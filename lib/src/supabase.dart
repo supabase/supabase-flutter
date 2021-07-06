@@ -12,16 +12,16 @@ class Supabase {
   GotrueSubscription? _initialClientSubscription;
   bool _initialDeeplinkIsHandled = false;
 
-  String? _authCallbackUrlHost;
+  String? _authCallbackUrlHostname;
 
   factory Supabase({
     String? url,
     String? anonKey,
-    String? authCallbackUrlHost,
+    String? authCallbackUrlHostname,
   }) {
     if (url != null && anonKey != null) {
       _instance._init(url, anonKey);
-      _instance._authCallbackUrlHost = authCallbackUrlHost;
+      _instance._authCallbackUrlHostname = authCallbackUrlHostname;
       print('***** Supabase init completed $_instance');
     }
 
@@ -99,10 +99,10 @@ class Supabase {
 
   /// if _authCallbackUrlHost not init, we treat all deeplink as auth callback
   bool isAuthCallbackDeeplink(Uri uri) {
-    if (_authCallbackUrlHost == null) {
+    if (_authCallbackUrlHostname == null) {
       return true;
     } else {
-      return _authCallbackUrlHost == uri.host;
+      return _authCallbackUrlHostname == uri.host;
     }
   }
 }
