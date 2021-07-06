@@ -31,7 +31,6 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
       // the foreground or in the background.
       _sub = uriLinkStream.listen((Uri? uri) {
         if (mounted && uri != null) {
-          onReceivedDeeplink(uri);
           _handleDeeplink(uri);
         }
       }, onError: (Object err) {
@@ -49,12 +48,11 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
   ///
   /// We handle all exceptions, since it is called from initState.
   Future<void> _handleInitialUri() async {
-    if (!Supabase().shouldHandleInitialUri()) return;
+    if (!Supabase().shouldHandleInitialDeeplink()) return;
 
     try {
       final uri = await getInitialUri();
       if (mounted && uri != null) {
-        onReceivedDeeplink(uri);
         _handleDeeplink(uri);
       }
     } on PlatformException {
@@ -68,21 +66,22 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
   void _handleDeeplink(Uri uri) async {
     print('uri.scheme: ${uri.scheme}');
     print('uri.host: ${uri.host}');
+    if (Supabase().isAuthCallbackDeeplink(uri)) {
+      // notify auth deeplink received
+      onReceivedAuthDeeplink(uri);
 
-    // TODO: we should verify uri.host before handling as
-    // 3rd party authentication deeplink if not we should ignore
-
-    final response = await Supabase().client.auth.getSessionFromUrl(uri);
-    if (response.error != null) {
-      onErrorHandlingAuthDeeplink(response.error!.message);
-    } else {
-      onHandledAuthDeeplink(response.data!);
+      final response = await Supabase().client.auth.getSessionFromUrl(uri);
+      if (response.error != null) {
+        onErrorHandlingAuthDeeplink(response.error!.message);
+      } else {
+        onHandledAuthDeeplink(response.data!);
+      }
     }
   }
 
   // As a callback when deeplink received and is processing
-  void onReceivedDeeplink(Uri uri) {
-    print('onReceivedDeepLink uri: $uri');
+  void onReceivedAuthDeeplink(Uri uri) {
+    print('onReceivedAuthDeeplink uri: $uri');
   }
 
   // As a callback when deeplink receiving throw error

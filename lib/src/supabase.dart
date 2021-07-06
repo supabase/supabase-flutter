@@ -10,11 +10,18 @@ class Supabase {
 
   SupabaseClient? _client;
   GotrueSubscription? _initialClientSubscription;
-  bool _initialUriIsHandled = false;
+  bool _initialDeeplinkIsHandled = false;
 
-  factory Supabase({String? url, String? anonKey}) {
+  String? _authCallbackUrlHost;
+
+  factory Supabase({
+    String? url,
+    String? anonKey,
+    String? authCallbackUrlHost,
+  }) {
     if (url != null && anonKey != null) {
       _instance._init(url, anonKey);
+      _instance._authCallbackUrlHost = authCallbackUrlHost;
       print('***** Supabase init completed $_instance');
     }
 
@@ -81,12 +88,21 @@ class Supabase {
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
-  bool shouldHandleInitialUri() {
-    if (_initialUriIsHandled)
+  bool shouldHandleInitialDeeplink() {
+    if (_initialDeeplinkIsHandled)
       return false;
     else {
-      _initialUriIsHandled = true;
+      _initialDeeplinkIsHandled = true;
       return true;
+    }
+  }
+
+  /// if _authCallbackUrlHost not init, we treat all deeplink as auth callback
+  bool isAuthCallbackDeeplink(Uri uri) {
+    if (_authCallbackUrlHost == null) {
+      return true;
+    } else {
+      return _authCallbackUrlHost == uri.host;
     }
   }
 }
