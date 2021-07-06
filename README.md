@@ -66,7 +66,7 @@ class AuthState<T extends StatefulWidget> extends SupabaseAuthState<T> {
   @override
   void onAuthenticated(supabase.Session session) {
     // Code to handle authenticated user
-    // show your welcome screen
+    // e.g. show your welcome screen
   }
 
   @override
