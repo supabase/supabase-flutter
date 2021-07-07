@@ -24,13 +24,17 @@ jobs:
       - name: Checks-out repo
         uses: actions/checkout@v2
 
-      - name: Setup Dart
-        uses: cedx/setup-dart@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: "12.x"
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: "stable"
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: dartfmt
+      - name: flutterfmt
         run: flutter format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
