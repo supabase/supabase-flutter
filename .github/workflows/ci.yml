@@ -1,0 +1,40 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Test
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test / OS ${{ matrix.os }} / Node ${{ matrix.node }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node: ["12"]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checks-out repo
+        uses: actions/checkout@v2
+
+      - name: Setup Dart
+        uses: cedx/setup-dart@v2
+
+      - name: Install dependencies
+        run: pub get
+
+      - name: dartfmt
+        run: dart format lib test -l 80 --set-exit-if-changed
+
+      - name: analyzer
+        run: dart analyze --fatal-warnings --fatal-infos .
+
+      - name: Run tests
+        run: pub run test

@@ -13,12 +13,13 @@ dependencies:
     sdk: flutter
   shared_preferences: ^2.0.6
   supabase: ^0.0.1-dev.26
-  url_launcher: ^6.0.6
   uni_links: ^0.5.1
+  url_launcher: ^6.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  lint: ^1.5.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
