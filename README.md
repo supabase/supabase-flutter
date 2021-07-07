@@ -37,7 +37,7 @@ void main() {
 }
 ```
 
-> `authCallbackUrlHostname` is optional. It will be used to filter for Supabase authentication redirect deeplink. You need to provide this param if you use deeplink for other features on the mobile app.
+> `authCallbackUrlHostname` is optional. It will be used to filter Supabase authentication redirect deeplink. You need to provide this param if you use deeplink for other features on the app.
 
 Now you can access Supabase client anywhere in your app.
 
@@ -84,20 +84,7 @@ class AuthState<T extends StatefulWidget> extends SupabaseAuthState<T> {
 }
 ```
 
-Then you can use this `AuthState` class with your login screen, splash screen.
-
-```dart
-class SignInScreen extends StatefulWidget {
-  SignInScreen({Key? key}) : super(key: key);
-
-  @override
-  _SignInState createState() => _SignInState();
-}
-
-class _SignInState extends AuthState<SignInScreen> {
-
-}
-```
+For more details, please take a look at the example apps [here](https://github.com/supabase/supabase-flutter/tree/main/example)
 
 ### Deeplink config
 
@@ -109,6 +96,10 @@ class _SignInState extends AuthState<SignInScreen> {
 The redirect callback url should have this format `[YOUR_SCHEME]://[YOUR_AUTH_HOSTNAME]`
 
 ![authentication settings page](https://user-images.githubusercontent.com/689843/124574731-f735c180-de74-11eb-8f50-2d34161261dd.png)
+
+#### Supabase 3rd party logins config
+
+Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
 #### For Android
 
