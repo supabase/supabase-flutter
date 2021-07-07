@@ -63,7 +63,7 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
-  void _handleDeeplink(Uri uri) async {
+  Future<bool> _handleDeeplink(Uri uri) async {
     print('uri.scheme: ${uri.scheme}');
     print('uri.host: ${uri.host}');
     if (Supabase().isAuthCallbackDeeplink(uri)) {
@@ -76,6 +76,9 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
       } else {
         onHandledAuthDeeplink(response.data!);
       }
+      return true;
+    } else {
+      return false;
     }
   }
 

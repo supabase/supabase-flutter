@@ -4,7 +4,7 @@ abstract class SupabaseLifecycleState<T extends StatefulWidget> extends State<T>
     with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
-    return SizedBox.shrink();
+    return const SizedBox.shrink();
   }
 
   @override

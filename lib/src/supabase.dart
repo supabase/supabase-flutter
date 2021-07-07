@@ -4,16 +4,6 @@ import 'package:supabase_flutter/src/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Supabase {
-  Supabase._privateConstructor();
-
-  static final Supabase _instance = Supabase._privateConstructor();
-
-  SupabaseClient? _client;
-  GotrueSubscription? _initialClientSubscription;
-  bool _initialDeeplinkIsHandled = false;
-
-  String? _authCallbackUrlHostname;
-
   factory Supabase({
     String? url,
     String? anonKey,
@@ -28,6 +18,15 @@ class Supabase {
     return _instance;
   }
 
+  Supabase._privateConstructor();
+  static final Supabase _instance = Supabase._privateConstructor();
+
+  SupabaseClient? _client;
+  GotrueSubscription? _initialClientSubscription;
+  bool _initialDeeplinkIsHandled = false;
+
+  String? _authCallbackUrlHostname;
+
   void dispose() {
     if (_initialClientSubscription != null) {
       _initialClientSubscription!.data!.unsubscribe();
@@ -36,7 +35,7 @@ class Supabase {
 
   void _init(String supabaseUrl, String supabaseAnonKey) {
     if (_client != null) {
-      throw ('Supabase client is initialized more than once $_client');
+      throw 'Supabase client is initialized more than once $_client';
     }
 
     _client = SupabaseClient(supabaseUrl, supabaseAnonKey);
@@ -46,27 +45,27 @@ class Supabase {
 
   SupabaseClient get client {
     if (_client == null) {
-      throw ('Supabase client is not initialized');
+      throw 'Supabase client is not initialized';
     }
     return _client!;
   }
 
   Future<bool> get hasAccessToken async {
     final prefs = await SharedPreferences.getInstance();
-    bool exist = prefs.containsKey(SUPABASE_PERSIST_SESSION_KEY);
+    final exist = prefs.containsKey(supabasePersistSessionKey);
     return exist;
   }
 
   Future<String?> get accessToken async {
     final prefs = await SharedPreferences.getInstance();
-    String? jsonStr = prefs.getString(SUPABASE_PERSIST_SESSION_KEY);
+    final jsonStr = prefs.getString(supabasePersistSessionKey);
     return jsonStr;
   }
 
-  void removePersistSession() async {
+  Future<bool> removePersistSession() async {
     print('***** _removePersistSession _removePersistSession');
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.remove(SUPABASE_PERSIST_SESSION_KEY);
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.remove(supabasePersistSessionKey);
   }
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
@@ -79,19 +78,19 @@ class Supabase {
     }
   }
 
-  void _persistSession(String persistSessionString) async {
+  Future<bool> _persistSession(String persistSessionString) async {
     print('***** persistSession persistSession persistSession');
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString(SUPABASE_PERSIST_SESSION_KEY, persistSessionString);
+    return prefs.setString(supabasePersistSessionKey, persistSessionString);
   }
 
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
   bool shouldHandleInitialDeeplink() {
-    if (_initialDeeplinkIsHandled)
+    if (_initialDeeplinkIsHandled) {
       return false;
-    else {
+    } else {
       _initialDeeplinkIsHandled = true;
       return true;
     }
@@ -114,6 +113,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       provider: provider,
       options: options,
     );
-    return await launch(res.url!);
+    final result = await launch(res.url!);
+    return result;
   }
 }

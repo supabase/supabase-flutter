@@ -28,13 +28,13 @@ jobs:
         uses: cedx/setup-dart@v2
 
       - name: Install dependencies
-        run: pub get
+        run: flutter pub get
 
       - name: dartfmt
-        run: dart format lib test -l 80 --set-exit-if-changed
+        run: flutter format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
-        run: dart analyze --fatal-warnings --fatal-infos .
+        run: flutter analyze --fatal-warnings --fatal-infos .
 
       - name: Run tests
-        run: pub run test
+        run: flutter test
