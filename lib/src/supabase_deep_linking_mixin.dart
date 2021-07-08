@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/supabase.dart';
 import 'package:uni_links/uni_links.dart';
 
@@ -31,7 +30,7 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
       // the foreground or in the background.
       _sub = uriLinkStream.listen((Uri? uri) {
         if (mounted && uri != null) {
-          _handleDeeplink(uri);
+          handleDeeplink(uri);
         }
       }, onError: (Object err) {
         if (!mounted) return;
@@ -53,7 +52,7 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
     try {
       final uri = await getInitialUri();
       if (mounted && uri != null) {
-        _handleDeeplink(uri);
+        handleDeeplink(uri);
       }
     } on PlatformException {
       // Platform messages may fail but we ignore the exception
@@ -63,38 +62,9 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
-  Future<bool> _handleDeeplink(Uri uri) async {
-    print('uri.scheme: ${uri.scheme}');
-    print('uri.host: ${uri.host}');
-    if (Supabase().isAuthCallbackDeeplink(uri)) {
-      // notify auth deeplink received
-      onReceivedAuthDeeplink(uri);
+  /// Callback when deeplink receiving succeeds
+  void handleDeeplink(Uri uri);
 
-      final response = await Supabase().client.auth.getSessionFromUrl(uri);
-      if (response.error != null) {
-        onErrorHandlingAuthDeeplink(response.error!.message);
-      } else {
-        onHandledAuthDeeplink(response.data!);
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  // As a callback when deeplink received and is processing
-  void onReceivedAuthDeeplink(Uri uri) {
-    print('onReceivedAuthDeeplink uri: $uri');
-  }
-
-  // As a callback when deeplink receiving throw error
-  void onErrorReceivingDeeplink(String message) {
-    print('onErrorReceivingDeppLink message: $message');
-  }
-
-  /// As a callback when authenticating with deeplink failed
-  void onErrorHandlingAuthDeeplink(String message);
-
-  // As a callback after deep link handled
-  void onHandledAuthDeeplink(Session session);
+  /// Callback when deeplink receiving throw error
+  void onErrorReceivingDeeplink(String message);
 }
