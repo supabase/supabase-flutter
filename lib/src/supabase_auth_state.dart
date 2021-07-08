@@ -1,23 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/supabase.dart';
-import 'package:supabase_flutter/src/supabase_lifecycle_state.dart';
 import 'package:supabase_flutter/src/supabase_deep_linking_mixin.dart';
 
-abstract class SupabaseAuthState<T extends StatefulWidget>
-    extends SupabaseLifecycleState<T> with SupabaseDeepLinkingMixin {
+/// Interface for user authentication screen to support deeplink
+abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
+    with SupabaseDeepLinkingMixin {
   @override
-  Future<bool> onResumed() async {
-    print('***** onResumed onResumed onResumed');
-    final String? persistSessionString = await Supabase().accessToken;
-    if (persistSessionString != null) {
-      await Supabase().client.auth.recoverSession(persistSessionString);
-    }
-    return true;
+  Widget build(BuildContext context) {
+    return const SizedBox.shrink();
   }
 
   @override
   Future<bool> handleDeeplink(Uri uri) async {
+    print('***** SupabaseAuthState handleDeeplink $uri');
     if (Supabase().isAuthCallbackDeeplink(uri)) {
       // notify auth deeplink received
       onReceivedAuthDeeplink(uri);
