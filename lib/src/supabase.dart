@@ -8,11 +8,13 @@ class Supabase {
     String? url,
     String? anonKey,
     String? authCallbackUrlHostname,
+    bool? debug,
   }) {
     if (url != null && anonKey != null) {
       _instance._init(url, anonKey);
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
-      print('***** Supabase init completed $_instance');
+      _instance._debugEnable = debug ?? false;
+      _instance.log('***** Supabase init completed $_instance');
     }
 
     return _instance;
@@ -24,6 +26,7 @@ class Supabase {
   SupabaseClient? _client;
   GotrueSubscription? _initialClientSubscription;
   bool _initialDeeplinkIsHandled = false;
+  bool _debugEnable = false;
 
   String? _authCallbackUrlHostname;
 
@@ -63,25 +66,31 @@ class Supabase {
   }
 
   Future<bool> removePersistSession() async {
-    print('***** _removePersistSession _removePersistSession');
+    log('***** _removePersistSession _removePersistSession');
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.remove(supabasePersistSessionKey);
   }
 
+  Future<bool> _persistSession(String persistSessionString) async {
+    log('***** persistSession persistSession persistSession');
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.setString(supabasePersistSessionKey, persistSessionString);
+  }
+
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
-    print('**** onAuthStateChange: $event');
+    log('**** onAuthStateChange: $event');
     if (event == AuthChangeEvent.signedIn && session != null) {
-      print(session.persistSessionString);
+      log(session.persistSessionString);
       _persistSession(session.persistSessionString);
     } else if (event == AuthChangeEvent.signedOut) {
       removePersistSession();
     }
   }
 
-  Future<bool> _persistSession(String persistSessionString) async {
-    print('***** persistSession persistSession persistSession');
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.setString(supabasePersistSessionKey, persistSessionString);
+  void log(String msg) {
+    if (_debugEnable) {
+      print(msg);
+    }
   }
 
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled

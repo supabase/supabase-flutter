@@ -10,13 +10,13 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
   late StreamSubscription? _sub;
 
   void startDeeplinkObserver() {
-    print('***** SupabaseDeepLinkingMixin startAuthObserver');
+    Supabase().log('***** SupabaseDeepLinkingMixin startAuthObserver');
     _handleIncomingLinks();
     _handleInitialUri();
   }
 
   void stopDeeplinkObserver() {
-    print('***** SupabaseDeepLinkingMixin stopAuthObserver');
+    Supabase().log('***** SupabaseDeepLinkingMixin stopAuthObserver');
     _sub?.cancel();
   }
 

@@ -10,13 +10,13 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
     extends SupabaseState<T> with SupabaseDeepLinkingMixin {
   @override
   void startAuthObserver() {
-    print('***** SupabaseAuthState startAuthObserver');
+    Supabase().log('***** SupabaseAuthState startAuthObserver');
     startDeeplinkObserver();
   }
 
   @override
   void stopAuthObserver() {
-    print('***** SupabaseAuthState stopAuthObserver');
+    Supabase().log('***** SupabaseAuthState stopAuthObserver');
     stopDeeplinkObserver();
   }
 
@@ -24,7 +24,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
   Future<bool> handleDeeplink(Uri uri) async {
     if (!Supabase().isAuthCallbackDeeplink(uri)) return false;
 
-    print('***** SupabaseAuthState handleDeeplink $uri');
+    Supabase().log('***** SupabaseAuthState handleDeeplink $uri');
 
     // notify auth deeplink received
     onReceivedAuthDeeplink(uri);
@@ -56,7 +56,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
 
   @override
   void onErrorReceivingDeeplink(String message) {
-    print('onErrorReceivingDeppLink message: $message');
+    Supabase().log('onErrorReceivingDeppLink message: $message');
   }
 
   /// This method helps recover/refresh session if it's available
@@ -87,7 +87,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
 
   /// Callback when deeplink received and is processing. Optional
   void onReceivedAuthDeeplink(Uri uri) {
-    print('onReceivedAuthDeeplink uri: $uri');
+    Supabase().log('onReceivedAuthDeeplink uri: $uri');
   }
 
   /// Callback when user is unauthenticated

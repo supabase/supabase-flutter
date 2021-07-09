@@ -7,13 +7,13 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
     extends SupabaseState<T> with WidgetsBindingObserver {
   @override
   void startAuthObserver() {
-    print('***** SupabaseAuthRequiredState startAuthObserver');
+    Supabase().log('***** SupabaseAuthRequiredState startAuthObserver');
     WidgetsBinding.instance?.addObserver(this);
   }
 
   @override
   void stopAuthObserver() {
-    print('***** SupabaseAuthRequiredState stopAuthObserver');
+    Supabase().log('***** SupabaseAuthRequiredState stopAuthObserver');
     WidgetsBinding.instance?.removeObserver(this);
   }
 
@@ -32,9 +32,8 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
     }
   }
 
-  @override
   Future<bool> onResumed() async {
-    print('***** SupabaseAuthRequiredState onResumed');
+    Supabase().log('***** SupabaseAuthRequiredState onResumed');
     final bool exist = await Supabase().hasAccessToken;
     if (!exist) {
       onUnauthenticated();
