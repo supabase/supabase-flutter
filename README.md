@@ -30,7 +30,8 @@ void main() {
   Supabase(
     url: SUPABASE_URL,
     anonKey: SUPABASE_ANNON_KEY,
-    authCallbackUrlHostname: 'login-callback',
+    authCallbackUrlHostname: 'login-callback', // optional
+    debug: true // optional
   );
 
   runApp(MyApp());
@@ -49,42 +50,17 @@ final response = await Supabase().client.auth.signIn(email: _email, password: _p
 
 #### SupabaseAuthState
 
-SupabaseAuthState is a utility abstract class. It helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
+It helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
 
-```dart
-import 'package:flutter/material.dart';
-import 'package:supabase/supabase.dart' as supabase;
-import 'package:supabase_flutter/supabase_flutter.dart';
+For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_state.dart)
 
-class AuthState<T extends StatefulWidget> extends SupabaseAuthState<T> {
-  @override
-  void onUnauthenticated() {
-    // Code to handle unauthenticated user
-    // e.g. show your login screen
-  }
+> When using with a nested authentication flow, remember to call `startAuthObserver()` and `stopAuthObserver()` before/after navigation to new screen to prevent multiple observer running at the same time. Take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/026c6e8cbb05a5b1b76a50ce82d936016844ba1b/lib/screens/signin_screen.dart#L165-L170)
 
-  @override
-  void onAuthenticated(supabase.Session session) {
-    // Code to handle authenticated user
-    // e.g. show your welcome screen
-  }
+#### SupabaseAuthRequiredState
 
-  @override
-  void onPasswordRecovery(supabase.Session session) {
-    // Code to handle password recovery
-    // If your app doesn't support password recovery, you can ignore this callback
-    // e.g. show password change screen
-  }
+It helps you protect route that requires an authenticated user.
 
-  @override
-  void onErrorAuthenticating(String message) {
-    // Code to handle error
-    // e.g. show a snackbar message
-  }
-}
-```
-
-For more details, please take a look at the example apps [here](https://github.com/supabase/supabase-flutter/tree/main/example)
+For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_required_state.dart)
 
 ### Deeplink config
 
