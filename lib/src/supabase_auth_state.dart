@@ -7,6 +7,8 @@ import 'package:supabase_flutter/src/supabase_deep_linking_mixin.dart';
 /// It supports deeplink authentication
 abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
     with SupabaseDeepLinkingMixin {
+  bool _deeplinkObserverEnable = true;
+
   @override
   Widget build(BuildContext context) {
     return const SizedBox.shrink();
@@ -14,8 +16,9 @@ abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
 
   @override
   Future<bool> handleDeeplink(Uri uri) async {
-    print('***** SupabaseAuthState handleDeeplink $uri');
-    if (Supabase().isAuthCallbackDeeplink(uri)) {
+    if (_deeplinkObserverEnable && Supabase().isAuthCallbackDeeplink(uri)) {
+      print('***** SupabaseAuthState handleDeeplink $uri');
+
       // notify auth deeplink received
       onReceivedAuthDeeplink(uri);
 
@@ -50,6 +53,29 @@ abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
   @override
   void onErrorReceivingDeeplink(String message) {
     print('onErrorReceivingDeppLink message: $message');
+  }
+
+  /// enable deeplink observer
+  /// e.g. on nested authentication flow, call this method on navigation push.then()
+  ///
+  /// ```dart
+  /// Navigator.pushNamed(context, '/signUp').then((_) => startDeeplinkObserver());
+  /// ```
+  void startDeeplinkObserver() {
+    print('***** startDeeplinkObserver');
+    _deeplinkObserverEnable = true;
+  }
+
+  /// disable deeplink observer
+  /// e.g. on nested authentication flow, call this method before navigation push
+  ///
+  /// ```dart
+  /// stopDeeplinkObserver();
+  /// Navigator.pushNamed(context, '/signUp').then((_) =>{});
+  /// ```
+  void stopDeeplinkObserver() {
+    print('***** stopDeeplinkObserver');
+    _deeplinkObserverEnable = false;
   }
 
   /// This method helps recover/refresh session if it's available
