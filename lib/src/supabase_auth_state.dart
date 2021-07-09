@@ -1,81 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/supabase.dart';
+import 'package:supabase_flutter/src/supabase_state.dart';
 import 'package:supabase_flutter/src/supabase_deep_linking_mixin.dart';
 
 /// Interface for user authentication screen
 /// It supports deeplink authentication
-abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
-    with SupabaseDeepLinkingMixin {
-  bool _deeplinkObserverEnable = true;
+abstract class SupabaseAuthState<T extends StatefulWidget>
+    extends SupabaseState<T> with SupabaseDeepLinkingMixin {
+  @override
+  void startAuthObserver() {
+    print('***** SupabaseAuthState startAuthObserver');
+    startDeeplinkObserver();
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return const SizedBox.shrink();
+  void stopAuthObserver() {
+    print('***** SupabaseAuthState stopAuthObserver');
+    stopDeeplinkObserver();
   }
 
   @override
   Future<bool> handleDeeplink(Uri uri) async {
-    if (_deeplinkObserverEnable && Supabase().isAuthCallbackDeeplink(uri)) {
-      print('***** SupabaseAuthState handleDeeplink $uri');
+    if (!Supabase().isAuthCallbackDeeplink(uri)) return false;
 
-      // notify auth deeplink received
-      onReceivedAuthDeeplink(uri);
+    print('***** SupabaseAuthState handleDeeplink $uri');
 
-      // format uri fragment
-      Uri _uri = uri;
-      if (_uri.hasQuery) {
-        final decoded = _uri.toString().replaceAll('#', '&');
-        _uri = Uri.parse(decoded);
-      } else {
-        final decoded = _uri.toString().replaceAll('#', '?');
-        _uri = Uri.parse(decoded);
-      }
-      final type = _uri.queryParameters['type'] ?? '';
+    // notify auth deeplink received
+    onReceivedAuthDeeplink(uri);
 
-      // recover session from deeplink
-      final response = await Supabase().client.auth.getSessionFromUrl(uri);
-      if (response.error != null) {
-        onErrorAuthenticating(response.error!.message);
-      } else {
-        if (type == 'recovery') {
-          onPasswordRecovery(response.data!);
-        } else {
-          onAuthenticated(response.data!);
-        }
-      }
-      return true;
+    // format uri fragment
+    Uri _uri = uri;
+    if (_uri.hasQuery) {
+      final decoded = _uri.toString().replaceAll('#', '&');
+      _uri = Uri.parse(decoded);
     } else {
-      return false;
+      final decoded = _uri.toString().replaceAll('#', '?');
+      _uri = Uri.parse(decoded);
     }
+    final type = _uri.queryParameters['type'] ?? '';
+
+    // recover session from deeplink
+    final response = await Supabase().client.auth.getSessionFromUrl(uri);
+    if (response.error != null) {
+      onErrorAuthenticating(response.error!.message);
+    } else {
+      if (type == 'recovery') {
+        onPasswordRecovery(response.data!);
+      } else {
+        onAuthenticated(response.data!);
+      }
+    }
+    return true;
   }
 
   @override
   void onErrorReceivingDeeplink(String message) {
     print('onErrorReceivingDeppLink message: $message');
-  }
-
-  /// enable deeplink observer
-  /// e.g. on nested authentication flow, call this method on navigation push.then()
-  ///
-  /// ```dart
-  /// Navigator.pushNamed(context, '/signUp').then((_) => startDeeplinkObserver());
-  /// ```
-  void startDeeplinkObserver() {
-    print('***** startDeeplinkObserver');
-    _deeplinkObserverEnable = true;
-  }
-
-  /// disable deeplink observer
-  /// e.g. on nested authentication flow, call this method before navigation push
-  ///
-  /// ```dart
-  /// stopDeeplinkObserver();
-  /// Navigator.pushNamed(context, '/signUp').then((_) =>{});
-  /// ```
-  void stopDeeplinkObserver() {
-    print('***** stopDeeplinkObserver');
-    _deeplinkObserverEnable = false;
   }
 
   /// This method helps recover/refresh session if it's available

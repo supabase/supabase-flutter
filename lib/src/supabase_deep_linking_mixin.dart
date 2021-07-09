@@ -9,17 +9,15 @@ import 'package:uni_links/uni_links.dart';
 mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
   late StreamSubscription? _sub;
 
-  @override
-  void initState() {
-    super.initState();
+  void startDeeplinkObserver() {
+    print('***** SupabaseDeepLinkingMixin startAuthObserver');
     _handleIncomingLinks();
     _handleInitialUri();
   }
 
-  @override
-  void dispose() {
+  void stopDeeplinkObserver() {
+    print('***** SupabaseDeepLinkingMixin stopAuthObserver');
     _sub?.cancel();
-    super.dispose();
   }
 
   /// Handle incoming links - the ones that the app will recieve from the OS

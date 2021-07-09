@@ -1,13 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/src/supabase.dart';
-import 'package:supabase_flutter/src/supabase_lifecycle_state.dart';
+import 'package:supabase_flutter/src/supabase_state.dart';
 
 /// Interface for screen that requires an authenticated user
 abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
-    extends SupabaseLifecycleState<T> {
+    extends SupabaseState<T> with WidgetsBindingObserver {
   @override
-  Widget build(BuildContext context) {
-    return const SizedBox.shrink();
+  void startAuthObserver() {
+    print('***** SupabaseAuthRequiredState startAuthObserver');
+    WidgetsBinding.instance?.addObserver(this);
+  }
+
+  @override
+  void stopAuthObserver() {
+    print('***** SupabaseAuthRequiredState stopAuthObserver');
+    WidgetsBinding.instance?.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        onResumed();
+        break;
+      case AppLifecycleState.inactive:
+        break;
+      case AppLifecycleState.paused:
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
   }
 
   @override
