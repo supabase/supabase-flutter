@@ -3,7 +3,8 @@ import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/supabase.dart';
 import 'package:supabase_flutter/src/supabase_deep_linking_mixin.dart';
 
-/// Interface for user authentication screen to support deeplink
+/// Interface for user authentication screen
+/// It supports deeplink authentication
 abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
     with SupabaseDeepLinkingMixin {
   @override
@@ -52,7 +53,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
   }
 
   /// This method helps recover/refresh session if it's available
-  /// Should be called on a Splash screen when app starts.
+  /// e.g. called on a Splash screen when app starts.
   Future<bool> recoverSupabaseSession() async {
     final bool exist = await Supabase().hasAccessToken;
     if (!exist) {
