@@ -7,7 +7,7 @@ import 'package:supabase_flutter/src/supabase.dart';
 import 'package:uni_links/uni_links.dart';
 
 mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
-  late StreamSubscription? _sub;
+  StreamSubscription? _sub;
 
   void startDeeplinkObserver() {
     Supabase().log('***** SupabaseDeepLinkingMixin startAuthObserver');
@@ -17,7 +17,7 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
 
   void stopDeeplinkObserver() {
     Supabase().log('***** SupabaseDeepLinkingMixin stopAuthObserver');
-    _sub?.cancel();
+    if (_sub != null) _sub?.cancel();
   }
 
   /// Handle incoming links - the ones that the app will recieve from the OS
