@@ -1,3 +1,8 @@
+## [0.0.1-dev.5]
+
+- fix: launch url in the current tab for flutter web
+- fix: SupabaseAuthRequiredState to trigger onAuthenticated when user session available
+
 ## [0.0.1-dev.4]
 
 - feat: support flutter web
