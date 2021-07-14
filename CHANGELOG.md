@@ -1,3 +1,7 @@
+## [0.0.1-dev.4]
+
+- feat: support flutter web
+
 ## [0.0.1-dev.3]
 
 - chore: update supabase to v0.0.1
