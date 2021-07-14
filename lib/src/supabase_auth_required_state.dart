@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/supabase.dart';
 import 'package:supabase_flutter/src/supabase_state.dart';
 
 /// Interface for screen that requires an authenticated user
 abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
     extends SupabaseState<T> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+
+    if (Supabase().client.auth.currentSession == null) {
+      _recoverSupabaseSession();
+    } else {
+      onAuthenticated(Supabase().client.auth.currentSession!);
+    }
+  }
+
   @override
   void startAuthObserver() {
     Supabase().log('***** SupabaseAuthRequiredState startAuthObserver');
@@ -34,6 +46,10 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
 
   Future<bool> onResumed() async {
     Supabase().log('***** SupabaseAuthRequiredState onResumed');
+    return _recoverSupabaseSession();
+  }
+
+  Future<bool> _recoverSupabaseSession() async {
     final bool exist = await Supabase().hasAccessToken;
     if (!exist) {
       onUnauthenticated();
@@ -52,9 +68,13 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
       onUnauthenticated();
       return false;
     } else {
+      onAuthenticated(response.data!);
       return true;
     }
   }
+
+  /// Callback when user session is ready
+  void onAuthenticated(Session session) {}
 
   /// Callback when user is unauthenticated
   void onUnauthenticated();
