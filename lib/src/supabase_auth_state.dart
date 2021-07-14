@@ -29,16 +29,17 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
     // notify auth deeplink received
     onReceivedAuthDeeplink(uri);
 
-    // format uri fragment
-    Uri _uri = uri;
-    if (_uri.hasQuery) {
-      final decoded = _uri.toString().replaceAll('#', '&');
-      _uri = Uri.parse(decoded);
-    } else {
-      final decoded = _uri.toString().replaceAll('#', '?');
-      _uri = Uri.parse(decoded);
-    }
-    final type = _uri.queryParameters['type'] ?? '';
+    return recoverSessionFromUrl(uri);
+  }
+
+  @override
+  void onErrorReceivingDeeplink(String message) {
+    Supabase().log('onErrorReceivingDeppLink message: $message');
+  }
+
+  Future<bool> recoverSessionFromUrl(Uri uri) async {
+    final uriParameters = Supabase().parseUriParameters(uri);
+    final type = uriParameters['type'] ?? '';
 
     // recover session from deeplink
     final response = await Supabase().client.auth.getSessionFromUrl(uri);
@@ -54,12 +55,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
     return true;
   }
 
-  @override
-  void onErrorReceivingDeeplink(String message) {
-    Supabase().log('onErrorReceivingDeppLink message: $message');
-  }
-
-  /// This method helps recover/refresh session if it's available
+  /// Recover/refresh session if it's available
   /// e.g. called on a Splash screen when app starts.
   Future<bool> recoverSupabaseSession() async {
     final bool exist = await Supabase().hasAccessToken;
