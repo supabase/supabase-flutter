@@ -145,7 +145,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       provider: provider,
       options: options,
     );
-    final result = await launch(res.url!);
+    final result = await launch(res.url!, webOnlyWindowName: '_self');
     return result;
   }
 }
