@@ -1,3 +1,7 @@
+## [0.0.1]
+
+- chore: update supabase, url_launcher packages
+
 ## [0.0.1-dev.5]
 
 - fix: launch url in the current tab for flutter web
