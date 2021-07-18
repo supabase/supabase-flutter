@@ -58,13 +58,13 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
   /// Recover/refresh session if it's available
   /// e.g. called on a Splash screen when app starts.
   Future<bool> recoverSupabaseSession() async {
-    final bool exist = await Supabase().hasAccessToken;
+    final bool exist = await Supabase().localStorage.hasAccessToken();
     if (!exist) {
       onUnauthenticated();
       return false;
     }
 
-    final String? jsonStr = await Supabase().accessToken;
+    final String? jsonStr = await Supabase().localStorage.accessToken();
     if (jsonStr == null) {
       onUnauthenticated();
       return false;
@@ -72,7 +72,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
 
     final response = await Supabase().client.auth.recoverSession(jsonStr);
     if (response.error != null) {
-      Supabase().removePersistSession();
+      Supabase().localStorage.removePersistSession();
       onUnauthenticated();
       return false;
     } else {

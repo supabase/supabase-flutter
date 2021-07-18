@@ -1,7 +1,49 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
-import 'package:supabase_flutter/src/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
+
+Future<bool> defHasAccessToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  final exist = prefs.containsKey(supabasePersistSessionKey);
+  return exist;
+}
+
+Future<String?> defAccessToken() async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonStr = prefs.getString(supabasePersistSessionKey);
+  return jsonStr;
+}
+
+Future defRemovePersistedSession() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  return prefs.remove(supabasePersistSessionKey);
+}
+
+Future defPersistSession(String persistSessionString) async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.setString(supabasePersistSessionKey, persistSessionString);
+}
+
+class LocalStorage {
+  LocalStorage(
+      {Future<bool> Function()? hasAccessToken,
+      Future<String?> Function()? accessToken,
+      Future Function()? removePersistedSession,
+      Future Function(String)? persistSession}) {
+    hasAccessToken = hasAccessToken ?? defHasAccessToken;
+    accessToken = accessToken ?? defAccessToken;
+    removePersistedSession =
+        removePersistedSession ?? defRemovePersistedSession;
+    persistSession = persistSession ?? defPersistSession;
+  }
+
+  Future<bool> Function() hasAccessToken = defHasAccessToken;
+  Future<String?> Function() accessToken = defAccessToken;
+  Future Function() removePersistSession = defRemovePersistedSession;
+  Future Function(String) persistSession = defPersistSession;
+}
 
 class Supabase {
   factory Supabase({
@@ -9,11 +51,13 @@ class Supabase {
     String? anonKey,
     String? authCallbackUrlHostname,
     bool? debug,
+    LocalStorage? localStorage,
   }) {
     if (url != null && anonKey != null) {
       _instance._init(url, anonKey);
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
       _instance._debugEnable = debug ?? false;
+      _instance._localStorage = localStorage ?? LocalStorage();
       _instance.log('***** Supabase init completed $_instance');
     }
 
@@ -29,6 +73,7 @@ class Supabase {
   bool _debugEnable = false;
 
   String? _authCallbackUrlHostname;
+  LocalStorage _localStorage = LocalStorage();
 
   void dispose() {
     if (_initialClientSubscription != null) {
@@ -53,37 +98,25 @@ class Supabase {
     return _client!;
   }
 
+  LocalStorage get localStorage {
+    return _localStorage;
+  }
+
   Future<bool> get hasAccessToken async {
-    final prefs = await SharedPreferences.getInstance();
-    final exist = prefs.containsKey(supabasePersistSessionKey);
-    return exist;
+    return _localStorage.hasAccessToken();
   }
 
   Future<String?> get accessToken async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonStr = prefs.getString(supabasePersistSessionKey);
-    return jsonStr;
-  }
-
-  Future<bool> removePersistSession() async {
-    log('***** _removePersistSession _removePersistSession');
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.remove(supabasePersistSessionKey);
-  }
-
-  Future<bool> _persistSession(String persistSessionString) async {
-    log('***** persistSession persistSession persistSession');
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.setString(supabasePersistSessionKey, persistSessionString);
+    return _localStorage.accessToken();
   }
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
     log('**** onAuthStateChange: $event');
     if (event == AuthChangeEvent.signedIn && session != null) {
       log(session.persistSessionString);
-      _persistSession(session.persistSessionString);
+      _localStorage.persistSession(session.persistSessionString);
     } else if (event == AuthChangeEvent.signedOut) {
-      removePersistSession();
+      _localStorage.removePersistSession();
     }
   }
 
