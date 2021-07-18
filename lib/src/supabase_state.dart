@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Interface for screen that requires an authenticated user
 abstract class SupabaseState<T extends StatefulWidget> extends State<T> {

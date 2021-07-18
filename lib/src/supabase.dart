@@ -27,17 +27,16 @@ Future defPersistSession(String persistSessionString) async {
 }
 
 class LocalStorage {
-  LocalStorage(
-      {Future<bool> Function()? hasAccessToken,
-      Future<String?> Function()? accessToken,
-      Future Function()? removePersistedSession,
-      Future Function(String)? persistSession}) {
-    this.hasAccessToken = hasAccessToken ?? defHasAccessToken;
-    this.accessToken = accessToken ?? defAccessToken;
-    this.removePersistedSession =
-        removePersistedSession ?? defRemovePersistedSession;
-    this.persistSession = persistSession ?? defPersistSession;
-  }
+  LocalStorage({
+    Future<bool> Function()? hasAccessToken,
+    Future<String?> Function()? accessToken,
+    Future Function()? removePersistedSession,
+    Future Function(String)? persistSession,
+  })  : hasAccessToken = hasAccessToken ?? defHasAccessToken,
+        accessToken = accessToken ?? defAccessToken,
+        removePersistedSession =
+            removePersistedSession ?? defRemovePersistedSession,
+        persistSession = persistSession ?? defPersistSession;
 
   Future<bool> Function() hasAccessToken = defHasAccessToken;
   Future<String?> Function() accessToken = defAccessToken;
@@ -46,7 +45,19 @@ class LocalStorage {
 }
 
 class Supabase {
-  factory Supabase({
+  /// Gets the current supabase instance.
+  ///
+  /// An error is thrown if supabase isn't initialized yet
+  static Supabase get instance {
+    assert(
+      _instance._initialized,
+      'You must initialize the supabase instance before calling Supabase.instance',
+    );
+    return _instance;
+  }
+
+  /// Initialize the current supabase instance
+  factory Supabase.initialize({
     String? url,
     String? anonKey,
     String? authCallbackUrlHostname,
@@ -67,7 +78,9 @@ class Supabase {
   Supabase._privateConstructor();
   static final Supabase _instance = Supabase._privateConstructor();
 
-  SupabaseClient? _client;
+  bool _initialized = false;
+
+  late SupabaseClient _client;
   GotrueSubscription? _initialClientSubscription;
   bool _initialDeeplinkIsHandled = false;
   bool _debugEnable = false;
@@ -79,36 +92,23 @@ class Supabase {
     if (_initialClientSubscription != null) {
       _initialClientSubscription!.data!.unsubscribe();
     }
+    _initialized = false;
   }
 
   void _init(String supabaseUrl, String supabaseAnonKey) {
-    if (_client != null) {
-      throw 'Supabase client is initialized more than once $_client';
-    }
-
     _client = SupabaseClient(supabaseUrl, supabaseAnonKey);
     _initialClientSubscription =
-        _client!.auth.onAuthStateChange(_onAuthStateChange);
+        _client.auth.onAuthStateChange(_onAuthStateChange);
+    _initialized = true;
   }
 
-  SupabaseClient get client {
-    if (_client == null) {
-      throw 'Supabase client is not initialized';
-    }
-    return _client!;
-  }
+  SupabaseClient get client => _client;
 
-  LocalStorage get localStorage {
-    return _localStorage;
-  }
+  LocalStorage get localStorage => _localStorage;
 
-  Future<bool> get hasAccessToken async {
-    return _localStorage.hasAccessToken();
-  }
+  Future<bool> get hasAccessToken async => _localStorage.hasAccessToken();
 
-  Future<String?> get accessToken async {
-    return _localStorage.accessToken();
-  }
+  Future<String?> get accessToken async => _localStorage.accessToken();
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
     log('**** onAuthStateChange: $event');

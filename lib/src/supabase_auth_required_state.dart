@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/supabase.dart';
 import 'package:supabase_flutter/src/supabase_state.dart';
@@ -10,22 +10,22 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
   void initState() {
     super.initState();
 
-    if (Supabase().client.auth.currentSession == null) {
+    if (Supabase.instance.client.auth.currentSession == null) {
       _recoverSupabaseSession();
     } else {
-      onAuthenticated(Supabase().client.auth.currentSession!);
+      onAuthenticated(Supabase.instance.client.auth.currentSession!);
     }
   }
 
   @override
   void startAuthObserver() {
-    Supabase().log('***** SupabaseAuthRequiredState startAuthObserver');
+    Supabase.instance.log('***** SupabaseAuthRequiredState startAuthObserver');
     WidgetsBinding.instance?.addObserver(this);
   }
 
   @override
   void stopAuthObserver() {
-    Supabase().log('***** SupabaseAuthRequiredState stopAuthObserver');
+    Supabase.instance.log('***** SupabaseAuthRequiredState stopAuthObserver');
     WidgetsBinding.instance?.removeObserver(this);
   }
 
@@ -45,26 +45,27 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
   }
 
   Future<bool> onResumed() async {
-    Supabase().log('***** SupabaseAuthRequiredState onResumed');
+    Supabase.instance.log('***** SupabaseAuthRequiredState onResumed');
     return _recoverSupabaseSession();
   }
 
   Future<bool> _recoverSupabaseSession() async {
-    final bool exist = await Supabase().localStorage.hasAccessToken();
+    final bool exist = await Supabase.instance.localStorage.hasAccessToken();
     if (!exist) {
       onUnauthenticated();
       return false;
     }
 
-    final String? jsonStr = await Supabase().localStorage.accessToken();
+    final String? jsonStr = await Supabase.instance.localStorage.accessToken();
     if (jsonStr == null) {
       onUnauthenticated();
       return false;
     }
 
-    final response = await Supabase().client.auth.recoverSession(jsonStr);
+    final response =
+        await Supabase.instance.client.auth.recoverSession(jsonStr);
     if (response.error != null) {
-      Supabase().localStorage.removePersistedSession();
+      Supabase.instance.localStorage.removePersistedSession();
       onUnauthenticated();
       return false;
     } else {
