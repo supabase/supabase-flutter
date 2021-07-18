@@ -72,7 +72,7 @@ class Supabase {
       _instance._init(url, anonKey);
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
       _instance._debugEnable = debug ?? false;
-      _instance._localStorage = localStorage ?? LocalStorage();
+      _instance._localStorage = localStorage ?? const LocalStorage();
       _instance.log('***** Supabase init completed $_instance');
     }
 
@@ -91,7 +91,7 @@ class Supabase {
   bool _debugEnable = false;
 
   String? _authCallbackUrlHostname;
-  LocalStorage _localStorage = LocalStorage();
+  LocalStorage _localStorage = const LocalStorage();
 
   /// Dispose the instance
   void dispose() {
