@@ -1,3 +1,7 @@
+## [0.0.2]
+
+- feat: support custom localStorage with fallback to SharedPreferences as default
+
 ## [0.0.1]
 
 - chore: update supabase, url_launcher packages

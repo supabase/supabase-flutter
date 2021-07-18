@@ -48,6 +48,32 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 final response = await Supabase().client.auth.signIn(email: _email, password: _password);
 ```
 
+#### Custom LocalStorage
+
+As default `supabase_flutter` uses `shared_preferences` plugin to persist user session. However you can use any other plugins by providing a **LocalStorage**.
+For example, we can use `flutter_secure_storage` plugin to store user session in secure storage.
+
+```dart
+final localStorage = LocalStorage(
+  hasAccessToken: () {
+    const storage = FlutterSecureStorage();
+    return storage.containsKey(key: supabasePersistSessionKey);
+  }, accessToken: () {
+    const storage = FlutterSecureStorage();
+    return storage.read(key: supabasePersistSessionKey);
+  }, removePersistedSession: () {
+    const storage = FlutterSecureStorage();
+    return storage.delete(key: supabasePersistSessionKey);
+  }, persistSession: (String value) {
+    const storage = FlutterSecureStorage();
+    return storage.write(key: supabasePersistSessionKey, value: value);
+  });
+Supabase(
+  ...
+  localStorage: localStorage,
+);
+```
+
 #### SupabaseAuthState
 
 It helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
