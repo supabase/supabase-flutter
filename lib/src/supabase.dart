@@ -4,44 +4,41 @@ import 'package:url_launcher/url_launcher.dart';
 
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 
-Future<bool> defHasAccessToken() async {
+Future<bool> _defHasAccessToken() async {
   final prefs = await SharedPreferences.getInstance();
   final exist = prefs.containsKey(supabasePersistSessionKey);
   return exist;
 }
 
-Future<String?> defAccessToken() async {
+Future<String?> _defAccessToken() async {
   final prefs = await SharedPreferences.getInstance();
   final jsonStr = prefs.getString(supabasePersistSessionKey);
   return jsonStr;
 }
 
-Future defRemovePersistedSession() async {
+Future _defRemovePersistedSession() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   return prefs.remove(supabasePersistSessionKey);
 }
 
-Future defPersistSession(String persistSessionString) async {
+Future _defPersistSession(String persistSessionString) async {
   final prefs = await SharedPreferences.getInstance();
   return prefs.setString(supabasePersistSessionKey, persistSessionString);
 }
 
 class LocalStorage {
-  LocalStorage({
-    Future<bool> Function()? hasAccessToken,
-    Future<String?> Function()? accessToken,
-    Future Function()? removePersistedSession,
-    Future Function(String)? persistSession,
-  })  : hasAccessToken = hasAccessToken ?? defHasAccessToken,
-        accessToken = accessToken ?? defAccessToken,
-        removePersistedSession =
-            removePersistedSession ?? defRemovePersistedSession,
-        persistSession = persistSession ?? defPersistSession;
+  /// Creates a `LocalStorage` instance
+  const LocalStorage({
+    this.hasAccessToken = _defHasAccessToken,
+    this.accessToken = _defAccessToken,
+    this.removePersistedSession = _defRemovePersistedSession,
+    this.persistSession = _defPersistSession,
+  });
 
-  Future<bool> Function() hasAccessToken = defHasAccessToken;
-  Future<String?> Function() accessToken = defAccessToken;
-  Future Function() removePersistedSession = defRemovePersistedSession;
-  Future Function(String) persistSession = defPersistSession;
+  final Future<bool> Function() hasAccessToken;
+  final Future<String?> Function() accessToken;
+  final Future Function() removePersistedSession;
+  final Future Function(String) persistSession;
 }
 
 class Supabase {
@@ -57,6 +54,9 @@ class Supabase {
   }
 
   /// Initialize the current supabase instance
+  ///
+  /// This must be called only once. If called more than once, an
+  /// [AssertionError] is thrown
   factory Supabase.initialize({
     String? url,
     String? anonKey,
@@ -64,6 +64,10 @@ class Supabase {
     bool? debug,
     LocalStorage? localStorage,
   }) {
+    assert(
+      !_instance._initialized,
+      'This instance is already initialized',
+    );
     if (url != null && anonKey != null) {
       _instance._init(url, anonKey);
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
@@ -80,7 +84,8 @@ class Supabase {
 
   bool _initialized = false;
 
-  late SupabaseClient _client;
+  /// The supabase client for this instance
+  late final SupabaseClient client;
   GotrueSubscription? _initialClientSubscription;
   bool _initialDeeplinkIsHandled = false;
   bool _debugEnable = false;
@@ -88,6 +93,7 @@ class Supabase {
   String? _authCallbackUrlHostname;
   LocalStorage _localStorage = LocalStorage();
 
+  /// Dispose the instance
   void dispose() {
     if (_initialClientSubscription != null) {
       _initialClientSubscription!.data!.unsubscribe();
@@ -96,19 +102,17 @@ class Supabase {
   }
 
   void _init(String supabaseUrl, String supabaseAnonKey) {
-    _client = SupabaseClient(supabaseUrl, supabaseAnonKey);
+    client = SupabaseClient(supabaseUrl, supabaseAnonKey);
     _initialClientSubscription =
-        _client.auth.onAuthStateChange(_onAuthStateChange);
+        client.auth.onAuthStateChange(_onAuthStateChange);
     _initialized = true;
   }
 
-  SupabaseClient get client => _client;
-
   LocalStorage get localStorage => _localStorage;
 
-  Future<bool> get hasAccessToken async => _localStorage.hasAccessToken();
+  Future<bool> get hasAccessToken => _localStorage.hasAccessToken();
 
-  Future<String?> get accessToken async => _localStorage.accessToken();
+  Future<String?> get accessToken => _localStorage.accessToken();
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
     log('**** onAuthStateChange: $event');
@@ -172,7 +176,8 @@ class Supabase {
 }
 
 extension GoTrueClientSignInProvider on GoTrueClient {
-  Future<bool> signInWithProvider(Provider? provider,
+  /// Signs the user in using a thrid parties providers.
+  Future<bool> signInWithProvider(Provider provider,
       {AuthOptions? options}) async {
     final res = await signIn(
       provider: provider,
