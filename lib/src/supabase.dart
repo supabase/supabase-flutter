@@ -4,41 +4,63 @@ import 'package:url_launcher/url_launcher.dart';
 
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 
-Future<bool> _defHasAccessToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  final exist = prefs.containsKey(supabasePersistSessionKey);
-  return exist;
-}
-
-Future<String?> _defAccessToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  final jsonStr = prefs.getString(supabasePersistSessionKey);
-  return jsonStr;
-}
-
-Future _defRemovePersistedSession() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.remove(supabasePersistSessionKey);
-}
-
-Future _defPersistSession(String persistSessionString) async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.setString(supabasePersistSessionKey, persistSessionString);
-}
-
 class LocalStorage {
   /// Creates a `LocalStorage` instance
-  const LocalStorage({
-    this.hasAccessToken = _defHasAccessToken,
-    this.accessToken = _defAccessToken,
-    this.removePersistedSession = _defRemovePersistedSession,
-    this.persistSession = _defPersistSession,
+  LocalStorage({
+    required this.hasAccessToken,
+    required this.accessToken,
+    required this.removePersistedSession,
+    required this.persistSession,
   });
 
-  final Future<bool> Function() hasAccessToken;
-  final Future<String?> Function() accessToken;
-  final Future Function() removePersistedSession;
-  final Future Function(String) persistSession;
+  bool Function() hasAccessToken;
+  String? Function() accessToken;
+  void Function() removePersistedSession;
+  void Function(String) persistSession;
+
+  Future<void> init() async {}
+}
+
+class _DefaultLocalStorage extends LocalStorage {
+  late SharedPreferences sharedPreferencesInstance;
+
+  _DefaultLocalStorage()
+      : super(
+          accessToken: () => null,
+          hasAccessToken: () => false,
+          persistSession: (_) {},
+          removePersistedSession: () {},
+        );
+
+  @override
+  Future<void> init() async {
+    sharedPreferencesInstance = await SharedPreferences.getInstance();
+    hasAccessToken = _defHasAccessToken;
+    accessToken = _defAccessToken;
+    persistSession = _defPersistSession;
+    removePersistedSession = _defRemovePersistedSession;
+  }
+
+  bool _defHasAccessToken() {
+    final exist =
+        sharedPreferencesInstance.containsKey(supabasePersistSessionKey);
+    return exist;
+  }
+
+  String? _defAccessToken() {
+    final jsonStr =
+        sharedPreferencesInstance.getString(supabasePersistSessionKey);
+    return jsonStr;
+  }
+
+  void _defRemovePersistedSession() {
+    sharedPreferencesInstance.remove(supabasePersistSessionKey);
+  }
+
+  void _defPersistSession(String persistSessionString) {
+    sharedPreferencesInstance.setString(
+        supabasePersistSessionKey, persistSessionString);
+  }
 }
 
 class Supabase {
@@ -72,7 +94,8 @@ class Supabase {
       _instance._init(url, anonKey);
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
       _instance._debugEnable = debug ?? false;
-      _instance._localStorage = localStorage ?? LocalStorage();
+      _instance._localStorage = (localStorage ?? _DefaultLocalStorage())
+        ..init();
       _instance.log('***** Supabase init completed $_instance');
     }
 
@@ -91,7 +114,7 @@ class Supabase {
   bool _debugEnable = false;
 
   String? _authCallbackUrlHostname;
-  LocalStorage _localStorage = LocalStorage();
+  LocalStorage _localStorage = _DefaultLocalStorage()..init();
 
   /// Dispose the instance
   void dispose() {
@@ -110,9 +133,9 @@ class Supabase {
 
   LocalStorage get localStorage => _localStorage;
 
-  Future<bool> get hasAccessToken => _localStorage.hasAccessToken();
+  bool get hasAccessToken => _localStorage.hasAccessToken();
 
-  Future<String?> get accessToken => _localStorage.accessToken();
+  String? get accessToken => _localStorage.accessToken();
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
     log('**** onAuthStateChange: $event');
