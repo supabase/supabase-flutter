@@ -48,6 +48,31 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 final response = await Supabase().client.auth.signIn(email: _email, password: _password);
 ```
 
+#### SupabaseAuthState
+
+It helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
+
+For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_state.dart)
+
+> When using with a nested authentication flow, remember to call `startAuthObserver()` and `stopAuthObserver()` before/after navigation to new screen to prevent multiple observers running at the same time. Take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/026c6e8cbb05a5b1b76a50ce82d936016844ba1b/lib/screens/signin_screen.dart#L165-L170)
+
+#### SupabaseAuthRequiredState
+
+It helps you protect route that requires an authenticated user.
+
+For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_required_state.dart)
+
+#### signInWithProvider
+
+This method will automatically launch the auth url and open a browser for user to sign in with 3rd party login.
+
+```dart
+Supabase().client.auth.signInWithProvider(
+  supabase.Provider.github,
+  options: supabase.AuthOptions(redirectTo: ''),
+);
+```
+
 #### Custom LocalStorage
 
 As default `supabase_flutter` uses `shared_preferences` plugin to persist user session. However you can use any other plugins by providing a **LocalStorage**.
@@ -73,20 +98,6 @@ Supabase(
   localStorage: localStorage,
 );
 ```
-
-#### SupabaseAuthState
-
-It helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
-
-For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_state.dart)
-
-> When using with a nested authentication flow, remember to call `startAuthObserver()` and `stopAuthObserver()` before/after navigation to new screen to prevent multiple observers running at the same time. Take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/026c6e8cbb05a5b1b76a50ce82d936016844ba1b/lib/screens/signin_screen.dart#L165-L170)
-
-#### SupabaseAuthRequiredState
-
-It helps you protect route that requires an authenticated user.
-
-For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_required_state.dart)
 
 ### Deeplink config
 
