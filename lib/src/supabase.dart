@@ -32,16 +32,16 @@ class LocalStorage {
       Future<String?> Function()? accessToken,
       Future Function()? removePersistedSession,
       Future Function(String)? persistSession}) {
-    hasAccessToken = hasAccessToken ?? defHasAccessToken;
-    accessToken = accessToken ?? defAccessToken;
-    removePersistedSession =
+    this.hasAccessToken = hasAccessToken ?? defHasAccessToken;
+    this.accessToken = accessToken ?? defAccessToken;
+    this.removePersistedSession =
         removePersistedSession ?? defRemovePersistedSession;
-    persistSession = persistSession ?? defPersistSession;
+    this.persistSession = persistSession ?? defPersistSession;
   }
 
   Future<bool> Function() hasAccessToken = defHasAccessToken;
   Future<String?> Function() accessToken = defAccessToken;
-  Future Function() removePersistSession = defRemovePersistedSession;
+  Future Function() removePersistedSession = defRemovePersistedSession;
   Future Function(String) persistSession = defPersistSession;
 }
 
@@ -116,7 +116,7 @@ class Supabase {
       log(session.persistSessionString);
       _localStorage.persistSession(session.persistSessionString);
     } else if (event == AuthChangeEvent.signedOut) {
-      _localStorage.removePersistSession();
+      _localStorage.removePersistedSession();
     }
   }
 

@@ -64,7 +64,7 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
 
     final response = await Supabase().client.auth.recoverSession(jsonStr);
     if (response.error != null) {
-      Supabase().localStorage.removePersistSession();
+      Supabase().localStorage.removePersistedSession();
       onUnauthenticated();
       return false;
     } else {
