@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/supabase.dart';
 import 'package:supabase_flutter/src/supabase_state.dart';
@@ -10,21 +10,21 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
     extends SupabaseState<T> with SupabaseDeepLinkingMixin {
   @override
   void startAuthObserver() {
-    Supabase().log('***** SupabaseAuthState startAuthObserver');
+    Supabase.instance.log('***** SupabaseAuthState startAuthObserver');
     startDeeplinkObserver();
   }
 
   @override
   void stopAuthObserver() {
-    Supabase().log('***** SupabaseAuthState stopAuthObserver');
+    Supabase.instance.log('***** SupabaseAuthState stopAuthObserver');
     stopDeeplinkObserver();
   }
 
   @override
   Future<bool> handleDeeplink(Uri uri) async {
-    if (!Supabase().isAuthCallbackDeeplink(uri)) return false;
+    if (!Supabase.instance.isAuthCallbackDeeplink(uri)) return false;
 
-    Supabase().log('***** SupabaseAuthState handleDeeplink $uri');
+    Supabase.instance.log('***** SupabaseAuthState handleDeeplink $uri');
 
     // notify auth deeplink received
     onReceivedAuthDeeplink(uri);
@@ -34,15 +34,15 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
 
   @override
   void onErrorReceivingDeeplink(String message) {
-    Supabase().log('onErrorReceivingDeppLink message: $message');
+    Supabase.instance.log('onErrorReceivingDeppLink message: $message');
   }
 
   Future<bool> recoverSessionFromUrl(Uri uri) async {
-    final uriParameters = Supabase().parseUriParameters(uri);
+    final uriParameters = Supabase.instance.parseUriParameters(uri);
     final type = uriParameters['type'] ?? '';
 
     // recover session from deeplink
-    final response = await Supabase().client.auth.getSessionFromUrl(uri);
+    final response = await Supabase.instance.client.auth.getSessionFromUrl(uri);
     if (response.error != null) {
       onErrorAuthenticating(response.error!.message);
     } else {
@@ -58,21 +58,22 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
   /// Recover/refresh session if it's available
   /// e.g. called on a Splash screen when app starts.
   Future<bool> recoverSupabaseSession() async {
-    final bool exist = await Supabase().localStorage.hasAccessToken();
+    final bool exist = await Supabase.instance.localStorage.hasAccessToken();
     if (!exist) {
       onUnauthenticated();
       return false;
     }
 
-    final String? jsonStr = await Supabase().localStorage.accessToken();
+    final String? jsonStr = await Supabase.instance.localStorage.accessToken();
     if (jsonStr == null) {
       onUnauthenticated();
       return false;
     }
 
-    final response = await Supabase().client.auth.recoverSession(jsonStr);
+    final response =
+        await Supabase.instance.client.auth.recoverSession(jsonStr);
     if (response.error != null) {
-      Supabase().localStorage.removePersistedSession();
+      Supabase.instance.localStorage.removePersistedSession();
       onUnauthenticated();
       return false;
     } else {
@@ -83,7 +84,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
 
   /// Callback when deeplink received and is processing. Optional
   void onReceivedAuthDeeplink(Uri uri) {
-    Supabase().log('onReceivedAuthDeeplink uri: $uri');
+    Supabase.instance.log('onReceivedAuthDeeplink uri: $uri');
   }
 
   /// Callback when user is unauthenticated

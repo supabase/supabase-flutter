@@ -27,7 +27,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Supabase(
+  Supabase.initialize(
     url: SUPABASE_URL,
     anonKey: SUPABASE_ANNON_KEY,
     authCallbackUrlHostname: 'login-callback', // optional
@@ -45,7 +45,7 @@ Now you can access Supabase client anywhere in your app.
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final response = await Supabase().client.auth.signIn(email: _email, password: _password);
+final response = await Supabase.instance.client.auth.signIn(email: _email, password: _password);
 ```
 
 #### SupabaseAuthState
@@ -67,8 +67,8 @@ For more details, take a look at the example [here](https://github.com/phamhieu/
 This method will automatically launch the auth url and open a browser for user to sign in with 3rd party login.
 
 ```dart
-Supabase().client.auth.signInWithProvider(
-  supabase.Provider.github,
+Supabase.instance.client.auth.signInWithProvider(
+  Provider.github,
   options: supabase.AuthOptions(redirectTo: ''),
 );
 ```
@@ -93,7 +93,8 @@ final localStorage = LocalStorage(
     const storage = FlutterSecureStorage();
     return storage.write(key: supabasePersistSessionKey, value: value);
   });
-Supabase(
+
+Supabase.initialize(
   ...
   localStorage: localStorage,
 );
