@@ -1,3 +1,8 @@
+## [0.0.3]
+
+- BREAKING CHANGE: rework Supabase singleton with `Supabase.initialize` and `Supabase.instance`
+- chore: update docs
+
 ## [0.0.2]
 
 - feat: support custom localStorage with fallback to SharedPreferences as default
