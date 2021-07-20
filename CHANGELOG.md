@@ -1,3 +1,7 @@
+## [0.0.4]
+
+- chore: update supabase to v0.0.3
+
 ## [0.0.3]
 
 - BREAKING CHANGE: rework Supabase singleton with `Supabase.initialize` and `Supabase.instance`
