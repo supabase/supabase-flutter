@@ -17,9 +17,15 @@ Supabase is an open source Firebase alternative. We are a service to:
 - manage your users and their permissions
 - interact with your database using a simple UI
 
-### Getting Started
+## Getting Started
 
-Init Supabase singleton in `main.dart`
+Import the package:
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+```
+
+Intialize `Supabase` before using it:
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -40,15 +46,28 @@ void main() {
 
 > `authCallbackUrlHostname` is optional. It will be used to filter Supabase authentication redirect deeplink. You need to provide this param if you use deeplink for other features on the app.
 
-Now you can access Supabase client anywhere in your app.
+> `debug` is optional. It's enabled by default if you're running the app in debug mode (`flutter run --debug`).
+
+## Authentication
+
+Using authentication can be done easily.
+
+### Email authentication
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final response = await Supabase.instance.client.auth.signIn(email: _email, password: _password);
+void signIn(String email, String password) async {
+  final response = await Supabase.instance.client.auth.signIn(email: _email, password: _password);
+  if (reponse.error != null) {
+    /// Handle error
+  } else {
+    /// Sign in with success
+  }
+}
 ```
 
-#### SupabaseAuthState
+### SupabaseAuthState
 
 It helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
 
@@ -56,13 +75,13 @@ For more details, take a look at the example [here](https://github.com/phamhieu/
 
 > When using with a nested authentication flow, remember to call `startAuthObserver()` and `stopAuthObserver()` before/after navigation to new screen to prevent multiple observers running at the same time. Take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/026c6e8cbb05a5b1b76a50ce82d936016844ba1b/lib/screens/signin_screen.dart#L165-L170)
 
-#### SupabaseAuthRequiredState
+### SupabaseAuthRequiredState
 
 It helps you protect route that requires an authenticated user.
 
 For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_required_state.dart)
 
-#### signInWithProvider
+### signInWithProvider
 
 This method will automatically launch the auth url and open a browser for user to sign in with 3rd party login.
 
@@ -73,7 +92,7 @@ Supabase.instance.client.auth.signInWithProvider(
 );
 ```
 
-#### Custom LocalStorage
+### Custom LocalStorage
 
 As default `supabase_flutter` uses `shared_preferences` plugin to persist user session. However you can use any other plugins by providing a **LocalStorage**.
 For example, we can use `flutter_secure_storage` plugin to store user session in secure storage.
@@ -100,9 +119,9 @@ Supabase.initialize(
 );
 ```
 
-### Deeplink config
+## Deeplink config
 
-#### Supabase redirect URLs config
+### Supabase redirect URLs config
 
 - Go to your Supabase project Authentication Settings page.
 - You need to enter your app redirect callback on `Additional Redirect URLs` field.
@@ -111,11 +130,11 @@ The redirect callback url should have this format `[YOUR_SCHEME]://[YOUR_AUTH_HO
 
 ![authentication settings page](https://user-images.githubusercontent.com/689843/124574731-f735c180-de74-11eb-8f50-2d34161261dd.png)
 
-#### Supabase 3rd party logins config
+### Supabase 3rd party logins config
 
 Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
-#### For Android
+### For Android
 
 Deep Links can have any custom scheme. The downside is that any app can claim a scheme, so make sure yours are as unique as possible, eg. `HST0000001://host.com`.
 
@@ -145,7 +164,7 @@ The `android:host` attribute is optional for Deep Links.
 
 For more info: https://developer.android.com/training/app-links/deep-linking
 
-#### For iOS
+### For iOS
 
 Custom URL schemes can have... any custom scheme and there is no host specificity, nor entitlements or a hosted file. The downside is that any app can claim any scheme, so make sure yours is as unique as possible, eg. `hst0000001` or `myIncrediblyAwesomeScheme`.
 
@@ -177,6 +196,8 @@ under URL Types):
 This allows for your app to be started from `YOUR_SCHEME://ANYTHING` links.
 
 For more info: https://developer.apple.com/documentation/xcode/defining-a-custom-url-scheme-for-your-app
+
+---
 
 ## Contributing
 
