@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -16,16 +17,55 @@ Future<String?> _defAccessToken() async {
   return jsonStr;
 }
 
-Future _defRemovePersistedSession() async {
+Future<void> _defRemovePersistedSession() async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  return prefs.remove(supabasePersistSessionKey);
+  await prefs.remove(supabasePersistSessionKey);
 }
 
-Future _defPersistSession(String persistSessionString) async {
+Future<void> _defPersistSession(String persistSessionString) async {
   final prefs = await SharedPreferences.getInstance();
-  return prefs.setString(supabasePersistSessionKey, persistSessionString);
+  await prefs.setString(supabasePersistSessionKey, persistSessionString);
 }
 
+/// LocalStorage is used to persist the user session in the device.
+///
+/// By default, the package `shared_preferences` is used to save the
+/// user info on the device. However, you can use any other plugin to
+/// do so.
+///
+/// For example, we can use `flutter_secure_storage` plugin to store
+/// user session in secure storage.
+///
+/// ```dart
+/// final localStorage = LocalStorage(
+///   hasAccessToken: () {
+///     const storage = FlutterSecureStorage();
+///     return storage.containsKey(key: supabasePersistSessionKey);
+///   }, accessToken: () {
+///     const storage = FlutterSecureStorage();
+///     return storage.read(key: supabasePersistSessionKey);
+///   }, removePersistedSession: () {
+///     const storage = FlutterSecureStorage();
+///     return storage.delete(key: supabasePersistSessionKey);
+///   }, persistSession: (String value) {
+///     const storage = FlutterSecureStorage();
+///     return storage.write(key: supabasePersistSessionKey, value: value);
+///   });
+/// ```
+///
+/// To use the `LocalStorage` instance, pass it to `localStorage` when initializing
+/// the [Supabase] instance:
+///
+/// ```dart
+/// Supabase.initialize(
+///  ...
+///  localStorage: localStorage,
+/// );
+/// ```
+///
+/// See also:
+///
+///   * [Supabase], the instance used to manage authentication
 class LocalStorage {
   /// Creates a `LocalStorage` instance
   const LocalStorage({
@@ -35,16 +75,69 @@ class LocalStorage {
     this.persistSession = _defPersistSession,
   });
 
+  /// Check if there is a persisted session.
+  ///
+  /// Here's an example of how to do it using the shared_preferences
+  /// package:
+  ///
+  /// ```dart
+  /// Future<bool> hasAccessToken() async {
+  ///   final prefs = await SharedPreferences.getInstance();
+  ///   final exist = prefs.containsKey(supabasePersistSessionKey);
+  ///   return exist;
+  /// }
+  /// ```
   final Future<bool> Function() hasAccessToken;
+
+  /// Get the access token from the current persisted session.
+  ///
+  /// Here's an example of how to do it using the shared_preferences
+  /// package:
+  ///
+  /// ```dart
+  /// Future<String?> accessToken() async {
+  ///   final prefs = await SharedPreferences.getInstance();
+  ///   final jsonStr = prefs.getString(supabasePersistSessionKey);
+  ///   return jsonStr;
+  /// }
+  /// ```
   final Future<String?> Function() accessToken;
-  final Future Function() removePersistedSession;
-  final Future Function(String) persistSession;
+
+  /// Remove the current persisted session.
+  ///
+  /// Here's an example of how to do it using the shared_preferences
+  /// package:
+  ///
+  /// ```dart
+  /// Future<void> removePersistedSession() async {
+  ///   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  ///   return prefs.remove(supabasePersistSessionKey);
+  /// }
+  /// ```
+  final Future<void> Function() removePersistedSession;
+
+  /// Persist a session in the device.
+  ///
+  /// Here's an example of how to do it using the shared_preferences
+  /// package:
+  ///
+  /// ```dart
+  /// Future<void> persistSession(String persistSessionString) async {
+  ///   final prefs = await SharedPreferences.getInstance();
+  ///   return prefs.setString(supabasePersistSessionKey, persistSessionString);
+  /// }
+  /// ```
+  final Future<void> Function(String) persistSession;
 }
 
+/// See also:
+///
+///   * [LocalStorage], used to persist the user session.
 class Supabase {
   /// Gets the current supabase instance.
   ///
-  /// An error is thrown if supabase isn't initialized yet
+  /// An [AssertionError] is thrown if supabase isn't initialized yet.
+  /// Call [Supabase.intialize] to initialize it.
   static Supabase get instance {
     assert(
       _instance._initialized,
@@ -71,7 +164,7 @@ class Supabase {
     if (url != null && anonKey != null) {
       _instance._init(url, anonKey);
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
-      _instance._debugEnable = debug ?? false;
+      _instance._debugEnable = debug ?? kDebugMode;
       _instance._localStorage = localStorage ?? const LocalStorage();
       _instance.log('***** Supabase init completed $_instance');
     }
@@ -85,6 +178,8 @@ class Supabase {
   bool _initialized = false;
 
   /// The supabase client for this instance
+  ///
+  /// Throws an error if [Supabase.initialize] was not called.
   late final SupabaseClient client;
   GotrueSubscription? _initialClientSubscription;
   bool _initialDeeplinkIsHandled = false;
@@ -93,7 +188,7 @@ class Supabase {
   String? _authCallbackUrlHostname;
   LocalStorage _localStorage = const LocalStorage();
 
-  /// Dispose the instance
+  /// Dispose the instance to free up resources.
   void dispose() {
     if (_initialClientSubscription != null) {
       _initialClientSubscription!.data!.unsubscribe();
@@ -108,11 +203,8 @@ class Supabase {
     _initialized = true;
   }
 
+  /// The [LocalStorage] instance used to persist the user session.
   LocalStorage get localStorage => _localStorage;
-
-  Future<bool> get hasAccessToken => _localStorage.hasAccessToken();
-
-  Future<String?> get accessToken => _localStorage.accessToken();
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
     log('**** onAuthStateChange: $event');
@@ -126,7 +218,7 @@ class Supabase {
 
   void log(String msg) {
     if (_debugEnable) {
-      print(msg);
+      debugPrint(msg);
     }
   }
 
@@ -177,6 +269,10 @@ class Supabase {
 
 extension GoTrueClientSignInProvider on GoTrueClient {
   /// Signs the user in using a thrid parties providers.
+  ///
+  /// See also:
+  ///
+  ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
   Future<bool> signInWithProvider(Provider provider,
       {AuthOptions? options}) async {
     final res = await signIn(
