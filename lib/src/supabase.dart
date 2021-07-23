@@ -75,6 +75,7 @@ class LocalStorage {
     this.persistSession = _defPersistSession,
   });
 
+  /// {@template supabase.localstorage.hasAccessToken}
   /// Check if there is a persisted session.
   ///
   /// Here's an example of how to do it using the shared_preferences
@@ -87,8 +88,10 @@ class LocalStorage {
   ///   return exist;
   /// }
   /// ```
+  /// {@endTemplate}
   final Future<bool> Function() hasAccessToken;
 
+  /// {@template supabase.localstorage.accessToken}
   /// Get the access token from the current persisted session.
   ///
   /// Here's an example of how to do it using the shared_preferences
@@ -101,6 +104,7 @@ class LocalStorage {
   ///   return jsonStr;
   /// }
   /// ```
+  /// {@endTemplate}
   final Future<String?> Function() accessToken;
 
   /// Remove the current persisted session.
@@ -130,6 +134,18 @@ class LocalStorage {
   final Future<void> Function(String) persistSession;
 }
 
+/// Supabase instance. It must be initialized before used:
+///
+/// ```dart
+/// Supabase.initialize(...)
+/// ```
+///
+/// Use it:
+///
+/// ```dart
+/// final instance = Supabase.instance;
+/// ```
+///
 /// See also:
 ///
 ///   * [LocalStorage], used to persist the user session.
@@ -205,6 +221,12 @@ class Supabase {
 
   /// The [LocalStorage] instance used to persist the user session.
   LocalStorage get localStorage => _localStorage;
+
+  /// {@macro supabase.localstorage.hasAccessToken}
+  Future<bool> get hasAccessToken => _localStorage.hasAccessToken();
+
+  /// {@macro supabase.localstorage.accessToken}
+  Future<String?> get accessToken => _localStorage.accessToken();
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
     log('**** onAuthStateChange: $event');

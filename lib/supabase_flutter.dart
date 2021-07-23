@@ -1,3 +1,6 @@
+/// Supabase Client Library for Flutter.
+/// 
+/// See <https://github.com/supabase/supabase-flutter> to learn more
 library supabase_flutter;
 
 export 'src/supabase.dart';
