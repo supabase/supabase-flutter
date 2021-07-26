@@ -17,6 +17,13 @@ Supabase is an open source Firebase alternative. We are a service to:
 - manage your users and their permissions
 - interact with your database using a simple UI
 
+## Status
+
+- [x] Alpha: Under heavy development
+- [x] Public Alpha: Ready for testing. But go easy on us, there will be bugs and missing functionality.
+- [x] Public Beta: Stable. No breaking changes expected in this version but possible bugs.
+- [ ] Public: Production-ready
+
 ## Getting Started
 
 Import the package:
