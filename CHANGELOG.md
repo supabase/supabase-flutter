@@ -1,3 +1,7 @@
+## [0.0.6]
+
+- chore: update supabase to v0.0.5
+
 ## [0.0.5]
 
 - chore: update supabase to v0.0.4
