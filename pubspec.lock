@@ -218,7 +218,7 @@ packages:
       name: realtime_client
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.5"
+    version: "0.1.7"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -307,7 +307,7 @@ packages:
       name: supabase
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.0.5"
+    version: "0.0.7"
   term_glyph:
     dependency: transitive
     description:
