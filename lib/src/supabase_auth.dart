@@ -137,6 +137,7 @@ class LocalStorage {
   final Future<void> Function(String) persistSession;
 }
 
+/// SupabaseAuth
 class SupabaseAuth {
   SupabaseAuth._();
   static final SupabaseAuth _instance = SupabaseAuth._();
@@ -156,17 +157,50 @@ class SupabaseAuth {
   bool _initialDeeplinkIsHandled = false;
   String? _authCallbackUrlHostname;
 
+  GotrueSubscription? _authSubscription;
   final _listenerController = StreamController<AuthChangeEvent>.broadcast();
 
+  /// Listen to auth change events.
+  ///
+  /// ```dart
+  /// SupabaseAuth.instance.onAuthChange.listen((event) {
+  ///   // Handle event
+  /// });
+  /// ```
+  ///
+  /// A new event is fired when:
+  ///
+  ///   * the user is logged in
+  ///   * the user signs out
+  ///   * the user info is updated
+  ///   * the user password is recovered
   Stream<AuthChangeEvent> get onAuthChange => _listenerController.stream;
 
+  /// A [SupabaseAuth] instance.
+  ///
+  /// If not initialized, an [AssertionError] is thrown
   static SupabaseAuth get instance {
     assert(
       _instance._initialized,
       'You must initialize the supabase instance before calling Supabase.instance',
     );
 
-    Supabase.instance.client.auth.onAuthStateChange((event, session) {
+    return _instance;
+  }
+
+  /// Initialize the [SupabaseAuth] instance.
+  ///
+  /// It's necessary to initialize before calling [SupabaseAuth.instance]
+  factory SupabaseAuth.initialize({
+    LocalStorage localStorage = const LocalStorage(),
+    String? authCallbackUrlHostname,
+  }) {
+    _instance._initialized = true;
+    _instance._localStorage = localStorage;
+    _instance._authCallbackUrlHostname = authCallbackUrlHostname;
+
+    _instance._authSubscription =
+        Supabase.instance.client.auth.onAuthStateChange((event, session) {
       _instance._onAuthStateChange(event, session);
       if (!_instance._listenerController.isClosed) {
         _instance._listenerController.add(event);
@@ -176,19 +210,10 @@ class SupabaseAuth {
     return _instance;
   }
 
-  factory SupabaseAuth.initialize({
-    LocalStorage localStorage = const LocalStorage(),
-    String? authCallbackUrlHostname,
-  }) {
-    _instance._initialized = true;
-    _instance._localStorage = localStorage;
-    _instance._authCallbackUrlHostname = authCallbackUrlHostname;
-
-    return _instance;
-  }
-
+  /// Dispose the instance to free up resources
   void dispose() {
     _listenerController.close();
+    _authSubscription?.data?.unsubscribe();
   }
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {

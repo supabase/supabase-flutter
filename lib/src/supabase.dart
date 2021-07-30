@@ -17,7 +17,7 @@ import 'supabase_auth.dart';
 ///
 /// See also:
 ///
-///   * [LocalStorage], used to persist the user session.
+///   * [SupabaseAuth]
 class Supabase {
   /// Gets the current supabase instance.
   ///
