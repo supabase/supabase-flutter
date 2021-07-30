@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/src/supabase.dart';
 import 'package:uni_links/uni_links.dart';
+
+import '../supabase_flutter.dart';
 
 mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
   StreamSubscription? _sub;
@@ -45,7 +46,7 @@ mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
   ///
   /// We handle all exceptions, since it is called from initState.
   Future<void> _handleInitialUri() async {
-    if (!Supabase.instance.shouldHandleInitialDeeplink()) return;
+    if (!SupabaseAuth.instance.shouldHandleInitialDeeplink()) return;
 
     try {
       final uri = await getInitialUri();

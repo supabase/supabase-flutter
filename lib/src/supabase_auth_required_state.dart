@@ -1,7 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:supabase/supabase.dart';
-import 'package:supabase_flutter/src/supabase.dart';
-import 'package:supabase_flutter/src/supabase_state.dart';
+
+import '../supabase_flutter.dart';
+import 'supabase_state.dart';
 
 /// Interface for screen that requires an authenticated user
 abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
@@ -50,13 +51,15 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
   }
 
   Future<bool> _recoverSupabaseSession() async {
-    final bool exist = await Supabase.instance.localStorage.hasAccessToken();
+    final bool exist =
+        await SupabaseAuth.instance.localStorage.hasAccessToken();
     if (!exist) {
       onUnauthenticated();
       return false;
     }
 
-    final String? jsonStr = await Supabase.instance.localStorage.accessToken();
+    final String? jsonStr =
+        await SupabaseAuth.instance.localStorage.accessToken();
     if (jsonStr == null) {
       onUnauthenticated();
       return false;
@@ -65,7 +68,7 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
     final response =
         await Supabase.instance.client.auth.recoverSession(jsonStr);
     if (response.error != null) {
-      Supabase.instance.localStorage.removePersistedSession();
+      SupabaseAuth.instance.localStorage.removePersistedSession();
       onUnauthenticated();
       return false;
     } else {
