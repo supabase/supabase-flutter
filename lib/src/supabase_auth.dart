@@ -191,10 +191,10 @@ class SupabaseAuth {
   /// Initialize the [SupabaseAuth] instance.
   ///
   /// It's necessary to initialize before calling [SupabaseAuth.instance]
-  factory SupabaseAuth.initialize({
+  static Future<SupabaseAuth> initialize({
     LocalStorage localStorage = const LocalStorage(),
     String? authCallbackUrlHostname,
-  }) {
+  }) async {
     _instance._initialized = true;
     _instance._localStorage = localStorage;
     _instance._authCallbackUrlHostname = authCallbackUrlHostname;
@@ -206,6 +206,19 @@ class SupabaseAuth {
         _instance._listenerController.add(event);
       }
     });
+
+    final hasPersistedSession = await _instance._localStorage.hasAccessToken();
+    if (hasPersistedSession) {
+      final persistedSession = await _instance._localStorage.accessToken();
+      if (persistedSession != null) {
+        final response = await Supabase.instance.client.auth
+            .recoverSession(persistedSession);
+
+        if (response.error != null) {
+          Supabase.instance.log(response.error!.message);
+        }
+      }
+    }
 
     return _instance;
   }
