@@ -6,9 +6,9 @@ void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
 
-  setUpAll(() {
-    // initial Supabase singleton
-    Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+  setUpAll(() async {
+    // Initialize the Supabase singleton
+    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
   });
 
   test('can access Supabase singleton', () async {

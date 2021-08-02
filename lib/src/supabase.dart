@@ -35,13 +35,13 @@ class Supabase {
   ///
   /// This must be called only once. If called more than once, an
   /// [AssertionError] is thrown
-  factory Supabase.initialize({
+  static Future<Supabase> initialize({
     String? url,
     String? anonKey,
     String? authCallbackUrlHostname,
     bool? debug,
     LocalStorage? localStorage,
-  }) {
+  }) async {
     assert(
       !_instance._initialized,
       'This instance is already initialized',
@@ -51,7 +51,7 @@ class Supabase {
       _instance._debugEnable = debug ?? kDebugMode;
       _instance.log('***** Supabase init completed $_instance');
 
-      SupabaseAuth.initialize(
+      await SupabaseAuth.initialize(
         localStorage: localStorage ?? const LocalStorage(),
         authCallbackUrlHostname: authCallbackUrlHostname,
       );
