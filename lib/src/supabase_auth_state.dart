@@ -4,6 +4,8 @@ import 'package:supabase_flutter/src/supabase.dart';
 import 'package:supabase_flutter/src/supabase_state.dart';
 import 'package:supabase_flutter/src/supabase_deep_linking_mixin.dart';
 
+import '../supabase_flutter.dart';
+
 /// Interface for user authentication screen
 /// It supports deeplink authentication
 abstract class SupabaseAuthState<T extends StatefulWidget>
@@ -22,7 +24,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
 
   @override
   Future<bool> handleDeeplink(Uri uri) async {
-    if (!Supabase.instance.isAuthCallbackDeeplink(uri)) return false;
+    if (!SupabaseAuth.instance.isAuthCallbackDeeplink(uri)) return false;
 
     Supabase.instance.log('***** SupabaseAuthState handleDeeplink $uri');
 
@@ -38,7 +40,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
   }
 
   Future<bool> recoverSessionFromUrl(Uri uri) async {
-    final uriParameters = Supabase.instance.parseUriParameters(uri);
+    final uriParameters = SupabaseAuth.instance.parseUriParameters(uri);
     final type = uriParameters['type'] ?? '';
 
     // recover session from deeplink
@@ -58,13 +60,15 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
   /// Recover/refresh session if it's available
   /// e.g. called on a Splash screen when app starts.
   Future<bool> recoverSupabaseSession() async {
-    final bool exist = await Supabase.instance.localStorage.hasAccessToken();
+    final bool exist =
+        await SupabaseAuth.instance.localStorage.hasAccessToken();
     if (!exist) {
       onUnauthenticated();
       return false;
     }
 
-    final String? jsonStr = await Supabase.instance.localStorage.accessToken();
+    final String? jsonStr =
+        await SupabaseAuth.instance.localStorage.accessToken();
     if (jsonStr == null) {
       onUnauthenticated();
       return false;
@@ -73,7 +77,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
     final response =
         await Supabase.instance.client.auth.recoverSession(jsonStr);
     if (response.error != null) {
-      Supabase.instance.localStorage.removePersistedSession();
+      SupabaseAuth.instance.localStorage.removePersistedSession();
       onUnauthenticated();
       return false;
     } else {
