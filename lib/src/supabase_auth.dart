@@ -1,33 +1,34 @@
 import 'dart:async';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase/supabase.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../supabase_flutter.dart';
 
+const _hiveBoxName = 'supabase_authentication';
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 
-Future<bool> _defHasAccessToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  final exist = prefs.containsKey(supabasePersistSessionKey);
-  return exist;
+Future<void> _defInitialize() async {
+  await Hive.initFlutter('auth');
+  await Hive.openBox(_hiveBoxName);
 }
 
-Future<String?> _defAccessToken() async {
-  final prefs = await SharedPreferences.getInstance();
-  final jsonStr = prefs.getString(supabasePersistSessionKey);
-  return jsonStr;
+Future<bool> _defHasAccessToken() {
+  return Future.value(
+      Hive.box(_hiveBoxName).containsKey(supabasePersistSessionKey));
 }
 
-Future<void> _defRemovePersistedSession() async {
-  final SharedPreferences prefs = await SharedPreferences.getInstance();
-  await prefs.remove(supabasePersistSessionKey);
+Future<String?> _defAccessToken() {
+  return Future.value(Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?);
 }
 
-Future<void> _defPersistSession(String persistSessionString) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString(supabasePersistSessionKey, persistSessionString);
+Future<void> _defRemovePersistedSession() {
+  return Hive.box(_hiveBoxName).delete(supabasePersistSessionKey);
+}
+
+Future<void> _defPersistSession(String persistSessionString) {
+  return Hive.box(_hiveBoxName).put(supabasePersistSessionKey, persistSessionString);
 }
 
 /// LocalStorage is used to persist the user session in the device.
@@ -72,11 +73,15 @@ Future<void> _defPersistSession(String persistSessionString) async {
 class LocalStorage {
   /// Creates a `LocalStorage` instance
   const LocalStorage({
+    this.initialize = _defInitialize,
     this.hasAccessToken = _defHasAccessToken,
     this.accessToken = _defAccessToken,
     this.removePersistedSession = _defRemovePersistedSession,
     this.persistSession = _defPersistSession,
   });
+
+  /// Initialize the storage to persist session.
+  final Future<void> Function() initialize;
 
   /// {@template supabase.localstorage.hasAccessToken}
   /// Check if there is a persisted session.
@@ -206,6 +211,8 @@ class SupabaseAuth {
         _instance._listenerController.add(event);
       }
     });
+
+    await _instance._localStorage.initialize();
 
     final hasPersistedSession = await _instance._localStorage.hasAccessToken();
     if (hasPersistedSession) {
