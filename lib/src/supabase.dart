@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase/supabase.dart';
 
+import 'local_storage.dart';
 import 'supabase_auth.dart';
 
 /// Supabase instance. It must be initialized before used:
@@ -52,7 +53,7 @@ class Supabase {
       _instance.log('***** Supabase init completed $_instance');
 
       await SupabaseAuth.initialize(
-        localStorage: localStorage ?? const LocalStorage(),
+        localStorage: localStorage ?? const HiveLocalStorage(),
         authCallbackUrlHostname: authCallbackUrlHostname,
       );
     }

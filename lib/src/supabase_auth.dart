@@ -1,146 +1,10 @@
 import 'dart:async';
 
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase/supabase.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'local_storage.dart';
 import '../supabase_flutter.dart';
-
-const _hiveBoxName = 'supabase_authentication';
-const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
-
-Future<void> _defInitialize() async {
-  await Hive.initFlutter('auth');
-  await Hive.openBox(_hiveBoxName);
-}
-
-Future<bool> _defHasAccessToken() {
-  return Future.value(
-      Hive.box(_hiveBoxName).containsKey(supabasePersistSessionKey));
-}
-
-Future<String?> _defAccessToken() {
-  return Future.value(Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?);
-}
-
-Future<void> _defRemovePersistedSession() {
-  return Hive.box(_hiveBoxName).delete(supabasePersistSessionKey);
-}
-
-Future<void> _defPersistSession(String persistSessionString) {
-  return Hive.box(_hiveBoxName).put(supabasePersistSessionKey, persistSessionString);
-}
-
-/// LocalStorage is used to persist the user session in the device.
-///
-/// By default, the package `shared_preferences` is used to save the
-/// user info on the device. However, you can use any other plugin to
-/// do so.
-///
-/// For example, we can use `flutter_secure_storage` plugin to store
-/// user session in secure storage.
-///
-/// ```dart
-/// final localStorage = LocalStorage(
-///   hasAccessToken: () {
-///     const storage = FlutterSecureStorage();
-///     return storage.containsKey(key: supabasePersistSessionKey);
-///   }, accessToken: () {
-///     const storage = FlutterSecureStorage();
-///     return storage.read(key: supabasePersistSessionKey);
-///   }, removePersistedSession: () {
-///     const storage = FlutterSecureStorage();
-///     return storage.delete(key: supabasePersistSessionKey);
-///   }, persistSession: (String value) {
-///     const storage = FlutterSecureStorage();
-///     return storage.write(key: supabasePersistSessionKey, value: value);
-///   });
-/// ```
-///
-/// To use the `LocalStorage` instance, pass it to `localStorage` when initializing
-/// the [Supabase] instance:
-///
-/// ```dart
-/// Supabase.initialize(
-///  ...
-///  localStorage: localStorage,
-/// );
-/// ```
-///
-/// See also:
-///
-///   * [Supabase], the instance used to manage authentication
-class LocalStorage {
-  /// Creates a `LocalStorage` instance
-  const LocalStorage({
-    this.initialize = _defInitialize,
-    this.hasAccessToken = _defHasAccessToken,
-    this.accessToken = _defAccessToken,
-    this.removePersistedSession = _defRemovePersistedSession,
-    this.persistSession = _defPersistSession,
-  });
-
-  /// Initialize the storage to persist session.
-  final Future<void> Function() initialize;
-
-  /// {@template supabase.localstorage.hasAccessToken}
-  /// Check if there is a persisted session.
-  ///
-  /// Here's an example of how to do it using the shared_preferences
-  /// package:
-  ///
-  /// ```dart
-  /// Future<bool> hasAccessToken() async {
-  ///   final prefs = await SharedPreferences.getInstance();
-  ///   final exist = prefs.containsKey(supabasePersistSessionKey);
-  ///   return exist;
-  /// }
-  /// ```
-  /// {@endTemplate}
-  final Future<bool> Function() hasAccessToken;
-
-  /// {@template supabase.localstorage.accessToken}
-  /// Get the access token from the current persisted session.
-  ///
-  /// Here's an example of how to do it using the shared_preferences
-  /// package:
-  ///
-  /// ```dart
-  /// Future<String?> accessToken() async {
-  ///   final prefs = await SharedPreferences.getInstance();
-  ///   final jsonStr = prefs.getString(supabasePersistSessionKey);
-  ///   return jsonStr;
-  /// }
-  /// ```
-  /// {@endTemplate}
-  final Future<String?> Function() accessToken;
-
-  /// Remove the current persisted session.
-  ///
-  /// Here's an example of how to do it using the shared_preferences
-  /// package:
-  ///
-  /// ```dart
-  /// Future<void> removePersistedSession() async {
-  ///   final SharedPreferences prefs = await SharedPreferences.getInstance();
-  ///   return prefs.remove(supabasePersistSessionKey);
-  /// }
-  /// ```
-  final Future<void> Function() removePersistedSession;
-
-  /// Persist a session in the device.
-  ///
-  /// Here's an example of how to do it using the shared_preferences
-  /// package:
-  ///
-  /// ```dart
-  /// Future<void> persistSession(String persistSessionString) async {
-  ///   final prefs = await SharedPreferences.getInstance();
-  ///   return prefs.setString(supabasePersistSessionKey, persistSessionString);
-  /// }
-  /// ```
-  final Future<void> Function(String) persistSession;
-}
 
 /// SupabaseAuth
 class SupabaseAuth {
@@ -197,7 +61,7 @@ class SupabaseAuth {
   ///
   /// It's necessary to initialize before calling [SupabaseAuth.instance]
   static Future<SupabaseAuth> initialize({
-    LocalStorage localStorage = const LocalStorage(),
+    LocalStorage localStorage = const HiveLocalStorage(),
     String? authCallbackUrlHostname,
   }) async {
     _instance._initialized = true;
