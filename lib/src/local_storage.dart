@@ -3,38 +3,13 @@ import 'package:hive_flutter/hive_flutter.dart';
 const _hiveBoxName = 'supabase_authentication';
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 
-Future<void> _defInitialize() async {
-  await Hive.initFlutter('auth');
-  await Hive.openBox(_hiveBoxName);
-}
-
-Future<bool> _defHasAccessToken() {
-  return Future.value(
-      Hive.box(_hiveBoxName).containsKey(supabasePersistSessionKey));
-}
-
-Future<String?> _defAccessToken() {
-  return Future.value(
-      Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?);
-}
-
-Future<void> _defRemovePersistedSession() {
-  return Hive.box(_hiveBoxName).delete(supabasePersistSessionKey);
-}
-
-Future<void> _defPersistSession(String persistSessionString) {
-  return Hive.box(_hiveBoxName)
-      .put(supabasePersistSessionKey, persistSessionString);
-}
-
 /// LocalStorage is used to persist the user session in the device.
-///
-/// By default, the package `hive` is used to save the user info on
-/// the device. However, you can use any other plugin to do so.
 ///
 /// See also:
 ///
 ///   * [SupabaseAuth], the instance used to manage authentication
+///   * [EmptyLocalStorage], used to disable session persistance
+///   * [HiveLocalStorage], that implements Hive as storage method
 abstract class LocalStorage {
   const LocalStorage({
     required this.initialize,
@@ -60,14 +35,60 @@ abstract class LocalStorage {
   final Future<void> Function(String) persistSession;
 }
 
+/// A [LocalStorage] implementation that does nothing. Use this to
+/// disable persistance.
+class EmptyLocalStorage extends LocalStorage {
+  /// Creates a [LocalStorage] instance that disables persistance
+  const EmptyLocalStorage()
+      : super(
+          initialize: _initialize,
+          hasAccessToken: _hasAccessToken,
+          accessToken: _accessToken,
+          removePersistedSession: _removePersistedSession,
+          persistSession: _persistSession,
+        );
+
+  static Future<void> _initialize() async {}
+  static Future<bool> _hasAccessToken() => Future.value(false);
+  static Future<String?> _accessToken() => Future.value(null);
+  static Future<void> _removePersistedSession() async {}
+  static Future<void> _persistSession(_) async {}
+}
+
+/// A [LocalStorage] implementation that implements Hive as the
+/// storage method.
 class HiveLocalStorage extends LocalStorage {
   /// Creates a LocalStorage instance that implements the Hive Database
   const HiveLocalStorage()
       : super(
-          initialize: _defInitialize,
-          hasAccessToken: _defHasAccessToken,
-          accessToken: _defAccessToken,
-          removePersistedSession: _defRemovePersistedSession,
-          persistSession: _defPersistSession,
+          initialize: _initialize,
+          hasAccessToken: _hasAccessToken,
+          accessToken: _accessToken,
+          removePersistedSession: _removePersistedSession,
+          persistSession: _persistSession,
         );
+
+  static Future<void> _initialize() async {
+    await Hive.initFlutter('auth');
+    await Hive.openBox(_hiveBoxName);
+  }
+
+  static Future<bool> _hasAccessToken() {
+    return Future.value(
+        Hive.box(_hiveBoxName).containsKey(supabasePersistSessionKey));
+  }
+
+  static Future<String?> _accessToken() {
+    return Future.value(
+        Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?);
+  }
+
+  static Future<void> _removePersistedSession() {
+    return Hive.box(_hiveBoxName).delete(supabasePersistSessionKey);
+  }
+
+  static Future<void> _persistSession(String persistSessionString) {
+    return Hive.box(_hiveBoxName)
+        .put(supabasePersistSessionKey, persistSessionString);
+  }
 }

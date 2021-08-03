@@ -127,9 +127,19 @@ class SecureLocalStorage extends LocalStorage {
   );
 }
 
+// use it when initializing
 Supabase.initialize(
   ...
   localStorage: SecureLocalStorage(),
+);
+```
+
+You can use `EmptyLocalStorage` to disable session persistance:
+
+```dart
+Supabase.initialize(
+  ...
+  localStorage: const EmptyLocalStorage(),
 );
 ```
 
