@@ -32,36 +32,6 @@ Future<void> _defPersistSession(String persistSessionString) {
 /// By default, the package `hive` is used to save the user info on
 /// the device. However, you can use any other plugin to do so.
 ///
-/// For example, we can use `flutter_secure_storage` plugin to store
-/// user session in a secure storage.
-///
-/// ```dart
-/// final localStorage = LocalStorage(
-///   hasAccessToken: () {
-///     const storage = FlutterSecureStorage();
-///     return storage.containsKey(key: supabasePersistSessionKey);
-///   }, accessToken: () {
-///     const storage = FlutterSecureStorage();
-///     return storage.read(key: supabasePersistSessionKey);
-///   }, removePersistedSession: () {
-///     const storage = FlutterSecureStorage();
-///     return storage.delete(key: supabasePersistSessionKey);
-///   }, persistSession: (String value) {
-///     const storage = FlutterSecureStorage();
-///     return storage.write(key: supabasePersistSessionKey, value: value);
-///   });
-/// ```
-///
-/// To use the `LocalStorage` instance, pass it to `localStorage` when initializing
-/// the [Supabase] instance:
-///
-/// ```dart
-/// Supabase.initialize(
-///  ...
-///  localStorage: localStorage,
-/// );
-/// ```
-///
 /// See also:
 ///
 ///   * [SupabaseAuth], the instance used to manage authentication

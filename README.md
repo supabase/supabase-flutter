@@ -101,28 +101,35 @@ Supabase.instance.client.auth.signInWithProvider(
 
 ### Custom LocalStorage
 
-As default `supabase_flutter` uses `shared_preferences` plugin to persist user session. However you can use any other plugins by providing a **LocalStorage**.
-For example, we can use `flutter_secure_storage` plugin to store user session in secure storage.
+As default `supabase_flutter` uses [`hive`](https://pub.dev/packages/hive) plugin to persist user session. However you can use any other plugins by creating a `LocalStorage` impl.
+
+For example, we can use `flutter_secure_storage` plugin to store the user session in a secure storage.
 
 ```dart
-final localStorage = LocalStorage(
-  hasAccessToken: () {
-    const storage = FlutterSecureStorage();
-    return storage.containsKey(key: supabasePersistSessionKey);
-  }, accessToken: () {
-    const storage = FlutterSecureStorage();
-    return storage.read(key: supabasePersistSessionKey);
-  }, removePersistedSession: () {
-    const storage = FlutterSecureStorage();
-    return storage.delete(key: supabasePersistSessionKey);
-  }, persistSession: (String value) {
-    const storage = FlutterSecureStorage();
-    return storage.write(key: supabasePersistSessionKey, value: value);
-  });
+
+// Define the custom LocalStorage implementation
+class SecureLocalStorage extends LocalStorage {
+  SecureLocalStorage() : super(
+    initialize: () async {},
+    hasAccessToken: () {
+      const storage = FlutterSecureStorage();
+      return storage.containsKey(key: supabasePersistSessionKey);
+    }, accessToken: () {
+      const storage = FlutterSecureStorage();
+      return storage.read(key: supabasePersistSessionKey);
+    }, removePersistedSession: () {
+      const storage = FlutterSecureStorage();
+      return storage.delete(key: supabasePersistSessionKey);
+    }, persistSession: (String value) {
+      const storage = FlutterSecureStorage();
+      return storage.write(key: supabasePersistSessionKey, value: value);
+    },
+  );
+}
 
 Supabase.initialize(
   ...
-  localStorage: localStorage,
+  localStorage: SecureLocalStorage(),
 );
 ```
 
