@@ -4,7 +4,6 @@ import 'package:supabase/supabase.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'local_storage.dart';
-import '../supabase_flutter.dart';
 
 /// SupabaseAuth
 class SupabaseAuth {
