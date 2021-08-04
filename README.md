@@ -106,7 +106,6 @@ As default `supabase_flutter` uses [`hive`](https://pub.dev/packages/hive) plugi
 For example, we can use `flutter_secure_storage` plugin to store the user session in a secure storage.
 
 ```dart
-
 // Define the custom LocalStorage implementation
 class SecureLocalStorage extends LocalStorage {
   SecureLocalStorage() : super(

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:hive_flutter/hive_flutter.dart';
 
 const _hiveBoxName = 'supabase_authentication';
@@ -68,9 +70,23 @@ class HiveLocalStorage extends LocalStorage {
           persistSession: _persistSession,
         );
 
+  /// The encryption key used by Hive. If null, the box is not encrypted
+  /// 
+  /// This value should not be redefined in runtime, otherwise the user may
+  /// not be fetched correctly
+  ///
+  /// See also:
+  ///
+  ///   * <https://docs.hivedb.dev/#/advanced/encrypted_box?id=encrypted-box>
+  static String? encryptionKey;
+
   static Future<void> _initialize() async {
+    HiveCipher? encryptionCipher;
+    if (encryptionKey != null) {
+      encryptionCipher = HiveAesCipher(base64Url.decode(encryptionKey!));
+    }
     await Hive.initFlutter('auth');
-    await Hive.openBox(_hiveBoxName);
+    await Hive.openBox(_hiveBoxName, encryptionCipher: encryptionCipher);
   }
 
   static Future<bool> _hasAccessToken() {
