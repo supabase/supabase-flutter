@@ -71,7 +71,7 @@ class HiveLocalStorage extends LocalStorage {
         );
 
   /// The encryption key used by Hive. If null, the box is not encrypted
-  /// 
+  ///
   /// This value should not be redefined in runtime, otherwise the user may
   /// not be fetched correctly
   ///
