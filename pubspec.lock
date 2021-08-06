@@ -232,7 +232,7 @@ packages:
       name: postgrest
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.4"
+    version: "0.1.5"
   process:
     dependency: transitive
     description:
@@ -272,7 +272,7 @@ packages:
       name: storage_client
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.0.3"
+    version: "0.0.4"
   stream_channel:
     dependency: transitive
     description:
@@ -293,7 +293,7 @@ packages:
       name: supabase
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.0.7"
+    version: "0.0.8"
   term_glyph:
     dependency: transitive
     description:
