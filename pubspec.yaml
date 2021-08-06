@@ -11,7 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  shared_preferences: ^2.0.6
+  hive: ^2.0.4
+  hive_flutter: ^1.1.0
   supabase: ^0.0.8
   uni_links: ^0.5.1
   url_launcher: ^6.0.9
