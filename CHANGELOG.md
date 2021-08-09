@@ -1,3 +1,8 @@
+## [0.1.0]
+
+- chore: update supabase to v0.1.0
+- feat: using hive to persist session by default
+
 ## [0.0.8]
 
 - chore: update supabase to v0.0.8
