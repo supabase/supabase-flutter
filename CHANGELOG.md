@@ -1,5 +1,10 @@
+## [0.2.0]
+
+- chore: update supabase to v0.2.0
+
 ## [0.1.0]
 
+- BREAKING CHANGE: `Supabase.initialize` is now `Future<void>`
 - chore: update supabase to v0.1.0
 - feat: using hive to persist session by default
 
