@@ -2,15 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
-import 'fake_path_provider_platform.dart';
-
 void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
 
   setUpAll(() async {
-    PathProviderPlatform.instance = FakePathProviderPlatform();
     // Initialize the Supabase singleton
     await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
   });
