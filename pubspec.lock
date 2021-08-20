@@ -293,7 +293,7 @@ packages:
       name: supabase
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.1"
+    version: "0.2.2"
   term_glyph:
     dependency: transitive
     description:
