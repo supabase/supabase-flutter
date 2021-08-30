@@ -246,7 +246,7 @@ packages:
       name: realtime_client
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.9"
+    version: "0.1.10"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -293,7 +293,7 @@ packages:
       name: supabase
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.4"
+    version: "0.2.5"
   term_glyph:
     dependency: transitive
     description:
