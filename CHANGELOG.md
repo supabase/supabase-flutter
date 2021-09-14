@@ -1,6 +1,6 @@
 ## [0.2.7]
 
-- chore: added `X-Client-Info` header
+- chore: update supabase to v0.2.6
 
 ## [0.2.6]
 
