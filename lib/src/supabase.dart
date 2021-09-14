@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase/supabase.dart';
+import 'package:supabase_flutter/src/constants.dart';
 
 import 'local_storage.dart';
 import 'supabase_auth.dart';
@@ -78,7 +79,11 @@ class Supabase {
   }
 
   void _init(String supabaseUrl, String supabaseAnonKey) {
-    client = SupabaseClient(supabaseUrl, supabaseAnonKey);
+    client = SupabaseClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      headers: Constants.defaultHeaders,
+    );
     _initialized = true;
   }
 

@@ -1,3 +1,7 @@
+## [0.2.7]
+
+- chore: added `X-Client-Info` header
+
 ## [0.2.6]
 
 - fix: export local_storage

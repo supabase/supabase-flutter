@@ -42,4 +42,21 @@ void main() {
     expect(uriParams['access_token'], equals('aaa'));
     expect(uriParams['refresh_token'], equals('bbb'));
   });
+
+  test('X-Client-Info header is overridden in Supabase instance', () {
+    final xClientHeaderBeforeSlash = Supabase.instance.client
+        .from('cats')
+        .headers['X-Client-Info']!
+        .split('/')
+        .first;
+    expect(xClientHeaderBeforeSlash, 'supabase-flutter');
+  });
+
+  test('X-Client-Info header is overridden in SupabaseAuth instance', () {
+    final xClientHeaderBeforeSlash = Supabase
+        .instance.client.auth.api.headers['X-Client-Info']!
+        .split('/')
+        .first;
+    expect(xClientHeaderBeforeSlash, 'supabase-flutter');
+  });
 }
