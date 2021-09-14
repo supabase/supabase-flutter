@@ -43,7 +43,7 @@ void main() {
     expect(uriParams['refresh_token'], equals('bbb'));
   });
 
-  test('X-Client-Info header is overridden in Supabase instance', () {
+  test('X-Client-Info header is overridden in postgrest', () {
     final xClientHeaderBeforeSlash = Supabase.instance.client
         .from('cats')
         .headers['X-Client-Info']!
@@ -52,7 +52,7 @@ void main() {
     expect(xClientHeaderBeforeSlash, 'supabase-flutter');
   });
 
-  test('X-Client-Info header is overridden in SupabaseAuth instance', () {
+  test('X-Client-Info header is overridden in auth', () {
     final xClientHeaderBeforeSlash = Supabase
         .instance.client.auth.api.headers['X-Client-Info']!
         .split('/')
