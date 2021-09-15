@@ -78,7 +78,10 @@ class Supabase {
   }
 
   void _init(String supabaseUrl, String supabaseAnonKey) {
-    client = SupabaseClient(supabaseUrl, supabaseAnonKey);
+    client = SupabaseClient(
+      supabaseUrl,
+      supabaseAnonKey,
+    );
     _initialized = true;
   }
 

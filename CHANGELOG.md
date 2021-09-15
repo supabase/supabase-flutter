@@ -1,3 +1,7 @@
+## [0.2.7]
+
+- chore: update supabase to v0.2.6
+
 ## [0.2.6]
 
 - fix: export local_storage
