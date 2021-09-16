@@ -65,7 +65,7 @@ Using authentication can be done easily.
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void signIn(String email, String password) async {
-  final response = await Supabase.instance.client.auth.signIn(email: _email, password: _password);
+  final response = await Supabase.instance.client.auth.signIn(email: email, password: password);
   if (reponse.error != null) {
     /// Handle error
   } else {
