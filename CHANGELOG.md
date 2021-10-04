@@ -1,7 +1,3 @@
-## [0.2.9]
-
-- fix: export supabase package
-
 ## [0.2.8]
 
 - chore: update supabase to v0.2.7
