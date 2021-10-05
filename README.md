@@ -37,7 +37,7 @@ Intialize `Supabase` before using it:
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
