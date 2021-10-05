@@ -40,7 +40,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Supabase.initialize(
+  await Supabase.initialize(
     url: SUPABASE_URL,
     anonKey: SUPABASE_ANNON_KEY,
     authCallbackUrlHostname: 'login-callback', // optional
