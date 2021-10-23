@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:supabase/supabase.dart';
 
@@ -7,15 +9,29 @@ import 'supabase_state.dart';
 /// Interface for screen that requires an authenticated user
 abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
     extends SupabaseState<T> with WidgetsBindingObserver {
+  late final StreamSubscription<AuthChangeEvent> _authStateListener;
+
   @override
   void initState() {
     super.initState();
+
+    _authStateListener = SupabaseAuth.instance.onAuthChange.listen((event) {
+      if (event == AuthChangeEvent.signedOut) {
+        onUnauthenticated();
+      }
+    });
 
     if (Supabase.instance.client.auth.currentSession == null) {
       _recoverSupabaseSession();
     } else {
       onAuthenticated(Supabase.instance.client.auth.currentSession!);
     }
+  }
+
+  @override
+  void dispose() {
+    _authStateListener.cancel();
+    super.dispose();
   }
 
   @override

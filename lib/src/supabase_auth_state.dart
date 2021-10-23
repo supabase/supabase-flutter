@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/supabase.dart';
@@ -37,6 +39,24 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
   @override
   void onErrorReceivingDeeplink(String message) {
     Supabase.instance.log('onErrorReceivingDeppLink message: $message');
+  }
+
+  late final StreamSubscription<AuthChangeEvent> _authStateListener;
+
+  @override
+  void initState() {
+    _authStateListener = SupabaseAuth.instance.onAuthChange.listen((event) {
+      if (event == AuthChangeEvent.signedOut) {
+        onUnauthenticated();
+      }
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _authStateListener.cancel();
+    super.dispose();
   }
 
   Future<bool> recoverSessionFromUrl(Uri uri) async {
