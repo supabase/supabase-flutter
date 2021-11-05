@@ -1,3 +1,10 @@
+## [0.2.9]
+
+- feat: signing out now triggers `onUnauthenticated()`
+- feat: export supabase package so that underlying symbols can be imported
+- fix: update code samples to reflect breaking change from v0.0.3
+- fix: typos on code samples on readme.md
+
 ## [0.2.8]
 
 - chore: update supabase to v0.2.7
