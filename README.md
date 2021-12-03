@@ -24,6 +24,18 @@ Supabase is an open source Firebase alternative. We are a service to:
 - [x] Public Beta: Stable. No breaking changes expected in this version but possible bugs.
 - [ ] Public: Production-ready
 
+## Features
+
+- [x] Null-safety
+
+| Platform | Email Auth | Provider Auth | Database | Realtime | Storage |
+| -------- | :--------: | :-----------: | :------: | :------: | :-----: |
+| Android  |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
+| iOS      |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
+| macOS    |     ✅     |               |    ✅    |    ✅    |   ✅    |
+| Windows  |     ✅     |               |    ✅    |    ✅    |   ✅    |
+| Linux    |     ✅     |               |    ✅    |    ✅    |   ✅    |
+
 ## Getting Started
 
 Import the package:
