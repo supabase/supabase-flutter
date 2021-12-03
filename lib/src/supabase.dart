@@ -4,10 +4,12 @@ import 'package:supabase/supabase.dart';
 import 'local_storage.dart';
 import 'supabase_auth.dart';
 
-/// Supabase instance. It must be initialized before used:
+/// Supabase instance.
+///
+/// It must be initialized before used, otherwise an error is thrown.
 ///
 /// ```dart
-/// Supabase.initialize(...)
+/// await Supabase.initialize(...)
 /// ```
 ///
 /// Use it:
@@ -23,7 +25,7 @@ class Supabase {
   /// Gets the current supabase instance.
   ///
   /// An [AssertionError] is thrown if supabase isn't initialized yet.
-  /// Call [Supabase.intialize] to initialize it.
+  /// Call [Supabase.initialize] to initialize it.
   static Supabase get instance {
     assert(
       _instance._initialized,
@@ -61,8 +63,8 @@ class Supabase {
     return _instance;
   }
 
-  Supabase._privateConstructor();
-  static final Supabase _instance = Supabase._privateConstructor();
+  Supabase._();
+  static final Supabase _instance = Supabase._();
 
   bool _initialized = false;
 
