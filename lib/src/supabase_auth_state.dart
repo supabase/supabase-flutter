@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:supabase/supabase.dart';
-import 'package:supabase_flutter/src/supabase.dart';
 import 'package:supabase_flutter/src/supabase_deep_linking_mixin.dart';
 import 'package:supabase_flutter/src/supabase_state.dart';
 
