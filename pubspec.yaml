@@ -13,7 +13,7 @@ dependencies:
     sdk: flutter
   hive: ^2.0.4
   hive_flutter: ^1.1.0
-  supabase: ^0.2.10
+  supabase: ^0.2.11
   uni_links: ^0.5.1
   url_launcher: ^6.0.9
 
