@@ -1,3 +1,8 @@
+## [0.2.10]
+
+- chore: update supabase-dart package v0.2.12
+- chore: update documents
+
 ## [0.2.9]
 
 - feat: signing out now triggers `onUnauthenticated()`
