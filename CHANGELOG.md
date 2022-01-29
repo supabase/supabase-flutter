@@ -1,3 +1,7 @@
+## [0.2.12]
+
+- chore: update supabase-dart package v0.2.14
+
 ## [0.2.11]
 
 - chore: update supabase-dart package v0.2.13
