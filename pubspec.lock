@@ -92,14 +92,14 @@ packages:
       name: gotrue
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.5"
+    version: "0.1.6"
   hive:
     dependency: "direct main"
     description:
       name: hive
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.4"
+    version: "2.0.6"
   hive_flutter:
     dependency: "direct main"
     description:
@@ -293,7 +293,7 @@ packages:
       name: supabase
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.14"
+    version: "0.2.15"
   term_glyph:
     dependency: transitive
     description:
@@ -349,7 +349,7 @@ packages:
       name: url_launcher
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.9"
+    version: "6.0.10"
   url_launcher_linux:
     dependency: transitive
     description:

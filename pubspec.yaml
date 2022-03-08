@@ -11,11 +11,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  hive: ^2.0.4
+  hive: ^2.0.6
   hive_flutter: ^1.1.0
-  supabase: ^0.2.14
+  supabase: ^0.2.15
   uni_links: ^0.5.1
-  url_launcher: ^6.0.9
+  url_launcher: ^6.0.10
 
 dev_dependencies:
   flutter_test:
