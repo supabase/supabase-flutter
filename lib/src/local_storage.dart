@@ -43,12 +43,12 @@ class EmptyLocalStorage extends LocalStorage {
   /// Creates a [LocalStorage] instance that disables persistence
   const EmptyLocalStorage()
       : super(
-    initialize: _initialize,
-    hasAccessToken: _hasAccessToken,
-    accessToken: _accessToken,
-    removePersistedSession: _removePersistedSession,
-    persistSession: _persistSession,
-  );
+          initialize: _initialize,
+          hasAccessToken: _hasAccessToken,
+          accessToken: _accessToken,
+          removePersistedSession: _removePersistedSession,
+          persistSession: _persistSession,
+        );
 
   static Future<void> _initialize() async {}
   static Future<bool> _hasAccessToken() => Future.value(false);
@@ -63,12 +63,12 @@ class HiveLocalStorage extends LocalStorage {
   /// Creates a LocalStorage instance that implements the Hive Database
   const HiveLocalStorage()
       : super(
-    initialize: _initialize,
-    hasAccessToken: _hasAccessToken,
-    accessToken: _accessToken,
-    removePersistedSession: _removePersistedSession,
-    persistSession: _persistSession,
-  );
+          initialize: _initialize,
+          hasAccessToken: _hasAccessToken,
+          accessToken: _accessToken,
+          removePersistedSession: _removePersistedSession,
+          persistSession: _persistSession,
+        );
 
   /// The encryption key used by Hive. If null, the box is not encrypted
   ///
