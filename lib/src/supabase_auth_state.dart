@@ -4,12 +4,12 @@ import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/src/supabase_deep_linking_mixin.dart';
 import 'package:supabase_flutter/src/supabase_state.dart';
 
-import '../supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Interface for user authentication screen
 /// It supports deeplink authentication
-abstract class SupabaseAuthState<T extends StatefulWidget>
-    extends SupabaseState<T> with SupabaseDeepLinkingMixin {
+abstract class SupabaseAuthState<T extends StatefulWidget> extends SupabaseState<T>
+    with SupabaseDeepLinkingMixin {
   @override
   void startAuthObserver() {
     Supabase.instance.log('***** SupabaseAuthState startAuthObserver');
@@ -78,22 +78,19 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
   /// Recover/refresh session if it's available
   /// e.g. called on a Splash screen when app starts.
   Future<bool> recoverSupabaseSession() async {
-    final bool exist =
-        await SupabaseAuth.instance.localStorage.hasAccessToken();
+    final bool exist = await SupabaseAuth.instance.localStorage.hasAccessToken();
     if (!exist) {
       onUnauthenticated();
       return false;
     }
 
-    final String? jsonStr =
-        await SupabaseAuth.instance.localStorage.accessToken();
+    final String? jsonStr = await SupabaseAuth.instance.localStorage.accessToken();
     if (jsonStr == null) {
       onUnauthenticated();
       return false;
     }
 
-    final response =
-        await Supabase.instance.client.auth.recoverSession(jsonStr);
+    final response = await Supabase.instance.client.auth.recoverSession(jsonStr);
     if (response.error != null) {
       SupabaseAuth.instance.localStorage.removePersistedSession();
       onUnauthenticated();

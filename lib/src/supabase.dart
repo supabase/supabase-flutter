@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase/supabase.dart';
 
-import 'local_storage.dart';
-import 'supabase_auth.dart';
+import 'package:supabase_flutter/src/local_storage.dart';
+import 'package:supabase_flutter/src/supabase_auth.dart';
 
 /// Supabase instance.
 ///

@@ -1,8 +1,7 @@
 import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:url_launcher/url_launcher.dart';
-
-import '../supabase_flutter.dart';
 
 /// SupabaseAuth
 class SupabaseAuth {
@@ -66,8 +65,7 @@ class SupabaseAuth {
     _instance._localStorage = localStorage;
     _instance._authCallbackUrlHostname = authCallbackUrlHostname;
 
-    _instance._authSubscription =
-        Supabase.instance.client.auth.onAuthStateChange((event, session) {
+    _instance._authSubscription = Supabase.instance.client.auth.onAuthStateChange((event, session) {
       _instance._onAuthStateChange(event, session);
       if (!_instance._listenerController.isClosed) {
         _instance._listenerController.add(event);
@@ -80,8 +78,7 @@ class SupabaseAuth {
     if (hasPersistedSession) {
       final persistedSession = await _instance._localStorage.accessToken();
       if (persistedSession != null) {
-        final response = await Supabase.instance.client.auth
-            .recoverSession(persistedSession);
+        final response = await Supabase.instance.client.auth.recoverSession(persistedSession);
 
         if (response.error != null) {
           Supabase.instance.log(response.error!.message);
@@ -159,8 +156,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// See also:
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
-  Future<bool> signInWithProvider(Provider provider,
-      {AuthOptions? options}) async {
+  Future<bool> signInWithProvider(Provider provider, {AuthOptions? options}) async {
     final res = await signIn(
       provider: provider,
       options: options,

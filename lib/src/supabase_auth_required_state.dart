@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:supabase_flutter/src/supabase_state.dart';
 
-import '../supabase_flutter.dart';
-import 'supabase_state.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Interface for screen that requires an authenticated user
-abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
-    extends SupabaseState<T> with WidgetsBindingObserver {
+abstract class SupabaseAuthRequiredState<T extends StatefulWidget> extends SupabaseState<T>
+    with WidgetsBindingObserver {
   late final StreamSubscription<AuthChangeEvent> _authStateListener;
 
   @override
@@ -66,22 +66,19 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
   }
 
   Future<bool> _recoverSupabaseSession() async {
-    final bool exist =
-        await SupabaseAuth.instance.localStorage.hasAccessToken();
+    final bool exist = await SupabaseAuth.instance.localStorage.hasAccessToken();
     if (!exist) {
       onUnauthenticated();
       return false;
     }
 
-    final String? jsonStr =
-        await SupabaseAuth.instance.localStorage.accessToken();
+    final String? jsonStr = await SupabaseAuth.instance.localStorage.accessToken();
     if (jsonStr == null) {
       onUnauthenticated();
       return false;
     }
 
-    final response =
-        await Supabase.instance.client.auth.recoverSession(jsonStr);
+    final response = await Supabase.instance.client.auth.recoverSession(jsonStr);
     if (response.error != null) {
       SupabaseAuth.instance.localStorage.removePersistedSession();
       onUnauthenticated();

@@ -90,13 +90,11 @@ class HiveLocalStorage extends LocalStorage {
   }
 
   static Future<bool> _hasAccessToken() {
-    return Future.value(
-        Hive.box(_hiveBoxName).containsKey(supabasePersistSessionKey));
+    return Future.value(Hive.box(_hiveBoxName).containsKey(supabasePersistSessionKey));
   }
 
   static Future<String?> _accessToken() {
-    return Future.value(
-        Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?);
+    return Future.value(Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?);
   }
 
   static Future<void> _removePersistedSession() {
@@ -105,7 +103,6 @@ class HiveLocalStorage extends LocalStorage {
 
   static Future<void> _persistSession(String persistSessionString) {
     // Flush after X amount of writes
-    return Hive.box(_hiveBoxName)
-        .put(supabasePersistSessionKey, persistSessionString);
+    return Hive.box(_hiveBoxName).put(supabasePersistSessionKey, persistSessionString);
   }
 }
