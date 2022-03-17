@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:supabase_flutter/src/supabase_state.dart';
 
-import '../supabase_flutter.dart';
-import 'supabase_state.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Interface for screen that requires an authenticated user
 abstract class SupabaseAuthRequiredState<T extends StatefulWidget>

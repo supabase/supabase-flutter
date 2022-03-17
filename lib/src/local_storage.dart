@@ -10,7 +10,7 @@ const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 /// See also:
 ///
 ///   * [SupabaseAuth], the instance used to manage authentication
-///   * [EmptyLocalStorage], used to disable session persistance
+///   * [EmptyLocalStorage], used to disable session persistence
 ///   * [HiveLocalStorage], that implements Hive as storage method
 abstract class LocalStorage {
   const LocalStorage({
@@ -38,9 +38,9 @@ abstract class LocalStorage {
 }
 
 /// A [LocalStorage] implementation that does nothing. Use this to
-/// disable persistance.
+/// disable persistence.
 class EmptyLocalStorage extends LocalStorage {
-  /// Creates a [LocalStorage] instance that disables persistance
+  /// Creates a [LocalStorage] instance that disables persistence
   const EmptyLocalStorage()
       : super(
           initialize: _initialize,
@@ -104,6 +104,7 @@ class HiveLocalStorage extends LocalStorage {
   }
 
   static Future<void> _persistSession(String persistSessionString) {
+    // Flush after X amount of writes
     return Hive.box(_hiveBoxName)
         .put(supabasePersistSessionKey, persistSessionString);
   }
