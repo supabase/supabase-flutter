@@ -3,7 +3,7 @@ description: Flutter integration for Supabase. This package makes it simple for 
 version: 0.2.13
 homepage: "https://supabase.io"
 repository: "https://github.com/supabase/supabase-flutter"
-
+publish_to: none
 environment:
   sdk: ">=2.12.0 <3.0.0"
   flutter: ">=1.17.0"
@@ -13,7 +13,8 @@ dependencies:
     sdk: flutter
   hive: ^2.0.6
   hive_flutter: ^1.1.0
-  supabase: ^0.2.15
+  supabase:
+    git: git@github.com:DanMossa/supabase-dart.git
   uni_links: ^0.5.1
   url_launcher: ^6.0.10
 
