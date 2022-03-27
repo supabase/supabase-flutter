@@ -1,3 +1,11 @@
+## [0.2.13]
+
+- chore: update hive package to v2.0.6
+- chore: update supabase package to v0.2.15
+- chore: update url_launcher package to v6.0.10
+- refactor: fix lint errors and typos
+- feat: support for OpenID Connect via new updated supabase package
+
 ## [0.2.12]
 
 - chore: update supabase-dart package v0.2.14
