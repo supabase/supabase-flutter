@@ -158,8 +158,10 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// See also:
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
-  Future<bool> signInWithProvider(Provider provider,
-      {AuthOptions? options}) async {
+  Future<bool> signInWithProvider(
+    Provider provider, {
+    AuthOptions? options,
+  }) async {
     final res = await signIn(
       provider: provider,
       options: options,
