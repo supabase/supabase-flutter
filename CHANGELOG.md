@@ -1,3 +1,7 @@
+## [next]
+
+- breaking: `signInWithProvider` now returns `GotrueSessionResponse` instead of `bool`
+
 ## [0.2.12]
 
 - chore: update supabase-dart package v0.2.14
