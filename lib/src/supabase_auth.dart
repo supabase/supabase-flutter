@@ -79,8 +79,8 @@ class SupabaseAuth {
     if (hasPersistedSession) {
       final persistedSession = await _instance._localStorage.accessToken();
       if (persistedSession != null) {
-        final response =
-            await Supabase.instance.client.auth.recoverSession(persistedSession);
+        final response = await Supabase.instance.client.auth
+            .recoverSession(persistedSession);
 
         if (response.error != null) {
           Supabase.instance.log(response.error!.message);
