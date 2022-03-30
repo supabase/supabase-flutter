@@ -79,8 +79,8 @@ class SupabaseAuth {
     if (hasPersistedSession) {
       final persistedSession = await _instance._localStorage.accessToken();
       if (persistedSession != null) {
-        final response = await Supabase.instance.client.auth
-            .recoverSession(persistedSession);
+        final response =
+            await Supabase.instance.client.auth.recoverSession(persistedSession);
 
         if (response.error != null) {
           Supabase.instance.log(response.error!.message);
@@ -153,18 +153,20 @@ class SupabaseAuth {
 }
 
 extension GoTrueClientSignInProvider on GoTrueClient {
-  /// Signs the user in using a thrid parties providers.
+  /// Signs the user in using a third parties providers.
   ///
   /// See also:
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
-  Future<bool> signInWithProvider(Provider provider,
+  Future<GotrueSessionResponse> signInWithProvider(Provider provider,
       {AuthOptions? options}) async {
-    final res = await signIn(
+    final response = await signIn(
       provider: provider,
       options: options,
     );
-    final result = await launch(res.url!, webOnlyWindowName: '_self');
-    return result;
+    if (response.url != null) {
+      await launch(response.url!, webOnlyWindowName: '_self');
+    }
+    return response;
   }
 }
