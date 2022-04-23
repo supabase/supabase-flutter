@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive/hive.dart';
 
 const _hiveBoxName = 'supabase_authentication';
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
@@ -85,7 +85,7 @@ class HiveLocalStorage extends LocalStorage {
     if (encryptionKey != null) {
       encryptionCipher = HiveAesCipher(base64Url.decode(encryptionKey!));
     }
-    await Hive.initFlutter('auth');
+    Hive.init('auth');
     await Hive.openBox(_hiveBoxName, encryptionCipher: encryptionCipher);
   }
 
