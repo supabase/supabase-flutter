@@ -79,16 +79,25 @@ class SupabaseAuth {
     if (hasPersistedSession) {
       final persistedSession = await _instance._localStorage.accessToken();
       if (persistedSession != null) {
-        final response = await Supabase.instance.client.auth
-            .recoverSession(persistedSession);
-
-        if (response.error != null) {
-          Supabase.instance.log(response.error!.message);
-        }
+        await _recoverSessionn(persistedSession);
       }
     }
 
     return _instance;
+  }
+
+  static Future<void> _recoverSessionn(String persistedSession) async {
+    final response =
+        await Supabase.instance.client.auth.recoverSession(persistedSession);
+
+    if (response.error != null) {
+      if (response.error!.statusCode == 'SocketException') {
+        Timer(const Duration(seconds: 5), () {
+          _recoverSessionn(persistedSession);
+        });
+      }
+      Supabase.instance.log(response.error!.message);
+    }
   }
 
   /// Dispose the instance to free up resources
