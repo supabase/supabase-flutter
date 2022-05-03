@@ -10,8 +10,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// It supports deeplink authentication
 abstract class SupabaseAuthState<T extends StatefulWidget>
     extends SupabaseState<T> with SupabaseDeepLinkingMixin {
-  Timer? _refreshTokenTimer;
-
   @override
   void startAuthObserver() {
     Supabase.instance.log('***** SupabaseAuthState startAuthObserver');
@@ -80,7 +78,11 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
   /// Recover/refresh session if it's available
   /// e.g. called on a Splash screen when app starts.
   Future<bool> recoverSupabaseSession() async {
-    _refreshTokenTimer?.cancel();
+    resetTokenRefreshRetryCounter();
+    return _callTokenRefresh();
+  }
+
+  Future<bool> _callTokenRefresh() async {
     final bool exist =
         await SupabaseAuth.instance.localStorage.hasAccessToken();
     if (!exist) {
@@ -99,9 +101,7 @@ abstract class SupabaseAuthState<T extends StatefulWidget>
         await Supabase.instance.client.auth.recoverSession(jsonStr);
     if (response.error != null) {
       if (response.error!.statusCode == 'SocketException') {
-        _refreshTokenTimer = Timer(const Duration(seconds: 5), () {
-          recoverSupabaseSession();
-        });
+        retryTokenRefresh(_callTokenRefresh);
         return false;
       } else {
         SupabaseAuth.instance.localStorage.removePersistedSession();

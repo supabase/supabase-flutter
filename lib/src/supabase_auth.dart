@@ -26,6 +26,10 @@ class SupabaseAuth {
   GotrueSubscription? _authSubscription;
   final _listenerController = StreamController<AuthChangeEvent>.broadcast();
 
+  static Timer? _refreshTokenTimer;
+
+  static int _refreshTokenRetryCount = 0;
+
   /// Listen to auth change events.
   ///
   /// ```dart
@@ -87,14 +91,18 @@ class SupabaseAuth {
   }
 
   static Future<void> _recoverSession(String persistedSession) async {
+    _refreshTokenTimer?.cancel();
     final response =
         await Supabase.instance.client.auth.recoverSession(persistedSession);
 
     if (response.error != null) {
       if (response.error!.statusCode == 'SocketException') {
-        Timer(const Duration(seconds: 5), () {
-          _recoverSession(persistedSession);
-        });
+        _refreshTokenRetryCount++;
+        if (_refreshTokenRetryCount < 720) {
+          _refreshTokenTimer = Timer(const Duration(seconds: 5), () {
+            _recoverSession(persistedSession);
+          });
+        }
       }
       Supabase.instance.log(response.error!.message);
     }

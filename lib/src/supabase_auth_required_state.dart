@@ -62,6 +62,7 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
 
   Future<bool> onResumed() async {
     Supabase.instance.log('***** SupabaseAuthRequiredState onResumed');
+    resetTokenRefreshRetryCounter();
     return _recoverSupabaseSession();
   }
 
@@ -83,9 +84,14 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
     final response =
         await Supabase.instance.client.auth.recoverSession(jsonStr);
     if (response.error != null) {
-      SupabaseAuth.instance.localStorage.removePersistedSession();
-      onUnauthenticated();
-      return false;
+      if (response.error!.statusCode == 'SocketException') {
+        retryTokenRefresh(_recoverSupabaseSession);
+        return false;
+      } else {
+        SupabaseAuth.instance.localStorage.removePersistedSession();
+        onUnauthenticated();
+        return false;
+      }
     } else {
       onAuthenticated(response.data!);
       return true;
