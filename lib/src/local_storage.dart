@@ -52,7 +52,7 @@ class EmptyLocalStorage extends LocalStorage {
 
   static Future<void> _initialize() async {}
   static Future<bool> _hasAccessToken() => Future.value(false);
-  static Future<String?> _accessToken() => Future.value(null);
+  static Future<String?> _accessToken() => Future.value();
   static Future<void> _removePersistedSession() async {}
   static Future<void> _persistSession(_) async {}
 }
