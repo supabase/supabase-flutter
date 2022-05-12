@@ -1,3 +1,7 @@
+## [0.3.1]
+
+- feat: update supabase to [v0.3.4](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#030)
+
 ## [0.3.0]
 
 - BREAKING: update supabase to [v0.3.0](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#030)
