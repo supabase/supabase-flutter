@@ -52,7 +52,7 @@ class EmptyLocalStorage extends LocalStorage {
 
   static Future<void> _initialize() async {}
   static Future<bool> _hasAccessToken() => Future.value(false);
-  static Future<String?> _accessToken() => Future.value(null);
+  static Future<String?> _accessToken() => Future.value();
   static Future<void> _removePersistedSession() async {}
   static Future<void> _persistSession(_) async {}
 }
@@ -91,12 +91,16 @@ class HiveLocalStorage extends LocalStorage {
 
   static Future<bool> _hasAccessToken() {
     return Future.value(
-        Hive.box(_hiveBoxName).containsKey(supabasePersistSessionKey));
+      Hive.box(_hiveBoxName).containsKey(
+        supabasePersistSessionKey,
+      ),
+    );
   }
 
   static Future<String?> _accessToken() {
     return Future.value(
-        Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?);
+      Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?,
+    );
   }
 
   static Future<void> _removePersistedSession() {
