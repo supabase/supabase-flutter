@@ -36,13 +36,13 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
   @override
   void startAuthObserver() {
     Supabase.instance.log('***** SupabaseAuthRequiredState startAuthObserver');
-    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance?.addObserver(this);
   }
 
   @override
   void stopAuthObserver() {
     Supabase.instance.log('***** SupabaseAuthRequiredState stopAuthObserver');
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance?.removeObserver(this);
   }
 
   @override

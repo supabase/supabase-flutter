@@ -5,8 +5,8 @@ homepage: "https://supabase.io"
 repository: "https://github.com/supabase/supabase-flutter"
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
-  flutter: ">=1.17.0"
+  sdk: ">=2.15.0-7.0.dev <3.0.0"
+  flutter: ">=2.10.0 <3.0.0"
 
 dependencies:
   flutter:
@@ -15,11 +15,11 @@ dependencies:
   hive_flutter: ^1.1.0
   supabase: ^0.3.4
   uni_links: ^0.5.1
-  url_launcher: ^6.0.10
+  url_launcher: ^6.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  lint: ^1.5.3
+  lint: ^1.8.2
 
 flutter:
