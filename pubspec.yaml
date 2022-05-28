@@ -11,7 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  hive: ^2.0.6
+  hive: ^2.2.1
   hive_flutter: ^1.1.0
   supabase: ^0.3.4
   uni_links: ^0.5.1
