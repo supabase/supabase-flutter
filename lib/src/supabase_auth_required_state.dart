@@ -5,7 +5,11 @@ import 'package:supabase_flutter/src/supabase_state.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Interface for screen that requires an authenticated user
+// Because `WidgetsBinding.instance` became none-nullable in Flutter 3.0
+// we need the following ignore rule to avoid analysis warning
+// in both Flutter 2.0 and 3.0
+// ignore_for_file: invalid_null_aware_operator
+
 abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
     extends SupabaseState<T> with WidgetsBindingObserver {
   late final StreamSubscription<AuthChangeEvent> _authStateListener;
