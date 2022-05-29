@@ -1,3 +1,8 @@
+## [0.3.1+1]
+
+- fix: lint error on Flutter 2.X
+- chore: add multiple Flutter version to the CI pipeline
+
 ## [0.3.1]
 
 - feat: update supabase to [v0.3.4](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#030)
