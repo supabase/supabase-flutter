@@ -8,7 +8,7 @@ class MockWidget extends StatefulWidget {
   _MockWidgetState createState() => _MockWidgetState();
 }
 
-class _MockWidgetState extends SupabaseAuthRequiredState<MockWidget> {
+class _MockWidgetState extends SupabaseAuthState<MockWidget> {
   bool isSignedIn = true;
 
   @override

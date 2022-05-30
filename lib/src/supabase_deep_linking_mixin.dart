@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uni_links/uni_links.dart';
 
 mixin SupabaseDeepLinkingMixin<T extends StatefulWidget> on State<T> {
-  StreamSubscription? _sub;
+  StreamSubscription<Uri?>? _sub;
 
   void startDeeplinkObserver() {
     Supabase.instance.log('***** SupabaseDeepLinkingMixin startAuthObserver');
