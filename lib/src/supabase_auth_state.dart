@@ -76,17 +76,10 @@ abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
   }
 
   Future<bool> _recoverSessionFromUrl(Uri uri) async {
-    final uriParameters = SupabaseAuth.instance.parseUriParameters(uri);
-    final type = uriParameters['type'] ?? '';
-
     // recover session from deeplink
     final response = await Supabase.instance.client.auth.getSessionFromUrl(uri);
     if (response.error != null) {
       onErrorAuthenticating(response.error!.message);
-    } else {
-      if (type == 'recovery') {
-        onPasswordRecovery(response.data!);
-      }
     }
     return true;
   }
@@ -119,11 +112,6 @@ abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
   /// Callback when deeplink received and is processing. Optional
   void onReceivedAuthDeeplink(Uri uri) {
     Supabase.instance.log('onReceivedAuthDeeplink uri: $uri');
-  }
-
-  /// Callback when authentication deeplink is recovery password type. Optional
-  void onPasswordRecovery(Session session) {
-    Supabase.instance.log(session.toString());
   }
 
   /// Callback when recovering session from authentication deeplink throws error. Optional
