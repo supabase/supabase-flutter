@@ -121,9 +121,13 @@ abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
     Supabase.instance.log('onReceivedAuthDeeplink uri: $uri');
   }
 
-  /// Callback when authentication deeplink is recovery password type
-  void onPasswordRecovery(Session session);
+  /// Callback when authentication deeplink is recovery password type. Optional
+  void onPasswordRecovery(Session session) {
+    Supabase.instance.log(session.toString());
+  }
 
-  /// Callback when recovering session from authentication deeplink throws error
-  void onErrorAuthenticating(String message);
+  /// Callback when recovering session from authentication deeplink throws error. Optional
+  void onErrorAuthenticating(String message) {
+    Supabase.instance.log(message);
+  }
 }

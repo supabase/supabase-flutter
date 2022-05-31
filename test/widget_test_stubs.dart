@@ -12,13 +12,6 @@ class _MockWidgetState extends SupabaseAuthState<MockWidget> {
   bool isSignedIn = true;
 
   @override
-  void onUnauthenticated() {
-    setState(() {
-      isSignedIn = false;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return isSignedIn
         ? TextButton(
