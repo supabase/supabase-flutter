@@ -88,17 +88,12 @@ Future<void> signIn(String email, String password) async {
 
 ### SupabaseAuthState
 
-It helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
+It persists the auth state on local storage. 
+It also helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
 
 For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_state.dart)
 
 > When using with a nested authentication flow, remember to call `startAuthObserver()` and `stopAuthObserver()` before/after navigation to new screen to prevent multiple observers running at the same time. Take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/026c6e8cbb05a5b1b76a50ce82d936016844ba1b/lib/screens/signin_screen.dart#L165-L170)
-
-### SupabaseAuthRequiredState
-
-It helps you protect route that requires an authenticated user.
-
-For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_required_state.dart)
 
 ### signInWithProvider
 
