@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'widget_test_stubs.dart';
@@ -20,6 +19,14 @@ void main() {
   test('can access Supabase singleton', () async {
     final client = Supabase.instance.client;
     expect(client, isNotNull);
+  });
+
+  test('can re-initialize client', () async {
+    final client = Supabase.instance.client;
+    Supabase.instance.dispose();
+    final newClient =
+        Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+    expect(client, isNot(newClient));
   });
 
   test('can parse deeplink', () async {
