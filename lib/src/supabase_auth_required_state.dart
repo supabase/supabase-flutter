@@ -10,10 +10,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // in both Flutter 2.0 and 3.0
 // ignore_for_file: invalid_null_aware_operator
 
-abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
-    extends SupabaseState<T> with WidgetsBindingObserver {
+abstract class SupabaseAuthRequiredState<T extends StatefulWidget> extends SupabaseState<T>
+    with WidgetsBindingObserver {
   late final StreamSubscription<AuthChangeEvent> _authStateListener;
-
+  T? _ambiguate<T>(T? value) => value;
   @override
   void initState() {
     super.initState();
@@ -40,13 +40,13 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
   @override
   void startAuthObserver() {
     Supabase.instance.log('***** SupabaseAuthRequiredState startAuthObserver');
-    WidgetsBinding.instance?.addObserver(this);
+    _ambiguate(WidgetsBinding.instance)?.addObserver(this);
   }
 
   @override
   void stopAuthObserver() {
     Supabase.instance.log('***** SupabaseAuthRequiredState stopAuthObserver');
-    WidgetsBinding.instance?.removeObserver(this);
+    _ambiguate(WidgetsBinding.instance)?.removeObserver(this);
   }
 
   @override
@@ -70,22 +70,19 @@ abstract class SupabaseAuthRequiredState<T extends StatefulWidget>
   }
 
   Future<bool> _recoverSupabaseSession() async {
-    final bool exist =
-        await SupabaseAuth.instance.localStorage.hasAccessToken();
+    final bool exist = await SupabaseAuth.instance.localStorage.hasAccessToken();
     if (!exist) {
       onUnauthenticated();
       return false;
     }
 
-    final String? jsonStr =
-        await SupabaseAuth.instance.localStorage.accessToken();
+    final String? jsonStr = await SupabaseAuth.instance.localStorage.accessToken();
     if (jsonStr == null) {
       onUnauthenticated();
       return false;
     }
 
-    final response =
-        await Supabase.instance.client.auth.recoverSession(jsonStr);
+    final response = await Supabase.instance.client.auth.recoverSession(jsonStr);
     if (response.error != null) {
       SupabaseAuth.instance.localStorage.removePersistedSession();
       onUnauthenticated();
