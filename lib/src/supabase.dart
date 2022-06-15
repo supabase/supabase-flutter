@@ -49,16 +49,14 @@ class Supabase {
       !_instance._initialized,
       'This instance is already initialized',
     );
-    if (url != null && anonKey != null) {
-      _instance._init(url, anonKey);
-      _instance._debugEnable = debug ?? kDebugMode;
-      _instance.log('***** Supabase init completed $_instance');
+    _instance._init(url, anonKey);
+    _instance._debugEnable = debug ?? kDebugMode;
+    _instance.log('***** Supabase init completed $_instance');
 
-      await SupabaseAuth.initialize(
-        localStorage: localStorage ?? const HiveLocalStorage(),
-        authCallbackUrlHostname: authCallbackUrlHostname,
-      );
-    }
+    await SupabaseAuth.initialize(
+      localStorage: localStorage ?? const HiveLocalStorage(),
+      authCallbackUrlHostname: authCallbackUrlHostname,
+    );
 
     return _instance;
   }

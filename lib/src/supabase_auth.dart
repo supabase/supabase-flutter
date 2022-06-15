@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uni_links/uni_links.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
@@ -28,6 +31,8 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   GotrueSubscription? _authSubscription;
   final _listenerController = StreamController<AuthChangeEvent>.broadcast();
+
+  StreamSubscription<Uri?>? _deeplinkSubscription;
 
   /// Listen to auth change events.
   ///
@@ -98,6 +103,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   void dispose() {
     _listenerController.close();
     _authSubscription?.data?.unsubscribe();
+    stopDeeplinkObserver();
     WidgetsBinding.instance.removeObserver(this);
   }
 
@@ -193,6 +199,88 @@ class SupabaseAuth with WidgetsBindingObserver {
     } else {
       return _authCallbackUrlHostname == uri.host;
     }
+  }
+
+  /// Enable deep link observer to handle deep links
+  void startDeeplinkObserver() {
+    Supabase.instance.log('***** SupabaseDeepLinkingMixin startAuthObserver');
+    _handleIncomingLinks();
+    _handleInitialUri();
+  }
+
+  /// Stop deep link observer
+  ///
+  /// Automatically called on dispose().
+  void stopDeeplinkObserver() {
+    Supabase.instance.log('***** SupabaseDeepLinkingMixin stopAuthObserver');
+    if (_deeplinkSubscription != null) _deeplinkSubscription?.cancel();
+  }
+
+  /// Handle incoming links - the ones that the app will recieve from the OS
+  /// while already started.
+  void _handleIncomingLinks() {
+    if (!kIsWeb) {
+      // It will handle app links while the app is already started - be it in
+      // the foreground or in the background.
+      _deeplinkSubscription = uriLinkStream.listen(
+        (Uri? uri) {
+          if (uri != null) {
+            _handleDeeplink(uri);
+          }
+        },
+        onError: (Object err) {
+          _onErrorReceivingDeeplink(err.toString());
+        },
+      );
+    }
+  }
+
+  /// Handle the initial Uri - the one the app was started with
+  ///
+  /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
+  /// ONLY ONCE in your app's lifetime, since it is not meant to change
+  /// throughout your app's life.
+  ///
+  /// We handle all exceptions, since it is called from initState.
+  Future<void> _handleInitialUri() async {
+    if (!SupabaseAuth.instance.shouldHandleInitialDeeplink()) return;
+
+    try {
+      final uri = await getInitialUri();
+      if (uri != null) {
+        _handleDeeplink(uri);
+      }
+    } on PlatformException {
+      // Platform messages may fail but we ignore the exception
+    } on FormatException catch (err) {
+      _onErrorReceivingDeeplink(err.message);
+    }
+  }
+
+  /// Callback when deeplink receiving succeeds
+  Future<bool> _handleDeeplink(Uri uri) async {
+    if (!SupabaseAuth.instance.isAuthCallbackDeeplink(uri)) return false;
+
+    Supabase.instance.log('***** SupabaseAuthState handleDeeplink $uri');
+
+    // notify auth deeplink received
+    Supabase.instance.log('onReceivedAuthDeeplink uri: $uri');
+
+    return _recoverSessionFromUrl(uri);
+  }
+
+  Future<bool> _recoverSessionFromUrl(Uri uri) async {
+    // recover session from deeplink
+    final response = await Supabase.instance.client.auth.getSessionFromUrl(uri);
+    if (response.error != null) {
+      Supabase.instance.log(response.error!.message);
+    }
+    return true;
+  }
+
+  /// Callback when deeplink receiving throw error
+  void _onErrorReceivingDeeplink(String message) {
+    Supabase.instance.log('onErrorReceivingDeppLink message: $message');
   }
 }
 
