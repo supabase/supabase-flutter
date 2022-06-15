@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Interface for user authentication screen
 /// It supports deeplink authentication
 abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
-    with SupabaseDeepLinkingMixin, WidgetsBindingObserver {
+    with SupabaseDeepLinkingMixin {
   /// enable auth observer
   /// e.g. on nested authentication flow, call this method on navigation push.then()
   ///
@@ -49,32 +49,6 @@ abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
     Supabase.instance.log('onErrorReceivingDeppLink message: $message');
   }
 
-  @override
-  void initState() {
-    _recoverSupabaseSession();
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        _recoverSupabaseSession();
-        break;
-      case AppLifecycleState.inactive:
-        break;
-      case AppLifecycleState.paused:
-        break;
-      case AppLifecycleState.detached:
-        break;
-    }
-  }
-
   Future<bool> _recoverSessionFromUrl(Uri uri) async {
     // recover session from deeplink
     final response = await Supabase.instance.client.auth.getSessionFromUrl(uri);
@@ -82,31 +56,6 @@ abstract class SupabaseAuthState<T extends StatefulWidget> extends State<T>
       onErrorAuthenticating(response.error!.message);
     }
     return true;
-  }
-
-  /// Recover/refresh session if it's available
-  /// e.g. called on a Splash screen when app starts.
-  Future<bool> _recoverSupabaseSession() async {
-    final bool exist =
-        await SupabaseAuth.instance.localStorage.hasAccessToken();
-    if (!exist) {
-      return false;
-    }
-
-    final String? jsonStr =
-        await SupabaseAuth.instance.localStorage.accessToken();
-    if (jsonStr == null) {
-      return false;
-    }
-
-    final response =
-        await Supabase.instance.client.auth.recoverSession(jsonStr);
-    if (response.error != null) {
-      SupabaseAuth.instance.localStorage.removePersistedSession();
-      return false;
-    } else {
-      return true;
-    }
   }
 
   /// Callback when deeplink received and is processing. Optional

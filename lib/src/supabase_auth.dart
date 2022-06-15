@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
 /// SupabaseAuth
-class SupabaseAuth {
-  SupabaseAuth._();
+class SupabaseAuth with WidgetsBindingObserver {
+  SupabaseAuth._() {
+    WidgetsBinding.instance.addObserver(this);
+  }
   static final SupabaseAuth _instance = SupabaseAuth._();
 
   bool _initialized = false;
@@ -95,6 +98,47 @@ class SupabaseAuth {
   void dispose() {
     _listenerController.close();
     _authSubscription?.data?.unsubscribe();
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _recoverSupabaseSession();
+        break;
+      case AppLifecycleState.inactive:
+        break;
+      case AppLifecycleState.paused:
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  /// Recover/refresh session if it's available
+  /// e.g. called on a Splash screen when app starts.
+  Future<bool> _recoverSupabaseSession() async {
+    final bool exist =
+        await SupabaseAuth.instance.localStorage.hasAccessToken();
+    if (!exist) {
+      return false;
+    }
+
+    final String? jsonStr =
+        await SupabaseAuth.instance.localStorage.accessToken();
+    if (jsonStr == null) {
+      return false;
+    }
+
+    final response =
+        await Supabase.instance.client.auth.recoverSession(jsonStr);
+    if (response.error != null) {
+      SupabaseAuth.instance.localStorage.removePersistedSession();
+      return false;
+    } else {
+      return true;
+    }
   }
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
