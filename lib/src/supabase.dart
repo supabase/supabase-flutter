@@ -39,8 +39,8 @@ class Supabase {
   /// This must be called only once. If called more than once, an
   /// [AssertionError] is thrown
   static Future<Supabase> initialize({
-    String? url,
-    String? anonKey,
+    required String url,
+    required String anonKey,
     String? authCallbackUrlHostname,
     bool? debug,
     LocalStorage? localStorage,
