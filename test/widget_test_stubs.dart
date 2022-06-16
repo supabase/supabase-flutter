@@ -8,7 +8,7 @@ class MockWidget extends StatefulWidget {
   _MockWidgetState createState() => _MockWidgetState();
 }
 
-class _MockWidgetState extends SupabaseAuthState<MockWidget> {
+class _MockWidgetState extends State<MockWidget> {
   bool isSignedIn = true;
 
   @override
@@ -21,6 +21,18 @@ class _MockWidgetState extends SupabaseAuthState<MockWidget> {
             child: const Text('Sign out'),
           )
         : const Text('You have signed out');
+  }
+
+  @override
+  void initState() {
+    SupabaseAuth.instance.onAuthChange.listen((event) {
+      if (event == AuthChangeEvent.signedOut) {
+        setState(() {
+          isSignedIn = false;
+        });
+      }
+    });
+    super.initState();
   }
 }
 
