@@ -25,7 +25,8 @@ void main() {
     final client = Supabase.instance.client;
     Supabase.instance.dispose();
     final newClient =
-        Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+        (await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey))
+            .client;
     expect(client, isNot(newClient));
   });
 
