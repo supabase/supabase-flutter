@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +10,7 @@ void main() {
   const supabaseKey = '';
 
   setUpAll(() async {
+    WidgetsFlutterBinding.ensureInitialized();
     // Initialize the Supabase singleton
     await Supabase.initialize(
       url: supabaseUrl,
@@ -17,12 +19,12 @@ void main() {
     );
   });
 
-  test('can access Supabase singleton', () async {
+  testWidgets('can access Supabase singleton', (tester) async {
     final client = Supabase.instance.client;
     expect(client, isNotNull);
   });
 
-  test('can parse deeplink', () async {
+  testWidgets('can parse deeplink', (tester) async {
     final uri = Uri.parse(
       "io.supabase.flutterdemo://login-callback#access_token=aaa&expires_in=3600&refresh_token=bbb&token_type=bearer&type=recovery",
     );
@@ -32,7 +34,7 @@ void main() {
     expect(uriParams['refresh_token'], equals('bbb'));
   });
 
-  test('can parse flutter web redirect link', () async {
+  testWidgets('can parse flutter web redirect link', (tester) async {
     final uri = Uri.parse(
       "http://localhost:55510/#access_token=aaa&expires_in=3600&refresh_token=bbb&token_type=bearer&type=magiclink",
     );
@@ -42,7 +44,8 @@ void main() {
     expect(uriParams['refresh_token'], equals('bbb'));
   });
 
-  test('can parse flutter web custom page redirect link', () async {
+  testWidgets('can parse flutter web custom page redirect link',
+      (tester) async {
     final uri = Uri.parse(
       "http://localhost:55510/#/webAuth%23access_token=aaa&expires_in=3600&refresh_token=bbb&token_type=bearer&type=magiclink",
     );
