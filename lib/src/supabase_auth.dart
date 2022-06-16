@@ -7,10 +7,12 @@ import 'package:uni_links/uni_links.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
+// ignore_for_file: invalid_null_aware_operator
+
 /// SupabaseAuth
 class SupabaseAuth with WidgetsBindingObserver {
   SupabaseAuth._() {
-    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance?.addObserver(this);
   }
   static final SupabaseAuth _instance = SupabaseAuth._();
 
@@ -104,7 +106,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     _listenerController.close();
     _authSubscription?.data?.unsubscribe();
     stopDeeplinkObserver();
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance?.removeObserver(this);
   }
 
   @override
