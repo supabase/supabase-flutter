@@ -11,9 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// SupabaseAuth
 class SupabaseAuth with WidgetsBindingObserver {
-  SupabaseAuth._() {
-    WidgetsBinding.instance?.addObserver(this);
-  }
+  SupabaseAuth._();
   static final SupabaseAuth _instance = SupabaseAuth._();
 
   bool _initialized = false;
@@ -97,6 +95,8 @@ class SupabaseAuth with WidgetsBindingObserver {
         }
       }
     }
+    WidgetsBinding.instance?.addObserver(_instance);
+    _instance._startDeeplinkObserver();
 
     return _instance;
   }
@@ -105,7 +105,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   void dispose() {
     _listenerController.close();
     _authSubscription?.data?.unsubscribe();
-    stopDeeplinkObserver();
+    _stopDeeplinkObserver();
     WidgetsBinding.instance?.removeObserver(this);
   }
 
@@ -185,7 +185,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
-  bool shouldHandleInitialDeeplink() {
+  bool get shouldHandleInitialDeeplink {
     if (_initialDeeplinkIsHandled) {
       return false;
     } else {
@@ -204,7 +204,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 
   /// Enable deep link observer to handle deep links
-  void startDeeplinkObserver() {
+  void _startDeeplinkObserver() {
     Supabase.instance.log('***** SupabaseDeepLinkingMixin startAuthObserver');
     _handleIncomingLinks();
     _handleInitialUri();
@@ -213,7 +213,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Stop deep link observer
   ///
   /// Automatically called on dispose().
-  void stopDeeplinkObserver() {
+  void _stopDeeplinkObserver() {
     Supabase.instance.log('***** SupabaseDeepLinkingMixin stopAuthObserver');
     if (_deeplinkSubscription != null) _deeplinkSubscription?.cancel();
   }
@@ -245,7 +245,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   ///
   /// We handle all exceptions, since it is called from initState.
   Future<void> _handleInitialUri() async {
-    if (!SupabaseAuth.instance.shouldHandleInitialDeeplink()) return;
+    if (!shouldHandleInitialDeeplink) return;
 
     try {
       final uri = await getInitialUri();
@@ -261,7 +261,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Callback when deeplink receiving succeeds
   Future<bool> _handleDeeplink(Uri uri) async {
-    if (!SupabaseAuth.instance.isAuthCallbackDeeplink(uri)) return false;
+    if (!_instance.isAuthCallbackDeeplink(uri)) return false;
 
     Supabase.instance.log('***** SupabaseAuthState handleDeeplink $uri');
 
