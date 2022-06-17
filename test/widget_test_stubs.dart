@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MockWidget extends StatefulWidget {
@@ -48,4 +50,15 @@ class MockLocalStorage extends LocalStorage {
           removePersistedSession: () async {},
           hasAccessToken: () async => true,
         );
+}
+
+// Register the mock handler for uni_links
+void mockUniLink() {
+  const channel = MethodChannel('uni_links/messages');
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (call) {
+    return null;
+  });
 }
