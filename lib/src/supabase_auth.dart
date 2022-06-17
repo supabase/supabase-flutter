@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// SupabaseAuth
 class SupabaseAuth with WidgetsBindingObserver {
   SupabaseAuth._();
+
   static final SupabaseAuth _instance = SupabaseAuth._();
 
   bool _initialized = false;
@@ -301,7 +302,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       options: options,
     );
     final url = Uri.parse(res.url!);
-    final result = await launchUrl(url, webOnlyWindowName: '_self');
+    final result = await launchUrl(
+      url,
+      mode: LaunchMode.externalApplication,
+      webOnlyWindowName: '_self',
+    );
     return result;
   }
 }
