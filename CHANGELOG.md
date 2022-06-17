@@ -1,3 +1,6 @@
+## [0.3.1+3]
+- fix: OAuth authentication page should open in an external browser
+
 ## [0.3.1+2]
 - chore: update supabase package [v0.3.4+1](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#0341)
 
