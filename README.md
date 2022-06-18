@@ -74,6 +74,22 @@ Using authentication can be done easily.　Using this package automatically pers
 It also helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
 
 
+### Getting initial auth state
+
+You might want to redirect users to different screens upon app launch.
+For this, you can await `initialSession` of `SupabaseAuth` to get the initial session of the user. The future will complete once session recovery is done and will contain either the session if user had one or null if user had no session. 
+
+```dart
+Future<void> getInitialAuthState() async {
+  try {
+    final initialSession = await SupabaseAuth.instance.initialSession;
+    // Redirect users to different screens depending on the initial session
+  } catch(e) {
+    // Handle initial auth state fetch error here
+  }
+}
+```
+
 ### Email authentication
 
 ```dart
