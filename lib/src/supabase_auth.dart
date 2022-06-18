@@ -28,7 +28,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   Future<String?> get accessToken => _localStorage.accessToken();
 
   /// Returns when the initial session recovery is done.
-  /// Can be used to determine whether a user is signed in or not uplon
+  /// Can be used to determine whether a user is signed in or not upon
   /// initial app launch.
   Future<Session?> get initialSession => _initialSessionCompleter.future;
   final Completer<Session?> _initialSessionCompleter = Completer();
