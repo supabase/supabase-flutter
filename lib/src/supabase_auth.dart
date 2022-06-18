@@ -196,7 +196,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Automatically called on dispose().
   void _stopDeeplinkObserver() {
     Supabase.instance.log('***** SupabaseDeepLinkingMixin stopAuthObserver');
-    if (_deeplinkSubscription != null) _deeplinkSubscription?.cancel();
+    _deeplinkSubscription?.cancel();
   }
 
   /// Handle incoming links - the ones that the app will recieve from the OS
