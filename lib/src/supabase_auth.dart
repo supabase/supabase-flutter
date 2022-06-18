@@ -27,6 +27,12 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// {@macro supabase.localstorage.accessToken}
   Future<String?> get accessToken => _localStorage.accessToken();
 
+  /// Returns when the initial session recovery is done.
+  /// Can be used to determine whether a user is signed in or not uplon
+  /// initial app launch.
+  Future<Session?> get initialSession => _initialSessionCompleter.future;
+  final Completer<Session?> _initialSessionCompleter = Completer();
+
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
@@ -97,11 +103,17 @@ class SupabaseAuth with WidgetsBindingObserver {
         if (response.error != null) {
           Supabase.instance.log(response.error!.message);
         }
+        if (!_instance._initialSessionCompleter.isCompleted) {
+          _instance._initialSessionCompleter.complete(response.data);
+        }
       }
     }
     WidgetsBinding.instance?.addObserver(_instance);
     _instance._startDeeplinkObserver();
 
+    if (!_instance._initialSessionCompleter.isCompleted) {
+      _instance._initialSessionCompleter.complete(null);
+    }
     return _instance;
   }
 
