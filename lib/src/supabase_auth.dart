@@ -79,42 +79,51 @@ class SupabaseAuth with WidgetsBindingObserver {
     LocalStorage localStorage = const HiveLocalStorage(),
     String? authCallbackUrlHostname,
   }) async {
-    _instance._initialized = true;
-    _instance._localStorage = localStorage;
-    _instance._authCallbackUrlHostname = authCallbackUrlHostname;
+    try {
+      _instance._initialized = true;
+      _instance._localStorage = localStorage;
+      _instance._authCallbackUrlHostname = authCallbackUrlHostname;
 
-    _instance._authSubscription =
-        Supabase.instance.client.auth.onAuthStateChange((event, session) {
-      _instance._onAuthStateChange(event, session);
-      if (!_instance._listenerController.isClosed) {
-        _instance._listenerController.add(event);
-      }
-    });
-
-    await _instance._localStorage.initialize();
-
-    final hasPersistedSession = await _instance._localStorage.hasAccessToken();
-    if (hasPersistedSession) {
-      final persistedSession = await _instance._localStorage.accessToken();
-      if (persistedSession != null) {
-        final response = await Supabase.instance.client.auth
-            .recoverSession(persistedSession);
-
-        if (response.error != null) {
-          Supabase.instance.log(response.error!.message);
+      _instance._authSubscription =
+          Supabase.instance.client.auth.onAuthStateChange((event, session) {
+        _instance._onAuthStateChange(event, session);
+        if (!_instance._listenerController.isClosed) {
+          _instance._listenerController.add(event);
         }
-        if (!_instance._initialSessionCompleter.isCompleted) {
-          _instance._initialSessionCompleter.complete(response.data);
+      });
+
+      await _instance._localStorage.initialize();
+
+      final hasPersistedSession =
+          await _instance._localStorage.hasAccessToken();
+      if (hasPersistedSession) {
+        final persistedSession = await _instance._localStorage.accessToken();
+        if (persistedSession != null) {
+          final response = await Supabase.instance.client.auth
+              .recoverSession(persistedSession);
+
+          if (response.error != null) {
+            Supabase.instance.log(response.error!.message);
+          }
+          if (!_instance._initialSessionCompleter.isCompleted) {
+            _instance._initialSessionCompleter.complete(response.data);
+          }
         }
       }
-    }
-    WidgetsBinding.instance?.addObserver(_instance);
-    _instance._startDeeplinkObserver();
+      WidgetsBinding.instance?.addObserver(_instance);
+      _instance._startDeeplinkObserver();
 
-    if (!_instance._initialSessionCompleter.isCompleted) {
-      _instance._initialSessionCompleter.complete(null);
+      if (!_instance._initialSessionCompleter.isCompleted) {
+        _instance._initialSessionCompleter.complete(null);
+      }
+      return _instance;
+    } catch (_) {
+      // completer will complete with null if an error occurs
+      if (!_instance._initialSessionCompleter.isCompleted) {
+        _instance._initialSessionCompleter.complete(null);
+      }
+      rethrow;
     }
-    return _instance;
   }
 
   /// Dispose the instance to free up resources
