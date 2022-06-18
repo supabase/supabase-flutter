@@ -160,33 +160,10 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
   }
 
-  /// Parse Uri parameters from redirect url/deeplink
-  Map<String, String> parseUriParameters(Uri uri) {
-    Uri _uri = uri;
-    if (_uri.hasQuery) {
-      final decoded = _uri.toString().replaceAll('#', '&');
-      _uri = Uri.parse(decoded);
-    } else {
-      final uriStr = _uri.toString();
-      String decoded;
-      // %23 is the encoded of #hash
-      // support custom redirect to on flutter web
-      if (uriStr.contains('/#%23')) {
-        decoded = uriStr.replaceAll('/#%23', '/?');
-      } else if (uriStr.contains('/#/')) {
-        decoded = uriStr.replaceAll('/#/', '/').replaceAll('%23', '?');
-      } else {
-        decoded = uriStr.replaceAll('#', '?');
-      }
-      _uri = Uri.parse(decoded);
-    }
-    return _uri.queryParameters;
-  }
-
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
-  bool get shouldHandleInitialDeeplink {
+  bool get _shouldHandleInitialDeeplink {
     if (_initialDeeplinkIsHandled) {
       return false;
     } else {
@@ -196,7 +173,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 
   /// if _authCallbackUrlHost not init, we treat all deeplink as auth callback
-  bool isAuthCallbackDeeplink(Uri uri) {
+  bool _isAuthCallbackDeeplink(Uri uri) {
     if (_authCallbackUrlHostname == null) {
       return true;
     } else {
@@ -246,7 +223,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   ///
   /// We handle all exceptions, since it is called from initState.
   Future<void> _handleInitialUri() async {
-    if (!shouldHandleInitialDeeplink) return;
+    if (!_shouldHandleInitialDeeplink) return;
 
     try {
       final uri = await getInitialUri();
@@ -261,24 +238,23 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 
   /// Callback when deeplink receiving succeeds
-  Future<bool> _handleDeeplink(Uri uri) async {
-    if (!_instance.isAuthCallbackDeeplink(uri)) return false;
+  Future<void> _handleDeeplink(Uri uri) async {
+    if (!_instance._isAuthCallbackDeeplink(uri)) return;
 
     Supabase.instance.log('***** SupabaseAuthState handleDeeplink $uri');
 
     // notify auth deeplink received
     Supabase.instance.log('onReceivedAuthDeeplink uri: $uri');
 
-    return _recoverSessionFromUrl(uri);
+    await _recoverSessionFromUrl(uri);
   }
 
-  Future<bool> _recoverSessionFromUrl(Uri uri) async {
+  Future<void> _recoverSessionFromUrl(Uri uri) async {
     // recover session from deeplink
     final response = await Supabase.instance.client.auth.getSessionFromUrl(uri);
     if (response.error != null) {
       Supabase.instance.log(response.error!.message);
     }
-    return true;
   }
 
   /// Callback when deeplink receiving throw error
