@@ -27,6 +27,9 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// {@macro supabase.localstorage.accessToken}
   Future<String?> get accessToken => _localStorage.accessToken();
 
+  /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
+  /// ONLY ONCE in your app's lifetime, since it is not meant to change
+  /// throughout your app's life.
   bool _initialDeeplinkIsHandled = false;
   String? _authCallbackUrlHostname;
 
@@ -160,18 +163,6 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
   }
 
-  /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
-  /// ONLY ONCE in your app's lifetime, since it is not meant to change
-  /// throughout your app's life.
-  bool get _shouldHandleInitialDeeplink {
-    if (_initialDeeplinkIsHandled) {
-      return false;
-    } else {
-      _initialDeeplinkIsHandled = true;
-      return true;
-    }
-  }
-
   /// if _authCallbackUrlHost not init, we treat all deeplink as auth callback
   bool _isAuthCallbackDeeplink(Uri uri) {
     if (_authCallbackUrlHostname == null) {
@@ -223,7 +214,8 @@ class SupabaseAuth with WidgetsBindingObserver {
   ///
   /// We handle all exceptions, since it is called from initState.
   Future<void> _handleInitialUri() async {
-    if (!_shouldHandleInitialDeeplink) return;
+    if (_initialDeeplinkIsHandled) return;
+    _initialDeeplinkIsHandled = true;
 
     try {
       final uri = await getInitialUri();
