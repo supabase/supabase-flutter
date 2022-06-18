@@ -30,10 +30,8 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Returns when the initial session recovery is done.
   /// Can be used to determine whether a user is signed in or not uplon
   /// initial app launch.
-  Future<GotrueSessionResponse?> get initialSession =>
-      _initialSessionCompleter.future;
-  final Completer<GotrueSessionResponse?> _initialSessionCompleter =
-      Completer();
+  Future<Session?> get initialSession => _initialSessionCompleter.future;
+  final Completer<Session?> _initialSessionCompleter = Completer();
 
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
@@ -103,12 +101,16 @@ class SupabaseAuth with WidgetsBindingObserver {
         if (persistedSession != null) {
           final response = await Supabase.instance.client.auth
               .recoverSession(persistedSession);
+          final error = response.error;
 
-          if (response.error != null) {
+          if (error != null) {
             Supabase.instance.log(response.error!.message);
+            if (!_instance._initialSessionCompleter.isCompleted) {
+              _instance._initialSessionCompleter.completeError(error);
+            }
           }
           if (!_instance._initialSessionCompleter.isCompleted) {
-            _instance._initialSessionCompleter.complete(response);
+            _instance._initialSessionCompleter.complete(response.data);
           }
         }
       }
@@ -122,11 +124,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       return _instance;
     } catch (e) {
       if (!_instance._initialSessionCompleter.isCompleted) {
-        _instance._initialSessionCompleter.complete(
-          GotrueSessionResponse(
-            error: GotrueError(e.toString()),
-          ),
-        );
+        _instance._initialSessionCompleter.completeError(e);
       }
       rethrow;
     }
