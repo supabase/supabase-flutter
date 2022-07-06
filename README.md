@@ -33,8 +33,8 @@ Supabase is an open source Firebase alternative. We are a service to:
 | Web      |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
 | Android  |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
 | iOS      |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| macOS    |     ✅     |               |    ✅    |    ✅    |   ✅    |
-| Windows  |     ✅     |               |    ✅    |    ✅    |   ✅    |
+| macOS    |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
+| Windows  |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
 | Linux    |     ✅     |               |    ✅    |    ✅    |   ✅    |
 
 ## Getting Started
@@ -385,66 +385,186 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
 ### For Android
 
-Deep Links can have any custom scheme. The downside is that any app can claim a scheme, so make sure yours are as unique as possible, eg. `HST0000001://host.com`.
+<details>
+  <summary>How to setup</summary>
 
-```xml
-<manifest ...>
-  <!-- ... other tags -->
-  <application ...>
-    <activity ...>
-      <!-- ... other tags -->
+  Deep Links can have any custom scheme. The downside is that any app can claim a scheme, so make sure yours are as unique as possible, eg. `HST0000001://host.com`.
 
-      <!-- Deep Links -->
-      <intent-filter>
-        <action android:name="android.intent.action.VIEW" />
-        <category android:name="android.intent.category.DEFAULT" />
-        <category android:name="android.intent.category.BROWSABLE" />
-        <!-- Accepts URIs that begin with YOUR_SCHEME://YOUR_HOST -->
-        <data
-          android:scheme="[YOUR_SCHEME]"
-          android:host="[YOUR_HOST]" />
-      </intent-filter>
-    </activity>
-  </application>
-</manifest>
-```
+  ```xml
+  <manifest ...>
+    <!-- ... other tags -->
+    <application ...>
+      <activity ...>
+        <!-- ... other tags -->
 
-The `android:host` attribute is optional for Deep Links.
+        <!-- Deep Links -->
+        <intent-filter>
+          <action android:name="android.intent.action.VIEW" />
+          <category android:name="android.intent.category.DEFAULT" />
+          <category android:name="android.intent.category.BROWSABLE" />
+          <!-- Accepts URIs that begin with YOUR_SCHEME://YOUR_HOST -->
+          <data
+            android:scheme="[YOUR_SCHEME]"
+            android:host="[YOUR_HOST]" />
+        </intent-filter>
+      </activity>
+    </application>
+  </manifest>
+  ```
 
-For more info: https://developer.android.com/training/app-links/deep-linking
+  The `android:host` attribute is optional for Deep Links.
+
+  For more info: https://developer.android.com/training/app-links/deep-linking
+</details>
 
 ### For iOS
 
-Custom URL schemes can have... any custom scheme and there is no host specificity, nor entitlements or a hosted file. The downside is that any app can claim any scheme, so make sure yours is as unique as possible, eg. `hst0000001` or `myIncrediblyAwesomeScheme`.
+<details>
+  <summary>How to setup</summary>
 
-For **Custom URL schemes** you need to declare the scheme in
-`ios/Runner/Info.plist` (or through Xcode's Target Info editor,
-under URL Types):
+  Custom URL schemes can have... any custom scheme and there is no host specificity, nor entitlements or a hosted file. The downside is that any app can claim any scheme, so make sure yours is as unique as possible, eg. `hst0000001` or `myIncrediblyAwesomeScheme`.
 
-```xml
-<!-- ... other tags -->
-<plist>
-<dict>
+  For **Custom URL schemes** you need to declare the scheme in
+  `ios/Runner/Info.plist` (or through Xcode's Target Info editor,
+  under URL Types):
+
+  ```xml
   <!-- ... other tags -->
-  <key>CFBundleURLTypes</key>
-  <array>
-    <dict>
-      <key>CFBundleTypeRole</key>
-      <string>Editor</string>
-      <key>CFBundleURLSchemes</key>
-      <array>
-        <string>[YOUR_SCHEME]</string>
-      </array>
-    </dict>
-  </array>
+  <plist>
+  <dict>
+    <!-- ... other tags -->
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>[YOUR_SCHEME]</string>
+        </array>
+      </dict>
+    </array>
+    <!-- ... other tags -->
+  </dict>
+  </plist>
+  ```
+
+  This allows for your app to be started from `YOUR_SCHEME://ANYTHING` links.
+
+  For more info: https://developer.apple.com/documentation/xcode/defining-a-custom-url-scheme-for-your-app
+
+</details>
+
+## Windows
+
+<details>
+  <summary>How to setup</summary>
+
+  Setting up deeplinks in Windows has few more steps than other plantforms. 
+
+  Declare this method in <PROJECT_DIR>\windows\runner\win32_window.h
+  ```cpp
+    // Dispatches link if any.
+    // This method enables our app to be with a single instance too.
+    // This is optional but mandatory if you want to catch further links in same app.
+    bool SendAppLinkToInstance(const std::wstring& title);
+  ```
+
+  Add this inclusion at the top of <PROJECT_DIR>\windows\runner\win32_window.cpp
+  ```cpp
+  #include "app_links_windows/app_links_windows_plugin.h"
+  ```
+
+  Add this method in <PROJECT_DIR>\windows\runner\win32_window.cpp
+  ```cpp
+  bool Win32Window::SendAppLinkToInstance(const std::wstring& title) {
+    // Find our exact window
+    HWND hwnd = ::FindWindow(kWindowClassName, title.c_str());
+    
+    if (hwnd) {
+      // Dispatch new link to current window
+      SendAppLink(hwnd);
+
+      // (Optional) Restore our window to front in same state
+      WINDOWPLACEMENT place = { sizeof(WINDOWPLACEMENT) };
+      GetWindowPlacement(hwnd, &place);
+      switch(place.showCmd) {
+        case SW_SHOWMAXIMIZED:
+            ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+            break;
+        case SW_SHOWMINIMIZED:
+            ShowWindow(hwnd, SW_RESTORE);
+            break;
+        default:
+            ShowWindow(hwnd, SW_NORMAL);
+            break;
+      }
+      SetWindowPos(0, HWND_TOP, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
+      SetForegroundWindow(hwnd);
+      // END Restore
+
+      // Window has been found, don't create another one.
+      return true;
+    }
+
+    return false;
+  }
+  ```
+
+  Add the call to the previous method in `CreateAndShow`
+  ```cpp
+  bool Win32Window::CreateAndShow(const std::wstring& title,
+                                  const Point& origin,
+                                  const Size& size) {
+  if (SendAppLinkToInstance(title)) {
+      return false;
+  }
+
+  ...
+  ```
+
+  At this point, you can register your own scheme.  
+  On Windows, URL protocols are setup in the Windows registry.
+
+  This package won't do it for you. 
+
+  You can achieve it with [url_protocol](https://pub.dev/packages/url_protocol) inside you app.  
+
+  The most relevant solution is to include those registry modifications into your installer to allow the unregistration.
+
+</details>
+
+## Mac OS
+
+<details>
+  <summary>How to setup</summary>
+
+  Add this XML chapter in your macos/Runner/Info.plist inside <plist version="1.0"><dict> chapter:
+
+  ```xml
   <!-- ... other tags -->
-</dict>
-</plist>
-```
+  <plist version="1.0">
+  <dict>
+    <!-- ... other tags -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <!-- abstract name for this URL type (you can leave it blank) -->
+            <string>sample_name</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <!-- your schemes -->
+                <string>sample</string>
+            </array>
+        </dict>
+    </array>
+    <!-- ... other tags -->
+  </dict>
+  </plist>
+  ```
 
-This allows for your app to be started from `YOUR_SCHEME://ANYTHING` links.
-
-For more info: https://developer.apple.com/documentation/xcode/defining-a-custom-url-scheme-for-your-app
+</details>
 
 ---
 
