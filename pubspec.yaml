@@ -17,6 +17,10 @@ dependencies:
   uni_links: ^0.5.1
   url_launcher: ^6.1.2
 
+dependency_overrides:
+  supabase:
+    path: ../supabase-dart
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
