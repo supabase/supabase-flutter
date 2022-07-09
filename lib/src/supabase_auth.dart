@@ -29,7 +29,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Returns when the initial session recovery is done.
   ///
-  /// Can be used to determine whether a user is signed in upon initial 
+  /// Can be used to determine whether a user is signed in upon initial
   /// app launch.
   Future<Session?> get initialSession => _initialSessionCompleter.future;
   final Completer<Session?> _initialSessionCompleter = Completer();

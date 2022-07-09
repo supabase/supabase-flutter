@@ -1,0 +1,3 @@
+dependency_overrides:
+  supabase:
+    path: ../supabase-dart
