@@ -251,7 +251,7 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 <details>
   <summary>How to setup</summary>
 
-  Setting up deeplinks in Windows has few more steps than other plantforms. 
+  Setting up deeplinks in Windows has few more steps than other platforms. [Learn more](https://pub.dev/packages/app_links#windows)
 
   Declare this method in <PROJECT_DIR>\windows\runner\win32_window.h
   ```cpp
