@@ -279,7 +279,7 @@ class _MyWidgetState extends State<MyWidget> {
 
 ## Authentication
 
-Using authentication can be done easily.　Using this package automatically persists the auth state on local storage. 
+Using this package automatically persists the auth state on local storage. 
 It also helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
 
 
@@ -383,7 +383,7 @@ The redirect callback url should have this format `[YOUR_SCHEME]://[YOUR_AUTH_HO
 
 Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
-### For Android
+#### For Android
 
 <details>
   <summary>How to setup</summary>
@@ -417,7 +417,7 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
   For more info: https://developer.android.com/training/app-links/deep-linking
 </details>
 
-### For iOS
+#### For iOS
 
 <details>
   <summary>How to setup</summary>
@@ -455,7 +455,7 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
 </details>
 
-## Windows
+#### For Windows
 
 <details>
   <summary>How to setup</summary>
@@ -534,7 +534,7 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
 </details>
 
-## Mac OS
+#### For Mac OS
 
 <details>
   <summary>How to setup</summary>
