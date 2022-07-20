@@ -247,10 +247,13 @@ class SupabaseAuth with WidgetsBindingObserver {
       if (uri != null) {
         _handleDeeplink(uri);
       }
-    } on PlatformException {
+    } on PlatformException catch (err) {
+      _onErrorReceivingDeeplink(err.message ?? err.toString());
       // Platform messages may fail but we ignore the exception
     } on FormatException catch (err) {
       _onErrorReceivingDeeplink(err.message);
+    } catch (err) {
+      _onErrorReceivingDeeplink(err.toString());
     }
   }
 
