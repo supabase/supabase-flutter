@@ -1,5 +1,7 @@
-## [0.3.2]
+## [0.3.3]
 - feat: update supabase package [v0.3.6](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#036)
+
+## [0.3.2]
 - chore: add basic example codes on readme.md
 
 ## [0.3.1+3]
