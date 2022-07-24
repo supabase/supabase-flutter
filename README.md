@@ -68,6 +68,215 @@ void main() async {
 
 > `debug` is optional. It's enabled by default if you're running the app in debug mode (`flutter run --debug`).
 
+## Usage example
+
+### [Database](https://supabase.io/docs/guides/database)
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class MyWidget extends StatefulWidget {
+  const MyWidget({Key? key}) : super(key: key);
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  // Persisting the future as local variable to prevent refetching upon rebuilds. 
+  final Future<PostgrestResponse<dynamic>> _future = client
+      .from('countries')
+      .select()
+      .order('name', ascending: true)
+      .execute();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _future,
+      builder: (context, snapshot) {
+        // return your widget with the data from snapshot
+      },
+    );
+  }
+}
+```
+
+### [Realtime](https://supabase.io/docs/guides/database#realtime)
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final client = Supabase.instance.client;
+
+class MyWidget extends StatefulWidget {
+  const MyWidget({Key? key}) : super(key: key);
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late final RealtimeSubscription _subscription;
+  @override
+  void initState() {
+    _subscription =
+        client.from('countries').on(SupabaseEventTypes.all, (payload) {
+      // Do something when there is an update
+    }).subscribe();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    client.removeSubscription(_subscription);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container();
+  }
+}
+```
+
+### Realtime data as `Stream`
+
+To receive realtime updates, you have to first enable Realtime on from your Supabase console. You can read more [here](https://supabase.io/docs/guides/api#managing-realtime) on how to enable it.
+
+> **Warning**
+> When using `stream()` with a `StreamBuilder`, make sure to persist the stream value as a variable in a `StatefulWidget` instead of directly constructing the stream within your widget tree, which could cause rapid rebuilds that will lead to losing realtime connection. 
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final client = Supabase.instance.client;
+
+class MyWidget extends StatefulWidget {
+  const MyWidget({Key? key}) : super(key: key);
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  // Persisting the future as local variable to prevent refetching upon rebuilds.
+  final _stream = client.from('countries').stream(['id']).execute();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: _stream,
+      builder: (context, snapshot) {
+        // return your widget with the data from snapshot
+      },
+    );
+  }
+}
+```
+
+### [Authentication](https://supabase.io/docs/guides/auth)
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final client = Supabase.instance.client;
+
+class MyWidget extends StatefulWidget {
+  const MyWidget({Key? key}) : super(key: key);
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  late final GotrueSubscription _authSubscription;
+  User? _user;
+
+  @override
+  void initState() {
+    _authSubscription = client.auth.onAuthStateChange((event, session) {
+      setState(() {
+        _user = session?.user;
+      });
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.data?.unsubscribe();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () {
+        client.auth.signIn(email: 'my_email@example.com');
+      },
+      child: const Text('Login'),
+    );
+  }
+}
+```
+
+### [Storage](https://supabase.io/docs/guides/storage)
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () {
+        final file = File('example.txt');
+        file.writeAsStringSync('File content');
+        client.storage
+            .from('my_bucket')
+            .upload('my/path/to/files/example.txt', file);
+      },
+      child: const Text('Upload'),
+    );
+  }
+}
+```
+
+### [Edge Functions](https://supabase.com/docs/guides/functions)
+
+> **Warning**
+> Supabase Edge Functions are Experimental until 1 August 2022. There will be breaking changes. Do not use them in Production.
+
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final client = Supabase.instance.client;
+
+class MyWidget extends StatefulWidget {
+  const MyWidget({Key? key}) : super(key: key);
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  // Persisting the future as local variable to prevent refetching upon rebuilds.
+  final _future = client.functions.invoke('get_countries');
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _future,
+      builder: (context, snapshot) {
+        // return your widget with the data from snapshot
+      },
+    );
+  }
+}
+```
+
 ## Authentication
 
 Using authentication can be done easily.　Using this package automatically persists the auth state on local storage. 
