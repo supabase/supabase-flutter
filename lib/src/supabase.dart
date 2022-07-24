@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase/supabase.dart';
-
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
@@ -71,7 +70,7 @@ class Supabase {
   /// The supabase client for this instance
   ///
   /// Throws an error if [Supabase.initialize] was not called.
-  late final SupabaseClient client;
+  late SupabaseClient client;
   bool _debugEnable = false;
 
   /// Dispose the instance to free up resources.
