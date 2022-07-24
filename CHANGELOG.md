@@ -1,3 +1,6 @@
+## [0.3.3+1]
+- fix: enable reinitialize client
+
 ## [0.3.3]
 - feat: update supabase package [v0.3.6](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#036)
 
