@@ -10,6 +10,8 @@ void main() {
   const supabaseKey = '';
 
   setUpAll(() async {
+    mockUniLink();
+
     // Initialize the Supabase singleton
     await Supabase.initialize(
       url: supabaseUrl,
@@ -18,7 +20,8 @@ void main() {
     );
   });
 
-  testWidgets('Signing out triggers onUnauthenticated()', (tester) async {
+  testWidgets('Signing out triggers AuthChangeEvent.signedOut event',
+      (tester) async {
     await tester.pumpWidget(const MaterialApp(home: MockWidget()));
     await tester.tap(find.text('Sign out'));
     await tester.pump();

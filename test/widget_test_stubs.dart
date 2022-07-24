@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MockWidget extends StatefulWidget {
@@ -8,15 +10,8 @@ class MockWidget extends StatefulWidget {
   _MockWidgetState createState() => _MockWidgetState();
 }
 
-class _MockWidgetState extends SupabaseAuthRequiredState<MockWidget> {
+class _MockWidgetState extends State<MockWidget> {
   bool isSignedIn = true;
-
-  @override
-  void onUnauthenticated() {
-    setState(() {
-      isSignedIn = false;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +23,18 @@ class _MockWidgetState extends SupabaseAuthRequiredState<MockWidget> {
             child: const Text('Sign out'),
           )
         : const Text('You have signed out');
+  }
+
+  @override
+  void initState() {
+    SupabaseAuth.instance.onAuthChange.listen((event) {
+      if (event == AuthChangeEvent.signedOut) {
+        setState(() {
+          isSignedIn = false;
+        });
+      }
+    });
+    super.initState();
   }
 }
 
@@ -43,4 +50,15 @@ class MockLocalStorage extends LocalStorage {
           removePersistedSession: () async {},
           hasAccessToken: () async => true,
         );
+}
+
+// Register the mock handler for uni_links
+void mockUniLink() {
+  const channel = MethodChannel('uni_links/messages');
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (call) {
+    return null;
+  });
 }

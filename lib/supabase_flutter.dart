@@ -7,5 +7,3 @@ export 'package:supabase/supabase.dart';
 export 'src/local_storage.dart';
 export 'src/supabase.dart';
 export 'src/supabase_auth.dart';
-export 'src/supabase_auth_required_state.dart';
-export 'src/supabase_auth_state.dart';

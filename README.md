@@ -30,6 +30,7 @@ Supabase is an open source Firebase alternative. We are a service to:
 
 | Platform | Email Auth | Provider Auth | Database | Realtime | Storage |
 | -------- | :--------: | :-----------: | :------: | :------: | :-----: |
+| Web      |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
 | Android  |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
 | iOS      |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
 | macOS    |     ✅     |               |    ✅    |    ✅    |   ✅    |
@@ -278,7 +279,25 @@ class _MyWidgetState extends State<MyWidget> {
 
 ## Authentication
 
-Using authentication can be done easily.
+Using authentication can be done easily.　Using this package automatically persists the auth state on local storage. 
+It also helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
+
+
+### Getting initial auth state
+
+You might want to redirect users to different screens upon app launch.
+For this, you can await `initialSession` of `SupabaseAuth` to get the initial session of the user. The future will complete once session recovery is done and will contain either the session if user had one or null if user had no session. 
+
+```dart
+Future<void> getInitialAuthState() async {
+  try {
+    final initialSession = await SupabaseAuth.instance.initialSession;
+    // Redirect users to different screens depending on the initial session
+  } catch(e) {
+    // Handle initial auth state fetch error here
+  }
+}
+```
 
 ### Email authentication
 
@@ -294,20 +313,6 @@ Future<void> signIn(String email, String password) async {
   }
 }
 ```
-
-### SupabaseAuthState
-
-It helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
-
-For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_state.dart)
-
-> When using with a nested authentication flow, remember to call `startAuthObserver()` and `stopAuthObserver()` before/after navigation to new screen to prevent multiple observers running at the same time. Take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/026c6e8cbb05a5b1b76a50ce82d936016844ba1b/lib/screens/signin_screen.dart#L165-L170)
-
-### SupabaseAuthRequiredState
-
-It helps you protect route that requires an authenticated user.
-
-For more details, take a look at the example [here](https://github.com/phamhieu/supabase-flutter-demo/blob/main/lib/components/auth_required_state.dart)
 
 ### signInWithProvider
 
