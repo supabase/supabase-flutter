@@ -122,9 +122,9 @@ class SupabaseAuth with WidgetsBindingObserver {
         _instance._initialSessionCompleter.complete(null);
       }
       return _instance;
-    } catch (e) {
+    } catch (error, stacktrace) {
       if (!_instance._initialSessionCompleter.isCompleted) {
-        _instance._initialSessionCompleter.completeError(e);
+        _instance._initialSessionCompleter.completeError(error, stracktrace);
       }
       rethrow;
     }
