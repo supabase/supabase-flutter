@@ -53,8 +53,8 @@ class MockLocalStorage extends LocalStorage {
 }
 
 // Register the mock handler for uni_links
-void mockUniLink() {
-  const channel = MethodChannel('uni_links/messages');
+void mockAppLink() {
+  const channel = MethodChannel('com.llfbandit.app_links/messages');
   TestWidgetsFlutterBinding.ensureInitialized();
 
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger

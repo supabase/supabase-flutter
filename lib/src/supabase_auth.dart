@@ -1,9 +1,9 @@
 import 'dart:async';
+import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uni_links/uni_links.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
@@ -28,8 +28,9 @@ class SupabaseAuth with WidgetsBindingObserver {
   Future<String?> get accessToken => _localStorage.accessToken();
 
   /// Returns when the initial session recovery is done.
-  /// Can be used to determine whether a user is signed in or not upon
-  /// initial app launch.
+  ///
+  /// Can be used to determine whether a user is signed in upon initial
+  /// app launch.
   Future<Session?> get initialSession => _initialSessionCompleter.future;
   final Completer<Session?> _initialSessionCompleter = Completer();
 
@@ -43,6 +44,8 @@ class SupabaseAuth with WidgetsBindingObserver {
   final _listenerController = StreamController<AuthChangeEvent>.broadcast();
 
   StreamSubscription<Uri?>? _deeplinkSubscription;
+
+  final _appLinks = AppLinks();
 
   /// Listen to auth change events.
   ///
@@ -218,7 +221,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     if (!kIsWeb) {
       // It will handle app links while the app is already started - be it in
       // the foreground or in the background.
-      _deeplinkSubscription = uriLinkStream.listen(
+      _deeplinkSubscription = _appLinks.uriLinkStream.listen(
         (Uri? uri) {
           if (uri != null) {
             _handleDeeplink(uri);
@@ -243,7 +246,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     _initialDeeplinkIsHandled = true;
 
     try {
-      final uri = await getInitialUri();
+      final uri = await _appLinks.getInitialAppLink();
       if (uri != null) {
         _handleDeeplink(uri);
       }

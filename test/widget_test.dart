@@ -10,7 +10,7 @@ void main() {
   const supabaseKey = '';
 
   setUpAll(() async {
-    mockUniLink();
+    mockAppLink();
 
     // Initialize the Supabase singleton
     await Supabase.initialize(
