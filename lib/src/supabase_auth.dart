@@ -102,18 +102,22 @@ class SupabaseAuth with WidgetsBindingObserver {
       if (hasPersistedSession) {
         final persistedSession = await _instance._localStorage.accessToken();
         if (persistedSession != null) {
-          final response = await Supabase.instance.client.auth
-              .recoverSession(persistedSession);
-          final error = response.error;
-
-          if (error != null) {
-            Supabase.instance.log(response.error!.message);
+          try {
+            final response = await Supabase.instance.client.auth
+                .recoverSession(persistedSession);
+            if (!_instance._initialSessionCompleter.isCompleted) {
+              _instance._initialSessionCompleter.complete(response.data);
+            }
+          } on GotrueError catch (error) {
+            Supabase.instance.log(error.message);
             if (!_instance._initialSessionCompleter.isCompleted) {
               _instance._initialSessionCompleter.completeError(error);
             }
-          }
-          if (!_instance._initialSessionCompleter.isCompleted) {
-            _instance._initialSessionCompleter.complete(response.data);
+          } catch (error) {
+            Supabase.instance.log(error.toString());
+            if (!_instance._initialSessionCompleter.isCompleted) {
+              _instance._initialSessionCompleter.completeError(error);
+            }
           }
         }
       }
@@ -171,13 +175,12 @@ class SupabaseAuth with WidgetsBindingObserver {
       return false;
     }
 
-    final response =
-        await Supabase.instance.client.auth.recoverSession(jsonStr);
-    if (response.error != null) {
+    try {
+      await Supabase.instance.client.auth.recoverSession(jsonStr);
+      return true;
+    } catch (error) {
       SupabaseAuth.instance.localStorage.removePersistedSession();
       return false;
-    } else {
-      return true;
     }
   }
 
@@ -274,9 +277,12 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   Future<void> _recoverSessionFromUrl(Uri uri) async {
     // recover session from deeplink
-    final response = await Supabase.instance.client.auth.getSessionFromUrl(uri);
-    if (response.error != null) {
-      Supabase.instance.log(response.error!.message);
+    try {
+      await Supabase.instance.client.auth.getSessionFromUrl(uri);
+    } on GotrueError catch (error) {
+      Supabase.instance.log(error.message);
+    } catch (error) {
+      Supabase.instance.log(error.toString());
     }
   }
 
