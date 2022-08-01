@@ -45,7 +45,7 @@ class MockLocalStorage extends LocalStorage {
 
           /// Session expires at is at its maximum value for unix timestamp
           accessToken: () async =>
-              '{"currentSession":{"access_token":"","expires_in":3600,"refresh_token":"","user":{"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""}},"expiresAt":2147483647}',
+              '{"currentSession":{"token_type": "","access_token":"","expires_in":3600,"refresh_token":"","user":{"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""}},"expiresAt":2147483647}',
           persistSession: (_) async {},
           removePersistedSession: () async {},
           hasAccessToken: () async => true,
@@ -55,10 +55,13 @@ class MockLocalStorage extends LocalStorage {
 // Register the mock handler for uni_links
 void mockAppLink() {
   const channel = MethodChannel('com.llfbandit.app_links/messages');
+  const anotherChannel = MethodChannel('com.llfbandit.app_links/events');
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-      .setMockMethodCallHandler(channel, (call) {
-    return null;
-  });
+      .setMockMethodCallHandler(channel, (call) => null);
+
+  TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
+      .setMockMethodCallHandler(anotherChannel, (message) => null);
 }
