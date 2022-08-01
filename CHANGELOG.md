@@ -1,6 +1,44 @@
 ## [1.0.0-dev.1]
 - feat: add Mac OS and Windows support for deeplinks
 - BREAKING: Remove SupabaseAuthRequiredState as well as overriding methods in SupabaseAuthState
+```dart
+// Before
+
+await Supabase.initialize(
+  url: 'SUPABASE_URL',
+  anonKey: 'SUPABASE_ANON_KEY',
+);
+...
+
+// Class extending `SupabaseAuthState` or `AuthRequiredState` was necessary
+// to persist auth state
+class AuthState<T extends StatefulWidget> extends SupabaseAuthState<T> {
+  ...
+}
+
+// After
+
+// Initializing Supabase is all you need to do to persist auth state
+// Deeplinks will also be automatically handled when you initialize Supabase.
+await Supabase.initialize(
+  url: 'SUPABASE_URL',
+  anonKey: 'SUPABASE_ANON_KEY',
+);
+
+...
+
+// You can get the initial session of the user with `SupabaseAuth.instance.initialSession`
+try {
+    final initialSession = await SupabaseAuth.instance.initialSession;
+} catch(error) {
+    // Handle errors in session initial recovery here
+}
+
+// You should now use `onAuthStateChanged` as the 
+Supabase.instance.client.auth.onAuthStateChange((event, session) {
+    // handle sinin/ signups here
+});
+```
 - fix: OAuth should open in an external browser
 - BREAKING: update supabase package [v1.0.0-dev.1](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#100-dev1)
 
