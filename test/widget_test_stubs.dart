@@ -17,8 +17,10 @@ class _MockWidgetState extends State<MockWidget> {
   Widget build(BuildContext context) {
     return isSignedIn
         ? TextButton(
-            onPressed: () {
-              Supabase.instance.client.auth.signOut();
+            onPressed: () async {
+              try {
+                await Supabase.instance.client.auth.signOut();
+              } catch (_) {}
             },
             child: const Text('Sign out'),
           )
