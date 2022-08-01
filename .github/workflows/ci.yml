@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        flutter-version: ['2.5.0', '2.10.5', '3.x']
+        flutter-version: ['3.x']
 
     runs-on: ${{ matrix.os }}
 
