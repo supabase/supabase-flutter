@@ -1,4 +1,7 @@
 ## [1.0.0-dev.1]
+- feat: add Mac OS and Windows support for deeplinks
+- BREAKING: Remove SupabaseAuthRequiredState as well as overriding methods in SupabaseAuthState
+- fix: OAuth should open in an external browser
 - BREAKING: update supabase package [v1.0.0-dev.1](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#100-dev1)
 
 ## [0.3.3]
