@@ -1,3 +1,6 @@
+## [1.0.0-dev.1]
+- BREAKING: update supabase package [v1.0.0-dev.1](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#100-dev1)
+
 ## [0.3.3]
 - feat: update supabase package [v0.3.6](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#036)
 
