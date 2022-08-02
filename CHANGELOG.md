@@ -1,3 +1,7 @@
+## [1.0.0-dev.2]
+
+- feat: custom http client
+
 ## [1.0.0-dev.1]
 - feat: add Mac OS and Windows support for deeplinks
 - BREAKING: Remove SupabaseAuthRequiredState as well as overriding methods in SupabaseAuthState
