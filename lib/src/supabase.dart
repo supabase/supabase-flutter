@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
@@ -43,12 +44,17 @@ class Supabase {
     String? authCallbackUrlHostname,
     bool? debug,
     LocalStorage? localStorage,
+    Client? httpClient,
   }) async {
     assert(
       !_instance._initialized,
       'This instance is already initialized',
     );
-    _instance._init(url, anonKey);
+    _instance._init(
+      url,
+      anonKey,
+      httpClient: httpClient,
+    );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
 
@@ -76,10 +82,11 @@ class Supabase {
     _initialized = false;
   }
 
-  void _init(String supabaseUrl, String supabaseAnonKey) {
+  void _init(String supabaseUrl, String supabaseAnonKey, {Client? httpClient}) {
     client = SupabaseClient(
       supabaseUrl,
       supabaseAnonKey,
+      httpClient: httpClient,
     );
     _initialized = true;
   }
