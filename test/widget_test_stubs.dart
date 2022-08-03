@@ -7,7 +7,7 @@ class MockWidget extends StatefulWidget {
   const MockWidget({Key? key}) : super(key: key);
 
   @override
-  _MockWidgetState createState() => _MockWidgetState();
+  State<MockWidget> createState() => _MockWidgetState();
 }
 
 class _MockWidgetState extends State<MockWidget> {
