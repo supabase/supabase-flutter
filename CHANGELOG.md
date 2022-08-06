@@ -1,3 +1,7 @@
+## [1.0.0-dev.3]
+
+- BREAKING: update supabase package [v1.0.0-dev.3](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#100-dev3)
+
 ## [1.0.0-dev.2]
 
 - feat: custom http client
