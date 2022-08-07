@@ -1,10 +1,10 @@
 import 'dart:async';
+
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:url_launcher/url_launcher.dart';
 
 // ignore_for_file: invalid_null_aware_operator
@@ -108,7 +108,7 @@ class SupabaseAuth with WidgetsBindingObserver {
             if (!_instance._initialSessionCompleter.isCompleted) {
               _instance._initialSessionCompleter.complete(response.data);
             }
-          } on GotrueError catch (error) {
+          } on GoTrueException catch (error) {
             Supabase.instance.log(error.message);
             if (!_instance._initialSessionCompleter.isCompleted) {
               _instance._initialSessionCompleter.completeError(error);
@@ -279,7 +279,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     // recover session from deeplink
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
-    } on GotrueError catch (error) {
+    } on GoTrueException catch (error) {
       Supabase.instance.log(error.message);
     } catch (error) {
       Supabase.instance.log(error.toString());
