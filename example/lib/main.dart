@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
-  await Supabase.initialize(
-      url: 'https://ualrvfiametspbkkntpo.supabase.co',
-      anonKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhbHJ2ZmlhbWV0c3Bia2tudHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NTk1ODU0MDIsImV4cCI6MTk3NTE2MTQwMn0.sMZmPO3ZKRK2-4J6SBc2k9ymoGYQPY7DxyYXxychX8I');
+  await Supabase.initialize(url: 'SUPABASE_URL', anonKey: 'SUPABASE_ANON_KEY');
   runApp(const MyApp());
 }
 
