@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
+import 'package:supabase_flutter/src/constants.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
@@ -45,6 +46,7 @@ class Supabase {
     bool? debug,
     LocalStorage? localStorage,
     Client? httpClient,
+    Map<String, String>? headers,
   }) async {
     assert(
       !_instance._initialized,
@@ -54,6 +56,7 @@ class Supabase {
       url,
       anonKey,
       httpClient: httpClient,
+      customHeaders: headers,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
@@ -82,11 +85,21 @@ class Supabase {
     _initialized = false;
   }
 
-  void _init(String supabaseUrl, String supabaseAnonKey, {Client? httpClient}) {
+  void _init(
+    String supabaseUrl,
+    String supabaseAnonKey, {
+    Client? httpClient,
+    Map<String, String>? customHeaders,
+  }) {
+    final headers = {
+      ...Constants.defaultHeaders,
+      if (customHeaders != null) ...customHeaders
+    };
     client = SupabaseClient(
       supabaseUrl,
       supabaseAnonKey,
       httpClient: httpClient,
+      headers: headers,
     );
     _initialized = true;
   }
