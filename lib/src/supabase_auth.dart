@@ -106,7 +106,7 @@ class SupabaseAuth with WidgetsBindingObserver {
             final response = await Supabase.instance.client.auth
                 .recoverSession(persistedSession);
             if (!_instance._initialSessionCompleter.isCompleted) {
-              _instance._initialSessionCompleter.complete(response.data);
+              _instance._initialSessionCompleter.complete(response.session);
             }
           } on GoTrueException catch (error) {
             Supabase.instance.log(error.message);
