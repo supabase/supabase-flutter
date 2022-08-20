@@ -26,7 +26,7 @@ Supabase is an open source Firebase alternative. We are a service to:
 
 ## Features
 
-- [x] Null-safety
+- ✅ Null-safety
 
 | Platform | Email Auth | Provider Auth | Database | Realtime | Storage |
 | -------- | :--------: | :-----------: | :------: | :------: | :-----: |
@@ -327,9 +327,20 @@ Supabase.instance.client.auth.signInWithProvider(
 
 ### Custom LocalStorage
 
-As default `supabase_flutter` uses [`hive`](https://pub.dev/packages/hive) plugin to persist user session. However you can use any other plugins by creating a `LocalStorage` impl.
+As default, `supabase_flutter` uses [`hive`](https://pub.dev/packages/hive) to persist user session. Encryption is disabled by default, since it's necessary a unique key we can not define. To set an `encryptionKey`, do the following:
 
-For example, we can use `flutter_secure_storage` plugin to store the user session in a secure storage.
+```dart
+void main() {
+  // set it before initializing
+  HiveLocalStorage.encryptionKey = 'my_secure_key';
+  Supabase.initialize(...);
+}
+```
+
+**Note** the key must be the same. There is no check if the encryption key is correct. If it isn't, there may be unexpected behavior. [Learn more](https://docs.hivedb.dev/#/advanced/encrypted_box) about encryption in hive.
+
+
+However you can use any other methods by creating a `LocalStorage` implementation. For example, we can use [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to store the user session in a secure storage.
 
 ```dart
 // Define the custom LocalStorage implementation
@@ -359,7 +370,7 @@ Supabase.initialize(
 );
 ```
 
-You can use `EmptyLocalStorage` to disable session persistance:
+You can use also `EmptyLocalStorage` to disable session persistance:
 
 ```dart
 Supabase.initialize(
