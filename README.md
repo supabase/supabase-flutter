@@ -327,7 +327,7 @@ Supabase.instance.client.auth.signInWithProvider(
 
 ### Custom LocalStorage
 
-As default, `supabase_flutter` uses [`hive`](https://pub.dev/packages/hive) to persist user session. Encryption is disabled by default, since it's necessary a unique key we can not define. To set an `encryptionKey`, do the following:
+As default, `supabase_flutter` uses [`hive`](https://pub.dev/packages/hive) to persist the user session. Encryption is disabled by default, since an unique encryption key is necessary, and we can not define it. To set an `encryptionKey`, do the following:
 
 ```dart
 void main() {
@@ -370,7 +370,7 @@ Supabase.initialize(
 );
 ```
 
-You can use also `EmptyLocalStorage` to disable session persistance:
+You can also use `EmptyLocalStorage` to disable session persistance:
 
 ```dart
 Supabase.initialize(
