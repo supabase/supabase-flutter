@@ -13,6 +13,8 @@ import 'package:url_launcher/url_launcher.dart';
 class SupabaseAuth with WidgetsBindingObserver {
   SupabaseAuth._();
 
+  static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
+
   static final SupabaseAuth _instance = SupabaseAuth._();
 
   bool _initialized = false;
@@ -121,7 +123,7 @@ class SupabaseAuth with WidgetsBindingObserver {
           }
         }
       }
-      WidgetsBinding.instance?.addObserver(_instance);
+      _widgetsBindingInstance?.addObserver(_instance);
       _instance._startDeeplinkObserver();
 
       if (!_instance._initialSessionCompleter.isCompleted) {
@@ -142,7 +144,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     _listenerController.close();
     _authSubscription?.data?.unsubscribe();
     _stopDeeplinkObserver();
-    WidgetsBinding.instance?.removeObserver(this);
+    _widgetsBindingInstance?.removeObserver(this);
   }
 
   @override
