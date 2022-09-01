@@ -1,9 +1,13 @@
+## [1.0.0-dev.5]
+
+- chore: add example app in example directory
+- fix: `WidgetsBinding` warning
+
 ## [1.0.0-dev.4]
 
 - BREAKING: update supabase package [v1.0.0-dev.4](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#100-dev4)
 - feat: accept custom headers
 - feat: add add X-Client-Info header
-
 
 ## [1.0.0-dev.3]
 
