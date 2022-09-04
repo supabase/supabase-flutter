@@ -3,74 +3,74 @@
 - BREAKING: update supabase package [v1.0.0-dev.5](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#100-dev5)
   - deprecated: `.stream()` no longer needs `.execute()`
   - BREAKING: `eq` filter on `.stream()` is a separate method now
-```dart
-// before
-Supabase.instance.client.from('my_table:title=eq.Supabase')
-  .stream(['id'])
-  .order('created_at')
-  .limit(10)
-  .execute()
-  .listen((payload) {
-    // do something with payload here
-  });
+  ```dart
+  // before
+  Supabase.instance.client.from('my_table:title=eq.Supabase')
+    .stream(['id'])
+    .order('created_at')
+    .limit(10)
+    .execute()
+    .listen((payload) {
+      // do something with payload here
+    });
 
-// now
-Supabase.instance.client.from('my_table')
-  .stream(['id'])
-  .eq('title', 'Supabase')
-  .order('created_at')
-  .limit(10)
-  .listen((payload) {
-    // do something with payload here
-  });
-```
+  // now
+  Supabase.instance.client.from('my_table')
+    .stream(['id'])
+    .eq('title', 'Supabase')
+    .order('created_at')
+    .limit(10)
+    .listen((payload) {
+      // do something with payload here
+    });
+  ```
   - BREAKING: listening to database changes has a new API
   - feat: added support for [broadcast](https://supabase.com/docs/guides/realtime/broadcast) and [presence](https://supabase.com/docs/guides/realtime/presence)
-```dart
-final channel = Supabase.instance.client.channel('can_be_any_string');
+  ```dart
+  final channel = Supabase.instance.client.channel('can_be_any_string');
 
-// listen to insert events on public.messages table
-channel.on(
-    RealtimeListenTypes.postgresChanges,
-    ChannelFilter(
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-    ), (payload, [ref]) {
-  print('database insert payload: $payload');
-});
+  // listen to insert events on public.messages table
+  channel.on(
+      RealtimeListenTypes.postgresChanges,
+      ChannelFilter(
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+      ), (payload, [ref]) {
+    print('database insert payload: $payload');
+  });
 
-// listen to `location` broadcast events
-channel.on(
-    RealtimeListenTypes.broadcast,
-    ChannelFilter(
-      event: 'location',
-    ), (payload, [ref]) {
-  print(payload);
-});
+  // listen to `location` broadcast events
+  channel.on(
+      RealtimeListenTypes.broadcast,
+      ChannelFilter(
+        event: 'location',
+      ), (payload, [ref]) {
+    print(payload);
+  });
 
-// send `location` broadcast events
-channel.send(
-  type: RealtimeListenTypes.broadcast,
-  event: 'location',
-  payload: {'lat': 1.3521, 'lng': 103.8198},
-);
+  // send `location` broadcast events
+  channel.send(
+    type: RealtimeListenTypes.broadcast,
+    event: 'location',
+    payload: {'lat': 1.3521, 'lng': 103.8198},
+  );
 
-// listen to presence states
-channel.on(RealtimeListenTypes.presence, ChannelFilter(event: 'sync'),
-    (payload, [ref]) {
-  print(payload);
-  print(channel.presenceState());
-});
+  // listen to presence states
+  channel.on(RealtimeListenTypes.presence, ChannelFilter(event: 'sync'),
+      (payload, [ref]) {
+    print(payload);
+    print(channel.presenceState());
+  });
 
-// subscribe to the above changes
-channel.subscribe((status) async {
-  if (status == 'SUBSCRIBED') {
-    // if subscribed successfully, send presence event
-    final status = await channel.track({'user_id': myUserId});
-  }
-});
-```
+  // subscribe to the above changes
+  channel.subscribe((status) async {
+    if (status == 'SUBSCRIBED') {
+      // if subscribed successfully, send presence event
+      final status = await channel.track({'user_id': myUserId});
+    }
+  });
+  ```
 
 ## [1.0.0-dev.5]
 
