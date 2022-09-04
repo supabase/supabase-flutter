@@ -1,8 +1,8 @@
 ## [1.0.0-dev.6]
 
 - BREAKING: update supabase package [v1.0.0-dev.5](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#100-dev5)
- - deprecated: `.stream()` no longer needs `.execute()`
- - BREAKING: `eq` filter on `.stream()` is a separate method now
+  - deprecated: `.stream()` no longer needs `.execute()`
+  - BREAKING: `eq` filter on `.stream()` is a separate method now
 ```dart
 // before
 Supabase.instance.client.from('my_table:title=eq.Supabase')
@@ -24,8 +24,8 @@ Supabase.instance.client.from('my_table')
     // do something with payload here
   });
 ```
- - BREAKING: listening to database changes has a new API
- - feat: added support for [broadcast](https://supabase.com/docs/guides/realtime/broadcast) and [presence](https://supabase.com/docs/guides/realtime/presence)
+  - BREAKING: listening to database changes has a new API
+  - feat: added support for [broadcast](https://supabase.com/docs/guides/realtime/broadcast) and [presence](https://supabase.com/docs/guides/realtime/presence)
 ```dart
 final channel = Supabase.instance.client.channel('can_be_any_string');
 
