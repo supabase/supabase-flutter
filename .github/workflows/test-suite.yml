@@ -12,7 +12,7 @@ on:
 
 jobs:
   test:
-    name: Test / OS ${{ matrix.os }} / Flutter Version ${{ matrix.flutter-version }}
+    name: Daily test / OS ${{ matrix.os }} / Flutter Version ${{ matrix.flutter-version }}
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -35,5 +35,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Instlal junitreport
+        run: dart pub global activate junitreport
+        
       - name: Run tests
         run: flutter test --machine | tojunit --output report.xml
