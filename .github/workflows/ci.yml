@@ -41,5 +41,9 @@ jobs:
       - name: analyzer
         run: flutter analyze --fatal-warnings --fatal-infos .
 
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 1.0.0
+
       - name: Run tests
         run: flutter test
