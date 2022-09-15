@@ -1,6 +1,6 @@
 ## [1.0.0-dev.7]
 
-- chore: update supabaes to [v1.0.0-dev.6](https://github.com/supabase-community/supabase-dart/pull/139)
+- chore: update supabase to [v1.0.0-dev.6](https://github.com/supabase-community/supabase-dart/pull/139)
   - fix: `.stream()` typing issue [#138](https://github.com/supabase-community/supabase-dart/pull/138)
 
 ## [1.0.0-dev.6]
