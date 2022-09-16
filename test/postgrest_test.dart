@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -9,6 +11,7 @@ void main() {
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24ifQ.625_WdcF3KHqz5amU0x2X5WWHP-OEs_4qj0ssLNHzTs';
 
   setUpAll(() async {
+    HttpOverrides.global = null;
     mockAppLink();
 
     // Initialize the Supabase singleton
@@ -19,9 +22,14 @@ void main() {
     );
   });
 
-  testWidgets('test', (tester) async {
-    print('check');
-    final messages = await Supabase.instance.client.from('messages').select();
-    expect(messages, isList);
+  group('postgrest', () {
+    testWidgets('basic select table', (tester) async {
+      await tester.runAsync(() async {
+        print('check');
+        final messages =
+            await Supabase.instance.client.from('messages').select();
+        expect(messages, isList);
+      });
+    });
   });
 }

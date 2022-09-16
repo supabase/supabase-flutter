@@ -34,6 +34,12 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+      
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 1.0.0
+
+      - run: supabase start
 
       - name: Instlal junitreport
         run: dart pub global activate junitreport
