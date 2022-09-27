@@ -1,3 +1,13 @@
+## [1.0.0-dev.9]
+
+- fix: update supabase to [v1.0.0-dev.8](https://github.com/supabase-community/supabase-dart/pull/146)
+  - fix: recreate a `PostgrestClient` with proper auth headers when calling `.rpc()` [(#143)](https://github.com/supabase-community/supabase-dart/pull/143)
+  - fix: allow custom headers to be set for `SupabaseClient` [(#144)](https://github.com/supabase-community/supabase-dart/pull/144)
+  - fix: stream error will emit the entire exception and the stack trace [(#145)](https://github.com/supabase-community/supabase-dart/pull/145)
+  - fix: update realtime to [v1.0.0-dev.4](https://github.com/supabase-community/realtime-dart/blob/main/CHANGELOG.md#100-dev4)
+    - fix: bug where it throws exception when listening to postgres changes on old version of realtime server
+
+
 ## [1.0.0-dev.8]
 
 - BREAKING: update supabase to [v1.0.0-dev.7](https://github.com/supabase-community/supabase-dart/pull/141)
