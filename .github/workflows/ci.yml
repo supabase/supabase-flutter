@@ -12,11 +12,11 @@ on:
 
 jobs:
   test:
-    name: Test / OS ${{ matrix.os }} / Flutter Version ${{ matrix.flutter-version }}
+    name: Test / Flutter Version ${{ matrix.flutter-version }}
     strategy:
       matrix:
         os: [ubuntu-latest]
-        flutter-version: ['3.x']
+        flutter-version: ['2.8.0', '3.x']
 
     runs-on: ${{ matrix.os }}
 
