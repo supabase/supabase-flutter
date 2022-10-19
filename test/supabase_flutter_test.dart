@@ -25,12 +25,13 @@ void main() {
   test('can re-initialize client', () async {
     final client = Supabase.instance.client;
     Supabase.instance.dispose();
-    final newClient = (await Supabase.initialize(
+    await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseKey,
       localStorage: MockLocalStorage(),
-    ))
-        .client;
+    );
+
+    final newClient = Supabase.instance.client;
     expect(client, isNot(newClient));
   });
 }
