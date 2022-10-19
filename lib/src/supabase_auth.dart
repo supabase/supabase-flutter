@@ -42,28 +42,11 @@ class SupabaseAuth with WidgetsBindingObserver {
   bool _initialDeeplinkIsHandled = false;
   String? _authCallbackUrlHostname;
 
-  GotrueSubscription? _authSubscription;
-  final _listenerController = StreamController<AuthChangeEvent>.broadcast();
+  StreamSubscription<AuthState>? _authSubscription;
 
   StreamSubscription<Uri?>? _deeplinkSubscription;
 
   final _appLinks = AppLinks();
-
-  /// Listen to auth change events.
-  ///
-  /// ```dart
-  /// SupabaseAuth.instance.onAuthChange.listen((event) {
-  ///   // Handle event
-  /// });
-  /// ```
-  ///
-  /// A new event is fired when:
-  ///
-  ///   * the user is logged in
-  ///   * the user signs out
-  ///   * the user info is updated
-  ///   * the user password is recovered
-  Stream<AuthChangeEvent> get onAuthChange => _listenerController.stream;
 
   /// A [SupabaseAuth] instance.
   ///
@@ -90,11 +73,8 @@ class SupabaseAuth with WidgetsBindingObserver {
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
 
       _instance._authSubscription =
-          Supabase.instance.client.auth.onAuthStateChange((event, session) {
-        _instance._onAuthStateChange(event, session);
-        if (!_instance._listenerController.isClosed) {
-          _instance._listenerController.add(event);
-        }
+          Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        _instance._onAuthStateChange(data.event, data.session);
       });
 
       await _instance._localStorage.initialize();
@@ -110,7 +90,7 @@ class SupabaseAuth with WidgetsBindingObserver {
             if (!_instance._initialSessionCompleter.isCompleted) {
               _instance._initialSessionCompleter.complete(response.session);
             }
-          } on GoTrueException catch (error) {
+          } on AuthException catch (error) {
             Supabase.instance.log(error.message);
             if (!_instance._initialSessionCompleter.isCompleted) {
               _instance._initialSessionCompleter.completeError(error);
@@ -141,8 +121,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Dispose the instance to free up resources
   void dispose() {
-    _listenerController.close();
-    _authSubscription?.data?.unsubscribe();
+    _authSubscription?.cancel();
     _stopDeeplinkObserver();
     _widgetsBindingInstance?.removeObserver(this);
   }
@@ -281,7 +260,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     // recover session from deeplink
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
-    } on GoTrueException catch (error) {
+    } on AuthException catch (error) {
       Supabase.instance.log(error.message);
     } catch (error) {
       Supabase.instance.log(error.toString());
@@ -300,13 +279,17 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// See also:
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
-  Future<bool> signInWithProvider(
+  Future<bool> signInWithOAuth(
     Provider provider, {
-    AuthOptions? options,
+    String? redirectTo,
+    String? scopes,
+    Map<String, String>? queryParams,
   }) async {
-    final res = await signIn(
+    final res = await getOAuthSignInUrl(
       provider: provider,
-      options: options,
+      redirectTo: redirectTo,
+      scopes: scopes,
+      queryParams: queryParams,
     );
     final url = Uri.parse(res.url!);
     final result = await launchUrl(

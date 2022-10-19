@@ -29,8 +29,8 @@ class _MockWidgetState extends State<MockWidget> {
 
   @override
   void initState() {
-    SupabaseAuth.instance.onAuthChange.listen((event) {
-      if (event == AuthChangeEvent.signedOut) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedOut) {
         setState(() {
           isSignedIn = false;
         });
