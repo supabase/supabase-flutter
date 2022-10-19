@@ -83,6 +83,8 @@ class Supabase {
   /// Dispose the instance to free up resources.
   void dispose() {
     _initialized = false;
+    client.dispose();
+    SupabaseAuth.instance.dispose();
   }
 
   void _init(

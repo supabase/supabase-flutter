@@ -37,9 +37,9 @@ class _MyWidgetState extends State<MyWidget> {
     setState(() {
       _user = Supabase.instance.client.auth.currentUser;
     });
-    Supabase.instance.client.auth.onAuthStateChange((event, session) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       setState(() {
-        _user = session?.user;
+        _user = data.session?.user;
       });
     });
   }
@@ -101,7 +101,7 @@ class _LoginFormState extends State<_LoginForm> {
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
-                    await Supabase.instance.client.auth.signIn(
+                    await Supabase.instance.client.auth.signInWithPassword(
                       email: email,
                       password: password,
                     );
@@ -126,7 +126,10 @@ class _LoginFormState extends State<_LoginForm> {
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
-                    await Supabase.instance.client.auth.signUp(email, password);
+                    await Supabase.instance.client.auth.signUp(
+                      email: email,
+                      password: password,
+                    );
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('Signup failed'),
