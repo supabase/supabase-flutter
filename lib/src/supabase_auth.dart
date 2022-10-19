@@ -43,7 +43,6 @@ class SupabaseAuth with WidgetsBindingObserver {
   String? _authCallbackUrlHostname;
 
   StreamSubscription<AuthState>? _authSubscription;
-  final _listenerController = StreamController<AuthChangeEvent>.broadcast();
 
   StreamSubscription<Uri?>? _deeplinkSubscription;
 
@@ -76,9 +75,6 @@ class SupabaseAuth with WidgetsBindingObserver {
       _instance._authSubscription =
           Supabase.instance.client.auth.onAuthStateChange.listen((data) {
         _instance._onAuthStateChange(data.event, data.session);
-        if (!_instance._listenerController.isClosed) {
-          _instance._listenerController.add(data.event);
-        }
       });
 
       await _instance._localStorage.initialize();
@@ -125,7 +121,6 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Dispose the instance to free up resources
   void dispose() {
-    _listenerController.close();
     _authSubscription?.cancel();
     _stopDeeplinkObserver();
     _widgetsBindingInstance?.removeObserver(this);
