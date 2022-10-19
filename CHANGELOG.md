@@ -1,3 +1,74 @@
+## [1.0.0]
+
+
+- chore: v1.0.0 release 🚀
+- BREAKING: update supabase to [v1.0.0](https://github.com/supabase-community/supabase-flutter/pull/240)
+  - BREAKING: `.stream()` now takes a named parameter `primaryKey` instead of a positional argument. 
+    ```dart
+    supabase.from('my_table').stream(primaryKey: ['id']);
+    ```
+  - feat: `.stream()` has 5 additional filters: `neq`, `gt`, `gte`, `lt`, `lte` ([148](https://github.com/supabase-community/supabase-dart/pull/148)
+  - `auth.signUp()` now uses named parameters
+  ```dart
+    // Before
+    final res = await supabase.auth.signUp('example@email.com', 'password');
+    // After
+    final res = await supabase.auth.signUp(email: 'example@email.com', password: 'password');
+  ```
+  - `auth.signIn()` is split into different methods
+  ```dart
+    // Magic link signin
+    // Before
+    final res = await supabase.auth.signIn(email: 'example@email.com');
+    // After
+    final res = await supabase.auth.signInWithOtp(email: 'example@email.com');
+
+    // Email and password signin
+    // Before
+    final res = await supabase.auth.signIn(email: 'example@email.com', password: 'password');
+    // After
+    final res = await supabase.auth.signInWithPassword(email: 'example@email.com', password: 'password');
+  ``` 
+  - `auth.onAuthStateChange` is now a stream
+  ```dart
+    // Before
+    supabase.auth.onAuthStateChange((event, session) {
+      // ...
+    });
+    // After
+    final subscription = supabase.auth.onAuthStateChange().listen((data) {
+      final AuthChangeEvent event = data.event;
+      final Session? session = data.session;
+    });
+    // Don't forget to cancel the subscription when you're done
+    subscription.cancel();
+  ```
+  - `auth.update()` is renamed to `auth.updateUser()`
+  ```dart
+    // Before
+    final res = await supabase.auth.update(
+        UserAttributes(
+          email: 'new@email.com',
+          data: {
+            'username': 'new_username',
+          },
+        ),
+    );
+    // After
+    final res = await supabase.auth.updateUser(
+        UserAttributes(
+          email: 'new@email.com',
+          data: {
+            'username': 'new_username',
+          },
+        ),
+    );
+  ```
+  - `SupabaseAuth.instance.onAuthChange()` is now removed and `supabase.auth.onAuthStateChange()` should be used instead
+- BREAKING: set minimum required Flutter version to 2.8.0
+
+
+
 ## [1.0.0-dev.9]
 
 - fix: update supabase to [v1.0.0-dev.9](https://github.com/supabase-community/supabase-dart/blob/main/CHANGELOG.md#100-dev9)
