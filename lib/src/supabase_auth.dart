@@ -49,22 +49,6 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   final _appLinks = AppLinks();
 
-  /// Listen to auth change events.
-  ///
-  /// ```dart
-  /// SupabaseAuth.instance.onAuthChange.listen((event) {
-  ///   // Handle event
-  /// });
-  /// ```
-  ///
-  /// A new event is fired when:
-  ///
-  ///   * the user is logged in
-  ///   * the user signs out
-  ///   * the user info is updated
-  ///   * the user password is recovered
-  Stream<AuthChangeEvent> get onAuthChange => _listenerController.stream;
-
   /// A [SupabaseAuth] instance.
   ///
   /// If not initialized, an [AssertionError] is thrown
