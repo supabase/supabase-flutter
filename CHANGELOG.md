@@ -1,3 +1,6 @@
+## [1.0.1]
+
+- fix: update sample code on readme.md
 ## [1.0.0]
 
 
