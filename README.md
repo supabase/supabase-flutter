@@ -217,7 +217,7 @@ class _MyWidgetState extends State<MyWidget> {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () {
-        client.auth.signIn(email: 'my_email@example.com');
+        supabase.auth.signInWithOtp(email: 'my_email@example.com');
       },
       child: const Text('Login'),
     );
