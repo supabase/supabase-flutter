@@ -56,8 +56,6 @@ void main() async {
   await Supabase.initialize(
     url: SUPABASE_URL,
     anonKey: SUPABASE_ANNON_KEY,
-    authCallbackUrlHostname: 'login-callback', // optional
-    debug: true // optional
   );
 
   runApp(MyApp());
@@ -75,6 +73,8 @@ void main() async {
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+final supabase = Supabase.instance.client;
+
 class MyWidget extends StatefulWidget {
   const MyWidget({Key? key}) : super(key: key);
 
@@ -84,11 +84,10 @@ class MyWidget extends StatefulWidget {
 
 class _MyWidgetState extends State<MyWidget> {
   // Persisting the future as local variable to prevent refetching upon rebuilds. 
-  final Future<PostgrestResponse<dynamic>> _future = client
+  final Future<PostgrestResponse<dynamic>> _future = supabase
       .from('countries')
       .select()
-      .order('name', ascending: true)
-      .execute();
+      .order('name', ascending: true);
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +106,7 @@ class _MyWidgetState extends State<MyWidget> {
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final client = Supabase.instance.client;
+final supabase = Supabase.instance.client;
 
 class MyWidget extends StatefulWidget {
   const MyWidget({Key? key}) : super(key: key);
@@ -117,19 +116,22 @@ class MyWidget extends StatefulWidget {
 }
 
 class _MyWidgetState extends State<MyWidget> {
-  late final RealtimeSubscription _subscription;
+
   @override
   void initState() {
-    _subscription =
-        client.from('countries').on(SupabaseEventTypes.all, (payload) {
+    super.initState();
+    supabase.channel('my_channel').on(RealtimeListenTypes.postgresChanges, ChannelFilter(
+      event: '*',
+      schema: 'public',
+      table: 'countries'
+    ), (payload, [ref]) {
       // Do something when there is an update
     }).subscribe();
-    super.initState();
   }
 
   @override
   void dispose() {
-    client.removeSubscription(_subscription);
+    supabase.removeAllChannels();
     super.dispose();
   }
 
@@ -150,7 +152,7 @@ To receive realtime updates, you have to first enable Realtime on from your Supa
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final client = Supabase.instance.client;
+final supabase = Supabase.instance.client;
 
 class MyWidget extends StatefulWidget {
   const MyWidget({Key? key}) : super(key: key);
@@ -161,7 +163,7 @@ class MyWidget extends StatefulWidget {
 
 class _MyWidgetState extends State<MyWidget> {
   // Persisting the future as local variable to prevent refetching upon rebuilds.
-  final _stream = client.from('countries').stream(['id']).execute();
+  final _stream = supabase.from('countries').stream(primaryKey: ['id']);
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +182,7 @@ class _MyWidgetState extends State<MyWidget> {
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final client = Supabase.instance.client;
+final supabase = Supabase.instance.client;
 
 class MyWidget extends StatefulWidget {
   const MyWidget({Key? key}) : super(key: key);
@@ -190,12 +192,14 @@ class MyWidget extends StatefulWidget {
 }
 
 class _MyWidgetState extends State<MyWidget> {
-  late final GotrueSubscription _authSubscription;
+  late final StreamSubscription<AuthState> _authSubscription;
   User? _user;
 
   @override
   void initState() {
-    _authSubscription = client.auth.onAuthStateChange((event, session) {
+    _authSubscription = supabase.auth.onAuthStateChange.listen((data) {
+      final AuthChangeEvent event = data.event;
+      final Session? session = data.session;
       setState(() {
         _user = session?.user;
       });
@@ -205,7 +209,7 @@ class _MyWidgetState extends State<MyWidget> {
 
   @override
   void dispose() {
-    _authSubscription.data?.unsubscribe();
+    _authSubscription.cancel();
     super.dispose();
   }
 
@@ -213,7 +217,7 @@ class _MyWidgetState extends State<MyWidget> {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () {
-        client.auth.signIn(email: 'my_email@example.com');
+        supabase.auth.signInWithOtp(email: 'my_email@example.com');
       },
       child: const Text('Login'),
     );
@@ -226,6 +230,8 @@ class _MyWidgetState extends State<MyWidget> {
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+final supabase = Supabase.instance.client;
+
 class MyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -233,7 +239,7 @@ class MyWidget extends StatelessWidget {
       onPressed: () {
         final file = File('example.txt');
         file.writeAsStringSync('File content');
-        client.storage
+        supabase.storage
             .from('my_bucket')
             .upload('my/path/to/files/example.txt', file);
       },
@@ -305,12 +311,9 @@ Future<void> getInitialAuthState() async {
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> signIn(String email, String password) async {
-  final response = await Supabase.instance.client.auth.signIn(email: email, password: password);
-  if (response.error != null) {
-    /// Handle error
-  } else {
-    /// Sign in with success
-  }
+  final response = await Supabase.instance.client.auth.signInWithPassword(email: email, password: password);
+  final Session? session = response.session;
+  final User? user = response.user;
 }
 ```
 
@@ -319,9 +322,9 @@ Future<void> signIn(String email, String password) async {
 This method will automatically launch the auth url and open a browser for user to sign in with 3rd party login.
 
 ```dart
-Supabase.instance.client.auth.signInWithProvider(
-  Provider.github,
-  options: supabase.AuthOptions(redirectTo: ''),
+supabase.auth.signInWithOAuth(
+  Provider.google,
+  redirectTo: 'io.supabase.flutter://reset-callback/',
 );
 ```
 
@@ -330,10 +333,10 @@ Supabase.instance.client.auth.signInWithProvider(
 As default, `supabase_flutter` uses [`hive`](https://pub.dev/packages/hive) to persist the user session. Encryption is disabled by default, since an unique encryption key is necessary, and we can not define it. To set an `encryptionKey`, do the following:
 
 ```dart
-void main() {
+Future<void> main() async {
   // set it before initializing
   HiveLocalStorage.encryptionKey = 'my_secure_key';
-  Supabase.initialize(...);
+  await Supabase.initialize(...);
 }
 ```
 
