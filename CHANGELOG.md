@@ -39,7 +39,7 @@
       // ...
     });
     // After
-    final subscription = supabase.auth.onAuthStateChange().listen((data) {
+    final subscription = supabase.auth.onAuthStateChange.listen((data) {
       final AuthChangeEvent event = data.event;
       final Session? session = data.session;
     });
