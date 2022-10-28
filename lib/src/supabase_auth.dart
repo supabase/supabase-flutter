@@ -104,7 +104,7 @@ class SupabaseAuth with WidgetsBindingObserver {
         }
       }
       _widgetsBindingInstance?.addObserver(_instance);
-      _instance._startDeeplinkObserver();
+      await _instance._startDeeplinkObserver();
 
       if (!_instance._initialSessionCompleter.isCompleted) {
         // Complete with null if the user did not have persisted session
@@ -185,10 +185,10 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 
   /// Enable deep link observer to handle deep links
-  void _startDeeplinkObserver() {
+  Future<void> _startDeeplinkObserver() async {
     Supabase.instance.log('***** SupabaseDeepLinkingMixin startAuthObserver');
     _handleIncomingLinks();
-    _handleInitialUri();
+    await _handleInitialUri();
   }
 
   /// Stop deep link observer
@@ -232,7 +232,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     try {
       final uri = await _appLinks.getInitialAppLink();
       if (uri != null) {
-        _handleDeeplink(uri);
+        await _handleDeeplink(uri);
       }
     } on PlatformException catch (err) {
       _onErrorReceivingDeeplink(err.message ?? err.toString());
@@ -256,8 +256,8 @@ class SupabaseAuth with WidgetsBindingObserver {
     await _recoverSessionFromUrl(uri);
   }
 
+  /// recover session from deeplink
   Future<void> _recoverSessionFromUrl(Uri uri) async {
-    // recover session from deeplink
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
     } on AuthException catch (error) {
