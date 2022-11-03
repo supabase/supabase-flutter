@@ -14,10 +14,10 @@
   - feat: add generic types to `.select()`
     ```dart
     // data is `List<Map<String, dynamic>>`
-    final data = await supabase.from<List<Map<String, dynamic>>>('users').select();
+    final data = await supabase.from('users').select<List<Map<String, dynamic>>>();
 
     // data is `Map<String, dynamic>`
-    final data = await supabase.from<Map<String, dynamic>>('users').select().eq('id', myId).single();
+    final data = await supabase.from('users').select<Map<String, dynamic>>().eq('id', myId).single();
     ```
 ## [1.0.1]
 
