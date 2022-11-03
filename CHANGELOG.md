@@ -1,3 +1,24 @@
+## [1.1.0]
+
+- fix: await for the initial deeplink to be handled during auth initialize [#262](https://github.com/supabase/supabase-flutter/pull/262)
+- feat: update supabase to v1.1.0
+  - fix: stream filter other than eq is not properly applied.
+  - fail to getSessionFromUrl throws error on `onAuthStateChange`
+    ```dart
+    supabase.onAuthStateChange.listen((data) {
+      // handle auth state change here
+    }, onError: (error) {
+      // handle error here
+    });
+    ```
+  - feat: add generic types to `.select()`
+    ```dart
+    // data is `List<Map<String, dynamic>>`
+    final data = await supabase.from<List<Map<String, dynamic>>>('users').select();
+
+    // data is `Map<String, dynamic>`
+    final data = await supabase.from<Map<String, dynamic>>('users').select().eq('id', myId).single();
+    ```
 ## [1.0.1]
 
 - fix: update sample code on readme.md
