@@ -47,6 +47,7 @@ class Supabase {
     LocalStorage? localStorage,
     Client? httpClient,
     Map<String, String>? headers,
+    String? schema,
   }) async {
     assert(
       !_instance._initialized,
@@ -57,6 +58,7 @@ class Supabase {
       anonKey,
       httpClient: httpClient,
       customHeaders: headers,
+      schema: schema,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
@@ -92,6 +94,7 @@ class Supabase {
     String supabaseAnonKey, {
     Client? httpClient,
     Map<String, String>? customHeaders,
+    String? schema,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
@@ -102,6 +105,7 @@ class Supabase {
       supabaseAnonKey,
       httpClient: httpClient,
       headers: headers,
+      schema: schema,
     );
     _initialized = true;
   }
