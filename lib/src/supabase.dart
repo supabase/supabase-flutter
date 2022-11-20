@@ -39,15 +39,35 @@ class Supabase {
   ///
   /// This must be called only once. If called more than once, an
   /// [AssertionError] is thrown
+  ///
+  /// [url] and [anonKey] can be found on your Supabase dashboard.
+  ///
+  /// You can access none public schema by passing different [schema].
+  ///
+  /// Default headers can be overridden by specifying [headers].
+  ///
+  /// Specify [authCallbackUrlHostname] to let the SDK know what host name auth callback deeplink will have.
+  /// if [authCallbackUrlHostname] is not set, we treat all deeplinks as auth callbacks.
+  ///
+  /// Pass [localStorage] to override the default local storage option used to persist auth.
+  ///
+  /// Custom http client can be used by passing [httpClient] parameter.
+  ///
+  /// [storageRetryAttempts] specifies how many retry attempts there should be to
+  ///  upload a file to Supabase storage when failed due to network interruption.
+  ///
+  /// If [debug] is set to `true`, debug logs will be printed in debug console.
+  /// `kDebugMode` value is used by default.
   static Future<Supabase> initialize({
     required String url,
     required String anonKey,
+    String? schema,
+    Map<String, String>? headers,
     String? authCallbackUrlHostname,
-    bool? debug,
     LocalStorage? localStorage,
     Client? httpClient,
-    Map<String, String>? headers,
-    String? schema,
+    int storageRetryAttempts = 0,
+    bool? debug,
   }) async {
     assert(
       !_instance._initialized,
@@ -59,6 +79,7 @@ class Supabase {
       httpClient: httpClient,
       customHeaders: headers,
       schema: schema,
+      storageRetryAttempts: storageRetryAttempts,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
@@ -95,18 +116,17 @@ class Supabase {
     Client? httpClient,
     Map<String, String>? customHeaders,
     String? schema,
+    required int storageRetryAttempts,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
       if (customHeaders != null) ...customHeaders
     };
-    client = SupabaseClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      httpClient: httpClient,
-      headers: headers,
-      schema: schema,
-    );
+    client = SupabaseClient(supabaseUrl, supabaseAnonKey,
+        httpClient: httpClient,
+        headers: headers,
+        schema: schema,
+        storageRetryAttempts: storageRetryAttempts);
     _initialized = true;
   }
 
