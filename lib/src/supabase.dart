@@ -66,7 +66,7 @@ class Supabase {
     LocalStorage? localStorage,
     Client? httpClient,
     int storageRetryAttempts = 0,
-    bool debug = kDebugMode,
+    bool? debug,
   }) async {
     assert(
       !_instance._initialized,
@@ -80,7 +80,7 @@ class Supabase {
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
     );
-    _instance._debugEnable = debug;
+    _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
 
     await SupabaseAuth.initialize(
