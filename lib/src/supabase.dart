@@ -121,11 +121,14 @@ class Supabase {
       ...Constants.defaultHeaders,
       if (customHeaders != null) ...customHeaders
     };
-    client = SupabaseClient(supabaseUrl, supabaseAnonKey,
-        httpClient: httpClient,
-        headers: headers,
-        schema: schema,
-        storageRetryAttempts: storageRetryAttempts);
+    client = SupabaseClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      httpClient: httpClient,
+      headers: headers,
+      schema: schema,
+      storageRetryAttempts: storageRetryAttempts,
+    );
     _initialized = true;
   }
 
