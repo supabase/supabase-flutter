@@ -57,7 +57,6 @@ class Supabase {
   ///  upload a file to Supabase storage when failed due to network interruption.
   ///
   /// If [debug] is set to `true`, debug logs will be printed in debug console.
-  /// `kDebugMode` value is used by default.
   static Future<Supabase> initialize({
     required String url,
     required String anonKey,
@@ -67,7 +66,7 @@ class Supabase {
     LocalStorage? localStorage,
     Client? httpClient,
     int storageRetryAttempts = 0,
-    bool? debug,
+    bool debug = kDebugMode,
   }) async {
     assert(
       !_instance._initialized,
@@ -81,7 +80,7 @@ class Supabase {
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
     );
-    _instance._debugEnable = debug ?? kDebugMode;
+    _instance._debugEnable = debug;
     _instance.log('***** Supabase init completed $_instance');
 
     await SupabaseAuth.initialize(
