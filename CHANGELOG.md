@@ -1,3 +1,18 @@
+## [1.2.0]
+
+- feat: update supabase to v1.2.0
+  - add createUser(), deleteUser(), and listUsers() to admin methods.
+- feat: add storage retry option to enable storage to auto retry failed upload attempts [#280](https://github.com/supabase/supabase-flutter/pull/280)
+  ```dart
+  // The following will initialize Supabase that will retry failed uploads up to 25 times,
+  // which is about 10 minutes of retrying.
+  await Supabase.initialize(
+    supabaseUrl,
+    supabaseAnonKey,
+    storageRetryAttempts: 25,
+  );
+  ```
+
 ## [1.1.0]
 
 - fix: await for the initial deeplink to be handled during auth initialize [#262](https://github.com/supabase/supabase-flutter/pull/262)
