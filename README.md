@@ -1,13 +1,13 @@
 # `supabase_flutter`
 
-Flutter package for [Supabase](https://supabase.io/).
+Flutter package for [Supabase](https://supabase.com/).
 
 [![pub package](https://img.shields.io/pub/v/supabase_flutter.svg)](https://pub.dev/packages/supabase_flutter)
 [![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
 
 ---
 
-### [What is Supabase](https://supabase.io/docs/)
+### [What is Supabase](https://supabase.com/docs/)
 
 Supabase is an open source Firebase alternative. We are a service to:
 
@@ -68,7 +68,7 @@ void main() async {
 
 ## Usage example
 
-### [Database](https://supabase.io/docs/guides/database)
+### [Database](https://supabase.com/docs/guides/database)
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -101,7 +101,7 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
-### [Realtime](https://supabase.io/docs/guides/database#realtime)
+### [Realtime](https://supabase.com/docs/guides/database#realtime)
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -144,7 +144,7 @@ class _MyWidgetState extends State<MyWidget> {
 
 ### Realtime data as `Stream`
 
-To receive realtime updates, you have to first enable Realtime on from your Supabase console. You can read more [here](https://supabase.io/docs/guides/api#managing-realtime) on how to enable it.
+To receive realtime updates, you have to first enable Realtime on from your Supabase console. You can read more [here](https://supabase.com/docs/guides/api#managing-realtime) on how to enable it.
 
 > **Warning**
 > When using `stream()` with a `StreamBuilder`, make sure to persist the stream value as a variable in a `StatefulWidget` instead of directly constructing the stream within your widget tree, which could cause rapid rebuilds that will lead to losing realtime connection. 
@@ -177,7 +177,7 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
-### [Authentication](https://supabase.io/docs/guides/auth)
+### [Authentication](https://supabase.com/docs/guides/auth)
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -225,7 +225,7 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
-### [Storage](https://supabase.io/docs/guides/storage)
+### [Storage](https://supabase.com/docs/guides/storage)
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -593,3 +593,9 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 ## License
 
 This repo is licenced under MIT.
+  
+## Resources
+
+- [Quickstart: Flutter](https://supabase.com/docs/guides/with-flutter)
+- [Flutter Tutorial: building a Flutter chat app](https://supabase.com/blog/flutter-tutorial-building-a-chat-app)
+- [Flutter Tutorial - Part 2: Authentication and Authorization with RLS](https://supabase.com/blog/flutter-authentication-and-authorization-with-rls)
