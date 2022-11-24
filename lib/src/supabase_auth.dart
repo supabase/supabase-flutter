@@ -178,7 +178,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// if _authCallbackUrlHost not init, we treat all deeplink as auth callback
   bool _isAuthCallbackDeeplink(Uri uri) {
     if (_authCallbackUrlHostname == null) {
-      return true;
+      return uri.queryParameters.containsKey('access_token');
     } else {
       return _authCallbackUrlHostname == uri.host;
     }
