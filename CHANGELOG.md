@@ -1,3 +1,8 @@
+## [1.2.1]
+
+- fix: Only parse deep links if it contains access_token [#284](https://github.com/supabase/supabase-flutter/pull/284)
+- chore: update and add some links in Readme.md [#286](https://github.com/supabase/supabase-flutter/pull/286)
+
 ## [1.2.0]
 
 - feat: update supabase to v1.2.0
