@@ -1,6 +1,6 @@
 ## [1.2.2]
 
-- fix: bug where auth callback URL is not correctly parsed
+- fix: bug where auth callback URL is not correctly parsed [#292](https://github.com/supabase/supabase-flutter/pull/292)
 
 ## [1.2.1]
 
