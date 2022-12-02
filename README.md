@@ -84,7 +84,7 @@ class MyWidget extends StatefulWidget {
 
 class _MyWidgetState extends State<MyWidget> {
   // Persisting the future as local variable to prevent refetching upon rebuilds. 
-  final Future<PostgrestResponse<dynamic>> _future = supabase
+  final Future<List<Map<String, dynamic>>> _future = supabase
       .from('countries')
       .select()
       .order('name', ascending: true);
@@ -120,11 +120,13 @@ class _MyWidgetState extends State<MyWidget> {
   @override
   void initState() {
     super.initState();
-    supabase.channel('my_channel').on(RealtimeListenTypes.postgresChanges, ChannelFilter(
-      event: '*',
-      schema: 'public',
-      table: 'countries'
-    ), (payload, [ref]) {
+    supabase.channel('my_channel').on(
+        RealtimeListenTypes.postgresChanges,
+        ChannelFilter(
+            event: '*',
+            schema: 'public',
+            table: 'countries'),
+        (payload, [ref]) {
       // Do something when there is an update
     }).subscribe();
   }
@@ -163,11 +165,11 @@ class MyWidget extends StatefulWidget {
 
 class _MyWidgetState extends State<MyWidget> {
   // Persisting the future as local variable to prevent refetching upon rebuilds.
-  final _stream = supabase.from('countries').stream(primaryKey: ['id']);
+  final List<Map<String, dynamic>> _stream = supabase.from('countries').stream(primaryKey: ['id']);
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _stream,
       builder: (context, snapshot) {
         // return your widget with the data from snapshot
