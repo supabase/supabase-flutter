@@ -65,7 +65,7 @@
   ```
   - `auth.signIn()` is split into different methods
   ```dart
-    // Magic sign-in link
+    // Magic link sign-in
     // Before
     final res = await supabase.auth.signIn(email: 'example@email.com');
     // After
