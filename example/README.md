@@ -1,6 +1,8 @@
 # Profile Example
 
-Basic example of how to signup/ login using Supabase auth and read and write from your Supabase database. 
+Basic example of how to signup/login using Supabase auth and read and write from your Supabase
+database. 
+
 ## SQL
 
 You can run the following SQL from your SQL editor of your Supabase console to get started. 

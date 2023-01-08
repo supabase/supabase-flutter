@@ -45,7 +45,7 @@ Import the package:
 import 'package:supabase_flutter/supabase_flutter.dart';
 ```
 
-Intialize `Supabase` before using it:
+Initialize `Supabase` before using it:
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -83,7 +83,7 @@ class MyWidget extends StatefulWidget {
 }
 
 class _MyWidgetState extends State<MyWidget> {
-  // Persisting the future as local variable to prevent refetching upon rebuilds. 
+  // Persisting the future as a local variable to prevent refetching upon rebuilds. 
   final Future<List<Map<String, dynamic>>> _future = supabase
       .from('countries')
       .select()
@@ -375,7 +375,7 @@ Supabase.initialize(
 );
 ```
 
-You can also use `EmptyLocalStorage` to disable session persistance:
+You can also use `EmptyLocalStorage` to disable session persistence:
 
 ```dart
 Supabase.initialize(
@@ -476,7 +476,8 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 <details>
   <summary>How to setup</summary>
 
-  Setting up deeplinks in Windows has few more steps than other platforms. [Learn more](https://pub.dev/packages/app_links#windows)
+  Setting up deep links in Windows has few more steps than other platforms.
+  [Learn more](https://pub.dev/packages/app_links#windows)
 
   Declare this method in <PROJECT_DIR>\windows\runner\win32_window.h
   ```cpp
@@ -546,7 +547,8 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
   You can achieve it with [url_protocol](https://pub.dev/packages/url_protocol) inside you app.  
 
-  The most relevant solution is to include those registry modifications into your installer to allow the unregistration.
+  The most relevant solution is to include those registry modifications into your installer to allow
+  for deregistration.
 
 </details>
 

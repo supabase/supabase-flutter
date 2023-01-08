@@ -23,8 +23,8 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Smartphone (please complete the following information):**
- - Version [e.g. 1.0.0-dev.4]
+**Version (please complete the following information):**
+ - [e.g. 1.2.2]
 
 **Additional context**
 Add any other context about the problem here.

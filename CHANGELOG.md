@@ -65,13 +65,13 @@
   ```
   - `auth.signIn()` is split into different methods
   ```dart
-    // Magic link signin
+    // Magic sign-in link
     // Before
     final res = await supabase.auth.signIn(email: 'example@email.com');
     // After
     final res = await supabase.auth.signInWithOtp(email: 'example@email.com');
 
-    // Email and password signin
+    // Email and password sign-in
     // Before
     final res = await supabase.auth.signIn(email: 'example@email.com', password: 'password');
     // After
@@ -235,7 +235,7 @@
 - feat: custom http client
 
 ## [1.0.0-dev.1]
-- feat: add Mac OS and Windows support for deeplinks
+- feat: add Mac OS and Windows support for deep links
 - BREAKING: Remove SupabaseAuthRequiredState as well as overriding methods in SupabaseAuthState
 ```dart
 // Before
@@ -255,7 +255,7 @@ class AuthState<T extends StatefulWidget> extends SupabaseAuthState<T> {
 // After
 
 // Initializing Supabase is all you need to do to persist auth state
-// Deeplinks will also be automatically handled when you initialize Supabase.
+// Deep links will also be automatically handled when you initialize Supabase.
 await Supabase.initialize(
   url: 'SUPABASE_URL',
   anonKey: 'SUPABASE_ANON_KEY',
@@ -272,7 +272,7 @@ try {
 
 // You should now use `onAuthStateChanged` as the 
 Supabase.instance.client.auth.onAuthStateChange((event, session) {
-    // handle sinin/ signups here
+    // handle sign-in/signups here
 });
 ```
 - fix: OAuth should open in an external browser

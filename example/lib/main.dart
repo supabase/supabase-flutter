@@ -187,7 +187,7 @@ class _ProfileFormState extends State<_ProfileForm> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Error occured while getting profile'),
+        content: Text('Error occurred while getting profile'),
         backgroundColor: Colors.red,
       ));
     }
