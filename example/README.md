@@ -57,6 +57,6 @@ create policy "Anyone can update an avatar." on storage.objects
 
 ## Other Examples
 
-- Flutter user management: https://github.com/supabase/supabase/tree/master/examples/flutter-user-management
+- Flutter user management: https://github.com/supabase/supabase/tree/master/examples/user-management/flutter-user-management
 - Extended flutter user management with web support, github login, recovery password flow: https://github.com/phamhieu/supabase-flutter-demo
 - Real time chat application: https://github.com/supabase-community/flutter-chat
