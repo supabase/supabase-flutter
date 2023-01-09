@@ -283,7 +283,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     Provider provider, {
     String? redirectTo,
     String? scopes,
-    LaunchMode authScreenLaunchMode = LaunchMode.externalApplication,
+    LaunchMode authScreenLaunchMode = LaunchMode.inAppWebView,
     Map<String, String>? queryParams,
   }) async {
     final res = await getOAuthSignInUrl(
