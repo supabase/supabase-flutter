@@ -46,15 +46,18 @@ class Supabase {
   ///
   /// Default headers can be overridden by specifying [headers].
   ///
-  /// Specify [authCallbackUrlHostname] to let the SDK know what host name auth callback deeplink will have.
-  /// if [authCallbackUrlHostname] is not set, we treat all deeplinks as auth callbacks.
+  /// Specify [authCallbackUrlHostname] to let the SDK know what host name auth
+  /// callback deeplink will have. If [authCallbackUrlHostname] is not set, we
+  /// treat all deep links as auth callbacks.
   ///
-  /// Pass [localStorage] to override the default local storage option used to persist auth.
+  /// Pass [localStorage] to override the default local storage option used to
+  /// persist auth.
   ///
   /// Custom http client can be used by passing [httpClient] parameter.
   ///
-  /// [storageRetryAttempts] specifies how many retry attempts there should be to
-  ///  upload a file to Supabase storage when failed due to network interruption.
+  /// [storageRetryAttempts] specifies how many retry attempts there should be
+  /// to upload a file to Supabase storage when failed due to network
+  /// interruption.
   ///
   /// If [debug] is set to `true`, debug logs will be printed in debug console.
   static Future<Supabase> initialize({
