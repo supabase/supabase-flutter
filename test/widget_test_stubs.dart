@@ -45,7 +45,7 @@ class MockLocalStorage extends LocalStorage {
       : super(
           initialize: () async {},
 
-          /// Session expires at is at its maximum value for unix timestamp
+          // Session expires at is at its maximum value for unix timestamp
           accessToken: () async =>
               '{"currentSession":{"token_type": "","access_token":"","expires_in":3600,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""}},"expiresAt":2147483647}',
           persistSession: (_) async {},
@@ -54,7 +54,7 @@ class MockLocalStorage extends LocalStorage {
         );
 }
 
-// Register the mock handler for uni_links
+/// Registers the mock handler for uni_links
 void mockAppLink() {
   const channel = MethodChannel('com.llfbandit.app_links/messages');
   const anotherChannel = MethodChannel('com.llfbandit.app_links/events');

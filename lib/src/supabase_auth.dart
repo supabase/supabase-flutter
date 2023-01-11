@@ -142,7 +142,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 
   /// Recover/refresh session if it's available
-  /// e.g. called on a Splash screen when app starts.
+  /// e.g. called on a splash screen when the app starts.
   Future<bool> _recoverSupabaseSession() async {
     final bool exist =
         await SupabaseAuth.instance.localStorage.hasAccessToken();
@@ -175,7 +175,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
   }
 
-  /// if _authCallbackUrlHost not init, we treat all deeplink as auth callback
+  /// If _authCallbackUrlHost not init, we treat all deep links as auth callback
   bool _isAuthCallbackDeeplink(Uri uri) {
     if (_authCallbackUrlHostname == null) {
       return uri.fragment.contains('access_token');
@@ -199,7 +199,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     _deeplinkSubscription?.cancel();
   }
 
-  /// Handle incoming links - the ones that the app will recieve from the OS
+  /// Handle incoming links - the ones that the app will receive from the OS
   /// while already started.
   void _handleIncomingLinks() {
     if (!kIsWeb) {
@@ -269,12 +269,12 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Callback when deeplink receiving throw error
   void _onErrorReceivingDeeplink(String message) {
-    Supabase.instance.log('onErrorReceivingDeppLink message: $message');
+    Supabase.instance.log('onErrorReceivingDeepLink message: $message');
   }
 }
 
 extension GoTrueClientSignInProvider on GoTrueClient {
-  /// Signs the user in using a thrid parties providers.
+  /// Signs the user in using a third party providers.
   ///
   /// See also:
   ///
@@ -283,6 +283,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     Provider provider, {
     String? redirectTo,
     String? scopes,
+    LaunchMode authScreenLaunchMode = LaunchMode.externalApplication,
     Map<String, String>? queryParams,
   }) async {
     final res = await getOAuthSignInUrl(
@@ -294,7 +295,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     final url = Uri.parse(res.url!);
     final result = await launchUrl(
       url,
-      mode: LaunchMode.externalApplication,
+      mode: authScreenLaunchMode,
       webOnlyWindowName: '_self',
     );
     return result;

@@ -45,7 +45,7 @@ Import the package:
 import 'package:supabase_flutter/supabase_flutter.dart';
 ```
 
-Intialize `Supabase` before using it:
+Initialize `Supabase` before using it:
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -55,7 +55,7 @@ void main() async {
 
   await Supabase.initialize(
     url: SUPABASE_URL,
-    anonKey: SUPABASE_ANNON_KEY,
+    anonKey: SUPABASE_ANON_KEY,
   );
 
   runApp(MyApp());
@@ -172,11 +172,11 @@ class MyWidget extends StatefulWidget {
 
 class _MyWidgetState extends State<MyWidget> {
   // Persisting the future as local variable to prevent refetching upon rebuilds.
-  final _stream = supabase.from('countries').stream(primaryKey: ['id']);
+  final List<Map<String, dynamic>> _stream = supabase.from('countries').stream(primaryKey: ['id']);
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<List<Map<String, dynamic>>>(
       stream: _stream,
       builder: (context, snapshot) {
         // return your widget with the data from snapshot
@@ -401,7 +401,7 @@ Supabase.initialize(
 );
 ```
 
-You can also use `EmptyLocalStorage` to disable session persistance:
+You can also use `EmptyLocalStorage` to disable session persistence:
 
 ```dart
 Supabase.initialize(
@@ -502,7 +502,8 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 <details>
   <summary>How to setup</summary>
 
-  Setting up deep links in Windows has few more steps than other platforms. [Learn more](https://pub.dev/packages/app_links#windows)
+  Setting up deep links in Windows has few more steps than other platforms.
+  [Learn more](https://pub.dev/packages/app_links#windows)
 
   Declare this method in <PROJECT_DIR>\windows\runner\win32_window.h
   ```cpp
@@ -572,7 +573,8 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
   You can achieve it with [url_protocol](https://pub.dev/packages/url_protocol) inside you app.  
 
-  The most relevant solution is to include those registry modifications into your installer to allow the unregistration.
+  The most relevant solution is to include those registry modifications into your installer to allow
+  for deregistration.
 
 </details>
 
