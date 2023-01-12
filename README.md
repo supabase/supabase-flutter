@@ -279,10 +279,6 @@ class MyWidget extends StatelessWidget {
 
 ### [Edge Functions](https://supabase.com/docs/guides/functions)
 
-> **Warning**
-> Supabase Edge Functions are Experimental until 1 August 2022. There will be breaking changes. Do not use them in Production.
-
-
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
