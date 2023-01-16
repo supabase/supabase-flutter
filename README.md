@@ -68,117 +68,6 @@ void main() async {
 
 ## Usage example
 
-### [Database](https://supabase.com/docs/guides/database)
-
-```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-final supabase = Supabase.instance.client;
-
-class MyWidget extends StatefulWidget {
-  const MyWidget({Key? key}) : super(key: key);
-
-  @override
-  State<MyWidget> createState() => _MyWidgetState();
-}
-
-class _MyWidgetState extends State<MyWidget> {
-  // Persisting the future as a local variable to prevent refetching upon rebuilds. 
-  final Future<List<Map<String, dynamic>>> _future = supabase
-      .from('countries')
-      .select()
-      .order('name', ascending: true);
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _future,
-      builder: (context, snapshot) {
-        // return your widget with the data from snapshot
-      },
-    );
-  }
-}
-```
-
-### [Realtime](https://supabase.com/docs/guides/database#realtime)
-
-```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-final supabase = Supabase.instance.client;
-
-class MyWidget extends StatefulWidget {
-  const MyWidget({Key? key}) : super(key: key);
-
-  @override
-  State<MyWidget> createState() => _MyWidgetState();
-}
-
-class _MyWidgetState extends State<MyWidget> {
-
-  @override
-  void initState() {
-    super.initState();
-    supabase.channel('my_channel').on(
-        RealtimeListenTypes.postgresChanges,
-        ChannelFilter(
-            event: '*',
-            schema: 'public',
-            table: 'countries'),
-        (payload, [ref]) {
-      // Do something when there is an update
-    }).subscribe();
-  }
-
-  @override
-  void dispose() {
-    supabase.removeAllChannels();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container();
-  }
-}
-```
-
-### Realtime data as `Stream`
-
-To receive realtime updates, you have to first enable Realtime on from your Supabase console. You can read more [here](https://supabase.com/docs/guides/api#managing-realtime) on how to enable it.
-
-> **Warning**
-> When using `stream()` with a `StreamBuilder`, make sure to persist the stream value as a variable in a `StatefulWidget` instead of directly constructing the stream within your widget tree, which could cause rapid rebuilds that will lead to losing realtime connection. 
-
-```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-final supabase = Supabase.instance.client;
-
-class MyWidget extends StatefulWidget {
-  const MyWidget({Key? key}) : super(key: key);
-
-  @override
-  State<MyWidget> createState() => _MyWidgetState();
-}
-
-class _MyWidgetState extends State<MyWidget> {
-  // Persisting the future as local variable to prevent refetching upon rebuilds.
-  final List<Map<String, dynamic>> _stream = supabase.from('countries').stream(primaryKey: ['id']);
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: _stream,
-      builder: (context, snapshot) {
-        // return your widget with the data from snapshot
-      },
-    );
-  }
-}
-```
-
 ### [Authentication](https://supabase.com/docs/guides/auth)
 
 ```dart
@@ -227,6 +116,143 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
+### [Database](https://supabase.com/docs/guides/database)
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final supabase = Supabase.instance.client;
+
+class MyWidget extends StatefulWidget {
+  const MyWidget({Key? key}) : super(key: key);
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  // Persisting the future as local variable to prevent refetching upon rebuilds. 
+  final Future<dynamic> _future = supabase
+      .from('countries')
+      .select()
+      .order('name', ascending: true);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: _future,
+      builder: (context, snapshot) {
+        // return your widget with the data from snapshot
+      },
+    );
+  }
+}
+```
+
+### [Realtime](https://supabase.com/docs/guides/realtime)
+
+#### Realtime data as `Stream`
+
+To receive realtime updates, you have to first enable Realtime on from your Supabase console. You can read more [here](https://supabase.com/docs/guides/api#realtime-api) on how to enable it.
+
+> **Warning**
+> When using `stream()` with a `StreamBuilder`, make sure to persist the stream value as a variable in a `StatefulWidget` instead of directly constructing the stream within your widget tree, which could cause rapid rebuilds that will lead to losing realtime connection. 
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final supabase = Supabase.instance.client;
+
+class MyWidget extends StatefulWidget {
+  const MyWidget({Key? key}) : super(key: key);
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  // Persisting the future as local variable to prevent refetching upon rebuilds.
+  final List<Map<String, dynamic>> _stream = supabase.from('countries').stream(primaryKey: ['id']);
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _stream,
+      builder: (context, snapshot) {
+        // return your widget with the data from snapshot
+      },
+    );
+  }
+}
+```
+
+#### [Postgres Changes](https://supabase.com/docs/guides/realtime#postgres-changes)
+
+You can get notified whenever there is a change in your Supabase tables.
+
+```dart
+final myChannel = supabase.channel('my_channel');
+
+myChannel.on(
+    RealtimeListenTypes.postgresChanges,
+    ChannelFilter(
+      event: '*',
+      schema: 'public',
+      table: 'countries',
+    ), (payload, [ref]) {
+  // Do something fun or interesting when there is an change on the database
+}).subscribe();
+```
+
+#### [Broadcast](https://supabase.com/docs/guides/realtime#broadcast)
+
+Broadcast lets you send and receive low latency messages between connected clients without bypassing the database.
+
+```dart
+final myChannel = supabase.channel('my_channel');
+
+// Subscribe to `cursor-pos` broadcast event
+myChannel.on(RealtimeListenTypes.broadcast,
+    ChannelFilter(event: 'cursor-pos'), (payload, [ref]) {
+  // Do something fun or interesting when there is an change on the database
+}).subscribe();
+
+// Send a broadcast message to other connected clients
+await myChannel.send(
+  type: RealtimeListenTypes.broadcast,
+  event: 'cursor-pos',
+  payload: {'x': 30, 'y': 50},
+);
+```
+
+### [Presence](https://supabase.com/docs/guides/realtime#presence)
+
+Presence let's you easily create "I'm online" feature.
+
+```dart
+final myChannel = supabase.channel('my_channel');
+
+// Subscribe to presence events
+myChannel.on(
+    RealtimeListenTypes.presence, ChannelFilter(event: 'sync'),
+    (payload, [ref]) {
+  final onlineUsers = myChannel.presenceState();
+  // handle sync event
+}).on(RealtimeListenTypes.presence, ChannelFilter(event: 'join'),
+    (payload, [ref]) {
+  // New users have joined
+}).on(RealtimeListenTypes.presence, ChannelFilter(event: 'leave'),
+    (payload, [ref]) {
+  // Users have left
+}).subscribe(((status, [_]) async {
+  if (status == 'SUBSCRIBED') {
+    // Send the current user's state upon subscribing
+    final status = await myChannel
+        .track({'online_at': DateTime.now().toIso8601String()});
+  }
+}));
+```
+
 ### [Storage](https://supabase.com/docs/guides/storage)
 
 ```dart
@@ -252,10 +278,6 @@ class MyWidget extends StatelessWidget {
 ```
 
 ### [Edge Functions](https://supabase.com/docs/guides/functions)
-
-> **Warning**
-> Supabase Edge Functions are Experimental until 1 August 2022. There will be breaking changes. Do not use them in Production.
-
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -288,7 +310,7 @@ class _MyWidgetState extends State<MyWidget> {
 ## Authentication
 
 Using this package automatically persists the auth state on local storage. 
-It also helps you handle authentication with deeplink from 3rd party service like Google, Github, Twitter...
+It also helps you handle authentication with deep link from 3rd party service like Google, Github, Twitter...
 
 
 ### Getting initial auth state
@@ -384,7 +406,7 @@ Supabase.initialize(
 );
 ```
 
-## Deeplink config
+## Deep link config
 
 ### Supabase redirect URLs config
 
