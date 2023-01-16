@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 // ignore_for_file: invalid_null_aware_operator
 
@@ -104,7 +106,13 @@ class SupabaseAuth with WidgetsBindingObserver {
         }
       }
       _widgetsBindingInstance?.addObserver(_instance);
-      await _instance._startDeeplinkObserver();
+      if (kIsWeb ||
+          Platform.isAndroid ||
+          Platform.isIOS ||
+          Platform.isMacOS ||
+          Platform.isWindows) {
+        await _instance._startDeeplinkObserver();
+      }
 
       if (!_instance._initialSessionCompleter.isCompleted) {
         // Complete with null if the user did not have persisted session
