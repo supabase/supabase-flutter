@@ -7,6 +7,7 @@
     authScreenLaunchMode: LaunchMode.inAppWebView,
   );
   ```
+- fix: only start deep link observer on supported platforms [#333](https://github.com/supabase/supabase-flutter/pull/333)
 - feat: update supabase to v1.3.0
   - fix: handle update and delete on record that wasn't found properly using stream [#167](https://github.com/supabase/supabase-dart/pull/167)
   - feat: update gotrue to v1.4.0
