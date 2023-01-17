@@ -1,3 +1,6 @@
+## [1.3.1]
+
+- chore: update readme.md file [#335](https://github.com/supabase/supabase-flutter/pull/335)
 ## [1.3.0]
 
 - feat: add `authScreenLaunchMode` to `auth.signInWithOAuth()` to change OAuth sign-in screen behavior  [#323](https://github.com/supabase/supabase-flutter/pull/323)
