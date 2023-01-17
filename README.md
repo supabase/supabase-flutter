@@ -9,33 +9,9 @@ Flutter package for [Supabase](https://supabase.com/).
 
 ### [What is Supabase](https://supabase.com/docs/)
 
-Supabase is an open source Firebase alternative. We are a service to:
+Flutter Client library for [Supabase](https://supabase.com/).
 
-- listen to database changes
-- query your tables, including filtering, pagination, and deeply nested relationships (like GraphQL)
-- create, update, and delete rows
-- manage your users and their permissions
-- interact with your database using a simple UI
-
-## Status
-
-- [x] Alpha: Under heavy development
-- [x] Public Alpha: Ready for testing. But go easy on us, there will be bugs and missing functionality.
-- [x] Public Beta: Stable. No breaking changes expected in this version but possible bugs.
-- [ ] Public: Production-ready
-
-## Features
-
-- ✅ Null-safety
-
-| Platform | Email Auth | Provider Auth | Database | Realtime | Storage |
-| -------- | :--------: | :-----------: | :------: | :------: | :-----: |
-| Web      |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| Android  |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| iOS      |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| macOS    |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| Windows  |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| Linux    |     ✅     |               |    ✅    |    ✅    |   ✅    |
+- Documentation: https://supabase.com/docs/reference/dart/introduction
 
 ## Getting Started
 
@@ -60,6 +36,9 @@ void main() async {
 
   runApp(MyApp());
 }
+
+// It's handy to then extract the Supabase client in a variable for later uses
+final supabase = Supabase.instance.client;
 ```
 
 > `authCallbackUrlHostname` is optional. It will be used to filter Supabase authentication redirect deeplink. You need to provide this param if you use deeplink for other features on the app.
@@ -407,6 +386,8 @@ Supabase.initialize(
 ```
 
 ## Deep link config
+
+*Currently supabase_flutter supports deep links on Android, iOS, Web, MacOS and Windows.
 
 ### Supabase redirect URLs config
 
