@@ -1,41 +1,13 @@
 # `supabase_flutter`
 
-Flutter package for [Supabase](https://supabase.com/).
-
 [![pub package](https://img.shields.io/pub/v/supabase_flutter.svg)](https://pub.dev/packages/supabase_flutter)
 [![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
 
 ---
 
-### [What is Supabase](https://supabase.com/docs/)
+Flutter Client library for [Supabase](https://supabase.com/).
 
-Supabase is an open source Firebase alternative. We are a service to:
-
-- listen to database changes
-- query your tables, including filtering, pagination, and deeply nested relationships (like GraphQL)
-- create, update, and delete rows
-- manage your users and their permissions
-- interact with your database using a simple UI
-
-## Status
-
-- [x] Alpha: Under heavy development
-- [x] Public Alpha: Ready for testing. But go easy on us, there will be bugs and missing functionality.
-- [x] Public Beta: Stable. No breaking changes expected in this version but possible bugs.
-- [ ] Public: Production-ready
-
-## Features
-
-- ✅ Null-safety
-
-| Platform | Email Auth | Provider Auth | Database | Realtime | Storage |
-| -------- | :--------: | :-----------: | :------: | :------: | :-----: |
-| Web      |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| Android  |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| iOS      |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| macOS    |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| Windows  |     ✅     |      ✅       |    ✅    |    ✅    |   ✅    |
-| Linux    |     ✅     |               |    ✅    |    ✅    |   ✅    |
+- Documentation: https://supabase.com/docs/reference/dart/introduction
 
 ## Getting Started
 
@@ -60,6 +32,9 @@ void main() async {
 
   runApp(MyApp());
 }
+
+// It's handy to then extract the Supabase client in a variable for later uses
+final supabase = Supabase.instance.client;
 ```
 
 > `authCallbackUrlHostname` is optional. It will be used to filter Supabase authentication redirect deeplink. You need to provide this param if you use deeplink for other features on the app.
@@ -307,27 +282,11 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
-## Authentication
+## Authentication Deep Dive
 
 Using this package automatically persists the auth state on local storage. 
 It also helps you handle authentication with deep link from 3rd party service like Google, Github, Twitter...
 
-
-### Getting initial auth state
-
-You might want to redirect users to different screens upon app launch.
-For this, you can await `initialSession` of `SupabaseAuth` to get the initial session of the user. The future will complete once session recovery is done and will contain either the session if user had one or null if user had no session. 
-
-```dart
-Future<void> getInitialAuthState() async {
-  try {
-    final initialSession = await SupabaseAuth.instance.initialSession;
-    // Redirect users to different screens depending on the initial session
-  } catch(e) {
-    // Handle initial auth state fetch error here
-  }
-}
-```
 
 ### Email authentication
 
@@ -407,6 +366,8 @@ Supabase.initialize(
 ```
 
 ## Deep link config
+
+*Currently supabase_flutter supports deep links on Android, iOS, Web, MacOS and Windows.
 
 ### Supabase redirect URLs config
 
