@@ -1,3 +1,20 @@
+## [1.4.0]
+
+- feat: add `realtimeClientOptions` to `Supabase.initialize()`
+- feat: update supabase to v1.5.0
+  - add `realtimeClientOptions` to SupabaseClient
+  - add missing `options` parameter to rpc
+  - use single isolate for functions and postgrest and add `isolate` parameter to `SupabaseClient`
+  - update postgrest to v1.2.2
+    - improve comment docs
+    - deprecate `returning` parameter of `.delete()`
+  - update storage to v1.2.2
+    - properly parse content type 
+    - correct path parameter documentation
+  - update gotrue to v1.4.1
+    - `onAuthStateChanged` now emits the latest `AuthState`
+    - downgrade minimum `collection` version to support wider range of Flutter SDK versions
+
 ## [1.3.1]
 
 - chore: update readme.md file [#335](https://github.com/supabase/supabase-flutter/pull/335)
