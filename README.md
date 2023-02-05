@@ -91,6 +91,31 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
+#### Native Auth example
+```dart
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final supabase = Supabase.instance.client;
+final String nonce = uuidV4();
+final String hashedNonce = sha256.convert(utf8.encode(nonce)).toString();
+const String clientId = 'com.app';
+
+final AuthorizationCredentialAppleID credential = await SignInWithApple.getAppleIDCredential(
+  scopes: [
+    AppleIDAuthorizationScopes.email,
+  ],
+  nonce: hashedNonce,
+);
+
+return supabase.auth.signInWithIdToken(
+  provider: Provider.google, 
+  idToken: credential.identityToken,
+);
+```
+
 ### [Database](https://supabase.com/docs/guides/database)
 
 ```dart
