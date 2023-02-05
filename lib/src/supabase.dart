@@ -69,6 +69,7 @@ class Supabase {
     LocalStorage? localStorage,
     Client? httpClient,
     int storageRetryAttempts = 0,
+    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     bool? debug,
   }) async {
     assert(
@@ -82,6 +83,7 @@ class Supabase {
       customHeaders: headers,
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
+      realtimeClientOptions: realtimeClientOptions,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
@@ -119,6 +121,7 @@ class Supabase {
     Map<String, String>? customHeaders,
     String? schema,
     required int storageRetryAttempts,
+    required RealtimeClientOptions realtimeClientOptions,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
@@ -131,6 +134,7 @@ class Supabase {
       headers: headers,
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
+      realtimeClientOptions: realtimeClientOptions,
     );
     _initialized = true;
   }
