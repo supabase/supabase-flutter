@@ -376,7 +376,7 @@ Supabase.initialize(
 
 The redirect callback url should have this format `[YOUR_SCHEME]://[YOUR_AUTH_HOSTNAME]`
 
-![authentication settings page](https://raw.githubusercontent.com/Wizzel1/supabase-flutter/5ba88b53b6459ab5420876b50275af316b8f62d2/screenshot.png)
+![authentication settings page](https://raw.githubusercontent.com/supabase/supabase-flutter/main/screenshot.png)
 
 ### Supabase 3rd party logins config
 
