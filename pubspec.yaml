@@ -1,12 +1,12 @@
 name: supabase_flutter
 description: Flutter integration for Supabase. This package makes it simple for developers to build secure and scalable products.
 version: 1.4.0
-homepage: 'https://supabase.io'
-repository: 'https://github.com/supabase/supabase-flutter'
+homepage: "https://supabase.io"
+repository: "https://github.com/supabase/supabase-flutter"
 
 environment:
-  sdk: '>=2.15.0 <3.0.0'
-  flutter: '>=2.8.0'
+  sdk: ">=2.15.0 <3.0.0"
+  flutter: ">=2.8.0"
 
 dependencies:
   app_links: ^3.2.0

@@ -354,22 +354,28 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
         NavigationDelegate(
           onPageStarted: (_) => setState(() => isLoading = true),
           onPageFinished: (_) => setState(() => isLoading = false),
-          onWebResourceError: (_) => Navigator.of(context).canPop()
-              ? Navigator.of(context).pop(false)
-              : null,
-          onNavigationRequest: (NavigationRequest request) {
-            if (widget.redirectTo != null &&
-                request.url.startsWith(widget.redirectTo!)) {
-              launchUrlString(request.url);
-              if (Navigator.canPop(context)) {
-                Navigator.of(context).pop(true);
-              }
-            }
-            return NavigationDecision.navigate;
-          },
+          onNavigationRequest: _onNavigationRequest,
+          onWebResourceError: _onWebResourceError,
         ),
       )
       ..loadRequest(widget.uri);
+  }
+
+  void _onWebResourceError(WebResourceError error) {
+    if (Navigator.canPop(context)) {
+      Navigator.of(context).pop(false);
+    }
+  }
+
+  FutureOr<NavigationDecision> _onNavigationRequest(NavigationRequest request) {
+    if (widget.redirectTo != null &&
+        request.url.startsWith(widget.redirectTo!)) {
+      launchUrlString(request.url);
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop(true);
+      }
+    }
+    return NavigationDecision.navigate;
   }
 
   @override
