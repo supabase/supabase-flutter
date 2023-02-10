@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:url_launcher/url_launcher_string.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 // ignore_for_file: invalid_null_aware_operator
 
@@ -288,6 +289,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
   Future<bool> signInWithOAuth(
+    BuildContext context,
     Provider provider, {
     String? redirectTo,
     String? scopes,
@@ -300,12 +302,105 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final url = Uri.parse(res.url!);
-    final result = await launchUrl(
-      url,
-      mode: authScreenLaunchMode,
-      webOnlyWindowName: '_self',
+    final uri = Uri.parse(res.url!);
+
+    bool? result;
+    if (authScreenLaunchMode == LaunchMode.inAppWebView) {
+      result = await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => _OAuthSignInWebView(
+          uri: uri,
+          redirectTo: redirectTo,
+        ),
+      );
+    } else {
+      result = await launchUrl(
+        uri,
+        mode: authScreenLaunchMode,
+        webOnlyWindowName: '_self',
+      );
+    }
+    return result ?? false;
+  }
+}
+
+class _OAuthSignInWebView extends StatefulWidget {
+  const _OAuthSignInWebView({
+    Key? key,
+    required this.uri,
+    required this.redirectTo,
+  }) : super(key: key);
+
+  final Uri uri;
+  final String? redirectTo;
+
+  @override
+  State<_OAuthSignInWebView> createState() => _OAuthSignInWebViewState();
+}
+
+/// Modal bottom sheet with webview for OAuth sign in
+class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
+  late final WebViewController controller;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = WebViewController()
+      ..setUserAgent('random')
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (_) => setState(() => isLoading = true),
+          onPageFinished: (_) => setState(() => isLoading = false),
+          onWebResourceError: (_) => Navigator.of(context).canPop()
+              ? Navigator.of(context).pop(false)
+              : null,
+          onNavigationRequest: (NavigationRequest request) {
+            if (widget.redirectTo != null &&
+                request.url.startsWith(widget.redirectTo!)) {
+              launchUrlString(request.url);
+              if (Navigator.canPop(context)) {
+                Navigator.of(context).pop(true);
+              }
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(widget.uri);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.9,
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            // WebView
+            WebViewWidget(controller: controller),
+            // Handle
+            Container(
+              height: 4,
+              width: 40,
+              margin: EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.grey,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            // Loader
+            if (isLoading)
+              const Center(
+                child: CircularProgressIndicator.adaptive(),
+              )
+          ],
+        ),
+      ),
     );
-    return result;
   }
 }
