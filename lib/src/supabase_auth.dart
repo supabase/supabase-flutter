@@ -7,9 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-
-// ignore_for_file: invalid_null_aware_operator
 
 /// SupabaseAuth
 class SupabaseAuth with WidgetsBindingObserver {
@@ -343,52 +342,58 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
   late final WebViewController controller;
   bool isLoading = true;
 
+  void _handleWebResourceError(WebResourceError error) {
+    if (Navigator.canPop(context)) {
+      Navigator.of(context).pop(false);
+    }
+  }
+
   FutureOr<NavigationDecision> _handleNavigationRequest(
     NavigationRequest request,
   ) {
     if (widget.redirectTo != null &&
         request.url.startsWith(widget.redirectTo!)) {
-      Navigator.of(context).pop(true);
-      return NavigationDecision.prevent;
+      launchUrlString(request.url);
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop(true);
+      }
     }
     return NavigationDecision.navigate;
   }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.9,
-        child: Stack(
-          alignment: Alignment.topCenter,
-          children: [
-            // WebView
-            WebView(
-              userAgent: 'random',
-              initialUrl: widget.uri.toString(),
-              javascriptMode: JavascriptMode.unrestricted,
-              onPageStarted: (_) => setState(() => isLoading = true),
-              onPageFinished: (_) => setState(() => isLoading = false),
-              navigationDelegate: _handleNavigationRequest,
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.9,
+      child: Stack(
+        alignment: Alignment.topCenter,
+        children: [
+          // WebView
+          WebView(
+            userAgent: 'random',
+            initialUrl: widget.uri.toString(),
+            javascriptMode: JavascriptMode.unrestricted,
+            onPageStarted: (_) => setState(() => isLoading = true),
+            onPageFinished: (_) => setState(() => isLoading = false),
+            navigationDelegate: _handleNavigationRequest,
+            onWebResourceError: _handleWebResourceError,
+          ),
+          // Handle
+          Container(
+            height: 4,
+            width: 40,
+            margin: EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey,
+              borderRadius: BorderRadius.circular(8),
             ),
-            // Handle
-            Container(
-              height: 4,
-              width: 40,
-              margin: EdgeInsets.symmetric(vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.grey,
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            // Loader
-            if (isLoading)
-              const Center(
-                child: CircularProgressIndicator.adaptive(),
-              )
-          ],
-        ),
+          ),
+          // Loader
+          if (isLoading)
+            const Center(
+              child: CircularProgressIndicator.adaptive(),
+            )
+        ],
       ),
     );
   }
