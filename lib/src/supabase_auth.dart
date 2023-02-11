@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:url_launcher/url_launcher_string.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 // ignore_for_file: invalid_null_aware_operator
@@ -347,8 +346,8 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
   FutureOr<NavigationDecision> _handleNavigationRequest(
     NavigationRequest request,
   ) {
-    final uri = Uri.parse(request.url);
-    if (uri.host == widget.redirectTo) {
+    if (widget.redirectTo != null &&
+        request.url.startsWith(widget.redirectTo!)) {
       Navigator.of(context).pop(true);
       return NavigationDecision.prevent;
     }
