@@ -6,7 +6,7 @@ import FlutterMacOS
 import Foundation
 
 import app_links
-import path_provider_foundation
+import path_provider_macos
 import url_launcher_macos
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {

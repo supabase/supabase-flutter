@@ -344,36 +344,13 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
   late final WebViewController controller;
   bool isLoading = true;
 
-  @override
-  void initState() {
-    super.initState();
-    controller = WebViewController()
-      ..setUserAgent('random')
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (_) => setState(() => isLoading = true),
-          onPageFinished: (_) => setState(() => isLoading = false),
-          onNavigationRequest: _onNavigationRequest,
-          onWebResourceError: _onWebResourceError,
-        ),
-      )
-      ..loadRequest(widget.uri);
-  }
-
-  void _onWebResourceError(WebResourceError error) {
-    if (Navigator.canPop(context)) {
-      Navigator.of(context).pop(false);
-    }
-  }
-
-  FutureOr<NavigationDecision> _onNavigationRequest(NavigationRequest request) {
-    if (widget.redirectTo != null &&
-        request.url.startsWith(widget.redirectTo!)) {
-      launchUrlString(request.url);
-      if (Navigator.canPop(context)) {
-        Navigator.of(context).pop(true);
-      }
+  FutureOr<NavigationDecision> _handleNavigationRequest(
+    NavigationRequest request,
+  ) {
+    final uri = Uri.parse(request.url);
+    if (uri.host == widget.redirectTo) {
+      Navigator.of(context).pop(true);
+      return NavigationDecision.prevent;
     }
     return NavigationDecision.navigate;
   }
@@ -388,7 +365,14 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
           alignment: Alignment.topCenter,
           children: [
             // WebView
-            WebViewWidget(controller: controller),
+            WebView(
+              userAgent: 'random',
+              initialUrl: widget.uri.toString(),
+              javascriptMode: JavascriptMode.unrestricted,
+              onPageStarted: (_) => setState(() => isLoading = true),
+              onPageFinished: (_) => setState(() => isLoading = false),
+              navigationDelegate: _handleNavigationRequest,
+            ),
             // Handle
             Container(
               height: 4,
