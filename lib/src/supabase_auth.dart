@@ -287,8 +287,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
   Future<bool> signInWithOAuth(
-    BuildContext context,
     Provider provider, {
+    BuildContext? context,
     String? redirectTo,
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.externalApplication,
@@ -303,12 +303,13 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     final uri = Uri.parse(res.url!);
 
     bool? result;
-    if (authScreenLaunchMode == LaunchMode.inAppWebView) {
+    if (authScreenLaunchMode == LaunchMode.inAppWebView && !kIsWeb) {
+      assert(context != null, 'context is required for inAppWebView');
       result = await showModalBottomSheet<bool>(
-        context: context,
+        context: context!,
         isScrollControlled: true,
         builder: (context) => _OAuthSignInWebView(
-          uri: uri,
+          oAuthUri: uri,
           redirectTo: redirectTo,
         ),
       );
@@ -326,11 +327,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
 class _OAuthSignInWebView extends StatefulWidget {
   const _OAuthSignInWebView({
     Key? key,
-    required this.uri,
+    required this.oAuthUri,
     required this.redirectTo,
   }) : super(key: key);
 
-  final Uri uri;
+  final Uri oAuthUri;
   final String? redirectTo;
 
   @override
@@ -339,7 +340,6 @@ class _OAuthSignInWebView extends StatefulWidget {
 
 /// Modal bottom sheet with webview for OAuth sign in
 class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
-  late final WebViewController controller;
   bool isLoading = true;
 
   void _handleWebResourceError(WebResourceError error) {
@@ -371,7 +371,7 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
           // WebView
           WebView(
             userAgent: 'random',
-            initialUrl: widget.uri.toString(),
+            initialUrl: widget.oAuthUri.toString(),
             javascriptMode: JavascriptMode.unrestricted,
             onPageStarted: (_) => setState(() => isLoading = true),
             onPageFinished: (_) => setState(() => isLoading = false),
