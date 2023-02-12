@@ -303,10 +303,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     final uri = Uri.parse(res.url!);
 
     bool? result;
-    if (authScreenLaunchMode == LaunchMode.inAppWebView && !kIsWeb) {
-      assert(context != null, 'context is required for inAppWebView');
+    if (authScreenLaunchMode == LaunchMode.inAppWebView &&
+        context != null &&
+        !kIsWeb) {
       result = await showModalBottomSheet<bool>(
-        context: context!,
+        context: context,
         isScrollControlled: true,
         builder: (context) => _OAuthSignInWebView(
           oAuthUri: uri,
