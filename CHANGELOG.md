@@ -1,3 +1,7 @@
+## [1.4.1]
+
+- fix: print stack trace on the console while in debug mode when auth error occurs
+
 ## [1.4.0]
 
 - feat: add `realtimeClientOptions` to `Supabase.initialize()`
