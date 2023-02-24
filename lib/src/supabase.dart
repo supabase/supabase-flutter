@@ -139,9 +139,12 @@ class Supabase {
     _initialized = true;
   }
 
-  void log(String msg) {
+  void log(String msg, [StackTrace? stackTrace]) {
     if (_debugEnable) {
       debugPrint(msg);
+      if (stackTrace != null) {
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
   }
 }
