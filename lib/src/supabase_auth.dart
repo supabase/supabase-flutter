@@ -93,13 +93,13 @@ class SupabaseAuth with WidgetsBindingObserver {
               _instance._initialSessionCompleter.complete(response.session);
             }
           } on AuthException catch (error, stackTrace) {
-            Supabase.instance.log(error.message);
+            Supabase.instance.log(error.message, stackTrace);
             if (!_instance._initialSessionCompleter.isCompleted) {
               _instance._initialSessionCompleter
                   .completeError(error, stackTrace);
             }
           } catch (error, stackTrace) {
-            Supabase.instance.log(error.toString());
+            Supabase.instance.log(error.toString(), stackTrace);
             if (!_instance._initialSessionCompleter.isCompleted) {
               _instance._initialSessionCompleter
                   .completeError(error, stackTrace);
@@ -279,7 +279,8 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Callback when deeplink receiving throw error
   void _onErrorReceivingDeeplink(String message, StackTrace stackTrace) {
-    Supabase.instance.log('onErrorReceivingDeepLink message: $message');
+    Supabase.instance
+        .log('onErrorReceivingDeepLink message: $message', stackTrace);
   }
 }
 
