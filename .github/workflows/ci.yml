@@ -40,7 +40,7 @@ jobs:
         run: flutter format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
-        run: flutter analyze --fatal-warnings --fatal-infos ./lib ./test/
+        run: flutter analyze --fatal-warnings --fatal-infos ./lib/ ./test/
 
       - name: Run tests
         run: flutter test
