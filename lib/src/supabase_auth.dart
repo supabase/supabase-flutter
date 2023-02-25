@@ -91,15 +91,17 @@ class SupabaseAuth with WidgetsBindingObserver {
             if (!_instance._initialSessionCompleter.isCompleted) {
               _instance._initialSessionCompleter.complete(response.session);
             }
-          } on AuthException catch (error) {
-            Supabase.instance.log(error.message);
+          } on AuthException catch (error, stackTrace) {
+            Supabase.instance.log(error.message, stackTrace);
             if (!_instance._initialSessionCompleter.isCompleted) {
-              _instance._initialSessionCompleter.completeError(error);
+              _instance._initialSessionCompleter
+                  .completeError(error, stackTrace);
             }
-          } catch (error) {
-            Supabase.instance.log(error.toString());
+          } catch (error, stackTrace) {
+            Supabase.instance.log(error.toString(), stackTrace);
             if (!_instance._initialSessionCompleter.isCompleted) {
-              _instance._initialSessionCompleter.completeError(error);
+              _instance._initialSessionCompleter
+                  .completeError(error, stackTrace);
             }
           }
         }
@@ -218,8 +220,8 @@ class SupabaseAuth with WidgetsBindingObserver {
             _handleDeeplink(uri);
           }
         },
-        onError: (Object err) {
-          _onErrorReceivingDeeplink(err.toString());
+        onError: (Object err, StackTrace stackTrace) {
+          _onErrorReceivingDeeplink(err.toString(), stackTrace);
         },
       );
     }
@@ -241,13 +243,13 @@ class SupabaseAuth with WidgetsBindingObserver {
       if (uri != null) {
         await _handleDeeplink(uri);
       }
-    } on PlatformException catch (err) {
-      _onErrorReceivingDeeplink(err.message ?? err.toString());
+    } on PlatformException catch (err, stackTrace) {
+      _onErrorReceivingDeeplink(err.message ?? err.toString(), stackTrace);
       // Platform messages may fail but we ignore the exception
-    } on FormatException catch (err) {
-      _onErrorReceivingDeeplink(err.message);
-    } catch (err) {
-      _onErrorReceivingDeeplink(err.toString());
+    } on FormatException catch (err, stackTrace) {
+      _onErrorReceivingDeeplink(err.message, stackTrace);
+    } catch (err, stackTrace) {
+      _onErrorReceivingDeeplink(err.toString(), stackTrace);
     }
   }
 
@@ -267,16 +269,17 @@ class SupabaseAuth with WidgetsBindingObserver {
   Future<void> _recoverSessionFromUrl(Uri uri) async {
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
-    } on AuthException catch (error) {
-      Supabase.instance.log(error.message);
-    } catch (error) {
-      Supabase.instance.log(error.toString());
+    } on AuthException catch (error, stackTrace) {
+      Supabase.instance.log(error.message, stackTrace);
+    } catch (error, stackTrace) {
+      Supabase.instance.log(error.toString(), stackTrace);
     }
   }
 
   /// Callback when deeplink receiving throw error
-  void _onErrorReceivingDeeplink(String message) {
-    Supabase.instance.log('onErrorReceivingDeepLink message: $message');
+  void _onErrorReceivingDeeplink(String message, StackTrace stackTrace) {
+    Supabase.instance
+        .log('onErrorReceivingDeepLink message: $message', stackTrace);
   }
 }
 
