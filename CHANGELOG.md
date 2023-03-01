@@ -1,3 +1,8 @@
+## [1.5.0]
+
+- feat: update supabase-dart to 1.6.0
+  - add support for `signInWithIdToken`
+  - 
 ## [1.4.1]
 
 - fix: print stack trace on the console while in debug mode when auth error occurs
