@@ -23,4 +23,11 @@ dev_dependencies:
     sdk: flutter
   lints: ^1.0.1
 
+platforms:
+  android:
+  ios:
+  macos:
+  web:
+  windows:
+
 flutter:
