@@ -376,7 +376,7 @@ Supabase.initialize(
 
 The redirect callback url should have this format `[YOUR_SCHEME]://[YOUR_AUTH_HOSTNAME]`
 
-![authentication settings page](https://raw.githubusercontent.com/supabase/supabase-flutter/main/screenshot.png)
+![authentication settings page](https://raw.githubusercontent.com/supabase/supabase-flutter/main/images/deeplink-config.png)
 
 ### Supabase 3rd party logins config
 
