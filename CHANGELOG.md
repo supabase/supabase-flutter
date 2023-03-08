@@ -2,7 +2,12 @@
 
 - feat: update supabase-dart to 1.6.0
   - add support for `signInWithIdToken`
-  - 
+
+## [1.4.2]
+
+- fix: show web support on pub.dev [#373](https://github.com/supabase/supabase-flutter/pull/373)
+- refactor: update example [#374](https://github.com/supabase/supabase-flutter/pull/374)
+
 ## [1.4.1]
 
 - fix: print stack trace on the console while in debug mode when auth error occurs

@@ -91,7 +91,9 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
-#### Native Auth example
+#### Native Sign in with Apple example
+##### The `signInWithIdToken` method is currently experimental and is subject to change.
+
 ```dart
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
