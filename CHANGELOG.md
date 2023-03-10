@@ -1,7 +1,8 @@
 ## [1.5.0]
 
-- feat: update supabase-dart to 1.6.0
+- feat: update supabase-dart to 1.6.0 [#381](https://github.com/supabase/supabase-flutter/pull/381)
   - add support for `signInWithIdToken`
+- fix: declare web support [#392](https://github.com/supabase/supabase-flutter/pull/392)
 
 ## [1.4.2]
 
