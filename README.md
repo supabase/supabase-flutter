@@ -9,6 +9,10 @@ Flutter Client library for [Supabase](https://supabase.com/).
 
 - Documentation: https://supabase.com/docs/reference/dart/introduction
 
+## Platform Support
+
+Except Linux, all platforms are fully supported. Linux only doesn't support deeplinks, because of our dependency [app_links](https://pub.dev/packages/app_links). All other features are supported.
+
 ## Getting Started
 
 Import the package:
@@ -89,6 +93,33 @@ class _MyWidgetState extends State<MyWidget> {
     );
   }
 }
+```
+
+#### Native Sign in with Apple example
+##### The `signInWithIdToken` method is currently experimental and is subject to change.
+
+```dart
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final supabase = Supabase.instance.client;
+final String nonce = uuidV4();
+final String hashedNonce = sha256.convert(utf8.encode(nonce)).toString();
+const String clientId = 'com.app';
+
+final AuthorizationCredentialAppleID credential = await SignInWithApple.getAppleIDCredential(
+  scopes: [
+    AppleIDAuthorizationScopes.email,
+  ],
+  nonce: hashedNonce,
+);
+
+return supabase.auth.signInWithIdToken(
+  provider: Provider.google, 
+  idToken: credential.identityToken,
+);
 ```
 
 ### [Database](https://supabase.com/docs/guides/database)
