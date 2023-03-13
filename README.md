@@ -117,8 +117,9 @@ final AuthorizationCredentialAppleID credential = await SignInWithApple.getApple
 );
 
 return supabase.auth.signInWithIdToken(
-  provider: Provider.google, 
+  provider: Provider.apple, 
   idToken: credential.identityToken,
+  nonce: nonce
 );
 ```
 
