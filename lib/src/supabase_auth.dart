@@ -140,7 +140,9 @@ class SupabaseAuth with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
+        if (!_initialDeeplinkIsHandled) {
         _recoverSupabaseSession();
+        }
         break;
       case AppLifecycleState.inactive:
         break;
