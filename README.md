@@ -96,7 +96,7 @@ class _MyWidgetState extends State<MyWidget> {
 ```
 
 #### Native Sign in with Apple example
-##### The `signInWithIdToken` method is currently experimental and is subject to change.
+##### The `signInWithIdToken` method is currently experimental and is subject to change. Apple sign in on iOS is working, as shown in the code below, but other combinations of Apple/Google sign in on iOS/Android may not be. Follow [this issue](https://github.com/supabase/supabase-flutter/issues/399) for platform support progress.
 
 ```dart
 import 'dart:convert';
@@ -117,8 +117,9 @@ final AuthorizationCredentialAppleID credential = await SignInWithApple.getApple
 );
 
 return supabase.auth.signInWithIdToken(
-  provider: Provider.google, 
+  provider: Provider.apple, 
   idToken: credential.identityToken,
+  nonce: nonce
 );
 ```
 
