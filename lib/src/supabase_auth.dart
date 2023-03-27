@@ -1,15 +1,14 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
-
-// ignore_for_file: invalid_null_aware_operator
+import 'package:url_launcher/url_launcher_string.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 /// SupabaseAuth
 class SupabaseAuth with WidgetsBindingObserver {
@@ -287,11 +286,27 @@ class SupabaseAuth with WidgetsBindingObserver {
 extension GoTrueClientSignInProvider on GoTrueClient {
   /// Signs the user in using a third party providers.
   ///
+  /// ```dart
+  /// await supabase.auth.signInWithOAuth(
+  ///   Provider.google,
+  ///   // Use deep link to bring the user back to the app
+  ///   redirectTo: 'my-scheme://my-host/login-callback',
+  ///   // Pass the context and set the launch mode to `inAppWebView` to open the OAuth screen in webview for iOS apps
+  ///   context: context,
+  ///   authScreenLaunchMode: LaunchMode.inAppWebView,
+  /// );
+  /// ```
+  ///
+  /// The return value of this method is not the auth result, and whether the
+  /// OAuth sign-in has succeded or not should be observed by setting a listener
+  /// on [auth.onAuthStateChanged].
+  ///
   /// See also:
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
   Future<bool> signInWithOAuth(
     Provider provider, {
+    BuildContext? context,
     String? redirectTo,
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.externalApplication,
@@ -303,12 +318,92 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final url = Uri.parse(res.url!);
-    final result = await launchUrl(
-      url,
-      mode: authScreenLaunchMode,
-      webOnlyWindowName: '_self',
+    final uri = Uri.parse(res.url!);
+
+    final willOpenWebview = authScreenLaunchMode == LaunchMode.inAppWebView &&
+        context != null &&
+        !kIsWeb && // `Platform.isIOS` throws on web, so adding a guard for web here.
+        Platform.isIOS;
+
+    if (willOpenWebview) {
+      Navigator.of(context).push(PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) {
+        return _OAuthSignInWebView(oAuthUri: uri, redirectTo: redirectTo);
+      }));
+      return true;
+    } else {
+      final result = await launchUrl(
+        uri,
+        mode: authScreenLaunchMode,
+        webOnlyWindowName: '_self',
+      );
+      return result;
+    }
+  }
+}
+
+class _OAuthSignInWebView extends StatefulWidget {
+  const _OAuthSignInWebView({
+    Key? key,
+    required this.oAuthUri,
+    required this.redirectTo,
+  }) : super(key: key);
+
+  final Uri oAuthUri;
+  final String? redirectTo;
+
+  @override
+  State<_OAuthSignInWebView> createState() => _OAuthSignInWebViewState();
+}
+
+/// Modal bottom sheet with webview for OAuth sign in
+class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
+  bool isLoading = true;
+
+  void _handleWebResourceError(WebResourceError error) {
+    if (Navigator.canPop(context)) {
+      Navigator.of(context).pop(false);
+    }
+  }
+
+  FutureOr<NavigationDecision> _handleNavigationRequest(
+    NavigationRequest request,
+  ) {
+    if (widget.redirectTo != null &&
+        request.url.startsWith(widget.redirectTo!)) {
+      launchUrlString(request.url);
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop(true);
+      }
+    }
+    return NavigationDecision.navigate;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      child: SafeArea(
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            // WebView
+            WebView(
+              userAgent: 'Supabase OAuth',
+              initialUrl: widget.oAuthUri.toString(),
+              javascriptMode: JavascriptMode.unrestricted,
+              onPageStarted: (_) => setState(() => isLoading = true),
+              onPageFinished: (_) => setState(() => isLoading = false),
+              navigationDelegate: _handleNavigationRequest,
+              onWebResourceError: _handleWebResourceError,
+            ),
+            // Loader
+            if (isLoading)
+              const Center(
+                child: CircularProgressIndicator.adaptive(),
+              )
+          ],
+        ),
+      ),
     );
-    return result;
   }
 }
