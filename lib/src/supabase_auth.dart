@@ -286,6 +286,22 @@ class SupabaseAuth with WidgetsBindingObserver {
 extension GoTrueClientSignInProvider on GoTrueClient {
   /// Signs the user in using a third party providers.
   ///
+  /// Pass a context to launch it in
+  /// ```dart
+  /// await supabase.auth.signInWithOAuth(
+  ///   Provider.google,
+  ///   // Use deep link to bring the user back to the app
+  ///   redirectTo: 'my-scheme://my-host/login-callback',
+  ///   // Pass the context and set the launch mode to `inAppWebView` to open the OAuth screen in webview for native apps
+  ///   context: context,
+  ///   authScreenLaunchMode: LaunchMode.inAppWebView,
+  /// );
+  /// ```
+  ///
+  /// The return value of this method is not the auth result, and whether the
+  /// OAuth sign-in has succeded or not should be observed by setting a listener
+  /// on [auth.onAuthStateChanged].
+  ///
   /// See also:
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
@@ -305,22 +321,22 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     );
     final uri = Uri.parse(res.url!);
 
-    bool? result;
     if (authScreenLaunchMode == LaunchMode.inAppWebView &&
         context != null &&
         !kIsWeb) {
       Navigator.of(context).push(PageRouteBuilder(
-          pageBuilder: (context, insertAnimation, exitamiation) {
+          pageBuilder: (context, animation, secondaryAnimation) {
         return _OAuthSignInWebView(oAuthUri: uri, redirectTo: redirectTo);
       }));
+      return true;
     } else {
-      result = await launchUrl(
+      final result = await launchUrl(
         uri,
         mode: authScreenLaunchMode,
         webOnlyWindowName: '_self',
       );
+      return result;
     }
-    return result ?? false;
   }
 }
 
