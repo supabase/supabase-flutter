@@ -309,14 +309,10 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     if (authScreenLaunchMode == LaunchMode.inAppWebView &&
         context != null &&
         !kIsWeb) {
-      result = await showModalBottomSheet<bool>(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) => _OAuthSignInWebView(
-          oAuthUri: uri,
-          redirectTo: redirectTo,
-        ),
-      );
+      Navigator.of(context).push(PageRouteBuilder(
+          pageBuilder: (context, insertAnimation, exitamiation) {
+        return _OAuthSignInWebView(oAuthUri: uri, redirectTo: redirectTo);
+      }));
     } else {
       result = await launchUrl(
         uri,
@@ -367,37 +363,28 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.9,
-      child: Stack(
-        alignment: Alignment.topCenter,
-        children: [
-          // WebView
-          WebView(
-            userAgent: 'random',
-            initialUrl: widget.oAuthUri.toString(),
-            javascriptMode: JavascriptMode.unrestricted,
-            onPageStarted: (_) => setState(() => isLoading = true),
-            onPageFinished: (_) => setState(() => isLoading = false),
-            navigationDelegate: _handleNavigationRequest,
-            onWebResourceError: _handleWebResourceError,
-          ),
-          // Handle
-          Container(
-            height: 4,
-            width: 40,
-            margin: EdgeInsets.symmetric(vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey,
-              borderRadius: BorderRadius.circular(8),
+    return Material(
+      child: SafeArea(
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            // WebView
+            WebView(
+              userAgent: 'Supabase OAuth',
+              initialUrl: widget.oAuthUri.toString(),
+              javascriptMode: JavascriptMode.unrestricted,
+              onPageStarted: (_) => setState(() => isLoading = true),
+              onPageFinished: (_) => setState(() => isLoading = false),
+              navigationDelegate: _handleNavigationRequest,
+              onWebResourceError: _handleWebResourceError,
             ),
-          ),
-          // Loader
-          if (isLoading)
-            const Center(
-              child: CircularProgressIndicator.adaptive(),
-            )
-        ],
+            // Loader
+            if (isLoading)
+              const Center(
+                child: CircularProgressIndicator.adaptive(),
+              )
+          ],
+        ),
       ),
     );
   }
