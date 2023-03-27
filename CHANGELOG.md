@@ -1,3 +1,10 @@
+## [1.6.0]
+
+- feat: Added custom WebView for OAuth (LaunchMode.inAppWebView) [#355](https://github.com/supabase/supabase-flutter/pull/355)
+- fix: update supabase to v1.6.1
+    - add setAuth() function to storage
+    - fix: keep one storage and functions instance to persist auth
+
 ## [1.5.0]
 
 - feat: update supabase-dart to 1.6.0 [#381](https://github.com/supabase/supabase-flutter/pull/381)
