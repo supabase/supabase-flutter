@@ -74,9 +74,13 @@ class SupabaseAuth with WidgetsBindingObserver {
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
 
       _instance._authSubscription =
-          Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-        _instance._onAuthStateChange(data.event, data.session);
-      });
+          Supabase.instance.client.auth.onAuthStateChange.listen(
+        (data) {
+          _instance._onAuthStateChange(data.event, data.session);
+        },
+      )..onError((error, stackTrace) {
+              Supabase.instance.log(error.toString(), stackTrace);
+            });
 
       await _instance._localStorage.initialize();
 
