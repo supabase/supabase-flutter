@@ -24,7 +24,11 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Version (please complete the following information):**
- - [e.g. 1.2.2]
+On Linux/macOS
+Please run `dart pub deps | grep -E "supabase|gotrue|postgrest|storage_client|realtime_client|functions_client"` in your project directory and paste the output here.
+
+On Windows
+Please run `dart pub deps | findstr "supabase gotrue postgrest storage_client realtime_client functions_client"` in your project directory and paste the output here.
 
 **Additional context**
 Add any other context about the problem here.

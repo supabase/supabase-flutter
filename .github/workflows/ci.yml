@@ -37,7 +37,7 @@ jobs:
         run: flutter pub get
 
       - name: flutterfmt
-        run: flutter format lib test -l 80 --set-exit-if-changed
+        run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
         run: flutter analyze --fatal-warnings --fatal-infos .
