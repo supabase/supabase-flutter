@@ -1,3 +1,8 @@
+## [1.6.1]
+
+- fix: add onError within SupabaseAuth.dart to listen to auth errors [#416](https://github.com/supabase/supabase-flutter/pull/416)
+- fix: catch initial session [#418](https://github.com/supabase/supabase-flutter/pull/418)
+
 ## [1.6.0]
 
 - feat: Added custom WebView for OAuth (LaunchMode.inAppWebView) [#355](https://github.com/supabase/supabase-flutter/pull/355)
