@@ -6,32 +6,52 @@ import 'widget_test_stubs.dart';
 void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
+  group("Valid session", () {
+    setUp(() async {
+      mockAppLink();
+      // Initialize the Supabase singleton
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+        localStorage: MockLocalStorage(),
+      );
+    });
 
-  setUpAll(() async {
-    mockAppLink();
-    // Initialize the Supabase singleton
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseKey,
-      localStorage: MockLocalStorage(),
-    );
+    tearDown(() => Supabase.instance.dispose());
+
+    test('can access Supabase singleton', () async {
+      final client = Supabase.instance.client;
+      await expectLater(
+          await SupabaseAuth.instance.initialSession, isA<Session>());
+      expect(client, isNotNull);
+    });
+
+    test('can re-initialize client', () async {
+      final client = Supabase.instance.client;
+      Supabase.instance.dispose();
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+        localStorage: MockLocalStorage(),
+      );
+
+      final newClient = Supabase.instance.client;
+      expect(client, isNot(newClient));
+    });
   });
 
-  testWidgets('can access Supabase singleton', (tester) async {
-    final client = Supabase.instance.client;
-    expect(client, isNotNull);
-  });
-
-  test('can re-initialize client', () async {
-    final client = Supabase.instance.client;
-    Supabase.instance.dispose();
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseKey,
-      localStorage: MockLocalStorage(),
-    );
-
-    final newClient = Supabase.instance.client;
-    expect(client, isNot(newClient));
+  group("Expired session", () {
+    setUp(() async {
+      mockAppLink();
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+        localStorage: MockExpiredStorage(),
+      );
+    });
+    test('initial session contains the error', () async {
+      await expectLater(
+          SupabaseAuth.instance.initialSession, throwsA(isA<AuthException>()));
+    });
   });
 }

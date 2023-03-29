@@ -1,12 +1,12 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -35,7 +35,8 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Can be used to determine whether a user is signed in upon initial
   /// app launch.
   Future<Session?> get initialSession => _initialSessionCompleter.future;
-  final Completer<Session?> _initialSessionCompleter = Completer();
+
+  late Completer<Session?> _initialSessionCompleter;
 
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
@@ -72,6 +73,11 @@ class SupabaseAuth with WidgetsBindingObserver {
       _instance._initialized = true;
       _instance._localStorage = localStorage;
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
+      _instance._initialSessionCompleter = Completer();
+
+      _instance.initialSession.catchError((e, d) {
+        return null;
+      });
 
       _instance._authSubscription =
           Supabase.instance.client.auth.onAuthStateChange.listen((data) {
