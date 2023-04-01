@@ -1,6 +1,6 @@
 ## [1.6.2]
 
-- fix: Update supabase_auth.dart [#422](https://github.com/supabase/supabase-flutter/pull/422)
+- fix: persist session to local storage on `onAuthStateChanged` event with a session [#422](https://github.com/supabase/supabase-flutter/pull/422)
 
 ## [1.6.1]
 
