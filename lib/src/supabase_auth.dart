@@ -370,6 +370,8 @@ class _OAuthSignInWebView extends StatefulWidget {
 class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
   bool isLoading = true;
 
+  late final WebViewController _controller;
+
   void _handleWebResourceError(WebResourceError error) {
     if (Navigator.canPop(context)) {
       Navigator.of(context).pop(false);
@@ -390,6 +392,21 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setUserAgent('Supabase OAuth')
+      ..loadRequest(widget.oAuthUri)
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(NavigationDelegate(
+        onPageStarted: (_) => setState(() => isLoading = true),
+        onPageFinished: (_) => setState(() => isLoading = false),
+        onWebResourceError: _handleWebResourceError,
+        onNavigationRequest: _handleNavigationRequest,
+      ));
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Material(
       child: SafeArea(
@@ -397,14 +414,8 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
           alignment: Alignment.topCenter,
           children: [
             // WebView
-            WebView(
-              userAgent: 'Supabase OAuth',
-              initialUrl: widget.oAuthUri.toString(),
-              javascriptMode: JavascriptMode.unrestricted,
-              onPageStarted: (_) => setState(() => isLoading = true),
-              onPageFinished: (_) => setState(() => isLoading = false),
-              navigationDelegate: _handleNavigationRequest,
-              onWebResourceError: _handleWebResourceError,
+            WebViewWidget(
+              controller: _controller,
             ),
             // Loader
             if (isLoading)
