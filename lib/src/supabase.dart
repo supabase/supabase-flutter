@@ -59,6 +59,9 @@ class Supabase {
   /// to upload a file to Supabase storage when failed due to network
   /// interruption.
   ///
+  /// By passing [pkceAsyncStorage], you can override the defualt hive local storage
+  /// to store code verifier for pkce flow.
+  ///
   /// If [debug] is set to `true`, debug logs will be printed in debug console.
   static Future<Supabase> initialize({
     required String url,
@@ -70,7 +73,7 @@ class Supabase {
     Client? httpClient,
     int storageRetryAttempts = 0,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    GotrueAsyncStorage? gotrueAsyncStorage,
+    GotrueAsyncStorage? pkceAsyncStorage,
     bool? debug,
   }) async {
     assert(
@@ -85,7 +88,7 @@ class Supabase {
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
-      gotrueAsyncStorage: gotrueAsyncStorage ?? HiveGotrueAsyncStorage(),
+      gotrueAsyncStorage: pkceAsyncStorage ?? HiveGotrueAsyncStorage(),
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
