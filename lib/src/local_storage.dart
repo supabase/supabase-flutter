@@ -119,9 +119,13 @@ class HiveLocalStorage extends LocalStorage {
 
 /// local storage to store pkce flow code verifier.
 class HiveGotrueAsyncStorage extends GotrueAsyncStorage {
+  HiveGotrueAsyncStorage() {
+    _initialize();
+  }
+
   static const pkceHiveBoxName = 'supabase.pkce';
 
-  Future<void> initialize() async {
+  Future<void> _initialize() async {
     String? path;
     if (!kIsWeb) {
       // use support directory for non-web platform

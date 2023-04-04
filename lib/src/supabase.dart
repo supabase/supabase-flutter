@@ -70,6 +70,7 @@ class Supabase {
     Client? httpClient,
     int storageRetryAttempts = 0,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    GotrueAsyncStorage? gotrueAsyncStorage,
     bool? debug,
   }) async {
     assert(
@@ -84,6 +85,7 @@ class Supabase {
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
+      gotrueAsyncStorage: gotrueAsyncStorage ?? HiveGotrueAsyncStorage(),
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
@@ -122,6 +124,7 @@ class Supabase {
     String? schema,
     required int storageRetryAttempts,
     required RealtimeClientOptions realtimeClientOptions,
+    required GotrueAsyncStorage gotrueAsyncStorage,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
@@ -135,7 +138,7 @@ class Supabase {
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
-      gotrueAsyncStorage: HiveGotrueAsyncStorage()..initialize(),
+      gotrueAsyncStorage: gotrueAsyncStorage,
     );
     _initialized = true;
   }
