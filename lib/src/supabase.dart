@@ -135,6 +135,7 @@ class Supabase {
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
+      gotrueAsyncStorage: HiveGotrueAsyncStorage()..initialize(),
     );
     _initialized = true;
   }

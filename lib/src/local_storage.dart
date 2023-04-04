@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _hiveBoxName = 'supabase_authentication';
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
@@ -111,5 +114,35 @@ class HiveLocalStorage extends LocalStorage {
     // Flush after X amount of writes
     return Hive.box(_hiveBoxName)
         .put(supabasePersistSessionKey, persistSessionString);
+  }
+}
+
+/// local storage to store pkce flow code verifier.
+class HiveGotrueAsyncStorage extends GotrueAsyncStorage {
+  static const pkceHiveBoxName = 'supabase.pkce';
+
+  Future<void> initialize() async {
+    String? path;
+    if (!kIsWeb) {
+      // use support directory for non-web platform
+      path = (await getApplicationSupportDirectory()).path;
+    }
+    Hive.initFlutter(path);
+    await Hive.openBox(pkceHiveBoxName);
+  }
+
+  @override
+  Future<String?> getItem({required String key}) async {
+    return Future.value(Hive.box(pkceHiveBoxName).get(key) as String?);
+  }
+
+  @override
+  Future<void> removeItem({required String key}) {
+    return Hive.box(pkceHiveBoxName).delete(key);
+  }
+
+  @override
+  Future<void> setItem({required String key, required String value}) {
+    return Hive.box(pkceHiveBoxName).put(key, value);
   }
 }
