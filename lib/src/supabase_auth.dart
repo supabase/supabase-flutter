@@ -301,9 +301,9 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///   Provider.google,
   ///   // Use deep link to bring the user back to the app
   ///   redirectTo: 'my-scheme://my-host/login-callback',
-  ///   // Pass the context and set the launch mode to `inAppWebView` to open the OAuth screen in webview for iOS apps
+  ///   // Pass the context to open the OAuth screen in webview for iOS apps as recommended by Apple.
+  ///   // For other platforms it will launch the OAuth screen in external browser.
   ///   context: context,
-  ///   authScreenLaunchMode: LaunchMode.inAppWebView,
   /// );
   /// ```
   ///
@@ -330,7 +330,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     );
     final uri = Uri.parse(res.url!);
 
-    final willOpenWebview = authScreenLaunchMode == LaunchMode.inAppWebView &&
+    final willOpenWebview = (authScreenLaunchMode == LaunchMode.inAppWebView ||
+            authScreenLaunchMode == LaunchMode.platformDefault) &&
         context != null &&
         !kIsWeb && // `Platform.isIOS` throws on web, so adding a guard for web here.
         Platform.isIOS;
@@ -380,13 +381,10 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
 
   FutureOr<NavigationDecision> _handleNavigationRequest(
     NavigationRequest request,
-  ) {
+  ) async {
     if (widget.redirectTo != null &&
         request.url.startsWith(widget.redirectTo!)) {
-      launchUrlString(request.url);
-      if (Navigator.canPop(context)) {
-        Navigator.of(context).pop(true);
-      }
+      await launchUrlString(request.url);
     }
     return NavigationDecision.navigate;
   }
