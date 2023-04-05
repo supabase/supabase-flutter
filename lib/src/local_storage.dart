@@ -1,8 +1,7 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _hiveBoxName = 'supabase_authentication';
@@ -118,35 +117,31 @@ class HiveLocalStorage extends LocalStorage {
 }
 
 /// local storage to store pkce flow code verifier.
-class HiveGotrueAsyncStorage extends GotrueAsyncStorage {
-  HiveGotrueAsyncStorage() {
+class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
+  SharedPreferencesGotrueAsyncStorage() {
     _initialize();
   }
 
   static const pkceHiveBoxName = 'supabase.pkce';
 
+  late final SharedPreferences _prefs;
+
   Future<void> _initialize() async {
-    String? path;
-    if (!kIsWeb) {
-      // use support directory for non-web platform
-      path = (await getApplicationSupportDirectory()).path;
-    }
-    Hive.initFlutter(path);
-    await Hive.openBox(pkceHiveBoxName);
+    _prefs = await SharedPreferences.getInstance();
   }
 
   @override
   Future<String?> getItem({required String key}) async {
-    return Future.value(Hive.box(pkceHiveBoxName).get(key) as String?);
+    return _prefs.getString(key);
   }
 
   @override
   Future<void> removeItem({required String key}) {
-    return Hive.box(pkceHiveBoxName).delete(key);
+    return _prefs.remove(key);
   }
 
   @override
   Future<void> setItem({required String key, required String value}) {
-    return Hive.box(pkceHiveBoxName).put(key, value);
+    return _prefs.setString(key, value);
   }
 }

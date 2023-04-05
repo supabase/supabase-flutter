@@ -88,7 +88,8 @@ class Supabase {
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
-      gotrueAsyncStorage: pkceAsyncStorage ?? HiveGotrueAsyncStorage(),
+      gotrueAsyncStorage:
+          pkceAsyncStorage ?? SharedPreferencesGotrueAsyncStorage(),
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
