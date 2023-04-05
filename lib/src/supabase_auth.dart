@@ -321,12 +321,14 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.externalApplication,
     Map<String, String>? queryParams,
+    OAuthFlowType flowType = OAuthFlowType.implicit,
   }) async {
     final res = await getOAuthSignInUrl(
       provider: provider,
       redirectTo: redirectTo,
       scopes: scopes,
       queryParams: queryParams,
+      flowType: flowType,
     );
     final uri = Uri.parse(res.url!);
 

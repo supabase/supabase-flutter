@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -127,6 +128,7 @@ class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
   late final SharedPreferences _prefs;
 
   Future<void> _initialize() async {
+    WidgetsFlutterBinding.ensureInitialized();
     _prefs = await SharedPreferences.getInstance();
   }
 
