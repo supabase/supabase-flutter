@@ -10,11 +10,13 @@ environment:
 
 dependencies:
   app_links: ^3.4.1
+  crypto: ^3.0.2
   flutter:
     sdk: flutter
   hive: ^2.2.1
   hive_flutter: ^1.1.0
   http: ^0.13.4
+  sign_in_with_apple: ^4.3.0
   supabase: ^1.6.1
   url_launcher: ^6.1.2
   webview_flutter: ^4.0.0
