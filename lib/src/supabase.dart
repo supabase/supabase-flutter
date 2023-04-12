@@ -81,17 +81,15 @@ class Supabase {
       !_instance._initialized,
       'This instance is already initialized',
     );
-    _instance._init(
-      url,
-      anonKey,
-      httpClient: httpClient,
-      customHeaders: headers,
-      schema: schema,
-      storageRetryAttempts: storageRetryAttempts,
-      realtimeClientOptions: realtimeClientOptions,
-      gotrueAsyncStorage:
-          pkceAsyncStorage ?? SharedPreferencesGotrueAsyncStorage(),
-    );
+    _instance._init(url, anonKey,
+        httpClient: httpClient,
+        customHeaders: headers,
+        schema: schema,
+        storageRetryAttempts: storageRetryAttempts,
+        realtimeClientOptions: realtimeClientOptions,
+        gotrueAsyncStorage:
+            pkceAsyncStorage ?? SharedPreferencesGotrueAsyncStorage(),
+        authFlowType: authFlowType);
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
 
@@ -131,6 +129,7 @@ class Supabase {
     required int storageRetryAttempts,
     required RealtimeClientOptions realtimeClientOptions,
     required GotrueAsyncStorage gotrueAsyncStorage,
+    required AuthFlowType authFlowType,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
@@ -145,6 +144,7 @@ class Supabase {
       storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
       gotrueAsyncStorage: gotrueAsyncStorage,
+      authFlowType: authFlowType,
     );
     _initialized = true;
   }
