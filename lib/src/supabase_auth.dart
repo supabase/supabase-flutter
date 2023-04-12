@@ -364,7 +364,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// This method is experimental as the underlying `signInWithIdToken` method is experimental.
   @experimental
   Future<AuthResponse> signInWithApple() async {
-    assert(Platform.isIOS, 'Please use signInWithOAuth for non-iOS platforms');
+    assert(!kIsWeb && Platform.isIOS, 'Please use signInWithOAuth for non-iOS platforms');
     final rawNonce = _generateRandomString();
     final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
