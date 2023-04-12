@@ -355,7 +355,12 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     }
   }
 
+  /// Signs a user in using native Apple Login.
+  ///
+  /// This method only works on iOS. If you want to sign in a user using Apple
+  /// on other platforms, please use the `signInWithOAuth` method.
   Future<AuthResponse> signInWithApple() async {
+    assert(Platform.isIOS, 'Please use signInWithOAuth for non-iOS platforms');
     final rawNonce = _generateRandomString();
     final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
