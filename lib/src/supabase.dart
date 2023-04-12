@@ -74,6 +74,7 @@ class Supabase {
     int storageRetryAttempts = 0,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     GotrueAsyncStorage? pkceAsyncStorage,
+    AuthFlowType authFlowType = AuthFlowType.implicit,
     bool? debug,
   }) async {
     assert(
@@ -97,6 +98,7 @@ class Supabase {
     await SupabaseAuth.initialize(
       localStorage: localStorage ?? const HiveLocalStorage(),
       authCallbackUrlHostname: authCallbackUrlHostname,
+      authFlowType: authFlowType,
     );
 
     return _instance;
