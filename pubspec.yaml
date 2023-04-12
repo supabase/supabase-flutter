@@ -16,10 +16,12 @@ dependencies:
   hive: ^2.2.1
   hive_flutter: ^1.1.0
   http: ^0.13.4
+  meta: ^1.7.0
   sign_in_with_apple: ^4.3.0
   supabase: ^1.6.1
   url_launcher: ^6.1.2
   webview_flutter: ^4.0.0
+
 
 dev_dependencies:
   flutter_test:

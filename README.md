@@ -96,32 +96,21 @@ class _MyWidgetState extends State<MyWidget> {
 ```
 
 #### Native Sign in with Apple example
-##### The `signInWithIdToken` method is currently experimental and is subject to change. Apple sign in on iOS is working, as shown in the code below, but other combinations of Apple/Google sign in on iOS/Android may not be. Follow [this issue](https://github.com/supabase/supabase-flutter/issues/399) for platform support progress.
+
+Before you run the code, you need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected. 
 
 ```dart
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
-final String nonce = uuidV4();
-final String hashedNonce = sha256.convert(utf8.encode(nonce)).toString();
-const String clientId = 'com.app';
 
-final AuthorizationCredentialAppleID credential = await SignInWithApple.getAppleIDCredential(
-  scopes: [
-    AppleIDAuthorizationScopes.email,
-  ],
-  nonce: hashedNonce,
-);
-
-return supabase.auth.signInWithIdToken(
-  provider: Provider.apple, 
-  idToken: credential.identityToken,
-  nonce: nonce
-);
+return supabase.auth.signInWithApple();
 ```
+
+`signInWithApple()` is only supported on iOS. Other platforms can use the `signInWithOAuth()` method to perform Apple login.
+
+The `signInWithApple` method is currently experimental and is subject to change. Follow [this issue](https://github.com/supabase/supabase-flutter/issues/399) for platform support progress.
+
 
 ### [Database](https://supabase.com/docs/guides/database)
 

@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:meta/meta.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -359,6 +360,9 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   /// This method only works on iOS. If you want to sign in a user using Apple
   /// on other platforms, please use the `signInWithOAuth` method.
+  ///
+  /// This method is experimental as the underlying `signInWithIdToken` method is experimental.
+  @experimental
   Future<AuthResponse> signInWithApple() async {
     assert(Platform.isIOS, 'Please use signInWithOAuth for non-iOS platforms');
     final rawNonce = _generateRandomString();
