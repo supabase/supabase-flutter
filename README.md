@@ -107,7 +107,7 @@ final supabase = Supabase.instance.client;
 return supabase.auth.signInWithApple();
 ```
 
-`signInWithApple()` is only supported on iOS. Other platforms can use the `signInWithOAuth()` method to perform Apple login.
+`signInWithApple()` is only supported on iOS and on macOS. Other platforms can use the `signInWithOAuth()` method to perform Apple login.
 
 The `signInWithApple` method is currently experimental and is subject to change. Follow [this issue](https://github.com/supabase/supabase-flutter/issues/399) for platform support progress.
 
