@@ -4,6 +4,7 @@
   ```dart
   final AuthResponse response = await supabase.auth.signInWithApple();
   ```
+- fix: upgrade webview_flutter to 4.0.0 [#427](https://github.com/supabase/supabase-flutter/pull/427)
 
 ## [1.6.2]
 
