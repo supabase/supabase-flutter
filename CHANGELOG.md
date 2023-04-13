@@ -1,3 +1,10 @@
+## [1.7.0]
+
+- feat: Add signInWithApple method [#437](https://github.com/supabase/supabase-flutter/pull/437)
+  ```dart
+  final AuthResponse response = await supabase.auth.signInWithApple();
+  ```
+
 ## [1.6.2]
 
 - fix: persist session to local storage on `onAuthStateChanged` event with a session [#422](https://github.com/supabase/supabase-flutter/pull/422)
