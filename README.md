@@ -97,7 +97,7 @@ class _MyWidgetState extends State<MyWidget> {
 
 #### Native Sign in with Apple example
 
-Before you run the code, you need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected, and add the bundle ID to your Supabase dashboard. 
+Before you run the code, you need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected, and add the bundle ID to your Supabase dashboard in `Authentication -> Providers -> Apple`. 
 
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
