@@ -15,9 +15,7 @@ dependencies:
   hive: ^2.2.1
   hive_flutter: ^1.1.0
   http: ^0.13.4
-  # supabase: ^1.6.1
-  supabase:
-    path: ../supabase-dart
+  supabase: ^1.6.1
   url_launcher: ^6.1.2
   webview_flutter: ^4.0.0
   path_provider: ^2.0.5

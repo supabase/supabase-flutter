@@ -202,7 +202,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     if (_authCallbackUrlHostname == null) {
       return (uri.fragment.contains('access_token') &&
               _authFlowType == AuthFlowType.implicit) ||
-          (uri.fragment.contains('access_token') &&
+          (uri.queryParameters.containsKey('code') &&
               _authFlowType == AuthFlowType.pkce);
     } else {
       return _authCallbackUrlHostname == uri.host;
@@ -281,7 +281,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
     } on AuthException catch (error, stackTrace) {
-      Supabase.instance.log(error.message, stackTrace);
+      Supabase.instance.log(error.toString(), stackTrace);
     } catch (error, stackTrace) {
       Supabase.instance.log(error.toString(), stackTrace);
     }
