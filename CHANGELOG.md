@@ -1,3 +1,7 @@
+## [1.8.0]
+
+- feat: feat: allow `signInWithOAuth` with `platformDefault` option to open in app webview for iOS [#431](https://github.com/supabase/supabase-flutter/pull/431)
+
 ## [1.7.0]
 
 - feat: Add signInWithApple method [#437](https://github.com/supabase/supabase-flutter/pull/437)
