@@ -306,9 +306,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///   Provider.google,
   ///   // Use deep link to bring the user back to the app
   ///   redirectTo: 'my-scheme://my-host/login-callback',
-  ///   // Pass the context to open the OAuth screen in webview for iOS apps as recommended by Apple.
-  ///   // For other platforms it will launch the OAuth screen in external browser.
+  ///   // Pass the context and set `authScreenLaunchMode` to `platformDefault`
+  ///   // to open the OAuth screen in webview for iOS apps as recommended by Apple.
+  ///   // For other platforms it will launch the OAuth screen in whatever the platform default is.
   ///   context: context,
+  ///   authScreenLaunchMode: LaunchMode.platformDefault
   /// );
   /// ```
   ///
@@ -348,9 +350,18 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       }));
       return true;
     } else {
+      LaunchMode launchMode = authScreenLaunchMode;
+
+      // `Platform.isAndroid` throws on web, so adding a guard for web here.
+      final isAndroid = !kIsWeb && Platform.isAndroid;
+
+      if (provider == Provider.google && isAndroid) {
+        launchMode = LaunchMode.externalApplication;
+      }
+
       final result = await launchUrl(
         uri,
-        mode: authScreenLaunchMode,
+        mode: launchMode,
         webOnlyWindowName: '_self',
       );
       return result;

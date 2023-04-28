@@ -1,3 +1,7 @@
+## [1.8.1]
+
+- fix: ensure that Google login on Android always opens in external browser [#455](https://github.com/supabase/supabase-flutter/pull/455)
+
 ## [1.8.0]
 
 - feat: allow `signInWithOAuth` with `platformDefault` option to open in app webview for iOS [#431](https://github.com/supabase/supabase-flutter/pull/431)
