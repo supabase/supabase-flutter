@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
+import 'dart:math';
 
 import 'package:app_links/app_links.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:meta/meta.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -302,9 +307,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///   Provider.google,
   ///   // Use deep link to bring the user back to the app
   ///   redirectTo: 'my-scheme://my-host/login-callback',
-  ///   // Pass the context and set the launch mode to `inAppWebView` to open the OAuth screen in webview for iOS apps
+  ///   // Pass the context and set `authScreenLaunchMode` to `platformDefault`
+  ///   // to open the OAuth screen in webview for iOS apps as recommended by Apple.
+  ///   // For other platforms it will launch the OAuth screen in whatever the platform default is.
   ///   context: context,
-  ///   authScreenLaunchMode: LaunchMode.inAppWebView,
+  ///   authScreenLaunchMode: LaunchMode.platformDefault
   /// );
   /// ```
   ///
@@ -331,7 +338,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     );
     final uri = Uri.parse(res.url!);
 
-    final willOpenWebview = authScreenLaunchMode == LaunchMode.inAppWebView &&
+    final willOpenWebview = (authScreenLaunchMode == LaunchMode.inAppWebView ||
+            authScreenLaunchMode == LaunchMode.platformDefault) &&
         context != null &&
         !kIsWeb && // `Platform.isIOS` throws on web, so adding a guard for web here.
         Platform.isIOS;
@@ -343,13 +351,60 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       }));
       return true;
     } else {
+      LaunchMode launchMode = authScreenLaunchMode;
+
+      // `Platform.isAndroid` throws on web, so adding a guard for web here.
+      final isAndroid = !kIsWeb && Platform.isAndroid;
+
+      if (provider == Provider.google && isAndroid) {
+        launchMode = LaunchMode.externalApplication;
+      }
+
       final result = await launchUrl(
         uri,
-        mode: authScreenLaunchMode,
+        mode: launchMode,
         webOnlyWindowName: '_self',
       );
       return result;
     }
+  }
+
+  /// Signs a user in using native Apple Login.
+  ///
+  /// This method only works on iOS and MacOS. If you want to sign in a user using Apple
+  /// on other platforms, please use the `signInWithOAuth` method.
+  ///
+  /// This method is experimental as the underlying `signInWithIdToken` method is experimental.
+  @experimental
+  Future<AuthResponse> signInWithApple() async {
+    assert(!kIsWeb && (Platform.isIOS || Platform.isMacOS),
+        'Please use signInWithOAuth for non-iOS platforms');
+    final rawNonce = _generateRandomString();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+    final credential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: hashedNonce,
+    );
+
+    final idToken = credential.identityToken;
+    if (idToken == null) {
+      throw AuthException('Could not find ID Token from generated credential.');
+    }
+
+    return signInWithIdToken(
+      provider: Provider.apple,
+      idToken: idToken,
+      nonce: rawNonce,
+    );
+  }
+
+  String _generateRandomString() {
+    final random = Random.secure();
+    return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
   }
 }
 
@@ -381,13 +436,10 @@ class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
 
   FutureOr<NavigationDecision> _handleNavigationRequest(
     NavigationRequest request,
-  ) {
+  ) async {
     if (widget.redirectTo != null &&
         request.url.startsWith(widget.redirectTo!)) {
-      launchUrlString(request.url);
-      if (Navigator.canPop(context)) {
-        Navigator.of(context).pop(true);
-      }
+      await launchUrlString(request.url);
     }
     return NavigationDecision.navigate;
   }

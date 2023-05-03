@@ -1,3 +1,19 @@
+## [1.8.1]
+
+- fix: ensure that Google login on Android always opens in external browser [#455](https://github.com/supabase/supabase-flutter/pull/455)
+
+## [1.8.0]
+
+- feat: allow `signInWithOAuth` with `platformDefault` option to open in app webview for iOS [#431](https://github.com/supabase/supabase-flutter/pull/431)
+
+## [1.7.0]
+
+- feat: Add signInWithApple method [#437](https://github.com/supabase/supabase-flutter/pull/437)
+  ```dart
+  final AuthResponse response = await supabase.auth.signInWithApple();
+  ```
+- fix: upgrade webview_flutter to 4.0.0 [#427](https://github.com/supabase/supabase-flutter/pull/427)
+
 ## [1.6.2]
 
 - fix: persist session to local storage on `onAuthStateChanged` event with a session [#422](https://github.com/supabase/supabase-flutter/pull/422)
