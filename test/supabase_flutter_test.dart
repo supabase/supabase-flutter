@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'helpers/mock_storage.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
@@ -14,6 +15,7 @@ void main() {
         url: supabaseUrl,
         anonKey: supabaseKey,
         localStorage: MockLocalStorage(),
+        pkceAsyncStorage: MockAsyncStorage(),
       );
     });
 
@@ -33,6 +35,7 @@ void main() {
         url: supabaseUrl,
         anonKey: supabaseKey,
         localStorage: MockLocalStorage(),
+        pkceAsyncStorage: MockAsyncStorage(),
       );
 
       final newClient = Supabase.instance.client;
@@ -47,6 +50,7 @@ void main() {
         url: supabaseUrl,
         anonKey: supabaseKey,
         localStorage: MockExpiredStorage(),
+        pkceAsyncStorage: MockAsyncStorage(),
       );
     });
     test('initial session contains the error', () async {
