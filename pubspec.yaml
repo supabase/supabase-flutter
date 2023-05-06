@@ -25,6 +25,7 @@ dependencies:
   shared_preferences: ^2.0.8
 
 dev_dependencies:
+  dart_jsonwebtoken: ^2.4.1
   flutter_test:
     sdk: flutter
   lints: ^1.0.1
