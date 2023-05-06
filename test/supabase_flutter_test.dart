@@ -6,6 +6,34 @@ import 'widget_test_stubs.dart';
 void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
+
+  group('Deep Link with PKCE code', () {
+    late final PkceHttpClient customHttpClient;
+    setUp(() async {
+      customHttpClient = PkceHttpClient();
+      mockAppLink(
+        initialLink: 'com.supabase://callback/?code=my-code-verifier',
+      );
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+        authFlowType: AuthFlowType.pkce,
+        httpClient: customHttpClient,
+        localStorage: MockEmptyLocalStorage(),
+        pkceAsyncStorage: MockAsyncStorage(),
+      );
+    });
+
+    tearDown(() => Supabase.instance.dispose());
+
+    test(
+        'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
+        () async {
+      expect(customHttpClient.callCount, 1);
+      expect(customHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
+    });
+  });
+
   group("Valid session", () {
     setUp(() async {
       mockAppLink();
@@ -58,33 +86,6 @@ void main() {
     test('initial session contains the error', () async {
       await expectLater(
           SupabaseAuth.instance.initialSession, throwsA(isA<AuthException>()));
-    });
-  });
-
-  group('Deep Link with PKCE code', () {
-    late final PkceHttpClient customHttpClient;
-    setUp(() async {
-      customHttpClient = PkceHttpClient();
-      mockAppLink(
-        initialLink: 'com.supabase://callback/?code=my-code-verifier',
-      );
-      await Supabase.initialize(
-        url: supabaseUrl,
-        anonKey: supabaseKey,
-        authFlowType: AuthFlowType.pkce,
-        httpClient: customHttpClient,
-        localStorage: MockEmptyLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
-      );
-    });
-
-    tearDown(() => Supabase.instance.dispose());
-
-    test(
-        'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
-        () async {
-      expect(customHttpClient.callCount, 1);
-      expect(customHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
     });
   });
 }
