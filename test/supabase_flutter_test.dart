@@ -57,4 +57,28 @@ void main() {
           SupabaseAuth.instance.initialSession, throwsA(isA<AuthException>()));
     });
   });
+
+  group('Deep Link with PKCE code', () {
+    late final PkceHttpClient customHttpClient;
+    setUp(() async {
+      customHttpClient = PkceHttpClient();
+      mockAppLink(
+        initialLink: 'com.supabase://callback/?code=my-code-verifier',
+      );
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+        authFlowType: AuthFlowType.pkce,
+        httpClient: customHttpClient,
+        localStorage: MockEmptyLocalStorage(),
+        pkceAsyncStorage: MockAsyncStorage(),
+      );
+    });
+    test(
+        'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
+        () async {
+      expect(customHttpClient.callCount, 1);
+      expect(customHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
+    });
+  });
 }

@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MockWidget extends StatefulWidget {
@@ -68,18 +71,29 @@ class MockLocalStorage extends LocalStorage {
         );
 }
 
+class MockEmptyLocalStorage extends LocalStorage {
+  MockEmptyLocalStorage()
+      : super(
+          initialize: () async {},
+          accessToken: () async => null,
+          persistSession: (_) async {},
+          removePersistedSession: () async {},
+          hasAccessToken: () async => false,
+        );
+}
+
 /// Registers the mock handler for uni_links
-void mockAppLink() {
+void mockAppLink({String? initialLink}) {
   const channel = MethodChannel('com.llfbandit.app_links/messages');
   const anotherChannel = MethodChannel('com.llfbandit.app_links/events');
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-      .setMockMethodCallHandler(channel, (call) => null);
+      .setMockMethodCallHandler(channel, (call) async => initialLink);
 
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-      .setMockMethodCallHandler(anotherChannel, (message) => null);
+      .setMockMethodCallHandler(anotherChannel, (message) async => null);
 }
 
 class MockAsyncStorage extends GotrueAsyncStorage {
@@ -100,5 +114,61 @@ class MockAsyncStorage extends GotrueAsyncStorage {
   @override
   Future<void> setItem({required String key, required String value}) async {
     _map[key] = value;
+  }
+}
+
+/// Custom HTTP client just to test the PKCE flow.
+class PkceHttpClient extends BaseClient {
+  int callCount = 0;
+  Map<String, dynamic> lastRequestBody = {};
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    //Return custom status code to check for usage of this client.
+    callCount++;
+    if (request is Request) {
+      lastRequestBody = jsonDecode(request.body);
+    }
+
+    final now = DateTime.now().toIso8601String();
+    return StreamedResponse(
+      Stream.value(
+        utf8.encode(
+          jsonEncode(
+            {
+              'id': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136',
+              'aud': 'authenticated',
+              'role': 'authenticated',
+              'email': 'fake1@email.com',
+              'phone': '',
+              'confirmation_sent_at': now,
+              'app_metadata': {
+                'provider': 'email',
+                'providers': ['email']
+              },
+              'user_metadata': {},
+              'identities': [
+                {
+                  'id': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136',
+                  'user_id': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136',
+                  'identity_data': {
+                    'email': 'fake1@email.com',
+                    'sub': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136'
+                  },
+                  'provider': 'email',
+                  'last_sign_in_at': now,
+                  'created_at': now,
+                  'updated_at': now
+                }
+              ],
+              'created_at': now,
+              'updated_at': now,
+            },
+          ),
+        ),
+      ),
+      201,
+      request: request,
+    );
   }
 }
