@@ -52,6 +52,9 @@ void main() {
         pkceAsyncStorage: MockAsyncStorage(),
       );
     });
+
+    tearDown(() => Supabase.instance.dispose());
+
     test('initial session contains the error', () async {
       await expectLater(
           SupabaseAuth.instance.initialSession, throwsA(isA<AuthException>()));
@@ -74,6 +77,9 @@ void main() {
         pkceAsyncStorage: MockAsyncStorage(),
       );
     });
+
+    tearDown(() => Supabase.instance.dispose());
+
     test(
         'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
         () async {
