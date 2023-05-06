@@ -59,8 +59,11 @@ class Supabase {
   /// to upload a file to Supabase storage when failed due to network
   /// interruption.
   ///
-  /// By passing [pkceAsyncStorage], you can override the defualt hive local storage
-  /// to store code verifier for pkce flow.
+  /// Set [authFlowType] to `AuthFlowType.pkce` to use the PKCE flow for authentication
+  /// involving deep links.
+  ///
+  /// PKCE flow uses shared preferences for storing the code verifier by default.
+  /// Pass a custom storage to [pkceAsyncStorage] to override the behavior.
   ///
   /// If [debug] is set to `true`, debug logs will be printed in debug console.
   static Future<Supabase> initialize({
@@ -73,8 +76,8 @@ class Supabase {
     Client? httpClient,
     int storageRetryAttempts = 0,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    GotrueAsyncStorage? pkceAsyncStorage,
     AuthFlowType authFlowType = AuthFlowType.implicit,
+    GotrueAsyncStorage? pkceAsyncStorage,
     bool? debug,
   }) async {
     assert(
