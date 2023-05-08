@@ -124,7 +124,6 @@ class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
     _initialize();
   }
 
-
   final Completer<void> _initializationCompleter = Completer();
 
   late final SharedPreferences _prefs;
