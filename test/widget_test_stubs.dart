@@ -98,7 +98,6 @@ void mockAppLink({String? initialLink}) {
 }
 
 class MockAsyncStorage extends GotrueAsyncStorage {
-
   final Map<String, String> _map = {};
 
   @override
