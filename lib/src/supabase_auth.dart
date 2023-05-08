@@ -148,6 +148,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Dispose the instance to free up resources
   void dispose() {
+    _initialDeeplinkIsHandled = false;
     _authSubscription?.cancel();
     _stopDeeplinkObserver();
     _widgetsBindingInstance?.removeObserver(this);
@@ -261,7 +262,6 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     try {
       final uri = await _appLinks.getInitialAppLink();
-      print('initial deep link: $uri');
       if (uri != null) {
         await _handleDeeplink(uri);
       }
