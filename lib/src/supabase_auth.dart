@@ -25,6 +25,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   bool _initialized = false;
   late LocalStorage _localStorage;
+  late AuthFlowType _authFlowType;
 
   /// The [LocalStorage] instance used to persist the user session.
   LocalStorage get localStorage => _localStorage;
@@ -73,12 +74,14 @@ class SupabaseAuth with WidgetsBindingObserver {
   static Future<SupabaseAuth> initialize({
     LocalStorage localStorage = const HiveLocalStorage(),
     String? authCallbackUrlHostname,
+    required AuthFlowType authFlowType,
   }) async {
     try {
       _instance._initialized = true;
       _instance._localStorage = localStorage;
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
       _instance._initialSessionCompleter = Completer();
+      _instance._authFlowType = authFlowType;
 
       _instance.initialSession.catchError((e, d) {
         return null;
@@ -126,7 +129,8 @@ class SupabaseAuth with WidgetsBindingObserver {
           Platform.isAndroid ||
           Platform.isIOS ||
           Platform.isMacOS ||
-          Platform.isWindows) {
+          Platform.isWindows ||
+          Platform.environment.containsKey('FLUTTER_TEST')) {
         await _instance._startDeeplinkObserver();
       }
 
@@ -145,6 +149,9 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Dispose the instance to free up resources
   void dispose() {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      _initialDeeplinkIsHandled = false;
+    }
     _authSubscription?.cancel();
     _stopDeeplinkObserver();
     _widgetsBindingInstance?.removeObserver(this);
@@ -202,7 +209,10 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// If _authCallbackUrlHost not init, we treat all deep links as auth callback
   bool _isAuthCallbackDeeplink(Uri uri) {
     if (_authCallbackUrlHostname == null) {
-      return uri.fragment.contains('access_token');
+      return (uri.fragment.contains('access_token') &&
+              _authFlowType == AuthFlowType.implicit) ||
+          (uri.queryParameters.containsKey('code') &&
+              _authFlowType == AuthFlowType.pkce);
     } else {
       return _authCallbackUrlHostname == uri.host;
     }
@@ -277,15 +287,10 @@ class SupabaseAuth with WidgetsBindingObserver {
     // notify auth deeplink received
     Supabase.instance.log('onReceivedAuthDeeplink uri: $uri');
 
-    await _recoverSessionFromUrl(uri);
-  }
-
-  /// recover session from deeplink
-  Future<void> _recoverSessionFromUrl(Uri uri) async {
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
     } on AuthException catch (error, stackTrace) {
-      Supabase.instance.log(error.message, stackTrace);
+      Supabase.instance.log(error.toString(), stackTrace);
     } catch (error, stackTrace) {
       Supabase.instance.log(error.toString(), stackTrace);
     }

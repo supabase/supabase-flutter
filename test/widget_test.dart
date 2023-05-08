@@ -17,6 +17,7 @@ void main() {
       url: supabaseUrl,
       anonKey: supabaseKey,
       localStorage: MockLocalStorage(),
+      pkceAsyncStorage: MockAsyncStorage(),
     );
   });
 

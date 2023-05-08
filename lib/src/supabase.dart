@@ -59,6 +59,12 @@ class Supabase {
   /// to upload a file to Supabase storage when failed due to network
   /// interruption.
   ///
+  /// Set [authFlowType] to `AuthFlowType.pkce` to use the PKCE flow for authentication
+  /// involving deep links.
+  ///
+  /// PKCE flow uses shared preferences for storing the code verifier by default.
+  /// Pass a custom storage to [pkceAsyncStorage] to override the behavior.
+  ///
   /// If [debug] is set to `true`, debug logs will be printed in debug console.
   static Future<Supabase> initialize({
     required String url,
@@ -70,6 +76,8 @@ class Supabase {
     Client? httpClient,
     int storageRetryAttempts = 0,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    AuthFlowType authFlowType = AuthFlowType.implicit,
+    GotrueAsyncStorage? pkceAsyncStorage,
     bool? debug,
   }) async {
     assert(
@@ -84,6 +92,9 @@ class Supabase {
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
+      gotrueAsyncStorage:
+          pkceAsyncStorage ?? SharedPreferencesGotrueAsyncStorage(),
+      authFlowType: authFlowType,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
@@ -91,6 +102,7 @@ class Supabase {
     await SupabaseAuth.initialize(
       localStorage: localStorage ?? const HiveLocalStorage(),
       authCallbackUrlHostname: authCallbackUrlHostname,
+      authFlowType: authFlowType,
     );
 
     return _instance;
@@ -122,6 +134,8 @@ class Supabase {
     String? schema,
     required int storageRetryAttempts,
     required RealtimeClientOptions realtimeClientOptions,
+    required GotrueAsyncStorage gotrueAsyncStorage,
+    required AuthFlowType authFlowType,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
@@ -135,6 +149,8 @@ class Supabase {
       schema: schema,
       storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
+      gotrueAsyncStorage: gotrueAsyncStorage,
+      authFlowType: authFlowType,
     );
     _initialized = true;
   }

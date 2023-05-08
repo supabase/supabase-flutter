@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _hiveBoxName = 'supabase_authentication';
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
@@ -111,5 +115,40 @@ class HiveLocalStorage extends LocalStorage {
     // Flush after X amount of writes
     return Hive.box(_hiveBoxName)
         .put(supabasePersistSessionKey, persistSessionString);
+  }
+}
+
+/// local storage to store pkce flow code verifier.
+class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
+  SharedPreferencesGotrueAsyncStorage() {
+    _initialize();
+  }
+
+  final Completer<void> _initializationCompleter = Completer();
+
+  late final SharedPreferences _prefs;
+
+  Future<void> _initialize() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    _prefs = await SharedPreferences.getInstance();
+    _initializationCompleter.complete();
+  }
+
+  @override
+  Future<String?> getItem({required String key}) async {
+    await _initializationCompleter.future;
+    return _prefs.getString(key);
+  }
+
+  @override
+  Future<void> removeItem({required String key}) async {
+    await _initializationCompleter.future;
+    await _prefs.remove(key);
+  }
+
+  @override
+  Future<void> setItem({required String key, required String value}) async {
+    await _initializationCompleter.future;
+    await _prefs.setString(key, value);
   }
 }
