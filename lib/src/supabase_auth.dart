@@ -258,14 +258,11 @@ class SupabaseAuth with WidgetsBindingObserver {
   ///
   /// We handle all exceptions, since it is called from initState.
   Future<void> _handleInitialUri() async {
-    Supabase.instance
-        .log('_initialDeeplinkIsHandled: $_initialDeeplinkIsHandled');
     if (_initialDeeplinkIsHandled) return;
     _initialDeeplinkIsHandled = true;
 
     try {
       final uri = await _appLinks.getInitialAppLink();
-      Supabase.instance.log('initial deep link: $uri');
       if (uri != null) {
         await _handleDeeplink(uri);
       }
