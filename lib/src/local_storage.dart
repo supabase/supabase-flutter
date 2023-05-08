@@ -124,7 +124,6 @@ class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
     _initialize();
   }
 
-  static const pkceHiveBoxName = 'supabase.pkce';
 
   final Completer<void> _initializationCompleter = Completer();
 
