@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
@@ -125,25 +126,31 @@ class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
 
   static const pkceHiveBoxName = 'supabase.pkce';
 
+  final Completer<void> _initializationCompleter = Completer();
+
   late final SharedPreferences _prefs;
 
   Future<void> _initialize() async {
     WidgetsFlutterBinding.ensureInitialized();
     _prefs = await SharedPreferences.getInstance();
+    _initializationCompleter.complete();
   }
 
   @override
   Future<String?> getItem({required String key}) async {
+    await _initializationCompleter.future;
     return _prefs.getString(key);
   }
 
   @override
-  Future<void> removeItem({required String key}) {
-    return _prefs.remove(key);
+  Future<void> removeItem({required String key}) async {
+    await _initializationCompleter.future;
+    await _prefs.remove(key);
   }
 
   @override
-  Future<void> setItem({required String key, required String value}) {
-    return _prefs.setString(key, value);
+  Future<void> setItem({required String key, required String value}) async {
+    await _initializationCompleter.future;
+    await _prefs.setString(key, value);
   }
 }

@@ -149,7 +149,9 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Dispose the instance to free up resources
   void dispose() {
-    _initialDeeplinkIsHandled = false;
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      _initialDeeplinkIsHandled = false;
+    }
     _authSubscription?.cancel();
     _stopDeeplinkObserver();
     _widgetsBindingInstance?.removeObserver(this);
