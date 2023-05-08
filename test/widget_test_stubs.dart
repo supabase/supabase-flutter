@@ -98,7 +98,6 @@ void mockAppLink({String? initialLink}) {
 }
 
 class MockAsyncStorage extends GotrueAsyncStorage {
-  static const pkceHiveBoxName = 'supabase.pkce';
 
   final Map<String, String> _map = {};
 
