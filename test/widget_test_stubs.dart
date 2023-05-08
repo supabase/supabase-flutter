@@ -120,12 +120,12 @@ class MockAsyncStorage extends GotrueAsyncStorage {
 
 /// Custom HTTP client just to test the PKCE flow.
 class PkceHttpClient extends BaseClient {
-  int callCount = 0;
+  int requestCount = 0;
   Map<String, dynamic> lastRequestBody = {};
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    callCount++;
+    requestCount++;
 
     if (request is Request) {
       lastRequestBody = jsonDecode(request.body);

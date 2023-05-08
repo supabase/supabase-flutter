@@ -8,9 +8,11 @@ void main() {
   const supabaseKey = '';
 
   group('Deep Link with PKCE code', () {
-    late final PkceHttpClient customHttpClient;
+    late final PkceHttpClient pkceHttpClient;
     setUp(() async {
-      customHttpClient = PkceHttpClient();
+      pkceHttpClient = PkceHttpClient();
+
+      // Add initial deep link with a `code` parameter
       mockAppLink(
         initialLink: 'com.supabase://callback/?code=my-code-verifier',
       );
@@ -18,7 +20,7 @@ void main() {
         url: supabaseUrl,
         anonKey: supabaseKey,
         authFlowType: AuthFlowType.pkce,
-        httpClient: customHttpClient,
+        httpClient: pkceHttpClient,
         localStorage: MockEmptyLocalStorage(),
         pkceAsyncStorage: MockAsyncStorage(),
       );
@@ -29,8 +31,8 @@ void main() {
     test(
         'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
         () async {
-      expect(customHttpClient.callCount, 1);
-      expect(customHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
+      expect(pkceHttpClient.requestCount, 1);
+      expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
     });
   });
 

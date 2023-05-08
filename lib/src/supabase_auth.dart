@@ -261,6 +261,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     try {
       final uri = await _appLinks.getInitialAppLink();
+      print('initial deep link: $uri');
       if (uri != null) {
         await _handleDeeplink(uri);
       }
