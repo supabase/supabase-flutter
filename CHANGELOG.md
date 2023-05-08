@@ -1,6 +1,6 @@
 ## [1.9.0]
 
-- feat: add pkce support #432 [#455](https://github.com/supabase/supabase-flutter/pull/432)
+- feat: add pkce support [#432](https://github.com/supabase/supabase-flutter/pull/432)
   ```dart
   // Initialize Supabase with AuthFlowType.pkce to enable PKCE flow for deep link related auth
   await Supabase.initialize(
