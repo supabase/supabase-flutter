@@ -129,7 +129,8 @@ class SupabaseAuth with WidgetsBindingObserver {
           Platform.isAndroid ||
           Platform.isIOS ||
           Platform.isMacOS ||
-          Platform.isWindows) {
+          Platform.isWindows ||
+          Platform.environment.containsKey('FLUTTER_TEST')) {
         await _instance._startDeeplinkObserver();
       }
 
@@ -257,13 +258,14 @@ class SupabaseAuth with WidgetsBindingObserver {
   ///
   /// We handle all exceptions, since it is called from initState.
   Future<void> _handleInitialUri() async {
-    print('_initialDeeplinkIsHandled: $_initialDeeplinkIsHandled');
+    Supabase.instance
+        .log('_initialDeeplinkIsHandled: $_initialDeeplinkIsHandled');
     if (_initialDeeplinkIsHandled) return;
     _initialDeeplinkIsHandled = true;
 
     try {
       final uri = await _appLinks.getInitialAppLink();
-      print('initial deep link: $uri');
+      Supabase.instance.log('initial deep link: $uri');
       if (uri != null) {
         await _handleDeeplink(uri);
       }
