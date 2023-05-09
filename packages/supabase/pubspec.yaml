@@ -1,0 +1,23 @@
+name: supabase
+description: A dart client for Supabase. This client makes it simple for developers to build secure and scalable products.
+version: 1.8.0
+homepage: 'https://supabase.io'
+repository: 'https://github.com/supabase/supabase-dart'
+
+environment:
+  sdk: '>=2.15.0 <3.0.0'
+
+dependencies:
+  functions_client: ^1.2.0
+  gotrue: ^1.7.0
+  http: ^0.13.4
+  postgrest: ^1.2.3
+  realtime_client: ^1.0.2
+  storage_client: ^1.2.3
+  rxdart: ^0.27.5
+  yet_another_json_isolate: ^1.0.1
+
+dev_dependencies:
+  lints: ^1.0.1
+  test: ^1.17.9
+  web_socket_channel: ^2.2.0
