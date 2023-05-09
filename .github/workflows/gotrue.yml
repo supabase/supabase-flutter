@@ -1,21 +1,29 @@
-name: Test
+name: gotrue
 
 on:
   push:
-    branches: [main]
+    paths:
+      - 'packages/gotrue/**'
+      - '.github/workflows/gotrue.yaml'
+
   pull_request:
-    branches: [main]
-  workflow_dispatch:
+    paths:
+      - 'packages/gotrue/**'
+      - '.github/workflows/gotrue.yaml'
 
 jobs:
   test:
-    name: Test / SDK ${{ matrix.sdk }}
+    name: gotrue Test / SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         node: ['12']
         sdk: [2.14.0, stable, beta, dev]
+
+    defaults:
+      run:
+        working-directory: packages/gotrue
 
     runs-on: ${{ matrix.os }}
 

@@ -1,20 +1,29 @@
-name: Test
+name: postgrest
 
 on:
   push:
-    branches: [master]
+    paths:
+      - 'packages/postgrest/**'
+      - '.github/workflows/postgrest.yaml'
+
   pull_request:
-    branches: [master]
+    paths:
+      - 'packages/postgrest/**'
+      - '.github/workflows/postgrest.yaml'
 
 jobs:
   test:
-    name: Test / SDK ${{ matrix.sdk }}
+    name: postgrest Test / SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         node: ['12']
         sdk: [2.15.0, stable, beta, dev]
+
+    defaults:
+      run:
+        working-directory: packages/postgrest
 
     runs-on: ${{ matrix.os }}
 

@@ -1,20 +1,29 @@
-name: Test
+name: yet_another_json_isolate
 
 on:
   push:
-    branches: [main]
+    paths:
+      - 'packages/yet_another_json_isolate/**'
+      - '.github/workflows/yet_another_json_isolate.yaml'
+
   pull_request:
-    branches: [main]
+    paths:
+      - 'packages/yet_another_json_isolate/**'
+      - '.github/workflows/yet_another_json_isolate.yaml'
 
 jobs:
   test:
-    name: Test / SDK ${{ matrix.sdk }}
+    name: yet_another_json_isolate Test / SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         node: ['12']
         sdk: [2.15.0, stable, beta, dev]
+
+    defaults:
+      run:
+        working-directory: packages/yet_another_json_isolate
 
     runs-on: ${{ matrix.os }}
 
@@ -35,6 +44,6 @@ jobs:
 
       - name: analyzer
         run: dart analyze --fatal-warnings --fatal-infos .
-        
+
       - name: Run tests
         run: dart test

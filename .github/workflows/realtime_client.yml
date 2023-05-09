@@ -1,20 +1,29 @@
-name: Test
+name: realtime_client
 
 on:
   push:
-    branches: [main]
+    paths:
+      - 'packages/realtime_client/**'
+      - '.github/workflows/realtime_client.yaml'
+
   pull_request:
-    branches: [main]
+    paths:
+      - 'packages/realtime_client/**'
+      - '.github/workflows/realtime_client.yaml'
 
 jobs:
   test:
-    name: Test / SDK ${{ matrix.sdk }}
+    name: realtime_client Test / SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        node: ["12"]
+        node: ['12']
         sdk: [2.14.0, stable, beta, dev]
+
+    defaults:
+      run:
+        working-directory: packages/realtime_client
 
     runs-on: ${{ matrix.os }}
 

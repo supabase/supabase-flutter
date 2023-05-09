@@ -1,19 +1,29 @@
-name: Test
+name: supabase
 
 on:
   push:
-    branches: [main]
+    paths:
+      - 'packages/supabase/**'
+      - '.github/workflows/supabase.yaml'
+
   pull_request:
+    paths:
+      - 'packages/supabase/**'
+      - '.github/workflows/supabase.yaml'
 
 jobs:
   test:
-    name: Test / SDK ${{ matrix.sdk }}
+    name: supabase Test / SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         node: ['12']
         sdk: [2.15.0, stable, beta, dev]
+
+    defaults:
+      run:
+        working-directory: packages/supabase
 
     runs-on: ${{ matrix.os }}
 

@@ -1,21 +1,28 @@
-name: Test
+name: storage_client
 
 on:
   push:
-    branches: [main]
+    paths:
+      - 'packages/storage_client/**'
+      - '.github/workflows/storage_client.yaml'
   pull_request:
-    branches: [main]
-  workflow_dispatch:
+    paths:
+      - 'packages/storage_client/**'
+      - '.github/workflows/storage_client.yaml'
 
 jobs:
   test:
-    name: Test / SDK ${{ matrix.sdk }}
+    name: storage_client Test / SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         node: ['12']
         sdk: [2.15.0, stable, beta, dev]
+
+    defaults:
+      run:
+        working-directory: packages/storage_client
 
     runs-on: ${{ matrix.os }}
 

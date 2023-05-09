@@ -1,23 +1,28 @@
-# This is a basic workflow to help you get started with Actions
+name: supabase_flutter
 
-name: Test
-
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the main branch
 on:
   push:
-    branches: [main]
+    paths:
+      - 'packages/supabase_flutter/**'
+      - '.github/workflows/supabase_flutter.yaml'
+
   pull_request:
-    branches: [main]
+    paths:
+      - 'packages/supabase_flutter/**'
+      - '.github/workflows/supabase_flutter.yaml'
 
 jobs:
   test:
-    name: Test / Flutter Version ${{ matrix.flutter-version }}
+    name: supabase_flutter Test / Flutter Version ${{ matrix.flutter-version }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         flutter-version: ['3.0.0', '3.x']
+
+    defaults:
+      run:
+        working-directory: packages/supabase_flutter
 
     runs-on: ${{ matrix.os }}
 
