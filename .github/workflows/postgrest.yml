@@ -47,7 +47,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          cd infra/db
+          cd ../../postgrest/infra
           docker-compose down
           docker-compose up -d
 

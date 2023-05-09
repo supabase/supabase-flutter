@@ -46,7 +46,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          cd infra
+          cd ../../storage_client/infra
           docker-compose down
           docker-compose up -d
 
