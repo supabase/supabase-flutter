@@ -1,8 +1,30 @@
-name: supabase_flutter_packages
+name: Supabase Flutter
+repository: https://github.com/supabase/supabase-flutter
 
 packages:
-  - packages/**
+  - packages/*
+
+command:
+  version:
+    # Generate commit links in package changelogs.
+    linkToCommits: true
+    # Additionally build a changelog at the root of the workspace.
+    workspaceChangelog: true
+
+  bootstrap:
+    # It seems so that running "pub get" in parallel has some issues (like
+    # https://github.com/dart-lang/pub/issues/3404). Disabling this feature
+    # makes the CI much more stable.
+    runPubGetInParallel: false
+    usePubspecOverrides: true
 
 scripts:
+  lint:all:
+    run: melos run analyze && melos run format
+    description: Run all static analysis checks.
+
   analyze:
-    exec: dart analyze .
+    exec: dart analyze --fatal-warnings --fatal-infos .
+
+  format:
+    exec: dart format lib test -l 80 --set-exit-if-changed

@@ -47,7 +47,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          cd ../../packages/gotrue/infra
+          cd ../../infra/gotrue
           docker-compose down
           docker-compose up -d
 
