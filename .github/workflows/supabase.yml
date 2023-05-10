@@ -5,11 +5,21 @@ on:
     paths:
       - 'packages/supabase/**'
       - '.github/workflows/supabase.yaml'
+      - 'packages/functions_client/**'
+      - 'packages/gotrue/**'
+      - 'packages/postgrest/**'
+      - 'packages/realtime_client/**'
+      - 'packages/storage_client/**'
 
   pull_request:
     paths:
       - 'packages/supabase/**'
       - '.github/workflows/supabase.yaml'
+      - 'packages/functions_client/**'
+      - 'packages/gotrue/**'
+      - 'packages/postgrest/**'
+      - 'packages/realtime_client/**'
+      - 'packages/storage_client/**'
 
 jobs:
   test:
@@ -36,8 +46,11 @@ jobs:
         with:
           sdk: ${{ matrix.sdk }}
 
-      - name: Install dependencies
-        run: dart pub get
+      - name: Bootstrap workspace
+        run: |
+          cd ../../
+          dart pub global activate melos
+          melos bootstrap
 
       - name: dartfmt
         run: dart format lib test -l 80 --set-exit-if-changed
