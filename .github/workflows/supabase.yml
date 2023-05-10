@@ -50,7 +50,7 @@ jobs:
         run: |
           cd ../../
           dart pub global activate melos
-          melos bootstrap
+          melos bootstrap --ignore="supabase_flutter"
 
       - name: dartfmt
         run: dart format lib test -l 80 --set-exit-if-changed
