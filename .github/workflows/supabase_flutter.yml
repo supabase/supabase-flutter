@@ -1,0 +1,67 @@
+name: supabase_flutter
+
+on:
+  push:
+    paths:
+      - 'packages/supabase_flutter/**'
+      - '.github/workflows/supabase_flutter.yaml'
+      - 'packages/functions_client/**'
+      - 'packages/gotrue/**'
+      - 'packages/postgrest/**'
+      - 'packages/realtime_client/**'
+      - 'packages/storage_client/**'
+      - 'packages/supabase/**'
+
+  pull_request:
+    paths:
+      - 'packages/supabase_flutter/**'
+      - '.github/workflows/supabase_flutter.yaml'
+      - 'packages/functions_client/**'
+      - 'packages/gotrue/**'
+      - 'packages/postgrest/**'
+      - 'packages/realtime_client/**'
+      - 'packages/storage_client/**'
+      - 'packages/supabase/**'
+
+jobs:
+  test:
+    name: supabase_flutter Test / Flutter Version ${{ matrix.flutter-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        flutter-version: ['3.0.0', '3.x']
+
+    defaults:
+      run:
+        working-directory: packages/supabase_flutter
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checks-out repo
+        uses: actions/checkout@v2
+
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '12.x'
+
+      - uses: subosito/flutter-action@v1
+        with:
+          flutter-version: ${{ matrix.flutter-version }}
+          channel: 'stable'
+
+      - name: Bootstrap workspace
+        run: |
+          cd ../../
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: flutterfmt
+        run: dart format lib test -l 80 --set-exit-if-changed
+
+      - name: analyzer
+        run: flutter analyze --fatal-warnings --fatal-infos .
+
+      - name: Run tests
+        run: flutter test

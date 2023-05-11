@@ -1,0 +1,28 @@
+# docker-compose.yml
+
+version: '3'
+services:
+  rest:
+    image: postgrest/postgrest:v9.0.1.20220802
+    ports:
+      - '3000:3000'
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,personal
+      PGRST_DB_EXTRA_SEARCH_PATH: extensions
+      PGRST_DB_ANON_ROLE: postgres
+      PGRST_DB_PLAN_ENABLED: 1
+      PGRST_DB_TX_END: commit-allow-override
+    depends_on:
+      - db
+  db:
+    image: supabase/postgres:14.1.0.34
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_PORT: 5432

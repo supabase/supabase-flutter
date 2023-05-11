@@ -1,0 +1,52 @@
+name: realtime_client
+
+on:
+  push:
+    paths:
+      - 'packages/realtime_client/**'
+      - '.github/workflows/realtime_client.yaml'
+
+  pull_request:
+    paths:
+      - 'packages/realtime_client/**'
+      - '.github/workflows/realtime_client.yaml'
+
+jobs:
+  test:
+    name: realtime_client Test / SDK ${{ matrix.sdk }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node: ['12']
+        sdk: [2.15.0, stable, beta, dev]
+
+    defaults:
+      run:
+        working-directory: packages/realtime_client
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checks-out repo
+        uses: actions/checkout@v2
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+
+      - name: Bootstrap workspace
+        run: |
+          cd ../../
+          dart pub global activate melos
+          melos bootstrap --ignore="supabase_flutter"
+
+      - name: dartfmt
+        run: dart format lib test -l 80 --set-exit-if-changed
+
+      - name: analyzer
+        run: dart analyze --fatal-warnings --fatal-infos .
+
+      - name: Run tests
+        run: dart test

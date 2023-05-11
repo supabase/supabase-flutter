@@ -1,0 +1,10 @@
+include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    avoid_print: false
+    # TODO: need proper fix
+    avoid_dynamic_calls: false
+analyzer:
+  errors:
+    todo: ignore

@@ -1,0 +1,63 @@
+name: gotrue
+
+on:
+  push:
+    paths:
+      - 'packages/gotrue/**'
+      - '.github/workflows/gotrue.yaml'
+
+  pull_request:
+    paths:
+      - 'packages/gotrue/**'
+      - '.github/workflows/gotrue.yaml'
+
+jobs:
+  test:
+    name: gotrue Test / SDK ${{ matrix.sdk }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node: ['12']
+        sdk: [2.15.0, stable, beta, dev]
+
+    defaults:
+      run:
+        working-directory: packages/gotrue
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checks-out repo
+        uses: actions/checkout@v2
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+
+      - name: Bootstrap workspace
+        run: |
+          cd ../../
+          dart pub global activate melos
+          melos bootstrap --ignore="supabase_flutter"
+
+      - name: dartfmt
+        run: dart format lib test -l 80 --set-exit-if-changed
+
+      - name: analyzer
+        run: dart analyze --fatal-warnings --fatal-infos .
+
+      - name: Build Docker image
+        run: |
+          cd ../../infra/gotrue
+          docker-compose down
+          docker-compose up -d
+
+      - name: Sleep for 5 seconds
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '5s'
+
+      - name: Run tests
+        run: dart test
