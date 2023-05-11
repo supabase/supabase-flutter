@@ -11,8 +11,7 @@ command:
     # Additionally build a changelog at the root of the workspace.
     workspaceChangelog: true
     hooks:
-      preCommit: |
-        # Make changes to the version commit here.
+      preCommit: melos run update-version
 
   bootstrap:
     # It seems so that running "pub get" in parallel has some issues (like
