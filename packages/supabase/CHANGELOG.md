@@ -1,3 +1,7 @@
+## 1.8.1
+
+ - chore: move the repo into supabase-flutter monorepo
+
 ## [1.8.0]
 - feat: make the headers property editable [#185](https://github.com/supabase/supabase-dart/pull/185)
   ```dart

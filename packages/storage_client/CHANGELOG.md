@@ -1,3 +1,7 @@
+## 1.3.1
+
+ - chore: move the repo into supabase-flutter monorepo
+
 ## [1.3.0]
 
 - feat: add custom file size limit and mime types restrictions at bucket level [#58](https://github.com/supabase/storage-dart/pull/58)
