@@ -33,7 +33,7 @@ pubspec_overrides.yaml
 .pub-cache/
 .pub/
 build/
-packages/*/pubspec.lock
+packages/**/pubspec.lock
 
 # Android related
 **/android/**/gradle-wrapper.jar
