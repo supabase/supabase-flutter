@@ -1,6 +1,6 @@
 name: functions_client
 description: A dart client library for the Supabase functions.
-version: 1.2.0
+version: 1.2.1
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/functions_client'
 documentation: 'https://supabase.com/docs/reference/dart/functions-invoke'
@@ -10,7 +10,7 @@ environment:
 
 dependencies:
   http: ^0.13.4
-  yet_another_json_isolate: ^1.0.1
+  yet_another_json_isolate: ^1.0.4
 
 dev_dependencies:
   lints: ^1.0.1

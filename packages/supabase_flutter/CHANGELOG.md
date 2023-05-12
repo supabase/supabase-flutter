@@ -1,3 +1,7 @@
+## 1.9.1
+
+ - chore: update the repo to be a monorepo for all sub-libraries
+
 ## [1.9.0]
 
 - feat: add pkce support [#432](https://github.com/supabase/supabase-flutter/pull/432)

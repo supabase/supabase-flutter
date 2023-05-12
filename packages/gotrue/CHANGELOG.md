@@ -1,3 +1,7 @@
+## 1.7.1
+
+ - chore: move the repo into supabase-flutter monorepo
+
 ## [1.7.0]
 
 - chore: export mfa types [#140](https://github.com/supabase/gotrue-dart/pull/140)

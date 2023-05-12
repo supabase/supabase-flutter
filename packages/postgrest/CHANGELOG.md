@@ -1,3 +1,7 @@
+## 1.2.4
+
+ - chore: move the repo into supabase-flutter monorepo
+
 ## [1.2.3]
 
 - fix: deprecate `auth()`, use `setAuth()` instead [#107](https://github.com/supabase/postgrest-dart/pull/107)

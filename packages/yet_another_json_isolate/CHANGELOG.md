@@ -1,3 +1,7 @@
+## 1.0.4
+
+ - chore: move the repo into supabase-flutter monorepo
+
 ## 1.0.3
 
 - fix: correctly check for web platform

@@ -1,3 +1,7 @@
+## 1.2.1
+
+ - chore: move the repo into supabase-flutter monorepo
+
 ## [1.2.0]
 
 - feat: expose `headers` getter
