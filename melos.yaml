@@ -45,5 +45,5 @@ scripts:
       # Remove the version file for yes_another_json_isolate
       rm packages/yet_another_json_isolate/lib/src/version.dart
       # Stage the version.dart file change
-      git add .
+      git add packages/*/lib/src/version.dart
     description: Updates the version.dart file for each packages except yet_another_json_isolate
