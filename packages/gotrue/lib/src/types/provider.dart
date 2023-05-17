@@ -7,6 +7,7 @@ enum Provider {
   github,
   gitlab,
   google,
+  kakao,
   keycloak,
   linkedin,
   notion,
@@ -15,7 +16,6 @@ enum Provider {
   twitch,
   twitter,
   workos,
-  kakao
 }
 
 extension ProviderName on Provider {
