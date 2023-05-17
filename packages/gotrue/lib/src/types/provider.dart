@@ -16,7 +16,6 @@ enum Provider {
   twitch,
   twitter,
   workos,
-  kakao
 }
 
 extension ProviderName on Provider {
