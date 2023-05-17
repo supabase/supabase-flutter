@@ -9,7 +9,8 @@ jobs:
   publish:
     name: Publish on pub.dev
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write # This is required for requesting the JWT
     defaults:
       run:
         working-directory: packages/supabase_flutter
