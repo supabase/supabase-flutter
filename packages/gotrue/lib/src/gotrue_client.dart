@@ -300,7 +300,7 @@ class GoTrueClient {
 
   /// Allows signing in with an ID token issued by certain supported providers.
   /// The [idToken] is verified for validity and a new session is established.
-  /// This method of signing in only supports [Provider.google] or [Provider.apple].
+  /// This method of signing in only supports [Provider.google] or [Provider.apple] or [Provider.kakao].
   ///
   /// This method is experimental.
   @experimental
@@ -312,9 +312,9 @@ class GoTrueClient {
   }) async {
     _removeSession();
 
-    if (provider != Provider.google && provider != Provider.apple) {
+    if (provider != Provider.google && provider != Provider.apple && provider != Provider.kakao) {
       throw AuthException('Provider must either be '
-          '${Provider.google.name} or ${Provider.apple.name}.');
+          '${Provider.google.name} or ${Provider.apple.name} or ${Provider.kakao.name}.');
     }
 
     final response = await _fetch.request(

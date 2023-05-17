@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:meta/meta.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -404,6 +405,36 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       idToken: idToken,
       nonce: rawNonce,
     );
+  }
+
+  /// Signs a user in using Kakao Talk application installed on device.
+  ///
+  /// This method only works on iOS and android. If you want to sign in a user using Kakao
+  /// on other platforms, please use the `signInWithOAuth` method.
+  ///
+  /// This method is experimental as the underlying `signInWithIdToken` method is experimental.
+  @experimental
+  Future<AuthResponse> signInWithKakaoTalk() async {
+    assert(!kIsWeb && (Platform.isIOS || Platform.isAndroid),
+    'Please use signInWithOAuth for non-iOS or non-android platforms');
+    final rawNonce = _generateRandomString();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+    try {
+      OAuthToken token = await UserApi.instance.loginWithKakaoTalk(nonce: hashedNonce);
+      final idToken = token.idToken;
+      if (idToken == null) {
+        throw AuthException('Could not find ID Token from generated credential.');
+      }
+
+      return signInWithIdToken(
+        provider: Provider.kakao,
+        idToken: idToken,
+        nonce: rawNonce,
+      );
+    } catch (error) {
+      throw AuthException(error.toString());
+    }
   }
 
   String _generateRandomString() {
