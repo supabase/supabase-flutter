@@ -167,7 +167,7 @@ dynamic convertCell(String type, dynamic value) {
     case PostgresTypes.text:
     case PostgresTypes.time: // To allow users to cast it based on Timezone
     case PostgresTypes
-        .timestamptz: // To allow users to cast it based on Timezone
+          .timestamptz: // To allow users to cast it based on Timezone
     case PostgresTypes.timetz: // To allow users to cast it based on Timezone
     case PostgresTypes.tsrange:
     case PostgresTypes.tstzrange:

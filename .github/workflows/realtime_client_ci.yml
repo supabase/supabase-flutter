@@ -2,6 +2,8 @@ name: realtime_client
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'packages/realtime_client/**'
       - '.github/workflows/realtime_client.yaml'
