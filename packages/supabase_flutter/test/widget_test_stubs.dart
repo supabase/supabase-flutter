@@ -90,9 +90,11 @@ void mockAppLink({String? initialLink}) {
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // ignore: invalid_null_aware_operator
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
       .setMockMethodCallHandler(channel, (call) async => initialLink);
 
+  // ignore: invalid_null_aware_operator
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
       .setMockMethodCallHandler(anotherChannel, (message) async => null);
 }
