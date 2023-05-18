@@ -53,6 +53,7 @@ jobs:
           melos bootstrap --ignore="supabase_flutter"
 
       - name: dartfmt
+        if: ${{ matrix.sdk == 'stable'}} 
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer

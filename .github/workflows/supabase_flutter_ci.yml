@@ -58,6 +58,7 @@ jobs:
           melos bootstrap
 
       - name: flutterfmt
+        if: ${{ matrix.sdk == '3.x'}} 
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
