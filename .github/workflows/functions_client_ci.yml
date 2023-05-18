@@ -15,7 +15,7 @@ on:
 
 jobs:
   test:
-    name: functions_client Test / SDK ${{ matrix.sdk }}
+    name: Test SDK ${{ matrix.sdk }}
 
     strategy:
       fail-fast: false

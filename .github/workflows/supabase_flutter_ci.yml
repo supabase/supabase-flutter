@@ -25,7 +25,7 @@ on:
 
 jobs:
   test:
-    name: supabase_flutter Test / Flutter Version ${{ matrix.flutter-version }}
+    name: Test Flutter v${{ matrix.flutter-version }}
     strategy:
       fail-fast: false
       matrix:

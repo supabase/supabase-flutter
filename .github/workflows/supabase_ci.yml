@@ -23,7 +23,7 @@ on:
 
 jobs:
   test:
-    name: supabase Test / SDK ${{ matrix.sdk }}
+    name: Test SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:

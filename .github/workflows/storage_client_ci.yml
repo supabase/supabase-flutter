@@ -12,7 +12,7 @@ on:
 
 jobs:
   test:
-    name: storage_client Test / SDK ${{ matrix.sdk }}
+    name: Test SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:
