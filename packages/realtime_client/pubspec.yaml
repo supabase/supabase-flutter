@@ -6,7 +6,7 @@ repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/rea
 documentation: 'https://supabase.com/docs/reference/dart/subscribe'
 
 environment:
-  sdk: '>=2.14.0 <3.0.0'
+  sdk: '>=2.14.0 <4.0.0'
 
 dependencies:
   collection: ^1.15.0
