@@ -2,6 +2,8 @@ name: postgrest
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'packages/postgrest/**'
       - '.github/workflows/postgrest.yaml'
@@ -15,7 +17,7 @@ on:
 
 jobs:
   test:
-    name: postgrest Test / SDK ${{ matrix.sdk }}
+    name: Test SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:
@@ -45,6 +47,7 @@ jobs:
           melos bootstrap --ignore="supabase_flutter"
 
       - name: dartfmt
+        if: ${{ matrix.sdk == 'stable'}} 
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer

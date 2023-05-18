@@ -2,6 +2,8 @@ name: yet_another_json_isolate
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'packages/yet_another_json_isolate/**'
       - '.github/workflows/yet_another_json_isolate.yaml'
@@ -13,7 +15,7 @@ on:
 
 jobs:
   test:
-    name: yet_another_json_isolate Test / SDK ${{ matrix.sdk }}
+    name: Test SDK ${{ matrix.sdk }}
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +45,7 @@ jobs:
           melos bootstrap --ignore="supabase_flutter"
 
       - name: dartfmt
+        if: ${{ matrix.sdk == 'stable'}} 
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
