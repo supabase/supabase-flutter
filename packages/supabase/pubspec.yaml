@@ -6,7 +6,7 @@ repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/sup
 documentation: 'https://supabase.com/docs/reference/dart/introduction'
 
 environment:
-  sdk: '>=2.15.0 <3.0.0'
+  sdk: '>=2.15.0 <4.0.0'
 
 dependencies:
   functions_client: ^1.2.1
