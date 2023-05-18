@@ -2,6 +2,8 @@ name: functions_client
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'packages/functions_client/**'
       - '.github/workflows/functions_client.yaml'

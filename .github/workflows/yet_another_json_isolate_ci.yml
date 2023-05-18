@@ -2,6 +2,8 @@ name: yet_another_json_isolate
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'packages/yet_another_json_isolate/**'
       - '.github/workflows/yet_another_json_isolate.yaml'

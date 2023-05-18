@@ -2,6 +2,8 @@ name: storage_client
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'packages/storage_client/**'
       - '.github/workflows/storage_client.yaml'

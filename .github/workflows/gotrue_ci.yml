@@ -2,6 +2,8 @@ name: gotrue
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'packages/gotrue/**'
       - '.github/workflows/gotrue.yaml'
