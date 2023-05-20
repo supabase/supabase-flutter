@@ -48,7 +48,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .or('status.eq.OFFLINE,username.eq.supabot');
   /// ```
   PostgrestFilterBuilder<T> or(String filters, {String? foreignTable}) {
-    final key = foreignTable != null ? '"$foreignTable".or' : 'or';
+    final key = foreignTable != null ? '$foreignTable.or' : 'or';
     appendSearchParams(key, '($filters)');
     return this;
   }
