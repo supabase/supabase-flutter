@@ -56,6 +56,32 @@ class StorageFileApi {
     return (response as Map)['Key'] as String;
   }
 
+  /// Upload a file with a token generated from `createUploadSignedUrl`.
+  ///
+  /// [path] The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+  ///
+  /// [token] The token generated from `createUploadSignedUrl`
+  ///
+  /// [file] The body of the file to be stored in the bucket.
+  Future<String> uploadToSignedUrl(
+    String path,
+    String token,
+    File file, [
+    FileOptions? fileOptions,
+  ]) async {
+    throw UnimplementedError();
+  }
+
+  /// Creates a signed upload URL.
+  ///
+  /// Signed upload URLs can be used upload files to the bucket without further authentication.
+  /// They are valid for one minute.
+  ///
+  /// [path] The file path, including the current file name. For example `folder/image.png`.
+  Future<SignedUploadURLResponse> createSignedUploadUrl(String path) async {
+    throw UnimplementedError();
+  }
+
   /// Uploads a binary file to an existing bucket. Can be used on the web.
   ///
   /// [path] is the relative file path without the bucket ID. Should be of the

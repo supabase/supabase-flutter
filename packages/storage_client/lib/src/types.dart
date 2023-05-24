@@ -160,10 +160,13 @@ class SortBy {
 }
 
 class SignedUrl {
-  final String? path;
-  final String? signedUrl;
+  final String path;
+  final String signedUrl;
 
-  const SignedUrl({this.path, this.signedUrl});
+  const SignedUrl({
+    required this.path,
+    required this.signedUrl,
+  });
 
   @override
   String toString() => 'SignedUrl(path: $path, signedUrl: $signedUrl)';
@@ -189,6 +192,19 @@ class SignedUrl {
       signedUrl: signedUrl ?? this.signedUrl,
     );
   }
+}
+
+class SignedUploadURLResponse extends SignedUrl {
+  final String token;
+
+  const SignedUploadURLResponse({
+    required String signedUrl,
+    required String path,
+    required this.token,
+  }) : super(
+          signedUrl: signedUrl,
+          path: path,
+        );
 }
 
 class StorageException implements Exception {

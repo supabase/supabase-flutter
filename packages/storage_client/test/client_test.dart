@@ -134,6 +134,68 @@ void main() {
     expect(response, 'Successfully deleted');
   });
 
+  group('description', () {
+    setUpAll(() async {
+      // init SupabaseClient with test url & test key
+      storage = SupabaseStorageClient(storageUrl, {
+        'Authorization': 'Bearer $storageKey',
+      });
+
+      // Register default mock values (used by mocktail)
+      registerFallbackValue(const FileOptions());
+      registerFallbackValue(const FetchOptions());
+      file = File(join(
+          Directory.current.path, 'test', 'fixtures', 'upload', 'sadcat.jpg'));
+    });
+
+    tearDownAll(() async {
+      await storage.deleteBucket(newBucketName);
+    });
+    test('sign url for upload', () async {
+      final response =
+          await storage.from(newBucketName).createSignedUploadUrl(uploadPath);
+
+      expect(response.path, uploadPath);
+      expect(response.token, isNotNull);
+      expect(
+          response.signedUrl,
+          contains(
+            '$storageUrl/object/upload/sign/$newBucketName/$uploadPath',
+          ));
+    });
+
+    test('can upload with a signed url', () async {
+      final response =
+          await storage.from(newBucketName).createSignedUploadUrl(uploadPath);
+
+      final uploadedPath = await storage
+          .from(newBucketName)
+          .uploadToSignedUrl(response.path, response.token, file);
+
+      expect(uploadedPath, uploadPath);
+    });
+
+    test('cannot upload to a signed url twice', () async {
+      final response =
+          await storage.from(newBucketName).createSignedUploadUrl(uploadPath);
+
+      final uploadedPath = await storage
+          .from(newBucketName)
+          .uploadToSignedUrl(response.path, response.token, file);
+
+      expect(uploadedPath, uploadPath);
+      try {
+        await storage
+            .from(newBucketName)
+            .uploadToSignedUrl(response.path, response.token, file);
+      } on StorageException catch (error) {
+        expect(error.error, 'Duplicate');
+        expect(error.message, 'The resource already exists');
+        expect(error.statusCode, '409');
+      }
+    });
+  });
+
   group('Transformations', () {
     setUpAll(() async {
       await findOrCreateBucket(newBucketName);
