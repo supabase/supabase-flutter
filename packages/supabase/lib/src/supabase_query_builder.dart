@@ -32,7 +32,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
 
   /// Returns real-time data from your table as a `Stream`.
   ///
-  /// Realtime is disabled by default for new tables. You can turn it on by [managing replication](/docs/guides/realtime/extensions/postgres-changes#replication-setup).
+  /// Realtime is disabled by default for new tables. You can turn it on by [managing replication](https://supabase.com/docs/guides/realtime/extensions/postgres-changes#replication-setup).
   ///
   /// Pass the list of primary key column names to [primaryKey], which will be used to updating and deleting the proper records internally as the library receives real-time updates.
   ///
