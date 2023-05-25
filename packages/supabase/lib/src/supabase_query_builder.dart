@@ -34,7 +34,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   ///
   /// Realtime is disabled by default for new tables. You can turn it on by [managing replication](/docs/guides/realtime/extensions/postgres-changes#replication-setup).
   ///
-  /// [primaryKey] argument is used to updating and deleting the proper record internally.
+  /// Pass [primaryKey] as an argument, which is used to updating and deleting the proper records internally as the library receives real-time updates.
   ///
   /// ```dart
   /// supabase.from('chats').stream(primaryKey: ['my_primary_key']).listen(_onChatsReceived);
