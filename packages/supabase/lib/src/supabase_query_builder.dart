@@ -34,16 +34,16 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   ///
   /// Realtime is disabled by default for new tables. You can turn it on by [managing replication](/docs/guides/realtime/extensions/postgres-changes#replication-setup).
   ///
-  /// Pass [primaryKey] as an argument, which is used to updating and deleting the proper records internally as the library receives real-time updates.
+  /// Pass the list of primary key column names to [primaryKey], which will be used to updating and deleting the proper records internally as the library receives real-time updates.
   ///
   /// ```dart
-  /// supabase.from('chats').stream(primaryKey: ['my_primary_key']).listen(_onChatsReceived);
+  /// supabase.from('chats').stream(primaryKey: ['id']).listen(_onChatsReceived);
   /// ```
   ///
   /// `eq`, `neq`, `lt`, `lte`, `gt` or `gte` and `order`, `limit` filter are available to limit the data being queried.
   ///
   /// ```dart
-  /// supabase.from('chats').stream(primaryKey: ['my_primary_key']).eq('room_id','123').order('created_at').limit(20).listen(_onChatsReceived);
+  /// supabase.from('chats').stream(primaryKey: ['id']).eq('room_id','123').order('created_at').limit(20).listen(_onChatsReceived);
   /// ```
   SupabaseStreamBuilder stream({required List<String> primaryKey}) {
     assert(primaryKey.isNotEmpty, 'Please specify primary key column(s).');
