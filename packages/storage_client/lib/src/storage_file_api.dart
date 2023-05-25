@@ -21,6 +21,12 @@ class StorageFileApi {
     return '$bucketId/$path';
   }
 
+  String _removeEmptyFolders(String path) {
+    return path
+        .replaceAll(RegExp(r'/^\/|\/$/g'), '')
+        .replaceAll(RegExp(r'/\/+/g'), '/');
+  }
+
   /// Uploads a file to an existing bucket.
   ///
   /// [path] is the relative file path without the bucket ID. Should be of the
@@ -67,9 +73,23 @@ class StorageFileApi {
     String path,
     String token,
     File file, [
-    FileOptions? fileOptions,
+    FileOptions fileOptions = const FileOptions(),
+    int? retryAttempts,
+    StorageRetryController? retryController,
   ]) async {
-    throw UnimplementedError();
+    assert(retryAttempts == null || retryAttempts >= 0,
+        'retryAttempts has to be greater or equal to 0');
+
+    final cleanPath = _removeEmptyFolders(path);
+    final _path = _getFinalPath(cleanPath);
+    var url = Uri.parse('${this.url}/object/upload/sign/$_path');
+    url = url.replace(queryParameters: {'token': token});
+
+    await storageFetch.putFile(url.toString(), file, fileOptions,
+        retryAttempts: retryAttempts ?? _retryAttempts,
+        retryController: retryController);
+
+    return cleanPath;
   }
 
   /// Creates a signed upload URL.
