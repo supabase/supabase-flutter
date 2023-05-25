@@ -3,7 +3,6 @@ repository: https://github.com/supabase/supabase-flutter
 
 packages:
   - packages/*
-  - packages/supabase_flutter/example
 
 command:
   version:
