@@ -30,9 +30,11 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
           isolate: isolate,
         );
 
-  /// Notifies of data at the queried table
+  /// Returns real-time data from your table as a `Stream`.
   ///
-  /// [primaryKey] list of name of primary key column(s).
+  /// Realtime is disabled by default for new tables. You can turn it on by [managing replication](/docs/guides/realtime/extensions/postgres-changes#replication-setup).
+  ///
+  /// [primaryKey] argument is used to updating and deleting the proper record internally.
   ///
   /// ```dart
   /// supabase.from('chats').stream(primaryKey: ['my_primary_key']).listen(_onChatsReceived);
