@@ -9,7 +9,7 @@ environment:
   sdk: '>=2.15.0 <4.0.0'
 
 dependencies:
-  http: ^0.13.4
+  http: '>=0.13.4 <2.0.0'
   yet_another_json_isolate: ^1.1.0
 
 dev_dependencies:
