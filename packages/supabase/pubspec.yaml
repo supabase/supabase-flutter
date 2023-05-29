@@ -11,7 +11,7 @@ environment:
 dependencies:
   functions_client: ^1.3.0
   gotrue: ^1.8.0
-  http: ^0.13.4
+  http: '>=0.13.5 <2.0.0'
   postgrest: ^1.3.0
   realtime_client: ^1.1.0
   storage_client: ^1.4.0
