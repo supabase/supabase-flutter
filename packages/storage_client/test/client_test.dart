@@ -134,23 +134,7 @@ void main() {
     expect(response, 'Successfully deleted');
   });
 
-  group('description', () {
-    setUpAll(() async {
-      // init SupabaseClient with test url & test key
-      storage = SupabaseStorageClient(storageUrl, {
-        'Authorization': 'Bearer $storageKey',
-      });
-
-      // Register default mock values (used by mocktail)
-      registerFallbackValue(const FileOptions());
-      registerFallbackValue(const FetchOptions());
-      file = File(join(
-          Directory.current.path, 'test', 'fixtures', 'upload', 'sadcat.jpg'));
-    });
-
-    tearDownAll(() async {
-      await storage.deleteBucket(newBucketName);
-    });
+  group('Signed upload URL', () {
     test('sign url for upload', () async {
       final response =
           await storage.from(newBucketName).createSignedUploadUrl(uploadPath);
