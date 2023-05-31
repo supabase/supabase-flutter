@@ -135,10 +135,7 @@ class SupabaseClient {
         realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
         authUrl = '$supabaseUrl/auth/v1',
         storageUrl = '$supabaseUrl/storage/v1',
-        functionsUrl = RegExp(r'(supabase\.co)|(supabase\.in)')
-                .hasMatch(supabaseUrl)
-            ? '${supabaseUrl.split('.')[0]}.functions.${supabaseUrl.split('.')[1]}.${supabaseUrl.split('.')[2]}'
-            : '$supabaseUrl/functions/v1',
+        functionsUrl = '$supabaseUrl/functions/v1',
         schema = schema ?? 'public',
         _headers = {
           ...Constants.defaultHeaders,
