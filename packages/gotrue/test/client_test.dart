@@ -19,6 +19,7 @@ void main() {
 
   group('Client with default http client', () {
     late GoTrueClient client;
+    late GoTrueClient adminClient;
     late GoTrueClient clientWithAuthConfirmOff;
 
     setUp(() async {
@@ -37,6 +38,15 @@ void main() {
         headers: {
           'Authorization': 'Bearer $anonToken',
           'apikey': anonToken,
+        },
+        asyncStorage: asyncStorage,
+      );
+
+      adminClient = client = GoTrueClient(
+        url: gotrueUrl,
+        headers: {
+          'Authorization': 'Bearer ${getServiceRoleToken()}',
+          'apikey': getServiceRoleToken(),
         },
         asyncStorage: asyncStorage,
       );
@@ -251,6 +261,15 @@ void main() {
     test('signOut', () async {
       await client.signInWithPassword(email: email1, password: password);
       expect(client.currentUser, isNotNull);
+      await client.signOut();
+      expect(client.currentUser, isNull);
+      expect(client.currentSession, isNull);
+    });
+
+    test('signOut of deleted user', () async {
+      await client.signInWithPassword(email: email1, password: password);
+      expect(client.currentUser, isNotNull);
+      await adminClient.admin.deleteUser(userId1);
       await client.signOut();
       expect(client.currentUser, isNull);
       expect(client.currentSession, isNull);

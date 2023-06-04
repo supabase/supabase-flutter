@@ -610,7 +610,17 @@ class GoTrueClient {
     _removeSession();
     _notifyAllSubscribers(AuthChangeEvent.signedOut);
     if (accessToken != null) {
-      return admin.signOut(accessToken);
+      try {
+        return await admin.signOut(accessToken);
+      } on AuthException catch (error) {
+        // ignore 404s since user might not exist anymore
+        // ignore 401s since an invalid or expired JWT should sign out the current session
+        if (error.statusCode == '401' || error.statusCode == '404') {
+          return;
+        } else {
+          rethrow;
+        }
+      }
     }
   }
 
