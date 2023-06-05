@@ -171,6 +171,18 @@ void main() {
       expect(uploadedPath, uploadPath);
     });
 
+    test('can upload a binary file with a signed url', () async {
+      final response =
+          await storage.from(newBucketName).createSignedUploadUrl(uploadPath);
+
+      final uploadedPath = await storage
+          .from(newBucketName)
+          .uploadBinaryToSignedUrl(
+              response.path, response.token, file.readAsBytesSync());
+
+      expect(uploadedPath, uploadPath);
+    });
+
     test('cannot upload to a signed url twice', () async {
       final response =
           await storage.from(newBucketName).createSignedUploadUrl(uploadPath);
