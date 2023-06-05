@@ -613,9 +613,8 @@ class GoTrueClient {
       try {
         await admin.signOut(accessToken);
       } on AuthException catch (error) {
-        // ignore 401s since an invalid or expired JWT should sign out the         
+        // ignore 401s since an invalid or expired JWT should sign out the current session
         // ignore 404s since user might not exist anymore
-current session
         if (error.statusCode != '401' && error.statusCode != '404') {
           rethrow;
         }
