@@ -135,6 +135,10 @@ void main() {
   });
 
   group('Signed upload URL', () {
+    setUpAll(() async {
+      await findOrCreateBucket(newBucketName);
+    });
+
     test('sign url for upload', () async {
       final response =
           await storage.from(newBucketName).createSignedUploadUrl(uploadPath);
