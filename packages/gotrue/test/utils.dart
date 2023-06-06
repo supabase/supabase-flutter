@@ -1,3 +1,5 @@
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
 
 /// Email of a user with unverified factor
@@ -33,6 +35,17 @@ String getNewPhone() {
   final timestamp =
       (DateTime.now().microsecondsSinceEpoch / (1000 * 1000)).round();
   return '$timestamp';
+}
+
+String getServiceRoleToken() {
+  return JWT(
+    {
+      'role': 'service_role',
+    },
+  ).sign(
+    SecretKey(
+        env['GOTRUE_JWT_SECRET'] ?? '37c304f8-51aa-419a-a1af-06154e63707a'),
+  );
 }
 
 class TestAsyncStorage extends GotrueAsyncStorage {
