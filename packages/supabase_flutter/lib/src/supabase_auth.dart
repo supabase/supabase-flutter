@@ -8,8 +8,9 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:meta/meta.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -377,19 +378,16 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   /// This method only works on iOS and MacOS. If you want to sign in a user using Apple
   /// on other platforms, please use the `signInWithOAuth` method.
-  ///
-  /// This method is experimental as the underlying `signInWithIdToken` method is experimental.
-  @experimental
   Future<AuthResponse> signInWithApple() async {
     assert(!kIsWeb && (Platform.isIOS || Platform.isMacOS),
         'Please use signInWithOAuth for non-iOS platforms');
     final rawNonce = _generateRandomString();
     final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
-    final credential = await SignInWithApple.getAppleIDCredential(
+    final credential = await apple.SignInWithApple.getAppleIDCredential(
       scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
+        apple.AppleIDAuthorizationScopes.email,
+        apple.AppleIDAuthorizationScopes.fullName,
       ],
       nonce: hashedNonce,
     );
@@ -402,6 +400,97 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     return signInWithIdToken(
       provider: Provider.apple,
       idToken: idToken,
+      nonce: rawNonce,
+    );
+  }
+
+  /// Signs a user in using native Google Login.
+  ///
+  ///
+  /// [iosClientId] is the client ID for iOS registered on Google Cloud Platform
+  ///
+  /// [androidClientId] is the client ID for Android registered
+  /// on Google Cloud Platform
+  ///
+  /// This method only works on iOS and Android. Use `signInWithOAuth`
+  /// on other platforms.
+  Future<AuthResponse> signInWithGoogle({
+    String? iosClientId,
+    String? androidClientId,
+  }) async {
+    assert(
+      !kIsWeb && (Platform.isIOS || Platform.isAndroid),
+      'Please use signInWithOAuth for platform other than iOS or Android',
+    );
+    assert(
+      (Platform.isIOS && iosClientId != null) ||
+          (Platform.isAndroid && androidClientId != null),
+      'Please set the respective client ID for the platform',
+    );
+
+    final rawNonce = _generateRandomString();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+    final clientId = Platform.isIOS ? iosClientId! : androidClientId!;
+
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    final packageName = packageInfo.packageName;
+
+    /// fixed for google login
+    final redirectUrl = '$packageName:/google_auth';
+
+    /// fixed for google login
+    const discoveryUrl =
+        'https://accounts.google.com/.well-known/openid-configuration';
+
+    final appAuth = FlutterAppAuth();
+
+    // authorize the user by opening the concent page
+    final result = await appAuth.authorize(
+      AuthorizationRequest(
+        clientId,
+        redirectUrl,
+        discoveryUrl: discoveryUrl,
+        nonce: hashedNonce,
+        scopes: [
+          'openid',
+          'email',
+        ],
+      ),
+    );
+
+    if (result == null) {
+      throw AuthException(
+          'Could not find AuthorizationResponse after authorizing');
+    }
+
+    // Request the access and id token to google
+    final tokenResponse = await appAuth.token(
+      TokenRequest(
+        clientId,
+        redirectUrl,
+        authorizationCode: result.authorizationCode,
+        discoveryUrl: discoveryUrl,
+        codeVerifier: result.codeVerifier,
+        nonce: result.nonce,
+        scopes: [
+          'openid',
+          'email',
+        ],
+      ),
+    );
+
+    final idToken = tokenResponse?.idToken;
+
+    if (idToken == null) {
+      throw AuthException('Could not find idToken from the token response');
+    }
+
+    return signInWithIdToken(
+      provider: Provider.google,
+      idToken: idToken,
+      accessToken: tokenResponse?.accessToken,
       nonce: rawNonce,
     );
   }
