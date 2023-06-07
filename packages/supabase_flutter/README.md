@@ -41,10 +41,6 @@ void main() async {
 final supabase = Supabase.instance.client;
 ```
 
-> `authCallbackUrlHostname` is optional. It will be used to filter Supabase authentication redirect deeplink. You need to provide this param if you use deeplink for other features on the app.
-
-> `debug` is optional. It's enabled by default if you're running the app in debug mode (`flutter run --debug`).
-
 ## Usage example
 
 ### [Authentication](https://supabase.com/docs/guides/auth)
@@ -95,21 +91,33 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
-#### Native Sign in with Apple example
+#### Native Apple Sign in
 
-Before you run the code, you need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected, and add the bundle ID to your Supabase dashboard in `Authentication -> Providers -> Apple`. 
+You need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected, and add the bundle ID to your Supabase dashboard in `Authentication -> Providers -> Apple` before performing native Apple sign in. 
 
 ```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-final supabase = Supabase.instance.client;
-
-return supabase.auth.signInWithApple();
+// Perform Apple login on iOS and macOS
+await supabase.auth.signInWithApple();
 ```
 
-`signInWithApple()` is only supported on iOS and on macOS. Other platforms can use the `signInWithOAuth()` method to perform Apple login.
+`signInWithApple()` is only supported on iOS and on macOS. Use the `signInWithOAuth()` method to perform web-based Apple sign in on other platforms.
 
-The `signInWithApple` method is currently experimental and is subject to change. Follow [this issue](https://github.com/supabase/supabase-flutter/issues/399) for platform support progress.
+#### Native Google sign in
+
+You need to obtain a client ID from your Google console and add them to your Supabase dashboard in `Authentication -> Providers -> Google`.
+
+Android guide [here](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project), and iOS guide [here](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id). In both platforms, you do **NOT** need to add any configuration files into your Flutter application.
+
+```dart
+// Perform Google login on Android and iOS
+// Pass the same client ID set on the Supabase dashboard to the sign in method
+await supabase.auth.signInWithGoogle(
+  iosClientId: 'IOS_CLIENT_ID',
+  androidClientId: 'ANDROID_CLIENT_ID',
+);
+```
+
+`signInWithGoogle()` is only supported on Android and iOS. Use the `signInWithOAuth()` method to perform web-based Google sign in on other platforms.
 
 
 ### [Database](https://supabase.com/docs/guides/database)
