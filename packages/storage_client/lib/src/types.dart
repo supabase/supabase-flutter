@@ -159,10 +159,16 @@ class SortBy {
   }
 }
 
+/// {@template signed_url}
+/// [path] The file path, including the current file name. For example `folder/image.png`.
+///
+/// [signedUrl] Full signed URL of the files.
+/// {@endtemplate}
 class SignedUrl {
   final String path;
   final String signedUrl;
 
+  /// {@macro signed_url}
   const SignedUrl({
     required this.path,
     required this.signedUrl,
@@ -194,9 +200,17 @@ class SignedUrl {
   }
 }
 
+/// {@macro signed_url}
+/// {@template signed_upload_url_response}
+///
+/// [token] Token to be used when uploading files with the `uploadToSignedUrl` method.
+/// {@endtemplate}
 class SignedUploadURLResponse extends SignedUrl {
   final String token;
 
+  /// {@macro signed_url}
+  ///
+  /// {@macro signed_upload_url_response}
   const SignedUploadURLResponse({
     required String signedUrl,
     required String path,
