@@ -21,6 +21,12 @@ class StorageFileApi {
     return '$bucketId/$path';
   }
 
+  String _removeEmptyFolders(String path) {
+    return path
+        .replaceAll(RegExp(r'/^\/|\/$/g'), '')
+        .replaceAll(RegExp(r'/\/+/g'), '/');
+  }
+
   /// Uploads a file to an existing bucket.
   ///
   /// [path] is the relative file path without the bucket ID. Should be of the
@@ -89,6 +95,106 @@ class StorageFileApi {
     );
 
     return (response as Map)['Key'] as String;
+  }
+
+  /// Upload a file with a token generated from `createUploadSignedUrl`.
+  ///
+  /// [path] The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+  ///
+  /// [token] The token generated from `createUploadSignedUrl`
+  ///
+  /// [file] The body of the file to be stored in the bucket.
+  Future<String> uploadToSignedUrl(
+    String path,
+    String token,
+    File file, [
+    FileOptions fileOptions = const FileOptions(),
+    int? retryAttempts,
+    StorageRetryController? retryController,
+  ]) async {
+    assert(retryAttempts == null || retryAttempts >= 0,
+        'retryAttempts has to be greater or equal to 0');
+
+    final cleanPath = _removeEmptyFolders(path);
+    final _path = _getFinalPath(cleanPath);
+    var url = Uri.parse('${this.url}/object/upload/sign/$_path');
+    url = url.replace(queryParameters: {'token': token});
+
+    await storageFetch.putFile(
+      url.toString(),
+      file,
+      fileOptions,
+      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryController: retryController,
+    );
+
+    return cleanPath;
+  }
+
+  /// Upload a binary file with a token generated from `createUploadSignedUrl`.
+  ///
+  /// [path] The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+  ///
+  /// [token] The token generated from `createUploadSignedUrl`
+  ///
+  /// [data] The body of the binary file to be stored in the bucket.
+  Future<String> uploadBinaryToSignedUrl(
+    String path,
+    String token,
+    Uint8List data, [
+    FileOptions fileOptions = const FileOptions(),
+    int? retryAttempts,
+    StorageRetryController? retryController,
+  ]) async {
+    assert(retryAttempts == null || retryAttempts >= 0,
+        'retryAttempts has to be greater or equal to 0');
+
+    final cleanPath = _removeEmptyFolders(path);
+    final _path = _getFinalPath(cleanPath);
+    var url = Uri.parse('${this.url}/object/upload/sign/$_path');
+    url = url.replace(queryParameters: {'token': token});
+
+    await storageFetch.putBinaryFile(
+      url.toString(),
+      data,
+      fileOptions,
+      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryController: retryController,
+    );
+
+    return cleanPath;
+  }
+
+  /// Creates a signed upload URL.
+  ///
+  /// Signed upload URLs can be used upload files to the bucket without further authentication.
+  /// They are valid for one minute.
+  ///
+  /// [path] The file path, including the current file name. For example `folder/image.png`.
+  Future<SignedUploadURLResponse> createSignedUploadUrl(String path) async {
+    final finalPath = _getFinalPath(path);
+
+    final data = await storageFetch.post(
+      '$url/object/upload/sign/$finalPath',
+      {},
+      options: FetchOptions(headers: headers),
+    );
+
+    final signedUrl = Uri.parse('$url${data['url']}');
+
+    final token = signedUrl.queryParameters['token'];
+
+    if (token == null || token.isEmpty) {
+      throw StorageException('No token returned by API');
+    }
+
+    return SignedUploadURLResponse(
+      signedUrl: signedUrl.toString(),
+      path: path,
+      token: token,
+    );
+
+    //   return { data: { signedUrl: url.toString(), path, token }, error: null }
   }
 
   /// Replaces an existing file at the specified path with a new one.
