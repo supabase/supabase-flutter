@@ -1,3 +1,7 @@
+## 1.10.2
+
+ - Update a dependency to the latest release.
+
 ## 1.10.1
 
  - **FIX**: Update http dependency constraints ([#491](https://github.com/supabase/supabase-flutter/issues/491)). ([825d0737](https://github.com/supabase/supabase-flutter/commit/825d07375d873b2a56b31c7cc881cb3a4226a8fd))
