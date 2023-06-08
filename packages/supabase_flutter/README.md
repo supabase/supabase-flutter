@@ -46,49 +46,29 @@ final supabase = Supabase.instance.client;
 ### [Authentication](https://supabase.com/docs/guides/auth)
 
 ```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 final supabase = Supabase.instance.client;
 
-class MyWidget extends StatefulWidget {
-  const MyWidget({Key? key}) : super(key: key);
+// Email and password sign up
+await supabase.auth.signUp(
+  email: email,
+  password: password,
+);
 
-  @override
-  State<MyWidget> createState() => _MyWidgetState();
-}
+// Email and password login
+await supabase.auth.signInWithPassword(
+  email: email,
+  password: password,
+);
 
-class _MyWidgetState extends State<MyWidget> {
-  late final StreamSubscription<AuthState> _authSubscription;
-  User? _user;
+// Magic link login
+await supabase.auth.signInWithOtp(email: 'my_email@example.com');
 
-  @override
-  void initState() {
-    _authSubscription = supabase.auth.onAuthStateChange.listen((data) {
-      final AuthChangeEvent event = data.event;
-      final Session? session = data.session;
-      setState(() {
-        _user = session?.user;
-      });
-    });
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _authSubscription.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () {
-        supabase.auth.signInWithOtp(email: 'my_email@example.com');
-      },
-      child: const Text('Login'),
-    );
-  }
-}
+// Listen to auth state changes
+supabase.auth.onAuthStateChange.listen((data) {
+  final AuthChangeEvent event = data.event;
+  final Session? session = data.session;
+  // Do something when there is an auth event
+});
 ```
 
 #### Native Apple Sign in
@@ -104,9 +84,10 @@ await supabase.auth.signInWithApple();
 
 #### Native Google sign in
 
-You need to obtain a client ID from your Google console and add them to your Supabase dashboard in `Authentication -> Providers -> Google`.
+You need to create a client ID in your Google Cloud console and add them to your Supabase dashboard in `Authentication -> Providers -> Google`. 
 
-Android guide [here](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project), and iOS guide [here](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id). In both platforms, you do **NOT** need to add any configuration files into your Flutter application.
+- [Obtain Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
+- [Obtain iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
 
 ```dart
 // Perform Google login on Android and iOS
