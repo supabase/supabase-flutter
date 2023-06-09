@@ -345,7 +345,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       }
     }).subscribe((status, [error]) {
       if (error != null) {
-        _streamController?.addError(error);
+        _addException(error);
       }
     });
 
