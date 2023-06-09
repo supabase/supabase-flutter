@@ -343,7 +343,11 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         _streamData.removeAt(deletedIndex);
         _addStream();
       }
-    }).subscribe();
+    }).subscribe((status, [error]) {
+      if (error != null) {
+        _streamController?.addError(error);
+      }
+    });
 
     PostgrestFilterBuilder query = _queryBuilder.select();
     if (_streamFilter != null) {
