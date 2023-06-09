@@ -180,7 +180,7 @@ class RealtimeChannel {
     }
   }
 
-  /// Subscribe registers your client with the server
+  /// Subscribes to receive real-time changes
   ///
   /// Pass a [callback] to react to different status changes. Values of `status`
   /// can be `SUBSCRIBED`, `CHANNEL_ERROR`, `CLOSED`, or `TIMED_OUT`.
