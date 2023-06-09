@@ -180,8 +180,10 @@ class RealtimeChannel {
     }
   }
 
-  void subscribe(
-      [void Function(String, [Object?])? callback, Duration? timeout]) {
+  void subscribe([
+    void Function(String status, [Object? error])? callback,
+    Duration? timeout,
+  ]) {
     if (joinedOnce == true) {
       throw "tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance";
     } else {
