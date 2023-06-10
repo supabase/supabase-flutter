@@ -180,8 +180,16 @@ class RealtimeChannel {
     }
   }
 
-  void subscribe(
-      [void Function(String, [Object?])? callback, Duration? timeout]) {
+  /// Subscribes to receive real-time changes
+  ///
+  /// Pass a [callback] to react to different status changes. Values of `status`
+  /// can be `SUBSCRIBED`, `CHANNEL_ERROR`, `CLOSED`, or `TIMED_OUT`.
+  ///
+  /// [timeout] parameter can be used to override the default timeout set on `RealtimeClient`.
+  void subscribe([
+    void Function(String status, [Object? error])? callback,
+    Duration? timeout,
+  ]) {
     if (joinedOnce == true) {
       throw "tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance";
     } else {
