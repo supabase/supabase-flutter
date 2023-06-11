@@ -90,4 +90,9 @@ class Session {
       user: user ?? this.user,
     );
   }
+
+  @override
+  String toString() {
+    return 'Session(providerToken: $providerToken, providerRefreshToken: $providerRefreshToken, expiresIn: $expiresIn, tokenType: $tokenType, user: $user, accessToken: $accessToken, refreshToken: $refreshToken)';
+  }
 }
