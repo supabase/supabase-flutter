@@ -21,7 +21,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         node: ['12']
-        sdk: [2.15.0, stable, beta, dev]
+        sdk: [2.17.0, stable, beta, dev]
 
     defaults:
       run:
@@ -45,7 +45,7 @@ jobs:
           melos bootstrap --ignore="supabase_flutter"
 
       - name: dartfmt
-        if: ${{ matrix.sdk == 'stable'}} 
+        if: ${{ matrix.sdk == 'stable'}}
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
