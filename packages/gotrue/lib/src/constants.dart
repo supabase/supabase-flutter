@@ -56,9 +56,3 @@ enum OtpType {
   recovery,
   emailChange
 }
-
-extension EnumName on Enum {
-  String get name {
-    return toString().split('.').last;
-  }
-}
