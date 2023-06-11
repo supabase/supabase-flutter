@@ -54,54 +54,64 @@ class User {
     if (json['id'] == null) {
       return null;
     }
+
     return User(
-      id: json['id'] as String,
-      appMetadata: json['app_metadata'] as Map<String, dynamic>,
-      userMetadata: json['user_metadata'] as Map<String, dynamic>?,
-      aud: json['aud'] as String,
-      confirmationSentAt: json['confirmation_sent_at'] as String?,
-      recoverySentAt: json['recovery_sent_at'] as String?,
-      emailChangeSentAt: json['email_change_sent_at'] as String?,
-      newEmail: json['new_email'] as String?,
-      invitedAt: json['invited_at'] as String?,
-      actionLink: json['action_link'] as String?,
-      email: json['email'] as String?,
-      phone: json['phone'] as String?,
-      createdAt: json['created_at'] as String,
+      id: json['id'] ?? '',
+      appMetadata: Map<String, dynamic>.from(json['appMetadata']),
+      userMetadata: Map<String, dynamic>.from(json['userMetadata']),
+      aud: json['aud'] ?? '',
+      confirmationSentAt: json['confirmationSentAt'],
+      recoverySentAt: json['recoverySentAt'],
+      emailChangeSentAt: json['emailChangeSentAt'],
+      newEmail: json['newEmail'],
+      invitedAt: json['invitedAt'],
+      actionLink: json['actionLink'],
+      email: json['email'],
+      phone: json['phone'],
+      createdAt: json['createdAt'] ?? '',
       // ignore: deprecated_member_use_from_same_package
-      confirmedAt: json['confirmed_at'] as String?,
-      emailConfirmedAt: json['email_confirmed_at'] as String?,
-      phoneConfirmedAt: json['phone_confirmed_at'] as String?,
-      lastSignInAt: json['last_sign_in_at'] as String?,
-      role: json['role'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      identities:
-          (json['identities'] as List?)?.cast<Map<String, dynamic>>().map((e) {
-        return UserIdentity.fromMap(e);
-      }).toList(),
-      factors:
-          (json['factors'] as List?)?.cast<Map<String, dynamic>>().map((e) {
-        return Factor.fromJson(e);
-      }).toList(),
+      confirmedAt: json['confirmedAt'],
+      emailConfirmedAt: json['emailConfirmedAt'],
+      phoneConfirmedAt: json['phoneConfirmedAt'],
+      lastSignInAt: json['lastSignInAt'],
+      role: json['role'],
+      updatedAt: json['updatedAt'],
+      identities: json['identities'] != null
+          ? List<UserIdentity>.from(
+              json['identities']?.map((x) => UserIdentity.fromMap(x)))
+          : null,
+      factors: json['factors'] != null
+          ? List<Factor>.from(json['factors']?.map((x) => Factor.fromMap(x)))
+          : null,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'app_metadata': appMetadata,
-        'user_metadata': userMetadata,
-        'aud': aud,
-        'email': email,
-        'phone': phone,
-        'created_at': createdAt,
-        // ignore: deprecated_member_use_from_same_package
-        'confirmed_at': confirmedAt,
-        'email_confirmed_at': emailConfirmedAt,
-        'phone_confirmed_at': phoneConfirmedAt,
-        'last_sign_in_at': lastSignInAt,
-        'role': role,
-        'updated_at': updatedAt,
-      };
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'appMetadata': appMetadata,
+      'userMetadata': userMetadata,
+      'aud': aud,
+      'confirmationSentAt': confirmationSentAt,
+      'recoverySentAt': recoverySentAt,
+      'emailChangeSentAt': emailChangeSentAt,
+      'newEmail': newEmail,
+      'invitedAt': invitedAt,
+      'actionLink': actionLink,
+      'email': email,
+      'phone': phone,
+      'createdAt': createdAt,
+      // ignore: deprecated_member_use_from_same_package
+      'confirmedAt': confirmedAt,
+      'emailConfirmedAt': emailConfirmedAt,
+      'phoneConfirmedAt': phoneConfirmedAt,
+      'lastSignInAt': lastSignInAt,
+      'role': role,
+      'updatedAt': updatedAt,
+      'identities': identities?.map((x) => x.toMap()).toList(),
+      'factors': factors?.map((x) => x.toMap()).toList(),
+    };
+  }
 
   @override
   String toString() {

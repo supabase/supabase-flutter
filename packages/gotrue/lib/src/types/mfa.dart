@@ -193,6 +193,28 @@ class Factor {
       updatedAt: DateTime.parse(json['updated_at']),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'friendlyName': friendlyName,
+      'factorType': factorType.name,
+      'status': status.name,
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'updatedAt': updatedAt.millisecondsSinceEpoch,
+    };
+  }
+
+  factory Factor.fromJson(Map<String, dynamic> map) {
+    return Factor(
+      id: map['id'] ?? '',
+      friendlyName: map['friendlyName'],
+      factorType: FactorType.fromName(map['factorType']),
+      status: FactorStatus.fromName(map['status']),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt']),
+    );
+  }
 }
 
 enum AuthenticatorAssuranceLevels {
