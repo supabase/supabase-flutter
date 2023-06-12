@@ -136,7 +136,7 @@ void main() {
     final response = await client.refreshSession();
     final session = response.session;
     final deserializedSession = Session.fromJson(session!.toJson());
-    expect(session, deserializedSession);
+    expect(session == deserializedSession, isTrue);
   });
 }
 
