@@ -50,12 +50,6 @@ extension ChannelEventsExtended on ChannelEvents {
   }
 }
 
-extension EnumName on Enum {
-  String get name {
-    return toString().split('.').last;
-  }
-}
-
 class Transports {
   static const String websocket = 'websocket';
 }
