@@ -200,8 +200,8 @@ class Factor {
       'friendly_name': friendlyName,
       'factor_type': factorType.name,
       'status': status.name,
-      'created_at': createdAt.millisecondsSinceEpoch,
-      'updated_at': updatedAt.millisecondsSinceEpoch,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }
