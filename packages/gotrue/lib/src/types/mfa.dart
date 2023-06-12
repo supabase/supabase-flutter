@@ -204,6 +204,29 @@ class Factor {
       'updated_at': updatedAt.toIso8601String(),
     };
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Factor &&
+        other.id == id &&
+        other.friendlyName == friendlyName &&
+        other.factorType == factorType &&
+        other.status == status &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        friendlyName.hashCode ^
+        factorType.hashCode ^
+        status.hashCode ^
+        createdAt.hashCode ^
+        updatedAt.hashCode;
+  }
 }
 
 enum AuthenticatorAssuranceLevels {
