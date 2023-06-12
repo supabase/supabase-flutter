@@ -129,6 +129,15 @@ void main() {
         totpEntry!.timestamp.difference(DateTime.now()) < Duration(seconds: 2),
         true);
   });
+
+  test('Session object can be properly json serielized', () async {
+    await client.signInWithPassword(password: password, email: email2);
+    await client.mfa.challengeAndVerify(factorId: factorId2, code: getTOTP());
+    final response = await client.refreshSession();
+    final session = response.session;
+    final deserializedSession = Session.fromJson(session!.toJson());
+    expect(session, deserializedSession);
+  });
 }
 
 String getTOTP() {
