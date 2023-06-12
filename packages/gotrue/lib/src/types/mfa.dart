@@ -197,23 +197,12 @@ class Factor {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'friendlyName': friendlyName,
-      'factorType': factorType.name,
+      'friendly_name': friendlyName,
+      'factor_type': factorType.name,
       'status': status.name,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'updatedAt': updatedAt.millisecondsSinceEpoch,
+      'created_at': createdAt.millisecondsSinceEpoch,
+      'updated_at': updatedAt.millisecondsSinceEpoch,
     };
-  }
-
-  factory Factor.fromJson(Map<String, dynamic> map) {
-    return Factor(
-      id: map['id'] ?? '',
-      friendlyName: map['friendlyName'],
-      factorType: FactorType.fromName(map['factorType']),
-      status: FactorStatus.fromName(map['status']),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt']),
-    );
   }
 }
 

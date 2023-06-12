@@ -81,7 +81,7 @@ class User {
               json['identities']?.map((x) => UserIdentity.fromMap(x)))
           : null,
       factors: json['factors'] != null
-          ? List<Factor>.from(json['factors']?.map((x) => Factor.fromMap(x)))
+          ? List<Factor>.from(json['factors']?.map((x) => Factor.fromJson(x)))
           : null,
     );
   }
@@ -108,13 +108,14 @@ class User {
       'last_sign_in_at': lastSignInAt,
       'role': role,
       'updated_at': updatedAt,
-      'identities': identities?.map((x) => x.toMap()).toList(),
-      'factors': factors?.map((x) => x.toMap()).toList(),
+      'identities': identities?.map((identity) => identity.toJson()).toList(),
+      'factors': factors?.map((factor) => factor.toJson()).toList(),
     };
   }
 
   @override
   String toString() {
+    // ignore: deprecated_member_use_from_same_package
     return 'User(id: $id, appMetadata: $appMetadata, userMetadata: $userMetadata, aud: $aud, confirmationSentAt: $confirmationSentAt, recoverySentAt: $recoverySentAt, emailChangeSentAt: $emailChangeSentAt, newEmail: $newEmail, invitedAt: $invitedAt, actionLink: $actionLink, email: $email, phone: $phone, createdAt: $createdAt, confirmedAt: $confirmedAt, emailConfirmedAt: $emailConfirmedAt, phoneConfirmedAt: $phoneConfirmedAt, lastSignInAt: $lastSignInAt, role: $role, updatedAt: $updatedAt, identities: $identities, factors: $factors)';
   }
 }
@@ -168,6 +169,18 @@ class UserIdentity {
       lastSignInAt: map['last_sign_in_at'] as String?,
       updatedAt: map['updated_at'] as String?,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'identity_data': identityData,
+      'provider': provider,
+      'created_at': createdAt,
+      'last_sign_in_at': lastSignInAt,
+      'updated_at': updatedAt,
+    };
   }
 
   @override
