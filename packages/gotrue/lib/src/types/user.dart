@@ -1,3 +1,6 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
+import 'package:collection/collection.dart';
 import 'package:gotrue/src/types/mfa.dart';
 
 class User {
@@ -69,7 +72,6 @@ class User {
       email: json['email'],
       phone: json['phone'],
       createdAt: json['created_at'] ?? '',
-      // ignore: deprecated_member_use_from_same_package
       confirmedAt: json['confirmed_at'],
       emailConfirmedAt: json['email_confirmed_at'],
       phoneConfirmedAt: json['phone_confirmed_at'],
@@ -101,7 +103,6 @@ class User {
       'email': email,
       'phone': phone,
       'created_at': createdAt,
-      // ignore: deprecated_member_use_from_same_package
       'confirmed_at': confirmedAt,
       'email_confirmed_at': emailConfirmedAt,
       'phone_confirmed_at': phoneConfirmedAt,
@@ -115,8 +116,61 @@ class User {
 
   @override
   String toString() {
-    // ignore: deprecated_member_use_from_same_package
     return 'User(id: $id, appMetadata: $appMetadata, userMetadata: $userMetadata, aud: $aud, confirmationSentAt: $confirmationSentAt, recoverySentAt: $recoverySentAt, emailChangeSentAt: $emailChangeSentAt, newEmail: $newEmail, invitedAt: $invitedAt, actionLink: $actionLink, email: $email, phone: $phone, createdAt: $createdAt, confirmedAt: $confirmedAt, emailConfirmedAt: $emailConfirmedAt, phoneConfirmedAt: $phoneConfirmedAt, lastSignInAt: $lastSignInAt, role: $role, updatedAt: $updatedAt, identities: $identities, factors: $factors)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    final collectionEquals = const DeepCollectionEquality().equals;
+
+    return other is User &&
+        other.id == id &&
+        collectionEquals(other.appMetadata, appMetadata) &&
+        collectionEquals(other.userMetadata, userMetadata) &&
+        other.aud == aud &&
+        other.confirmationSentAt == confirmationSentAt &&
+        other.recoverySentAt == recoverySentAt &&
+        other.emailChangeSentAt == emailChangeSentAt &&
+        other.newEmail == newEmail &&
+        other.invitedAt == invitedAt &&
+        other.actionLink == actionLink &&
+        other.email == email &&
+        other.phone == phone &&
+        other.createdAt == createdAt &&
+        other.confirmedAt == confirmedAt &&
+        other.emailConfirmedAt == emailConfirmedAt &&
+        other.phoneConfirmedAt == phoneConfirmedAt &&
+        other.lastSignInAt == lastSignInAt &&
+        other.role == role &&
+        other.updatedAt == updatedAt &&
+        collectionEquals(other.identities, identities) &&
+        collectionEquals(other.factors, factors);
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        appMetadata.hashCode ^
+        userMetadata.hashCode ^
+        aud.hashCode ^
+        confirmationSentAt.hashCode ^
+        recoverySentAt.hashCode ^
+        emailChangeSentAt.hashCode ^
+        newEmail.hashCode ^
+        invitedAt.hashCode ^
+        actionLink.hashCode ^
+        email.hashCode ^
+        phone.hashCode ^
+        createdAt.hashCode ^
+        confirmedAt.hashCode ^
+        emailConfirmedAt.hashCode ^
+        phoneConfirmedAt.hashCode ^
+        lastSignInAt.hashCode ^
+        role.hashCode ^
+        updatedAt.hashCode ^
+        identities.hashCode ^
+        factors.hashCode;
   }
 }
 
@@ -191,11 +245,12 @@ class UserIdentity {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
+    final mapEquals = const DeepCollectionEquality().equals;
 
     return other is UserIdentity &&
         other.id == id &&
         other.userId == userId &&
-        other.identityData == identityData &&
+        mapEquals(other.identityData, identityData) &&
         other.provider == provider &&
         other.createdAt == createdAt &&
         other.lastSignInAt == lastSignInAt &&
