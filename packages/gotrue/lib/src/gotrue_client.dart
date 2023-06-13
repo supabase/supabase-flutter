@@ -437,7 +437,9 @@ class GoTrueClient {
     assert((email != null && phone == null) || (email == null && phone != null),
         '`email` or `phone` needs to be specified.');
 
-    _removeSession();
+    if (type != OtpType.emailChange && type != OtpType.phoneChange) {
+      _removeSession();
+    }
 
     final body = {
       if (email != null) 'email': email,
