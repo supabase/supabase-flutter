@@ -90,4 +90,34 @@ class Session {
       user: user ?? this.user,
     );
   }
+
+  @override
+  String toString() {
+    return 'Session(providerToken: $providerToken, providerRefreshToken: $providerRefreshToken, expiresIn: $expiresIn, tokenType: $tokenType, user: $user, accessToken: $accessToken, refreshToken: $refreshToken)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Session &&
+        other.providerToken == providerToken &&
+        other.providerRefreshToken == providerRefreshToken &&
+        other.accessToken == accessToken &&
+        other.expiresIn == expiresIn &&
+        other.refreshToken == refreshToken &&
+        other.tokenType == tokenType &&
+        other.user == user;
+  }
+
+  @override
+  int get hashCode {
+    return providerToken.hashCode ^
+        providerRefreshToken.hashCode ^
+        accessToken.hashCode ^
+        expiresIn.hashCode ^
+        refreshToken.hashCode ^
+        tokenType.hashCode ^
+        user.hashCode;
+  }
 }

@@ -192,6 +192,40 @@ class Factor {
       updatedAt: DateTime.parse(json['updated_at']),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'friendly_name': friendlyName,
+      'factor_type': factorType.name,
+      'status': status.name,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is Factor &&
+        other.id == id &&
+        other.friendlyName == friendlyName &&
+        other.factorType == factorType &&
+        other.status == status &&
+        other.createdAt == createdAt &&
+        other.updatedAt == updatedAt;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        friendlyName.hashCode ^
+        factorType.hashCode ^
+        status.hashCode ^
+        createdAt.hashCode ^
+        updatedAt.hashCode;
+  }
 }
 
 enum AuthenticatorAssuranceLevels {
