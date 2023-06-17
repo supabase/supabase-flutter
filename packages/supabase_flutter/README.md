@@ -102,24 +102,17 @@ await supabase.auth.signInWithGoogle(
 
 ### [Database](https://supabase.com/docs/guides/database)
 
-Full list of supported operators can be found [here](https://supabase.com/docs/reference/dart/select).
+Database methods are used to perform basic CRUD operations using the Supabase REST API. Full list of supported operators can be found [here](https://supabase.com/docs/reference/dart/select).
 
 ```dart
-final supabase = Supabase.instance.client;
-
-// Basic select
-final data = await supabase
-  .from('countries')
-  .select();
-
-// Select with filters
+// Select data with filters
 final data = await supabase
   .from('cities')
   .select()
   .eq('country_id', 1) // equals filter
   .neq('name', 'The shire'); // does not equal filter
 
-// Insert new row
+// Insert a new row
 await supabase
   .from('cities')
   .insert({'name': 'The Shire', 'country_id': 554});
@@ -135,10 +128,6 @@ To receive realtime updates, you have to first enable Realtime on from your Supa
 > When using `stream()` with a `StreamBuilder`, make sure to persist the stream value as a variable in a `StatefulWidget` instead of directly constructing the stream within your widget tree, which could cause rapid rebuilds that will lead to losing realtime connection.
 
 ```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-final supabase = Supabase.instance.client;
-
 class MyWidget extends StatefulWidget {
   const MyWidget({Key? key}) : super(key: key);
 
@@ -232,55 +221,22 @@ myChannel.on(
 ### [Storage](https://supabase.com/docs/guides/storage)
 
 ```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
+final file = File('example.txt');
+file.writeAsStringSync('File content');
+await supabase.storage
+  .from('my_bucket')
+  .upload('my/path/to/files/example.txt', file);
 
-final supabase = Supabase.instance.client;
-
-class MyWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () {
-        final file = File('example.txt');
-        file.writeAsStringSync('File content');
-        supabase.storage
-            .from('my_bucket')
-            .upload('my/path/to/files/example.txt', file);
-      },
-      child: const Text('Upload'),
-    );
-  }
-}
+// Use the `uploadBinary` method to upload files on Flutter web
+await supabase.storage
+  .from('my_bucket')
+  .uploadBinary('my/path/to/files/example.txt', file.readAsBytesSync());
 ```
 
 ### [Edge Functions](https://supabase.com/docs/guides/functions)
 
 ```dart
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-final client = Supabase.instance.client;
-
-class MyWidget extends StatefulWidget {
-  const MyWidget({Key? key}) : super(key: key);
-
-  @override
-  State<MyWidget> createState() => _MyWidgetState();
-}
-
-class _MyWidgetState extends State<MyWidget> {
-  // Persisting the future as local variable to prevent refetching upon rebuilds.
-  final _future = client.functions.invoke('get_countries');
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _future,
-      builder: (context, snapshot) {
-        // return your widget with the data from snapshot
-      },
-    );
-  }
-}
+final data = await supabase.functions.invoke('get_countries');
 ```
 
 ## Authentication Deep Dive
