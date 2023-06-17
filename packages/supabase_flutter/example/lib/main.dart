@@ -18,6 +18,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
+final supabase = Supabase.instance.client;
+
 class MyWidget extends StatefulWidget {
   const MyWidget({Key? key}) : super(key: key);
 
@@ -35,9 +37,9 @@ class _MyWidgetState extends State<MyWidget> {
 
   Future<void> _getAuth() async {
     setState(() {
-      _user = Supabase.instance.client.auth.currentUser;
+      _user = supabase.auth.currentUser;
     });
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    supabase.auth.onAuthStateChange.listen((data) {
       setState(() {
         _user = data.session?.user;
       });
@@ -101,14 +103,14 @@ class _LoginFormState extends State<_LoginForm> {
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
-                    await Supabase.instance.client.auth.signInWithPassword(
+                    await supabase.auth.signInWithPassword(
                       email: email,
                       password: password,
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Login failed'),
-                      backgroundColor: Colors.red,
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Login failed'),
+                      backgroundColor: Theme.of(context).colorScheme.error,
                     ));
                     setState(() {
                       _loading = false;
@@ -126,14 +128,14 @@ class _LoginFormState extends State<_LoginForm> {
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
-                    await Supabase.instance.client.auth.signUp(
+                    await supabase.auth.signUp(
                       email: email,
                       password: password,
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                      content: Text('Signup failed'),
-                      backgroundColor: Colors.red,
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Signup failed'),
+                      backgroundColor: Theme.of(context).colorScheme.error,
                     ));
                     setState(() {
                       _loading = false;
@@ -174,8 +176,8 @@ class _ProfileFormState extends State<_ProfileForm> {
 
   Future<void> _loadProfile() async {
     try {
-      final userId = Supabase.instance.client.auth.currentUser!.id;
-      final data = (await Supabase.instance.client
+      final userId = supabase.auth.currentUser!.id;
+      final data = (await supabase
           .from('profiles')
           .select()
           .match({'id': userId}).maybeSingle()) as Map?;
@@ -186,9 +188,9 @@ class _ProfileFormState extends State<_ProfileForm> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Error occurred while getting profile'),
-        backgroundColor: Colors.red,
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Error occurred while getting profile'),
+        backgroundColor: Theme.of(context).colorScheme.error,
       ));
     }
     setState(() {
@@ -223,11 +225,10 @@ class _ProfileFormState extends State<_ProfileForm> {
                       setState(() {
                         _loading = true;
                       });
-                      final userId =
-                          Supabase.instance.client.auth.currentUser!.id;
+                      final userId = supabase.auth.currentUser!.id;
                       final username = _usernameController.text;
                       final website = _websiteController.text;
-                      await Supabase.instance.client.from('profiles').upsert({
+                      await supabase.from('profiles').upsert({
                         'id': userId,
                         'username': username,
                         'website': website,
@@ -239,9 +240,9 @@ class _ProfileFormState extends State<_ProfileForm> {
                         ));
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('Error saving profile'),
-                        backgroundColor: Colors.red,
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: const Text('Error saving profile'),
+                        backgroundColor: Theme.of(context).colorScheme.error,
                       ));
                     }
                     setState(() {
@@ -251,7 +252,7 @@ class _ProfileFormState extends State<_ProfileForm> {
                   child: const Text('Save')),
               const SizedBox(height: 16),
               TextButton(
-                  onPressed: () => Supabase.instance.client.auth.signOut(),
+                  onPressed: () => supabase.auth.signOut(),
                   child: const Text('Sign Out')),
             ],
           );
