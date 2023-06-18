@@ -342,20 +342,33 @@ Supabase.initialize(
 );
 ```
 
-## Deep link config
+## Deep links
+
+### Why do you need to setup deep links
+
+You need to setup deep links if you want your native app to open when a user clicks on a link. User clicking on a link and the app opens up happens in a few scenarios when you use Supabase auth, and in order to support those scenarios, you need to setup deep links.
+
+### When do you need to setup deep links
+
+You need to setup deep links when want any of the followings
+
+- Magic link login
+- Have `confirm email` enabled and are using email login
+- Resetting password for email login
+- Calling `.signInWithOAuth()` method
 
 \*Currently supabase_flutter supports deep links on Android, iOS, Web, MacOS and Windows.
 
-### Supabase redirect URLs config
+### Deep link config
 
 - Go to your Supabase project Authentication Settings page.
 - You need to enter your app redirect callback on `Additional Redirect URLs` field.
 
-The redirect callback url should have this format `[YOUR_SCHEME]://[YOUR_AUTH_HOSTNAME]`
+The redirect callback url should have this format `[YOUR_SCHEME]://[YOUR_HOSTNAME]`. Here, `io.supabase.flutterdemo://login-callback` is just an example, you can choose whatever you would like for `YOUR_SCHEME` and `YOUR_HOSTNAME` as long as the scheme is unique across the user's device. For this reason, typically a reverse domain of your website is used.
 
 ![authentication settings page](https://raw.githubusercontent.com/supabase/supabase-flutter/main/.github/images/deeplink-config.png)
 
-### Supabase 3rd party logins config
+### Platform specific config
 
 Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
@@ -363,8 +376,6 @@ Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
 
 <details>
   <summary>How to setup</summary>
-
-Deep Links can have any custom scheme. The downside is that any app can claim a scheme, so make sure yours are as unique as possible, eg. `HST0000001://host.com`.
 
 ```xml
 <manifest ...>
@@ -380,8 +391,8 @@ Deep Links can have any custom scheme. The downside is that any app can claim a 
         <category android:name="android.intent.category.BROWSABLE" />
         <!-- Accepts URIs that begin with YOUR_SCHEME://YOUR_HOST -->
         <data
-          android:scheme="[YOUR_SCHEME]"
-          android:host="[YOUR_HOST]" />
+          android:scheme="YOUR_SCHEME"
+          android:host="YOUR_HOSTNAME" />
       </intent-filter>
     </activity>
   </application>
@@ -398,8 +409,6 @@ For more info: https://developer.android.com/training/app-links/deep-linking
 
 <details>
   <summary>How to setup</summary>
-
-Custom URL schemes can have... any custom scheme and there is no host specificity, nor entitlements or a hosted file. The downside is that any app can claim any scheme, so make sure yours is as unique as possible, eg. `hst0000001` or `myIncrediblyAwesomeScheme`.
 
 For **Custom URL schemes** you need to declare the scheme in
 `ios/Runner/Info.plist` (or through Xcode's Target Info editor,
@@ -425,8 +434,6 @@ under URL Types):
 </dict>
 </plist>
 ```
-
-This allows for your app to be started from `YOUR_SCHEME://ANYTHING` links.
 
 For more info: https://developer.apple.com/documentation/xcode/defining-a-custom-url-scheme-for-your-app
 
