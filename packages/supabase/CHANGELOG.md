@@ -1,3 +1,7 @@
+## 1.9.4
+
+ - Update a dependency to the latest release.
+
 ## 1.9.3
 
  - **REFACTOR**: bump minimum Dart SDK version to 2.17.0 ([#510](https://github.com/supabase/supabase-flutter/issues/510)). ([ed927ee0](https://github.com/supabase/supabase-flutter/commit/ed927ee061272f61c84ee3ee145bb4e8c0eae59a))
