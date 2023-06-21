@@ -479,8 +479,29 @@ class GoTrueClient {
     return refreshCompleter.future;
   }
 
+  /// Sends a reauthentication OTP to the user's email or phone number.
+  /// Requires the user to be signed-in.
+  Future<void> reauthenticate() async {
+    final session = currentSession;
+    if (session == null) {
+      throw AuthException('Not logged in.');
+    }
+
+    final options =
+        GotrueRequestOptions(headers: headers, jwt: session.accessToken);
+
+    await _fetch.request(
+      '$_url/reauthenticate',
+      RequestMethodType.get,
+      options: options,
+    );
+  }
+
   /// Updates user data, if there is a logged in user.
-  Future<UserResponse> updateUser(UserAttributes attributes) async {
+  Future<UserResponse> updateUser(
+    UserAttributes attributes, {
+    String? emailRedirectTo,
+  }) async {
     final accessToken = currentSession?.accessToken;
     if (accessToken == null) {
       throw AuthException('Not logged in.');
@@ -491,6 +512,7 @@ class GoTrueClient {
       headers: _headers,
       body: body,
       jwt: accessToken,
+      redirectTo: emailRedirectTo,
     );
     final response = await _fetch.request('$_url/user', RequestMethodType.put,
         options: options);
