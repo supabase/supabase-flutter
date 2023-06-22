@@ -10,7 +10,9 @@ environment:
 
 dependencies:
   functions_client: ^1.3.2
-  gotrue: ^1.8.4
+  # gotrue: ^1.8.4
+  gotrue:
+    path: ../gotrue
   http: '>=0.13.5 <2.0.0'
   postgrest: ^1.3.2
   realtime_client: ^1.1.1

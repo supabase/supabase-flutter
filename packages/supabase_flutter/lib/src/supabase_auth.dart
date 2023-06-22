@@ -8,8 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:meta/meta.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart'; // TODO: remove this
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -307,6 +306,25 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// Signs the user in using a third party providers.
   ///
   /// ```dart
+  /// await supabase.auth.signInWithCredential(
+  ///   FacebookAuthProvider.credential
+  /// );
+  /// ```
+  Future<AuthResponse> signInWithCredential(AuthCredential credential) async {
+    if (credential.accessToken == null) {
+      throw AuthException(
+          'Could not find accessToken from generated credential.');
+    }
+
+    return signInWithIdToken(
+      provider: credential.provider,
+      idToken: credential.idToken ?? '',
+    );
+  }
+
+  /// Signs the user in using a third party providers.
+  ///
+  /// ```dart
   /// await supabase.auth.signInWithOAuth(
   ///   Provider.google,
   ///   // Use deep link to bring the user back to the app
@@ -378,8 +396,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// This method only works on iOS and MacOS. If you want to sign in a user using Apple
   /// on other platforms, please use the `signInWithOAuth` method.
   ///
-  /// This method is experimental as the underlying `signInWithIdToken` method is experimental.
-  @experimental
+  @Deprecated("use signInWithCredential instead signInWithApple")
   Future<AuthResponse> signInWithApple() async {
     assert(!kIsWeb && (Platform.isIOS || Platform.isMacOS),
         'Please use signInWithOAuth for non-iOS platforms');

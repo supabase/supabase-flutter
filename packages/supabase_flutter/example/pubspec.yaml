@@ -11,7 +11,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^1.10.0
+  supabase_flutter: ^1.10.4
+  flutter_facebook_auth: ^6.0.0
+  google_sign_in: ^6.1.4
+  # conflict supabase_flutter
+  # sign_in_with_apple: ^5.0.0
 
 dev_dependencies:
   flutter_test:
