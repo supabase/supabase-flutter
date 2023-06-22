@@ -89,6 +89,21 @@ You need to create a client ID in your Google Cloud console and add them to your
 - [Obtain Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
 - [Obtain iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
 
+To add Google login on Android, you also need to add the following in your `android/app/build.gradle` file. Your application ID cannot have underscores in it.
+
+```
+...
+android {
+    ...
+    defaultConfig {
+        ...
+        manifestPlaceholders += [
+                'appAuthRedirectScheme': '<your_application_id>'
+        ]
+    }
+}
+```
+
 ```dart
 // Perform Google login on Android and iOS
 // Pass the same client ID set on the Supabase dashboard to the sign in method
