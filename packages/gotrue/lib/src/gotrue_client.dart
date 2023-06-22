@@ -480,6 +480,7 @@ class GoTrueClient {
   }
 
   /// Sends a reauthentication OTP to the user's email or phone number.
+  ///
   /// Requires the user to be signed-in.
   Future<void> reauthenticate() async {
     final session = currentSession;
@@ -495,6 +496,28 @@ class GoTrueClient {
       RequestMethodType.get,
       options: options,
     );
+  }
+
+  ///Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
+  ///
+  ///Use [EmailResendParams] or [PhoneResendParams] to specify the type of resend.
+  Future<ResendResponse> resend(ResendParams params) async {
+    _removeSession();
+
+    final options =
+        GotrueRequestOptions(headers: headers, body: params.toJson());
+
+    final response = await _fetch.request(
+      '$_url/resend',
+      RequestMethodType.post,
+      options: options,
+    );
+
+    if ((response as Map).containsKey(['message_id'])) {
+      return ResendResponse(messageId: response['message_id']);
+    } else {
+      return ResendResponse();
+    }
   }
 
   /// Updates user data, if there is a logged in user.

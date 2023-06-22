@@ -268,3 +268,77 @@ class UserIdentity {
         updatedAt.hashCode;
   }
 }
+
+class ResendResponse {
+  /// Only set for phone resend
+  String? messageId;
+
+  ResendResponse({
+    this.messageId,
+  });
+}
+
+abstract class ResendParams {
+  String? captchaToken;
+  Map<String, dynamic> toJson();
+}
+
+enum EmailResendType {
+  signup('signup'),
+  emailChange('email_change');
+
+  final String value;
+
+  const EmailResendType(this.value);
+}
+
+class EmailResendParams extends ResendParams {
+  EmailResendType type;
+  String email;
+
+  EmailResendParams({
+    required this.type,
+    required this.email,
+  });
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type.name,
+      'email': email,
+      'gotrue_meta_security': {
+        'captcha_token': captchaToken,
+      }
+    };
+  }
+}
+
+enum PhoneResendType {
+  sms('sms'),
+  phoneChange('phone_change');
+
+  final String value;
+
+  const PhoneResendType(this.value);
+}
+
+class PhoneResendParams extends ResendParams {
+  PhoneResendType type;
+  String phone;
+
+  PhoneResendParams({
+    required this.type,
+    required this.phone,
+  });
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type.name,
+      'phone': phone,
+      'gotrue_meta_security': {
+        'captcha_token': captchaToken,
+      }
+    };
+  }
+}
