@@ -304,7 +304,7 @@ class EmailResendParams extends ResendParams {
   @override
   Map<String, dynamic> toJson() {
     return {
-      'type': type.name,
+      'type': type.value,
       'email': email,
       'gotrue_meta_security': {
         'captcha_token': captchaToken,
@@ -334,7 +334,7 @@ class PhoneResendParams extends ResendParams {
   @override
   Map<String, dynamic> toJson() {
     return {
-      'type': type.name,
+      'type': type.value,
       'phone': phone,
       'gotrue_meta_security': {
         'captcha_token': captchaToken,
