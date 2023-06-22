@@ -14,7 +14,7 @@ const _provider = Provider.google;
 ///
 /// ```dart
 /// String accessToken = '...'; // From 3rd party provider
-/// var googleAuthCredential = GoogleAuthProvider.credential(accessToken);
+/// var googleAuthCredential = GoogleAuthProvider.credential(idToken, accessToken);
 ///
 /// Supabase.instance.client.auth.signInWithCredential(googleAuthCredential)
 ///   .then(...);

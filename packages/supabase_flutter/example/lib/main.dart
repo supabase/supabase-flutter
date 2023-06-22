@@ -273,7 +273,7 @@ class _LoginFormState extends State<_LoginForm> {
                 try {
                   // TODO: put file client in "/android/app/client_secret_*.json"
                   // follow instructions: https://pub.dev/packages/google_sign_in
-                  // https://console.cloud.google.com/
+                  // resources: https://console.cloud.google.com/ https://developers.google.com/identity
                   var client = GoogleSignIn(
                     // optional
                     clientId: '*-*.apps.googleusercontent.com',
