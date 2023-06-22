@@ -14,7 +14,8 @@ class AuthCredential {
   @protected
   const AuthCredential({
     required this.provider,
-    this.idToken,
+    required this.signInMethod,
+    this.token,
     this.accessToken,
   });
 
@@ -22,19 +23,29 @@ class AuthCredential {
   /// 'facebook', or 'google'.
   final Provider provider;
 
-  final String? idToken;
+  /// The authentication sign in method for the credential. For example,
+  /// 'password', or 'emailLink'. This corresponds to the sign-in method
+  final String signInMethod;
+
+  /// A token used to identify the AuthCredential on native platforms.
+  final int? token;
+
+  /// The OAuth access token associated with the credential if it belongs to an
+  /// OAuth provider, such as `facebook.com`, `twitter.com`, etc.
+  /// Using the OAuth access token, you can call the provider's API.
   final String? accessToken;
 
   /// Returns the current instance as a serialized [Map].
   Map<String, dynamic> asMap() {
     return <String, dynamic>{
       'provider': provider.name,
-      'idToken': idToken,
+      'signInMethod': signInMethod,
+      'token': token,
       'accessToken': accessToken,
     };
   }
 
   @override
   String toString() =>
-      'AuthCredential(providerId: ${provider.index}, idToken: $idToken, accessToken: $accessToken)';
+      'AuthCredential(providerId: ${provider.index}, signInMethod: $signInMethod, token: $token, accessToken: $accessToken)';
 }

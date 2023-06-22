@@ -40,12 +40,11 @@ class FacebookAuthCredential extends OAuthCredential {
     required String accessToken,
   }) : super(
           provider: _provider,
+          signInMethod: _provider.name,
           accessToken: accessToken,
         );
 
   factory FacebookAuthCredential._credential(String accessToken) {
-    return FacebookAuthCredential._(
-      accessToken: accessToken,
-    );
+    return FacebookAuthCredential._(accessToken: accessToken);
   }
 }

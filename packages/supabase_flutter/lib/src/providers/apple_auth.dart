@@ -14,7 +14,7 @@ const _provider = Provider.apple;
 ///
 /// ```dart
 /// String accessToken = '...'; // From 3rd party provider
-/// var appleAuthCredential = AppleAuthProvider.credential(identityToken, authorizationCode);
+/// var appleAuthCredential = AppleAuthProvider.credential(identityToken);
 ///
 /// Supabase.instance.client.auth.signInWithCredential(appleAuthCredential)
 ///   .then(...);
@@ -25,13 +25,9 @@ class AppleAuthProvider extends AuthProvider {
   /// Creates a new instance.
   AppleAuthProvider() : super(_provider);
 
-  /// Create a new [AppleAuthCredential] from a provided [identityToken, authorizationCode];
-  static OAuthCredential credential(
-      String identityToken, String authorizationCode) {
-    return AppleAuthCredential._credential(
-      identityToken,
-      authorizationCode,
-    );
+  /// Create a new [AppleAuthCredential] from a provided [identityToken];
+  static OAuthCredential credential(String identityToken) {
+    return AppleAuthCredential._credential(identityToken);
   }
 }
 
@@ -39,18 +35,16 @@ class AppleAuthProvider extends AuthProvider {
 /// [AppleAuthProvider.credential].
 class AppleAuthCredential extends OAuthCredential {
   AppleAuthCredential._({
-    required String idToken,
     required String accessToken,
   }) : super(
           provider: _provider,
-          idToken: idToken,
+          signInMethod: _provider.name,
+          accessToken: accessToken,
         );
 
-  factory AppleAuthCredential._credential(
-      String idToken, String authorizationCode) {
+  factory AppleAuthCredential._credential(String identityToken) {
     return AppleAuthCredential._(
-      idToken: idToken,
-      accessToken: authorizationCode,
+      accessToken: identityToken,
     );
   }
 }

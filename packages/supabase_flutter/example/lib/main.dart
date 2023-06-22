@@ -161,7 +161,7 @@ class _LoginFormState extends State<_LoginForm> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Signin failed! ${error.toString()}'),
-                      backgroundColor: Colors.red,
+                      backgroundColor: Theme.of(context).colorScheme.error,
                     ),
                   );
                 }

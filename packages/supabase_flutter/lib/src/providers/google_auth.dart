@@ -43,6 +43,7 @@ class GoogleAuthCredential extends OAuthCredential {
     String? idToken,
   }) : super(
           provider: _provider,
+          signInMethod: _provider.name,
           accessToken: accessToken,
           idToken: idToken,
         );

@@ -310,7 +310,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///   FacebookAuthProvider.credential
   /// );
   /// ```
-  Future<AuthResponse> signInWithCredential(AuthCredential credential) async {
+  Future<AuthResponse> signInWithCredential(
+    AuthCredential credential, {
+    String? nonce,
+    String? captchaToken,
+  }) async {
     if (credential.accessToken == null) {
       throw AuthException(
           'Could not find accessToken from generated credential.');
@@ -318,7 +322,9 @@ extension GoTrueClientSignInProvider on GoTrueClient {
 
     return signInWithIdToken(
       provider: credential.provider,
-      idToken: credential.idToken ?? '',
+      idToken: credential.accessToken ?? '',
+      nonce: nonce,
+      captchaToken: captchaToken,
     );
   }
 
