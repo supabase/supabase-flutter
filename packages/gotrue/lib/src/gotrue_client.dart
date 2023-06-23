@@ -303,7 +303,7 @@ class GoTrueClient {
   /// This method of signing in only supports [Provider.google] or [Provider.apple].
   ///
   /// If the ID token contains an `at_hash` claim, then [accessToken] must be
-  /// provided to compare its hashthe hash with the value in the ID token.
+  /// provided to compare its hash with the value in the ID token.
   ///
   /// If the ID token contains a `nonce` claim, then [nonce] must be
   /// provided to compare its hash with the value in the ID token.
