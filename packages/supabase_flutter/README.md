@@ -112,7 +112,7 @@ android {
 }
 ```
 
-At this point you can perform native Google sign in using the following code. Make sure to replace the `applicationId` with your own.
+At this point you can perform native Google sign in using the following code. Make sure to replace the `clientId` and `applicationId` with your own.
 
 ```dart
 import 'package:crypto/crypto.dart';
@@ -124,11 +124,17 @@ String _generateRandomString() {
   return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
 }
 
-Future<AuthResponse> signInWithGoogle(String clientId) {
+Future<AuthResponse> signInWithGoogle() {
   // Just a random string
   final rawNonce = _generateRandomString();
   final hashedNonce =
       sha256.convert(utf8.encode(rawNonce)).toString();
+
+  /// TODO: update the client ID with your own
+  ///
+  /// Client ID that you registered with Google Cloud.
+  /// You will have two different values for iOS and Android.
+  const clientId = 'YOUR_CLIENT_ID_HERE';
 
   /// TODO: Replace the following with your own app details
   ///
