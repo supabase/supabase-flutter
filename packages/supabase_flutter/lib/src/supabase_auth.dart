@@ -5,7 +5,7 @@ import 'dart:math';
 
 import 'package:app_links/app_links.dart';
 import 'package:crypto/crypto.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple;
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -383,10 +383,10 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     final rawNonce = _generateRandomString();
     final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
-    final credential = await apple.SignInWithApple.getAppleIDCredential(
+    final credential = await SignInWithApple.getAppleIDCredential(
       scopes: [
-        apple.AppleIDAuthorizationScopes.email,
-        apple.AppleIDAuthorizationScopes.fullName,
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
       ],
       nonce: hashedNonce,
     );
