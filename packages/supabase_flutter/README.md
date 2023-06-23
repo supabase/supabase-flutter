@@ -98,7 +98,7 @@ android {
     defaultConfig {
         ...
         manifestPlaceholders += [
-                'appAuthRedirectScheme': '<your_application_id>'
+                'appAuthRedirectScheme': applicationId
         ]
     }
 }
