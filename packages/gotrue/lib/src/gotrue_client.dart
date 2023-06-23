@@ -302,14 +302,23 @@ class GoTrueClient {
   /// The [idToken] is verified for validity and a new session is established.
   /// This method of signing in only supports [Provider.google] or [Provider.apple].
   ///
+  /// If the ID token contains an `at_hash` claim, then [accessToken] must be
+  /// provided to compare its hashthe hash with the value in the ID token.
+  ///
+  /// If the ID token contains a `nonce` claim, then [nonce] must be
+  /// provided to compare its hash with the value in the ID token.
+  ///
+  /// [captchaToken] is the verification token received when the user
+  /// completes the captcha on the app.
+  ///
   /// This method is experimental.
   @experimental
   Future<AuthResponse> signInWithIdToken({
     required Provider provider,
     required String idToken,
+    String? accessToken,
     String? nonce,
     String? captchaToken,
-    String? accessToken,
   }) async {
     _removeSession();
 
