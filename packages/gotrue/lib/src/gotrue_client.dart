@@ -309,6 +309,7 @@ class GoTrueClient {
     required String idToken,
     String? nonce,
     String? captchaToken,
+    String? accessToken,
   }) async {
     _removeSession();
 
@@ -327,6 +328,7 @@ class GoTrueClient {
           'id_token': idToken,
           'nonce': nonce,
           'gotrue_meta_security': {'captcha_token': captchaToken},
+          'access_token': accessToken,
         },
         query: {'grant_type': 'id_token'},
       ),
@@ -437,9 +439,7 @@ class GoTrueClient {
     assert((email != null && phone == null) || (email == null && phone != null),
         '`email` or `phone` needs to be specified.');
 
-    if (type != OtpType.emailChange && type != OtpType.phoneChange) {
-      _removeSession();
-    }
+    _removeSession();
 
     final body = {
       if (email != null) 'email': email,
@@ -612,15 +612,7 @@ class GoTrueClient {
     _removeSession();
     _notifyAllSubscribers(AuthChangeEvent.signedOut);
     if (accessToken != null) {
-      try {
-        await admin.signOut(accessToken);
-      } on AuthException catch (error) {
-        // ignore 401s since an invalid or expired JWT should sign out the current session
-        // ignore 404s since user might not exist anymore
-        if (error.statusCode != '401' && error.statusCode != '404') {
-          rethrow;
-        }
-      }
+      return admin.signOut(accessToken);
     }
   }
 
