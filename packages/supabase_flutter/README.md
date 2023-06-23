@@ -73,11 +73,54 @@ supabase.auth.onAuthStateChange.listen((data) {
 
 #### Native Apple Sign in
 
-You need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected, and add the bundle ID to your Supabase dashboard in `Authentication -> Providers -> Apple` before performing native Apple sign in.
+You can perform native Apple sign in on iOS and MacOS using [sign_in_with_apple](https://pub.dev/packages/sign_in_with_apple).
+
+Although [sign_in_with_apple](https://pub.dev/packages/sign_in_with_apple) plugin is compatible with Android and Web, setting it up requires you to host your own backend, so it is recommended to use `signInWithOAuth()` method to perform Apple sign in on Android, Web and other platforms.
+
+First, you need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected, and add the bundle ID to your Supabase dashboard in `Authentication -> Providers -> Apple -> IOS Bundle ID` before performing native Apple sign in. You can pass multiple bundle IDs as comma separated string.
+
+Then add [sign_in_with_apple](https://pub.dev/packages/sign_in_with_apple) to your app. You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
+
+```bash
+flutter pub add sign_in_with_apple crypto
+```
+
+With that you are ready to perform Apple sign in like this:
 
 ```dart
-// Perform Apple login on iOS and macOS
-await supabase.auth.signInWithApple();
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:crypto/crypto.dart';
+
+String _generateRandomString() {
+  final random = Random.secure();
+  return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
+}
+
+Future<AuthResponse> signInWithApple() {
+
+  final rawNonce = _generateRandomString();
+  final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+  final credential = await SignInWithApple.getAppleIDCredential(
+    scopes: [
+      AppleIDAuthorizationScopes.email,
+      AppleIDAuthorizationScopes.fullName,
+    ],
+    nonce: hashedNonce,
+  );
+
+  final idToken = credential.identityToken;
+  if (idToken == null) {
+    throw 'Could not find ID Token from generated credential.';
+  }
+
+  return signInWithIdToken(
+    provider: Provider.apple,
+    idToken: idToken,
+    nonce: rawNonce,
+  );
+  }
+}
 ```
 
 `signInWithApple()` is only supported on iOS and on macOS. Use the `signInWithOAuth()` method to perform web-based Apple sign in on other platforms.
