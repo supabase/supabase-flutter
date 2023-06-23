@@ -91,7 +91,7 @@ First, you need to create a client ID in your Google Cloud console and add them 
 - [Steps to obtain Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
 - [Steps to obtain iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
 
-Then add `flutter_appauth` to your app. You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
+Then add [flutter_appauth](https://pub.dev/packages/flutter_appauth) to your app. You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
 
 ```bash
 flutter pub add flutter_appauth crypto
