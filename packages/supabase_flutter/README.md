@@ -84,12 +84,20 @@ await supabase.auth.signInWithApple();
 
 #### Native Google sign in
 
-You need to create a client ID in your Google Cloud console and add them to your Supabase dashboard in `Authentication -> Providers -> Google`.
+You can perform native Google sign in on Android and iOS using [flutter_appauth](https://pub.dev/packages/flutter_appauth).
 
-- [Obtain Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
-- [Obtain iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
+First, you need to create a client ID in your Google Cloud console and add them to your Supabase dashboard in `Authentication -> Providers -> Google -> Authorized Client IDs`. You can add multiple client IDs as comma separated string.
 
-To add Google login on Android, you also need to add the following in your `android/app/build.gradle` file. Your application ID cannot have underscores in it.
+- [Steps to obtain Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
+- [Steps to obtain iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
+
+Then add `flutter_appauth` to your app. You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
+
+```bash
+flutter pub add flutter_appauth crypto
+```
+
+For iOS, no further setup is required. For Android, you also need to add the following in your `android/app/build.gradle` file. Your application ID cannot have underscores in it.
 
 ```
 ...
@@ -104,16 +112,85 @@ android {
 }
 ```
 
-```dart
-// Perform Google login on Android and iOS
-// Pass the same client ID set on the Supabase dashboard to the sign in method
-await supabase.auth.signInWithGoogle(
-  iosClientId: 'IOS_CLIENT_ID',
-  androidClientId: 'ANDROID_CLIENT_ID',
-);
-```
+At this point you can perform native Google sign in using the following code. Make sure to replace the `applicationId` with your own.
 
-`signInWithGoogle()` is only supported on Android and iOS. Use the `signInWithOAuth()` method to perform web-based Google sign in on other platforms.
+```dart
+import 'package:crypto/crypto.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
+
+/// Function to generate a random 16 character string.
+String _generateRandomString() {
+  final random = Random.secure();
+  return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
+}
+
+Future<AuthResponse> signInWithGoogle(String clientId) {
+  // Just a random string
+  final rawNonce = _generateRandomString();
+  final hashedNonce =
+      sha256.convert(utf8.encode(rawNonce)).toString();
+
+  /// TODO: Replace the following with your own app details
+  ///
+  /// Application ID or Bundle ID for your app.
+  /// If the application ID and Bundle ID is different for Android and iOS,
+  /// make sure the value here matches the platform you are running on.
+  const applicationId = 'com.supabase.example';
+
+  /// Fixed value for google login
+  const redirectUrl = '$applicationId:/google_auth';
+
+  /// Fixed value for google login
+  const discoveryUrl =
+      'https://accounts.google.com/.well-known/openid-configuration';
+
+  // authorize the user by opening the concent page
+  final result = await appAuth.authorize(
+    AuthorizationRequest(
+      clientId,
+      redirectUrl,
+      discoveryUrl: discoveryUrl,
+      nonce: hashedNonce,
+      scopes: [
+        'openid',
+        'email',
+      ],
+    ),
+  );
+
+  if (result == null) {
+    throw 'No result';
+  }
+
+  // Request the access and id token to google
+  final tokenResult = await appAuth.token(
+    TokenRequest(
+      clientId,
+      redirectUrl,
+      authorizationCode: result.authorizationCode,
+      discoveryUrl: discoveryUrl,
+      codeVerifier: result.codeVerifier,
+      nonce: result.nonce,
+      scopes: [
+        'openid',
+        'email',
+      ],
+    ),
+  );
+
+  final idToken = tokenResult?.idToken;
+
+  if (idToken == null) {
+    throw 'No idToken';
+  }
+
+  return supabase.auth.signInWithIdToken(
+    provider: Provider.google,
+    idToken: idToken,
+    nonce: rawNonce,
+  );
+}
+```
 
 ### OAuth login
 
