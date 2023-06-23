@@ -106,9 +106,9 @@ class _LoginFormState extends State<_LoginForm> {
                       password: password,
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text('Login failed'),
-                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Login failed'),
+                      backgroundColor: Colors.red,
                     ));
                     setState(() {
                       _loading = false;
@@ -131,9 +131,9 @@ class _LoginFormState extends State<_LoginForm> {
                       password: password,
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text('Signup failed'),
-                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Signup failed'),
+                      backgroundColor: Colors.red,
                     ));
                     setState(() {
                       _loading = false;
@@ -186,9 +186,9 @@ class _ProfileFormState extends State<_ProfileForm> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('Error occurred while getting profile'),
-        backgroundColor: Theme.of(context).colorScheme.error,
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Error occurred while getting profile'),
+        backgroundColor: Colors.red,
       ));
     }
     setState(() {
@@ -239,9 +239,9 @@ class _ProfileFormState extends State<_ProfileForm> {
                         ));
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: const Text('Error saving profile'),
-                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Error saving profile'),
+                        backgroundColor: Colors.red,
                       ));
                     }
                     setState(() {

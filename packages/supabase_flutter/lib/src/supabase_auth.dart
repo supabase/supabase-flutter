@@ -5,11 +5,11 @@ import 'dart:math';
 
 import 'package:app_links/app_links.dart';
 import 'package:crypto/crypto.dart';
-import 'package:meta/meta.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter/services.dart';
+import 'package:meta/meta.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -383,7 +383,6 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   Future<AuthResponse> signInWithApple() async {
     assert(!kIsWeb && (Platform.isIOS || Platform.isMacOS),
         'Please use signInWithOAuth for non-iOS platforms');
-
     final rawNonce = _generateRandomString();
     final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
