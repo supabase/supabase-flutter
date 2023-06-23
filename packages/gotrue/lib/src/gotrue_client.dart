@@ -309,7 +309,6 @@ class GoTrueClient {
     required String idToken,
     String? nonce,
     String? captchaToken,
-    String? accessToken,
   }) async {
     _removeSession();
 
@@ -328,7 +327,6 @@ class GoTrueClient {
           'id_token': idToken,
           'nonce': nonce,
           'gotrue_meta_security': {'captcha_token': captchaToken},
-          'access_token': accessToken,
         },
         query: {'grant_type': 'id_token'},
       ),
