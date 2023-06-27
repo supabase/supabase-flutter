@@ -134,28 +134,13 @@ First, you need to create a client ID in your Google Cloud console and add them 
 - [Steps to obtain Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
 - [Steps to obtain iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
 
-Then add [flutter_appauth](https://pub.dev/packages/flutter_appauth) to your app. You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
+Second, add [flutter_appauth](https://pub.dev/packages/flutter_appauth) to your app and complete the [setup steps](https://pub.dev/packages/flutter_appauth#android-setup). You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
 
 ```bash
 flutter pub add flutter_appauth crypto
 ```
 
-For iOS, no further setup is required. For Android, you also need to add the following in your `android/app/build.gradle` file. Your application ID cannot have underscores in it.
-
-```
-...
-android {
-    ...
-    defaultConfig {
-        ...
-        manifestPlaceholders += [
-                'appAuthRedirectScheme': applicationId
-        ]
-    }
-}
-```
-
-At this point you can perform native Google sign in using the following code. Make sure to replace the `applicationId` with your own.
+At this point you can perform native Google sign in using the following code. Make sure to replace the `clientId` and `applicationId` with your own.
 
 ```dart
 import 'package:crypto/crypto.dart';
@@ -167,11 +152,17 @@ String _generateRandomString() {
   return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
 }
 
-Future<AuthResponse> signInWithGoogle(String clientId) {
+Future<AuthResponse> signInWithGoogle() {
   // Just a random string
   final rawNonce = _generateRandomString();
   final hashedNonce =
       sha256.convert(utf8.encode(rawNonce)).toString();
+
+  /// TODO: update the client ID with your own
+  ///
+  /// Client ID that you registered with Google Cloud.
+  /// You will have two different values for iOS and Android.
+  const clientId = 'YOUR_CLIENT_ID_HERE';
 
   /// TODO: Replace the following with your own app details
   ///
