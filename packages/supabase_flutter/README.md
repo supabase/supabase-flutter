@@ -119,7 +119,6 @@ Future<AuthResponse> signInWithApple() {
     idToken: idToken,
     nonce: rawNonce,
   );
-  }
 }
 ```
 
