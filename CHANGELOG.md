@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-06-27
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v1.9.0`](#gotrue---v190)
+ - [`supabase` - `v1.9.5`](#supabase---v195)
+ - [`supabase_flutter` - `v1.10.5`](#supabase_flutter---v1105)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.9.5`
+ - `supabase_flutter` - `v1.10.5`
+
+---
+
+#### `gotrue` - `v1.9.0`
+
+ - **FEAT**(gotrue): add accessToken to `signInWithIdToken` method ([#520](https://github.com/supabase/supabase-flutter/issues/520)). ([4dcd5968](https://github.com/supabase/supabase-flutter/commit/4dcd5968bc57e711d6296377fe3374aea27bf3fc))
+
+
 ## 2023-06-19
 
 ### Changes
