@@ -91,25 +91,10 @@ First, you need to create a client ID in your Google Cloud console and add them 
 - [Steps to obtain Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
 - [Steps to obtain iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
 
-Then add [flutter_appauth](https://pub.dev/packages/flutter_appauth) to your app. You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
+Second, add [flutter_appauth](https://pub.dev/packages/flutter_appauth) to your app and complete the [setup steps](https://pub.dev/packages/flutter_appauth#android-setup). You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
 
 ```bash
 flutter pub add flutter_appauth crypto
-```
-
-For iOS, no further setup is required. For Android, you also need to add the following in your `android/app/build.gradle` file. Your application ID cannot have underscores in it.
-
-```
-...
-android {
-    ...
-    defaultConfig {
-        ...
-        manifestPlaceholders += [
-                'appAuthRedirectScheme': applicationId
-        ]
-    }
-}
 ```
 
 At this point you can perform native Google sign in using the following code. Make sure to replace the `clientId` and `applicationId` with your own.
