@@ -1,3 +1,7 @@
+## 1.10.6
+
+ - update README.md to include native auth instructions
+
 ## 1.10.5
 
  - Update a dependency to the latest release.
