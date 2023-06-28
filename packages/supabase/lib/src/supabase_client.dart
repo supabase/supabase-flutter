@@ -162,7 +162,7 @@ class SupabaseClient {
   }
 
   /// Perform a table operation.
-  SupabaseQueryBuilder from(String table) {
+  SupabaseQueryBuilder from(String table, {String? schema}) {
     final url = '$restUrl/$table';
     _incrementId++;
     return SupabaseQueryBuilder(
@@ -172,7 +172,7 @@ class SupabaseClient {
         ...rest.headers,
         ..._getAuthHeaders(),
       },
-      schema: schema,
+      schema: schema ?? this.schema,
       table: table,
       httpClient: _httpClient,
       incrementId: _incrementId,
