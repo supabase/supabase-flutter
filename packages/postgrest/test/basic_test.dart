@@ -88,6 +88,18 @@ void main() {
       expect(res.length, 5);
     });
 
+    test('specify schema within from', () async {
+      final postgrest = PostgrestClient(rootUrl);
+      final personalData = await postgrest
+          .from('users', schema: 'personal')
+          .select<PostgrestList>();
+      expect(personalData.length, 5);
+
+      // confirm that the client defaults to its initialized schema by default.
+      final publicData = await postgrest.from('users').select<PostgrestList>();
+      expect(publicData.length, 4);
+    });
+
     test('on_conflict upsert', () async {
       final res = await postgrest.from('users').upsert(
         {'username': 'dragarcia', 'status': 'OFFLINE'},
