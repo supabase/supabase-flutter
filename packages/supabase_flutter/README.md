@@ -352,7 +352,6 @@ You need to setup deep links if you want your native app to open when a user cli
 
 ### When do you need to setup deep links
 
-You need to setup deep links when want any of the followings
 
 - Magic link login
 - Have `confirm email` enabled and are using email login
