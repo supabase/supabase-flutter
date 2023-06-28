@@ -50,12 +50,12 @@ class PostgrestClient {
   }
 
   /// Perform a table operation.
-  PostgrestQueryBuilder<void> from(String table) {
+  PostgrestQueryBuilder<void> from(String table, {String? schema}) {
     final url = '${this.url}/$table';
     return PostgrestQueryBuilder<void>(
       url,
       headers: {...headers},
-      schema: schema,
+      schema: schema ?? this.schema,
       httpClient: httpClient,
       isolate: _isolate,
     );
