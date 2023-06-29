@@ -501,11 +501,28 @@ class GoTrueClient {
   ///Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
   ///
   ///Use [EmailResendParams] or [PhoneResendParams] to specify the type of resend.
-  Future<ResendResponse> resend(ResendParams params) async {
+  Future<ResendResponse> resend({
+    String? email,
+    String? phone,
+    required OtpType type,
+    String? captchaToken,
+  }) async {
+    assert((email != null && phone == null) || (email == null && phone != null),
+        '`email` or `phone` needs to be specified.');
+
     _removeSession();
 
-    final options =
-        GotrueRequestOptions(headers: headers, body: params.toJson());
+    final body = {
+      if (email != null) 'email': email,
+      if (phone != null) 'phone': phone,
+      'type': type.snakeCase,
+      'gotrue_meta_security': {'captcha_token': captchaToken},
+    };
+
+    final options = GotrueRequestOptions(
+      headers: _headers,
+      body: body,
+    );
 
     final response = await _fetch.request(
       '$_url/resend',
