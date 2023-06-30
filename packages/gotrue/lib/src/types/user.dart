@@ -268,12 +268,3 @@ class UserIdentity {
         updatedAt.hashCode;
   }
 }
-
-class ResendResponse {
-  /// Only set for phone resend
-  String? messageId;
-
-  ResendResponse({
-    this.messageId,
-  });
-}

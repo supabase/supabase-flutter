@@ -36,6 +36,15 @@ class UserResponse {
   UserResponse.fromJson(Map<String, dynamic> json) : user = User.fromJson(json);
 }
 
+class ResendResponse {
+  /// Only set for phone resend
+  String? messageId;
+
+  ResendResponse({
+    this.messageId,
+  });
+}
+
 class AuthSessionUrlResponse {
   final Session session;
   final String? redirectType;
