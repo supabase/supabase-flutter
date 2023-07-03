@@ -625,6 +625,13 @@ class GoTrueClient {
   }) async {
     final accessToken = currentSession?.accessToken;
 
+    if (scope != SingOutScope.others) {
+      _removeSession();
+      await _asyncStorage?.removeItem(
+          key: '${Constants.defaultStorageKey}-code-verifier');
+      _notifyAllSubscribers(AuthChangeEvent.signedOut);
+    }
+
     if (accessToken != null) {
       try {
         await admin.signOut(accessToken, scope: scope);
@@ -634,13 +641,6 @@ class GoTrueClient {
         if (error.statusCode != '401' && error.statusCode != '404') {
           rethrow;
         }
-      }
-
-      if (scope != SingOutScope.others) {
-        _removeSession();
-        await _asyncStorage?.removeItem(
-            key: '${Constants.defaultStorageKey}-code-verifier');
-        _notifyAllSubscribers(AuthChangeEvent.signedOut);
       }
     }
   }
