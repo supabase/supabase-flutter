@@ -56,3 +56,12 @@ enum OtpType {
   recovery,
   emailChange
 }
+
+///Determines which sessions should be logged out.
+///
+///[global] means all sessions by this account.
+///
+///[local] means only this session.
+///
+///[others] means all other sessions except the current one. When using others, there is no [AuthChangeEvent.signedOut] event fired on the current session!
+enum SingOutScope { global, local, others }
