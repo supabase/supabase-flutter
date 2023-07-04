@@ -31,7 +31,7 @@ class GoTrueAdminApi {
   /// Removes a logged-in session.
   Future<void> signOut(
     String jwt, {
-    SingOutScope scope = SingOutScope.global,
+    SignOutScope scope = SignOutScope.global,
   }) async {
     final options = GotrueRequestOptions(
       headers: _headers,

@@ -619,13 +619,13 @@ class GoTrueClient {
 
   /// Signs out the current user, if there is a logged in user.
   ///
-  /// If using [SingOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
+  /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
   Future<void> signOut({
-    SingOutScope scope = SingOutScope.global,
+    SignOutScope scope = SignOutScope.global,
   }) async {
     final accessToken = currentSession?.accessToken;
 
-    if (scope != SingOutScope.others) {
+    if (scope != SignOutScope.others) {
       _removeSession();
       await _asyncStorage?.removeItem(
           key: '${Constants.defaultStorageKey}-code-verifier');
