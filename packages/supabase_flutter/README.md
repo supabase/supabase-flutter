@@ -100,8 +100,11 @@ flutter pub add flutter_appauth crypto
 At this point you can perform native Google sign in using the following code. Make sure to replace the `clientId` and `applicationId` with your own.
 
 ```dart
+import 'dart:convert';
+import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Function to generate a random 16 character string.
 String _generateRandomString() {
@@ -134,6 +137,8 @@ Future<AuthResponse> signInWithGoogle() {
   /// Fixed value for google login
   const discoveryUrl =
       'https://accounts.google.com/.well-known/openid-configuration';
+
+  final appAuth = FlutterAppAuth();
 
   // authorize the user by opening the concent page
   final result = await appAuth.authorize(
@@ -351,7 +356,6 @@ final data = await supabase.functions.invoke('get_countries');
 You need to setup deep links if you want your native app to open when a user clicks on a link. User clicking on a link and the app opens up happens in a few scenarios when you use Supabase auth, and in order to support those scenarios, you need to setup deep links.
 
 ### When do you need to setup deep links
-
 
 - Magic link login
 - Have `confirm email` enabled and are using email login
