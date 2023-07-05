@@ -1,4 +1,5 @@
 import 'package:gotrue/gotrue.dart';
+import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
 import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
@@ -28,9 +29,17 @@ class GoTrueAdminApi {
   }
 
   /// Removes a logged-in session.
-  Future<void> signOut(String jwt) async {
-    final options =
-        GotrueRequestOptions(headers: _headers, noResolveJson: true, jwt: jwt);
+  Future<void> signOut(
+    String jwt, {
+    SignOutScope scope = SignOutScope.global,
+  }) async {
+    final options = GotrueRequestOptions(
+      headers: _headers,
+      noResolveJson: true,
+      jwt: jwt,
+      query: {'scope': scope.name},
+    );
+
     await _fetch.request(
       '$_url/logout',
       RequestMethodType.post,
