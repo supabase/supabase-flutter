@@ -1,3 +1,7 @@
+## 1.10.7
+
+ - **FIX**(supabase_flutter): update README.md with additional imports and code to enable Google sign in ([#531](https://github.com/supabase/supabase-flutter/issues/531)). ([de2628fa](https://github.com/supabase/supabase-flutter/commit/de2628fa9d6b6e99871a9dcc7dfc4d4a08182dcb))
+
 ## 1.10.6
 
  - update README.md to include native auth instructions
