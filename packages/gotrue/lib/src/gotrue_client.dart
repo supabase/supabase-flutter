@@ -125,6 +125,12 @@ class GoTrueClient {
 
   /// Creates a new user.
   ///
+  /// Be aware that if a user account exists in the system you may get back an
+  /// error message that attempts to hide this information from the user.
+  /// This method has support for PKCE via email signups. The PKCE flow cannot be used when autoconfirm is enabled.
+  ///
+  /// Returns a logged-in session if the server has "autoconfirm" ON, but only a user if the server has "autoconfirm" OFF
+  ///
   /// [email] is the user's email address
   ///
   /// [phone] is the user's phone number WITH international prefix
@@ -148,7 +154,17 @@ class GoTrueClient {
     late final Map<String, dynamic> response;
 
     if (email != null) {
-      final urlParams = <String, String>{};
+      String? codeChallenge;
+
+      if (_flowType == AuthFlowType.pkce) {
+        assert(_asyncStorage != null,
+            'You need to provide asyncStorage to perform pkce flow.');
+        final codeVerifier = generatePKCEVerifier();
+        await _asyncStorage!.setItem(
+            key: '${Constants.defaultStorageKey}-code-verifier',
+            value: codeVerifier);
+        codeChallenge = generatePKCEChallenge(codeVerifier);
+      }
 
       response = await _fetch.request(
         '$_url/signup',
@@ -161,8 +177,9 @@ class GoTrueClient {
             'password': password,
             'data': data,
             'gotrue_meta_security': {'captcha_token': captchaToken},
+            'code_challenge': codeChallenge,
+            'code_challenge_method': codeChallenge != null ? 's256' : null,
           },
-          query: urlParams,
         ),
       );
     } else if (phone != null) {
