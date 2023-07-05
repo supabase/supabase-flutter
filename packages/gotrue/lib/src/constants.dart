@@ -50,11 +50,14 @@ extension GenerateLinkTypeExtended on GenerateLinkType {
 enum OtpType {
   sms,
   phoneChange,
+  @Deprecated('Use OtpType.email instead')
   signup,
   invite,
+  @Deprecated('Use OtpType.email instead')
   magiclink,
   recovery,
-  emailChange
+  emailChange,
+  email
 }
 
 ///Determines which sessions should be logged out.
