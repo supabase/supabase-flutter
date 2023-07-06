@@ -505,6 +505,7 @@ class GoTrueClient {
     String? email,
     String? phone,
     required OtpType type,
+    String? emailRedirectTo,
     String? captchaToken,
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
@@ -524,6 +525,7 @@ class GoTrueClient {
     final options = GotrueRequestOptions(
       headers: _headers,
       body: body,
+      redirectTo: emailRedirectTo,
     );
 
     final response = await _fetch.request(
