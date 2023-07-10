@@ -91,7 +91,7 @@ First, you need to create a client ID in your Google Cloud console and add them 
 - [Steps to obtain Android client ID](https://developers.google.com/identity/sign-in/android/start-integrating#configure_a_project)
 - [Steps to obtain iOS client ID](https://developers.google.com/identity/sign-in/ios/start-integrating#get_an_oauth_client_id)
 
-Second, add [flutter_appauth](https://pub.dev/packages/flutter_appauth) to your app and complete the [setup steps](https://pub.dev/packages/flutter_appauth#android-setup). You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
+Second, add [flutter_appauth](https://pub.dev/packages/flutter_appauth) to your app and complete the [setup steps](https://pub.dev/packages/flutter_appauth#android-setup). For `appAuthRedirectScheme`, reverse DNS form of the client ID should be set (e.g. `com.googleusercontent.apps.*account_id*`). You also need [crypto](https://pub.dev/packages/crypto) package to hash nonce.
 
 ```bash
 flutter pub add flutter_appauth crypto
@@ -124,15 +124,8 @@ Future<AuthResponse> signInWithGoogle() {
   /// You will have two different values for iOS and Android.
   const clientId = 'YOUR_CLIENT_ID_HERE';
 
-  /// TODO: Replace the following with your own app details
-  ///
-  /// Application ID or Bundle ID for your app.
-  /// If the application ID and Bundle ID is different for Android and iOS,
-  /// make sure the value here matches the platform you are running on.
-  const applicationId = 'com.supabase.example';
-
-  /// Fixed value for google login
-  const redirectUrl = '$applicationId:/google_auth';
+  /// reverse DNS form of the client ID + `:/` is set as the redirect URL
+  final redirectUrl = '${clientId.split('.').reversed.join('.')}:/';
 
   /// Fixed value for google login
   const discoveryUrl =
