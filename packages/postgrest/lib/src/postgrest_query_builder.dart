@@ -28,7 +28,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
           isolate: isolate,
         );
 
-  /// Performs horizontal filtering with SELECT.
+  /// Perform a SELECT query on the table or view.
   ///
   /// ```dart
   /// postgrest.from('users').select<PostgrestList>('id, messages');
@@ -90,7 +90,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     );
   }
 
-  /// Performs an INSERT into the table.
+  /// Perform an INSERT into the table or view.
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
   ///
@@ -115,7 +115,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     return PostgrestFilterBuilder<T>(this);
   }
 
-  /// Performs an UPSERT into the table.
+  /// Perform an UPSERT on the table or view.
   ///
   /// By specifying the [onConflict] query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
   /// [ignoreDuplicates] Specifies if duplicate rows should be ignored and not inserted.
@@ -162,7 +162,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     return PostgrestFilterBuilder<T>(this);
   }
 
-  /// Performs an UPDATE on the table.
+  /// Perform an UPDATE on the table or view.
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
   ///
@@ -193,7 +193,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     return PostgrestFilterBuilder<T>(this);
   }
 
-  /// Performs a DELETE on the table.
+  /// Perform a DELETE on the table or view.
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
   ///
