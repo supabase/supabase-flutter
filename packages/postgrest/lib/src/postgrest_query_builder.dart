@@ -117,7 +117,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
 
   /// Perform an UPSERT on the table or view.
   ///
-  /// By specifying the [onConflict] query parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
+  /// By specifying the [onConflict] parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
   /// [ignoreDuplicates] Specifies if duplicate rows should be ignored and not inserted.
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
