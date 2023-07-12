@@ -1,3 +1,7 @@
+## 1.10.8
+
+ - **FIX**: update the google auth setup instruction to use reversed client ID ([#542](https://github.com/supabase/supabase-flutter/issues/542)). ([fa52378a](https://github.com/supabase/supabase-flutter/commit/fa52378aadc7ad23c422b1c5b515743b814bea7d))
+
 ## 1.10.7
 
  - **FIX**(supabase_flutter): update README.md with additional imports and code to enable Google sign in ([#531](https://github.com/supabase/supabase-flutter/issues/531)). ([de2628fa](https://github.com/supabase/supabase-flutter/commit/de2628fa9d6b6e99871a9dcc7dfc4d4a08182dcb))
