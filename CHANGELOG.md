@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-07-12
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v1.11.0`](#gotrue---v1110)
+ - [`postgrest` - `v1.3.3`](#postgrest---v133)
+ - [`supabase_flutter` - `v1.10.8`](#supabase_flutter---v1108)
+ - [`supabase` - `v1.9.7`](#supabase---v197)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.9.7`
+
+---
+
+#### `gotrue` - `v1.11.0`
+
+ - **FEAT**(gotrue): add reauthenticate and resend method ([#517](https://github.com/supabase/supabase-flutter/issues/517)). ([35a924b9](https://github.com/supabase/supabase-flutter/commit/35a924b9d131230102f105247ec6d4aa2aff2ddc))
+
+#### `postgrest` - `v1.3.3`
+
+ - **FIX**(postgrest): update docs to mention views ([#543](https://github.com/supabase/supabase-flutter/issues/543)). ([22eb68f2](https://github.com/supabase/supabase-flutter/commit/22eb68f2b0b1b59ea955bd7394cd63de95cee1c6))
+
+#### `supabase_flutter` - `v1.10.8`
+
+ - **FIX**: update the google auth setup instruction to use reversed client ID ([#542](https://github.com/supabase/supabase-flutter/issues/542)). ([fa52378a](https://github.com/supabase/supabase-flutter/commit/fa52378aadc7ad23c422b1c5b515743b814bea7d))
+
+
 ## 2023-07-05
 
 ### Changes
