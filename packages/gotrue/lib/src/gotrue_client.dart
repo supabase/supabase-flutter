@@ -507,8 +507,73 @@ class GoTrueClient {
     return refreshCompleter.future;
   }
 
+  /// Sends a reauthentication OTP to the user's email or phone number.
+  ///
+  /// Requires the user to be signed-in.
+  Future<void> reauthenticate() async {
+    final session = currentSession;
+    if (session == null) {
+      throw AuthException('Not logged in.');
+    }
+
+    final options =
+        GotrueRequestOptions(headers: headers, jwt: session.accessToken);
+
+    await _fetch.request(
+      '$_url/reauthenticate',
+      RequestMethodType.get,
+      options: options,
+    );
+  }
+
+  ///Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
+  ///
+  ///Use [EmailResendParams] or [PhoneResendParams] to specify the type of resend.
+  Future<ResendResponse> resend({
+    String? email,
+    String? phone,
+    required OtpType type,
+    String? emailRedirectTo,
+    String? captchaToken,
+  }) async {
+    assert((email != null && phone == null) || (email == null && phone != null),
+        '`email` or `phone` needs to be specified.');
+
+    if (type != OtpType.emailChange && type != OtpType.phoneChange) {
+      _removeSession();
+    }
+
+    final body = {
+      if (email != null) 'email': email,
+      if (phone != null) 'phone': phone,
+      'type': type.snakeCase,
+      'gotrue_meta_security': {'captcha_token': captchaToken},
+    };
+
+    final options = GotrueRequestOptions(
+      headers: _headers,
+      body: body,
+      redirectTo: emailRedirectTo,
+    );
+
+    final response = await _fetch.request(
+      '$_url/resend',
+      RequestMethodType.post,
+      options: options,
+    );
+
+    if ((response as Map).containsKey(['message_id'])) {
+      return ResendResponse(messageId: response['message_id']);
+    } else {
+      return ResendResponse();
+    }
+  }
+
   /// Updates user data, if there is a logged in user.
-  Future<UserResponse> updateUser(UserAttributes attributes) async {
+  Future<UserResponse> updateUser(
+    UserAttributes attributes, {
+    String? emailRedirectTo,
+  }) async {
     final accessToken = currentSession?.accessToken;
     if (accessToken == null) {
       throw AuthException('Not logged in.');
@@ -519,6 +584,7 @@ class GoTrueClient {
       headers: _headers,
       body: body,
       jwt: accessToken,
+      redirectTo: emailRedirectTo,
     );
     final response = await _fetch.request('$_url/user', RequestMethodType.put,
         options: options);

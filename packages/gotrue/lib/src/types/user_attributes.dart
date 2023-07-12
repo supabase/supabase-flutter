@@ -8,6 +8,11 @@ class UserAttributes {
   /// The user's password.
   String? password;
 
+  /// The nonce sent for reauthentication if the user's password is to be updated.
+  ///
+  /// Call reauthenticate() to obtain the nonce first.
+  String? nonce;
+
   /// A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
   ///
   /// The `data` should be a JSON object that includes user-specific info, such as their first and last name.
@@ -17,6 +22,7 @@ class UserAttributes {
     this.email,
     this.phone,
     this.password,
+    this.nonce,
     this.data,
   }) : assert(data == null || data is List || data is Map);
 
@@ -24,6 +30,7 @@ class UserAttributes {
     return {
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
+      if (nonce != null) 'nonce': nonce,
       if (password != null) 'password': password,
       if (data != null) 'data': data,
     };
