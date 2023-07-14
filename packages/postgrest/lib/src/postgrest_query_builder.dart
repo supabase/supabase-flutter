@@ -94,6 +94,8 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
   ///
+  /// [defaultToNull] Make missing fields default to `null`. Otherwise, use the default value for the column.
+  ///
   /// Default (not returning data):
   /// ```dart
   /// await supabase.from('messages').insert(
@@ -108,9 +110,17 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///   'channel_id': 1
   /// }).select();
   /// ```
-  PostgrestFilterBuilder<T> insert(dynamic values) {
+  PostgrestFilterBuilder<T> insert(
+    dynamic values, {
+    bool defaultToNull = true,
+  }) {
     _method = METHOD_POST;
     _headers['Prefer'] = '';
+
+    if (!defaultToNull) {
+      _headers['Prefer'] = 'missing=default';
+    }
+
     _body = values;
     return PostgrestFilterBuilder<T>(this);
   }
@@ -121,6 +131,8 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   /// [ignoreDuplicates] Specifies if duplicate rows should be ignored and not inserted.
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
+  ///
+  /// [defaultToNull] Make missing fields default to `null`. Otherwise, use the default value for the column. This only applies when inserting new rows, not when merging with existing rows under [ignoreDuplicates] = false.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -144,11 +156,17 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     dynamic values, {
     String? onConflict,
     bool ignoreDuplicates = false,
+    bool defaultToNull = true,
     FetchOptions options = const FetchOptions(),
   }) {
     _method = METHOD_POST;
     _headers['Prefer'] =
         'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates';
+
+    if (!defaultToNull) {
+      _headers['Prefer'] = _headers['Prefer']! + ',missing=default';
+    }
+
     if (onConflict != null) {
       _url = _url.replace(
         queryParameters: {
