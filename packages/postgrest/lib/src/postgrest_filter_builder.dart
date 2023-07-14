@@ -152,6 +152,32 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return this;
   }
 
+  /// Match only rows where [column] matches all of [patterns] case-sensitively.
+  ///
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .likeAllOf('username', ['%supa%', '%bot%']);
+  /// ```
+  PostgrestFilterBuilder likeAllOf(String column, List<String> patterns) {
+    appendSearchParams(column, 'like(all).{${patterns.join(',')}}');
+    return this;
+  }
+
+  /// Match only rows where [column] matches any of [patterns] case-sensitively.
+  ///
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .likeAnyOf('username', ['%supa%', '%bot%']);
+  /// ```
+  PostgrestFilterBuilder likeAnyOf(String column, List<String> patterns) {
+    appendSearchParams(column, 'like(any).{${patterns.join(',')}}');
+    return this;
+  }
+
   /// Finds all rows whose value in the stated [column] matches the supplied [pattern] (case insensitive).
   ///
   /// ```dart
@@ -162,6 +188,32 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> ilike(String column, String pattern) {
     appendSearchParams(column, 'ilike.$pattern');
+    return this;
+  }
+
+  /// Match only rows where [column] matches all of [patterns] case-insensitively.
+  ///
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .likeAllOf('username', ['%supa%', '%bot%']);
+  /// ```
+  PostgrestFilterBuilder ilikeAllOf(String column, List<String> patterns) {
+    appendSearchParams(column, 'ilike(all).{${patterns.join(',')}}');
+    return this;
+  }
+
+  /// Match only rows where [column] matches any of [patterns] case-insensitively.
+  ///
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .likeAnyOf('username', ['%supa%', '%bot%']);
+  /// ```
+  PostgrestFilterBuilder ilikeAnyOf(String column, List<String> patterns) {
+    appendSearchParams(column, 'ilike(any).{${patterns.join(',')}}');
     return this;
   }
 
