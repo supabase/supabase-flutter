@@ -133,6 +133,41 @@ void main() {
       expect(res.length, 2);
     });
 
+    test('bulk insert without column defaults', () async {
+      final res = await postgrest.from('users').insert(
+        [
+          {
+            'username': "bot",
+            'status': 'OFFLINE',
+          },
+          {
+            'username': "crazy bot",
+          },
+        ],
+      ).select<PostgrestList>();
+      expect(res.length, 2);
+      expect(res.first['status'], 'OFFLINE');
+      expect(res.last['status'], null);
+    });
+
+    test('bulk insert with column defaults', () async {
+      final res = await postgrest.from('users').insert(
+        [
+          {
+            'username': "bot",
+            'status': 'OFFLINE',
+          },
+          {
+            'username': "crazy bot",
+          },
+        ],
+        defaultToNull: false,
+      ).select<PostgrestList>();
+      expect(res.length, 2);
+      expect(res.first['status'], 'OFFLINE');
+      expect(res.last['status'], 'ONLINE');
+    });
+
     test('basic update', () async {
       final res = await postgrest
           .from('messages')
