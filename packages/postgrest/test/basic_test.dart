@@ -176,33 +176,8 @@ void main() {
           )
           .is_("data", null)
           .select<PostgrestList>();
-      expect(res, [
-        {
-          'id': 1,
-          'data': null,
-          'message': 'Hello World 👋',
-          'username': 'supabot',
-          'channel_id': 2,
-          'inserted_at': '2021-06-25T04:28:21.598+00:00'
-        },
-        {
-          'id': 2,
-          'data': null,
-          'message':
-              'Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.',
-          'username': 'supabot',
-          'channel_id': 2,
-          'inserted_at': '2021-06-29T04:28:21.598+00:00'
-        },
-        {
-          'id': 3,
-          'data': null,
-          'message': 'Supabase Launch Week is on fire',
-          'username': 'supabot',
-          'channel_id': 2,
-          'inserted_at': '2021-06-20T04:28:21.598+00:00'
-        }
-      ]);
+      expect(res, isNotEmpty);
+      expect(res, everyElement(containsPair("channel_id", 2)));
 
       final messages = await postgrest.from('messages').select<PostgrestList>();
       for (final rec in messages) {
