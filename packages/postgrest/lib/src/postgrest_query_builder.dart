@@ -122,6 +122,11 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     }
 
     _body = values;
+
+    if (values is List) {
+      _setColumsSearchParam(values);
+    }
+
     return PostgrestFilterBuilder<T>(this);
   }
 
@@ -175,6 +180,11 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
         },
       );
     }
+
+    if (values is List) {
+      _setColumsSearchParam(values);
+    }
+
     _body = values;
     _options = options.ensureNotHead();
     return PostgrestFilterBuilder<T>(this);
@@ -240,5 +250,15 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     _headers['Prefer'] = '';
     _options = options.ensureNotHead();
     return PostgrestFilterBuilder<T>(this);
+  }
+
+  void _setColumsSearchParam(List values) {
+    final newValues = PostgrestList.from(values);
+    final columns = newValues.fold<List<String>>(
+        [], (value, element) => value..addAll(element.keys));
+    if (newValues.isNotEmpty) {
+      final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
+      appendSearchParams("columns", uniqueColumns);
+    }
   }
 }
