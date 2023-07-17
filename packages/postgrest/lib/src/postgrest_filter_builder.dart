@@ -197,7 +197,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// await supabase
   ///     .from('users')
   ///     .select()
-  ///     .likeAllOf('username', ['%supa%', '%bot%']);
+  ///     .ilikeAllOf('username', ['%supa%', '%bot%']);
   /// ```
   PostgrestFilterBuilder ilikeAllOf(String column, List<String> patterns) {
     appendSearchParams(column, 'ilike(all).{${patterns.join(',')}}');
@@ -210,7 +210,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// await supabase
   ///     .from('users')
   ///     .select()
-  ///     .likeAnyOf('username', ['%supa%', '%bot%']);
+  ///     .ilikeAnyOf('username', ['%supa%', '%bot%']);
   /// ```
   PostgrestFilterBuilder ilikeAnyOf(String column, List<String> patterns) {
     appendSearchParams(column, 'ilike(any).{${patterns.join(',')}}');
