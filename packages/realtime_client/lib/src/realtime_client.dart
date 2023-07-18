@@ -91,6 +91,8 @@ class RealtimeClient {
       eventsPerSecondLimitMs = (1000 / int.parse(eventsPerSecond)).floor();
     }
 
+    accessToken = this.headers['Authorization']?.split(' ').last;
+
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
     this.encode = encode ??
