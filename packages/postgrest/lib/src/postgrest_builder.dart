@@ -222,6 +222,24 @@ class PostgrestBuilder<T, S> implements Future<T> {
         }
       }
 
+      // Workaround for https://github.com/supabase/supabase-flutter/issues/560
+      if (_maybeSingle && _method?.toUpperCase() == 'GET' && body is List) {
+        if (body.length > 1) {
+          throw PostgrestException(
+            // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
+            code: 'PGRST116',
+            details:
+                'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
+            hint: null,
+            message: 'JSON object requested, multiple (or no) rows returned',
+          );
+        } else if (body.length == 1) {
+          body = body.first;
+        } else {
+          body = null;
+        }
+      }
+
       final contentRange = response.headers['content-range'];
       if (contentRange != null && contentRange.length > 1) {
         count = contentRange.split('/').last == '*'
