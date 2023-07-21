@@ -27,7 +27,8 @@ typedef _Nullable<T> = T?;
 class PostgrestBuilder<T, S> implements Future<T> {
   dynamic _body;
   late final Headers _headers;
-  bool _maybeEmpty = false;
+  // ignore: prefer_final_fields
+  bool _maybeSingle = false;
   String? _method;
   late final String? _schema;
   late Uri _url;
@@ -75,9 +76,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
       isolate: _isolate,
       httpClient: _httpClient,
       options: _options,
-    )
-      .._maybeEmpty = _maybeEmpty
-      .._converter = converter;
+    ).._converter = converter;
   }
 
   void _assertCorrectGeneric(Type R) {
@@ -301,8 +300,8 @@ class PostgrestBuilder<T, S> implements Future<T> {
             details: response.reasonPhrase,
           );
 
-          if (_maybeEmpty) {
-            return _handleMaybeEmptyError(response, error);
+          if (_maybeSingle) {
+            return _handleMaybeSingleError(response, error);
           }
         } catch (_) {
           error = PostgrestException(
@@ -324,10 +323,10 @@ class PostgrestBuilder<T, S> implements Future<T> {
     }
   }
 
-  /// on maybeEmpty enable, check for error details contains
+  /// When [_maybeSingle] is true, check whether error details contain
   /// 'Results contain 0 rows' then
   /// return PostgrestResponse with null data
-  PostgrestResponse<T> _handleMaybeEmptyError(
+  PostgrestResponse<T> _handleMaybeSingleError(
     http.Response response,
     PostgrestException error,
   ) {
@@ -398,7 +397,25 @@ class PostgrestBuilder<T, S> implements Future<T> {
 
     try {
       final response = await _execute();
-      final data = response.data;
+      var data = response.data;
+
+      // Workaround for https://github.com/supabase/supabase-flutter/issues/560
+      if (_maybeSingle && _method?.toUpperCase() == 'GET' && data is List) {
+        if (data.length > 1) {
+          throw PostgrestException(
+            // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
+            code: 'PGRST116',
+            details:
+                'Results contain ${data.length} rows, application/vnd.pgrst.object+json requires 1 row',
+            hint: null,
+            message: 'JSON object requested, multiple (or no) rows returned',
+          );
+        } else if (data.length == 1) {
+          data = data.first;
+        } else {
+          data = null;
+        }
+      }
 
       if (_converter != null) {
         assert(

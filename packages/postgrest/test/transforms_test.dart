@@ -252,5 +252,17 @@ void main() {
           .maybeSingle();
       expect(user, isNull);
     });
+
+    test('maybeSingle with multiple rows throws', () async {
+      try {
+        await postgrest.from('users').select().maybeSingle();
+        fail('maybeSingle with multiple rows did not throw.');
+      } on PostgrestException catch (error) {
+        expect(error.code, 'PGRST116');
+      } catch (error) {
+        fail(
+            'maybeSingle with multiple rows threw ${error.runtimeType} instead of PostgrestException.');
+      }
+    });
   });
 }
