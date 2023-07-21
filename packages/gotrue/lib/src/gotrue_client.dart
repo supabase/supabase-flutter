@@ -55,6 +55,7 @@ class GoTrueClient {
 
   int _refreshTokenRetryCount = 0;
 
+  /// Completer to combine multiple simultaneous token refresh requests.
   Completer<AuthResponse>? _refreshTokenCompleter;
 
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
@@ -798,24 +799,21 @@ class GoTrueClient {
     }
   }
 
-  Future<AuthResponse> _setTokenRefreshTimer(
+  void _setTokenRefreshTimer(
     Duration timerDuration, {
     String? refreshToken,
     String? accessToken,
   }) {
     _refreshTokenTimer?.cancel();
     _refreshTokenRetryCount++;
-    final completer = Completer<AuthResponse>();
     if (_refreshTokenRetryCount < Constants.maxRetryCount) {
-      _refreshTokenTimer = Timer(timerDuration, () async {
-        final res = await _callRefreshToken(
+      _refreshTokenTimer = Timer(timerDuration, () {
+        _callRefreshToken(
           refreshToken: refreshToken,
           accessToken: accessToken,
           ignorePendingRequest: true,
         );
-        completer.complete(res);
       });
-      return completer.future;
     } else {
       throw AuthException('Access token refresh retry limit exceeded.');
     }
@@ -830,7 +828,10 @@ class GoTrueClient {
   }
 
   /// Generates a new JWT.
-  /// [ignorePendingRequest] is used to call [_callRefreshToken] again after socket exception
+  ///
+  /// To prevent multiple simultaneous requests it catches an already ongoing requests by using the global [_refreshTokenCompleter]. If that's not null and not completed it returns the future that the ongoing request.
+  ///
+  /// To be able to call [_callRefreshToken] again after a [SocketException] and not get trapped by the ongoing request, [ignorePendingRequest] is used to bypass that check.
   Future<AuthResponse> _callRefreshToken({
     String? refreshToken,
     String? accessToken,
