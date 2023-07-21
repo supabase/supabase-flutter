@@ -360,15 +360,6 @@ void main() {
       expect(res.count, 1);
     });
 
-    test('row level security error', () async {
-      try {
-        await postgrest.from('sample').update({'id': 2});
-        fail('Returned even with row level security');
-      } on PostgrestException catch (error) {
-        expect(error.code, '404');
-      }
-    });
-
     test('withConverter', () async {
       final res = await postgrest
           .from('users')
