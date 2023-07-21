@@ -420,9 +420,9 @@ class PostgrestBuilder<T, S> implements Future<T> {
       // Workaround for https://github.com/supabase/supabase-flutter/issues/560
       if (_maybeSingle && _method?.toUpperCase() == 'GET' && data is List) {
         if (data.length > 1) {
+          // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
           throw PostgrestException(
-            // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
-            code: 'PGRST116',
+            code: '406',
             details:
                 'Results contain ${data.length} rows, application/vnd.pgrst.object+json requires 1 row',
             hint: null,

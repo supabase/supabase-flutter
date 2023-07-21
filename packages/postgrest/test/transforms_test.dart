@@ -258,7 +258,7 @@ void main() {
         await postgrest.from('users').select().maybeSingle();
         fail('maybeSingle with multiple rows did not throw.');
       } on PostgrestException catch (error) {
-        expect(error.code, 'PGRST116');
+        expect(error.code, '406');
       } catch (error) {
         fail(
             'maybeSingle with multiple rows threw ${error.runtimeType} instead of PostgrestException.');
@@ -276,7 +276,7 @@ void main() {
             .maybeSingle();
         fail('maybeSingle with multiple inserts did not throw.');
       } on PostgrestException catch (error) {
-        expect(error.code, 'PGRST116');
+        expect(error.code, '406');
       } catch (error) {
         fail(
             'maybeSingle with multiple inserts threw ${error.runtimeType} instead of PostgrestException.');
