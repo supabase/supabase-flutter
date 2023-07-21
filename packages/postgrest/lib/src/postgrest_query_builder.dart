@@ -124,7 +124,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     _body = values;
 
     if (values is List) {
-      _setColumsSearchParam(values);
+      _setColumnsSearchParam(values);
     }
 
     return PostgrestFilterBuilder<T>(this);
@@ -182,7 +182,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     }
 
     if (values is List) {
-      _setColumsSearchParam(values);
+      _setColumnsSearchParam(values);
     }
 
     _body = values;
@@ -252,7 +252,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     return PostgrestFilterBuilder<T>(this);
   }
 
-  void _setColumsSearchParam(List values) {
+  void _setColumnsSearchParam(List values) {
     final newValues = PostgrestList.from(values);
     final columns = newValues.fold<List<String>>(
         [], (value, element) => value..addAll(element.keys));
