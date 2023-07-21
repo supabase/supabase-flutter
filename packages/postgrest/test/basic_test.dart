@@ -125,6 +125,37 @@ void main() {
       expect(res, isEmpty);
     });
 
+    test('insert', () async {
+      final res = await postgrest.from('users').insert(
+        {
+          'username': "bot",
+          'status': 'OFFLINE',
+        },
+      ).select<PostgrestList>();
+      expect(res.length, 1);
+      expect(res.first['status'], 'OFFLINE');
+    });
+
+    test('insert uses default value', () async {
+      final res = await postgrest.from('users').insert(
+        {
+          'username': "bot",
+        },
+      ).select<PostgrestList>();
+      expect(res.length, 1);
+      expect(res.first['status'], 'ONLINE');
+    });
+
+    test('bulk insert with one row uses default value', () async {
+      final res = await postgrest.from('users').insert(
+        {
+          'username': "bot",
+        },
+      ).select<PostgrestList>();
+      expect(res.length, 1);
+      expect(res.first['status'], 'ONLINE');
+    });
+
     test('bulk insert', () async {
       final res = await postgrest.from('messages').insert([
         {'id': 4, 'message': 'foo', 'username': 'supabot', 'channel_id': 2},
