@@ -264,5 +264,23 @@ void main() {
             'maybeSingle with multiple rows threw ${error.runtimeType} instead of PostgrestException.');
       }
     });
+    test('maybeSingle with multiple inserts throws', () async {
+      try {
+        await postgrest
+            .from('channels')
+            .insert([
+              {'data': {}, 'slug': 'channel1'},
+              {'data': {}, 'slug': 'channel2'},
+            ])
+            .select()
+            .maybeSingle();
+        fail('maybeSingle with multiple inserts did not throw.');
+      } on PostgrestException catch (error) {
+        expect(error.code, 'PGRST116');
+      } catch (error) {
+        fail(
+            'maybeSingle with multiple inserts threw ${error.runtimeType} instead of PostgrestException.');
+      }
+    });
   });
 }
