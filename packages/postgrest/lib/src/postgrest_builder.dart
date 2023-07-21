@@ -227,7 +227,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
         if (body.length > 1) {
           throw PostgrestException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
-            code: 'PGRST116',
+            code: '406',
             details:
                 'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
             hint: null,
