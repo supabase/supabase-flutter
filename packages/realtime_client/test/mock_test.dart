@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:realtime_client/realtime_client.dart';
+import 'package:realtime_client/src/constants.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -285,6 +286,31 @@ void main() {
           },
         ]),
       );
+    });
+
+    test("correct CHANNEL_ERROR data on heartbeat timeout", () async {
+      final subscribeCallback = expectAsync2((event, [data]) {
+        if (event == "CHANNEL_ERROR") {
+          expect(data, "heartbeat timeout");
+        } else {
+          expect(event, "CLOSED");
+        }
+      }, count: 2);
+
+      final channel = client.channel('public:todoos').on(
+            RealtimeListenTypes.postgresChanges,
+            ChannelFilter(
+                event: '*',
+                schema: 'public',
+                table: 'todos',
+                filter: 'id=eq.2'),
+            (_, [__]) {},
+          );
+
+      channel.subscribe(subscribeCallback);
+
+      await client.conn!.sink
+          .close(Constants.wsCloseNormal, "heartbeat timeout");
     });
   });
 
