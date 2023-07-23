@@ -45,8 +45,8 @@ class SupabaseClient {
   final String storageUrl;
   final String functionsUrl;
   final Map<String, String> _headers;
+  final Client? _httpClient;
   late final Client _authHttpClient;
-  late final Client? _httpClient;
 
   late final GoTrueClient auth;
 
@@ -144,8 +144,8 @@ class SupabaseClient {
           ...Constants.defaultHeaders,
           if (headers != null) ...headers
         },
+        _httpClient = httpClient,
         _isolate = isolate ?? (YAJsonIsolate()..initialize()) {
-    _httpClient = httpClient;
     auth = _initSupabaseAuthClient(
       autoRefreshToken: autoRefreshToken,
       gotrueAsyncStorage: gotrueAsyncStorage,
