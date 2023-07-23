@@ -11,7 +11,7 @@ Monorepo containing all [Supabase](https://supabase.com/) libraries for Flutter.
 - [supabase_flutter](https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_flutter)
 - [yet_another_json_isolate](https://github.com/supabase/supabase-flutter/tree/main/packages/yet_another_json_isolate)
 
-- Documentation: https://supabase.com/docs/reference/dart/introduction
+Documentation: https://supabase.com/docs/reference/dart/introduction
 
 ---
 

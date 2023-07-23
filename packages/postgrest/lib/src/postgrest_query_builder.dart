@@ -94,6 +94,12 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
   ///
+  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
+  /// to be either `NULL` or the default value of these columns.
+  /// Fields missing in all rows always use the default value of these columns.
+  ///
+  /// For single row insertions, missing fields will be set to default values when applicable.
+  ///
   /// Default (not returning data):
   /// ```dart
   /// await supabase.from('messages').insert(
@@ -108,10 +114,23 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///   'channel_id': 1
   /// }).select();
   /// ```
-  PostgrestFilterBuilder<T> insert(dynamic values) {
+  PostgrestFilterBuilder<T> insert(
+    dynamic values, {
+    bool defaultToNull = true,
+  }) {
     _method = METHOD_POST;
     _headers['Prefer'] = '';
+
+    if (!defaultToNull) {
+      _headers['Prefer'] = 'missing=default';
+    }
+
     _body = values;
+
+    if (values is List) {
+      _setColumnsSearchParam(values);
+    }
+
     return PostgrestFilterBuilder<T>(this);
   }
 
@@ -121,6 +140,12 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   /// [ignoreDuplicates] Specifies if duplicate rows should be ignored and not inserted.
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
+  ///
+  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
+  /// to be either `NULL` or the default value of these columns.
+  /// Fields missing in all rows always use the default value of these columns.
+  ///
+  /// For single row insertions, missing fields will be set to default values when applicable.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -144,11 +169,17 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     dynamic values, {
     String? onConflict,
     bool ignoreDuplicates = false,
+    bool defaultToNull = true,
     FetchOptions options = const FetchOptions(),
   }) {
     _method = METHOD_POST;
     _headers['Prefer'] =
         'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates';
+
+    if (!defaultToNull) {
+      _headers['Prefer'] = _headers['Prefer']! + ',missing=default';
+    }
+
     if (onConflict != null) {
       _url = _url.replace(
         queryParameters: {
@@ -157,6 +188,11 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
         },
       );
     }
+
+    if (values is List) {
+      _setColumnsSearchParam(values);
+    }
+
     _body = values;
     _options = options.ensureNotHead();
     return PostgrestFilterBuilder<T>(this);
@@ -222,5 +258,15 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     _headers['Prefer'] = '';
     _options = options.ensureNotHead();
     return PostgrestFilterBuilder<T>(this);
+  }
+
+  void _setColumnsSearchParam(List values) {
+    final newValues = PostgrestList.from(values);
+    final columns = newValues.fold<List<String>>(
+        [], (value, element) => value..addAll(element.keys));
+    if (newValues.isNotEmpty) {
+      final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
+      appendSearchParams("columns", uniqueColumns);
+    }
   }
 }

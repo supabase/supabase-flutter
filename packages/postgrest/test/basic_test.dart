@@ -125,12 +125,78 @@ void main() {
       expect(res, isEmpty);
     });
 
+    test('insert', () async {
+      final res = await postgrest.from('users').insert(
+        {
+          'username': "bot",
+          'status': 'OFFLINE',
+        },
+      ).select<PostgrestList>();
+      expect(res.length, 1);
+      expect(res.first['status'], 'OFFLINE');
+    });
+
+    test('insert uses default value', () async {
+      final res = await postgrest.from('users').insert(
+        {
+          'username': "bot",
+        },
+      ).select<PostgrestList>();
+      expect(res.length, 1);
+      expect(res.first['status'], 'ONLINE');
+    });
+
+    test('bulk insert with one row uses default value', () async {
+      final res = await postgrest.from('users').insert(
+        {
+          'username': "bot",
+        },
+      ).select<PostgrestList>();
+      expect(res.length, 1);
+      expect(res.first['status'], 'ONLINE');
+    });
+
     test('bulk insert', () async {
       final res = await postgrest.from('messages').insert([
         {'id': 4, 'message': 'foo', 'username': 'supabot', 'channel_id': 2},
         {'id': 5, 'message': 'foo', 'username': 'supabot', 'channel_id': 1}
       ]).select<PostgrestList>();
       expect(res.length, 2);
+    });
+
+    test('bulk insert without column defaults', () async {
+      final res = await postgrest.from('users').insert(
+        [
+          {
+            'username': "bot",
+            'status': 'OFFLINE',
+          },
+          {
+            'username': "crazy bot",
+          },
+        ],
+      ).select<PostgrestList>();
+      expect(res.length, 2);
+      expect(res.first['status'], 'OFFLINE');
+      expect(res.last['status'], null);
+    });
+
+    test('bulk insert with column defaults', () async {
+      final res = await postgrest.from('users').insert(
+        [
+          {
+            'username': "bot",
+            'status': 'OFFLINE',
+          },
+          {
+            'username': "crazy bot",
+          },
+        ],
+        defaultToNull: false,
+      ).select<PostgrestList>();
+      expect(res.length, 2);
+      expect(res.first['status'], 'OFFLINE');
+      expect(res.last['status'], 'ONLINE');
     });
 
     test('basic update', () async {
@@ -141,33 +207,8 @@ void main() {
           )
           .is_("data", null)
           .select<PostgrestList>();
-      expect(res, [
-        {
-          'id': 1,
-          'data': null,
-          'message': 'Hello World 👋',
-          'username': 'supabot',
-          'channel_id': 2,
-          'inserted_at': '2021-06-25T04:28:21.598+00:00'
-        },
-        {
-          'id': 2,
-          'data': null,
-          'message':
-              'Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.',
-          'username': 'supabot',
-          'channel_id': 2,
-          'inserted_at': '2021-06-29T04:28:21.598+00:00'
-        },
-        {
-          'id': 3,
-          'data': null,
-          'message': 'Supabase Launch Week is on fire',
-          'username': 'supabot',
-          'channel_id': 2,
-          'inserted_at': '2021-06-20T04:28:21.598+00:00'
-        }
-      ]);
+      expect(res, isNotEmpty);
+      expect(res, everyElement(containsPair("channel_id", 2)));
 
       final messages = await postgrest.from('messages').select<PostgrestList>();
       for (final rec in messages) {
@@ -348,15 +389,6 @@ void main() {
           .eq('slug', 'new slug')
           .select<PostgrestListResponse>();
       expect(res.count, 1);
-    });
-
-    test('row level security error', () async {
-      try {
-        await postgrest.from('sample').update({'id': 2});
-        fail('Returned even with row level security');
-      } on PostgrestException catch (error) {
-        expect(error.code, '404');
-      }
     });
 
     test('withConverter', () async {

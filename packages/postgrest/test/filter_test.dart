@@ -183,6 +183,31 @@ void main() {
     }
   });
 
+  test('likeAllOf', () async {
+    PostgrestList res = await postgrest
+        .from('users')
+        .select<PostgrestList>('username')
+        .likeAllOf('username', ['%supa%', '%bot%']);
+    expect(res, isNotEmpty);
+    for (final item in res) {
+      expect(item['username'], contains('supa'));
+      expect(item['username'], contains('bot'));
+    }
+  });
+
+  test('likeAnyOf', () async {
+    PostgrestList res = await postgrest
+        .from('users')
+        .select<PostgrestList>('username')
+        .likeAnyOf('username', ['%supa%', '%wai%']);
+    expect(res, isNotEmpty);
+    for (final item in res) {
+      expect(
+          item['username'].contains('supa') || item['username'].contains('wai'),
+          true);
+    }
+  });
+
   test('ilike', () async {
     final res = await postgrest
         .from('users')
@@ -192,6 +217,32 @@ void main() {
     for (final item in res) {
       final user = (item['username'] as String).toLowerCase();
       expect(user.contains('supa'), true);
+    }
+  });
+
+  test('ilikeAllOf', () async {
+    PostgrestList res = await postgrest
+        .from('users')
+        .select<PostgrestList>('username')
+        .ilikeAllOf('username', ['%SUPA%', '%bot%']);
+    expect(res, isNotEmpty);
+    for (final item in res) {
+      expect(item['username'].toLowerCase(), contains('supa'));
+      expect(item['username'].toLowerCase(), contains('bot'));
+    }
+  });
+
+  test('ilikeAnyOf', () async {
+    PostgrestList res = await postgrest
+        .from('users')
+        .select<PostgrestList>('username')
+        .ilikeAnyOf('username', ['%SUPA%', '%wai%']);
+    expect(res, isNotEmpty);
+    for (final item in res) {
+      expect(
+          item['username'].toLowerCase().contains('supa') ||
+              item['username'].toLowerCase().contains('wai'),
+          true);
     }
   });
 
