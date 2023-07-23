@@ -94,7 +94,11 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
   ///
-  /// When inserting multiple rows in bulk, [defaultToNull] can be used to set the values of the missing fields to be either `null` or the default value for the column. For single row insertions, missing fields will be set to default values when applicable.
+  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
+  /// to be either `NULL` or the default value of these columns.
+  /// Fields missing in all rows always use the default value of these columns.
+  ///
+  /// For single row insertions, missing fields will be set to default values when applicable.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -137,7 +141,11 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
   ///
-  /// When inserting multiple rows in bulk, [defaultToNull] can be used to set the values of the missing fields to be either `null` or the default value for the column. For single row insertions, missing fields will be set to default values when applicable.
+  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
+  /// to be either `NULL` or the default value of these columns.
+  /// Fields missing in all rows always use the default value of these columns.
+  ///
+  /// For single row insertions, missing fields will be set to default values when applicable.
   ///
   /// Default (not returning data):
   /// ```dart
