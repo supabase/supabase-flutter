@@ -79,7 +79,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
       isolate: _isolate,
       httpClient: _httpClient,
       options: _options,
-      // maybeSingle: _maybeSingle,
+      maybeSingle: _maybeSingle,
       converter: converter,
     );
   }
