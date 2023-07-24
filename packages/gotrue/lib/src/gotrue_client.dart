@@ -526,9 +526,13 @@ class GoTrueClient {
     );
   }
 
-  ///Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
+  /// Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
   ///
-  ///Use [EmailResendParams] or [PhoneResendParams] to specify the type of resend.
+  /// Use [EmailResendParams] or [PhoneResendParams] to specify the type of resend.
+  ///
+  /// For [type] of [OtpType.signup] or [OtpType.emailChange] [email] must be
+  /// provided, and for [type] or [OtpType.sms] or [OtpType.phoneChange],
+  /// [phone] must be provided
   Future<ResendResponse> resend({
     String? email,
     String? phone,
@@ -538,6 +542,14 @@ class GoTrueClient {
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
         '`email` or `phone` needs to be specified.');
+    if (email != null) {
+      assert([OtpType.signup, OtpType.emailChange].contains(type),
+          'email must be provided for type ${type.name}');
+    }
+    if (phone != null) {
+      assert([OtpType.sms, OtpType.phoneChange].contains(type),
+          'phone must be provided for type ${type.name}');
+    }
 
     if (type != OtpType.emailChange && type != OtpType.phoneChange) {
       _removeSession();
