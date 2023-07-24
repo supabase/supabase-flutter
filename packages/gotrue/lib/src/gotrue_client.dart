@@ -777,7 +777,7 @@ class GoTrueClient {
     return OAuthResponse(provider: provider, url: url);
   }
 
-  void _saveSession(Session session) {
+  void _saveSession(Session session) async {
     _currentSession = session;
     _currentUser = session.user;
     final expiresAt = session.expiresAt;
@@ -789,12 +789,16 @@ class GoTrueClient {
       final expiresIn = expiresAt - timeNow;
       final refreshDurationBeforeExpires = expiresIn > 60 ? 60 : 1;
       final nextDuration = expiresIn - refreshDurationBeforeExpires;
-      if (nextDuration > 0) {
-        _refreshTokenRetryCount = 0;
-        final timerDuration = Duration(seconds: nextDuration);
-        _setTokenRefreshTimer(timerDuration);
-      } else {
-        _callRefreshToken();
+      try {
+        if (nextDuration > 0) {
+          _refreshTokenRetryCount = 0;
+          final timerDuration = Duration(seconds: nextDuration);
+          _setTokenRefreshTimer(timerDuration);
+        } else {
+          await _callRefreshToken();
+        }
+      } catch (e) {
+        // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
       }
     }
   }
@@ -807,12 +811,16 @@ class GoTrueClient {
     _refreshTokenTimer?.cancel();
     _refreshTokenRetryCount++;
     if (_refreshTokenRetryCount < Constants.maxRetryCount) {
-      _refreshTokenTimer = Timer(timerDuration, () {
-        _callRefreshToken(
-          refreshToken: refreshToken,
-          accessToken: accessToken,
-          ignorePendingRequest: true,
-        );
+      _refreshTokenTimer = Timer(timerDuration, () async {
+        try {
+          await _callRefreshToken(
+            refreshToken: refreshToken,
+            accessToken: accessToken,
+            ignorePendingRequest: true,
+          );
+        } catch (_) {
+          // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
+        }
       });
     } else {
       throw AuthException('Access token refresh retry limit exceeded.');
