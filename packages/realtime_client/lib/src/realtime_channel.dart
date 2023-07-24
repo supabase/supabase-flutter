@@ -283,7 +283,7 @@ class RealtimeChannel {
         }
         return;
       }).receive('timeout', (_) {
-        if (callback != null) callback('TIMED OUT');
+        if (callback != null) callback('TIMED_OUT');
         return;
       });
     }

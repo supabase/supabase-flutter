@@ -136,7 +136,7 @@ class RealtimeClient {
           if (connState != SocketStates.disconnected) {
             connState = SocketStates.closed;
           }
-          _onConnClose('');
+          _onConnClose();
         },
       );
     } catch (e) {
@@ -369,13 +369,14 @@ class RealtimeClient {
   }
 
   /// communication has been closed
-  void _onConnClose(String event) {
+  void _onConnClose() {
+    final event = conn?.closeReason ?? '';
     log('transport', 'close', event);
 
     /// SocketStates.disconnected: by user with socket.disconnect()
     /// SocketStates.closed: NOT by user, should try to reconnect
     if (connState == SocketStates.closed) {
-      _triggerChanError();
+      _triggerChanError(event);
       reconnectTimer.scheduleTimeout();
     }
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
