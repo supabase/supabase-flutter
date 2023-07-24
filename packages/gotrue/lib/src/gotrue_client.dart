@@ -528,7 +528,6 @@ class GoTrueClient {
 
   /// Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
   ///
-  /// Use [EmailResendParams] or [PhoneResendParams] to specify the type of resend.
   ///
   /// For [type] of [OtpType.signup] or [OtpType.emailChange] [email] must be
   /// provided, and for [type] or [OtpType.sms] or [OtpType.phoneChange],
