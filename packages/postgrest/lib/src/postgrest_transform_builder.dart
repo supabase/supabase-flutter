@@ -175,7 +175,8 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// Retrieves at most one row from the result.
   ///
   /// Result must be at most one row or nullable
-  /// (e.g. using `eq` on a UNIQUE column), otherwise this will result in an error.
+  /// (e.g. using `eq` on a UNIQUE column or `limit(1)`),
+  /// otherwise this will result in an error.
   ///
   ///
   /// Data type is `Map<String, dynamic>?`.
