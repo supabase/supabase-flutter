@@ -28,11 +28,11 @@ class PostgrestBuilder<T, S> implements Future<T> {
   dynamic _body;
   late final Headers _headers;
   // ignore: prefer_final_fields
-  bool _maybeSingle = false;
+  bool _maybeSingle;
   String? _method;
   late final String? _schema;
   late Uri _url;
-  PostgrestConverter<T, S>? _converter;
+  final PostgrestConverter<T, S>? _converter;
   late final Client? _httpClient;
   late final YAJsonIsolate? _isolate;
   // ignore: prefer_final_fields
@@ -47,7 +47,10 @@ class PostgrestBuilder<T, S> implements Future<T> {
     Client? httpClient,
     YAJsonIsolate? isolate,
     FetchOptions? options,
-  }) {
+    bool maybeSingle = false,
+    PostgrestConverter<T, S>? converter,
+  })  : _maybeSingle = maybeSingle,
+        _converter = converter {
     _url = url;
     _headers = headers;
     _schema = schema;
@@ -76,7 +79,9 @@ class PostgrestBuilder<T, S> implements Future<T> {
       isolate: _isolate,
       httpClient: _httpClient,
       options: _options,
-    ).._converter = converter;
+      // maybeSingle: _maybeSingle,
+      converter: converter,
+    );
   }
 
   void _assertCorrectGeneric(Type R) {
