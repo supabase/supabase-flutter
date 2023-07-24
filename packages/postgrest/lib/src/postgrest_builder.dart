@@ -27,11 +27,12 @@ typedef _Nullable<T> = T?;
 class PostgrestBuilder<T, S> implements Future<T> {
   dynamic _body;
   late final Headers _headers;
-  bool _maybeEmpty = false;
+  // ignore: prefer_final_fields
+  bool _maybeSingle;
   String? _method;
   late final String? _schema;
   late Uri _url;
-  PostgrestConverter<T, S>? _converter;
+  final PostgrestConverter<T, S>? _converter;
   late final Client? _httpClient;
   late final YAJsonIsolate? _isolate;
   // ignore: prefer_final_fields
@@ -46,7 +47,10 @@ class PostgrestBuilder<T, S> implements Future<T> {
     Client? httpClient,
     YAJsonIsolate? isolate,
     FetchOptions? options,
-  }) {
+    bool maybeSingle = false,
+    PostgrestConverter<T, S>? converter,
+  })  : _maybeSingle = maybeSingle,
+        _converter = converter {
     _url = url;
     _headers = headers;
     _schema = schema;
@@ -75,9 +79,9 @@ class PostgrestBuilder<T, S> implements Future<T> {
       isolate: _isolate,
       httpClient: _httpClient,
       options: _options,
-    )
-      .._maybeEmpty = _maybeEmpty
-      .._converter = converter;
+      maybeSingle: _maybeSingle,
+      converter: converter,
+    );
   }
 
   void _assertCorrectGeneric(Type R) {
@@ -223,6 +227,24 @@ class PostgrestBuilder<T, S> implements Future<T> {
         }
       }
 
+      // Workaround for https://github.com/supabase/supabase-flutter/issues/560
+      if (_maybeSingle && _method?.toUpperCase() == 'GET' && body is List) {
+        if (body.length > 1) {
+          throw PostgrestException(
+            // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
+            code: '406',
+            details:
+                'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
+            hint: null,
+            message: 'JSON object requested, multiple (or no) rows returned',
+          );
+        } else if (body.length == 1) {
+          body = body.first;
+        } else {
+          body = null;
+        }
+      }
+
       final contentRange = response.headers['content-range'];
       if (contentRange != null && contentRange.length > 1) {
         count = contentRange.split('/').last == '*'
@@ -301,8 +323,8 @@ class PostgrestBuilder<T, S> implements Future<T> {
             details: response.reasonPhrase,
           );
 
-          if (_maybeEmpty) {
-            return _handleMaybeEmptyError(response, error);
+          if (_maybeSingle) {
+            return _handleMaybeSingleError(response, error);
           }
         } catch (_) {
           error = PostgrestException(
@@ -324,10 +346,10 @@ class PostgrestBuilder<T, S> implements Future<T> {
     }
   }
 
-  /// on maybeEmpty enable, check for error details contains
+  /// When [_maybeSingle] is true, check whether error details contain
   /// 'Results contain 0 rows' then
   /// return PostgrestResponse with null data
-  PostgrestResponse<T> _handleMaybeEmptyError(
+  PostgrestResponse<T> _handleMaybeSingleError(
     http.Response response,
     PostgrestException error,
   ) {

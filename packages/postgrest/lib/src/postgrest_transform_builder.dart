@@ -175,15 +175,22 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// Retrieves at most one row from the result.
   ///
   /// Result must be at most one row or nullable
-  /// (e.g. using `eq` on a UNIQUE column), otherwise this will result in an error.
+  /// (e.g. using `eq` on a UNIQUE column or `limit(1)`),
+  /// otherwise this will result in an error.
   ///
   ///
   /// Data type is `Map<String, dynamic>?`.
   ///
   /// By specifying this type via `.select<Map<String,dynamic>?>()` you get more type safety.
   PostgrestTransformBuilder<T> maybeSingle() {
-    _headers['Accept'] = 'application/vnd.pgrst.object+json';
-    _maybeEmpty = true;
+    // Temporary fix for https://github.com/supabase/supabase-flutter/issues/560
+    // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
+    if (_method?.toUpperCase() == 'GET') {
+      _headers['Accept'] = 'application/json';
+    } else {
+      _headers['Accept'] = 'application/vnd.pgrst.object+json';
+    }
+    _maybeSingle = true;
     return this;
   }
 
