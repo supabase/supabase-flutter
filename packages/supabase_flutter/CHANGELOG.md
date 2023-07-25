@@ -1,3 +1,7 @@
+## 1.10.10
+
+ - Update a dependency to the latest release.
+
 ## 1.10.9
 
  - **FIX**(supabase_flutter): update sign_in_with_apple version constraints to allow v5.0.0 ([#548](https://github.com/supabase/supabase-flutter/issues/548)). ([bc977431](https://github.com/supabase/supabase-flutter/commit/bc9774319a578c96d43eea121b7dca319d63a749))
