@@ -55,6 +55,9 @@ class GoTrueClient {
 
   int _refreshTokenRetryCount = 0;
 
+  /// Completer to combine multiple simultaneous token refresh requests.
+  Completer<AuthResponse>? _refreshTokenCompleter;
+
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
   final _onAuthStateChangeControllerSync =
       BehaviorSubject<AuthState>(sync: true);
@@ -498,13 +501,11 @@ class GoTrueClient {
   /// Force refreshes the session including the user data in case it was updated
   /// in a different session.
   Future<AuthResponse> refreshSession() async {
-    final refreshCompleter = Completer<AuthResponse>();
     if (currentSession?.accessToken == null) {
       throw AuthException('Not logged in.');
     }
 
-    _callRefreshToken(refreshCompleter);
-    return refreshCompleter.future;
+    return await _callRefreshToken();
   }
 
   /// Sends a reauthentication OTP to the user's email or phone number.
@@ -609,12 +610,10 @@ class GoTrueClient {
 
   /// Sets the session data from refresh_token and returns the current session.
   Future<AuthResponse> setSession(String refreshToken) async {
-    final refreshCompleter = Completer<AuthResponse>();
     if (refreshToken.isEmpty) {
       throw AuthException('No current session.');
     }
-    _callRefreshToken(refreshCompleter, refreshToken: refreshToken);
-    return refreshCompleter.future;
+    return await _callRefreshToken(refreshToken: refreshToken);
   }
 
   /// Gets the session data from a magic link or oauth2 callback URL
@@ -779,7 +778,6 @@ class GoTrueClient {
   ///
   /// currentSession: session json object, expiresAt: timestamp in seconds
   Future<AuthResponse> recoverSession(String jsonStr) async {
-    final refreshCompleter = Completer<AuthResponse>();
     final persistedData = json.decode(jsonStr) as Map<String, dynamic>;
     final currentSession =
         persistedData['currentSession'] as Map<String, dynamic>?;
@@ -799,12 +797,10 @@ class GoTrueClient {
     final timeNow = (DateTime.now().millisecondsSinceEpoch / 1000).round();
     if (expiresAt < (timeNow + Constants.expiryMargin.inSeconds)) {
       if (_autoRefreshToken && session.refreshToken != null) {
-        _callRefreshToken(
-          refreshCompleter,
+        return await _callRefreshToken(
           refreshToken: session.refreshToken,
           accessToken: session.accessToken,
         );
-        return refreshCompleter.future;
       } else {
         throw _notifyException(AuthException('Session expired.'));
       }
@@ -857,8 +853,7 @@ class GoTrueClient {
     return OAuthResponse(provider: provider, url: url);
   }
 
-  void _saveSession(Session session) {
-    final refreshCompleter = Completer<AuthResponse>();
+  void _saveSession(Session session) async {
     _currentSession = session;
     _currentUser = session.user;
     final expiresAt = session.expiresAt;
@@ -870,35 +865,41 @@ class GoTrueClient {
       final expiresIn = expiresAt - timeNow;
       final refreshDurationBeforeExpires = expiresIn > 60 ? 60 : 1;
       final nextDuration = expiresIn - refreshDurationBeforeExpires;
-      if (nextDuration > 0) {
-        _refreshTokenRetryCount = 0;
-        final timerDuration = Duration(seconds: nextDuration);
-        _setTokenRefreshTimer(timerDuration, refreshCompleter);
-      } else {
-        _callRefreshToken(refreshCompleter);
+      try {
+        if (nextDuration > 0) {
+          _refreshTokenRetryCount = 0;
+          final timerDuration = Duration(seconds: nextDuration);
+          _setTokenRefreshTimer(timerDuration);
+        } else {
+          await _callRefreshToken();
+        }
+      } catch (e) {
+        // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
       }
     }
   }
 
   void _setTokenRefreshTimer(
-    Duration timerDuration,
-    Completer<AuthResponse> completer, {
+    Duration timerDuration, {
     String? refreshToken,
     String? accessToken,
   }) {
     _refreshTokenTimer?.cancel();
     _refreshTokenRetryCount++;
     if (_refreshTokenRetryCount < Constants.maxRetryCount) {
-      _refreshTokenTimer = Timer(timerDuration, () {
-        _callRefreshToken(
-          completer,
-          refreshToken: refreshToken,
-          accessToken: accessToken,
-        );
+      _refreshTokenTimer = Timer(timerDuration, () async {
+        try {
+          await _callRefreshToken(
+            refreshToken: refreshToken,
+            accessToken: accessToken,
+            ignorePendingRequest: true,
+          );
+        } catch (_) {
+          // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
+        }
       });
     } else {
-      final error = AuthException('Access token refresh retry limit exceeded.');
-      completer.completeError(error, StackTrace.current);
+      throw AuthException('Access token refresh retry limit exceeded.');
     }
   }
 
@@ -911,16 +912,23 @@ class GoTrueClient {
   }
 
   /// Generates a new JWT.
-  void _callRefreshToken(
-    Completer<AuthResponse> completer, {
+  ///
+  /// To prevent multiple simultaneous requests it catches an already ongoing requests by using the global [_refreshTokenCompleter]. If that's not null and not completed it returns the future that the ongoing request.
+  ///
+  /// To be able to call [_callRefreshToken] again after a [SocketException] and not get trapped by the ongoing request, [ignorePendingRequest] is used to bypass that check.
+  Future<AuthResponse> _callRefreshToken({
     String? refreshToken,
     String? accessToken,
+    bool ignorePendingRequest = false,
   }) async {
+    if (_refreshTokenCompleter?.isCompleted ?? true) {
+      _refreshTokenCompleter = Completer<AuthResponse>();
+    } else if (!ignorePendingRequest) {
+      return _refreshTokenCompleter!.future;
+    }
     final token = refreshToken ?? currentSession?.refreshToken;
     if (token == null) {
-      final error = AuthException('No current session.');
-      completer.completeError(error, StackTrace.current);
-      throw error;
+      throw AuthException('No current session.');
     }
 
     final jwt = accessToken ?? currentSession?.accessToken;
@@ -939,30 +947,29 @@ class GoTrueClient {
       final authResponse = AuthResponse.fromJson(response);
 
       if (authResponse.session == null) {
-        final error = AuthException('Invalid session data.');
-        completer.completeError(error, StackTrace.current);
-        throw error;
+        throw AuthException('Invalid session data.');
       }
 
       _saveSession(authResponse.session!);
 
-      completer.complete(authResponse);
       _notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+      _refreshTokenCompleter!.complete(authResponse);
+      return authResponse;
     } on SocketException {
       _setTokenRefreshTimer(
         Constants.retryInterval * pow(2, _refreshTokenRetryCount),
-        completer,
         refreshToken: token,
         accessToken: accessToken,
       );
+      return _refreshTokenCompleter!.future;
     } catch (error, stack) {
       if (error is AuthException) {
         if (error.message == 'Invalid Refresh Token: Refresh Token Not Found') {
           await signOut();
         }
       }
-      completer.completeError(error, stack);
       _onAuthStateChangeController.addError(error, stack);
+      rethrow;
     }
   }
 

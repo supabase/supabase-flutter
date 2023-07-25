@@ -16,7 +16,7 @@ class Session {
   final String tokenType;
   final User user;
 
-  const Session({
+  Session({
     required this.accessToken,
     this.expiresIn,
     this.refreshToken,
@@ -57,13 +57,25 @@ class Session {
 
   /// A timestamp of when the token will expire. Returned when a login is
   /// confirmed.
-  int? get expiresAt {
+  late int? expiresAt = _expiresAt;
+
+  int? get _expiresAt {
     try {
       final payload = Jwt.parseJwt(accessToken);
       return payload['exp'] as int;
     } catch (_) {
       return null;
     }
+  }
+
+  /// Returns 'true` if the token is expired or will expire in the next 5 seconds.
+  ///
+  /// The 5 second buffer is to account for latency issues.
+  bool get isExpired {
+    if (expiresAt == null) return false;
+    return DateTime.now().add(Duration(seconds: 5)).isAfter(
+          DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
+        );
   }
 
   String get persistSessionString {
