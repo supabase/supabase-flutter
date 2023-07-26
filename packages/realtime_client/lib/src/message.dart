@@ -2,16 +2,18 @@ import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
 
 class Message {
-  String topic;
-  ChannelEvents event;
-  dynamic payload;
-  String ref;
+  final String topic;
+  final ChannelEvents event;
+  final dynamic payload;
+  final String ref;
+  final String? joinRef;
 
   Message({
     required this.topic,
     required this.event,
     required this.payload,
     required this.ref,
+    this.joinRef,
   });
 
   /// Converting to JSON while removing functions
@@ -46,7 +48,8 @@ class Message {
       'event':
           event != ChannelEvents.heartbeat ? event.eventName() : 'heartbeat',
       'payload': processedPayload,
-      'ref': ref
+      'ref': ref,
+      if (joinRef != null) 'join_ref': joinRef,
     };
   }
 }
