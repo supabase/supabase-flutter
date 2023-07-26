@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 import 'package:realtime_client/src/constants.dart';
 import 'package:realtime_client/src/message.dart';
 import 'package:realtime_client/src/realtime_channel.dart';
@@ -35,7 +36,13 @@ class RealtimeClient {
   final WebSocketTransport transport;
   int heartbeatIntervalMs = 30000;
   Timer? heartbeatTimer;
+
+  /// reference ID of the most recently sent heartbeat.
+  ///
+  /// Used to keep track of whether the client is connected to the server.
   String? pendingHeartbeatRef;
+
+  /// Unique reference ID for every heartbeat.
   int ref = 0;
   late RetryTimer reconnectTimer;
   void Function(String? kind, String? msg, dynamic data)? logger;
@@ -111,6 +118,7 @@ class RealtimeClient {
   }
 
   /// Connects the socket.
+  @internal
   void connect() async {
     if (conn != null) {
       return;
@@ -232,6 +240,7 @@ class RealtimeClient {
   bool get isConnected => connectionState == 'open';
 
   /// Removes a subscription from the socket.
+  @internal
   void remove(RealtimeChannel channel) {
     channels = channels.where((c) => c.joinRef != channel.joinRef).toList();
   }
@@ -344,6 +353,7 @@ class RealtimeClient {
   }
 
   /// Unsubscribe from channels with the specified topic.
+  @internal
   void leaveOpenTopic(String topic) {
     final dupChannel = channels.firstWhereOrNull(
       (c) => c.topic == topic && (c.isJoined || c.isJoining),
@@ -421,10 +431,13 @@ class RealtimeClient {
     }
   }
 
+  @internal
   void sendHeartbeat() {
     if (!isConnected) {
       return;
     }
+
+    // If the previous heartbeat hasn't received a reply, close the connection.
     if (pendingHeartbeatRef != null) {
       pendingHeartbeatRef = null;
       log(
