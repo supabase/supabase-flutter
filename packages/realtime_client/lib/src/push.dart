@@ -6,7 +6,9 @@ import 'package:realtime_client/src/realtime_channel.dart';
 
 typedef Callback = void Function(dynamic response);
 
-/// Push event obj
+/// {@template push}
+/// Initializes the Push
+/// {@endtemplate}
 class Push {
   bool sent = false;
   Timer? _timeoutTimer;
@@ -16,17 +18,19 @@ class Push {
   String? _refEvent;
   bool rateLimited = false;
 
+  /// The channel
   final RealtimeChannel _channel;
+
+  /// The event, for example [ChannelEvents.join]
   final ChannelEvents _event;
+
+  /// The payload, for example `{user_id: 123}`
   late Map<String, dynamic> payload;
+
+  /// The push timeout
   Duration _timeout;
 
-  /// Initializes the Push
-  ///
-  /// `channel` The Channel
-  /// `event` The event, for example `"phx_join"`
-  /// `payload` The payload, for example `{user_id: 123}`
-  /// `timeout` The push timeout in milliseconds
+  /// {@macro push}
   Push(
     this._channel,
     this._event, [
@@ -60,6 +64,7 @@ class Push {
         event: _event,
         payload: payload,
         ref: ref,
+        joinRef: _channel.joinRef,
       ),
     );
     if (status == 'rate limited') {

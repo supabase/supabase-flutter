@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
 import 'package:realtime_client/src/push.dart';
@@ -173,6 +174,7 @@ class RealtimeChannel {
     presence = RealtimePresence(this);
   }
 
+  @internal
   void rejoinUntilConnected() {
     _rejoinTimer.scheduleTimeout();
     if (socket.isConnected) {
@@ -498,6 +500,7 @@ class RealtimeChannel {
 
   String get joinRef => joinPush.ref;
 
+  @internal
   void rejoin([Duration? timeout]) {
     if (isLeaving) {
       return;
@@ -572,14 +575,19 @@ class RealtimeChannel {
     return 'chan_reply_$ref';
   }
 
+  @internal
   bool get isClosed => _state == ChannelStates.closed;
 
+  @internal
   bool get isErrored => _state == ChannelStates.errored;
 
+  @internal
   bool get isJoined => _state == ChannelStates.joined;
 
+  @internal
   bool get isJoining => _state == ChannelStates.joining;
 
+  @internal
   bool get isLeaving => _state == ChannelStates.leaving;
 
   static _isEqual(Map<String, String> obj1, Map<String, String> obj2) {
