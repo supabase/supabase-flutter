@@ -182,6 +182,27 @@ Future<AuthResponse> signInWithGoogle() {
 }
 ```
 
+When going to production on Android, you may have multiple SHA-1 fingerprint certificates, debug and the production certificate provided from Play Store. You will need to create one Google OAuth 2.0 Client ID for each certificates. You can then utilize [flavors](https://docs.flutter.dev/deployment/flavors#using-flavors-in-android) to dynamically update the `appAuthRedirectScheme` like this:
+
+```groovy
+flavorDimensions "default"
+productFlavors {
+    dev {
+        dimension "default"
+        versionNameSuffix ".dev"
+        manifestPlaceholders += [
+            'appAuthRedirectScheme': 'com.googleusercontent.apps.*DEBUG_CLIENT_ID*'
+        ]
+    }
+    prod {
+        dimension "default"
+        manifestPlaceholders += [
+            'appAuthRedirectScheme': 'com.googleusercontent.apps.*PROD_CLIENT_ID*'
+        ]
+    }
+}
+```
+
 ### OAuth login
 
 For providers other than Apple or Google, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
