@@ -133,7 +133,7 @@ Future<AuthResponse> signInWithGoogle() {
 
   final appAuth = FlutterAppAuth();
 
-  // authorize the user by opening the concent page
+  // authorize the user by opening the consent page
   final result = await appAuth.authorize(
     AuthorizationRequest(
       clientId,
@@ -176,6 +176,7 @@ Future<AuthResponse> signInWithGoogle() {
   return supabase.auth.signInWithIdToken(
     provider: Provider.google,
     idToken: idToken,
+    accessToken: tokenResponse?.accessToken,
     nonce: rawNonce,
   );
 }
