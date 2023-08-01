@@ -1,3 +1,7 @@
+## 1.9.9
+
+ - Update a dependency to the latest release.
+
 ## 1.9.8
 
  - **FIX**(supabase): get jwt on http call ([#540](https://github.com/supabase/supabase-flutter/issues/540)). ([e044d3ca](https://github.com/supabase/supabase-flutter/commit/e044d3caa2a0085804b7b4f39b050d25ab949083))

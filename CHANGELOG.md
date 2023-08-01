@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-08-01
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v1.11.2`](#gotrue---v1112)
+ - [`realtime_client` - `v1.1.3`](#realtime_client---v113)
+ - [`supabase` - `v1.9.9`](#supabase---v199)
+ - [`supabase_flutter` - `v1.10.11`](#supabase_flutter---v11011)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.9.9`
+ - `supabase_flutter` - `v1.10.11`
+
+---
+
+#### `gotrue` - `v1.11.2`
+
+ - **FIX**(gotrue): export SignOutScope ([#576](https://github.com/supabase/supabase-flutter/issues/576)). ([2bd6e459](https://github.com/supabase/supabase-flutter/commit/2bd6e4599dc3ebb11ffb0deaef19095574d4b93d))
+
+#### `realtime_client` - `v1.1.3`
+
+ - **FIX**: Add join_ref, comment docs and @internal annotations. ([#570](https://github.com/supabase/supabase-flutter/issues/570)). ([a28de337](https://github.com/supabase/supabase-flutter/commit/a28de3377cd5dcd1e176ffbe7de68bf23cd50cfd))
+
+
 ## 2023-07-25
 
 ### Changes
