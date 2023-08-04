@@ -64,6 +64,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   PostgrestFilterBuilder<T> eq(String column, dynamic value) {
     if (value is List) {
       appendSearchParams(column, 'eq.{${_cleanFilterArray(value)}}');
+    } else if (value == null) {
+      appendSearchParams(column, 'is.null');
     } else {
       appendSearchParams(column, 'eq.$value');
     }
@@ -81,6 +83,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   PostgrestFilterBuilder<T> neq(String column, dynamic value) {
     if (value is List) {
       appendSearchParams(column, 'neq.{${_cleanFilterArray(value)}}');
+    } else if (value == null) {
+      appendSearchParams(column, 'not.is.null');
     } else {
       appendSearchParams(column, 'neq.$value');
     }
