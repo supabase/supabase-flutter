@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:postgrest/postgrest.dart';
 
 class ResetHelper {
@@ -16,13 +17,23 @@ class ResetHelper {
     _reactions = await _postgrest.from('reactions').select<PostgrestList>();
   }
 
-  Future<void> reset() async {
+  Future<void> reset([int delay = 0]) async {
     await _postgrest.from("reactions").delete().neq("emoji", "dne");
     await _postgrest.from('messages').delete().neq('message', 'dne');
     await _postgrest.from('channels').delete().neq('slug', 'dne');
     await _postgrest.from('users').delete().neq('username', 'dne');
     try {
+      if (delay > 0) await Future.delayed(Duration(milliseconds: delay));
+
       await _postgrest.from('users').insert(_users);
+
+      final insertedUsers =
+          await _postgrest.from('users').select<PostgrestList>();
+
+      // Somehow the order of the users is sometimes not correct. Adding the delay should solve this.
+      if (!DeepCollectionEquality().equals(insertedUsers, _users)) {
+        return reset(delay + 500);
+      }
     } on PostgrestException catch (exception) {
       throw 'users table was not properly reset. $exception';
     }
