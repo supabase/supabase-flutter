@@ -12,15 +12,17 @@ part of 'postgrest_builder.dart';
 /// /// {@endtemplate}
 class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   /// {@macro postgrest_query_builder}
-  PostgrestQueryBuilder(
-    String url, {
+  PostgrestQueryBuilder({
+    required Uri url,
+    String? method,
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
     FetchOptions? options,
     YAJsonIsolate? isolate,
   }) : super(
-          url: Uri.parse(url),
+          url: url,
+          method: method,
           headers: headers ?? {},
           schema: schema,
           httpClient: httpClient,
@@ -61,7 +63,6 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     FetchOptions options = const FetchOptions(),
   ]) {
     _assertCorrectGeneric(R);
-    _method = METHOD_GET;
 
     // Remove whitespaces except when quoted
     var quoted = false;
@@ -76,18 +77,12 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
       return c;
     }).join();
 
-    overrideSearchParams('select', cleanedColumns);
-    _options = options;
-    return PostgrestFilterBuilder<R>(
-      PostgrestQueryBuilder(
-        _url.toString(),
-        headers: _headers,
-        schema: _schema,
-        httpClient: _httpClient,
-        isolate: _isolate,
-        options: _options,
-      ).._method = _method,
-    );
+    final url = overrideSearchParams('select', cleanedColumns);
+    return PostgrestFilterBuilder<R>(copyWithType(
+      url: url,
+      method: METHOD_GET,
+      options: options,
+    ));
   }
 
   /// Perform an INSERT into the table or view.
@@ -118,20 +113,24 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     dynamic values, {
     bool defaultToNull = true,
   }) {
-    _method = METHOD_POST;
-    _headers['Prefer'] = '';
+    final newHeaders = {..._headers};
+    newHeaders['Prefer'] = '';
 
     if (!defaultToNull) {
-      _headers['Prefer'] = 'missing=default';
+      newHeaders['Prefer'] = 'missing=default';
     }
 
-    _body = values;
-
+    Uri url = _url;
     if (values is List) {
-      _setColumnsSearchParam(values);
+      url = _setColumnsSearchParam(values);
     }
 
-    return PostgrestFilterBuilder<T>(this);
+    return PostgrestFilterBuilder<T>(copyWith(
+      method: METHOD_POST,
+      headers: newHeaders,
+      body: values,
+      url: url,
+    ));
   }
 
   /// Perform an UPSERT on the table or view.
@@ -172,16 +171,16 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     bool defaultToNull = true,
     FetchOptions options = const FetchOptions(),
   }) {
-    _method = METHOD_POST;
-    _headers['Prefer'] =
+    final newHeaders = {..._headers};
+    newHeaders['Prefer'] =
         'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates';
 
     if (!defaultToNull) {
-      _headers['Prefer'] = '${_headers['Prefer']!},missing=default';
+      newHeaders['Prefer'] = '${newHeaders['Prefer']!},missing=default';
     }
-
+    Uri url = _url;
     if (onConflict != null) {
-      _url = _url.replace(
+      url = _url.replace(
         queryParameters: {
           'on_conflict': onConflict,
           ..._url.queryParameters,
@@ -190,12 +189,16 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     }
 
     if (values is List) {
-      _setColumnsSearchParam(values);
+      url = _setColumnsSearchParam(values);
     }
 
-    _body = values;
-    _options = options.ensureNotHead();
-    return PostgrestFilterBuilder<T>(this);
+    return PostgrestFilterBuilder<T>(copyWith(
+      method: METHOD_POST,
+      headers: newHeaders,
+      options: options.ensureNotHead(),
+      body: values,
+      url: url,
+    ));
   }
 
   /// Perform an UPDATE on the table or view.
@@ -222,11 +225,15 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     Map values, {
     FetchOptions options = const FetchOptions(),
   }) {
-    _method = METHOD_PATCH;
-    _headers['Prefer'] = '';
-    _body = values;
-    _options = options.ensureNotHead();
-    return PostgrestFilterBuilder<T>(this);
+    final newHeaders = {..._headers};
+    newHeaders['Prefer'] = '';
+
+    return PostgrestFilterBuilder<T>(copyWith(
+      method: METHOD_PATCH,
+      headers: newHeaders,
+      body: values,
+      options: options.ensureNotHead(),
+    ));
   }
 
   /// Perform a DELETE on the table or view.
@@ -254,19 +261,23 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     ReturningOption returning = ReturningOption.representation,
     FetchOptions options = const FetchOptions(),
   }) {
-    _method = METHOD_DELETE;
-    _headers['Prefer'] = '';
-    _options = options.ensureNotHead();
-    return PostgrestFilterBuilder<T>(this);
+    final newHeaders = {..._headers};
+    newHeaders['Prefer'] = '';
+    return PostgrestFilterBuilder<T>(copyWith(
+      method: METHOD_DELETE,
+      headers: newHeaders,
+      options: options.ensureNotHead(),
+    ));
   }
 
-  void _setColumnsSearchParam(List values) {
+  Uri _setColumnsSearchParam(List values) {
     final newValues = PostgrestList.from(values);
     final columns = newValues.fold<List<String>>(
         [], (value, element) => value..addAll(element.keys));
     if (newValues.isNotEmpty) {
       final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
-      appendSearchParams("columns", uniqueColumns);
+      return appendSearchParams("columns", uniqueColumns);
     }
+    return _url;
   }
 }

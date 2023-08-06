@@ -23,7 +23,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
         _table = table,
         _incrementId = incrementId,
         super(
-          url,
+          url: Uri.parse(url),
           headers: headers,
           schema: schema,
           httpClient: httpClient,

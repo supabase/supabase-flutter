@@ -25,18 +25,16 @@ typedef _Nullable<T> = T?;
 
 /// The base builder class.
 class PostgrestBuilder<T, S> implements Future<T> {
-  dynamic _body;
-  late final Headers _headers;
-  // ignore: prefer_final_fields
-  bool _maybeSingle;
-  String? _method;
-  late final String? _schema;
-  late Uri _url;
+  final dynamic _body;
+  final Headers _headers;
+  final bool _maybeSingle;
+  final String? _method;
+  final String? _schema;
+  final Uri _url;
   final PostgrestConverter<T, S>? _converter;
-  late final Client? _httpClient;
-  late final YAJsonIsolate? _isolate;
-  // ignore: prefer_final_fields
-  FetchOptions? _options;
+  final Client? _httpClient;
+  final YAJsonIsolate? _isolate;
+  final FetchOptions? _options;
 
   PostgrestBuilder({
     required Uri url,
@@ -50,15 +48,65 @@ class PostgrestBuilder<T, S> implements Future<T> {
     bool maybeSingle = false,
     PostgrestConverter<T, S>? converter,
   })  : _maybeSingle = maybeSingle,
-        _converter = converter {
-    _url = url;
-    _headers = headers;
-    _schema = schema;
-    _method = method;
-    _body = body;
-    _httpClient = httpClient;
-    _isolate = isolate;
-    _options = options;
+        _method = method,
+        _converter = converter,
+        _schema = schema,
+        _url = url,
+        _headers = headers,
+        _httpClient = httpClient,
+        _isolate = isolate,
+        _options = options,
+        _body = body;
+
+  // @mustBeOverridden
+  PostgrestBuilder<T, S> copyWith({
+    Uri? url,
+    Headers? headers,
+    String? schema,
+    String? method,
+    dynamic body,
+    Client? httpClient,
+    YAJsonIsolate? isolate,
+    FetchOptions? options,
+    bool? maybeSingle,
+    PostgrestConverter<T, S>? converter,
+  }) {
+    return PostgrestBuilder<T, S>(
+      url: url ?? _url,
+      headers: headers ?? _headers,
+      schema: schema ?? _schema,
+      method: method ?? _method,
+      body: body ?? _body,
+      httpClient: httpClient ?? _httpClient,
+      isolate: isolate ?? _isolate,
+      options: options ?? _options,
+      maybeSingle: maybeSingle ?? _maybeSingle,
+      converter: converter ?? _converter,
+    );
+  }
+
+  PostgrestBuilder<R, Q> copyWithType<R, Q>({
+    Uri? url,
+    Headers? headers,
+    String? schema,
+    String? method,
+    dynamic body,
+    Client? httpClient,
+    YAJsonIsolate? isolate,
+    FetchOptions? options,
+    bool? maybeSingle,
+  }) {
+    return PostgrestBuilder<R, Q>(
+      url: url ?? _url,
+      headers: headers ?? _headers,
+      schema: schema ?? _schema,
+      method: method ?? _method,
+      body: body ?? _body,
+      httpClient: httpClient ?? _httpClient,
+      isolate: isolate ?? _isolate,
+      options: options ?? _options,
+      maybeSingle: maybeSingle ?? _maybeSingle,
+    );
   }
 
   /// Converts any response that comes from the server into a type-safe response.
@@ -100,37 +148,12 @@ class PostgrestBuilder<T, S> implements Future<T> {
         "$R is not allowed as generic for `select<R>()`. Allowed types are: `PostgrestList`, `PostgrestMap`, `PostgrestMap?`, `PostgrestListResponse`, `PostgrestMapResponse`, `PostgrestResponse`, `dynamic`.");
   }
 
-  /// Sends the request and returns a [PostgrestResponse]
-  ///
-  /// [head] to trigger a HEAD request
-  ///
-  /// [count] if you want to returns the count value. Support exact, planned and
-  /// estimated count options.
-  ///
-  /// For more details about switching schemas: https://postgrest.org/en/stable/api.html#switching-schemas
-  ///
-  /// ```dart
-  /// try {
-  ///   final client.from('countries').select().execute();
-  /// } on PostgrestError catch (error) {
-  ///   print(error.code);
-  /// }
-  /// ```
-  @Deprecated('Use async/await or .then instead. Deprecated in 0.2.0')
-  Future<PostgrestResponse> execute({
-    bool head = false,
-    CountOption? count,
-  }) async {
-    _options = FetchOptions(
-      head: head,
-      count: count ?? _options?.count,
-    );
-    return _execute();
-  }
-
   Future<PostgrestResponse> _execute() async {
+    final String? method;
     if (_options?.head ?? false) {
-      _method = METHOD_HEAD;
+      method = METHOD_HEAD;
+    } else {
+      method = _method;
     }
 
     if (_options?.count != null) {
@@ -144,23 +167,23 @@ class PostgrestBuilder<T, S> implements Future<T> {
     }
 
     try {
-      if (_method == null) {
+      if (method == null) {
         throw ArgumentError(
           'Missing table operation: select, insert, update or delete',
         );
       }
 
-      final uppercaseMethod = _method!.toUpperCase();
+      final uppercaseMethod = method.toUpperCase();
       late http.Response response;
 
       if (_schema == null) {
         // skip
-      } else if ([METHOD_GET, METHOD_HEAD].contains(_method)) {
+      } else if ([METHOD_GET, METHOD_HEAD].contains(method)) {
         _headers['Accept-Profile'] = _schema!;
       } else {
         _headers['Content-Profile'] = _schema!;
       }
-      if (_method != METHOD_GET && _method != METHOD_HEAD) {
+      if (method != METHOD_GET && method != METHOD_HEAD) {
         _headers['Content-Type'] = 'application/json';
       }
       final bodyStr = jsonEncode(_body);
@@ -199,14 +222,15 @@ class PostgrestBuilder<T, S> implements Future<T> {
         );
       }
 
-      return _parseResponse(response);
+      return _parseResponse(response, method);
     } catch (error) {
       rethrow;
     }
   }
 
   /// Parse request response to json object if possible
-  Future<PostgrestResponse> _parseResponse(http.Response response) async {
+  Future<PostgrestResponse> _parseResponse(
+      http.Response response, String method) async {
     if (response.statusCode >= 200 && response.statusCode <= 299) {
       dynamic body;
       int? count;
@@ -228,7 +252,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
       }
 
       // Workaround for https://github.com/supabase/supabase-flutter/issues/560
-      if (_maybeSingle && _method?.toUpperCase() == 'GET' && body is List) {
+      if (_maybeSingle && method.toUpperCase() == 'GET' && body is List) {
         if (body.length > 1) {
           throw PostgrestException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
@@ -367,19 +391,19 @@ class PostgrestBuilder<T, S> implements Future<T> {
     }
   }
 
-  /// Update Uri queryParameters with new key:value
+  /// Get new Uri queryParameters with new key:value
   /// Use lists to allow multiple values for the same key
-  void appendSearchParams(String key, String value) {
+  Uri appendSearchParams(String key, String value, [Uri? url]) {
     final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
     searchParams[key] = [...searchParams[key] ?? [], value];
-    _url = _url.replace(queryParameters: searchParams);
+    return (url ?? _url).replace(queryParameters: searchParams);
   }
 
   /// Overrides Uri queryParameters with new key:value
-  void overrideSearchParams(String key, String value) {
+  Uri overrideSearchParams(String key, String value) {
     final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
     searchParams[key] = value;
-    _url = _url.replace(queryParameters: searchParams);
+    return _url.replace(queryParameters: searchParams);
   }
 
   @override
