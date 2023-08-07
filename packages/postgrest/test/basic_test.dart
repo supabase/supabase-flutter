@@ -88,7 +88,7 @@ void main() {
       expect(res.length, 5);
     });
 
-    test('specify schema within from', () async {
+    test('query non-public schema dynamically', () async {
       final postgrest = PostgrestClient(rootUrl);
       final personalData = await postgrest
           .setSchema('personal')
