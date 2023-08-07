@@ -184,16 +184,7 @@ class SupabaseClient {
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
   PostgrestClient setSchema(String schema) {
-    return PostgrestClient(
-      restUrl,
-      headers: {
-        ...rest.headers,
-        ..._getAuthHeaders(),
-      },
-      schema: schema,
-      httpClient: _httpClient,
-      isolate: _isolate,
-    );
+    return rest.setSchema(schema);
   }
 
   /// Perform a stored procedure call.
