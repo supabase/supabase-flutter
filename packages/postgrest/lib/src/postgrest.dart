@@ -50,12 +50,25 @@ class PostgrestClient {
   }
 
   /// Perform a table operation.
-  PostgrestQueryBuilder<void> from(String table, {String? schema}) {
+  PostgrestQueryBuilder<void> from(String table) {
     final url = '${this.url}/$table';
     return PostgrestQueryBuilder<void>(
       url,
       headers: {...headers},
-      schema: schema ?? this.schema,
+      schema: schema,
+      httpClient: httpClient,
+      isolate: _isolate,
+    );
+  }
+
+  /// Select a schema to query or perform an function (rpc) call.
+  ///
+  /// The schema needs to be on the list of exposed schemas inside Supabase.
+  PostgrestClient setSchema(String schema) {
+    return PostgrestClient(
+      url,
+      headers: {...headers},
+      schema: schema,
       httpClient: httpClient,
       isolate: _isolate,
     );

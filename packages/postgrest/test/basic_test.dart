@@ -91,7 +91,8 @@ void main() {
     test('specify schema within from', () async {
       final postgrest = PostgrestClient(rootUrl);
       final personalData = await postgrest
-          .from('users', schema: 'personal')
+          .setSchema('personal')
+          .from('users')
           .select<PostgrestList>();
       expect(personalData.length, 5);
 
