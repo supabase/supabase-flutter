@@ -162,7 +162,7 @@ class SupabaseClient {
   }
 
   /// Perform a table operation.
-  SupabaseQueryBuilder from(String table, {String? schema}) {
+  SupabaseQueryBuilder from(String table) {
     final url = '$restUrl/$table';
     _incrementId++;
     return SupabaseQueryBuilder(
@@ -172,10 +172,26 @@ class SupabaseClient {
         ...rest.headers,
         ..._getAuthHeaders(),
       },
-      schema: schema ?? this.schema,
+      schema: schema,
       table: table,
       httpClient: _httpClient,
       incrementId: _incrementId,
+      isolate: _isolate,
+    );
+  }
+
+  /// Select a schema to query or perform an function (rpc) call.
+  ///
+  /// The schema needs to be on the list of exposed schemas inside Supabase.
+  PostgrestClient setSchema(String schema) {
+    return PostgrestClient(
+      restUrl,
+      headers: {
+        ...rest.headers,
+        ..._getAuthHeaders(),
+      },
+      schema: schema,
+      httpClient: _httpClient,
       isolate: _isolate,
     );
   }
