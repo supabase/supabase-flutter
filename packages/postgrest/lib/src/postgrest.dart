@@ -64,7 +64,7 @@ class PostgrestClient {
   /// Select a schema to query or perform an function (rpc) call.
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
-  PostgrestClient setSchema(String schema) {
+  PostgrestClient useSchema(String schema) {
     return PostgrestClient(
       url,
       headers: {...headers},

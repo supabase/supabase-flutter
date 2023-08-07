@@ -91,7 +91,7 @@ void main() {
     test('query non-public schema dynamically', () async {
       final postgrest = PostgrestClient(rootUrl);
       final personalData = await postgrest
-          .setSchema('personal')
+          .useSchema('personal')
           .from('users')
           .select<PostgrestList>();
       expect(personalData.length, 5);
