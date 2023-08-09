@@ -1,3 +1,7 @@
+## 1.10.0
+
+ - **FEAT**(postgrest,supabase): add `useSchema()` method for making rest API calls on custom schema. ([#525](https://github.com/supabase/supabase-flutter/issues/525)). ([40a0f090](https://github.com/supabase/supabase-flutter/commit/40a0f09078bface9cb51cb0f7fe7bd6e1032b99b))
+
 ## 1.9.9
 
  - Update a dependency to the latest release.
