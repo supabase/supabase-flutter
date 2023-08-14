@@ -274,7 +274,7 @@ myChannel.on(
 
 #### [Broadcast](https://supabase.com/docs/guides/realtime#broadcast)
 
-Broadcast lets you send and receive low latency messages between connected clients without bypassing the database.
+Broadcast lets you send and receive low latency messages between connected clients by bypassing the database.
 
 ```dart
 final myChannel = supabase.channel('my_channel');
