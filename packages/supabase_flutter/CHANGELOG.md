@@ -1,3 +1,7 @@
+## 1.10.13
+
+ - Add support for Android Gradle Plugin 8.0.
+
 ## 1.10.12
 
  - Update a dependency to the latest release.

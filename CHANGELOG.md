@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-07-13
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+- There are no breaking changes in this release.
+
+Packages with other changes:
+
+- [`supabase_flutter` - `v1.10.13`](#supabase_flutter---v11013)
+
+---
+
+#### `supabase_flutter` - `v1.10.13`
+
+- **FIX**(supabase_flutter): update app_links to support Android Gradle Plugin 8  ([#548](https://github.com/supabase/supabase-flutter/issues/590)). ([bc977431](https://github.com/supabase/supabase-flutter/commit/bc9774319a578c96d43eea121b7dca319d63a749))
+
+
+
 ## 2023-08-09
 
 ### Changes
