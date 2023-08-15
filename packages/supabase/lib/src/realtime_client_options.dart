@@ -1,3 +1,5 @@
+import 'package:realtime_client/realtime_client.dart';
+
 /// {@template realtime_client_options}
 /// Options to pass to the RealtimeClient.
 /// {@endtemplate}
@@ -7,6 +9,12 @@ class RealtimeClientOptions {
   /// Defaults to 10 events per second
   final int? eventsPerSecond;
 
+  /// Level of realtime server logs to to be logged
+  final RealtimeLogLevel? logLevel;
+
   /// {@macro realtime_client_options}
-  const RealtimeClientOptions({this.eventsPerSecond});
+  const RealtimeClientOptions({
+    this.eventsPerSecond,
+    this.logLevel,
+  });
 }

@@ -278,6 +278,7 @@ class SupabaseClient {
         if (eventsPerSecond != null) 'eventsPerSecond': '$eventsPerSecond'
       },
       headers: headers,
+      logLevel: options.logLevel,
     );
   }
 

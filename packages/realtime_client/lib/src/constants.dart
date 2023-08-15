@@ -53,3 +53,5 @@ extension ChannelEventsExtended on ChannelEvents {
 class Transports {
   static const String websocket = 'websocket';
 }
+
+enum RealtimeLogLevel { info, debug, warn, error }

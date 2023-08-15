@@ -8,8 +8,9 @@ import 'utils.dart';
 
 void main() {
   group('Standard Header', () {
-    const supabaseUrl = '';
-    const supabaseKey = '';
+    const supabaseUrl = 'https://nlbsnpoablmsiwndbmer.supabase.co';
+    const supabaseKey =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53emxkenlsb2pyemdqemloZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQxMzI2ODAsImV4cCI6MTk5OTcwODY4MH0.MU-LVeAPic93VLcRsHktxzYtBKBUMWAQb8E-0AQETPs';
     late SupabaseClient client;
 
     setUp(() {
@@ -30,6 +31,29 @@ void main() {
       final xClientHeaderBeforeSlash =
           client.storage.headers['X-Client-Info']!.split('/').first;
       expect(xClientHeaderBeforeSlash, 'supabase-dart');
+    });
+
+    test('realtime URL is properly being set', () {
+      var realtimeWebsocketURL = Uri.parse(client.realtime.endPointURL);
+      expect(
+        realtimeWebsocketURL.queryParameters,
+        containsPair('apikey', supabaseKey),
+      );
+      expect(realtimeWebsocketURL.queryParameters['log_level'], isNull);
+
+      client = SupabaseClient(supabaseUrl, supabaseKey,
+          realtimeClientOptions:
+              RealtimeClientOptions(logLevel: RealtimeLogLevel.info));
+
+      realtimeWebsocketURL = Uri.parse(client.realtime.endPointURL);
+      expect(
+        realtimeWebsocketURL.queryParameters,
+        containsPair('apikey', supabaseKey),
+      );
+      expect(
+        realtimeWebsocketURL.queryParameters,
+        containsPair('log_level', 'info'),
+      );
     });
   });
 
