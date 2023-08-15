@@ -8,7 +8,7 @@ import 'utils.dart';
 
 void main() {
   group('Standard Header', () {
-    const supabaseUrl = '';
+    const supabaseUrl = 'https://nlbsnpoablmsiwndbmer.supabase.co';
     const supabaseKey = '';
     late SupabaseClient client;
 
@@ -30,6 +30,20 @@ void main() {
       final xClientHeaderBeforeSlash =
           client.storage.headers['X-Client-Info']!.split('/').first;
       expect(xClientHeaderBeforeSlash, 'supabase-dart');
+    });
+
+    test('realtime URL is properly being set', () {
+      var realtimeUrl = client.realtimeUrl;
+      expect(realtimeUrl, 'ws://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1');
+
+      client = SupabaseClient(supabaseUrl, supabaseKey,
+          realtimeClientOptions:
+              RealtimeClientOptions(logLevel: RealtimeLogLevel.info));
+      realtimeUrl = client.realtimeUrl;
+      expect(
+        realtimeUrl,
+        'ws://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1?log_level=info',
+      );
     });
   });
 

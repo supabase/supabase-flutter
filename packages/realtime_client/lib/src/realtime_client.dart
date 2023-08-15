@@ -87,6 +87,7 @@ class RealtimeClient {
     Map<String, String>? headers,
     this.params = const {},
     this.longpollerTimeout = 20000,
+    RealtimeLogLevel? logLevel,
   })  : endPoint = '$endPoint/${Transports.websocket}',
         headers = {
           ...Constants.defaultHeaders,
