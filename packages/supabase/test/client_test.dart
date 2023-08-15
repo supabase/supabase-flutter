@@ -34,15 +34,25 @@ void main() {
 
     test('realtime URL is properly being set', () {
       var realtimeUrl = client.realtimeUrl;
-      expect(realtimeUrl, 'ws://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1');
+      var realtimeWebsocketURL = client.realtime.endPointURL;
+      expect(realtimeUrl, 'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1');
+      expect(
+        realtimeWebsocketURL,
+        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1/websocket?vsn=1.0.0',
+      );
 
       client = SupabaseClient(supabaseUrl, supabaseKey,
           realtimeClientOptions:
               RealtimeClientOptions(logLevel: RealtimeLogLevel.info));
       realtimeUrl = client.realtimeUrl;
+      realtimeWebsocketURL = client.realtime.endPointURL;
       expect(
         realtimeUrl,
-        'ws://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1?log_level=info',
+        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1?log_level=info',
+      );
+      expect(
+        realtimeWebsocketURL,
+        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1/websocket?log_level=info&vsn=1.0.0',
       );
     });
   });

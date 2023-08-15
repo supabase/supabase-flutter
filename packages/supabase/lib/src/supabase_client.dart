@@ -135,14 +135,7 @@ class SupabaseClient {
     GotrueAsyncStorage? gotrueAsyncStorage,
     AuthFlowType authFlowType = AuthFlowType.implicit,
   })  : restUrl = '$supabaseUrl/rest/v1',
-        realtimeUrl = Uri.parse('$supabaseUrl/realtime/v1')
-            .replace(
-              scheme: 'ws',
-              queryParameters: realtimeClientOptions.logLevel == null
-                  ? null
-                  : {'log_level': realtimeClientOptions.logLevel?.name},
-            )
-            .toString(),
+        realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
         authUrl = '$supabaseUrl/auth/v1',
         storageUrl = '$supabaseUrl/storage/v1',
         functionsUrl = '$supabaseUrl/functions/v1',

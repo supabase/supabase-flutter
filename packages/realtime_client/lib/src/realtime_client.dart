@@ -88,7 +88,12 @@ class RealtimeClient {
     this.params = const {},
     this.longpollerTimeout = 20000,
     RealtimeLogLevel? logLevel,
-  })  : endPoint = '$endPoint/${Transports.websocket}',
+  })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
+            .replace(
+              queryParameters:
+                  logLevel == null ? null : {'log_level': logLevel.name},
+            )
+            .toString(),
         headers = {
           ...Constants.defaultHeaders,
           if (headers != null) ...headers,
@@ -416,9 +421,10 @@ class RealtimeClient {
     }
 
     var endpoint = Uri.parse(url);
-    final searchParams = Map<String, dynamic>.from(endpoint.queryParameters);
-    params.forEach((k, v) => searchParams[k] = v);
-    endpoint = endpoint.replace(queryParameters: searchParams);
+    endpoint = endpoint.replace(queryParameters: {
+      ...endpoint.queryParameters,
+      ...params,
+    });
 
     return endpoint.toString();
   }
