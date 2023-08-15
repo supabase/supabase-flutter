@@ -1,3 +1,7 @@
+## 1.10.13
+
+ - **FIX**(supabase_flutter): update readme.md on the notes about broadcast ([#589](https://github.com/supabase/supabase-flutter/issues/589)). ([d0f4e2dd](https://github.com/supabase/supabase-flutter/commit/d0f4e2dd8e6b6eeb550c164cf19cb2c8a6cb50ba))
+
 ## 1.10.12
 
  - Update a dependency to the latest release.

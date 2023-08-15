@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-08-15
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v1.2.0`](#realtime_client---v120)
+ - [`supabase` - `v1.11.0`](#supabase---v1110)
+ - [`supabase_flutter` - `v1.10.13`](#supabase_flutter---v11013)
+
+---
+
+#### `realtime_client` - `v1.2.0`
+
+ - **FEAT**: add `logLevel` parameter to `RealtimeClientOptions` ([#592](https://github.com/supabase/supabase-flutter/issues/592)). ([76e9fc20](https://github.com/supabase/supabase-flutter/commit/76e9fc2067cc36e67c7bbaaed1fcad6281426f82))
+
+#### `supabase` - `v1.11.0`
+
+ - **FEAT**: add `logLevel` parameter to `RealtimeClientOptions` ([#592](https://github.com/supabase/supabase-flutter/issues/592)). ([76e9fc20](https://github.com/supabase/supabase-flutter/commit/76e9fc2067cc36e67c7bbaaed1fcad6281426f82))
+
+#### `supabase_flutter` - `v1.10.13`
+
+ - **FIX**(supabase_flutter): update readme.md on the notes about broadcast ([#589](https://github.com/supabase/supabase-flutter/issues/589)). ([d0f4e2dd](https://github.com/supabase/supabase-flutter/commit/d0f4e2dd8e6b6eeb550c164cf19cb2c8a6cb50ba))
+
+
 ## 2023-08-09
 
 ### Changes
