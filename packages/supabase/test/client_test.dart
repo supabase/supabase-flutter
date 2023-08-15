@@ -8,8 +8,7 @@ import 'utils.dart';
 
 void main() {
   group('Standard Header', () {
-    const supabaseProjectRef = 'nlbsnpoablmsiwndbmer';
-    const supabaseUrl = 'https://$supabaseProjectRef.supabase.co';
+    const supabaseUrl = 'https://nlbsnpoablmsiwndbmer.supabase.co';
     const supabaseKey =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53emxkenlsb2pyemdqemloZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQxMzI2ODAsImV4cCI6MTk5OTcwODY4MH0.MU-LVeAPic93VLcRsHktxzYtBKBUMWAQb8E-0AQETPs';
     late SupabaseClient client;
