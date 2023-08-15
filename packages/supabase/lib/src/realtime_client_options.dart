@@ -9,7 +9,7 @@ class RealtimeClientOptions {
   /// Defaults to 10 events per second
   final int? eventsPerSecond;
 
-  /// Level of realtime server logs to log
+  /// Level of realtime server logs to to be logged
   final RealtimeLogLevel? logLevel;
 
   /// {@macro realtime_client_options}
