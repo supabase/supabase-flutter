@@ -8,8 +8,10 @@ import 'utils.dart';
 
 void main() {
   group('Standard Header', () {
-    const supabaseUrl = 'https://nlbsnpoablmsiwndbmer.supabase.co';
-    const supabaseKey = '';
+    const supabaseProjectRef = 'nlbsnpoablmsiwndbmer';
+    const supabaseUrl = 'https://$supabaseProjectRef.supabase.co';
+    const supabaseKey =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53emxkenlsb2pyemdqemloZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQxMzI2ODAsImV4cCI6MTk5OTcwODY4MH0.MU-LVeAPic93VLcRsHktxzYtBKBUMWAQb8E-0AQETPs';
     late SupabaseClient client;
 
     setUp(() {
@@ -35,10 +37,10 @@ void main() {
     test('realtime URL is properly being set', () {
       var realtimeUrl = client.realtimeUrl;
       var realtimeWebsocketURL = client.realtime.endPointURL;
-      expect(realtimeUrl, 'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1');
+      expect(realtimeUrl, 'wss://$supabaseProjectRef.supabase.co/realtime/v1');
       expect(
         realtimeWebsocketURL,
-        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1/websocket?vsn=1.0.0',
+        'wss://$supabaseProjectRef.supabase.co/realtime/v1/websocket?apikey=$supabaseKey&vsn=1.0.0',
       );
 
       client = SupabaseClient(supabaseUrl, supabaseKey,
@@ -52,7 +54,7 @@ void main() {
       );
       expect(
         realtimeWebsocketURL,
-        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1/websocket?log_level=info&vsn=1.0.0',
+        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1/websocket?apikey=$supabaseKey&log_level=info&vsn=1.0.0',
       );
     });
   });
