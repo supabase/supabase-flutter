@@ -50,7 +50,7 @@ void main() {
       realtimeWebsocketURL = client.realtime.endPointURL;
       expect(
         realtimeUrl,
-        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1?log_level=info',
+        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1',
       );
       expect(
         realtimeWebsocketURL,
