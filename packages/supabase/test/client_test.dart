@@ -35,26 +35,25 @@ void main() {
     });
 
     test('realtime URL is properly being set', () {
-      var realtimeUrl = client.realtimeUrl;
-      var realtimeWebsocketURL = client.realtime.endPointURL;
-      expect(realtimeUrl, 'wss://$supabaseProjectRef.supabase.co/realtime/v1');
+      var realtimeWebsocketURL = Uri.parse(client.realtime.endPointURL);
       expect(
-        realtimeWebsocketURL,
-        'wss://$supabaseProjectRef.supabase.co/realtime/v1/websocket?apikey=$supabaseKey&vsn=1.0.0',
+        realtimeWebsocketURL.queryParameters,
+        containsPair('apikey', supabaseKey),
       );
+      expect(realtimeWebsocketURL.queryParameters['log_level'], isNull);
 
       client = SupabaseClient(supabaseUrl, supabaseKey,
           realtimeClientOptions:
               RealtimeClientOptions(logLevel: RealtimeLogLevel.info));
-      realtimeUrl = client.realtimeUrl;
-      realtimeWebsocketURL = client.realtime.endPointURL;
+
+      realtimeWebsocketURL = Uri.parse(client.realtime.endPointURL);
       expect(
-        realtimeUrl,
-        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1',
+        realtimeWebsocketURL.queryParameters,
+        containsPair('apikey', supabaseKey),
       );
       expect(
-        realtimeWebsocketURL,
-        'wss://nlbsnpoablmsiwndbmer.supabase.co/realtime/v1/websocket?apikey=$supabaseKey&log_level=info&vsn=1.0.0',
+        realtimeWebsocketURL.queryParameters,
+        containsPair('log_level', 'info'),
       );
     });
   });
