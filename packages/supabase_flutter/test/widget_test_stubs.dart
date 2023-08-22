@@ -51,7 +51,7 @@ class MockExpiredStorage extends LocalStorage {
 
           // Session expires at is at its maximum value for unix timestamp
           accessToken: () async =>
-              '{"currentSession":{"token_type": "","access_token":"","expires_in":20,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""}},"expiresAt":${((DateTime.now().subtract(Duration(seconds: 11))).millisecondsSinceEpoch / 1000).round()}}',
+              '{"currentSession":{"token_type": "","access_token":"","expires_in":20,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""}},"expiresAt":${((DateTime.now().subtract(const Duration(seconds: 11))).millisecondsSinceEpoch / 1000).round()}}',
           persistSession: (_) async {},
           removePersistedSession: () async {},
           hasAccessToken: () async => true,
