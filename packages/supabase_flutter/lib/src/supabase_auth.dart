@@ -159,6 +159,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // ignore:missing_enum_constant_in_switch
     switch (state) {
       case AppLifecycleState.resumed:
         _recoverSupabaseSession();

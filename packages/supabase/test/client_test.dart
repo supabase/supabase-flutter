@@ -55,6 +55,10 @@ void main() {
         containsPair('log_level', 'info'),
       );
     });
+
+    test('realtime access token is set properly', () {
+      expect(client.realtime.accessToken, supabaseKey);
+    });
   });
 
   group('auth', () {

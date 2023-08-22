@@ -39,7 +39,8 @@ void main() {
 
   group('constructor', () {
     test('sets defaults', () async {
-      final socket = RealtimeClient('wss://example.com/socket');
+      final socket =
+          RealtimeClient('wss://example.com/socket', params: {'apikey': '123'});
       expect(socket.channels.length, 0);
       expect(socket.sendBuffer.length, 0);
       expect(socket.ref, 0);
@@ -65,6 +66,7 @@ void main() {
         socket.headers['X-Client-Info']!.split('/').first,
         'realtime-dart',
       );
+      expect(socket.accessToken, '123');
     });
 
     test('overrides some defaults with options', () async {
