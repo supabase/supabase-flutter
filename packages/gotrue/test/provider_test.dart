@@ -1,4 +1,4 @@
-import 'package:dotenv/dotenv.dart' show env, load;
+import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
@@ -6,7 +6,9 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
-  load(); // Load env variables from .env file
+  final env = DotEnv();
+
+  env.load(); // Load env variables from .env file
 
   final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
   final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
