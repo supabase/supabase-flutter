@@ -20,7 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         node: ['12']
-        sdk: [2.17.0, stable, beta, dev]
+        sdk: [stable, beta, dev]
 
     defaults:
       run:
