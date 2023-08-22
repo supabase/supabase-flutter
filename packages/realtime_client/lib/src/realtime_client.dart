@@ -104,7 +104,8 @@ class RealtimeClient {
       eventsPerSecondLimitMs = (1000 / int.parse(eventsPerSecond)).floor();
     }
 
-    accessToken = this.headers['Authorization']?.split(' ').last;
+    final customJWT = this.headers['Authorization']?.split(' ').last;
+    accessToken = customJWT ?? params['apikey'];
 
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
