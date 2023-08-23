@@ -270,6 +270,18 @@ void main() {
       );
     }
   });
+
+  test('immutable filter', () async {
+    final query = postgrest.from("users").select<PostgrestList>();
+    final res1 = await query.eq("status", "OFFLINE");
+    final res2 = await query.eq("username", "supabot");
+
+    expect(res1.length, 1);
+    expect(res1.first, containsPair("status", "OFFLINE"));
+    expect(res2.length, 1);
+    expect(res2.first, containsPair("username", "supabot"));
+  });
+
   group("contains", () {
     test('contains range', () async {
       final res = await postgrest
