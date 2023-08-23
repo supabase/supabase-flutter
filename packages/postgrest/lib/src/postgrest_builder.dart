@@ -58,7 +58,6 @@ class PostgrestBuilder<T, S> implements Future<T> {
         _options = options,
         _body = body;
 
-  // @mustBeOverridden
   PostgrestBuilder<T, S> copyWith({
     Uri? url,
     Headers? headers,
@@ -85,6 +84,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
     );
   }
 
+  /// Very similar to [copyWith], but allows changing the generics, therefore [_converter] is omitted
   PostgrestBuilder<R, Q> copyWithType<R, Q>({
     Uri? url,
     Headers? headers,
@@ -391,19 +391,23 @@ class PostgrestBuilder<T, S> implements Future<T> {
     }
   }
 
-  /// Get new Uri queryParameters with new key:value
-  /// Use lists to allow multiple values for the same key
+  /// Get new Uri with updated queryParams
+  /// Uses lists to allow multiple values for the same key
+  ///
+  /// [url] may be used to update based on a different url than the current one
   Uri appendSearchParams(String key, String value, [Uri? url]) {
     final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
     searchParams[key] = [...searchParams[key] ?? [], value];
     return (url ?? _url).replace(queryParameters: searchParams);
   }
 
-  /// Overrides Uri queryParameters with new key:value
-  Uri overrideSearchParams(String key, String value) {
+  /// Get new Uri with overridden queryParams
+  ///
+  /// [url] may be used to update based on a different url than the current one
+  Uri overrideSearchParams(String key, String value, [Uri? url]) {
     final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
     searchParams[key] = value;
-    return _url.replace(queryParameters: searchParams);
+    return (url ?? _url).replace(queryParameters: searchParams);
   }
 
   @override
