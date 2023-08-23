@@ -362,7 +362,6 @@ class StorageFileApi {
       options: options,
     );
     final List<SignedUrl> urls = (response as List).map((e) {
-      print(e);
       return SignedUrl(
         path: e['path'],
         signedUrl: '$url${e['signedURL']}',

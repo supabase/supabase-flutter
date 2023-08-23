@@ -72,6 +72,7 @@ void main() {
     expect(response, newBucketName);
   });
   test('createSignedUrls does not throw', () async {
+    await storage.from(newBucketName).upload(uploadPath, file);
     await storage.from(newBucketName).createSignedUrls([uploadPath], 2000);
   });
 
