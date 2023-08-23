@@ -15,8 +15,8 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
           converter: builder._converter,
         );
 
-  PostgrestTransformBuilder<T> copyWithUrl(Uri uri) =>
-      PostgrestTransformBuilder(copyWith(url: uri));
+  PostgrestTransformBuilder<T> copyWithUrl(Uri url) =>
+      PostgrestTransformBuilder(copyWith(url: url));
 
   /// Performs horizontal filtering with SELECT.
   ///
@@ -62,14 +62,14 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
     }).join();
     final newHeaders = {..._headers};
 
-    final uri = overrideSearchParams('select', cleanedColumns);
+    final url = overrideSearchParams('select', cleanedColumns);
     if (newHeaders['Prefer'] != null) {
       newHeaders['Prefer'] = '${newHeaders['Prefer']},';
     }
     newHeaders['Prefer'] = '${newHeaders['Prefer']}return=representation';
     return PostgrestTransformBuilder<R>(
       copyWithType(
-        url: uri,
+        url: url,
         headers: newHeaders,
       ),
     );

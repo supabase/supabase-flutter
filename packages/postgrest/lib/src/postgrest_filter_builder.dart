@@ -4,8 +4,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   PostgrestFilterBuilder(PostgrestBuilder<T, T> builder) : super(builder);
 
   @override
-  PostgrestFilterBuilder<T> copyWithUrl(Uri uri) =>
-      PostgrestFilterBuilder(copyWith(url: uri));
+  PostgrestFilterBuilder<T> copyWithUrl(Uri url) =>
+      PostgrestFilterBuilder(copyWith(url: url));
 
   /// Convert list filter to query params string
   String _cleanFilterArray(List filter) {
