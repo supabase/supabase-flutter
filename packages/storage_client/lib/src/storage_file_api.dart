@@ -363,7 +363,9 @@ class StorageFileApi {
     );
     final List<SignedUrl> urls = (response as List).map((e) {
       return SignedUrl(
-        path: e['path'],
+        // Prevents exceptions being thrown when null value is returned
+        // https://github.com/supabase/storage-api/issues/353
+        path: e['path'] ?? '',
         signedUrl: '$url${e['signedURL']}',
       );
     }).toList();
