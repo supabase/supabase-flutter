@@ -37,7 +37,7 @@ String getNewPhone() {
   return '$timestamp';
 }
 
-String getServiceRoleToken() {
+String getServiceRoleToken(DotEnv env) {
   return JWT(
     {
       'role': 'service_role',

@@ -177,7 +177,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
         'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates';
 
     if (!defaultToNull) {
-      _headers['Prefer'] = _headers['Prefer']! + ',missing=default';
+      _headers['Prefer'] = '${_headers['Prefer']!},missing=default';
     }
 
     if (onConflict != null) {

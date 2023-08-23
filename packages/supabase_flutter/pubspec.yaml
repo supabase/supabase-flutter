@@ -6,7 +6,7 @@ repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/sup
 documentation: 'https://supabase.com/docs/reference/dart/introduction'
 
 environment:
-  sdk: '>=2.17.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
   flutter: '>=3.0.0'
 
 dependencies:
@@ -29,7 +29,7 @@ dev_dependencies:
   dart_jsonwebtoken: ^2.4.1
   flutter_test:
     sdk: flutter
-  lints: ^1.0.1
+  flutter_lints: ^2.0.2
 
 platforms:
   android:

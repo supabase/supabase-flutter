@@ -159,17 +159,10 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // ignore:missing_enum_constant_in_switch
     switch (state) {
       case AppLifecycleState.resumed:
         _recoverSupabaseSession();
-        break;
-      case AppLifecycleState.inactive:
-        break;
-      case AppLifecycleState.paused:
-        break;
-      case AppLifecycleState.detached:
-        break;
+      default:
     }
   }
 
@@ -335,6 +328,15 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     LaunchMode authScreenLaunchMode = LaunchMode.externalApplication,
     Map<String, String>? queryParams,
   }) async {
+    final willOpenWebview = (authScreenLaunchMode == LaunchMode.inAppWebView ||
+            authScreenLaunchMode == LaunchMode.platformDefault) &&
+        context != null &&
+        !kIsWeb && // `Platform.isIOS` throws on web, so adding a guard for web here.
+        Platform.isIOS;
+
+    final NavigatorState? navigator =
+        willOpenWebview ? Navigator.of(context) : null;
+
     final res = await getOAuthSignInUrl(
       provider: provider,
       redirectTo: redirectTo,
@@ -343,14 +345,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     );
     final uri = Uri.parse(res.url!);
 
-    final willOpenWebview = (authScreenLaunchMode == LaunchMode.inAppWebView ||
-            authScreenLaunchMode == LaunchMode.platformDefault) &&
-        context != null &&
-        !kIsWeb && // `Platform.isIOS` throws on web, so adding a guard for web here.
-        Platform.isIOS;
-
     if (willOpenWebview) {
-      Navigator.of(context).push(PageRouteBuilder(
+      navigator!.push(PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) {
         return _OAuthSignInWebView(oAuthUri: uri, redirectTo: redirectTo);
       }));
@@ -397,7 +393,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
 
     final idToken = credential.identityToken;
     if (idToken == null) {
-      throw AuthException('Could not find ID Token from generated credential.');
+      throw const AuthException(
+          'Could not find ID Token from generated credential.');
     }
 
     return signInWithIdToken(
