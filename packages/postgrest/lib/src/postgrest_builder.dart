@@ -6,6 +6,7 @@ import 'dart:core';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
+import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -24,6 +25,7 @@ const METHOD_DELETE = 'DELETE';
 typedef _Nullable<T> = T?;
 
 /// The base builder class.
+@immutable
 class PostgrestBuilder<T, S> implements Future<T> {
   final dynamic _body;
   final Headers _headers;
