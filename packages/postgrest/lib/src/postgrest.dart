@@ -53,7 +53,7 @@ class PostgrestClient {
   PostgrestQueryBuilder<void> from(String table) {
     final url = '${this.url}/$table';
     return PostgrestQueryBuilder<void>(
-      url,
+      url: Uri.parse(url),
       headers: {...headers},
       schema: schema,
       httpClient: httpClient,

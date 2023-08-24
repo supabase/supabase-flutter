@@ -11,7 +11,12 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
           httpClient: builder._httpClient,
           options: builder._options,
           isolate: builder._isolate,
+          maybeSingle: builder._maybeSingle,
+          converter: builder._converter,
         );
+
+  PostgrestTransformBuilder<T> copyWithUrl(Uri url) =>
+      PostgrestTransformBuilder(_copyWith(url: url));
 
   /// Performs horizontal filtering with SELECT.
   ///
@@ -55,22 +60,17 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
       }
       return c;
     }).join();
+    final newHeaders = {..._headers};
 
-    overrideSearchParams('select', cleanedColumns);
-    if (_headers['Prefer'] != null) {
-      _headers['Prefer'] = '${_headers['Prefer']},';
+    final url = overrideSearchParams('select', cleanedColumns);
+    if (newHeaders['Prefer'] != null) {
+      newHeaders['Prefer'] = '${newHeaders['Prefer']},';
     }
-    _headers['Prefer'] = '${_headers['Prefer']}return=representation';
+    newHeaders['Prefer'] = '${newHeaders['Prefer']}return=representation';
     return PostgrestTransformBuilder<R>(
-      PostgrestBuilder(
-        headers: _headers,
-        url: _url,
-        httpClient: _httpClient,
-        isolate: _isolate,
-        options: _options,
-        body: _body,
-        method: _method,
-        schema: _schema,
+      _copyWithType(
+        url: url,
+        headers: newHeaders,
       ),
     );
   }
@@ -103,9 +103,8 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
     final existingOrder = _url.queryParameters[key];
     final value = '${existingOrder == null ? '' : '$existingOrder,'}'
         '$column.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}';
-
-    overrideSearchParams(key, value);
-    return this;
+    final url = overrideSearchParams(key, value);
+    return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
   /// Limits the result with the specified `count`.
@@ -124,8 +123,8 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   PostgrestTransformBuilder<T> limit(int count, {String? foreignTable}) {
     final key = foreignTable == null ? 'limit' : '$foreignTable.limit';
 
-    appendSearchParams(key, '$count');
-    return this;
+    final url = appendSearchParams(key, '$count');
+    return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
   /// Limits the result to rows within the specified range, inclusive.
@@ -148,9 +147,9 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
     final keyOffset = foreignTable == null ? 'offset' : '$foreignTable.offset';
     final keyLimit = foreignTable == null ? 'limit' : '$foreignTable.limit';
 
-    appendSearchParams(keyOffset, '$from');
-    appendSearchParams(keyLimit, '${to - from + 1}');
-    return this;
+    var url = appendSearchParams(keyOffset, '$from');
+    url = appendSearchParams(keyLimit, '${to - from + 1}', url);
+    return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
   /// Retrieves only one row from the result.
@@ -168,8 +167,11 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   ///
   /// By specifying this type via `.select<Map<String,dynamic>>()` you get more type safety.
   PostgrestTransformBuilder<T> single() {
-    _headers['Accept'] = 'application/vnd.pgrst.object+json';
-    return this;
+    final newHeaders = {..._headers};
+    newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
+    return PostgrestTransformBuilder(_copyWith(
+      headers: newHeaders,
+    ));
   }
 
   /// Retrieves at most one row from the result.
@@ -185,13 +187,18 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   PostgrestTransformBuilder<T> maybeSingle() {
     // Temporary fix for https://github.com/supabase/supabase-flutter/issues/560
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
+    final newHeaders = {..._headers};
+
     if (_method?.toUpperCase() == 'GET') {
-      _headers['Accept'] = 'application/json';
+      newHeaders['Accept'] = 'application/json';
     } else {
-      _headers['Accept'] = 'application/vnd.pgrst.object+json';
+      newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
     }
-    _maybeSingle = true;
-    return this;
+
+    return PostgrestTransformBuilder<T>(_copyWith(
+      maybeSingle: true,
+      headers: newHeaders,
+    ));
   }
 
   /// Retrieves the response as CSV.
@@ -201,7 +208,11 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// postgrest.from('users').select().csv()
   /// ```
   PostgrestTransformBuilder<T> csv() {
-    _headers['Accept'] = 'text/csv';
-    return this;
+    final newHeaders = {..._headers};
+    newHeaders['Accept'] = 'text/csv';
+
+    return PostgrestTransformBuilder<T>(_copyWith(
+      headers: newHeaders,
+    ));
   }
 }
