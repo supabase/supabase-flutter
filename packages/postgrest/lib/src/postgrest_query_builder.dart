@@ -78,7 +78,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     }).join();
 
     final url = overrideSearchParams('select', cleanedColumns);
-    return PostgrestFilterBuilder<R>(copyWithType(
+    return PostgrestFilterBuilder<R>(_copyWithType(
       url: url,
       method: METHOD_GET,
       options: options,
@@ -125,7 +125,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
       url = _setColumnsSearchParam(values);
     }
 
-    return PostgrestFilterBuilder<T>(copyWith(
+    return PostgrestFilterBuilder<T>(_copyWith(
       method: METHOD_POST,
       headers: newHeaders,
       body: values,
@@ -192,7 +192,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
       url = _setColumnsSearchParam(values);
     }
 
-    return PostgrestFilterBuilder<T>(copyWith(
+    return PostgrestFilterBuilder<T>(_copyWith(
       method: METHOD_POST,
       headers: newHeaders,
       options: options.ensureNotHead(),
@@ -228,7 +228,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     final newHeaders = {..._headers};
     newHeaders['Prefer'] = '';
 
-    return PostgrestFilterBuilder<T>(copyWith(
+    return PostgrestFilterBuilder<T>(_copyWith(
       method: METHOD_PATCH,
       headers: newHeaders,
       body: values,
@@ -263,7 +263,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   }) {
     final newHeaders = {..._headers};
     newHeaders['Prefer'] = '';
-    return PostgrestFilterBuilder<T>(copyWith(
+    return PostgrestFilterBuilder<T>(_copyWith(
       method: METHOD_DELETE,
       headers: newHeaders,
       options: options.ensureNotHead(),

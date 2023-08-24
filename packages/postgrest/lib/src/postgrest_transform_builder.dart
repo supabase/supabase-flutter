@@ -16,7 +16,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
         );
 
   PostgrestTransformBuilder<T> copyWithUrl(Uri url) =>
-      PostgrestTransformBuilder(copyWith(url: url));
+      PostgrestTransformBuilder(_copyWith(url: url));
 
   /// Performs horizontal filtering with SELECT.
   ///
@@ -68,7 +68,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
     }
     newHeaders['Prefer'] = '${newHeaders['Prefer']}return=representation';
     return PostgrestTransformBuilder<R>(
-      copyWithType(
+      _copyWithType(
         url: url,
         headers: newHeaders,
       ),
@@ -169,7 +169,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   PostgrestTransformBuilder<T> single() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
-    return PostgrestTransformBuilder(copyWith(
+    return PostgrestTransformBuilder(_copyWith(
       headers: newHeaders,
     ));
   }
@@ -195,7 +195,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
       newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
     }
 
-    return PostgrestTransformBuilder<T>(copyWith(
+    return PostgrestTransformBuilder<T>(_copyWith(
       maybeSingle: true,
       headers: newHeaders,
     ));
@@ -211,7 +211,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'text/csv';
 
-    return PostgrestTransformBuilder<T>(copyWith(
+    return PostgrestTransformBuilder<T>(_copyWith(
       headers: newHeaders,
     ));
   }

@@ -60,7 +60,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
         _options = options,
         _body = body;
 
-  PostgrestBuilder<T, S> copyWith({
+  PostgrestBuilder<T, S> _copyWith({
     Uri? url,
     Headers? headers,
     String? schema,
@@ -86,8 +86,8 @@ class PostgrestBuilder<T, S> implements Future<T> {
     );
   }
 
-  /// Very similar to [copyWith], but allows changing the generics, therefore [_converter] is omitted
-  PostgrestBuilder<R, Q> copyWithType<R, Q>({
+  /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
+  PostgrestBuilder<R, Q> _copyWithType<R, Q>({
     Uri? url,
     Headers? headers,
     String? schema,

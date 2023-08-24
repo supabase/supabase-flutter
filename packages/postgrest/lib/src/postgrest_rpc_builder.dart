@@ -22,7 +22,7 @@ class PostgrestRpcBuilder extends PostgrestBuilder {
     dynamic params,
     FetchOptions options = const FetchOptions(),
   ]) {
-    return PostgrestFilterBuilder(copyWith(
+    return PostgrestFilterBuilder(_copyWith(
       method: METHOD_POST,
       body: params,
       options: options.ensureNotHead(),
