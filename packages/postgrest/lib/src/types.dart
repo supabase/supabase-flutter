@@ -9,7 +9,7 @@ typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 class PostgrestException implements Exception {
   final String message;
   final String? code;
-  final dynamic details;
+  final Object? details;
   final String? hint;
 
   const PostgrestException({
@@ -28,7 +28,7 @@ class PostgrestException implements Exception {
     return PostgrestException(
       message: (json['message'] ?? message) as String,
       code: (json['code'] ?? '$code') as String?,
-      details: (json['details'] ?? details) as dynamic,
+      details: (json['details'] ?? details),
       hint: json['hint'] as String?,
     );
   }

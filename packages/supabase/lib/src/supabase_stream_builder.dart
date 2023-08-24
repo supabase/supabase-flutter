@@ -85,7 +85,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// ```dart
   /// supabase.from('users').stream(primaryKey: ['id']).eq('name', 'Supabase');
   /// ```
-  SupabaseStreamBuilder eq(String column, dynamic value) {
+  SupabaseStreamBuilder eq(String column, Object value) {
     assert(
       _streamFilter == null,
       'Only one filter can be applied to `.stream()`',
@@ -105,7 +105,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// ```dart
   /// supabase.from('users').stream(primaryKey: ['id']).neq('name', 'Supabase');
   /// ```
-  SupabaseStreamBuilder neq(String column, dynamic value) {
+  SupabaseStreamBuilder neq(String column, Object value) {
     assert(
       _streamFilter == null,
       'Only one filter can be applied to `.stream()`',
@@ -125,7 +125,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// ```dart
   /// supabase.from('users').stream(primaryKey: ['id']).lt('likes', 100);
   /// ```
-  SupabaseStreamBuilder lt(String column, dynamic value) {
+  SupabaseStreamBuilder lt(String column, Object value) {
     assert(
       _streamFilter == null,
       'Only one filter can be applied to `.stream()`',
@@ -145,7 +145,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// ```dart
   /// supabase.from('users').stream(primaryKey: ['id']).lte('likes', 100);
   /// ```
-  SupabaseStreamBuilder lte(String column, dynamic value) {
+  SupabaseStreamBuilder lte(String column, Object value) {
     assert(
       _streamFilter == null,
       'Only one filter can be applied to `.stream()`',
@@ -165,7 +165,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// ```dart
   /// supabase.from('users').stream(primaryKey: ['id']).gt('likes', '100');
   /// ```
-  SupabaseStreamBuilder gt(String column, dynamic value) {
+  SupabaseStreamBuilder gt(String column, Object value) {
     assert(
       _streamFilter == null,
       'Only one filter can be applied to `.stream()`',
@@ -185,7 +185,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// ```dart
   /// supabase.from('users').stream(primaryKey: ['id']).gte('likes', 100);
   /// ```
-  SupabaseStreamBuilder gte(String column, dynamic value) {
+  SupabaseStreamBuilder gte(String column, Object value) {
     assert(
       _streamFilter == null,
       'Only one filter can be applied to `.stream()`',
@@ -205,7 +205,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// ```dart
   /// supabase.from('users').stream(primaryKey: ['id']).inFilter('name', ['Andy', 'Amy', 'Terry']);
   /// ```
-  SupabaseStreamBuilder inFilter(String column, List<dynamic> values) {
+  SupabaseStreamBuilder inFilter(String column, List<Object> values) {
     assert(
       _streamFilter == null,
       'Only one filter can be applied to `.stream()`',

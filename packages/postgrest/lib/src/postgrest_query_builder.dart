@@ -110,7 +110,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   /// }).select();
   /// ```
   PostgrestFilterBuilder<T> insert(
-    dynamic values, {
+    Object values, {
     bool defaultToNull = true,
   }) {
     final newHeaders = {..._headers};
@@ -165,7 +165,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   /// }).select();
   /// ```
   PostgrestFilterBuilder<T> upsert(
-    dynamic values, {
+    Object values, {
     String? onConflict,
     bool ignoreDuplicates = false,
     bool defaultToNull = true,
