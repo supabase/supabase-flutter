@@ -56,6 +56,12 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   final _appLinks = AppLinks();
 
+  /// A [StreamController] that emits the deep link when it's received and not handled by the library.
+  final _onUriLinkController = StreamController<Uri>.broadcast();
+
+  /// A [Stream] that emits the deep link when it's received and not handled by the library.
+  Stream get uriLinksStream => _onUriLinkController.stream;
+
   /// A [SupabaseAuth] instance.
   ///
   /// If not initialized, an [AssertionError] is thrown
@@ -232,6 +238,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   void _stopDeeplinkObserver() {
     Supabase.instance.log('***** SupabaseDeepLinkingMixin stopAuthObserver');
     _deeplinkSubscription?.cancel();
+    _onUriLinkController.close();
   }
 
   /// Handle incoming links - the ones that the app will receive from the OS
@@ -281,7 +288,11 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Callback when deeplink receiving succeeds
   Future<void> _handleDeeplink(Uri uri) async {
-    if (!_instance._isAuthCallbackDeeplink(uri)) return;
+    if (!_instance._isAuthCallbackDeeplink(uri)) {
+      // notify listener that a deeplink was received and not handled
+      _onUriLinkController.add(uri);
+      return;
+    }
 
     Supabase.instance.log('***** SupabaseAuthState handleDeeplink $uri');
 
