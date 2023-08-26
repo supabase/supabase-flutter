@@ -414,7 +414,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .filter('username', 'eq', 'supabot');
   /// ```
   PostgrestFilterBuilder<T> filter(
-      String column, String operator, Object value) {
+      String column, String operator, Object? value) {
     final Uri url;
     if (value is List) {
       if (operator == "in") {
