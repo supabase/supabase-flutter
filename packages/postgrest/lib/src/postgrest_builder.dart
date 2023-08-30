@@ -27,7 +27,7 @@ typedef _Nullable<T> = T?;
 /// The base builder class.
 @immutable
 class PostgrestBuilder<T, S> implements Future<T> {
-  final dynamic _body;
+  final Object? _body;
   final Headers _headers;
   final bool _maybeSingle;
   final String? _method;
@@ -43,7 +43,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
     required Headers headers,
     String? schema,
     String? method,
-    dynamic body,
+    Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
     FetchOptions? options,
@@ -65,7 +65,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
     Headers? headers,
     String? schema,
     String? method,
-    dynamic body,
+    Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
     FetchOptions? options,
@@ -92,7 +92,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
     Headers? headers,
     String? schema,
     String? method,
-    dynamic body,
+    Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
     FetchOptions? options,
@@ -234,7 +234,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
   Future<PostgrestResponse> _parseResponse(
       http.Response response, String method) async {
     if (response.statusCode >= 200 && response.statusCode <= 299) {
-      dynamic body;
+      Object? body;
       int? count;
 
       if (response.request!.method != METHOD_HEAD) {
@@ -277,6 +277,8 @@ class PostgrestBuilder<T, S> implements Future<T> {
             ? null
             : int.parse(contentRange.split('/').last);
       }
+
+      body as dynamic;
 
       // When using converter [S] is the type of the converter functions's argument. Otherwise [T] should be equal to [S]
       if (S == PostgrestList) {
@@ -466,7 +468,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
         }
       }
     } catch (error, stack) {
-      final dynamic result;
+      final FutureOr<R> result;
       if (onError != null) {
         if (onError is Function(Object, StackTrace)) {
           result = onError(error, stack);

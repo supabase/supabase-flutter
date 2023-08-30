@@ -15,7 +15,7 @@ enum HttpMethod {
 
 class FunctionInvokeOptions {
   final Map<String, String>? headers;
-  final dynamic body;
+  final Object? body;
   final ResponseType? responseType;
 
   FunctionInvokeOptions({

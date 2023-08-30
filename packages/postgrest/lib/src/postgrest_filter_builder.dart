@@ -24,7 +24,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .not('status', 'eq', 'OFFLINE');
   /// ```
-  PostgrestFilterBuilder<T> not(String column, String operator, dynamic value) {
+  PostgrestFilterBuilder<T> not(String column, String operator, Object value) {
     final Uri url;
     if (value is List) {
       if (operator == "in") {
@@ -66,7 +66,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .eq('username', 'supabot');
   /// ```
-  PostgrestFilterBuilder<T> eq(String column, dynamic value) {
+  PostgrestFilterBuilder<T> eq(String column, Object value) {
     final Uri url;
     if (value is List) {
       url = appendSearchParams(column, 'eq.{${_cleanFilterArray(value)}}');
@@ -84,7 +84,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .neq('username', 'supabot');
   /// ```
-  PostgrestFilterBuilder<T> neq(String column, dynamic value) {
+  PostgrestFilterBuilder<T> neq(String column, Object value) {
     final Uri url;
     if (value is List) {
       url = appendSearchParams(column, 'neq.{${_cleanFilterArray(value)}}');
@@ -102,7 +102,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .gt('id', 1);
   /// ```
-  PostgrestFilterBuilder<T> gt(String column, dynamic value) {
+  PostgrestFilterBuilder<T> gt(String column, Object value) {
     return copyWithUrl(appendSearchParams(column, 'gt.$value'));
   }
 
@@ -114,7 +114,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .gte('id', 1);
   /// ```
-  PostgrestFilterBuilder<T> gte(String column, dynamic value) {
+  PostgrestFilterBuilder<T> gte(String column, Object value) {
     return copyWithUrl(appendSearchParams(column, 'gte.$value'));
   }
 
@@ -126,7 +126,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .lt('id', 2);
   /// ```
-  PostgrestFilterBuilder<T> lt(String column, dynamic value) {
+  PostgrestFilterBuilder<T> lt(String column, Object value) {
     return copyWithUrl(appendSearchParams(column, 'lt.$value'));
   }
 
@@ -138,7 +138,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .lte('id', 2);
   /// ```
-  PostgrestFilterBuilder<T> lte(String column, dynamic value) {
+  PostgrestFilterBuilder<T> lte(String column, Object value) {
     return copyWithUrl(appendSearchParams(column, 'lte.$value'));
   }
 
@@ -228,7 +228,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .is_('data', null);
   /// ```
   // ignore: non_constant_identifier_names
-  PostgrestFilterBuilder<T> is_(String column, dynamic value) {
+  PostgrestFilterBuilder<T> is_(String column, Object? value) {
     return copyWithUrl(appendSearchParams(column, 'is.$value'));
   }
 
@@ -254,7 +254,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .contains('age_range', '[1,2)');
   /// ```
-  PostgrestFilterBuilder<T> contains(String column, dynamic value) {
+  PostgrestFilterBuilder<T> contains(String column, Object value) {
     final Uri url;
     if (value is String) {
       // range types can be inclusive '[', ']' or exclusive '(', ')' so just
@@ -278,7 +278,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .containedBy('age_range', '[1,2)');
   /// ```
-  PostgrestFilterBuilder<T> containedBy(String column, dynamic value) {
+  PostgrestFilterBuilder<T> containedBy(String column, Object value) {
     final Uri url;
     if (value is String) {
       // range types can be inclusive '[', ']' or exclusive '(', ')' so just
@@ -362,7 +362,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .overlaps('age_range', '[2,25)');
   /// ```
-  PostgrestFilterBuilder<T> overlaps(String column, dynamic value) {
+  PostgrestFilterBuilder<T> overlaps(String column, Object value) {
     final Uri url;
     if (value is List) {
       // array
@@ -414,7 +414,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .filter('username', 'eq', 'supabot');
   /// ```
   PostgrestFilterBuilder<T> filter(
-      String column, String operator, dynamic value) {
+      String column, String operator, Object? value) {
     final Uri url;
     if (value is List) {
       if (operator == "in") {
