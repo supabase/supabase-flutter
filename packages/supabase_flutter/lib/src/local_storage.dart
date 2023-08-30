@@ -8,6 +8,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import './local_storage_stub.dart'
+    if (dart.library.html) './local_storage_web.dart' as web;
+
 const _hiveBoxName = 'supabase_authentication';
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 
@@ -121,32 +124,48 @@ class HiveLocalStorage extends LocalStorage {
 class SharedPreferencesLocalStorage extends LocalStorage {
   late final SharedPreferences _prefs;
 
+  static const persistSessionKey = "supabase.auth.token";
+  static const _useWebLocalStorage =
+      kIsWeb && bool.fromEnvironment("dart.library.html");
+
   @override
   Future<void> initialize() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    _prefs = await SharedPreferences.getInstance();
+    if (!_useWebLocalStorage) {
+      WidgetsFlutterBinding.ensureInitialized();
+      _prefs = await SharedPreferences.getInstance();
+    }
   }
 
   @override
-  Future<bool> hasAccessToken() {
-    return Future.value(_prefs.containsKey(supabasePersistSessionKey));
+  Future<bool> hasAccessToken() async {
+    if (_useWebLocalStorage) {
+      return web.hasAccessToken();
+    }
+    return _prefs.containsKey(persistSessionKey);
   }
 
   @override
-  Future<String?> accessToken() {
-    return Future.value(
-      _prefs.getString(supabasePersistSessionKey),
-    );
+  Future<String?> accessToken() async {
+    if (_useWebLocalStorage) {
+      return web.accessToken();
+    }
+    return _prefs.getString(persistSessionKey);
   }
 
   @override
-  Future<void> removePersistedSession() {
-    return _prefs.remove(supabasePersistSessionKey);
+  Future<void> removePersistedSession() async {
+    if (_useWebLocalStorage) {
+      web.removePersistedSession();
+    }
+    await _prefs.remove(persistSessionKey);
   }
 
   @override
   Future<void> persistSession(String persistSessionString) {
-    return _prefs.setString(supabasePersistSessionKey, persistSessionString);
+    if (_useWebLocalStorage) {
+      return web.persistSession(persistSessionString);
+    }
+    return _prefs.setString(persistSessionKey, persistSessionString);
   }
 }
 
