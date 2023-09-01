@@ -392,6 +392,8 @@ class GoTrueClient {
   /// [data] can be used to set the user's metadata, which maps to the `auth.users.user_metadata` column.
   ///
   /// [captchaToken] Verification token received when the user completes the captcha on the site.
+  ///
+  /// [channel] Messaging channel to use (e.g. whatsapp or sms)
   Future<void> signInWithOtp({
     String? email,
     String? phone,

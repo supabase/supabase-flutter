@@ -58,7 +58,7 @@ enum OtpType {
   email
 }
 
-/// Through what channel to send the OTP
+/// Messaging channel to use (e.g. whatsapp or sms)
 enum OtpChannel {
   sms,
   whatsapp,
