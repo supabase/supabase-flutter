@@ -399,6 +399,7 @@ class GoTrueClient {
     bool? shouldCreateUser,
     Map<String, dynamic>? data,
     String? captchaToken,
+    OtpChannel? channel,
   }) async {
     _removeSession();
 
@@ -437,6 +438,7 @@ class GoTrueClient {
         'data': data ?? {},
         'create_user': shouldCreateUser ?? true,
         'gotrue_meta_security': {'captcha_token': captchaToken},
+        'channel': (channel ?? OtpChannel.sms).name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
 

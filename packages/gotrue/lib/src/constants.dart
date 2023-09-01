@@ -58,6 +58,12 @@ enum OtpType {
   email
 }
 
+/// Through what channel to send the OTP
+enum OtpChannel {
+  sms,
+  whatsapp,
+}
+
 ///Determines which sessions should be logged out.
 ///
 ///[global] means all sessions by this account will be signed out.
