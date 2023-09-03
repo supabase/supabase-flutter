@@ -194,7 +194,7 @@ class GoTrueClient {
         'password': password,
         'data': data,
         'gotrue_meta_security': {'captcha_token': captchaToken},
-        'channel': (channel ?? OtpChannel.sms).name,
+        'channel': channel.name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
       response = await _fetch.request('$_url/signup', RequestMethodType.post,
@@ -405,7 +405,7 @@ class GoTrueClient {
     bool? shouldCreateUser,
     Map<String, dynamic>? data,
     String? captchaToken,
-    OtpChannel? channel,
+    OtpChannel channel = OtpChannel.sms,
   }) async {
     _removeSession();
 
@@ -444,7 +444,7 @@ class GoTrueClient {
         'data': data ?? {},
         'create_user': shouldCreateUser ?? true,
         'gotrue_meta_security': {'captcha_token': captchaToken},
-        'channel': (channel ?? OtpChannel.sms).name,
+        'channel': channel.name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
 
