@@ -150,7 +150,7 @@ class GoTrueClient {
     String? emailRedirectTo,
     Map<String, dynamic>? data,
     String? captchaToken,
-    OtpChannel? channel,
+    OtpChannel channel = OtpChannel.sms,
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
         'You must provide either an email or phone number');
