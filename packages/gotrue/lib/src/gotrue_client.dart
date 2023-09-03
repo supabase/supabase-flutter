@@ -141,6 +141,8 @@ class GoTrueClient {
   /// [password] is the password of the user
   ///
   /// [data] sets [User.userMetadata] without an extra call to [updateUser]
+  ///
+  /// [channel] Messaging channel to use (e.g. whatsapp or sms)
   Future<AuthResponse> signUp({
     String? email,
     String? phone,
@@ -148,6 +150,7 @@ class GoTrueClient {
     String? emailRedirectTo,
     Map<String, dynamic>? data,
     String? captchaToken,
+    OtpChannel? channel,
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
         'You must provide either an email or phone number');
@@ -191,6 +194,7 @@ class GoTrueClient {
         'password': password,
         'data': data,
         'gotrue_meta_security': {'captcha_token': captchaToken},
+        'channel': (channel ?? OtpChannel.sms).name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
       response = await _fetch.request('$_url/signup', RequestMethodType.post,
