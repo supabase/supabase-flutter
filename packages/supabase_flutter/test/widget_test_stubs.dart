@@ -10,6 +10,8 @@ import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'utils.dart';
+
 class MockWidget extends StatefulWidget {
   const MockWidget({Key? key}) : super(key: key);
 
@@ -52,7 +54,7 @@ class MockExpiredStorage extends LocalStorage {
   Future<void> initialize() async {}
   @override
   Future<String?> accessToken() async {
-    return '{"token_type": "","access_token":"","expires_in":20,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""},"expiresAt":${((DateTime.now().subtract(const Duration(seconds: 11))).millisecondsSinceEpoch / 1000).round()}}';
+    return getSessionData(DateTime.now().subtract(const Duration(hours: 1))).$3;
   }
 
   @override
@@ -68,7 +70,7 @@ class MockLocalStorage extends LocalStorage {
   Future<void> initialize() async {}
   @override
   Future<String?> accessToken() async {
-    return '{"token_type": "","access_token":"","expires_in":3600,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""},"expiresAt":2147483647}';
+    return getSessionData(DateTime.now().add(const Duration(hours: 1))).$2;
   }
 
   @override

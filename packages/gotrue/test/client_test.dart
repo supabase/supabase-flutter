@@ -206,7 +206,7 @@ void main() {
       expect(user.appMetadata['provider'], 'email');
     });
 
-    test('signInWithPassword() with phone', () async {
+    test('signInWithPassword() with   phone', () async {
       final response =
           await client.signInWithPassword(phone: phone1, password: password);
       final data = response.session;
@@ -355,13 +355,11 @@ void main() {
         ]),
       );
 
-      final currentSession = client.currentSession!.toJson()
-        ..['refresh_token'] = 'wrong'
-        ..['expires_at'] = 100;
-      final session = json.encode(currentSession);
+      final session =
+          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
 
       await expectLater(
-          client.recoverSession(session), throwsA(isA<AuthException>()));
+          client.recoverSession(session.$3), throwsA(isA<AuthException>()));
       expect(stream, emitsError(isA<AuthException>()));
 
       expect(client.currentSession, isNull);
