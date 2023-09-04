@@ -52,7 +52,7 @@ class MockExpiredStorage extends LocalStorage {
   Future<void> initialize() async {}
   @override
   Future<String?> accessToken() async {
-    return '{"currentSession":{"token_type": "","access_token":"","expires_in":20,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""}},"expiresAt":${((DateTime.now().subtract(const Duration(seconds: 11))).millisecondsSinceEpoch / 1000).round()}}';
+    return '{"token_type": "","access_token":"","expires_in":20,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""},"expiresAt":${((DateTime.now().subtract(const Duration(seconds: 11))).millisecondsSinceEpoch / 1000).round()}}';
   }
 
   @override
@@ -68,7 +68,7 @@ class MockLocalStorage extends LocalStorage {
   Future<void> initialize() async {}
   @override
   Future<String?> accessToken() async {
-    return '{"currentSession":{"token_type": "","access_token":"","expires_in":3600,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""}},"expiresAt":2147483647}';
+    return '{"token_type": "","access_token":"","expires_in":3600,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""},"expiresAt":2147483647}';
   }
 
   @override

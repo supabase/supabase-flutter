@@ -773,29 +773,14 @@ class GoTrueClient {
     );
   }
 
-  /// Recover session from persisted session json string.
-  /// Persisted session json has the format { currentSession, expiresAt }
-  ///
-  /// currentSession: session json object, expiresAt: timestamp in seconds
+  /// Recover session from stringified [Session].
   Future<AuthResponse> recoverSession(String jsonStr) async {
-    final persistedData = json.decode(jsonStr) as Map<String, dynamic>;
-    final currentSession =
-        persistedData['currentSession'] as Map<String, dynamic>?;
-    final expiresAt = persistedData['expiresAt'] as int?;
-    if (currentSession == null) {
-      throw _notifyException(AuthException('Missing currentSession.'));
-    }
-    if (expiresAt == null) {
-      throw _notifyException(AuthException('Missing expiresAt.'));
-    }
-
-    final session = Session.fromJson(currentSession);
+    final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
       throw _notifyException(AuthException('Current session is missing data.'));
     }
 
-    final timeNow = (DateTime.now().millisecondsSinceEpoch / 1000).round();
-    if (expiresAt < (timeNow + Constants.expiryMargin.inSeconds)) {
+    if (session.isExpired) {
       if (_autoRefreshToken && session.refreshToken != null) {
         return await _callRefreshToken(
           refreshToken: session.refreshToken,

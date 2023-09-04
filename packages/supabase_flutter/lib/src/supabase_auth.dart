@@ -193,8 +193,8 @@ class SupabaseAuth with WidgetsBindingObserver {
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
     Supabase.instance.log('**** onAuthStateChange: $event');
     if (session != null) {
-      Supabase.instance.log(session.persistSessionString);
-      _localStorage.persistSession(session.persistSessionString);
+      Supabase.instance.log(session.toJson().toString());
+      _localStorage.persistSession(session.toJson().toString());
     } else if (event == AuthChangeEvent.signedOut) {
       _localStorage.removePersistedSession();
     }
