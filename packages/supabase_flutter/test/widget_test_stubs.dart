@@ -54,7 +54,8 @@ class MockExpiredStorage extends LocalStorage {
   Future<void> initialize() async {}
   @override
   Future<String?> accessToken() async {
-    return getSessionData(DateTime.now().subtract(const Duration(hours: 1))).$3;
+    return getSessionData(DateTime.now().subtract(const Duration(hours: 1)))
+        .sessionString;
   }
 
   @override
@@ -70,7 +71,8 @@ class MockLocalStorage extends LocalStorage {
   Future<void> initialize() async {}
   @override
   Future<String?> accessToken() async {
-    return getSessionData(DateTime.now().add(const Duration(hours: 1))).$2;
+    return getSessionData(DateTime.now().add(const Duration(hours: 1)))
+        .sessionString;
   }
 
   @override

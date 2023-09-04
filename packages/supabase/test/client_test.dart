@@ -110,7 +110,7 @@ void main() {
         autoRefreshToken: false,
       );
       final sessionData = getSessionData(expiresAt);
-      await client.auth.recoverSession(sessionData[2]);
+      await client.auth.recoverSession(sessionData.sessionString);
 
       await Future.delayed(Duration(seconds: 11));
 
@@ -131,15 +131,14 @@ void main() {
             fail("Token was refreshed twice");
           }
           gotTokenRefresh = true;
-          final sessionData =
+          String sessionString;
+          (accessToken: secondAccessToken, :sessionString) =
               getSessionData(DateTime.now().add(Duration(hours: 1)));
-          secondAccessToken = sessionData[0];
 
-          final another = sessionData[1];
           req.response
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.json
-            ..write(another)
+            ..write(sessionString)
             ..close();
         } else {
           expect(req.headers.value('Authorization')?.split(" ").last,

@@ -358,8 +358,8 @@ void main() {
       final session =
           getSessionData(DateTime.now().subtract(Duration(hours: 1)));
 
-      await expectLater(
-          client.recoverSession(session.$3), throwsA(isA<AuthException>()));
+      await expectLater(client.recoverSession(session.sessionString),
+          throwsA(isA<AuthException>()));
       expect(stream, emitsError(isA<AuthException>()));
 
       expect(client.currentSession, isNull);
