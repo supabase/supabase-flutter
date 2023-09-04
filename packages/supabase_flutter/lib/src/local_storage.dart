@@ -124,7 +124,9 @@ class HiveLocalStorage extends LocalStorage {
 class SharedPreferencesLocalStorage extends LocalStorage {
   late final SharedPreferences _prefs;
 
-  static const persistSessionKey = "supabase.auth.token";
+  SharedPreferencesLocalStorage({required this.persistSessionKey});
+
+  final String persistSessionKey;
   static const _useWebLocalStorage =
       kIsWeb && bool.fromEnvironment("dart.library.html");
 
@@ -139,7 +141,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   @override
   Future<bool> hasAccessToken() async {
     if (_useWebLocalStorage) {
-      return web.hasAccessToken();
+      return web.hasAccessToken(persistSessionKey);
     }
     return _prefs.containsKey(persistSessionKey);
   }
@@ -147,7 +149,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   @override
   Future<String?> accessToken() async {
     if (_useWebLocalStorage) {
-      return web.accessToken();
+      return web.accessToken(persistSessionKey);
     }
     return _prefs.getString(persistSessionKey);
   }
@@ -155,7 +157,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   @override
   Future<void> removePersistedSession() async {
     if (_useWebLocalStorage) {
-      web.removePersistedSession();
+      web.removePersistedSession(persistSessionKey);
     }
     await _prefs.remove(persistSessionKey);
   }
@@ -163,15 +165,20 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   @override
   Future<void> persistSession(String persistSessionString) {
     if (_useWebLocalStorage) {
-      return web.persistSession(persistSessionString);
+      return web.persistSession(persistSessionKey, persistSessionString);
     }
     return _prefs.setString(persistSessionKey, persistSessionString);
   }
 }
 
 class MigrationLocalStorage extends LocalStorage {
-  final sharedPreferencesLocalStorage = SharedPreferencesLocalStorage();
+  final SharedPreferencesLocalStorage sharedPreferencesLocalStorage;
   late final HiveLocalStorage hiveLocalStorage;
+
+  MigrationLocalStorage({required String persistSessionKey})
+      : sharedPreferencesLocalStorage =
+            SharedPreferencesLocalStorage(persistSessionKey: persistSessionKey);
+
   @override
   Future<void> initialize() async {
     await Hive.initFlutter('auth');

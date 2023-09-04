@@ -100,7 +100,10 @@ class Supabase {
     _instance.log('***** Supabase init completed $_instance');
 
     await SupabaseAuth.initialize(
-      localStorage: localStorage ?? MigrationLocalStorage(),
+      localStorage: localStorage ??
+          MigrationLocalStorage(
+              persistSessionKey:
+                  "sb-${Uri.parse(url).host.split(".").first}-auth-token"),
       authCallbackUrlHostname: authCallbackUrlHostname,
       authFlowType: authFlowType,
     );

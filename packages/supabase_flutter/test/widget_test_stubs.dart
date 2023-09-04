@@ -88,6 +88,9 @@ class TestHiveLocalStorage extends HiveLocalStorage {
 }
 
 class TestMigrationLocalStorage extends MigrationLocalStorage {
+  TestMigrationLocalStorage()
+      : super(persistSessionKey: "SUPABASE_PERSIST_SESSION_KEY");
+
   @override
   Future<void> initialize() async {
     Hive.init("${path.current}/auth_test");
