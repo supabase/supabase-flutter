@@ -141,6 +141,8 @@ class GoTrueClient {
   /// [password] is the password of the user
   ///
   /// [data] sets [User.userMetadata] without an extra call to [updateUser]
+  ///
+  /// [channel] Messaging channel to use (e.g. whatsapp or sms)
   Future<AuthResponse> signUp({
     String? email,
     String? phone,
@@ -148,6 +150,7 @@ class GoTrueClient {
     String? emailRedirectTo,
     Map<String, dynamic>? data,
     String? captchaToken,
+    OtpChannel channel = OtpChannel.sms,
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
         'You must provide either an email or phone number');
@@ -191,6 +194,7 @@ class GoTrueClient {
         'password': password,
         'data': data,
         'gotrue_meta_security': {'captcha_token': captchaToken},
+        'channel': channel.name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
       response = await _fetch.request('$_url/signup', RequestMethodType.post,
@@ -392,6 +396,8 @@ class GoTrueClient {
   /// [data] can be used to set the user's metadata, which maps to the `auth.users.user_metadata` column.
   ///
   /// [captchaToken] Verification token received when the user completes the captcha on the site.
+  ///
+  /// [channel] Messaging channel to use (e.g. whatsapp or sms)
   Future<void> signInWithOtp({
     String? email,
     String? phone,
@@ -399,6 +405,7 @@ class GoTrueClient {
     bool? shouldCreateUser,
     Map<String, dynamic>? data,
     String? captchaToken,
+    OtpChannel channel = OtpChannel.sms,
   }) async {
     _removeSession();
 
@@ -437,6 +444,7 @@ class GoTrueClient {
         'data': data ?? {},
         'create_user': shouldCreateUser ?? true,
         'gotrue_meta_security': {'captcha_token': captchaToken},
+        'channel': channel.name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
 
