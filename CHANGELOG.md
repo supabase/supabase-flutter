@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-09-04
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v1.12.0`](#gotrue---v1120)
+ - [`storage_client` - `v1.5.2`](#storage_client---v152)
+ - [`supabase` - `v1.11.2`](#supabase---v1112)
+ - [`supabase_flutter` - `v1.10.15`](#supabase_flutter---v11015)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.11.2`
+ - `supabase_flutter` - `v1.10.15`
+
+---
+
+#### `gotrue` - `v1.12.0`
+
+ - **FEAT**(gotrue): add WhatsApp support for OTP login ([#613](https://github.com/supabase/supabase-flutter/issues/613)). ([40da5be2](https://github.com/supabase/supabase-flutter/commit/40da5be2d8c883f591b71493749367c1e9de4d43))
+
+#### `storage_client` - `v1.5.2`
+
+ - **FIX**(storage_client): prevent the SDK from throwing when null path was returned from calling `createSignedUrls()` ([#599](https://github.com/supabase/supabase-flutter/issues/599)). ([e25a70d6](https://github.com/supabase/supabase-flutter/commit/e25a70d67aeaa8844a0a8dca8385a3637b4ffd42))
+
+
 ## 2023-08-22
 
 ### Changes

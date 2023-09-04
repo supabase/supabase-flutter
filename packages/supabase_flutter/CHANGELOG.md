@@ -1,3 +1,7 @@
+## 1.10.15
+
+ - Update a dependency to the latest release.
+
 ## 1.10.14
 
  - **FIX**(realtime_client,supabase): pass apikey as the initial access token for realtime client ([#596](https://github.com/supabase/supabase-flutter/issues/596)). ([af8e368b](https://github.com/supabase/supabase-flutter/commit/af8e368bdb0b2a07f9cf9806c854456f8e9d198e))
