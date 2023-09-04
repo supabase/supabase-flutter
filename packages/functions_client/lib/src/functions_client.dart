@@ -44,14 +44,11 @@ class FunctionsClient {
   /// [headers]: object representing the headers to send with the request
   ///
   /// [body]: the body of the request
-  ///
-  /// [responseType]: how the response should be parsed. The default is `json`
   Future<FunctionResponse> invoke(
     String functionName, {
     Map<String, String>? headers,
     Map<String, dynamic>? body,
     HttpMethod method = HttpMethod.post,
-    ResponseType responseType = ResponseType.json,
   }) async {
     final bodyStr = body == null ? null : await _isolate.encode(body);
 
@@ -103,19 +100,16 @@ class FunctionsClient {
         break;
     }
 
-    final dynamic data;
-    if (responseType == ResponseType.json) {
-      final resBody = response.body;
-      data = resBody.isEmpty ? resBody : await _isolate.decode(resBody);
-    } else if (responseType == ResponseType.blob) {
-      data = response.bodyBytes;
-    } else if (responseType == ResponseType.arraybuffer) {
-      data = response.bodyBytes;
-    } else if (responseType == ResponseType.text) {
-      data = utf8.decode(response.bodyBytes);
-    } else {
-      data = response.body;
-    }
+    final responseType =
+        (response.headers['Content-Type'] ?? 'text/plain').split(';')[0].trim();
+
+    final data = switch (responseType) {
+      'application/json' => response.bodyBytes.isEmpty
+          ? ""
+          : await _isolate.decode(utf8.decode(response.bodyBytes)),
+      'application/octet-stream' => response.bodyBytes,
+      _ => utf8.decode(response.bodyBytes),
+    };
     return FunctionResponse(data: data, status: response.statusCode);
   }
 

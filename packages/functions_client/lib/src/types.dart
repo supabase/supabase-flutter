@@ -1,28 +1,9 @@
-enum ResponseType {
-  json,
-  text,
-  arraybuffer,
-  blob,
-}
-
 enum HttpMethod {
   get,
   post,
   put,
   delete,
   patch,
-}
-
-class FunctionInvokeOptions {
-  final Map<String, String>? headers;
-  final Object? body;
-  final ResponseType? responseType;
-
-  FunctionInvokeOptions({
-    this.headers,
-    this.body,
-    this.responseType,
-  });
 }
 
 class FunctionResponse {
