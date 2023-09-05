@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:supabase/supabase.dart';
@@ -63,13 +62,8 @@ void main() {
 
   group('auth', () {
     test('properly set Authorization header', () async {
-      final expiresAt =
-          DateTime.now().add(Duration(hours: 1)).millisecondsSinceEpoch ~/ 1000;
-      final accessToken = base64.encode(utf8.encode(json.encode(
-          {"exp": expiresAt, "sub": "1234567890", "role": "authenticated"})));
-
-      final sessionString =
-          '{"currentSession":{"access_token":"$accessToken","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}},"expiresAt":$expiresAt}';
+      final (:sessionString, :accessToken) =
+          getSessionData(DateTime.now().add(Duration(hours: 1)));
 
       final mockServer = await HttpServer.bind('localhost', 0);
       final client = SupabaseClient(
@@ -110,7 +104,7 @@ void main() {
         autoRefreshToken: false,
       );
       final sessionData = getSessionData(expiresAt);
-      await client.auth.recoverSession(sessionData[2]);
+      await client.auth.recoverSession(sessionData.sessionString);
 
       await Future.delayed(Duration(seconds: 11));
 
@@ -131,15 +125,14 @@ void main() {
             fail("Token was refreshed twice");
           }
           gotTokenRefresh = true;
-          final sessionData =
+          String sessionString;
+          (accessToken: secondAccessToken, :sessionString) =
               getSessionData(DateTime.now().add(Duration(hours: 1)));
-          secondAccessToken = sessionData[0];
 
-          final another = sessionData[1];
           req.response
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.json
-            ..write(another)
+            ..write(sessionString)
             ..close();
         } else {
           expect(req.headers.value('Authorization')?.split(" ").last,

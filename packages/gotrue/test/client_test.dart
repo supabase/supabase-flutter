@@ -194,8 +194,7 @@ void main() {
       expect(data?.user.id, isA<String>());
 
       final payload = Jwt.parseJwt(data!.accessToken);
-      final persistSession = json.decode(data.persistSessionString);
-      expect(payload['exp'], persistSession['expiresAt']);
+      expect(payload['exp'], data.expiresAt);
     });
 
     test('Get user', () async {
@@ -207,7 +206,7 @@ void main() {
       expect(user.appMetadata['provider'], 'email');
     });
 
-    test('signInWithPassword() with phone', () async {
+    test('signInWithPassword() with   phone', () async {
       final response =
           await client.signInWithPassword(phone: phone1, password: password);
       final data = response.session;
@@ -217,8 +216,7 @@ void main() {
       expect(data?.user.id, isA<String>());
 
       final payload = Jwt.parseJwt(data!.accessToken);
-      final persistSession = json.decode(data.persistSessionString);
-      expect(payload['exp'], persistSession['expiresAt']);
+      expect(payload['exp'], data.expiresAt);
     });
 
     test('Set session', () async {
@@ -337,7 +335,7 @@ void main() {
     test('Repeatedly recover session', () async {
       await client.signInWithPassword(password: password, email: email1);
       for (int i = 0; i < 10; i++) {
-        final json = client.currentSession!.persistSessionString;
+        final json = jsonEncode(client.currentSession!);
         await client.recoverSession(json);
       }
     });
@@ -357,13 +355,11 @@ void main() {
         ]),
       );
 
-      final currentSession = client.currentSession!.toJson()
-        ..['refresh_token'] = 'wrong';
-      final data = {'currentSession': currentSession, 'expiresAt': 100};
-      final session = json.encode(data);
+      final session =
+          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
 
-      await expectLater(
-          client.recoverSession(session), throwsA(isA<AuthException>()));
+      await expectLater(client.recoverSession(session.sessionString),
+          throwsA(isA<AuthException>()));
       expect(stream, emitsError(isA<AuthException>()));
 
       expect(client.currentSession, isNull);
@@ -404,7 +400,7 @@ void main() {
 
     test('Session recovery succeeds after retries', () async {
       await client.recoverSession(
-          '{"currentSession":{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}},"expiresAt":1680341705}');
+          '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"},"expiresAt":1680341705}');
       expect(httpClient.retryCount, 3);
     });
   });
