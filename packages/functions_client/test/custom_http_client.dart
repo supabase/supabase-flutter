@@ -10,6 +10,9 @@ class CustomHttpClient extends BaseClient {
       Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
       420,
       request: request,
+      headers: {
+        "Content-Type": "application/json",
+      },
     );
   }
 }

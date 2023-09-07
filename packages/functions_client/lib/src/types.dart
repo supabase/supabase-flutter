@@ -1,9 +1,5 @@
-enum ResponseType {
-  json,
-  text,
-  arraybuffer,
-  blob,
-}
+import 'dart:convert';
+import 'dart:typed_data';
 
 enum HttpMethod {
   get,
@@ -13,19 +9,11 @@ enum HttpMethod {
   patch,
 }
 
-class FunctionInvokeOptions {
-  final Map<String, String>? headers;
-  final Object? body;
-  final ResponseType? responseType;
-
-  FunctionInvokeOptions({
-    this.headers,
-    this.body,
-    this.responseType,
-  });
-}
-
 class FunctionResponse {
+  /// The data returned by the function. Type depends on the header `Content-Type`:
+  /// - 'text/plain': [String]
+  /// - 'octet/stream': [Uint8List]
+  /// - 'application/json': dynamic ([jsonDecode] is used)
   final dynamic data;
   final int? status;
 
