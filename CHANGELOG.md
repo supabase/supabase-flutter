@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-09-10
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v1.2.2`](#realtime_client---v122)
+ - [`supabase` - `v1.11.4`](#supabase---v1114)
+ - [`supabase_flutter` - `v1.10.17`](#supabase_flutter---v11017)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.11.4`
+ - `supabase_flutter` - `v1.10.17`
+
+---
+
+#### `realtime_client` - `v1.2.2`
+
+ - **FIX**(realtime_client): No exception is thrown when connection is closed.  ([#620](https://github.com/supabase/supabase-flutter/issues/620)). ([64b8b968](https://github.com/supabase/supabase-flutter/commit/64b8b9689d089c056e1f1665df749aa21b893aad))
+
+
 ## 2023-09-05
 
 ### Changes
