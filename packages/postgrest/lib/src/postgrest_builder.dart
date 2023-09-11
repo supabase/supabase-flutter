@@ -352,8 +352,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   }
 
   @override
-  Future<R> then<R>(
-    FutureOr<R> Function(T value) onValue, {
+  Future<U> then<U>(
+    FutureOr<U> Function(T value) onValue, {
     Function? onError,
   }) async {
     if (onError != null &&
@@ -371,7 +371,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       final response = await _execute();
       return onValue(response);
     } catch (error, stack) {
-      final FutureOr<R> result;
+      final FutureOr<U> result;
       if (onError != null) {
         if (onError is Function(Object, StackTrace)) {
           result = onError(error, stack);

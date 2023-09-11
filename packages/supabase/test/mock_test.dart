@@ -379,7 +379,7 @@ void main() {
 
     test('test mock server', () async {
       final data = await client.from('todos').select('task, status');
-      expect((data as List).length, 2);
+      expect(data.length, 2);
     });
 
     group('Basic client test', () {
