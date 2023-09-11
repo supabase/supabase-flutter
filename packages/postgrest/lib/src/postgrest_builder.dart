@@ -14,6 +14,8 @@ part 'postgrest_filter_builder.dart';
 part 'postgrest_query_builder.dart';
 part 'postgrest_rpc_builder.dart';
 part 'postgrest_transform_builder.dart';
+part 'raw_postgrest_builder.dart';
+part 'response_postgrest_builder.dart';
 
 const METHOD_GET = 'GET';
 const METHOD_HEAD = 'HEAD';
@@ -25,16 +27,19 @@ const METHOD_DELETE = 'DELETE';
 typedef _Nullable<T> = T?;
 
 /// The base builder class.
-/// [T] for the data type before [_converter] and [S] after
+/// [T] for the overall return type, so `PostgrestResponse<S>` or [S]
+///
+/// When using [_converter], [S] is the input and [R] is the output
+/// Otherwise [S] and [R] are the same
 @immutable
-class PostgrestBuilder<T, S> implements Future<T> {
+class PostgrestBuilder<T, S, R> implements Future<T> {
   final Object? _body;
   final Headers _headers;
   final bool _maybeSingle;
   final String? _method;
   final String? _schema;
   final Uri _url;
-  final PostgrestConverter<T, S>? _converter;
+  final PostgrestConverter<S, R>? _converter;
   final Client? _httpClient;
   final YAJsonIsolate? _isolate;
   final FetchOptions? _options;
@@ -49,7 +54,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
     YAJsonIsolate? isolate,
     FetchOptions? options,
     bool maybeSingle = false,
-    PostgrestConverter<T, S>? converter,
+    PostgrestConverter<S, R>? converter,
   })  : _maybeSingle = maybeSingle,
         _method = method,
         _converter = converter,
@@ -61,7 +66,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
         _options = options,
         _body = body;
 
-  PostgrestBuilder<T, S> _copyWith({
+  PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
     Headers? headers,
     String? schema,
@@ -71,9 +76,9 @@ class PostgrestBuilder<T, S> implements Future<T> {
     YAJsonIsolate? isolate,
     FetchOptions? options,
     bool? maybeSingle,
-    PostgrestConverter<T, S>? converter,
+    PostgrestConverter<S, R>? converter,
   }) {
-    return PostgrestBuilder<T, S>(
+    return PostgrestBuilder<T, S, R>(
       url: url ?? _url,
       headers: headers ?? _headers,
       schema: schema ?? _schema,
@@ -84,54 +89,6 @@ class PostgrestBuilder<T, S> implements Future<T> {
       options: options ?? _options,
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
-    );
-  }
-
-  /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
-  PostgrestBuilder<R, Q> _copyWithType<R, Q>({
-    Uri? url,
-    Headers? headers,
-    String? schema,
-    String? method,
-    Object? body,
-    Client? httpClient,
-    YAJsonIsolate? isolate,
-    FetchOptions? options,
-    bool? maybeSingle,
-  }) {
-    return PostgrestBuilder<R, Q>(
-      url: url ?? _url,
-      headers: headers ?? _headers,
-      schema: schema ?? _schema,
-      method: method ?? _method,
-      body: body ?? _body,
-      httpClient: httpClient ?? _httpClient,
-      isolate: isolate ?? _isolate,
-      options: options ?? _options,
-      maybeSingle: maybeSingle ?? _maybeSingle,
-    );
-  }
-
-  /// Converts any response that comes from the server into a type-safe response.
-  ///
-  /// ```dart
-  /// final User user = await postgrest
-  ///     .from('users')
-  ///     .select()
-  ///     .withConverter<User>((data) => User.fromJson(data));
-  /// ```
-  PostgrestBuilder<R, T> withConverter<R>(PostgrestConverter<R, T> converter) {
-    return PostgrestBuilder<R, T>(
-      url: _url,
-      headers: _headers,
-      schema: _schema,
-      method: _method,
-      body: _body,
-      isolate: _isolate,
-      httpClient: _httpClient,
-      options: _options,
-      maybeSingle: _maybeSingle,
-      converter: converter,
     );
   }
 
@@ -263,71 +220,35 @@ class PostgrestBuilder<T, S> implements Future<T> {
       }
 
       body as dynamic;
-      Object? converted;
+      final S converted;
 
-      // When using converter [S] is the type of the converter functions's argument. Otherwise [T] should be equal to [S]
-      if (S == PostgrestList) {
-        body = PostgrestList.from(body as Iterable) as S;
-      } else if (S == PostgrestMap) {
-        body = PostgrestMap.from(body as Map) as S;
-
-        //You can't write `S == PostgrestMap?`
-      } else if (S == _Nullable<PostgrestMap>) {
-        if (body == null) {
-          body = null as S;
-        } else {
-          body = PostgrestMap.from(body as Map) as S;
-        }
-      } else if (S == int) {
-        body = null;
-      } else if (S == PostgrestListResponse) {
+      if (R == PostgrestList) {
         body = PostgrestList.from(body);
-        if (_converter != null) {
-          body = _converter!(body as S);
-        }
-        final res = PostgrestResponse<PostgrestList>(
-          data: body as PostgrestList,
-          count: count!,
-        );
-        return res as T;
-      } else if (S == PostgrestMapResponse) {
+      } else if (R == PostgrestMap) {
         body = PostgrestMap.from(body);
-        final res = PostgrestResponse<PostgrestMap>(
-          data: body as PostgrestMap,
-          count: count!,
-        );
-        if (_converter != null) {
-          return _converter!(res as S);
-        }
-        return res as T;
-      } else if (S == PostgrestResponse<PostgrestMap?>) {
+      } else if (R == _Nullable<PostgrestMap>) {
         if (body != null) {
-          body = PostgrestMap.from(body as Map);
+          body = PostgrestMap.from(body);
         }
-        final res = PostgrestResponse<PostgrestMap?>(
-          data: body,
-          count: count!,
-        );
-        if (_converter != null) {
-          return _converter!(res as S);
-        }
-        return res as T;
-      } else if (S == PostgrestResponse) {
-        final res = PostgrestResponse(
-          data: body,
-          count: count!,
-        ) as T;
-        if (_converter != null) {
-          return _converter!(res as S);
-        }
-        return res;
+      } else if (R == int) {
+        body = count;
       }
+      body as R;
 
       if (_converter != null) {
-        body = _converter!(body);
+        converted = _converter!(body);
+      } else {
+        converted = body as S;
       }
 
-      return body;
+      if (_options?.count != null && method != METHOD_HEAD) {
+        return PostgrestResponse<S>(
+          data: converted,
+          count: count!,
+        ) as T;
+      } else {
+        return converted as T;
+      }
     } else {
       late PostgrestException error;
       if (response.request!.method != METHOD_HEAD) {
@@ -372,16 +293,16 @@ class PostgrestBuilder<T, S> implements Future<T> {
   ) {
     if (error.details is String &&
         error.details.toString().contains('Results contain 0 rows')) {
-      if (S is PostgrestResponse) {
-        final res = PostgrestResponse(data: null, count: 0) as S;
+      if (_options?.count != null && response.request!.method != METHOD_HEAD) {
         if (_converter != null) {
-          return _converter!(res);
+          return PostgrestResponse<S>(data: _converter!(null as R), count: 0)
+              as T;
         } else {
-          return res as T;
+          return null as T;
         }
       } else {
         if (_converter != null) {
-          return _converter!(null as S);
+          return _converter!(null as R) as T;
         } else {
           return null as T;
         }

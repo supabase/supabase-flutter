@@ -30,13 +30,6 @@ void main() {
       await resetHelper.reset();
     });
 
-    test('temp', () async {
-      final res = await postgrest
-          .from("users")
-          .select()
-          .count(CountOption.exact)
-          .withConverter((data) => 5);
-    });
     test('basic select table', () async {
       final res = await postgrest.from('users').select();
       expect(res.length, 4);
@@ -288,14 +281,6 @@ void main() {
             '*',
           )
           .head();
-    });
-
-    test('select with head:true with converter', () async {
-      await postgrest
-          .from('users')
-          .select('*')
-          .head()
-          .withConverter((data) => data);
     });
 
     test('select with head:true, count: exact', () async {

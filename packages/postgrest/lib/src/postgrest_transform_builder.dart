@@ -1,19 +1,7 @@
 part of 'postgrest_builder.dart';
 
-class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
-  PostgrestTransformBuilder(PostgrestBuilder<T, T> builder)
-      : super(
-          url: builder._url,
-          method: builder._method,
-          headers: builder._headers,
-          schema: builder._schema,
-          body: builder._body,
-          httpClient: builder._httpClient,
-          options: builder._options,
-          isolate: builder._isolate,
-          maybeSingle: builder._maybeSingle,
-          converter: builder._converter,
-        );
+class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
+  PostgrestTransformBuilder(super.builder);
 
   PostgrestTransformBuilder<T> copyWithUrl(Uri url) =>
       PostgrestTransformBuilder(_copyWith(url: url));
@@ -165,7 +153,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// Data type is `Map<String, dynamic>`.
   ///
   /// By specifying this type via `.select<Map<String,dynamic>>()` you get more type safety.
-  PostgrestBuilder<PostgrestMap, PostgrestMap> single() {
+  RawPostgrestBuilder<PostgrestMap, PostgrestMap, PostgrestMap> single() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
 
@@ -184,7 +172,8 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// Data type is `Map<String, dynamic>?`.
   ///
   /// By specifying this type via `.select<Map<String,dynamic>?>()` you get more type safety.
-  PostgrestBuilder<PostgrestMap?, PostgrestMap?> maybeSingle() {
+  RawPostgrestBuilder<PostgrestMap?, PostgrestMap?, PostgrestMap?>
+      maybeSingle() {
     // Temporary fix for https://github.com/supabase/supabase-flutter/issues/560
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
     final newHeaders = {..._headers};
@@ -207,7 +196,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// ```dart
   /// postgrest.from('users').select().csv()
   /// ```
-  PostgrestBuilder<String, String> csv() {
+  RawPostgrestBuilder<String, String, String> csv() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'text/csv';
 
@@ -216,11 +205,13 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
     );
   }
 
-  PostgrestBuilder<PostgrestResponse<T>, T> count(CountOption option) {
-    return _copyWithType(options: FetchOptions(count: option));
+  ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count(
+      CountOption option) {
+    return ResponsePostgrestBuilder(
+        _copyWithType(options: FetchOptions(count: option)));
   }
 
-  PostgrestBuilder<void, void> head() {
+  PostgrestBuilder<void, void, void> head() {
     return _copyWithType(options: FetchOptions(head: true));
   }
 }

@@ -10,7 +10,7 @@ part of 'postgrest_builder.dart';
 /// * delete() - "delete"
 /// Once any of these are called the filters are passed down to the Request.
 /// /// {@endtemplate}
-class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
+class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// {@macro postgrest_query_builder}
   PostgrestQueryBuilder({
     required Uri url,
@@ -21,13 +21,15 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     FetchOptions? options,
     YAJsonIsolate? isolate,
   }) : super(
-          url: url,
-          method: method,
-          headers: headers ?? {},
-          schema: schema,
-          httpClient: httpClient,
-          options: options,
-          isolate: isolate,
+          PostgrestBuilder(
+            url: url,
+            method: method,
+            headers: headers ?? {},
+            schema: schema,
+            httpClient: httpClient,
+            options: options,
+            isolate: isolate,
+          ),
         );
 
   /// Perform a SELECT query on the table or view.
@@ -266,7 +268,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     return _url;
   }
 
-  PostgrestBuilder<int, int> count(CountOption option) {
+  RawPostgrestBuilder<int, int, int> count(CountOption option) {
     return _copyWithType(
       method: METHOD_GET,
       options: FetchOptions(count: option, head: true),
