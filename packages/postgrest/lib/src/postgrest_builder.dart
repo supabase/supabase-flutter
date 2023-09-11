@@ -25,6 +25,7 @@ const METHOD_DELETE = 'DELETE';
 typedef _Nullable<T> = T?;
 
 /// The base builder class.
+/// [T] for the data type before [_converter] and [S] after
 @immutable
 class PostgrestBuilder<T, S> implements Future<T> {
   final Object? _body;
@@ -134,23 +135,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
     );
   }
 
-  void _assertCorrectGeneric(Type R) {
-    assert(
-        R == PostgrestList ||
-            R == PostgrestMap ||
-            R == (_Nullable<PostgrestMap>) ||
-            R == PostgrestListResponse ||
-            R == PostgrestMapResponse ||
-            R == (PostgrestResponse<PostgrestMap?>) ||
-            R == PostgrestResponse ||
-            R == List ||
-            R == (List<Map>) ||
-            R == Map ||
-            R == dynamic,
-        "$R is not allowed as generic for `select<R>()`. Allowed types are: `PostgrestList`, `PostgrestMap`, `PostgrestMap?`, `PostgrestListResponse`, `PostgrestMapResponse`, `PostgrestResponse`, `dynamic`.");
-  }
-
-  Future<PostgrestResponse> _execute() async {
+  Future<T> _execute() async {
     final String? method;
     if (_options?.head ?? false) {
       method = METHOD_HEAD;
@@ -231,8 +216,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
   }
 
   /// Parse request response to json object if possible
-  Future<PostgrestResponse> _parseResponse(
-      http.Response response, String method) async {
+  Future<T> _parseResponse(http.Response response, String method) async {
     if (response.statusCode >= 200 && response.statusCode <= 299) {
       Object? body;
       int? count;
@@ -279,12 +263,11 @@ class PostgrestBuilder<T, S> implements Future<T> {
       }
 
       body as dynamic;
+      Object? converted;
 
       // When using converter [S] is the type of the converter functions's argument. Otherwise [T] should be equal to [S]
       if (S == PostgrestList) {
         body = PostgrestList.from(body as Iterable) as S;
-      } else if (S == List<Map>) {
-        body = List<Map>.from(body as Iterable) as S;
       } else if (S == PostgrestMap) {
         body = PostgrestMap.from(body as Map) as S;
 
@@ -295,50 +278,56 @@ class PostgrestBuilder<T, S> implements Future<T> {
         } else {
           body = PostgrestMap.from(body as Map) as S;
         }
+      } else if (S == int) {
+        body = null;
       } else if (S == PostgrestListResponse) {
-        body = PostgrestList.from(body as Iterable);
+        body = PostgrestList.from(body);
         if (_converter != null) {
           body = _converter!(body as S);
         }
-        return PostgrestResponse<PostgrestList>(
-          data: body,
-          status: response.statusCode,
-          count: count,
+        final res = PostgrestResponse<PostgrestList>(
+          data: body as PostgrestList,
+          count: count!,
         );
+        return res as T;
       } else if (S == PostgrestMapResponse) {
-        body = PostgrestMap.from(body as Map);
-        if (_converter != null) {
-          body = _converter!(body as S);
-        }
-        return PostgrestResponse<PostgrestMap>(
-          data: body,
-          status: response.statusCode,
-          count: count,
+        body = PostgrestMap.from(body);
+        final res = PostgrestResponse<PostgrestMap>(
+          data: body as PostgrestMap,
+          count: count!,
         );
+        if (_converter != null) {
+          return _converter!(res as S);
+        }
+        return res as T;
       } else if (S == PostgrestResponse<PostgrestMap?>) {
-        if (body == null) {
-          body = null;
-        } else {
+        if (body != null) {
           body = PostgrestMap.from(body as Map);
         }
-        if (_converter != null) {
-          body = _converter!(body as S);
-        }
-        return PostgrestResponse<PostgrestMap?>(
+        final res = PostgrestResponse<PostgrestMap?>(
           data: body,
-          status: response.statusCode,
-          count: count,
+          count: count!,
         );
+        if (_converter != null) {
+          return _converter!(res as S);
+        }
+        return res as T;
+      } else if (S == PostgrestResponse) {
+        final res = PostgrestResponse(
+          data: body,
+          count: count!,
+        ) as T;
+        if (_converter != null) {
+          return _converter!(res as S);
+        }
+        return res;
       }
+
       if (_converter != null) {
         body = _converter!(body);
       }
 
-      return PostgrestResponse(
-        data: body,
-        status: response.statusCode,
-        count: count,
-      );
+      return body;
     } else {
       late PostgrestException error;
       if (response.request!.method != METHOD_HEAD) {
@@ -377,19 +366,26 @@ class PostgrestBuilder<T, S> implements Future<T> {
   /// When [_maybeSingle] is true, check whether error details contain
   /// 'Results contain 0 rows' then
   /// return PostgrestResponse with null data
-  PostgrestResponse<T> _handleMaybeSingleError(
+  T _handleMaybeSingleError(
     http.Response response,
     PostgrestException error,
   ) {
     if (error.details is String &&
         error.details.toString().contains('Results contain 0 rows')) {
-      return PostgrestResponse<T>(
-        data: null,
-        status: 200,
-        count: (_options?.count != null || (_options?.forceResponse ?? false))
-            ? 0
-            : null,
-      );
+      if (S is PostgrestResponse) {
+        final res = PostgrestResponse(data: null, count: 0) as S;
+        if (_converter != null) {
+          return _converter!(res);
+        } else {
+          return res as T;
+        }
+      } else {
+        if (_converter != null) {
+          return _converter!(null as S);
+        } else {
+          return null as T;
+        }
+      }
     } else {
       throw error;
     }
@@ -452,21 +448,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
 
     try {
       final response = await _execute();
-      final data = response.data;
-
-      if (_converter != null) {
-        assert(
-          !(_options?.forceResponse ?? false),
-          'converter and forceReponse can not be set at the same time',
-        );
-        return onValue(data as T);
-      } else {
-        if ((_options?.forceResponse ?? false) || response.count != null) {
-          return onValue(response as T);
-        } else {
-          return onValue(data as T);
-        }
-      }
+      return onValue(response);
     } catch (error, stack) {
       final FutureOr<R> result;
       if (onError != null) {

@@ -82,7 +82,6 @@ class PostgrestClient {
   PostgrestFilterBuilder rpc(
     String fn, {
     Map? params,
-    FetchOptions options = const FetchOptions(),
   }) {
     final url = '${this.url}/rpc/$fn';
     return PostgrestRpcBuilder(
@@ -90,9 +89,8 @@ class PostgrestClient {
       headers: {...headers},
       schema: schema,
       httpClient: httpClient,
-      options: options,
       isolate: _isolate,
-    ).rpc(params, options);
+    ).rpc(params);
   }
 
   Future<void> dispose() async {

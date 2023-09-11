@@ -58,12 +58,9 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   /// - [PostgrestResponse]
   ///
   /// There are optional typedefs for [R]: [PostgrestMap], [PostgrestList], [PostgrestMapResponse], [PostgrestListResponse]
-  PostgrestFilterBuilder<R> select<R>([
+  PostgrestFilterBuilder<PostgrestList> select([
     String columns = '*',
-    FetchOptions options = const FetchOptions(),
   ]) {
-    _assertCorrectGeneric(R);
-
     // Remove whitespaces except when quoted
     var quoted = false;
     final re = RegExp(r'\s');
@@ -78,10 +75,9 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     }).join();
 
     final url = overrideSearchParams('select', cleanedColumns);
-    return PostgrestFilterBuilder<R>(_copyWithType(
+    return PostgrestFilterBuilder(_copyWithType(
       url: url,
       method: METHOD_GET,
-      options: options,
     ));
   }
 
@@ -125,7 +121,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
       url = _setColumnsSearchParam(values);
     }
 
-    return PostgrestFilterBuilder<T>(_copyWith(
+    return PostgrestFilterBuilder(_copyWith(
       method: METHOD_POST,
       headers: newHeaders,
       body: values,
@@ -169,7 +165,6 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     String? onConflict,
     bool ignoreDuplicates = false,
     bool defaultToNull = true,
-    FetchOptions options = const FetchOptions(),
   }) {
     final newHeaders = {..._headers};
     newHeaders['Prefer'] =
@@ -195,7 +190,6 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     return PostgrestFilterBuilder<T>(_copyWith(
       method: METHOD_POST,
       headers: newHeaders,
-      options: options.ensureNotHead(),
       body: values,
       url: url,
     ));
@@ -221,10 +215,7 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> update(
-    Map values, {
-    FetchOptions options = const FetchOptions(),
-  }) {
+  PostgrestFilterBuilder<T> update(Map values) {
     final newHeaders = {..._headers};
     newHeaders['Prefer'] = '';
 
@@ -232,7 +223,6 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
       method: METHOD_PATCH,
       headers: newHeaders,
       body: values,
-      options: options.ensureNotHead(),
     ));
   }
 
@@ -256,17 +246,12 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> delete({
-    @Deprecated('Append `.select()` on the query instead')
-    ReturningOption returning = ReturningOption.representation,
-    FetchOptions options = const FetchOptions(),
-  }) {
+  PostgrestFilterBuilder<T> delete() {
     final newHeaders = {..._headers};
     newHeaders['Prefer'] = '';
     return PostgrestFilterBuilder<T>(_copyWith(
       method: METHOD_DELETE,
       headers: newHeaders,
-      options: options.ensureNotHead(),
     ));
   }
 
@@ -279,5 +264,12 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
       return appendSearchParams("columns", uniqueColumns);
     }
     return _url;
+  }
+
+  PostgrestBuilder<int, int> count(CountOption option) {
+    return _copyWithType(
+      method: METHOD_GET,
+      options: FetchOptions(count: option, head: true),
+    );
   }
 }

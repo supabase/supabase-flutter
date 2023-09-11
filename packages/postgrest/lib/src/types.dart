@@ -43,21 +43,17 @@ class PostgrestException implements Exception {
 class PostgrestResponse<T> {
   const PostgrestResponse({
     required this.data,
-    required this.status,
-    this.count,
+    required this.count,
   });
 
-  final T? data;
+  final T data;
 
-  final int status;
-
-  final int? count;
+  final int count;
 
   factory PostgrestResponse.fromJson(Map<String, dynamic> json) =>
       PostgrestResponse<T>(
         data: json['data'] as T,
-        status: json['status'] as int,
-        count: json['count'] as int?,
+        count: json['count'] as int,
       );
 }
 
@@ -125,21 +121,16 @@ class FetchOptions {
   /// modifiers (e.g. limit, range).
   final CountOption? count;
 
-  /// Set [forceResponse] to `true` if you want to force the return type to be [PostgrestResponse<T>].
-  final bool forceResponse;
-
   /// {@macro fetch_options}
   const FetchOptions({
     this.head = false,
     this.count,
-    this.forceResponse = false,
   });
 
   FetchOptions ensureNotHead() {
     return FetchOptions(
       head: false,
       count: count,
-      forceResponse: forceResponse,
     );
   }
 }
