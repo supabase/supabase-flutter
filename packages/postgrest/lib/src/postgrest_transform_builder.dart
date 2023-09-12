@@ -183,6 +183,10 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Performs additionally to the [select] a count query.
   ///
+  /// It's used to retrieve the total number of rows that satisfy the
+  /// query. The value for count respects any filters (e.g. eq, gt), but ignores
+  /// modifiers (e.g. limit, range).
+  ///
   /// This changes the return type from the data only to a [PostgrestResponse] with the data and the count.
   ///
   /// ```dart

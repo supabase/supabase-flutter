@@ -110,7 +110,6 @@ extension TextSearchTypeName on TextSearchType {
 ///
 /// Set [head] to `true` if you only want the [count] value and not the underlying data.
 ///
-/// Set [forceResponse] to `true` if you want to force the return type to be [PostgrestResponse<T>].
 /// {endtemplate}
 class FetchOptions {
   /// Set [head] to true if you only want the [count] value and not the underlying data.
@@ -126,11 +125,4 @@ class FetchOptions {
     this.head = false,
     this.count,
   });
-
-  FetchOptions ensureNotHead() {
-    return FetchOptions(
-      head: false,
-      count: count,
-    );
-  }
 }
