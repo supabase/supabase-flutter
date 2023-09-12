@@ -133,12 +133,14 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .limit(1)
   ///     .single();
   /// ```
-  RawPostgrestBuilder<PostgrestMap, PostgrestMap, PostgrestMap> single() {
+  PostgrestTransformBuilder<PostgrestMap> single() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
 
-    return _copyWithType(
-      headers: newHeaders,
+    return PostgrestTransformBuilder(
+      _copyWithType(
+        headers: newHeaders,
+      ),
     );
   }
 
@@ -147,8 +149,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// Result must be at most one row or nullable
   /// (e.g. using `eq` on a UNIQUE column or `limit(1)`),
   /// otherwise this will result in an error.
-  RawPostgrestBuilder<PostgrestMap?, PostgrestMap?, PostgrestMap?>
-      maybeSingle() {
+  PostgrestTransformBuilder<PostgrestMap?> maybeSingle() {
     // Temporary fix for https://github.com/supabase/supabase-flutter/issues/560
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
     final newHeaders = {..._headers};
@@ -159,9 +160,11 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
     }
 
-    return _copyWithType(
-      maybeSingle: true,
-      headers: newHeaders,
+    return PostgrestTransformBuilder(
+      _copyWithType(
+        maybeSingle: true,
+        headers: newHeaders,
+      ),
     );
   }
 
@@ -172,12 +175,14 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```dart
   /// supabase.from('users').select().csv()
   /// ```
-  RawPostgrestBuilder<String, String, String> csv() {
+  PostgrestTransformBuilder<String> csv() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'text/csv';
 
-    return _copyWithType(
-      headers: newHeaders,
+    return PostgrestTransformBuilder(
+      _copyWithType(
+        headers: newHeaders,
+      ),
     );
   }
 

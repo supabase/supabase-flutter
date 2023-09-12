@@ -55,6 +55,16 @@ class PostgrestResponse<T> {
         data: json['data'] as T,
         count: json['count'] as int,
       );
+
+  Map<String, dynamic> toJson() => {
+        'data': data,
+        'count': count,
+      };
+
+  @override
+  String toString() {
+    return 'PostgrestResponse(data: $data, count: $count)';
+  }
 }
 
 /// Returns count as part of the response when specified.

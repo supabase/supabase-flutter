@@ -220,6 +220,17 @@ void main() {
     expect(res['status'], 'ONLINE');
   });
 
+  test('single with count', () async {
+    final res = await postgrest
+        .from('users')
+        .select()
+        .limit(1)
+        .single()
+        .count(CountOption.exact);
+    expect(res.data, isA<Map>());
+    expect(res.count, greaterThan(3));
+  });
+
   group("maybe single", () {
     test('maybeSingle with 1 row', () async {
       final user = await postgrest
@@ -278,9 +289,13 @@ void main() {
       }
     });
 
-    test('two transformer in a row', () async {
+    test(
+        'maybeSingle followed by another transformer preserves the maybeSingle status',
+        () async {
       try {
-        await postgrest.from('channels').select().limit(2).maybeSingle();
+        // maybeSingle followed by another transformer preserves the maybeSingle status
+        // and should throw when the returned data is more than 2 rows.
+        await postgrest.from('channels').select().maybeSingle().limit(2);
         fail('Query did not throw.');
       } on PostgrestException catch (error) {
         expect(error.code, '406');
