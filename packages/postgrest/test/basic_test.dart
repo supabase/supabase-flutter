@@ -391,6 +391,17 @@ void main() {
       expect(res.first, isNotEmpty);
       expect(res.first, isA<List>());
     });
+
+    test('withConverter and count', () async {
+      final res = await postgrest
+          .from('users')
+          .select()
+          .count(CountOption.exact)
+          .withConverter((data) => [data]);
+      expect(res.data.first, isNotEmpty);
+      expect(res.data.first, isA<List>());
+      expect(res.count, greaterThan(3));
+    });
   });
   group("Custom http client", () {
     setUp(() {

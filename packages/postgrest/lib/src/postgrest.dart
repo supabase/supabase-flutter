@@ -77,7 +77,7 @@ class PostgrestClient {
   /// Perform a stored procedure call.
   ///
   /// ```dart
-  /// postgrest.rpc('get_status', params: {'name_param': 'supabot'})
+  /// supabase.rpc('get_status', params: {'name_param': 'supabot'})
   /// ```
   PostgrestFilterBuilder rpc(
     String fn, {

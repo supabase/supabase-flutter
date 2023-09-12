@@ -35,34 +35,18 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// Perform a SELECT query on the table or view.
   ///
   /// ```dart
-  /// postgrest.from('users').select<PostgrestList>('id, messages');
+  /// supabase.from('users').select('id, messages');
   /// ```
   ///
   /// ```dart
-  /// postgrest.from('users').select<PostgrestListResponse>('id, messages', FetchOptions(count: CountOption.exact));
+  /// supabase.from('users').select('id, messages').count(CountOption.exact);
   /// ```
-  /// By setting [FetchOptions.count] to non null or [FetchOptions.forceResponse] to `true`, the return type is [PostgrestResponse<T>]. Otherwise it's `T` directly.
+  /// By appending [count] the return type is [PostgrestResponse]. Otherwise it's the data directly without the wrapper.
   ///
-  /// The type specification for [R] is optional and enhances the type safety of the return value. But use with care as a wrong type specification will result in a runtime error.
+  /// The type specification for [R] is optional and enhances the type safety of the return value. But use with care as a wrong type specification will result in a runtime error
   ///
-  /// `T` is
-  /// - [List<Map<String, dynamic>>] for queries without `.single()` or `maybeSingle()`
-  /// - [Map<String, dynamic>] for queries with `.single()`
-  /// - [Map<String, dynamic>?] for queries with `.maybeSingle()`
-  ///
-  /// Allowed types for [R] are:
-  /// - [List<Map<String, dynamic>>]
-  /// - [Map<String, dynamic>]
-  /// - [Map<String, dynamic>?]
-  /// - [PostgrestResponse<List<Map<String, dynamic>>>]
-  /// - [PostgrestResponse<Map<String, dynamic>>]
-  /// - [PostgrestResponse<Map<String, dynamic>?>]
-  /// - [PostgrestResponse]
-  ///
-  /// There are optional typedefs for [R]: [PostgrestMap], [PostgrestList], [PostgrestMapResponse], [PostgrestListResponse]
-  PostgrestFilterBuilder<PostgrestList> select([
-    String columns = '*',
-  ]) {
+  /// There are optional typedefs for typical types: [PostgrestMap], [PostgrestList], [PostgrestMapResponse], [PostgrestListResponse]
+  PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
     final re = RegExp(r'\s');
@@ -85,7 +69,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Perform an INSERT into the table or view.
   ///
-  /// By default no data is returned. Use a trailing `select` to return data.
+  /// By default no data is returned. Use a trailing [select] to return data.
   ///
   /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
   /// to be either `NULL` or the default value of these columns.
@@ -199,7 +183,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Perform an UPDATE on the table or view.
   ///
-  /// By default no data is returned. Use a trailing `select` to return data.
+  /// By default no data is returned. Use a trailing [select] to return data.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -230,7 +214,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Perform a DELETE on the table or view.
   ///
-  /// By default no data is returned. Use a trailing `select` to return data.
+  /// By default no data is returned. Use a trailing [select] to return data.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -268,6 +252,10 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     return _url;
   }
 
+  /// Only performs a count query on the table or view.
+  /// ```dart
+  /// int count = await supabase.from('users').count();
+  /// ```
   RawPostgrestBuilder<int, int, int> count(CountOption option) {
     return _copyWithType(
       method: METHOD_GET,
