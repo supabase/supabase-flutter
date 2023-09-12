@@ -198,13 +198,13 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// int count = res.count;
   /// ```
   ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count(
-      CountOption option) {
+      CountOption count) {
     return ResponsePostgrestBuilder(
-      _copyWithType(options: FetchOptions(count: option)),
+      _copyWithType(count: count),
     );
   }
 
   PostgrestBuilder<void, void, void> head() {
-    return _copyWithType(options: FetchOptions(head: true));
+    return _copyWithType(method: METHOD_HEAD);
   }
 }

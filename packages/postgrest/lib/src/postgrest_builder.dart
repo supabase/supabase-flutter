@@ -42,7 +42,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final PostgrestConverter<S, R>? _converter;
   final Client? _httpClient;
   final YAJsonIsolate? _isolate;
-  final FetchOptions? _options;
+  final CountOption? _count;
 
   PostgrestBuilder({
     required Uri url,
@@ -52,7 +52,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
-    FetchOptions? options,
+    CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
   })  : _maybeSingle = maybeSingle,
@@ -63,7 +63,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         _headers = headers,
         _httpClient = httpClient,
         _isolate = isolate,
-        _options = options,
+        _count = count,
         _body = body;
 
   PostgrestBuilder<T, S, R> _copyWith({
@@ -74,7 +74,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
-    FetchOptions? options,
+    CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
   }) {
@@ -86,27 +86,21 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       body: body ?? _body,
       httpClient: httpClient ?? _httpClient,
       isolate: isolate ?? _isolate,
-      options: options ?? _options,
+      count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
     );
   }
 
   Future<T> _execute() async {
-    final String? method;
-    if (_options?.head ?? false) {
-      method = METHOD_HEAD;
-    } else {
-      method = _method;
-    }
+    final String? method = _method;
 
-    if (_options?.count != null) {
+    if (_count != null) {
       if (_headers['Prefer'] != null) {
         final oldPreferHeader = _headers['Prefer'];
-        _headers['Prefer'] =
-            '$oldPreferHeader,count=${_options!.count!.name()}';
+        _headers['Prefer'] = '$oldPreferHeader,count=${_count!.name()}';
       } else {
-        _headers['Prefer'] = 'count=${_options!.count!.name()}';
+        _headers['Prefer'] = 'count=${_count!.name()}';
       }
     }
 
@@ -241,7 +235,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         converted = body as S;
       }
 
-      if (_options?.count != null && method != METHOD_HEAD) {
+      if (_count != null && method != METHOD_HEAD) {
         return PostgrestResponse<S>(
           data: converted,
           count: count!,
@@ -293,7 +287,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ) {
     if (error.details is String &&
         error.details.toString().contains('Results contain 0 rows')) {
-      if (_options?.count != null && response.request!.method != METHOD_HEAD) {
+      if (_count != null && response.request!.method != METHOD_HEAD) {
         if (_converter != null) {
           return PostgrestResponse<S>(data: _converter!(null as R), count: 0)
               as T;

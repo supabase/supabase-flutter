@@ -10,7 +10,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
           schema: builder._schema,
           body: builder._body,
           httpClient: builder._httpClient,
-          options: builder._options,
+          count: builder._count,
           isolate: builder._isolate,
           maybeSingle: builder._maybeSingle,
           converter: builder._converter,
@@ -25,7 +25,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
-    FetchOptions? options,
+    CountOption? count,
     bool? maybeSingle,
   }) {
     return RawPostgrestBuilder<O, P, Q>(PostgrestBuilder(
@@ -36,7 +36,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       body: body ?? _body,
       httpClient: httpClient ?? _httpClient,
       isolate: isolate ?? _isolate,
-      options: options ?? _options,
+      count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
     ));
   }
@@ -61,7 +61,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       body: _body,
       isolate: _isolate,
       httpClient: _httpClient,
-      options: _options,
+      count: _count,
       maybeSingle: _maybeSingle,
       converter: converter,
     );

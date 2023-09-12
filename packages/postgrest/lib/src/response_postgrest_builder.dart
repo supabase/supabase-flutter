@@ -10,7 +10,7 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
           schema: builder._schema,
           body: builder._body,
           httpClient: builder._httpClient,
-          options: builder._options,
+          count: builder._count,
           isolate: builder._isolate,
           maybeSingle: builder._maybeSingle,
           converter: builder._converter,
@@ -39,7 +39,7 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       body: _body,
       isolate: _isolate,
       httpClient: _httpClient,
-      options: _options,
+      count: _count,
       maybeSingle: _maybeSingle,
       converter: converter,
     );

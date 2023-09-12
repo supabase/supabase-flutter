@@ -18,7 +18,6 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
-    FetchOptions? options,
     YAJsonIsolate? isolate,
   }) : super(
           PostgrestBuilder(
@@ -27,7 +26,6 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
             headers: headers ?? {},
             schema: schema,
             httpClient: httpClient,
-            options: options,
             isolate: isolate,
           ),
         );
@@ -258,8 +256,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```
   RawPostgrestBuilder<int, int, int> count(CountOption option) {
     return _copyWithType(
-      method: METHOD_GET,
-      options: FetchOptions(count: option, head: true),
+      method: METHOD_HEAD,
+      count: option,
     );
   }
 }
