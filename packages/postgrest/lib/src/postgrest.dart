@@ -79,7 +79,7 @@ class PostgrestClient {
   /// ```dart
   /// supabase.rpc('get_status', params: {'name_param': 'supabot'})
   /// ```
-  PostgrestFilterBuilder rpc(
+  PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map? params,
   }) {

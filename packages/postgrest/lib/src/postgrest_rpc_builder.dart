@@ -1,6 +1,6 @@
 part of 'postgrest_builder.dart';
 
-class PostgrestRpcBuilder extends PostgrestBuilder {
+class PostgrestRpcBuilder extends RawPostgrestBuilder {
   PostgrestRpcBuilder(
     String url, {
     Map<String, String>? headers,
@@ -8,18 +8,20 @@ class PostgrestRpcBuilder extends PostgrestBuilder {
     Client? httpClient,
     required YAJsonIsolate isolate,
   }) : super(
-          url: Uri.parse(url),
-          headers: headers ?? {},
-          schema: schema,
-          httpClient: httpClient,
-          isolate: isolate,
+          PostgrestBuilder(
+            url: Uri.parse(url),
+            headers: headers ?? {},
+            schema: schema,
+            httpClient: httpClient,
+            isolate: isolate,
+          ),
         );
 
   /// Performs stored procedures on the database.
-  PostgrestFilterBuilder rpc([
+  PostgrestFilterBuilder<T> rpc<T>([
     Object? params,
   ]) {
-    return PostgrestFilterBuilder(_copyWith(
+    return PostgrestFilterBuilder(_copyWithType(
       method: METHOD_POST,
       body: params,
     ));

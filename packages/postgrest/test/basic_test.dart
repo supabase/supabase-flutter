@@ -36,19 +36,19 @@ void main() {
     });
 
     test('stored procedure', () async {
-      final res = await postgrest.rpc('get_status', params: {
+      final res = await postgrest.rpc<String>('get_status', params: {
         'name_param': 'supabot',
       });
       expect(res, 'ONLINE');
     });
 
     test('select on stored procedure', () async {
-      final List res = await postgrest.rpc(
+      final res = await postgrest.rpc(
         'get_username_and_status',
         params: {'name_param': 'supabot'},
       ).select('status');
       expect(
-        (res.first as Map<String, dynamic>)['status'],
+        res.first['status'],
         'ONLINE',
       );
     });
@@ -275,12 +275,7 @@ void main() {
     });
 
     test('select with head:true', () async {
-      await postgrest
-          .from('users')
-          .select(
-            '*',
-          )
-          .head();
+      await postgrest.from('users').select('*').head();
     });
 
     test('select with head:true, count: exact', () async {
@@ -305,7 +300,7 @@ void main() {
     });
 
     test('stored procedure with count: exact', () async {
-      final res = await postgrest.rpc(
+      final res = await postgrest.rpc<String>(
         'get_status',
         params: {'name_param': 'supabot'},
       ).count(CountOption.exact);
@@ -437,7 +432,7 @@ void main() {
     test('basic stored procedure call', () async {
       try {
         await postgrestCustomHttpClient
-            .rpc('get_status', params: {'name_param': 'supabot'});
+            .rpc<String>('get_status', params: {'name_param': 'supabot'});
         fail(
             'Stored procedure was able to be called, even tho it does not exist');
       } on PostgrestException catch (error) {

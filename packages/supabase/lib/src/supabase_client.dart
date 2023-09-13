@@ -183,7 +183,7 @@ class SupabaseClient {
   }
 
   /// Perform a stored procedure call.
-  PostgrestFilterBuilder rpc(
+  PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map<String, dynamic>? params,
   }) {
