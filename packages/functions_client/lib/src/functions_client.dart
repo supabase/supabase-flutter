@@ -110,7 +110,12 @@ class FunctionsClient {
       'application/octet-stream' => response.bodyBytes,
       _ => utf8.decode(response.bodyBytes),
     };
-    return FunctionResponse(data: data, status: response.statusCode);
+
+    if (200 <= response.statusCode && response.statusCode < 300) {
+      return FunctionResponse(data: data, status: response.statusCode);
+    } else {
+      throw FunctionException(response.statusCode, data);
+    }
   }
 
   /// Disposes the self created isolate for json encoding/decoding

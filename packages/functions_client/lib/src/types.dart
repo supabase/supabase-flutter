@@ -15,10 +15,17 @@ class FunctionResponse {
   /// - 'octet/stream': [Uint8List]
   /// - 'application/json': dynamic ([jsonDecode] is used)
   final dynamic data;
-  final int? status;
+  final int status;
 
   FunctionResponse({
     this.data,
-    this.status,
+    required this.status,
   });
+}
+
+class FunctionException {
+  final int status;
+  final Object reason;
+
+  FunctionException(this.status, this.reason);
 }
