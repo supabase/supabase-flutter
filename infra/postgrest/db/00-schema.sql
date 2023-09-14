@@ -61,6 +61,13 @@ CREATE FUNCTION public.void_func()
 RETURNS void AS $$
 $$ LANGUAGE SQL;
 
+CREATE FUNCTION public.get_integer()
+    RETURNS integer AS $$
+    BEGIN
+        RETURN 42;
+    End;
+$$ LANGUAGE plpgsql;
+
 -- SECOND SCHEMA USERS
 CREATE TYPE personal.user_status AS ENUM ('ONLINE', 'OFFLINE');
 CREATE TABLE personal.users(

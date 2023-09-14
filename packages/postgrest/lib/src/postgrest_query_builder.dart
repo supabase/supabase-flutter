@@ -40,10 +40,6 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// supabase.from('users').select('id, messages').count(CountOption.exact);
   /// ```
   /// By appending [count] the return type is [PostgrestResponse]. Otherwise it's the data directly without the wrapper.
-  ///
-  /// The type specification for [R] is optional and enhances the type safety of the return value. But use with care as a wrong type specification will result in a runtime error
-  ///
-  /// There are optional typedefs for typical types: [PostgrestMap], [PostgrestList], [PostgrestMapResponse], [PostgrestListResponse]
   PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
@@ -254,7 +250,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```dart
   /// int count = await supabase.from('users').count();
   /// ```
-  RawPostgrestBuilder<int, int, int> count(CountOption option) {
+  RawPostgrestBuilder<int, int, int> count(
+      [CountOption option = CountOption.exact]) {
     return _copyWithType(
       method: METHOD_HEAD,
       count: option,

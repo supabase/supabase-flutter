@@ -16,8 +16,6 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```
   ///
   /// By appending [count] the return type is [PostgrestResponse]. Otherwise it's the data directly without the wrapper.
-  ///
-  /// There are optional typedefs for typical types: [PostgrestMap], [PostgrestList], [PostgrestMapResponse], [PostgrestListResponse]
   PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
@@ -203,7 +201,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// int count = res.count;
   /// ```
   ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count(
-      CountOption count) {
+      [CountOption count = CountOption.exact]) {
     return ResponsePostgrestBuilder(
       _copyWithType(count: count),
     );

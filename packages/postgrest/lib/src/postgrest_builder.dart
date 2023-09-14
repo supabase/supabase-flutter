@@ -27,6 +27,7 @@ const METHOD_DELETE = 'DELETE';
 typedef _Nullable<T> = T?;
 
 /// The base builder class.
+///
 /// [T] for the overall return type, so `PostgrestResponse<S>` or [S]
 ///
 /// When using [_converter], [S] is the input and [R] is the output
@@ -225,7 +226,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           body = PostgrestMap.from(body);
         }
       } else if (R == int) {
-        body = count;
+        if (count != null) body = count;
       }
       body as R;
 

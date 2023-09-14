@@ -58,6 +58,11 @@ void main() {
       expect(res, isNull);
     });
 
+    test('stored procedure returns int', () async {
+      final res = await postgrest.rpc<int>('get_integer');
+      expect(res, isA<int>());
+    });
+
     test('custom headers', () async {
       final postgrest = PostgrestClient(rootUrl, headers: {'apikey': 'foo'});
       expect(postgrest.headers['apikey'], 'foo');
