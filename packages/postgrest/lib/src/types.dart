@@ -69,8 +69,13 @@ class PostgrestResponse<T> {
 
 /// Returns count as part of the response when specified.
 enum CountOption {
+  /// Exact but slow count algorithm. Performs a `COUNT(*)` under the hood.
   exact,
+
+  /// Approximated but fast count algorithm. Uses the Postgres statistics under the hood.
   planned,
+
+  /// Uses exact count for low numbers and planned count for high numbers.
   estimated,
 }
 

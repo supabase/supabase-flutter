@@ -207,6 +207,16 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     );
   }
 
+  /// Performs a head request.
+  ///
+  /// This will not return any data, but can only be used for either
+  /// ```dart
+  /// supabase.from("table").select().head();
+  /// ```
+  /// or
+  /// ```dart
+  /// supabase.rpc("function").head();
+  ///```
   PostgrestBuilder<void, void, void> head() {
     return _copyWithType(method: METHOD_HEAD);
   }
