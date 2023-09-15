@@ -183,13 +183,12 @@ class SupabaseClient {
   }
 
   /// Perform a stored procedure call.
-  PostgrestFilterBuilder rpc(
+  PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map<String, dynamic>? params,
-    FetchOptions options = const FetchOptions(),
   }) {
     rest.headers.addAll({...rest.headers, ...headers});
-    return rest.rpc(fn, params: params, options: options);
+    return rest.rpc(fn, params: params);
   }
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.

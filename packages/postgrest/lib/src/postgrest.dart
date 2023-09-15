@@ -77,12 +77,11 @@ class PostgrestClient {
   /// Perform a stored procedure call.
   ///
   /// ```dart
-  /// postgrest.rpc('get_status', params: {'name_param': 'supabot'})
+  /// supabase.rpc('get_status', params: {'name_param': 'supabot'})
   /// ```
-  PostgrestFilterBuilder rpc(
+  PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map? params,
-    FetchOptions options = const FetchOptions(),
   }) {
     final url = '${this.url}/rpc/$fn';
     return PostgrestRpcBuilder(
@@ -90,9 +89,8 @@ class PostgrestClient {
       headers: {...headers},
       schema: schema,
       httpClient: httpClient,
-      options: options,
       isolate: _isolate,
-    ).rpc(params, options);
+    ).rpc(params);
   }
 
   Future<void> dispose() async {

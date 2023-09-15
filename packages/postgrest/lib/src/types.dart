@@ -43,28 +43,39 @@ class PostgrestException implements Exception {
 class PostgrestResponse<T> {
   const PostgrestResponse({
     required this.data,
-    required this.status,
-    this.count,
+    required this.count,
   });
 
-  final T? data;
+  final T data;
 
-  final int status;
-
-  final int? count;
+  final int count;
 
   factory PostgrestResponse.fromJson(Map<String, dynamic> json) =>
       PostgrestResponse<T>(
         data: json['data'] as T,
-        status: json['status'] as int,
-        count: json['count'] as int?,
+        count: json['count'] as int,
       );
+
+  Map<String, dynamic> toJson() => {
+        'data': data,
+        'count': count,
+      };
+
+  @override
+  String toString() {
+    return 'PostgrestResponse(data: $data, count: $count)';
+  }
 }
 
 /// Returns count as part of the response when specified.
 enum CountOption {
+  /// Exact but slow count algorithm. Performs a `COUNT(*)` under the hood.
   exact,
+
+  /// Approximated but fast count algorithm. Uses the Postgres statistics under the hood.
   planned,
+
+  /// Uses exact count for low numbers and planned count for high numbers.
   estimated,
 }
 
@@ -102,44 +113,5 @@ enum TextSearchType {
 extension TextSearchTypeName on TextSearchType {
   String name() {
     return toString().split('.').last;
-  }
-}
-
-/// {@template fetch_options}
-/// Options for querying Supabase.
-///
-/// [count] options can be used to retrieve the total number of rows that satisfies the
-/// query. The value for count respects any filters (e.g. `eq`, `gt`), but ignores
-/// modifiers (e.g. `limit`, `range`).
-///
-/// Set [head] to `true` if you only want the [count] value and not the underlying data.
-///
-/// Set [forceResponse] to `true` if you want to force the return type to be [PostgrestResponse<T>].
-/// {endtemplate}
-class FetchOptions {
-  /// Set [head] to true if you only want the [count] value and not the underlying data.
-  final bool head;
-
-  /// [count] options can be used to retrieve the total number of rows that satisfies the
-  /// query. The value for count respects any filters (e.g. eq, gt), but ignores
-  /// modifiers (e.g. limit, range).
-  final CountOption? count;
-
-  /// Set [forceResponse] to `true` if you want to force the return type to be [PostgrestResponse<T>].
-  final bool forceResponse;
-
-  /// {@macro fetch_options}
-  const FetchOptions({
-    this.head = false,
-    this.count,
-    this.forceResponse = false,
-  });
-
-  FetchOptions ensureNotHead() {
-    return FetchOptions(
-      head: false,
-      count: count,
-      forceResponse: forceResponse,
-    );
   }
 }

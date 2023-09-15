@@ -1,19 +1,7 @@
 part of 'postgrest_builder.dart';
 
-class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
-  PostgrestTransformBuilder(PostgrestBuilder<T, T> builder)
-      : super(
-          url: builder._url,
-          method: builder._method,
-          headers: builder._headers,
-          schema: builder._schema,
-          body: builder._body,
-          httpClient: builder._httpClient,
-          options: builder._options,
-          isolate: builder._isolate,
-          maybeSingle: builder._maybeSingle,
-          converter: builder._converter,
-        );
+class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
+  PostgrestTransformBuilder(super.builder);
 
   PostgrestTransformBuilder<T> copyWithUrl(Uri url) =>
       PostgrestTransformBuilder(_copyWith(url: url));
@@ -21,33 +9,14 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// Performs horizontal filtering with SELECT.
   ///
   /// ```dart
-  /// postgrest.from('users').insert().select<PostgrestList>('id, messages');
+  /// supabase.from('users').insert().select('id, messages');
   /// ```
   /// ```dart
-  /// postgrest.from('users').insert().select<PostgrestListResponse>('id, messages', FetchOptions(count: CountOption.exact));
+  /// supabase.from('users').insert().select('id, messages').count(CountOption.exact);
   /// ```
   ///
-  /// By setting [FetchOptions.count] to non null or [FetchOptions.forceResponse] to `true`, the return type is [PostgrestResponse<T>]. Otherwise it's `T` directly.
-  ///
-  /// The type specification for [R] is optional and enhances the type safety of the return value. But use with care as a wrong type specification will result in a runtime error.
-  ///
-  /// `T` is
-  /// - [List<Map<String, dynamic>>] for queries without `.single()` or `maybeSingle()`
-  /// - [Map<String, dynamic>] for queries with `.single()`
-  /// - [Map<String, dynamic>?] for queries with `.maybeSingle()`
-  ///
-  /// Allowed types for [R] are:
-  /// - [List<Map<String, dynamic>>]
-  /// - [Map<String, dynamic>]
-  /// - [Map<String, dynamic>?]
-  /// - [PostgrestResponse<List<Map<String, dynamic>>>]
-  /// - [PostgrestResponse<Map<String, dynamic>>]
-  /// - [PostgrestResponse<Map<String, dynamic>?>]
-  /// - [PostgrestResponse]
-  ///
-  /// There are optional typedefs for [R]: [PostgrestMap], [PostgrestList], [PostgrestMapResponse], [PostgrestListResponse]
-  PostgrestTransformBuilder<R> select<R>([String columns = '*']) {
-    _assertCorrectGeneric(R);
+  /// By appending [count] the return type is [PostgrestResponse]. Otherwise it's the data directly without the wrapper.
+  PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
     final re = RegExp(r'\s');
@@ -67,7 +36,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
       newHeaders['Prefer'] = '${newHeaders['Prefer']},';
     }
     newHeaders['Prefer'] = '${newHeaders['Prefer']}return=representation';
-    return PostgrestTransformBuilder<R>(
+    return PostgrestTransformBuilder<PostgrestList>(
       _copyWithType(
         url: url,
         headers: newHeaders,
@@ -77,15 +46,15 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
 
   /// Orders the result with the specified [column].
   ///
-  /// When [options] has `ascending` value true, the result will be in ascending order.
-  /// When [options] has `nullsFirst` value true, `null`s appear first.
+  /// When [ascending] is true, the result will be in ascending order.
+  /// When [nullsFirst] is true, `null`s appear first.
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
   ///     .select()
   ///     .order('username', ascending: false);
   /// ````
-  /// If [column] is a foreign column, the [options] need to have `foreignTable` value provided
+  /// If [column] is a foreign column, [foreignTable] has to be set
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
@@ -107,13 +76,13 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
-  /// Limits the result with the specified `count`.
+  /// Limits the result with the specified [count].
   ///
   /// ```dart
   /// final data = await supabase.from('users').select().limit(1);
   /// ```
   ///
-  /// If we want to limit a foreign column, the [options] need to have `foreignTable` value provided
+  /// If we want to limit a foreign column, [foreignTable] has to be set
   /// ```dart
   /// final data = await supabase
   ///   .from('users')
@@ -136,7 +105,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   ///     .range(1, 1);
   /// ```
   ///
-  /// If we want to limit a foreign column, the [options] need to have `foreignTable` value provided
+  /// If we want to limit a foreign column, [foreignTable] has to be set
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
@@ -158,20 +127,19 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
-  ///     .select<PostgrestMap>()
+  ///     .select()
   ///     .limit(1)
   ///     .single();
   /// ```
-  ///
-  /// Data type is `Map<String, dynamic>`.
-  ///
-  /// By specifying this type via `.select<Map<String,dynamic>>()` you get more type safety.
-  PostgrestTransformBuilder<T> single() {
+  PostgrestTransformBuilder<PostgrestMap> single() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
-    return PostgrestTransformBuilder(_copyWith(
-      headers: newHeaders,
-    ));
+
+    return PostgrestTransformBuilder(
+      _copyWithType(
+        headers: newHeaders,
+      ),
+    );
   }
 
   /// Retrieves at most one row from the result.
@@ -179,12 +147,7 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// Result must be at most one row or nullable
   /// (e.g. using `eq` on a UNIQUE column or `limit(1)`),
   /// otherwise this will result in an error.
-  ///
-  ///
-  /// Data type is `Map<String, dynamic>?`.
-  ///
-  /// By specifying this type via `.select<Map<String,dynamic>?>()` you get more type safety.
-  PostgrestTransformBuilder<T> maybeSingle() {
+  PostgrestTransformBuilder<PostgrestMap?> maybeSingle() {
     // Temporary fix for https://github.com/supabase/supabase-flutter/issues/560
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
     final newHeaders = {..._headers};
@@ -195,24 +158,66 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
       newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
     }
 
-    return PostgrestTransformBuilder<T>(_copyWith(
-      maybeSingle: true,
-      headers: newHeaders,
-    ));
+    return PostgrestTransformBuilder(
+      _copyWithType(
+        maybeSingle: true,
+        headers: newHeaders,
+      ),
+    );
   }
 
   /// Retrieves the response as CSV.
+  ///
   /// This will skip object parsing.
   ///
   /// ```dart
-  /// postgrest.from('users').select().csv()
+  /// supabase.from('users').select().csv()
   /// ```
-  PostgrestTransformBuilder<T> csv() {
+  PostgrestTransformBuilder<String> csv() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'text/csv';
 
-    return PostgrestTransformBuilder<T>(_copyWith(
-      headers: newHeaders,
-    ));
+    return PostgrestTransformBuilder(
+      _copyWithType(
+        headers: newHeaders,
+      ),
+    );
+  }
+
+  /// Performs additionally to the [select] a count query.
+  ///
+  /// It's used to retrieve the total number of rows that satisfy the
+  /// query. The value for count respects any filters (e.g. eq, gt), but ignores
+  /// modifiers (e.g. limit, range).
+  ///
+  /// This changes the return type from the data only to a [PostgrestResponse] with the data and the count.
+  ///
+  /// ```dart
+  /// final res = await postgrest
+  ///    .from('users')
+  ///    .select()
+  ///    .count(CountOption.exact);
+  /// final users = res.data;
+  /// int count = res.count;
+  /// ```
+  ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count(
+      [CountOption count = CountOption.exact]) {
+    return ResponsePostgrestBuilder(
+      _copyWithType(count: count),
+    );
+  }
+
+  /// Performs a head request.
+  ///
+  /// This will not return any data, but can only be used for either
+  /// ```dart
+  /// supabase.from("table").select().head();
+  /// ```
+  /// or
+  /// ```dart
+  /// supabase.rpc("function").head();
+  ///```
+  PostgrestBuilder<void, void, void> head() {
+    return _copyWithType(method: METHOD_HEAD);
   }
 }

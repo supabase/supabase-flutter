@@ -11,10 +11,10 @@ class ResetHelper {
 
   Future<void> initialize(PostgrestClient postgrest) async {
     _postgrest = postgrest;
-    _users = (await _postgrest.from('users').select<PostgrestList>());
-    _channels = await _postgrest.from('channels').select<PostgrestList>();
-    _messages = await _postgrest.from('messages').select<PostgrestList>();
-    _reactions = await _postgrest.from('reactions').select<PostgrestList>();
+    _users = (await _postgrest.from('users').select());
+    _channels = await _postgrest.from('channels').select();
+    _messages = await _postgrest.from('messages').select();
+    _reactions = await _postgrest.from('reactions').select();
   }
 
   Future<void> reset([int delay = 0]) async {
@@ -27,8 +27,7 @@ class ResetHelper {
 
       await _postgrest.from('users').insert(_users);
 
-      final insertedUsers =
-          await _postgrest.from('users').select<PostgrestList>();
+      final insertedUsers = await _postgrest.from('users').select();
 
       // Somehow the order of the users is sometimes not correct. Adding the delay should solve this.
       if (!DeepCollectionEquality().equals(insertedUsers, _users)) {

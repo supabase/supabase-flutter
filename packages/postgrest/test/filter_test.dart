@@ -24,7 +24,7 @@ void main() {
   test('not', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('status')
+        .select('status')
         .not('status', 'eq', 'OFFLINE');
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -35,7 +35,7 @@ void main() {
   test('not with in filter', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .not('username', 'in', ['supabot', 'kiwicopple']);
     expect(res, isNotEmpty);
 
@@ -48,7 +48,7 @@ void main() {
   test('not with List of values', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('status')
+        .select('status')
         .not('interests', 'cs', ['baseball', 'basketball']);
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -63,7 +63,7 @@ void main() {
   test('or', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('status, username')
+        .select('status, username')
         .or('status.eq.OFFLINE,username.eq.supabot');
     expect(res, isNotEmpty);
 
@@ -79,7 +79,7 @@ void main() {
     test('eq string', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .eq('username', 'supabot');
       expect(res, isNotEmpty);
 
@@ -91,7 +91,7 @@ void main() {
     test('eq list', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .eq('interests', ["basketball", "baseball"]);
       expect(res, isNotEmpty);
 
@@ -105,7 +105,7 @@ void main() {
     test('neq string', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .neq('username', 'supabot');
       expect(res, isNotEmpty);
 
@@ -117,7 +117,7 @@ void main() {
     test('neq list', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .neq('interests', ["football"]);
       expect(res, isNotEmpty);
 
@@ -127,10 +127,7 @@ void main() {
   });
 
   test('gt', () async {
-    final res = await postgrest
-        .from('messages')
-        .select<PostgrestList>('id')
-        .gt('id', 1);
+    final res = await postgrest.from('messages').select('id').gt('id', 1);
     expect(res, isNotEmpty);
 
     for (final item in res) {
@@ -139,10 +136,7 @@ void main() {
   });
 
   test('gte', () async {
-    final res = await postgrest
-        .from('messages')
-        .select<PostgrestList>('id')
-        .gte('id', 1);
+    final res = await postgrest.from('messages').select('id').gte('id', 1);
     expect(res, isNotEmpty);
 
     for (final item in res) {
@@ -151,10 +145,7 @@ void main() {
   });
 
   test('lt', () async {
-    final res = await postgrest
-        .from('messages')
-        .select<PostgrestList>('id')
-        .lt('id', 2);
+    final res = await postgrest.from('messages').select('id').lt('id', 2);
     expect(res, isNotEmpty);
     for (final item in res) {
       expect((item['id'] as int) < 2, true);
@@ -162,10 +153,7 @@ void main() {
   });
 
   test('lte', () async {
-    final res = await postgrest
-        .from('messages')
-        .select<PostgrestList>('id')
-        .lte('id', 2);
+    final res = await postgrest.from('messages').select('id').lte('id', 2);
     expect(res, isNotEmpty);
     for (final item in res) {
       expect((item['id'] as int) > 2, false);
@@ -175,7 +163,7 @@ void main() {
   test('like', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .like('username', '%supa%');
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -186,7 +174,7 @@ void main() {
   test('likeAllOf', () async {
     PostgrestList res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .likeAllOf('username', ['%supa%', '%bot%']);
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -198,7 +186,7 @@ void main() {
   test('likeAnyOf', () async {
     PostgrestList res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .likeAnyOf('username', ['%supa%', '%wai%']);
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -211,7 +199,7 @@ void main() {
   test('ilike', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .ilike('username', '%SUPA%');
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -223,7 +211,7 @@ void main() {
   test('ilikeAllOf', () async {
     PostgrestList res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .ilikeAllOf('username', ['%SUPA%', '%bot%']);
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -235,7 +223,7 @@ void main() {
   test('ilikeAnyOf', () async {
     PostgrestList res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .ilikeAnyOf('username', ['%SUPA%', '%wai%']);
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -247,10 +235,7 @@ void main() {
   });
 
   test('is', () async {
-    final res = await postgrest
-        .from('users')
-        .select<PostgrestList>('data')
-        .is_('data', null);
+    final res = await postgrest.from('users').select('data').is_('data', null);
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(item['data'], null);
@@ -260,7 +245,7 @@ void main() {
   test('in', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('status')
+        .select('status')
         .in_('status', ['ONLINE', 'OFFLINE']);
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -272,7 +257,7 @@ void main() {
   });
 
   test('immutable filter', () async {
-    final query = postgrest.from("users").select<PostgrestList>();
+    final query = postgrest.from("users").select();
     final res1 = await query.eq("status", "OFFLINE");
     final res2 = await query.eq("username", "supabot");
 
@@ -286,7 +271,7 @@ void main() {
     test('contains range', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .contains('age_range', '[1,2)');
       expect(res, isNotEmpty);
       expect(
@@ -298,7 +283,7 @@ void main() {
     test('contains list', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .contains('interests', ["basketball", "baseball"]);
       expect(res, isNotEmpty);
       expect(
@@ -311,7 +296,7 @@ void main() {
     test('containedBy range', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .containedBy('age_range', '[0,3)');
       expect(res, isNotEmpty);
       expect((res[0])['username'], 'supabot');
@@ -320,7 +305,7 @@ void main() {
     test('containedBy list', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .containedBy('interests', ["basketball", "baseball", "xxxx"]);
       expect(res, isNotEmpty);
       expect(res[0]['username'], 'supabot');
@@ -330,7 +315,7 @@ void main() {
   test('rangeLt', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .rangeLt('age_range', '[2,25)');
     expect(res, isNotEmpty);
     expect(res[0]['username'], 'supabot');
@@ -339,7 +324,7 @@ void main() {
   test('rangeGt', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('age_range')
+        .select('age_range')
         .rangeGt('age_range', '[2,25)');
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -350,7 +335,7 @@ void main() {
   test('rangeGte', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('age_range')
+        .select('age_range')
         .rangeGte('age_range', '[2,25)');
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -361,7 +346,7 @@ void main() {
   test('rangeLte', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .rangeLte('age_range', '[2,25)');
     expect(res, isNotEmpty);
     for (final item in res) {
@@ -372,7 +357,7 @@ void main() {
   test('rangeAdjacent', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('age_range')
+        .select('age_range')
         .rangeAdjacent('age_range', '[2,25)');
     expect(res.length, 3);
   });
@@ -381,7 +366,7 @@ void main() {
     test('overlaps range', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .overlaps('age_range', '[2,25)');
       expect(
         (res[0])['username'],
@@ -392,7 +377,7 @@ void main() {
     test('overlaps list', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>('username')
+          .select('username')
           .overlaps('interests', ["basketball", "baseball"]);
       expect(
         (res[0])['username'],
@@ -404,16 +389,13 @@ void main() {
   test('textSearch', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('username')
+        .select('username')
         .textSearch('catchphrase', "'fat' & 'cat'", config: 'english');
     expect(res[0]['username'], 'supabot');
   });
 
   test('textSearch with plainto_tsquery', () async {
-    final res = await postgrest
-        .from('users')
-        .select<PostgrestList>('username')
-        .textSearch(
+    final res = await postgrest.from('users').select('username').textSearch(
           'catchphrase',
           "'fat' & 'cat'",
           config: 'english',
@@ -423,10 +405,7 @@ void main() {
   });
 
   test('textSearch with phraseto_tsquery', () async {
-    final res = await postgrest
-        .from('users')
-        .select<PostgrestList>('username')
-        .textSearch(
+    final res = await postgrest.from('users').select('username').textSearch(
           'catchphrase',
           'cat',
           config: 'english',
@@ -436,10 +415,7 @@ void main() {
   });
 
   test('textSearch with websearch_to_tsquery', () async {
-    final res = await postgrest
-        .from('users')
-        .select<PostgrestList>('username')
-        .textSearch(
+    final res = await postgrest.from('users').select('username').textSearch(
           'catchphrase',
           "'fat' & 'cat'",
           config: 'english',
@@ -451,7 +427,7 @@ void main() {
   test('multiple filters', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>()
+        .select()
         .eq('username', 'supabot')
         .is_('data', null)
         .overlaps('age_range', '[1,2)')
@@ -464,7 +440,7 @@ void main() {
     test('filter', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>()
+          .select()
           .filter('username', 'eq', 'supabot');
       expect(res[0]['username'], 'supabot');
     });
@@ -472,7 +448,7 @@ void main() {
     test('filter in with List of values', () async {
       final res = await postgrest
           .from('users')
-          .select<PostgrestList>()
+          .select()
           .filter('username', 'in', ['supabot', 'kiwicopple']);
       expect(res.length, 2);
       for (final item in res) {
@@ -487,7 +463,7 @@ void main() {
   test('match', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>()
+        .select()
         .match({'username': 'supabot', 'status': 'ONLINE'});
     expect(res[0]['username'], 'supabot');
   });
@@ -501,7 +477,7 @@ void main() {
   test('date range filter 1', () async {
     final res = await postgrest
         .from('messages')
-        .select<PostgrestList>()
+        .select()
         .gte('inserted_at', DateTime.parse('2021-06-24').toIso8601String())
         .lte('inserted_at', DateTime.parse('2021-06-26').toIso8601String());
     expect(res.length, 1);
@@ -510,7 +486,7 @@ void main() {
   test('date range filter 2', () async {
     final res = await postgrest
         .from('messages')
-        .select<PostgrestList>()
+        .select()
         .gte('inserted_at', DateTime.parse('2021-06-24').toIso8601String())
         .lte('inserted_at', DateTime.parse('2021-06-30').toIso8601String());
     expect(res.length, 2);
