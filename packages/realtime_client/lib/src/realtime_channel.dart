@@ -9,6 +9,8 @@ import 'package:realtime_client/src/retry_timer.dart';
 import 'package:realtime_client/src/transformers.dart';
 
 typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
+typedef TriggerCallback = void Function(String type,
+    [dynamic payload, String? ref]);
 
 class Binding {
   String type;
@@ -120,9 +122,14 @@ class RealtimeChannel {
   Map<String, dynamic> params;
   final RealtimeClient socket;
 
-  RealtimeChannel(this.topic, this.socket,
-      {RealtimeChannelConfig params = const RealtimeChannelConfig()})
-      : _timeout = socket.timeout,
+  late final TriggerCallback onTrigger;
+
+  RealtimeChannel(
+    this.topic,
+    this.socket, {
+    RealtimeChannelConfig params = const RealtimeChannelConfig(),
+    TriggerCallback? onTrigger,
+  })  : _timeout = socket.timeout,
         params = params.toMap() {
     joinPush = Push(
       this,
@@ -140,6 +147,8 @@ class RealtimeChannel {
       }
       _pushBuffer = [];
     });
+
+    this.onTrigger = onTrigger ?? (type, [payload, ref]) {};
 
     onClose(() {
       _rejoinTimer.reset();
@@ -511,6 +520,8 @@ class RealtimeChannel {
   }
 
   void trigger(String type, [dynamic payload, String? ref]) {
+    onTrigger(type, payload, ref);
+
     final typeLower = type.toLowerCase();
 
     final events = [

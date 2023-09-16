@@ -45,7 +45,10 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   /// ```dart
   /// supabase.from('chats').stream(primaryKey: ['id']).eq('room_id','123').order('created_at').limit(20).listen(_onChatsReceived);
   /// ```
-  SupabaseStreamBuilder stream({required List<String> primaryKey}) {
+  SupabaseStreamBuilder stream({
+    required List<String> primaryKey,
+    TriggerCallback? onTrigger,
+  }) {
     assert(primaryKey.isNotEmpty, 'Please specify primary key column(s).');
     return SupabaseStreamBuilder(
       queryBuilder: this,
@@ -54,6 +57,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
       schema: _schema,
       table: _table,
       primaryKey: primaryKey,
+      onTrigger: onTrigger,
     );
   }
 }

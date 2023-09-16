@@ -275,12 +275,18 @@ class RealtimeClient {
   RealtimeChannel channel(
     String topic, [
     RealtimeChannelConfig params = const RealtimeChannelConfig(),
+    TriggerCallback? onTrigger,
   ]) {
     if (!isConnected) {
       connect();
     }
 
-    final chan = RealtimeChannel('realtime:$topic', this, params: params);
+    final chan = RealtimeChannel(
+      'realtime:$topic',
+      this,
+      params: params,
+      onTrigger: onTrigger,
+    );
     channels.add(chan);
     return chan;
   }

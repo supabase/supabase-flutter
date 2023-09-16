@@ -49,6 +49,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Used to identify which row has changed
   final List<String> _uniqueColumns;
 
+  late final TriggerCallback? _onTrigger;
+
   /// StreamController for `stream()` method.
   BehaviorSubject<SupabaseStreamEvent>? _streamController;
 
@@ -71,12 +73,14 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     required String schema,
     required String table,
     required List<String> primaryKey,
+    TriggerCallback? onTrigger
   })  : _queryBuilder = queryBuilder,
         _realtimeTopic = realtimeTopic,
         _realtimeClient = realtimeClient,
         _schema = schema,
         _table = table,
-        _uniqueColumns = primaryKey;
+        _uniqueColumns = primaryKey,
+        _onTrigger = onTrigger;
 
   /// Filters the results where [column] equals [value].
   ///
@@ -296,7 +300,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       }
     }
 
-    _channel = _realtimeClient.channel(_realtimeTopic);
+    _channel = _realtimeClient.channel(_realtimeTopic, const RealtimeChannelConfig(), _onTrigger);
     _channel!.on(
         RealtimeListenTypes.postgresChanges,
         ChannelFilter(
