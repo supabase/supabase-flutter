@@ -25,7 +25,8 @@ class FunctionResponse {
 
 class FunctionException {
   final int status;
-  final Object reason;
+  final dynamic details;
+  final String? reasonPhrase;
 
-  FunctionException(this.status, this.reason);
+  FunctionException({required this.status, this.details, this.reasonPhrase});
 }

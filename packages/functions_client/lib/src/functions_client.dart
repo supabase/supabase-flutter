@@ -110,11 +110,14 @@ class FunctionsClient {
       'application/octet-stream' => response.bodyBytes,
       _ => utf8.decode(response.bodyBytes),
     };
-
     if (200 <= response.statusCode && response.statusCode < 300) {
       return FunctionResponse(data: data, status: response.statusCode);
     } else {
-      throw FunctionException(response.statusCode, data);
+      throw FunctionException(
+        status: response.statusCode,
+        details: data,
+        reasonPhrase: response.reasonPhrase,
+      );
     }
   }
 
