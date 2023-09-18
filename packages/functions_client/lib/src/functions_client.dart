@@ -100,8 +100,11 @@ class FunctionsClient {
         break;
     }
 
-    final responseType =
-        (response.headers['Content-Type'] ?? 'text/plain').split(';')[0].trim();
+    final responseType = (response.headers['Content-Type'] ??
+            response.headers['content-type'] ??
+            'text/plain')
+        .split(';')[0]
+        .trim();
 
     final data = switch (responseType) {
       'application/json' => response.bodyBytes.isEmpty
