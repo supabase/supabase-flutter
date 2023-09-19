@@ -294,41 +294,42 @@ void main() {
 
     group('The auth client can signin with third-party oAuth providers', () {
       test('signIn() with Provider', () async {
-        final res = await client.getOAuthSignInUrl(provider: Provider.google);
+        final res =
+            await client.getOAuthSignInUrl(provider: OAuthProvider.google);
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider with redirectTo', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google, redirectTo: 'https://supabase.com');
+            provider: OAuthProvider.google, redirectTo: 'https://supabase.com');
         expect(res.url,
             '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com');
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append a redirectUrl', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google,
+            provider: OAuthProvider.google,
             redirectTo: 'https://localhost:9000/welcome');
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append scopes', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google, scopes: 'repo');
+            provider: OAuthProvider.google, scopes: 'repo');
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append options', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google,
+            provider: OAuthProvider.google,
             redirectTo: 'https://localhost:9000/welcome',
             scopes: 'repo');
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
     });
 
@@ -419,7 +420,7 @@ void main() {
     test('getOAuthSignInUrl with PKCE flow has the correct query parameters',
         () async {
       final response = await client.getOAuthSignInUrl(
-        provider: Provider.google,
+        provider: OAuthProvider.google,
       );
       final url = Uri.parse(response.url!);
       final queryParameters = url.queryParameters;

@@ -27,16 +27,17 @@ void main() {
   });
   group('Provider sign in', () {
     test('signIn() with Provider', () async {
-      final res = await client.getOAuthSignInUrl(provider: Provider.google);
+      final res =
+          await client.getOAuthSignInUrl(provider: OAuthProvider.google);
       final url = res.url;
       final provider = res.provider;
       expect(url, '$gotrueUrl/authorize?provider=google');
-      expect(provider, Provider.google);
+      expect(provider, OAuthProvider.google);
     });
 
     test('signIn() with Provider and options', () async {
       final res = await client.getOAuthSignInUrl(
-        provider: Provider.github,
+        provider: OAuthProvider.github,
         redirectTo: 'redirectToURL',
         scopes: 'repo',
       );
@@ -46,7 +47,7 @@ void main() {
         url,
         '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL',
       );
-      expect(provider, Provider.github);
+      expect(provider, OAuthProvider.github);
     });
   });
 

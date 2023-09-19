@@ -287,7 +287,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
   Future<bool> signInWithOAuth(
-    Provider provider, {
+    OAuthProvider provider, {
     BuildContext? context,
     String? redirectTo,
     String? scopes,
@@ -323,7 +323,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       // `Platform.isAndroid` throws on web, so adding a guard for web here.
       final isAndroid = !kIsWeb && Platform.isAndroid;
 
-      if (provider == Provider.google && isAndroid) {
+      if (provider == OAuthProvider.google && isAndroid) {
         launchMode = LaunchMode.externalApplication;
       }
 
@@ -364,7 +364,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     }
 
     return signInWithIdToken(
-      provider: Provider.apple,
+      provider: OAuthProvider.apple,
       idToken: idToken,
       nonce: rawNonce,
     );

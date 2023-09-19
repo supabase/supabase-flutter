@@ -267,7 +267,7 @@ class GoTrueClient {
 
   /// Generates a link to log in an user via a third-party provider.
   Future<OAuthResponse> getOAuthSignInUrl({
-    required Provider provider,
+    required OAuthProvider provider,
     String? redirectTo,
     String? scopes,
     Map<String, String>? queryParams,
@@ -320,7 +320,7 @@ class GoTrueClient {
 
   /// Allows signing in with an ID token issued by certain supported providers.
   /// The [idToken] is verified for validity and a new session is established.
-  /// This method of signing in only supports [Provider.google] or [Provider.apple].
+  /// This method of signing in only supports [OAuthProvider.google] or [OAuthProvider.apple].
   ///
   /// If the ID token contains an `at_hash` claim, then [accessToken] must be
   /// provided to compare its hash with the value in the ID token.
@@ -334,7 +334,7 @@ class GoTrueClient {
   /// This method is experimental.
   @experimental
   Future<AuthResponse> signInWithIdToken({
-    required Provider provider,
+    required OAuthProvider provider,
     required String idToken,
     String? accessToken,
     String? nonce,
@@ -342,9 +342,9 @@ class GoTrueClient {
   }) async {
     _removeSession();
 
-    if (provider != Provider.google && provider != Provider.apple) {
+    if (provider != OAuthProvider.google && provider != OAuthProvider.apple) {
       throw AuthException('Provider must either be '
-          '${Provider.google.name} or ${Provider.apple.name}.');
+          '${OAuthProvider.google.name} or ${OAuthProvider.apple.name}.');
     }
 
     final response = await _fetch.request(
@@ -802,7 +802,7 @@ class GoTrueClient {
 
   /// return provider url only
   Future<OAuthResponse> _handleProviderSignIn(
-    Provider provider, {
+    OAuthProvider provider, {
     required String? scopes,
     required String? redirectTo,
     required Map<String, String>? queryParams,

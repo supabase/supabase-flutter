@@ -1,4 +1,4 @@
-enum Provider {
+enum OAuthProvider {
   apple,
   azure,
   bitbucket,
@@ -16,10 +16,4 @@ enum Provider {
   twitch,
   twitter,
   workos,
-}
-
-extension ProviderName on Provider {
-  String get name {
-    return toString().split('.').last;
-  }
 }

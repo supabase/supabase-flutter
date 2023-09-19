@@ -79,22 +79,10 @@ enum CountOption {
   estimated,
 }
 
-extension CountOptionName on CountOption {
-  String name() {
-    return toString().split('.').last;
-  }
-}
-
 /// Returns count as part of the response when specified.
 enum ReturningOption {
   minimal,
   representation,
-}
-
-extension ReturningOptionName on ReturningOption {
-  String name() {
-    return toString().split('.').last;
-  }
 }
 
 /// The type of tsquery conversion to use on [query].
@@ -108,10 +96,4 @@ enum TextSearchType {
   /// Uses PostgreSQL's websearch_to_tsquery function.
   /// This function will never raise syntax errors, which makes it possible to use raw user-supplied input for search, and can be used with advanced operators.
   websearch,
-}
-
-extension TextSearchTypeName on TextSearchType {
-  String name() {
-    return toString().split('.').last;
-  }
 }
