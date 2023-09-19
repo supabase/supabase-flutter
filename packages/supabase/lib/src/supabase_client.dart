@@ -133,7 +133,7 @@ class SupabaseClient {
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     YAJsonIsolate? isolate,
     GotrueAsyncStorage? gotrueAsyncStorage,
-    AuthFlowType authFlowType = AuthFlowType.implicit,
+    AuthFlowType authFlowType = AuthFlowType.pkce,
   })  : restUrl = '$supabaseUrl/rest/v1',
         realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
         authUrl = '$supabaseUrl/auth/v1',

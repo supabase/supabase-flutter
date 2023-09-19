@@ -55,7 +55,7 @@ class Supabase {
   /// to upload a file to Supabase storage when failed due to network
   /// interruption.
   ///
-  /// Set [authFlowType] to `AuthFlowType.pkce` to use the PKCE flow for authentication
+  /// Set [authFlowType] to [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
   /// PKCE flow uses shared preferences for storing the code verifier by default.
@@ -71,7 +71,7 @@ class Supabase {
     Client? httpClient,
     int storageRetryAttempts = 0,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    AuthFlowType authFlowType = AuthFlowType.implicit,
+    AuthFlowType authFlowType = AuthFlowType.pkce,
     GotrueAsyncStorage? pkceAsyncStorage,
     bool? debug,
   }) async {
