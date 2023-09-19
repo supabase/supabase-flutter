@@ -11,7 +11,9 @@ class AuthHttpClient extends BaseClient {
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     if (_auth.currentSession?.isExpired ?? false) {
-      await _auth.refreshSession();
+      try {
+        await _auth.refreshSession();
+      } catch (_) {}
     }
     final authBearer = _auth.currentSession?.accessToken ?? _supabaseKey;
 
