@@ -60,6 +60,7 @@ void main() {
           'Authorization': 'Bearer $anonToken',
           'apikey': anonToken,
         },
+        asyncStorage: asyncStorage,
       );
     });
 
@@ -90,10 +91,7 @@ void main() {
       expect(data?.user.userMetadata, {'Hello': 'World'});
     });
 
-    test('Parsing invalid URL should emit Exception on onAuthStateChange',
-        () async {
-      expect(client.onAuthStateChange, emitsError(isA<AuthException>()));
-
+    test('Parsing invalid URL should throw', () async {
       const expiresIn = 12345;
       const refreshToken = 'my_refresh_token';
       const tokenType = 'my_token_type';
@@ -303,8 +301,14 @@ void main() {
       test('signIn() with Provider with redirectTo', () async {
         final res = await client.getOAuthSignInUrl(
             provider: OAuthProvider.google, redirectTo: 'https://supabase.com');
-        expect(res.url,
-            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com');
+        final expectedOutput =
+            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com';
+        final queryParameters = Uri.parse(res.url!).queryParameters;
+
+        expect(res.url, startsWith(expectedOutput));
+        expect(queryParameters, containsPair('flow_type', 'pkce'));
+        expect(queryParameters, containsPair('code_challenge', isNotNull));
+        expect(queryParameters, containsPair('code_challenge_method', 's256'));
         expect(res.provider, OAuthProvider.google);
       });
 

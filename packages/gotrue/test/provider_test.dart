@@ -23,6 +23,7 @@ void main() {
         'Authorization': 'Bearer $anonToken',
         'apikey': anonToken,
       },
+      flowType: AuthFlowType.implicit,
     );
   });
   group('Provider sign in', () {
@@ -31,7 +32,7 @@ void main() {
           await client.getOAuthSignInUrl(provider: OAuthProvider.google);
       final url = res.url;
       final provider = res.provider;
-      expect(url, '$gotrueUrl/authorize?provider=google');
+      expect(url, startsWith('$gotrueUrl/authorize?provider=google'));
       expect(provider, OAuthProvider.google);
     });
 
@@ -45,7 +46,8 @@ void main() {
       final provider = res.provider;
       expect(
         url,
-        '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL',
+        startsWith(
+            '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL'),
       );
       expect(provider, OAuthProvider.github);
     });

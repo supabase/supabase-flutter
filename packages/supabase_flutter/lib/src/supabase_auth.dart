@@ -250,6 +250,8 @@ class SupabaseAuth with WidgetsBindingObserver {
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
     } on AuthException catch (error, stackTrace) {
+      // ignore: invalid_use_of_internal_member
+      Supabase.instance.client.auth.notifyException(error, stackTrace);
       Supabase.instance.log(error.toString(), stackTrace);
     } catch (error, stackTrace) {
       Supabase.instance.log(error.toString(), stackTrace);

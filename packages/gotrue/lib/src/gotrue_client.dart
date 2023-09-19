@@ -652,7 +652,7 @@ class GoTrueClient {
 
     final errorDescription = url.queryParameters['error_description'];
     if (errorDescription != null) {
-      throw _notifyException(AuthException(errorDescription));
+      throw AuthException(errorDescription);
     }
 
     final accessToken = url.queryParameters['access_token'];
@@ -663,16 +663,16 @@ class GoTrueClient {
     final providerRefreshToken = url.queryParameters['provider_refresh_token'];
 
     if (accessToken == null) {
-      throw _notifyException(AuthException('No access_token detected.'));
+      throw AuthException('No access_token detected.');
     }
     if (expiresIn == null) {
-      throw _notifyException(AuthException('No expires_in detected.'));
+      throw AuthException('No expires_in detected.');
     }
     if (refreshToken == null) {
-      throw _notifyException(AuthException('No refresh_token detected.'));
+      throw AuthException('No refresh_token detected.');
     }
     if (tokenType == null) {
-      throw _notifyException(AuthException('No token_type detected.'));
+      throw AuthException('No token_type detected.');
     }
 
     final headers = {..._headers};
@@ -682,7 +682,7 @@ class GoTrueClient {
         options: options);
     final user = UserResponse.fromJson(response).user;
     if (user == null) {
-      throw _notifyException(AuthException('No user found.'));
+      throw AuthException('No user found.');
     }
 
     final session = Session(
@@ -777,7 +777,7 @@ class GoTrueClient {
   Future<AuthResponse> recoverSession(String jsonStr) async {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
-      throw _notifyException(AuthException('Current session is missing data.'));
+      throw notifyException(AuthException('Current session is missing data.'));
     }
 
     if (session.isExpired) {
@@ -787,7 +787,7 @@ class GoTrueClient {
           accessToken: session.accessToken,
         );
       } else {
-        throw _notifyException(AuthException('Session expired.'));
+        throw notifyException(AuthException('Session expired.'));
       }
     } else {
       final shouldEmitEvent = _currentSession == null ||
@@ -966,7 +966,9 @@ class GoTrueClient {
     _onAuthStateChangeControllerSync.add(state);
   }
 
-  Exception _notifyException(Exception exception, [StackTrace? stackTrace]) {
+  /// For internal use only.
+  @internal
+  Exception notifyException(Exception exception, [StackTrace? stackTrace]) {
     _onAuthStateChangeController.addError(
       exception,
       stackTrace ?? StackTrace.current,
