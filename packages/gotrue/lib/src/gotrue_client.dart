@@ -58,6 +58,8 @@ class GoTrueClient {
   /// Completer to combine multiple simultaneous token refresh requests.
   Completer<AuthResponse>? _refreshTokenCompleter;
 
+  bool _isRefreshingToken = false;
+
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
   final _onAuthStateChangeControllerSync =
       BehaviorSubject<AuthState>(sync: true);
@@ -931,7 +933,7 @@ class GoTrueClient {
   }) async {
     if (_refreshTokenCompleter?.isCompleted ?? true) {
       _refreshTokenCompleter = Completer<AuthResponse>();
-    } else if (!ignorePendingRequest) {
+    } else if (!ignorePendingRequest && _isRefreshingToken) {
       return _refreshTokenCompleter!.future;
     }
     final token = refreshToken ?? currentSession?.refreshToken;
@@ -942,6 +944,7 @@ class GoTrueClient {
     final jwt = accessToken ?? currentSession?.accessToken;
 
     try {
+      _isRefreshingToken = true;
       final body = {'refresh_token': token};
       if (jwt != null) {
         _headers['Authorization'] = 'Bearer $jwt';
@@ -978,6 +981,8 @@ class GoTrueClient {
       }
       _onAuthStateChangeController.addError(error, stack);
       rethrow;
+    } finally {
+      _isRefreshingToken = false;
     }
   }
 
