@@ -1,3 +1,7 @@
+## 1.11.5
+
+ - **FIX**(gotrue,supabase): allow refreshSession after exception ([#633](https://github.com/supabase/supabase-flutter/issues/633)). ([8853155f](https://github.com/supabase/supabase-flutter/commit/8853155fdaaec984818323b35718cb1c4c3ede4c))
+
 ## 1.11.4
 
  - Update a dependency to the latest release.

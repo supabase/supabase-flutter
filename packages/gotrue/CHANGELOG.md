@@ -1,3 +1,7 @@
+## 1.12.2
+
+ - **FIX**(gotrue,supabase): allow refreshSession after exception ([#633](https://github.com/supabase/supabase-flutter/issues/633)). ([8853155f](https://github.com/supabase/supabase-flutter/commit/8853155fdaaec984818323b35718cb1c4c3ede4c))
+
 ## 1.12.1
 
  - **FIX**(gotrue): export everything in constants.dart and hide what we want to hide instead of using show ([#617](https://github.com/supabase/supabase-flutter/issues/617)). ([24df174f](https://github.com/supabase/supabase-flutter/commit/24df174fb952a824692f33cb714e4f913c5866f5))
