@@ -100,8 +100,11 @@ class FunctionsClient {
         break;
     }
 
-    final responseType =
-        (response.headers['Content-Type'] ?? 'text/plain').split(';')[0].trim();
+    final responseType = (response.headers['Content-Type'] ??
+            response.headers['content-type'] ??
+            'text/plain')
+        .split(';')[0]
+        .trim();
 
     final data = switch (responseType) {
       'application/json' => response.bodyBytes.isEmpty
@@ -110,7 +113,15 @@ class FunctionsClient {
       'application/octet-stream' => response.bodyBytes,
       _ => utf8.decode(response.bodyBytes),
     };
-    return FunctionResponse(data: data, status: response.statusCode);
+    if (200 <= response.statusCode && response.statusCode < 300) {
+      return FunctionResponse(data: data, status: response.statusCode);
+    } else {
+      throw FunctionException(
+        status: response.statusCode,
+        details: data,
+        reasonPhrase: response.reasonPhrase,
+      );
+    }
   }
 
   /// Disposes the self created isolate for json encoding/decoding
