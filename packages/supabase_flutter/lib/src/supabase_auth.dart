@@ -325,7 +325,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     BuildContext? context,
     String? redirectTo,
     String? scopes,
-    LaunchMode authScreenLaunchMode = LaunchMode.externalApplication,
+    LaunchMode authScreenLaunchMode = LaunchMode.inAppWebView,
     Map<String, String>? queryParams,
   }) async {
     final willOpenWebview = (authScreenLaunchMode == LaunchMode.inAppWebView ||
