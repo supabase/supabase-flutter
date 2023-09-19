@@ -353,8 +353,6 @@ void main() {
   });
 
   tearDown(() async {
-    listeners.clear();
-
     await client.dispose();
     await customHeadersClient.dispose();
 
@@ -364,6 +362,8 @@ void main() {
 
     // Wait for the realtime updates to come through
     await Future.delayed(Duration(milliseconds: 100));
+
+    listeners.clear();
 
     await webSocket?.close();
 
@@ -512,16 +512,12 @@ void main() {
         final stream = client
             .from('todos')
             .stream(primaryKey: ['id']).asyncMap((event) => event);
-        stream.listen(expectAsync1((event) {
-          print(event);
-        }, count: 5));
+        stream.listen(expectAsync1((event) {}, count: 5));
 
         await Future.delayed(Duration(seconds: 3));
 
         // All realtime events are done emitting, so should receive the currnet data
-        stream.listen(expectAsync1((event) {
-          print('called');
-        }, count: 1));
+        stream.listen(expectAsync1((event) {}, count: 1));
       });
 
       test('emits data with custom headers', () {
