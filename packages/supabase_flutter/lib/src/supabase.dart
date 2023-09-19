@@ -46,10 +46,6 @@ class Supabase {
   ///
   /// Default headers can be overridden by specifying [headers].
   ///
-  /// Specify [authCallbackUrlHostname] to let the SDK know what host name auth
-  /// callback deeplink will have. If [authCallbackUrlHostname] is not set, we
-  /// treat all deep links as auth callbacks.
-  ///
   /// Pass [localStorage] to override the default local storage option used to
   /// persist auth.
   ///
@@ -71,7 +67,6 @@ class Supabase {
     required String anonKey,
     String? schema,
     Map<String, String>? headers,
-    String? authCallbackUrlHostname,
     LocalStorage? localStorage,
     Client? httpClient,
     int storageRetryAttempts = 0,
@@ -104,7 +99,6 @@ class Supabase {
           MigrationLocalStorage(
               persistSessionKey:
                   "sb-${Uri.parse(url).host.split(".").first}-auth-token"),
-      authCallbackUrlHostname: authCallbackUrlHostname,
       authFlowType: authFlowType,
     );
 

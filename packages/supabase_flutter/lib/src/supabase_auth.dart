@@ -48,7 +48,6 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
   bool _initialDeeplinkIsHandled = false;
-  String? _authCallbackUrlHostname;
 
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -73,13 +72,11 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// It's necessary to initialize before calling [SupabaseAuth.instance]
   static Future<SupabaseAuth> initialize({
     required LocalStorage localStorage,
-    String? authCallbackUrlHostname,
     required AuthFlowType authFlowType,
   }) async {
     try {
       _instance._initialized = true;
       _instance._localStorage = localStorage;
-      _instance._authCallbackUrlHostname = authCallbackUrlHostname;
       _instance._initialSessionCompleter = Completer();
       _instance._authFlowType = authFlowType;
 
@@ -202,14 +199,10 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// If _authCallbackUrlHost not init, we treat all deep links as auth callback
   bool _isAuthCallbackDeeplink(Uri uri) {
-    if (_authCallbackUrlHostname == null) {
-      return (uri.fragment.contains('access_token') &&
-              _authFlowType == AuthFlowType.implicit) ||
-          (uri.queryParameters.containsKey('code') &&
-              _authFlowType == AuthFlowType.pkce);
-    } else {
-      return _authCallbackUrlHostname == uri.host;
-    }
+    return (uri.fragment.contains('access_token') &&
+            _authFlowType == AuthFlowType.implicit) ||
+        (uri.queryParameters.containsKey('code') &&
+            _authFlowType == AuthFlowType.pkce);
   }
 
   /// Enable deep link observer to handle deep links
