@@ -205,7 +205,7 @@ class GoTrueClient {
     final session = authResponse.session;
     if (session != null) {
       _saveSession(session);
-      _notifyAllSubscribers(AuthChangeEvent.signedIn);
+      notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
 
     return authResponse;
@@ -260,7 +260,7 @@ class GoTrueClient {
 
     if (authResponse.session?.accessToken != null) {
       _saveSession(authResponse.session!);
-      _notifyAllSubscribers(AuthChangeEvent.signedIn);
+      notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
     return authResponse;
   }
@@ -312,7 +312,7 @@ class GoTrueClient {
     final session = authResponse.session;
     if (session != null) {
       _saveSession(session);
-      _notifyAllSubscribers(AuthChangeEvent.signedIn);
+      notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
 
     return authResponse;
@@ -372,7 +372,7 @@ class GoTrueClient {
     }
 
     _saveSession(authResponse.session!);
-    _notifyAllSubscribers(AuthChangeEvent.signedIn);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
 
     return authResponse;
   }
@@ -493,7 +493,7 @@ class GoTrueClient {
     }
 
     _saveSession(authResponse.session!);
-    _notifyAllSubscribers(AuthChangeEvent.signedIn);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
 
     return authResponse;
   }
@@ -603,7 +603,7 @@ class GoTrueClient {
 
     _currentUser = userResponse.user;
     _currentSession = currentSession?.copyWith(user: userResponse.user);
-    _notifyAllSubscribers(AuthChangeEvent.userUpdated);
+    notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
     return userResponse;
   }
@@ -636,7 +636,7 @@ class GoTrueClient {
 
       if (storeSession == true) {
         _saveSession(session);
-        _notifyAllSubscribers(AuthChangeEvent.signedIn);
+        notifyAllSubscribers(AuthChangeEvent.signedIn);
       }
 
       return AuthSessionUrlResponse(session: session, redirectType: null);
@@ -700,9 +700,9 @@ class GoTrueClient {
     if (storeSession == true) {
       _saveSession(session);
       if (redirectType == 'recovery') {
-        _notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
+        notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
       } else {
-        _notifyAllSubscribers(AuthChangeEvent.signedIn);
+        notifyAllSubscribers(AuthChangeEvent.signedIn);
       }
     }
 
@@ -721,7 +721,7 @@ class GoTrueClient {
       _removeSession();
       await _asyncStorage?.removeItem(
           key: '${Constants.defaultStorageKey}-code-verifier');
-      _notifyAllSubscribers(AuthChangeEvent.signedOut);
+      notifyAllSubscribers(AuthChangeEvent.signedOut);
     }
 
     if (accessToken != null) {
@@ -794,7 +794,7 @@ class GoTrueClient {
           _currentSession?.user.id != session.user.id;
       _saveSession(session);
 
-      if (shouldEmitEvent) _notifyAllSubscribers(AuthChangeEvent.signedIn);
+      if (shouldEmitEvent) notifyAllSubscribers(AuthChangeEvent.signedIn);
 
       return AuthResponse(session: session);
     }
@@ -937,7 +937,7 @@ class GoTrueClient {
 
       _saveSession(authResponse.session!);
 
-      _notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+      notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
       _refreshTokenCompleter!.complete(authResponse);
       return authResponse;
     } on SocketException {
@@ -958,7 +958,9 @@ class GoTrueClient {
     }
   }
 
-  void _notifyAllSubscribers(AuthChangeEvent event) {
+  /// For internal use only.
+  @internal
+  void notifyAllSubscribers(AuthChangeEvent event) {
     final state = AuthState(event, currentSession);
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);

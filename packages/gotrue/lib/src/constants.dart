@@ -17,6 +17,7 @@ class Constants {
 }
 
 enum AuthChangeEvent {
+  initialSession,
   passwordRecovery,
   signedIn,
   signedOut,

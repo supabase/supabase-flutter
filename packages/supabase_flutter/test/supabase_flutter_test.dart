@@ -23,8 +23,7 @@ void main() {
 
     test('can access Supabase singleton', () async {
       final client = Supabase.instance.client;
-      await expectLater(
-          await SupabaseAuth.instance.initialSession, isA<Session>());
+
       expect(client, isNotNull);
     });
 
@@ -57,8 +56,28 @@ void main() {
     tearDown(() => Supabase.instance.dispose());
 
     test('initial session contains the error', () async {
-      await expectLater(
-          SupabaseAuth.instance.initialSession, throwsA(isA<AuthException>()));
+      await expectLater(Supabase.instance.client.auth.onAuthStateChange,
+          emitsError(isA<AuthException>()));
+    });
+  });
+
+  group("No session", () {
+    setUp(() async {
+      mockAppLink();
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+        localStorage: MockEmptyLocalStorage(),
+        pkceAsyncStorage: MockAsyncStorage(),
+      );
+    });
+
+    tearDown(() => Supabase.instance.dispose());
+
+    test('initial session contains the error', () async {
+      final event = await Supabase.instance.client.auth.onAuthStateChange.first;
+      expect(event.event, AuthChangeEvent.initialSession);
+      expect(event.session, isNull);
     });
   });
 
