@@ -428,15 +428,15 @@ class RealtimeClient {
 
   void _onConnError(dynamic error) {
     log('transport', error.toString());
-    _triggerChanError(error);
+    _triggerChanError();
     for (final callback in stateChangeCallbacks['error']!) {
       callback(error);
     }
   }
 
-  void _triggerChanError([dynamic error]) {
+  void _triggerChanError() {
     for (final channel in channels) {
-      channel.trigger(ChannelEvents.error.eventName(), error);
+      channel.trigger(ChannelEvents.error.eventName());
     }
   }
 
