@@ -36,19 +36,10 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// {@macro supabase.localstorage.accessToken}
   Future<String?> get accessToken => _localStorage.accessToken();
 
-  /// Returns when the initial session recovery is done.
-  ///
-  /// Can be used to determine whether a user is signed in upon initial
-  /// app launch.
-  Future<Session?> get initialSession => _initialSessionCompleter.future;
-
-  late Completer<Session?> _initialSessionCompleter;
-
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
   bool _initialDeeplinkIsHandled = false;
-  String? _authCallbackUrlHostname;
 
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -73,78 +64,57 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// It's necessary to initialize before calling [SupabaseAuth.instance]
   static Future<SupabaseAuth> initialize({
     required LocalStorage localStorage,
-    String? authCallbackUrlHostname,
     required AuthFlowType authFlowType,
   }) async {
-    try {
-      _instance._initialized = true;
-      _instance._localStorage = localStorage;
-      _instance._authCallbackUrlHostname = authCallbackUrlHostname;
-      _instance._initialSessionCompleter = Completer();
-      _instance._authFlowType = authFlowType;
+    _instance._initialized = true;
+    _instance._localStorage = localStorage;
+    _instance._authFlowType = authFlowType;
 
-      _instance.initialSession.catchError((e, d) {
-        return null;
-      });
+    _instance._authSubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        _instance._onAuthStateChange(data.event, data.session);
+      },
+      onError: (error, stackTrace) {
+        Supabase.instance.log(error.toString(), stackTrace);
+      },
+    );
 
-      _instance._authSubscription =
-          Supabase.instance.client.auth.onAuthStateChange.listen(
-        (data) {
-          _instance._onAuthStateChange(data.event, data.session);
-        },
-      )..onError((error, stackTrace) {
-              Supabase.instance.log(error.toString(), stackTrace);
-            });
+    await _instance._localStorage.initialize();
 
-      await _instance._localStorage.initialize();
-
-      final hasPersistedSession =
-          await _instance._localStorage.hasAccessToken();
-      if (hasPersistedSession) {
-        final persistedSession = await _instance._localStorage.accessToken();
-        if (persistedSession != null) {
-          try {
-            final response = await Supabase.instance.client.auth
-                .recoverSession(persistedSession);
-            if (!_instance._initialSessionCompleter.isCompleted) {
-              _instance._initialSessionCompleter.complete(response.session);
-            }
-          } on AuthException catch (error, stackTrace) {
-            Supabase.instance.log(error.message, stackTrace);
-            if (!_instance._initialSessionCompleter.isCompleted) {
-              _instance._initialSessionCompleter
-                  .completeError(error, stackTrace);
-            }
-          } catch (error, stackTrace) {
-            Supabase.instance.log(error.toString(), stackTrace);
-            if (!_instance._initialSessionCompleter.isCompleted) {
-              _instance._initialSessionCompleter
-                  .completeError(error, stackTrace);
-            }
-          }
+    final hasPersistedSession = await _instance._localStorage.hasAccessToken();
+    var shouldEmitInitialSession = true;
+    if (hasPersistedSession) {
+      final persistedSession = await _instance._localStorage.accessToken();
+      if (persistedSession != null) {
+        try {
+          // At this point either an [AuthChangeEvent.signedIn] event or an exception should next be emitted by `onAuthStateChange`
+          shouldEmitInitialSession = false;
+          await Supabase.instance.client.auth.recoverSession(persistedSession);
+        } on AuthException catch (error, stackTrace) {
+          Supabase.instance.log(error.message, stackTrace);
+        } catch (error, stackTrace) {
+          Supabase.instance.log(error.toString(), stackTrace);
         }
       }
-      _widgetsBindingInstance?.addObserver(_instance);
-      if (kIsWeb ||
-          Platform.isAndroid ||
-          Platform.isIOS ||
-          Platform.isMacOS ||
-          Platform.isWindows ||
-          Platform.environment.containsKey('FLUTTER_TEST')) {
-        await _instance._startDeeplinkObserver();
-      }
-
-      if (!_instance._initialSessionCompleter.isCompleted) {
-        // Complete with null if the user did not have persisted session
-        _instance._initialSessionCompleter.complete(null);
-      }
-      return _instance;
-    } catch (error, stacktrace) {
-      if (!_instance._initialSessionCompleter.isCompleted) {
-        _instance._initialSessionCompleter.completeError(error, stacktrace);
-      }
-      rethrow;
     }
+    _widgetsBindingInstance?.addObserver(_instance);
+    if (kIsWeb ||
+        Platform.isAndroid ||
+        Platform.isIOS ||
+        Platform.isMacOS ||
+        Platform.isWindows ||
+        Platform.environment.containsKey('FLUTTER_TEST')) {
+      await _instance._startDeeplinkObserver();
+    }
+
+    // Emit a null session if the user did not have persisted session
+    if (shouldEmitInitialSession) {
+      Supabase.instance.client.auth
+          // ignore: invalid_use_of_internal_member
+          .notifyAllSubscribers(AuthChangeEvent.initialSession);
+    }
+    return _instance;
   }
 
   /// Dispose the instance to free up resources
@@ -202,14 +172,10 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// If _authCallbackUrlHost not init, we treat all deep links as auth callback
   bool _isAuthCallbackDeeplink(Uri uri) {
-    if (_authCallbackUrlHostname == null) {
-      return (uri.fragment.contains('access_token') &&
-              _authFlowType == AuthFlowType.implicit) ||
-          (uri.queryParameters.containsKey('code') &&
-              _authFlowType == AuthFlowType.pkce);
-    } else {
-      return _authCallbackUrlHostname == uri.host;
-    }
+    return (uri.fragment.contains('access_token') &&
+            _authFlowType == AuthFlowType.implicit) ||
+        (uri.queryParameters.containsKey('code') &&
+            _authFlowType == AuthFlowType.pkce);
   }
 
   /// Enable deep link observer to handle deep links
@@ -284,6 +250,8 @@ class SupabaseAuth with WidgetsBindingObserver {
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
     } on AuthException catch (error, stackTrace) {
+      // ignore: invalid_use_of_internal_member
+      Supabase.instance.client.auth.notifyException(error, stackTrace);
       Supabase.instance.log(error.toString(), stackTrace);
     } catch (error, stackTrace) {
       Supabase.instance.log(error.toString(), stackTrace);
@@ -321,11 +289,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
   Future<bool> signInWithOAuth(
-    Provider provider, {
+    OAuthProvider provider, {
     BuildContext? context,
     String? redirectTo,
     String? scopes,
-    LaunchMode authScreenLaunchMode = LaunchMode.externalApplication,
+    LaunchMode authScreenLaunchMode = LaunchMode.inAppWebView,
     Map<String, String>? queryParams,
   }) async {
     final willOpenWebview = (authScreenLaunchMode == LaunchMode.inAppWebView ||
@@ -357,7 +325,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       // `Platform.isAndroid` throws on web, so adding a guard for web here.
       final isAndroid = !kIsWeb && Platform.isAndroid;
 
-      if (provider == Provider.google && isAndroid) {
+      if (provider == OAuthProvider.google && isAndroid) {
         launchMode = LaunchMode.externalApplication;
       }
 
@@ -398,7 +366,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     }
 
     return signInWithIdToken(
-      provider: Provider.apple,
+      provider: OAuthProvider.apple,
       idToken: idToken,
       nonce: rawNonce,
     );

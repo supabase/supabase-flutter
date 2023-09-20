@@ -99,9 +99,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (_count != null) {
       if (_headers['Prefer'] != null) {
         final oldPreferHeader = _headers['Prefer'];
-        _headers['Prefer'] = '$oldPreferHeader,count=${_count!.name()}';
+        _headers['Prefer'] = '$oldPreferHeader,count=${_count!.name}';
       } else {
-        _headers['Prefer'] = 'count=${_count!.name()}';
+        _headers['Prefer'] = 'count=${_count!.name}';
       }
     }
 

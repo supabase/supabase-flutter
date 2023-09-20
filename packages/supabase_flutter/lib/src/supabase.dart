@@ -46,10 +46,6 @@ class Supabase {
   ///
   /// Default headers can be overridden by specifying [headers].
   ///
-  /// Specify [authCallbackUrlHostname] to let the SDK know what host name auth
-  /// callback deeplink will have. If [authCallbackUrlHostname] is not set, we
-  /// treat all deep links as auth callbacks.
-  ///
   /// Pass [localStorage] to override the default local storage option used to
   /// persist auth.
   ///
@@ -59,7 +55,7 @@ class Supabase {
   /// to upload a file to Supabase storage when failed due to network
   /// interruption.
   ///
-  /// Set [authFlowType] to `AuthFlowType.pkce` to use the PKCE flow for authentication
+  /// Set [authFlowType] to [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
   /// PKCE flow uses shared preferences for storing the code verifier by default.
@@ -71,12 +67,11 @@ class Supabase {
     required String anonKey,
     String? schema,
     Map<String, String>? headers,
-    String? authCallbackUrlHostname,
     LocalStorage? localStorage,
     Client? httpClient,
     int storageRetryAttempts = 0,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    AuthFlowType authFlowType = AuthFlowType.implicit,
+    AuthFlowType authFlowType = AuthFlowType.pkce,
     GotrueAsyncStorage? pkceAsyncStorage,
     bool? debug,
   }) async {
@@ -104,7 +99,6 @@ class Supabase {
           MigrationLocalStorage(
               persistSessionKey:
                   "sb-${Uri.parse(url).host.split(".").first}-auth-token"),
-      authCallbackUrlHostname: authCallbackUrlHostname,
       authFlowType: authFlowType,
     );
 

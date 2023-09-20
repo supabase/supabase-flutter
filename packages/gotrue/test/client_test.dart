@@ -60,6 +60,7 @@ void main() {
           'Authorization': 'Bearer $anonToken',
           'apikey': anonToken,
         },
+        asyncStorage: asyncStorage,
       );
     });
 
@@ -90,10 +91,7 @@ void main() {
       expect(data?.user.userMetadata, {'Hello': 'World'});
     });
 
-    test('Parsing invalid URL should emit Exception on onAuthStateChange',
-        () async {
-      expect(client.onAuthStateChange, emitsError(isA<AuthException>()));
-
+    test('Parsing invalid URL should throw', () async {
       const expiresIn = 12345;
       const refreshToken = 'my_refresh_token';
       const tokenType = 'my_token_type';
@@ -294,41 +292,48 @@ void main() {
 
     group('The auth client can signin with third-party oAuth providers', () {
       test('signIn() with Provider', () async {
-        final res = await client.getOAuthSignInUrl(provider: Provider.google);
+        final res =
+            await client.getOAuthSignInUrl(provider: OAuthProvider.google);
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider with redirectTo', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google, redirectTo: 'https://supabase.com');
-        expect(res.url,
-            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com');
-        expect(res.provider, Provider.google);
+            provider: OAuthProvider.google, redirectTo: 'https://supabase.com');
+        final expectedOutput =
+            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com';
+        final queryParameters = Uri.parse(res.url!).queryParameters;
+
+        expect(res.url, startsWith(expectedOutput));
+        expect(queryParameters, containsPair('flow_type', 'pkce'));
+        expect(queryParameters, containsPair('code_challenge', isNotNull));
+        expect(queryParameters, containsPair('code_challenge_method', 's256'));
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append a redirectUrl', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google,
+            provider: OAuthProvider.google,
             redirectTo: 'https://localhost:9000/welcome');
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append scopes', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google, scopes: 'repo');
+            provider: OAuthProvider.google, scopes: 'repo');
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append options', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google,
+            provider: OAuthProvider.google,
             redirectTo: 'https://localhost:9000/welcome',
             scopes: 'repo');
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
     });
 
@@ -419,7 +424,7 @@ void main() {
     test('getOAuthSignInUrl with PKCE flow has the correct query parameters',
         () async {
       final response = await client.getOAuthSignInUrl(
-        provider: Provider.google,
+        provider: OAuthProvider.google,
       );
       final url = Uri.parse(response.url!);
       final queryParameters = url.queryParameters;

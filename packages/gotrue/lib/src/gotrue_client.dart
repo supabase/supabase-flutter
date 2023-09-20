@@ -28,7 +28,7 @@ part 'gotrue_mfa_api.dart';
 ///
 /// [asyncStorage] local storage to store pkce code verifiers. Required when using the pkce flow.
 ///
-/// Set [flowType] to `AuthFlowType.pkce` to perform pkce auth flow.
+/// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 /// /// {@endtemplate}
 class GoTrueClient {
   /// Namespace for the GoTrue API methods.
@@ -93,7 +93,7 @@ class GoTrueClient {
     bool? autoRefreshToken,
     Client? httpClient,
     GotrueAsyncStorage? asyncStorage,
-    AuthFlowType flowType = AuthFlowType.implicit,
+    AuthFlowType flowType = AuthFlowType.pkce,
   })  : _url = url ?? Constants.defaultGotrueUrl,
         _headers = headers ?? {},
         _httpClient = httpClient,
@@ -205,7 +205,7 @@ class GoTrueClient {
     final session = authResponse.session;
     if (session != null) {
       _saveSession(session);
-      _notifyAllSubscribers(AuthChangeEvent.signedIn);
+      notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
 
     return authResponse;
@@ -260,14 +260,14 @@ class GoTrueClient {
 
     if (authResponse.session?.accessToken != null) {
       _saveSession(authResponse.session!);
-      _notifyAllSubscribers(AuthChangeEvent.signedIn);
+      notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
     return authResponse;
   }
 
   /// Generates a link to log in an user via a third-party provider.
   Future<OAuthResponse> getOAuthSignInUrl({
-    required Provider provider,
+    required OAuthProvider provider,
     String? redirectTo,
     String? scopes,
     Map<String, String>? queryParams,
@@ -312,7 +312,7 @@ class GoTrueClient {
     final session = authResponse.session;
     if (session != null) {
       _saveSession(session);
-      _notifyAllSubscribers(AuthChangeEvent.signedIn);
+      notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
 
     return authResponse;
@@ -320,7 +320,7 @@ class GoTrueClient {
 
   /// Allows signing in with an ID token issued by certain supported providers.
   /// The [idToken] is verified for validity and a new session is established.
-  /// This method of signing in only supports [Provider.google] or [Provider.apple].
+  /// This method of signing in only supports [OAuthProvider.google] or [OAuthProvider.apple].
   ///
   /// If the ID token contains an `at_hash` claim, then [accessToken] must be
   /// provided to compare its hash with the value in the ID token.
@@ -334,7 +334,7 @@ class GoTrueClient {
   /// This method is experimental.
   @experimental
   Future<AuthResponse> signInWithIdToken({
-    required Provider provider,
+    required OAuthProvider provider,
     required String idToken,
     String? accessToken,
     String? nonce,
@@ -342,9 +342,9 @@ class GoTrueClient {
   }) async {
     _removeSession();
 
-    if (provider != Provider.google && provider != Provider.apple) {
+    if (provider != OAuthProvider.google && provider != OAuthProvider.apple) {
       throw AuthException('Provider must either be '
-          '${Provider.google.name} or ${Provider.apple.name}.');
+          '${OAuthProvider.google.name} or ${OAuthProvider.apple.name}.');
     }
 
     final response = await _fetch.request(
@@ -372,7 +372,7 @@ class GoTrueClient {
     }
 
     _saveSession(authResponse.session!);
-    _notifyAllSubscribers(AuthChangeEvent.signedIn);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
 
     return authResponse;
   }
@@ -493,7 +493,7 @@ class GoTrueClient {
     }
 
     _saveSession(authResponse.session!);
-    _notifyAllSubscribers(AuthChangeEvent.signedIn);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
 
     return authResponse;
   }
@@ -603,7 +603,7 @@ class GoTrueClient {
 
     _currentUser = userResponse.user;
     _currentSession = currentSession?.copyWith(user: userResponse.user);
-    _notifyAllSubscribers(AuthChangeEvent.userUpdated);
+    notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
     return userResponse;
   }
@@ -636,7 +636,7 @@ class GoTrueClient {
 
       if (storeSession == true) {
         _saveSession(session);
-        _notifyAllSubscribers(AuthChangeEvent.signedIn);
+        notifyAllSubscribers(AuthChangeEvent.signedIn);
       }
 
       return AuthSessionUrlResponse(session: session, redirectType: null);
@@ -652,7 +652,7 @@ class GoTrueClient {
 
     final errorDescription = url.queryParameters['error_description'];
     if (errorDescription != null) {
-      throw _notifyException(AuthException(errorDescription));
+      throw AuthException(errorDescription);
     }
 
     final accessToken = url.queryParameters['access_token'];
@@ -663,16 +663,16 @@ class GoTrueClient {
     final providerRefreshToken = url.queryParameters['provider_refresh_token'];
 
     if (accessToken == null) {
-      throw _notifyException(AuthException('No access_token detected.'));
+      throw AuthException('No access_token detected.');
     }
     if (expiresIn == null) {
-      throw _notifyException(AuthException('No expires_in detected.'));
+      throw AuthException('No expires_in detected.');
     }
     if (refreshToken == null) {
-      throw _notifyException(AuthException('No refresh_token detected.'));
+      throw AuthException('No refresh_token detected.');
     }
     if (tokenType == null) {
-      throw _notifyException(AuthException('No token_type detected.'));
+      throw AuthException('No token_type detected.');
     }
 
     final headers = {..._headers};
@@ -682,7 +682,7 @@ class GoTrueClient {
         options: options);
     final user = UserResponse.fromJson(response).user;
     if (user == null) {
-      throw _notifyException(AuthException('No user found.'));
+      throw AuthException('No user found.');
     }
 
     final session = Session(
@@ -700,9 +700,9 @@ class GoTrueClient {
     if (storeSession == true) {
       _saveSession(session);
       if (redirectType == 'recovery') {
-        _notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
+        notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
       } else {
-        _notifyAllSubscribers(AuthChangeEvent.signedIn);
+        notifyAllSubscribers(AuthChangeEvent.signedIn);
       }
     }
 
@@ -721,7 +721,7 @@ class GoTrueClient {
       _removeSession();
       await _asyncStorage?.removeItem(
           key: '${Constants.defaultStorageKey}-code-verifier');
-      _notifyAllSubscribers(AuthChangeEvent.signedOut);
+      notifyAllSubscribers(AuthChangeEvent.signedOut);
     }
 
     if (accessToken != null) {
@@ -777,7 +777,7 @@ class GoTrueClient {
   Future<AuthResponse> recoverSession(String jsonStr) async {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
-      throw _notifyException(AuthException('Current session is missing data.'));
+      throw notifyException(AuthException('Current session is missing data.'));
     }
 
     if (session.isExpired) {
@@ -787,14 +787,14 @@ class GoTrueClient {
           accessToken: session.accessToken,
         );
       } else {
-        throw _notifyException(AuthException('Session expired.'));
+        throw notifyException(AuthException('Session expired.'));
       }
     } else {
       final shouldEmitEvent = _currentSession == null ||
           _currentSession?.user.id != session.user.id;
       _saveSession(session);
 
-      if (shouldEmitEvent) _notifyAllSubscribers(AuthChangeEvent.signedIn);
+      if (shouldEmitEvent) notifyAllSubscribers(AuthChangeEvent.signedIn);
 
       return AuthResponse(session: session);
     }
@@ -802,7 +802,7 @@ class GoTrueClient {
 
   /// return provider url only
   Future<OAuthResponse> _handleProviderSignIn(
-    Provider provider, {
+    OAuthProvider provider, {
     required String? scopes,
     required String? redirectTo,
     required Map<String, String>? queryParams,
@@ -937,7 +937,7 @@ class GoTrueClient {
 
       _saveSession(authResponse.session!);
 
-      _notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+      notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
       _refreshTokenCompleter!.complete(authResponse);
       return authResponse;
     } on SocketException {
@@ -958,13 +958,17 @@ class GoTrueClient {
     }
   }
 
-  void _notifyAllSubscribers(AuthChangeEvent event) {
+  /// For internal use only.
+  @internal
+  void notifyAllSubscribers(AuthChangeEvent event) {
     final state = AuthState(event, currentSession);
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }
 
-  Exception _notifyException(Exception exception, [StackTrace? stackTrace]) {
+  /// For internal use only.
+  @internal
+  Exception notifyException(Exception exception, [StackTrace? stackTrace]) {
     _onAuthStateChangeController.addError(
       exception,
       stackTrace ?? StackTrace.current,
