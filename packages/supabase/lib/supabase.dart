@@ -14,6 +14,7 @@ export 'src/auth_user.dart';
 export 'src/realtime_client_options.dart';
 export 'src/remove_subscription_result.dart';
 export 'src/supabase_client.dart';
+export 'src/supabase_client_options.dart';
 export 'src/supabase_event_types.dart';
 export 'src/supabase_query_builder.dart';
 export 'src/supabase_realtime_error.dart';

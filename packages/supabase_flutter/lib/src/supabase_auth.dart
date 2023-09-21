@@ -62,13 +62,15 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Initialize the [SupabaseAuth] instance.
   ///
   /// It's necessary to initialize before calling [SupabaseAuth.instance]
+  ///
+  /// Should not be initialized manually, but automatically by  [Supabase.initialize]
+  @internal
   static Future<SupabaseAuth> initialize({
-    required LocalStorage localStorage,
-    required AuthFlowType authFlowType,
+    required FlutterGoTrueClientOptions options,
   }) async {
     _instance._initialized = true;
-    _instance._localStorage = localStorage;
-    _instance._authFlowType = authFlowType;
+    _instance._localStorage = options.localStorage!;
+    _instance._authFlowType = options.authFlowType;
 
     _instance._authSubscription =
         Supabase.instance.client.auth.onAuthStateChange.listen(

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/constants.dart';
+import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
@@ -65,14 +66,13 @@ class Supabase {
   static Future<Supabase> initialize({
     required String url,
     required String anonKey,
-    String? schema,
     Map<String, String>? headers,
-    LocalStorage? localStorage,
     Client? httpClient,
-    int storageRetryAttempts = 0,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    AuthFlowType authFlowType = AuthFlowType.pkce,
-    GotrueAsyncStorage? pkceAsyncStorage,
+    PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
+    StorageClientOptions storageOptions = const StorageClientOptions(),
+    FlutterGoTrueClientOptions goTrueOptions =
+        const FlutterGoTrueClientOptions(),
     bool? debug,
   }) async {
     assert(
@@ -84,22 +84,23 @@ class Supabase {
       anonKey,
       httpClient: httpClient,
       customHeaders: headers,
-      schema: schema,
-      storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
-      gotrueAsyncStorage:
-          pkceAsyncStorage ?? SharedPreferencesGotrueAsyncStorage(),
-      authFlowType: authFlowType,
+      goTrueOptions: goTrueOptions.maybeWith(
+        gotrueAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
+      ),
+      postgrestOptions: postgrestOptions,
+      storageOptions: storageOptions,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
 
     await SupabaseAuth.initialize(
-      localStorage: localStorage ??
-          MigrationLocalStorage(
-              persistSessionKey:
-                  "sb-${Uri.parse(url).host.split(".").first}-auth-token"),
-      authFlowType: authFlowType,
+      options: goTrueOptions.maybeWith(
+        localStorage: MigrationLocalStorage(
+          persistSessionKey:
+              "sb-${Uri.parse(url).host.split(".").first}-auth-token",
+        ),
+      ),
     );
 
     return _instance;
@@ -128,11 +129,10 @@ class Supabase {
     String supabaseAnonKey, {
     Client? httpClient,
     Map<String, String>? customHeaders,
-    String? schema,
-    required int storageRetryAttempts,
     required RealtimeClientOptions realtimeClientOptions,
-    required GotrueAsyncStorage gotrueAsyncStorage,
-    required AuthFlowType authFlowType,
+    required PostgrestClientOptions postgrestOptions,
+    required StorageClientOptions storageOptions,
+    required GoTrueClientOptions goTrueOptions,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
@@ -143,11 +143,10 @@ class Supabase {
       supabaseAnonKey,
       httpClient: httpClient,
       headers: headers,
-      schema: schema,
-      storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
-      gotrueAsyncStorage: gotrueAsyncStorage,
-      authFlowType: authFlowType,
+      postgrestOptions: postgrestOptions,
+      storageOptions: storageOptions,
+      goTrueOptions: goTrueOptions,
     );
     _initialized = true;
   }

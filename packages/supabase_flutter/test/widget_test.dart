@@ -21,8 +21,10 @@ void main() {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseKey,
-      localStorage: MockLocalStorage(),
-      pkceAsyncStorage: MockAsyncStorage(),
+      goTrueOptions: FlutterGoTrueClientOptions(
+        localStorage: MockLocalStorage(),
+        pkceAsyncStorage: MockAsyncStorage(),
+      ),
     );
     await tester.pumpWidget(const MaterialApp(home: MockWidget()));
     await tester.tap(find.text('Sign out'));
