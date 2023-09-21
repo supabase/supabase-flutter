@@ -10,13 +10,17 @@ class FlutterGoTrueClientOptions extends GoTrueClientOptions {
     this.localStorage,
   });
 
-  FlutterGoTrueClientOptions maybeWith({
+  FlutterGoTrueClientOptions copyWith({
+    AuthFlowType? authFlowType,
+    bool? autoRefreshToken,
     LocalStorage? localStorage,
-    GotrueAsyncStorage? gotrueAsyncStorage,
+    dynamic pkceAsyncStorage,
   }) {
     return FlutterGoTrueClientOptions(
-      localStorage: this.localStorage ?? localStorage,
-      pkceAsyncStorage: pkceAsyncStorage ?? gotrueAsyncStorage,
+      authFlowType: authFlowType ?? this.authFlowType,
+      autoRefreshToken: autoRefreshToken ?? this.autoRefreshToken,
+      localStorage: localStorage ?? this.localStorage,
+      pkceAsyncStorage: pkceAsyncStorage ?? this.pkceAsyncStorage,
     );
   }
 }

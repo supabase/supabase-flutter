@@ -79,29 +79,33 @@ class Supabase {
       !_instance._initialized,
       'This instance is already initialized',
     );
+    if (goTrueOptions.pkceAsyncStorage == null) {
+      goTrueOptions = goTrueOptions.copyWith(
+        pkceAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
+      );
+    }
+    if (goTrueOptions.localStorage == null) {
+      goTrueOptions = goTrueOptions.copyWith(
+        localStorage: MigrationLocalStorage(
+          persistSessionKey:
+              "sb-${Uri.parse(url).host.split(".").first}-auth-token",
+        ),
+      );
+    }
     _instance._init(
       url,
       anonKey,
       httpClient: httpClient,
       customHeaders: headers,
       realtimeClientOptions: realtimeClientOptions,
-      goTrueOptions: goTrueOptions.maybeWith(
-        gotrueAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
-      ),
+      goTrueOptions: goTrueOptions,
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
 
-    await SupabaseAuth.initialize(
-      options: goTrueOptions.maybeWith(
-        localStorage: MigrationLocalStorage(
-          persistSessionKey:
-              "sb-${Uri.parse(url).host.split(".").first}-auth-token",
-        ),
-      ),
-    );
+    await SupabaseAuth.initialize(options: goTrueOptions);
 
     return _instance;
   }
