@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-09-25
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v1.2.3`](#realtime_client---v123)
+ - [`supabase` - `v1.11.6`](#supabase---v1116)
+ - [`supabase_flutter` - `v1.10.19`](#supabase_flutter---v11019)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.11.6`
+ - `supabase_flutter` - `v1.10.19`
+
+---
+
+#### `realtime_client` - `v1.2.3`
+
+ - **FIX**: Remove error parameter on `_triggerChanError` ([#637](https://github.com/supabase/supabase-flutter/issues/637)). ([c4291c97](https://github.com/supabase/supabase-flutter/commit/c4291c97c87342cbd84795297c046b7ababef5ac))
+
+
 ## 2023-09-19
 
 ### Changes
