@@ -1,4 +1,4 @@
-import 'package:realtime_client/src/realtime_channel.dart';
+import 'package:realtime_client/realtime_client.dart';
 
 class Presence {
   final String presenceRef;
