@@ -87,12 +87,11 @@ class RealtimeChannel {
 
   /// Subscribes to receive real-time changes
   ///
-  /// Pass a [callback] to react to different status changes. Values of `status`
-  /// can be `SUBSCRIBED`, `CHANNEL_ERROR`, `CLOSED`, or `TIMED_OUT`.
+  /// Pass a [callback] to react to different status changes.
   ///
-  /// [timeout] parameter can be used to override the default timeout set on `RealtimeClient`.
+  /// [timeout] parameter can be used to override the default timeout set on [RealtimeClient].
   void subscribe([
-    void Function(String status, Object? error)? callback,
+    void Function(RealtimeSubscribeStatus status, Object? error)? callback,
     Duration? timeout,
   ]) {
     if (joinedOnce == true) {
@@ -102,10 +101,10 @@ class RealtimeChannel {
       final presence = params['config']['presence'];
 
       onError((e) {
-        if (callback != null) callback('CHANNEL_ERROR', e);
+        if (callback != null) callback(RealtimeSubscribeStatus.channelError, e);
       });
       onClose(() {
-        if (callback != null) callback('CLOSED', null);
+        if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
       });
 
       final accessTokenPayload = <String, String>{};
@@ -132,7 +131,9 @@ class RealtimeChannel {
           if (socket.accessToken != null) socket.setAuth(socket.accessToken);
 
           if (serverPostgresFilters == null) {
-            if (callback != null) callback('SUBSCRIBED', null);
+            if (callback != null) {
+              callback(RealtimeSubscribeStatus.subscribed, null);
+            }
             return;
           } else {
             final clientPostgresBindings = _bindings['postgres_changes'];
@@ -160,7 +161,7 @@ class RealtimeChannel {
                 unsubscribe();
                 if (callback != null) {
                   callback(
-                    'CHANNEL_ERROR',
+                    RealtimeSubscribeStatus.channelError,
                     Exception(
                         'mismatch between server and client bindings for postgres changes'),
                   );
@@ -171,14 +172,16 @@ class RealtimeChannel {
 
             _bindings['postgres_changes'] = newPostgresBindings;
 
-            if (callback != null) callback('SUBSCRIBED', null);
+            if (callback != null) {
+              callback(RealtimeSubscribeStatus.subscribed, null);
+            }
             return;
           }
         },
       ).receive('error', (error) {
         if (callback != null) {
           callback(
-            'CHANNEL_ERROR',
+            RealtimeSubscribeStatus.channelError,
             Exception(
               jsonEncode((error as Map<String, dynamic>).isNotEmpty
                   ? (error).values.join(', ')
@@ -188,7 +191,7 @@ class RealtimeChannel {
         }
         return;
       }).receive('timeout', (_) {
-        if (callback != null) callback('TIMED_OUT', null);
+        if (callback != null) callback(RealtimeSubscribeStatus.timedOut, null);
         return;
       });
     }

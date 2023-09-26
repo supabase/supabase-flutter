@@ -64,6 +64,8 @@ enum ChannelResponse { ok, timedOut, rateLimited }
 
 enum RealtimeListenTypes { postgresChanges, broadcast, presence }
 
+enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
+
 extension ToType on RealtimeListenTypes {
   String toType() {
     if (this == RealtimeListenTypes.postgresChanges) {
