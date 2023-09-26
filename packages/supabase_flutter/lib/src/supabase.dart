@@ -105,7 +105,8 @@ class Supabase {
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
 
-    await SupabaseAuth.initialize(options: goTrueOptions);
+    _instance._supabaseAuth = SupabaseAuth();
+    await _instance._supabaseAuth.initialize(options: goTrueOptions);
 
     return _instance;
   }
@@ -119,12 +120,15 @@ class Supabase {
   ///
   /// Throws an error if [Supabase.initialize] was not called.
   late SupabaseClient client;
+
+  late SupabaseAuth _supabaseAuth;
+
   bool _debugEnable = false;
 
   /// Dispose the instance to free up resources.
   void dispose() {
     client.dispose();
-    SupabaseAuth.instance.dispose();
+    _instance._supabaseAuth.dispose();
     _initialized = false;
   }
 
