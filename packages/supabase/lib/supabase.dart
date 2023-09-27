@@ -17,3 +17,4 @@ export 'src/supabase_client.dart';
 export 'src/supabase_event_types.dart';
 export 'src/supabase_query_builder.dart';
 export 'src/supabase_realtime_error.dart';
+export 'src/supabase_stream_builder.dart';

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase/supabase.dart';
 
+part 'supabase_stream_filter_builder.dart';
+
 enum _FilterType { eq, neq, lt, lte, gt, gte, inFilter }
 
 class _StreamPostgrestFilter {
@@ -77,146 +79,6 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         _schema = schema,
         _table = table,
         _uniqueColumns = primaryKey;
-
-  /// Filters the results where [column] equals [value].
-  ///
-  /// Only one filter can be applied to `.stream()`.
-  ///
-  /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).eq('name', 'Supabase');
-  /// ```
-  SupabaseStreamBuilder eq(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
-    _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.eq,
-      column: column,
-      value: value,
-    );
-    return this;
-  }
-
-  /// Filters the results where [column] does not equal [value].
-  ///
-  /// Only one filter can be applied to `.stream()`.
-  ///
-  /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).neq('name', 'Supabase');
-  /// ```
-  SupabaseStreamBuilder neq(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
-    _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.neq,
-      column: column,
-      value: value,
-    );
-    return this;
-  }
-
-  /// Filters the results where [column] is less than [value].
-  ///
-  /// Only one filter can be applied to `.stream()`.
-  ///
-  /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).lt('likes', 100);
-  /// ```
-  SupabaseStreamBuilder lt(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
-    _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.lt,
-      column: column,
-      value: value,
-    );
-    return this;
-  }
-
-  /// Filters the results where [column] is less than or equal to [value].
-  ///
-  /// Only one filter can be applied to `.stream()`.
-  ///
-  /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).lte('likes', 100);
-  /// ```
-  SupabaseStreamBuilder lte(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
-    _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.lte,
-      column: column,
-      value: value,
-    );
-    return this;
-  }
-
-  /// Filters the results where [column] is greater than [value].
-  ///
-  /// Only one filter can be applied to `.stream()`.
-  ///
-  /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).gt('likes', '100');
-  /// ```
-  SupabaseStreamBuilder gt(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
-    _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.gt,
-      column: column,
-      value: value,
-    );
-    return this;
-  }
-
-  /// Filters the results where [column] is greater than or equal to [value].
-  ///
-  /// Only one filter can be applied to `.stream()`.
-  ///
-  /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).gte('likes', 100);
-  /// ```
-  SupabaseStreamBuilder gte(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
-    _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.gte,
-      column: column,
-      value: value,
-    );
-    return this;
-  }
-
-  /// Filters the results where [column] is included in [value].
-  ///
-  /// Only one filter can be applied to `.stream()`.
-  ///
-  /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).inFilter('name', ['Andy', 'Amy', 'Terry']);
-  /// ```
-  SupabaseStreamBuilder inFilter(String column, List<Object> values) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
-    _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.inFilter,
-      column: column,
-      value: values,
-    );
-    return this;
-  }
 
   /// Orders the result with the specified [column].
   ///
