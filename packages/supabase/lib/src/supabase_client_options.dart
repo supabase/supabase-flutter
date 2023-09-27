@@ -6,12 +6,12 @@ class PostgrestClientOptions {
   const PostgrestClientOptions({this.schema = 'public'});
 }
 
-class GoTrueClientOptions {
+class AuthClientOptions {
   final bool autoRefreshToken;
   final GotrueAsyncStorage? pkceAsyncStorage;
   final AuthFlowType authFlowType;
 
-  const GoTrueClientOptions({
+  const AuthClientOptions({
     this.autoRefreshToken = true,
     this.pkceAsyncStorage,
     this.authFlowType = AuthFlowType.pkce,

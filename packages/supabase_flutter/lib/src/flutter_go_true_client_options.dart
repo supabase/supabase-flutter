@@ -1,22 +1,22 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class FlutterGoTrueClientOptions extends GoTrueClientOptions {
+class FlutterAuthClientOptions extends AuthClientOptions {
   final LocalStorage? localStorage;
 
-  const FlutterGoTrueClientOptions({
+  const FlutterAuthClientOptions({
     super.authFlowType,
     super.autoRefreshToken,
     super.pkceAsyncStorage,
     this.localStorage,
   });
 
-  FlutterGoTrueClientOptions copyWith({
+  FlutterAuthClientOptions copyWith({
     AuthFlowType? authFlowType,
     bool? autoRefreshToken,
     LocalStorage? localStorage,
     dynamic pkceAsyncStorage,
   }) {
-    return FlutterGoTrueClientOptions(
+    return FlutterAuthClientOptions(
       authFlowType: authFlowType ?? this.authFlowType,
       autoRefreshToken: autoRefreshToken ?? this.autoRefreshToken,
       localStorage: localStorage ?? this.localStorage,

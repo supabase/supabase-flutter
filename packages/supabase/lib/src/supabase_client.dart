@@ -121,7 +121,7 @@ class SupabaseClient {
     this.supabaseUrl,
     this.supabaseKey, {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
-    GoTrueClientOptions goTrueOptions = const GoTrueClientOptions(),
+    AuthClientOptions authOptions = const AuthClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     Map<String, String>? headers,
@@ -140,9 +140,9 @@ class SupabaseClient {
         _httpClient = httpClient,
         _isolate = isolate ?? (YAJsonIsolate()..initialize()) {
     auth = _initSupabaseAuthClient(
-      autoRefreshToken: goTrueOptions.autoRefreshToken,
-      gotrueAsyncStorage: goTrueOptions.pkceAsyncStorage,
-      authFlowType: goTrueOptions.authFlowType,
+      autoRefreshToken: authOptions.autoRefreshToken,
+      gotrueAsyncStorage: authOptions.pkceAsyncStorage,
+      authFlowType: authOptions.authFlowType,
     );
     _authHttpClient = AuthHttpClient(supabaseKey, httpClient ?? Client(), auth);
     rest = _initRestClient();

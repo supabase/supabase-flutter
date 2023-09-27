@@ -71,21 +71,21 @@ class Supabase {
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
-    FlutterGoTrueClientOptions goTrueOptions =
-        const FlutterGoTrueClientOptions(),
+    FlutterAuthClientOptions authOptions =
+        const FlutterAuthClientOptions(),
     bool? debug,
   }) async {
     assert(
       !_instance._initialized,
       'This instance is already initialized',
     );
-    if (goTrueOptions.pkceAsyncStorage == null) {
-      goTrueOptions = goTrueOptions.copyWith(
+    if (authOptions.pkceAsyncStorage == null) {
+      authOptions = authOptions.copyWith(
         pkceAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
       );
     }
-    if (goTrueOptions.localStorage == null) {
-      goTrueOptions = goTrueOptions.copyWith(
+    if (authOptions.localStorage == null) {
+      authOptions = authOptions.copyWith(
         localStorage: MigrationLocalStorage(
           persistSessionKey:
               "sb-${Uri.parse(url).host.split(".").first}-auth-token",
@@ -98,7 +98,7 @@ class Supabase {
       httpClient: httpClient,
       customHeaders: headers,
       realtimeClientOptions: realtimeClientOptions,
-      goTrueOptions: goTrueOptions,
+      authOptions: authOptions,
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
     );
@@ -106,7 +106,7 @@ class Supabase {
     _instance.log('***** Supabase init completed $_instance');
 
     _instance._supabaseAuth = SupabaseAuth();
-    await _instance._supabaseAuth.initialize(options: goTrueOptions);
+    await _instance._supabaseAuth.initialize(options: authOptions);
 
     return _instance;
   }
@@ -140,7 +140,7 @@ class Supabase {
     required RealtimeClientOptions realtimeClientOptions,
     required PostgrestClientOptions postgrestOptions,
     required StorageClientOptions storageOptions,
-    required GoTrueClientOptions goTrueOptions,
+    required AuthClientOptions authOptions,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
@@ -154,7 +154,7 @@ class Supabase {
       realtimeClientOptions: realtimeClientOptions,
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
-      goTrueOptions: goTrueOptions,
+      authOptions: authOptions,
     );
     _initialized = true;
   }

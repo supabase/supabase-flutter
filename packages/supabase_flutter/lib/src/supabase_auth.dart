@@ -34,7 +34,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   final _appLinks = AppLinks();
 
   Future<void> initialize({
-    required FlutterGoTrueClientOptions options,
+    required FlutterAuthClientOptions options,
   }) async {
     _localStorage = options.localStorage!;
     _authFlowType = options.authFlowType;

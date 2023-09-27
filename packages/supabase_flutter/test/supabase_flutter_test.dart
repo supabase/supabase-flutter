@@ -14,7 +14,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        goTrueOptions: FlutterGoTrueClientOptions(
+        authOptions: FlutterAuthClientOptions(
           localStorage: MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
@@ -35,7 +35,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        goTrueOptions: FlutterGoTrueClientOptions(
+        authOptions: FlutterAuthClientOptions(
           localStorage: MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
@@ -52,7 +52,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        goTrueOptions: FlutterGoTrueClientOptions(
+        authOptions: FlutterAuthClientOptions(
           localStorage: MockExpiredStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
@@ -73,7 +73,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        goTrueOptions: FlutterGoTrueClientOptions(
+        authOptions: FlutterAuthClientOptions(
           localStorage: MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
@@ -102,7 +102,7 @@ void main() {
         url: supabaseUrl,
         anonKey: supabaseKey,
         httpClient: pkceHttpClient,
-        goTrueOptions: FlutterGoTrueClientOptions(
+        authOptions: FlutterAuthClientOptions(
           localStorage: MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
