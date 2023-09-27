@@ -4,9 +4,9 @@ import 'dart:core';
 
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
 import 'package:realtime_client/src/message.dart';
-import 'package:realtime_client/src/realtime_channel.dart';
 import 'package:realtime_client/src/retry_timer.dart';
 import 'package:realtime_client/src/websocket/websocket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';

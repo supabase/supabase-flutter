@@ -289,11 +289,12 @@ void main() {
     });
 
     test("correct CHANNEL_ERROR data on heartbeat timeout", () async {
-      final subscribeCallback = expectAsync2((event, [data]) {
-        if (event == "CHANNEL_ERROR") {
+      final subscribeCallback =
+          expectAsync2((RealtimeSubscribeStatus event, data) {
+        if (event == RealtimeSubscribeStatus.channelError) {
           expect(data, "heartbeat timeout");
         } else {
-          expect(event, "CLOSED");
+          expect(event, RealtimeSubscribeStatus.closed);
         }
       }, count: 2);
 
