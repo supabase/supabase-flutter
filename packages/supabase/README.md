@@ -53,16 +53,20 @@ main() {
 import 'package:supabase/supabase.dart';
 
 main() {
-  final supabase = SupabaseClient('supabaseUrl', 'supabaseKey');
+final supabase = SupabaseClient('supabaseUrl', 'supabaseKey');
 
-  // Set up a listener to listen to changes in `countries` table
-  supabase.channel('my_channel').on(RealtimeListenTypes.postgresChanges, ChannelFilter(
-      event: '*',
-      schema: 'public',
-      table: 'countries'
-    ), (payload, [ref]) {
-      // Do something when there is an update
-    }).subscribe();
+// Set up a listener to listen to changes in `countries` table
+supabase.channel('my_channel').on(
+  RealtimeListenTypes.postgresChanges,
+  ChannelFilter(
+    event: '*',
+    schema: 'public',
+    table: 'countries',
+  ), 
+  (payload, [ref]) {
+    // Do something when there is an update
+  },
+).subscribe();
 
   // remember to remove the channels when you're done
   supabase.removeAllChannels();

@@ -190,7 +190,7 @@ Use the `redirectTo` parameter to redirect the user to a deep link to bring the 
 ```dart
 // Perform web based OAuth login
 await supabase.auth.signInWithOAuth(
-  Provider.github,
+  OAuthProvider.github,
   redirectTo: kIsWeb ? null : 'io.supabase.flutter://callback',
 );
 
@@ -240,12 +240,12 @@ class MyWidget extends StatefulWidget {
 
 class _MyWidgetState extends State<MyWidget> {
   // Persisting the future as local variable to prevent refetching upon rebuilds.
-  final List<Map<String, dynamic>> _stream = supabase.from('countries').stream(primaryKey: ['id']);
+  final stream = supabase.from('countries').stream(primaryKey: ['id']);
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: _stream,
+      stream: stream,
       builder: (context, snapshot) {
         // return your widget with the data from snapshot
       },
@@ -280,10 +280,13 @@ Broadcast lets you send and receive low latency messages between connected clien
 final myChannel = supabase.channel('my_channel');
 
 // Subscribe to `cursor-pos` broadcast event
-myChannel.on(RealtimeListenTypes.broadcast,
-    ChannelFilter(event: 'cursor-pos'), (payload, [ref]) {
-  // Do something fun or interesting when there is an change on the database
-}).subscribe();
+myChannel.on(
+    RealtimeListenTypes.broadcast,
+    ChannelFilter(event: 'cursor-pos'),
+    (payload, [ref]) {
+      // Do something fun or interesting when there is an change on the database
+    },
+).subscribe();
 
 // Send a broadcast message to other connected clients
 await myChannel.send(
@@ -556,45 +559,46 @@ Add this XML chapter in your macos/Runner/Info.plist inside <plist version="1.0"
 
 ### Custom LocalStorage
 
-As default, `supabase_flutter` uses [`hive`](https://pub.dev/packages/hive) to persist the user session. Encryption is disabled by default, since an unique encryption key is necessary, and we can not define it. To set an `encryptionKey`, do the following:
+As default, `supabase_flutter` uses [`Shared preferences`](https://pub.dev/packages/shared_preferences) to persist the user session.
 
-```dart
-Future<void> main() async {
-  // set it before initializing
-  HiveLocalStorage.encryptionKey = 'my_secure_key';
-  await Supabase.initialize(...);
-}
-```
-
-**Note** the key must be the same. There is no check if the encryption key is correct. If it isn't, there may be unexpected behavior. [Learn more](https://docs.hivedb.dev/#/advanced/encrypted_box) about encryption in hive.
-
-However you can use any other methods by creating a `LocalStorage` implementation. For example, we can use [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to store the user session in a secure storage.
+However, you can use any other methods by creating a `LocalStorage` implementation. For example, we can use [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to store the user session in a secure storage.
 
 ```dart
 // Define the custom LocalStorage implementation
-class SecureLocalStorage extends LocalStorage {
-  SecureLocalStorage() : super(
-    initialize: () async {},
-    hasAccessToken: () {
-      const storage = FlutterSecureStorage();
-      return storage.containsKey(key: supabasePersistSessionKey);
-    }, accessToken: () {
-      const storage = FlutterSecureStorage();
-      return storage.read(key: supabasePersistSessionKey);
-    }, removePersistedSession: () {
-      const storage = FlutterSecureStorage();
-      return storage.delete(key: supabasePersistSessionKey);
-    }, persistSession: (String value) {
-      const storage = FlutterSecureStorage();
-      return storage.write(key: supabasePersistSessionKey, value: value);
-    },
-  );
+class MockLocalStorage extends LocalStorage {
+
+  final storage = FlutterSecureStorage();
+  
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<String?> accessToken() async {
+    return storage.containsKey(key: supabasePersistSessionKey);
+  }
+
+  @override
+  Future<bool> hasAccessToken() async {
+    return storage.read(key: supabasePersistSessionKey);
+  }
+
+  @override
+  Future<void> persistSession(String persistSessionString) async {
+    return storage.write(key: supabasePersistSessionKey, value: persistSessionString);
+  }
+
+  @override
+  Future<void> removePersistedSession() async {
+    return storage.delete(key: supabasePersistSessionKey);
+  }
 }
 
 // use it when initializing
 Supabase.initialize(
   ...
-  localStorage: SecureLocalStorage(),
+  authOptions: FlutterAuthClientOptions(
+    localStorage: const EmptyLocalStorage(),
+  ),
 );
 ```
 
@@ -603,7 +607,9 @@ You can also use `EmptyLocalStorage` to disable session persistence:
 ```dart
 Supabase.initialize(
   // ...
-  localStorage: const EmptyLocalStorage(),
+  authOptions: FlutterAuthClientOptions(
+    localStorage: const EmptyLocalStorage(),
+  ),
 );
 ```
 
