@@ -18,10 +18,6 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).eq('name', 'Supabase');
   /// ```
   SupabaseStreamBuilder eq(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
     _streamFilter = _StreamPostgrestFilter(
       type: _FilterType.eq,
       column: column,
@@ -38,10 +34,6 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).neq('name', 'Supabase');
   /// ```
   SupabaseStreamBuilder neq(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
     _streamFilter = _StreamPostgrestFilter(
       type: _FilterType.neq,
       column: column,
@@ -58,10 +50,6 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).lt('likes', 100);
   /// ```
   SupabaseStreamBuilder lt(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
     _streamFilter = _StreamPostgrestFilter(
       type: _FilterType.lt,
       column: column,
@@ -78,10 +66,6 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).lte('likes', 100);
   /// ```
   SupabaseStreamBuilder lte(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
     _streamFilter = _StreamPostgrestFilter(
       type: _FilterType.lte,
       column: column,
@@ -98,10 +82,6 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).gt('likes', '100');
   /// ```
   SupabaseStreamBuilder gt(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
     _streamFilter = _StreamPostgrestFilter(
       type: _FilterType.gt,
       column: column,
@@ -118,10 +98,6 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).gte('likes', 100);
   /// ```
   SupabaseStreamBuilder gte(String column, Object value) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
     _streamFilter = _StreamPostgrestFilter(
       type: _FilterType.gte,
       column: column,
@@ -138,10 +114,6 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).inFilter('name', ['Andy', 'Amy', 'Terry']);
   /// ```
   SupabaseStreamBuilder inFilter(String column, List<Object> values) {
-    assert(
-      _streamFilter == null,
-      'Only one filter can be applied to `.stream()`',
-    );
     _streamFilter = _StreamPostgrestFilter(
       type: _FilterType.inFilter,
       column: column,
