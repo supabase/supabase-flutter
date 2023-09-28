@@ -71,6 +71,10 @@ void main() {
     final response = await storage.createBucket(newBucketName);
     expect(response, newBucketName);
   });
+  test('createSignedUrls does not throw', () async {
+    await storage.from(newBucketName).upload(uploadPath, file);
+    await storage.from(newBucketName).createSignedUrls([uploadPath], 2000);
+  });
 
   test('Create new public bucket', () async {
     const newPublicBucketName = 'my-new-public-bucket';

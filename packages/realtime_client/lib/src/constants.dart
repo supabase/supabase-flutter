@@ -9,7 +9,22 @@ class Constants {
   };
 }
 
-enum SocketStates { connecting, open, closing, closed, disconnected }
+enum SocketStates {
+  /// Client attempting to establish a connection
+  connecting,
+
+  /// Connection is live and connected
+  open,
+
+  /// Socket is closing.
+  closing,
+
+  /// Socket being close not by the user. Realtime should attempt to reconnect.
+  closed,
+
+  /// Socket being closed by the user
+  disconnected,
+}
 
 enum ChannelStates { closed, errored, joined, joining, leaving }
 

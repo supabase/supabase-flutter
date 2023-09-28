@@ -1,3 +1,7 @@
+## 1.5.2
+
+ - **FIX**(storage_client): prevent the SDK from throwing when null path was returned from calling `createSignedUrls()` ([#599](https://github.com/supabase/supabase-flutter/issues/599)). ([e25a70d6](https://github.com/supabase/supabase-flutter/commit/e25a70d67aeaa8844a0a8dca8385a3637b4ffd42))
+
 ## 1.5.1
 
  - **REFACTOR**: bump minimum Dart SDK version to 2.17.0 ([#510](https://github.com/supabase/supabase-flutter/issues/510)). ([ed927ee0](https://github.com/supabase/supabase-flutter/commit/ed927ee061272f61c84ee3ee145bb4e8c0eae59a))

@@ -19,7 +19,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        node: ['12']
         sdk: [stable, beta, dev]
 
     defaults:

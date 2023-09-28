@@ -58,6 +58,8 @@ class GoTrueClient {
   /// Completer to combine multiple simultaneous token refresh requests.
   Completer<AuthResponse>? _refreshTokenCompleter;
 
+  bool _isRefreshingToken = false;
+
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
   final _onAuthStateChangeControllerSync =
       BehaviorSubject<AuthState>(sync: true);
@@ -141,6 +143,8 @@ class GoTrueClient {
   /// [password] is the password of the user
   ///
   /// [data] sets [User.userMetadata] without an extra call to [updateUser]
+  ///
+  /// [channel] Messaging channel to use (e.g. whatsapp or sms)
   Future<AuthResponse> signUp({
     String? email,
     String? phone,
@@ -148,6 +152,7 @@ class GoTrueClient {
     String? emailRedirectTo,
     Map<String, dynamic>? data,
     String? captchaToken,
+    OtpChannel channel = OtpChannel.sms,
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
         'You must provide either an email or phone number');
@@ -191,6 +196,7 @@ class GoTrueClient {
         'password': password,
         'data': data,
         'gotrue_meta_security': {'captcha_token': captchaToken},
+        'channel': channel.name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
       response = await _fetch.request('$_url/signup', RequestMethodType.post,
@@ -392,6 +398,8 @@ class GoTrueClient {
   /// [data] can be used to set the user's metadata, which maps to the `auth.users.user_metadata` column.
   ///
   /// [captchaToken] Verification token received when the user completes the captcha on the site.
+  ///
+  /// [channel] Messaging channel to use (e.g. whatsapp or sms)
   Future<void> signInWithOtp({
     String? email,
     String? phone,
@@ -399,6 +407,7 @@ class GoTrueClient {
     bool? shouldCreateUser,
     Map<String, dynamic>? data,
     String? captchaToken,
+    OtpChannel channel = OtpChannel.sms,
   }) async {
     _removeSession();
 
@@ -437,6 +446,7 @@ class GoTrueClient {
         'data': data ?? {},
         'create_user': shouldCreateUser ?? true,
         'gotrue_meta_security': {'captcha_token': captchaToken},
+        'channel': channel.name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
 
@@ -908,7 +918,7 @@ class GoTrueClient {
   }) async {
     if (_refreshTokenCompleter?.isCompleted ?? true) {
       _refreshTokenCompleter = Completer<AuthResponse>();
-    } else if (!ignorePendingRequest) {
+    } else if (!ignorePendingRequest && _isRefreshingToken) {
       return _refreshTokenCompleter!.future;
     }
     final token = refreshToken ?? currentSession?.refreshToken;
@@ -919,6 +929,7 @@ class GoTrueClient {
     final jwt = accessToken ?? currentSession?.accessToken;
 
     try {
+      _isRefreshingToken = true;
       final body = {'refresh_token': token};
       if (jwt != null) {
         _headers['Authorization'] = 'Bearer $jwt';
@@ -955,6 +966,8 @@ class GoTrueClient {
       }
       _onAuthStateChangeController.addError(error, stack);
       rethrow;
+    } finally {
+      _isRefreshingToken = false;
     }
   }
 

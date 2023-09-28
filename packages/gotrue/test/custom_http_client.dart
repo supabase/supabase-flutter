@@ -72,9 +72,9 @@ class RetryTestHttpClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    if (retryCount < 3) {
-      retryCount++;
-      throw SocketException('Retry #${retryCount + 1}');
+    retryCount++;
+    if (retryCount < 4) {
+      throw SocketException('Retry #$retryCount');
     }
     final jwt = JWT(
       {'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 60},

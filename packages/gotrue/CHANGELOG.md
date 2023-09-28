@@ -1,3 +1,15 @@
+## 1.12.2
+
+ - **FIX**(gotrue,supabase): allow refreshSession after exception ([#633](https://github.com/supabase/supabase-flutter/issues/633)). ([8853155f](https://github.com/supabase/supabase-flutter/commit/8853155fdaaec984818323b35718cb1c4c3ede4c))
+
+## 1.12.1
+
+ - **FIX**(gotrue): export everything in constants.dart and hide what we want to hide instead of using show ([#617](https://github.com/supabase/supabase-flutter/issues/617)). ([24df174f](https://github.com/supabase/supabase-flutter/commit/24df174fb952a824692f33cb714e4f913c5866f5))
+
+## 1.12.0
+
+ - **FEAT**(gotrue): add WhatsApp support for OTP login ([#613](https://github.com/supabase/supabase-flutter/issues/613)). ([40da5be2](https://github.com/supabase/supabase-flutter/commit/40da5be2d8c883f591b71493749367c1e9de4d43))
+
 ## 1.11.2
 
  - **FIX**(gotrue): export SignOutScope ([#576](https://github.com/supabase/supabase-flutter/issues/576)). ([2bd6e459](https://github.com/supabase/supabase-flutter/commit/2bd6e4599dc3ebb11ffb0deaef19095574d4b93d))

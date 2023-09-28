@@ -174,7 +174,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       int? count;
 
       if (response.request!.method != METHOD_HEAD) {
-        if (response.request!.headers['Accept'] == 'text/csv') {
+        if (response.bodyBytes.isEmpty) {
+          body = null;
+        } else if (response.request!.headers['Accept'] == 'text/csv') {
           body = response.body;
         } else {
           try {

@@ -30,6 +30,12 @@ scripts:
 
   format:
     exec: dart format lib test -l 80 --set-exit-if-changed
+  
+  upgrade:
+    exec: dart pub upgrade
+  
+  outdated:
+    exec: dart pub outdated
 
   update-version:
     run: |

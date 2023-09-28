@@ -1,3 +1,23 @@
+## 1.11.6
+
+ - Update a dependency to the latest release.
+
+## 1.11.5
+
+ - **FIX**(gotrue,supabase): allow refreshSession after exception ([#633](https://github.com/supabase/supabase-flutter/issues/633)). ([8853155f](https://github.com/supabase/supabase-flutter/commit/8853155fdaaec984818323b35718cb1c4c3ede4c))
+
+## 1.11.4
+
+ - Update a dependency to the latest release.
+
+## 1.11.3
+
+ - Update a dependency to the latest release.
+
+## 1.11.2
+
+ - Update a dependency to the latest release.
+
 ## 1.11.1
 
  - **FIX**(realtime_client,supabase): pass apikey as the initial access token for realtime client ([#596](https://github.com/supabase/supabase-flutter/issues/596)). ([af8e368b](https://github.com/supabase/supabase-flutter/commit/af8e368bdb0b2a07f9cf9806c854456f8e9d198e))

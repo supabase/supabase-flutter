@@ -234,7 +234,7 @@ class RealtimeChannel {
   /// Registers a callback that will be executed when the channel encounteres an error.
   void onError(void Function(String?) callback) {
     onEvents(ChannelEvents.error.eventName(), ChannelFilter(),
-        (reason, [ref]) => callback(reason.toString()));
+        (reason, [ref]) => callback(reason?.toString()));
   }
 
   RealtimeChannel on(
