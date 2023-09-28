@@ -322,7 +322,7 @@ Future<void> signIn(String email, String password) async {
   final response = await Supabase.instance.client.auth.signInWithPassword(email: email, password: password);
   final Session? session = response.session;
   final User? user = response.user;
-e.collabora.cloudapps.ionos.com}
+}
 ```
 
 ### signInWithProvider
