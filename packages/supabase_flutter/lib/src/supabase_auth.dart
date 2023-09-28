@@ -17,29 +17,15 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 /// SupabaseAuth
 class SupabaseAuth with WidgetsBindingObserver {
-  SupabaseAuth._();
-
   static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
 
-  static final SupabaseAuth _instance = SupabaseAuth._();
-
-  bool _initialized = false;
   late LocalStorage _localStorage;
   late AuthFlowType _authFlowType;
-
-  /// The [LocalStorage] instance used to persist the user session.
-  LocalStorage get localStorage => _localStorage;
-
-  /// {@macro supabase.localstorage.hasAccessToken}
-  Future<bool> get hasAccessToken => _localStorage.hasAccessToken();
-
-  /// {@macro supabase.localstorage.accessToken}
-  Future<String?> get accessToken => _localStorage.accessToken();
 
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
-  bool _initialDeeplinkIsHandled = false;
+  static bool _initialDeeplinkIsHandled = false;
 
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -47,45 +33,27 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   final _appLinks = AppLinks();
 
-  /// A [SupabaseAuth] instance.
-  ///
-  /// If not initialized, an [AssertionError] is thrown
-  static SupabaseAuth get instance {
-    assert(
-      _instance._initialized,
-      'You must initialize the supabase instance before calling Supabase.instance',
-    );
-
-    return _instance;
-  }
-
-  /// Initialize the [SupabaseAuth] instance.
-  ///
-  /// It's necessary to initialize before calling [SupabaseAuth.instance]
-  static Future<SupabaseAuth> initialize({
-    required LocalStorage localStorage,
-    required AuthFlowType authFlowType,
+  Future<void> initialize({
+    required FlutterAuthClientOptions options,
   }) async {
-    _instance._initialized = true;
-    _instance._localStorage = localStorage;
-    _instance._authFlowType = authFlowType;
+    _localStorage = options.localStorage!;
+    _authFlowType = options.authFlowType;
 
-    _instance._authSubscription =
-        Supabase.instance.client.auth.onAuthStateChange.listen(
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
-        _instance._onAuthStateChange(data.event, data.session);
+        _onAuthStateChange(data.event, data.session);
       },
       onError: (error, stackTrace) {
         Supabase.instance.log(error.toString(), stackTrace);
       },
     );
 
-    await _instance._localStorage.initialize();
+    await _localStorage.initialize();
 
-    final hasPersistedSession = await _instance._localStorage.hasAccessToken();
+    final hasPersistedSession = await _localStorage.hasAccessToken();
     var shouldEmitInitialSession = true;
     if (hasPersistedSession) {
-      final persistedSession = await _instance._localStorage.accessToken();
+      final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
         try {
           // At this point either an [AuthChangeEvent.signedIn] event or an exception should next be emitted by `onAuthStateChange`
@@ -98,14 +66,14 @@ class SupabaseAuth with WidgetsBindingObserver {
         }
       }
     }
-    _widgetsBindingInstance?.addObserver(_instance);
+    _widgetsBindingInstance?.addObserver(this);
     if (kIsWeb ||
         Platform.isAndroid ||
         Platform.isIOS ||
         Platform.isMacOS ||
         Platform.isWindows ||
         Platform.environment.containsKey('FLUTTER_TEST')) {
-      await _instance._startDeeplinkObserver();
+      await _startDeeplinkObserver();
     }
 
     // Emit a null session if the user did not have persisted session
@@ -114,7 +82,6 @@ class SupabaseAuth with WidgetsBindingObserver {
           // ignore: invalid_use_of_internal_member
           .notifyAllSubscribers(AuthChangeEvent.initialSession);
     }
-    return _instance;
   }
 
   /// Dispose the instance to free up resources
@@ -139,14 +106,12 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Recover/refresh session if it's available
   /// e.g. called on a splash screen when the app starts.
   Future<bool> _recoverSupabaseSession() async {
-    final bool exist =
-        await SupabaseAuth.instance.localStorage.hasAccessToken();
+    final bool exist = await _localStorage.hasAccessToken();
     if (!exist) {
       return false;
     }
 
-    final String? jsonStr =
-        await SupabaseAuth.instance.localStorage.accessToken();
+    final String? jsonStr = await _localStorage.accessToken();
     if (jsonStr == null) {
       return false;
     }
@@ -155,7 +120,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       await Supabase.instance.client.auth.recoverSession(jsonStr);
       return true;
     } catch (error) {
-      SupabaseAuth.instance.localStorage.removePersistedSession();
+      _localStorage.removePersistedSession();
       return false;
     }
   }
@@ -240,7 +205,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Callback when deeplink receiving succeeds
   Future<void> _handleDeeplink(Uri uri) async {
-    if (!_instance._isAuthCallbackDeeplink(uri)) return;
+    if (!_isAuthCallbackDeeplink(uri)) return;
 
     Supabase.instance.log('***** SupabaseAuthState handleDeeplink $uri');
 

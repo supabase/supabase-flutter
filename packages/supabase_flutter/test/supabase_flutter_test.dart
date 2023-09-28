@@ -14,8 +14,10 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        localStorage: MockLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       );
     });
 
@@ -33,8 +35,10 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        localStorage: MockLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       );
 
       final newClient = Supabase.instance.client;
@@ -48,8 +52,10 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        localStorage: MockExpiredStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockExpiredStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       );
     });
 
@@ -67,8 +73,10 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        localStorage: MockEmptyLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockEmptyLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       );
     });
 
@@ -93,10 +101,11 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        authFlowType: AuthFlowType.pkce,
         httpClient: pkceHttpClient,
-        localStorage: MockEmptyLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockEmptyLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       );
     });
 

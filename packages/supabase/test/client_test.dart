@@ -69,7 +69,7 @@ void main() {
       final client = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         "supabaseKey",
-        autoRefreshToken: false,
+        authOptions: AuthClientOptions(autoRefreshToken: false),
       );
       await client.auth.recoverSession(sessionString);
 
@@ -101,7 +101,7 @@ void main() {
       final client = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         "supabaseKey",
-        autoRefreshToken: false,
+        authOptions: AuthClientOptions(autoRefreshToken: false),
       );
       final sessionData = getSessionData(expiresAt);
       await client.auth.recoverSession(sessionData.sessionString);
