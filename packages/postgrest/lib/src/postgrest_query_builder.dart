@@ -9,7 +9,7 @@ part of 'postgrest_builder.dart';
 /// * update() - "patch"
 /// * delete() - "delete"
 /// Once any of these are called the filters are passed down to the Request.
-/// /// {@endtemplate}
+/// {@endtemplate}
 class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// {@macro postgrest_query_builder}
   PostgrestQueryBuilder({
