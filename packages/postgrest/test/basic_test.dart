@@ -221,7 +221,7 @@ void main() {
           .update(
             {'channel_id': 2},
           )
-          .is_("data", null)
+          .isFilter("data", null)
           .select();
       expect(res, isNotEmpty);
       expect(res, everyElement(containsPair("channel_id", 2)));

@@ -228,7 +228,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .is_('data', null);
   /// ```
   // ignore: non_constant_identifier_names
-  PostgrestFilterBuilder<T> is_(String column, Object? value) {
+  PostgrestFilterBuilder<T> isFilter(String column, Object? value) {
     return copyWithUrl(appendSearchParams(column, 'is.$value'));
   }
 
@@ -241,7 +241,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .in_('status', ['ONLINE', 'OFFLINE']);
   /// ```
   // ignore: non_constant_identifier_names
-  PostgrestFilterBuilder<T> in_(String column, List values) {
+  PostgrestFilterBuilder<T> inFilter(String column, List values) {
     return copyWithUrl(
         appendSearchParams(column, 'in.(${_cleanFilterArray(values)})'));
   }

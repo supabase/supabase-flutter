@@ -233,7 +233,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           query = query.gte(_streamFilter!.column, _streamFilter!.value);
           break;
         case _FilterType.inFilter:
-          query = query.in_(_streamFilter!.column, _streamFilter!.value);
+          query = query.inFilter(_streamFilter!.column, _streamFilter!.value);
           break;
       }
     }

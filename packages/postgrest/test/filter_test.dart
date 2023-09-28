@@ -235,7 +235,7 @@ void main() {
   });
 
   test('is', () async {
-    final res = await postgrest.from('users').select('data').is_('data', null);
+    final res = await postgrest.from('users').select('data').isFilter('data', null);
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(item['data'], null);
@@ -246,7 +246,7 @@ void main() {
     final res = await postgrest
         .from('users')
         .select('status')
-        .in_('status', ['ONLINE', 'OFFLINE']);
+        .inFilter('status', ['ONLINE', 'OFFLINE']);
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(
@@ -429,7 +429,7 @@ void main() {
         .from('users')
         .select()
         .eq('username', 'supabot')
-        .is_('data', null)
+        .isFilter('data', null)
         .overlaps('age_range', '[1,2)')
         .eq('status', 'ONLINE')
         .textSearch('catchphrase', 'cat');
