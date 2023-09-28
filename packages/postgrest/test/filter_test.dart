@@ -235,7 +235,8 @@ void main() {
   });
 
   test('is', () async {
-    final res = await postgrest.from('users').select('data').isFilter('data', null);
+    final res =
+        await postgrest.from('users').select('data').isFilter('data', null);
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(item['data'], null);
