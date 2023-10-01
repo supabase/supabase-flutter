@@ -483,10 +483,10 @@ class RealtimeChannel {
   }
 
   @internal
-  bool get isErrored => _state == ChannelStates.errored;
+  bool get isClosed => _state == ChannelStates.closed;
 
   @internal
-  bool get isClosed => _state == ChannelStates.closed;
+  bool get isErrored => _state == ChannelStates.errored;
 
   @internal
   bool get isJoined => _state == ChannelStates.joined;
