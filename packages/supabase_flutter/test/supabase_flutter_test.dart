@@ -25,7 +25,6 @@ void main() {
 
     test('can access Supabase singleton', () async {
       final client = Supabase.instance.client;
-      client.channel('').isClosed;
 
       expect(client, isNotNull);
     });

@@ -74,18 +74,18 @@ void main() {
   });
 
   group('onError', () {
-    test("sets state to 'errored'", () {
-      var isErrored = false;
+    setUp(() {
       socket = RealtimeClient('/socket');
       channel = socket.channel('topic');
-      channel.subscribe(((status, error) {
-        isErrored = status == RealtimeSubscribeStatus.channelError;
-      }));
-      expect(isErrored, isFalse);
+      channel.subscribe();
+    });
+
+    test("sets state to 'errored'", () {
+      expect(channel.isErrored, isFalse);
 
       channel.trigger('phx_error');
 
-      expect(isErrored, isTrue);
+      expect(channel.isErrored, isTrue);
     });
   });
 
