@@ -354,7 +354,6 @@ class RealtimeChannel {
   /// ```
   Future<String> unsubscribe([Duration? timeout]) {
     _state = ChannelStates.leaving;
-
     void onClose() {
       socket.log('channel', 'leave $topic');
       trigger(ChannelEvents.close.eventName(), 'leave', joinRef);
