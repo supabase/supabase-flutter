@@ -6,23 +6,44 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
+  /// Extracts a single request sent to the realtime server
+  Future<HttpRequest> getRealtimeRequest({
+    required HttpServer server,
+    required SupabaseClient supabaseClient,
+  }) async {
+    supabaseClient.channel('name').subscribe();
+
+    return server.first;
+  }
+
   group('Standard Header', () {
-    const supabaseUrl = 'https://nlbsnpoablmsiwndbmer.supabase.co';
+    late String supabaseUrl;
     const supabaseKey =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53emxkenlsb2pyemdqemloZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQxMzI2ODAsImV4cCI6MTk5OTcwODY4MH0.MU-LVeAPic93VLcRsHktxzYtBKBUMWAQb8E-0AQETPs';
     late SupabaseClient client;
+    late HttpServer mockServer;
 
-    setUp(() {
+    setUp(() async {
+      mockServer = await HttpServer.bind('localhost', 0);
+      supabaseUrl = 'http://${mockServer.address.host}:${mockServer.port}';
+
       client = SupabaseClient(supabaseUrl, supabaseKey);
     });
 
     tearDown(() async {
+      await client.removeAllChannels();
       await client.dispose();
     });
 
-    test('X-Client-Info header is set properly on realtime', () {
+    test('X-Client-Info header is set properly on realtime', () async {
+      final request = await getRealtimeRequest(
+        server: mockServer,
+        supabaseClient: client,
+      );
+
       final xClientHeaderBeforeSlash =
-          client.realtime.headers['X-Client-Info']!.split('/').first;
+          request.headers['X-Client-Info']?.first.split('/').first;
+
       expect(xClientHeaderBeforeSlash, 'supabase-dart');
     });
 
@@ -32,19 +53,33 @@ void main() {
       expect(xClientHeaderBeforeSlash, 'supabase-dart');
     });
 
-    test('realtime URL is properly being set', () {
-      var realtimeWebsocketURL = Uri.parse(client.realtime.endPointURL);
+    test('realtime URL is properly being set', () async {
+      final request = await getRealtimeRequest(
+        server: mockServer,
+        supabaseClient: client,
+      );
+
+      var realtimeWebsocketURL = request.uri;
+
       expect(
         realtimeWebsocketURL.queryParameters,
         containsPair('apikey', supabaseKey),
       );
       expect(realtimeWebsocketURL.queryParameters['log_level'], isNull);
+    });
 
+    test('log_level query parameter is properly set', () async {
       client = SupabaseClient(supabaseUrl, supabaseKey,
           realtimeClientOptions:
               RealtimeClientOptions(logLevel: RealtimeLogLevel.info));
 
-      realtimeWebsocketURL = Uri.parse(client.realtime.endPointURL);
+      final request = await getRealtimeRequest(
+        server: mockServer,
+        supabaseClient: client,
+      );
+
+      final realtimeWebsocketURL = request.uri;
+
       expect(
         realtimeWebsocketURL.queryParameters,
         containsPair('apikey', supabaseKey),
@@ -55,8 +90,13 @@ void main() {
       );
     });
 
-    test('realtime access token is set properly', () {
-      expect(client.realtime.accessToken, supabaseKey);
+    test('realtime access token is set properly', () async {
+      final request = await getRealtimeRequest(
+        server: mockServer,
+        supabaseClient: client,
+      );
+
+      expect(request.uri.queryParameters['apikey'], supabaseKey);
     });
   });
 
@@ -163,9 +203,23 @@ void main() {
       );
     });
 
-    test('X-Client-Info header is set properly on realtime', () {
-      final xClientInfoHeader = client.realtime.headers['X-Client-Info'];
-      expect(xClientInfoHeader, 'supabase-flutter/0.0.0');
+    test('X-Client-Info header is set properly on realtime', () async {
+      final mockServer = await HttpServer.bind('localhost', 0);
+
+      final client = SupabaseClient(
+        'http://${mockServer.address.host}:${mockServer.port}',
+        supabaseKey,
+        headers: {
+          'X-Client-Info': 'supabase-flutter/0.0.0',
+        },
+      );
+
+      final request = await getRealtimeRequest(
+        server: mockServer,
+        supabaseClient: client,
+      );
+
+      expect(request.headers['X-Client-Info']?.first, 'supabase-flutter/0.0.0');
     });
 
     test('X-Client-Info header is set properly on storage', () {
