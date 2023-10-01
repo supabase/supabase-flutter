@@ -101,7 +101,7 @@ class SupabaseClient {
   /// {@macro supabase_client}
   SupabaseClient(
     String supabaseUrl,
-    this._supabaseKey, {
+    String supabaseKey, {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     AuthClientOptions authOptions = const AuthClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
@@ -109,7 +109,8 @@ class SupabaseClient {
     Map<String, String>? headers,
     Client? httpClient,
     YAJsonIsolate? isolate,
-  })  : _restUrl = '$supabaseUrl/rest/v1',
+  })  : _supabaseKey = supabaseKey,
+        _restUrl = '$supabaseUrl/rest/v1',
         _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
         _authUrl = '$supabaseUrl/auth/v1',
         _storageUrl = '$supabaseUrl/storage/v1',

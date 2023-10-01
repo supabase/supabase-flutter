@@ -44,14 +44,14 @@ class RealtimeChannel {
       _pushBuffer = [];
     });
 
-    onClose(() {
+    _onClose(() {
       _rejoinTimer.reset();
       socket.log('channel', 'close $topic $joinRef');
       _state = ChannelStates.closed;
       socket.remove(this);
     });
 
-    onError((String? reason) {
+    _onError((String? reason) {
       if (isLeaving || isClosed) {
         return;
       }
@@ -100,10 +100,10 @@ class RealtimeChannel {
       final broadcast = params['config']['broadcast'];
       final presence = params['config']['presence'];
 
-      onError((e) {
+      _onError((e) {
         if (callback != null) callback(RealtimeSubscribeStatus.channelError, e);
       });
-      onClose(() {
+      _onClose(() {
         if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
       });
 
@@ -226,13 +226,13 @@ class RealtimeChannel {
   }
 
   /// Registers a callback that will be executed when the channel closes.
-  void onClose(Function callback) {
+  void _onClose(Function callback) {
     onEvents(ChannelEvents.close.eventName(), ChannelFilter(),
         (reason, [ref]) => callback());
   }
 
   /// Registers a callback that will be executed when the channel encounteres an error.
-  void onError(void Function(String?) callback) {
+  void _onError(void Function(String?) callback) {
     onEvents(ChannelEvents.error.eventName(), ChannelFilter(),
         (reason, [ref]) => callback(reason?.toString()));
   }
@@ -271,7 +271,7 @@ class RealtimeChannel {
   }
 
   /// Returns `true` if the socket is connected and the channel has been joined.
-  bool get canPush {
+  bool get _canPush {
     return socket.isConnected && isJoined;
   }
 
@@ -284,7 +284,7 @@ class RealtimeChannel {
       throw "tried to push '${event.eventName()}' to '$topic' before joining. Use channel.subscribe() before pushing events";
     }
     final pushEvent = Push(this, event, payload, timeout ?? _timeout);
-    if (canPush) {
+    if (_canPush) {
       pushEvent.send();
     } else {
       pushEvent.startTimeout();
@@ -354,6 +354,7 @@ class RealtimeChannel {
   /// ```
   Future<String> unsubscribe([Duration? timeout]) {
     _state = ChannelStates.leaving;
+
     void onClose() {
       socket.log('channel', 'leave $topic');
       trigger(ChannelEvents.close.eventName(), 'leave', joinRef);
@@ -385,7 +386,7 @@ class RealtimeChannel {
 
     leavePush.send();
 
-    if (!canPush) {
+    if (!_canPush) {
       leavePush.trigger('ok', {});
     }
 
@@ -483,9 +484,6 @@ class RealtimeChannel {
 
   @internal
   bool get isClosed => _state == ChannelStates.closed;
-
-  @internal
-  bool get isErrored => _state == ChannelStates.errored;
 
   @internal
   bool get isJoined => _state == ChannelStates.joined;
