@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show File;
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -8,7 +9,6 @@ import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:mime/mime.dart';
 import 'package:retry/retry.dart';
 import 'package:storage_client/src/types.dart';
-import 'package:universal_io/io.dart';
 
 Fetch storageFetch = Fetch();
 
@@ -108,7 +108,7 @@ class Fetch {
       },
       retryIf: (error) =>
           retryController?.cancelled != true &&
-          (error is SocketException || error is TimeoutException),
+          (error is ClientException || error is TimeoutException),
     );
 
     return _handleResponse(streamedResponse, options);
@@ -152,7 +152,7 @@ class Fetch {
       },
       retryIf: (error) =>
           retryController?.cancelled != true &&
-          (error is SocketException || error is TimeoutException),
+          (error is ClientException || error is TimeoutException),
     );
 
     return _handleResponse(streamedResponse, options);

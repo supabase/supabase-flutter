@@ -1,8 +1,8 @@
+import 'dart:io' show File;
 import 'dart:typed_data';
 
 import 'package:storage_client/src/fetch.dart';
 import 'package:storage_client/src/types.dart';
-import 'package:universal_io/io.dart';
 
 class StorageFileApi {
   final String url;
