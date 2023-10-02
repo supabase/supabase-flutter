@@ -12,8 +12,6 @@ import 'package:meta/meta.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:url_launcher/url_launcher_string.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 /// SupabaseAuth
 class SupabaseAuth with WidgetsBindingObserver {
@@ -237,12 +235,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// await supabase.auth.signInWithOAuth(
   ///   Provider.google,
   ///   // Use deep link to bring the user back to the app
-  ///   redirectTo: 'my-scheme://my-host/login-callback',
-  ///   // Pass the context and set `authScreenLaunchMode` to `platformDefault`
-  ///   // to open the OAuth screen in webview for iOS apps as recommended by Apple.
-  ///   // For other platforms it will launch the OAuth screen in whatever the platform default is.
-  ///   context: context,
-  ///   authScreenLaunchMode: LaunchMode.platformDefault
+  ///   redirectTo: 'my-scheme://my-host/callback-path',
   /// );
   /// ```
   ///
@@ -255,21 +248,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
   Future<bool> signInWithOAuth(
     OAuthProvider provider, {
-    BuildContext? context,
     String? redirectTo,
     String? scopes,
-    LaunchMode authScreenLaunchMode = LaunchMode.inAppWebView,
+    LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
     Map<String, String>? queryParams,
   }) async {
-    final willOpenWebview = (authScreenLaunchMode == LaunchMode.inAppWebView ||
-            authScreenLaunchMode == LaunchMode.platformDefault) &&
-        context != null &&
-        !kIsWeb && // `Platform.isIOS` throws on web, so adding a guard for web here.
-        Platform.isIOS;
-
-    final NavigatorState? navigator =
-        willOpenWebview ? Navigator.of(context) : null;
-
     final res = await getOAuthSignInUrl(
       provider: provider,
       redirectTo: redirectTo,
@@ -278,29 +261,22 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     );
     final uri = Uri.parse(res.url!);
 
-    if (willOpenWebview) {
-      navigator!.push(PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) {
-        return _OAuthSignInWebView(oAuthUri: uri, redirectTo: redirectTo);
-      }));
-      return true;
-    } else {
-      LaunchMode launchMode = authScreenLaunchMode;
+    LaunchMode launchMode = authScreenLaunchMode;
 
-      // `Platform.isAndroid` throws on web, so adding a guard for web here.
-      final isAndroid = !kIsWeb && Platform.isAndroid;
+    // `Platform.isAndroid` throws on web, so adding a guard for web here.
+    final isAndroid = !kIsWeb && Platform.isAndroid;
 
-      if (provider == OAuthProvider.google && isAndroid) {
-        launchMode = LaunchMode.externalApplication;
-      }
-
-      final result = await launchUrl(
-        uri,
-        mode: launchMode,
-        webOnlyWindowName: '_self',
-      );
-      return result;
+    // Google login has to be performed on external browser window on Android
+    if (provider == OAuthProvider.google && isAndroid) {
+      launchMode = LaunchMode.externalApplication;
     }
+
+    final result = await launchUrl(
+      uri,
+      mode: launchMode,
+      webOnlyWindowName: '_self',
+    );
+    return result;
   }
 
   /// Signs a user in using native Apple Login.
@@ -340,79 +316,5 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   String _generateRandomString() {
     final random = Random.secure();
     return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
-  }
-}
-
-class _OAuthSignInWebView extends StatefulWidget {
-  const _OAuthSignInWebView({
-    Key? key,
-    required this.oAuthUri,
-    required this.redirectTo,
-  }) : super(key: key);
-
-  final Uri oAuthUri;
-  final String? redirectTo;
-
-  @override
-  State<_OAuthSignInWebView> createState() => _OAuthSignInWebViewState();
-}
-
-/// Modal bottom sheet with webview for OAuth sign in
-class _OAuthSignInWebViewState extends State<_OAuthSignInWebView> {
-  bool isLoading = true;
-
-  late final WebViewController _controller;
-
-  void _handleWebResourceError(WebResourceError error) {
-    if (Navigator.canPop(context)) {
-      Navigator.of(context).pop(false);
-    }
-  }
-
-  FutureOr<NavigationDecision> _handleNavigationRequest(
-    NavigationRequest request,
-  ) async {
-    if (widget.redirectTo != null &&
-        request.url.startsWith(widget.redirectTo!)) {
-      await launchUrlString(request.url);
-    }
-    return NavigationDecision.navigate;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = WebViewController()
-      ..setUserAgent('Supabase OAuth')
-      ..loadRequest(widget.oAuthUri)
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (_) => setState(() => isLoading = true),
-        onPageFinished: (_) => setState(() => isLoading = false),
-        onWebResourceError: _handleWebResourceError,
-        onNavigationRequest: _handleNavigationRequest,
-      ));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      child: SafeArea(
-        child: Stack(
-          alignment: Alignment.topCenter,
-          children: [
-            // WebView
-            WebViewWidget(
-              controller: _controller,
-            ),
-            // Loader
-            if (isLoading)
-              const Center(
-                child: CircularProgressIndicator.adaptive(),
-              )
-          ],
-        ),
-      ),
-    );
   }
 }
