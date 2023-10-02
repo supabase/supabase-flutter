@@ -29,7 +29,7 @@ part 'gotrue_mfa_api.dart';
 /// [asyncStorage] local storage to store pkce code verifiers. Required when using the pkce flow.
 ///
 /// Set [flowType] to `AuthFlowType.pkce` to perform pkce auth flow.
-/// /// {@endtemplate}
+/// {@endtemplate}
 class GoTrueClient {
   /// Namespace for the GoTrue API methods.
   /// These can be used for example to get a user from a JWT in a server environment or reset a user's password.
