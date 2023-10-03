@@ -49,8 +49,8 @@ class SupabaseClient {
 
   /// Supabase Storage allows you to manage user-generated content, such as photos or videos.
   late final SupabaseStorageClient storage;
-  late final RealtimeClient _realtime;
-  late final PostgrestClient _rest;
+  late final RealtimeClient realtime;
+  late final PostgrestClient rest;
   String? _changedAccessToken;
   late StreamSubscription<AuthState> _authStateSubscription;
   late final YAJsonIsolate _isolate;
@@ -71,7 +71,7 @@ class SupabaseClient {
       ...headers,
     });
 
-    _rest.headers
+    rest.headers
       ..clear()
       ..addAll(_headers);
 
@@ -93,7 +93,7 @@ class SupabaseClient {
 
     // To apply the new headers in the realtime client,
     // manually unsubscribe and resubscribe to all channels.
-    _realtime.headers
+    realtime.headers
       ..clear()
       ..addAll(_headers);
   }
@@ -129,10 +129,10 @@ class SupabaseClient {
     );
     _authHttpClient =
         AuthHttpClient(_supabaseKey, httpClient ?? Client(), auth);
-    _rest = _initRestClient();
+    rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(storageOptions.retryAttempts);
-    _realtime = _initRealtimeClient(options: realtimeClientOptions);
+    realtime = _initRealtimeClient(options: realtimeClientOptions);
     _listenForAuthEvents();
   }
 
@@ -142,8 +142,8 @@ class SupabaseClient {
     _incrementId++;
     return SupabaseQueryBuilder(
       url,
-      _realtime,
-      headers: {..._rest.headers, ...headers},
+      realtime,
+      headers: {...rest.headers, ...headers},
       schema: _postgrestOptions.schema,
       table: table,
       httpClient: _authHttpClient,
@@ -156,7 +156,7 @@ class SupabaseClient {
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
   PostgrestClient useSchema(String schema) {
-    return _rest.useSchema(schema);
+    return rest.useSchema(schema);
   }
 
   /// Perform a stored procedure call.
@@ -164,31 +164,31 @@ class SupabaseClient {
     String fn, {
     Map<String, dynamic>? params,
   }) {
-    _rest.headers.addAll({..._rest.headers, ...headers});
-    return _rest.rpc(fn, params: params);
+    rest.headers.addAll({...rest.headers, ...headers});
+    return rest.rpc(fn, params: params);
   }
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
   RealtimeChannel channel(String name,
       {RealtimeChannelConfig opts = const RealtimeChannelConfig()}) {
-    return _realtime.channel(name, opts);
+    return realtime.channel(name, opts);
   }
 
   /// Returns all Realtime channels.
   List<RealtimeChannel> getChannels() {
-    return _realtime.getChannels();
+    return realtime.getChannels();
   }
 
   /// Unsubscribes and removes Realtime channel from Realtime client.
   ///
   /// [channel] - The name of the Realtime channel.
   Future<String> removeChannel(RealtimeChannel channel) {
-    return _realtime.removeChannel(channel);
+    return realtime.removeChannel(channel);
   }
 
   ///  Unsubscribes and removes all Realtime channels from Realtime client.
   Future<List<String>> removeAllChannels() {
-    return _realtime.removeAllChannels();
+    return realtime.removeAllChannels();
   }
 
   Future<void> dispose() async {
@@ -284,12 +284,12 @@ class SupabaseClient {
       // Token has changed
       _changedAccessToken = token;
 
-      _realtime.setAuth(token);
+      realtime.setAuth(token);
     } else if (event == AuthChangeEvent.signedOut ||
         event == AuthChangeEvent.userDeleted) {
       // Token is removed
 
-      _realtime.setAuth(_supabaseKey);
+      realtime.setAuth(_supabaseKey);
     }
   }
 }
