@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show File;
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -9,6 +8,8 @@ import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:mime/mime.dart';
 import 'package:retry/retry.dart';
 import 'package:storage_client/src/types.dart';
+
+import 'file_io.dart' if (dart.library.js) './file_stub.dart';
 
 Fetch storageFetch = Fetch();
 
