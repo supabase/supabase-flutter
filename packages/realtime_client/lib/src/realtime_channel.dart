@@ -115,15 +115,22 @@ class RealtimeChannel {
   late RetryTimer _rejoinTimer;
   List<Push> _pushBuffer = [];
   late RealtimePresence presence;
-
+  late final String broadcastEndpointURL;
+  final String subTopic;
   final String topic;
   Map<String, dynamic> params;
   final RealtimeClient socket;
 
-  RealtimeChannel(this.topic, this.socket,
-      {RealtimeChannelConfig params = const RealtimeChannelConfig()})
-      : _timeout = socket.timeout,
-        params = params.toMap() {
+  RealtimeChannel(
+    this.topic,
+    this.socket, {
+    RealtimeChannelConfig params = const RealtimeChannelConfig(),
+  })  : _timeout = socket.timeout,
+        params = params.toMap(),
+        subTopic = topic.replaceFirst(
+            RegExp(r"^realtime:", caseSensitive: false), "") {
+    broadcastEndpointURL = _broadcastEndpointURL;
+
     joinPush = Push(
       this,
       ChannelEvents.join,
@@ -192,6 +199,9 @@ class RealtimeChannel {
     void Function(String status, [Object? error])? callback,
     Duration? timeout,
   ]) {
+    if (!socket.isConnected) {
+      socket.connect();
+    }
     if (joinedOnce == true) {
       throw "tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance";
     } else {
@@ -393,7 +403,7 @@ class RealtimeChannel {
     String? event,
     required Map<String, dynamic> payload,
     Map<String, dynamic> opts = const {},
-  }) {
+  }) async {
     final completer = Completer<ChannelResponse>();
 
     payload['type'] = type.toType();
@@ -401,35 +411,60 @@ class RealtimeChannel {
       payload['event'] = event;
     }
 
-    final push = this.push(
-      ChannelEventsExtended.fromType(payload['type']),
-      payload,
-      opts['timeout'] ?? _timeout,
-    );
+    if (!canPush && type == RealtimeListenTypes.broadcast) {
+      final headers = {
+        'Content-Type': 'application/json',
+        'apikey': socket.accessToken ?? '',
+        ...socket.headers
+      };
+      final body = {
+        'messages': [
+          {
+            'topic': subTopic,
+            'payload': payload['endpoint_payload'],
+            'event': payload['event'],
+          }
+        ]
+      };
+      try {
+        await socket.httpClient.post(
+          Uri.parse(broadcastEndpointURL),
+          headers: headers,
+          body: json.encode(body),
+        );
+      } catch (e) {
+        completer.completeError(e);
+      }
+    } else {
+      final push = this.push(
+        ChannelEventsExtended.fromType(payload['type']),
+        payload,
+        opts['timeout'] ?? _timeout,
+      );
 
-    if (push.rateLimited) {
-      completer.complete(ChannelResponse.rateLimited);
+      if (push.rateLimited) {
+        completer.complete(ChannelResponse.rateLimited);
+      }
+
+      if (payload['type'] == 'broadcast' &&
+          (params['config']?['broadcast']?['ack'] == null ||
+              params['config']?['broadcast']?['ack'] == false)) {
+        if (!completer.isCompleted) {
+          completer.complete(ChannelResponse.ok);
+        }
+      }
+
+      push.receive('ok', (_) {
+        if (!completer.isCompleted) {
+          completer.complete(ChannelResponse.ok);
+        }
+      });
+      push.receive('timeout', (_) {
+        if (!completer.isCompleted) {
+          completer.complete(ChannelResponse.timedOut);
+        }
+      });
     }
-
-    if (payload['type'] == 'broadcast' &&
-        (params['config']?['broadcast']?['ack'] == null ||
-            params['config']?['broadcast']?['ack'] == false)) {
-      if (!completer.isCompleted) {
-        completer.complete(ChannelResponse.ok);
-      }
-    }
-
-    push.receive('ok', (_) {
-      if (!completer.isCompleted) {
-        completer.complete(ChannelResponse.ok);
-      }
-    });
-    push.receive('timeout', (_) {
-      if (!completer.isCompleted) {
-        completer.complete(ChannelResponse.timedOut);
-      }
-    });
-
     return completer.future;
   }
 
@@ -484,6 +519,18 @@ class RealtimeChannel {
     }
 
     return completer.future;
+  }
+
+  String get _broadcastEndpointURL {
+    var url = socket.endPoint;
+    url = url.replaceFirst(RegExp(r'^ws', caseSensitive: false), 'http');
+    url = url.replaceAll(
+      RegExp(r'(/socket/websocket|/socket|/websocket)/?$',
+          caseSensitive: false),
+      '',
+    );
+    url = '${url.replaceAll(RegExp(r'/+$'), '')}/api/broadcast';
+    return url;
   }
 
   /// Overridable message hook
