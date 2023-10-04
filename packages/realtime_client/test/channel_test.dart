@@ -241,7 +241,7 @@ void main() {
   });
 
   group('send', () {
-    late final HttpServer mockServer;
+    late HttpServer mockServer;
 
     setUp(() async {
       mockServer = await HttpServer.bind('localhost', 0);
@@ -253,9 +253,9 @@ void main() {
       channel = socket.channel('myTopic');
     });
 
-    tearDown(() {
+    tearDown(() async {
       socket.disconnect();
-      channel.unsubscribe();
+      await channel.unsubscribe();
     });
 
     test('sets endpoint', () {
