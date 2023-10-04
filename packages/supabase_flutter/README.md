@@ -76,8 +76,31 @@ supabase.auth.onAuthStateChange.listen((data) {
 You need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected, and add the bundle ID to your Supabase dashboard in `Authentication -> Providers -> Apple` before performing native Apple sign in.
 
 ```dart
-// Perform Apple login on iOS and macOS
-await supabase.auth.signInWithApple();
+/// Performs Apple sign in on iOS or macOS
+Future<AuthResponse> signInWithApple() async {
+  final rawNonce = generateRawNonce();
+  final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+  final credential = await SignInWithApple.getAppleIDCredential(
+    scopes: [
+      AppleIDAuthorizationScopes.email,
+      AppleIDAuthorizationScopes.fullName,
+    ],
+    nonce: hashedNonce,
+  );
+
+  final idToken = credential.identityToken;
+  if (idToken == null) {
+    throw const AuthException(
+        'Could not find ID Token from generated credential.');
+  }
+
+  return signInWithIdToken(
+    provider: OAuthProvider.apple,
+    idToken: idToken,
+    nonce: rawNonce,
+  );
+}
 ```
 
 `signInWithApple()` is only supported on iOS and on macOS. Use the `signInWithOAuth()` method to perform web-based Apple sign in on other platforms.
@@ -106,15 +129,9 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Function to generate a random 16 character string.
-String _generateRandomString() {
-  final random = Random.secure();
-  return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
-}
-
 Future<AuthResponse> signInWithGoogle() {
   // Just a random string
-  final rawNonce = _generateRandomString();
+  final rawNonce = generateRawNonce();
   final hashedNonce =
       sha256.convert(utf8.encode(rawNonce)).toString();
 
@@ -568,7 +585,7 @@ However, you can use any other methods by creating a `LocalStorage` implementati
 class MockLocalStorage extends LocalStorage {
 
   final storage = FlutterSecureStorage();
-  
+
   @override
   Future<void> initialize() async {}
 
