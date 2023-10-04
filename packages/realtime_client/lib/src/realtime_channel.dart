@@ -61,7 +61,7 @@ class ChannelFilter {
   }
 }
 
-enum ChannelResponse { ok, timedOut, rateLimited }
+enum ChannelResponse { ok, timedOut, rateLimited, error }
 
 enum RealtimeListenTypes { postgresChanges, broadcast, presence }
 
@@ -421,19 +421,24 @@ class RealtimeChannel {
         'messages': [
           {
             'topic': subTopic,
-            'payload': payload['endpoint_payload'],
-            'event': payload['event'],
+            'payload': payload,
+            'event': event,
           }
         ]
       };
       try {
-        await socket.httpClient.post(
+        final res = await socket.httpClient.post(
           Uri.parse(broadcastEndpointURL),
           headers: headers,
           body: json.encode(body),
         );
+        if (200 <= res.statusCode && res.statusCode < 300) {
+          completer.complete(ChannelResponse.ok);
+        } else {
+          completer.complete(ChannelResponse.error);
+        }
       } catch (e) {
-        completer.completeError(e);
+        completer.complete(ChannelResponse.error);
       }
     } else {
       final push = this.push(
