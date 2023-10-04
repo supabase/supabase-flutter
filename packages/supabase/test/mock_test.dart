@@ -357,8 +357,8 @@ void main() {
     await customHeadersClient.dispose();
 
     //Manually disconnect the socket channel to avoid automatic retrying to reconnect. This caused failing in later executed tests.
-    client.realtime.disconnect();
-    customHeadersClient.realtime.disconnect();
+    await client.removeAllChannels();
+    await customHeadersClient.removeAllChannels();
 
     // Wait for the realtime updates to come through
     await Future.delayed(Duration(milliseconds: 100));

@@ -30,8 +30,7 @@ import 'auth_http_client.dart';
 /// `AuthFlowType.pkce`in order to perform auth actions with pkce flow.
 /// {@endtemplate}
 class SupabaseClient {
-  final String supabaseUrl;
-  final String supabaseKey;
+  final String _supabaseKey;
   final PostgrestClientOptions _postgrestOptions;
 
   final String _restUrl;
@@ -99,27 +98,10 @@ class SupabaseClient {
       ..addAll(_headers);
   }
 
-  /// Creates a Supabase client to interact with your Supabase instance.
-  ///
-  /// [supabaseUrl] and [supabaseKey] can be found on your Supabase dashboard.
-  ///
-  /// You can access none public schema by passing different [schema].
-  ///
-  /// Default headers can be overridden by specifying [headers].
-  ///
-  /// Custom http client can be used by passing [httpClient] parameter.
-  ///
-  /// [storageRetryAttempts] specifies how many retry attempts there should be to
-  ///  upload a file to Supabase storage when failed due to network interruption.
-  ///
-  /// [realtimeClientOptions] specifies different options you can pass to `RealtimeClient`.
-  ///
-  /// Pass an instance of `YAJsonIsolate` to [isolate] to use your own persisted
-  /// isolate instance. A new instance will be created if [isolate] is omitted.
   /// {@macro supabase_client}
   SupabaseClient(
-    this.supabaseUrl,
-    this.supabaseKey, {
+    String supabaseUrl,
+    String supabaseKey, {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     AuthClientOptions authOptions = const AuthClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
@@ -127,7 +109,8 @@ class SupabaseClient {
     Map<String, String>? headers,
     Client? httpClient,
     YAJsonIsolate? isolate,
-  })  : _restUrl = '$supabaseUrl/rest/v1',
+  })  : _supabaseKey = supabaseKey,
+        _restUrl = '$supabaseUrl/rest/v1',
         _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
         _authUrl = '$supabaseUrl/auth/v1',
         _storageUrl = '$supabaseUrl/storage/v1',
@@ -144,7 +127,8 @@ class SupabaseClient {
       gotrueAsyncStorage: authOptions.pkceAsyncStorage,
       authFlowType: authOptions.authFlowType,
     );
-    _authHttpClient = AuthHttpClient(supabaseKey, httpClient ?? Client(), auth);
+    _authHttpClient =
+        AuthHttpClient(_supabaseKey, httpClient ?? Client(), auth);
     rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(storageOptions.retryAttempts);
@@ -218,8 +202,8 @@ class SupabaseClient {
     required AuthFlowType authFlowType,
   }) {
     final authHeaders = {...headers};
-    authHeaders['apikey'] = supabaseKey;
-    authHeaders['Authorization'] = 'Bearer $supabaseKey';
+    authHeaders['apikey'] = _supabaseKey;
+    authHeaders['Authorization'] = 'Bearer $_supabaseKey';
 
     return GoTrueClient(
       url: _authUrl,
@@ -266,7 +250,7 @@ class SupabaseClient {
     return RealtimeClient(
       _realtimeUrl,
       params: {
-        'apikey': supabaseKey,
+        'apikey': _supabaseKey,
         if (eventsPerSecond != null) 'eventsPerSecond': '$eventsPerSecond'
       },
       headers: headers,
@@ -275,9 +259,9 @@ class SupabaseClient {
   }
 
   Map<String, String> _getAuthHeaders() {
-    final authBearer = auth.currentSession?.accessToken ?? supabaseKey;
+    final authBearer = auth.currentSession?.accessToken ?? _supabaseKey;
     final defaultHeaders = {
-      'apikey': supabaseKey,
+      'apikey': _supabaseKey,
       'Authorization': 'Bearer $authBearer',
     };
     final headers = {...defaultHeaders, ..._headers};
@@ -305,7 +289,7 @@ class SupabaseClient {
         event == AuthChangeEvent.userDeleted) {
       // Token is removed
 
-      realtime.setAuth(supabaseKey);
+      realtime.setAuth(_supabaseKey);
     }
   }
 }
