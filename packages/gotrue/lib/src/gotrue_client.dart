@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -13,7 +14,6 @@ import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/subjects.dart';
-import 'package:universal_io/io.dart';
 
 part 'gotrue_mfa_api.dart';
 
@@ -29,7 +29,7 @@ part 'gotrue_mfa_api.dart';
 /// [asyncStorage] local storage to store pkce code verifiers. Required when using the pkce flow.
 ///
 /// Set [flowType] to `AuthFlowType.pkce` to perform pkce auth flow.
-/// /// {@endtemplate}
+/// {@endtemplate}
 class GoTrueClient {
   /// Namespace for the GoTrue API methods.
   /// These can be used for example to get a user from a JWT in a server environment or reset a user's password.
@@ -966,7 +966,7 @@ class GoTrueClient {
       _notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
       _refreshTokenCompleter!.complete(authResponse);
       return authResponse;
-    } on SocketException {
+    } on ClientException {
       _setTokenRefreshTimer(
         Constants.retryInterval * pow(2, _refreshTokenRetryCount),
         refreshToken: token,

@@ -12,7 +12,6 @@ dependencies:
   http: '>=0.13.4 <2.0.0'
   http_parser: ^4.0.1
   mime: ^1.0.2
-  universal_io: ^2.0.4
   retry: ^3.1.0
 
 dev_dependencies:
