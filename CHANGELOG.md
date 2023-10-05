@@ -15,6 +15,41 @@ Packages with breaking changes:
 
 Packages with other changes:
 
+ - [`gotrue` - `v1.12.3`](#gotrue---v1123)
+ - [`storage_client` - `v1.5.3`](#storage_client---v153)
+ - [`supabase` - `v1.11.8`](#supabase---v1118)
+ - [`supabase_flutter` - `v1.10.21`](#supabase_flutter---v11021)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.11.8`
+ - `supabase_flutter` - `v1.10.21`
+
+---
+
+#### `gotrue` - `v1.12.3`
+
+ - **FIX**: compile with webdev ([#653](https://github.com/supabase/supabase-flutter/issues/653)). ([23242287](https://github.com/supabase/supabase-flutter/commit/232422874df7f09fcf76ab5879822741a7272245))
+
+#### `storage_client` - `v1.5.3`
+
+ - **FIX**: compile with webdev ([#653](https://github.com/supabase/supabase-flutter/issues/653)). ([23242287](https://github.com/supabase/supabase-flutter/commit/232422874df7f09fcf76ab5879822741a7272245))
+
+
+## 2023-10-05
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
  - [`realtime_client` - `v1.3.0`](#realtime_client---v130)
  - [`supabase` - `v1.11.7`](#supabase---v1117)
  - [`supabase_flutter` - `v1.10.20`](#supabase_flutter---v11020)
