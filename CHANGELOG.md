@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-10-05
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v1.3.0`](#realtime_client---v130)
+ - [`supabase` - `v1.11.7`](#supabase---v1117)
+ - [`supabase_flutter` - `v1.10.20`](#supabase_flutter---v11020)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.11.7`
+ - `supabase_flutter` - `v1.10.20`
+
+---
+
+#### `realtime_client` - `v1.3.0`
+
+ - **FEAT**: send messages via broadcast endpoint ([#654](https://github.com/supabase/supabase-flutter/issues/654)). ([2ff950d7](https://github.com/supabase/supabase-flutter/commit/2ff950d7b228fd377ba0da2c45f4803d90b3368d))
+
+
 ## 2023-09-25
 
 ### Changes
