@@ -449,6 +449,7 @@ void main() {
       }
       await for (final AuthState event in client.onAuthStateChange) {
         expect(httpClient.retryCount, 4);
+        expect(event.event, AuthChangeEvent.tokenRefreshed);
         break;
       }
     });
