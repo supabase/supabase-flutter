@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:http/http.dart';
 import 'package:supabase/src/constants.dart';
-import 'package:supabase/src/supabase_query_schema.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
