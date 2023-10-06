@@ -906,9 +906,12 @@ class GoTrueClient {
 
   /// Generates a new JWT.
   ///
-  /// To prevent multiple simultaneous requests it catches an already ongoing requests by using the global [_refreshTokenCompleter]. If that's not null and not completed it returns the future that the ongoing request.
+  /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
+  /// If that's not null and not completed it returns the future of the ongoing request.
   ///
-  /// To be able to call [_callRefreshToken] again after a [ClientException] and not get trapped by the ongoing request, [ignorePendingRequest] is used to bypass that check.
+  /// To call [_callRefreshToken] during a running request [ignorePendingRequest] is used to bypass that check.
+  ///
+  /// When a [ClientException] occurs [_setTokenRefreshTimer] is used to schedule a retry in the background, which emits the result via [onAuthStateChange].
   Future<AuthResponse> _callRefreshToken({
     String? refreshToken,
     String? accessToken,
