@@ -9,7 +9,7 @@ class SupabaseQuerySchema {
   final Counter _counter;
   final String _restUrl;
   final Map<String, String> _headers;
-  final PostgrestClientOptions _postgrestOptions;
+  final String _schema;
   final YAJsonIsolate _isolate;
   final Client? _authHttpClient;
   final RealtimeClient _realtime;
@@ -19,7 +19,7 @@ class SupabaseQuerySchema {
     required Counter counter,
     required String restUrl,
     required Map<String, String> headers,
-    required PostgrestClientOptions postgrestOptions,
+    required String schema,
     required YAJsonIsolate isolate,
     required Client? authHttpClient,
     required RealtimeClient realtime,
@@ -27,7 +27,7 @@ class SupabaseQuerySchema {
   })  : _counter = counter,
         _restUrl = restUrl,
         _headers = headers,
-        _postgrestOptions = postgrestOptions,
+        _schema = schema,
         _isolate = isolate,
         _authHttpClient = authHttpClient,
         _realtime = realtime,
@@ -40,7 +40,7 @@ class SupabaseQuerySchema {
       url,
       _realtime,
       headers: {..._rest.headers, ..._headers},
-      schema: _postgrestOptions.schema,
+      schema: _schema,
       table: table,
       httpClient: _authHttpClient,
       incrementId: _counter.increment(),
@@ -55,5 +55,19 @@ class SupabaseQuerySchema {
   }) {
     _rest.headers.addAll({..._rest.headers, ..._headers});
     return _rest.rpc(fn, params: params);
+  }
+
+  SupabaseQuerySchema useSchema(String schema) {
+    final newRest = _rest.useSchema(schema);
+    return SupabaseQuerySchema(
+      counter: _counter,
+      restUrl: _restUrl,
+      headers: _headers,
+      schema: schema,
+      isolate: _isolate,
+      authHttpClient: _authHttpClient,
+      realtime: _realtime,
+      rest: newRest,
+    );
   }
 }

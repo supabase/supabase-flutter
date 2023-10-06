@@ -162,7 +162,7 @@ class SupabaseClient {
       counter: _incrementId,
       restUrl: _restUrl,
       headers: headers,
-      postgrestOptions: _postgrestOptions,
+      schema: schema,
       isolate: _isolate,
       authHttpClient: _authHttpClient,
       realtime: realtime,
