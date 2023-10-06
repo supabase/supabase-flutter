@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:http/http.dart';
 import 'package:supabase/src/constants.dart';
+import 'package:supabase/src/supabase_wrapper.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'auth_http_client.dart';
+import 'counter.dart';
 
 /// {@template supabase_client}
 /// Creates a Supabase client to interact with your Supabase instance.
@@ -56,7 +58,7 @@ class SupabaseClient {
   late final YAJsonIsolate _isolate;
 
   /// Increment ID of the stream to create different realtime topic for each stream
-  int _incrementId = 0;
+  final _incrementId = Counter();
 
   /// Getter for the HTTP headers
   Map<String, String> get headers {
@@ -139,7 +141,6 @@ class SupabaseClient {
   /// Perform a table operation.
   SupabaseQueryBuilder from(String table) {
     final url = '$_restUrl/$table';
-    _incrementId++;
     return SupabaseQueryBuilder(
       url,
       realtime,
@@ -147,7 +148,7 @@ class SupabaseClient {
       schema: _postgrestOptions.schema,
       table: table,
       httpClient: _authHttpClient,
-      incrementId: _incrementId,
+      incrementId: _incrementId.increment(),
       isolate: _isolate,
     );
   }
@@ -155,8 +156,18 @@ class SupabaseClient {
   /// Select a schema to query or perform an function (rpc) call.
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
-  PostgrestClient useSchema(String schema) {
-    return rest.useSchema(schema);
+  SupabaseSchemaQuery useSchema(String schema) {
+    final newRest = rest.useSchema(schema);
+    return SupabaseSchemaQuery(
+      counter: _incrementId,
+      restUrl: _restUrl,
+      headers: headers,
+      postgrestOptions: _postgrestOptions,
+      isolate: _isolate,
+      authHttpClient: _authHttpClient,
+      realtime: realtime,
+      rest: newRest,
+    );
   }
 
   /// Perform a stored procedure call.
