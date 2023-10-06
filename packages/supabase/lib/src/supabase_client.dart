@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:http/http.dart';
 import 'package:supabase/src/constants.dart';
-import 'package:supabase/src/supabase_wrapper.dart';
+import 'package:supabase/src/supabase_query_schema.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -156,9 +156,9 @@ class SupabaseClient {
   /// Select a schema to query or perform an function (rpc) call.
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
-  SupabaseSchemaQuery useSchema(String schema) {
+  SupabaseQuerySchema useSchema(String schema) {
     final newRest = rest.useSchema(schema);
-    return SupabaseSchemaQuery(
+    return SupabaseQuerySchema(
       counter: _incrementId,
       restUrl: _restUrl,
       headers: headers,

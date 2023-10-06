@@ -5,7 +5,7 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 import 'counter.dart';
 
 /// Used to perform [rpc] and [from] operations with a different schema than in [SupabaseClient].
-class SupabaseSchemaQuery {
+class SupabaseQuerySchema {
   final Counter _counter;
   final String _restUrl;
   final Map<String, String> _headers;
@@ -15,7 +15,7 @@ class SupabaseSchemaQuery {
   final RealtimeClient _realtime;
   final PostgrestClient _rest;
 
-  SupabaseSchemaQuery({
+  SupabaseQuerySchema({
     required Counter counter,
     required String restUrl,
     required Map<String, String> headers,
