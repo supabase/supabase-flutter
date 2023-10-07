@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -925,7 +924,7 @@ class GoTrueClient {
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing requests by using the global [_refreshTokenCompleter]. If that's not null and not completed it returns the future that the ongoing request.
   ///
-  /// To be able to call [_callRefreshToken] again after a [SocketException] and not get trapped by the ongoing request, [ignorePendingRequest] is used to bypass that check.
+  /// To be able to call [_callRefreshToken] again after a [ClientException] and not get trapped by the ongoing request, [ignorePendingRequest] is used to bypass that check.
   Future<AuthResponse> _callRefreshToken({
     String? refreshToken,
     String? accessToken,
