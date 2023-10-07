@@ -29,7 +29,7 @@ part 'gotrue_mfa_api.dart';
 /// [asyncStorage] local storage to store pkce code verifiers. Required when using the pkce flow.
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
-/// /// {@endtemplate}
+/// {@endtemplate}
 class GoTrueClient {
   /// Namespace for the GoTrue API methods.
   /// These can be used for example to get a user from a JWT in a server environment or reset a user's password.
@@ -57,8 +57,6 @@ class GoTrueClient {
 
   /// Completer to combine multiple simultaneous token refresh requests.
   Completer<AuthResponse>? _refreshTokenCompleter;
-
-  bool _isRefreshingToken = false;
 
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
   final _onAuthStateChangeControllerSync =
@@ -908,9 +906,12 @@ class GoTrueClient {
 
   /// Generates a new JWT.
   ///
-  /// To prevent multiple simultaneous requests it catches an already ongoing requests by using the global [_refreshTokenCompleter]. If that's not null and not completed it returns the future that the ongoing request.
+  /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
+  /// If that's not null and not completed it returns the future of the ongoing request.
   ///
-  /// To be able to call [_callRefreshToken] again after a [SocketException] and not get trapped by the ongoing request, [ignorePendingRequest] is used to bypass that check.
+  /// To call [_callRefreshToken] during a running request [ignorePendingRequest] is used to bypass that check.
+  ///
+  /// When a [ClientException] occurs [_setTokenRefreshTimer] is used to schedule a retry in the background, which emits the result via [onAuthStateChange].
   Future<AuthResponse> _callRefreshToken({
     String? refreshToken,
     String? accessToken,
@@ -918,7 +919,12 @@ class GoTrueClient {
   }) async {
     if (_refreshTokenCompleter?.isCompleted ?? true) {
       _refreshTokenCompleter = Completer<AuthResponse>();
-    } else if (!ignorePendingRequest && _isRefreshingToken) {
+      // Catch any error in case nobody awaits the future
+      _refreshTokenCompleter!.future.then(
+        (value) => null,
+        onError: (error, stack) => null,
+      );
+    } else if (!ignorePendingRequest) {
       return _refreshTokenCompleter!.future;
     }
     final token = refreshToken ?? currentSession?.refreshToken;
@@ -929,7 +935,6 @@ class GoTrueClient {
     final jwt = accessToken ?? currentSession?.accessToken;
 
     try {
-      _isRefreshingToken = true;
       final body = {'refresh_token': token};
       if (jwt != null) {
         _headers['Authorization'] = 'Bearer $jwt';
@@ -947,27 +952,33 @@ class GoTrueClient {
       }
 
       _saveSession(authResponse.session!);
+      if (!_refreshTokenCompleter!.isCompleted) {
+        _refreshTokenCompleter!.complete(authResponse);
+      }
 
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-      _refreshTokenCompleter!.complete(authResponse);
       return authResponse;
-    } on SocketException {
+    } on SocketException catch (e, stack) {
       _setTokenRefreshTimer(
         Constants.retryInterval * pow(2, _refreshTokenRetryCount),
         refreshToken: token,
         accessToken: accessToken,
       );
-      return _refreshTokenCompleter!.future;
+      if (!_refreshTokenCompleter!.isCompleted) {
+        _refreshTokenCompleter!.completeError(e, stack);
+      }
+      rethrow;
     } catch (error, stack) {
       if (error is AuthException) {
         if (error.message == 'Invalid Refresh Token: Refresh Token Not Found') {
           await signOut();
         }
       }
+      if (!_refreshTokenCompleter!.isCompleted) {
+        _refreshTokenCompleter!.completeError(error, stack);
+      }
       _onAuthStateChangeController.addError(error, stack);
       rethrow;
-    } finally {
-      _isRefreshingToken = false;
     }
   }
 
