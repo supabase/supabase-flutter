@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-10-09
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v1.12.4`](#gotrue---v1124)
+ - [`supabase` - `v1.11.9`](#supabase---v1119)
+ - [`supabase_flutter` - `v1.10.22`](#supabase_flutter---v11022)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.11.9`
+ - `supabase_flutter` - `v1.10.22`
+
+---
+
+#### `gotrue` - `v1.12.4`
+
+ - **FIX**(gotrue): remove import of dart:io from gotrue_client.dart ([#659](https://github.com/supabase/supabase-flutter/issues/659)). ([7280b490](https://github.com/supabase/supabase-flutter/commit/7280b490f10a8de5c69509c5242aff98e348c162))
+
+
 ## 2023-10-05
 
 ### Changes
