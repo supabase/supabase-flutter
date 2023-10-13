@@ -79,6 +79,7 @@ class Supabase {
     AuthFlowType authFlowType = AuthFlowType.implicit,
     GotrueAsyncStorage? pkceAsyncStorage,
     bool? debug,
+    bool ignoreDeepLinks = false,
   }) async {
     assert(
       !_instance._initialized,
@@ -103,6 +104,7 @@ class Supabase {
       localStorage: localStorage ?? const HiveLocalStorage(),
       authCallbackUrlHostname: authCallbackUrlHostname,
       authFlowType: authFlowType,
+      ignoreDeepLinks: ignoreDeepLinks,
     );
 
     return _instance;

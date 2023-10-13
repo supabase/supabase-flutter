@@ -56,6 +56,8 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   final _appLinks = AppLinks();
 
+  bool _ignoreDeepLinks = false;
+
   /// A [SupabaseAuth] instance.
   ///
   /// If not initialized, an [AssertionError] is thrown
@@ -75,6 +77,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     LocalStorage localStorage = const HiveLocalStorage(),
     String? authCallbackUrlHostname,
     required AuthFlowType authFlowType,
+    bool ignoreDeepLinks = false,
   }) async {
     try {
       _instance._initialized = true;
@@ -82,6 +85,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       _instance._authCallbackUrlHostname = authCallbackUrlHostname;
       _instance._initialSessionCompleter = Completer();
       _instance._authFlowType = authFlowType;
+      _instance._ignoreDeepLinks = ignoreDeepLinks;
 
       _instance.initialSession.catchError((e, d) {
         return null;
@@ -281,7 +285,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Callback when deeplink receiving succeeds
   Future<void> _handleDeeplink(Uri uri) async {
-    if (!_instance._isAuthCallbackDeeplink(uri)) return;
+    if (_ignoreDeepLinks || !_instance._isAuthCallbackDeeplink(uri)) return;
 
     Supabase.instance.log('***** SupabaseAuthState handleDeeplink $uri');
 
