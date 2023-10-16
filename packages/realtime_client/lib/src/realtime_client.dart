@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:collection/collection.dart';
+import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
@@ -54,6 +55,7 @@ class RealtimeClient {
   final Map<String, dynamic> params;
   final Duration timeout;
   final WebSocketTransport transport;
+  final Client httpClient;
   int heartbeatIntervalMs = 30000;
   Timer? heartbeatTimer;
 
@@ -108,6 +110,7 @@ class RealtimeClient {
     this.params = const {},
     this.longpollerTimeout = 20000,
     RealtimeLogLevel? logLevel,
+    Client? httpClient,
   })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
             .replace(
               queryParameters:
@@ -118,7 +121,8 @@ class RealtimeClient {
           ...Constants.defaultHeaders,
           if (headers != null) ...headers,
         },
-        transport = transport ?? createWebSocketClient {
+        transport = transport ?? createWebSocketClient,
+        httpClient = httpClient ?? Client() {
     final eventsPerSecond = params['eventsPerSecond'];
     if (eventsPerSecond != null) {
       eventsPerSecondLimitMs = (1000 / int.parse(eventsPerSecond)).floor();
@@ -276,10 +280,6 @@ class RealtimeClient {
     String topic, [
     RealtimeChannelConfig params = const RealtimeChannelConfig(),
   ]) {
-    if (!isConnected) {
-      connect();
-    }
-
     final chan = RealtimeChannel('realtime:$topic', this, params: params);
     channels.add(chan);
     return chan;

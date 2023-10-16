@@ -13,7 +13,6 @@ import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/subjects.dart';
-import 'package:universal_io/io.dart';
 
 part 'gotrue_mfa_api.dart';
 
@@ -958,7 +957,7 @@ class GoTrueClient {
 
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
       return authResponse;
-    } on SocketException catch (e, stack) {
+    } on ClientException catch (e, stack) {
       _setTokenRefreshTimer(
         Constants.retryInterval * pow(2, _refreshTokenRetryCount),
         refreshToken: token,
