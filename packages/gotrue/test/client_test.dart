@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
