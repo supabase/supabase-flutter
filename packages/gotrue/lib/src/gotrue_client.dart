@@ -13,7 +13,6 @@ import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/subjects.dart';
-import 'package:universal_io/io.dart';
 
 part 'gotrue_mfa_api.dart';
 
@@ -909,9 +908,7 @@ class GoTrueClient {
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
   /// If that's not null and not completed it returns the future of the ongoing request.
   ///
-  /// To call [_callRefreshToken] during a running request [ignorePendingRequest] is used to bypass that check.
-  ///
-  /// When a [ClientException] occurs [_setTokenRefreshTimer] is used to schedule a retry in the background, which emits the result via [onAuthStateChange].
+  /// To be able to call [_callRefreshToken] again after a [ClientException] and not get trapped by the ongoing request, [ignorePendingRequest] is used to bypass that check.
   Future<AuthResponse> _callRefreshToken({
     String? refreshToken,
     String? accessToken,
@@ -958,7 +955,7 @@ class GoTrueClient {
 
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
       return authResponse;
-    } on SocketException catch (e, stack) {
+    } on ClientException catch (e, stack) {
       _setTokenRefreshTimer(
         Constants.retryInterval * pow(2, _refreshTokenRetryCount),
         refreshToken: token,
