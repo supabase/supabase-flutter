@@ -2,7 +2,8 @@ import 'dart:typed_data';
 
 import 'package:storage_client/src/fetch.dart';
 import 'package:storage_client/src/types.dart';
-import 'package:universal_io/io.dart';
+
+import 'file_io.dart' if (dart.library.js) './file_stub.dart';
 
 class StorageFileApi {
   final String url;

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:http/http.dart';
-import 'package:universal_io/io.dart';
 
 class CustomHttpClient extends BaseClient {
   @override
@@ -22,7 +21,7 @@ class RetryHttpClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     if (failureCount < 3) {
       failureCount++;
-      throw SocketException('Offline');
+      throw ClientException('Offline');
     }
     //Return custom status code to check for usage of this client.
     return StreamedResponse(
