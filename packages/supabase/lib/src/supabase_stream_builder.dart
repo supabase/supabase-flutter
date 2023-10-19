@@ -56,13 +56,13 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   final SupabaseStreamEvent _streamData = [];
 
   /// `eq` filter used for both postgrest and realtime
-  late final _StreamPostgrestFilter? _streamFilter;
+  _StreamPostgrestFilter? _streamFilter;
 
   /// Which column to order by and whether it's ascending
-  late final _Order? _orderBy;
+  _Order? _orderBy;
 
   /// Count of record to be returned
-  late final int? _limit;
+  int? _limit;
 
   SupabaseStreamBuilder({
     required PostgrestQueryBuilder queryBuilder,
