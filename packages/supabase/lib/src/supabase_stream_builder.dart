@@ -53,16 +53,16 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   BehaviorSubject<SupabaseStreamEvent>? _streamController;
 
   /// Contains the combined data of postgrest and realtime to emit as stream.
-  SupabaseStreamEvent _streamData = [];
+  final SupabaseStreamEvent _streamData = [];
 
   /// `eq` filter used for both postgrest and realtime
-  _StreamPostgrestFilter? _streamFilter;
+  late final _StreamPostgrestFilter? _streamFilter;
 
   /// Which column to order by and whether it's ascending
-  _Order? _orderBy;
+  late final _Order? _orderBy;
 
   /// Count of record to be returned
-  int? _limit;
+  late final int? _limit;
 
   SupabaseStreamBuilder({
     required PostgrestQueryBuilder queryBuilder,
@@ -277,8 +277,19 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   }
 
   Future<void> _getStreamData() async {
+    _streamData.clear();
+
+    _setRealtimeSubscription();
+
+    await _getPostgrestData();
+  }
+
+  void _setRealtimeSubscription() {
+    if (_channel != null) {
+      _realtimeClient.removeChannel(_channel!);
+    }
+
     final currentStreamFilter = _streamFilter;
-    _streamData = [];
     String? realtimeFilter;
     if (currentStreamFilter != null) {
       if (currentStreamFilter.type == _FilterType.inFilter) {
@@ -347,8 +358,16 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       if (error != null) {
         _addException(error);
       }
+      if (status == 'SUBSCRIBED') {
+        // refetch the data whenever the connection is re-established
+        _getPostgrestData();
+      } else if (status == 'CLOSED' || status == 'TIMED_OUT') {
+        _setRealtimeSubscription();
+      }
     });
+  }
 
+  Future<void> _getPostgrestData() async {
     PostgrestFilterBuilder query = _queryBuilder.select();
     if (_streamFilter != null) {
       switch (_streamFilter!.type) {
@@ -387,6 +406,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     try {
       final data = await (transformQuery ?? query);
       final rows = SupabaseStreamEvent.from(data as List);
+
+      // Postgrest data is always the most up to date one, so replace
+      // the in-memory cache with whatever we get here.
+      _streamData.clear();
       _streamData.addAll(rows);
       _addStream();
     } catch (error, stackTrace) {
