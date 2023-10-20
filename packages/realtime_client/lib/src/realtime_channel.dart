@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
@@ -427,7 +428,7 @@ class RealtimeChannel {
         ]
       };
       try {
-        final res = await socket.httpClient.post(
+        final res = await (socket.httpClient?.post ?? post)(
           Uri.parse(broadcastEndpointURL),
           headers: headers,
           body: json.encode(body),

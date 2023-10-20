@@ -55,7 +55,7 @@ class RealtimeClient {
   final Map<String, dynamic> params;
   final Duration timeout;
   final WebSocketTransport transport;
-  final Client httpClient;
+  final Client? httpClient;
   int heartbeatIntervalMs = 30000;
   Timer? heartbeatTimer;
 
@@ -110,7 +110,7 @@ class RealtimeClient {
     this.params = const {},
     this.longpollerTimeout = 20000,
     RealtimeLogLevel? logLevel,
-    Client? httpClient,
+    this.httpClient,
   })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
             .replace(
               queryParameters:
@@ -121,8 +121,7 @@ class RealtimeClient {
           ...Constants.defaultHeaders,
           if (headers != null) ...headers,
         },
-        transport = transport ?? createWebSocketClient,
-        httpClient = httpClient ?? Client() {
+        transport = transport ?? createWebSocketClient {
     final eventsPerSecond = params['eventsPerSecond'];
     if (eventsPerSecond != null) {
       eventsPerSecondLimitMs = (1000 / int.parse(eventsPerSecond)).floor();

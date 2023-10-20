@@ -279,6 +279,7 @@ class SupabaseClient {
       },
       headers: headers,
       logLevel: options.logLevel,
+      httpClient: _authHttpClient,
     );
   }
 
