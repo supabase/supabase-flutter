@@ -55,7 +55,7 @@ class RealtimeClient {
   final Map<String, dynamic> params;
   final Duration timeout;
   final WebSocketTransport transport;
-  final Client httpClient;
+  final Client? httpClient;
   int heartbeatIntervalMs = 30000;
   Timer? heartbeatTimer;
 
@@ -122,7 +122,7 @@ class RealtimeClient {
           if (headers != null) ...headers,
         },
         transport = transport ?? createWebSocketClient,
-        httpClient = httpClient ?? Client() {
+        httpClient = httpClient {
     final eventsPerSecond = params['eventsPerSecond'];
     if (eventsPerSecond != null) {
       eventsPerSecondLimitMs = (1000 / int.parse(eventsPerSecond)).floor();
