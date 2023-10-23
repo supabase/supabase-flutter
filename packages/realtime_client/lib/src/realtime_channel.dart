@@ -334,11 +334,7 @@ class RealtimeChannel {
         ]
       };
       try {
-<<<<<<< HEAD
-        final res = await socket.httpClient.post(
-=======
         final res = await (socket.httpClient?.post ?? post)(
->>>>>>> main
           Uri.parse(broadcastEndpointURL),
           headers: headers,
           body: json.encode(body),
