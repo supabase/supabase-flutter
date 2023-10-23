@@ -1,3 +1,7 @@
+## 2.0.0-dev.1
+
+ - fix: a but that prevents SupabaseClient to be used in Dart Edge
+
 ## 2.0.0-dev.0
 
 > Note: This release has breaking changes.
