@@ -1,3 +1,7 @@
+## 1.11.11
+
+ - Update a dependency to the latest release.
+
 ## 1.11.10
 
  - **FIX**: make Supabase client work in Dart Edge again ([#675](https://github.com/supabase/supabase-flutter/issues/675)). ([53530f22](https://github.com/supabase/supabase-flutter/commit/53530f222b1430debf40d0beb95f75f279d1830f))

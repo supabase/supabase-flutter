@@ -1,3 +1,7 @@
+## 1.12.6
+
+ - **FIX**(gotrue): allow empty session response for verifyOtp method ([#680](https://github.com/supabase/supabase-flutter/issues/680)). ([dc6146dc](https://github.com/supabase/supabase-flutter/commit/dc6146dc81e7daa80daacc7e4c4562b033a1b5e8))
+
 ## 1.12.5
 
  - **FIX**(gotrue): remove import of dart:io from gotrue_client.dart ([#659](https://github.com/supabase/supabase-flutter/issues/659)). ([7280b490](https://github.com/supabase/supabase-flutter/commit/7280b490f10a8de5c69509c5242aff98e348c162))

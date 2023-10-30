@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-10-30
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v1.12.6`](#gotrue---v1126)
+ - [`supabase` - `v1.11.11`](#supabase---v11111)
+ - [`supabase_flutter` - `v1.10.24`](#supabase_flutter---v11024)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v1.11.11`
+ - `supabase_flutter` - `v1.10.24`
+
+---
+
+#### `gotrue` - `v1.12.6`
+
+ - **FIX**(gotrue): allow empty session response for verifyOtp method ([#680](https://github.com/supabase/supabase-flutter/issues/680)). ([dc6146dc](https://github.com/supabase/supabase-flutter/commit/dc6146dc81e7daa80daacc7e4c4562b033a1b5e8))
+
+
 ## 2023-10-23
 
 ### Changes
