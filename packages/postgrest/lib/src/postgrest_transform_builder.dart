@@ -54,21 +54,21 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .select()
   ///     .order('username', ascending: false);
   /// ````
-  /// If [column] is a foreign column, [foreignTable] has to be set
+  /// If [column] is a referenced table column, [referencedTable] has to be set
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
   ///     .select('messages(*)')
   ///     .order('channel_id',
-  ///         foreignTable: 'messages', ascending: false);
+  ///         referencedTable: 'messages', ascending: false);
   /// ```
   PostgrestTransformBuilder<T> order(
     String column, {
     bool ascending = false,
     bool nullsFirst = false,
-    String? foreignTable,
+    String? referencedTable,
   }) {
-    final key = foreignTable == null ? 'order' : '$foreignTable.order';
+    final key = referencedTable == null ? 'order' : '$referencedTable.order';
     final existingOrder = _url.queryParameters[key];
     final value = '${existingOrder == null ? '' : '$existingOrder,'}'
         '$column.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}';
@@ -82,15 +82,16 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// final data = await supabase.from('users').select().limit(1);
   /// ```
   ///
-  /// If we want to limit a foreign column, [foreignTable] has to be set
+  /// If we want to limit a referenced table column, [referencedTable]
+  /// has to beset
   /// ```dart
   /// final data = await supabase
   ///   .from('users')
   ///   .select('messages(*)')
-  ///   .limit(1, foreignTable: 'messages');
+  ///   .limit(1, referencedTable: 'messages');
   /// ```
-  PostgrestTransformBuilder<T> limit(int count, {String? foreignTable}) {
-    final key = foreignTable == null ? 'limit' : '$foreignTable.limit';
+  PostgrestTransformBuilder<T> limit(int count, {String? referencedTable}) {
+    final key = referencedTable == null ? 'limit' : '$referencedTable.limit';
 
     final url = appendSearchParams(key, '$count');
     return PostgrestTransformBuilder(copyWithUrl(url));
@@ -105,16 +106,20 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .range(1, 1);
   /// ```
   ///
-  /// If we want to limit a foreign column, [foreignTable] has to be set
+  /// If we want to limit a referenced table column, [referencedTable]
+  /// has to be set
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
   ///     .select('messages(*)')
-  ///     .range(1, 1, foreignTable: 'messages');
+  ///     .range(1, 1, referencedTable: 'messages');
   /// ```
-  PostgrestTransformBuilder<T> range(int from, int to, {String? foreignTable}) {
-    final keyOffset = foreignTable == null ? 'offset' : '$foreignTable.offset';
-    final keyLimit = foreignTable == null ? 'limit' : '$foreignTable.limit';
+  PostgrestTransformBuilder<T> range(int from, int to,
+      {String? referencedTable}) {
+    final keyOffset =
+        referencedTable == null ? 'offset' : '$referencedTable.offset';
+    final keyLimit =
+        referencedTable == null ? 'limit' : '$referencedTable.limit';
 
     var url = appendSearchParams(keyOffset, '$from');
     url = appendSearchParams(keyLimit, '${to - from + 1}', url);

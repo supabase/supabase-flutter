@@ -73,7 +73,7 @@ void main() {
     );
   });
 
-  test("order on foreign table", () async {
+  test("order on referenced table", () async {
     final data = await postgrest
         .from("users")
         .select(
@@ -89,7 +89,7 @@ void main() {
         ''',
         )
         .eq("username", "supabot")
-        .order("created_at", foreignTable: "messages.reactions")
+        .order("created_at", referencedTable: "messages.reactions")
         .single();
 
     final messages = data['messages'] as List;
@@ -111,7 +111,7 @@ void main() {
     expect(res.length, 1);
   });
 
-  test("limit on foreign table", () async {
+  test("limit on referenced table", () async {
     final data = await postgrest
         .from("users")
         .select(
@@ -127,7 +127,7 @@ void main() {
           ''',
         )
         .eq("username", "supabot")
-        .limit(1, foreignTable: "messages.reactions")
+        .limit(1, referencedTable: "messages.reactions")
         .single();
 
     final messages = data['messages'] as List;
@@ -157,7 +157,7 @@ void main() {
     expect(res.length, to - (from - 1));
   });
 
-  test("range on foreign table", () async {
+  test("range on referenced table", () async {
     const from = 0;
     const to = 2;
     final data = await postgrest
@@ -176,14 +176,14 @@ void main() {
         )
         .eq("username", "supabot")
         .eq("messages.id", 1)
-        .range(from, to, foreignTable: "messages.reactions")
+        .range(from, to, referencedTable: "messages.reactions")
         .single();
     final message = (data['messages'] as List)[0];
     final reactions = (message as Map)["reactions"] as List;
     expect(reactions.length, to - (from - 1));
   });
 
-  test("range 1-1 on foreign table", () async {
+  test("range 1-1 on referenced table", () async {
     const from = 1;
     const to = 1;
     final data = await postgrest
@@ -202,7 +202,7 @@ void main() {
         )
         .eq("username", "supabot")
         .eq("messages.id", 1)
-        .range(from, to, foreignTable: "messages.reactions")
+        .range(from, to, referencedTable: "messages.reactions")
         .single();
 
     final message = (data['messages'] as List)[0];

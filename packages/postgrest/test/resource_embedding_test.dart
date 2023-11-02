@@ -60,7 +60,7 @@ void main() {
     final res = await postgrest
         .from('users')
         .select('messages(*)')
-        .order('channel_id', foreignTable: 'messages');
+        .order('channel_id', referencedTable: 'messages');
     expect(
       res[0]['messages']!.length,
       3,
@@ -80,7 +80,7 @@ void main() {
         .from('users')
         .select('username, messages(*)')
         .order('username', ascending: true)
-        .order('channel_id', foreignTable: 'messages');
+        .order('channel_id', referencedTable: 'messages');
     expect(
       res[0]['username'],
       'awailas',
@@ -107,7 +107,7 @@ void main() {
     final res = await postgrest
         .from('users')
         .select('messages(*)')
-        .limit(1, foreignTable: 'messages');
+        .limit(1, referencedTable: 'messages');
     expect(
       res[0]['messages']!.length,
       1,
@@ -130,7 +130,7 @@ void main() {
     final res = await postgrest
         .from('users')
         .select('messages(*)')
-        .range(1, 1, foreignTable: 'messages');
+        .range(1, 1, referencedTable: 'messages');
     expect(
       res[0]['messages']!.length,
       1,
