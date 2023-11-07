@@ -1,3 +1,7 @@
+## 1.10.25
+
+ - Update native Google sign-in instructions on README
+
 ## 1.10.24
 
  - Update a dependency to the latest release.

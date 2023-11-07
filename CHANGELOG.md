@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-11-08
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`supabase_flutter` - `v1.10.25`](#supabase_flutter---v11025)
+
+---
+
+#### `supabase_flutter` - `v1.10.25`
+
+ - Update native Google sign-in instructions on README
+
+
 ## 2023-10-30
 
 ### Changes
