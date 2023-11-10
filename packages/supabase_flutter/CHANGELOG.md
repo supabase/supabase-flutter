@@ -1,7 +1,3 @@
-## 2.0.0-dev.2
-
-- **FIX**(supabase_flutter): The session is not restored when the application is started. ([#698](https://github.com/supabase/supabase-flutter/issues/698)).
-
 ## 2.0.0-dev.1
 
  - Update a dependency to the latest release.
