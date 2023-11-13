@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-11-13
+
+### Changes
+
+---
+
+- There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.0.0-dev.1`](#gotrue---v200-dev1)
+ - [`supabase_flutter` - `v2.0.0-dev.2`](#supabase_flutter---v200-dev2)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+- `supabase` - `v2.0.0-dev.2`
+
+---
+
+#### `gotrue` - `v2.0.0-dev.1`
+
+ - **FIX**(gotrue): allow empty session response for verifyOtp method ([#680](https://github.com/supabase/supabase-flutter/issues/680)). ([dc6146dc](https://github.com/supabase/supabase-flutter/commit/dc6146dc81e7daa80daacc7e4c4562b033a1b5e8))
+
+#### `supabase_flutter` - `v2.0.0-dev.2`
+
+ - **FIX**(supabase_flutter): The session is not restored when the application is started. ([#702](https://github.com/supabase/supabase-flutter/issues/702)). ([e1cc576c](https://github.com/supabase/supabase-flutter/commit/e1cc576c53d4f7f84f866e98a03222c1e85c5376))
+
 ## 2023-11-08
 
 ### Changes
@@ -79,7 +108,7 @@ Packages with dependency updates only:
 
 #### `realtime_client` - `v2.0.0-dev.1`
 
-- fix: a but that prevents SupabaseClient to be used in Dart Edge
+- fix: a bug that prevents SupabaseClient to be used in Dart Edge
 
 ## 2023-10-23
 
