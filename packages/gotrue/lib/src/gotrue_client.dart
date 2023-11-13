@@ -493,12 +493,6 @@ class GoTrueClient {
 
     final authResponse = AuthResponse.fromJson(response);
 
-    if (authResponse.session == null) {
-      throw AuthException(
-        'An error occurred on token verification.',
-      );
-    }
-
     _saveSession(authResponse.session!);
     notifyAllSubscribers(AuthChangeEvent.signedIn);
 
