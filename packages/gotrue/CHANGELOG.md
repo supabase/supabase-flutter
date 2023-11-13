@@ -1,3 +1,7 @@
+## 2.0.0-dev.1
+
+ - **FIX**(gotrue): allow empty session response for verifyOtp method ([#680](https://github.com/supabase/supabase-flutter/issues/680)). ([dc6146dc](https://github.com/supabase/supabase-flutter/commit/dc6146dc81e7daa80daacc7e4c4562b033a1b5e8))
+
 ## 2.0.0-dev.0
 
 > Note: This release has breaking changes.
