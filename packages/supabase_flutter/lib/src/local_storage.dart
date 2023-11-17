@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _hiveBoxName = 'supabase_authentication';
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 
 /// LocalStorage is used to persist the user session in the device.
@@ -61,11 +58,8 @@ class EmptyLocalStorage extends LocalStorage {
   static Future<void> _persistSession(_) async {}
 }
 
-/// A [LocalStorage] implementation that implements Hive as the
-/// storage method.
-class HiveLocalStorage extends LocalStorage {
-  /// Creates a LocalStorage instance that implements the Hive Database
-  const HiveLocalStorage()
+class SharedPreferencesStorage extends LocalStorage {
+  const SharedPreferencesStorage()
       : super(
           initialize: _initialize,
           hasAccessToken: _hasAccessToken,
@@ -74,47 +68,29 @@ class HiveLocalStorage extends LocalStorage {
           persistSession: _persistSession,
         );
 
-  /// The encryption key used by Hive. If null, the box is not encrypted
-  ///
-  /// This value should not be redefined in runtime, otherwise the user may
-  /// not be fetched correctly
-  ///
-  /// See also:
-  ///
-  ///   * <https://docs.hivedb.dev/#/advanced/encrypted_box?id=encrypted-box>
-  static String? encryptionKey;
-
   static Future<void> _initialize() async {
-    HiveCipher? encryptionCipher;
-    if (encryptionKey != null) {
-      encryptionCipher = HiveAesCipher(base64Url.decode(encryptionKey!));
-    }
-    await Hive.initFlutter('auth');
-    await Hive.openBox(_hiveBoxName, encryptionCipher: encryptionCipher);
+    WidgetsFlutterBinding.ensureInitialized();
+    await SharedPreferences.getInstance();
   }
 
-  static Future<bool> _hasAccessToken() {
-    return Future.value(
-      Hive.box(_hiveBoxName).containsKey(
-        supabasePersistSessionKey,
-      ),
-    );
+  static Future<bool> _hasAccessToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.containsKey(supabasePersistSessionKey);
   }
 
-  static Future<String?> _accessToken() {
-    return Future.value(
-      Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?,
-    );
+  static Future<String?> _accessToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString(supabasePersistSessionKey);
   }
 
-  static Future<void> _removePersistedSession() {
-    return Hive.box(_hiveBoxName).delete(supabasePersistSessionKey);
+  static Future<void> _removePersistedSession() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(supabasePersistSessionKey);
   }
 
-  static Future<void> _persistSession(String persistSessionString) {
-    // Flush after X amount of writes
-    return Hive.box(_hiveBoxName)
-        .put(supabasePersistSessionKey, persistSessionString);
+  static Future<void> _persistSession(String persistSessionString) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(supabasePersistSessionKey, persistSessionString);
   }
 }
 

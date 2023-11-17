@@ -72,7 +72,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   ///
   /// It's necessary to initialize before calling [SupabaseAuth.instance]
   static Future<SupabaseAuth> initialize({
-    LocalStorage localStorage = const HiveLocalStorage(),
+    LocalStorage localStorage = const SharedPreferencesStorage(),
     String? authCallbackUrlHostname,
     required AuthFlowType authFlowType,
   }) async {
