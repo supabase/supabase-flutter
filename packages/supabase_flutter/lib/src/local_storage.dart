@@ -12,7 +12,6 @@ const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 ///
 ///   * [SupabaseAuth], the instance used to manage authentication
 ///   * [EmptyLocalStorage], used to disable session persistence
-///   * [HiveLocalStorage], that implements Hive as storage method
 abstract class LocalStorage {
   const LocalStorage({
     required this.initialize,
