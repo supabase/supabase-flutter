@@ -14,7 +14,7 @@ dependencies:
   crypto: ^3.0.2
   flutter:
     sdk: flutter
-  hive: ^2.2.1
+  hive: ^2.2.3
   hive_flutter: ^1.1.0
   http: '>=0.13.4 <2.0.0'
   meta: ^1.7.0
