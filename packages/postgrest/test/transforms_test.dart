@@ -323,7 +323,7 @@ void main() {
 
   test('explain', () async {
     final res = await postgrest.from('users').select().explain();
-    final regex = RegExp(r'/Aggregate  \(cost=.*/');
+    final regex = RegExp(r'Aggregate  \(cost=.*');
     expect(regex.hasMatch(res), isTrue);
   });
 
@@ -332,7 +332,7 @@ void main() {
           analyze: true,
           verbose: true,
         );
-    final regex = RegExp(r'/Aggregate  \(cost=.*/');
+    final regex = RegExp(r'Aggregate  \(cost=.*');
     expect(regex.hasMatch(res), isTrue);
   });
 }

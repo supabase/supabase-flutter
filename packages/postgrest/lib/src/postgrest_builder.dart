@@ -178,6 +178,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           body = null;
         } else if (response.request!.headers['Accept'] == 'text/csv') {
           body = response.body;
+        } else if (_headers['Accept'] != null &&
+            _headers['Accept']!.contains('application/vnd.pgrst.plan+text')) {
+          body = response.body;
         } else {
           try {
             if ((response.contentLength ?? 0) > 10000 && _isolate != null) {
