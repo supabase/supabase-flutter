@@ -225,4 +225,44 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   PostgrestBuilder<void, void, void> head() {
     return _copyWithType(method: METHOD_HEAD);
   }
+
+  /// Obtains the EXPLAIN plan for this request.
+  ///
+  /// Before using this method, you need to enable `explain()` on your
+  /// Supabase instance by following the guide below. Note that `explain()`
+  /// should only be enabled on an development environment.
+  ///
+  /// https://supabase.com/docs/guides/api/rest/debugging-performance#enabling-explain
+  ///
+  /// [analyze] If `true`, the query will be executed and the actual run time will be displayed.
+  ///
+  /// [verbose] If `true`, the query identifier will be displayed and the result will include the output columns of the query.
+  ///
+  /// [settings] If `true`, include information on configuration parameters that affect query planning.
+  ///
+  /// [buffers] If `true`, include information on buffer usage.
+  ///
+  /// [wal] If `true`, include information on WAL record generation
+  PostgrestBuilder<String, String, String> explain({
+    bool analyze = false,
+    bool verbose = false,
+    bool settings = false,
+    bool buffers = false,
+    bool wal = false,
+  }) {
+    final options = [
+      if (analyze) 'analyze',
+      if (verbose) 'verbose',
+      if (settings) 'settings',
+      if (buffers) 'buffers',
+      if (wal) 'wal',
+    ].join('|');
+
+    // An Accept header can carry multiple media types but postgrest-js always sends one
+    final forMediatype = _headers['Accept'] ?? 'application/json';
+    final newHeaders = {..._headers};
+    newHeaders['Accept'] =
+        'application/vnd.pgrst.plan+text; for="$forMediatype"; options=$options;';
+    return _copyWithType(headers: newHeaders);
+  }
 }
