@@ -28,7 +28,7 @@ Future<void> main() async {
   final realtimeChannel = supabase.channel('my_channel');
   realtimeChannel
       .on(
-          RealtimeListenTypes.postgresChanges,
+          RealtimeListenType.postgresChanges,
           ChannelFilter(event: '*', schema: 'public', table: 'countries'),
           (payload, [ref]) {})
       .subscribe();

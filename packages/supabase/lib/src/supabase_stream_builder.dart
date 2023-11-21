@@ -160,7 +160,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     _channel = _realtimeClient.channel(_realtimeTopic);
     _channel!.on(
-        RealtimeListenTypes.postgresChanges,
+        RealtimeListenType.postgresChanges,
         ChannelFilter(
           event: 'INSERT',
           schema: _schema,
@@ -171,7 +171,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       _streamData.add(newRecord);
       _addStream();
     }).on(
-        RealtimeListenTypes.postgresChanges,
+        RealtimeListenType.postgresChanges,
         ChannelFilter(
           event: 'UPDATE',
           schema: _schema,
@@ -190,7 +190,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       }
       _addStream();
     }).on(
-        RealtimeListenTypes.postgresChanges,
+        RealtimeListenType.postgresChanges,
         ChannelFilter(
           event: 'DELETE',
           schema: _schema,

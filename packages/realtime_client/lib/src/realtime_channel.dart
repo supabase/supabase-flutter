@@ -215,7 +215,7 @@ class RealtimeChannel {
   Future<ChannelResponse> track(Map<String, dynamic> payload,
       [Map<String, dynamic> opts = const {}]) {
     return send(
-      type: RealtimeListenTypes.presence,
+      type: RealtimeListenType.presence,
       payload: {
         'event': 'track',
         'payload': payload,
@@ -228,7 +228,7 @@ class RealtimeChannel {
     Map<String, dynamic> opts = const {},
   ]) {
     return send(
-      type: RealtimeListenTypes.presence,
+      type: RealtimeListenType.presence,
       payload: {
         'event': 'untrack',
       },
@@ -248,14 +248,48 @@ class RealtimeChannel {
         (reason, [ref]) => callback(reason?.toString()));
   }
 
-  RealtimeChannel on(
-    RealtimeListenTypes type,
-    ChannelFilter filter,
-    BindingCallback callback,
-  ) {
-    return onEvents(type.toType(), filter, callback);
+  RealtimeChannel onPostgresChanges({
+    required PostgresChangeEvent event,
+    String? schema,
+    String? table,
+    String? filter,
+    required void Function(PostgresChangePayload payload) callback,
+  }) {
+    return onEvents(
+      'postgres_changes',
+      ChannelFilter(
+        event: event.toRealtimeEvent(),
+        schema: schema,
+        table: table,
+        filter: filter,
+      ),
+      ((payload, [ref]) =>
+          callback(PostgresChangePayload.fromPayload(payload))),
+    );
   }
 
+  RealtimeChannel onBroadcast({
+    required String event,
+    required void Function(dynamic payload) callback,
+  }) {
+    return onEvents('broadcast', ChannelFilter(event: event),
+        (payload, [ref]) => callback(payload));
+  }
+
+  RealtimeChannel onPresence({
+    required PresenceEvent event,
+    required void Function(dynamic payload) callback,
+  }) {
+    return onEvents(
+      'presence',
+      ChannelFilter(
+        event: event.name,
+      ),
+      (payload, [ref]) => callback(payload),
+    );
+  }
+
+  @internal
   RealtimeChannel onEvents(
       String type, ChannelFilter filter, BindingCallback callback) {
     final typeLower = type.toLowerCase();
@@ -306,7 +340,7 @@ class RealtimeChannel {
   }
 
   Future<ChannelResponse> send({
-    required RealtimeListenTypes type,
+    required RealtimeListenType type,
     String? event,
     required Map<String, dynamic> payload,
     Map<String, dynamic> opts = const {},
@@ -318,7 +352,7 @@ class RealtimeChannel {
       payload['event'] = event;
     }
 
-    if (!canPush && type == RealtimeListenTypes.broadcast) {
+    if (!canPush && type == RealtimeListenType.broadcast) {
       final headers = {
         'Content-Type': 'application/json',
         'apikey': socket.accessToken ?? '',

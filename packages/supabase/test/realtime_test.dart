@@ -51,7 +51,7 @@ void main() {
     test('subscribe on existing subscription fail', () {
       channel
           .on(
-              RealtimeListenTypes.postgresChanges,
+              RealtimeListenType.postgresChanges,
               ChannelFilter(
                 event: 'INSERT',
                 schema: 'public',

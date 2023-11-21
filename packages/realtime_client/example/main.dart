@@ -10,11 +10,11 @@ Future<void> main() async {
   );
 
   final channel = socket.channel('realtime:public');
-  channel.on(RealtimeListenTypes.postgresChanges,
+  channel.on(RealtimeListenType.postgresChanges,
       ChannelFilter(event: 'DELETE', schema: 'public'), (payload, [ref]) {
     print('channel delete payload: $payload');
   });
-  channel.on(RealtimeListenTypes.postgresChanges,
+  channel.on(RealtimeListenType.postgresChanges,
       ChannelFilter(event: 'INSERT', schema: 'public'), (payload, [ref]) {
     print('channel insert payload: $payload');
   });

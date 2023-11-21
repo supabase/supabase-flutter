@@ -28,17 +28,34 @@ class Binding {
   }
 }
 
+enum PostgresChangeEvent {
+  all,
+  insert,
+  update,
+  delete,
+}
+
+extension ToRealtimeEvent on PostgresChangeEvent {
+  String toRealtimeEvent() {
+    if (this == PostgresChangeEvent.all) {
+      return '*';
+    } else {
+      return name.toUpperCase();
+    }
+  }
+}
+
 class ChannelFilter {
-  /// For [RealtimeListenTypes.postgresChanges] it's one of: `INSERT`, `UPDATE`, `DELETE`
+  /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`, `DELETE`
   ///
-  /// For [RealtimeListenTypes.presence] it's one of: `sync`, `join`, `leave`
+  /// For [RealtimeListenType.presence] it's one of: `sync`, `join`, `leave`
   ///
-  /// For [RealtimeListenTypes.broadcast] it can be any string
+  /// For [RealtimeListenType.broadcast] it can be any string
   final String? event;
   final String? schema;
   final String? table;
 
-  /// For [RealtimeListenTypes.postgresChanges] it's of the format `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt, gte, in`
+  /// For [RealtimeListenType.postgresChanges] it's of the format `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt, gte, in`
   ///
   /// Only one filter can be applied
   final String? filter;
@@ -62,13 +79,15 @@ class ChannelFilter {
 
 enum ChannelResponse { ok, timedOut, rateLimited, error }
 
-enum RealtimeListenTypes { postgresChanges, broadcast, presence }
+enum RealtimeListenType { postgresChanges, broadcast, presence }
+
+enum PresenceEvent { sync, join, leave }
 
 enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
 
-extension ToType on RealtimeListenTypes {
+extension ToType on RealtimeListenType {
   String toType() {
-    if (this == RealtimeListenTypes.postgresChanges) {
+    if (this == RealtimeListenType.postgresChanges) {
       return 'postgres_changes';
     } else {
       return name;
@@ -105,4 +124,26 @@ class RealtimeChannelConfig {
       }
     };
   }
+}
+
+/// Data class that contains the Postgres change event payload.
+class PostgresChangePayload {
+  final String schema;
+  final String table;
+  final DateTime commitTimestamp;
+  final String eventType;
+  final Map<String, dynamic> newRow;
+  final Map<String, dynamic> oldRow;
+  final dynamic errors;
+
+  /// Creates a PostgresChangePayload instance from the enriched postgres
+  /// change payload
+  PostgresChangePayload.fromPayload(Map<String, dynamic> map)
+      : schema = map['schema'],
+        table = map['table'],
+        commitTimestamp = DateTime.parse(map['commit_timestamp'] ?? '19700101'),
+        eventType = map['eventType'],
+        newRow = map['new'],
+        oldRow = map['old'],
+        errors = map['errors'];
 }

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
+import 'package:realtime_client/src/types.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -210,7 +211,7 @@ void main() {
     test('.on()', () {
       final streamController = StreamController<Map<String, dynamic>>();
 
-      client.channel('public:todoos').on(RealtimeListenTypes.postgresChanges,
+      client.channel('public:todoos').on(RealtimeListenType.postgresChanges,
           ChannelFilter(event: '*', schema: 'public', table: 'todos'), (payload,
               [ref]) {
         streamController.add(payload);
@@ -254,7 +255,7 @@ void main() {
       final streamController = StreamController<Map<String, dynamic>>();
 
       client.channel('public:todoos').on(
-          RealtimeListenTypes.postgresChanges,
+          RealtimeListenType.postgresChanges,
           ChannelFilter(
               event: '*',
               schema: 'public',
@@ -299,7 +300,7 @@ void main() {
       }, count: 2);
 
       final channel = client.channel('public:todoos').on(
-            RealtimeListenTypes.postgresChanges,
+            RealtimeListenType.postgresChanges,
             ChannelFilter(
                 event: '*',
                 schema: 'public',
@@ -444,7 +445,7 @@ void main() {
     test('.on()', () {
       final streamController = StreamController<Map<String, dynamic>>();
 
-      client.channel('public:todoos').on(RealtimeListenTypes.postgresChanges,
+      client.channel('public:todoos').on(RealtimeListenType.postgresChanges,
           ChannelFilter(event: '*', schema: 'public', table: 'todos'), (payload,
               [ref]) {
         streamController.add(payload);
@@ -488,7 +489,7 @@ void main() {
       final streamController = StreamController<Map<String, dynamic>>();
 
       client.channel('public:todoos').on(
-          RealtimeListenTypes.postgresChanges,
+          RealtimeListenType.postgresChanges,
           ChannelFilter(
               event: '*',
               schema: 'public',
