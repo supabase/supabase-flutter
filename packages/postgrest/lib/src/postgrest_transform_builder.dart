@@ -244,11 +244,11 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///
   /// [wal] If `true`, include information on WAL record generation
   PostgrestBuilder<String, T, T> explain({
-    analyze = false,
-    verbose = false,
-    settings = false,
-    buffers = false,
-    wal = false,
+    bool analyze = false,
+    bool verbose = false,
+    bool settings = false,
+    bool buffers = false,
+    bool wal = false,
   }) {
     final options = [
       if (analyze) 'analyze',
