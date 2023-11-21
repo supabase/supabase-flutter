@@ -232,7 +232,8 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///
   /// https://supabase.com/docs/guides/database/extensions/postgis
   ///
-  ResponsePostgrestBuilder geojson() {
+  ResponsePostgrestBuilder<Map<String, dynamic>, Map<String, dynamic>,
+      Map<String, dynamic>> geojson() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'application/geo+json;';
     return ResponsePostgrestBuilder(_copyWithType(headers: newHeaders));
