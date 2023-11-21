@@ -225,7 +225,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// await supabase
   ///     .from('users')
   ///     .select()
-  ///     .is_('data', null);
+  ///     .isFilter('data', null);
   /// ```
   // ignore: non_constant_identifier_names
   PostgrestFilterBuilder<T> isFilter(String column, Object? value) {
@@ -238,7 +238,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// await supabase
   ///     .from('users')
   ///     .select()
-  ///     .in_('status', ['ONLINE', 'OFFLINE']);
+  ///     .inFilter('status', ['ONLINE', 'OFFLINE']);
   /// ```
   // ignore: non_constant_identifier_names
   PostgrestFilterBuilder<T> inFilter(String column, List values) {
