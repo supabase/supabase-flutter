@@ -243,7 +243,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// [buffers] If `true`, include information on buffer usage.
   ///
   /// [wal] If `true`, include information on WAL record generation
-  PostgrestBuilder<String, T, T> explain({
+  PostgrestBuilder<String, void, void> explain({
     bool analyze = false,
     bool verbose = false,
     bool settings = false,
