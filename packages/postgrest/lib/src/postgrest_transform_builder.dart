@@ -228,6 +228,12 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Obtains the EXPLAIN plan for this request.
   ///
+  /// Before using this method, you need to enable `explain()` on your
+  /// Supabase instance by following the guide below. Note that `explain()`
+  /// should only be enabled on an development environment.
+  ///
+  /// https://supabase.com/docs/guides/api/rest/debugging-performance#enabling-explain
+  ///
   /// [analyze] If `true`, the query will be executed and the actual run time will be displayed.
   ///
   /// [verbose] If `true`, the query identifier will be displayed and the result will include the output columns of the query.
@@ -243,7 +249,6 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     settings = false,
     buffers = false,
     wal = false,
-    format = 'text',
   }) {
     final options = [
       if (analyze) 'analyze',
@@ -257,7 +262,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final forMediatype = _headers['Accept'] ?? 'application/json';
     final newHeaders = {..._headers};
     newHeaders['Accept'] =
-        'application/vnd.pgrst.plan+$format; for="$forMediatype"; options=$options;';
+        'application/vnd.pgrst.plan+text; for="$forMediatype"; options=$options;';
     return _copyWithType(headers: newHeaders);
   }
 }
