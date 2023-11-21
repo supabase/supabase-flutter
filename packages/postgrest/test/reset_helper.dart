@@ -8,6 +8,7 @@ class ResetHelper {
   late final PostgrestList _channels;
   late final PostgrestList _messages;
   late final PostgrestList _reactions;
+  late final PostgrestList _addresses;
 
   Future<void> initialize(PostgrestClient postgrest) async {
     _postgrest = postgrest;
@@ -16,9 +17,11 @@ class ResetHelper {
     _messages = await _postgrest.from('messages').select();
     print('messages has ${_messages.length} items');
     _reactions = await _postgrest.from('reactions').select();
+    _addresses = await _postgrest.from('addresses').select();
   }
 
   Future<void> reset([int delay = 0]) async {
+    await _postgrest.from("addresses").delete().neq("username", "dne");
     await _postgrest.from("reactions").delete().neq("emoji", "dne");
     await _postgrest.from('messages').delete().neq('message', 'dne');
     await _postgrest.from('channels').delete().neq('slug', 'dne');
@@ -51,6 +54,12 @@ class ResetHelper {
 
     try {
       await _postgrest.from('reactions').insert(_reactions);
+    } on PostgrestException catch (exception) {
+      throw 'reactions table was not properly reset. $exception';
+    }
+
+    try {
+      await _postgrest.from('addresses').insert(_addresses);
     } on PostgrestException catch (exception) {
       throw 'reactions table was not properly reset. $exception';
     }

@@ -226,6 +226,18 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     return _copyWithType(method: METHOD_HEAD);
   }
 
+  /// Enables support for GeoJSON for use with PostGIS data types
+  /// Used when you need the complete response to be in GeoJSON format.
+  /// You will need to enable the PostGIS extension for this to work.
+  ///
+  /// https://supabase.com/docs/guides/database/extensions/postgis
+  ///
+  ResponsePostgrestBuilder geojson() {
+    final newHeaders = {..._headers};
+    newHeaders['Accept'] = 'application/geo+json;';
+    return ResponsePostgrestBuilder(_copyWithType(headers: newHeaders));
+  }
+
   /// Obtains the EXPLAIN plan for this request.
   ///
   /// Before using this method, you need to enable `explain()` on your

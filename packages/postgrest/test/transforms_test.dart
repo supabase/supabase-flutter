@@ -335,4 +335,10 @@ void main() {
     final regex = RegExp(r'Aggregate  \(cost=.*');
     expect(regex.hasMatch(res), isTrue);
   });
+
+  test('geojson', () async {
+    final res = await postgrest.from('addresses').select().geojson();
+    expect(res, isNotNull);
+    expect(res['type'], 'FeatureCollection');
+  });
 }

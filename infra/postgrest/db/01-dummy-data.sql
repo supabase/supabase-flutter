@@ -44,3 +44,5 @@ VALUES
     ('😂', 2, '2021-06-22T04:28:21.598Z');
     -- ('😍', 3, '2021-06-21T04:28:21.598Z'),
     -- ('😂', 3, '2021-06-19T04:28:21.598Z');
+
+INSERT INTO public.addresses (username, location) VALUES ('supabot', 'SRID=4326;POINT(-71.10044 42.373695)');
