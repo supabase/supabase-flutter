@@ -143,10 +143,12 @@ void main() {
 
   test('range', () async {
     const from = 1;
-    const to = 3;
+    const to = 2;
     final res = await postgrest.from('users').select().range(from, to);
     //from -1 so that the index is included
     expect(res.length, to - (from - 1));
+    expect(res[0]['username'], 'kiwicopple');
+    expect(res[1]['username'], 'awailas');
   });
 
   test('range 1-1', () async {
