@@ -270,22 +270,25 @@ class RealtimeChannel {
 
   RealtimeChannel onBroadcast({
     required String event,
-    required void Function(dynamic payload) callback,
+    required void Function(Map<String, dynamic> payload) callback,
   }) {
-    return onEvents('broadcast', ChannelFilter(event: event),
-        (payload, [ref]) => callback(payload));
+    return onEvents(
+      'broadcast',
+      ChannelFilter(event: event),
+      (payload, [ref]) => callback(Map<String, dynamic>.from(payload)),
+    );
   }
 
   RealtimeChannel onPresence({
     required PresenceEvent event,
-    required void Function(dynamic payload) callback,
+    required void Function(Map<String, dynamic> payload) callback,
   }) {
     return onEvents(
       'presence',
       ChannelFilter(
         event: event.name,
       ),
-      (payload, [ref]) => callback(payload),
+      (payload, [ref]) => callback(Map<String, dynamic>.from(payload)),
     );
   }
 
