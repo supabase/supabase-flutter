@@ -14,6 +14,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
@@ -35,6 +36,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
