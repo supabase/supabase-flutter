@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
@@ -106,10 +108,13 @@ class Supabase {
 
     _instance._supabaseAuth = SupabaseAuth();
     await _instance._supabaseAuth.initialize(options: authOptions);
-    _instance._supabaseAuth.recoverSession();
+    _instance._sessionRecoverCompleter
+        .complete(_instance._supabaseAuth.recoverSession());
 
     return _instance;
   }
+
+  Completer<void> _sessionRecoverCompleter = Completer();
 
   Supabase._();
   static final Supabase _instance = Supabase._();
@@ -126,7 +131,9 @@ class Supabase {
   bool _debugEnable = false;
 
   /// Dispose the instance to free up resources.
-  void dispose() {
+  Future<void> dispose() async {
+    await _sessionRecoverCompleter.future;
+    _sessionRecoverCompleter = Completer();
     client.dispose();
     _instance._supabaseAuth.dispose();
     _initialized = false;

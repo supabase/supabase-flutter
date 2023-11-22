@@ -22,7 +22,7 @@ void main() {
       );
     });
 
-    tearDown(() => Supabase.instance.dispose());
+    tearDown(() async => await Supabase.instance.dispose());
 
     test('can access Supabase singleton', () async {
       final client = Supabase.instance.client;
