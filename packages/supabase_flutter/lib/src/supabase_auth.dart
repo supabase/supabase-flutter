@@ -100,23 +100,23 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Recover/refresh session if it's available
   /// e.g. called on a splash screen when the app starts.
-  Future<bool> _recoverSupabaseSession() async {
+  Future<void> _recoverSupabaseSession() async {
     final bool exist = await _localStorage.hasAccessToken();
     if (!exist) {
-      return false;
+      return;
     }
 
     final String? jsonStr = await _localStorage.accessToken();
     if (jsonStr == null) {
-      return false;
+      return;
     }
 
     try {
       await Supabase.instance.client.auth.recoverSession(jsonStr);
-      return true;
     } catch (error) {
-      _localStorage.removePersistedSession();
-      return false;
+      // When there is an exception thrown while recovering the session,
+      // the appropriate action (retry, revoking session) will be taken by
+      // the gotrue library, so need to do anything here.
     }
   }
 
