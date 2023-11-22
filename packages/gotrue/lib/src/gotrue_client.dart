@@ -780,7 +780,7 @@ class GoTrueClient {
     );
   }
 
-  /// Set the initially obtained session from local storage.
+  /// Set the initial session to the session obtained from local storage
   void setInitialSession(String jsonStr) {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
