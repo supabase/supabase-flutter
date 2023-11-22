@@ -47,15 +47,13 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     final hasPersistedSession = await _localStorage.hasAccessToken();
     var shouldEmitInitialSession = true;
+
     if (hasPersistedSession) {
       final persistedSession = await _localStorage.accessToken();
+
       if (persistedSession != null) {
         try {
-          // At this point either an [AuthChangeEvent.signedIn] event or an exception should next be emitted by `onAuthStateChange`
-          shouldEmitInitialSession = false;
-          await Supabase.instance.client.auth.recoverSession(persistedSession);
-        } on AuthException catch (error, stackTrace) {
-          Supabase.instance.log(error.message, stackTrace);
+          Supabase.instance.client.auth.setInitialSession(persistedSession);
         } catch (error, stackTrace) {
           Supabase.instance.log(error.toString(), stackTrace);
         }
@@ -76,6 +74,23 @@ class SupabaseAuth with WidgetsBindingObserver {
       Supabase.instance.client.auth
           // ignore: invalid_use_of_internal_member
           .notifyAllSubscribers(AuthChangeEvent.initialSession);
+    }
+  }
+
+  /// Recovers the session from local storage.
+  Future<void> recoverSession() async {
+    try {
+      final hasPersistedSession = await _localStorage.hasAccessToken();
+      if (hasPersistedSession) {
+        final persistedSession = await _localStorage.accessToken();
+        if (persistedSession != null) {
+          await Supabase.instance.client.auth.recoverSession(persistedSession);
+        }
+      }
+    } on AuthException catch (error, stackTrace) {
+      Supabase.instance.log(error.message, stackTrace);
+    } catch (error, stackTrace) {
+      Supabase.instance.log(error.toString(), stackTrace);
     }
   }
 

@@ -71,8 +71,7 @@ class Supabase {
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
-    FlutterAuthClientOptions authOptions =
-        const FlutterAuthClientOptions(),
+    FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
     bool? debug,
   }) async {
     assert(
@@ -107,6 +106,7 @@ class Supabase {
 
     _instance._supabaseAuth = SupabaseAuth();
     await _instance._supabaseAuth.initialize(options: authOptions);
+    _instance._supabaseAuth.recoverSession();
 
     return _instance;
   }

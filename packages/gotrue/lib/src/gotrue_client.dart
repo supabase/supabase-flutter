@@ -780,6 +780,17 @@ class GoTrueClient {
     );
   }
 
+  /// Set the initially obtained session from local storage.
+  void setInitialSession(String jsonStr) {
+    final session = Session.fromJson(json.decode(jsonStr));
+    if (session == null) {
+      throw notifyException(AuthException('Initial session is missing data.'));
+    }
+
+    _currentSession = session;
+    notifyAllSubscribers(AuthChangeEvent.initialSession);
+  }
+
   /// Recover session from stringified [Session].
   Future<AuthResponse> recoverSession(String jsonStr) async {
     final session = Session.fromJson(json.decode(jsonStr));
@@ -801,7 +812,7 @@ class GoTrueClient {
           _currentSession?.user.id != session.user.id;
       _saveSession(session);
 
-      if (shouldEmitEvent) notifyAllSubscribers(AuthChangeEvent.signedIn);
+      if (shouldEmitEvent) notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
 
       return AuthResponse(session: session);
     }
