@@ -797,6 +797,7 @@ class GoTrueClient {
   Future<AuthResponse> recoverSession(String jsonStr) async {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
+      await signOut();
       throw notifyException(AuthException('Current session is missing data.'));
     }
 
@@ -807,6 +808,7 @@ class GoTrueClient {
           accessToken: session.accessToken,
         );
       } else {
+        await signOut();
         throw notifyException(AuthException('Session expired.'));
       }
     } else {
