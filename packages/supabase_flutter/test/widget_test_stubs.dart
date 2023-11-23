@@ -49,6 +49,7 @@ class _MockWidgetState extends State<MockWidget> {
   }
 }
 
+/// Local storage that returns an expired session
 class MockExpiredStorage extends LocalStorage {
   @override
   Future<void> initialize() async {}

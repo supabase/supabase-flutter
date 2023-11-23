@@ -28,6 +28,9 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   final _appLinks = AppLinks();
 
+  /// - Obtains session from local storage and sets it as the current session
+  /// - Starts a deep link observer
+  /// - Emits an initial session if there were no session stored in local storage
   Future<void> initialize({
     required FlutterAuthClientOptions options,
   }) async {
@@ -76,6 +79,8 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 
   /// Recovers the session from local storage.
+  ///
+  /// Called lazily after `.initialize()` by `Supabase` instance
   Future<void> recoverSession() async {
     try {
       final hasPersistedSession = await _localStorage.hasAccessToken();

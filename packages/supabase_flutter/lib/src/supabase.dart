@@ -110,16 +110,15 @@ class Supabase {
     _instance._supabaseAuth = SupabaseAuth();
     await _instance._supabaseAuth.initialize(options: authOptions);
 
-    // Wrap it in a `CancelableOperation` so that it can be canceled in dispose
+    // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
     // if still in progress
-    _instance._cancellableOperation = CancelableOperation.fromFuture(
+    _instance._restoreSessionCancellableOperation =
+        CancelableOperation.fromFuture(
       _instance._supabaseAuth.recoverSession(),
     );
 
     return _instance;
   }
-
-  late CancelableOperation _cancellableOperation;
 
   Supabase._();
   static final Supabase _instance = Supabase._();
@@ -135,9 +134,12 @@ class Supabase {
 
   bool _debugEnable = false;
 
+  /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
+  late CancelableOperation _restoreSessionCancellableOperation;
+
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {
-    await _cancellableOperation.cancel();
+    await _restoreSessionCancellableOperation.cancel();
     client.dispose();
     _instance._supabaseAuth.dispose();
     _initialized = false;

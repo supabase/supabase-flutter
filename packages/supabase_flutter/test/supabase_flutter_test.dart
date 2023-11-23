@@ -6,6 +6,7 @@ import 'widget_test_stubs.dart';
 void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
+  tearDown(() async => await Supabase.instance.dispose());
 
   group("Valid session", () {
     setUp(() async {
@@ -21,8 +22,6 @@ void main() {
         ),
       );
     });
-
-    tearDown(() async => await Supabase.instance.dispose());
 
     test('can access Supabase singleton', () async {
       final client = Supabase.instance.client;
@@ -54,6 +53,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockExpiredStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
@@ -61,9 +61,10 @@ void main() {
       );
     });
 
-    tearDown(() async => await Supabase.instance.dispose());
-
     test('initial session contains the error', () async {
+      // Give it a delay to wait for recoverSession to throw
+      await Future.delayed(const Duration(milliseconds: 10));
+
       await expectLater(Supabase.instance.client.auth.onAuthStateChange,
           emitsError(isA<AuthException>()));
     });
@@ -75,14 +76,13 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );
     });
-
-    tearDown(() async => await Supabase.instance.dispose());
 
     test('initial session contains the error', () async {
       final event = await Supabase.instance.client.auth.onAuthStateChange.first;
@@ -103,6 +103,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        debug: false,
         httpClient: pkceHttpClient,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockEmptyLocalStorage(),
@@ -110,8 +111,6 @@ void main() {
         ),
       );
     });
-
-    tearDown(() async => await Supabase.instance.dispose());
 
     test(
         'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
