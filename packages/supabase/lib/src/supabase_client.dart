@@ -52,7 +52,6 @@ class SupabaseClient {
   late final SupabaseStorageClient storage;
   late final RealtimeClient realtime;
   late final PostgrestClient rest;
-  String? _changedAccessToken;
   late StreamSubscription<AuthState> _authStateSubscription;
   late final YAJsonIsolate _isolate;
 
@@ -290,11 +289,9 @@ class SupabaseClient {
   }
 
   void _handleTokenChanged(AuthChangeEvent event, String? token) {
-    if (event == AuthChangeEvent.tokenRefreshed ||
-        event == AuthChangeEvent.signedIn && _changedAccessToken != token) {
-      // Token has changed
-      _changedAccessToken = token;
-
+    if (event == AuthChangeEvent.initialSession ||
+        event == AuthChangeEvent.tokenRefreshed ||
+        event == AuthChangeEvent.signedIn) {
       realtime.setAuth(token);
     } else if (event == AuthChangeEvent.signedOut ||
         event == AuthChangeEvent.userDeleted) {
