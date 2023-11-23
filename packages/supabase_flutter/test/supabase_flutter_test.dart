@@ -32,7 +32,7 @@ void main() {
 
     test('can re-initialize client', () async {
       final client = Supabase.instance.client;
-      Supabase.instance.dispose();
+      await Supabase.instance.dispose();
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
@@ -61,7 +61,7 @@ void main() {
       );
     });
 
-    tearDown(() => Supabase.instance.dispose());
+    tearDown(() async => await Supabase.instance.dispose());
 
     test('initial session contains the error', () async {
       await expectLater(Supabase.instance.client.auth.onAuthStateChange,
@@ -82,7 +82,7 @@ void main() {
       );
     });
 
-    tearDown(() => Supabase.instance.dispose());
+    tearDown(() async => await Supabase.instance.dispose());
 
     test('initial session contains the error', () async {
       final event = await Supabase.instance.client.auth.onAuthStateChange.first;
@@ -111,7 +111,7 @@ void main() {
       );
     });
 
-    tearDown(() => Supabase.instance.dispose());
+    tearDown(() async => await Supabase.instance.dispose());
 
     test(
         'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
