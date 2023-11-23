@@ -931,8 +931,6 @@ class GoTrueClient {
     String? accessToken,
     bool ignorePendingRequest = false,
   }) async {
-    final start = DateTime.now();
-
     if (_refreshTokenCompleter?.isCompleted ?? true) {
       _refreshTokenCompleter = Completer<AuthResponse>();
       // Catch any error in case nobody awaits the future
@@ -973,9 +971,6 @@ class GoTrueClient {
       }
 
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-      print(
-          'took ${DateTime.now().difference(start).inMilliseconds} ms to refresh token');
-
       return authResponse;
     } on ClientException catch (e, stack) {
       _setTokenRefreshTimer(
