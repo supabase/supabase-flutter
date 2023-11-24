@@ -65,11 +65,14 @@ enum OtpChannel {
   whatsapp,
 }
 
-///Determines which sessions should be logged out.
-///
-///[global] means all sessions by this account will be signed out.
-///
-///[local] means only this session will be signed out.
-///
-///[others] means all other sessions except the current one will be signed out. When using others, there is no [AuthChangeEvent.signedOut] event fired on the current session!
-enum SignOutScope { global, local, others }
+/// Determines which sessions should be logged out.
+enum SignOutScope {
+  /// All sessions by this account will be signed out.
+  global,
+
+  /// Only this session will be signed out.
+  local,
+
+  /// All other sessions except the current one will be signed out. When using others, there is no [AuthChangeEvent.signedOut] event fired on the current session!
+  others,
+}
