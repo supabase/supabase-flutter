@@ -198,7 +198,11 @@ class MigrationLocalStorage extends LocalStorage {
         final accessToken = await hiveLocalStorage.accessToken();
         final session =
             Session.fromJson(jsonDecode(accessToken!)['currentSession']);
-        await sharedPreferencesLocalStorage.persistSession(jsonEncode(session));
+        if (session == null) {
+          return;
+        }
+        await sharedPreferencesLocalStorage
+            .persistSession(jsonEncode(session.toJson()));
         await hiveLocalStorage.removePersistedSession();
       }
       if (Hive.box(_hiveBoxName).isEmpty) {
