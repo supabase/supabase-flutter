@@ -1,3 +1,11 @@
+## 2.0.0-dev.1
+
+> Note: This release has breaking changes.
+
+ - **FIX**: issue where `.range()` not respecting the offset given. ([#722](https://github.com/supabase/supabase-flutter/issues/722)). ([e3541a46](https://github.com/supabase/supabase-flutter/commit/e3541a46d026e069122634b7a6e84be5b9f1deaf))
+ - **FEAT**: adds geojson support for working with the PostGIS extension ([#721](https://github.com/supabase/supabase-flutter/issues/721)). ([60a25153](https://github.com/supabase/supabase-flutter/commit/60a2515391ab0c5abb205888dfa25a1ed744814e))
+ - **FEAT**: adds `.explain()` for debugging performance issues on Supabase client generated queries.  ([#719](https://github.com/supabase/supabase-flutter/issues/719)). ([f6e41578](https://github.com/supabase/supabase-flutter/commit/f6e41578895ce31542120bd6c937014e17c4e72d))
+
 ## 2.0.0-dev.0
 
 > Note: This release has breaking changes.
