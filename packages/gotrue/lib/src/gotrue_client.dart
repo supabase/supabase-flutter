@@ -720,7 +720,7 @@ class GoTrueClient {
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
   Future<void> signOut({
-    SignOutScope scope = SignOutScope.global,
+    SignOutScope scope = SignOutScope.local,
   }) async {
     final accessToken = currentSession?.accessToken;
 
