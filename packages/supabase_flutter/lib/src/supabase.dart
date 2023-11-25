@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
@@ -71,8 +74,7 @@ class Supabase {
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
-    FlutterAuthClientOptions authOptions =
-        const FlutterAuthClientOptions(),
+    FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
     bool? debug,
   }) async {
     assert(
@@ -108,6 +110,13 @@ class Supabase {
     _instance._supabaseAuth = SupabaseAuth();
     await _instance._supabaseAuth.initialize(options: authOptions);
 
+    // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
+    // if still in progress
+    _instance._restoreSessionCancellableOperation =
+        CancelableOperation.fromFuture(
+      _instance._supabaseAuth.recoverSession(),
+    );
+
     return _instance;
   }
 
@@ -125,8 +134,12 @@ class Supabase {
 
   bool _debugEnable = false;
 
+  /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
+  late CancelableOperation _restoreSessionCancellableOperation;
+
   /// Dispose the instance to free up resources.
-  void dispose() {
+  Future<void> dispose() async {
+    await _restoreSessionCancellableOperation.cancel();
     client.dispose();
     _instance._supabaseAuth.dispose();
     _initialized = false;

@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-11-23
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`realtime_client` - `v2.0.0-dev.2`](#realtime_client---v200-dev2)
+
+Packages with other changes:
+
+ - [`postgrest` - `v2.0.0-dev.1`](#postgrest---v200-dev1)
+ - [`supabase` - `v2.0.0-dev.3`](#supabase---v200-dev3)
+ - [`supabase_flutter` - `v2.0.0-dev.3`](#supabase_flutter---v200-dev3)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.0.0-dev.3`
+ - `supabase_flutter` - `v2.0.0-dev.3`
+
+---
+
+#### `postgrest` - `v2.0.0-dev.1`
+
+ - **FIX**: issue where `.range()` not respecting the offset given. ([#722](https://github.com/supabase/supabase-flutter/issues/722)). ([e3541a46](https://github.com/supabase/supabase-flutter/commit/e3541a46d026e069122634b7a6e84be5b9f1deaf))
+ - **FEAT**: adds geojson support for working with the PostGIS extension ([#721](https://github.com/supabase/supabase-flutter/issues/721)). ([60a25153](https://github.com/supabase/supabase-flutter/commit/60a2515391ab0c5abb205888dfa25a1ed744814e))
+ - **FEAT**: adds `.explain()` for debugging performance issues on Supabase client generated queries.  ([#719](https://github.com/supabase/supabase-flutter/issues/719)). ([f6e41578](https://github.com/supabase/supabase-flutter/commit/f6e41578895ce31542120bd6c937014e17c4e72d))
+
+#### `realtime_client` - `v2.0.0-dev.2`
+
+- **BREAKING** **REFACTOR**(realtime_client): make channel methods private and add @internal label ([#724](https://github.com/supabase/supabase-flutter/pull/724)).
+
+
 ## 2023-11-13
 
 ### Changes

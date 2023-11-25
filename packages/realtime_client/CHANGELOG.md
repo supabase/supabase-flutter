@@ -1,3 +1,8 @@
+## 2.0.0-dev.2
+
+- **BREAKING** **REFACTOR**(realtime_client): make channel methods private and add @internal label ([#724](https://github.com/supabase/supabase-flutter/pull/724)).
+
+
 ## 2.0.0-dev.1
 
  - fix: a but that prevents SupabaseClient to be used in Dart Edge

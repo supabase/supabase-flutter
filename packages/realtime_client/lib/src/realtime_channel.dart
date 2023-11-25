@@ -52,14 +52,14 @@ class RealtimeChannel {
       _pushBuffer = [];
     });
 
-    onClose(() {
+    _onClose(() {
       _rejoinTimer.reset();
       socket.log('channel', 'close $topic $joinRef');
       _state = ChannelStates.closed;
       socket.remove(this);
     });
 
-    onError((String? reason) {
+    _onError((String? reason) {
       if (isLeaving || isClosed) {
         return;
       }
@@ -111,10 +111,10 @@ class RealtimeChannel {
       final broadcast = params['config']['broadcast'];
       final presence = params['config']['presence'];
 
-      onError((e) {
+      _onError((e) {
         if (callback != null) callback(RealtimeSubscribeStatus.channelError, e);
       });
-      onClose(() {
+      _onClose(() {
         if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
       });
 
@@ -237,13 +237,13 @@ class RealtimeChannel {
   }
 
   /// Registers a callback that will be executed when the channel closes.
-  void onClose(Function callback) {
+  void _onClose(Function callback) {
     onEvents(ChannelEvents.close.eventName(), ChannelFilter(),
         (reason, [ref]) => callback());
   }
 
   /// Registers a callback that will be executed when the channel encounteres an error.
-  void onError(void Function(String?) callback) {
+  void _onError(void Function(String?) callback) {
     onEvents(ChannelEvents.error.eventName(), ChannelFilter(),
         (reason, [ref]) => callback(reason?.toString()));
   }
@@ -308,6 +308,7 @@ class RealtimeChannel {
     return this;
   }
 
+  @internal
   RealtimeChannel off(String type, Map<String, String> filter) {
     final typeLower = type.toLowerCase();
 
@@ -323,6 +324,7 @@ class RealtimeChannel {
     return socket.isConnected && isJoined;
   }
 
+  @internal
   Push push(
     ChannelEvents event,
     Map<String, dynamic> payload, [
@@ -417,6 +419,7 @@ class RealtimeChannel {
     return completer.future;
   }
 
+  @internal
   void updateJoinPayload(Map<String, dynamic> payload) {
     joinPush.updatePayload(payload);
   }
@@ -486,14 +489,17 @@ class RealtimeChannel {
   ///
   /// Receives all events for specialized message handling before dispatching to the channel callbacks.
   /// Must return the payload, modified or unmodified.
+  @internal
   dynamic onMessage(String event, dynamic payload, [String? ref]) {
     return payload;
   }
 
+  @internal
   bool isMember(String? topic) {
     return this.topic == topic;
   }
 
+  @internal
   String get joinRef => joinPush.ref;
 
   @internal
@@ -567,6 +573,7 @@ class RealtimeChannel {
     }
   }
 
+  @internal
   String replyEventName(String? ref) {
     return 'chan_reply_$ref';
   }

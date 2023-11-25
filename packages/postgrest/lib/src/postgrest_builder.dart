@@ -178,6 +178,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           body = null;
         } else if (response.request!.headers['Accept'] == 'text/csv') {
           body = response.body;
+        } else if (_headers['Accept'] != null &&
+            _headers['Accept']!.contains('application/vnd.pgrst.plan+text')) {
+          body = response.body;
         } else {
           try {
             if ((response.contentLength ?? 0) > 10000 && _isolate != null) {
@@ -314,7 +317,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///
   /// [url] may be used to update based on a different url than the current one
   Uri appendSearchParams(String key, String value, [Uri? url]) {
-    final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
+    final searchParams =
+        Map<String, dynamic>.from((url ?? _url).queryParametersAll);
     searchParams[key] = [...searchParams[key] ?? [], value];
     return (url ?? _url).replace(queryParameters: searchParams);
   }
@@ -322,10 +326,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// Get new Uri with overridden queryParams
   ///
   /// [url] may be used to update based on a different url than the current one
-  Uri overrideSearchParams(String key, String value, [Uri? url]) {
+  Uri overrideSearchParams(String key, String value) {
     final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
     searchParams[key] = value;
-    return (url ?? _url).replace(queryParameters: searchParams);
+    return _url.replace(queryParameters: searchParams);
   }
 
   @override

@@ -143,10 +143,12 @@ void main() {
 
   test('range', () async {
     const from = 1;
-    const to = 3;
+    const to = 2;
     final res = await postgrest.from('users').select().range(from, to);
     //from -1 so that the index is included
     expect(res.length, to - (from - 1));
+    expect(res[0]['username'], 'kiwicopple');
+    expect(res[1]['username'], 'awailas');
   });
 
   test('range 1-1', () async {
@@ -319,5 +321,26 @@ void main() {
         fail('Query threw ${error.runtimeType} instead of PostgrestException.');
       }
     });
+  });
+
+  test('explain', () async {
+    final res = await postgrest.from('users').select().explain();
+    final regex = RegExp(r'Aggregate  \(cost=.*');
+    expect(regex.hasMatch(res), isTrue);
+  });
+
+  test('explain with options', () async {
+    final res = await postgrest.from('users').select().explain(
+          analyze: true,
+          verbose: true,
+        );
+    final regex = RegExp(r'Aggregate  \(cost=.*');
+    expect(regex.hasMatch(res), isTrue);
+  });
+
+  test('geojson', () async {
+    final res = await postgrest.from('addresses').select().geojson();
+    expect(res, isNotNull);
+    expect(res['type'], 'FeatureCollection');
   });
 }

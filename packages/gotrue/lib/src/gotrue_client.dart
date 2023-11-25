@@ -718,9 +718,11 @@ class GoTrueClient {
 
   /// Signs out the current user, if there is a logged in user.
   ///
+  /// [scope] dtermines which sessions should be logged out.
+  ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
   Future<void> signOut({
-    SignOutScope scope = SignOutScope.global,
+    SignOutScope scope = SignOutScope.local,
   }) async {
     final accessToken = currentSession?.accessToken;
 
@@ -780,10 +782,24 @@ class GoTrueClient {
     );
   }
 
+  /// Set the initial session to the session obtained from local storage
+  Future<void> setInitialSession(String jsonStr) async {
+    final session = Session.fromJson(json.decode(jsonStr));
+    if (session == null) {
+      // sign out to delete the local storage from supabase_flutter
+      await signOut();
+      throw notifyException(AuthException('Initial session is missing data.'));
+    }
+
+    _currentSession = session;
+    notifyAllSubscribers(AuthChangeEvent.initialSession);
+  }
+
   /// Recover session from stringified [Session].
   Future<AuthResponse> recoverSession(String jsonStr) async {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
+      await signOut();
       throw notifyException(AuthException('Current session is missing data.'));
     }
 
@@ -794,6 +810,7 @@ class GoTrueClient {
           accessToken: session.accessToken,
         );
       } else {
+        await signOut();
         throw notifyException(AuthException('Session expired.'));
       }
     } else {
@@ -801,7 +818,7 @@ class GoTrueClient {
           _currentSession?.user.id != session.user.id;
       _saveSession(session);
 
-      if (shouldEmitEvent) notifyAllSubscribers(AuthChangeEvent.signedIn);
+      if (shouldEmitEvent) notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
 
       return AuthResponse(session: session);
     }

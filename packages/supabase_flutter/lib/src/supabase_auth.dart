@@ -28,6 +28,9 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   final _appLinks = AppLinks();
 
+  /// - Obtains session from local storage and sets it as the current session
+  /// - Starts a deep link observer
+  /// - Emits an initial session if there were no session stored in local storage
   Future<void> initialize({
     required FlutterAuthClientOptions options,
   }) async {
@@ -51,11 +54,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
         try {
-          // At this point either an [AuthChangeEvent.signedIn] event or an exception should next be emitted by `onAuthStateChange`
-          shouldEmitInitialSession = false;
-          await Supabase.instance.client.auth.recoverSession(persistedSession);
-        } on AuthException catch (error, stackTrace) {
-          Supabase.instance.log(error.message, stackTrace);
+          Supabase.instance.client.auth.setInitialSession(persistedSession);
         } catch (error, stackTrace) {
           Supabase.instance.log(error.toString(), stackTrace);
         }
@@ -76,6 +75,25 @@ class SupabaseAuth with WidgetsBindingObserver {
       Supabase.instance.client.auth
           // ignore: invalid_use_of_internal_member
           .notifyAllSubscribers(AuthChangeEvent.initialSession);
+    }
+  }
+
+  /// Recovers the session from local storage.
+  ///
+  /// Called lazily after `.initialize()` by `Supabase` instance
+  Future<void> recoverSession() async {
+    try {
+      final hasPersistedSession = await _localStorage.hasAccessToken();
+      if (hasPersistedSession) {
+        final persistedSession = await _localStorage.accessToken();
+        if (persistedSession != null) {
+          await Supabase.instance.client.auth.recoverSession(persistedSession);
+        }
+      }
+    } on AuthException catch (error, stackTrace) {
+      Supabase.instance.log(error.message, stackTrace);
+    } catch (error, stackTrace) {
+      Supabase.instance.log(error.toString(), stackTrace);
     }
   }
 
@@ -100,23 +118,23 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Recover/refresh session if it's available
   /// e.g. called on a splash screen when the app starts.
-  Future<bool> _recoverSupabaseSession() async {
+  Future<void> _recoverSupabaseSession() async {
     final bool exist = await _localStorage.hasAccessToken();
     if (!exist) {
-      return false;
+      return;
     }
 
     final String? jsonStr = await _localStorage.accessToken();
     if (jsonStr == null) {
-      return false;
+      return;
     }
 
     try {
       await Supabase.instance.client.auth.recoverSession(jsonStr);
-      return true;
     } catch (error) {
-      _localStorage.removePersistedSession();
-      return false;
+      // When there is an exception thrown while recovering the session,
+      // the appropriate action (retry, revoking session) will be taken by
+      // the gotrue library, so need to do anything here.
     }
   }
 
