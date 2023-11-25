@@ -641,11 +641,6 @@ class GoTrueClient {
             'No session found for the auth code.');
       }
 
-      if (storeSession == true) {
-        _saveSession(session);
-        notifyAllSubscribers(AuthChangeEvent.signedIn);
-      }
-
       return AuthSessionUrlResponse(session: session, redirectType: null);
     }
     var url = originUrl;
