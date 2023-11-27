@@ -274,7 +274,7 @@ myChannel
     .subscribe();
 
 // Send a broadcast message to other connected clients
-await myChannel.sendBroadcast(
+await myChannel.sendBroadcastMessage(
   event: 'cursor-pos',
   payload: {'x': 30, 'y': 50},
 );

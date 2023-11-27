@@ -344,7 +344,7 @@ class RealtimeChannel {
   }
 
   /// Sends a realtime broadcast message.
-  Future<ChannelResponse> sendBroadcast({
+  Future<ChannelResponse> sendBroadcastMessage({
     required String event,
     required Map<String, dynamic> payload,
   }) {
