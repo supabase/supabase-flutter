@@ -96,7 +96,7 @@ void main() {
     test('query non-public schema dynamically', () async {
       final postgrest = PostgrestClient(rootUrl);
       final personalData =
-          await postgrest.useSchema('personal').from('users').select();
+          await postgrest.schema('personal').from('users').select();
       expect(personalData.length, 5);
 
       // confirm that the client defaults to its initialized schema by default.

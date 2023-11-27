@@ -154,8 +154,8 @@ class SupabaseClient {
   /// Select a schema to query or perform an function (rpc) call.
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
-  SupabaseQuerySchema useSchema(String schema) {
-    final newRest = rest.useSchema(schema);
+  SupabaseQuerySchema schema(String schema) {
+    final newRest = rest.schema(schema);
     return SupabaseQuerySchema(
       counter: _incrementId,
       restUrl: _restUrl,

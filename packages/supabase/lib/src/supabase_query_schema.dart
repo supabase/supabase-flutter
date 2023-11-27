@@ -57,8 +57,8 @@ class SupabaseQuerySchema {
     return _rest.rpc(fn, params: params);
   }
 
-  SupabaseQuerySchema useSchema(String schema) {
-    final newRest = _rest.useSchema(schema);
+  SupabaseQuerySchema schema(String schema) {
+    final newRest = _rest.schema(schema);
     return SupabaseQuerySchema(
       counter: _counter,
       restUrl: _restUrl,
