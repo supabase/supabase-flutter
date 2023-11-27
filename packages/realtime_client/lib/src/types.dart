@@ -174,7 +174,7 @@ class PostgresChangePayload {
         table = payload['table'],
         commitTimestamp =
             DateTime.parse(payload['commit_timestamp'] ?? '19700101'),
-        eventType = payload['eventType'],
+        eventType = PostgresChangeEventMethods.fromString(payload['eventType']),
         newRow =
             Map<String, dynamic>.from((payload['new'] as Map<String, dynamic>)),
         oldRow =
