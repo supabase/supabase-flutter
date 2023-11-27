@@ -38,41 +38,6 @@ void main() {
                   ['postgres_changes']
               .first['filter'];
 
-          final replyString = jsonEncode({
-            'event': 'phx_reply',
-            'payload': {
-              'response': {
-                'postgres_changes': [
-                  {
-                    'id': 77086988,
-                    'event': 'INSERT',
-                    'schema': 'public',
-                    'table': 'todos',
-                    if (postgresFilter != null) 'filter': postgresFilter,
-                  },
-                  {
-                    'id': 25993878,
-                    'event': 'UPDATE',
-                    'schema': 'public',
-                    'table': 'todos',
-                    if (postgresFilter != null) 'filter': postgresFilter,
-                  },
-                  {
-                    'id': 48673474,
-                    'event': 'DELETE',
-                    'schema': 'public',
-                    'table': 'todos',
-                    if (postgresFilter != null) 'filter': postgresFilter,
-                  }
-                ]
-              },
-              'status': 'ok'
-            },
-            'ref': '1',
-            'topic': 'realtime:public:todos'
-          });
-          webSocket!.add(replyString);
-
           final topic = (jsonDecode(request as String) as Map)['topic'];
 
           // Send an insert event
