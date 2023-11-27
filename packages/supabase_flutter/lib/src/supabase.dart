@@ -128,7 +128,7 @@ class Supabase {
   /// The supabase client for this instance
   ///
   /// Throws an error if [Supabase.initialize] was not called.
-  late SupabaseClient client;
+  late SupabaseClient supabase;
 
   late SupabaseAuth _supabaseAuth;
 
@@ -140,7 +140,7 @@ class Supabase {
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {
     await _restoreSessionCancellableOperation.cancel();
-    client.dispose();
+    supabase.dispose();
     _instance._supabaseAuth.dispose();
     _initialized = false;
   }
@@ -159,7 +159,7 @@ class Supabase {
       ...Constants.defaultHeaders,
       if (customHeaders != null) ...customHeaders
     };
-    client = SupabaseClient(
+    supabase = SupabaseClient(
       supabaseUrl,
       supabaseAnonKey,
       httpClient: httpClient,

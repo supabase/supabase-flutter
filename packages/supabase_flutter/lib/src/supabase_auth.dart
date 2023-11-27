@@ -37,7 +37,8 @@ class SupabaseAuth with WidgetsBindingObserver {
     _localStorage = options.localStorage!;
     _authFlowType = options.authFlowType;
 
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+    _authSubscription =
+        Supabase.instance.supabase.auth.onAuthStateChange.listen(
       (data) {
         _onAuthStateChange(data.event, data.session);
       },
@@ -54,7 +55,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
         try {
-          Supabase.instance.client.auth.setInitialSession(persistedSession);
+          Supabase.instance.supabase.auth.setInitialSession(persistedSession);
         } catch (error, stackTrace) {
           Supabase.instance.log(error.toString(), stackTrace);
         }
@@ -72,7 +73,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     // Emit a null session if the user did not have persisted session
     if (shouldEmitInitialSession) {
-      Supabase.instance.client.auth
+      Supabase.instance.supabase.auth
           // ignore: invalid_use_of_internal_member
           .notifyAllSubscribers(AuthChangeEvent.initialSession);
     }
@@ -87,7 +88,8 @@ class SupabaseAuth with WidgetsBindingObserver {
       if (hasPersistedSession) {
         final persistedSession = await _localStorage.accessToken();
         if (persistedSession != null) {
-          await Supabase.instance.client.auth.recoverSession(persistedSession);
+          await Supabase.instance.supabase.auth
+              .recoverSession(persistedSession);
         }
       }
     } on AuthException catch (error, stackTrace) {
@@ -130,7 +132,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
 
     try {
-      await Supabase.instance.client.auth.recoverSession(jsonStr);
+      await Supabase.instance.supabase.auth.recoverSession(jsonStr);
     } catch (error) {
       // When there is an exception thrown while recovering the session,
       // the appropriate action (retry, revoking session) will be taken by
@@ -226,10 +228,10 @@ class SupabaseAuth with WidgetsBindingObserver {
     Supabase.instance.log('onReceivedAuthDeeplink uri: $uri');
 
     try {
-      await Supabase.instance.client.auth.getSessionFromUrl(uri);
+      await Supabase.instance.supabase.auth.getSessionFromUrl(uri);
     } on AuthException catch (error, stackTrace) {
       // ignore: invalid_use_of_internal_member
-      Supabase.instance.client.auth.notifyException(error, stackTrace);
+      Supabase.instance.supabase.auth.notifyException(error, stackTrace);
       Supabase.instance.log(error.toString(), stackTrace);
     } catch (error, stackTrace) {
       Supabase.instance.log(error.toString(), stackTrace);

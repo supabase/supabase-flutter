@@ -24,13 +24,13 @@ void main() {
     });
 
     test('can access Supabase singleton', () async {
-      final client = Supabase.instance.client;
+      final supabase = Supabase.instance.supabase;
 
-      expect(client, isNotNull);
+      expect(supabase, isNotNull);
     });
 
     test('can re-initialize client', () async {
-      final client = Supabase.instance.client;
+      final supabase = Supabase.instance.supabase;
       await Supabase.instance.dispose();
       await Supabase.initialize(
         url: supabaseUrl,
@@ -42,8 +42,8 @@ void main() {
         ),
       );
 
-      final newClient = Supabase.instance.client;
-      expect(client, isNot(newClient));
+      final newClient = Supabase.instance.supabase;
+      expect(supabase, isNot(newClient));
     });
   });
 
@@ -65,7 +65,7 @@ void main() {
       // Give it a delay to wait for recoverSession to throw
       await Future.delayed(const Duration(milliseconds: 10));
 
-      await expectLater(Supabase.instance.client.auth.onAuthStateChange,
+      await expectLater(Supabase.instance.supabase.auth.onAuthStateChange,
           emitsError(isA<AuthException>()));
     });
   });
@@ -85,7 +85,8 @@ void main() {
     });
 
     test('initial session contains the error', () async {
-      final event = await Supabase.instance.client.auth.onAuthStateChange.first;
+      final event =
+          await Supabase.instance.supabase.auth.onAuthStateChange.first;
       expect(event.event, AuthChangeEvent.initialSession);
       expect(event.session, isNull);
     });

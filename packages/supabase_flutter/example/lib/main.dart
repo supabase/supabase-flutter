@@ -35,9 +35,9 @@ class _MyWidgetState extends State<MyWidget> {
 
   Future<void> _getAuth() async {
     setState(() {
-      _user = Supabase.instance.client.auth.currentUser;
+      _user = Supabase.instance.supabase.auth.currentUser;
     });
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.supabase.auth.onAuthStateChange.listen((data) {
       setState(() {
         _user = data.session?.user;
       });
@@ -101,7 +101,7 @@ class _LoginFormState extends State<_LoginForm> {
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
-                    await Supabase.instance.client.auth.signInWithPassword(
+                    await Supabase.instance.supabase.auth.signInWithPassword(
                       email: email,
                       password: password,
                     );
@@ -126,7 +126,7 @@ class _LoginFormState extends State<_LoginForm> {
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
-                    await Supabase.instance.client.auth.signUp(
+                    await Supabase.instance.supabase.auth.signUp(
                       email: email,
                       password: password,
                     );
@@ -174,8 +174,8 @@ class _ProfileFormState extends State<_ProfileForm> {
 
   Future<void> _loadProfile() async {
     try {
-      final userId = Supabase.instance.client.auth.currentUser!.id;
-      final data = (await Supabase.instance.client
+      final userId = Supabase.instance.supabase.auth.currentUser!.id;
+      final data = (await Supabase.instance.supabase
           .from('profiles')
           .select()
           .match({'id': userId}).maybeSingle()) as Map?;
@@ -224,10 +224,10 @@ class _ProfileFormState extends State<_ProfileForm> {
                         _loading = true;
                       });
                       final userId =
-                          Supabase.instance.client.auth.currentUser!.id;
+                          Supabase.instance.supabase.auth.currentUser!.id;
                       final username = _usernameController.text;
                       final website = _websiteController.text;
-                      await Supabase.instance.client.from('profiles').upsert({
+                      await Supabase.instance.supabase.from('profiles').upsert({
                         'id': userId,
                         'username': username,
                         'website': website,
@@ -251,7 +251,7 @@ class _ProfileFormState extends State<_ProfileForm> {
                   child: const Text('Save')),
               const SizedBox(height: 16),
               TextButton(
-                  onPressed: () => Supabase.instance.client.auth.signOut(),
+                  onPressed: () => Supabase.instance.supabase.auth.signOut(),
                   child: const Text('Sign Out')),
             ],
           );
