@@ -343,6 +343,19 @@ class RealtimeChannel {
     return pushEvent;
   }
 
+  /// Sends a realtime broadcast message.
+  Future<ChannelResponse> sendBroadcast({
+    required String event,
+    required Map<String, dynamic> payload,
+  }) {
+    return send(
+      type: RealtimeListenTypes.broadcast,
+      event: event,
+      payload: payload,
+    );
+  }
+
+  @internal
   Future<ChannelResponse> send({
     required RealtimeListenTypes type,
     String? event,
