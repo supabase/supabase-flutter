@@ -69,16 +69,16 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
 }
 
 class ChannelFilter {
-  /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`, `DELETE`
+  /// For [RealtimeListenTypes.postgresChanges] it's one of: `INSERT`, `UPDATE`, `DELETE`
   ///
-  /// For [RealtimeListenType.presence] it's one of: `sync`, `join`, `leave`
+  /// For [RealtimeListenTypes.presence] it's one of: `sync`, `join`, `leave`
   ///
-  /// For [RealtimeListenType.broadcast] it can be any string
+  /// For [RealtimeListenTypes.broadcast] it can be any string
   final String? event;
   final String? schema;
   final String? table;
 
-  /// For [RealtimeListenType.postgresChanges] it's of the format `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt, gte, in`
+  /// For [RealtimeListenTypes.postgresChanges] it's of the format `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt, gte, in`
   ///
   /// Only one filter can be applied
   final String? filter;
@@ -102,15 +102,15 @@ class ChannelFilter {
 
 enum ChannelResponse { ok, timedOut, rateLimited, error }
 
-enum RealtimeListenType { postgresChanges, broadcast, presence }
+enum RealtimeListenTypes { postgresChanges, broadcast, presence }
 
 enum PresenceEvent { sync, join, leave }
 
 enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
 
-extension ToType on RealtimeListenType {
+extension ToType on RealtimeListenTypes {
   String toType() {
-    if (this == RealtimeListenType.postgresChanges) {
+    if (this == RealtimeListenTypes.postgresChanges) {
       return 'postgres_changes';
     } else {
       return name;

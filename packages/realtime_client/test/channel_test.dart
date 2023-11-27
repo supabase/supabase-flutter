@@ -270,7 +270,7 @@ void main() {
         if (status == RealtimeSubscribeStatus.subscribed) {
           final completer = Completer<ChannelResponse>();
           channel.send(
-            type: RealtimeListenType.broadcast,
+            type: RealtimeListenTypes.broadcast,
             payload: {
               'myKey': 'myValue',
             },
@@ -294,7 +294,7 @@ void main() {
         () async {
       final completer = Completer<ChannelResponse>();
       channel.send(
-        type: RealtimeListenType.broadcast,
+        type: RealtimeListenTypes.broadcast,
         payload: {
           'myKey': 'myValue',
         },

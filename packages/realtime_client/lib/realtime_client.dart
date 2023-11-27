@@ -4,4 +4,4 @@ export 'src/realtime_client.dart';
 export 'src/realtime_presence.dart';
 export 'src/transformers.dart' hide getEnrichedPayload, getPayloadRecords;
 export 'src/types.dart'
-    hide ToType, PostgresChangeEventMethods, ChannelFilter, RealtimeListenType;
+    hide ToType, PostgresChangeEventMethods, ChannelFilter, RealtimeListenTypes;

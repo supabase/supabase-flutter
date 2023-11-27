@@ -90,7 +90,6 @@ void main() {
                   'schema': 'public',
                   'table': 'todos',
                   'type': 'INSERT',
-                  if (postgresFilter != null) 'filter': postgresFilter,
                   'columns': [
                     {
                       'name': 'id',

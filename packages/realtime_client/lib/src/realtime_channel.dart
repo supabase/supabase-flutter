@@ -215,7 +215,7 @@ class RealtimeChannel {
   Future<ChannelResponse> track(Map<String, dynamic> payload,
       [Map<String, dynamic> opts = const {}]) {
     return send(
-      type: RealtimeListenType.presence,
+      type: RealtimeListenTypes.presence,
       payload: {
         'event': 'track',
         'payload': payload,
@@ -228,7 +228,7 @@ class RealtimeChannel {
     Map<String, dynamic> opts = const {},
   ]) {
     return send(
-      type: RealtimeListenType.presence,
+      type: RealtimeListenTypes.presence,
       payload: {
         'event': 'untrack',
       },
@@ -263,8 +263,7 @@ class RealtimeChannel {
         table: table,
         filter: filter?.toString(),
       ),
-      ((payload, [ref]) =>
-          callback(PostgresChangePayload.fromPayload(payload))),
+      (payload, [ref]) => callback(PostgresChangePayload.fromPayload(payload)),
     );
   }
 
@@ -345,7 +344,7 @@ class RealtimeChannel {
   }
 
   Future<ChannelResponse> send({
-    required RealtimeListenType type,
+    required RealtimeListenTypes type,
     String? event,
     required Map<String, dynamic> payload,
     Map<String, dynamic> opts = const {},
@@ -357,7 +356,7 @@ class RealtimeChannel {
       payload['event'] = event;
     }
 
-    if (!canPush && type == RealtimeListenType.broadcast) {
+    if (!canPush && type == RealtimeListenTypes.broadcast) {
       final headers = {
         'Content-Type': 'application/json',
         'apikey': socket.accessToken ?? '',
