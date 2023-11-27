@@ -224,7 +224,7 @@ void main() {
       expect(
         streamController.stream,
         emitsInOrder([
-          {
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2021-08-01T08:00:20Z',
@@ -232,8 +232,8 @@ void main() {
             'new': {'id': 3, 'task': 'task 3', 'status': true},
             'old': {},
             'errors': null
-          },
-          {
+          }),
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2021-08-01T08:00:30Z',
@@ -241,8 +241,8 @@ void main() {
             'new': {'id': 2, 'task': 'task 2 updated', 'status': false},
             'old': {'id': 2},
             'errors': null
-          },
-          {
+          }),
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-14T02:12:52Z',
@@ -250,7 +250,7 @@ void main() {
             'new': {},
             'old': {'id': 2},
             'errors': null
-          },
+          }),
         ]),
       );
     });
@@ -274,7 +274,7 @@ void main() {
       expect(
         streamController.stream,
         emitsInOrder([
-          {
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2021-08-01T08:00:30Z',
@@ -282,8 +282,8 @@ void main() {
             'new': {'id': 2, 'task': 'task 2 updated', 'status': false},
             'old': {'id': 2},
             'errors': null
-          },
-          {
+          }),
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-14T02:12:52Z',
@@ -291,7 +291,7 @@ void main() {
             'new': {},
             'old': {'id': 2},
             'errors': null
-          },
+          })
         ]),
       );
     });
@@ -465,7 +465,7 @@ void main() {
       expect(
         streamController.stream,
         emitsInOrder([
-          {
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',
@@ -473,8 +473,8 @@ void main() {
             'new': {'id': 1, 'task': 'task 1', 'status': true},
             'old': {},
             'errors': null
-          },
-          {
+          }),
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',
@@ -482,8 +482,8 @@ void main() {
             'new': {'id': 2, 'task': 'task 2 updated', 'status': false},
             'old': {'id': 2},
             'errors': null
-          },
-          {
+          }),
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',
@@ -491,7 +491,7 @@ void main() {
             'new': {},
             'old': {'id': 2},
             'errors': null
-          },
+          }),
         ]),
       );
     });
@@ -515,7 +515,7 @@ void main() {
       expect(
         streamController.stream,
         emitsInOrder([
-          {
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',
@@ -523,8 +523,8 @@ void main() {
             'new': {'id': 2, 'task': 'task 2 updated', 'status': false},
             'old': {'id': 2},
             'errors': null
-          },
-          {
+          }),
+          PostgresChangePayload.fromPayload({
             'schema': 'public',
             'table': 'todos',
             'commit_timestamp': '2022-09-24T05:42:01.303668+00:00',
@@ -532,7 +532,7 @@ void main() {
             'new': {},
             'old': {'id': 2},
             'errors': null
-          },
+          }),
         ]),
       );
     });

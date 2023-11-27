@@ -1,3 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:collection/collection.dart';
+
 typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
 
 class Binding {
@@ -166,20 +169,46 @@ class PostgresChangePayload {
   });
 
   /// Creates a PostgresChangePayload instance from the enriched postgres change payload
-  PostgresChangePayload.fromPayload(Map<String, dynamic> map)
-      : schema = map['schema'],
-        table = map['table'],
-        commitTimestamp = DateTime.parse(map['commit_timestamp'] ?? '19700101'),
-        eventType = map['eventType'],
+  PostgresChangePayload.fromPayload(Map<String, dynamic> payload)
+      : schema = payload['schema'],
+        table = payload['table'],
+        commitTimestamp =
+            DateTime.parse(payload['commit_timestamp'] ?? '19700101'),
+        eventType = payload['eventType'],
         newRow =
-            Map<String, dynamic>.from((map['new'] as Map<String, dynamic>)),
+            Map<String, dynamic>.from((payload['new'] as Map<String, dynamic>)),
         oldRow =
-            Map<String, dynamic>.from((map['old'] as Map<String, dynamic>)),
-        errors = map['errors'];
+            Map<String, dynamic>.from((payload['old'] as Map<String, dynamic>)),
+        errors = payload['errors'];
 
   @override
   String toString() {
     return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: $eventType, newRow: $newRow, oldRow: $oldRow, errors: $errors)';
+  }
+
+  @override
+  bool operator ==(covariant PostgresChangePayload other) {
+    if (identical(this, other)) return true;
+    final mapEquals = const DeepCollectionEquality().equals;
+
+    return other.schema == schema &&
+        other.table == table &&
+        other.commitTimestamp == commitTimestamp &&
+        other.eventType == eventType &&
+        mapEquals(other.newRow, newRow) &&
+        mapEquals(other.oldRow, oldRow) &&
+        other.errors == errors;
+  }
+
+  @override
+  int get hashCode {
+    return schema.hashCode ^
+        table.hashCode ^
+        commitTimestamp.hashCode ^
+        eventType.hashCode ^
+        newRow.hashCode ^
+        oldRow.hashCode ^
+        errors.hashCode;
   }
 }
 
