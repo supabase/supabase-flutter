@@ -90,6 +90,7 @@ void main() {
                   'schema': 'public',
                   'table': 'todos',
                   'type': 'INSERT',
+                  if (postgresFilter != null) 'filter': postgresFilter,
                   'columns': [
                     {
                       'name': 'id',
@@ -258,13 +259,16 @@ void main() {
       final streamController = StreamController<PostgresChangePayload>();
 
       client
-          .channel('public:todoos')
+          .channel('public:todos')
           .onPostgresChanges(
               event: PostgresChangeEvent.all,
               schema: 'public',
               table: 'todos',
               filter: PostgresChangeFilter(
-                  type: PostgresChangeFilterType.eq, column: 'id', value: 2),
+                type: PostgresChangeFilterType.eq,
+                column: 'id',
+                value: 2,
+              ),
               callback: (payload) {
                 streamController.add(payload);
               })
@@ -305,7 +309,7 @@ void main() {
         }
       }, count: 2);
 
-      final channel = client.channel('public:todoos').onPostgresChanges(
+      final channel = client.channel('public:todos').onPostgresChanges(
             event: PostgresChangeEvent.all,
             schema: 'public',
             table: 'todos',
@@ -451,7 +455,7 @@ void main() {
       final streamController = StreamController<PostgresChangePayload>();
 
       client
-          .channel('public:todoos')
+          .channel('public:todos')
           .onPostgresChanges(
               event: PostgresChangeEvent.all,
               schema: 'public',
@@ -499,7 +503,7 @@ void main() {
       final streamController = StreamController<PostgresChangePayload>();
 
       client
-          .channel('public:todoos')
+          .channel('public:todos')
           .onPostgresChanges(
               event: PostgresChangeEvent.all,
               schema: 'public',

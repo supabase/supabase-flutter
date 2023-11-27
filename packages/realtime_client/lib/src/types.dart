@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:collection/collection.dart';
 
 typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
@@ -155,16 +154,16 @@ class PostgresChangePayload {
   final String table;
   final DateTime commitTimestamp;
   final PostgresChangeEvent eventType;
-  final Map<String, dynamic> newRow;
-  final Map<String, dynamic> oldRow;
+  final Map<String, dynamic> newRecord;
+  final Map<String, dynamic> oldRecord;
   final dynamic errors;
   PostgresChangePayload({
     required this.schema,
     required this.table,
     required this.commitTimestamp,
     required this.eventType,
-    required this.newRow,
-    required this.oldRow,
+    required this.newRecord,
+    required this.oldRecord,
     required this.errors,
   });
 
@@ -175,13 +174,13 @@ class PostgresChangePayload {
         commitTimestamp =
             DateTime.parse(payload['commit_timestamp'] ?? '19700101'),
         eventType = PostgresChangeEventMethods.fromString(payload['eventType']),
-        newRow = Map<String, dynamic>.from(payload['new']),
-        oldRow = Map<String, dynamic>.from(payload['old']),
+        newRecord = Map<String, dynamic>.from(payload['new']),
+        oldRecord = Map<String, dynamic>.from(payload['old']),
         errors = payload['errors'];
 
   @override
   String toString() {
-    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: $eventType, newRow: $newRow, oldRow: $oldRow, errors: $errors)';
+    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: $eventType, newRow: $newRecord, oldRow: $oldRecord, errors: $errors)';
   }
 
   @override
@@ -193,8 +192,8 @@ class PostgresChangePayload {
         other.table == table &&
         other.commitTimestamp == commitTimestamp &&
         other.eventType == eventType &&
-        mapEquals(other.newRow, newRow) &&
-        mapEquals(other.oldRow, oldRow) &&
+        mapEquals(other.newRecord, newRecord) &&
+        mapEquals(other.oldRecord, oldRecord) &&
         other.errors == errors;
   }
 
@@ -204,8 +203,8 @@ class PostgresChangePayload {
         table.hashCode ^
         commitTimestamp.hashCode ^
         eventType.hashCode ^
-        newRow.hashCode ^
-        oldRow.hashCode ^
+        newRecord.hashCode ^
+        oldRecord.hashCode ^
         errors.hashCode;
   }
 }

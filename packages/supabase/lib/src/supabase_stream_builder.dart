@@ -166,7 +166,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
             table: _table,
             filter: realtimeFilter,
             callback: (payload) {
-              final newRecord = payload.newRow;
+              final newRecord = payload.newRecord;
               _streamData.add(newRecord);
               _addStream();
             })
@@ -180,7 +180,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
                 (element) => _isTargetRecord(record: element, payload: payload),
               );
 
-              final updatedRecord = payload.newRow;
+              final updatedRecord = payload.newRecord;
               if (updatedIndex >= 0) {
                 _streamData[updatedIndex] = updatedRecord;
               } else {
@@ -260,9 +260,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   }) {
     late final Map<String, dynamic> targetRecord;
     if (payload.eventType == PostgresChangeEvent.update) {
-      targetRecord = payload.newRow;
+      targetRecord = payload.newRecord;
     } else if (payload.eventType == PostgresChangeEvent.delete) {
-      targetRecord = payload.oldRow;
+      targetRecord = payload.oldRecord;
     }
     return _uniqueColumns
         .every((column) => record[column] == targetRecord[column]);
