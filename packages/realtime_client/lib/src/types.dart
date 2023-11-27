@@ -29,19 +29,39 @@ class Binding {
 }
 
 enum PostgresChangeEvent {
+  /// Listen to all insert, update, and delete events.
   all,
+
+  /// Listen to insert events.
   insert,
+
+  /// Listen to update events.
   update,
+
+  /// Listen to delete events.
   delete,
 }
 
-extension ToRealtimeEvent on PostgresChangeEvent {
+extension PostgresChangeEventMethods on PostgresChangeEvent {
   String toRealtimeEvent() {
     if (this == PostgresChangeEvent.all) {
       return '*';
     } else {
       return name.toUpperCase();
     }
+  }
+
+  static PostgresChangeEvent fromString(String event) {
+    switch (event) {
+      case 'INSERT':
+        return PostgresChangeEvent.insert;
+      case 'UPDATE':
+        return PostgresChangeEvent.update;
+      case 'DELETE':
+        return PostgresChangeEvent.delete;
+    }
+    throw ArgumentError(
+        'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.');
   }
 }
 
@@ -131,19 +151,82 @@ class PostgresChangePayload {
   final String schema;
   final String table;
   final DateTime commitTimestamp;
-  final String eventType;
+  final PostgresChangeEvent eventType;
   final Map<String, dynamic> newRow;
   final Map<String, dynamic> oldRow;
   final dynamic errors;
+  PostgresChangePayload({
+    required this.schema,
+    required this.table,
+    required this.commitTimestamp,
+    required this.eventType,
+    required this.newRow,
+    required this.oldRow,
+    required this.errors,
+  });
 
-  /// Creates a PostgresChangePayload instance from the enriched postgres
-  /// change payload
+  /// Creates a PostgresChangePayload instance from the enriched postgres change payload
   PostgresChangePayload.fromPayload(Map<String, dynamic> map)
       : schema = map['schema'],
         table = map['table'],
         commitTimestamp = DateTime.parse(map['commit_timestamp'] ?? '19700101'),
         eventType = map['eventType'],
-        newRow = map['new'],
-        oldRow = map['old'],
+        newRow =
+            Map<String, dynamic>.from((map['new'] as Map<String, dynamic>)),
+        oldRow =
+            Map<String, dynamic>.from((map['old'] as Map<String, dynamic>)),
         errors = map['errors'];
+
+  @override
+  String toString() {
+    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: $eventType, newRow: $newRow, oldRow: $oldRow, errors: $errors)';
+  }
+}
+
+/// Specifies the type of filter to be applied on realtime Postgres Change listener.
+enum PostgresChangeFilterType {
+  /// Listens to changes where a column's value in a table equals a client-specified value.
+  eq,
+
+  /// Listens to changes where a column's value in a table does not equal a value specified.
+  neq,
+
+  /// Listen to changes where a column's value in a table is less than a value specified.
+  lt,
+
+  /// Listens to changes where a column's value in a table is less than or equal to a value specified.
+  lte,
+
+  /// Listens to changes where a column's value in a table is greater than a value specified.
+  gt,
+
+  /// Listens to changes where a column's value in a table is greater than or equal to a value specified.
+  gte,
+
+  /// Listen to changes when a column's value in a table equals any of the values specified.
+  inFilter;
+}
+
+class PostgresChangeFilter {
+  final PostgresChangeFilterType type;
+  final String column;
+  final dynamic value;
+
+  PostgresChangeFilter({
+    required this.type,
+    required this.column,
+    required this.value,
+  });
+
+  @override
+  String toString() {
+    if (type == PostgresChangeFilterType.inFilter) {
+      if (value is List<String>) {
+        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
+      } else {
+        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
+      }
+    }
+    return '$column=${type.name}.$value';
+  }
 }

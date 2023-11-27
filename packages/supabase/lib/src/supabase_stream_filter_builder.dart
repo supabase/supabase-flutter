@@ -19,7 +19,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// ```
   SupabaseStreamBuilder eq(String column, Object value) {
     _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.eq,
+      type: PostgresChangeFilterType.eq,
       column: column,
       value: value,
     );
@@ -35,7 +35,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// ```
   SupabaseStreamBuilder neq(String column, Object value) {
     _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.neq,
+      type: PostgresChangeFilterType.neq,
       column: column,
       value: value,
     );
@@ -51,7 +51,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// ```
   SupabaseStreamBuilder lt(String column, Object value) {
     _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.lt,
+      type: PostgresChangeFilterType.lt,
       column: column,
       value: value,
     );
@@ -67,7 +67,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// ```
   SupabaseStreamBuilder lte(String column, Object value) {
     _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.lte,
+      type: PostgresChangeFilterType.lte,
       column: column,
       value: value,
     );
@@ -83,7 +83,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// ```
   SupabaseStreamBuilder gt(String column, Object value) {
     _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.gt,
+      type: PostgresChangeFilterType.gt,
       column: column,
       value: value,
     );
@@ -99,7 +99,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// ```
   SupabaseStreamBuilder gte(String column, Object value) {
     _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.gte,
+      type: PostgresChangeFilterType.gte,
       column: column,
       value: value,
     );
@@ -115,7 +115,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// ```
   SupabaseStreamBuilder inFilter(String column, List<Object> values) {
     _streamFilter = _StreamPostgrestFilter(
-      type: _FilterType.inFilter,
+      type: PostgresChangeFilterType.inFilter,
       column: column,
       value: values,
     );

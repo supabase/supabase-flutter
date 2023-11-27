@@ -252,7 +252,7 @@ class RealtimeChannel {
     required PostgresChangeEvent event,
     String? schema,
     String? table,
-    String? filter,
+    PostgresChangeFilter? filter,
     required void Function(PostgresChangePayload payload) callback,
   }) {
     return onEvents(
@@ -261,7 +261,7 @@ class RealtimeChannel {
         event: event.toRealtimeEvent(),
         schema: schema,
         table: table,
-        filter: filter,
+        filter: filter?.toString(),
       ),
       ((payload, [ref]) =>
           callback(PostgresChangePayload.fromPayload(payload))),

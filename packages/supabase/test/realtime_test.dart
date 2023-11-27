@@ -50,14 +50,11 @@ void main() {
     /// - error
     test('subscribe on existing subscription fail', () {
       channel
-          .on(
-              RealtimeListenType.postgresChanges,
-              ChannelFilter(
-                event: 'INSERT',
-                schema: 'public',
-                table: 'countries',
-              ),
-              (payload, [ref]) {})
+          .onPostgresChanges(
+              event: PostgresChangeEvent.insert,
+              schema: 'public',
+              table: 'countries',
+              callback: (payload) {})
           .subscribe(
             (event, [errorMsg]) {},
           );
