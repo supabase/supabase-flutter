@@ -24,13 +24,13 @@ void main() {
     });
 
     test('can access Supabase singleton', () async {
-      final client = Supabase.instance.client;
+      final supabase = Supabase.instance.client;
 
-      expect(client, isNotNull);
+      expect(supabase, isNotNull);
     });
 
     test('can re-initialize client', () async {
-      final client = Supabase.instance.client;
+      final supabase = Supabase.instance.client;
       await Supabase.instance.dispose();
       await Supabase.initialize(
         url: supabaseUrl,
@@ -43,7 +43,7 @@ void main() {
       );
 
       final newClient = Supabase.instance.client;
-      expect(client, isNot(newClient));
+      expect(supabase, isNot(newClient));
     });
   });
 

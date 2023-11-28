@@ -20,25 +20,25 @@ void main() {
     late String supabaseUrl;
     const supabaseKey =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53emxkenlsb2pyemdqemloZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQxMzI2ODAsImV4cCI6MTk5OTcwODY4MH0.MU-LVeAPic93VLcRsHktxzYtBKBUMWAQb8E-0AQETPs';
-    late SupabaseClient client;
+    late SupabaseClient supabase;
     late HttpServer mockServer;
 
     setUp(() async {
       mockServer = await HttpServer.bind('localhost', 0);
       supabaseUrl = 'http://${mockServer.address.host}:${mockServer.port}';
 
-      client = SupabaseClient(supabaseUrl, supabaseKey);
+      supabase = SupabaseClient(supabaseUrl, supabaseKey);
     });
 
     tearDown(() async {
-      await client.removeAllChannels();
-      await client.dispose();
+      await supabase.removeAllChannels();
+      await supabase.dispose();
     });
 
     test('X-Client-Info header is set properly on realtime', () async {
       final request = await getRealtimeRequest(
         server: mockServer,
-        supabaseClient: client,
+        supabaseClient: supabase,
       );
 
       final xClientHeaderBeforeSlash =
@@ -49,14 +49,14 @@ void main() {
 
     test('X-Client-Info header is set properly on storage', () {
       final xClientHeaderBeforeSlash =
-          client.storage.headers['X-Client-Info']!.split('/').first;
+          supabase.storage.headers['X-Client-Info']!.split('/').first;
       expect(xClientHeaderBeforeSlash, 'supabase-dart');
     });
 
     test('realtime URL is properly being set', () async {
       final request = await getRealtimeRequest(
         server: mockServer,
-        supabaseClient: client,
+        supabaseClient: supabase,
       );
 
       var realtimeWebsocketURL = request.uri;
@@ -69,13 +69,13 @@ void main() {
     });
 
     test('log_level query parameter is properly set', () async {
-      client = SupabaseClient(supabaseUrl, supabaseKey,
+      supabase = SupabaseClient(supabaseUrl, supabaseKey,
           realtimeClientOptions:
               RealtimeClientOptions(logLevel: RealtimeLogLevel.info));
 
       final request = await getRealtimeRequest(
         server: mockServer,
-        supabaseClient: client,
+        supabaseClient: supabase,
       );
 
       final realtimeWebsocketURL = request.uri;
@@ -93,7 +93,7 @@ void main() {
     test('realtime access token is set properly', () async {
       final request = await getRealtimeRequest(
         server: mockServer,
-        supabaseClient: client,
+        supabaseClient: supabase,
       );
 
       expect(request.uri.queryParameters['apikey'], supabaseKey);
@@ -106,18 +106,18 @@ void main() {
           getSessionData(DateTime.now().add(Duration(hours: 1)));
 
       final mockServer = await HttpServer.bind('localhost', 0);
-      final client = SupabaseClient(
+      final supabase = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         "supabaseKey",
         authOptions: AuthClientOptions(autoRefreshToken: false),
       );
-      await client.auth.recoverSession(sessionString);
+      await supabase.auth.recoverSession(sessionString);
 
       // Make some requests
-      client.from("test").select().then((value) => null);
-      client.rpc("test").select().then((value) => null);
-      client.functions.invoke("test").then((value) => null);
-      client.storage.from("test").list().then((value) => null);
+      supabase.from("test").select().then((value) => null);
+      supabase.rpc("test").select().then((value) => null);
+      supabase.functions.invoke("test").then((value) => null);
+      supabase.storage.from("test").list().then((value) => null);
 
       var count = 0;
 
@@ -138,21 +138,21 @@ void main() {
       final expiresAt = DateTime.now().add(Duration(seconds: 11));
 
       final mockServer = await HttpServer.bind('localhost', 0);
-      final client = SupabaseClient(
+      final supabase = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         "supabaseKey",
         authOptions: AuthClientOptions(autoRefreshToken: false),
       );
       final sessionData = getSessionData(expiresAt);
-      await client.auth.recoverSession(sessionData.sessionString);
+      await supabase.auth.recoverSession(sessionData.sessionString);
 
       await Future.delayed(Duration(seconds: 11));
 
       // Make some requests
-      client.from("test").select().then((value) => null);
-      client.rpc("test").select().then((value) => null);
-      client.functions.invoke("test").then((value) => null);
-      client.storage.from("test").list().then((value) => null);
+      supabase.from("test").select().then((value) => null);
+      supabase.rpc("test").select().then((value) => null);
+      supabase.functions.invoke("test").then((value) => null);
+      supabase.storage.from("test").list().then((value) => null);
 
       var count = 0;
       var gotTokenRefresh = false;
@@ -191,10 +191,10 @@ void main() {
   group('Custom Header', () {
     const supabaseUrl = '';
     const supabaseKey = '';
-    late SupabaseClient client;
+    late SupabaseClient supabase;
 
     setUp(() {
-      client = SupabaseClient(
+      supabase = SupabaseClient(
         supabaseUrl,
         supabaseKey,
         headers: {
@@ -206,7 +206,7 @@ void main() {
     test('X-Client-Info header is set properly on realtime', () async {
       final mockServer = await HttpServer.bind('localhost', 0);
 
-      final client = SupabaseClient(
+      final supabase = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         supabaseKey,
         headers: {
@@ -216,14 +216,14 @@ void main() {
 
       final request = await getRealtimeRequest(
         server: mockServer,
-        supabaseClient: client,
+        supabaseClient: supabase,
       );
 
       expect(request.headers['X-Client-Info']?.first, 'supabase-flutter/0.0.0');
     });
 
     test('X-Client-Info header is set properly on storage', () {
-      final xClientInfoHeader = client.storage.headers['X-Client-Info'];
+      final xClientInfoHeader = supabase.storage.headers['X-Client-Info'];
       expect(xClientInfoHeader, 'supabase-flutter/0.0.0');
     });
   });
