@@ -312,12 +312,6 @@ class GoTrueClient {
 
     final authResponse = AuthResponse.fromJson(response);
 
-    final session = authResponse.session;
-    if (session != null) {
-      _saveSession(session);
-      notifyAllSubscribers(AuthChangeEvent.signedIn);
-    }
-
     return authResponse;
   }
 
@@ -630,6 +624,8 @@ class GoTrueClient {
   }) async {
     if (_flowType == AuthFlowType.pkce) {
       final authCode = originUrl.queryParameters['code'];
+      final redirectType = originUrl.queryParameters['type'];
+
       if (authCode == null) {
         throw AuthPKCEGrantCodeExchangeError(
             'No code detected in query parameters.');
@@ -639,6 +635,15 @@ class GoTrueClient {
       if (session == null) {
         throw AuthPKCEGrantCodeExchangeError(
             'No session found for the auth code.');
+      }
+
+      if (storeSession == true) {
+        _saveSession(session);
+        if (redirectType == 'recovery') {
+          notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
+        } else {
+          notifyAllSubscribers(AuthChangeEvent.signedIn);
+        }
       }
 
       return AuthSessionUrlResponse(session: session, redirectType: null);
