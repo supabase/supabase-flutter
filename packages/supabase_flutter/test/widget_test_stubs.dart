@@ -28,7 +28,7 @@ class _MockWidgetState extends State<MockWidget> {
         ? TextButton(
             onPressed: () async {
               try {
-                await Supabase.instance.supabase.auth.signOut();
+                await Supabase.instance.client.auth.signOut();
               } catch (_) {}
             },
             child: const Text('Sign out'),
@@ -38,7 +38,7 @@ class _MockWidgetState extends State<MockWidget> {
 
   @override
   void initState() {
-    Supabase.instance.supabase.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (data.event == AuthChangeEvent.signedOut) {
         setState(() {
           isSignedIn = false;
