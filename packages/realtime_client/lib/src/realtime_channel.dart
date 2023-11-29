@@ -20,6 +20,7 @@ class RealtimeChannel {
   List<Push> _pushBuffer = [];
   late RealtimePresence presence;
   late final String broadcastEndpointURL;
+  @internal
   final String subTopic;
   final String topic;
   Map<String, dynamic> params;
