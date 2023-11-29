@@ -7,14 +7,14 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 class PostgrestClient {
   final String url;
   final Map<String, String> headers;
-  final String? schema;
+  final String? _schema;
   final Client? httpClient;
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
 
   /// To create a [PostgrestClient], you need to provide an [url] endpoint.
   ///
-  /// You can also provide custom [headers] and [schema] if needed
+  /// You can also provide custom [headers] and [_schema] if needed
   /// ```dart
   /// PostgrestClient(REST_URL)
   /// PostgrestClient(REST_URL, headers: {'apikey': 'foo'})
@@ -26,10 +26,11 @@ class PostgrestClient {
   PostgrestClient(
     this.url, {
     Map<String, String>? headers,
-    this.schema,
+    String? schema,
     this.httpClient,
     YAJsonIsolate? isolate,
-  })  : headers = {...defaultHeaders, if (headers != null) ...headers},
+  })  : _schema = schema,
+        headers = {...defaultHeaders, if (headers != null) ...headers},
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
         _hasCustomIsolate = isolate != null;
 
@@ -55,7 +56,7 @@ class PostgrestClient {
     return PostgrestQueryBuilder<void>(
       url: Uri.parse(url),
       headers: {...headers},
-      schema: schema,
+      schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
     );
@@ -64,7 +65,7 @@ class PostgrestClient {
   /// Select a schema to query or perform an function (rpc) call.
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
-  PostgrestClient useSchema(String schema) {
+  PostgrestClient schema(String schema) {
     return PostgrestClient(
       url,
       headers: {...headers},
@@ -87,7 +88,7 @@ class PostgrestClient {
     return PostgrestRpcBuilder(
       url,
       headers: {...headers},
-      schema: schema,
+      schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
     ).rpc(params);
