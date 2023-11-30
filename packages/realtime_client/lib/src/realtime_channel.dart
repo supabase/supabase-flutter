@@ -105,7 +105,7 @@ class RealtimeChannel {
   /// Pass a [callback] to react to different status changes.
   ///
   /// [timeout] parameter can be used to override the default timeout set on [RealtimeClient].
-  void subscribe([
+  RealtimeChannel subscribe([
     void Function(RealtimeSubscribeStatus status, Object? error)? callback,
     Duration? timeout,
   ]) {
@@ -213,6 +213,7 @@ class RealtimeChannel {
         return;
       });
     }
+    return this;
   }
 
   Map<String, dynamic> presenceState() {
