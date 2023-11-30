@@ -28,13 +28,13 @@ enum AuthChangeEvent {
 }
 
 extension AuthChangeEventExtended on AuthChangeEvent {
-  static GenerateLinkType fromString(String? val) {
-    for (final event in GenerateLinkType.values) {
+  static AuthChangeEvent fromString(String? val) {
+    for (final event in AuthChangeEvent.values) {
       if (event.name == val) {
         return event;
       }
     }
-    return GenerateLinkType.unknown;
+    return AuthChangeEvent.signedIn;
   }
 }
 
