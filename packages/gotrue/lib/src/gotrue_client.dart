@@ -289,14 +289,14 @@ class GoTrueClient {
     assert(_asyncStorage != null,
         'You need to provide asyncStorage to perform pkce flow.');
 
-    final rawString = await _asyncStorage!
+    final codeVerifierRawString = await _asyncStorage!
         .getItem(key: '${Constants.defaultStorageKey}-code-verifier');
-    if (rawString == null) {
+    if (codeVerifierRawString == null) {
       throw AuthException('Code verifier could not be found in local storage.');
     }
-    final codeVerifier = rawString.split('/').first;
-    final typeString = rawString.split('/').last;
-    final type = AuthChangeEventExtended.fromString(typeString);
+    final codeVerifier = codeVerifierRawString.split('/').first;
+    final eventName = codeVerifierRawString.split('/').last;
+    final type = AuthChangeEventExtended.fromString(eventName);
 
     final Map<String, dynamic> response = await _fetch.request(
       '$_url/token',
