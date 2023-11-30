@@ -141,20 +141,11 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     _streamData = [];
     PostgresChangeFilter? realtimeFilter;
     if (currentStreamFilter != null) {
-      if (currentStreamFilter.type == PostgresChangeFilterType.inFilter) {
-        final value = currentStreamFilter.value;
-        realtimeFilter = PostgresChangeFilter(
-          type: PostgresChangeFilterType.inFilter,
-          column: currentStreamFilter.column,
-          value: value,
-        );
-      } else {
-        realtimeFilter = PostgresChangeFilter(
-          type: currentStreamFilter.type,
-          column: currentStreamFilter.column,
-          value: currentStreamFilter.value,
-        );
-      }
+      realtimeFilter = PostgresChangeFilter(
+        type: currentStreamFilter.type,
+        column: currentStreamFilter.column,
+        value: currentStreamFilter.value,
+      );
     }
 
     _channel = _realtimeClient.channel(_realtimeTopic);
