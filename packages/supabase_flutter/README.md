@@ -78,7 +78,7 @@ You need to [register your app ID with Apple](https://developer.apple.com/help/a
 ```dart
 /// Performs Apple sign in on iOS or macOS
 Future<AuthResponse> signInWithApple() async {
-  final rawNonce = generateRawNonce();
+  final rawNonce = supabase.auth.generateRawNonce();
   final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
   final credential = await SignInWithApple.getAppleIDCredential(
