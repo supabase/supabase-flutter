@@ -233,11 +233,20 @@ enum PostgresChangeFilterType {
   inFilter;
 }
 
+/// {@template postgres_change_filter}
+/// Creates a filter for realtime postgres change listener.
+/// {@endtemplate}
 class PostgresChangeFilter {
+  /// The type of the filter to set.
   final PostgresChangeFilterType type;
+
+  /// The column to set the filter on.
   final String column;
+
+  /// The value to perform the filter on.
   final dynamic value;
 
+  /// {@macro postgres_change_filter}
   PostgresChangeFilter({
     required this.type,
     required this.column,
