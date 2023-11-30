@@ -6,7 +6,7 @@ import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
 void main() {
-  late SupabaseClient client;
+  late SupabaseClient supabase;
   late SupabaseClient customHeadersClient;
   late HttpServer mockServer;
   late String apiKey;
@@ -337,7 +337,7 @@ void main() {
   setUp(() async {
     apiKey = 'supabaseKey';
     mockServer = await HttpServer.bind('localhost', 0);
-    client = SupabaseClient(
+    supabase = SupabaseClient(
       'http://${mockServer.address.host}:${mockServer.port}',
       apiKey,
       headers: {
@@ -353,11 +353,11 @@ void main() {
   });
 
   tearDown(() async {
-    await client.dispose();
+    await supabase.dispose();
     await customHeadersClient.dispose();
 
     //Manually disconnect the socket channel to avoid automatic retrying to reconnect. This caused failing in later executed tests.
-    await client.removeAllChannels();
+    await supabase.removeAllChannels();
     await customHeadersClient.removeAllChannels();
 
     // Wait for the realtime updates to come through
@@ -378,13 +378,13 @@ void main() {
     });
 
     test('test mock server', () async {
-      final data = await client.from('todos').select('task, status');
+      final data = await supabase.from('todos').select('task, status');
       expect(data.length, 2);
     });
 
     group('Basic client test', () {
       test('Postgrest calls the correct endpoint', () async {
-        final data = await client.from('todos').select();
+        final data = await supabase.from('todos').select();
         expect(data, [
           {'id': 1, 'task': 'task 1', 'status': true},
           {'id': 2, 'task': 'task 2', 'status': false}
@@ -404,7 +404,7 @@ void main() {
 
     group('stream()', () {
       test("listen, cancel and listen again", () async {
-        final stream = client.from('todos').stream(primaryKey: ['id']);
+        final stream = supabase.from('todos').stream(primaryKey: ['id']);
         final sub = stream.listen(expectAsync1((event) {}, count: 5));
         await Future.delayed(Duration(seconds: 1));
 
@@ -415,7 +415,7 @@ void main() {
       });
 
       test("can listen twice at the same time", () async {
-        final stream = client.from('todos').stream(primaryKey: ['id']);
+        final stream = supabase.from('todos').stream(primaryKey: ['id']);
         stream.listen(expectAsync1((event) {}, count: 5));
         stream.listen(expectAsync1((event) {}, count: 5));
 
@@ -423,8 +423,8 @@ void main() {
       });
 
       test("Create two stream to same table", () async {
-        final stream1 = client.from('todos').stream(primaryKey: ['id']);
-        final stream2 = client.from('todos').stream(primaryKey: ['id']);
+        final stream1 = supabase.from('todos').stream(primaryKey: ['id']);
+        final stream2 = supabase.from('todos').stream(primaryKey: ['id']);
         stream1.listen(expectAsync1((event) {}, count: 5));
 
         stream2.listen(expectAsync1((event) {}, count: 5));
@@ -432,7 +432,7 @@ void main() {
 
       test("stream should emit the last emitted data when listened to",
           () async {
-        final stream = client.from('todos').stream(primaryKey: ['id']);
+        final stream = supabase.from('todos').stream(primaryKey: ['id']);
         stream.listen(expectAsync1((event) {}, count: 5));
 
         await Future.delayed(Duration(seconds: 3));
@@ -441,7 +441,7 @@ void main() {
         stream.listen(expectAsync1((event) {}, count: 1));
       });
       test('emits data', () {
-        final stream = client.from('todos').stream(primaryKey: ['id']);
+        final stream = supabase.from('todos').stream(primaryKey: ['id']);
         expect(
           stream,
           emitsInOrder([
@@ -473,7 +473,7 @@ void main() {
       });
 
       test('emits data with asyncMap', () {
-        final stream = client.from('todos').stream(
+        final stream = supabase.from('todos').stream(
             primaryKey: ['id']).asyncMap((event) => Future.value([event]));
         expect(
           stream,
@@ -509,7 +509,7 @@ void main() {
       });
 
       test("can listen twice at the same time with asyncMap", () async {
-        final stream = client
+        final stream = supabase
             .from('todos')
             .stream(primaryKey: ['id']).asyncMap((event) => event);
         stream.listen(expectAsync1((event) {}, count: 5));
@@ -542,7 +542,7 @@ void main() {
 
       test('with order', () {
         final stream =
-            client.from('todos').stream(primaryKey: ['id']).order('id');
+            supabase.from('todos').stream(primaryKey: ['id']).order('id');
         expect(
           stream,
           emitsInOrder([
@@ -569,7 +569,7 @@ void main() {
       });
 
       test('with limit', () {
-        final stream = client
+        final stream = supabase
             .from('todos')
             .stream(primaryKey: ['id'])
             .order('id')
@@ -600,7 +600,7 @@ void main() {
 
     group("rpc", () {
       test("rpc", () async {
-        final data = await client.rpc("todos").select();
+        final data = await supabase.rpc("todos").select();
         expect(data, [
           {'id': 1, 'task': 'task 1', 'status': true},
           {'id': 2, 'task': 'task 2', 'status': false}
@@ -621,20 +621,20 @@ void main() {
       /// Constructing Supabase query within a realtime callback caused exception
       /// https://github.com/supabase-community/supabase-flutter/issues/81
       test('Calling Postgrest within realtime callback', () async {
-        client
+        supabase
             .channel('todos')
             .onPostgresChanges(
                 event: PostgresChangeEvent.all,
                 schema: 'public',
                 table: 'todos',
                 callback: (payload) async {
-                  client.from('todos');
+                  supabase.from('todos');
                 })
             .subscribe();
 
         await Future.delayed(const Duration(milliseconds: 700));
 
-        await client.removeAllChannels();
+        await supabase.removeAllChannels();
       });
     });
   });
@@ -643,7 +643,7 @@ void main() {
     test('can filter stream results with eq', () {
       handleRequests(mockServer, expectedFilter: 'status=eq.true');
       final stream =
-          client.from('todos').stream(primaryKey: ['id']).eq('status', true);
+          supabase.from('todos').stream(primaryKey: ['id']).eq('status', true);
       expect(
         stream,
         emitsInOrder([
@@ -661,35 +661,35 @@ void main() {
     test('can filter stream results with neq', () {
       handleRequests(mockServer, expectedFilter: 'id=neq.2');
       final stream =
-          client.from('todos').stream(primaryKey: ['id']).neq('id', 2);
+          supabase.from('todos').stream(primaryKey: ['id']).neq('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with gt', () {
       handleRequests(mockServer, expectedFilter: 'id=gt.2');
       final stream =
-          client.from('todos').stream(primaryKey: ['id']).gt('id', 2);
+          supabase.from('todos').stream(primaryKey: ['id']).gt('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with gte', () {
       handleRequests(mockServer, expectedFilter: 'id=gte.2');
       final stream =
-          client.from('todos').stream(primaryKey: ['id']).gte('id', 2);
+          supabase.from('todos').stream(primaryKey: ['id']).gte('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with lt', () {
       handleRequests(mockServer, expectedFilter: 'id=lt.2');
       final stream =
-          client.from('todos').stream(primaryKey: ['id']).lt('id', 2);
+          supabase.from('todos').stream(primaryKey: ['id']).lt('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with lte', () {
       handleRequests(mockServer, expectedFilter: 'id=lte.2');
       final stream =
-          client.from('todos').stream(primaryKey: ['id']).lte('id', 2);
+          supabase.from('todos').stream(primaryKey: ['id']).lte('id', 2);
       expect(stream, emits(isList));
     });
   });

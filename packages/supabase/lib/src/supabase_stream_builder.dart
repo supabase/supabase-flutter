@@ -262,13 +262,13 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   void _sortData() {
     final orderModifier = _orderBy!.ascending ? 1 : -1;
     _streamData.sort((a, b) {
-      if (a[_orderBy!.column] is String && b[_orderBy!.column] is String) {
-        return orderModifier *
-            (a[_orderBy!.column] as String)
-                .compareTo(b[_orderBy!.column] as String);
-      } else if (a[_orderBy!.column] is int && b[_orderBy!.column] is int) {
-        return orderModifier *
-            (a[_orderBy!.column] as int).compareTo(b[_orderBy!.column] as int);
+      final columnA = a[_orderBy!.column];
+      final columnB = b[_orderBy!.column];
+
+      if (columnA is num && columnB is num) {
+        return orderModifier * columnA.compareTo(columnB);
+      } else if (columnA is String && columnB is String) {
+        return orderModifier * columnA.compareTo(columnB);
       } else {
         return 0;
       }

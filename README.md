@@ -283,7 +283,7 @@ class MyWidget extends StatelessWidget {
 ```dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final client = Supabase.instance.client;
+final supabase = Supabase.instance.client;
 
 class MyWidget extends StatefulWidget {
   const MyWidget({Key? key}) : super(key: key);
@@ -294,7 +294,7 @@ class MyWidget extends StatefulWidget {
 
 class _MyWidgetState extends State<MyWidget> {
   // Persisting the future as local variable to prevent refetching upon rebuilds.
-  final future = client.functions.invoke('get_countries');
+  final future = supabase.functions.invoke('get_countries');
 
   @override
   Widget build(BuildContext context) {
@@ -347,7 +347,7 @@ However, you can use any other methods by creating a `LocalStorage` implementati
 class MockLocalStorage extends LocalStorage {
 
   final storage = FlutterSecureStorage();
-  
+
   @override
   Future<void> initialize() async {}
 

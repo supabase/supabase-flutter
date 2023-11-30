@@ -158,8 +158,9 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   Future<void> removePersistedSession() async {
     if (_useWebLocalStorage) {
       web.removePersistedSession(persistSessionKey);
+    } else {
+      await _prefs.remove(persistSessionKey);
     }
-    await _prefs.remove(persistSessionKey);
   }
 
   @override

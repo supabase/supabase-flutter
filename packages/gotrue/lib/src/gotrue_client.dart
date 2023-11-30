@@ -641,11 +641,6 @@ class GoTrueClient {
             'No session found for the auth code.');
       }
 
-      if (storeSession == true) {
-        _saveSession(session);
-        notifyAllSubscribers(AuthChangeEvent.signedIn);
-      }
-
       return AuthSessionUrlResponse(session: session, redirectType: null);
     }
     var url = originUrl;
@@ -986,7 +981,7 @@ class GoTrueClient {
       rethrow;
     } catch (error, stack) {
       if (error is AuthException) {
-        if (error.message == 'Invalid Refresh Token: Refresh Token Not Found') {
+        if (error.message.startsWith('Invalid Refresh Token:')) {
           await signOut();
         }
       }
