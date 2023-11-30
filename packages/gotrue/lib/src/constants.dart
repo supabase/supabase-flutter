@@ -27,6 +27,17 @@ enum AuthChangeEvent {
   mfaChallengeVerified,
 }
 
+extension AuthChangeEventExtended on AuthChangeEvent {
+  static GenerateLinkType fromString(String? val) {
+    for (final event in GenerateLinkType.values) {
+      if (event.name == val) {
+        return event;
+      }
+    }
+    return GenerateLinkType.unknown;
+  }
+}
+
 enum GenerateLinkType {
   signup,
   invite,

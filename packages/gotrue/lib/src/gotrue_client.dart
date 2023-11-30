@@ -289,8 +289,14 @@ class GoTrueClient {
     assert(_asyncStorage != null,
         'You need to provide asyncStorage to perform pkce flow.');
 
-    final codeVerifier = await _asyncStorage!
+    final rawString = await _asyncStorage!
         .getItem(key: '${Constants.defaultStorageKey}-code-verifier');
+    if (rawString == null) {
+      throw AuthException('Code verifier could not be found in local storage.');
+    }
+    final codeVerifier = rawString.split('/').first;
+    final typeString = rawString.split('/').last;
+    final type = AuthChangeEventExtended.fromString(typeString);
 
     final Map<String, dynamic> response = await _fetch.request(
       '$_url/token',
@@ -315,7 +321,11 @@ class GoTrueClient {
     final session = authResponse.session;
     if (session != null) {
       _saveSession(session);
-      notifyAllSubscribers(AuthChangeEvent.signedIn);
+      if (type == AuthChangeEvent.passwordRecovery) {
+        notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
+      } else {
+        notifyAllSubscribers(AuthChangeEvent.signedIn);
+      }
     }
 
     return authResponse;
@@ -753,8 +763,9 @@ class GoTrueClient {
           'You need to provide asyncStorage to perform pkce flow.');
       final codeVerifier = generatePKCEVerifier();
       await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier);
+        key: '${Constants.defaultStorageKey}-code-verifier',
+        value: '$codeVerifier/${AuthChangeEvent.passwordRecovery.name}',
+      );
       codeChallenge = generatePKCEChallenge(codeVerifier);
     }
 
