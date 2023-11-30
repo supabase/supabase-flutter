@@ -981,7 +981,7 @@ class GoTrueClient {
       rethrow;
     } catch (error, stack) {
       if (error is AuthException) {
-        if (error.message == 'Invalid Refresh Token: Refresh Token Not Found') {
+        if (error.message.startsWith('Invalid Refresh Token:')) {
           await signOut();
         }
       }
