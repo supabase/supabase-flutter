@@ -4,6 +4,7 @@ enum OAuthProvider {
   bitbucket,
   discord,
   facebook,
+  figma,
   github,
   gitlab,
   google,
