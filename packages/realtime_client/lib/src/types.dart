@@ -1,4 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:collection/collection.dart';
+import 'package:realtime_client/realtime_client.dart';
 
 typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
 
@@ -104,6 +106,18 @@ enum ChannelResponse { ok, timedOut, rateLimited, error }
 enum RealtimeListenTypes { postgresChanges, broadcast, presence }
 
 enum PresenceEvent { sync, join, leave }
+
+extension PresenceEventExtended on PresenceEvent {
+  static PresenceEvent fromString(String val) {
+    for (final event in PresenceEvent.values) {
+      if (event.name == val) {
+        return event;
+      }
+    }
+    throw ArgumentError(
+        'Only "sync", "join", or "leave" can be can be passed to `fromString()` method.');
+  }
+}
 
 enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
 
@@ -263,5 +277,66 @@ class PostgresChangeFilter {
       }
     }
     return '$column=${type.name}.$value';
+  }
+}
+
+/// Object for the presence callback payload for when the event is [PresenceEvent.sync].
+///
+/// For [PresenceEvent.join] event, [PresenceJoinPayload] will be returned, and
+/// for [PresenceEvent.leave] event, [PresenceLeavePayload] will be returned.
+class PresencePayload {
+  final PresenceEvent event;
+
+  PresencePayload({
+    required this.event,
+  });
+
+  PresencePayload.fromJson(Map<String, dynamic> json)
+      : event = PresenceEventExtended.fromString(json['event']);
+}
+
+/// Object for the presence callback payload for when the event is `join`.
+class PresenceJoinPayload extends PresencePayload {
+  final String key;
+  final List<Presence> newPresences;
+  final List<Presence> currentPresences;
+
+  PresenceJoinPayload({
+    required super.event,
+    required this.key,
+    required this.currentPresences,
+    required this.newPresences,
+  });
+
+  factory PresenceJoinPayload.fromJson(Map<String, dynamic> json) {
+    return PresenceJoinPayload(
+      event: PresenceEventExtended.fromString(json['event']),
+      key: json['key'] as String,
+      newPresences: json['newPresences'] as List<Presence>,
+      currentPresences: json['currentPresences'] as List<Presence>,
+    );
+  }
+}
+
+/// Object for the presence callback payload for when the event is `leave`.
+class PresenceLeavePayload extends PresencePayload {
+  final String key;
+  final List<Presence> leftPresences;
+  final List<Presence> currentPresences;
+
+  PresenceLeavePayload({
+    required super.event,
+    required this.key,
+    required this.currentPresences,
+    required this.leftPresences,
+  });
+
+  factory PresenceLeavePayload.fromJson(Map<String, dynamic> json) {
+    return PresenceLeavePayload(
+      event: PresenceEventExtended.fromString(json['event']),
+      key: json['key'] as String,
+      leftPresences: json['leftPresences'] as List<Presence>,
+      currentPresences: json['currentPresences'] as List<Presence>,
+    );
   }
 }
