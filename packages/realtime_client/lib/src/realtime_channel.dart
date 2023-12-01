@@ -347,16 +347,33 @@ class RealtimeChannel {
   ///         })
   ///     .subscribe();
   /// ```
-  RealtimeChannel onPresence({
+  RealtimeChannel onPresence<T extends PresencePayload>({
     required PresenceEvent event,
-    required void Function(Map<String, dynamic> payload) callback,
+    required void Function(T payload) callback,
   }) {
     return onEvents(
       'presence',
       ChannelFilter(
         event: event.name,
       ),
-      (payload, [ref]) => callback(Map<String, dynamic>.from(payload)),
+      (payload, [ref]) {
+        switch (event) {
+          case PresenceEvent.sync:
+            callback(
+                PresencePayload.fromJson(Map<String, dynamic>.from(payload))
+                    as T);
+            break;
+          case PresenceEvent.join:
+            callback(
+                PresenceJoinPayload.fromJson(Map<String, dynamic>.from(payload))
+                    as T);
+            break;
+          case PresenceEvent.leave:
+            callback(PresenceLeavePayload.fromJson(
+                Map<String, dynamic>.from(payload)) as T);
+            break;
+        }
+      },
     );
   }
 
