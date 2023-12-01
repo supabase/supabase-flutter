@@ -281,15 +281,15 @@ class PostgresChangeFilter {
 }
 
 /// Base class for the payload in `.onPresence()` callback functions.
-abstract class PresencePayload {
+abstract class RealtimePresencePayload {
   /// Name of the presence event.
   final PresenceEvent event;
 
-  PresencePayload({
+  RealtimePresencePayload({
     required this.event,
   });
 
-  PresencePayload.fromJson(Map<String, dynamic> json)
+  RealtimePresencePayload.fromJson(Map<String, dynamic> json)
       : event = PresenceEventExtended.fromString(json['event']);
 
   @override
@@ -297,13 +297,13 @@ abstract class PresencePayload {
 }
 
 /// Payload for [PresenceEvent.sync] callback.
-class PresenceSyncPayload extends PresencePayload {
-  PresenceSyncPayload({
+class RealtimePresenceSyncPayload extends RealtimePresencePayload {
+  RealtimePresenceSyncPayload({
     required super.event,
   });
 
-  factory PresenceSyncPayload.fromJson(Map<String, dynamic> json) {
-    return PresenceSyncPayload(
+  factory RealtimePresenceSyncPayload.fromJson(Map<String, dynamic> json) {
+    return RealtimePresenceSyncPayload(
       event: PresenceEventExtended.fromString(json['event']),
     );
   }
@@ -313,7 +313,7 @@ class PresenceSyncPayload extends PresencePayload {
 }
 
 /// Payload for [PresenceEvent.join] callback.
-class PresenceJoinPayload extends PresencePayload {
+class RealtimePresenceJoinPayload extends RealtimePresencePayload {
   /// Unique identifier for the clients.
   /// By default the realtime server generates a UUIDv1 key for each client.
   final String key;
@@ -324,15 +324,15 @@ class PresenceJoinPayload extends PresencePayload {
   /// List of currently present presences.
   final List<Presence> currentPresences;
 
-  PresenceJoinPayload({
+  RealtimePresenceJoinPayload({
     required super.event,
     required this.key,
     required this.currentPresences,
     required this.newPresences,
   });
 
-  factory PresenceJoinPayload.fromJson(Map<String, dynamic> json) {
-    return PresenceJoinPayload(
+  factory RealtimePresenceJoinPayload.fromJson(Map<String, dynamic> json) {
+    return RealtimePresenceJoinPayload(
       event: PresenceEventExtended.fromString(json['event']),
       key: json['key'] as String,
       newPresences: json['newPresences'] as List<Presence>,
@@ -346,7 +346,7 @@ class PresenceJoinPayload extends PresencePayload {
 }
 
 /// Payload for [PresenceEvent.leave] callback.
-class PresenceLeavePayload extends PresencePayload {
+class RealtimePresenceLeavePayload extends RealtimePresencePayload {
   /// Unique identifier for the clients.
   /// By default the realtime server generates a UUIDv1 key for each client.
   final String key;
@@ -357,15 +357,15 @@ class PresenceLeavePayload extends PresencePayload {
   /// List of currently present presences.
   final List<Presence> currentPresences;
 
-  PresenceLeavePayload({
+  RealtimePresenceLeavePayload({
     required super.event,
     required this.key,
     required this.currentPresences,
     required this.leftPresences,
   });
 
-  factory PresenceLeavePayload.fromJson(Map<String, dynamic> json) {
-    return PresenceLeavePayload(
+  factory RealtimePresenceLeavePayload.fromJson(Map<String, dynamic> json) {
+    return RealtimePresenceLeavePayload(
       event: PresenceEventExtended.fromString(json['event']),
       key: json['key'] as String,
       leftPresences: json['leftPresences'] as List<Presence>,
@@ -376,4 +376,21 @@ class PresenceLeavePayload extends PresencePayload {
   @override
   String toString() =>
       'PresenceLeavePayload(key: $key, leftPresences: $leftPresences, currentPresences: $currentPresences)';
+}
+
+/// A single client connected through presence.
+class SinglePresenceState {
+  /// Presence key of the client.
+  final String key;
+
+  /// List of shared payloads of the client.
+  final List<Presence> presences;
+
+  SinglePresenceState({
+    required this.key,
+    required this.presences,
+  });
+
+  @override
+  String toString() => 'PresenceState(key: $key, presences: $presences)';
 }

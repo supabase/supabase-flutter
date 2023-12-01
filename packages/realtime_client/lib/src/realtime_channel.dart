@@ -216,8 +216,11 @@ class RealtimeChannel {
     return this;
   }
 
-  Map<String, dynamic> presenceState() {
-    return presence.state;
+  List<SinglePresenceState> presenceState() {
+    return presence.state.entries
+        .map((entry) =>
+            SinglePresenceState(key: entry.key, presences: entry.value))
+        .toList();
   }
 
   Future<ChannelResponse> track(Map<String, dynamic> payload,
@@ -330,24 +333,24 @@ class RealtimeChannel {
   /// ```dart
   /// final channel = supabase.channel('my_channel');
   /// channel
-  ///     .onPresence<PresenceSyncPayload>(
+  ///     .onPresence<RealtimePresenceSyncPayload>(
   ///         event: PresenceEvent.sync,
-  ///         callback: (PresenceSyncPayload payload) {
+  ///         callback: (RealtimePresenceSyncPayload payload) {
   ///           print('Synced presence state: ${channel.presenceState()}');
   ///         })
-  ///     .onPresence<PresenceJoinPayload>(
+  ///     .onPresence<RealtimePresenceJoinPayload>(
   ///         event: PresenceEvent.join,
-  ///         callback: (PresenceJoinPayload payload) {
+  ///         callback: (RealtimePresenceJoinPayload payload) {
   ///           print('Newly joined presences $payload');
   ///         })
-  ///     .onPresence<PresenceLeavePayload>(
+  ///     .onPresence<RealtimePresenceLeavePayload>(
   ///         event: PresenceEvent.leave,
-  ///         callback: (PresenceLeavePayload payload) {
+  ///         callback: (RealtimePresenceLeavePayload payload) {
   ///           print('Newly left presences: $payload');
   ///         })
   ///     .subscribe();
   /// ```
-  RealtimeChannel onPresence<T extends PresencePayload>({
+  RealtimeChannel onPresence<T extends RealtimePresencePayload>({
     required PresenceEvent event,
     required void Function(T payload) callback,
   }) {
@@ -359,17 +362,15 @@ class RealtimeChannel {
       (payload, [ref]) {
         switch (event) {
           case PresenceEvent.sync:
-            callback(
-                PresenceSyncPayload.fromJson(Map<String, dynamic>.from(payload))
-                    as T);
+            callback(RealtimePresenceSyncPayload.fromJson(
+                Map<String, dynamic>.from(payload)) as T);
             break;
           case PresenceEvent.join:
-            callback(
-                PresenceJoinPayload.fromJson(Map<String, dynamic>.from(payload))
-                    as T);
+            callback(RealtimePresenceJoinPayload.fromJson(
+                Map<String, dynamic>.from(payload)) as T);
             break;
           case PresenceEvent.leave:
-            callback(PresenceLeavePayload.fromJson(
+            callback(RealtimePresenceLeavePayload.fromJson(
                 Map<String, dynamic>.from(payload)) as T);
             break;
         }
