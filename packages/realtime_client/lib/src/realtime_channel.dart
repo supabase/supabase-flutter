@@ -360,7 +360,7 @@ class RealtimeChannel {
         switch (event) {
           case PresenceEvent.sync:
             callback(
-                PresencePayload.fromJson(Map<String, dynamic>.from(payload))
+                PresenceSyncPayload.fromJson(Map<String, dynamic>.from(payload))
                     as T);
             break;
           case PresenceEvent.join:

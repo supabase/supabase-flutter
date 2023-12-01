@@ -280,11 +280,9 @@ class PostgresChangeFilter {
   }
 }
 
-/// Object for the presence callback payload for when the event is [PresenceEvent.sync].
-///
-/// For [PresenceEvent.join] event, [PresenceJoinPayload] will be returned, and
-/// for [PresenceEvent.leave] event, [PresenceLeavePayload] will be returned.
-class PresencePayload {
+/// Base class for the payload in `.onPresence()` callback functions.
+abstract class PresencePayload {
+  /// Name of the presence event.
   final PresenceEvent event;
 
   PresencePayload({
@@ -295,10 +293,29 @@ class PresencePayload {
       : event = PresenceEventExtended.fromString(json['event']);
 }
 
-/// Object for the presence callback payload for when the event is `join`.
+/// Payload for [PresenceEvent.sync] callback.
+class PresenceSyncPayload extends PresencePayload {
+  PresenceSyncPayload({
+    required super.event,
+  });
+
+  factory PresenceSyncPayload.fromJson(Map<String, dynamic> json) {
+    return PresenceSyncPayload(
+      event: PresenceEventExtended.fromString(json['event']),
+    );
+  }
+}
+
+/// Payload for [PresenceEvent.join] callback.
 class PresenceJoinPayload extends PresencePayload {
+  /// Unique identifier for the clients.
+  /// By default the realtime server generates a UUIDv1 key for each client.
   final String key;
+
+  /// List of newly joined presences in the callback.
   final List<Presence> newPresences;
+
+  /// List of currently present presences.
   final List<Presence> currentPresences;
 
   PresenceJoinPayload({
@@ -318,10 +335,16 @@ class PresenceJoinPayload extends PresencePayload {
   }
 }
 
-/// Object for the presence callback payload for when the event is `leave`.
+/// Payload for [PresenceEvent.leave] callback.
 class PresenceLeavePayload extends PresencePayload {
+  /// Unique identifier for the clients.
+  /// By default the realtime server generates a UUIDv1 key for each client.
   final String key;
+
+  /// List of presences that left in the callback.
   final List<Presence> leftPresences;
+
+  /// List of currently present presences.
   final List<Presence> currentPresences;
 
   PresenceLeavePayload({
