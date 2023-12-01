@@ -296,7 +296,7 @@ class GoTrueClient {
     }
     final codeVerifier = codeVerifierRawString.split('/').first;
     final eventName = codeVerifierRawString.split('/').last;
-    final type = AuthChangeEventExtended.fromString(eventName);
+    final redirectType = AuthChangeEventExtended.fromString(eventName);
 
     final Map<String, dynamic> response = await _fetch.request(
       '$_url/token',
@@ -321,7 +321,7 @@ class GoTrueClient {
     final session = authResponse.session;
     if (session != null) {
       _saveSession(session);
-      if (type == AuthChangeEvent.passwordRecovery) {
+      if (redirectType == AuthChangeEvent.passwordRecovery) {
         notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
       } else {
         notifyAllSubscribers(AuthChangeEvent.signedIn);

@@ -28,13 +28,13 @@ enum AuthChangeEvent {
 }
 
 extension AuthChangeEventExtended on AuthChangeEvent {
-  static AuthChangeEvent fromString(String? val) {
+  static AuthChangeEvent? fromString(String? val) {
     for (final event in AuthChangeEvent.values) {
       if (event.name == val) {
         return event;
       }
     }
-    return AuthChangeEvent.signedIn;
+    return null;
   }
 }
 
