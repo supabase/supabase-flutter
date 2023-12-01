@@ -249,15 +249,16 @@ You can get notified whenever there is a change in your Supabase tables.
 ```dart
 final myChannel = supabase.channel('my_channel');
 
-myChannel.on(
-    RealtimeListenTypes.postgresChanges,
-    ChannelFilter(
-      event: '*',
+myChannel
+    .onPostgresChanges(
+      event: PostgresChangeEvent.all,
       schema: 'public',
       table: 'countries',
-    ), (payload, [ref]) {
-  // Do something fun or interesting when there is an change on the database
-}).subscribe();
+      callback: (payload) {
+        // Do something fun or interesting when there is an change on the database
+      },
+    )
+    .subscribe();
 ```
 
 #### [Broadcast](https://supabase.com/docs/guides/realtime#broadcast)
@@ -268,17 +269,16 @@ Broadcast lets you send and receive low latency messages between connected clien
 final myChannel = supabase.channel('my_channel');
 
 // Subscribe to `cursor-pos` broadcast event
-myChannel.on(
-    RealtimeListenTypes.broadcast,
-    ChannelFilter(event: 'cursor-pos'),
-    (payload, [ref]) {
-      // Do something fun or interesting when there is an change on the database
-    },
-).subscribe();
+final myChannel = supabase.channel('my_channel');
+
+myChannel
+    .onBroadcast(event: 'cursor-pos', callback: (payload) {}
+        // Do something fun or interesting when there is an change on the database
+        )
+    .subscribe();
 
 // Send a broadcast message to other connected clients
-await myChannel.send(
-  type: RealtimeListenTypes.broadcast,
+await myChannel.sendBroadcastMessage(
   event: 'cursor-pos',
   payload: {'x': 30, 'y': 50},
 );
@@ -292,19 +292,25 @@ Presence let's you easily create "I'm online" feature.
 final myChannel = supabase.channel('my_channel');
 
 // Subscribe to presence events
-myChannel.on(
-    RealtimeListenTypes.presence, ChannelFilter(event: 'sync'),
-    (payload, [ref]) {
-  final onlineUsers = myChannel.presenceState();
-  // handle sync event
-}).on(RealtimeListenTypes.presence, ChannelFilter(event: 'join'),
-    (payload, [ref]) {
-  // New users have joined
-}).on(RealtimeListenTypes.presence, ChannelFilter(event: 'leave'),
-    (payload, [ref]) {
-  // Users have left
-}).subscribe(((status, [_]) async {
-  if (status == 'SUBSCRIBED') {
+myChannel
+    .onPresence(
+        event: PresenceEvent.sync,
+        callback: (payload) {
+          final onlineUsers = myChannel.presenceState();
+          // handle sync event
+        })
+    .onPresence(
+        event: PresenceEvent.join,
+        callback: (payload) {
+          // New users have joined
+        })
+    .onPresence(
+        event: PresenceEvent.leave,
+        callback: (payload) {
+          // Users have left
+        })
+    .subscribe(((status, [_]) async {
+  if (status == RealtimeSubscribeStatus.subscribed) {
     // Send the current user's state upon subscribing
     final status = await myChannel
         .track({'online_at': DateTime.now().toIso8601String()});

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
+import 'package:realtime_client/src/types.dart';
 import 'package:test/test.dart';
 
 void main() {

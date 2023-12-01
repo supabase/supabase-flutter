@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
 
 class Binding {
@@ -25,6 +27,43 @@ class Binding {
       callback ?? this.callback,
       id ?? this.id,
     );
+  }
+}
+
+enum PostgresChangeEvent {
+  /// Listen to all insert, update, and delete events.
+  all,
+
+  /// Listen to insert events.
+  insert,
+
+  /// Listen to update events.
+  update,
+
+  /// Listen to delete events.
+  delete,
+}
+
+extension PostgresChangeEventMethods on PostgresChangeEvent {
+  String toRealtimeEvent() {
+    if (this == PostgresChangeEvent.all) {
+      return '*';
+    } else {
+      return name.toUpperCase();
+    }
+  }
+
+  static PostgresChangeEvent fromString(String event) {
+    switch (event) {
+      case 'INSERT':
+        return PostgresChangeEvent.insert;
+      case 'UPDATE':
+        return PostgresChangeEvent.update;
+      case 'DELETE':
+        return PostgresChangeEvent.delete;
+    }
+    throw ArgumentError(
+        'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.');
   }
 }
 
@@ -63,6 +102,8 @@ class ChannelFilter {
 enum ChannelResponse { ok, timedOut, rateLimited, error }
 
 enum RealtimeListenTypes { postgresChanges, broadcast, presence }
+
+enum PresenceEvent { sync, join, leave }
 
 enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
 
@@ -104,5 +145,123 @@ class RealtimeChannelConfig {
         },
       }
     };
+  }
+}
+
+/// Data class that contains the Postgres change event payload.
+class PostgresChangePayload {
+  final String schema;
+  final String table;
+  final DateTime commitTimestamp;
+  final PostgresChangeEvent eventType;
+  final Map<String, dynamic> newRecord;
+  final Map<String, dynamic> oldRecord;
+  final dynamic errors;
+  PostgresChangePayload({
+    required this.schema,
+    required this.table,
+    required this.commitTimestamp,
+    required this.eventType,
+    required this.newRecord,
+    required this.oldRecord,
+    required this.errors,
+  });
+
+  /// Creates a PostgresChangePayload instance from the enriched postgres change payload
+  PostgresChangePayload.fromPayload(Map<String, dynamic> payload)
+      : schema = payload['schema'],
+        table = payload['table'],
+        commitTimestamp =
+            DateTime.parse(payload['commit_timestamp'] ?? '19700101'),
+        eventType = PostgresChangeEventMethods.fromString(payload['eventType']),
+        newRecord = Map<String, dynamic>.from(payload['new']),
+        oldRecord = Map<String, dynamic>.from(payload['old']),
+        errors = payload['errors'];
+
+  @override
+  String toString() {
+    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: $eventType, newRow: $newRecord, oldRow: $oldRecord, errors: $errors)';
+  }
+
+  @override
+  bool operator ==(covariant PostgresChangePayload other) {
+    if (identical(this, other)) return true;
+    final mapEquals = const DeepCollectionEquality().equals;
+
+    return other.schema == schema &&
+        other.table == table &&
+        other.commitTimestamp == commitTimestamp &&
+        other.eventType == eventType &&
+        mapEquals(other.newRecord, newRecord) &&
+        mapEquals(other.oldRecord, oldRecord) &&
+        other.errors == errors;
+  }
+
+  @override
+  int get hashCode {
+    return schema.hashCode ^
+        table.hashCode ^
+        commitTimestamp.hashCode ^
+        eventType.hashCode ^
+        newRecord.hashCode ^
+        oldRecord.hashCode ^
+        errors.hashCode;
+  }
+}
+
+/// Specifies the type of filter to be applied on realtime Postgres Change listener.
+enum PostgresChangeFilterType {
+  /// Listens to changes where a column's value in a table equals a client-specified value.
+  eq,
+
+  /// Listens to changes where a column's value in a table does not equal a value specified.
+  neq,
+
+  /// Listen to changes where a column's value in a table is less than a value specified.
+  lt,
+
+  /// Listens to changes where a column's value in a table is less than or equal to a value specified.
+  lte,
+
+  /// Listens to changes where a column's value in a table is greater than a value specified.
+  gt,
+
+  /// Listens to changes where a column's value in a table is greater than or equal to a value specified.
+  gte,
+
+  /// Listen to changes when a column's value in a table equals any of the values specified.
+  inFilter;
+}
+
+/// {@template postgres_change_filter}
+/// Creates a filter for realtime postgres change listener.
+/// {@endtemplate}
+class PostgresChangeFilter {
+  /// The type of the filter to set.
+  final PostgresChangeFilterType type;
+
+  /// The column to set the filter on.
+  final String column;
+
+  /// The value to perform the filter on.
+  final dynamic value;
+
+  /// {@macro postgres_change_filter}
+  PostgresChangeFilter({
+    required this.type,
+    required this.column,
+    required this.value,
+  });
+
+  @override
+  String toString() {
+    if (type == PostgresChangeFilterType.inFilter) {
+      if (value is List<String>) {
+        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
+      } else {
+        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
+      }
+    }
+    return '$column=${type.name}.$value';
   }
 }

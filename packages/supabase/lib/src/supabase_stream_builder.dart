@@ -5,8 +5,6 @@ import 'package:supabase/supabase.dart';
 
 part 'supabase_stream_filter_builder.dart';
 
-enum _FilterType { eq, neq, lt, lte, gt, gte, inFilter }
-
 class _StreamPostgrestFilter {
   _StreamPostgrestFilter({
     required this.column,
@@ -21,7 +19,7 @@ class _StreamPostgrestFilter {
   final dynamic value;
 
   /// Type of the filer being applied
-  final _FilterType type;
+  final PostgresChangeFilterType type;
 }
 
 class _Order {
@@ -141,71 +139,62 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   Future<void> _getStreamData() async {
     final currentStreamFilter = _streamFilter;
     _streamData = [];
-    String? realtimeFilter;
+    PostgresChangeFilter? realtimeFilter;
     if (currentStreamFilter != null) {
-      if (currentStreamFilter.type == _FilterType.inFilter) {
-        final value = currentStreamFilter.value;
-        if (value is List<String>) {
-          realtimeFilter =
-              '${currentStreamFilter.column}=in.(${value.map((s) => '"$s"').join(',')})';
-        } else {
-          realtimeFilter =
-              '${currentStreamFilter.column}=in.(${value.join(',')})';
-        }
-      } else {
-        realtimeFilter =
-            '${currentStreamFilter.column}=${currentStreamFilter.type.name}.${currentStreamFilter.value}';
-      }
+      realtimeFilter = PostgresChangeFilter(
+        type: currentStreamFilter.type,
+        column: currentStreamFilter.column,
+        value: currentStreamFilter.value,
+      );
     }
 
     _channel = _realtimeClient.channel(_realtimeTopic);
-    _channel!.on(
-        RealtimeListenTypes.postgresChanges,
-        ChannelFilter(
-          event: 'INSERT',
-          schema: _schema,
-          table: _table,
-          filter: realtimeFilter,
-        ), (payload, [ref]) {
-      final newRecord = Map<String, dynamic>.from(payload['new']!);
-      _streamData.add(newRecord);
-      _addStream();
-    }).on(
-        RealtimeListenTypes.postgresChanges,
-        ChannelFilter(
-          event: 'UPDATE',
-          schema: _schema,
-          table: _table,
-          filter: realtimeFilter,
-        ), (payload, [ref]) {
-      final updatedIndex = _streamData.indexWhere(
-        (element) => _isTargetRecord(record: element, payload: payload),
-      );
 
-      final updatedRecord = Map<String, dynamic>.from(payload['new']!);
-      if (updatedIndex >= 0) {
-        _streamData[updatedIndex] = updatedRecord;
-      } else {
-        _streamData.add(updatedRecord);
-      }
-      _addStream();
-    }).on(
-        RealtimeListenTypes.postgresChanges,
-        ChannelFilter(
-          event: 'DELETE',
-          schema: _schema,
-          table: _table,
-          filter: realtimeFilter,
-        ), (payload, [ref]) {
-      final deletedIndex = _streamData.indexWhere(
-        (element) => _isTargetRecord(record: element, payload: payload),
-      );
-      if (deletedIndex >= 0) {
-        /// Delete the data from in memory cache if it was found
-        _streamData.removeAt(deletedIndex);
-        _addStream();
-      }
-    }).subscribe((status, [error]) {
+    _channel!
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: _schema,
+            table: _table,
+            filter: realtimeFilter,
+            callback: (payload) {
+              final newRecord = payload.newRecord;
+              _streamData.add(newRecord);
+              _addStream();
+            })
+        .onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: _schema,
+            table: _table,
+            filter: realtimeFilter,
+            callback: (payload) {
+              final updatedIndex = _streamData.indexWhere(
+                (element) => _isTargetRecord(record: element, payload: payload),
+              );
+
+              final updatedRecord = payload.newRecord;
+              if (updatedIndex >= 0) {
+                _streamData[updatedIndex] = updatedRecord;
+              } else {
+                _streamData.add(updatedRecord);
+              }
+              _addStream();
+            })
+        .onPostgresChanges(
+            event: PostgresChangeEvent.delete,
+            schema: _schema,
+            table: _table,
+            filter: realtimeFilter,
+            callback: (payload) {
+              final deletedIndex = _streamData.indexWhere(
+                (element) => _isTargetRecord(record: element, payload: payload),
+              );
+              if (deletedIndex >= 0) {
+                /// Delete the data from in memory cache if it was found
+                _streamData.removeAt(deletedIndex);
+                _addStream();
+              }
+            })
+        .subscribe((status, [error]) {
       if (error != null) {
         _addException(error);
       }
@@ -214,25 +203,25 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     PostgrestFilterBuilder query = _queryBuilder.select();
     if (_streamFilter != null) {
       switch (_streamFilter!.type) {
-        case _FilterType.eq:
+        case PostgresChangeFilterType.eq:
           query = query.eq(_streamFilter!.column, _streamFilter!.value);
           break;
-        case _FilterType.neq:
+        case PostgresChangeFilterType.neq:
           query = query.neq(_streamFilter!.column, _streamFilter!.value);
           break;
-        case _FilterType.lt:
+        case PostgresChangeFilterType.lt:
           query = query.lt(_streamFilter!.column, _streamFilter!.value);
           break;
-        case _FilterType.lte:
+        case PostgresChangeFilterType.lte:
           query = query.lte(_streamFilter!.column, _streamFilter!.value);
           break;
-        case _FilterType.gt:
+        case PostgresChangeFilterType.gt:
           query = query.gt(_streamFilter!.column, _streamFilter!.value);
           break;
-        case _FilterType.gte:
+        case PostgresChangeFilterType.gte:
           query = query.gte(_streamFilter!.column, _streamFilter!.value);
           break;
-        case _FilterType.inFilter:
+        case PostgresChangeFilterType.inFilter:
           query = query.inFilter(_streamFilter!.column, _streamFilter!.value);
           break;
       }
@@ -258,13 +247,13 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   bool _isTargetRecord({
     required Map<String, dynamic> record,
-    required Map payload,
+    required PostgresChangePayload payload,
   }) {
     late final Map<String, dynamic> targetRecord;
-    if (payload['eventType'] == 'UPDATE') {
-      targetRecord = payload['new']!;
-    } else if (payload['eventType'] == 'DELETE') {
-      targetRecord = payload['old']!;
+    if (payload.eventType == PostgresChangeEvent.update) {
+      targetRecord = payload.newRecord;
+    } else if (payload.eventType == PostgresChangeEvent.delete) {
+      targetRecord = payload.oldRecord;
     }
     return _uniqueColumns
         .every((column) => record[column] == targetRecord[column]);

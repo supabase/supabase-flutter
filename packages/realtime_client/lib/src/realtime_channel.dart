@@ -14,15 +14,22 @@ class RealtimeChannel {
   final Map<String, List<Binding>> _bindings = {};
   final Duration _timeout;
   ChannelStates _state = ChannelStates.closed;
+  @internal
   bool joinedOnce = false;
+  @internal
   late Push joinPush;
   late RetryTimer _rejoinTimer;
   List<Push> _pushBuffer = [];
   late RealtimePresence presence;
+  @internal
   late final String broadcastEndpointURL;
+  @internal
   final String subTopic;
+  @internal
   final String topic;
+  @internal
   Map<String, dynamic> params;
+  @internal
   final RealtimeClient socket;
 
   RealtimeChannel(
@@ -98,7 +105,7 @@ class RealtimeChannel {
   /// Pass a [callback] to react to different status changes.
   ///
   /// [timeout] parameter can be used to override the default timeout set on [RealtimeClient].
-  void subscribe([
+  RealtimeChannel subscribe([
     void Function(RealtimeSubscribeStatus status, Object? error)? callback,
     Duration? timeout,
   ]) {
@@ -206,6 +213,7 @@ class RealtimeChannel {
         return;
       });
     }
+    return this;
   }
 
   Map<String, dynamic> presenceState() {
@@ -248,12 +256,108 @@ class RealtimeChannel {
         (reason, [ref]) => callback(reason?.toString()));
   }
 
-  RealtimeChannel on(
-    RealtimeListenTypes type,
-    ChannelFilter filter,
-    BindingCallback callback,
-  ) {
-    return onEvents(type.toType(), filter, callback);
+  /// Sets up a listener on your Supabase database.
+  ///
+  /// [event] determines whether you listen to `insert`, `update`, `delete`, or all of the events.
+  ///
+  /// [schema] is the schema of the database on which to set up the listener.
+  /// The listener will return all changes from every listenable schema if omitted.
+  ///
+  /// [table] is the table of the database on which to setup the listener.
+  /// The listener will return all changes from every listenable table if omitted.
+  ///
+  /// [filter] can be used to further control which rows to listen to within the given [schema] and [table].
+  ///
+  /// ```dart
+  /// supabase.channel('my_channel').onPostgresChanges(
+  ///     event: PostgresChangeEvent.all,
+  ///     schema: 'public',
+  ///     table: 'messages',
+  ///     filter: PostgresChangeFilter(
+  ///       type: PostgresChangeFilterType.eq,
+  ///       column: 'room_id',
+  ///       value: 200,
+  ///     ),
+  ///     callback: (payload) {
+  ///       print(payload);
+  ///     }).subscribe();
+  /// ```
+  RealtimeChannel onPostgresChanges({
+    required PostgresChangeEvent event,
+    String? schema,
+    String? table,
+    PostgresChangeFilter? filter,
+    required void Function(PostgresChangePayload payload) callback,
+  }) {
+    return onEvents(
+      'postgres_changes',
+      ChannelFilter(
+        event: event.toRealtimeEvent(),
+        schema: schema,
+        table: table,
+        filter: filter?.toString(),
+      ),
+      (payload, [ref]) => callback(PostgresChangePayload.fromPayload(payload)),
+    );
+  }
+
+  /// Sets up a listener for realtime broadcast messages.
+  ///
+  /// [event] is the broadcast event name to which you want to listen.
+  ///
+  /// ```dart
+  /// supabase.channel('my_channel').onBroadcast(
+  ///     event: 'position',
+  ///     callback: (payload) {
+  ///       print(payload);
+  ///     }).subscribe();
+  /// ```
+  RealtimeChannel onBroadcast({
+    required String event,
+    required void Function(Map<String, dynamic> payload) callback,
+  }) {
+    return onEvents(
+      'broadcast',
+      ChannelFilter(event: event),
+      (payload, [ref]) => callback(Map<String, dynamic>.from(payload)),
+    );
+  }
+
+  /// Sets up a listen for realtime presence.
+  ///
+  /// [event] sets which presence event to listen to.
+  ///
+  /// ```dart
+  /// final channel = supabase.channel('my_channel');
+  /// channel
+  ///     .onPresence(
+  ///         event: PresenceEvent.sync,
+  ///         callback: (payload) {
+  ///           print('Synced presence state: ${channel.presenceState()}');
+  ///         })
+  ///     .onPresence(
+  ///         event: PresenceEvent.join,
+  ///         callback: (payload) {
+  ///           print('Newly joined presences $payload');
+  ///         })
+  ///     .onPresence(
+  ///         event: PresenceEvent.leave,
+  ///         callback: (payload) {
+  ///           print('Newly left presences: $payload');
+  ///         })
+  ///     .subscribe();
+  /// ```
+  RealtimeChannel onPresence({
+    required PresenceEvent event,
+    required void Function(Map<String, dynamic> payload) callback,
+  }) {
+    return onEvents(
+      'presence',
+      ChannelFilter(
+        event: event.name,
+      ),
+      (payload, [ref]) => callback(Map<String, dynamic>.from(payload)),
+    );
   }
 
   @internal
@@ -308,6 +412,19 @@ class RealtimeChannel {
     return pushEvent;
   }
 
+  /// Sends a realtime broadcast message.
+  Future<ChannelResponse> sendBroadcastMessage({
+    required String event,
+    required Map<String, dynamic> payload,
+  }) {
+    return send(
+      type: RealtimeListenTypes.broadcast,
+      event: event,
+      payload: payload,
+    );
+  }
+
+  @internal
   Future<ChannelResponse> send({
     required RealtimeListenTypes type,
     String? event,

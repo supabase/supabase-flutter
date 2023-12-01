@@ -621,11 +621,16 @@ void main() {
       /// Constructing Supabase query within a realtime callback caused exception
       /// https://github.com/supabase-community/supabase-flutter/issues/81
       test('Calling Postgrest within realtime callback', () async {
-        supabase.channel('todos').on(RealtimeListenTypes.postgresChanges,
-            ChannelFilter(event: '*', schema: 'public', table: 'todos'), (event,
-                [_]) async {
-          supabase.from('todos');
-        }).subscribe();
+        supabase
+            .channel('todos')
+            .onPostgresChanges(
+                event: PostgresChangeEvent.all,
+                schema: 'public',
+                table: 'todos',
+                callback: (payload) async {
+                  supabase.from('todos');
+                })
+            .subscribe();
 
         await Future.delayed(const Duration(milliseconds: 700));
 
