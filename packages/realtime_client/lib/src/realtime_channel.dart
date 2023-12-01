@@ -330,19 +330,19 @@ class RealtimeChannel {
   /// ```dart
   /// final channel = supabase.channel('my_channel');
   /// channel
-  ///     .onPresence(
+  ///     .onPresence<PresenceSyncPayload>(
   ///         event: PresenceEvent.sync,
-  ///         callback: (payload) {
+  ///         callback: (PresenceSyncPayload payload) {
   ///           print('Synced presence state: ${channel.presenceState()}');
   ///         })
-  ///     .onPresence(
+  ///     .onPresence<PresenceJoinPayload>(
   ///         event: PresenceEvent.join,
-  ///         callback: (payload) {
+  ///         callback: (PresenceJoinPayload payload) {
   ///           print('Newly joined presences $payload');
   ///         })
-  ///     .onPresence(
+  ///     .onPresence<PresenceLeavePayload>(
   ///         event: PresenceEvent.leave,
-  ///         callback: (payload) {
+  ///         callback: (PresenceLeavePayload payload) {
   ///           print('Newly left presences: $payload');
   ///         })
   ///     .subscribe();

@@ -291,6 +291,9 @@ abstract class PresencePayload {
 
   PresencePayload.fromJson(Map<String, dynamic> json)
       : event = PresenceEventExtended.fromString(json['event']);
+
+  @override
+  String toString() => 'PresencePayload(event: $event)';
 }
 
 /// Payload for [PresenceEvent.sync] callback.
@@ -304,6 +307,9 @@ class PresenceSyncPayload extends PresencePayload {
       event: PresenceEventExtended.fromString(json['event']),
     );
   }
+
+  @override
+  String toString() => 'PresenceSyncPayload(event: $event)';
 }
 
 /// Payload for [PresenceEvent.join] callback.
@@ -333,6 +339,10 @@ class PresenceJoinPayload extends PresencePayload {
       currentPresences: json['currentPresences'] as List<Presence>,
     );
   }
+
+  @override
+  String toString() =>
+      'PresenceJoinPayload(key: $key, newPresences: $newPresences, currentPresences: $currentPresences)';
 }
 
 /// Payload for [PresenceEvent.leave] callback.
@@ -362,4 +372,8 @@ class PresenceLeavePayload extends PresencePayload {
       currentPresences: json['currentPresences'] as List<Presence>,
     );
   }
+
+  @override
+  String toString() =>
+      'PresenceLeavePayload(key: $key, leftPresences: $leftPresences, currentPresences: $currentPresences)';
 }

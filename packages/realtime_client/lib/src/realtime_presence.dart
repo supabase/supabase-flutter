@@ -2,8 +2,12 @@
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/types.dart';
 
+/// A single shared state between users with Realtime Presence.
 class Presence {
+  /// Reference to the presence object.
   final String presenceRef;
+
+  /// The payload shared by users.
   final Map<String, dynamic> payload;
 
   Presence.fromJson(Map<String, dynamic> map)
