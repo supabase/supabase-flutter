@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/types.dart';
 
@@ -5,16 +6,19 @@ class Presence {
   final String presenceRef;
   final Map<String, dynamic> payload;
 
-  Presence(Map<String, dynamic> map)
+  Presence.fromJson(Map<String, dynamic> map)
       : presenceRef = map['presence_ref'],
         payload = map..remove('presence_ref');
 
   Presence deepClone() {
-    return Presence({
+    return Presence.fromJson({
       'presence_ref': presenceRef,
       ...payload,
     });
   }
+
+  @override
+  String toString() => 'Presence(presenceRef: $presenceRef, payload: $payload)';
 }
 
 typedef PresenceChooser<T> = T Function(String key, dynamic presence);
@@ -298,7 +302,7 @@ class RealtimePresence {
           presence.remove('phx_ref');
           presence.remove('phx_ref_prev');
 
-          return Presence(presence);
+          return Presence.fromJson(presence);
         }).toList();
       } else {
         // presences is List<Presence>
