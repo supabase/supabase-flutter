@@ -73,9 +73,15 @@ supabase.auth.onAuthStateChange.listen((data) {
 
 #### Native Apple Sign in
 
-You need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected, and add the bundle ID to your Supabase dashboard in `Authentication -> Providers -> Apple` before performing native Apple sign in.
+You can perform Apple sign in using the [sign_in_with_apple](https://pub.dev/packages/sign_in_with_apple) package on Flutter.
+Follow the instructions on README of the `sign_in_with_apple` package to setup the native Apple sign in on iOS and macOS.
+
+Once the setup is complete on the Flutter app, add the bundle ID of your app to your Supabase dashboard in `Authentication -> Providers -> Apple` in order to register your app with Supabase.
 
 ```dart
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 /// Performs Apple sign in on iOS or macOS
 Future<AuthResponse> signInWithApple() async {
   final rawNonce = supabase.auth.generateRawNonce();
@@ -102,8 +108,6 @@ Future<AuthResponse> signInWithApple() async {
   );
 }
 ```
-
-`signInWithApple()` is only supported on iOS and on macOS. Use the `signInWithOAuth()` method to perform web-based Apple sign in on other platforms.
 
 #### Native Google sign in
 
