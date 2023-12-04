@@ -315,6 +315,7 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
 /// Payload for [PresenceEvent.join] callback.
 class RealtimePresenceJoinPayload extends RealtimePresencePayload {
   /// Unique identifier for the clients.
+  ///
   /// By default the realtime server generates a UUIDv1 key for each client.
   final String key;
 
