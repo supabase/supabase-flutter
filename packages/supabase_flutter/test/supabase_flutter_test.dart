@@ -107,7 +107,10 @@ void main() {
         httpClient: pkceHttpClient,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockEmptyLocalStorage(),
-          pkceAsyncStorage: MockAsyncStorage(),
+          pkceAsyncStorage: MockAsyncStorage()
+            ..setItem(
+                key: 'supabase.auth.token-code-verifier',
+                value: 'raw-code-verifier'),
         ),
       );
     });

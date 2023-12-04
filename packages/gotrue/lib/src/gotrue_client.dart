@@ -285,12 +285,18 @@ class GoTrueClient {
   }
 
   /// Verifies the PKCE code verifyer and retrieves a session.
-  Future<AuthResponse> exchangeCodeForSession(String authCode) async {
+  Future<AuthSessionUrlResponse> exchangeCodeForSession(String authCode) async {
     assert(_asyncStorage != null,
         'You need to provide asyncStorage to perform pkce flow.');
 
-    final codeVerifier = await _asyncStorage!
+    final codeVerifierRawString = await _asyncStorage!
         .getItem(key: '${Constants.defaultStorageKey}-code-verifier');
+    if (codeVerifierRawString == null) {
+      throw AuthException('Code verifier could not be found in local storage.');
+    }
+    final codeVerifier = codeVerifierRawString.split('/').first;
+    final eventName = codeVerifierRawString.split('/').last;
+    final redirectType = AuthChangeEventExtended.fromString(eventName);
 
     final Map<String, dynamic> response = await _fetch.request(
       '$_url/token',
@@ -310,15 +316,18 @@ class GoTrueClient {
     await _asyncStorage!
         .removeItem(key: '${Constants.defaultStorageKey}-code-verifier');
 
-    final authResponse = AuthResponse.fromJson(response);
+    final authSessionUrlResponse = AuthSessionUrlResponse(
+        session: Session.fromJson(response)!, redirectType: redirectType?.name);
 
-    final session = authResponse.session;
-    if (session != null) {
-      _saveSession(session);
+    final session = authSessionUrlResponse.session;
+    _saveSession(session);
+    if (redirectType == AuthChangeEvent.passwordRecovery) {
+      notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
+    } else {
       notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
 
-    return authResponse;
+    return authSessionUrlResponse;
   }
 
   /// Allows signing in with an ID token issued by certain supported providers.
@@ -634,14 +643,7 @@ class GoTrueClient {
         throw AuthPKCEGrantCodeExchangeError(
             'No code detected in query parameters.');
       }
-      final data = await exchangeCodeForSession(authCode);
-      final session = data.session;
-      if (session == null) {
-        throw AuthPKCEGrantCodeExchangeError(
-            'No session found for the auth code.');
-      }
-
-      return AuthSessionUrlResponse(session: session, redirectType: null);
+      return await exchangeCodeForSession(authCode);
     }
     var url = originUrl;
     if (originUrl.hasQuery) {
@@ -753,8 +755,9 @@ class GoTrueClient {
           'You need to provide asyncStorage to perform pkce flow.');
       final codeVerifier = generatePKCEVerifier();
       await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier);
+        key: '${Constants.defaultStorageKey}-code-verifier',
+        value: '$codeVerifier/${AuthChangeEvent.passwordRecovery.name}',
+      );
       codeChallenge = generatePKCEChallenge(codeVerifier);
     }
 
