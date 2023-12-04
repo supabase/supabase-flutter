@@ -643,10 +643,7 @@ class GoTrueClient {
         throw AuthPKCEGrantCodeExchangeError(
             'No code detected in query parameters.');
       }
-      final data = await exchangeCodeForSession(authCode);
-      final session = data.session;
-
-      return AuthSessionUrlResponse(session: session, redirectType: null);
+      return await exchangeCodeForSession(authCode);
     }
     var url = originUrl;
     if (originUrl.hasQuery) {
