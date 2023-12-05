@@ -1,3 +1,8 @@
+## 2.0.0-dev.4
+
+ - **FIX**: realtime ordering on double ([#741](https://github.com/supabase/supabase-flutter/issues/741)). ([f20faef7](https://github.com/supabase/supabase-flutter/commit/f20faef710e4e730590543ccd0a7bafd072be2ff))
+ - **REFACTOR**: make `schema` variable private and rename `useSchema()` to `schema()` ([#737](https://github.com/supabase/supabase-flutter/issues/737)). 
+
 ## 2.0.0-dev.3
 
  - Update a dependency to the latest release.
