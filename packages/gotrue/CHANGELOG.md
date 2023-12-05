@@ -1,3 +1,10 @@
+## 2.0.0-dev.2
+
+ - **FIX**: PKCE flow not emitting password recovery event ([#744](https://github.com/supabase/supabase-flutter/issues/744)). ([65859bd2](https://github.com/supabase/supabase-flutter/commit/65859bd2676873c685397b4b37d2685bed18b5a1))
+ - **FIX**: sign out on already used refresh token ([#740](https://github.com/supabase/supabase-flutter/issues/740)). ([72ffb9ee](https://github.com/supabase/supabase-flutter/commit/72ffb9ee1a1386fb7ab8085b68cd9bc6f6d72c78))
+ - **FIX**(gotrue): signing in with pkce flow fires two `signedIn` auth event ([#734](https://github.com/supabase/supabase-flutter/issues/734)). ([6dee1660](https://github.com/supabase/supabase-flutter/commit/6dee1660024afcb926853ec77cd7da685dfa479b))
+ - **FEAT**(gotrue): add Figma to  OAuth provider. ([#743](https://github.com/supabase/supabase-flutter/issues/743)). ([f5b72d47](https://github.com/supabase/supabase-flutter/commit/f5b72d47e7af4b62aa99f3e380557ef039b1e2d9))
+
 ## 2.0.0-dev.1
 
  - **FIX**(gotrue): allow empty session response for verifyOtp method ([#680](https://github.com/supabase/supabase-flutter/issues/680)). ([dc6146dc](https://github.com/supabase/supabase-flutter/commit/dc6146dc81e7daa80daacc7e4c4562b033a1b5e8))

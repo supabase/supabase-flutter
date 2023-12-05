@@ -1,3 +1,10 @@
+## 2.0.0-dev.4
+
+ - **FIX**: PKCE flow not emitting password recovery event ([#744](https://github.com/supabase/supabase-flutter/issues/744)). ([65859bd2](https://github.com/supabase/supabase-flutter/commit/65859bd2676873c685397b4b37d2685bed18b5a1))
+ - **FIX**: update sign in with Apple instruction on readme ([#746](https://github.com/supabase/supabase-flutter/issues/746)). ([a4897d06](https://github.com/supabase/supabase-flutter/commit/a4897d06684d38bb159721f8f308fcbde836095e))
+ - **FIX**: use SharedPreferences on web ([#738](https://github.com/supabase/supabase-flutter/issues/738)). ([d0cc2015](https://github.com/supabase/supabase-flutter/commit/d0cc20153f23004f1ef2f821b0e9c6d9189f6b03))
+ - **FIX**(supabase_flutter): session migration from hive to sharedPreferences now works properly ([#731](https://github.com/supabase/supabase-flutter/issues/731)). ([c81cf07f](https://github.com/supabase/supabase-flutter/commit/c81cf07f75be13916b8b90ccc1ded20f1ad4aec9))
+
 ## 2.0.0-dev.3
 
  - Update a dependency to the latest release.
