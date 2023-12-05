@@ -216,8 +216,11 @@ class RealtimeChannel {
     return this;
   }
 
-  Map<String, dynamic> presenceState() {
-    return presence.state;
+  List<SinglePresenceState> presenceState() {
+    return presence.state.entries
+        .map((entry) =>
+            SinglePresenceState(key: entry.key, presences: entry.value))
+        .toList();
   }
 
   Future<ChannelResponse> track(Map<String, dynamic> payload,
@@ -323,40 +326,81 @@ class RealtimeChannel {
     );
   }
 
-  /// Sets up a listen for realtime presence.
-  ///
-  /// [event] sets which presence event to listen to.
+  /// Sets up a listener for realtime presence sync event.
   ///
   /// ```dart
   /// final channel = supabase.channel('my_channel');
   /// channel
-  ///     .onPresence(
-  ///         event: PresenceEvent.sync,
-  ///         callback: (payload) {
+  ///     .onPresenceSync(
+  ///         (RealtimePresenceSyncPayload payload) {
   ///           print('Synced presence state: ${channel.presenceState()}');
-  ///         })
-  ///     .onPresence(
-  ///         event: PresenceEvent.join,
-  ///         callback: (payload) {
-  ///           print('Newly joined presences $payload');
-  ///         })
-  ///     .onPresence(
-  ///         event: PresenceEvent.leave,
-  ///         callback: (payload) {
-  ///           print('Newly left presences: $payload');
   ///         })
   ///     .subscribe();
   /// ```
-  RealtimeChannel onPresence({
-    required PresenceEvent event,
-    required void Function(Map<String, dynamic> payload) callback,
-  }) {
+  RealtimeChannel onPresenceSync(
+    void Function(RealtimePresenceSyncPayload payload) callback,
+  ) {
     return onEvents(
       'presence',
       ChannelFilter(
-        event: event.name,
+        event: PresenceEvent.sync.name,
       ),
-      (payload, [ref]) => callback(Map<String, dynamic>.from(payload)),
+      (payload, [ref]) {
+        callback(RealtimePresenceSyncPayload.fromJson(
+            Map<String, dynamic>.from(payload)));
+      },
+    );
+  }
+
+  /// Sets up a listener for realtime presence join event.
+  ///
+  /// ```dart
+  /// final channel = supabase.channel('my_channel');
+  /// channel
+  ///     .onPresenceJoin(
+  ///         (RealtimePresenceJoinPayload payload) {
+  ///           print('Newly joined Presence: ${channel.presenceState()}');
+  ///         })
+  ///     .subscribe();
+  /// ```
+  RealtimeChannel onPresenceJoin(
+    void Function(RealtimePresenceJoinPayload payload) callback,
+  ) {
+    return onEvents(
+      'presence',
+      ChannelFilter(
+        event: PresenceEvent.join.name,
+      ),
+      (payload, [ref]) {
+        callback(RealtimePresenceJoinPayload.fromJson(
+            Map<String, dynamic>.from(payload)));
+      },
+    );
+  }
+
+  /// Sets up a listener for realtime presence leave event.
+  ///
+  /// ```dart
+  /// final channel = supabase.channel('my_channel');
+  /// channel
+  ///     .onPresenceLeave(
+  ///         (RealtimePresenceLeavePayload payload) {
+  ///           print('Newly left Presence: ${channel.presenceState()}');
+  ///         })
+  ///     .subscribe();
+  /// ```
+  RealtimeChannel onPresenceLeave(
+    void Function(RealtimePresenceLeavePayload payload) callback,
+  ) {
+    return onEvents(
+      'presence',
+      ChannelFilter(
+        event: PresenceEvent.leave.name,
+      ),
+      (payload, [ref]) {
+        callback(RealtimePresenceLeavePayload.fromJson(
+            Map<String, dynamic>.from(payload)));
+      },
     );
   }
 

@@ -1,4 +1,6 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:collection/collection.dart';
+import 'package:realtime_client/realtime_client.dart';
 
 typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
 
@@ -104,6 +106,18 @@ enum ChannelResponse { ok, timedOut, rateLimited, error }
 enum RealtimeListenTypes { postgresChanges, broadcast, presence }
 
 enum PresenceEvent { sync, join, leave }
+
+extension PresenceEventExtended on PresenceEvent {
+  static PresenceEvent fromString(String val) {
+    for (final event in PresenceEvent.values) {
+      if (event.name == val) {
+        return event;
+      }
+    }
+    throw ArgumentError(
+        'Only "sync", "join", or "leave" can be can be passed to `fromString()` method.');
+  }
+}
 
 enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
 
@@ -264,4 +278,121 @@ class PostgresChangeFilter {
     }
     return '$column=${type.name}.$value';
   }
+}
+
+/// Base class for the payload in `.onPresence()` callback functions.
+abstract class RealtimePresencePayload {
+  /// Name of the presence event.
+  final PresenceEvent event;
+
+  RealtimePresencePayload({
+    required this.event,
+  });
+
+  RealtimePresencePayload.fromJson(Map<String, dynamic> json)
+      : event = PresenceEventExtended.fromString(json['event']);
+
+  @override
+  String toString() => 'PresencePayload(event: $event)';
+}
+
+/// Payload for [PresenceEvent.sync] callback.
+class RealtimePresenceSyncPayload extends RealtimePresencePayload {
+  RealtimePresenceSyncPayload({
+    required super.event,
+  });
+
+  factory RealtimePresenceSyncPayload.fromJson(Map<String, dynamic> json) {
+    return RealtimePresenceSyncPayload(
+      event: PresenceEventExtended.fromString(json['event']),
+    );
+  }
+
+  @override
+  String toString() => 'PresenceSyncPayload(event: $event)';
+}
+
+/// Payload for [PresenceEvent.join] callback.
+class RealtimePresenceJoinPayload extends RealtimePresencePayload {
+  /// Unique identifier for the clients.
+  ///
+  /// By default the realtime server generates a UUIDv1 key for each client.
+  final String key;
+
+  /// List of newly joined presences in the callback.
+  final List<Presence> newPresences;
+
+  /// List of currently present presences.
+  final List<Presence> currentPresences;
+
+  RealtimePresenceJoinPayload({
+    required super.event,
+    required this.key,
+    required this.currentPresences,
+    required this.newPresences,
+  });
+
+  factory RealtimePresenceJoinPayload.fromJson(Map<String, dynamic> json) {
+    return RealtimePresenceJoinPayload(
+      event: PresenceEventExtended.fromString(json['event']),
+      key: json['key'] as String,
+      newPresences: json['newPresences'] as List<Presence>,
+      currentPresences: json['currentPresences'] as List<Presence>,
+    );
+  }
+
+  @override
+  String toString() =>
+      'PresenceJoinPayload(key: $key, newPresences: $newPresences, currentPresences: $currentPresences)';
+}
+
+/// Payload for [PresenceEvent.leave] callback.
+class RealtimePresenceLeavePayload extends RealtimePresencePayload {
+  /// Unique identifier for the clients.
+  ///
+  /// By default the realtime server generates a UUIDv1 key for each client.
+  final String key;
+
+  /// List of presences that left in the callback.
+  final List<Presence> leftPresences;
+
+  /// List of currently present presences.
+  final List<Presence> currentPresences;
+
+  RealtimePresenceLeavePayload({
+    required super.event,
+    required this.key,
+    required this.currentPresences,
+    required this.leftPresences,
+  });
+
+  factory RealtimePresenceLeavePayload.fromJson(Map<String, dynamic> json) {
+    return RealtimePresenceLeavePayload(
+      event: PresenceEventExtended.fromString(json['event']),
+      key: json['key'] as String,
+      leftPresences: json['leftPresences'] as List<Presence>,
+      currentPresences: json['currentPresences'] as List<Presence>,
+    );
+  }
+
+  @override
+  String toString() =>
+      'PresenceLeavePayload(key: $key, leftPresences: $leftPresences, currentPresences: $currentPresences)';
+}
+
+/// A single client connected through presence.
+class SinglePresenceState {
+  /// Presence key of the client.
+  final String key;
+
+  /// List of shared payloads of the client.
+  final List<Presence> presences;
+
+  SinglePresenceState({
+    required this.key,
+    required this.presences,
+  });
+
+  @override
+  String toString() => 'PresenceState(key: $key, presences: $presences)';
 }
