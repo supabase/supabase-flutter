@@ -7,7 +7,7 @@ import 'package:web_socket_channel/io.dart';
 
 void main() {
   late HttpServer mockServer;
-  late SupabaseClient client;
+  late SupabaseClient supabase;
   late RealtimeChannel channel;
   late StreamSubscription<WebSocket> subscription;
 
@@ -23,17 +23,17 @@ void main() {
         });
       });
 
-      client = SupabaseClient(
+      supabase = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         'supabaseKey',
       );
 
-      channel = client.channel('realtime');
+      channel = supabase.channel('realtime');
     });
 
     tearDown(() async {
-      await client.dispose();
-      await client.removeAllChannels();
+      await supabase.dispose();
+      await supabase.removeAllChannels();
       await subscription.cancel();
 
       await Future.delayed(Duration(milliseconds: 100));
@@ -50,14 +50,11 @@ void main() {
     /// - error
     test('subscribe on existing subscription fail', () {
       channel
-          .on(
-              RealtimeListenTypes.postgresChanges,
-              ChannelFilter(
-                event: 'INSERT',
-                schema: 'public',
-                table: 'countries',
-              ),
-              (payload, [ref]) {})
+          .onPostgresChanges(
+              event: PostgresChangeEvent.insert,
+              schema: 'public',
+              table: 'countries',
+              callback: (payload) {})
           .subscribe(
             (event, [errorMsg]) {},
           );
@@ -75,9 +72,9 @@ void main() {
     /// expectation:
     /// - 2 channels
     test('two realtime channels', () {
-      client.channel('anotherChannel');
+      supabase.channel('anotherChannel');
 
-      final channels = client.getChannels();
+      final channels = supabase.getChannels();
 
       expect(
         channels.length,
@@ -94,22 +91,22 @@ void main() {
     /// - status is `ok`
     /// - only one channel
     test('remove realtime connection', () async {
-      final anotherChannel = client.channel('anotherChannel');
+      final anotherChannel = supabase.channel('anotherChannel');
 
       channel.subscribe();
       anotherChannel.subscribe();
 
       expect(
-        client.getChannels().length,
+        supabase.getChannels().length,
         2,
       );
 
-      final status = await client.removeChannel(anotherChannel);
+      final status = await supabase.removeChannel(anotherChannel);
 
       expect(status, 'ok');
 
       expect(
-        client.getChannels().length,
+        supabase.getChannels().length,
         1,
       );
     });
@@ -124,13 +121,13 @@ void main() {
     /// - status 2 without error
     /// - no subscriptions
     test('remove multiple realtime connection', () async {
-      final anotherChannel = client.channel('anotherChannel');
+      final anotherChannel = supabase.channel('anotherChannel');
 
       channel.subscribe();
       anotherChannel.subscribe();
 
-      final status1 = await client.removeChannel(channel);
-      final status2 = await client.removeChannel(anotherChannel);
+      final status1 = await supabase.removeChannel(channel);
+      final status2 = await supabase.removeChannel(anotherChannel);
 
       expect(
         status1,
@@ -142,7 +139,7 @@ void main() {
       );
 
       expect(
-        client.getChannels().length,
+        supabase.getChannels().length,
         0,
       );
     });
@@ -158,12 +155,12 @@ void main() {
     /// - result with 2 items
     /// - no subscriptions
     test('remove all realtime connection', () async {
-      final anotherChannel = client.channel('anotherChannel');
+      final anotherChannel = supabase.channel('anotherChannel');
 
       channel.subscribe();
       anotherChannel.subscribe();
 
-      final result1 = await client.removeAllChannels();
+      final result1 = await supabase.removeAllChannels();
       expect(
         result1,
         isNotEmpty,
@@ -174,7 +171,7 @@ void main() {
       );
 
       expect(
-        client.getChannels().length,
+        supabase.getChannels().length,
         isZero,
       );
     });

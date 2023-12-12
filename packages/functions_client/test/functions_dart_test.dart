@@ -1,4 +1,5 @@
 import 'package:functions_client/src/functions_client.dart';
+import 'package:functions_client/src/types.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -12,9 +13,19 @@ void main() {
       functionsCustomHttpClient =
           FunctionsClient("", {}, httpClient: CustomHttpClient());
     });
-    test('simple function call', () async {
-      final res = await functionsCustomHttpClient.invoke('function');
-      expect(res.status, 420);
+    test('function throws', () async {
+      try {
+        await functionsCustomHttpClient.invoke('function');
+        fail('should throw');
+      } on FunctionException catch (e) {
+        expect(e.status, 420);
+      }
+    });
+
+    test('function call', () async {
+      final res = await functionsCustomHttpClient.invoke('function1');
+      expect(res.data, {'key': 'Hello World'});
+      expect(res.status, 200);
     });
 
     test('dispose isolate', () async {
@@ -31,7 +42,7 @@ void main() {
       );
 
       await client.dispose();
-      final res = await client.invoke('function');
+      final res = await client.invoke('function1');
       expect(res.data, {'key': 'Hello World'});
     });
   });

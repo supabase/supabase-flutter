@@ -99,7 +99,7 @@ class GoTrueMFAApi {
         refreshToken: response.refreshToken,
       ),
     );
-    _client._notifyAllSubscribers(AuthChangeEvent.mfaChallengeVerified);
+    _client.notifyAllSubscribers(AuthChangeEvent.mfaChallengeVerified);
     return response;
   }
 

@@ -1,31 +1,16 @@
 # `gotrue-dart`
 
-Dart client for the [GoTrue](https://github.com/netlify/gotrue) API.
+Dart client for the [GoTrue](https://github.com/supabase/gotrue) API.
 
 [![pub package](https://img.shields.io/pub/v/gotrue.svg)](https://pub.dev/packages/gotrue)
 [![pub test](https://github.com/supabase/gotrue-dart/workflows/Test/badge.svg)](https://github.com/supabase/gotrue-dart/actions?query=workflow%3ATest)
 
-## Using
+## Docs
 
-The usage should be the same as gotrue-js except:
+The docs can be found on the official Supabase website.
 
-Oauth2:
-
-- `signIn` with oauth2 provider only return provider url. Users have to launch that url to continue the auth flow. I recommend to use [url_launcher](https://pub.dev/packages/url_launcher) package.
-- After receiving callback uri from oauth2 provider, use `getSessionFromUrl` to parse session data.
-
-Persist/restore session:
-
-- No persist storage provided. Users can easily store session as json with any Flutter storage library.
-- Expose `recoverSession` method. It's used to recover session from a saved json string.
-
-## Contributing
-
-- Fork the repo on [GitHub](https://github.com/supabase/gotrue-dart)
-- Clone the project to your own machine
-- Commit changes to your own branch
-- Push your work back up to your fork
-- Submit a Pull request so that we can review your changes and merge
+- [Dart reference](https://supabase.com/docs/reference/dart/auth-signup)
+- [Supabase Auth guide](https://supabase.com/docs/guides/auth)
 
 ## License
 

@@ -23,7 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        sdk: [2.17.0, stable, beta, dev]
+        sdk: [stable, beta, dev]
 
     defaults:
       run:

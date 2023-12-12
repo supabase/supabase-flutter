@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        sdk: [2.17.0, stable, beta, dev]
+        sdk: [stable, beta, dev]
 
     defaults:
       run:
@@ -62,4 +62,4 @@ jobs:
           time: '5s'
 
       - name: Run tests
-        run: dart test
+        run: dart test --concurrency=1

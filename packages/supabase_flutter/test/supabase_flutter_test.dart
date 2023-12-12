@@ -6,6 +6,7 @@ import 'widget_test_stubs.dart';
 void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
+  tearDown(() async => await Supabase.instance.dispose());
 
   group("Valid session", () {
     setUp(() async {
@@ -14,32 +15,35 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        localStorage: MockLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        debug: false,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       );
     });
 
-    tearDown(() => Supabase.instance.dispose());
-
     test('can access Supabase singleton', () async {
-      final client = Supabase.instance.client;
-      await expectLater(
-          await SupabaseAuth.instance.initialSession, isA<Session>());
-      expect(client, isNotNull);
+      final supabase = Supabase.instance.client;
+
+      expect(supabase, isNotNull);
     });
 
     test('can re-initialize client', () async {
-      final client = Supabase.instance.client;
-      Supabase.instance.dispose();
+      final supabase = Supabase.instance.client;
+      await Supabase.instance.dispose();
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        localStorage: MockLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        debug: false,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       );
 
       final newClient = Supabase.instance.client;
-      expect(client, isNot(newClient));
+      expect(supabase, isNot(newClient));
     });
   });
 
@@ -49,16 +53,41 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        localStorage: MockExpiredStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        debug: false,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockExpiredStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       );
     });
 
-    tearDown(() => Supabase.instance.dispose());
+    test('initial session contains the error', () async {
+      // Give it a delay to wait for recoverSession to throw
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      await expectLater(Supabase.instance.client.auth.onAuthStateChange,
+          emitsError(isA<AuthException>()));
+    });
+  });
+
+  group("No session", () {
+    setUp(() async {
+      mockAppLink();
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+        debug: false,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockEmptyLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
+      );
+    });
 
     test('initial session contains the error', () async {
-      await expectLater(
-          SupabaseAuth.instance.initialSession, throwsA(isA<AuthException>()));
+      final event = await Supabase.instance.client.auth.onAuthStateChange.first;
+      expect(event.event, AuthChangeEvent.initialSession);
+      expect(event.session, isNull);
     });
   });
 
@@ -74,14 +103,17 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
-        authFlowType: AuthFlowType.pkce,
+        debug: false,
         httpClient: pkceHttpClient,
-        localStorage: MockEmptyLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+        authOptions: FlutterAuthClientOptions(
+          localStorage: MockEmptyLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage()
+            ..setItem(
+                key: 'supabase.auth.token-code-verifier',
+                value: 'raw-code-verifier'),
+        ),
       );
     });
-
-    tearDown(() => Supabase.instance.dispose());
 
     test(
         'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',

@@ -1,6 +1,6 @@
 name: supabase_flutter_packages
 
 environment:
-  sdk: '>=2.18.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 dev_dependencies:
   melos: ^3.0.1

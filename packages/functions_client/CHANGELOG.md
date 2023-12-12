@@ -1,3 +1,12 @@
+## 2.0.0-dev.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(functions_client): use header for response parsing ([#616](https://github.com/supabase/supabase-flutter/issues/616)). ([e413acbb](https://github.com/supabase/supabase-flutter/commit/e413acbb6fc424ae419c569a47a023c41aa34b45))
+ - **BREAKING** **REFACTOR**: use Dart 3 ([#598](https://github.com/supabase/supabase-flutter/issues/598)). ([02c4071a](https://github.com/supabase/supabase-flutter/commit/02c4071aaf2792d365792eed18ec65d09af4c247))
+ - **BREAKING** **FIX**: throw exception on non 2xx status ([#629](https://github.com/supabase/supabase-flutter/issues/629)). ([db5ec824](https://github.com/supabase/supabase-flutter/commit/db5ec824c625f7ba24bceccdb5b0de452ce45dca))
+ - **BREAKING** **FEAT**: use Object? instead of dynamic ([#606](https://github.com/supabase/supabase-flutter/issues/606)). ([0c6caa00](https://github.com/supabase/supabase-flutter/commit/0c6caa00912bc73fc220110bdd9f3d69aaecb3ac))
+
 ## 1.3.2
 
  - **REFACTOR**: bump minimum Dart SDK version to 2.17.0 ([#510](https://github.com/supabase/supabase-flutter/issues/510)). ([ed927ee0](https://github.com/supabase/supabase-flutter/commit/ed927ee061272f61c84ee3ee145bb4e8c0eae59a))

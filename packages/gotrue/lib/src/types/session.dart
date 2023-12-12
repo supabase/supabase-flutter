@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/types/user.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 
@@ -47,6 +46,7 @@ class Session {
     return {
       'access_token': accessToken,
       'expires_in': expiresIn,
+      'expires_at': expiresAt,
       'refresh_token': refreshToken,
       'token_type': tokenType,
       'provider_token': providerToken,
@@ -68,19 +68,14 @@ class Session {
     }
   }
 
-  /// Returns 'true` if the token is expired or will expire in the next 5 seconds.
+  /// Returns 'true` if the token is expired or will expire in the next 10 seconds.
   ///
-  /// The 5 second buffer is to account for latency issues.
+  /// The 10 second buffer is to account for latency issues.
   bool get isExpired {
     if (expiresAt == null) return false;
-    return DateTime.now().add(Duration(seconds: 5)).isAfter(
+    return DateTime.now().add(Constants.expiryMargin).isAfter(
           DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
         );
-  }
-
-  String get persistSessionString {
-    final data = {'currentSession': toJson(), 'expiresAt': expiresAt};
-    return json.encode(data);
   }
 
   Session copyWith({

@@ -6,6 +6,7 @@ import 'dart:core';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
+import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -13,6 +14,8 @@ part 'postgrest_filter_builder.dart';
 part 'postgrest_query_builder.dart';
 part 'postgrest_rpc_builder.dart';
 part 'postgrest_transform_builder.dart';
+part 'raw_postgrest_builder.dart';
+part 'response_postgrest_builder.dart';
 
 const METHOD_GET = 'GET';
 const METHOD_HEAD = 'HEAD';
@@ -24,143 +27,102 @@ const METHOD_DELETE = 'DELETE';
 typedef _Nullable<T> = T?;
 
 /// The base builder class.
-class PostgrestBuilder<T, S> implements Future<T> {
-  dynamic _body;
-  late final Headers _headers;
-  // ignore: prefer_final_fields
-  bool _maybeSingle;
-  String? _method;
-  late final String? _schema;
-  late Uri _url;
-  final PostgrestConverter<T, S>? _converter;
-  late final Client? _httpClient;
-  late final YAJsonIsolate? _isolate;
-  // ignore: prefer_final_fields
-  FetchOptions? _options;
+///
+/// [T] for the overall return type, so `PostgrestResponse<S>` or [S]
+///
+/// When using [_converter], [S] is the input and [R] is the output
+/// Otherwise [S] and [R] are the same
+@immutable
+class PostgrestBuilder<T, S, R> implements Future<T> {
+  final Object? _body;
+  final Headers _headers;
+  final bool _maybeSingle;
+  final String? _method;
+  final String? _schema;
+  final Uri _url;
+  final PostgrestConverter<S, R>? _converter;
+  final Client? _httpClient;
+  final YAJsonIsolate? _isolate;
+  final CountOption? _count;
 
   PostgrestBuilder({
     required Uri url,
     required Headers headers,
     String? schema,
     String? method,
-    dynamic body,
+    Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
-    FetchOptions? options,
-    bool maybeSingle = false,
-    PostgrestConverter<T, S>? converter,
-  })  : _maybeSingle = maybeSingle,
-        _converter = converter {
-    _url = url;
-    _headers = headers;
-    _schema = schema;
-    _method = method;
-    _body = body;
-    _httpClient = httpClient;
-    _isolate = isolate;
-    _options = options;
-  }
-
-  /// Converts any response that comes from the server into a type-safe response.
-  ///
-  /// ```dart
-  /// final User user = await postgrest
-  ///     .from('users')
-  ///     .select()
-  ///     .withConverter<User>((data) => User.fromJson(data));
-  /// ```
-  PostgrestBuilder<R, T> withConverter<R>(PostgrestConverter<R, T> converter) {
-    return PostgrestBuilder<R, T>(
-      url: _url,
-      headers: _headers,
-      schema: _schema,
-      method: _method,
-      body: _body,
-      isolate: _isolate,
-      httpClient: _httpClient,
-      options: _options,
-      maybeSingle: _maybeSingle,
-      converter: converter,
-    );
-  }
-
-  void _assertCorrectGeneric(Type R) {
-    assert(
-        R == PostgrestList ||
-            R == PostgrestMap ||
-            R == (_Nullable<PostgrestMap>) ||
-            R == PostgrestListResponse ||
-            R == PostgrestMapResponse ||
-            R == (PostgrestResponse<PostgrestMap?>) ||
-            R == PostgrestResponse ||
-            R == List ||
-            R == (List<Map>) ||
-            R == Map ||
-            R == dynamic,
-        "$R is not allowed as generic for `select<R>()`. Allowed types are: `PostgrestList`, `PostgrestMap`, `PostgrestMap?`, `PostgrestListResponse`, `PostgrestMapResponse`, `PostgrestResponse`, `dynamic`.");
-  }
-
-  /// Sends the request and returns a [PostgrestResponse]
-  ///
-  /// [head] to trigger a HEAD request
-  ///
-  /// [count] if you want to returns the count value. Support exact, planned and
-  /// estimated count options.
-  ///
-  /// For more details about switching schemas: https://postgrest.org/en/stable/api.html#switching-schemas
-  ///
-  /// ```dart
-  /// try {
-  ///   final client.from('countries').select().execute();
-  /// } on PostgrestError catch (error) {
-  ///   print(error.code);
-  /// }
-  /// ```
-  @Deprecated('Use async/await or .then instead. Deprecated in 0.2.0')
-  Future<PostgrestResponse> execute({
-    bool head = false,
     CountOption? count,
-  }) async {
-    _options = FetchOptions(
-      head: head,
-      count: count ?? _options?.count,
+    bool maybeSingle = false,
+    PostgrestConverter<S, R>? converter,
+  })  : _maybeSingle = maybeSingle,
+        _method = method,
+        _converter = converter,
+        _schema = schema,
+        _url = url,
+        _headers = headers,
+        _httpClient = httpClient,
+        _isolate = isolate,
+        _count = count,
+        _body = body;
+
+  PostgrestBuilder<T, S, R> _copyWith({
+    Uri? url,
+    Headers? headers,
+    String? schema,
+    String? method,
+    Object? body,
+    Client? httpClient,
+    YAJsonIsolate? isolate,
+    CountOption? count,
+    bool? maybeSingle,
+    PostgrestConverter<S, R>? converter,
+  }) {
+    return PostgrestBuilder<T, S, R>(
+      url: url ?? _url,
+      headers: headers ?? _headers,
+      schema: schema ?? _schema,
+      method: method ?? _method,
+      body: body ?? _body,
+      httpClient: httpClient ?? _httpClient,
+      isolate: isolate ?? _isolate,
+      count: count ?? _count,
+      maybeSingle: maybeSingle ?? _maybeSingle,
+      converter: converter ?? _converter,
     );
-    return _execute();
   }
 
-  Future<PostgrestResponse> _execute() async {
-    if (_options?.head ?? false) {
-      _method = METHOD_HEAD;
-    }
+  Future<T> _execute() async {
+    final String? method = _method;
 
-    if (_options?.count != null) {
+    if (_count != null) {
       if (_headers['Prefer'] != null) {
         final oldPreferHeader = _headers['Prefer'];
-        _headers['Prefer'] =
-            '$oldPreferHeader,count=${_options!.count!.name()}';
+        _headers['Prefer'] = '$oldPreferHeader,count=${_count!.name}';
       } else {
-        _headers['Prefer'] = 'count=${_options!.count!.name()}';
+        _headers['Prefer'] = 'count=${_count!.name}';
       }
     }
 
     try {
-      if (_method == null) {
+      if (method == null) {
         throw ArgumentError(
           'Missing table operation: select, insert, update or delete',
         );
       }
 
-      final uppercaseMethod = _method!.toUpperCase();
+      final uppercaseMethod = method.toUpperCase();
       late http.Response response;
 
       if (_schema == null) {
         // skip
-      } else if ([METHOD_GET, METHOD_HEAD].contains(_method)) {
+      } else if ([METHOD_GET, METHOD_HEAD].contains(method)) {
         _headers['Accept-Profile'] = _schema!;
       } else {
         _headers['Content-Profile'] = _schema!;
       }
-      if (_method != METHOD_GET && _method != METHOD_HEAD) {
+      if (method != METHOD_GET && method != METHOD_HEAD) {
         _headers['Content-Type'] = 'application/json';
       }
       final bodyStr = jsonEncode(_body);
@@ -199,22 +161,25 @@ class PostgrestBuilder<T, S> implements Future<T> {
         );
       }
 
-      return _parseResponse(response);
+      return _parseResponse(response, method);
     } catch (error) {
       rethrow;
     }
   }
 
   /// Parse request response to json object if possible
-  Future<PostgrestResponse> _parseResponse(http.Response response) async {
+  Future<T> _parseResponse(http.Response response, String method) async {
     if (response.statusCode >= 200 && response.statusCode <= 299) {
-      dynamic body;
+      Object? body;
       int? count;
 
       if (response.request!.method != METHOD_HEAD) {
         if (response.bodyBytes.isEmpty) {
           body = null;
         } else if (response.request!.headers['Accept'] == 'text/csv') {
+          body = response.body;
+        } else if (_headers['Accept'] != null &&
+            _headers['Accept']!.contains('application/vnd.pgrst.plan+text')) {
           body = response.body;
         } else {
           try {
@@ -230,7 +195,7 @@ class PostgrestBuilder<T, S> implements Future<T> {
       }
 
       // Workaround for https://github.com/supabase/supabase-flutter/issues/560
-      if (_maybeSingle && _method?.toUpperCase() == 'GET' && body is List) {
+      if (_maybeSingle && method.toUpperCase() == 'GET' && body is List) {
         if (body.length > 1) {
           throw PostgrestException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
@@ -254,65 +219,36 @@ class PostgrestBuilder<T, S> implements Future<T> {
             : int.parse(contentRange.split('/').last);
       }
 
-      // When using converter [S] is the type of the converter functions's argument. Otherwise [T] should be equal to [S]
-      if (S == PostgrestList) {
-        body = PostgrestList.from(body as Iterable) as S;
-      } else if (S == List<Map>) {
-        body = List<Map>.from(body as Iterable) as S;
-      } else if (S == PostgrestMap) {
-        body = PostgrestMap.from(body as Map) as S;
+      body as dynamic;
+      final S converted;
 
-        //You can't write `S == PostgrestMap?`
-      } else if (S == _Nullable<PostgrestMap>) {
-        if (body == null) {
-          body = null as S;
-        } else {
-          body = PostgrestMap.from(body as Map) as S;
+      if (R == PostgrestList) {
+        body = PostgrestList.from(body);
+      } else if (R == PostgrestMap) {
+        body = PostgrestMap.from(body);
+      } else if (R == _Nullable<PostgrestMap>) {
+        if (body != null) {
+          body = PostgrestMap.from(body);
         }
-      } else if (S == PostgrestListResponse) {
-        body = PostgrestList.from(body as Iterable);
-        if (_converter != null) {
-          body = _converter!(body as S);
-        }
-        return PostgrestResponse<PostgrestList>(
-          data: body,
-          status: response.statusCode,
-          count: count,
-        );
-      } else if (S == PostgrestMapResponse) {
-        body = PostgrestMap.from(body as Map);
-        if (_converter != null) {
-          body = _converter!(body as S);
-        }
-        return PostgrestResponse<PostgrestMap>(
-          data: body,
-          status: response.statusCode,
-          count: count,
-        );
-      } else if (S == PostgrestResponse<PostgrestMap?>) {
-        if (body == null) {
-          body = null;
-        } else {
-          body = PostgrestMap.from(body as Map);
-        }
-        if (_converter != null) {
-          body = _converter!(body as S);
-        }
-        return PostgrestResponse<PostgrestMap?>(
-          data: body,
-          status: response.statusCode,
-          count: count,
-        );
+      } else if (R == int) {
+        if (count != null) body = count;
       }
+      body as R;
+
       if (_converter != null) {
-        body = _converter!(body);
+        converted = _converter!(body);
+      } else {
+        converted = body as S;
       }
 
-      return PostgrestResponse(
-        data: body,
-        status: response.statusCode,
-        count: count,
-      );
+      if (_count != null && method != METHOD_HEAD) {
+        return PostgrestResponse<S>(
+          data: converted,
+          count: count!,
+        ) as T;
+      } else {
+        return converted as T;
+      }
     } else {
       late PostgrestException error;
       if (response.request!.method != METHOD_HEAD) {
@@ -351,37 +287,49 @@ class PostgrestBuilder<T, S> implements Future<T> {
   /// When [_maybeSingle] is true, check whether error details contain
   /// 'Results contain 0 rows' then
   /// return PostgrestResponse with null data
-  PostgrestResponse<T> _handleMaybeSingleError(
+  T _handleMaybeSingleError(
     http.Response response,
     PostgrestException error,
   ) {
     if (error.details is String &&
         error.details.toString().contains('Results contain 0 rows')) {
-      return PostgrestResponse<T>(
-        data: null,
-        status: 200,
-        count: (_options?.count != null || (_options?.forceResponse ?? false))
-            ? 0
-            : null,
-      );
+      if (_count != null && response.request!.method != METHOD_HEAD) {
+        if (_converter != null) {
+          return PostgrestResponse<S>(data: _converter!(null as R), count: 0)
+              as T;
+        } else {
+          return null as T;
+        }
+      } else {
+        if (_converter != null) {
+          return _converter!(null as R) as T;
+        } else {
+          return null as T;
+        }
+      }
     } else {
       throw error;
     }
   }
 
-  /// Update Uri queryParameters with new key:value
-  /// Use lists to allow multiple values for the same key
-  void appendSearchParams(String key, String value) {
-    final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
+  /// Get new Uri with updated queryParams
+  /// Uses lists to allow multiple values for the same key
+  ///
+  /// [url] may be used to update based on a different url than the current one
+  Uri appendSearchParams(String key, String value, [Uri? url]) {
+    final searchParams =
+        Map<String, dynamic>.from((url ?? _url).queryParametersAll);
     searchParams[key] = [...searchParams[key] ?? [], value];
-    _url = _url.replace(queryParameters: searchParams);
+    return (url ?? _url).replace(queryParameters: searchParams);
   }
 
-  /// Overrides Uri queryParameters with new key:value
-  void overrideSearchParams(String key, String value) {
+  /// Get new Uri with overridden queryParams
+  ///
+  /// [url] may be used to update based on a different url than the current one
+  Uri overrideSearchParams(String key, String value) {
     final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
     searchParams[key] = value;
-    _url = _url.replace(queryParameters: searchParams);
+    return _url.replace(queryParameters: searchParams);
   }
 
   @override
@@ -405,8 +353,8 @@ class PostgrestBuilder<T, S> implements Future<T> {
   }
 
   @override
-  Future<R> then<R>(
-    FutureOr<R> Function(T value) onValue, {
+  Future<U> then<U>(
+    FutureOr<U> Function(T value) onValue, {
     Function? onError,
   }) async {
     if (onError != null &&
@@ -422,23 +370,9 @@ class PostgrestBuilder<T, S> implements Future<T> {
 
     try {
       final response = await _execute();
-      final data = response.data;
-
-      if (_converter != null) {
-        assert(
-          !(_options?.forceResponse ?? false),
-          'converter and forceReponse can not be set at the same time',
-        );
-        return onValue(data as T);
-      } else {
-        if ((_options?.forceResponse ?? false) || response.count != null) {
-          return onValue(response as T);
-        } else {
-          return onValue(data as T);
-        }
-      }
+      return onValue(response);
     } catch (error, stack) {
-      final dynamic result;
+      final FutureOr<U> result;
       if (onError != null) {
         if (onError is Function(Object, StackTrace)) {
           result = onError(error, stack);
