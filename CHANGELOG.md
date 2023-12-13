@@ -3,6 +3,57 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-12-13
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`functions_client` - `v2.0.0`](#functions_client---v200)
+ - [`gotrue` - `v2.0.0`](#gotrue---v200)
+ - [`postgrest` - `v2.0.0`](#postgrest---v200)
+ - [`realtime_client` - `v2.0.0`](#realtime_client---v200)
+ - [`storage_client` - `v2.0.0`](#storage_client---v200)
+ - [`supabase` - `v2.0.0`](#supabase---v200)
+ - [`supabase_flutter` - `v2.0.0`](#supabase_flutter---v200)
+ - [`yet_another_json_isolate` - `v2.0.0`](#yet_another_json_isolate---v200)
+
+Packages with other changes:
+
+ - There are no other changes in this release.
+
+Packages graduated to a stable release (see pre-releases prior to the stable version for changelog entries):
+
+ - `functions_client` - `v2.0.0`
+ - `gotrue` - `v2.0.0`
+ - `postgrest` - `v2.0.0`
+ - `realtime_client` - `v2.0.0`
+ - `storage_client` - `v2.0.0`
+ - `supabase` - `v2.0.0`
+ - `supabase_flutter` - `v2.0.0`
+ - `yet_another_json_isolate` - `v2.0.0`
+
+---
+
+#### `functions_client` - `v2.0.0`
+
+#### `gotrue` - `v2.0.0`
+
+#### `postgrest` - `v2.0.0`
+
+#### `realtime_client` - `v2.0.0`
+
+#### `storage_client` - `v2.0.0`
+
+#### `supabase` - `v2.0.0`
+
+#### `supabase_flutter` - `v2.0.0`
+
+#### `yet_another_json_isolate` - `v2.0.0`
+
+
 ## 2023-12-05
 
 ### Changes
