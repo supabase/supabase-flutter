@@ -9,60 +9,38 @@ part of 'postgrest_builder.dart';
 /// * update() - "patch"
 /// * delete() - "delete"
 /// Once any of these are called the filters are passed down to the Request.
-/// /// {@endtemplate}
-class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
+/// {@endtemplate}
+class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// {@macro postgrest_query_builder}
-  PostgrestQueryBuilder(
-    String url, {
+  PostgrestQueryBuilder({
+    required Uri url,
+    String? method,
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
-    FetchOptions? options,
     YAJsonIsolate? isolate,
   }) : super(
-          url: Uri.parse(url),
-          headers: headers ?? {},
-          schema: schema,
-          httpClient: httpClient,
-          options: options,
-          isolate: isolate,
+          PostgrestBuilder(
+            url: url,
+            method: method,
+            headers: headers ?? {},
+            schema: schema,
+            httpClient: httpClient,
+            isolate: isolate,
+          ),
         );
 
   /// Perform a SELECT query on the table or view.
   ///
   /// ```dart
-  /// postgrest.from('users').select<PostgrestList>('id, messages');
+  /// supabase.from('users').select('id, messages');
   /// ```
   ///
   /// ```dart
-  /// postgrest.from('users').select<PostgrestListResponse>('id, messages', FetchOptions(count: CountOption.exact));
+  /// supabase.from('users').select('id, messages').count(CountOption.exact);
   /// ```
-  /// By setting [FetchOptions.count] to non null or [FetchOptions.forceResponse] to `true`, the return type is [PostgrestResponse<T>]. Otherwise it's `T` directly.
-  ///
-  /// The type specification for [R] is optional and enhances the type safety of the return value. But use with care as a wrong type specification will result in a runtime error.
-  ///
-  /// `T` is
-  /// - [List<Map<String, dynamic>>] for queries without `.single()` or `maybeSingle()`
-  /// - [Map<String, dynamic>] for queries with `.single()`
-  /// - [Map<String, dynamic>?] for queries with `.maybeSingle()`
-  ///
-  /// Allowed types for [R] are:
-  /// - [List<Map<String, dynamic>>]
-  /// - [Map<String, dynamic>]
-  /// - [Map<String, dynamic>?]
-  /// - [PostgrestResponse<List<Map<String, dynamic>>>]
-  /// - [PostgrestResponse<Map<String, dynamic>>]
-  /// - [PostgrestResponse<Map<String, dynamic>?>]
-  /// - [PostgrestResponse]
-  ///
-  /// There are optional typedefs for [R]: [PostgrestMap], [PostgrestList], [PostgrestMapResponse], [PostgrestListResponse]
-  PostgrestFilterBuilder<R> select<R>([
-    String columns = '*',
-    FetchOptions options = const FetchOptions(),
-  ]) {
-    _assertCorrectGeneric(R);
-    _method = METHOD_GET;
-
+  /// By appending [count] the return type is [PostgrestResponse]. Otherwise it's the data directly without the wrapper.
+  PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
     final re = RegExp(r'\s');
@@ -76,23 +54,16 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
       return c;
     }).join();
 
-    overrideSearchParams('select', cleanedColumns);
-    _options = options;
-    return PostgrestFilterBuilder<R>(
-      PostgrestQueryBuilder(
-        _url.toString(),
-        headers: _headers,
-        schema: _schema,
-        httpClient: _httpClient,
-        isolate: _isolate,
-        options: _options,
-      ).._method = _method,
-    );
+    final url = overrideSearchParams('select', cleanedColumns);
+    return PostgrestFilterBuilder(_copyWithType(
+      url: url,
+      method: METHOD_GET,
+    ));
   }
 
   /// Perform an INSERT into the table or view.
   ///
-  /// By default no data is returned. Use a trailing `select` to return data.
+  /// By default no data is returned. Use a trailing [select] to return data.
   ///
   /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
   /// to be either `NULL` or the default value of these columns.
@@ -115,23 +86,27 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   /// }).select();
   /// ```
   PostgrestFilterBuilder<T> insert(
-    dynamic values, {
+    Object values, {
     bool defaultToNull = true,
   }) {
-    _method = METHOD_POST;
-    _headers['Prefer'] = '';
+    final newHeaders = {..._headers};
+    newHeaders['Prefer'] = '';
 
     if (!defaultToNull) {
-      _headers['Prefer'] = 'missing=default';
+      newHeaders['Prefer'] = 'missing=default';
     }
 
-    _body = values;
-
+    Uri url = _url;
     if (values is List) {
-      _setColumnsSearchParam(values);
+      url = _setColumnsSearchParam(values);
     }
 
-    return PostgrestFilterBuilder<T>(this);
+    return PostgrestFilterBuilder(_copyWith(
+      method: METHOD_POST,
+      headers: newHeaders,
+      body: values,
+      url: url,
+    ));
   }
 
   /// Perform an UPSERT on the table or view.
@@ -166,22 +141,21 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   /// }).select();
   /// ```
   PostgrestFilterBuilder<T> upsert(
-    dynamic values, {
+    Object values, {
     String? onConflict,
     bool ignoreDuplicates = false,
     bool defaultToNull = true,
-    FetchOptions options = const FetchOptions(),
   }) {
-    _method = METHOD_POST;
-    _headers['Prefer'] =
+    final newHeaders = {..._headers};
+    newHeaders['Prefer'] =
         'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates';
 
     if (!defaultToNull) {
-      _headers['Prefer'] = _headers['Prefer']! + ',missing=default';
+      newHeaders['Prefer'] = '${newHeaders['Prefer']!},missing=default';
     }
-
+    Uri url = _url;
     if (onConflict != null) {
-      _url = _url.replace(
+      url = _url.replace(
         queryParameters: {
           'on_conflict': onConflict,
           ..._url.queryParameters,
@@ -190,17 +164,20 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
     }
 
     if (values is List) {
-      _setColumnsSearchParam(values);
+      url = _setColumnsSearchParam(values);
     }
 
-    _body = values;
-    _options = options.ensureNotHead();
-    return PostgrestFilterBuilder<T>(this);
+    return PostgrestFilterBuilder<T>(_copyWith(
+      method: METHOD_POST,
+      headers: newHeaders,
+      body: values,
+      url: url,
+    ));
   }
 
   /// Perform an UPDATE on the table or view.
   ///
-  /// By default no data is returned. Use a trailing `select` to return data.
+  /// By default no data is returned. Use a trailing [select] to return data.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -218,20 +195,20 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> update(
-    Map values, {
-    FetchOptions options = const FetchOptions(),
-  }) {
-    _method = METHOD_PATCH;
-    _headers['Prefer'] = '';
-    _body = values;
-    _options = options.ensureNotHead();
-    return PostgrestFilterBuilder<T>(this);
+  PostgrestFilterBuilder<T> update(Map values) {
+    final newHeaders = {..._headers};
+    newHeaders['Prefer'] = '';
+
+    return PostgrestFilterBuilder<T>(_copyWith(
+      method: METHOD_PATCH,
+      headers: newHeaders,
+      body: values,
+    ));
   }
 
   /// Perform a DELETE on the table or view.
   ///
-  /// By default no data is returned. Use a trailing `select` to return data.
+  /// By default no data is returned. Use a trailing [select] to return data.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -249,24 +226,35 @@ class PostgrestQueryBuilder<T> extends PostgrestBuilder<T, T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> delete({
-    @Deprecated('Append `.select()` on the query instead')
-    ReturningOption returning = ReturningOption.representation,
-    FetchOptions options = const FetchOptions(),
-  }) {
-    _method = METHOD_DELETE;
-    _headers['Prefer'] = '';
-    _options = options.ensureNotHead();
-    return PostgrestFilterBuilder<T>(this);
+  PostgrestFilterBuilder<T> delete() {
+    final newHeaders = {..._headers};
+    newHeaders['Prefer'] = '';
+    return PostgrestFilterBuilder<T>(_copyWith(
+      method: METHOD_DELETE,
+      headers: newHeaders,
+    ));
   }
 
-  void _setColumnsSearchParam(List values) {
+  Uri _setColumnsSearchParam(List values) {
     final newValues = PostgrestList.from(values);
     final columns = newValues.fold<List<String>>(
         [], (value, element) => value..addAll(element.keys));
     if (newValues.isNotEmpty) {
       final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
-      appendSearchParams("columns", uniqueColumns);
+      return appendSearchParams("columns", uniqueColumns);
     }
+    return _url;
+  }
+
+  /// Only performs a count query on the table or view.
+  /// ```dart
+  /// int count = await supabase.from('users').count();
+  /// ```
+  RawPostgrestBuilder<int, int, int> count(
+      [CountOption option = CountOption.exact]) {
+    return _copyWithType(
+      method: METHOD_HEAD,
+      count: option,
+    );
   }
 }

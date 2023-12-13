@@ -73,14 +73,41 @@ supabase.auth.onAuthStateChange.listen((data) {
 
 #### Native Apple Sign in
 
-You need to [register your app ID with Apple](https://developer.apple.com/help/account/manage-identifiers/register-an-app-id/) with the `Sign In with Apple` capability selected, and add the bundle ID to your Supabase dashboard in `Authentication -> Providers -> Apple` before performing native Apple sign in.
+You can perform Apple sign in using the [sign_in_with_apple](https://pub.dev/packages/sign_in_with_apple) package on Flutter.
+Follow the instructions on README of the `sign_in_with_apple` package to setup the native Apple sign in on iOS and macOS.
+
+Once the setup is complete on the Flutter app, add the bundle ID of your app to your Supabase dashboard in `Authentication -> Providers -> Apple` in order to register your app with Supabase.
 
 ```dart
-// Perform Apple login on iOS and macOS
-await supabase.auth.signInWithApple();
-```
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-`signInWithApple()` is only supported on iOS and on macOS. Use the `signInWithOAuth()` method to perform web-based Apple sign in on other platforms.
+/// Performs Apple sign in on iOS or macOS
+Future<AuthResponse> signInWithApple() async {
+  final rawNonce = supabase.auth.generateRawNonce();
+  final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+  final credential = await SignInWithApple.getAppleIDCredential(
+    scopes: [
+      AppleIDAuthorizationScopes.email,
+      AppleIDAuthorizationScopes.fullName,
+    ],
+    nonce: hashedNonce,
+  );
+
+  final idToken = credential.identityToken;
+  if (idToken == null) {
+    throw const AuthException(
+        'Could not find ID Token from generated credential.');
+  }
+
+  return signInWithIdToken(
+    provider: OAuthProvider.apple,
+    idToken: idToken,
+    nonce: rawNonce,
+  );
+}
+```
 
 #### Native Google sign in
 
@@ -151,7 +178,7 @@ Use the `redirectTo` parameter to redirect the user to a deep link to bring the 
 ```dart
 // Perform web based OAuth login
 await supabase.auth.signInWithOAuth(
-  Provider.github,
+  OAuthProvider.github,
   redirectTo: kIsWeb ? null : 'io.supabase.flutter://callback',
 );
 
@@ -201,12 +228,12 @@ class MyWidget extends StatefulWidget {
 
 class _MyWidgetState extends State<MyWidget> {
   // Persisting the future as local variable to prevent refetching upon rebuilds.
-  final List<Map<String, dynamic>> _stream = supabase.from('countries').stream(primaryKey: ['id']);
+  final stream = supabase.from('countries').stream(primaryKey: ['id']);
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: _stream,
+      stream: stream,
       builder: (context, snapshot) {
         // return your widget with the data from snapshot
       },
@@ -222,15 +249,16 @@ You can get notified whenever there is a change in your Supabase tables.
 ```dart
 final myChannel = supabase.channel('my_channel');
 
-myChannel.on(
-    RealtimeListenTypes.postgresChanges,
-    ChannelFilter(
-      event: '*',
+myChannel
+    .onPostgresChanges(
+      event: PostgresChangeEvent.all,
       schema: 'public',
       table: 'countries',
-    ), (payload, [ref]) {
-  // Do something fun or interesting when there is an change on the database
-}).subscribe();
+      callback: (payload) {
+        // Do something fun or interesting when there is an change on the database
+      },
+    )
+    .subscribe();
 ```
 
 #### [Broadcast](https://supabase.com/docs/guides/realtime#broadcast)
@@ -241,14 +269,16 @@ Broadcast lets you send and receive low latency messages between connected clien
 final myChannel = supabase.channel('my_channel');
 
 // Subscribe to `cursor-pos` broadcast event
-myChannel.on(RealtimeListenTypes.broadcast,
-    ChannelFilter(event: 'cursor-pos'), (payload, [ref]) {
-  // Do something fun or interesting when there is an change on the database
-}).subscribe();
+final myChannel = supabase.channel('my_channel');
+
+myChannel
+    .onBroadcast(event: 'cursor-pos', callback: (payload) {}
+        // Do something fun or interesting when there is an change on the database
+        )
+    .subscribe();
 
 // Send a broadcast message to other connected clients
-await myChannel.send(
-  type: RealtimeListenTypes.broadcast,
+await myChannel.sendBroadcastMessage(
   event: 'cursor-pos',
   payload: {'x': 30, 'y': 50},
 );
@@ -262,19 +292,25 @@ Presence let's you easily create "I'm online" feature.
 final myChannel = supabase.channel('my_channel');
 
 // Subscribe to presence events
-myChannel.on(
-    RealtimeListenTypes.presence, ChannelFilter(event: 'sync'),
-    (payload, [ref]) {
-  final onlineUsers = myChannel.presenceState();
-  // handle sync event
-}).on(RealtimeListenTypes.presence, ChannelFilter(event: 'join'),
-    (payload, [ref]) {
-  // New users have joined
-}).on(RealtimeListenTypes.presence, ChannelFilter(event: 'leave'),
-    (payload, [ref]) {
-  // Users have left
-}).subscribe(((status, [_]) async {
-  if (status == 'SUBSCRIBED') {
+myChannel
+    .onPresence(
+        event: PresenceEvent.sync,
+        callback: (payload) {
+          final onlineUsers = myChannel.presenceState();
+          // handle sync event
+        })
+    .onPresence(
+        event: PresenceEvent.join,
+        callback: (payload) {
+          // New users have joined
+        })
+    .onPresence(
+        event: PresenceEvent.leave,
+        callback: (payload) {
+          // Users have left
+        })
+    .subscribe(((status, [_]) async {
+  if (status == RealtimeSubscribeStatus.subscribed) {
     // Send the current user's state upon subscribing
     final status = await myChannel
         .track({'online_at': DateTime.now().toIso8601String()});
@@ -517,45 +553,46 @@ Add this XML chapter in your macos/Runner/Info.plist inside <plist version="1.0"
 
 ### Custom LocalStorage
 
-As default, `supabase_flutter` uses [`hive`](https://pub.dev/packages/hive) to persist the user session. Encryption is disabled by default, since an unique encryption key is necessary, and we can not define it. To set an `encryptionKey`, do the following:
+As default, `supabase_flutter` uses [`Shared preferences`](https://pub.dev/packages/shared_preferences) to persist the user session.
 
-```dart
-Future<void> main() async {
-  // set it before initializing
-  HiveLocalStorage.encryptionKey = 'my_secure_key';
-  await Supabase.initialize(...);
-}
-```
-
-**Note** the key must be the same. There is no check if the encryption key is correct. If it isn't, there may be unexpected behavior. [Learn more](https://docs.hivedb.dev/#/advanced/encrypted_box) about encryption in hive.
-
-However you can use any other methods by creating a `LocalStorage` implementation. For example, we can use [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to store the user session in a secure storage.
+However, you can use any other methods by creating a `LocalStorage` implementation. For example, we can use [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to store the user session in a secure storage.
 
 ```dart
 // Define the custom LocalStorage implementation
-class SecureLocalStorage extends LocalStorage {
-  SecureLocalStorage() : super(
-    initialize: () async {},
-    hasAccessToken: () {
-      const storage = FlutterSecureStorage();
-      return storage.containsKey(key: supabasePersistSessionKey);
-    }, accessToken: () {
-      const storage = FlutterSecureStorage();
-      return storage.read(key: supabasePersistSessionKey);
-    }, removePersistedSession: () {
-      const storage = FlutterSecureStorage();
-      return storage.delete(key: supabasePersistSessionKey);
-    }, persistSession: (String value) {
-      const storage = FlutterSecureStorage();
-      return storage.write(key: supabasePersistSessionKey, value: value);
-    },
-  );
+class MockLocalStorage extends LocalStorage {
+
+  final storage = FlutterSecureStorage();
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Future<String?> accessToken() async {
+    return storage.containsKey(key: supabasePersistSessionKey);
+  }
+
+  @override
+  Future<bool> hasAccessToken() async {
+    return storage.read(key: supabasePersistSessionKey);
+  }
+
+  @override
+  Future<void> persistSession(String persistSessionString) async {
+    return storage.write(key: supabasePersistSessionKey, value: persistSessionString);
+  }
+
+  @override
+  Future<void> removePersistedSession() async {
+    return storage.delete(key: supabasePersistSessionKey);
+  }
 }
 
 // use it when initializing
 Supabase.initialize(
   ...
-  localStorage: SecureLocalStorage(),
+  authOptions: FlutterAuthClientOptions(
+    localStorage: const EmptyLocalStorage(),
+  ),
 );
 ```
 
@@ -564,7 +601,9 @@ You can also use `EmptyLocalStorage` to disable session persistence:
 ```dart
 Supabase.initialize(
   // ...
-  localStorage: const EmptyLocalStorage(),
+  authOptions: FlutterAuthClientOptions(
+    localStorage: const EmptyLocalStorage(),
+  ),
 );
 ```
 

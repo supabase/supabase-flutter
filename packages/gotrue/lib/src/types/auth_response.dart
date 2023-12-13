@@ -19,7 +19,7 @@ class AuthResponse {
 
 /// Response of OAuth signin
 class OAuthResponse {
-  final Provider provider;
+  final OAuthProvider provider;
   final String? url;
 
   /// Instanciates an `OAuthResponse` object from json response.

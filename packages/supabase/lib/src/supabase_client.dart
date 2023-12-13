@@ -1,17 +1,12 @@
 import 'dart:async';
 
-import 'package:functions_client/functions_client.dart';
-import 'package:gotrue/gotrue.dart';
 import 'package:http/http.dart';
-import 'package:postgrest/postgrest.dart';
-import 'package:realtime_client/realtime_client.dart';
-import 'package:storage_client/storage_client.dart';
 import 'package:supabase/src/constants.dart';
-import 'package:supabase/src/realtime_client_options.dart';
-import 'package:supabase/src/supabase_query_builder.dart';
+import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'auth_http_client.dart';
+import 'counter.dart';
 
 /// {@template supabase_client}
 /// Creates a Supabase client to interact with your Supabase instance.
@@ -36,14 +31,14 @@ import 'auth_http_client.dart';
 /// `AuthFlowType.pkce`in order to perform auth actions with pkce flow.
 /// {@endtemplate}
 class SupabaseClient {
-  final String supabaseUrl;
-  final String supabaseKey;
-  final String schema;
-  final String restUrl;
-  final String realtimeUrl;
-  final String authUrl;
-  final String storageUrl;
-  final String functionsUrl;
+  final String _supabaseKey;
+  final PostgrestClientOptions _postgrestOptions;
+
+  final String _restUrl;
+  final String _realtimeUrl;
+  final String _authUrl;
+  final String _storageUrl;
+  final String _functionsUrl;
   final Map<String, String> _headers;
   final Client? _httpClient;
   late final Client _authHttpClient;
@@ -57,12 +52,11 @@ class SupabaseClient {
   late final SupabaseStorageClient storage;
   late final RealtimeClient realtime;
   late final PostgrestClient rest;
-  String? _changedAccessToken;
   late StreamSubscription<AuthState> _authStateSubscription;
   late final YAJsonIsolate _isolate;
 
   /// Increment ID of the stream to create different realtime topic for each stream
-  int _incrementId = 0;
+  final _incrementId = Counter();
 
   /// Getter for the HTTP headers
   Map<String, String> get headers {
@@ -104,42 +98,24 @@ class SupabaseClient {
       ..addAll(_headers);
   }
 
-  /// Creates a Supabase client to interact with your Supabase instance.
-  ///
-  /// [supabaseUrl] and [supabaseKey] can be found on your Supabase dashboard.
-  ///
-  /// You can access none public schema by passing different [schema].
-  ///
-  /// Default headers can be overridden by specifying [headers].
-  ///
-  /// Custom http client can be used by passing [httpClient] parameter.
-  ///
-  /// [storageRetryAttempts] specifies how many retry attempts there should be to
-  ///  upload a file to Supabase storage when failed due to network interruption.
-  ///
-  /// [realtimeClientOptions] specifies different options you can pass to `RealtimeClient`.
-  ///
-  /// Pass an instance of `YAJsonIsolate` to [isolate] to use your own persisted
-  /// isolate instance. A new instance will be created if [isolate] is omitted.
   /// {@macro supabase_client}
   SupabaseClient(
-    this.supabaseUrl,
-    this.supabaseKey, {
-    String? schema,
-    bool autoRefreshToken = true,
+    String supabaseUrl,
+    String supabaseKey, {
+    PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
+    AuthClientOptions authOptions = const AuthClientOptions(),
+    StorageClientOptions storageOptions = const StorageClientOptions(),
+    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     Map<String, String>? headers,
     Client? httpClient,
-    int storageRetryAttempts = 0,
-    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     YAJsonIsolate? isolate,
-    GotrueAsyncStorage? gotrueAsyncStorage,
-    AuthFlowType authFlowType = AuthFlowType.implicit,
-  })  : restUrl = '$supabaseUrl/rest/v1',
-        realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
-        authUrl = '$supabaseUrl/auth/v1',
-        storageUrl = '$supabaseUrl/storage/v1',
-        functionsUrl = '$supabaseUrl/functions/v1',
-        schema = schema ?? 'public',
+  })  : _supabaseKey = supabaseKey,
+        _restUrl = '$supabaseUrl/rest/v1',
+        _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
+        _authUrl = '$supabaseUrl/auth/v1',
+        _storageUrl = '$supabaseUrl/storage/v1',
+        _functionsUrl = '$supabaseUrl/functions/v1',
+        _postgrestOptions = postgrestOptions,
         _headers = {
           ...Constants.defaultHeaders,
           if (headers != null) ...headers
@@ -147,30 +123,30 @@ class SupabaseClient {
         _httpClient = httpClient,
         _isolate = isolate ?? (YAJsonIsolate()..initialize()) {
     auth = _initSupabaseAuthClient(
-      autoRefreshToken: autoRefreshToken,
-      gotrueAsyncStorage: gotrueAsyncStorage,
-      authFlowType: authFlowType,
+      autoRefreshToken: authOptions.autoRefreshToken,
+      gotrueAsyncStorage: authOptions.pkceAsyncStorage,
+      authFlowType: authOptions.authFlowType,
     );
-    _authHttpClient = AuthHttpClient(supabaseKey, httpClient ?? Client(), auth);
+    _authHttpClient =
+        AuthHttpClient(_supabaseKey, httpClient ?? Client(), auth);
     rest = _initRestClient();
     functions = _initFunctionsClient();
-    storage = _initStorageClient(storageRetryAttempts);
+    storage = _initStorageClient(storageOptions.retryAttempts);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     _listenForAuthEvents();
   }
 
   /// Perform a table operation.
   SupabaseQueryBuilder from(String table) {
-    final url = '$restUrl/$table';
-    _incrementId++;
+    final url = '$_restUrl/$table';
     return SupabaseQueryBuilder(
       url,
       realtime,
       headers: {...rest.headers, ...headers},
-      schema: schema,
+      schema: _postgrestOptions.schema,
       table: table,
       httpClient: _authHttpClient,
-      incrementId: _incrementId,
+      incrementId: _incrementId.increment(),
       isolate: _isolate,
     );
   }
@@ -178,18 +154,27 @@ class SupabaseClient {
   /// Select a schema to query or perform an function (rpc) call.
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
-  PostgrestClient useSchema(String schema) {
-    return rest.useSchema(schema);
+  SupabaseQuerySchema schema(String schema) {
+    final newRest = rest.schema(schema);
+    return SupabaseQuerySchema(
+      counter: _incrementId,
+      restUrl: _restUrl,
+      headers: headers,
+      schema: schema,
+      isolate: _isolate,
+      authHttpClient: _authHttpClient,
+      realtime: realtime,
+      rest: newRest,
+    );
   }
 
   /// Perform a stored procedure call.
-  PostgrestFilterBuilder rpc(
+  PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map<String, dynamic>? params,
-    FetchOptions options = const FetchOptions(),
   }) {
     rest.headers.addAll({...rest.headers, ...headers});
-    return rest.rpc(fn, params: params, options: options);
+    return rest.rpc(fn, params: params);
   }
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
@@ -226,11 +211,11 @@ class SupabaseClient {
     required AuthFlowType authFlowType,
   }) {
     final authHeaders = {...headers};
-    authHeaders['apikey'] = supabaseKey;
-    authHeaders['Authorization'] = 'Bearer $supabaseKey';
+    authHeaders['apikey'] = _supabaseKey;
+    authHeaders['Authorization'] = 'Bearer $_supabaseKey';
 
     return GoTrueClient(
-      url: authUrl,
+      url: _authUrl,
       headers: authHeaders,
       autoRefreshToken: autoRefreshToken,
       httpClient: _httpClient,
@@ -241,9 +226,9 @@ class SupabaseClient {
 
   PostgrestClient _initRestClient() {
     return PostgrestClient(
-      restUrl,
+      _restUrl,
       headers: {...headers},
-      schema: schema,
+      schema: _postgrestOptions.schema,
       httpClient: _authHttpClient,
       isolate: _isolate,
     );
@@ -251,7 +236,7 @@ class SupabaseClient {
 
   FunctionsClient _initFunctionsClient() {
     return FunctionsClient(
-      functionsUrl,
+      _functionsUrl,
       {...headers},
       httpClient: _authHttpClient,
       isolate: _isolate,
@@ -260,7 +245,7 @@ class SupabaseClient {
 
   SupabaseStorageClient _initStorageClient(int storageRetryAttempts) {
     return SupabaseStorageClient(
-      storageUrl,
+      _storageUrl,
       {...headers},
       httpClient: _authHttpClient,
       retryAttempts: storageRetryAttempts,
@@ -272,9 +257,9 @@ class SupabaseClient {
   }) {
     final eventsPerSecond = options.eventsPerSecond;
     return RealtimeClient(
-      realtimeUrl,
+      _realtimeUrl,
       params: {
-        'apikey': supabaseKey,
+        'apikey': _supabaseKey,
         if (eventsPerSecond != null) 'eventsPerSecond': '$eventsPerSecond'
       },
       headers: headers,
@@ -284,9 +269,9 @@ class SupabaseClient {
   }
 
   Map<String, String> _getAuthHeaders() {
-    final authBearer = auth.currentSession?.accessToken ?? supabaseKey;
+    final authBearer = auth.currentSession?.accessToken ?? _supabaseKey;
     final defaultHeaders = {
-      'apikey': supabaseKey,
+      'apikey': _supabaseKey,
       'Authorization': 'Bearer $authBearer',
     };
     final headers = {...defaultHeaders, ..._headers};
@@ -304,17 +289,15 @@ class SupabaseClient {
   }
 
   void _handleTokenChanged(AuthChangeEvent event, String? token) {
-    if (event == AuthChangeEvent.tokenRefreshed ||
-        event == AuthChangeEvent.signedIn && _changedAccessToken != token) {
-      // Token has changed
-      _changedAccessToken = token;
-
+    if (event == AuthChangeEvent.initialSession ||
+        event == AuthChangeEvent.tokenRefreshed ||
+        event == AuthChangeEvent.signedIn) {
       realtime.setAuth(token);
     } else if (event == AuthChangeEvent.signedOut ||
         event == AuthChangeEvent.userDeleted) {
       // Token is removed
 
-      realtime.setAuth(supabaseKey);
+      realtime.setAuth(_supabaseKey);
     }
   }
 }

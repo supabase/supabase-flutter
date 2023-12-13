@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/constants.dart';
+import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
@@ -46,10 +50,6 @@ class Supabase {
   ///
   /// Default headers can be overridden by specifying [headers].
   ///
-  /// Specify [authCallbackUrlHostname] to let the SDK know what host name auth
-  /// callback deeplink will have. If [authCallbackUrlHostname] is not set, we
-  /// treat all deep links as auth callbacks.
-  ///
   /// Pass [localStorage] to override the default local storage option used to
   /// persist auth.
   ///
@@ -59,7 +59,7 @@ class Supabase {
   /// to upload a file to Supabase storage when failed due to network
   /// interruption.
   ///
-  /// Set [authFlowType] to `AuthFlowType.pkce` to use the PKCE flow for authentication
+  /// Set [authFlowType] to [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
   /// PKCE flow uses shared preferences for storing the code verifier by default.
@@ -69,40 +69,52 @@ class Supabase {
   static Future<Supabase> initialize({
     required String url,
     required String anonKey,
-    String? schema,
     Map<String, String>? headers,
-    String? authCallbackUrlHostname,
-    LocalStorage? localStorage,
     Client? httpClient,
-    int storageRetryAttempts = 0,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    AuthFlowType authFlowType = AuthFlowType.implicit,
-    GotrueAsyncStorage? pkceAsyncStorage,
+    PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
+    StorageClientOptions storageOptions = const StorageClientOptions(),
+    FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
     bool? debug,
   }) async {
     assert(
       !_instance._initialized,
       'This instance is already initialized',
     );
+    if (authOptions.pkceAsyncStorage == null) {
+      authOptions = authOptions.copyWith(
+        pkceAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
+      );
+    }
+    if (authOptions.localStorage == null) {
+      authOptions = authOptions.copyWith(
+        localStorage: MigrationLocalStorage(
+          persistSessionKey:
+              "sb-${Uri.parse(url).host.split(".").first}-auth-token",
+        ),
+      );
+    }
     _instance._init(
       url,
       anonKey,
       httpClient: httpClient,
       customHeaders: headers,
-      schema: schema,
-      storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
-      gotrueAsyncStorage:
-          pkceAsyncStorage ?? SharedPreferencesGotrueAsyncStorage(),
-      authFlowType: authFlowType,
+      authOptions: authOptions,
+      postgrestOptions: postgrestOptions,
+      storageOptions: storageOptions,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
 
-    await SupabaseAuth.initialize(
-      localStorage: localStorage ?? const HiveLocalStorage(),
-      authCallbackUrlHostname: authCallbackUrlHostname,
-      authFlowType: authFlowType,
+    _instance._supabaseAuth = SupabaseAuth();
+    await _instance._supabaseAuth.initialize(options: authOptions);
+
+    // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
+    // if still in progress
+    _instance._restoreSessionCancellableOperation =
+        CancelableOperation.fromFuture(
+      _instance._supabaseAuth.recoverSession(),
     );
 
     return _instance;
@@ -117,12 +129,19 @@ class Supabase {
   ///
   /// Throws an error if [Supabase.initialize] was not called.
   late SupabaseClient client;
+
+  late SupabaseAuth _supabaseAuth;
+
   bool _debugEnable = false;
 
+  /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
+  late CancelableOperation _restoreSessionCancellableOperation;
+
   /// Dispose the instance to free up resources.
-  void dispose() {
+  Future<void> dispose() async {
+    await _restoreSessionCancellableOperation.cancel();
     client.dispose();
-    SupabaseAuth.instance.dispose();
+    _instance._supabaseAuth.dispose();
     _initialized = false;
   }
 
@@ -131,11 +150,10 @@ class Supabase {
     String supabaseAnonKey, {
     Client? httpClient,
     Map<String, String>? customHeaders,
-    String? schema,
-    required int storageRetryAttempts,
     required RealtimeClientOptions realtimeClientOptions,
-    required GotrueAsyncStorage gotrueAsyncStorage,
-    required AuthFlowType authFlowType,
+    required PostgrestClientOptions postgrestOptions,
+    required StorageClientOptions storageOptions,
+    required AuthClientOptions authOptions,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
@@ -146,11 +164,10 @@ class Supabase {
       supabaseAnonKey,
       httpClient: httpClient,
       headers: headers,
-      schema: schema,
-      storageRetryAttempts: storageRetryAttempts,
       realtimeClientOptions: realtimeClientOptions,
-      gotrueAsyncStorage: gotrueAsyncStorage,
-      authFlowType: authFlowType,
+      postgrestOptions: postgrestOptions,
+      storageOptions: storageOptions,
+      authOptions: authOptions,
     );
     _initialized = true;
   }

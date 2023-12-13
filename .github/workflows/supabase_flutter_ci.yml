@@ -32,7 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        flutter-version: ['3.0.0', '3.x']
+        flutter-version: ['3.10.x', '3.x']
 
     defaults:
       run:
@@ -60,11 +60,11 @@ jobs:
           melos bootstrap
 
       - name: flutterfmt
-        if: ${{ matrix.sdk == '3.x'}} 
+        if: ${{ matrix.sdk == '3.x'}}
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
         run: flutter analyze --fatal-warnings --fatal-infos .
 
       - name: Run tests
-        run: flutter test
+        run: flutter test --concurrency=1

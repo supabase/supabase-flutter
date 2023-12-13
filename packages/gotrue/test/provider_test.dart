@@ -1,4 +1,4 @@
-import 'package:dotenv/dotenv.dart' show env, load;
+import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
@@ -6,7 +6,9 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
-  load(); // Load env variables from .env file
+  final env = DotEnv();
+
+  env.load(); // Load env variables from .env file
 
   final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
   final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
@@ -21,20 +23,22 @@ void main() {
         'Authorization': 'Bearer $anonToken',
         'apikey': anonToken,
       },
+      flowType: AuthFlowType.implicit,
     );
   });
   group('Provider sign in', () {
     test('signIn() with Provider', () async {
-      final res = await client.getOAuthSignInUrl(provider: Provider.google);
+      final res =
+          await client.getOAuthSignInUrl(provider: OAuthProvider.google);
       final url = res.url;
       final provider = res.provider;
-      expect(url, '$gotrueUrl/authorize?provider=google');
-      expect(provider, Provider.google);
+      expect(url, startsWith('$gotrueUrl/authorize?provider=google'));
+      expect(provider, OAuthProvider.google);
     });
 
     test('signIn() with Provider and options', () async {
       final res = await client.getOAuthSignInUrl(
-        provider: Provider.github,
+        provider: OAuthProvider.github,
         redirectTo: 'redirectToURL',
         scopes: 'repo',
       );
@@ -42,9 +46,10 @@ void main() {
       final provider = res.provider;
       expect(
         url,
-        '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL',
+        startsWith(
+            '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL'),
       );
-      expect(provider, Provider.github);
+      expect(provider, OAuthProvider.github);
     });
   });
 

@@ -1,5 +1,4 @@
 import 'package:http/http.dart';
-import 'package:supabase/src/supabase_stream_builder.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -23,7 +22,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
         _table = table,
         _incrementId = incrementId,
         super(
-          url,
+          url: Uri.parse(url),
           headers: headers,
           schema: schema,
           httpClient: httpClient,
@@ -45,9 +44,9 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   /// ```dart
   /// supabase.from('chats').stream(primaryKey: ['id']).eq('room_id','123').order('created_at').limit(20).listen(_onChatsReceived);
   /// ```
-  SupabaseStreamBuilder stream({required List<String> primaryKey}) {
+  SupabaseStreamFilterBuilder stream({required List<String> primaryKey}) {
     assert(primaryKey.isNotEmpty, 'Please specify primary key column(s).');
-    return SupabaseStreamBuilder(
+    return SupabaseStreamFilterBuilder(
       queryBuilder: this,
       realtimeClient: _realtime,
       realtimeTopic: '$_schema:$_table:$_incrementId',

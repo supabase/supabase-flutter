@@ -22,8 +22,7 @@ void main() {
   });
 
   test('embedded select', () async {
-    final res =
-        await postgrest.from('users').select<PostgrestList>('messages(*)');
+    final res = await postgrest.from('users').select('messages(*)');
     expect(
       res[0]['messages']!.length,
       3,
@@ -37,7 +36,7 @@ void main() {
   test('embedded eq', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('messages(*)')
+        .select('messages(*)')
         .eq('messages.channel_id', 1);
     expect(
       res[0]['messages']!.length,
@@ -60,8 +59,8 @@ void main() {
   test('embedded order', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('messages(*)')
-        .order('channel_id', foreignTable: 'messages');
+        .select('messages(*)')
+        .order('channel_id', referencedTable: 'messages');
     expect(
       res[0]['messages']!.length,
       3,
@@ -79,9 +78,9 @@ void main() {
   test('embedded order on multiple columns', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('username, messages(*)')
+        .select('username, messages(*)')
         .order('username', ascending: true)
-        .order('channel_id', foreignTable: 'messages');
+        .order('channel_id', referencedTable: 'messages');
     expect(
       res[0]['username'],
       'awailas',
@@ -107,8 +106,8 @@ void main() {
   test('embedded limit', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('messages(*)')
-        .limit(1, foreignTable: 'messages');
+        .select('messages(*)')
+        .limit(1, referencedTable: 'messages');
     expect(
       res[0]['messages']!.length,
       1,
@@ -130,8 +129,8 @@ void main() {
   test('embedded range', () async {
     final res = await postgrest
         .from('users')
-        .select<PostgrestList>('messages(*)')
-        .range(1, 1, foreignTable: 'messages');
+        .select('messages(*)')
+        .range(1, 1, referencedTable: 'messages');
     expect(
       res[0]['messages']!.length,
       1,

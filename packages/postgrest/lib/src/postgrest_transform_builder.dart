@@ -1,48 +1,22 @@
 part of 'postgrest_builder.dart';
 
-class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
-  PostgrestTransformBuilder(PostgrestBuilder<T, T> builder)
-      : super(
-          url: builder._url,
-          method: builder._method,
-          headers: builder._headers,
-          schema: builder._schema,
-          body: builder._body,
-          httpClient: builder._httpClient,
-          options: builder._options,
-          isolate: builder._isolate,
-        );
+class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
+  PostgrestTransformBuilder(super.builder);
+
+  PostgrestTransformBuilder<T> copyWithUrl(Uri url) =>
+      PostgrestTransformBuilder(_copyWith(url: url));
 
   /// Performs horizontal filtering with SELECT.
   ///
   /// ```dart
-  /// postgrest.from('users').insert().select<PostgrestList>('id, messages');
+  /// supabase.from('users').insert().select('id, messages');
   /// ```
   /// ```dart
-  /// postgrest.from('users').insert().select<PostgrestListResponse>('id, messages', FetchOptions(count: CountOption.exact));
+  /// supabase.from('users').insert().select('id, messages').count(CountOption.exact);
   /// ```
   ///
-  /// By setting [FetchOptions.count] to non null or [FetchOptions.forceResponse] to `true`, the return type is [PostgrestResponse<T>]. Otherwise it's `T` directly.
-  ///
-  /// The type specification for [R] is optional and enhances the type safety of the return value. But use with care as a wrong type specification will result in a runtime error.
-  ///
-  /// `T` is
-  /// - [List<Map<String, dynamic>>] for queries without `.single()` or `maybeSingle()`
-  /// - [Map<String, dynamic>] for queries with `.single()`
-  /// - [Map<String, dynamic>?] for queries with `.maybeSingle()`
-  ///
-  /// Allowed types for [R] are:
-  /// - [List<Map<String, dynamic>>]
-  /// - [Map<String, dynamic>]
-  /// - [Map<String, dynamic>?]
-  /// - [PostgrestResponse<List<Map<String, dynamic>>>]
-  /// - [PostgrestResponse<Map<String, dynamic>>]
-  /// - [PostgrestResponse<Map<String, dynamic>?>]
-  /// - [PostgrestResponse]
-  ///
-  /// There are optional typedefs for [R]: [PostgrestMap], [PostgrestList], [PostgrestMapResponse], [PostgrestListResponse]
-  PostgrestTransformBuilder<R> select<R>([String columns = '*']) {
-    _assertCorrectGeneric(R);
+  /// By appending [count] the return type is [PostgrestResponse]. Otherwise it's the data directly without the wrapper.
+  PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
     final re = RegExp(r'\s');
@@ -55,77 +29,72 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
       }
       return c;
     }).join();
+    final newHeaders = {..._headers};
 
-    overrideSearchParams('select', cleanedColumns);
-    if (_headers['Prefer'] != null) {
-      _headers['Prefer'] = '${_headers['Prefer']},';
+    final url = overrideSearchParams('select', cleanedColumns);
+    if (newHeaders['Prefer'] != null) {
+      newHeaders['Prefer'] = '${newHeaders['Prefer']},';
     }
-    _headers['Prefer'] = '${_headers['Prefer']}return=representation';
-    return PostgrestTransformBuilder<R>(
-      PostgrestBuilder(
-        headers: _headers,
-        url: _url,
-        httpClient: _httpClient,
-        isolate: _isolate,
-        options: _options,
-        body: _body,
-        method: _method,
-        schema: _schema,
+    newHeaders['Prefer'] = '${newHeaders['Prefer']}return=representation';
+    return PostgrestTransformBuilder<PostgrestList>(
+      _copyWithType(
+        url: url,
+        headers: newHeaders,
       ),
     );
   }
 
   /// Orders the result with the specified [column].
   ///
-  /// When [options] has `ascending` value true, the result will be in ascending order.
-  /// When [options] has `nullsFirst` value true, `null`s appear first.
+  /// When [ascending] is true, the result will be in ascending order.
+  /// When [nullsFirst] is true, `null`s appear first.
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
   ///     .select()
   ///     .order('username', ascending: false);
   /// ````
-  /// If [column] is a foreign column, the [options] need to have `foreignTable` value provided
+  /// If [column] is a referenced table column, [referencedTable] has to be set
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
   ///     .select('messages(*)')
   ///     .order('channel_id',
-  ///         foreignTable: 'messages', ascending: false);
+  ///         referencedTable: 'messages', ascending: false);
   /// ```
   PostgrestTransformBuilder<T> order(
     String column, {
     bool ascending = false,
     bool nullsFirst = false,
-    String? foreignTable,
+    String? referencedTable,
   }) {
-    final key = foreignTable == null ? 'order' : '$foreignTable.order';
+    final key = referencedTable == null ? 'order' : '$referencedTable.order';
     final existingOrder = _url.queryParameters[key];
     final value = '${existingOrder == null ? '' : '$existingOrder,'}'
         '$column.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}';
-
-    overrideSearchParams(key, value);
-    return this;
+    final url = overrideSearchParams(key, value);
+    return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
-  /// Limits the result with the specified `count`.
+  /// Limits the result with the specified [count].
   ///
   /// ```dart
   /// final data = await supabase.from('users').select().limit(1);
   /// ```
   ///
-  /// If we want to limit a foreign column, the [options] need to have `foreignTable` value provided
+  /// If we want to limit a referenced table column, [referencedTable]
+  /// has to beset
   /// ```dart
   /// final data = await supabase
   ///   .from('users')
   ///   .select('messages(*)')
-  ///   .limit(1, foreignTable: 'messages');
+  ///   .limit(1, referencedTable: 'messages');
   /// ```
-  PostgrestTransformBuilder<T> limit(int count, {String? foreignTable}) {
-    final key = foreignTable == null ? 'limit' : '$foreignTable.limit';
+  PostgrestTransformBuilder<T> limit(int count, {String? referencedTable}) {
+    final key = referencedTable == null ? 'limit' : '$referencedTable.limit';
 
-    appendSearchParams(key, '$count');
-    return this;
+    final url = appendSearchParams(key, '$count');
+    return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
   /// Limits the result to rows within the specified range, inclusive.
@@ -137,20 +106,24 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   ///     .range(1, 1);
   /// ```
   ///
-  /// If we want to limit a foreign column, the [options] need to have `foreignTable` value provided
+  /// If we want to limit a referenced table column, [referencedTable]
+  /// has to be set
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
   ///     .select('messages(*)')
-  ///     .range(1, 1, foreignTable: 'messages');
+  ///     .range(1, 1, referencedTable: 'messages');
   /// ```
-  PostgrestTransformBuilder<T> range(int from, int to, {String? foreignTable}) {
-    final keyOffset = foreignTable == null ? 'offset' : '$foreignTable.offset';
-    final keyLimit = foreignTable == null ? 'limit' : '$foreignTable.limit';
+  PostgrestTransformBuilder<T> range(int from, int to,
+      {String? referencedTable}) {
+    final keyOffset =
+        referencedTable == null ? 'offset' : '$referencedTable.offset';
+    final keyLimit =
+        referencedTable == null ? 'limit' : '$referencedTable.limit';
 
-    appendSearchParams(keyOffset, '$from');
-    appendSearchParams(keyLimit, '${to - from + 1}');
-    return this;
+    var url = appendSearchParams(keyOffset, '$from');
+    url = appendSearchParams(keyLimit, '${to - from + 1}', url);
+    return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
   /// Retrieves only one row from the result.
@@ -159,17 +132,19 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
-  ///     .select<PostgrestMap>()
+  ///     .select()
   ///     .limit(1)
   ///     .single();
   /// ```
-  ///
-  /// Data type is `Map<String, dynamic>`.
-  ///
-  /// By specifying this type via `.select<Map<String,dynamic>>()` you get more type safety.
-  PostgrestTransformBuilder<T> single() {
-    _headers['Accept'] = 'application/vnd.pgrst.object+json';
-    return this;
+  PostgrestTransformBuilder<PostgrestMap> single() {
+    final newHeaders = {..._headers};
+    newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
+
+    return PostgrestTransformBuilder(
+      _copyWithType(
+        headers: newHeaders,
+      ),
+    );
   }
 
   /// Retrieves at most one row from the result.
@@ -177,31 +152,130 @@ class PostgrestTransformBuilder<T> extends PostgrestBuilder<T, T> {
   /// Result must be at most one row or nullable
   /// (e.g. using `eq` on a UNIQUE column or `limit(1)`),
   /// otherwise this will result in an error.
-  ///
-  ///
-  /// Data type is `Map<String, dynamic>?`.
-  ///
-  /// By specifying this type via `.select<Map<String,dynamic>?>()` you get more type safety.
-  PostgrestTransformBuilder<T> maybeSingle() {
+  PostgrestTransformBuilder<PostgrestMap?> maybeSingle() {
     // Temporary fix for https://github.com/supabase/supabase-flutter/issues/560
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
+    final newHeaders = {..._headers};
+
     if (_method?.toUpperCase() == 'GET') {
-      _headers['Accept'] = 'application/json';
+      newHeaders['Accept'] = 'application/json';
     } else {
-      _headers['Accept'] = 'application/vnd.pgrst.object+json';
+      newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
     }
-    _maybeSingle = true;
-    return this;
+
+    return PostgrestTransformBuilder(
+      _copyWithType(
+        maybeSingle: true,
+        headers: newHeaders,
+      ),
+    );
   }
 
   /// Retrieves the response as CSV.
+  ///
   /// This will skip object parsing.
   ///
   /// ```dart
-  /// postgrest.from('users').select().csv()
+  /// supabase.from('users').select().csv()
   /// ```
-  PostgrestTransformBuilder<T> csv() {
-    _headers['Accept'] = 'text/csv';
-    return this;
+  PostgrestTransformBuilder<String> csv() {
+    final newHeaders = {..._headers};
+    newHeaders['Accept'] = 'text/csv';
+
+    return PostgrestTransformBuilder(
+      _copyWithType(
+        headers: newHeaders,
+      ),
+    );
+  }
+
+  /// Performs additionally to the [select] a count query.
+  ///
+  /// It's used to retrieve the total number of rows that satisfy the
+  /// query. The value for count respects any filters (e.g. eq, gt), but ignores
+  /// modifiers (e.g. limit, range).
+  ///
+  /// This changes the return type from the data only to a [PostgrestResponse] with the data and the count.
+  ///
+  /// ```dart
+  /// final res = await postgrest
+  ///    .from('users')
+  ///    .select()
+  ///    .count(CountOption.exact);
+  /// final users = res.data;
+  /// int count = res.count;
+  /// ```
+  ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count(
+      [CountOption count = CountOption.exact]) {
+    return ResponsePostgrestBuilder(
+      _copyWithType(count: count),
+    );
+  }
+
+  /// Performs a head request.
+  ///
+  /// This will not return any data, but can only be used for either
+  /// ```dart
+  /// supabase.from("table").select().head();
+  /// ```
+  /// or
+  /// ```dart
+  /// supabase.rpc("function").head();
+  ///```
+  PostgrestBuilder<void, void, void> head() {
+    return _copyWithType(method: METHOD_HEAD);
+  }
+
+  /// Enables support for GeoJSON for use with PostGIS data types
+  /// Used when you need the complete response to be in GeoJSON format.
+  /// You will need to enable the PostGIS extension for this to work.
+  ///
+  /// https://supabase.com/docs/guides/database/extensions/postgis
+  ///
+  ResponsePostgrestBuilder<Map<String, dynamic>, Map<String, dynamic>,
+      Map<String, dynamic>> geojson() {
+    final newHeaders = {..._headers};
+    newHeaders['Accept'] = 'application/geo+json;';
+    return ResponsePostgrestBuilder(_copyWithType(headers: newHeaders));
+  }
+
+  /// Obtains the EXPLAIN plan for this request.
+  ///
+  /// Before using this method, you need to enable `explain()` on your
+  /// Supabase instance by following the guide below. Note that `explain()`
+  /// should only be enabled on an development environment.
+  ///
+  /// https://supabase.com/docs/guides/api/rest/debugging-performance#enabling-explain
+  ///
+  /// [analyze] If `true`, the query will be executed and the actual run time will be displayed.
+  ///
+  /// [verbose] If `true`, the query identifier will be displayed and the result will include the output columns of the query.
+  ///
+  /// [settings] If `true`, include information on configuration parameters that affect query planning.
+  ///
+  /// [buffers] If `true`, include information on buffer usage.
+  ///
+  /// [wal] If `true`, include information on WAL record generation
+  PostgrestBuilder<String, String, String> explain({
+    bool analyze = false,
+    bool verbose = false,
+    bool settings = false,
+    bool buffers = false,
+    bool wal = false,
+  }) {
+    final options = [
+      if (analyze) 'analyze',
+      if (verbose) 'verbose',
+      if (settings) 'settings',
+      if (buffers) 'buffers',
+      if (wal) 'wal',
+    ].join('|');
+
+    // An Accept header can carry multiple media types but postgrest-js always sends one
+    final forMediatype = _headers['Accept'] ?? 'application/json';
+    final newHeaders = {..._headers};
+    newHeaders['Accept'] =
+        'application/vnd.pgrst.plan+text; for="$forMediatype"; options=$options;';
+    return _copyWithType(headers: newHeaders);
   }
 }

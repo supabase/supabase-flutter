@@ -27,10 +27,11 @@ Future<void> main() async {
   // realtime
   final realtimeChannel = supabase.channel('my_channel');
   realtimeChannel
-      .on(
-          RealtimeListenTypes.postgresChanges,
-          ChannelFilter(event: '*', schema: 'public', table: 'countries'),
-          (payload, [ref]) {})
+      .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'countries',
+          callback: (payload) {})
       .subscribe();
 
   // remember to remove channel when no longer needed

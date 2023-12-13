@@ -1,8 +1,9 @@
 import 'dart:convert';
 
-import 'package:dotenv/dotenv.dart' show env, load;
+import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:test/test.dart';
 
@@ -10,7 +11,9 @@ import 'custom_http_client.dart';
 import 'utils.dart';
 
 void main() {
-  load(); // Load env variables from .env file
+  final env = DotEnv();
+
+  env.load(); // Load env variables from .env file
 
   final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
   final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
@@ -45,8 +48,8 @@ void main() {
       adminClient = client = GoTrueClient(
         url: gotrueUrl,
         headers: {
-          'Authorization': 'Bearer ${getServiceRoleToken()}',
-          'apikey': getServiceRoleToken(),
+          'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+          'apikey': getServiceRoleToken(env),
         },
         asyncStorage: asyncStorage,
       );
@@ -58,6 +61,7 @@ void main() {
           'Authorization': 'Bearer $anonToken',
           'apikey': anonToken,
         },
+        asyncStorage: asyncStorage,
       );
     });
 
@@ -88,10 +92,7 @@ void main() {
       expect(data?.user.userMetadata, {'Hello': 'World'});
     });
 
-    test('Parsing invalid URL should emit Exception on onAuthStateChange',
-        () async {
-      expect(client.onAuthStateChange, emitsError(isA<AuthException>()));
-
+    test('Parsing invalid URL should throw', () async {
       const expiresIn = 12345;
       const refreshToken = 'my_refresh_token';
       const tokenType = 'my_token_type';
@@ -192,8 +193,7 @@ void main() {
       expect(data?.user.id, isA<String>());
 
       final payload = Jwt.parseJwt(data!.accessToken);
-      final persistSession = json.decode(data.persistSessionString);
-      expect(payload['exp'], persistSession['expiresAt']);
+      expect(payload['exp'], data.expiresAt);
     });
 
     test('Get user', () async {
@@ -205,7 +205,7 @@ void main() {
       expect(user.appMetadata['provider'], 'email');
     });
 
-    test('signInWithPassword() with phone', () async {
+    test('signInWithPassword() with   phone', () async {
       final response =
           await client.signInWithPassword(phone: phone1, password: password);
       final data = response.session;
@@ -215,8 +215,7 @@ void main() {
       expect(data?.user.id, isA<String>());
 
       final payload = Jwt.parseJwt(data!.accessToken);
-      final persistSession = json.decode(data.persistSessionString);
-      expect(payload['exp'], persistSession['expiresAt']);
+      expect(payload['exp'], data.expiresAt);
     });
 
     test('Set session', () async {
@@ -294,48 +293,55 @@ void main() {
 
     group('The auth client can signin with third-party oAuth providers', () {
       test('signIn() with Provider', () async {
-        final res = await client.getOAuthSignInUrl(provider: Provider.google);
+        final res =
+            await client.getOAuthSignInUrl(provider: OAuthProvider.google);
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider with redirectTo', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google, redirectTo: 'https://supabase.com');
-        expect(res.url,
-            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com');
-        expect(res.provider, Provider.google);
+            provider: OAuthProvider.google, redirectTo: 'https://supabase.com');
+        final expectedOutput =
+            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com';
+        final queryParameters = Uri.parse(res.url!).queryParameters;
+
+        expect(res.url, startsWith(expectedOutput));
+        expect(queryParameters, containsPair('flow_type', 'pkce'));
+        expect(queryParameters, containsPair('code_challenge', isNotNull));
+        expect(queryParameters, containsPair('code_challenge_method', 's256'));
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append a redirectUrl', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google,
+            provider: OAuthProvider.google,
             redirectTo: 'https://localhost:9000/welcome');
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append scopes', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google, scopes: 'repo');
+            provider: OAuthProvider.google, scopes: 'repo');
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append options', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: Provider.google,
+            provider: OAuthProvider.google,
             redirectTo: 'https://localhost:9000/welcome',
             scopes: 'repo');
         expect(res.url, isA<String>());
-        expect(res.provider, Provider.google);
+        expect(res.provider, OAuthProvider.google);
       });
     });
 
     test('Repeatedly recover session', () async {
       await client.signInWithPassword(password: password, email: email1);
       for (int i = 0; i < 10; i++) {
-        final json = client.currentSession!.persistSessionString;
+        final json = jsonEncode(client.currentSession!);
         await client.recoverSession(json);
       }
     });
@@ -352,25 +358,28 @@ void main() {
         httpClient: httpClient,
       );
       final session =
-          '{"currentSession":{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}},"expiresAt":1680341705}';
+          '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"},"expiresAt":1680341705}';
 
       ///These 3 are bundled and in sum 4 refresh token requests are made, because the first 3 fail in [RetryTestHttpClient]
-      await Future.wait([
+      final future1 = Future.wait([
         client.recoverSession(session),
         client.recoverSession(session),
         client.recoverSession(session),
       ]);
 
-      expect(httpClient.retryCount, 4);
+      await expectLater(future1, throwsA(isA<ClientException>()));
+      expect(httpClient.retryCount, 1);
 
       /// Again these 3 are bundled and only one refresh token request is made
-      await Future.wait([
+      final future2 = Future.wait([
         client.recoverSession(session),
         client.recoverSession(session),
         client.recoverSession(session),
       ]);
 
-      expect(httpClient.retryCount, 5);
+      await expectLater(future2, throwsA(isA<ClientException>()));
+      expect(client.onAuthStateChange, emits(isA<AuthState>()));
+      expect(httpClient.retryCount, 2);
     });
 
     test('Sign out on wrong refresh token', () async {
@@ -388,13 +397,11 @@ void main() {
         ]),
       );
 
-      final currentSession = client.currentSession!.toJson()
-        ..['refresh_token'] = 'wrong';
-      final data = {'currentSession': currentSession, 'expiresAt': 100};
-      final session = json.encode(data);
+      final session =
+          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
 
-      await expectLater(
-          client.recoverSession(session), throwsA(isA<AuthException>()));
+      await expectLater(client.recoverSession(session.sessionString),
+          throwsA(isA<AuthException>()));
       expect(stream, emitsError(isA<AuthException>()));
 
       expect(client.currentSession, isNull);
@@ -434,9 +441,17 @@ void main() {
     });
 
     test('Session recovery succeeds after retries', () async {
-      await client.recoverSession(
-          '{"currentSession":{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}},"expiresAt":1680341705}');
-      expect(httpClient.retryCount, 4);
+      try {
+        await client.recoverSession(
+            '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"},"expiresAt":1680341705}');
+      } on ClientException {
+        // the method should throw
+      }
+      await for (final AuthState event in client.onAuthStateChange) {
+        expect(httpClient.retryCount, 4);
+        expect(event.event, AuthChangeEvent.tokenRefreshed);
+        break;
+      }
     });
   });
 
@@ -454,7 +469,7 @@ void main() {
     test('getOAuthSignInUrl with PKCE flow has the correct query parameters',
         () async {
       final response = await client.getOAuthSignInUrl(
-        provider: Provider.google,
+        provider: OAuthProvider.google,
       );
       final url = Uri.parse(response.url!);
       final queryParameters = url.queryParameters;

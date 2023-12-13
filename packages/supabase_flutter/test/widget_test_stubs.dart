@@ -4,8 +4,13 @@ import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart';
+import 'package:path/path.dart' as path;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'utils.dart';
 
 class MockWidget extends StatefulWidget {
   const MockWidget({Key? key}) : super(key: key);
@@ -44,43 +49,74 @@ class _MockWidgetState extends State<MockWidget> {
   }
 }
 
+/// Local storage that returns an expired session
 class MockExpiredStorage extends LocalStorage {
-  MockExpiredStorage()
-      : super(
-          initialize: () async {},
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<String?> accessToken() async {
+    return getSessionData(DateTime.now().subtract(const Duration(hours: 1)))
+        .sessionString;
+  }
 
-          // Session expires at is at its maximum value for unix timestamp
-          accessToken: () async =>
-              '{"currentSession":{"token_type": "","access_token":"","expires_in":20,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""}},"expiresAt":${((DateTime.now().subtract(Duration(seconds: 11))).millisecondsSinceEpoch / 1000).round()}}',
-          persistSession: (_) async {},
-          removePersistedSession: () async {},
-          hasAccessToken: () async => true,
-        );
+  @override
+  Future<bool> hasAccessToken() async => true;
+  @override
+  Future<void> persistSession(String persistSessionString) async {}
+  @override
+  Future<void> removePersistedSession() async {}
 }
 
 class MockLocalStorage extends LocalStorage {
-  MockLocalStorage()
-      : super(
-          initialize: () async {},
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<String?> accessToken() async {
+    return getSessionData(DateTime.now().add(const Duration(hours: 1)))
+        .sessionString;
+  }
 
-          // Session expires at is at its maximum value for unix timestamp
-          accessToken: () async =>
-              '{"currentSession":{"token_type": "","access_token":"","expires_in":3600,"refresh_token":"","user":{"app_metadata": {},"id":"","aud":"","created_at":"","role":"authenticated","updated_at":""}},"expiresAt":2147483647}',
-          persistSession: (_) async {},
-          removePersistedSession: () async {},
-          hasAccessToken: () async => true,
-        );
+  @override
+  Future<bool> hasAccessToken() async => true;
+  @override
+  Future<void> persistSession(String persistSessionString) async {}
+  @override
+  Future<void> removePersistedSession() async {}
+}
+
+class TestHiveLocalStorage extends HiveLocalStorage {
+  @override
+  Future<void> initialize() async {
+    Hive.init("${path.current}/auth_test");
+    await Hive.openBox("supabase_authentication");
+  }
+}
+
+class TestMigrationLocalStorage extends MigrationLocalStorage {
+  TestMigrationLocalStorage()
+      : super(persistSessionKey: "SUPABASE_PERSIST_SESSION_KEY");
+
+  @override
+  Future<void> initialize() async {
+    Hive.init("${path.current}/auth_test");
+    hiveLocalStorage = TestHiveLocalStorage();
+    SharedPreferences.setMockInitialValues({});
+    await sharedPreferencesLocalStorage.initialize();
+    await migrate();
+  }
 }
 
 class MockEmptyLocalStorage extends LocalStorage {
-  MockEmptyLocalStorage()
-      : super(
-          initialize: () async {},
-          accessToken: () async => null,
-          persistSession: (_) async {},
-          removePersistedSession: () async {},
-          hasAccessToken: () async => false,
-        );
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<String?> accessToken() async => null;
+  @override
+  Future<bool> hasAccessToken() async => false;
+  @override
+  Future<void> persistSession(String persistSessionString) async {}
+  @override
+  Future<void> removePersistedSession() async {}
 }
 
 /// Registers the mock handler for uni_links
