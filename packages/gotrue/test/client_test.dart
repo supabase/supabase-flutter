@@ -479,4 +479,25 @@ void main() {
       expect(queryParameters['code_challenge'], isA<String>());
     });
   });
+
+  group('identity linking', () {
+    late GoTrueClient client;
+
+    setUpAll(() {
+      client = GoTrueClient(
+        url: gotrueUrl,
+        flowType: AuthFlowType.pkce,
+        asyncStorage: TestAsyncStorage(),
+      );
+    });
+
+    test('linkIdentity', () async {
+      await client.signInWithPassword(
+        email: email1,
+        password: password,
+      );
+      final res = await client.getLinkIdentityUrl(OAuthProvider.google);
+      expect(res.url, '');
+    });
+  });
 }

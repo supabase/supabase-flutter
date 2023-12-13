@@ -276,8 +276,9 @@ class GoTrueClient {
     Map<String, String>? queryParams,
   }) async {
     _removeSession();
-    return _handleProviderSignIn(
+    return _getUrlForProvider(
       provider,
+      url: '$_url/authorize',
       redirectTo: redirectTo,
       scopes: scopes,
       queryParams: queryParams,
@@ -780,6 +781,48 @@ class GoTrueClient {
     );
   }
 
+  /// Gets all the identities linked to a user.
+  Future<List<UserIdentity>> getUserIdentities() async {
+    final res = await refreshSession();
+    return res.user?.identities ?? [];
+  }
+
+  /// Returns the URL to link the user's identity with an OAuth provider.
+  Future<OAuthResponse> getLinkIdentityUrl(
+    OAuthProvider provider, {
+    String? redirectTo,
+    String? scopes,
+    Map<String, String>? queryParams,
+  }) async {
+    final urlResponse = await _getUrlForProvider(
+      provider,
+      url: '$_url/user/identities/authorize',
+      redirectTo: redirectTo,
+      scopes: scopes,
+      queryParams: queryParams,
+    );
+    final url = await _fetch.request(urlResponse.url!, RequestMethodType.get,
+        options: GotrueRequestOptions(
+          headers: _headers,
+          jwt: _currentSession?.accessToken,
+        ));
+    return OAuthResponse(provider: provider, url: url);
+  }
+
+  /// Unlinks an identity from a user by deleting it.
+  ///
+  /// The user will no longer be able to sign in with that identity once it's unlinked.
+  Future<void> unlinkIdentity(UserIdentity identity) async {
+    await _fetch.request(
+      '$_url/user/identities/${identity.id}',
+      RequestMethodType.delete,
+      options: GotrueRequestOptions(
+        headers: headers,
+        jwt: _currentSession?.accessToken,
+      ),
+    );
+  }
+
   /// Set the initial session to the session obtained from local storage
   Future<void> setInitialSession(String jsonStr) async {
     final session = Session.fromJson(json.decode(jsonStr));
@@ -822,9 +865,10 @@ class GoTrueClient {
     }
   }
 
-  /// return provider url only
-  Future<OAuthResponse> _handleProviderSignIn(
+  /// Returns the OAuth sign in URL constructed from the [url] parameter.
+  Future<OAuthResponse> _getUrlForProvider(
     OAuthProvider provider, {
+    required String url,
     required String? scopes,
     required String? redirectTo,
     required Map<String, String>? queryParams,
@@ -856,8 +900,8 @@ class GoTrueClient {
       };
       urlParams.addAll(flowParams);
     }
-    final url = '$_url/authorize?${Uri(queryParameters: urlParams).query}';
-    return OAuthResponse(provider: provider, url: url);
+    final oauthUrl = '$url?${Uri(queryParameters: urlParams).query}';
+    return OAuthResponse(provider: provider, url: oauthUrl);
   }
 
   void _saveSession(Session session) async {
