@@ -596,6 +596,23 @@ class GoTrueClient {
     }
   }
 
+  /// Gets the current user details from current session or custom [jwt]
+  Future<UserResponse> getUser(String? jwt) async {
+    if (jwt == null && currentSession?.accessToken == null) {
+      throw AuthException('Cannot get user: no current session.');
+    }
+    final options = GotrueRequestOptions(
+      headers: _headers,
+      jwt: jwt ?? currentSession?.accessToken,
+    );
+    final response = await _fetch.request(
+      '$_url/user',
+      RequestMethodType.get,
+      options: options,
+    );
+    return UserResponse.fromJson(response);
+  }
+
   /// Updates user data, if there is a logged in user.
   Future<UserResponse> updateUser(
     UserAttributes attributes, {
@@ -679,12 +696,7 @@ class GoTrueClient {
       throw AuthException('No token_type detected.');
     }
 
-    final headers = {..._headers};
-    headers['Authorization'] = 'Bearer $accessToken';
-    final options = GotrueRequestOptions(headers: headers);
-    final response = await _fetch.request('$_url/user', RequestMethodType.get,
-        options: options);
-    final user = UserResponse.fromJson(response).user;
+    final user = (await getUser(accessToken)).user;
     if (user == null) {
       throw AuthException('No user found.');
     }
