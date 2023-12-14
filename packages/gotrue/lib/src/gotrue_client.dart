@@ -597,7 +597,7 @@ class GoTrueClient {
   }
 
   /// Gets the current user details from current session or custom [jwt]
-  Future<UserResponse> getUser(String? jwt) async {
+  Future<UserResponse> getUser([String? jwt]) async {
     if (jwt == null && currentSession?.accessToken == null) {
       throw AuthException('Cannot get user: no current session.');
     }
