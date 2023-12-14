@@ -105,7 +105,7 @@ VALUES (
     ),
     (
         '28bc7a4e-c095-4573-93dc-e0be29bada97',
-        'apple',
+        'google',
         '28bc7a4e-c095-4573-93dc-e0be29bada97',
         '{"sub": "28bc7a4e-c095-4573-93dc-e0be29bada97", "email": "fake2@email.com"}',
         'email',
