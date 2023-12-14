@@ -178,7 +178,7 @@ class _ProfileFormState extends State<_ProfileForm> {
       final data = (await Supabase.instance.client
           .from('profiles')
           .select()
-          .match({'id': userId}).maybeSingle()) as Map?;
+          .match({'id': userId}).maybeSingle());
       if (data != null) {
         setState(() {
           _usernameController.text = data['username'];
