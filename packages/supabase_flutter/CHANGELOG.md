@@ -1,3 +1,8 @@
+## 2.0.1
+
+ - Update a dependency to the latest release.
+ - **FIX**: fix(supabase_flutter): export signInWithOAuth() and generateRawNonce() ([#763](https://github.com/supabase/supabase-flutter/pull/763))
+
 ## 2.0.0
 
  - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.

@@ -3,6 +3,38 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-12-14
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.1.0`](#gotrue---v210)
+ - [`supabase` - `v2.0.1`](#supabase---v201)
+ - [`supabase_flutter` - `v2.0.1`](#supabase_flutter---v201)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.0.1`
+
+---
+
+#### `gotrue` - `v2.1.0`
+
+ - **FEAT**: add getUser() method. ([62dcb8c6](https://github.com/supabase/supabase-flutter/commit/62dcb8c6d818e91559699c70befdfbdc63ad2d2f))
+
+#### `supabase_flutter` - `v2.0.1`
+
+ - **FIX**: fix(supabase_flutter): export signInWithOAuth() and generateRawNonce() ([#763](https://github.com/supabase/supabase-flutter/pull/763))
+
 ## 2023-12-13
 
 ### Changes
