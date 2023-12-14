@@ -95,7 +95,7 @@ INSERT INTO auth.identities (
     )
 VALUES (
         '18bc7a4e-c095-4573-93dc-e0be29bada97',
-        '18bc7a4e-c095-4573-93dc-e0be29bada97',
+        'google',
         '18bc7a4e-c095-4573-93dc-e0be29bada97',
         '{"sub": "18bc7a4e-c095-4573-93dc-e0be29bada97", "email": "fake1@email.com"}',
         'email',
@@ -105,7 +105,7 @@ VALUES (
     ),
     (
         '28bc7a4e-c095-4573-93dc-e0be29bada97',
-        '28bc7a4e-c095-4573-93dc-e0be29bada97',
+        'apple',
         '28bc7a4e-c095-4573-93dc-e0be29bada97',
         '{"sub": "28bc7a4e-c095-4573-93dc-e0be29bada97", "email": "fake2@email.com"}',
         'email',
