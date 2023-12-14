@@ -801,12 +801,12 @@ class GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final url = await _fetch.request(urlResponse.url!, RequestMethodType.get,
+    final res = await _fetch.request(urlResponse.url!, RequestMethodType.get,
         options: GotrueRequestOptions(
           headers: _headers,
           jwt: _currentSession?.accessToken,
         ));
-    return OAuthResponse(provider: provider, url: url);
+    return OAuthResponse(provider: provider, url: res['url']);
   }
 
   /// Unlinks an identity from a user by deleting it.
