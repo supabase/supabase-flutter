@@ -1,3 +1,5 @@
+![Supabase](https://raw.githubusercontent.com/supabase/supabase-flutter/main/.github/images/supabase-banner.jpg)
+
 # `Supabase Flutter`
 
 Flutter Client library for [Supabase](https://supabase.com/).
