@@ -1,6 +1,5 @@
 ## 2.1.0
 
- - **FIX**: make jwt optional. ([0b0073ef](https://github.com/supabase/supabase-flutter/commit/0b0073efeaca558027a28b899c461506eb6988a2))
  - **FEAT**: add getUser() method. ([62dcb8c6](https://github.com/supabase/supabase-flutter/commit/62dcb8c6d818e91559699c70befdfbdc63ad2d2f))
 
 ## 2.0.0
