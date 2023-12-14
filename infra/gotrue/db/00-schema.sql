@@ -85,7 +85,7 @@ VALUES -- For unverified factors
 
 INSERT INTO auth.identities (
         id,
-        privider_id,
+        provider_id,
         user_id,
         identity_data,
         provider,
