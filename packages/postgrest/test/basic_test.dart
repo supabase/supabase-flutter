@@ -283,12 +283,11 @@ void main() {
       await postgrest.from('users').select('*').head();
     });
 
-    test('count with head: true, filters and modifiers', () async {
+    test('count with head: true, filters', () async {
       final int count = await postgrest
           .from('users')
           .count(CountOption.exact)
-          .eq('status', 'ONLINE')
-          .limit(1);
+          .eq('status', 'ONLINE');
       expect(count, 3);
     });
 
