@@ -1,3 +1,7 @@
+## 2.0.1
+
+ - **FIX**: enable filtering and tranformation on count with head ([#768](https://github.com/supabase/supabase-flutter/issues/768)). ([d66aaab6](https://github.com/supabase/supabase-flutter/commit/d66aaab66e5b0d437da4f49b6cdc2168dacf5582))
+
 ## 2.0.0
 
  - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.
