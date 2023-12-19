@@ -250,11 +250,10 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```dart
   /// int count = await supabase.from('users').count();
   /// ```
-  RawPostgrestBuilder<int, int, int> count(
-      [CountOption option = CountOption.exact]) {
-    return _copyWithType(
+  PostgrestFilterBuilder<int> count([CountOption option = CountOption.exact]) {
+    return PostgrestFilterBuilder<int>(_copyWithType(
       method: METHOD_HEAD,
       count: option,
-    );
+    ));
   }
 }

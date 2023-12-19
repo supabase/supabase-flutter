@@ -283,19 +283,29 @@ void main() {
       await postgrest.from('users').select('*').head();
     });
 
+    test('count with head: true, filters', () async {
+      final int count = await postgrest
+          .from('users')
+          .count(CountOption.exact)
+          .eq('status', 'ONLINE');
+      expect(count, 3);
+    });
+
     test('select with head:true, count: exact', () async {
-      final res = await postgrest.from('users').count(CountOption.exact);
+      final int res = await postgrest.from('users').count(CountOption.exact);
       expect(res, 4);
     });
 
     test('select with count: planned', () async {
       final res =
           await postgrest.from('users').select('*').count(CountOption.planned);
-      expect(res.count, isNotNull);
+      final int count = res.count;
+      expect(count, isNotNull);
     });
 
     test('select with head:true, count: estimated', () async {
-      final res = await postgrest.from('users').count(CountOption.estimated);
+      final int res =
+          await postgrest.from('users').count(CountOption.estimated);
       expect(res, isA<int>());
     });
 
