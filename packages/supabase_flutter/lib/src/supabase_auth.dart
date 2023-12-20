@@ -248,7 +248,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   /// ```dart
   /// await supabase.auth.signInWithOAuth(
-  ///   Provider.google,
+  ///   OAuthProvider.google,
   ///   // Use deep link to bring the user back to the app
   ///   redirectTo: 'my-scheme://my-host/callback-path',
   /// );

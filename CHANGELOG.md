@@ -3,6 +3,119 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2023-12-19
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`postgrest` - `v2.0.1`](#postgrest---v201)
+ - [`supabase` - `v2.0.2`](#supabase---v202)
+ - [`supabase_flutter` - `v2.0.2`](#supabase_flutter---v202)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.0.2`
+ - `supabase_flutter` - `v2.0.2`
+
+---
+
+#### `postgrest` - `v2.0.1`
+
+ - **FIX**: enable filtering and tranformation on count with head ([#768](https://github.com/supabase/supabase-flutter/issues/768)). ([d66aaab6](https://github.com/supabase/supabase-flutter/commit/d66aaab66e5b0d437da4f49b6cdc2168dacf5582))
+
+
+## 2023-12-14
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.1.0`](#gotrue---v210)
+ - [`supabase` - `v2.0.1`](#supabase---v201)
+ - [`supabase_flutter` - `v2.0.1`](#supabase_flutter---v201)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.0.1`
+
+---
+
+#### `gotrue` - `v2.1.0`
+
+ - **FEAT**: add getUser() method. ([62dcb8c6](https://github.com/supabase/supabase-flutter/commit/62dcb8c6d818e91559699c70befdfbdc63ad2d2f))
+
+#### `supabase_flutter` - `v2.0.1`
+
+ - **FIX**: fix(supabase_flutter): export signInWithOAuth() and generateRawNonce() ([#763](https://github.com/supabase/supabase-flutter/pull/763))
+
+## 2023-12-13
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`functions_client` - `v2.0.0`](#functions_client---v200)
+ - [`gotrue` - `v2.0.0`](#gotrue---v200)
+ - [`postgrest` - `v2.0.0`](#postgrest---v200)
+ - [`realtime_client` - `v2.0.0`](#realtime_client---v200)
+ - [`storage_client` - `v2.0.0`](#storage_client---v200)
+ - [`supabase` - `v2.0.0`](#supabase---v200)
+ - [`supabase_flutter` - `v2.0.0`](#supabase_flutter---v200)
+ - [`yet_another_json_isolate` - `v2.0.0`](#yet_another_json_isolate---v200)
+
+Packages with other changes:
+
+ - There are no other changes in this release.
+
+Packages graduated to a stable release (see pre-releases prior to the stable version for changelog entries):
+
+ - `functions_client` - `v2.0.0`
+ - `gotrue` - `v2.0.0`
+ - `postgrest` - `v2.0.0`
+ - `realtime_client` - `v2.0.0`
+ - `storage_client` - `v2.0.0`
+ - `supabase` - `v2.0.0`
+ - `supabase_flutter` - `v2.0.0`
+ - `yet_another_json_isolate` - `v2.0.0`
+
+---
+
+#### `functions_client` - `v2.0.0`
+
+#### `gotrue` - `v2.0.0`
+
+#### `postgrest` - `v2.0.0`
+
+#### `realtime_client` - `v2.0.0`
+
+#### `storage_client` - `v2.0.0`
+
+#### `supabase` - `v2.0.0`
+
+#### `supabase_flutter` - `v2.0.0`
+
+#### `yet_another_json_isolate` - `v2.0.0`
+
+
 ## 2023-12-05
 
 ### Changes
