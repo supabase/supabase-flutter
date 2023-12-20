@@ -509,7 +509,9 @@ class GoTrueClient {
     }
 
     _saveSession(authResponse.session!);
-    notifyAllSubscribers(AuthChangeEvent.signedIn);
+    notifyAllSubscribers(type == OtpType.recovery
+        ? AuthChangeEvent.passwordRecovery
+        : AuthChangeEvent.signedIn);
 
     return authResponse;
   }
