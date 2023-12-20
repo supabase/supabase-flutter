@@ -800,6 +800,7 @@ class GoTrueClient {
       redirectTo: redirectTo,
       scopes: scopes,
       queryParams: queryParams,
+      skipBrowserRedirect: true,
     );
     final res = await _fetch.request(urlResponse.url!, RequestMethodType.get,
         options: GotrueRequestOptions(
@@ -872,6 +873,7 @@ class GoTrueClient {
     required String? scopes,
     required String? redirectTo,
     required Map<String, String>? queryParams,
+    bool skipBrowserRedirect = false,
   }) async {
     final urlParams = {'provider': provider.name};
     if (scopes != null) {
@@ -899,6 +901,9 @@ class GoTrueClient {
         'code_challenge_method': 's256',
       };
       urlParams.addAll(flowParams);
+    }
+    if (skipBrowserRedirect) {
+      urlParams['skip_http_redirect'] = 'true';
     }
     final oauthUrl = '$url?${Uri(queryParameters: urlParams).query}';
     return OAuthResponse(provider: provider, url: oauthUrl);
