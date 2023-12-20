@@ -407,13 +407,15 @@ void main() {
       expect(client.currentSession, isNull);
     });
 
-    test('linkIdentity', () async {
+    test('Call getLinkIdentityUrl', () async {
       await client.signInWithPassword(
         email: email1,
         password: password,
       );
       final res = await client.getLinkIdentityUrl(OAuthProvider.google);
-      expect(res.url, '');
+      expect(res.url, isA<String>());
+      final uri = Uri.parse(res.url!);
+      expect(uri.host, 'accounts.google.com');
     });
   });
 
