@@ -795,7 +795,7 @@ class GoTrueClient {
 
   /// Gets all the identities linked to a user.
   Future<List<UserIdentity>> getUserIdentities() async {
-    final res = await refreshSession();
+    final res = await getUser();
     return res.user?.identities ?? [];
   }
 
