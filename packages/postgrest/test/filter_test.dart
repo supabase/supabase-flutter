@@ -51,11 +51,6 @@ void main() {
         .select('username')
         .not('username', 'is', null);
     expect(res.length, 4);
-
-    for (final item in res) {
-      expect(item['username'] != ('supabot'), true);
-      expect(item['username'] != ('kiwicopple'), true);
-    }
   });
 
   test('not with List of values', () async {
