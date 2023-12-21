@@ -24,7 +24,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .not('status', 'eq', 'OFFLINE');
   /// ```
-  PostgrestFilterBuilder<T> not(String column, String operator, Object value) {
+  PostgrestFilterBuilder<T> not(String column, String operator, Object? value) {
     final Uri url;
     if (value is List) {
       if (operator == "in") {
