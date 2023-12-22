@@ -45,6 +45,14 @@ void main() {
     }
   });
 
+  test('not with is null', () async {
+    final res = await postgrest
+        .from('users')
+        .select('username')
+        .not('username', 'is', null);
+    expect(res.length, 4);
+  });
+
   test('not with List of values', () async {
     final res = await postgrest
         .from('users')
