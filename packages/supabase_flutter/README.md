@@ -161,7 +161,7 @@ Future<AuthResponse> _googleSignIn() async {
   }
 
   return supabase.auth.signInWithIdToken(
-    provider: Provider.google,
+    provider: OAuthProvider.google,
     idToken: idToken,
     accessToken: accessToken,
   );
