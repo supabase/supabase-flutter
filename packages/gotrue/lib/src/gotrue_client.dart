@@ -814,7 +814,7 @@ class GoTrueClient {
       queryParams: queryParams,
       skipBrowserRedirect: true,
     );
-    final res = await _fetch.request(urlResponse.url!, RequestMethodType.get,
+    final res = await _fetch.request(urlResponse.url, RequestMethodType.get,
         options: GotrueRequestOptions(
           headers: _headers,
           jwt: _currentSession?.accessToken,
