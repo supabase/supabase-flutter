@@ -274,7 +274,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final uri = Uri.parse(res.url!);
+    final uri = Uri.parse(res.url);
 
     LaunchMode launchMode = authScreenLaunchMode;
 
@@ -314,7 +314,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final uri = Uri.parse(res.url!);
+    final uri = Uri.parse(res.url);
 
     LaunchMode launchMode = authScreenLaunchMode;
 
