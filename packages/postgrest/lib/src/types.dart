@@ -33,6 +33,15 @@ class PostgrestException implements Exception {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+      'code': code,
+      'details': details,
+      'hint': hint,
+    };
+  }
+
   @override
   String toString() {
     return 'PostgrestException(message: $message, code: $code, details: $details, hint: $hint)';
