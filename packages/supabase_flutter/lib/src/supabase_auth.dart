@@ -274,7 +274,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final uri = Uri.parse(res.url!);
+    final uri = Uri.parse(res.url);
 
     LaunchMode launchMode = authScreenLaunchMode;
 
@@ -297,5 +297,40 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   String generateRawNonce() {
     final random = Random.secure();
     return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
+  }
+
+  /// Links an oauth identity to an existing user.
+  /// This method supports the PKCE flow.
+  Future<bool> linkIdentity(
+    OAuthProvider provider, {
+    String? redirectTo,
+    String? scopes,
+    LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
+    Map<String, String>? queryParams,
+  }) async {
+    final res = await getLinkIdentityUrl(
+      provider,
+      redirectTo: redirectTo,
+      scopes: scopes,
+      queryParams: queryParams,
+    );
+    final uri = Uri.parse(res.url);
+
+    LaunchMode launchMode = authScreenLaunchMode;
+
+    // `Platform.isAndroid` throws on web, so adding a guard for web here.
+    final isAndroid = !kIsWeb && Platform.isAndroid;
+
+    // Google login has to be performed on external browser window on Android
+    if (provider == OAuthProvider.google && isAndroid) {
+      launchMode = LaunchMode.externalApplication;
+    }
+
+    final result = await launchUrl(
+      uri,
+      mode: launchMode,
+      webOnlyWindowName: '_self',
+    );
+    return result;
   }
 }

@@ -50,7 +50,7 @@ class GotrueFetch {
       qs['redirect_to'] = options!.redirectTo!;
     }
     Uri uri = Uri.parse(url);
-    uri = uri.replace(queryParameters: qs);
+    uri = uri.replace(queryParameters: {...uri.queryParameters, ...qs});
     late final http.Response response;
 
     final bodyStr = json.encode(options?.body ?? {});
