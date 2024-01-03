@@ -1,3 +1,8 @@
+## 2.2.0
+
+ - **FIX**(gotrue): Fix the issue where `verfiyOTP` emits `signIn` instead of `passwordRecovery` auth event. ([#774](https://github.com/supabase/supabase-flutter/issues/774)). ([fc426134](https://github.com/supabase/supabase-flutter/commit/fc426134fff8cb6ab34ea7e7633e29c90cafaa43))
+ - **FEAT**(gotrue,supabase_flutter): Add identity linking and unlinking methods. ([#760](https://github.com/supabase/supabase-flutter/issues/760)). ([6c0c922d](https://github.com/supabase/supabase-flutter/commit/6c0c922df6097a6ef5a43b801fbd45900118bd7a))
+
 ## 2.1.0
 
  - **FEAT**: add getUser() method. ([62dcb8c6](https://github.com/supabase/supabase-flutter/commit/62dcb8c6d818e91559699c70befdfbdc63ad2d2f))

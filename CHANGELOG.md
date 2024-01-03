@@ -3,6 +3,47 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-01-03
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.2.0`](#gotrue---v220)
+ - [`postgrest` - `v2.1.0`](#postgrest---v210)
+ - [`supabase_flutter` - `v2.1.0`](#supabase_flutter---v210)
+ - [`supabase` - `v2.0.3`](#supabase---v203)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.0.3`
+
+---
+
+#### `gotrue` - `v2.2.0`
+
+ - **FIX**(gotrue): Fix the issue where `verfiyOTP` emits `signIn` instead of `passwordRecovery` auth event. ([#774](https://github.com/supabase/supabase-flutter/issues/774)). ([fc426134](https://github.com/supabase/supabase-flutter/commit/fc426134fff8cb6ab34ea7e7633e29c90cafaa43))
+ - **FEAT**(gotrue,supabase_flutter): Add identity linking and unlinking methods. ([#760](https://github.com/supabase/supabase-flutter/issues/760)). ([6c0c922d](https://github.com/supabase/supabase-flutter/commit/6c0c922df6097a6ef5a43b801fbd45900118bd7a))
+
+#### `postgrest` - `v2.1.0`
+
+ - **FIX**: Passing `null` to `not()` filter is now allowed ([#775](https://github.com/supabase/supabase-flutter/issues/775)). ([13f02286](https://github.com/supabase/supabase-flutter/commit/13f02286dc2d6fd1c1a30099bf540c436951f9a4))
+ - **FEAT**(postgrest): Add `toJson()` method to `PostgrestException` to allow serialization ([#783](https://github.com/supabase/supabase-flutter/issues/783)). ([28c9819a](https://github.com/supabase/supabase-flutter/commit/28c9819a1af715d2711a896d6f9694a19dc24120))
+
+#### `supabase_flutter` - `v2.1.0`
+
+ - **FIX**: Update Provider to OAuthProvider in readme ([#778](https://github.com/supabase/supabase-flutter/issues/778)). ([0585ee96](https://github.com/supabase/supabase-flutter/commit/0585ee960c7dbd1b232fe84a169daf8b3f37170c))
+ - **FEAT**(gotrue,supabase_flutter): Add identity linking and unlinking methods. ([#760](https://github.com/supabase/supabase-flutter/issues/760)). ([6c0c922d](https://github.com/supabase/supabase-flutter/commit/6c0c922df6097a6ef5a43b801fbd45900118bd7a))
+
+
 ## 2023-12-19
 
 ### Changes
