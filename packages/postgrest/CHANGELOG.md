@@ -1,3 +1,8 @@
+## 2.1.0
+
+ - **FIX**: Passing `null` to `not()` filter is now allowed ([#775](https://github.com/supabase/supabase-flutter/issues/775)). ([13f02286](https://github.com/supabase/supabase-flutter/commit/13f02286dc2d6fd1c1a30099bf540c436951f9a4))
+ - **FEAT**(postgrest): Add `toJson()` method to `PostgrestException` to allow serialization ([#783](https://github.com/supabase/supabase-flutter/issues/783)). ([28c9819a](https://github.com/supabase/supabase-flutter/commit/28c9819a1af715d2711a896d6f9694a19dc24120))
+
 ## 2.0.1
 
  - **FIX**: enable filtering and tranformation on count with head ([#768](https://github.com/supabase/supabase-flutter/issues/768)). ([d66aaab6](https://github.com/supabase/supabase-flutter/commit/d66aaab66e5b0d437da4f49b6cdc2168dacf5582))
