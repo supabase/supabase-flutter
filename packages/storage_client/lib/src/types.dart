@@ -159,6 +159,23 @@ class SortBy {
   }
 }
 
+class UploadResponse {
+  /// the previously returned key: bucket-id/path/to/file
+  final String key;
+
+  /// the new storage.object.id of the uploaded file
+  final String id;
+
+  const UploadResponse({
+    required this.key,
+    required this.id,
+  });
+
+  UploadResponse.fromJson(Map<String, dynamic> json)
+      : key = json['Key'] as String,
+        id = json['Id'] as String;
+}
+
 class SignedUrl {
   /// The file path, including the current file name. For example `folder/image.png`.
   final String path;
