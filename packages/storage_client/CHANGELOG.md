@@ -1,3 +1,9 @@
+## 2.0.1
+
+> Note: This release has breaking changes.
+
+ - **BREAKING** : upload response does not only return the new key, but also the new id. Forwards [supabase/storage/#332](https://github.com/supabase/storage/pull/332) PR.
+
 ## 2.0.0
 
  - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.

@@ -1,3 +1,7 @@
+## 2.1.1
+
+ - Update a dependency to the latest release.
+
 ## 2.1.0
 
  - **FIX**: Update Provider to OAuthProvider in readme ([#778](https://github.com/supabase/supabase-flutter/issues/778)). ([0585ee96](https://github.com/supabase/supabase-flutter/commit/0585ee960c7dbd1b232fe84a169daf8b3f37170c))
