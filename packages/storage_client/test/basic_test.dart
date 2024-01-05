@@ -175,7 +175,7 @@ void main() {
 
       final response = await client.from('public').upload('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response.key.endsWith('/a.txt'), isTrue);
     });
 
     test('should update file', () async {
@@ -197,7 +197,7 @@ void main() {
 
       final response = await client.from('public').update('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response.key.endsWith('/a.txt'), isTrue);
     });
 
     test('should move file', () async {
@@ -328,7 +328,7 @@ void main() {
 
       final response = await client.from('public').upload('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response.key.endsWith('/a.txt'), isTrue);
     });
 
     test('aborting upload should throw', () async {
@@ -357,7 +357,7 @@ void main() {
           .from('public')
           .uploadBinary('a.txt', file.readAsBytesSync());
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response.key.endsWith('/a.txt'), isTrue);
     });
 
     test('should update file with few network failures', () async {
@@ -366,7 +366,7 @@ void main() {
 
       final response = await client.from('public').update('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response.key.endsWith('/a.txt'), isTrue);
     });
     test('should update binary with few network failures', () async {
       final file = File('a.txt');
@@ -376,7 +376,7 @@ void main() {
           .from('public')
           .updateBinary('a.txt', file.readAsBytesSync());
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response.key.endsWith('/a.txt'), isTrue);
     });
   });
 
