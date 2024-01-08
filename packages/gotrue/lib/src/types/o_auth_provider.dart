@@ -1,5 +1,3 @@
-// ignore_for_file: constant_identifier_names
-
 enum OAuthProvider {
   apple,
   azure,
@@ -13,7 +11,7 @@ enum OAuthProvider {
   kakao,
   keycloak,
   linkedin,
-  linkedin_oidc,
+  linkedinOidc,
   notion,
   slack,
   spotify,

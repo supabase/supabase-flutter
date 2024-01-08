@@ -366,7 +366,7 @@ class GoTrueClient {
       options: GotrueRequestOptions(
         headers: _headers,
         body: {
-          'provider': provider.name,
+          'provider': provider.snakeCase,
           'id_token': idToken,
           'nonce': nonce,
           'gotrue_meta_security': {'captcha_token': captchaToken},
@@ -889,7 +889,7 @@ class GoTrueClient {
     required Map<String, String>? queryParams,
     bool skipBrowserRedirect = false,
   }) async {
-    final urlParams = {'provider': provider.name};
+    final urlParams = {'provider': provider.snakeCase};
     if (scopes != null) {
       urlParams['scopes'] = scopes;
     }
