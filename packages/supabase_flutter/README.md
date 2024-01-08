@@ -354,7 +354,7 @@ You need to setup deep links if you want your native app to open when a user cli
 
 \*Currently supabase_flutter supports deep links on Android, iOS, Web, MacOS and Windows.
 
-### Deep link config
+### Dashboard Deep link config
 
 - Go to your Supabase project Authentication Settings page.
 - You need to enter your app redirect callback on `Additional Redirect URLs` field.
@@ -363,195 +363,19 @@ The redirect callback url should have this format `[YOUR_SCHEME]://[YOUR_HOSTNAM
 
 ![authentication settings page](https://raw.githubusercontent.com/supabase/supabase-flutter/main/.github/images/deeplink-config.png)
 
+### Flutter Deep link config
+
+supabase_flutter uses [app_link](https://pub.dev/packages/app_links) internally to handle deep links. You can find the platform specific config to setup deep links in the following.
+
+https://github.com/llfbandit/app_links/tree/master?tab=readme-ov-file#getting-started
+
 ### Platform specific config
 
-Follow the guide https://supabase.io/docs/guides/auth#third-party-logins
+Follow the guide to find additional platform specidic condigs for your OAuth provider.
 
-#### For Android
+https://supabase.io/docs/guides/auth#third-party-logins
 
-<details>
-  <summary>How to setup</summary>
-
-```xml
-<manifest ...>
-  <!-- ... other tags -->
-  <application ...>
-    <activity ...>
-      <!-- ... other tags -->
-
-      <!-- Deep Links -->
-      <intent-filter>
-        <action android:name="android.intent.action.VIEW" />
-        <category android:name="android.intent.category.DEFAULT" />
-        <category android:name="android.intent.category.BROWSABLE" />
-        <!-- Accepts URIs that begin with YOUR_SCHEME://YOUR_HOST -->
-        <data
-          android:scheme="YOUR_SCHEME"
-          android:host="YOUR_HOSTNAME" />
-      </intent-filter>
-    </activity>
-  </application>
-</manifest>
-```
-
-The `android:host` attribute is optional for Deep Links.
-
-For more info: https://developer.android.com/training/app-links/deep-linking
-
-</details>
-
-#### For iOS
-
-<details>
-  <summary>How to setup</summary>
-
-For **Custom URL schemes** you need to declare the scheme in
-`ios/Runner/Info.plist` (or through Xcode's Target Info editor,
-under URL Types):
-
-```xml
-<!-- ... other tags -->
-<plist>
-<dict>
-  <!-- ... other tags -->
-  <key>CFBundleURLTypes</key>
-  <array>
-    <dict>
-      <key>CFBundleTypeRole</key>
-      <string>Editor</string>
-      <key>CFBundleURLSchemes</key>
-      <array>
-        <string>[YOUR_SCHEME]</string>
-      </array>
-    </dict>
-  </array>
-  <!-- ... other tags -->
-</dict>
-</plist>
-```
-
-For more info: https://developer.apple.com/documentation/xcode/defining-a-custom-url-scheme-for-your-app
-
-</details>
-
-#### For Windows
-
-<details>
-  <summary>How to setup</summary>
-
-Setting up deep links in Windows has few more steps than other platforms.
-[Learn more](https://pub.dev/packages/app_links#windows)
-
-Declare this method in <PROJECT_DIR>\windows\runner\win32_window.h
-
-```cpp
-  // Dispatches link if any.
-  // This method enables our app to be with a single instance too.
-  // This is optional but mandatory if you want to catch further links in same app.
-  bool SendAppLinkToInstance(const std::wstring& title);
-```
-
-Add this inclusion at the top of <PROJECT_DIR>\windows\runner\win32_window.cpp
-
-```cpp
-#include "app_links_windows/app_links_windows_plugin.h"
-```
-
-Add this method in <PROJECT_DIR>\windows\runner\win32_window.cpp
-
-```cpp
-bool Win32Window::SendAppLinkToInstance(const std::wstring& title) {
-  // Find our exact window
-  HWND hwnd = ::FindWindow(kWindowClassName, title.c_str());
-
-  if (hwnd) {
-    // Dispatch new link to current window
-    SendAppLink(hwnd);
-
-    // (Optional) Restore our window to front in same state
-    WINDOWPLACEMENT place = { sizeof(WINDOWPLACEMENT) };
-    GetWindowPlacement(hwnd, &place);
-    switch(place.showCmd) {
-      case SW_SHOWMAXIMIZED:
-          ShowWindow(hwnd, SW_SHOWMAXIMIZED);
-          break;
-      case SW_SHOWMINIMIZED:
-          ShowWindow(hwnd, SW_RESTORE);
-          break;
-      default:
-          ShowWindow(hwnd, SW_NORMAL);
-          break;
-    }
-    SetWindowPos(0, HWND_TOP, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
-    SetForegroundWindow(hwnd);
-    // END Restore
-
-    // Window has been found, don't create another one.
-    return true;
-  }
-
-  return false;
-}
-```
-
-Add the call to the previous method in `CreateAndShow`
-
-```cpp
-bool Win32Window::CreateAndShow(const std::wstring& title,
-                                const Point& origin,
-                                const Size& size) {
-if (SendAppLinkToInstance(title)) {
-    return false;
-}
-
-...
-```
-
-At this point, you can register your own scheme.  
- On Windows, URL protocols are setup in the Windows registry.
-
-This package won't do it for you.
-
-You can achieve it with [url_protocol](https://pub.dev/packages/url_protocol) inside you app.
-
-The most relevant solution is to include those registry modifications into your installer to allow
-for deregistration.
-
-</details>
-
-#### For Mac OS
-
-<details>
-  <summary>How to setup</summary>
-
-Add this XML chapter in your macos/Runner/Info.plist inside <plist version="1.0"><dict> chapter:
-
-```xml
-<!-- ... other tags -->
-<plist version="1.0">
-<dict>
-  <!-- ... other tags -->
-  <key>CFBundleURLTypes</key>
-  <array>
-      <dict>
-          <key>CFBundleURLName</key>
-          <!-- abstract name for this URL type (you can leave it blank) -->
-          <string>sample_name</string>
-          <key>CFBundleURLSchemes</key>
-          <array>
-              <!-- your schemes -->
-              <string>sample</string>
-          </array>
-      </dict>
-  </array>
-  <!-- ... other tags -->
-</dict>
-</plist>
-```
-
-</details>
-
-### Custom LocalStorage
+## Custom LocalStorage
 
 As default, `supabase_flutter` uses [`Shared preferences`](https://pub.dev/packages/shared_preferences) to persist the user session.
 
