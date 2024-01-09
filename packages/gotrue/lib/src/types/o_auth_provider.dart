@@ -11,6 +11,7 @@ enum OAuthProvider {
   kakao,
   keycloak,
   linkedin,
+  linkedinOidc,
   notion,
   slack,
   spotify,
