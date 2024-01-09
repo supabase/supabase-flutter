@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-01-09
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.3.0`](#gotrue---v230)
+ - [`supabase_flutter` - `v2.2.0`](#supabase_flutter---v220)
+ - [`supabase` - `v2.0.4`](#supabase---v204)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.0.4`
+
+---
+
+#### `gotrue` - `v2.3.0`
+
+ - **FEAT**: Add linkedin_oidc OAuthProvider ([#791](https://github.com/supabase/supabase-flutter/issues/791)). ([09664281](https://github.com/supabase/supabase-flutter/commit/0966428189817d3f4ff3a9101ed2402a4fe2f001))
+
+#### `supabase_flutter` - `v2.2.0`
+
+ - **FEAT**(supabase_flutter): Update app_link to v3.5.0, to add Linux support for deep links ([#792](https://github.com/supabase/supabase-flutter/issues/792)). ([5ad7a674](https://github.com/supabase/supabase-flutter/commit/5ad7a674a22033ac0f792fba8ba3e7fed721190e))
+
+
 ## 2024-01-03
 
 ### Changes

@@ -1,3 +1,7 @@
+## 2.2.0
+
+ - **FEAT**(supabase_flutter): Update app_link to v3.5.0, to add Linux support for deep links ([#792](https://github.com/supabase/supabase-flutter/issues/792)). ([5ad7a674](https://github.com/supabase/supabase-flutter/commit/5ad7a674a22033ac0f792fba8ba3e7fed721190e))
+
 ## 2.1.0
 
  - **FIX**: Update Provider to OAuthProvider in readme ([#778](https://github.com/supabase/supabase-flutter/issues/778)). ([0585ee96](https://github.com/supabase/supabase-flutter/commit/0585ee960c7dbd1b232fe84a169daf8b3f37170c))
