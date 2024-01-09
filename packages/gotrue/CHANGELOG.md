@@ -1,3 +1,7 @@
+## 2.3.0
+
+ - **FEAT**: Add linkedin_oidc OAuthProvider ([#791](https://github.com/supabase/supabase-flutter/issues/791)). ([09664281](https://github.com/supabase/supabase-flutter/commit/0966428189817d3f4ff3a9101ed2402a4fe2f001))
+
 ## 2.2.0
 
  - **FIX**(gotrue): Fix the issue where `verfiyOTP` emits `signIn` instead of `passwordRecovery` auth event. ([#774](https://github.com/supabase/supabase-flutter/issues/774)). ([fc426134](https://github.com/supabase/supabase-flutter/commit/fc426134fff8cb6ab34ea7e7633e29c90cafaa43))
