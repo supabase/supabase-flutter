@@ -189,7 +189,6 @@ class MigrationLocalStorage extends LocalStorage {
     try {
       await migrate();
     } on TimeoutException {
-      print('TimeoutException');
       // Ignore TimeoutException thrown by Hive methods
       // https://github.com/supabase/supabase-flutter/issues/794
     }
