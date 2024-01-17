@@ -87,7 +87,8 @@ class HiveLocalStorage extends LocalStorage {
       encryptionCipher = HiveAesCipher(base64Url.decode(encryptionKey!));
     }
     await Hive.initFlutter('auth');
-    await Hive.openBox(_hiveBoxName, encryptionCipher: encryptionCipher);
+    await Hive.openBox(_hiveBoxName, encryptionCipher: encryptionCipher)
+        .timeout(const Duration(seconds: 1));
   }
 
   @override
@@ -185,7 +186,13 @@ class MigrationLocalStorage extends LocalStorage {
     await Hive.initFlutter('auth');
     hiveLocalStorage = const HiveLocalStorage();
     await sharedPreferencesLocalStorage.initialize();
-    await migrate();
+    try {
+      await migrate();
+    } on TimeoutException {
+      print('TimeoutException');
+      // Ignore TimeoutException thrown by Hive methods
+      // https://github.com/supabase/supabase-flutter/issues/794
+    }
   }
 
   @visibleForTesting
