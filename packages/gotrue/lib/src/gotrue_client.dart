@@ -527,7 +527,7 @@ class GoTrueClient {
   /// If you have built an organization-specific login page, you can use the
   /// organization's SSO Identity Provider UUID directly instead.
   // async signInWithSSO(params: SignInWithSSO): Promise<SSOResponse> {
-  Future<void> signInWithSSO({
+  Future<String> signInWithSSO({
     String? providerId,
     String? domain,
     String? redirectTo,
@@ -552,7 +552,7 @@ class GoTrueClient {
       codeChallengeMethod = codeVerifier == codeChallenge ? 'plain' : 's256';
     }
 
-    return await _fetch.request('$_url/sso', RequestMethodType.post,
+    final res = await _fetch.request('$_url/sso', RequestMethodType.post,
         options: GotrueRequestOptions(
           body: {
             if (providerId != null) 'provider_id': providerId,
@@ -566,6 +566,8 @@ class GoTrueClient {
           },
           headers: _headers,
         ));
+
+    return res['url'] as String;
   }
 
   /// Force refreshes the session including the user data in case it was updated
