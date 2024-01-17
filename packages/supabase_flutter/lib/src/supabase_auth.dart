@@ -294,6 +294,42 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     return result;
   }
 
+  /// Attempts a single-sign on using an enterprise Identity Provider. A
+  /// successful SSO attempt will redirect the current page to the identity
+  /// provider authorization page. The redirect URL is implementation and SSO
+  /// protocol specific.
+  ///
+  /// You can use it by providing a SSO domain. Typically you can extract this
+  /// domain by asking users for their email address. If this domain is
+  /// registered on the Auth instance the redirect will use that organization's
+  /// currently active SSO Identity Provider for the login.
+  ///
+  /// If you have built an organization-specific login page, you can use the
+  /// organization's SSO Identity Provider UUID directly instead.
+  ///
+  /// Returns true if the URL was launched successful, otherwise either returns
+  /// false or throws a [PlatformException] depending on the launchUrl failure.
+  ///
+  /// ```dart
+  /// await supabase.auth.signInWithSSO(
+  ///   domain: 'company.com',
+  /// );
+  /// ```
+  Future<bool> signInWithSSO({
+    String? providerId,
+    String? domain,
+    String? redirectTo,
+    String? captchaToken,
+    LaunchMode launchMode = LaunchMode.platformDefault,
+  }) async {
+    final ssoUrl = await getSSOSignInUrl();
+    return await launchUrl(
+      Uri.parse(ssoUrl),
+      mode: launchMode,
+      webOnlyWindowName: '_self',
+    );
+  }
+
   String generateRawNonce() {
     final random = Random.secure();
     return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));

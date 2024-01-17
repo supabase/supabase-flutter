@@ -514,10 +514,8 @@ class GoTrueClient {
     return authResponse;
   }
 
-  /// Attempts a single-sign on using an enterprise Identity Provider. A
-  /// successful SSO attempt will redirect the current page to the identity
-  /// provider authorization page. The redirect URL is implementation and SSO
-  /// protocol specific.
+  /// Obtains a URL to perform a single-sign on using an enterprise Identity
+  /// Provider. The redirect URL is implementation and SSO protocol specific.
   ///
   /// You can use it by providing a SSO domain. Typically you can extract this
   /// domain by asking users for their email address. If this domain is
@@ -526,8 +524,7 @@ class GoTrueClient {
   ///
   /// If you have built an organization-specific login page, you can use the
   /// organization's SSO Identity Provider UUID directly instead.
-  // async signInWithSSO(params: SignInWithSSO): Promise<SSOResponse> {
-  Future<String> signInWithSSO({
+  Future<String> getSSOSignInUrl({
     String? providerId,
     String? domain,
     String? redirectTo,
