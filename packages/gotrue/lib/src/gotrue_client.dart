@@ -517,6 +517,59 @@ class GoTrueClient {
     return authResponse;
   }
 
+  /// Obtains a URL to perform a single-sign on using an enterprise Identity
+  /// Provider. The redirect URL is implementation and SSO protocol specific.
+  ///
+  /// You can use it by providing a SSO domain. Typically you can extract this
+  /// domain by asking users for their email address. If this domain is
+  /// registered on the Auth instance the redirect will use that organization's
+  /// currently active SSO Identity Provider for the login.
+  ///
+  /// If you have built an organization-specific login page, you can use the
+  /// organization's SSO Identity Provider UUID directly instead.
+  Future<String> getSSOSignInUrl({
+    String? providerId,
+    String? domain,
+    String? redirectTo,
+    String? captchaToken,
+  }) async {
+    assert(
+      providerId != null || domain != null,
+      'providerId or domain has to be provided.',
+    );
+
+    _removeSession();
+    String? codeChallenge;
+    String? codeChallengeMethod;
+    if (_flowType == AuthFlowType.pkce) {
+      assert(_asyncStorage != null,
+          'You need to provide asyncStorage to perform pkce flow.');
+      final codeVerifier = generatePKCEVerifier();
+      await _asyncStorage!.setItem(
+          key: '${Constants.defaultStorageKey}-code-verifier',
+          value: codeVerifier);
+      codeChallenge = generatePKCEChallenge(codeVerifier);
+      codeChallengeMethod = codeVerifier == codeChallenge ? 'plain' : 's256';
+    }
+
+    final res = await _fetch.request('$_url/sso', RequestMethodType.post,
+        options: GotrueRequestOptions(
+          body: {
+            if (providerId != null) 'provider_id': providerId,
+            if (domain != null) 'domain': domain,
+            if (redirectTo != null) 'redirect_to': redirectTo,
+            if (captchaToken != null)
+              'gotrue_meta_security': {'captcha_token': captchaToken},
+            'skip_http_redirect': true,
+            'code_challenge': codeChallenge,
+            'code_challenge_method': codeChallengeMethod,
+          },
+          headers: _headers,
+        ));
+
+    return res['url'] as String;
+  }
+
   /// Force refreshes the session including the user data in case it was updated
   /// in a different session.
   Future<AuthResponse> refreshSession() async {
