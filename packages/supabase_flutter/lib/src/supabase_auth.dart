@@ -307,7 +307,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// If you have built an organization-specific login page, you can use the
   /// organization's SSO Identity Provider UUID directly instead.
   ///
-  /// Returns true if the URL was launched successful, otherwise either returns
+  /// Returns true if the URL was launched successfully, otherwise either returns
   /// false or throws a [PlatformException] depending on the launchUrl failure.
   ///
   /// ```dart
