@@ -1,3 +1,8 @@
+## 2.3.0
+
+ - **FIX**(supabase_flutter): Add timeout to Hive.openBox to fix hanging issue ([#799](https://github.com/supabase/supabase-flutter/issues/799)). ([7fc3ed0b](https://github.com/supabase/supabase-flutter/commit/7fc3ed0bfc14335e3a87b60edc25ba6edbfce6ab))
+ - **FEAT**(gotrue,supabase_flutter): Add `signInWithSSO` method ([#798](https://github.com/supabase/supabase-flutter/issues/798)). ([87c16327](https://github.com/supabase/supabase-flutter/commit/87c163279866ac9d44756fd7d5faf01d48860fb0))
+
 ## 2.2.0
 
  - **FEAT**(supabase_flutter): Update app_link to v3.5.0, to add Linux support for deep links ([#792](https://github.com/supabase/supabase-flutter/issues/792)). ([5ad7a674](https://github.com/supabase/supabase-flutter/commit/5ad7a674a22033ac0f792fba8ba3e7fed721190e))
