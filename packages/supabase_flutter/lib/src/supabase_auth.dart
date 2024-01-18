@@ -322,7 +322,12 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     String? captchaToken,
     LaunchMode launchMode = LaunchMode.platformDefault,
   }) async {
-    final ssoUrl = await getSSOSignInUrl();
+    final ssoUrl = await getSSOSignInUrl(
+      providerId: providerId,
+      domain: domain,
+      redirectTo: redirectTo,
+      captchaToken: captchaToken,
+    );
     return await launchUrl(
       Uri.parse(ssoUrl),
       mode: launchMode,
