@@ -120,6 +120,11 @@ class GoTrueClient {
   Map<String, String> get headers => _headers;
 
   /// Returns the current logged in user, if any;
+  ///
+  /// Use [currentSession] to determine whether the user has an active session,
+  /// because [currentUser] can be non-null without an active session, such as
+  /// when the user signed up using email and password but has not confirmed
+  /// their email address.
   User? get currentUser => _currentUser;
 
   /// Returns the current session, if any;
@@ -901,7 +906,7 @@ class GoTrueClient {
     }
 
     _currentSession = session;
-    _currentUser = _currentSession?.user;
+    _currentUser = session.user;
     notifyAllSubscribers(AuthChangeEvent.initialSession);
   }
 
