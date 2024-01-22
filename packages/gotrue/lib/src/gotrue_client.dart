@@ -901,6 +901,7 @@ class GoTrueClient {
     }
 
     _currentSession = session;
+    _currentUser = _currentSession?.user;
     notifyAllSubscribers(AuthChangeEvent.initialSession);
   }
 
