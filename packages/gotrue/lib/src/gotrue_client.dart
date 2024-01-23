@@ -225,6 +225,7 @@ class GoTrueClient {
     String? phone,
     required String password,
     String? captchaToken,
+    String? proxyLoginUrl,
   }) async {
     _removeSession();
 
@@ -232,7 +233,7 @@ class GoTrueClient {
 
     if (email != null) {
       response = await _fetch.request(
-        '$_url/token',
+        proxyLoginUrl ?? '$_url/token',
         RequestMethodType.post,
         options: GotrueRequestOptions(
           headers: _headers,
@@ -246,7 +247,7 @@ class GoTrueClient {
       );
     } else if (phone != null) {
       response = await _fetch.request(
-        '$_url/token',
+        proxyLoginUrl ?? '$_url/token',
         RequestMethodType.post,
         options: GotrueRequestOptions(
           headers: _headers,
