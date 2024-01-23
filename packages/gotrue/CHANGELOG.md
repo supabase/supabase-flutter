@@ -1,3 +1,7 @@
+## 2.4.1
+
+ - **FIX**(gotrue): Set _currentUser when setting initial session ([#806](https://github.com/supabase/supabase-flutter/issues/806)). ([042f3c6d](https://github.com/supabase/supabase-flutter/commit/042f3c6dde7db6f479088ad788a4bbcbba640808))
+
 ## 2.4.0
 
  - **FEAT**(gotrue,supabase_flutter): Add `signInWithSSO` method ([#798](https://github.com/supabase/supabase-flutter/issues/798)). ([87c16327](https://github.com/supabase/supabase-flutter/commit/87c163279866ac9d44756fd7d5faf01d48860fb0))

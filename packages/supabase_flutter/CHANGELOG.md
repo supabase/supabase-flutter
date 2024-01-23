@@ -1,3 +1,7 @@
+## 2.3.1
+
+ - Update a dependency to the latest release.
+
 ## 2.3.0
 
  - **FIX**(supabase_flutter): Add timeout to Hive.openBox to fix hanging issue ([#799](https://github.com/supabase/supabase-flutter/issues/799)). ([7fc3ed0b](https://github.com/supabase/supabase-flutter/commit/7fc3ed0bfc14335e3a87b60edc25ba6edbfce6ab))
