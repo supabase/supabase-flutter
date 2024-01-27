@@ -479,8 +479,8 @@ class GoTrueClient {
   /// [phone] is the user's phone number WITH international prefix
   ///
   /// [token] is the token that user was sent to their mobile phone
-  /// 
-  /// [tokenHash] is the token used in an email link 
+  ///
+  /// [tokenHash] is the token used in an email link
   Future<AuthResponse> verifyOTP({
     String? email,
     String? phone,
