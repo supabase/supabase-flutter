@@ -1,9 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:mocktail/mocktail.dart';
-import 'package:storage_client/src/fetch.dart';
-import 'package:storage_client/src/types.dart';
 import 'package:storage_client/storage_client.dart';
 import 'package:test/test.dart';
 
@@ -11,12 +8,6 @@ import 'custom_http_client.dart';
 
 const String supabaseUrl = 'SUPABASE_TEST_URL';
 const String supabaseKey = 'SUPABASE_TEST_KEY';
-
-class MockFetch extends Mock implements Fetch {}
-
-FileOptions get mockFileOptions => any<FileOptions>();
-
-FetchOptions get mockFetchOptions => any<FetchOptions>(named: 'options');
 
 Map<String, dynamic> get testBucketJson => {
       'id': 'test_bucket',
@@ -39,25 +30,22 @@ Map<String, dynamic> get testFileObjectJson => {
     };
 
 String get bucketUrl => '$supabaseUrl/storage/v1/bucket';
-
 String get objectUrl => '$supabaseUrl/storage/v1/object';
 
 void main() {
   late SupabaseStorageClient client;
+  late CustomHttpClient customHttpClient = CustomHttpClient();
 
   group('Client with default http client', () {
     setUp(() {
       // init SupabaseClient with test url & test key
-      client = SupabaseStorageClient('$supabaseUrl/storage/v1', {
-        'Authorization': 'Bearer $supabaseKey',
-      });
-
-      // Use mocked version for `storageFetch`, to prevent actual http calls.
-      storageFetch = MockFetch();
-
-      // Register default mock values (used by mocktail)
-      registerFallbackValue(const FileOptions());
-      registerFallbackValue(const FetchOptions());
+      client = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {
+          'Authorization': 'Bearer $supabaseKey',
+        },
+        httpClient: customHttpClient,
+      );
     });
 
     tearDown(() {
@@ -66,10 +54,7 @@ void main() {
     });
 
     test('should list buckets', () async {
-      when(() => storageFetch.get(bucketUrl, options: mockFetchOptions))
-          .thenAnswer(
-        (_) => Future.value([testBucketJson, testBucketJson]),
-      );
+      customHttpClient.response = [testBucketJson, testBucketJson];
 
       final response = await client.listBuckets();
       expect(response, isA<List<Bucket>>());
@@ -77,24 +62,8 @@ void main() {
 
     test('should create bucket', () async {
       const testBucketId = 'test_bucket';
-      const requestBody = {
-        'id': testBucketId,
-        'name': testBucketId,
-        'public': false
-      };
-      when(
-        () => storageFetch.post(
-          bucketUrl,
-          requestBody,
-          options: mockFetchOptions,
-        ),
-      ).thenAnswer(
-        (_) => Future.value(
-          {
-            'name': 'test_bucket',
-          },
-        ),
-      );
+
+      customHttpClient.response = {'name': 'test_bucket'};
 
       final response = await client.createBucket(testBucketId);
       expect(response, isA<String>());
@@ -103,16 +72,8 @@ void main() {
 
     test('should get bucket', () async {
       const testBucketId = 'test_bucket';
-      when(
-        () => storageFetch.get(
-          '$bucketUrl/$testBucketId',
-          options: mockFetchOptions,
-        ),
-      ).thenAnswer(
-        (_) => Future.value(
-          testBucketJson,
-        ),
-      );
+
+      customHttpClient.response = testBucketJson;
 
       final response = await client.getBucket(testBucketId);
       expect(response, isA<Bucket>());
@@ -122,19 +83,8 @@ void main() {
 
     test('should empty bucket', () async {
       const testBucketId = 'test_bucket';
-      when(
-        () => storageFetch.post(
-          '$bucketUrl/$testBucketId/empty',
-          {},
-          options: mockFetchOptions,
-        ),
-      ).thenAnswer(
-        (_) => Future.value(
-          {
-            'message': 'Emptied',
-          },
-        ),
-      );
+
+      customHttpClient.response = {'message': 'Emptied'};
 
       final response = await client.emptyBucket(testBucketId);
       expect(response, 'Emptied');
@@ -142,15 +92,8 @@ void main() {
 
     test('should delete bucket', () async {
       const testBucketId = 'test_bucket';
-      when(
-        () => storageFetch.delete(
-          '$bucketUrl/$testBucketId',
-          {},
-          options: mockFetchOptions,
-        ),
-      ).thenAnswer(
-        (_) => Future.value({'message': 'Deleted'}),
-      );
+
+      customHttpClient.response = {'message': 'Deleted'};
 
       final response = await client.deleteBucket(testBucketId);
       expect(response, 'Deleted');
@@ -160,18 +103,7 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('File content');
 
-      when(
-        () => storageFetch.postFile(
-          '$objectUrl/public/a.txt',
-          file,
-          mockFileOptions,
-          options: mockFetchOptions,
-          retryAttempts: 0,
-          retryController: null,
-        ),
-      ).thenAnswer(
-        (_) => Future.value({'Key': 'public/a.txt'}),
-      );
+      customHttpClient.response = {'Key': 'public/a.txt'};
 
       final response = await client.from('public').upload('a.txt', file);
       expect(response, isA<String>());
@@ -182,18 +114,7 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('Updated content');
 
-      when(
-        () => storageFetch.putFile(
-          '$objectUrl/public/a.txt',
-          file,
-          mockFileOptions,
-          options: mockFetchOptions,
-          retryAttempts: 0,
-          retryController: null,
-        ),
-      ).thenAnswer(
-        (_) => Future.value({'Key': 'public/a.txt'}),
-      );
+      customHttpClient.response = {'Key': 'public/a.txt'};
 
       final response = await client.from('public').update('a.txt', file);
       expect(response, isA<String>());
@@ -201,52 +122,21 @@ void main() {
     });
 
     test('should move file', () async {
-      const requestBody = {
-        'bucketId': 'public',
-        'sourceKey': 'a.txt',
-        'destinationKey': 'b.txt',
-      };
-      when(
-        () => storageFetch.post(
-          '$objectUrl/move',
-          requestBody,
-          options: mockFetchOptions,
-        ),
-      ).thenAnswer(
-        (_) => Future.value({'message': 'Move'}),
-      );
+      customHttpClient.response = {'message': 'Move'};
 
       final response = await client.from('public').move('a.txt', 'b.txt');
       expect(response, 'Move');
     });
 
     test('should createSignedUrl file', () async {
-      when(
-        () => storageFetch.post(
-          '$objectUrl/sign/public/b.txt',
-          {'expiresIn': 60},
-          options: mockFetchOptions,
-        ),
-      ).thenAnswer(
-        (_) => Future.value({'signedURL': 'url'}),
-      );
+      customHttpClient.response = {'signedURL': 'url'};
 
       final response = await client.from('public').createSignedUrl('b.txt', 60);
       expect(response, isA<String>());
     });
 
     test('should list files', () async {
-      when(
-        () => storageFetch.post(
-          '$objectUrl/list/public',
-          any(),
-          options: mockFetchOptions,
-        ),
-      ).thenAnswer(
-        (_) => Future.value(
-          [testFileObjectJson, testFileObjectJson],
-        ),
-      );
+      customHttpClient.response = [testFileObjectJson, testFileObjectJson];
 
       final response = await client.from('public').list();
       expect(response, isA<List<FileObject>>());
@@ -257,16 +147,7 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('Updated content');
 
-      when(
-        () => storageFetch.get(
-          '$objectUrl/public_bucket/b.txt',
-          options: mockFetchOptions,
-        ),
-      ).thenAnswer(
-        (_) => Future.value(
-          file.readAsBytesSync(),
-        ),
-      );
+      customHttpClient.response = file.readAsBytesSync();
 
       final response = await client.from('public_bucket').download('b.txt');
       expect(response, isA<Uint8List>());
@@ -279,20 +160,7 @@ void main() {
     });
 
     test('should remove file', () async {
-      final requestBody = {
-        'prefixes': ['a.txt', 'b.txt']
-      };
-      when(
-        () => storageFetch.delete(
-          '$objectUrl/public',
-          requestBody,
-          options: mockFetchOptions,
-        ),
-      ).thenAnswer(
-        (_) => Future.value(
-          [testFileObjectJson, testFileObjectJson],
-        ),
-      );
+      customHttpClient.response = [testFileObjectJson, testFileObjectJson];
 
       final response = await client.from('public').remove(['a.txt', 'b.txt']);
       expect(response, isA<List>());
@@ -307,10 +175,9 @@ void main() {
         '$supabaseUrl/storage/v1',
         {'Authorization': 'Bearer $supabaseKey'},
         retryAttempts: 5,
+        // `RetryHttpClient` will throw `SocketException` for the first two tries
+        httpClient: RetryHttpClient(),
       );
-
-      // `RetryHttpClient` will throw `SocketException` for the first two tries
-      storageFetch = Fetch(RetryHttpClient());
     });
 
     test('Upload fails without retry', () async {
@@ -383,10 +250,13 @@ void main() {
   group('Client with custom http client', () {
     setUp(() {
       // init SupabaseClient with test url & test key
-      client = SupabaseStorageClient('$supabaseUrl/storage/v1', {
-        'Authorization': 'Bearer $supabaseKey',
-      });
-      storageFetch = Fetch(CustomHttpClient());
+      client = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {
+          'Authorization': 'Bearer $supabaseKey',
+        },
+        httpClient: FailingHttpClient(),
+      );
     });
     test('should list buckets', () async {
       try {
