@@ -479,6 +479,8 @@ class GoTrueClient {
   /// [phone] is the user's phone number WITH international prefix
   ///
   /// [token] is the token that user was sent to their mobile phone
+  ///
+  /// [tokenHash] is the token used in an email link
   Future<AuthResponse> verifyOTP({
     String? email,
     String? phone,
@@ -486,6 +488,7 @@ class GoTrueClient {
     required OtpType type,
     String? redirectTo,
     String? captchaToken,
+    String? tokenHash,
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
         '`email` or `phone` needs to be specified.');
@@ -501,6 +504,7 @@ class GoTrueClient {
       'type': type.snakeCase,
       'redirect_to': redirectTo,
       'gotrue_meta_security': {'captchaToken': captchaToken},
+      if (tokenHash != null) 'token_hash': tokenHash,
     };
     final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
     final response = await _fetch
