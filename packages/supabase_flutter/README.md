@@ -9,10 +9,6 @@ Flutter Client library for [Supabase](https://supabase.com/).
 
 - Documentation: https://supabase.com/docs/reference/dart/introduction
 
-## Platform Support
-
-Except Linux, all platforms are fully supported. Linux only doesn't support deeplinks, because of our dependency [app_links](https://pub.dev/packages/app_links). All other features are supported.
-
 ## Getting Started
 
 Import the package:
