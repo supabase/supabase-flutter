@@ -61,14 +61,8 @@ class SupabaseAuth with WidgetsBindingObserver {
       }
     }
     _widgetsBindingInstance?.addObserver(this);
-    if (kIsWeb ||
-        Platform.isAndroid ||
-        Platform.isIOS ||
-        Platform.isMacOS ||
-        Platform.isWindows ||
-        Platform.environment.containsKey('FLUTTER_TEST')) {
-      await _startDeeplinkObserver();
-    }
+
+    await _startDeeplinkObserver();
 
     // Emit a null session if the user did not have persisted session
     if (shouldEmitInitialSession) {
