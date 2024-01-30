@@ -48,7 +48,13 @@ class SupabaseStorageClient extends StorageBucketApi {
   ///
   /// [id] The bucket id to operate on.
   StorageFileApi from(String id) {
-    return StorageFileApi(url, headers, id, _defaultRetryAttempts);
+    return StorageFileApi(
+      url,
+      headers,
+      id,
+      _defaultRetryAttempts,
+      storageFetch,
+    );
   }
 
   void setAuth(String jwt) {
