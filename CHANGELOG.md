@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-01-31
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.5.0`](#gotrue---v250)
+ - [`storage_client` - `v2.0.1`](#storage_client---v201)
+ - [`supabase_flutter` - `v2.3.2`](#supabase_flutter---v232)
+ - [`supabase` - `v2.0.7`](#supabase---v207)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.0.7`
+
+---
+
+#### `gotrue` - `v2.5.0`
+
+ - **FEAT**: Add token hash to verifyOtp ([#813](https://github.com/supabase/supabase-flutter/issues/813)). ([a789d795](https://github.com/supabase/supabase-flutter/commit/a789d7954f8a66e0e8eaa271b82cd2daf274e6de))
+
+#### `storage_client` - `v2.0.1`
+
+ - **FIX**: Use per client fetch instance ([#818](https://github.com/supabase/supabase-flutter/issues/818)). ([0f3182c4](https://github.com/supabase/supabase-flutter/commit/0f3182c4f34ca5096b6dd747edf6ade0d1ec1c9e))
+
+#### `supabase_flutter` - `v2.3.2`
+
+ - **FIX**: Remove platform check to start deep link observer on every platform including Linux ([#815](https://github.com/supabase/supabase-flutter/issues/815)). ([9b05eeac](https://github.com/supabase/supabase-flutter/commit/9b05eeac559a1f2da6289e1d70b3fa89e262fa3c))
+
+
 ## 2024-01-23
 
 ### Changes
