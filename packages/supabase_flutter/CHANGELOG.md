@@ -1,3 +1,7 @@
+## 2.3.2
+
+ - **FIX**: Remove platform check to start deep link observer on every platform including Linux ([#815](https://github.com/supabase/supabase-flutter/issues/815)). ([9b05eeac](https://github.com/supabase/supabase-flutter/commit/9b05eeac559a1f2da6289e1d70b3fa89e262fa3c))
+
 ## 2.3.1
 
  - Update a dependency to the latest release.

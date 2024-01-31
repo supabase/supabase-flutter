@@ -1,3 +1,7 @@
+## 2.5.0
+
+ - **FEAT**: Add token hash to verifyOtp ([#813](https://github.com/supabase/supabase-flutter/issues/813)). ([a789d795](https://github.com/supabase/supabase-flutter/commit/a789d7954f8a66e0e8eaa271b82cd2daf274e6de))
+
 ## 2.4.1
 
  - **FIX**(gotrue): Set _currentUser when setting initial session ([#806](https://github.com/supabase/supabase-flutter/issues/806)). ([042f3c6d](https://github.com/supabase/supabase-flutter/commit/042f3c6dde7db6f479088ad788a4bbcbba640808))
