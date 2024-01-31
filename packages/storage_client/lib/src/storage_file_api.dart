@@ -10,12 +10,14 @@ class StorageFileApi {
   final Map<String, String> headers;
   final String? bucketId;
   final int _retryAttempts;
+  final Fetch _storageFetch;
 
   const StorageFileApi(
     this.url,
     this.headers,
     this.bucketId,
     this._retryAttempts,
+    this._storageFetch,
   );
 
   String _getFinalPath(String path) {
@@ -51,7 +53,7 @@ class StorageFileApi {
     assert(retryAttempts == null || retryAttempts >= 0,
         'retryAttempts has to be greater or equal to 0');
     final finalPath = _getFinalPath(path);
-    final response = await storageFetch.postFile(
+    final response = await _storageFetch.postFile(
       '$url/object/$finalPath',
       file,
       fileOptions,
@@ -86,7 +88,7 @@ class StorageFileApi {
     assert(retryAttempts == null || retryAttempts >= 0,
         'retryAttempts has to be greater or equal to 0');
     final finalPath = _getFinalPath(path);
-    final response = await storageFetch.postBinaryFile(
+    final response = await _storageFetch.postBinaryFile(
       '$url/object/$finalPath',
       data,
       fileOptions,
@@ -121,7 +123,7 @@ class StorageFileApi {
     var url = Uri.parse('${this.url}/object/upload/sign/$finalPath');
     url = url.replace(queryParameters: {'token': token});
 
-    await storageFetch.putFile(
+    await _storageFetch.putFile(
       url.toString(),
       file,
       fileOptions,
@@ -155,7 +157,7 @@ class StorageFileApi {
     var url = Uri.parse('${this.url}/object/upload/sign/$path0');
     url = url.replace(queryParameters: {'token': token});
 
-    await storageFetch.putBinaryFile(
+    await _storageFetch.putBinaryFile(
       url.toString(),
       data,
       fileOptions,
@@ -175,7 +177,7 @@ class StorageFileApi {
   Future<SignedUploadURLResponse> createSignedUploadUrl(String path) async {
     final finalPath = _getFinalPath(path);
 
-    final data = await storageFetch.post(
+    final data = await _storageFetch.post(
       '$url/object/upload/sign/$finalPath',
       {},
       options: FetchOptions(headers: headers),
@@ -220,7 +222,7 @@ class StorageFileApi {
     assert(retryAttempts == null || retryAttempts >= 0,
         'retryAttempts has to be greater or equal to 0');
     final finalPath = _getFinalPath(path);
-    final response = await storageFetch.putFile(
+    final response = await _storageFetch.putFile(
       '$url/object/$finalPath',
       file,
       fileOptions,
@@ -256,7 +258,7 @@ class StorageFileApi {
     assert(retryAttempts == null || retryAttempts >= 0,
         'retryAttempts has to be greater or equal to 0');
     final finalPath = _getFinalPath(path);
-    final response = await storageFetch.putBinaryFile(
+    final response = await _storageFetch.putBinaryFile(
       '$url/object/$finalPath',
       data,
       fileOptions,
@@ -276,7 +278,7 @@ class StorageFileApi {
   /// `folder/image-new.png`.
   Future<String> move(String fromPath, String toPath) async {
     final options = FetchOptions(headers: headers);
-    final response = await storageFetch.post(
+    final response = await _storageFetch.post(
       '$url/object/move',
       {
         'bucketId': bucketId,
@@ -297,7 +299,7 @@ class StorageFileApi {
   /// `folder/image-copy.png`.
   Future<String> copy(String fromPath, String toPath) async {
     final options = FetchOptions(headers: headers);
-    final response = await storageFetch.post(
+    final response = await _storageFetch.post(
       '$url/object/copy',
       {
         'bucketId': bucketId,
@@ -326,7 +328,7 @@ class StorageFileApi {
   }) async {
     final finalPath = _getFinalPath(path);
     final options = FetchOptions(headers: headers);
-    final response = await storageFetch.post(
+    final response = await _storageFetch.post(
       '$url/object/sign/$finalPath',
       {
         'expiresIn': expiresIn,
@@ -354,7 +356,7 @@ class StorageFileApi {
     int expiresIn,
   ) async {
     final options = FetchOptions(headers: headers);
-    final response = await storageFetch.post(
+    final response = await _storageFetch.post(
       '$url/object/sign/$bucketId',
       {
         'expiresIn': expiresIn,
@@ -391,7 +393,7 @@ class StorageFileApi {
     fetchUrl = fetchUrl.replace(queryParameters: queryParams);
 
     final response =
-        await storageFetch.get(fetchUrl.toString(), options: options);
+        await _storageFetch.get(fetchUrl.toString(), options: options);
     return response as Uint8List;
   }
 
@@ -424,7 +426,7 @@ class StorageFileApi {
   /// name. For example: `remove(['folder/image.png'])`.
   Future<List<FileObject>> remove(List<String> paths) async {
     final options = FetchOptions(headers: headers);
-    final response = await storageFetch.delete(
+    final response = await _storageFetch.delete(
       '$url/object/$bucketId',
       {'prefixes': paths},
       options: options,
@@ -451,7 +453,7 @@ class StorageFileApi {
       ...searchOptions.toMap(),
     };
     final options = FetchOptions(headers: headers);
-    final response = await storageFetch.post(
+    final response = await _storageFetch.post(
       '$url/object/list/$bucketId',
       body,
       options: options,

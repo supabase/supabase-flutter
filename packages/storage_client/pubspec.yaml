@@ -13,9 +13,9 @@ dependencies:
   http_parser: ^4.0.1
   mime: ^1.0.2
   retry: ^3.1.0
+  meta: ^1.7.0
 
 dev_dependencies:
-  mocktail: ^0.3.0
   test: ^1.21.4
   lints: ^2.1.1
   path: ^1.8.2
