@@ -4,10 +4,7 @@ import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart';
-import 'package:path/path.dart' as path;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'utils.dart';
@@ -82,28 +79,6 @@ class MockLocalStorage extends LocalStorage {
   Future<void> persistSession(String persistSessionString) async {}
   @override
   Future<void> removePersistedSession() async {}
-}
-
-class TestHiveLocalStorage extends HiveLocalStorage {
-  @override
-  Future<void> initialize() async {
-    Hive.init("${path.current}/auth_test");
-    await Hive.openBox("supabase_authentication");
-  }
-}
-
-class TestMigrationLocalStorage extends MigrationLocalStorage {
-  TestMigrationLocalStorage()
-      : super(persistSessionKey: "SUPABASE_PERSIST_SESSION_KEY");
-
-  @override
-  Future<void> initialize() async {
-    Hive.init("${path.current}/auth_test");
-    hiveLocalStorage = TestHiveLocalStorage();
-    SharedPreferences.setMockInitialValues({});
-    await sharedPreferencesLocalStorage.initialize();
-    await migrate();
-  }
 }
 
 class MockEmptyLocalStorage extends LocalStorage {
