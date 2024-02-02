@@ -429,7 +429,7 @@ Supabase.initialize(
 
 ### Persisting the user session from supabase_flutter v1
 
-supabase_flutter v1 used hive to persist the user session. In the current versino of supabase_flutter it uses shared_preferences. If you are updating your app from v1 to v2, you can use the following custom `LocalStorage` implementation to automatically migrate the user session from hive to shared_preferences.
+supabase_flutter v1 used hive to persist the user session. In the current version of supabase_flutter it uses shared_preferences. If you are updating your app from v1 to v2, you can use the following custom `LocalStorage` implementation to automatically migrate the user session from hive to shared_preferences.
 
 ```dart
 const _hiveBoxName = 'supabase_authentication';
