@@ -567,7 +567,7 @@ class HiveLocalStorage extends LocalStorage {
 }
 ```
 
-You can then initialize Supabase with `MigrationLocalStorage` and it will automatically migrate the sessino from Hive to SharedPreferences.
+You can then initialize Supabase with `MigrationLocalStorage` and it will automatically migrate the session from Hive to SharedPreferences.
 
 ```dart
 Supabase.initialize(
