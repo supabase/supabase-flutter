@@ -583,6 +583,11 @@ Supabase.initialize(
 
 ---
 
+## Migrating Guide
+
+You can find the migration guide to migrate from v1 to v2 here:
+https://supabase.com/docs/reference/dart/upgrade-guide
+
 ## Contributing
 
 - Fork the repo on [GitHub](https://github.com/supabase/supabase-flutter)
