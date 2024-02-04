@@ -248,11 +248,25 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
 
   /// Finds all rows whose json, array, or range value on the stated [column] contains the values specified in [value].
   ///
+  /// Pass an array or use brackets in a string for an inclusive range:
   /// ```dart
   /// await supabase
   ///     .from('users')
   ///     .select()
-  ///     .contains('age_range', '[1,2)');
+  ///     .contains('age_range', [1,2]);
+  /// 
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .contains('age_range', '[1,2]');  
+  /// ```
+  ///
+  /// Use parenthesis in a string for an exclusive range:
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .contains('age_range', '(1,2)');
   /// ```
   PostgrestFilterBuilder<T> contains(String column, Object value) {
     final Uri url;
@@ -272,11 +286,25 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
 
   /// Finds all rows whose json, array, or range value on the stated [column] is contained by the specified [value].
   ///
+  /// Pass an array or use brackets in a string for an inclusive range:
   /// ```dart
   /// await supabase
   ///     .from('users')
   ///     .select()
-  ///     .containedBy('age_range', '[1,2)');
+  ///     .containedBy('age_range', [1,2]);
+  /// 
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .containedBy('age_range', '[1,2]');  
+  /// ```
+  ///
+  /// Use parenthesis in a string for an exclusive range:
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .containedBy('age_range', '(1,2)');
   /// ```
   PostgrestFilterBuilder<T> containedBy(String column, Object value) {
     final Uri url;
