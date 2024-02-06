@@ -379,7 +379,7 @@ However, you can use any other methods by creating a `LocalStorage` implementati
 
 ```dart
 // Define the custom LocalStorage implementation
-class MockLocalStorage extends LocalStorage {
+class MySecureStorage extends LocalStorage {
 
   final storage = FlutterSecureStorage();
 
@@ -411,7 +411,7 @@ class MockLocalStorage extends LocalStorage {
 Supabase.initialize(
   ...
   authOptions: FlutterAuthClientOptions(
-    localStorage: const MockLocalStorage(),
+    localStorage: MySecureStorage(),
   ),
 );
 ```
