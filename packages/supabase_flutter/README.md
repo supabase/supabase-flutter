@@ -411,7 +411,7 @@ class MockLocalStorage extends LocalStorage {
 Supabase.initialize(
   ...
   authOptions: FlutterAuthClientOptions(
-    localStorage: const EmptyLocalStorage(),
+    localStorage: const MockLocalStorage(),
   ),
 );
 ```
