@@ -1,3 +1,7 @@
+## 2.3.3
+
+ - **REFACTOR**: Remove hive dependency and add instructinos to migration from v1 while persisting the auth state ([#823](https://github.com/supabase/supabase-flutter/issues/823)). ([26885c20](https://github.com/supabase/supabase-flutter/commit/26885c20167fd8f689ed0bd532fbff04f0e8006f))
+
 ## 2.3.2
 
  - **FIX**: Remove platform check to start deep link observer on every platform including Linux ([#815](https://github.com/supabase/supabase-flutter/issues/815)). ([9b05eeac](https://github.com/supabase/supabase-flutter/commit/9b05eeac559a1f2da6289e1d70b3fa89e262fa3c))
