@@ -31,7 +31,7 @@
 
 ## 2.0.0
 
- - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.
+ - Graduate package to a stable release. See pre-releases prior to this version for changelog entries. Upgrade guide can be found [here](https://supabase.com/docs/reference/dart/upgrade-guide).
 
 ## 2.0.0-dev.4
 

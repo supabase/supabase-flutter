@@ -88,7 +88,7 @@ class Supabase {
     }
     if (authOptions.localStorage == null) {
       authOptions = authOptions.copyWith(
-        localStorage: MigrationLocalStorage(
+        localStorage: SharedPreferencesLocalStorage(
           persistSessionKey:
               "sb-${Uri.parse(url).host.split(".").first}-auth-token",
         ),
