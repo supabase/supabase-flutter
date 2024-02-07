@@ -54,7 +54,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
         try {
-          Supabase.instance.client.auth.setInitialSession(persistedSession);
+          await Supabase.instance.client.auth.setInitialSession(persistedSession);
         } catch (error, stackTrace) {
           Supabase.instance.log(error.toString(), stackTrace);
         }
