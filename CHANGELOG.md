@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-02-06
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`supabase_flutter` - `v2.3.3`](#supabase_flutter---v233)
+
+---
+
+#### `supabase_flutter` - `v2.3.3`
+
+ - **REFACTOR**: Remove hive dependency and add instructinos to migration from v1 while persisting the auth state ([#823](https://github.com/supabase/supabase-flutter/issues/823)). ([26885c20](https://github.com/supabase/supabase-flutter/commit/26885c20167fd8f689ed0bd532fbff04f0e8006f))
+
+
 ## 2024-01-31
 
 ### Changes
