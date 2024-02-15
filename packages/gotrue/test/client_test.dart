@@ -106,6 +106,23 @@ void main() {
       } catch (_) {}
     });
 
+    test('Parsing an error URL should throw', () async {
+      const errorMessage =
+          'Unverified email with spotify. A confirmation email has been sent to your spotify email';
+
+      final urlWithoutAccessToken = Uri.parse(
+          'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}');
+      try {
+        await client.getSessionFromUrl(urlWithoutAccessToken);
+        fail('getSessionFromUrl did not throw exception');
+      } on AuthException catch (error) {
+        expect(error.message, errorMessage);
+      } catch (error) {
+        fail(
+            'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
+      }
+    });
+
     test('Subscribe a listener', () async {
       final stream = client.onAuthStateChange;
 
@@ -490,18 +507,21 @@ void main() {
       expect(queryParameters['code_challenge'], isA<String>());
     });
 
-    test('Parsing invalid URL should throw', () async {
-      const errorMessage = 'auth_error_message';
+    test('Parsing an error URL should throw', () async {
+      const errorMessage =
+          'Unverified email with spotify. A confirmation email has been sent to your spotify email';
 
+      // Supabase Auth returns a URL with `#` even when using pkce flow.
       final urlWithoutAccessToken = Uri.parse(
-          'http://my-callback-url.com/welcome#error_description=errorMessage');
+          'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}');
       try {
         await client.getSessionFromUrl(urlWithoutAccessToken);
         fail('getSessionFromUrl did not throw exception');
       } on AuthException catch (error) {
         expect(error.message, errorMessage);
-      } catch (_) {
-        fail('getSessionFromUrl did not throw exception');
+      } catch (error) {
+        fail(
+            'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
       }
     });
   });
