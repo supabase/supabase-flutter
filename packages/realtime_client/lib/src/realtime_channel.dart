@@ -518,10 +518,6 @@ class RealtimeChannel {
         opts['timeout'] ?? _timeout,
       );
 
-      if (push.rateLimited) {
-        completer.complete(ChannelResponse.rateLimited);
-      }
-
       if (payload['type'] == 'broadcast' &&
           (params['config']?['broadcast']?['ack'] == null ||
               params['config']?['broadcast']?['ack'] == false)) {

@@ -7,6 +7,8 @@ class RealtimeClientOptions {
   /// How many events the RealtimeClient can push in a second
   ///
   /// Defaults to 10 events per second
+  @Deprecated(
+      'Client side rate limit has been removed. This option will be ignored.')
   final int? eventsPerSecond;
 
   /// Level of realtime server logs to to be logged

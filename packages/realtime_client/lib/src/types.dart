@@ -101,7 +101,7 @@ class ChannelFilter {
   }
 }
 
-enum ChannelResponse { ok, timedOut, rateLimited, error }
+enum ChannelResponse { ok, timedOut, error }
 
 enum RealtimeListenTypes { postgresChanges, broadcast, presence }
 
