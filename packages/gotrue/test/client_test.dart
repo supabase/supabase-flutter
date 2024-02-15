@@ -46,7 +46,7 @@ void main() {
         flowType: AuthFlowType.implicit,
       );
 
-      adminClient = client = GoTrueClient(
+      adminClient = GoTrueClient(
         url: gotrueUrl,
         headers: {
           'Authorization': 'Bearer ${getServiceRoleToken(env)}',
