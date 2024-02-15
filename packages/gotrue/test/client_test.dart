@@ -43,6 +43,7 @@ void main() {
           'apikey': anonToken,
         },
         asyncStorage: asyncStorage,
+        flowType: AuthFlowType.implicit,
       );
 
       adminClient = client = GoTrueClient(
@@ -62,6 +63,7 @@ void main() {
           'apikey': anonToken,
         },
         asyncStorage: asyncStorage,
+        flowType: AuthFlowType.implicit,
       );
     });
 
@@ -319,14 +321,8 @@ void main() {
       test('signIn() with Provider with redirectTo', () async {
         final res = await client.getOAuthSignInUrl(
             provider: OAuthProvider.google, redirectTo: 'https://supabase.com');
-        final expectedOutput =
-            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com';
-        final queryParameters = Uri.parse(res.url).queryParameters;
-
-        expect(res.url, startsWith(expectedOutput));
-        expect(queryParameters, containsPair('flow_type', 'pkce'));
-        expect(queryParameters, containsPair('code_challenge', isNotNull));
-        expect(queryParameters, containsPair('code_challenge_method', 's256'));
+        expect(res.url,
+            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com');
         expect(res.provider, OAuthProvider.google);
       });
 
