@@ -147,7 +147,8 @@ class SupabaseAuth with WidgetsBindingObserver {
     return (uri.fragment.contains('access_token') &&
             _authFlowType == AuthFlowType.implicit) ||
         (uri.queryParameters.containsKey('code') &&
-            _authFlowType == AuthFlowType.pkce);
+            _authFlowType == AuthFlowType.pkce) ||
+        (uri.fragment.contains('error_description'));
   }
 
   /// Enable deep link observer to handle deep links
