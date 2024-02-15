@@ -719,14 +719,6 @@ class GoTrueClient {
     Uri originUrl, {
     bool storeSession = true,
   }) async {
-    if (_flowType == AuthFlowType.pkce) {
-      final authCode = originUrl.queryParameters['code'];
-      if (authCode == null) {
-        throw AuthPKCEGrantCodeExchangeError(
-            'No code detected in query parameters.');
-      }
-      return await exchangeCodeForSession(authCode);
-    }
     var url = originUrl;
     if (originUrl.hasQuery) {
       final decoded = originUrl.toString().replaceAll('#', '&');
@@ -739,6 +731,15 @@ class GoTrueClient {
     final errorDescription = url.queryParameters['error_description'];
     if (errorDescription != null) {
       throw AuthException(errorDescription);
+    }
+
+    if (_flowType == AuthFlowType.pkce) {
+      final authCode = originUrl.queryParameters['code'];
+      if (authCode == null) {
+        throw AuthPKCEGrantCodeExchangeError(
+            'No code detected in query parameters.');
+      }
+      return await exchangeCodeForSession(authCode);
     }
 
     final accessToken = url.queryParameters['access_token'];

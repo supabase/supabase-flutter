@@ -489,5 +489,20 @@ void main() {
       expect(queryParameters['code_challenge_method'], 's256');
       expect(queryParameters['code_challenge'], isA<String>());
     });
+
+    test('Parsing invalid URL should throw', () async {
+      const errorMessage = 'auth_error_message';
+
+      final urlWithoutAccessToken = Uri.parse(
+          'http://my-callback-url.com/welcome#error_description=errorMessage');
+      try {
+        await client.getSessionFromUrl(urlWithoutAccessToken);
+        fail('getSessionFromUrl did not throw exception');
+      } on AuthException catch (error) {
+        expect(error.message, errorMessage);
+      } catch (_) {
+        fail('getSessionFromUrl did not throw exception');
+      }
+    });
   });
 }
