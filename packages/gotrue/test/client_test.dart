@@ -43,9 +43,10 @@ void main() {
           'apikey': anonToken,
         },
         asyncStorage: asyncStorage,
+        flowType: AuthFlowType.implicit,
       );
 
-      adminClient = client = GoTrueClient(
+      adminClient = GoTrueClient(
         url: gotrueUrl,
         headers: {
           'Authorization': 'Bearer ${getServiceRoleToken(env)}',
@@ -62,6 +63,7 @@ void main() {
           'apikey': anonToken,
         },
         asyncStorage: asyncStorage,
+        flowType: AuthFlowType.implicit,
       );
     });
 
@@ -104,6 +106,23 @@ void main() {
         await client.getSessionFromUrl(urlWithoutAccessToken);
         fail('getSessionFromUrl did not throw exception');
       } catch (_) {}
+    });
+
+    test('Parsing an error URL should throw', () async {
+      const errorMessage =
+          'Unverified email with spotify. A confirmation email has been sent to your spotify email';
+
+      final urlWithoutAccessToken = Uri.parse(
+          'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}');
+      try {
+        await client.getSessionFromUrl(urlWithoutAccessToken);
+        fail('getSessionFromUrl did not throw exception');
+      } on AuthException catch (error) {
+        expect(error.message, errorMessage);
+      } catch (error) {
+        fail(
+            'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
+      }
     });
 
     test('Subscribe a listener', () async {
@@ -302,14 +321,8 @@ void main() {
       test('signIn() with Provider with redirectTo', () async {
         final res = await client.getOAuthSignInUrl(
             provider: OAuthProvider.google, redirectTo: 'https://supabase.com');
-        final expectedOutput =
-            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com';
-        final queryParameters = Uri.parse(res.url).queryParameters;
-
-        expect(res.url, startsWith(expectedOutput));
-        expect(queryParameters, containsPair('flow_type', 'pkce'));
-        expect(queryParameters, containsPair('code_challenge', isNotNull));
-        expect(queryParameters, containsPair('code_challenge_method', 's256'));
+        expect(res.url,
+            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com');
         expect(res.provider, OAuthProvider.google);
       });
 
@@ -488,6 +501,24 @@ void main() {
       expect(queryParameters['flow_type'], 'pkce');
       expect(queryParameters['code_challenge_method'], 's256');
       expect(queryParameters['code_challenge'], isA<String>());
+    });
+
+    test('Parsing an error URL should throw', () async {
+      const errorMessage =
+          'Unverified email with spotify. A confirmation email has been sent to your spotify email';
+
+      // Supabase Auth returns a URL with `#` even when using pkce flow.
+      final urlWithoutAccessToken = Uri.parse(
+          'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}');
+      try {
+        await client.getSessionFromUrl(urlWithoutAccessToken);
+        fail('getSessionFromUrl did not throw exception');
+      } on AuthException catch (error) {
+        expect(error.message, errorMessage);
+      } catch (error) {
+        fail(
+            'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
+      }
     });
   });
 }
