@@ -892,7 +892,7 @@ class GoTrueClient {
   /// The user will no longer be able to sign in with that identity once it's unlinked.
   Future<void> unlinkIdentity(UserIdentity identity) async {
     await _fetch.request(
-      '$_url/user/identities/${identity.id}',
+      '$_url/user/identities/${identity.identityId}',
       RequestMethodType.delete,
       options: GotrueRequestOptions(
         headers: headers,
