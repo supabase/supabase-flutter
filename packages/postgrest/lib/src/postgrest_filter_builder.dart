@@ -292,7 +292,6 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// Pass an array or use brackets in a string for an inclusive range and
   /// use parenthesis in a string for an exclusive range
   /// ```dart
-  ///
   /// // On array columns
   /// final data = await supabase
   ///   .from('classes')
