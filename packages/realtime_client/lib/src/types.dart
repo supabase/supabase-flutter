@@ -101,7 +101,14 @@ class ChannelFilter {
   }
 }
 
-enum ChannelResponse { ok, timedOut, error }
+enum ChannelResponse {
+  ok,
+  timedOut,
+  @Deprecated(
+      'Client side rate limiting has been removed, and this enum value will never be returned.')
+  rateLimited,
+  error
+}
 
 enum RealtimeListenTypes { postgresChanges, broadcast, presence }
 
