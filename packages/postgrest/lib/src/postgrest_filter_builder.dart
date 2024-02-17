@@ -248,25 +248,28 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
 
   /// Finds all rows whose json, array, or range value on the stated [column] contains the values specified in [value].
   ///
-  /// Pass an array or use brackets in a string for an inclusive range:
+  /// Pass an array or use brackets in a string for an inclusive range and
+  /// use parenthesis in a string for an exclusive range:
   /// ```dart
-  /// await supabase
-  ///     .from('users')
-  ///     .select()
-  ///     .contains('age_range', [1,2]);
-  /// 
-  /// await supabase
-  ///     .from('users')
-  ///     .select()
-  ///     .contains('age_range', '[1,2]');  
-  /// ```
+  /// // On array columns
+  /// final data = await supabase
+  ///   .from('issues')
+  ///   .select()
+  ///   .contains('tags', ['is:open', 'priority:low']);
   ///
-  /// Use parenthesis in a string for an exclusive range:
-  /// ```dart
-  /// await supabase
-  ///     .from('users')
-  ///     .select()
-  ///     .contains('age_range', '(1,2)');
+  /// // On range columns
+  /// // Finds rows where the `during` column contains the range between
+  /// // `2000-01-01 00:00` inclusive and `2000-01-01 23:59` exclusive
+  /// final data = await supabase
+  ///   .from('reservations')
+  ///   .select()
+  ///   .contains('during', '[2000-01-01 13:00, 2000-01-01 13:30)');
+  ///
+  /// //On jsonb columns
+  /// final data = await supabase
+  ///   .from('users')
+  ///   .select('name')
+  ///   .contains('address', { 'street': 'Melrose Place' });
   /// ```
   PostgrestFilterBuilder<T> contains(String column, Object value) {
     final Uri url;
@@ -286,25 +289,29 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
 
   /// Finds all rows whose json, array, or range value on the stated [column] is contained by the specified [value].
   ///
-  /// Pass an array or use brackets in a string for an inclusive range:
+  /// Pass an array or use brackets in a string for an inclusive range and
+  /// use parenthesis in a string for an exclusive range
   /// ```dart
-  /// await supabase
-  ///     .from('users')
-  ///     .select()
-  ///     .containedBy('age_range', [1,2]);
-  /// 
-  /// await supabase
-  ///     .from('users')
-  ///     .select()
-  ///     .containedBy('age_range', '[1,2]');  
-  /// ```
   ///
-  /// Use parenthesis in a string for an exclusive range:
-  /// ```dart
-  /// await supabase
-  ///     .from('users')
-  ///     .select()
-  ///     .containedBy('age_range', '(1,2)');
+  /// // On array columns
+  /// final data = await supabase
+  ///   .from('classes')
+  ///   .select('name')
+  ///   .containedBy('days', ['monday', 'tuesday', 'wednesday', 'friday']);
+  ///
+  /// // On range columns
+  /// // Finds rows where the `during` column is contained between
+  /// // `2000-01-01 00:00` inclusive and `2000-01-01 23:59` exclusive
+  /// final data = await supabase
+  ///   .from('reservations')
+  ///   .select()
+  ///   .containedBy('during', '[2000-01-01 00:00, 2000-01-01 23:59)');
+  ///
+  /// // On jsonb columns
+  /// final data = await supabase
+  ///   .from('users')
+  ///   .select('name')
+  ///   .containedBy('address', {'postcode': 90210});
   /// ```
   PostgrestFilterBuilder<T> containedBy(String column, Object value) {
     final Uri url;
