@@ -255,12 +255,10 @@ class SupabaseClient {
   RealtimeClient _initRealtimeClient({
     required RealtimeClientOptions options,
   }) {
-    final eventsPerSecond = options.eventsPerSecond;
     return RealtimeClient(
       _realtimeUrl,
       params: {
         'apikey': _supabaseKey,
-        if (eventsPerSecond != null) 'eventsPerSecond': '$eventsPerSecond'
       },
       headers: headers,
       logLevel: options.logLevel,

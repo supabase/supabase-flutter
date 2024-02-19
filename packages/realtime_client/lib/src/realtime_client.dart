@@ -81,8 +81,6 @@ class RealtimeClient {
   };
   int longpollerTimeout = 20000;
   SocketStates? connState;
-  int eventsPerSecondLimitMs = 100;
-  bool inThrottle = false;
 
   /// Initializes the Socket
   ///
@@ -122,11 +120,6 @@ class RealtimeClient {
           if (headers != null) ...headers,
         },
         transport = transport ?? createWebSocketClient {
-    final eventsPerSecond = params['eventsPerSecond'];
-    if (eventsPerSecond != null) {
-      eventsPerSecondLimitMs = (1000 / int.parse(eventsPerSecond)).floor();
-    }
-
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
 
@@ -288,7 +281,6 @@ class RealtimeClient {
   ///
   /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
   String? push(Message message) {
-    final event = message.event;
     void callback() {
       encode(message.toJson(), (result) => conn?.sink.add(result));
     }
@@ -297,18 +289,7 @@ class RealtimeClient {
         message.payload);
 
     if (isConnected) {
-      if ([
-        ChannelEvents.broadcast,
-        ChannelEvents.presence,
-        ChannelEvents.postgresChanges
-      ].contains(event)) {
-        final isThrottled = _throttle(callback)();
-        if (isThrottled) {
-          return 'rate limited';
-        }
-      } else {
-        callback();
-      }
+      callback();
     } else {
       sendBuffer.add(callback);
     }
@@ -486,18 +467,5 @@ class RealtimeClient {
       ref: pendingHeartbeatRef!,
     ));
     setAuth(accessToken);
-  }
-
-  bool Function() _throttle(Function callback, [int? eventsPerSecondLimit]) {
-    return () {
-      if (inThrottle) return true;
-      callback();
-      inThrottle = true;
-      Timer(
-          Duration(
-              milliseconds: eventsPerSecondLimit ?? eventsPerSecondLimitMs),
-          () => inThrottle = false);
-      return false;
-    };
   }
 }
