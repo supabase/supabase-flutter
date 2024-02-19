@@ -1,3 +1,7 @@
+## 2.1.1
+
+ - **DOCS**(postgrest): Expand documentation for `contains` and `containedBy` methods ([#824](https://github.com/supabase/supabase-flutter/issues/824)). ([e241e766](https://github.com/supabase/supabase-flutter/commit/e241e7668e4e0bafd6612011fef730f9b99874bc))
+
 ## 2.1.0
 
  - **FIX**: Passing `null` to `not()` filter is now allowed ([#775](https://github.com/supabase/supabase-flutter/issues/775)). ([13f02286](https://github.com/supabase/supabase-flutter/commit/13f02286dc2d6fd1c1a30099bf540c436951f9a4))

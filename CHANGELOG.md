@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-02-19
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.5.1`](#gotrue---v251)
+ - [`postgrest` - `v2.1.1`](#postgrest---v211)
+ - [`realtime_client` - `v2.0.1`](#realtime_client---v201)
+ - [`supabase` - `v2.0.8`](#supabase---v208)
+ - [`supabase_flutter` - `v2.3.4`](#supabase_flutter---v234)
+
+---
+
+#### `gotrue` - `v2.5.1`
+
+ - **FIX**: Correct the id value passed to `.unlinkIdentity()` method ([#841](https://github.com/supabase/supabase-flutter/issues/841)). ([0585cdde](https://github.com/supabase/supabase-flutter/commit/0585cdde4eefa61eda4c67e41b8f6f266b891fca))
+ - **FIX**(gotrue,supabase_flutter): Throw error when parsing auth URL that contains an error description. ([#839](https://github.com/supabase/supabase-flutter/issues/839)). ([afc4ce51](https://github.com/supabase/supabase-flutter/commit/afc4ce51c14798c2319a0ebebe231895c6ddd8ae))
+
+#### `postgrest` - `v2.1.1`
+
+ - **DOCS**(postgrest): Expand documentation for `contains` and `containedBy` methods ([#824](https://github.com/supabase/supabase-flutter/issues/824)). ([e241e766](https://github.com/supabase/supabase-flutter/commit/e241e7668e4e0bafd6612011fef730f9b99874bc))
+
+#### `realtime_client` - `v2.0.1`
+
+ - **REFACTOR**: Deprecate `eventsPerSecond` on Realtime ([#838](https://github.com/supabase/supabase-flutter/issues/838)). ([42383873](https://github.com/supabase/supabase-flutter/commit/42383873a71bbfbecb971e752806241bfdcaa0c2))
+
+#### `supabase` - `v2.0.8`
+
+ - **REFACTOR**: Deprecate `eventsPerSecond` on Realtime ([#838](https://github.com/supabase/supabase-flutter/issues/838)). ([42383873](https://github.com/supabase/supabase-flutter/commit/42383873a71bbfbecb971e752806241bfdcaa0c2))
+
+#### `supabase_flutter` - `v2.3.4`
+
+ - **FIX**(gotrue,supabase_flutter): Throw error when parsing auth URL that contains an error description. ([#839](https://github.com/supabase/supabase-flutter/issues/839)). ([afc4ce51](https://github.com/supabase/supabase-flutter/commit/afc4ce51c14798c2319a0ebebe231895c6ddd8ae))
+ - **FIX**: Correct the class name used for custom storage ([#825](https://github.com/supabase/supabase-flutter/issues/825)). ([a7216626](https://github.com/supabase/supabase-flutter/commit/a72166268facd97f07cf9588415a2f3d31f68c22))
+
+
 ## 2024-02-06
 
 ### Changes

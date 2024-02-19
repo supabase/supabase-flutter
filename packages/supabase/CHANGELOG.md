@@ -1,3 +1,7 @@
+## 2.0.8
+
+ - **REFACTOR**: Deprecate `eventsPerSecond` on Realtime ([#838](https://github.com/supabase/supabase-flutter/issues/838)). ([42383873](https://github.com/supabase/supabase-flutter/commit/42383873a71bbfbecb971e752806241bfdcaa0c2))
+
 ## 2.0.7
 
  - Update a dependency to the latest release.
