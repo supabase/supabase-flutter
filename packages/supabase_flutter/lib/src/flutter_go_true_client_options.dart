@@ -2,6 +2,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FlutterAuthClientOptions extends AuthClientOptions {
   final LocalStorage? localStorage;
+
+  /// If true, the client will start the deep link observer and obtain sessions
+  /// a valid URI comes in.
   final bool detectSessionInUri;
 
   const FlutterAuthClientOptions({
@@ -24,7 +27,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
       autoRefreshToken: autoRefreshToken ?? this.autoRefreshToken,
       localStorage: localStorage ?? this.localStorage,
       pkceAsyncStorage: pkceAsyncStorage ?? this.pkceAsyncStorage,
-      detectSessionInUri: detectSessionInUrl ?? this.detectSessionInUri,
+      detectSessionInUri: detectSessionInUrl ?? detectSessionInUri,
     );
   }
 }
