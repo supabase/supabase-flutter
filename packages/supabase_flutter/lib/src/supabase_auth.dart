@@ -62,7 +62,9 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
     _widgetsBindingInstance?.addObserver(this);
 
-    await _startDeeplinkObserver();
+    if (options.detectSessionInUri) {
+      await _startDeeplinkObserver();
+    }
 
     // Emit a null session if the user did not have persisted session
     if (shouldEmitInitialSession) {
