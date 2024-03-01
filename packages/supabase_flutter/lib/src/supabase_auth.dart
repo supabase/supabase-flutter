@@ -62,7 +62,9 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
     _widgetsBindingInstance?.addObserver(this);
 
-    await _startDeeplinkObserver();
+    if (options.detectSessionInUri) {
+      await _startDeeplinkObserver();
+    }
 
     // Emit a null session if the user did not have persisted session
     if (shouldEmitInitialSession) {
@@ -162,8 +164,10 @@ class SupabaseAuth with WidgetsBindingObserver {
   ///
   /// Automatically called on dispose().
   void _stopDeeplinkObserver() {
-    Supabase.instance.log('***** SupabaseDeepLinkingMixin stopAuthObserver');
-    _deeplinkSubscription?.cancel();
+    if (_deeplinkSubscription != null) {
+      Supabase.instance.log('***** SupabaseDeepLinkingMixin stopAuthObserver');
+      _deeplinkSubscription?.cancel();
+    }
   }
 
   /// Handle incoming links - the ones that the app will receive from the OS
