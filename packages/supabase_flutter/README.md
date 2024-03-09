@@ -388,12 +388,12 @@ class MySecureStorage extends LocalStorage {
 
   @override
   Future<String?> accessToken() async {
-    return storage.containsKey(key: supabasePersistSessionKey);
+    return storage.read(key: supabasePersistSessionKey);
   }
 
   @override
   Future<bool> hasAccessToken() async {
-    return storage.read(key: supabasePersistSessionKey);
+    return storage.containsKey(key: supabasePersistSessionKey);
   }
 
   @override
