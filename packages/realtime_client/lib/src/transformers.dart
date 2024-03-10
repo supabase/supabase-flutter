@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart' show IterableExtension;
+import 'package:meta/meta.dart';
 
 enum PostgresTypes {
   abstime,
@@ -64,6 +65,7 @@ class PostgresColumn {
 /// convertChangeData([{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}], {'first_name': 'Paul', 'age':'33'}, {})
 /// => { 'first_name': 'Paul', 'age': 33 }
 /// ```
+@internal
 Map<String, dynamic> convertChangeData(
   List<Map<String, dynamic>> columns,
   Map<String, dynamic> record, {
@@ -81,7 +83,7 @@ Map<String, dynamic> convertChangeData(
   }
 
   record.forEach((key, value) {
-    result[key] = convertColumn(key, parsedColumns, record, skipTypes ?? []);
+    result[key] = _convertColumn(key, parsedColumns, record, skipTypes ?? []);
   });
   return result;
 }
@@ -99,7 +101,7 @@ Map<String, dynamic> convertChangeData(
 /// convertColumn('age', [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}], ['Paul', '33'], ['int4'])
 /// => "33"
 /// ```
-dynamic convertColumn(
+dynamic _convertColumn(
   String columnName,
   List<PostgresColumn> columns,
   Map<String, dynamic> record,
@@ -128,6 +130,7 @@ dynamic convertColumn(
 /// @example convertCell('_int4', '{1,2,3,4}')
 /// => [1,2,3,4]
 /// ```
+@internal
 dynamic convertCell(String type, dynamic value) {
   // if data type is an array
   if (type[0] == '_') {
@@ -155,7 +158,7 @@ dynamic convertCell(String type, dynamic value) {
       return toJson(value);
     case PostgresTypes.timestamp:
       return toTimestampString(
-        value.toString(),
+        value?.toString(),
       ); // Format to be consistent with PostgREST
     case PostgresTypes.abstime: // To allow users to cast it based on Timezone
     case PostgresTypes.date: // To allow users to cast it based on Timezone
