@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:gotrue/gotrue.dart';
 
 /// Converts base 10 int into String representation of base 16 int and takes the last two digets.
 String dec2hex(int dec) {
@@ -20,4 +21,8 @@ String generatePKCEVerifier() {
 String generatePKCEChallenge(String verifier) {
   return base64UrlEncode(sha256.convert(ascii.encode(verifier)).bytes)
       .split('=')[0];
+}
+
+bool isAuthRetryableFetchError(Object error) {
+  return error is AuthRetryableFetchError;
 }

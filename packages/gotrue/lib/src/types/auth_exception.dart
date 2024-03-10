@@ -24,3 +24,11 @@ class AuthException implements Exception {
 class AuthPKCEGrantCodeExchangeError extends AuthException {
   AuthPKCEGrantCodeExchangeError(String message) : super(message);
 }
+
+class AuthSessionMissingError extends AuthException {
+  AuthSessionMissingError() : super('Auth session missing!', statusCode: '400');
+}
+
+class AuthRetryableFetchError extends AuthException {
+  AuthRetryableFetchError() : super('AuthRetryableFetchError');
+}
