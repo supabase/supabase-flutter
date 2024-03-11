@@ -32,3 +32,25 @@ class AuthSessionMissingError extends AuthException {
 class AuthRetryableFetchError extends AuthException {
   AuthRetryableFetchError() : super('AuthRetryableFetchError');
 }
+
+class AuthApiError extends AuthException {
+  AuthApiError(String message, {String? statusCode})
+      : super(message, statusCode: statusCode);
+}
+
+class AuthUnknownError extends AuthException {
+  final Object originalError;
+
+  AuthUnknownError({required String message, required this.originalError})
+      : super(message);
+}
+
+class AuthWeakPasswordError extends AuthException {
+  final List<String> reasons;
+
+  AuthWeakPasswordError({
+    required String message,
+    required String statusCode,
+    required this.reasons,
+  }) : super(message, statusCode: statusCode);
+}
