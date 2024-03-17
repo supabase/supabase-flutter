@@ -93,6 +93,98 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     );
   }
 
+  Future<Map<String, dynamic>> jsonifyRequest() async {
+    final String? method = _method;
+
+    if (_count != null) {
+      if (_headers['Prefer'] != null) {
+        final oldPreferHeader = _headers['Prefer'];
+        _headers['Prefer'] = '$oldPreferHeader,count=${_count!.name}';
+      } else {
+        _headers['Prefer'] = 'count=${_count!.name}';
+      }
+    }
+
+    try {
+      if (method == null) {
+        throw ArgumentError(
+          'Missing table operation: select, insert, update or delete',
+        );
+      }
+
+      final uppercaseMethod = method.toUpperCase();
+      late http.Response response;
+
+      if (_schema == null) {
+        // skip
+      } else if ([METHOD_GET, METHOD_HEAD].contains(method)) {
+        _headers['Accept-Profile'] = _schema!;
+      } else {
+        _headers['Content-Profile'] = _schema!;
+      }
+      if (method != METHOD_GET && method != METHOD_HEAD) {
+        _headers['Content-Type'] = 'application/json';
+      }
+      final bodyStr = jsonEncode(_body);
+
+      return {
+        'method': uppercaseMethod,
+        'url': _url,
+        'headers': _headers,
+        'body': bodyStr,
+      }
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  Future<T> executejsonRequest(Map<String, dynamic> jsonRequest) async {
+    final uppercaseMethod = jsonRequest['method'];
+    final _url = jsonRequest['url'];
+    final _headers = jsonRequest['headers'];
+    final bodyStr = jsonRequest['body'];
+    
+    if (uppercaseMethod == METHOD_GET) {
+        response = await (_httpClient?.get ?? http.get)(
+          _url,
+          headers: _headers,
+        );
+      } else if (uppercaseMethod == METHOD_POST) {
+        response = await (_httpClient?.post ?? http.post)(
+          _url,
+          headers: _headers,
+          body: bodyStr,
+        );
+      } else if (uppercaseMethod == METHOD_PUT) {
+        response = await (_httpClient?.put ?? http.put)(
+          _url,
+          headers: _headers,
+          body: bodyStr,
+        );
+      } else if (uppercaseMethod == METHOD_PATCH) {
+        response = await (_httpClient?.patch ?? http.patch)(
+          _url,
+          headers: _headers,
+          body: bodyStr,
+        );
+      } else if (uppercaseMethod == METHOD_DELETE) {
+        response = await (_httpClient?.delete ?? http.delete)(
+          _url,
+          headers: _headers,
+        );
+      } else if (uppercaseMethod == METHOD_HEAD) {
+        response = await (_httpClient?.head ?? http.head)(
+          _url,
+          headers: _headers,
+        );
+      }
+
+      return _parseResponse(response, method);
+    } catch (error) {
+      rethrow;
+    }
+  }
+
   Future<T> _execute() async {
     final String? method = _method;
 
