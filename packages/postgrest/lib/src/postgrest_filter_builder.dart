@@ -1,7 +1,7 @@
 part of 'postgrest_builder.dart';
 
 class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
-  PostgrestFilterBuilder(PostgrestBuilder<T, T, T> builder) : super(builder);
+  PostgrestFilterBuilder(super.builder);
 
   @override
   PostgrestFilterBuilder<T> copyWithUrl(Uri url) =>
@@ -230,6 +230,42 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   // ignore: non_constant_identifier_names
   PostgrestFilterBuilder<T> isFilter(String column, Object? value) {
     return copyWithUrl(appendSearchParams(column, 'is.$value'));
+  }
+
+  /// Finds all rows whose value on the stated [column] exactly match the null.
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .isNull('data');
+  /// ```
+  // ignore: non_constant_identifier_names
+  PostgrestFilterBuilder<T> isNull(String column) {
+    return this.isFilter(column, null);
+  }
+
+  /// Finds all rows whose value on the stated [column] exactly match the true.
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .isTrue('data');
+  /// ```
+  // ignore: non_constant_identifier_names
+  PostgrestFilterBuilder<T> isTrue(String column) {
+    return this.isFilter(column, true);
+  }
+
+  /// Finds all rows whose value on the stated [column] exactly match the false.
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .isFalse('data');
+  /// ```
+  // ignore: non_constant_identifier_names
+  PostgrestFilterBuilder<T> isFalse(String column) {
+    return this.isFilter(column, false);
   }
 
   /// Finds all rows whose value on the stated [column] is found on the specified [values].

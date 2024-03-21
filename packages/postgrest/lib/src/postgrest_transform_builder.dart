@@ -76,6 +76,32 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
+  /// finds oldest result with the default [created_at] or specified [column].
+  ///
+  /// ```dart
+  /// final data = await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .oldest();
+  /// ````
+  PostgrestTransformBuilder<Map<String, dynamic>> oldest(
+      [String column = 'created_at']) {
+    return order(column, ascending: false).single();
+  }
+
+  /// finds latest result with the default [created_at] or specified [column].
+  ///
+  /// ```dart
+  /// final data = await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .latest();
+  /// ````
+  PostgrestTransformBuilder<Map<String, dynamic>> latest(
+      [String column = 'created_at']) {
+    return order(column, ascending: true).single();
+  }
+
   /// Limits the result with the specified [count].
   ///
   /// ```dart
