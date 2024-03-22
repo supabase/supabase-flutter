@@ -970,8 +970,7 @@ class GoTrueClient {
   /// If you call this method any managed visibility change callback will be
   /// removed and you must manage visibility changes on your own.
   void stopAutoRefresh() {
-    // TODO: we might need to move this into supabase_flutter to remove the visibility change callback
-    final ticker = _autoRefreshTicker;
+    _autoRefreshTicker?.cancel();
     _autoRefreshTicker = null;
   }
 

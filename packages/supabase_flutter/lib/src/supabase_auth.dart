@@ -107,30 +107,12 @@ class SupabaseAuth with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        _recoverSupabaseSession();
-      default:
-    }
-  }
-
-  /// Recover/refresh session if it's available
-  /// e.g. called on a splash screen when the app starts.
-  Future<void> _recoverSupabaseSession() async {
-    final bool exist = await _localStorage.hasAccessToken();
-    if (!exist) {
-      return;
-    }
-
-    final String? jsonStr = await _localStorage.accessToken();
-    if (jsonStr == null) {
-      return;
-    }
-
-    try {
-      await Supabase.instance.client.auth.recoverSession(jsonStr);
-    } catch (error) {
-      // When there is an exception thrown while recovering the session,
-      // the appropriate action (retry, revoking session) will be taken by
-      // the gotrue library, so need to do anything here.
+        Supabase.instance.client.auth.startAutoRefresh();
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+        Supabase.instance.client.auth.stopAutoRefresh();
     }
   }
 
