@@ -14,6 +14,9 @@ class Constants {
   static const expiryMargin = Duration(seconds: 10);
   static const int maxRetryCount = 10;
   static const retryInterval = Duration(milliseconds: 200);
+  static const autoRefreshTickDuration = Duration(seconds: 30);
+  static const autoRefreshTockThreshold = 3;
+  // AUTO_REFRESH_TICK_THRESHOLD
 }
 
 enum AuthChangeEvent {

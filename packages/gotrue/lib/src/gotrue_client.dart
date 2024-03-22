@@ -50,10 +50,7 @@ class GoTrueClient {
 
   late bool _autoRefreshToken;
 
-  /// Timer to refresh the token including retries.
-  Timer? _refreshTokenTimer;
-
-  int _refreshTokenRetryCount = 0;
+  Timer? _autoRefreshTicker;
 
   /// Completer to combine multiple simultaneous token refresh requests.
   Completer<AuthResponse>? _refreshTokenCompleter;
@@ -580,14 +577,22 @@ class GoTrueClient {
     return res['url'] as String;
   }
 
-  /// Force refreshes the session including the user data in case it was updated
-  /// in a different session.
-  Future<AuthResponse> refreshSession() async {
+  /// Returns a new session, regardless of expiry status.
+  /// Takes in an optional current session. If not passed in, then refreshSession() will attempt to retrieve it from getSession().
+  /// If the current session's refresh token is invalid, an error will be thrown.
+  Future<AuthResponse> refreshSession([String? refreshToken]) async {
     if (currentSession?.accessToken == null) {
       throw AuthException('Not logged in.');
     }
 
-    return await _callRefreshToken();
+    final currentSessionRefreshToken =
+        _currentSession?.refreshToken ?? refreshToken;
+
+    if (currentSessionRefreshToken == null) {
+      throw AuthSessionMissingError();
+    }
+
+    return await _callRefreshToken(currentSessionRefreshToken);
   }
 
   /// Sends a reauthentication OTP to the user's email or phone number.
@@ -950,11 +955,14 @@ class GoTrueClient {
   void startAutoRefresh() async {
     stopAutoRefresh();
 
-    // _saveSession restarts the timer with the current time.
-    final session = _currentSession;
-    if (session != null) {
-      _saveSession(session);
-    }
+    // final ticker = setInterval(() => this._autoRefreshTokenTick(), AUTO_REFRESH_TICK_DURATION)
+    _autoRefreshTicker = Timer.periodic(
+      Constants.autoRefreshTickDuration,
+      (Timer t) => _autoRefreshTokenTick(),
+    );
+
+    await Future.delayed(Duration.zero);
+    await _autoRefreshTokenTick();
   }
 
   /// Stops an active auto refresh process running in the background (if any).
@@ -962,13 +970,54 @@ class GoTrueClient {
   /// If you call this method any managed visibility change callback will be
   /// removed and you must manage visibility changes on your own.
   void stopAutoRefresh() {
-    _refreshTokenTimer?.cancel();
-    _refreshTokenTimer = null;
+    // TODO: we might need to move this into supabase_flutter to remove the visibility change callback
+    final ticker = _autoRefreshTicker;
+    _autoRefreshTicker = null;
+  }
+
+  Future<void> _autoRefreshTokenTick() async {
+    // TODO: should we implement browser lock in Flutter as well?
+    try {
+      final now = DateTime.now();
+      final session = _currentSession;
+      if (session == null) {
+        return;
+      }
+      final refreshToken = session.refreshToken;
+      if (refreshToken == null) {
+        // TODO: properly handle case where refresh token is null
+        // check the js implementation
+        return;
+      }
+
+      final expiresAt = session.expiresAt;
+
+      if (expiresAt == null) {
+        // TODO: properly handle expiresAt being null
+        // check the js implementation
+        return;
+      }
+
+      final expiresInTicks =
+          ((DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)
+                          .difference(now))
+                      .inMilliseconds /
+                  Constants.autoRefreshTickDuration.inMilliseconds)
+              .floor();
+
+      // Only tick if the next tick comes after the retry threshold
+      if (expiresInTicks <= Constants.autoRefreshTockThreshold) {
+        await _callRefreshToken(refreshToken);
+      }
+    } catch (error) {
+      // TODO: in js, it's just printing here
+    }
   }
 
   /// Generates a new JWT.
-  /// @param refreshToken A valid refresh token that was returned on login.
+  /// [refreshToken] A valid refresh token that was returned on login.
   Future<AuthResponse> _refreshAccessToken(String refreshToken) async {
+    final startedAt = DateTime.now();
     return await retry<AuthResponse>(
       // Make a GET request
       () async {
@@ -981,8 +1030,10 @@ class GoTrueClient {
         final authResponse = AuthResponse.fromJson(response);
         return authResponse;
       },
-      // Retry on SocketException or TimeoutException
       retryIf: (e) {
+        // Do not retry if the next retry comes after the next tick.
+// Date.now() + (attempt + 1) * 200 - startedAt < AUTO_REFRESH_TICK_DURATION
+// TODO: Compare the remaining time until tik and the time until the next retry
         return e is ClientException;
       },
       maxDelay: Duration(seconds: 10),
@@ -1033,66 +1084,26 @@ class GoTrueClient {
     return OAuthResponse(provider: provider, url: oauthUrl);
   }
 
-  void _saveSession(Session session) async {
+  /// set currentSession and currentUser
+  /// process to _startAutoRefreshToken if possible
+  void _saveSession(Session session) {
     _currentSession = session;
     _currentUser = session.user;
-    final expiresAt = session.expiresAt;
 
-    if (_autoRefreshToken && expiresAt != null) {
-      _refreshTokenTimer?.cancel();
-
-      final timeNow = (DateTime.now().millisecondsSinceEpoch / 1000).round();
-      final expiresIn = expiresAt - timeNow;
-      final refreshDurationBeforeExpires = expiresIn > 60 ? 60 : 1;
-      final nextDuration = expiresIn - refreshDurationBeforeExpires;
-      try {
-        if (nextDuration > 0) {
-          _refreshTokenRetryCount = 0;
-          final timerDuration = Duration(seconds: nextDuration);
-          _setTokenRefreshTimer(timerDuration);
-        } else {
-          await _callRefreshToken();
-        }
-      } catch (e) {
-        // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
-      }
-    }
-  }
-
-  void _setTokenRefreshTimer(
-    Duration timerDuration, {
-    String? refreshToken,
-    String? accessToken,
-  }) {
-    _refreshTokenTimer?.cancel();
-    _refreshTokenRetryCount++;
-    if (_refreshTokenRetryCount < Constants.maxRetryCount) {
-      _refreshTokenTimer = Timer(timerDuration, () async {
-        try {
-          await _callRefreshToken(refreshToken);
-        } catch (_) {
-          // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
-        }
-      });
-    } else {
-      throw AuthException('Access token refresh retry limit exceeded.');
-    }
+    // TODO: in js, here it sets the session on local storage
   }
 
   void _removeSession() {
     _currentSession = null;
     _currentUser = null;
-    _refreshTokenRetryCount = 0;
 
-    _refreshTokenTimer?.cancel();
+    // TODO: in js, here it removes the session on local storage
   }
 
   /// Generates a new JWT.
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
   /// If that's not null and not completed it returns the future of the ongoing request.
-  ///
-  /// To call [_callRefreshToken] during a running request [ignorePendingRequest] is used to bypass that check.
   ///
   /// When a [ClientException] occurs [_setTokenRefreshTimer] is used to schedule a retry in the background, which emits the result via [onAuthStateChange].
   Future<AuthResponse> _callRefreshToken(String refreshToken) async {
@@ -1121,11 +1132,8 @@ class GoTrueClient {
       // this._debug(debugName, 'error', error)
 
       if (error is AuthException) {
-        // const result = { session: null, error }
-
         if (!isAuthRetryableFetchError(error)) {
           _removeSession();
-
           notifyAllSubscribers(AuthChangeEvent.signedOut);
         }
 
