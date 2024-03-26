@@ -27,6 +27,7 @@ class _Order {
     required this.column,
     required this.ascending,
   });
+
   final String column;
   final bool ascending;
 }
@@ -56,7 +57,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   SupabaseStreamEvent _streamData = [];
 
   /// `eq` filter used for both postgrest and realtime
-  _StreamPostgrestFilter? _streamFilter;
+  final List<_StreamPostgrestFilter> _streamFilters = [];
 
   /// Which column to order by and whether it's ascending
   _Order? _orderBy;
@@ -137,15 +138,19 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   }
 
   Future<void> _getStreamData() async {
-    final currentStreamFilter = _streamFilter;
+    final currentStreamFilter = _streamFilters;
     _streamData = [];
-    PostgresChangeFilter? realtimeFilter;
-    if (currentStreamFilter != null) {
-      realtimeFilter = PostgresChangeFilter(
-        type: currentStreamFilter.type,
-        column: currentStreamFilter.column,
-        value: currentStreamFilter.value,
-      );
+    List<PostgresChangeFilter> realtimeFilter = [];
+    if (currentStreamFilter.isNotEmpty) {
+      realtimeFilter = currentStreamFilter
+          .map(
+            (e) => PostgresChangeFilter(
+              type: e.type,
+              column: e.column,
+              value: e.value,
+            ),
+          )
+          .toList();
     }
 
     _channel = _realtimeClient.channel(_realtimeTopic);
@@ -155,7 +160,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
             event: PostgresChangeEvent.insert,
             schema: _schema,
             table: _table,
-            filter: realtimeFilter,
+            filters: realtimeFilter,
             callback: (payload) {
               final newRecord = payload.newRecord;
               _streamData.add(newRecord);
@@ -165,7 +170,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
             event: PostgresChangeEvent.update,
             schema: _schema,
             table: _table,
-            filter: realtimeFilter,
+            filters: realtimeFilter,
             callback: (payload) {
               final updatedIndex = _streamData.indexWhere(
                 (element) => _isTargetRecord(record: element, payload: payload),
@@ -183,7 +188,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
             event: PostgresChangeEvent.delete,
             schema: _schema,
             table: _table,
-            filter: realtimeFilter,
+            filters: realtimeFilter,
             callback: (payload) {
               final deletedIndex = _streamData.indexWhere(
                 (element) => _isTargetRecord(record: element, payload: payload),
@@ -201,29 +206,31 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     });
 
     PostgrestFilterBuilder query = _queryBuilder.select();
-    if (_streamFilter != null) {
-      switch (_streamFilter!.type) {
-        case PostgresChangeFilterType.eq:
-          query = query.eq(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.neq:
-          query = query.neq(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.lt:
-          query = query.lt(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.lte:
-          query = query.lte(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.gt:
-          query = query.gt(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.gte:
-          query = query.gte(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.inFilter:
-          query = query.inFilter(_streamFilter!.column, _streamFilter!.value);
-          break;
+    if (_streamFilters.isNotEmpty) {
+      for (var filter in _streamFilters) {
+        switch (filter.type) {
+          case PostgresChangeFilterType.eq:
+            query = query.eq(filter.column, filter.value);
+            break;
+          case PostgresChangeFilterType.neq:
+            query = query.neq(filter.column, filter.value);
+            break;
+          case PostgresChangeFilterType.lt:
+            query = query.lt(filter.column, filter.value);
+            break;
+          case PostgresChangeFilterType.lte:
+            query = query.lte(filter.column, filter.value);
+            break;
+          case PostgresChangeFilterType.gt:
+            query = query.gt(filter.column, filter.value);
+            break;
+          case PostgresChangeFilterType.gte:
+            query = query.gte(filter.column, filter.value);
+            break;
+          case PostgresChangeFilterType.inFilter:
+            query = query.inFilter(filter.column, filter.value);
+            break;
+        }
       }
     }
     PostgrestTransformBuilder? transformQuery;

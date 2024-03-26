@@ -229,11 +229,13 @@ void main() {
               event: PostgresChangeEvent.all,
               schema: 'public',
               table: 'todos',
-              filter: PostgresChangeFilter(
-                type: PostgresChangeFilterType.eq,
-                column: 'id',
-                value: 2,
-              ),
+              filters: [
+                PostgresChangeFilter(
+                  type: PostgresChangeFilterType.eq,
+                  column: 'id',
+                  value: 2,
+                )
+              ],
               callback: (payload) {
                 streamController.add(payload);
               })
@@ -278,8 +280,13 @@ void main() {
             event: PostgresChangeEvent.all,
             schema: 'public',
             table: 'todos',
-            filter: PostgresChangeFilter(
-                type: PostgresChangeFilterType.eq, column: 'id', value: 2),
+            filters: [
+              PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'id',
+                value: 2,
+              )
+            ],
             callback: (payload) {},
           );
 
@@ -473,8 +480,13 @@ void main() {
               event: PostgresChangeEvent.all,
               schema: 'public',
               table: 'todos',
-              filter: PostgresChangeFilter(
-                  type: PostgresChangeFilterType.eq, column: 'id', value: 2),
+              filters: [
+                PostgresChangeFilter(
+                  type: PostgresChangeFilterType.eq,
+                  column: 'id',
+                  value: 2,
+                )
+              ],
               callback: (payload) {
                 streamController.add(payload);
               })

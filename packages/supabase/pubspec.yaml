@@ -13,7 +13,8 @@ dependencies:
   gotrue: ^2.5.1
   http: '>=0.13.5 <2.0.0'
   postgrest: ^2.1.1
-  realtime_client: ^2.0.1
+  realtime_client: #^2.0.1
+    path: ../realtime_client
   storage_client: ^2.0.1
   rxdart: ^0.27.5
   yet_another_json_isolate: ^2.0.0

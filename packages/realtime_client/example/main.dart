@@ -12,11 +12,13 @@ Future<void> main() async {
   final channel = socket.channel('realtime:public');
   channel.onPostgresChanges(
     event: PostgresChangeEvent.all,
-    filter: PostgresChangeFilter(
-      type: PostgresChangeFilterType.eq,
-      column: 'column',
-      value: 'value',
-    ),
+    filters: [
+      PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'column',
+        value: 'value',
+      )
+    ],
     callback: (payload) {},
   );
   channel.onPostgresChanges(

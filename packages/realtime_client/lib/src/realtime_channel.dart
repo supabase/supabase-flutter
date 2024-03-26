@@ -269,7 +269,7 @@ class RealtimeChannel {
   /// [table] is the table of the database on which to setup the listener.
   /// The listener will return all changes from every listenable table if omitted.
   ///
-  /// [filter] can be used to further control which rows to listen to within the given [schema] and [table].
+  /// [filters] can be used to further control which rows to listen to within the given [schema] and [table].
   ///
   /// ```dart
   /// supabase.channel('my_channel').onPostgresChanges(
@@ -289,7 +289,7 @@ class RealtimeChannel {
     required PostgresChangeEvent event,
     String? schema,
     String? table,
-    PostgresChangeFilter? filter,
+    List<PostgresChangeFilter> filters = const [],
     required void Function(PostgresChangePayload payload) callback,
   }) {
     return onEvents(
@@ -298,7 +298,8 @@ class RealtimeChannel {
         event: event.toRealtimeEvent(),
         schema: schema,
         table: table,
-        filter: filter?.toString(),
+        filter:
+            filters.isEmpty ? null : filters.map((e) => e.toString()).join('&'),
       ),
       (payload, [ref]) => callback(PostgresChangePayload.fromPayload(payload)),
     );
