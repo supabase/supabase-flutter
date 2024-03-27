@@ -1130,7 +1130,7 @@ class GoTrueClient {
       if (!_refreshTokenCompleter!.isCompleted) {
         _refreshTokenCompleter!.completeError(e, stack);
       }
-      rethrow;
+      //rethrow;
     } catch (error, stack) {
       print("🦁 OTHER EXCEPTION 🦁: $error $stack");
 
