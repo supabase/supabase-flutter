@@ -1058,7 +1058,9 @@ class GoTrueClient {
     String? accessToken,
     bool ignorePendingRequest = false,
   }) async {
+    print("🦁 CALLING REFRESH TOKEN 🦁");
     if (_refreshTokenCompleter?.isCompleted ?? true) {
+      print("🦁 CREATING NEW FUTURE 🦁");
       _refreshTokenCompleter = Completer<AuthResponse>();
       // Catch any error in case nobody awaits the future
       _refreshTokenCompleter!.future.then(
@@ -1066,8 +1068,10 @@ class GoTrueClient {
         onError: (error, stack) => null,
       );
     } else if (!ignorePendingRequest) {
+      print("🦁 RETURNING EXISTING FUTURE 🦁");
       return _refreshTokenCompleter!.future;
     }
+    print("🦁 REFRESHING SESSION 🦁");
     final token = refreshToken ?? currentSession?.refreshToken;
     if (token == null) {
       throw AuthException('No current session.');
@@ -1100,6 +1104,8 @@ class GoTrueClient {
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
       return authResponse;
     } on ClientException catch (e, stack) {
+      print("🦁 CLIENT EXCEPTION 🦁: $e $stack");
+      
       _setTokenRefreshTimer(
         Constants.retryInterval * pow(2, _refreshTokenRetryCount),
         refreshToken: token,
@@ -1110,6 +1116,8 @@ class GoTrueClient {
       }
       rethrow;
     } catch (error, stack) {
+      print("🦁 OTHER EXCEPTION 🦁: $error $stack");
+
       if (error is AuthException) {
         if (error.message.startsWith('Invalid Refresh Token:')) {
           await signOut();
