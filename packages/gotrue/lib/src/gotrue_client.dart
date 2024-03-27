@@ -1067,6 +1067,11 @@ class GoTrueClient {
         (value) => null,
         onError: (error, stack) => null,
       );
+      _refreshTokenCompleter!.future.timeout(const Duration(seconds: 10), onTimeout: () {
+        if (!_refreshTokenCompleter!.isCompleted) {
+          _refreshTokenCompleter!.completeError(TimeoutException(), StackTrace.current);
+        }
+      });
     } else if (!ignorePendingRequest) {
       print("🦁 RETURNING EXISTING FUTURE 🦁");
       return _refreshTokenCompleter!.future;
