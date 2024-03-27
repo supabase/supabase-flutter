@@ -55,7 +55,7 @@ class GoTrueClient {
   int _refreshTokenRetryCount = 0;
 
   /// Completer to combine multiple simultaneous token refresh requests.
-  Completer<AuthResponse>? _refreshTokenCompleter;
+  Completer<AuthResponse?>? _refreshTokenCompleter;
 
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
   final _onAuthStateChangeControllerSync =
@@ -1065,7 +1065,7 @@ class GoTrueClient {
     print("🦁 CALLING REFRESH TOKEN 🦁");
     if (_refreshTokenCompleter?.isCompleted ?? true) {
       print("🦁 CREATING NEW FUTURE 🦁");
-      _refreshTokenCompleter = Completer<AuthResponse>();
+      _refreshTokenCompleter = Completer<AuthResponse?>();
       // Catch any error in case nobody awaits the future
       _refreshTokenCompleter!.future.then(
         (value) => null,
@@ -1074,14 +1074,14 @@ class GoTrueClient {
       try {
         (_refreshTokenCompleter!.future as Future<void>).timeout(const Duration(seconds: 10), onTimeout: () {
           if (!_refreshTokenCompleter!.isCompleted) {
-            _refreshTokenCompleter!.completeError(TimeoutException("Timeout"), StackTrace.current);
+            _refreshTokenCompleter!.complete(null);
           }
 
           throw TimeoutException("Timeout");
         });
       } catch (error, stackTrace) {
         print("🦁 TIMED OUT SELF FUTURE 🦁");
-        return Future.error(error, stackTrace);
+        return null;
       }
      } else if (!ignorePendingRequest) {
       print("🦁 RETURNING EXISTING FUTURE 🦁");
@@ -1128,8 +1128,9 @@ class GoTrueClient {
         accessToken: accessToken,
       );
       if (!_refreshTokenCompleter!.isCompleted) {
-        _refreshTokenCompleter!.completeError(e, stack);
+        _refreshTokenCompleter!.complete(null);
       }
+      return null;
     } catch (error, stack) {
       print("🦁 OTHER EXCEPTION 🦁: $error $stack");
 
