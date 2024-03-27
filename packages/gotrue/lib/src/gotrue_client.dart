@@ -1069,10 +1069,10 @@ class GoTrueClient {
       );
        (_refreshTokenCompleter!.future as Future<void>).timeout(const Duration(seconds: 10), onTimeout: () {
         if (!_refreshTokenCompleter!.isCompleted) {
-          _refreshTokenCompleter!.completeError(TimeoutException(), StackTrace.current);
+          _refreshTokenCompleter!.completeError(TimeoutException("Timeout"), StackTrace.current);
         }
 
-        throw TimeoutException();
+        throw TimeoutException("Timeout");
       });
     } else if (!ignorePendingRequest) {
       print("🦁 RETURNING EXISTING FUTURE 🦁");
