@@ -40,9 +40,9 @@ final supabase = Supabase.instance.client;
 ## Usage example
 
 * [Authentication](#authentication)
-* [Native Apple Sign in](#native-apple-sign-in)
-* [Native Google sign in](#native-google-sign-in)
-* [OAuth login](#oauth-login)
+  * [Native Apple Sign in](#native-apple-sign-in)
+  * [Native Google sign in](#native-google-sign-in)
+  * [OAuth login](#oauth-login)
 * [Database](#database)
 * [Realtime](#realtime)
 * [Postgres Changes](#postgres-changes)
