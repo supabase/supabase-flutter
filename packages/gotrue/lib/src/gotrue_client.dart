@@ -1071,19 +1071,12 @@ class GoTrueClient {
         (value) => null,
         onError: (error, stack) => null,
       );
-      try {
-        (_refreshTokenCompleter!.future as Future<void>).timeout(const Duration(seconds: 10), onTimeout: () {
-          if (!_refreshTokenCompleter!.isCompleted) {
-            _refreshTokenCompleter!.complete(null);
-          }
-
-          throw TimeoutException("Timeout");
-        });
-      } catch (error, stackTrace) {
-        print("🦁 TIMED OUT SELF FUTURE 🦁");
-        return null;
-      }
-     } else if (!ignorePendingRequest) {
+      (_refreshTokenCompleter!.future as Future<void>).timeout(const Duration(seconds: 10), onTimeout: () {
+        if (!_refreshTokenCompleter!.isCompleted) {
+          _refreshTokenCompleter!.complete(null);
+        }
+      });
+    } else if (!ignorePendingRequest) {
       print("🦁 RETURNING EXISTING FUTURE 🦁");
       return _refreshTokenCompleter!.future;
     }
