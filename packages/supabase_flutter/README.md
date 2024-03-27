@@ -39,6 +39,20 @@ final supabase = Supabase.instance.client;
 
 ## Usage example
 
+* Authentication
+* Native Apple Sign in
+* Native Google sign in
+* OAuth login
+* Database
+* Realtime
+* Postgres Changes
+* Broadcast
+* Presence
+* Storage
+* Edge Functions
+* Deep Links
+* Custom LocalStorage
+
 ### [Authentication](https://supabase.com/docs/guides/auth)
 
 ```dart
