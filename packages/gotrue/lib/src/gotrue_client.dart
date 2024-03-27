@@ -1018,18 +1018,22 @@ class GoTrueClient {
     String? refreshToken,
     String? accessToken,
   }) {
+    print("🦁 SET TIMER REFRESH TOKEN 🦁");
     _refreshTokenTimer?.cancel();
     _refreshTokenRetryCount++;
     if (_refreshTokenRetryCount < Constants.maxRetryCount) {
       _refreshTokenTimer = Timer(timerDuration, () async {
+        print("🦁 CALL TIMER REFRESH TOKEN 🦁");
         try {
           await _callRefreshToken(
             refreshToken: refreshToken,
             accessToken: accessToken,
             ignorePendingRequest: true,
           );
-        } catch (_) {
+          print("🦁 SUCCESS TIMER REFRESH TOKEN 🦁");
+        } catch (err, stack) {
           // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
+          print("🦁 ERROR TIMER REFRESH TOKEN 🦁: $err #stack");
         }
       });
     } else {
