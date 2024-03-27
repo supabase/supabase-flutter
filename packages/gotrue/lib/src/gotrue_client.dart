@@ -581,7 +581,7 @@ class GoTrueClient {
 
   /// Force refreshes the session including the user data in case it was updated
   /// in a different session.
-  Future<AuthResponse> refreshSession() async {
+  Future<AuthResponse?> refreshSession() async {
     if (currentSession?.accessToken == null) {
       throw AuthException('Not logged in.');
     }
@@ -707,7 +707,7 @@ class GoTrueClient {
   }
 
   /// Sets the session data from refresh_token and returns the current session.
-  Future<AuthResponse> setSession(String refreshToken) async {
+  Future<AuthResponse?> setSession(String refreshToken) async {
     if (refreshToken.isEmpty) {
       throw AuthException('No current session.');
     }
@@ -916,7 +916,7 @@ class GoTrueClient {
   }
 
   /// Recover session from stringified [Session].
-  Future<AuthResponse> recoverSession(String jsonStr) async {
+  Future<AuthResponse?> recoverSession(String jsonStr) async {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
       await signOut();
@@ -1057,7 +1057,7 @@ class GoTrueClient {
   /// To call [_callRefreshToken] during a running request [ignorePendingRequest] is used to bypass that check.
   ///
   /// When a [ClientException] occurs [_setTokenRefreshTimer] is used to schedule a retry in the background, which emits the result via [onAuthStateChange].
-  Future<AuthResponse> _callRefreshToken({
+  Future<AuthResponse?> _callRefreshToken({
     String? refreshToken,
     String? accessToken,
     bool ignorePendingRequest = false,
@@ -1130,7 +1130,6 @@ class GoTrueClient {
       if (!_refreshTokenCompleter!.isCompleted) {
         _refreshTokenCompleter!.completeError(e, stack);
       }
-      //rethrow;
     } catch (error, stack) {
       print("🦁 OTHER EXCEPTION 🦁: $error $stack");
 
