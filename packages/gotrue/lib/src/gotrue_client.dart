@@ -55,7 +55,7 @@ class GoTrueClient {
   int _refreshTokenRetryCount = 0;
 
   /// Completer to combine multiple simultaneous token refresh requests.
-  Completer<AuthResponse>? _refreshTokenCompleter;
+  Completer<AuthResponse?>? _refreshTokenCompleter;
 
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
   final _onAuthStateChangeControllerSync =
@@ -581,7 +581,7 @@ class GoTrueClient {
 
   /// Force refreshes the session including the user data in case it was updated
   /// in a different session.
-  Future<AuthResponse> refreshSession() async {
+  Future<AuthResponse?> refreshSession() async {
     if (currentSession?.accessToken == null) {
       throw AuthException('Not logged in.');
     }
@@ -707,7 +707,7 @@ class GoTrueClient {
   }
 
   /// Sets the session data from refresh_token and returns the current session.
-  Future<AuthResponse> setSession(String refreshToken) async {
+  Future<AuthResponse?> setSession(String refreshToken) async {
     if (refreshToken.isEmpty) {
       throw AuthException('No current session.');
     }
@@ -916,7 +916,7 @@ class GoTrueClient {
   }
 
   /// Recover session from stringified [Session].
-  Future<AuthResponse> recoverSession(String jsonStr) async {
+  Future<AuthResponse?> recoverSession(String jsonStr) async {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
       await signOut();
@@ -1018,18 +1018,22 @@ class GoTrueClient {
     String? refreshToken,
     String? accessToken,
   }) {
+    print("🦁 SET TIMER REFRESH TOKEN 🦁");
     _refreshTokenTimer?.cancel();
     _refreshTokenRetryCount++;
     if (_refreshTokenRetryCount < Constants.maxRetryCount) {
       _refreshTokenTimer = Timer(timerDuration, () async {
+        print("🦁 CALL TIMER REFRESH TOKEN 🦁");
         try {
           await _callRefreshToken(
             refreshToken: refreshToken,
             accessToken: accessToken,
             ignorePendingRequest: true,
           );
-        } catch (_) {
+          print("🦁 SUCCESS TIMER REFRESH TOKEN 🦁");
+        } catch (err, stack) {
           // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
+          print("🦁 ERROR TIMER REFRESH TOKEN 🦁: $err #stack");
         }
       });
     } else {
@@ -1053,21 +1057,30 @@ class GoTrueClient {
   /// To call [_callRefreshToken] during a running request [ignorePendingRequest] is used to bypass that check.
   ///
   /// When a [ClientException] occurs [_setTokenRefreshTimer] is used to schedule a retry in the background, which emits the result via [onAuthStateChange].
-  Future<AuthResponse> _callRefreshToken({
+  Future<AuthResponse?> _callRefreshToken({
     String? refreshToken,
     String? accessToken,
     bool ignorePendingRequest = false,
   }) async {
+    print("🦁 CALLING REFRESH TOKEN 🦁");
     if (_refreshTokenCompleter?.isCompleted ?? true) {
-      _refreshTokenCompleter = Completer<AuthResponse>();
+      print("🦁 CREATING NEW FUTURE 🦁");
+      _refreshTokenCompleter = Completer<AuthResponse?>();
       // Catch any error in case nobody awaits the future
       _refreshTokenCompleter!.future.then(
         (value) => null,
         onError: (error, stack) => null,
       );
+      (_refreshTokenCompleter!.future as Future<void>).timeout(const Duration(seconds: 10), onTimeout: () {
+        if (!_refreshTokenCompleter!.isCompleted) {
+          _refreshTokenCompleter!.complete(null);
+        }
+      });
     } else if (!ignorePendingRequest) {
+      print("🦁 RETURNING EXISTING FUTURE 🦁");
       return _refreshTokenCompleter!.future;
     }
+    print("🦁 REFRESHING SESSION 🦁");
     final token = refreshToken ?? currentSession?.refreshToken;
     if (token == null) {
       throw AuthException('No current session.');
@@ -1100,16 +1113,20 @@ class GoTrueClient {
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
       return authResponse;
     } on ClientException catch (e, stack) {
+      print("🦁 CLIENT EXCEPTION 🦁: $e $stack");
+      
       _setTokenRefreshTimer(
         Constants.retryInterval * pow(2, _refreshTokenRetryCount),
         refreshToken: token,
         accessToken: accessToken,
       );
       if (!_refreshTokenCompleter!.isCompleted) {
-        _refreshTokenCompleter!.completeError(e, stack);
+        _refreshTokenCompleter!.complete(null);
       }
-      rethrow;
+      return null;
     } catch (error, stack) {
+      print("🦁 OTHER EXCEPTION 🦁: $error $stack");
+
       if (error is AuthException) {
         if (error.message.startsWith('Invalid Refresh Token:')) {
           await signOut();
