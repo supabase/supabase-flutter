@@ -16,7 +16,8 @@ class AuthHttpClient extends BaseClient {
         final res = await _auth.refreshSession();
         accessToken = res.session?.accessToken;
       } catch (error) {
-        // Make a request with the Supabase key instead of an expired JWT
+        // Make a request with the Supabase key instead of an expired JWT to
+        // align the behavior with the JS client.
         accessToken = _supabaseKey;
       }
     }
