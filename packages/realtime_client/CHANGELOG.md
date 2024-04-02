@@ -1,3 +1,7 @@
+## 2.0.2
+
+ - **FIX**(realtime_client): Fix issue where `null` `timestamp` type column becomes `"null"` string on realtime ([#855](https://github.com/supabase/supabase-flutter/issues/855)). ([c59bdbbf](https://github.com/supabase/supabase-flutter/commit/c59bdbbf2b098f83d81d189cb36fd822787a880a))
+
 ## 2.0.1
 
  - **REFACTOR**: Deprecate `eventsPerSecond` on Realtime ([#838](https://github.com/supabase/supabase-flutter/issues/838)). ([42383873](https://github.com/supabase/supabase-flutter/commit/42383873a71bbfbecb971e752806241bfdcaa0c2))

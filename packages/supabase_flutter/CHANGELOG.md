@@ -1,3 +1,8 @@
+## 2.4.0
+
+ - **FEAT**: Add `detectSessionInUri` option to optionally disable deep link observer.  ([#848](https://github.com/supabase/supabase-flutter/issues/848)). ([cb9aed80](https://github.com/supabase/supabase-flutter/commit/cb9aed8056a9725f8a3413958530474faef1d5d1))
+ - **DOCS**: Fixed imprecision in Custom Local Storage README.md ([#853](https://github.com/supabase/supabase-flutter/issues/853)). ([6655e576](https://github.com/supabase/supabase-flutter/commit/6655e576b96550e91a24eccce3a79c948adf2922))
+
 ## 2.3.4
 
  - **FIX**(gotrue,supabase_flutter): Throw error when parsing auth URL that contains an error description. ([#839](https://github.com/supabase/supabase-flutter/issues/839)). ([afc4ce51](https://github.com/supabase/supabase-flutter/commit/afc4ce51c14798c2319a0ebebe231895c6ddd8ae))
