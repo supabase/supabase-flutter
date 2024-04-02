@@ -924,28 +924,37 @@ class GoTrueClient {
 
   /// Recover session from stringified [Session].
   Future<AuthResponse> recoverSession(String jsonStr) async {
-    final session = Session.fromJson(json.decode(jsonStr));
-    if (session == null) {
-      await signOut();
-      throw notifyException(AuthException('Current session is missing data.'));
-    }
-
-    if (session.isExpired) {
-      final refreshToken = session.refreshToken;
-      if (_autoRefreshToken && refreshToken != null) {
-        return await _callRefreshToken(refreshToken);
-      } else {
+    try {
+      final session = Session.fromJson(json.decode(jsonStr));
+      if (session == null) {
         await signOut();
-        throw notifyException(AuthException('Session expired.'));
+        throw notifyException(
+          AuthException('Current session is missing data.'),
+        );
       }
-    } else {
-      final shouldEmitEvent = _currentSession == null ||
-          _currentSession?.user.id != session.user.id;
-      _saveSession(session);
 
-      if (shouldEmitEvent) notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+      if (session.isExpired) {
+        final refreshToken = session.refreshToken;
+        if (_autoRefreshToken && refreshToken != null) {
+          return await _callRefreshToken(refreshToken);
+        } else {
+          await signOut();
+          throw notifyException(AuthException('Session expired.'));
+        }
+      } else {
+        final shouldEmitEvent = _currentSession == null ||
+            _currentSession?.user.id != session.user.id;
+        _saveSession(session);
 
-      return AuthResponse(session: session);
+        if (shouldEmitEvent) {
+          notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+        }
+
+        return AuthResponse(session: session);
+      }
+    } catch (error) {
+      notifyException(error);
+      rethrow;
     }
   }
 
@@ -1164,7 +1173,7 @@ class GoTrueClient {
 
   /// For internal use only.
   @internal
-  Exception notifyException(Exception exception, [StackTrace? stackTrace]) {
+  Object notifyException(Object exception, [StackTrace? stackTrace]) {
     _onAuthStateChangeController.addError(
       exception,
       stackTrace ?? StackTrace.current,
