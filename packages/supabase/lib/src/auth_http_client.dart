@@ -10,18 +10,21 @@ class AuthHttpClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    String? accessToken = _auth.currentSession?.accessToken;
     if (_auth.currentSession?.isExpired ?? false) {
       try {
-        final res = await _auth.refreshSession();
-        accessToken = res.session?.accessToken;
+        await _auth.refreshSession();
       } catch (error) {
-        // Make a request with the Supabase key instead of an expired JWT to
-        // align the behavior with the JS client.
-        accessToken = _supabaseKey;
+        // Failed to refresh the token.
+        final isExpiredWithoutMargin = DateTime.now().isAfter(
+            DateTime.fromMillisecondsSinceEpoch(
+                _auth.currentSession!.expiresAt! * 1000));
+        if (isExpiredWithoutMargin) {
+          // Throw the error instead of making an API request with an expired token.
+          rethrow;
+        }
       }
     }
-    final authBearer = accessToken ?? _supabaseKey;
+    final authBearer = _auth.currentSession?.accessToken ?? _supabaseKey;
 
     request.headers.putIfAbsent("Authorization", () => 'Bearer $authBearer');
     request.headers.putIfAbsent("apikey", () => _supabaseKey);
