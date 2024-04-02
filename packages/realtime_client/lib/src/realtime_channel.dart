@@ -483,11 +483,7 @@ class RealtimeChannel {
     }
 
     if (!canPush && type == RealtimeListenTypes.broadcast) {
-      final headers = {
-        'Content-Type': 'application/json',
-        'apikey': socket.accessToken ?? '',
-        ...socket.headers
-      };
+      final headers = {'Content-Type': 'application/json', ...socket.headers};
       final body = {
         'messages': [
           {
