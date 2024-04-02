@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:gotrue/gotrue.dart';
@@ -975,7 +976,7 @@ class GoTrueClient {
   }
 
   Future<void> _autoRefreshTokenTick() async {
-    // TODO: should we implement browser lock in Flutter as well?
+    print('auto refresh token tick: ${DateTime.now().toIso8601String()}');
     try {
       final now = DateTime.now();
       final session = _currentSession;
@@ -984,16 +985,12 @@ class GoTrueClient {
       }
       final refreshToken = session.refreshToken;
       if (refreshToken == null) {
-        // TODO: properly handle case where refresh token is null
-        // check the js implementation
         return;
       }
 
       final expiresAt = session.expiresAt;
 
       if (expiresAt == null) {
-        // TODO: properly handle expiresAt being null
-        // check the js implementation
         return;
       }
 
@@ -1005,11 +1002,11 @@ class GoTrueClient {
               .floor();
 
       // Only tick if the next tick comes after the retry threshold
-      if (expiresInTicks <= Constants.autoRefreshTockThreshold) {
+      if (expiresInTicks <= Constants.autoRefreshTickThreshold) {
         await _callRefreshToken(refreshToken);
       }
     } catch (error) {
-      // TODO: in js, it's just printing here
+      // Do nothing. JS client prints here
     }
   }
 
@@ -1017,9 +1014,11 @@ class GoTrueClient {
   /// [refreshToken] A valid refresh token that was returned on login.
   Future<AuthResponse> _refreshAccessToken(String refreshToken) async {
     final startedAt = DateTime.now();
+    var attempt = 0;
     return await retry<AuthResponse>(
       // Make a GET request
       () async {
+        attempt++;
         final options = GotrueRequestOptions(
             headers: _headers,
             body: {'refresh_token': refreshToken},
@@ -1031,12 +1030,21 @@ class GoTrueClient {
       },
       retryIf: (e) {
         // Do not retry if the next retry comes after the next tick.
-// Date.now() + (attempt + 1) * 200 - startedAt < AUTO_REFRESH_TICK_DURATION
-// TODO: Compare the remaining time until tik and the time until the next retry
-        return e is ClientException;
+        final nextBackOff =
+            Duration(milliseconds: (200 * pow(2, attempt - 1).floor()));
+
+        return e is AuthRetryableFetchError &&
+            (DateTime.now().millisecondsSinceEpoch +
+                    nextBackOff.inMilliseconds -
+                    startedAt.millisecondsSinceEpoch) <
+                Constants.autoRefreshTickDuration.inMilliseconds;
       },
       maxDelay: Duration(seconds: 10),
-      maxAttempts: 99999,
+      randomizationFactor: 0,
+
+      // Max interval between retries is 10 sec, so just set the maxAttempts
+      // to something that will yield a more than 10 sec interval.
+      maxAttempts: 999,
     );
   }
 
@@ -1088,15 +1096,11 @@ class GoTrueClient {
   void _saveSession(Session session) {
     _currentSession = session;
     _currentUser = session.user;
-
-    // TODO: in js, here it sets the session on local storage
   }
 
   void _removeSession() {
     _currentSession = null;
     _currentUser = null;
-
-    // TODO: in js, here it removes the session on local storage
   }
 
   /// Generates a new JWT.
@@ -1114,6 +1118,12 @@ class GoTrueClient {
     try {
       _refreshTokenCompleter = Completer<AuthResponse>();
 
+      // Catch any error in case nobody awaits the future
+      _refreshTokenCompleter!.future.then(
+        (_) => null,
+        onError: (_, __) => null,
+      );
+
       final data = await _refreshAccessToken(refreshToken);
 
       final session = data.session;
@@ -1127,20 +1137,16 @@ class GoTrueClient {
 
       _refreshTokenCompleter?.complete(data);
       return data;
-    } catch (error) {
-      // this._debug(debugName, 'error', error)
-
-      if (error is AuthException) {
-        if (!isAuthRetryableFetchError(error)) {
-          _removeSession();
-          notifyAllSubscribers(AuthChangeEvent.signedOut);
-        }
-
-        _refreshTokenCompleter?.completeError(error);
-
-        rethrow;
+    } on AuthException catch (error) {
+      if (error is! AuthRetryableFetchError) {
+        _removeSession();
+        notifyAllSubscribers(AuthChangeEvent.signedOut);
       }
 
+      _refreshTokenCompleter?.completeError(error);
+
+      rethrow;
+    } catch (error) {
       _refreshTokenCompleter?.completeError(error);
       rethrow;
     } finally {

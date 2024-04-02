@@ -16,6 +16,18 @@ class GotrueFetch {
     return code >= 200 && code <= 299;
   }
 
+  String _getErrorMessage(dynamic error) {
+    if (error is Map) {
+      return error['msg'] ??
+          error['message'] ??
+          error['error_description'] ??
+          error['error']?.toString() ??
+          error.toString();
+    }
+
+    return error.toString();
+  }
+
   AuthException _handleError(dynamic error) {
     if (error is! Response) {
       throw AuthRetryableFetchError();
@@ -31,7 +43,6 @@ class GotrueFetch {
     try {
       data = jsonDecode(error.body);
     } catch (error) {
-      // TODO: properly provide the error message
       throw AuthUnknownError(message: error.toString(), originalError: error);
     }
 
@@ -43,15 +54,17 @@ class GotrueFetch {
         (data['weak_password']['reasons'] as List)
             .whereNot((element) => element is String)
             .isEmpty) {
-      // TODO: properly provide the error message
       throw AuthWeakPasswordError(
-        message: '',
+        message: _getErrorMessage(data),
         statusCode: error.statusCode.toString(),
         reasons: data['weak_password']['reasons'],
       );
     }
 
-    throw AuthApiError('An', statusCode: error.statusCode.toString());
+    throw AuthApiError(
+      _getErrorMessage(data),
+      statusCode: error.statusCode.toString(),
+    );
   }
 
   Future<dynamic> request(
@@ -71,7 +84,7 @@ class GotrueFetch {
     Uri uri = Uri.parse(url);
     uri = uri.replace(queryParameters: {...uri.queryParameters, ...qs});
 
-    final response = await _handleRequest(
+    return await _handleRequest(
         method: method, uri: uri, options: options, headers: headers);
   }
 

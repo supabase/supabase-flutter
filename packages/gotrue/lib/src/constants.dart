@@ -11,11 +11,15 @@ class Constants {
 
   /// storage key prefix to store code verifiers
   static const String defaultStorageKey = 'supabase.auth.token';
-  static const expiryMargin = Duration(seconds: 10);
-  static const int maxRetryCount = 10;
-  static const retryInterval = Duration(milliseconds: 200);
-  static const autoRefreshTickDuration = Duration(seconds: 30);
-  static const autoRefreshTockThreshold = 3;
+
+  /// The margin to use when checking if a token is expired.
+  static const expiryMargin = Duration(seconds: 30);
+
+  /// Current session will be checked for refresh at this interval.
+  static const autoRefreshTickDuration = Duration(seconds: 10);
+
+  /// A token refresh will be attempted this many ticks before the current session expires.
+  static const autoRefreshTickThreshold = 3;
   // AUTO_REFRESH_TICK_THRESHOLD
 }
 
