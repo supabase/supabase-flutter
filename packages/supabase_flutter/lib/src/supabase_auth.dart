@@ -110,10 +110,10 @@ class SupabaseAuth with WidgetsBindingObserver {
       case AppLifecycleState.resumed:
         Supabase.instance.client.auth.startAutoRefresh();
       case AppLifecycleState.detached:
-      case AppLifecycleState.hidden:
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
         Supabase.instance.client.auth.stopAutoRefresh();
+      default:
     }
   }
 
