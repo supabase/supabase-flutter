@@ -27,5 +27,6 @@ void main() {
     await tester.tap(find.text('Sign out'));
     await tester.pump();
     expect(find.text('You have signed out'), findsOneWidget);
+    Supabase.instance.client.auth.stopAutoRefresh();
   });
 }

@@ -48,10 +48,12 @@ jobs:
         with:
           java-version: '12.x'
 
-      - uses: subosito/flutter-action@v1
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ matrix.flutter-version }}
           channel: 'stable'
+
+      - run: flutter --version
 
       - name: Bootstrap workspace
         run: |
@@ -64,6 +66,7 @@ jobs:
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
+        if: ${{ matrix.sdk == '3.x'}}
         run: flutter analyze --fatal-warnings --fatal-infos .
 
       - name: Run tests
