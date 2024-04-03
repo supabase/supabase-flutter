@@ -975,9 +975,6 @@ class GoTrueClient {
   }
 
   /// Stops an active auto refresh process running in the background (if any).
-  ///
-  /// If you call this method any managed visibility change callback will be
-  /// removed and you must manage visibility changes on your own.
   void stopAutoRefresh() {
     _autoRefreshTicker?.cancel();
     _autoRefreshTicker = null;
