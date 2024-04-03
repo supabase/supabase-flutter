@@ -984,7 +984,6 @@ class GoTrueClient {
   }
 
   Future<void> _autoRefreshTokenTick() async {
-    print('auto refresh token tick: ${DateTime.now().toIso8601String()}');
     try {
       final now = DateTime.now();
       final session = _currentSession;
