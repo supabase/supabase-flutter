@@ -965,7 +965,6 @@ class GoTrueClient {
   void startAutoRefresh() async {
     stopAutoRefresh();
 
-    // final ticker = setInterval(() => this._autoRefreshTokenTick(), AUTO_REFRESH_TICK_DURATION)
     _autoRefreshTicker = Timer.periodic(
       Constants.autoRefreshTickDuration,
       (Timer t) => _autoRefreshTokenTick(),
