@@ -260,7 +260,7 @@ class SupabaseClient {
       params: {
         'apikey': _supabaseKey,
       },
-      headers: headers,
+      headers: {'apikey': _supabaseKey, ...headers},
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
     );
