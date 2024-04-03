@@ -587,7 +587,7 @@ class GoTrueClient {
     }
 
     final currentSessionRefreshToken =
-        _currentSession?.refreshToken ?? refreshToken;
+        refreshToken ?? _currentSession?.refreshToken;
 
     if (currentSessionRefreshToken == null) {
       throw AuthSessionMissingError();
