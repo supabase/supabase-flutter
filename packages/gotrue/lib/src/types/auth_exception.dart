@@ -25,30 +25,31 @@ class AuthPKCEGrantCodeExchangeError extends AuthException {
   AuthPKCEGrantCodeExchangeError(String message) : super(message);
 }
 
-class AuthSessionMissingError extends AuthException {
-  AuthSessionMissingError() : super('Auth session missing!', statusCode: '400');
+class AuthSessionMissingException extends AuthException {
+  AuthSessionMissingException()
+      : super('Auth session missing!', statusCode: '400');
 }
 
-class AuthRetryableFetchError extends AuthException {
-  AuthRetryableFetchError() : super('AuthRetryableFetchError');
+class AuthRetryableFetchException extends AuthException {
+  AuthRetryableFetchException() : super('AuthRetryableFetchError');
 }
 
-class AuthApiError extends AuthException {
-  AuthApiError(String message, {String? statusCode})
+class AuthApiException extends AuthException {
+  AuthApiException(String message, {String? statusCode})
       : super(message, statusCode: statusCode);
 }
 
-class AuthUnknownError extends AuthException {
+class AuthUnknownException extends AuthException {
   final Object originalError;
 
-  AuthUnknownError({required String message, required this.originalError})
+  AuthUnknownException({required String message, required this.originalError})
       : super(message);
 }
 
-class AuthWeakPasswordError extends AuthException {
+class AuthWeakPasswordException extends AuthException {
   final List<String> reasons;
 
-  AuthWeakPasswordError({
+  AuthWeakPasswordException({
     required String message,
     required String statusCode,
     required this.reasons,

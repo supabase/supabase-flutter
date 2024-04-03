@@ -590,7 +590,7 @@ class GoTrueClient {
         refreshToken ?? _currentSession?.refreshToken;
 
     if (currentSessionRefreshToken == null) {
-      throw AuthSessionMissingError();
+      throw AuthSessionMissingException();
     }
 
     return await _callRefreshToken(currentSessionRefreshToken);
@@ -1032,7 +1032,7 @@ class GoTrueClient {
         final nextBackOff =
             Duration(milliseconds: (200 * pow(2, attempt - 1).floor()));
 
-        return e is AuthRetryableFetchError &&
+        return e is AuthRetryableFetchException &&
             (DateTime.now().millisecondsSinceEpoch +
                     nextBackOff.inMilliseconds -
                     startedAt.millisecondsSinceEpoch) <
@@ -1127,7 +1127,7 @@ class GoTrueClient {
       final session = data.session;
 
       if (session == null) {
-        throw AuthSessionMissingError();
+        throw AuthSessionMissingException();
       }
 
       _saveSession(session);
@@ -1136,7 +1136,7 @@ class GoTrueClient {
       _refreshTokenCompleter?.complete(data);
       return data;
     } on AuthException catch (error) {
-      if (error is! AuthRetryableFetchError) {
+      if (error is! AuthRetryableFetchException) {
         _removeSession();
         notifyAllSubscribers(AuthChangeEvent.signedOut);
       }

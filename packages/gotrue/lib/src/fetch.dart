@@ -30,20 +30,21 @@ class GotrueFetch {
 
   AuthException _handleError(dynamic error) {
     if (error is! Response) {
-      throw AuthRetryableFetchError();
+      throw AuthRetryableFetchException();
     }
 
     // If the status is 500 or above, it's likely a server error,
     // and can be retried.
     if (error.statusCode >= 500) {
-      throw AuthRetryableFetchError();
+      throw AuthRetryableFetchException();
     }
 
     final dynamic data;
     try {
       data = jsonDecode(error.body);
     } catch (error) {
-      throw AuthUnknownError(message: error.toString(), originalError: error);
+      throw AuthUnknownException(
+          message: error.toString(), originalError: error);
     }
 
     // Check if weak password reasons only contain strings
@@ -54,14 +55,14 @@ class GotrueFetch {
         (data['weak_password']['reasons'] as List)
             .whereNot((element) => element is String)
             .isEmpty) {
-      throw AuthWeakPasswordError(
+      throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
         statusCode: error.statusCode.toString(),
         reasons: data['weak_password']['reasons'],
       );
     }
 
-    throw AuthApiError(
+    throw AuthApiException(
       _getErrorMessage(data),
       statusCode: error.statusCode.toString(),
     );
@@ -133,7 +134,7 @@ class GotrueFetch {
       }
     } catch (e) {
       // fetch failed, likely due to a network or CORS error
-      throw AuthRetryableFetchError();
+      throw AuthRetryableFetchException();
     }
 
     if (!isSuccessStatusCode(response.statusCode)) {
