@@ -983,17 +983,12 @@ class GoTrueClient {
   Future<void> _autoRefreshTokenTick() async {
     try {
       final now = DateTime.now();
-      final session = _currentSession;
-      if (session == null) {
-        return;
-      }
-      final refreshToken = session.refreshToken;
+      final refreshToken = _currentSession?.refreshToken;
       if (refreshToken == null) {
         return;
       }
 
-      final expiresAt = session.expiresAt;
-
+      final expiresAt = _currentSession?.expiresAt;
       if (expiresAt == null) {
         return;
       }
