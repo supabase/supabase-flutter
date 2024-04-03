@@ -1096,7 +1096,6 @@ class GoTrueClient {
   }
 
   /// set currentSession and currentUser
-  /// process to _startAutoRefreshToken if possible
   void _saveSession(Session session) {
     _currentSession = session;
     _currentUser = session.user;
