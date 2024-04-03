@@ -20,7 +20,6 @@ class Constants {
 
   /// A token refresh will be attempted this many ticks before the current session expires.
   static const autoRefreshTickThreshold = 3;
-  // AUTO_REFRESH_TICK_THRESHOLD
 }
 
 enum AuthChangeEvent {
