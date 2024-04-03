@@ -793,7 +793,7 @@ class GoTrueClient {
 
   /// Signs out the current user, if there is a logged in user.
   ///
-  /// [scope] dtermines which sessions should be logged out.
+  /// [scope] determines which sessions should be logged out.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
   Future<void> signOut({
