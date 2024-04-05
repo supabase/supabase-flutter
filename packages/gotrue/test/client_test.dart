@@ -80,6 +80,8 @@ void main() {
       );
     });
 
+    test('anonymous sign-in', () => null)
+
     test('signUp() with email', () async {
       final response = await client.signUp(
         email: newEmail,
