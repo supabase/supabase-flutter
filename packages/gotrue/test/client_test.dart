@@ -80,7 +80,13 @@ void main() {
       );
     });
 
-    test('anonymous sign-in', () => null)
+    test('anonymous sign-in', () async {
+      final response = await client.signInAnonymously(
+        data: {'Hello': 'World'},
+      );
+      expect(response.session?.accessToken, isA<String>());
+      expect(response.user?.userMetadata, {'Hello': 'World'});
+    });
 
     test('signUp() with email', () async {
       final response = await client.signUp(
