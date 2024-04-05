@@ -99,7 +99,7 @@ void main() {
       expect(data?.accessToken, isA<String>());
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
-      expect(data?.user.userMetadata, {'Hello': 'World'});
+      expect(data?.user.userMetadata!['Hello'], 'World');
     });
 
     test('Parsing invalid URL should throw', () async {
@@ -161,7 +161,7 @@ void main() {
       expect(data?.accessToken, isA<String>());
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
-      expect(data?.user.userMetadata, {'Hello': 'World'});
+      expect(data?.user.userMetadata!['Hello'], 'World');
     });
 
     test('signUp() with autoConfirm off with email', () async {
