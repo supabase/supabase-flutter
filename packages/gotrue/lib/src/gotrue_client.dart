@@ -129,6 +129,40 @@ class GoTrueClient {
   /// Returns the current session, if any;
   Session? get currentSession => _currentSession;
 
+  Future<AuthResponse> signInAnonymously({
+    Map<String, dynamic>? data,
+    String? captchaToken,
+  }) async {
+    try {
+      _removeSession();
+
+      final response = await _fetch.request(
+        '$_url/signup',
+        RequestMethodType.post,
+        options: GotrueRequestOptions(
+          headers: _headers,
+          body: {
+            'data': data ?? {},
+            'gotrue_meta_security': {'captcha_token': captchaToken},
+          },
+        ),
+      );
+
+      final authResponse = AuthResponse.fromJson(response);
+
+      final session = authResponse.session;
+      if (session != null) {
+        _saveSession(session);
+        notifyAllSubscribers(AuthChangeEvent.signedIn);
+      }
+
+      return authResponse;
+    } catch (error) {
+      notifyException(error);
+      rethrow;
+    }
+  }
+
   /// Creates a new user.
   ///
   /// Be aware that if a user account exists in the system you may get back an
