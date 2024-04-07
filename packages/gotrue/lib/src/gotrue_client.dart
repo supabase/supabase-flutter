@@ -960,8 +960,6 @@ class GoTrueClient {
 
   /// Starts an auto-refresh process in the background. Close to the time of expiration a process is started to
   /// refresh the session. If refreshing fails it will be retried for as long as necessary.
-  ///
-  /// If you set the `autoRefreshToken` to `true`, you don't need to call this function, it will be called for you.
   void startAutoRefresh() async {
     stopAutoRefresh();
 
