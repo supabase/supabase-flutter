@@ -1103,8 +1103,6 @@ class GoTrueClient {
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
   /// If that's not null and not completed it returns the future of the ongoing request.
-  ///
-  /// When a [ClientException] occurs [_setTokenRefreshTimer] is used to schedule a retry in the background, which emits the result via [onAuthStateChange].
   Future<AuthResponse> _callRefreshToken(String refreshToken) async {
     // Refreshing is already in progress
     if (_refreshTokenCompleter != null) {
