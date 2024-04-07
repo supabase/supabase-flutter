@@ -1131,17 +1131,20 @@ class GoTrueClient {
 
       _refreshTokenCompleter?.complete(data);
       return data;
-    } on AuthException catch (error) {
+    } on AuthException catch (error, stack) {
       if (error is! AuthRetryableFetchException) {
         _removeSession();
         notifyAllSubscribers(AuthChangeEvent.signedOut);
+      } else {
+        _onAuthStateChangeController.addError(error, stack);
       }
 
       _refreshTokenCompleter?.completeError(error);
 
       rethrow;
-    } catch (error) {
+    } catch (error, stack) {
       _refreshTokenCompleter?.completeError(error);
+      _onAuthStateChangeController.addError(error, stack);
       rethrow;
     } finally {
       _refreshTokenCompleter = null;
