@@ -76,7 +76,11 @@ class RetryTestHttpClient extends BaseClient {
       throw ClientException('Retry #$retryCount');
     }
     final jwt = JWT(
-      {'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 60},
+      {
+        'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 60,
+        'retry_count':
+            retryCount, // Add retryCount so that tokens issued on different retries are different.
+      },
       subject: userId1,
     );
 

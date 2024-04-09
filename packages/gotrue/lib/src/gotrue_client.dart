@@ -12,6 +12,7 @@ import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:meta/meta.dart';
+import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
 
 part 'gotrue_mfa_api.dart';
@@ -50,9 +51,7 @@ class GoTrueClient {
 
   late bool _autoRefreshToken;
 
-  Timer? _refreshTokenTimer;
-
-  int _refreshTokenRetryCount = 0;
+  Timer? _autoRefreshTicker;
 
   /// Completer to combine multiple simultaneous token refresh requests.
   Completer<AuthResponse>? _refreshTokenCompleter;
@@ -114,6 +113,9 @@ class GoTrueClient {
       client: this,
       fetch: _fetch,
     );
+    if (_autoRefreshToken) {
+      startAutoRefresh();
+    }
   }
 
   /// Getter for the headers
@@ -579,14 +581,22 @@ class GoTrueClient {
     return res['url'] as String;
   }
 
-  /// Force refreshes the session including the user data in case it was updated
-  /// in a different session.
-  Future<AuthResponse> refreshSession() async {
+  /// Returns a new session, regardless of expiry status.
+  /// Takes in an optional current session. If not passed in, then refreshSession() will attempt to retrieve it from getSession().
+  /// If the current session's refresh token is invalid, an error will be thrown.
+  Future<AuthResponse> refreshSession([String? refreshToken]) async {
     if (currentSession?.accessToken == null) {
       throw AuthException('Not logged in.');
     }
 
-    return await _callRefreshToken();
+    final currentSessionRefreshToken =
+        refreshToken ?? _currentSession?.refreshToken;
+
+    if (currentSessionRefreshToken == null) {
+      throw AuthSessionMissingException();
+    }
+
+    return await _callRefreshToken(currentSessionRefreshToken);
   }
 
   /// Sends a reauthentication OTP to the user's email or phone number.
@@ -711,7 +721,7 @@ class GoTrueClient {
     if (refreshToken.isEmpty) {
       throw AuthException('No current session.');
     }
-    return await _callRefreshToken(refreshToken: refreshToken);
+    return await _callRefreshToken(refreshToken);
   }
 
   /// Gets the session data from a magic link or oauth2 callback URL
@@ -917,31 +927,125 @@ class GoTrueClient {
 
   /// Recover session from stringified [Session].
   Future<AuthResponse> recoverSession(String jsonStr) async {
-    final session = Session.fromJson(json.decode(jsonStr));
-    if (session == null) {
-      await signOut();
-      throw notifyException(AuthException('Current session is missing data.'));
-    }
-
-    if (session.isExpired) {
-      if (_autoRefreshToken && session.refreshToken != null) {
-        return await _callRefreshToken(
-          refreshToken: session.refreshToken,
-          accessToken: session.accessToken,
-        );
-      } else {
+    try {
+      final session = Session.fromJson(json.decode(jsonStr));
+      if (session == null) {
         await signOut();
-        throw notifyException(AuthException('Session expired.'));
+        throw notifyException(
+          AuthException('Current session is missing data.'),
+        );
       }
-    } else {
-      final shouldEmitEvent = _currentSession == null ||
-          _currentSession?.user.id != session.user.id;
-      _saveSession(session);
 
-      if (shouldEmitEvent) notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+      if (session.isExpired) {
+        final refreshToken = session.refreshToken;
+        if (_autoRefreshToken && refreshToken != null) {
+          return await _callRefreshToken(refreshToken);
+        } else {
+          await signOut();
+          throw notifyException(AuthException('Session expired.'));
+        }
+      } else {
+        final shouldEmitEvent = _currentSession == null ||
+            _currentSession?.user.id != session.user.id;
+        _saveSession(session);
 
-      return AuthResponse(session: session);
+        if (shouldEmitEvent) {
+          notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+        }
+
+        return AuthResponse(session: session);
+      }
+    } catch (error) {
+      notifyException(error);
+      rethrow;
     }
+  }
+
+  /// Starts an auto-refresh process in the background. Close to the time of expiration a process is started to
+  /// refresh the session. If refreshing fails it will be retried for as long as necessary.
+  void startAutoRefresh() async {
+    stopAutoRefresh();
+
+    _autoRefreshTicker = Timer.periodic(
+      Constants.autoRefreshTickDuration,
+      (Timer t) => _autoRefreshTokenTick(),
+    );
+
+    await Future.delayed(Duration.zero);
+    await _autoRefreshTokenTick();
+  }
+
+  /// Stops an active auto refresh process running in the background (if any).
+  void stopAutoRefresh() {
+    _autoRefreshTicker?.cancel();
+    _autoRefreshTicker = null;
+  }
+
+  Future<void> _autoRefreshTokenTick() async {
+    try {
+      final now = DateTime.now();
+      final refreshToken = _currentSession?.refreshToken;
+      if (refreshToken == null) {
+        return;
+      }
+
+      final expiresAt = _currentSession?.expiresAt;
+      if (expiresAt == null) {
+        return;
+      }
+
+      final expiresInTicks =
+          (DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)
+                      .difference(now)
+                      .inMilliseconds /
+                  Constants.autoRefreshTickDuration.inMilliseconds)
+              .floor();
+
+      // Only tick if the next tick comes after the retry threshold
+      if (expiresInTicks <= Constants.autoRefreshTickThreshold) {
+        await _callRefreshToken(refreshToken);
+      }
+    } catch (error) {
+      // Do nothing. JS client prints here
+    }
+  }
+
+  /// Generates a new JWT.
+  /// [refreshToken] A valid refresh token that was returned on login.
+  Future<AuthResponse> _refreshAccessToken(String refreshToken) async {
+    final startedAt = DateTime.now();
+    var attempt = 0;
+    return await retry<AuthResponse>(
+      // Make a GET request
+      () async {
+        attempt++;
+        final options = GotrueRequestOptions(
+            headers: _headers,
+            body: {'refresh_token': refreshToken},
+            query: {'grant_type': 'refresh_token'});
+        final response = await _fetch
+            .request('$_url/token', RequestMethodType.post, options: options);
+        final authResponse = AuthResponse.fromJson(response);
+        return authResponse;
+      },
+      retryIf: (e) {
+        // Do not retry if the next retry comes after the next tick.
+        final nextBackOff =
+            Duration(milliseconds: (200 * pow(2, attempt - 1).floor()));
+
+        return e is AuthRetryableFetchException &&
+            (DateTime.now().millisecondsSinceEpoch +
+                    nextBackOff.inMilliseconds -
+                    startedAt.millisecondsSinceEpoch) <
+                Constants.autoRefreshTickDuration.inMilliseconds;
+      },
+      maxDelay: Duration(seconds: 10),
+      randomizationFactor: 0,
+
+      // Max interval between retries is 10 sec, so just set the maxAttempts
+      // to something that will yield a more than 10 sec interval.
+      maxAttempts: 999,
+    );
   }
 
   /// Returns the OAuth sign in URL constructed from the [url] parameter.
@@ -987,139 +1091,66 @@ class GoTrueClient {
     return OAuthResponse(provider: provider, url: oauthUrl);
   }
 
-  void _saveSession(Session session) async {
+  /// set currentSession and currentUser
+  void _saveSession(Session session) {
     _currentSession = session;
     _currentUser = session.user;
-    final expiresAt = session.expiresAt;
-
-    if (_autoRefreshToken && expiresAt != null) {
-      _refreshTokenTimer?.cancel();
-
-      final timeNow = (DateTime.now().millisecondsSinceEpoch / 1000).round();
-      final expiresIn = expiresAt - timeNow;
-      final refreshDurationBeforeExpires = expiresIn > 60 ? 60 : 1;
-      final nextDuration = expiresIn - refreshDurationBeforeExpires;
-      try {
-        if (nextDuration > 0) {
-          _refreshTokenRetryCount = 0;
-          final timerDuration = Duration(seconds: nextDuration);
-          _setTokenRefreshTimer(timerDuration);
-        } else {
-          await _callRefreshToken();
-        }
-      } catch (e) {
-        // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
-      }
-    }
-  }
-
-  void _setTokenRefreshTimer(
-    Duration timerDuration, {
-    String? refreshToken,
-    String? accessToken,
-  }) {
-    _refreshTokenTimer?.cancel();
-    _refreshTokenRetryCount++;
-    if (_refreshTokenRetryCount < Constants.maxRetryCount) {
-      _refreshTokenTimer = Timer(timerDuration, () async {
-        try {
-          await _callRefreshToken(
-            refreshToken: refreshToken,
-            accessToken: accessToken,
-            ignorePendingRequest: true,
-          );
-        } catch (_) {
-          // Catch any error, because in this case they should be handled by listening to [onAuthStateChange]
-        }
-      });
-    } else {
-      throw AuthException('Access token refresh retry limit exceeded.');
-    }
   }
 
   void _removeSession() {
     _currentSession = null;
     _currentUser = null;
-    _refreshTokenRetryCount = 0;
-
-    _refreshTokenTimer?.cancel();
   }
 
   /// Generates a new JWT.
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
   /// If that's not null and not completed it returns the future of the ongoing request.
-  ///
-  /// To call [_callRefreshToken] during a running request [ignorePendingRequest] is used to bypass that check.
-  ///
-  /// When a [ClientException] occurs [_setTokenRefreshTimer] is used to schedule a retry in the background, which emits the result via [onAuthStateChange].
-  Future<AuthResponse> _callRefreshToken({
-    String? refreshToken,
-    String? accessToken,
-    bool ignorePendingRequest = false,
-  }) async {
-    if (_refreshTokenCompleter?.isCompleted ?? true) {
-      _refreshTokenCompleter = Completer<AuthResponse>();
-      // Catch any error in case nobody awaits the future
-      _refreshTokenCompleter!.future.then(
-        (value) => null,
-        onError: (error, stack) => null,
-      );
-    } else if (!ignorePendingRequest) {
+  Future<AuthResponse> _callRefreshToken(String refreshToken) async {
+    // Refreshing is already in progress
+    if (_refreshTokenCompleter != null) {
       return _refreshTokenCompleter!.future;
     }
-    final token = refreshToken ?? currentSession?.refreshToken;
-    if (token == null) {
-      throw AuthException('No current session.');
-    }
-
-    final jwt = accessToken ?? currentSession?.accessToken;
 
     try {
-      final body = {'refresh_token': token};
-      if (jwt != null) {
-        _headers['Authorization'] = 'Bearer $jwt';
-      }
-      final options = GotrueRequestOptions(
-          headers: _headers,
-          body: body,
-          query: {'grant_type': 'refresh_token'});
-      final response = await _fetch
-          .request('$_url/token', RequestMethodType.post, options: options);
-      final authResponse = AuthResponse.fromJson(response);
+      _refreshTokenCompleter = Completer<AuthResponse>();
 
-      if (authResponse.session == null) {
-        throw AuthException('Invalid session data.');
-      }
-
-      _saveSession(authResponse.session!);
-      if (!_refreshTokenCompleter!.isCompleted) {
-        _refreshTokenCompleter!.complete(authResponse);
-      }
-
-      notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-      return authResponse;
-    } on ClientException catch (e, stack) {
-      _setTokenRefreshTimer(
-        Constants.retryInterval * pow(2, _refreshTokenRetryCount),
-        refreshToken: token,
-        accessToken: accessToken,
+      // Catch any error in case nobody awaits the future
+      _refreshTokenCompleter!.future.then(
+        (_) => null,
+        onError: (_, __) => null,
       );
-      if (!_refreshTokenCompleter!.isCompleted) {
-        _refreshTokenCompleter!.completeError(e, stack);
+
+      final data = await _refreshAccessToken(refreshToken);
+
+      final session = data.session;
+
+      if (session == null) {
+        throw AuthSessionMissingException();
       }
+
+      _saveSession(session);
+      notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+
+      _refreshTokenCompleter?.complete(data);
+      return data;
+    } on AuthException catch (error, stack) {
+      if (error is! AuthRetryableFetchException) {
+        _removeSession();
+        notifyAllSubscribers(AuthChangeEvent.signedOut);
+      } else {
+        _onAuthStateChangeController.addError(error, stack);
+      }
+
+      _refreshTokenCompleter?.completeError(error);
+
       rethrow;
     } catch (error, stack) {
-      if (error is AuthException) {
-        if (error.message.startsWith('Invalid Refresh Token:')) {
-          await signOut();
-        }
-      }
-      if (!_refreshTokenCompleter!.isCompleted) {
-        _refreshTokenCompleter!.completeError(error, stack);
-      }
+      _refreshTokenCompleter?.completeError(error);
       _onAuthStateChangeController.addError(error, stack);
       rethrow;
+    } finally {
+      _refreshTokenCompleter = null;
     }
   }
 
@@ -1133,7 +1164,7 @@ class GoTrueClient {
 
   /// For internal use only.
   @internal
-  Exception notifyException(Exception exception, [StackTrace? stackTrace]) {
+  Object notifyException(Object exception, [StackTrace? stackTrace]) {
     _onAuthStateChangeController.addError(
       exception,
       stackTrace ?? StackTrace.current,

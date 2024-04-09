@@ -23,9 +23,10 @@ void main() {
         pkceAsyncStorage: MockAsyncStorage(),
       ),
     );
+    Supabase.instance.client.auth.stopAutoRefresh();
     await tester.pumpWidget(const MaterialApp(home: MockWidget()));
     await tester.tap(find.text('Sign out'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('You have signed out'), findsOneWidget);
   });
 }

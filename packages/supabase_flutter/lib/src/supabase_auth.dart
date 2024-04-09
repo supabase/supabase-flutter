@@ -17,6 +17,9 @@ class SupabaseAuth with WidgetsBindingObserver {
   late LocalStorage _localStorage;
   late AuthFlowType _authFlowType;
 
+  /// Whether to automatically refresh the token
+  late bool _autoRefreshToken;
+
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
@@ -36,6 +39,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }) async {
     _localStorage = options.localStorage!;
     _authFlowType = options.authFlowType;
+    _autoRefreshToken = options.autoRefreshToken;
 
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
@@ -107,30 +111,14 @@ class SupabaseAuth with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        _recoverSupabaseSession();
+        if (_autoRefreshToken) {
+          Supabase.instance.client.auth.startAutoRefresh();
+        }
+      case AppLifecycleState.detached:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+        Supabase.instance.client.auth.stopAutoRefresh();
       default:
-    }
-  }
-
-  /// Recover/refresh session if it's available
-  /// e.g. called on a splash screen when the app starts.
-  Future<void> _recoverSupabaseSession() async {
-    final bool exist = await _localStorage.hasAccessToken();
-    if (!exist) {
-      return;
-    }
-
-    final String? jsonStr = await _localStorage.accessToken();
-    if (jsonStr == null) {
-      return;
-    }
-
-    try {
-      await Supabase.instance.client.auth.recoverSession(jsonStr);
-    } catch (error) {
-      // When there is an exception thrown while recovering the session,
-      // the appropriate action (retry, revoking session) will be taken by
-      // the gotrue library, so need to do anything here.
     }
   }
 

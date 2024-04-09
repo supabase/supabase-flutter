@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
-import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 
 enum RequestMethodType { get, post, put, delete }
@@ -16,23 +16,56 @@ class GotrueFetch {
     return code >= 200 && code <= 299;
   }
 
-  AuthException _handleError(http.Response error) {
-    late AuthException errorRes;
-
-    try {
-      final parsedJson = json.decode(error.body) as Map<String, dynamic>;
-      final String message = (parsedJson['msg'] ??
-              parsedJson['message'] ??
-              parsedJson['error_description'] ??
-              parsedJson['error'] ??
-              error.body)
-          .toString();
-      errorRes = AuthException(message, statusCode: '${error.statusCode}');
-    } catch (_) {
-      errorRes = AuthException(error.body, statusCode: '${error.statusCode}');
+  String _getErrorMessage(dynamic error) {
+    if (error is Map) {
+      return error['msg'] ??
+          error['message'] ??
+          error['error_description'] ??
+          error['error']?.toString() ??
+          error.toString();
     }
 
-    return errorRes;
+    return error.toString();
+  }
+
+  AuthException _handleError(dynamic error) {
+    if (error is! Response) {
+      throw AuthRetryableFetchException();
+    }
+
+    // If the status is 500 or above, it's likely a server error,
+    // and can be retried.
+    if (error.statusCode >= 500) {
+      throw AuthRetryableFetchException();
+    }
+
+    final dynamic data;
+    try {
+      data = jsonDecode(error.body);
+    } catch (error) {
+      throw AuthUnknownException(
+          message: error.toString(), originalError: error);
+    }
+
+    // Check if weak password reasons only contain strings
+    if (data is Map &&
+        data['weak_password'] is Map &&
+        data['weak_password']['reasons'] is List &&
+        (data['weak_password']['reasons'] as List).isNotEmpty &&
+        (data['weak_password']['reasons'] as List)
+            .whereNot((element) => element is String)
+            .isEmpty) {
+      throw AuthWeakPasswordException(
+        message: _getErrorMessage(data),
+        statusCode: error.statusCode.toString(),
+        reasons: data['weak_password']['reasons'],
+      );
+    }
+
+    throw AuthApiException(
+      _getErrorMessage(data),
+      statusCode: error.statusCode.toString(),
+    );
   }
 
   Future<dynamic> request(
@@ -51,52 +84,71 @@ class GotrueFetch {
     }
     Uri uri = Uri.parse(url);
     uri = uri.replace(queryParameters: {...uri.queryParameters, ...qs});
-    late final http.Response response;
 
+    return await _handleRequest(
+        method: method, uri: uri, options: options, headers: headers);
+  }
+
+  Future<dynamic> _handleRequest({
+    required RequestMethodType method,
+    required Uri uri,
+    required GotrueRequestOptions? options,
+    required Map<String, String> headers,
+  }) async {
     final bodyStr = json.encode(options?.body ?? {});
 
     if (method != RequestMethodType.get) {
       headers['Content-Type'] = 'application/json';
     }
-    switch (method) {
-      case RequestMethodType.get:
-        response = await (httpClient?.get ?? http.get)(
-          uri,
-          headers: headers,
-        );
+    Response response;
+    try {
+      switch (method) {
+        case RequestMethodType.get:
+          response = await (httpClient?.get ?? get)(
+            uri,
+            headers: headers,
+          );
 
-        break;
-      case RequestMethodType.post:
-        response = await (httpClient?.post ?? http.post)(
-          uri,
-          headers: headers,
-          body: bodyStr,
-        );
-        break;
-      case RequestMethodType.put:
-        response = await (httpClient?.put ?? http.put)(
-          uri,
-          headers: headers,
-          body: bodyStr,
-        );
-        break;
-      case RequestMethodType.delete:
-        response = await (httpClient?.delete ?? http.delete)(
-          uri,
-          headers: headers,
-          body: bodyStr,
-        );
-        break;
+          break;
+        case RequestMethodType.post:
+          response = await (httpClient?.post ?? post)(
+            uri,
+            headers: headers,
+            body: bodyStr,
+          );
+          break;
+        case RequestMethodType.put:
+          response = await (httpClient?.put ?? put)(
+            uri,
+            headers: headers,
+            body: bodyStr,
+          );
+          break;
+        case RequestMethodType.delete:
+          response = await (httpClient?.delete ?? delete)(
+            uri,
+            headers: headers,
+            body: bodyStr,
+          );
+          break;
+      }
+    } catch (e) {
+      // fetch failed, likely due to a network or CORS error
+      throw AuthRetryableFetchException();
     }
 
-    if (isSuccessStatusCode(response.statusCode)) {
-      if (options?.noResolveJson == true) {
-        return response.body;
-      } else {
-        return json.decode(utf8.decode(response.bodyBytes));
-      }
-    } else {
+    if (!isSuccessStatusCode(response.statusCode)) {
       throw _handleError(response);
+    }
+
+    if (options?.noResolveJson == true) {
+      return response.body;
+    }
+
+    try {
+      return json.decode(utf8.decode(response.bodyBytes));
+    } catch (error) {
+      throw _handleError(error);
     }
   }
 }

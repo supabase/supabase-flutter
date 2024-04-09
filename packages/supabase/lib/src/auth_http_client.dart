@@ -13,7 +13,16 @@ class AuthHttpClient extends BaseClient {
     if (_auth.currentSession?.isExpired ?? false) {
       try {
         await _auth.refreshSession();
-      } catch (_) {}
+      } catch (error) {
+        // Failed to refresh the token.
+        final isExpiredWithoutMargin = DateTime.now().isAfter(
+            DateTime.fromMillisecondsSinceEpoch(
+                _auth.currentSession!.expiresAt! * 1000));
+        if (isExpiredWithoutMargin) {
+          // Throw the error instead of making an API request with an expired token.
+          rethrow;
+        }
+      }
     }
     final authBearer = _auth.currentSession?.accessToken ?? _supabaseKey;
 

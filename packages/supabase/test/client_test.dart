@@ -135,7 +135,7 @@ void main() {
     });
 
     test('call recoverSession', () async {
-      final expiresAt = DateTime.now().add(Duration(seconds: 11));
+      final expiresAt = DateTime.now().add(Duration(seconds: 31));
 
       final mockServer = await HttpServer.bind('localhost', 0);
       final supabase = SupabaseClient(
