@@ -132,38 +132,37 @@ class GoTrueClient {
   /// Returns the current session, if any;
   Session? get currentSession => _currentSession;
 
+  /// Creates a new anonymous user.
+  ///
+  /// Returns An `AuthResponse` with a session where the `is_anonymous` claim
+  /// in the access token JWT is set to true
   Future<AuthResponse> signInAnonymously({
     Map<String, dynamic>? data,
     String? captchaToken,
   }) async {
-    try {
-      _removeSession();
+    _removeSession();
 
-      final response = await _fetch.request(
-        '$_url/signup',
-        RequestMethodType.post,
-        options: GotrueRequestOptions(
-          headers: _headers,
-          body: {
-            'data': data ?? {},
-            'gotrue_meta_security': {'captcha_token': captchaToken},
-          },
-        ),
-      );
+    final response = await _fetch.request(
+      '$_url/signup',
+      RequestMethodType.post,
+      options: GotrueRequestOptions(
+        headers: _headers,
+        body: {
+          'data': data ?? {},
+          'gotrue_meta_security': {'captcha_token': captchaToken},
+        },
+      ),
+    );
 
-      final authResponse = AuthResponse.fromJson(response);
+    final authResponse = AuthResponse.fromJson(response);
 
-      final session = authResponse.session;
-      if (session != null) {
-        _saveSession(session);
-        notifyAllSubscribers(AuthChangeEvent.signedIn);
-      }
-
-      return authResponse;
-    } catch (error) {
-      notifyException(error);
-      rethrow;
+    final session = authResponse.session;
+    if (session != null) {
+      _saveSession(session);
+      notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
+
+    return authResponse;
   }
 
   /// Creates a new user.
