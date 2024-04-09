@@ -1,3 +1,9 @@
+## 2.6.0
+
+ - **FIX**: Typos in gotrue_client.dart ([#882](https://github.com/supabase/supabase-flutter/issues/882)). ([54a0b979](https://github.com/supabase/supabase-flutter/commit/54a0b979f61a0a161b805c23329964ca626000ce))
+ - **FEAT**(gotrue): Add `signInAnonymously()` method ([#883](https://github.com/supabase/supabase-flutter/issues/883)). ([2e636131](https://github.com/supabase/supabase-flutter/commit/2e636131667e6375a24fd08342c62f20eb5ea143))
+ - **FEAT**(gotrue,supabase_flutter): New auth token refresh algorithm ([#879](https://github.com/supabase/supabase-flutter/issues/879)). ([99931681](https://github.com/supabase/supabase-flutter/commit/9993168137f2e48279840c6c1b311ac7ac6138a6))
+
 ## 2.5.1
 
  - **FIX**: Correct the id value passed to `.unlinkIdentity()` method ([#841](https://github.com/supabase/supabase-flutter/issues/841)). ([0585cdde](https://github.com/supabase/supabase-flutter/commit/0585cdde4eefa61eda4c67e41b8f6f266b891fca))

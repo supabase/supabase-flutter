@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-04-09
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.6.0`](#gotrue---v260)
+ - [`realtime_client` - `v2.0.3`](#realtime_client---v203)
+ - [`supabase` - `v2.1.0`](#supabase---v210)
+ - [`supabase_flutter` - `v2.5.0`](#supabase_flutter---v250)
+
+---
+
+#### `gotrue` - `v2.6.0`
+
+ - **FIX**: Typos in gotrue_client.dart ([#882](https://github.com/supabase/supabase-flutter/issues/882)). ([54a0b979](https://github.com/supabase/supabase-flutter/commit/54a0b979f61a0a161b805c23329964ca626000ce))
+ - **FEAT**(gotrue): Add `signInAnonymously()` method ([#883](https://github.com/supabase/supabase-flutter/issues/883)). ([2e636131](https://github.com/supabase/supabase-flutter/commit/2e636131667e6375a24fd08342c62f20eb5ea143))
+ - **FEAT**(gotrue,supabase_flutter): New auth token refresh algorithm ([#879](https://github.com/supabase/supabase-flutter/issues/879)). ([99931681](https://github.com/supabase/supabase-flutter/commit/9993168137f2e48279840c6c1b311ac7ac6138a6))
+
+#### `realtime_client` - `v2.0.3`
+
+ - **FIX**: Don't send access token  in rest broadcast ([#881](https://github.com/supabase/supabase-flutter/issues/881)). ([01a10c97](https://github.com/supabase/supabase-flutter/commit/01a10c9708f6a9d4d2d2b0756009aa895c7238f6))
+
+#### `supabase` - `v2.1.0`
+
+ - **FIX**: Don't send access token  in rest broadcast ([#881](https://github.com/supabase/supabase-flutter/issues/881)). ([01a10c97](https://github.com/supabase/supabase-flutter/commit/01a10c9708f6a9d4d2d2b0756009aa895c7238f6))
+ - **FEAT**(gotrue,supabase_flutter): New auth token refresh algorithm ([#879](https://github.com/supabase/supabase-flutter/issues/879)). ([99931681](https://github.com/supabase/supabase-flutter/commit/9993168137f2e48279840c6c1b311ac7ac6138a6))
+
+#### `supabase_flutter` - `v2.5.0`
+
+ - **FEAT**(gotrue,supabase_flutter): New auth token refresh algorithm ([#879](https://github.com/supabase/supabase-flutter/issues/879)). ([99931681](https://github.com/supabase/supabase-flutter/commit/9993168137f2e48279840c6c1b311ac7ac6138a6))
+
+
 ## 2024-04-02
 
 ### Changes
