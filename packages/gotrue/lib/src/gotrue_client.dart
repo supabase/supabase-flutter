@@ -113,6 +113,9 @@ class GoTrueClient {
       client: this,
       fetch: _fetch,
     );
+    if (_autoRefreshToken) {
+      startAutoRefresh();
+    }
   }
 
   /// Getter for the headers
