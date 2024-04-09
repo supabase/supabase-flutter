@@ -76,7 +76,6 @@ class SupabaseAuth with WidgetsBindingObserver {
           // ignore: invalid_use_of_internal_member
           .notifyAllSubscribers(AuthChangeEvent.initialSession);
     }
-    Supabase.instance.client.auth.startAutoRefresh();
   }
 
   /// Recovers the session from local storage.
