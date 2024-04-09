@@ -85,6 +85,7 @@ void main() {
         data: {'Hello': 'World'},
       );
       expect(response.session?.accessToken, isA<String>());
+      expect(response.user?.isAnonymous, isTrue);
       expect(response.user?.userMetadata, {'Hello': 'World'});
     });
 
