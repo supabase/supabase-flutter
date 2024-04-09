@@ -113,6 +113,9 @@ class GoTrueClient {
       client: this,
       fetch: _fetch,
     );
+    if (_autoRefreshToken) {
+      startAutoRefresh();
+    }
   }
 
   /// Getter for the headers
@@ -834,7 +837,7 @@ class GoTrueClient {
 
   /// Signs out the current user, if there is a logged in user.
   ///
-  /// [scope] dtermines which sessions should be logged out.
+  /// [scope] determines which sessions should be logged out.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
   Future<void> signOut({
@@ -997,8 +1000,6 @@ class GoTrueClient {
 
   /// Starts an auto-refresh process in the background. Close to the time of expiration a process is started to
   /// refresh the session. If refreshing fails it will be retried for as long as necessary.
-  ///
-  /// If you set the `autoRefreshToken` to `true`, you don't need to call this function, it will be called for you.
   void startAutoRefresh() async {
     stopAutoRefresh();
 
@@ -1031,8 +1032,8 @@ class GoTrueClient {
       }
 
       final expiresInTicks =
-          ((DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)
-                          .difference(now))
+          (DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)
+                      .difference(now)
                       .inMilliseconds /
                   Constants.autoRefreshTickDuration.inMilliseconds)
               .floor();
@@ -1142,8 +1143,6 @@ class GoTrueClient {
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
   /// If that's not null and not completed it returns the future of the ongoing request.
-  ///
-  /// When a [ClientException] occurs [_setTokenRefreshTimer] is used to schedule a retry in the background, which emits the result via [onAuthStateChange].
   Future<AuthResponse> _callRefreshToken(String refreshToken) async {
     // Refreshing is already in progress
     if (_refreshTokenCompleter != null) {
@@ -1172,17 +1171,20 @@ class GoTrueClient {
 
       _refreshTokenCompleter?.complete(data);
       return data;
-    } on AuthException catch (error) {
+    } on AuthException catch (error, stack) {
       if (error is! AuthRetryableFetchException) {
         _removeSession();
         notifyAllSubscribers(AuthChangeEvent.signedOut);
+      } else {
+        _onAuthStateChangeController.addError(error, stack);
       }
 
       _refreshTokenCompleter?.completeError(error);
 
       rethrow;
-    } catch (error) {
+    } catch (error, stack) {
       _refreshTokenCompleter?.completeError(error);
+      _onAuthStateChangeController.addError(error, stack);
       rethrow;
     } finally {
       _refreshTokenCompleter = null;

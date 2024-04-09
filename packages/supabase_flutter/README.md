@@ -39,7 +39,22 @@ final supabase = Supabase.instance.client;
 
 ## Usage example
 
-### [Authentication](https://supabase.com/docs/guides/auth)
+* [Authentication](#authentication)
+  * [Native Apple Sign in](#native-apple-sign-in)
+  * [Native Google sign in](#native-google-sign-in)
+  * [OAuth login](#oauth-login)
+* [Database](#database)
+* [Realtime](#realtime)
+  * [Postgres Changes](#postgres-changes)
+  * [Broadcast](#broadcast)
+  * [Presence](#presence)
+* [Storage](#storage)
+* [Edge Functions](#edge-functions)
+* [Deep Links](#deep-links)
+* [Custom LocalStorage](#custom-localstorage)
+
+
+### <a id="authentication"></a>[Authentication](https://supabase.com/docs/guides/auth)
 
 ```dart
 final supabase = Supabase.instance.client;
@@ -67,7 +82,7 @@ supabase.auth.onAuthStateChange.listen((data) {
 });
 ```
 
-#### Native Apple Sign in
+#### <a id="native-apple-sign-in"></a>Native Apple Sign in
 
 You can perform Apple sign in using the [sign_in_with_apple](https://pub.dev/packages/sign_in_with_apple) package on Flutter.
 Follow the instructions on README of the `sign_in_with_apple` package to setup the native Apple sign in on iOS and macOS.
@@ -105,7 +120,7 @@ Future<AuthResponse> signInWithApple() async {
 }
 ```
 
-#### Native Google sign in
+#### <a id="native-google-sign-in"></a>Native Google sign in
 
 You can perform native Google sign in on Android and iOS using [google_sign_in](https://pub.dev/packages/google_sign_in).
 For platform specific settings, follow the instructions on README of the package.
@@ -165,7 +180,7 @@ Future<AuthResponse> _googleSignIn() async {
 ...
 ```
 
-### OAuth login
+### <a id="oauth-login"></a>OAuth login
 
 For providers other than Apple or Google, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
 
@@ -187,7 +202,7 @@ supabase.auth.onAuthStateChange.listen((data) {
 });
 ```
 
-### [Database](https://supabase.com/docs/guides/database)
+### <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
 
 Database methods are used to perform basic CRUD operations using the Supabase REST API. Full list of supported operators can be found [here](https://supabase.com/docs/reference/dart/select).
 
@@ -205,7 +220,7 @@ await supabase
   .insert({'name': 'The Shire', 'country_id': 554});
 ```
 
-### [Realtime](https://supabase.com/docs/guides/realtime)
+### <a id="realtime"></a>[Realtime](https://supabase.com/docs/guides/realtime)
 
 #### Realtime data as `Stream`
 
@@ -238,7 +253,7 @@ class _MyWidgetState extends State<MyWidget> {
 }
 ```
 
-#### [Postgres Changes](https://supabase.com/docs/guides/realtime#postgres-changes)
+#### <a id="postgres-changes"></a>[Postgres Changes](https://supabase.com/docs/guides/realtime#postgres-changes)
 
 You can get notified whenever there is a change in your Supabase tables.
 
@@ -257,7 +272,7 @@ myChannel
     .subscribe();
 ```
 
-#### [Broadcast](https://supabase.com/docs/guides/realtime#broadcast)
+#### <a id="broadcast"></a>[Broadcast](https://supabase.com/docs/guides/realtime#broadcast)
 
 Broadcast lets you send and receive low latency messages between connected clients by bypassing the database.
 
@@ -280,7 +295,7 @@ await myChannel.sendBroadcastMessage(
 );
 ```
 
-### [Presence](https://supabase.com/docs/guides/realtime#presence)
+### <a id="presence"></a>[Presence](https://supabase.com/docs/guides/realtime#presence)
 
 Presence let's you easily create "I'm online" feature.
 
@@ -314,7 +329,7 @@ myChannel
 }));
 ```
 
-### [Storage](https://supabase.com/docs/guides/storage)
+### <a id="storage"></a>[Storage](https://supabase.com/docs/guides/storage)
 
 ```dart
 final file = File('example.txt');
@@ -329,13 +344,13 @@ await supabase.storage
   .uploadBinary('my/path/to/files/example.txt', file.readAsBytesSync());
 ```
 
-### [Edge Functions](https://supabase.com/docs/guides/functions)
+### <a id="edge-functions"></a>[Edge Functions](https://supabase.com/docs/guides/functions)
 
 ```dart
 final data = await supabase.functions.invoke('get_countries');
 ```
 
-## Deep links
+## <a id="deep-links"></a>Deep links
 
 ### Why do you need to setup deep links
 
@@ -371,7 +386,7 @@ Follow the guide to find additional platform specidic condigs for your OAuth pro
 
 https://supabase.io/docs/guides/auth#third-party-logins
 
-## Custom LocalStorage
+## <a id="custom-localstorage"></a>Custom LocalStorage
 
 As default, `supabase_flutter` uses [`Shared preferences`](https://pub.dev/packages/shared_preferences) to persist the user session.
 
@@ -388,12 +403,12 @@ class MySecureStorage extends LocalStorage {
 
   @override
   Future<String?> accessToken() async {
-    return storage.containsKey(key: supabasePersistSessionKey);
+    return storage.read(key: supabasePersistSessionKey);
   }
 
   @override
   Future<bool> hasAccessToken() async {
-    return storage.read(key: supabasePersistSessionKey);
+    return storage.containsKey(key: supabasePersistSessionKey);
   }
 
   @override

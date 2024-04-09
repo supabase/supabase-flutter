@@ -155,7 +155,7 @@ dynamic convertCell(String type, dynamic value) {
       return toJson(value);
     case PostgresTypes.timestamp:
       return toTimestampString(
-        value.toString(),
+        value?.toString(),
       ); // Format to be consistent with PostgREST
     case PostgresTypes.abstime: // To allow users to cast it based on Timezone
     case PostgresTypes.date: // To allow users to cast it based on Timezone

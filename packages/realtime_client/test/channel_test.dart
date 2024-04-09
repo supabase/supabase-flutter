@@ -248,6 +248,7 @@ void main() {
       mockServer = await HttpServer.bind('localhost', 0);
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        headers: {'apikey': 'supabaseKey'},
         params: {'apikey': 'supabaseKey'},
       );
 

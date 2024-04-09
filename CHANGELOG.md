@@ -3,6 +3,40 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-04-02
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v2.0.2`](#realtime_client---v202)
+ - [`supabase_flutter` - `v2.4.0`](#supabase_flutter---v240)
+ - [`supabase` - `v2.0.9`](#supabase---v209)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.0.9`
+
+---
+
+#### `realtime_client` - `v2.0.2`
+
+ - **FIX**(realtime_client): Fix issue where `null` `timestamp` type column becomes `"null"` string on realtime ([#855](https://github.com/supabase/supabase-flutter/issues/855)). ([c59bdbbf](https://github.com/supabase/supabase-flutter/commit/c59bdbbf2b098f83d81d189cb36fd822787a880a))
+
+#### `supabase_flutter` - `v2.4.0`
+
+ - **FEAT**: Add `detectSessionInUri` option to optionally disable deep link observer.  ([#848](https://github.com/supabase/supabase-flutter/issues/848)). ([cb9aed80](https://github.com/supabase/supabase-flutter/commit/cb9aed8056a9725f8a3413958530474faef1d5d1))
+ - **DOCS**: Fixed imprecision in Custom Local Storage README.md ([#853](https://github.com/supabase/supabase-flutter/issues/853)). ([6655e576](https://github.com/supabase/supabase-flutter/commit/6655e576b96550e91a24eccce3a79c948adf2922))
+
+
 ## 2024-02-19
 
 ### Changes

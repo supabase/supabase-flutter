@@ -17,6 +17,9 @@ class SupabaseAuth with WidgetsBindingObserver {
   late LocalStorage _localStorage;
   late AuthFlowType _authFlowType;
 
+  /// Whether to automatically refresh the token
+  late bool _autoRefreshToken;
+
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
@@ -36,6 +39,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }) async {
     _localStorage = options.localStorage!;
     _authFlowType = options.authFlowType;
+    _autoRefreshToken = options.autoRefreshToken;
 
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
@@ -108,7 +112,9 @@ class SupabaseAuth with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        Supabase.instance.client.auth.startAutoRefresh();
+        if (_autoRefreshToken) {
+          Supabase.instance.client.auth.startAutoRefresh();
+        }
       case AppLifecycleState.detached:
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
