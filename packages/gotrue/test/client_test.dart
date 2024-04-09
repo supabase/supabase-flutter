@@ -80,6 +80,15 @@ void main() {
       );
     });
 
+    test('anonymous sign-in', () async {
+      final response = await client.signInAnonymously(
+        data: {'Hello': 'World'},
+      );
+      expect(response.session?.accessToken, isA<String>());
+      expect(response.user?.isAnonymous, isTrue);
+      expect(response.user?.userMetadata, {'Hello': 'World'});
+    });
+
     test('signUp() with email', () async {
       final response = await client.signUp(
         email: newEmail,
@@ -91,7 +100,7 @@ void main() {
       expect(data?.accessToken, isA<String>());
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
-      expect(data?.user.userMetadata, {'Hello': 'World'});
+      expect(data?.user.userMetadata!['Hello'], 'World');
     });
 
     test('Parsing invalid URL should throw', () async {
@@ -153,7 +162,7 @@ void main() {
       expect(data?.accessToken, isA<String>());
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
-      expect(data?.user.userMetadata, {'Hello': 'World'});
+      expect(data?.user.userMetadata!['Hello'], 'World');
     });
 
     test('signUp() with autoConfirm off with email', () async {

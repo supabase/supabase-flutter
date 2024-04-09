@@ -132,6 +132,39 @@ class GoTrueClient {
   /// Returns the current session, if any;
   Session? get currentSession => _currentSession;
 
+  /// Creates a new anonymous user.
+  ///
+  /// Returns An `AuthResponse` with a session where the `is_anonymous` claim
+  /// in the access token JWT is set to true
+  Future<AuthResponse> signInAnonymously({
+    Map<String, dynamic>? data,
+    String? captchaToken,
+  }) async {
+    _removeSession();
+
+    final response = await _fetch.request(
+      '$_url/signup',
+      RequestMethodType.post,
+      options: GotrueRequestOptions(
+        headers: _headers,
+        body: {
+          'data': data ?? {},
+          'gotrue_meta_security': {'captcha_token': captchaToken},
+        },
+      ),
+    );
+
+    final authResponse = AuthResponse.fromJson(response);
+
+    final session = authResponse.session;
+    if (session != null) {
+      _saveSession(session);
+      notifyAllSubscribers(AuthChangeEvent.signedIn);
+    }
+
+    return authResponse;
+  }
+
   /// Creates a new user.
   ///
   /// Be aware that if a user account exists in the system you may get back an
@@ -823,8 +856,11 @@ class GoTrueClient {
         await admin.signOut(accessToken, scope: scope);
       } on AuthException catch (error) {
         // ignore 401s since an invalid or expired JWT should sign out the current session
+        // ignore 403s since user might not exist anymore
         // ignore 404s since user might not exist anymore
-        if (error.statusCode != '401' && error.statusCode != '404') {
+        if (error.statusCode != '401' &&
+            error.statusCode != '403' &&
+            error.statusCode != '404') {
           rethrow;
         }
       }

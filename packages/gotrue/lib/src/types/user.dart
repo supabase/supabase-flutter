@@ -26,6 +26,7 @@ class User {
   final String? updatedAt;
   final List<UserIdentity>? identities;
   final List<Factor>? factors;
+  final bool isAnonymous;
 
   const User({
     required this.id,
@@ -49,6 +50,7 @@ class User {
     this.updatedAt,
     this.identities,
     this.factors,
+    this.isAnonymous = false,
   });
 
   /// Returns a `User` object from a map of json
@@ -85,6 +87,7 @@ class User {
       factors: json['factors'] != null
           ? List<Factor>.from(json['factors']?.map((x) => Factor.fromJson(x)))
           : null,
+      isAnonymous: json['is_anonymous'] ?? false,
     );
   }
 
@@ -111,12 +114,13 @@ class User {
       'updated_at': updatedAt,
       'identities': identities?.map((identity) => identity.toJson()).toList(),
       'factors': factors?.map((factor) => factor.toJson()).toList(),
+      'is_anonymous': isAnonymous,
     };
   }
 
   @override
   String toString() {
-    return 'User(id: $id, appMetadata: $appMetadata, userMetadata: $userMetadata, aud: $aud, confirmationSentAt: $confirmationSentAt, recoverySentAt: $recoverySentAt, emailChangeSentAt: $emailChangeSentAt, newEmail: $newEmail, invitedAt: $invitedAt, actionLink: $actionLink, email: $email, phone: $phone, createdAt: $createdAt, confirmedAt: $confirmedAt, emailConfirmedAt: $emailConfirmedAt, phoneConfirmedAt: $phoneConfirmedAt, lastSignInAt: $lastSignInAt, role: $role, updatedAt: $updatedAt, identities: $identities, factors: $factors)';
+    return 'User(id: $id, appMetadata: $appMetadata, userMetadata: $userMetadata, aud: $aud, confirmationSentAt: $confirmationSentAt, recoverySentAt: $recoverySentAt, emailChangeSentAt: $emailChangeSentAt, newEmail: $newEmail, invitedAt: $invitedAt, actionLink: $actionLink, email: $email, phone: $phone, createdAt: $createdAt, confirmedAt: $confirmedAt, emailConfirmedAt: $emailConfirmedAt, phoneConfirmedAt: $phoneConfirmedAt, lastSignInAt: $lastSignInAt, role: $role, updatedAt: $updatedAt, identities: $identities, factors: $factors, isAnonymous: $isAnonymous)';
   }
 
   @override
@@ -145,7 +149,8 @@ class User {
         other.role == role &&
         other.updatedAt == updatedAt &&
         collectionEquals(other.identities, identities) &&
-        collectionEquals(other.factors, factors);
+        collectionEquals(other.factors, factors) &&
+        other.isAnonymous == isAnonymous;
   }
 
   @override
@@ -170,7 +175,8 @@ class User {
         role.hashCode ^
         updatedAt.hashCode ^
         identities.hashCode ^
-        factors.hashCode;
+        factors.hashCode ^
+        isAnonymous.hashCode;
   }
 }
 
