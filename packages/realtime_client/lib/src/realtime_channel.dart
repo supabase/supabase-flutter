@@ -527,6 +527,11 @@ class RealtimeChannel {
           completer.complete(ChannelResponse.ok);
         }
       });
+      push.receive('error', (_) {
+        if (!completer.isCompleted) {
+          completer.complete(ChannelResponse.error);
+        }
+      });
       push.receive('timeout', (_) {
         if (!completer.isCompleted) {
           completer.complete(ChannelResponse.timedOut);
