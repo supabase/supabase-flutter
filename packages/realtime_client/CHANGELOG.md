@@ -1,3 +1,7 @@
+## 2.0.4
+
+ - **FIX**(realtime_client): Accept an error on track when the server returns an error ([#888](https://github.com/supabase/supabase-flutter/issues/888)). ([f829be58](https://github.com/supabase/supabase-flutter/commit/f829be584bab5af51256bbc8c176e95d52008ebe))
+
 ## 2.0.3
 
  - **FIX**: Don't send access token  in rest broadcast ([#881](https://github.com/supabase/supabase-flutter/issues/881)). ([01a10c97](https://github.com/supabase/supabase-flutter/commit/01a10c9708f6a9d4d2d2b0756009aa895c7238f6))

@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-04-15
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v2.0.4`](#realtime_client---v204)
+ - [`supabase` - `v2.1.1`](#supabase---v211)
+ - [`supabase_flutter` - `v2.5.1`](#supabase_flutter---v251)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.1.1`
+ - `supabase_flutter` - `v2.5.1`
+
+---
+
+#### `realtime_client` - `v2.0.4`
+
+ - **FIX**(realtime_client): Accept an error on track when the server returns an error ([#888](https://github.com/supabase/supabase-flutter/issues/888)). ([f829be58](https://github.com/supabase/supabase-flutter/commit/f829be584bab5af51256bbc8c176e95d52008ebe))
+
+
 ## 2024-04-09
 
 ### Changes
