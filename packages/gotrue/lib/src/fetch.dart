@@ -58,7 +58,7 @@ class GotrueFetch {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
         statusCode: error.statusCode.toString(),
-        reasons: data['weak_password']['reasons'],
+        reasons: List<String>.from(data['weak_password']['reasons']),
       );
     }
 
