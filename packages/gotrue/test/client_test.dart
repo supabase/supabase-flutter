@@ -102,6 +102,15 @@ void main() {
       expect(data?.user.id, isA<String>());
       expect(data?.user.userMetadata!['Hello'], 'World');
     });
+    test('signUp() with week password throws AuthWeakPasswordException',
+        () async {
+      try {
+        await client.signUp(email: newEmail, password: '123');
+        fail('signUp with week password should throw exception');
+      } catch (error) {
+        expect(error, isA<AuthWeakPasswordException>());
+      }
+    });
 
     test('Parsing invalid URL should throw', () async {
       const expiresIn = 12345;
