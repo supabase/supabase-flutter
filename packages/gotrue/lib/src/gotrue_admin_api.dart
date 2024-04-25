@@ -50,7 +50,7 @@ class GoTrueAdminApi {
   ///
   /// This function should only be called on a server. Never expose your `service_role` key on the client.
   ///
-  // Requires either an email or phone
+  /// Requires either an email or phone
   Future<UserResponse> createUser(AdminUserAttributes attributes) async {
     final options = GotrueRequestOptions(
       headers: _headers,
@@ -121,9 +121,20 @@ class GoTrueAdminApi {
   }
 
   /// Generates links to be sent via email or other.
+  ///
+  /// [password] is  used for [GenerateLinkType.signup]
+  ///
+  /// [newEmail] is used for [GenerateLinkType.emailChangeCurrent]
+  /// and [GenerateLinkType.emailChangeNew]
+  ///
+  /// [data] may be used to store the user's metadata.
+  /// This maps to the `auth.users.user_metadata` column.
+  /// Applicable for [GenerateLinkType.signup], [GenerateLinkType.invite],
+  /// [GenerateLinkType.magiclink]
   Future<GenerateLinkResponse> generateLink({
     required GenerateLinkType type,
     required String email,
+    String? newEmail,
     String? password,
     Map<String, dynamic>? data,
     String? redirectTo,
@@ -134,6 +145,7 @@ class GoTrueAdminApi {
       if (data != null) 'data': data,
       if (redirectTo != null) 'redirect_to': redirectTo,
       if (password != null) 'password': password,
+      if (newEmail != null) 'new_email': newEmail,
     };
 
     final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
