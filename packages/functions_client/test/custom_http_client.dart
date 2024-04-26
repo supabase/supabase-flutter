@@ -15,6 +15,13 @@ class CustomHttpClient extends BaseClient {
           "Content-Type": "application/json",
         },
       );
+    } else if (request.url.path.endsWith('sse')) {
+      return StreamedResponse(
+          Stream.fromIterable(['a', 'b', 'c'].map((e) => utf8.encode(e))), 200,
+          request: request,
+          headers: {
+            "Content-Type": "text/event-stream",
+          });
     } else {
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
