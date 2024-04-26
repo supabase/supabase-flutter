@@ -122,9 +122,9 @@ class GoTrueAdminApi {
 
   /// Generates links to be sent via email or other.
   ///
-  /// [password] is  used for [GenerateLinkType.signup]
+  /// [password] is required for [GenerateLinkType.signup]
   ///
-  /// [newEmail] is used for [GenerateLinkType.emailChangeCurrent]
+  /// [newEmail] is required for [GenerateLinkType.emailChangeCurrent]
   /// and [GenerateLinkType.emailChangeNew]
   ///
   /// [data] may be used to store the user's metadata.
@@ -139,6 +139,16 @@ class GoTrueAdminApi {
     Map<String, dynamic>? data,
     String? redirectTo,
   }) async {
+    assert(
+      !(type == GenerateLinkType.emailChangeCurrent ||
+              type == GenerateLinkType.emailChangeNew) ||
+          newEmail != null,
+      'newEmail is required for emailChangeCurrent and emailChangeNew',
+    );
+    assert(
+      type != GenerateLinkType.signup || password != null,
+      'password is required for signup',
+    );
     final body = {
       'email': email,
       'type': type.snakeCase,
