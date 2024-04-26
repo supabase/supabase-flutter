@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:http/http.dart';
+
 enum HttpMethod {
   get,
   post,
@@ -14,6 +16,7 @@ class FunctionResponse {
   /// - 'text/plain': [String]
   /// - 'octet/stream': [Uint8List]
   /// - 'application/json': dynamic ([jsonDecode] is used)
+  /// - 'text/event-stream': [ByteStream]
   final dynamic data;
   final int status;
 
