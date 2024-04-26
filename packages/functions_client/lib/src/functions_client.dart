@@ -43,6 +43,20 @@ class FunctionsClient {
   /// [headers]: object representing the headers to send with the request
   ///
   /// [body]: the body of the request
+  ///
+  /// ```dart
+  /// // Call a standard function
+  /// final response = await supabase.functions.invoke('hello-world');
+  /// print(response.data);
+  ///
+  /// // Listen to Server Sent Events
+  /// final response = await supabase.functions.invoke('sse-function');
+  /// response.data
+  ///     .transform(const Utf8Decoder())
+  ///     .listen((val) {
+  ///       print(val);
+  ///     });
+  /// ```
   Future<FunctionResponse> invoke(
     String functionName, {
     Map<String, String>? headers,
