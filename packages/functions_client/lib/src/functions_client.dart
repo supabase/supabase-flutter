@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:functions_client/src/constants.dart';
 import 'package:functions_client/src/types.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/http.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 class FunctionsClient {
@@ -44,6 +43,20 @@ class FunctionsClient {
   /// [headers]: object representing the headers to send with the request
   ///
   /// [body]: the body of the request
+  ///
+  /// ```dart
+  /// // Call a standard function
+  /// final response = await supabase.functions.invoke('hello-world');
+  /// print(response.data);
+  ///
+  /// // Listen to Server Sent Events
+  /// final response = await supabase.functions.invoke('sse-function');
+  /// response.data
+  ///     .transform(const Utf8Decoder())
+  ///     .listen((val) {
+  ///       print(val);
+  ///     });
+  /// ```
   Future<FunctionResponse> invoke(
     String functionName, {
     Map<String, String>? headers,
@@ -52,7 +65,6 @@ class FunctionsClient {
   }) async {
     final bodyStr = body == null ? null : await _isolate.encode(body);
 
-    late final Response response;
     final uri = Uri.parse('$_url/$functionName');
 
     final finalHeaders = <String, String>{
@@ -60,59 +72,35 @@ class FunctionsClient {
       if (headers != null) ...headers
     };
 
-    switch (method) {
-      case HttpMethod.post:
-        response = await (_httpClient?.post ?? http.post)(
-          uri,
-          headers: finalHeaders,
-          body: bodyStr,
-        );
-        break;
+    final request = http.Request(method.name, uri);
 
-      case HttpMethod.get:
-        response = await (_httpClient?.get ?? http.get)(
-          uri,
-          headers: finalHeaders,
-        );
-        break;
-
-      case HttpMethod.put:
-        response = await (_httpClient?.put ?? http.put)(
-          uri,
-          headers: finalHeaders,
-          body: bodyStr,
-        );
-        break;
-
-      case HttpMethod.delete:
-        response = await (_httpClient?.delete ?? http.delete)(
-          uri,
-          headers: finalHeaders,
-        );
-        break;
-
-      case HttpMethod.patch:
-        response = await (_httpClient?.patch ?? http.patch)(
-          uri,
-          headers: finalHeaders,
-          body: bodyStr,
-        );
-        break;
-    }
-
+    finalHeaders.forEach((key, value) {
+      request.headers[key] = value;
+    });
+    if (bodyStr != null) request.body = bodyStr;
+    final response = await (_httpClient?.send(request) ?? request.send());
     final responseType = (response.headers['Content-Type'] ??
             response.headers['content-type'] ??
             'text/plain')
         .split(';')[0]
         .trim();
 
-    final data = switch (responseType) {
-      'application/json' => response.bodyBytes.isEmpty
+    final dynamic data;
+
+    if (responseType == 'application/json') {
+      final bodyBytes = await response.stream.toBytes();
+      data = bodyBytes.isEmpty
           ? ""
-          : await _isolate.decode(utf8.decode(response.bodyBytes)),
-      'application/octet-stream' => response.bodyBytes,
-      _ => utf8.decode(response.bodyBytes),
-    };
+          : await _isolate.decode(utf8.decode(bodyBytes));
+    } else if (responseType == 'application/octet-stream') {
+      data = await response.stream.toBytes();
+    } else if (responseType == 'text/event-stream') {
+      data = response.stream;
+    } else {
+      final bodyBytes = await response.stream.toBytes();
+      data = utf8.decode(bodyBytes);
+    }
+
     if (200 <= response.statusCode && response.statusCode < 300) {
       return FunctionResponse(data: data, status: response.statusCode);
     } else {

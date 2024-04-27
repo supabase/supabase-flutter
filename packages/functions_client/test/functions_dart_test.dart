@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:functions_client/src/functions_client.dart';
 import 'package:functions_client/src/types.dart';
 import 'package:test/test.dart';
@@ -44,6 +46,15 @@ void main() {
       await client.dispose();
       final res = await client.invoke('function1');
       expect(res.data, {'key': 'Hello World'});
+    });
+
+    test('Listen to SSE event', () async {
+      final res = await functionsCustomHttpClient.invoke('sse');
+      expect(
+          res.data.transform(const Utf8Decoder()),
+          emitsInOrder(
+            ['a', 'b', 'c'],
+          ));
     });
   });
 }
