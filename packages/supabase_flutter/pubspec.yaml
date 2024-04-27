@@ -10,7 +10,7 @@ environment:
   flutter: '>=3.0.0'
 
 dependencies:
-  app_links: '>=3.5.0 <5.0.0'
+  app_links: '>=3.5.0 <6.0.0'
   async: ^2.11.0
   crypto: ^3.0.2
   flutter:
