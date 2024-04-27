@@ -57,6 +57,16 @@ class FunctionsClient {
   ///       print(val);
   ///     });
   /// ```
+  /// To stream SSE on the web, you can use custom HTTP client that are
+  /// able to handle SSE such as [fetch_client](https://pub.dev/packages/fetch_client).
+  /// ```dart
+  /// final fetchClient = FetchClient(mode: RequestMode.cors);
+  /// await Supabase.initialize(
+  ///   url: supabaseUrl,
+  ///   anonKey: supabaseKey,
+  ///   httpClient: fetchClient,
+  /// );
+  /// ```
   Future<FunctionResponse> invoke(
     String functionName, {
     Map<String, String>? headers,
