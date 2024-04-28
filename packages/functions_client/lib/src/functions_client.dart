@@ -57,7 +57,7 @@ class FunctionsClient {
   ///       print(val);
   ///     });
   /// ```
-  /// To stream SSE on the web, you can use custom HTTP client that are
+  /// To stream SSE on the web, you can use a custom HTTP client that is
   /// able to handle SSE such as [fetch_client](https://pub.dev/packages/fetch_client).
   /// ```dart
   /// final fetchClient = FetchClient(mode: RequestMode.cors);
