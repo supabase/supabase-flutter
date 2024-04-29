@@ -1,3 +1,8 @@
+## 2.6.1
+
+ - **FIX**: Add newEmail to admin generateLink method ([#904](https://github.com/supabase/supabase-flutter/issues/904)). ([5697e206](https://github.com/supabase/supabase-flutter/commit/5697e2060de1596626026a0f9ffd846435a6967a))
+ - **FIX**: Weak password throws `AuthWeakPasswordException`. ([#897](https://github.com/supabase/supabase-flutter/issues/897)). ([4f5b853c](https://github.com/supabase/supabase-flutter/commit/4f5b853cfb72f92bdceb8446397057ec434f1da3))
+
 ## 2.6.0
 
  - **FIX**: Typos in gotrue_client.dart ([#882](https://github.com/supabase/supabase-flutter/issues/882)). ([54a0b979](https://github.com/supabase/supabase-flutter/commit/54a0b979f61a0a161b805c23329964ca626000ce))
