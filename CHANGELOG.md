@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-04-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.1.0`](#functions_client---v210)
+ - [`gotrue` - `v2.6.1`](#gotrue---v261)
+ - [`supabase_flutter` - `v2.5.2`](#supabase_flutter---v252)
+ - [`supabase` - `v2.1.2`](#supabase---v212)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.1.2`
+
+---
+
+#### `functions_client` - `v2.1.0`
+
+ - **FEAT**(functions_client): Add SSE support to invoke method ([#905](https://github.com/supabase/supabase-flutter/issues/905)). ([2e052440](https://github.com/supabase/supabase-flutter/commit/2e052440e3889e52cb97cb44a70048713e0b583e))
+
+#### `gotrue` - `v2.6.1`
+
+ - **FIX**: Add newEmail to admin generateLink method ([#904](https://github.com/supabase/supabase-flutter/issues/904)). ([5697e206](https://github.com/supabase/supabase-flutter/commit/5697e2060de1596626026a0f9ffd846435a6967a))
+ - **FIX**: Weak password throws `AuthWeakPasswordException`. ([#897](https://github.com/supabase/supabase-flutter/issues/897)). ([4f5b853c](https://github.com/supabase/supabase-flutter/commit/4f5b853cfb72f92bdceb8446397057ec434f1da3))
+
+#### `supabase_flutter` - `v2.5.2`
+
+ - **FIX**: Update app_links dependency to accept v5.0.0 ([#908](https://github.com/supabase/supabase-flutter/issues/908)). ([7e9b9054](https://github.com/supabase/supabase-flutter/commit/7e9b905475c58d77078655e7cd944236f00a07a9))
+
+
 ## 2024-04-15
 
 ### Changes

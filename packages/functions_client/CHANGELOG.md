@@ -1,3 +1,7 @@
+## 2.1.0
+
+ - **FEAT**(functions_client): Add SSE support to invoke method ([#905](https://github.com/supabase/supabase-flutter/issues/905)). ([2e052440](https://github.com/supabase/supabase-flutter/commit/2e052440e3889e52cb97cb44a70048713e0b583e))
+
 ## 2.0.0
 
  - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.

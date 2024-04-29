@@ -1,3 +1,7 @@
+## 2.5.2
+
+ - **FIX**: Update app_links dependency to accept v5.0.0 ([#908](https://github.com/supabase/supabase-flutter/issues/908)). ([7e9b9054](https://github.com/supabase/supabase-flutter/commit/7e9b905475c58d77078655e7cd944236f00a07a9))
+
 ## 2.5.1
 
  - Update a dependency to the latest release.
