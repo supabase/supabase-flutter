@@ -71,3 +71,8 @@ jobs:
 
       - name: Run tests
         run: flutter test --concurrency=1
+
+      - name: Run tests with downgraded packages
+        run: |
+          flutter pub downgrade
+          flutter test --concurrency=1
