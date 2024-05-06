@@ -189,7 +189,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     _initialDeeplinkIsHandled = true;
 
     try {
-      final uri = await _appLinks.getInitialAppLink();
+      final uri = await _appLinks.getInitialLink();
       if (uri != null) {
         await _handleDeeplink(uri);
       }
