@@ -189,7 +189,16 @@ class SupabaseAuth with WidgetsBindingObserver {
     _initialDeeplinkIsHandled = true;
 
     try {
-      final uri = await _appLinks.getInitialAppLink();
+      Uri? uri;
+      try {
+        // before app_links 6.0.0
+        uri = await (_appLinks as dynamic).getInitialAppLink();
+      } on NoSuchMethodError catch (_) {
+        // Needed to keep compatible with 5.0.0 and 6.0.0
+        // https://pub.dev/packages/app_links/changelog
+        // after app_links 6.0.0
+        uri = await (_appLinks as dynamic).getInitialLink();
+      }
       if (uri != null) {
         await _handleDeeplink(uri);
       }
