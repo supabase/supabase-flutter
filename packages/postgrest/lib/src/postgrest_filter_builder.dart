@@ -479,9 +479,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///   'status': 'ONLINE',
   /// });
   /// ```
-  PostgrestFilterBuilder<T> match(Map query) {
-    assert(!query.values.contains(null),
-        '`null` equality does not work with match. Use isFilter instead.');
+  PostgrestFilterBuilder<T> match(Map<String, Object> query) {
     var url = _url;
     query.forEach((k, v) => url = appendSearchParams(k, 'eq.$v', url));
     return copyWithUrl(url);
