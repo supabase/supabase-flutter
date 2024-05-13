@@ -66,6 +66,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .eq('username', 'supabot');
   /// ```
+  ///
+  /// For `null` equality, use [isFilter] instead.
   PostgrestFilterBuilder<T> eq(String column, Object value) {
     final Uri url;
     if (value is List) {
@@ -477,9 +479,9 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///   'status': 'ONLINE',
   /// });
   /// ```
-  PostgrestFilterBuilder<T> match(Map query) {
+  PostgrestFilterBuilder<T> match(Map<String, Object> query) {
     var url = _url;
-    query.forEach((k, v) => url = appendSearchParams('$k', 'eq.$v', url));
+    query.forEach((k, v) => url = appendSearchParams(k, 'eq.$v', url));
     return copyWithUrl(url);
   }
 }
