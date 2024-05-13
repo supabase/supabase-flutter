@@ -230,7 +230,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .isFilter('data', null);
   /// ```
   // ignore: non_constant_identifier_names
-  PostgrestFilterBuilder<T> isFilter(String column, Object? value) {
+  PostgrestFilterBuilder<T> isFilter(String column, bool? value) {
     return copyWithUrl(appendSearchParams(column, 'is.$value'));
   }
 
