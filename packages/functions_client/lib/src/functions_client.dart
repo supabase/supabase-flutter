@@ -71,11 +71,13 @@ class FunctionsClient {
     String functionName, {
     Map<String, String>? headers,
     Map<String, dynamic>? body,
+    Map<String, String>? queryParameters,
     HttpMethod method = HttpMethod.post,
   }) async {
     final bodyStr = body == null ? null : await _isolate.encode(body);
 
-    final uri = Uri.parse('$_url/$functionName');
+    final uri = Uri.parse('$_url/$functionName')
+        .replace(queryParameters: queryParameters);
 
     final finalHeaders = <String, String>{
       ..._headers,
