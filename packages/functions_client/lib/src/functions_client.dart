@@ -71,7 +71,7 @@ class FunctionsClient {
     String functionName, {
     Map<String, String>? headers,
     Map<String, dynamic>? body,
-    Map<String, String>? queryParameters,
+    Map<String, dynamic>? queryParameters,
     HttpMethod method = HttpMethod.post,
   }) async {
     final bodyStr = body == null ? null : await _isolate.encode(body);
