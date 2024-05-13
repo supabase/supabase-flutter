@@ -3,8 +3,17 @@ import 'dart:convert';
 import 'package:http/http.dart';
 
 class CustomHttpClient extends BaseClient {
+  /// List of received requests by the client.
+  ///
+  /// Usefull for testing purposes, to check the request was constructed
+  /// correctly.
+  List<BaseRequest> receivedRequests = <BaseRequest>[];
+
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
+    // Add request to receivedRequests list.
+    receivedRequests = receivedRequests..add(request);
+
     if (request.url.path.endsWith("function")) {
       //Return custom status code to check for usage of this client.
       return StreamedResponse(

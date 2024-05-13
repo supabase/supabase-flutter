@@ -9,11 +9,13 @@ import 'custom_http_client.dart';
 
 void main() {
   late FunctionsClient functionsCustomHttpClient;
+  late CustomHttpClient customHttpClient;
 
   group("Custom http client", () {
     setUp(() {
+      customHttpClient = CustomHttpClient();
       functionsCustomHttpClient =
-          FunctionsClient("", {}, httpClient: CustomHttpClient());
+          FunctionsClient("", {}, httpClient: customHttpClient);
     });
     test('function throws', () async {
       try {
@@ -26,6 +28,17 @@ void main() {
 
     test('function call', () async {
       final res = await functionsCustomHttpClient.invoke('function1');
+      expect(res.data, {'key': 'Hello World'});
+      expect(res.status, 200);
+    });
+
+    test('function call with query parameters', () async {
+      final res = await functionsCustomHttpClient
+          .invoke('function1', queryParameters: {'key': 'value'});
+
+      final request = customHttpClient.receivedRequests.last;
+
+      expect(request.url.queryParameters, {'key': 'value'});
       expect(res.data, {'key': 'Hello World'});
       expect(res.status, 200);
     });
