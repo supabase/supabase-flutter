@@ -1,3 +1,7 @@
+## 2.7.0
+
+ - **FEAT**(goture): Allow OAuthProvider.kakao for signInWithIdToken ([#922](https://github.com/supabase/supabase-flutter/issues/922)). ([e21db454](https://github.com/supabase/supabase-flutter/commit/e21db454003bbd960af634a01b9642c46284715e))
+
 ## 2.6.1
 
  - **FIX**: Add newEmail to admin generateLink method ([#904](https://github.com/supabase/supabase-flutter/issues/904)). ([5697e206](https://github.com/supabase/supabase-flutter/commit/5697e2060de1596626026a0f9ffd846435a6967a))

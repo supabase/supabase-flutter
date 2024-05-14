@@ -3,6 +3,50 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-05-13
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.2.0`](#functions_client---v220)
+ - [`gotrue` - `v2.7.0`](#gotrue---v270)
+ - [`postgrest` - `v2.1.2`](#postgrest---v212)
+ - [`supabase_flutter` - `v2.5.3`](#supabase_flutter---v253)
+ - [`supabase` - `v2.1.3`](#supabase---v213)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.1.3`
+
+---
+
+#### `functions_client` - `v2.2.0`
+
+ - **FEAT**(functions): Invoke function with custom query params ([#926](https://github.com/supabase/supabase-flutter/issues/926)). ([7ded898d](https://github.com/supabase/supabase-flutter/commit/7ded898dee07004cbb20e4d7c209f94a507fad3b))
+
+#### `gotrue` - `v2.7.0`
+
+ - **FEAT**(goture): Allow OAuthProvider.kakao for signInWithIdToken ([#922](https://github.com/supabase/supabase-flutter/issues/922)). ([e21db454](https://github.com/supabase/supabase-flutter/commit/e21db454003bbd960af634a01b9642c46284715e))
+
+#### `postgrest` - `v2.1.2`
+
+ - **FIX**(postgrest): Update parameter type of `isFilter()` to only allow boolean or null ([#920](https://github.com/supabase/supabase-flutter/issues/920)). ([0a3b73e0](https://github.com/supabase/supabase-flutter/commit/0a3b73e02f90ad8d05cf96bf91336a951982b800))
+ - **FIX**(postgrest): Update parameter type of `match()` filter so that null values cannot be passed.  ([#919](https://github.com/supabase/supabase-flutter/issues/919)). ([0902124f](https://github.com/supabase/supabase-flutter/commit/0902124f7fa4b0fab07cc4b43a895914514fd04a))
+
+#### `supabase_flutter` - `v2.5.3`
+
+ - **FIX**: Keep compatible with app_links 6.0.0 and 5.0.0 ([#918](https://github.com/supabase/supabase-flutter/issues/918)). ([04a59dca](https://github.com/supabase/supabase-flutter/commit/04a59dcae738cf41e3a7daa293751db444f80f4c))
+
+
 ## 2024-04-29
 
 ### Changes

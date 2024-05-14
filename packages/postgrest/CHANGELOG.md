@@ -1,3 +1,8 @@
+## 2.1.2
+
+ - **FIX**(postgrest): Update parameter type of `isFilter()` to only allow boolean or null ([#920](https://github.com/supabase/supabase-flutter/issues/920)). ([0a3b73e0](https://github.com/supabase/supabase-flutter/commit/0a3b73e02f90ad8d05cf96bf91336a951982b800))
+ - **FIX**(postgrest): Update parameter type of `match()` filter so that null values cannot be passed.  ([#919](https://github.com/supabase/supabase-flutter/issues/919)). ([0902124f](https://github.com/supabase/supabase-flutter/commit/0902124f7fa4b0fab07cc4b43a895914514fd04a))
+
 ## 2.1.1
 
  - **DOCS**(postgrest): Expand documentation for `contains` and `containedBy` methods ([#824](https://github.com/supabase/supabase-flutter/issues/824)). ([e241e766](https://github.com/supabase/supabase-flutter/commit/e241e7668e4e0bafd6612011fef730f9b99874bc))
