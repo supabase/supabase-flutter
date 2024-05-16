@@ -263,6 +263,7 @@ class SupabaseClient {
       headers: {'apikey': _supabaseKey, ...headers},
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
+      timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
     );
   }
 

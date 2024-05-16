@@ -14,9 +14,13 @@ class RealtimeClientOptions {
   /// Level of realtime server logs to to be logged
   final RealtimeLogLevel? logLevel;
 
+  /// the timeout to trigger push timeouts
+  final Duration? timeout;
+
   /// {@macro realtime_client_options}
   const RealtimeClientOptions({
     this.eventsPerSecond,
     this.logLevel,
+    this.timeout,
   });
 }

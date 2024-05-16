@@ -9,6 +9,8 @@ class Constants {
   };
 }
 
+typedef RealtimeConstants = Constants;
+
 enum SocketStates {
   /// Client attempting to establish a connection
   connecting,
