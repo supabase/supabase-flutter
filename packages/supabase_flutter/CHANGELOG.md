@@ -1,3 +1,7 @@
+## 2.5.4
+
+ - Update a dependency to the latest release.
+
 ## 2.5.3
 
  - **FIX**: Keep compatible with app_links 6.0.0 and 5.0.0 ([#918](https://github.com/supabase/supabase-flutter/issues/918)). ([04a59dca](https://github.com/supabase/supabase-flutter/commit/04a59dcae738cf41e3a7daa293751db444f80f4c))
