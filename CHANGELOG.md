@@ -30,6 +30,8 @@ Packages with dependency updates only:
 
 #### `storage_client` - `v2.0.2`
 
+ - **CHORE**: Add some comments on storage symbols ([#938](https://github.com/supabase/supabase-flutter/issues/938)).
+
 #### `realtime_client` - `v2.1.0`
 
  - **FEAT**: Allow setting `timeout` of `RealtimeClient`. ([#932](https://github.com/supabase/supabase-flutter/issues/932)). ([dba8bae0](https://github.com/supabase/supabase-flutter/commit/dba8bae0c87209c8f900d753a1e15be7557a07dc))
