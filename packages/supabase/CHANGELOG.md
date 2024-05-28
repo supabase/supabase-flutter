@@ -1,3 +1,7 @@
+## 2.2.0
+
+ - **FEAT**: Allow setting `timeout` of `RealtimeClient`. ([#932](https://github.com/supabase/supabase-flutter/issues/932)). ([dba8bae0](https://github.com/supabase/supabase-flutter/commit/dba8bae0c87209c8f900d753a1e15be7557a07dc))
+
 ## 2.1.3
 
  - Update a dependency to the latest release.
