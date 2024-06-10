@@ -827,8 +827,7 @@ class GoTrueClient {
     final accessToken = currentSession?.accessToken;
 
     if (scope != SignOutScope.others) {
-      _currentSession = null;
-      _currentUser = null;
+      _removeSession();
       await _asyncStorage?.removeItem(
           key: '${Constants.defaultStorageKey}-code-verifier');
       notifyAllSubscribers(AuthChangeEvent.signedOut);
@@ -1116,6 +1115,11 @@ class GoTrueClient {
     _currentUser = session.user;
   }
 
+  void _removeSession() {
+    _currentSession = null;
+    _currentUser = null;
+  }
+
   /// Generates a new JWT.
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
@@ -1150,6 +1154,7 @@ class GoTrueClient {
       return data;
     } on AuthException catch (error, stack) {
       if (error is! AuthRetryableFetchException) {
+        _removeSession();
         notifyAllSubscribers(AuthChangeEvent.signedOut);
       } else {
         _onAuthStateChangeController.addError(error, stack);
