@@ -827,6 +827,8 @@ class GoTrueClient {
     final accessToken = currentSession?.accessToken;
 
     if (scope != SignOutScope.others) {
+      _currentSession = null;
+      _currentUser = null;
       await _asyncStorage?.removeItem(
           key: '${Constants.defaultStorageKey}-code-verifier');
       notifyAllSubscribers(AuthChangeEvent.signedOut);
