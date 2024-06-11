@@ -1,3 +1,8 @@
+## 2.8.0
+
+ - **FIX**(gotrue): Signing in does not remove the session unless the operation succeeds. ([#945](https://github.com/supabase/supabase-flutter/issues/945)). ([b2854c56](https://github.com/supabase/supabase-flutter/commit/b2854c564f0f5e7844302a2f7e63394fa4c6fc34))
+ - **FEAT**: Add zoom as a OAuth provider ([#944](https://github.com/supabase/supabase-flutter/issues/944)). ([98718b13](https://github.com/supabase/supabase-flutter/commit/98718b13172b4008547a2e2c6304b04ffb932bdf))
+
 ## 2.7.0
 
  - **FEAT**(goture): Allow OAuthProvider.kakao for signInWithIdToken ([#922](https://github.com/supabase/supabase-flutter/issues/922)). ([e21db454](https://github.com/supabase/supabase-flutter/commit/e21db454003bbd960af634a01b9642c46284715e))
