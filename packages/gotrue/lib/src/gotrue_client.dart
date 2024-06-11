@@ -140,8 +140,6 @@ class GoTrueClient {
     Map<String, dynamic>? data,
     String? captchaToken,
   }) async {
-    _removeSession();
-
     final response = await _fetch.request(
       '$_url/signup',
       RequestMethodType.post,
@@ -193,8 +191,6 @@ class GoTrueClient {
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
         'You must provide either an email or phone number');
-
-    _removeSession();
 
     late final Map<String, dynamic> response;
 
@@ -261,8 +257,6 @@ class GoTrueClient {
     required String password,
     String? captchaToken,
   }) async {
-    _removeSession();
-
     late final Map<String, dynamic> response;
 
     if (email != null) {
@@ -315,7 +309,6 @@ class GoTrueClient {
     String? scopes,
     Map<String, String>? queryParams,
   }) async {
-    _removeSession();
     return _getUrlForProvider(
       provider,
       url: '$_url/authorize',
@@ -393,8 +386,6 @@ class GoTrueClient {
     String? nonce,
     String? captchaToken,
   }) async {
-    _removeSession();
-
     if (provider != OAuthProvider.google &&
         provider != OAuthProvider.apple &&
         provider != OAuthProvider.kakao) {
@@ -458,8 +449,6 @@ class GoTrueClient {
     String? captchaToken,
     OtpChannel channel = OtpChannel.sms,
   }) async {
-    _removeSession();
-
     if (email != null) {
       String? codeChallenge;
       if (_flowType == AuthFlowType.pkce) {
@@ -530,10 +519,6 @@ class GoTrueClient {
     assert((email != null && phone == null) || (email == null && phone != null),
         '`email` or `phone` needs to be specified.');
 
-    if (type != OtpType.emailChange && type != OtpType.phoneChange) {
-      _removeSession();
-    }
-
     final body = {
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
@@ -584,7 +569,6 @@ class GoTrueClient {
       'providerId or domain has to be provided.',
     );
 
-    _removeSession();
     String? codeChallenge;
     String? codeChallengeMethod;
     if (_flowType == AuthFlowType.pkce) {
@@ -674,10 +658,6 @@ class GoTrueClient {
     if (phone != null) {
       assert([OtpType.sms, OtpType.phoneChange].contains(type),
           'phone must be provided for type ${type.name}');
-    }
-
-    if (type != OtpType.emailChange && type != OtpType.phoneChange) {
-      _removeSession();
     }
 
     final body = {
