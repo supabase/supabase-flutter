@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-06-11
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.8.0`](#gotrue---v280)
+ - [`supabase` - `v2.2.1`](#supabase---v221)
+ - [`supabase_flutter` - `v2.5.5`](#supabase_flutter---v255)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.2.1`
+ - `supabase_flutter` - `v2.5.5`
+
+---
+
+#### `gotrue` - `v2.8.0`
+
+ - **FIX**(gotrue): Signing in does not remove the session unless the operation succeeds. ([#945](https://github.com/supabase/supabase-flutter/issues/945)). ([b2854c56](https://github.com/supabase/supabase-flutter/commit/b2854c564f0f5e7844302a2f7e63394fa4c6fc34))
+ - **FEAT**: Add zoom as a OAuth provider ([#944](https://github.com/supabase/supabase-flutter/issues/944)). ([98718b13](https://github.com/supabase/supabase-flutter/commit/98718b13172b4008547a2e2c6304b04ffb932bdf))
+
+
 ## 2024-05-28
 
 ### Changes
