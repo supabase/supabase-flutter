@@ -18,4 +18,5 @@ enum OAuthProvider {
   twitch,
   twitter,
   workos,
+  zoom,
 }
