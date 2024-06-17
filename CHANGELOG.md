@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-06-17
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.8.1`](#gotrue---v281)
+ - [`supabase` - `v2.2.2`](#supabase---v222)
+ - [`supabase_flutter` - `v2.5.6`](#supabase_flutter---v256)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.2.2`
+ - `supabase_flutter` - `v2.5.6`
+
+---
+
+#### `gotrue` - `v2.8.1`
+
+ - **FIX**: Make token in verifyOtp nullable ([#950](https://github.com/supabase/supabase-flutter/issues/950)). ([0e69c58f](https://github.com/supabase/supabase-flutter/commit/0e69c58fab161c52c6f7a0127b3fb3f73f1995e4))
+
+
 ## 2024-06-11
 
 ### Changes

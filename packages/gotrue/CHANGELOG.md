@@ -1,3 +1,7 @@
+## 2.8.1
+
+ - **FIX**: Make token in verifyOtp nullable ([#950](https://github.com/supabase/supabase-flutter/issues/950)). ([0e69c58f](https://github.com/supabase/supabase-flutter/commit/0e69c58fab161c52c6f7a0127b3fb3f73f1995e4))
+
 ## 2.8.0
 
  - **FIX**(gotrue): Signing in does not remove the session unless the operation succeeds. ([#945](https://github.com/supabase/supabase-flutter/issues/945)). ([b2854c56](https://github.com/supabase/supabase-flutter/commit/b2854c564f0f5e7844302a2f7e63394fa4c6fc34))
