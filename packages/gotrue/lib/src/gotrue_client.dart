@@ -510,7 +510,7 @@ class GoTrueClient {
   Future<AuthResponse> verifyOTP({
     String? email,
     String? phone,
-    required String token,
+    String? token,
     required OtpType type,
     String? redirectTo,
     String? captchaToken,
@@ -518,11 +518,13 @@ class GoTrueClient {
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
         '`email` or `phone` needs to be specified.');
+    assert(token != null || tokenHash != null,
+        '`token` or `tokenHash` needs to be specified.');
 
     final body = {
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
-      'token': token,
+      if (token != null) 'token': token,
       'type': type.snakeCase,
       'redirect_to': redirectTo,
       'gotrue_meta_security': {'captchaToken': captchaToken},
