@@ -31,7 +31,10 @@ class AuthSessionMissingException extends AuthException {
 }
 
 class AuthRetryableFetchException extends AuthException {
-  AuthRetryableFetchException() : super('AuthRetryableFetchError');
+  AuthRetryableFetchException({
+    String message = 'AuthRetryableFetchException',
+    super.statusCode,
+  }) : super(message);
 }
 
 class AuthApiException extends AuthException {
