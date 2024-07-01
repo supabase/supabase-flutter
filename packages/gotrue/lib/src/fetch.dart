@@ -30,13 +30,16 @@ class GotrueFetch {
 
   AuthException _handleError(dynamic error) {
     if (error is! Response) {
-      throw AuthRetryableFetchException();
+      throw AuthRetryableFetchException(message: error.toString());
     }
 
     // If the status is 500 or above, it's likely a server error,
     // and can be retried.
     if (error.statusCode >= 500) {
-      throw AuthRetryableFetchException();
+      throw AuthRetryableFetchException(
+        message: error.body,
+        statusCode: error.statusCode.toString(),
+      );
     }
 
     final dynamic data;
@@ -134,7 +137,7 @@ class GotrueFetch {
       }
     } catch (e) {
       // fetch failed, likely due to a network or CORS error
-      throw AuthRetryableFetchException();
+      throw AuthRetryableFetchException(message: e.toString());
     }
 
     if (!isSuccessStatusCode(response.statusCode)) {
