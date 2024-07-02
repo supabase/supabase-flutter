@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-07-02
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.8.2`](#gotrue---v282)
+ - [`supabase` - `v2.2.3`](#supabase---v223)
+ - [`supabase_flutter` - `v2.5.7`](#supabase_flutter---v257)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.2.3`
+ - `supabase_flutter` - `v2.5.7`
+
+---
+
+#### `gotrue` - `v2.8.2`
+
+ - **FIX**: Store actual error in AuthException ([#959](https://github.com/supabase/supabase-flutter/issues/959)). ([aa6c2183](https://github.com/supabase/supabase-flutter/commit/aa6c2183891118f775a013227790fc92e4de8a73))
+
+
 ## 2024-06-17
 
 ### Changes
