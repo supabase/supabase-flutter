@@ -1,3 +1,7 @@
+## 2.8.2
+
+ - **FIX**: Store actual error in AuthException ([#959](https://github.com/supabase/supabase-flutter/issues/959)). ([aa6c2183](https://github.com/supabase/supabase-flutter/commit/aa6c2183891118f775a013227790fc92e4de8a73))
+
 ## 2.8.1
 
  - **FIX**: Make token in verifyOtp nullable ([#950](https://github.com/supabase/supabase-flutter/issues/950)). ([0e69c58f](https://github.com/supabase/supabase-flutter/commit/0e69c58fab161c52c6f7a0127b3fb3f73f1995e4))
