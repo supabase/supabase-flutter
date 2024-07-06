@@ -756,8 +756,9 @@ class GoTrueClient {
     }
 
     final errorDescription = url.queryParameters['error_description'];
+    final errorCode = url.queryParameters['error_code'];
     if (errorDescription != null) {
-      throw AuthException(errorDescription);
+      throw AuthException(errorDescription, statusCode: errorCode);
     }
 
     if (_flowType == AuthFlowType.pkce) {
