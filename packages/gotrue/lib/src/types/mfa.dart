@@ -257,7 +257,7 @@ class AuthMFAGetAuthenticatorAssuranceLevelResponse {
   });
 }
 
-enum AMRMethod { password, otp, oauth, totp }
+enum AMRMethod { password, otp, oauth, totp, magiclink }
 
 /// An authentication method reference (AMR) entry.
 ///
