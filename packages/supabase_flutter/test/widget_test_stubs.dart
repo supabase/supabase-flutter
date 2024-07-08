@@ -97,7 +97,11 @@ class MockEmptyLocalStorage extends LocalStorage {
 /// Registers the mock handler for app_links
 ///
 /// Returns the [EventChannel] used to mock the incoming links.
-EventChannel mockAppLink({String? initialLink}) {
+EventChannel mockAppLink({
+  bool mockMethodChannel = false,
+  bool mockEventChannel = false,
+  String? initialLink,
+}) {
   const channel = MethodChannel('com.llfbandit.app_links/messages');
   const eventChannel = EventChannel('com.llfbandit.app_links/events');
 
@@ -105,18 +109,23 @@ EventChannel mockAppLink({String? initialLink}) {
 
   // ignore: invalid_null_aware_operator
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-      .setMockMethodCallHandler(channel, (call) async => initialLink);
+      .setMockMethodCallHandler(
+          channel, (call) async => mockMethodChannel ? initialLink : null);
 
-  // ignore: invalid_null_aware_operator
-  TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-      .setMockStreamHandler(
-    eventChannel,
-    MockStreamHandler.inline(
-      onListen: (arguments, events) {
-        events.success(initialLink);
-      },
-    ),
-  );
+  if (mockEventChannel) {
+    // ignore: invalid_null_aware_operator
+    TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
+        .setMockStreamHandler(
+      eventChannel,
+      MockStreamHandler.inline(
+        onListen: (arguments, events) {
+          if (mockEventChannel) {
+            events.success(initialLink);
+          }
+        },
+      ),
+    );
+  }
 
   return eventChannel;
 }
