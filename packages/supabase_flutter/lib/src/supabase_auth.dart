@@ -44,21 +44,9 @@ class SupabaseAuth with WidgetsBindingObserver {
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
         _onAuthStateChange(data.event, data.session);
-
-        // The options can contain a callback for auth state changes
-        final optionsStateChangeCallback = options.onAuthStateChange;
-        if (optionsStateChangeCallback != null) {
-          optionsStateChangeCallback(data);
-        }
       },
       onError: (error, stackTrace) {
         Supabase.instance.log(error.toString(), stackTrace);
-
-        // The options can contain a callback for auth state changes
-        final optionsErrorCallback = options.onAuthError;
-        if (optionsErrorCallback != null) {
-          optionsErrorCallback(error, stackTrace);
-        }
       },
     );
 
