@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -93,11 +94,12 @@ void main() {
 
   group('Deep Link with PKCE code', () {
     late final PkceHttpClient pkceHttpClient;
+    late final EventChannel appLinksEventChannel;
     setUp(() async {
       pkceHttpClient = PkceHttpClient();
 
       // Add initial deep link with a `code` parameter
-      mockAppLink(
+      appLinksEventChannel = mockAppLink(
         initialLink: 'com.supabase://callback/?code=my-code-verifier',
       );
       await Supabase.initialize(
@@ -118,6 +120,9 @@ void main() {
     test(
         'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
         () async {
+      // Wait for the initial app link to be handled, as this is an async process
+      final stream = appLinksEventChannel.receiveBroadcastStream();
+      await stream.first;
       expect(pkceHttpClient.requestCount, 1);
       expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
     });

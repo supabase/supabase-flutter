@@ -94,10 +94,12 @@ class MockEmptyLocalStorage extends LocalStorage {
   Future<void> removePersistedSession() async {}
 }
 
-/// Registers the mock handler for uni_links
-void mockAppLink({String? initialLink}) {
+/// Registers the mock handler for app_links
+///
+/// Returns the [EventChannel] used to mock the incoming links.
+EventChannel mockAppLink({String? initialLink}) {
   const channel = MethodChannel('com.llfbandit.app_links/messages');
-  const anotherChannel = MethodChannel('com.llfbandit.app_links/events');
+  const eventChannel = EventChannel('com.llfbandit.app_links/events');
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -107,7 +109,16 @@ void mockAppLink({String? initialLink}) {
 
   // ignore: invalid_null_aware_operator
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-      .setMockMethodCallHandler(anotherChannel, (message) async => null);
+      .setMockStreamHandler(
+    eventChannel,
+    MockStreamHandler.inline(
+      onListen: (arguments, events) {
+        events.success(initialLink);
+      },
+    ),
+  );
+
+  return eventChannel;
 }
 
 class MockAsyncStorage extends GotrueAsyncStorage {
