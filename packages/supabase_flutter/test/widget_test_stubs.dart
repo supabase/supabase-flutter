@@ -103,7 +103,7 @@ void mockAppLink({
   String? initialLink,
 }) {
   const channel = MethodChannel('com.llfbandit.app_links/messages');
-  const eventChannel = EventChannel('com.llfbandit.app_links/events');
+  const eventChannel = MethodChannel('com.llfbandit.app_links/events');
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -112,18 +112,22 @@ void mockAppLink({
       .setMockMethodCallHandler(
           channel, (call) async => mockMethodChannel ? initialLink : null);
 
+  // Mock event channel using method channel, to keep supporting older versions
+  // of flutter_test in which setMockStreamHandler is not yet available.
   if (mockEventChannel) {
     // ignore: invalid_null_aware_operator
     TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-        .setMockStreamHandler(
+        .setMockMethodCallHandler(
       eventChannel,
-      MockStreamHandler.inline(
-        onListen: (arguments, events) {
-          if (mockEventChannel) {
-            events.success(initialLink);
-          }
-        },
-      ),
+      (MethodCall methodCall) async {
+        // ignore: invalid_null_aware_operator
+        TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
+            .handlePlatformMessage(
+          eventChannel.name,
+          const StandardMethodCodec().encodeSuccessEnvelope(initialLink),
+          (ByteData? data) {},
+        );
+      },
     );
   }
 }
