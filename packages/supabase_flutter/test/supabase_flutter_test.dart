@@ -1,5 +1,4 @@
 import 'package:app_links/app_links.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -95,7 +94,6 @@ void main() {
 
   group('Deep Link with PKCE code', () {
     late final PkceHttpClient pkceHttpClient;
-    late final EventChannel appLinksEventChannel;
     late final bool mockEventChannel;
 
     /// Check if the current version of AppLinks uses an explicit call to get
@@ -119,7 +117,7 @@ void main() {
       // getting the initial link. Otherwise we want to mock the event channel
       // and put the initial link there.
       mockEventChannel = appLinksExposesInitialLinkInStream();
-      appLinksEventChannel = mockAppLink(
+      mockAppLink(
         mockMethodChannel: !mockEventChannel,
         mockEventChannel: mockEventChannel,
         initialLink: 'com.supabase://callback/?code=my-code-verifier',
@@ -142,10 +140,10 @@ void main() {
     test(
         'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
         () async {
-      // Wait for the initial app link to be handled, as this is an async process
+      // Wait for the initial app link to be handled, as this is an async
+      // process when mocking the event channel.
       if (mockEventChannel) {
-        final stream = appLinksEventChannel.receiveBroadcastStream();
-        await stream.first;
+        await AppLinks().uriLinkStream.first;
       }
       expect(pkceHttpClient.requestCount, 1);
       expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');

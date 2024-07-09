@@ -97,7 +97,7 @@ class MockEmptyLocalStorage extends LocalStorage {
 /// Registers the mock handler for app_links
 ///
 /// Returns the [EventChannel] used to mock the incoming links.
-EventChannel mockAppLink({
+void mockAppLink({
   bool mockMethodChannel = false,
   bool mockEventChannel = false,
   String? initialLink,
@@ -126,8 +126,6 @@ EventChannel mockAppLink({
       ),
     );
   }
-
-  return eventChannel;
 }
 
 class MockAsyncStorage extends GotrueAsyncStorage {
