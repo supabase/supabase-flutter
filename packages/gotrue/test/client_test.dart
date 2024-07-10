@@ -137,6 +137,7 @@ void main() {
         fail('getSessionFromUrl did not throw exception');
       } on AuthException catch (error) {
         expect(error.message, errorMessage);
+        expect(error.statusCode, '401');
       } catch (error) {
         fail(
             'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
