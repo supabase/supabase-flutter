@@ -99,6 +99,8 @@ void main() {
     /// Check if the current version of AppLinks uses an explicit call to get
     /// the initial link. This is only the case before version 6.0.0, where we
     /// can find the getInitialAppLink function.
+    /// 
+    /// CI pipeline is set so that it tests both app_links newer and older than v6.0.0
     bool appLinksExposesInitialLinkInStream() {
       try {
         // before app_links 6.0.0
