@@ -148,10 +148,14 @@ class RealtimeChannelConfig {
   /// [key] option is used to track presence payload across clients
   final String key;
 
+  /// defines if the channel is private or not and if RLS policies will be used to check data
+  final bool private;
+
   const RealtimeChannelConfig({
     this.ack = false,
     this.self = false,
     this.key = '',
+    this.private = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -164,6 +168,7 @@ class RealtimeChannelConfig {
         'presence': {
           'key': key,
         },
+        'private': private,
       }
     };
   }
@@ -402,4 +407,18 @@ class SinglePresenceState {
 
   @override
   String toString() => 'PresenceState(key: $key, presences: $presences)';
+}
+
+class Channel {
+  final String name;
+  final String inserted_at;
+  final String updated_at;
+  final int id;
+
+  Channel({
+    required this.name,
+    required this.inserted_at,
+    required this.updated_at,
+    required this.id,
+  });
 }

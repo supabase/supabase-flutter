@@ -332,3 +332,20 @@ Map<String, Map<String, dynamic>> getPayloadRecords(
 
   return records;
 }
+
+/// Converts a WebSocket URL to an HTTP URL.
+String httpEndpointURL(String socketUrl) {
+  var url = socketUrl;
+
+  // Replace 'ws' or 'wss' with 'http' or 'https' respectively
+  url = url.replaceFirst(RegExp(r'^ws', caseSensitive: false), 'http');
+
+  // Remove WebSocket-specific endings
+  url = url.replaceFirst(
+    RegExp(r'(/socket/websocket|/socket|/websocket)/?$', caseSensitive: false),
+    '',
+  );
+
+  // Remove trailing slashes
+  return url.replaceAll(RegExp(r'/+$'), '');
+}

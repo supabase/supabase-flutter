@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
+import 'package:realtime_client/src/push.dart';
 import 'package:realtime_client/src/types.dart';
 import 'package:test/test.dart';
 
@@ -33,10 +34,30 @@ void main() {
       expect(channel.params, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
-          'presence': {'key': ''}
+          'presence': {'key': ''},
+          'private': false,
         }
       });
       expect(channel.socket, socket);
+    });
+
+    test('sets up joinPush object with private defined', () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: RealtimeChannelConfig(
+          private: true,
+        ),
+      );
+      final Push joinPush = channel.joinPush;
+
+      expect(joinPush.payload, {
+        'config': {
+          'broadcast': {'ack': false, 'self': false},
+          'presence': {'key': ''},
+          'private': true,
+        },
+      });
     });
   });
 
@@ -252,7 +273,7 @@ void main() {
         params: {'apikey': 'supabaseKey'},
       );
 
-      channel = socket.channel('myTopic');
+      channel = socket.channel('myTopic', RealtimeChannelConfig(private: true));
     });
 
     tearDown(() async {
@@ -311,9 +332,11 @@ void main() {
         final body = json.decode(await utf8.decodeStream(req));
         final message = body['messages'][0];
         final payload = message['payload'];
+        final private = message['private'];
 
         expect(payload, containsPair('myKey', 'myValue'));
         expect(message, containsPair('topic', 'myTopic'));
+        expect(private, true);
 
         await req.response.close();
         break;

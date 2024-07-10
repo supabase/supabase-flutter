@@ -32,6 +32,8 @@ class RealtimeChannel {
   @internal
   final RealtimeClient socket;
 
+  late final bool _private;
+
   RealtimeChannel(
     this.topic,
     this.socket, {
@@ -40,7 +42,8 @@ class RealtimeChannel {
         params = params.toMap(),
         subTopic = topic.replaceFirst(
             RegExp(r"^realtime:", caseSensitive: false), "") {
-    broadcastEndpointURL = _broadcastEndpointURL;
+    broadcastEndpointURL = '${httpEndpointURL(socket.endPoint)}/api/broadcast';
+    _private = params.private;
 
     joinPush = Push(
       this,
@@ -117,6 +120,7 @@ class RealtimeChannel {
     } else {
       final broadcast = params['config']['broadcast'];
       final presence = params['config']['presence'];
+      final isPrivate = params['config']['private'];
 
       _onError((e) {
         if (callback != null) callback(RealtimeSubscribeStatus.channelError, e);
@@ -131,6 +135,7 @@ class RealtimeChannel {
         'presence': presence,
         'postgres_changes':
             _bindings['postgres_changes']?.map((r) => r.filter).toList() ?? [],
+        'private': isPrivate == true,
       };
 
       if (socket.accessToken != null) {
@@ -483,13 +488,20 @@ class RealtimeChannel {
     }
 
     if (!canPush && type == RealtimeListenTypes.broadcast) {
-      final headers = {'Content-Type': 'application/json', ...socket.headers};
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        'apikey': socket.params['apikey'] ?? '',
+        ...socket.headers,
+        'Authorization':
+            socket.accessToken != null ? 'Bearer ${socket.accessToken}' : '',
+      };
       final body = {
         'messages': [
           {
             'topic': subTopic,
             'payload': payload,
             'event': event,
+            'private': _private,
           }
         ]
       };
@@ -593,18 +605,6 @@ class RealtimeChannel {
     }
 
     return completer.future;
-  }
-
-  String get _broadcastEndpointURL {
-    var url = socket.endPoint;
-    url = url.replaceFirst(RegExp(r'^ws', caseSensitive: false), 'http');
-    url = url.replaceAll(
-      RegExp(r'(/socket/websocket|/socket|/websocket)/?$',
-          caseSensitive: false),
-      '',
-    );
-    url = '${url.replaceAll(RegExp(r'/+$'), '')}/api/broadcast';
-    return url;
   }
 
   /// Overridable message hook
