@@ -94,20 +94,42 @@ class MockEmptyLocalStorage extends LocalStorage {
   Future<void> removePersistedSession() async {}
 }
 
-/// Registers the mock handler for uni_links
-void mockAppLink({String? initialLink}) {
+/// Registers the mock handler for app_links
+///
+/// Returns the [EventChannel] used to mock the incoming links.
+void mockAppLink({
+  bool mockMethodChannel = false,
+  bool mockEventChannel = false,
+  String? initialLink,
+}) {
   const channel = MethodChannel('com.llfbandit.app_links/messages');
-  const anotherChannel = MethodChannel('com.llfbandit.app_links/events');
+  const eventChannel = MethodChannel('com.llfbandit.app_links/events');
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // ignore: invalid_null_aware_operator
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-      .setMockMethodCallHandler(channel, (call) async => initialLink);
+      .setMockMethodCallHandler(
+          channel, (call) async => mockMethodChannel ? initialLink : null);
 
-  // ignore: invalid_null_aware_operator
-  TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-      .setMockMethodCallHandler(anotherChannel, (message) async => null);
+  // Mock event channel using method channel, to keep supporting older versions
+  // of flutter_test in which setMockStreamHandler is not yet available.
+  if (mockEventChannel) {
+    // ignore: invalid_null_aware_operator
+    TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      eventChannel,
+      (MethodCall methodCall) async {
+        // ignore: invalid_null_aware_operator
+        TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
+            .handlePlatformMessage(
+          eventChannel.name,
+          const StandardMethodCodec().encodeSuccessEnvelope(initialLink),
+          (ByteData? data) {},
+        );
+      },
+    );
+  }
 }
 
 class MockAsyncStorage extends GotrueAsyncStorage {

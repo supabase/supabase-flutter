@@ -194,10 +194,12 @@ class SupabaseAuth with WidgetsBindingObserver {
         // before app_links 6.0.0
         uri = await (_appLinks as dynamic).getInitialAppLink();
       } on NoSuchMethodError catch (_) {
-        // Needed to keep compatible with 5.0.0 and 6.0.0
+        // The AppLinks package contains the initial link in the uriLinkStream
+        // starting from version 6.0.0. Before this version, getting the
+        // initial link was done with getInitialAppLink. Being in this catch
+        // handler means we are in at least version 6.0.0, meaning we do not
+        // need to handle the initial link manually.
         // https://pub.dev/packages/app_links/changelog
-        // after app_links 6.0.0
-        uri = await (_appLinks as dynamic).getInitialLink();
       }
       if (uri != null) {
         await _handleDeeplink(uri);
