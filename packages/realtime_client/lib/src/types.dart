@@ -408,17 +408,3 @@ class SinglePresenceState {
   @override
   String toString() => 'PresenceState(key: $key, presences: $presences)';
 }
-
-class Channel {
-  final String name;
-  final String inserted_at;
-  final String updated_at;
-  final int id;
-
-  Channel({
-    required this.name,
-    required this.inserted_at,
-    required this.updated_at,
-    required this.id,
-  });
-}

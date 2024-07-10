@@ -51,7 +51,7 @@ class RealtimeClient {
   String? accessToken;
   List<RealtimeChannel> channels = [];
   final String endPoint;
-  final String httpEndpoint;
+
   final Map<String, String> headers;
   final Map<String, dynamic> params;
   final Duration timeout;
@@ -117,7 +117,6 @@ class RealtimeClient {
                   logLevel == null ? null : {'log_level': logLevel.name},
             )
             .toString(),
-        httpEndpoint = httpEndpointURL(endPoint),
         headers = {
           ...Constants.defaultHeaders,
           if (headers != null) ...headers,
