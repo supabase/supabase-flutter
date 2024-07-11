@@ -148,7 +148,7 @@ class RealtimeChannelConfig {
   /// [key] option is used to track presence payload across clients
   final String key;
 
-  /// defines if the channel is private or not and if RLS policies will be used to check data
+  /// Defines if the channel is private or not and if RLS policies will be used to check data
   final bool private;
 
   const RealtimeChannelConfig({

@@ -32,6 +32,7 @@ class RealtimeChannel {
   @internal
   final RealtimeClient socket;
 
+  /// Defines if the channel is private or not and if RLS policies will be used to check data
   late final bool _private;
 
   RealtimeChannel(
