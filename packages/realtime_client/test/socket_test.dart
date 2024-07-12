@@ -287,7 +287,8 @@ void main() {
       expect(channel.params, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
-          'presence': {'key': ''}
+          'presence': {'key': ''},
+          'private': false,
         }
       });
     });

@@ -51,6 +51,7 @@ class RealtimeClient {
   String? accessToken;
   List<RealtimeChannel> channels = [];
   final String endPoint;
+
   final Map<String, String> headers;
   final Map<String, dynamic> params;
   final Duration timeout;
@@ -85,6 +86,7 @@ class RealtimeClient {
   /// Initializes the Socket
   ///
   /// `endPoint` The string WebSocket endpoint, ie, "ws://example.com/socket", "wss://example.com", "/socket" (inherited host & protocol)
+  /// `httpEndpoint` The string HTTP endpoint, ie, "https://example.com", "/" (inherited host & protocol)
   /// `transport` The Websocket Transport, for example WebSocket.
   /// `timeout` The default timeout in milliseconds to trigger push timeouts.
   /// `params` The optional params to pass when connecting.
