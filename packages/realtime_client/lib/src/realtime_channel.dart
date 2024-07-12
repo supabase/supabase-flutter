@@ -494,8 +494,8 @@ class RealtimeChannel {
         if (socket.params['apikey'] != null)
           'apikey': socket.params['apikey']!,
         ...socket.headers,
-        'Authorization':
-            socket.accessToken != null ? 'Bearer ${socket.accessToken}' : '',
+        if (socket.accessToken != null)
+          'Authorization': 'Bearer ${socket.accessToken}',
       };
       final body = {
         'messages': [
