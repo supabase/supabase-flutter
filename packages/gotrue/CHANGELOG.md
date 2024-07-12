@@ -1,3 +1,8 @@
+## 2.8.3
+
+ - **FIX**: Add error_code from url to AuthException ([#968](https://github.com/supabase/supabase-flutter/issues/968)). ([c741fe9d](https://github.com/supabase/supabase-flutter/commit/c741fe9d7458e7aaadf779a8d8f14636b4aeb136))
+ - **FIX**: Add magiclink as authenticaiton method in mfa ([#967](https://github.com/supabase/supabase-flutter/issues/967)). ([4a871773](https://github.com/supabase/supabase-flutter/commit/4a87177389ad834febee20e9159e1ae1eb8be890))
+
 ## 2.8.2
 
  - **FIX**: Store actual error in AuthException ([#959](https://github.com/supabase/supabase-flutter/issues/959)). ([aa6c2183](https://github.com/supabase/supabase-flutter/commit/aa6c2183891118f775a013227790fc92e4de8a73))

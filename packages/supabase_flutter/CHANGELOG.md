@@ -1,3 +1,7 @@
+## 2.5.8
+
+ - **FIX**: Fix duplicate initial deeplink handling when using AppLinks >= 6.0.0 ([#965](https://github.com/supabase/supabase-flutter/issues/965)). ([74747f0d](https://github.com/supabase/supabase-flutter/commit/74747f0de13187ddb2ebfba06a75d902dd1d98a5))
+
 ## 2.5.7
 
  - Update a dependency to the latest release.

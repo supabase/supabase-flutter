@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-07-12
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.8.3`](#gotrue---v283)
+ - [`realtime_client` - `v2.2.0`](#realtime_client---v220)
+ - [`supabase_flutter` - `v2.5.8`](#supabase_flutter---v258)
+ - [`supabase` - `v2.2.4`](#supabase---v224)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.2.4`
+
+---
+
+#### `gotrue` - `v2.8.3`
+
+ - **FIX**: Add error_code from url to AuthException ([#968](https://github.com/supabase/supabase-flutter/issues/968)). ([c741fe9d](https://github.com/supabase/supabase-flutter/commit/c741fe9d7458e7aaadf779a8d8f14636b4aeb136))
+ - **FIX**: Add magiclink as authenticaiton method in mfa ([#967](https://github.com/supabase/supabase-flutter/issues/967)). ([4a871773](https://github.com/supabase/supabase-flutter/commit/4a87177389ad834febee20e9159e1ae1eb8be890))
+
+#### `realtime_client` - `v2.2.0`
+
+ - **FEAT**(realtime_client): Add support for authorized realtime channels with broadcast and presence. ([#970](https://github.com/supabase/supabase-flutter/issues/970)). ([8305fef6](https://github.com/supabase/supabase-flutter/commit/8305fef65eecbcca5d7d39ad7fc684d4134a578d))
+
+#### `supabase_flutter` - `v2.5.8`
+
+ - **FIX**: Fix duplicate initial deeplink handling when using AppLinks >= 6.0.0 ([#965](https://github.com/supabase/supabase-flutter/issues/965)). ([74747f0d](https://github.com/supabase/supabase-flutter/commit/74747f0de13187ddb2ebfba06a75d902dd1d98a5))
+
+
 ## 2024-07-02
 
 ### Changes
