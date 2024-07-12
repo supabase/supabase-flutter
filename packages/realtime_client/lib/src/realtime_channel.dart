@@ -491,8 +491,7 @@ class RealtimeChannel {
     if (!canPush && type == RealtimeListenTypes.broadcast) {
       final headers = <String, String>{
         'Content-Type': 'application/json',
-        if (socket.params['apikey'] != null)
-          'apikey': socket.params['apikey']!,
+        if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
         ...socket.headers,
         if (socket.accessToken != null)
           'Authorization': 'Bearer ${socket.accessToken}',
