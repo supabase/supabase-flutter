@@ -58,11 +58,18 @@ class SupabaseAuth with WidgetsBindingObserver {
       final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
         try {
-          Supabase.instance.client.auth.setInitialSession(persistedSession);
+          await Supabase.instance.client.auth
+              .setInitialSession(persistedSession);
+          shouldEmitInitialSession = false;
         } catch (error, stackTrace) {
           Supabase.instance.log(error.toString(), stackTrace);
         }
       }
+    }
+    if (shouldEmitInitialSession) {
+      Supabase.instance.client.auth
+          // ignore: invalid_use_of_internal_member
+          .notifyAllSubscribers(AuthChangeEvent.initialSession);
     }
     _widgetsBindingInstance?.addObserver(this);
 
@@ -71,11 +78,6 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
 
     // Emit a null session if the user did not have persisted session
-    if (shouldEmitInitialSession) {
-      Supabase.instance.client.auth
-          // ignore: invalid_use_of_internal_member
-          .notifyAllSubscribers(AuthChangeEvent.initialSession);
-    }
   }
 
   /// Recovers the session from local storage.
@@ -194,12 +196,10 @@ class SupabaseAuth with WidgetsBindingObserver {
         // before app_links 6.0.0
         uri = await (_appLinks as dynamic).getInitialAppLink();
       } on NoSuchMethodError catch (_) {
-        // The AppLinks package contains the initial link in the uriLinkStream
-        // starting from version 6.0.0. Before this version, getting the
-        // initial link was done with getInitialAppLink. Being in this catch
-        // handler means we are in at least version 6.0.0, meaning we do not
-        // need to handle the initial link manually.
+        // Needed to keep compatible with 5.0.0 and 6.0.0
         // https://pub.dev/packages/app_links/changelog
+        // after app_links 6.0.0
+        uri = await (_appLinks as dynamic).getInitialUri();
       }
       if (uri != null) {
         await _handleDeeplink(uri);
