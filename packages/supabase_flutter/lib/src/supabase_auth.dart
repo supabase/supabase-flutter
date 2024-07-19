@@ -58,11 +58,18 @@ class SupabaseAuth with WidgetsBindingObserver {
       final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
         try {
-          Supabase.instance.client.auth.setInitialSession(persistedSession);
+          await Supabase.instance.client.auth
+              .setInitialSession(persistedSession);
+          shouldEmitInitialSession = false;
         } catch (error, stackTrace) {
           Supabase.instance.log(error.toString(), stackTrace);
         }
       }
+    }
+    if (shouldEmitInitialSession) {
+      Supabase.instance.client.auth
+          // ignore: invalid_use_of_internal_member
+          .notifyAllSubscribers(AuthChangeEvent.initialSession);
     }
     _widgetsBindingInstance?.addObserver(this);
 
@@ -71,11 +78,6 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
 
     // Emit a null session if the user did not have persisted session
-    if (shouldEmitInitialSession) {
-      Supabase.instance.client.auth
-          // ignore: invalid_use_of_internal_member
-          .notifyAllSubscribers(AuthChangeEvent.initialSession);
-    }
   }
 
   /// Recovers the session from local storage.
@@ -199,7 +201,12 @@ class SupabaseAuth with WidgetsBindingObserver {
         // initial link was done with getInitialAppLink. Being in this catch
         // handler means we are in at least version 6.0.0, meaning we do not
         // need to handle the initial link manually.
-        // https://pub.dev/packages/app_links/changelog
+        //
+        // app_links claims that the initial link will be included in the
+        // `uriLinkStream`, but that is not the case for web
+        if (kIsWeb) {
+          uri = await (_appLinks as dynamic).getInitialLink();
+        }
       }
       if (uri != null) {
         await _handleDeeplink(uri);
