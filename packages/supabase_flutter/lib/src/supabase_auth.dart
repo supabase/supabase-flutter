@@ -199,7 +199,12 @@ class SupabaseAuth with WidgetsBindingObserver {
         // Needed to keep compatible with 5.0.0 and 6.0.0
         // https://pub.dev/packages/app_links/changelog
         // after app_links 6.0.0
-        uri = await (_appLinks as dynamic).getInitialUri();
+        //
+        // app_links claims that the initial link will be included in the
+        // `uriLinkStream`, but that is not the case for web
+        if (kIsWeb) {
+          uri = await (_appLinks as dynamic).getInitialLink();
+        }
       }
       if (uri != null) {
         await _handleDeeplink(uri);
