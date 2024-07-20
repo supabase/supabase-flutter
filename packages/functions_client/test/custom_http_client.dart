@@ -32,8 +32,22 @@ class CustomHttpClient extends BaseClient {
             "Content-Type": "text/event-stream",
           });
     } else {
+      final Stream<List<int>> stream;
+      if (request is MultipartRequest) {
+        stream = Stream.value(
+          utf8.encode(jsonEncode([
+            for (final file in request.files)
+              {
+                "name": file.field,
+                "content": await file.finalize().bytesToString()
+              }
+          ])),
+        );
+      } else {
+        stream = Stream.value(utf8.encode(jsonEncode({"key": "Hello World"})));
+      }
       return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
+        stream,
         200,
         request: request,
         headers: {

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:functions_client/src/functions_client.dart';
 import 'package:functions_client/src/types.dart';
+import 'package:http/http.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -40,6 +41,26 @@ void main() {
 
       expect(request.url.queryParameters, {'key': 'value'});
       expect(res.data, {'key': 'Hello World'});
+      expect(res.status, 200);
+    });
+
+    test('function call with files', () async {
+      final fileName = "file.txt";
+      final fileContent = "Hello World";
+      final res = await functionsCustomHttpClient.invoke(
+        'function1',
+        queryParameters: {'key': 'value'},
+        files: [
+          MultipartFile.fromString(fileName, fileContent),
+        ],
+      );
+
+      final request = customHttpClient.receivedRequests.last;
+
+      expect(request.url.queryParameters, {'key': 'value'});
+      expect(res.data, [
+        {'name': fileName, 'content': fileContent}
+      ]);
       expect(res.status, 200);
     });
 

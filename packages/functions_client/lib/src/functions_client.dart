@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:functions_client/src/constants.dart';
 import 'package:functions_client/src/types.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart' show MultipartRequest;
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 class FunctionsClient {
@@ -38,11 +39,17 @@ class FunctionsClient {
 
   /// Invokes a function
   ///
-  /// [functionName] - the name of the function to invoke
+  /// [functionName] is the name of the function to invoke
   ///
-  /// [headers]: object representing the headers to send with the request
+  /// [headers] to send with the request
   ///
-  /// [body]: the body of the request
+  /// [body] of the request when [files] is null and can be of type String
+  /// or an Object that is encodable to JSON with `jsonEncode`.
+  /// If [files] is not null, [body] represents the fields of the
+  /// [MultipartRequest] and must be be of type `Map<String, String>`.
+  ///
+  /// [files] to send in a `MultipartRequest`. [body] is used for the fields.
+  ///
   ///
   /// ```dart
   /// // Call a standard function
@@ -70,12 +77,11 @@ class FunctionsClient {
   Future<FunctionResponse> invoke(
     String functionName, {
     Map<String, String>? headers,
-    Map<String, dynamic>? body,
+    Object? body,
+    Iterable<http.MultipartFile>? files,
     Map<String, dynamic>? queryParameters,
     HttpMethod method = HttpMethod.post,
   }) async {
-    final bodyStr = body == null ? null : await _isolate.encode(body);
-
     final uri = Uri.parse('$_url/$functionName')
         .replace(queryParameters: queryParameters);
 
@@ -84,12 +90,36 @@ class FunctionsClient {
       if (headers != null) ...headers
     };
 
-    final request = http.Request(method.name, uri);
+    final http.BaseRequest request;
+    if (files != null) {
+      assert(
+        body == null || body is Map<String, String>,
+        'body must be of type Map',
+      );
+      final fields = body as Map<String, String>?;
+
+      request = http.MultipartRequest(method.name, uri)
+        ..fields.addAll(fields ?? {})
+        ..files.addAll(files);
+    } else {
+      final bodyRequest = http.Request(method.name, uri);
+
+      final String? bodyStr;
+      if (body == null) {
+        bodyStr = null;
+      } else if (body is String) {
+        bodyStr = body;
+      } else {
+        bodyStr = await _isolate.encode(body);
+      }
+      if (bodyStr != null) bodyRequest.body = bodyStr;
+      request = bodyRequest;
+    }
 
     finalHeaders.forEach((key, value) {
       request.headers[key] = value;
     });
-    if (bodyStr != null) request.body = bodyStr;
+
     final response = await (_httpClient?.send(request) ?? request.send());
     final responseType = (response.headers['Content-Type'] ??
             response.headers['content-type'] ??
