@@ -1,3 +1,7 @@
+## 2.5.9
+
+ - **FIX**(gotrue): Ensure a single `initialSession` is emitted. ([#975](https://github.com/supabase/supabase-flutter/issues/975)). ([6323f9fd](https://github.com/supabase/supabase-flutter/commit/6323f9fd40564b36027a1fc48004822baa063e19))
+
 ## 2.5.8
 
  - **FIX**: Fix duplicate initial deeplink handling when using AppLinks >= 6.0.0 ([#965](https://github.com/supabase/supabase-flutter/issues/965)). ([74747f0d](https://github.com/supabase/supabase-flutter/commit/74747f0de13187ddb2ebfba06a75d902dd1d98a5))

@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-07-21
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`supabase` - `v2.2.5`](#supabase---v225)
+ - [`supabase_flutter` - `v2.5.9`](#supabase_flutter---v259)
+
+---
+
+#### `supabase` - `v2.2.5`
+
+ - **FIX**: Add error messages for when the session or expiresAt was missing while making API requests.  ([#976](https://github.com/supabase/supabase-flutter/issues/976)). ([a25993cb](https://github.com/supabase/supabase-flutter/commit/a25993cbe5270c862023c23741fa0be048bb4731))
+
+#### `supabase_flutter` - `v2.5.9`
+
+ - **FIX**(gotrue): Ensure a single `initialSession` is emitted. ([#975](https://github.com/supabase/supabase-flutter/issues/975)). ([6323f9fd](https://github.com/supabase/supabase-flutter/commit/6323f9fd40564b36027a1fc48004822baa063e19))
+
+
 ## 2024-07-12
 
 ### Changes
