@@ -20,7 +20,7 @@ void main() {
     });
     test('function throws', () async {
       try {
-        await functionsCustomHttpClient.invoke('function');
+        await functionsCustomHttpClient.invoke('error-function');
         fail('should throw');
       } on FunctionException catch (e) {
         expect(e.status, 420);
@@ -28,14 +28,14 @@ void main() {
     });
 
     test('function call', () async {
-      final res = await functionsCustomHttpClient.invoke('function1');
+      final res = await functionsCustomHttpClient.invoke('function');
       expect(res.data, {'key': 'Hello World'});
       expect(res.status, 200);
     });
 
     test('function call with query parameters', () async {
       final res = await functionsCustomHttpClient
-          .invoke('function1', queryParameters: {'key': 'value'});
+          .invoke('function', queryParameters: {'key': 'value'});
 
       final request = customHttpClient.receivedRequests.last;
 
@@ -48,7 +48,7 @@ void main() {
       final fileName = "file.txt";
       final fileContent = "Hello World";
       final res = await functionsCustomHttpClient.invoke(
-        'function1',
+        'function',
         queryParameters: {'key': 'value'},
         files: [
           MultipartFile.fromString(fileName, fileContent),
@@ -78,7 +78,7 @@ void main() {
       );
 
       await client.dispose();
-      final res = await client.invoke('function1');
+      final res = await client.invoke('function');
       expect(res.data, {'key': 'Hello World'});
     });
 
@@ -89,6 +89,61 @@ void main() {
           emitsInOrder(
             ['a', 'b', 'c'],
           ));
+    });
+
+    group('body encoding', () {
+      test('integer properly encoded', () async {
+        await functionsCustomHttpClient.invoke('function', body: 42);
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req, isA<Request>());
+
+        req as Request;
+        expect(req.body, '42');
+      });
+
+      test('double is properly encoded', () async {
+        await functionsCustomHttpClient.invoke('function', body: 42.9);
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req, isA<Request>());
+
+        req as Request;
+        expect(req.body, '42.9');
+      });
+
+      test('string is properly encoded', () async {
+        await functionsCustomHttpClient.invoke('function', body: 'ExampleText');
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req, isA<Request>());
+
+        req as Request;
+        expect(req.body, 'ExampleText');
+      });
+
+      test('list is properly encoded', () async {
+        await functionsCustomHttpClient.invoke('function', body: [1, 2, 3]);
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req, isA<Request>());
+
+        req as Request;
+        expect(req.body, '[1,2,3]');
+      });
+
+      test('map is properly encoded', () async {
+        await functionsCustomHttpClient.invoke(
+          'function',
+          body: {'thekey': 'thevalue'},
+        );
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req, isA<Request>());
+
+        req as Request;
+        expect(req.body, '{"thekey":"thevalue"}');
+      });
     });
   });
 }

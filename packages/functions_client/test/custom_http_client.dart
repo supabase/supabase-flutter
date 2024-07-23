@@ -14,7 +14,7 @@ class CustomHttpClient extends BaseClient {
     // Add request to receivedRequests list.
     receivedRequests = receivedRequests..add(request);
 
-    if (request.url.path.endsWith("function")) {
+    if (request.url.path.endsWith("error-function")) {
       //Return custom status code to check for usage of this client.
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
