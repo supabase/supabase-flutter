@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -32,4 +33,8 @@ class FunctionException {
   final String? reasonPhrase;
 
   FunctionException({required this.status, this.details, this.reasonPhrase});
+
+  @override
+  String toString() =>
+      'FunctionException(status: $status, details: $details, reasonPhrase: $reasonPhrase)';
 }
