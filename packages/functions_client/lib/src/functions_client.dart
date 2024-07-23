@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:functions_client/src/constants.dart';
 import 'package:functions_client/src/types.dart';
@@ -90,6 +91,14 @@ class FunctionsClient {
       if (headers != null) ...headers
     };
 
+    if (body != null &&
+        (headers == null || headers.containsKey("Content-Type") == false)) {
+      finalHeaders['Content-Type'] = switch (body) {
+        Uint8List() => 'application/octet-stream',
+        String() => 'text/plain',
+        _ => 'application/json',
+      };
+    }
     final http.BaseRequest request;
     if (files != null) {
       assert(

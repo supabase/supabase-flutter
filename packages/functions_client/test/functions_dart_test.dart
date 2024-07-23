@@ -29,6 +29,8 @@ void main() {
 
     test('function call', () async {
       final res = await functionsCustomHttpClient.invoke('function');
+      expect(
+          customHttpClient.receivedRequests.last.headers["Content-Type"], null);
       expect(res.data, {'key': 'Hello World'});
       expect(res.status, 200);
     });
@@ -58,6 +60,7 @@ void main() {
       final request = customHttpClient.receivedRequests.last;
 
       expect(request.url.queryParameters, {'key': 'value'});
+      expect(request.headers['Content-Type'], contains('multipart/form-data'));
       expect(res.data, [
         {'name': fileName, 'content': fileContent}
       ]);
@@ -100,6 +103,7 @@ void main() {
 
         req as Request;
         expect(req.body, '42');
+        expect(req.headers["Content-Type"], contains("application/json"));
       });
 
       test('double is properly encoded', () async {
@@ -110,6 +114,7 @@ void main() {
 
         req as Request;
         expect(req.body, '42.9');
+        expect(req.headers["Content-Type"], contains("application/json"));
       });
 
       test('string is properly encoded', () async {
@@ -120,6 +125,7 @@ void main() {
 
         req as Request;
         expect(req.body, 'ExampleText');
+        expect(req.headers["Content-Type"], contains("text/plain"));
       });
 
       test('list is properly encoded', () async {
@@ -130,6 +136,7 @@ void main() {
 
         req as Request;
         expect(req.body, '[1,2,3]');
+        expect(req.headers["Content-Type"], contains("application/json"));
       });
 
       test('map is properly encoded', () async {
@@ -143,6 +150,7 @@ void main() {
 
         req as Request;
         expect(req.body, '{"thekey":"thevalue"}');
+        expect(req.headers["Content-Type"], contains("application/json"));
       });
     });
   });

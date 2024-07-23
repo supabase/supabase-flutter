@@ -13,6 +13,7 @@ class CustomHttpClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     // Add request to receivedRequests list.
     receivedRequests = receivedRequests..add(request);
+    request.finalize();
 
     if (request.url.path.endsWith("error-function")) {
       //Return custom status code to check for usage of this client.
