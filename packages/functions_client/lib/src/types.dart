@@ -31,5 +31,10 @@ class FunctionException {
   final dynamic details;
   final String? reasonPhrase;
 
-  FunctionException({required this.status, this.details, this.reasonPhrase});
+  const FunctionException(
+      {required this.status, this.details, this.reasonPhrase});
+
+  @override
+  String toString() =>
+      'FunctionException(status: $status, details: $details, reasonPhrase: $reasonPhrase)';
 }
