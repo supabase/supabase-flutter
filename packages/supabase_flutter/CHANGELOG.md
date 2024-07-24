@@ -1,3 +1,7 @@
+## 2.5.10
+
+ - Update a dependency to the latest release.
+
 ## 2.5.9
 
  - **FIX**(gotrue): Ensure a single `initialSession` is emitted. ([#975](https://github.com/supabase/supabase-flutter/issues/975)). ([6323f9fd](https://github.com/supabase/supabase-flutter/commit/6323f9fd40564b36027a1fc48004822baa063e19))

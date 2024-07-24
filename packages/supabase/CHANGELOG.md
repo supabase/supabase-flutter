@@ -1,3 +1,7 @@
+## 2.2.6
+
+ - Update a dependency to the latest release.
+
 ## 2.2.5
 
  - **FIX**: Add error messages for when the session or expiresAt was missing while making API requests.  ([#976](https://github.com/supabase/supabase-flutter/issues/976)). ([a25993cb](https://github.com/supabase/supabase-flutter/commit/a25993cbe5270c862023c23741fa0be048bb4731))
