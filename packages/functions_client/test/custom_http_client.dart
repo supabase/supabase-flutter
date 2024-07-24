@@ -13,8 +13,9 @@ class CustomHttpClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     // Add request to receivedRequests list.
     receivedRequests = receivedRequests..add(request);
+    request.finalize();
 
-    if (request.url.path.endsWith("function")) {
+    if (request.url.path.endsWith("error-function")) {
       //Return custom status code to check for usage of this client.
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
@@ -32,8 +33,22 @@ class CustomHttpClient extends BaseClient {
             "Content-Type": "text/event-stream",
           });
     } else {
+      final Stream<List<int>> stream;
+      if (request is MultipartRequest) {
+        stream = Stream.value(
+          utf8.encode(jsonEncode([
+            for (final file in request.files)
+              {
+                "name": file.field,
+                "content": await file.finalize().bytesToString()
+              }
+          ])),
+        );
+      } else {
+        stream = Stream.value(utf8.encode(jsonEncode({"key": "Hello World"})));
+      }
       return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
+        stream,
         200,
         request: request,
         headers: {
