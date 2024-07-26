@@ -43,7 +43,7 @@ jobs:
         run: |
           cd ../../
           dart pub global activate melos
-          melos bootstrap --ignore="supabase_flutter"
+          melos bootstrap --no-flutter
 
       - name: dartfmt
         if: ${{ matrix.sdk == 'stable'}}
