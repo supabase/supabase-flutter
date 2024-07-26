@@ -1,3 +1,7 @@
+## 2.0.1
+
+ - **FIX**: Make sure the package can be built on Flutter web ([#990](https://github.com/supabase/supabase-flutter/issues/990)). ([742b761c](https://github.com/supabase/supabase-flutter/commit/742b761c2c84a8b3d75e7966444f57a0dd5e692e))
+
 ## 2.0.0
 
  - Graduate package to a stable release. See pre-releases prior to this version for changelog entries.

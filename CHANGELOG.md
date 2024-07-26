@@ -3,6 +3,40 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-07-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`yet_another_json_isolate` - `v2.0.1`](#yet_another_json_isolate---v201)
+ - [`postgrest` - `v2.1.3`](#postgrest---v213)
+ - [`functions_client` - `v2.3.1`](#functions_client---v231)
+ - [`supabase` - `v2.2.7`](#supabase---v227)
+ - [`supabase_flutter` - `v2.5.11`](#supabase_flutter---v2511)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `postgrest` - `v2.1.3`
+ - `functions_client` - `v2.3.1`
+ - `supabase` - `v2.2.7`
+ - `supabase_flutter` - `v2.5.11`
+
+---
+
+#### `yet_another_json_isolate` - `v2.0.1`
+
+ - **FIX**: Make sure the package can be built on Flutter web ([#990](https://github.com/supabase/supabase-flutter/issues/990)). ([742b761c](https://github.com/supabase/supabase-flutter/commit/742b761c2c84a8b3d75e7966444f57a0dd5e692e))
+
+
 ## 2024-07-25
 
 ### Changes
