@@ -13,6 +13,7 @@ on:
       - 'packages/realtime_client/**'
       - 'packages/storage_client/**'
       - 'packages/supabase/**'
+      - 'packages/yet_another_json_isolate/**'
 
   pull_request:
     paths:
@@ -24,6 +25,7 @@ on:
       - 'packages/realtime_client/**'
       - 'packages/storage_client/**'
       - 'packages/supabase/**'
+      - 'packages/yet_another_json_isolate/**'
 
 jobs:
   test:
@@ -76,3 +78,8 @@ jobs:
         run: |
           flutter pub downgrade app_links
           flutter test --concurrency=1
+
+      - name: Verify if Flutter web build is successful
+        run: |
+          cd example
+          flutter build web

@@ -10,7 +10,7 @@ class YAJsonIsolate {
     return jsonDecode(json);
   }
 
-  Future<String> encode(Map json) async {
+  Future<String> encode(Object? json) async {
     await null;
     return jsonEncode(json);
   }
