@@ -1,6 +1,6 @@
 name: yet_another_json_isolate
 description: Package to simplify and improve JSON parsing in isolates by keeping one isolate running per instance.
-version: 2.0.0
+version: 2.0.1
 homepage: https://github.com/supabase-community/json-isolate-dart
 
 environment:

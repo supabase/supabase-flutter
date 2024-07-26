@@ -1,3 +1,7 @@
+## 2.1.3
+
+ - Update a dependency to the latest release.
+
 ## 2.1.2
 
  - **FIX**(postgrest): Update parameter type of `isFilter()` to only allow boolean or null ([#920](https://github.com/supabase/supabase-flutter/issues/920)). ([0a3b73e0](https://github.com/supabase/supabase-flutter/commit/0a3b73e02f90ad8d05cf96bf91336a951982b800))

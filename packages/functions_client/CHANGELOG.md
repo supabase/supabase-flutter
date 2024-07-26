@@ -1,3 +1,7 @@
+## 2.3.1
+
+ - Update a dependency to the latest release.
+
 ## 2.3.0
 
  - **FIX**(functions_client): Add `toString` to `FunctionException` ([#985](https://github.com/supabase/supabase-flutter/issues/985)). ([e072ff74](https://github.com/supabase/supabase-flutter/commit/e072ff74c71858ea3c9ede3361d2cdf710b22388))
