@@ -15,22 +15,9 @@ command:
       preCommit: melos run update-version
 
   bootstrap:
-    functions_client:
-      path: packages/functions_client
-    gotrue:
-      path: packages/gotrue
-    postgrest:
-      path: packages/postgrest
-    realtime_client:
-      path: packages/realtime_client
-    storage_client:
-      path: packages/storage_client
-    supabase:
-      path: packages/supabase
-    supabase_flutter:
-      path: packages/supabase_flutter
-    yes_another_json_isolate:
-      path: packages/yes_another_json_isolate
+    # It seems so that running "pub get" in parallel has some issues (like
+    # https://github.com/dart-lang/pub/issues/3404). Disabling this feature
+    # makes the CI much more stable.
     runPubGetInParallel: false
     usePubspecOverrides: true
 
