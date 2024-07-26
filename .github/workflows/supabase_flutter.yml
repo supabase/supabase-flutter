@@ -13,6 +13,7 @@ on:
       - 'packages/realtime_client/**'
       - 'packages/storage_client/**'
       - 'packages/supabase/**'
+      - 'packages/yet_another_json_isolate/**'
 
   pull_request:
     paths:
@@ -24,6 +25,7 @@ on:
       - 'packages/realtime_client/**'
       - 'packages/storage_client/**'
       - 'packages/supabase/**'
+      - 'packages/yet_another_json_isolate/**'
 
 jobs:
   test:
