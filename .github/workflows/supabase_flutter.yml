@@ -79,5 +79,5 @@ jobs:
 
       - name: Verify if Flutter web build is successful
         run: |
-          cd packages/supabase_flutter/example
+          cd example
           flutter build web
