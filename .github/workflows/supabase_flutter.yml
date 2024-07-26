@@ -76,3 +76,8 @@ jobs:
         run: |
           flutter pub downgrade app_links
           flutter test --concurrency=1
+
+      - name: Verify if Flutter web build is successful
+        run: |
+          cd packages/supabase_flutter/example
+          flutter build web
