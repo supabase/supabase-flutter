@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-07-25
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.3.0`](#functions_client---v230)
+ - [`supabase` - `v2.2.6`](#supabase---v226)
+ - [`supabase_flutter` - `v2.5.10`](#supabase_flutter---v2510)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.2.6`
+ - `supabase_flutter` - `v2.5.10`
+
+---
+
+#### `functions_client` - `v2.3.0`
+
+ - **FIX**(functions_client): Add `toString` to `FunctionException` ([#985](https://github.com/supabase/supabase-flutter/issues/985)). ([e072ff74](https://github.com/supabase/supabase-flutter/commit/e072ff74c71858ea3c9ede3361d2cdf710b22388))
+ - **FEAT**: Support MultipartRequest in functions invoke ([#977](https://github.com/supabase/supabase-flutter/issues/977)). ([09698edf](https://github.com/supabase/supabase-flutter/commit/09698edfba348794aee52e28d55903941cc49bcf))
+
+
 ## 2024-07-21
 
 ### Changes

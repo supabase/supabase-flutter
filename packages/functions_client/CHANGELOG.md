@@ -1,3 +1,8 @@
+## 2.3.0
+
+ - **FIX**(functions_client): Add `toString` to `FunctionException` ([#985](https://github.com/supabase/supabase-flutter/issues/985)). ([e072ff74](https://github.com/supabase/supabase-flutter/commit/e072ff74c71858ea3c9ede3361d2cdf710b22388))
+ - **FEAT**: Support MultipartRequest in functions invoke ([#977](https://github.com/supabase/supabase-flutter/issues/977)). ([09698edf](https://github.com/supabase/supabase-flutter/commit/09698edfba348794aee52e28d55903941cc49bcf))
+
 ## 2.2.0
 
  - **FEAT**(functions): Invoke function with custom query params ([#926](https://github.com/supabase/supabase-flutter/issues/926)). ([7ded898d](https://github.com/supabase/supabase-flutter/commit/7ded898dee07004cbb20e4d7c209f94a507fad3b))
