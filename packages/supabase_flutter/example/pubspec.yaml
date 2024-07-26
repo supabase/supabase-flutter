@@ -21,21 +21,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-melos_managed_dependency_overrides: functions_client,gotrue,postgrest,realtime_client,storage_client,yet_another_json_isolate
-dependency_overrides:
-  functions_client:
-    path: ../../functions_client
-  gotrue:
-    path: ../../gotrue
-  postgrest:
-    path: ../../postgrest
-  realtime_client:
-    path: ../../realtime_client
-  storage_client:
-    path: ../../storage_client
-  supabase:
-    path: ../../supabase
-  yet_another_json_isolate:
-    path: ../../yet_another_json_isolate
-  supabase_flutter:
-    path: ../
