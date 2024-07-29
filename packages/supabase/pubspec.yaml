@@ -19,6 +19,6 @@ dependencies:
   yet_another_json_isolate: 2.0.1
 
 dev_dependencies:
-  lints: ^4.0.0
+  lints: ^3.0.0
   test: ^1.17.9
   web_socket_channel: '>=2.3.0 <4.0.0'

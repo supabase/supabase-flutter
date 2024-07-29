@@ -212,13 +212,10 @@ class SignedUploadURLResponse extends SignedUrl {
   final String token;
 
   const SignedUploadURLResponse({
-    required String signedUrl,
-    required String path,
+    required super.signedUrl,
+    required super.path,
     required this.token,
-  }) : super(
-          signedUrl: signedUrl,
-          path: path,
-        );
+  });
 }
 
 class StorageException implements Exception {

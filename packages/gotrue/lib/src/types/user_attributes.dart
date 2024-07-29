@@ -77,16 +77,16 @@ class AdminUserAttributes extends UserAttributes {
   final String? banDuration;
 
   AdminUserAttributes({
-    String? email,
-    String? phone,
-    String? password,
-    Object? data,
+    super.email,
+    super.phone,
+    super.password,
+    super.data,
     this.userMetadata,
     this.appMetadata,
     this.emailConfirm,
     this.phoneConfirm,
     this.banDuration,
-  }) : super(email: email, phone: phone, password: password, data: data);
+  });
 
   @override
   Map<String, dynamic> toJson() {
