@@ -1,5 +1,4 @@
 import 'package:supabase/supabase.dart';
-import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   final RealtimeClient _realtime;
@@ -11,7 +10,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
     String url,
     RealtimeClient realtime, {
     super.headers = const {},
-    required super.schema,
+    required String super.schema,
     required String table,
     super.httpClient,
     required int incrementId,

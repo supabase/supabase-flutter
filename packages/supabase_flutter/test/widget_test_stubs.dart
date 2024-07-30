@@ -127,6 +127,7 @@ void mockAppLink({
           const StandardMethodCodec().encodeSuccessEnvelope(initialLink),
           (ByteData? data) {},
         );
+        return null;
       },
     );
   }
