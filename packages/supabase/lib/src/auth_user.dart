@@ -13,7 +13,7 @@ class AuthUser extends User {
     super.emailConfirmedAt,
     super.phoneConfirmedAt,
     super.lastSignInAt,
-    required String super.role,
-    required String super.updatedAt,
+    required super.role,
+    required super.updatedAt,
   });
 }

@@ -10,12 +10,12 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   SupabaseQueryBuilder(
     String url,
     RealtimeClient realtime, {
-    Map<String, String> super.headers = const {},
-    required String super.schema,
+    super.headers = const {},
+    required super.schema,
     required String table,
     super.httpClient,
     required int incrementId,
-    required YAJsonIsolate super.isolate,
+    required super.isolate,
   })  : _realtime = realtime,
         _schema = schema,
         _table = table,
