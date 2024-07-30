@@ -1,7 +1,7 @@
 part of 'postgrest_builder.dart';
 
 class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
-  PostgrestFilterBuilder(PostgrestBuilder<T, T, T> builder) : super(builder);
+  PostgrestFilterBuilder(super.builder);
 
   @override
   PostgrestFilterBuilder<T> copyWithUrl(Uri url) =>

@@ -13,7 +13,7 @@ class MockChannel extends Mock implements RealtimeChannel {}
 class MockPush extends Mock implements Push {}
 
 class SocketWithMockedChannel extends RealtimeClient {
-  SocketWithMockedChannel(String endPoint) : super(endPoint);
+  SocketWithMockedChannel(super.endPoint);
 
   Map<String, RealtimeChannel> mockedChannelLooker = {};
 

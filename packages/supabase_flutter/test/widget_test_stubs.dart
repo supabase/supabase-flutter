@@ -10,7 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'utils.dart';
 
 class MockWidget extends StatefulWidget {
-  const MockWidget({Key? key}) : super(key: key);
+  const MockWidget({super.key});
 
   @override
   State<MockWidget> createState() => _MockWidgetState();
@@ -127,6 +127,7 @@ void mockAppLink({
           const StandardMethodCodec().encodeSuccessEnvelope(initialLink),
           (ByteData? data) {},
         );
+        return null;
       },
     );
   }
