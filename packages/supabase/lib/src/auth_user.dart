@@ -4,7 +4,7 @@ class AuthUser extends User {
   AuthUser({
     required super.id,
     required super.appMetadata,
-    required Map<String, dynamic> super.userMetadata,
+    required super.userMetadata,
     required super.aud,
     required super.email,
     required super.phone,
