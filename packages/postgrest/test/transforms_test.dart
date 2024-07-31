@@ -222,6 +222,18 @@ void main() {
     expect(res['status'], 'ONLINE');
   });
 
+  test('Adding single() should throw if multiple rows are returned.', () async {
+    try {
+      await postgrest.from('users').select().single();
+      fail('.single() with multiple rows returned did not throw.');
+    } on PostgrestException catch (error) {
+      expect(error.code, 'PGRST116');
+    } catch (error) {
+      fail(
+          '.single() with multiple rows returned threw ${error.runtimeType} instead of PostgrestException.');
+    }
+  });
+
   test('single with count', () async {
     final res = await postgrest
         .from('users')
