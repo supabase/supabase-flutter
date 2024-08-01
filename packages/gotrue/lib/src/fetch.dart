@@ -28,6 +28,13 @@ class GotrueFetch {
     return error.toString();
   }
 
+  String? _getErrorCode(dynamic error) {
+    if (error is Map) {
+      return error['error_code']?.toString();
+    }
+    return null;
+  }
+
   AuthException _handleError(dynamic error) {
     if (error is! Response) {
       throw AuthRetryableFetchException(message: error.toString());
@@ -61,6 +68,7 @@ class GotrueFetch {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
         statusCode: error.statusCode.toString(),
+        errorCode: _getErrorCode(data),
         reasons: List<String>.from(data['weak_password']['reasons']),
       );
     }
@@ -68,6 +76,7 @@ class GotrueFetch {
     throw AuthApiException(
       _getErrorMessage(data),
       statusCode: error.statusCode.toString(),
+      errorCode: _getErrorCode(data),
     );
   }
 
