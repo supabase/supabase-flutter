@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
+import 'package:gotrue/src/types/auth_error_codes.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
@@ -107,8 +108,9 @@ void main() {
       try {
         await client.signUp(email: newEmail, password: '123');
         fail('signUp with week password should throw exception');
-      } catch (error) {
+      } on AuthException catch (error) {
         expect(error, isA<AuthWeakPasswordException>());
+        expect(error.errorCode, AuthErrorCode.weakPassword.code);
       }
     });
 
@@ -138,6 +140,7 @@ void main() {
       } on AuthException catch (error) {
         expect(error.message, errorMessage);
         expect(error.statusCode, '401');
+        expect(error.errorCode, 'unauthorized_client');
       } catch (error) {
         fail(
             'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
@@ -293,6 +296,16 @@ void main() {
       expect(user?.userMetadata?['japanese'], '日本語');
       expect(user?.userMetadata?['korean'], '한국어');
       expect(user?.userMetadata?['arabic'], 'عربى');
+    });
+
+    test('Update user on with the same password throws AuthException',
+        () async {
+      await client.signInWithPassword(email: email1, password: password);
+      try {
+        await client.updateUser(UserAttributes(password: password));
+      } on AuthException catch (error) {
+        expect(error.errorCode, AuthErrorCode.samePassword.code);
+      }
     });
 
     test('signOut', () async {
