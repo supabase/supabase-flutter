@@ -27,13 +27,13 @@ class AuthException implements Exception {
 }
 
 class AuthPKCEGrantCodeExchangeError extends AuthException {
-  AuthPKCEGrantCodeExchangeError(String message) : super(message);
+  AuthPKCEGrantCodeExchangeError(super.message);
 }
 
 class AuthSessionMissingException extends AuthException {
-  AuthSessionMissingException()
+  AuthSessionMissingException([String? message])
       : super(
-          'Auth session missing!',
+          message ?? 'Auth session missing!',
           statusCode: '400',
           errorCode: AuthErrorCode.sessionNotFound.code,
         );
@@ -48,8 +48,7 @@ class AuthRetryableFetchException extends AuthException {
 }
 
 class AuthApiException extends AuthException {
-  AuthApiException(String message, {String? statusCode, String? errorCode})
-      : super(message, statusCode: statusCode, errorCode: errorCode);
+  AuthApiException(super.message, {super.statusCode, super.errorCode});
 }
 
 class AuthUnknownException extends AuthException {

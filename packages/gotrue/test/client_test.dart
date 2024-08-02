@@ -111,6 +111,8 @@ void main() {
       } on AuthException catch (error) {
         expect(error, isA<AuthWeakPasswordException>());
         expect(error.errorCode, AuthErrorCode.weakPassword.code);
+      } catch (error) {
+        fail('signUp threw ${error.runtimeType} instead of AuthException');
       }
     });
 
@@ -246,7 +248,7 @@ void main() {
       expect(user.appMetadata['provider'], 'email');
     });
 
-    test('signInWithPassword() with   phone', () async {
+    test('signInWithPassword() with phone', () async {
       final response =
           await client.signInWithPassword(phone: phone1, password: password);
       final data = response.session;
@@ -278,6 +280,17 @@ void main() {
       expect(newClient.currentSession?.accessToken ?? '', isNotEmpty);
     });
 
+    test(
+        'Set session with an empty refresh token throws AuthSessionMissingException',
+        () async {
+      try {
+        await client.setSession('');
+        fail('setSession did not throw');
+      } catch (error) {
+        expect(error, isA<AuthSessionMissingException>());
+      }
+    });
+
     test('Update user', () async {
       await client.signInWithPassword(email: email1, password: password);
 
@@ -298,11 +311,11 @@ void main() {
       expect(user?.userMetadata?['arabic'], 'عربى');
     });
 
-    test('Update user on with the same password throws AuthException',
-        () async {
+    test('Update user with the same password throws AuthException', () async {
       await client.signInWithPassword(email: email1, password: password);
       try {
         await client.updateUser(UserAttributes(password: password));
+        fail('updateUser did not throw');
       } on AuthException catch (error) {
         expect(error.errorCode, AuthErrorCode.samePassword.code);
       }
