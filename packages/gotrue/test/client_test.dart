@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
-import 'package:gotrue/src/types/auth_error_codes.dart';
+import 'package:gotrue/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
@@ -103,14 +103,14 @@ void main() {
       expect(data?.user.id, isA<String>());
       expect(data?.user.userMetadata!['Hello'], 'World');
     });
-    test('signUp() with week password throws AuthWeakPasswordException',
+    test('signUp() with weak password throws AuthWeakPasswordException',
         () async {
       try {
         await client.signUp(email: newEmail, password: '123');
-        fail('signUp with week password should throw exception');
+        fail('signUp with weak password should throw exception');
       } on AuthException catch (error) {
         expect(error, isA<AuthWeakPasswordException>());
-        expect(error.errorCode, AuthErrorCode.weakPassword.code);
+        expect(error.errorCode, ErrorCode.weakPassword.code);
       } catch (error) {
         fail('signUp threw ${error.runtimeType} instead of AuthException');
       }
@@ -317,7 +317,7 @@ void main() {
         await client.updateUser(UserAttributes(password: password));
         fail('updateUser did not throw');
       } on AuthException catch (error) {
-        expect(error.errorCode, AuthErrorCode.samePassword.code);
+        expect(error.errorCode, ErrorCode.samePassword.code);
       }
     });
 

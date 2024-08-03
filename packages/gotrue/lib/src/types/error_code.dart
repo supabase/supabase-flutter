@@ -1,6 +1,8 @@
 // All error codes from the Supabase Auth API. The whole list can be found here:
 // https://github.com/supabase/auth/blob/master/internal/api/errorcodes.go
-enum AuthErrorCode {
+import 'package:collection/collection.dart';
+
+enum ErrorCode {
   unknown('unknown'),
   unexpectedFailure('unexpected_failure'),
   validationFailed('validation_failed'),
@@ -78,12 +80,11 @@ enum AuthErrorCode {
   mfaTotpVerifyDisabled('mfa_totp_verify_not_enabled');
 
   final String code;
-  const AuthErrorCode(this.code);
+  const ErrorCode(this.code);
 
-  static AuthErrorCode fromCode(String code) {
-    return AuthErrorCode.values.firstWhere(
+  static ErrorCode? fromCode(String code) {
+    return ErrorCode.values.firstWhereOrNull(
       (value) => value.code == code,
-      orElse: () => AuthErrorCode.unknown,
     );
   }
 }

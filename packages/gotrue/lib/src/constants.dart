@@ -20,6 +20,9 @@ class Constants {
 
   /// A token refresh will be attempted this many ticks before the current session expires.
   static const autoRefreshTickThreshold = 3;
+
+  /// The name of the header that contains API version.
+  static const apiVersionHeaderName = 'x-supabase-api-version';
 }
 
 enum AuthChangeEvent {

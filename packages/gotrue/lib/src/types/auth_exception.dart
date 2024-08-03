@@ -1,8 +1,15 @@
-import 'package:gotrue/src/types/auth_error_codes.dart';
+import 'package:gotrue/src/types/error_code.dart';
 
 class AuthException implements Exception {
+  /// Human readable error message associated with the error.
   final String message;
+
+  /// HTTP status code that caused the error.
   final String? statusCode;
+
+  /// Error code associated with the error. Most errors coming from
+  /// HTTP responses will have a code, though some errors that occur
+  /// before a response is received will not have one present.
   final String? errorCode;
 
   const AuthException(this.message, {this.statusCode, this.errorCode});
@@ -35,7 +42,7 @@ class AuthSessionMissingException extends AuthException {
       : super(
           message ?? 'Auth session missing!',
           statusCode: '400',
-          errorCode: AuthErrorCode.sessionNotFound.code,
+          errorCode: ErrorCode.sessionNotFound.code,
         );
 }
 
@@ -64,7 +71,7 @@ class AuthWeakPasswordException extends AuthException {
   AuthWeakPasswordException({
     required String message,
     required String statusCode,
-    required String? errorCode,
     required this.reasons,
+    String? errorCode,
   }) : super(message, statusCode: statusCode, errorCode: errorCode);
 }
