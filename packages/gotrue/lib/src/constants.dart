@@ -1,3 +1,4 @@
+import 'package:gotrue/src/types/api_version.dart';
 import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/version.dart';
 
@@ -20,6 +21,16 @@ class Constants {
 
   /// A token refresh will be attempted this many ticks before the current session expires.
   static const autoRefreshTickThreshold = 3;
+
+  /// The name of the header that contains API version.
+  static const apiVersionHeaderName = 'x-supabase-api-version';
+}
+
+class ApiVersions {
+  static final v20240101 = ApiVersion(
+    name: '2024-01-01',
+    timestamp: DateTime.parse('2024-01-01T00:00:00.0Z'),
+  );
 }
 
 enum AuthChangeEvent {

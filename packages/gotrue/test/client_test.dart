@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
+import 'package:gotrue/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
@@ -102,13 +103,16 @@ void main() {
       expect(data?.user.id, isA<String>());
       expect(data?.user.userMetadata!['Hello'], 'World');
     });
-    test('signUp() with week password throws AuthWeakPasswordException',
+    test('signUp() with weak password throws AuthWeakPasswordException',
         () async {
       try {
         await client.signUp(email: newEmail, password: '123');
-        fail('signUp with week password should throw exception');
-      } catch (error) {
+        fail('signUp with weak password should throw exception');
+      } on AuthException catch (error) {
         expect(error, isA<AuthWeakPasswordException>());
+        expect(error.code, ErrorCode.weakPassword.code);
+      } catch (error) {
+        fail('signUp threw ${error.runtimeType} instead of AuthException');
       }
     });
 
@@ -138,6 +142,7 @@ void main() {
       } on AuthException catch (error) {
         expect(error.message, errorMessage);
         expect(error.statusCode, '401');
+        expect(error.code, 'unauthorized_client');
       } catch (error) {
         fail(
             'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
@@ -243,7 +248,7 @@ void main() {
       expect(user.appMetadata['provider'], 'email');
     });
 
-    test('signInWithPassword() with   phone', () async {
+    test('signInWithPassword() with phone', () async {
       final response =
           await client.signInWithPassword(phone: phone1, password: password);
       final data = response.session;
@@ -275,6 +280,17 @@ void main() {
       expect(newClient.currentSession?.accessToken ?? '', isNotEmpty);
     });
 
+    test(
+        'Set session with an empty refresh token throws AuthSessionMissingException',
+        () async {
+      try {
+        await client.setSession('');
+        fail('setSession did not throw');
+      } catch (error) {
+        expect(error, isA<AuthSessionMissingException>());
+      }
+    });
+
     test('Update user', () async {
       await client.signInWithPassword(email: email1, password: password);
 
@@ -293,6 +309,16 @@ void main() {
       expect(user?.userMetadata?['japanese'], '日本語');
       expect(user?.userMetadata?['korean'], '한국어');
       expect(user?.userMetadata?['arabic'], 'عربى');
+    });
+
+    test('Update user with the same password throws AuthException', () async {
+      await client.signInWithPassword(email: email1, password: password);
+      try {
+        await client.updateUser(UserAttributes(password: password));
+        fail('updateUser did not throw');
+      } on AuthException catch (error) {
+        expect(error.code, ErrorCode.samePassword.code);
+      }
     });
 
     test('signOut', () async {

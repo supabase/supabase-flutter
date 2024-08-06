@@ -1,12 +1,26 @@
+import 'package:gotrue/src/types/error_code.dart';
+
 class AuthException implements Exception {
+  /// Human readable error message associated with the error.
   final String message;
+
+  /// HTTP status code that caused the error.
   final String? statusCode;
 
-  const AuthException(this.message, {this.statusCode});
+  /// Error code associated with the error. Most errors coming from
+  /// HTTP responses will have a code, though some errors that occur
+  /// before a response is received will not have one present.
+  /// In that case [statusCode] will also be null.
+  ///
+  /// Find the full list of error codes in our documentation.
+  /// https://supabase.com/docs/reference/dart/auth-error-codes
+  final String? code;
+
+  const AuthException(this.message, {this.statusCode, this.code});
 
   @override
   String toString() =>
-      'AuthException(message: $message, statusCode: $statusCode)';
+      'AuthException(message: $message, statusCode: $statusCode, errorCode: $code)';
 
   @override
   bool operator ==(Object other) {
@@ -14,11 +28,12 @@ class AuthException implements Exception {
 
     return other is AuthException &&
         other.message == message &&
-        other.statusCode == statusCode;
+        other.statusCode == statusCode &&
+        other.code == code;
   }
 
   @override
-  int get hashCode => message.hashCode ^ statusCode.hashCode;
+  int get hashCode => message.hashCode ^ statusCode.hashCode ^ code.hashCode;
 }
 
 class AuthPKCEGrantCodeExchangeError extends AuthException {
@@ -26,8 +41,11 @@ class AuthPKCEGrantCodeExchangeError extends AuthException {
 }
 
 class AuthSessionMissingException extends AuthException {
-  AuthSessionMissingException()
-      : super('Auth session missing!', statusCode: '400');
+  AuthSessionMissingException([String? message])
+      : super(
+          message ?? 'Auth session missing!',
+          statusCode: '400',
+        );
 }
 
 class AuthRetryableFetchException extends AuthException {
@@ -38,7 +56,7 @@ class AuthRetryableFetchException extends AuthException {
 }
 
 class AuthApiException extends AuthException {
-  AuthApiException(super.message, {super.statusCode});
+  AuthApiException(super.message, {super.statusCode, super.code});
 }
 
 class AuthUnknownException extends AuthException {
@@ -53,7 +71,7 @@ class AuthWeakPasswordException extends AuthException {
 
   AuthWeakPasswordException({
     required String message,
-    required String statusCode,
+    required super.statusCode,
     required this.reasons,
-  }) : super(message, statusCode: statusCode);
+  }) : super(message, code: ErrorCode.weakPassword.code);
 }

@@ -53,8 +53,8 @@ jobs:
       - name: Build Docker image
         run: |
           cd ../../infra/gotrue
-          docker-compose down
-          docker-compose up -d
+          docker compose down
+          docker compose up -d
 
       - name: Sleep for 5 seconds
         uses: jakejarvis/wait-action@master
