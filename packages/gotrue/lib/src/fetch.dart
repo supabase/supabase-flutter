@@ -65,9 +65,9 @@ class GotrueFetch {
 
     String? errorCode;
 
-    final ApiVersion? version = ApiVersion.fromResponse(error);
+    final responseApiVersion = ApiVersion.fromResponse(error);
 
-    if (version?.isSameOrAfter(ApiVersions.v20240101) ?? false) {
+    if (responseApiVersion?.isSameOrAfter(ApiVersions.v20240101) ?? false) {
       errorCode = _getErrorCode(data, 'code');
     } else {
       errorCode = _getErrorCode(data, 'error_code');
@@ -86,7 +86,6 @@ class GotrueFetch {
         throw AuthWeakPasswordException(
           message: _getErrorMessage(data),
           statusCode: error.statusCode.toString(),
-          errorCode: ErrorCode.weakPassword.code,
           reasons: List<String>.from(data['weak_password']['reasons']),
         );
       }
@@ -94,7 +93,6 @@ class GotrueFetch {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
         statusCode: error.statusCode.toString(),
-        errorCode: errorCode,
         reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
       );
     }
@@ -102,7 +100,7 @@ class GotrueFetch {
     throw AuthApiException(
       _getErrorMessage(data),
       statusCode: error.statusCode.toString(),
-      errorCode: errorCode,
+      code: errorCode,
     );
   }
 
@@ -115,7 +113,7 @@ class GotrueFetch {
 
     // Set the API version header if not already set
     if (!headers.containsKey(Constants.apiVersionHeaderName)) {
-      headers[Constants.apiVersionHeaderName] = ApiVersions.v20240101.asString;
+      headers[Constants.apiVersionHeaderName] = ApiVersions.v20240101.name;
     }
 
     if (options?.jwt != null) {

@@ -75,7 +75,7 @@ Future<void> _testFetchRequest(Client client) async {
   try {
     await fetch.request(_mockUrl, RequestMethodType.get);
   } on AuthException catch (error) {
-    expect(error.errorCode, 'weak_password');
+    expect(error.code, 'weak_password');
     expect(error.message, 'error_message');
   } catch (error) {
     fail('Should have thrown AuthException');

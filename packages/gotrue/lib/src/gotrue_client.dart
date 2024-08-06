@@ -762,7 +762,7 @@ class GoTrueClient {
       throw AuthException(
         errorDescription,
         statusCode: errorCode,
-        errorCode: error,
+        code: error,
       );
     }
 

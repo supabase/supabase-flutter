@@ -110,7 +110,7 @@ void main() {
         fail('signUp with weak password should throw exception');
       } on AuthException catch (error) {
         expect(error, isA<AuthWeakPasswordException>());
-        expect(error.errorCode, ErrorCode.weakPassword.code);
+        expect(error.code, ErrorCode.weakPassword.code);
       } catch (error) {
         fail('signUp threw ${error.runtimeType} instead of AuthException');
       }
@@ -142,7 +142,7 @@ void main() {
       } on AuthException catch (error) {
         expect(error.message, errorMessage);
         expect(error.statusCode, '401');
-        expect(error.errorCode, 'unauthorized_client');
+        expect(error.code, 'unauthorized_client');
       } catch (error) {
         fail(
             'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
@@ -317,7 +317,7 @@ void main() {
         await client.updateUser(UserAttributes(password: password));
         fail('updateUser did not throw');
       } on AuthException catch (error) {
-        expect(error.errorCode, ErrorCode.samePassword.code);
+        expect(error.code, ErrorCode.samePassword.code);
       }
     });
 

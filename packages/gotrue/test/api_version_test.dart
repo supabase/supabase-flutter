@@ -11,8 +11,8 @@ void main() {
         Constants.apiVersionHeaderName: validHeader,
       });
       final version = ApiVersion.fromResponse(response);
-      expect(version?.date, DateTime(2024, 1, 1));
-      expect(version?.asString, validHeader);
+      expect(version?.name, validHeader);
+      expect(version?.timestamp, DateTime(2024, 1, 1));
     });
 
     test('should return null object for invalid header', () {

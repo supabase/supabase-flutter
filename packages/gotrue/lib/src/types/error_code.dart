@@ -3,7 +3,6 @@
 import 'package:collection/collection.dart';
 
 enum ErrorCode {
-  unknown('unknown'),
   unexpectedFailure('unexpected_failure'),
   validationFailed('validation_failed'),
   badJson('bad_json'),
@@ -43,6 +42,7 @@ enum ErrorCode {
   smsSendFailed('sms_send_failed'),
   emailNotConfirmed('email_not_confirmed'),
   phoneNotConfirmed('phone_not_confirmed'),
+  reauthNonceMissing('reauth_nonce_missing'),
   samlRelayStateNotFound('saml_relay_state_not_found'),
   samlRelayStateExpired('saml_relay_state_expired'),
   samlIdpNotFound('saml_idp_not_found'),

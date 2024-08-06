@@ -6,15 +6,16 @@ const String _apiVersionRegex =
     r'^2[0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|1[0-9]|2[0-9]|3[0-1])';
 
 /// Represents the API versions supported by the package.
-class ApiVersions {
-  const ApiVersions._();
 
-  static ApiVersion v20240101 = ApiVersion(DateTime(2024, 1, 1));
-}
-
-/// Represents the API version specified by a [date] in the format YYYY-MM-DD.
+/// Represents the API version specified by a [name] in the format YYYY-MM-DD.
 class ApiVersion {
-  ApiVersion(this.date);
+  const ApiVersion({
+    required this.name,
+    required this.timestamp,
+  });
+
+  final String name;
+  final DateTime timestamp;
 
   /// Parses the API version from the string date.
   static ApiVersion? fromString(String version) {
@@ -22,24 +23,19 @@ class ApiVersion {
       return null;
     }
 
-    final DateTime? date = DateTime.tryParse(version);
-    if (date == null) return null;
-    return ApiVersion(date);
+    final DateTime? timestamp = DateTime.tryParse('${version}T00:00:00.0Z');
+    if (timestamp == null) return null;
+    return ApiVersion(name: version, timestamp: timestamp);
   }
 
   /// Parses the API version from the response headers.
   static ApiVersion? fromResponse(Response response) {
-    final String? version = response.headers[Constants.apiVersionHeaderName];
+    final version = response.headers[Constants.apiVersionHeaderName];
     return version != null ? fromString(version) : null;
   }
 
-  final DateTime date;
-
-  /// Return only the date part of the DateTime.
-  String get asString => date.toIso8601String().split('T').first;
-
   /// Returns true if this version is the same or after [other].
   bool isSameOrAfter(ApiVersion other) {
-    return date.isAfter(other.date) || date == other.date;
+    return timestamp.isAfter(other.timestamp) || name == other.name;
   }
 }
