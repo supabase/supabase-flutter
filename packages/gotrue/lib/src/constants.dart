@@ -23,7 +23,7 @@ class Constants {
   static const autoRefreshTickThreshold = 3;
 
   /// The name of the header that contains API version.
-  static const apiVersionHeaderName = 'X-Supabase-Api-Version';
+  static const apiVersionHeaderName = 'x-supabase-api-version';
 }
 
 class ApiVersions {
