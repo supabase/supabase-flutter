@@ -12,7 +12,7 @@ void main() {
       });
       final version = ApiVersion.fromResponse(response);
       expect(version?.name, validHeader);
-      expect(version?.timestamp, DateTime(2024, 1, 1));
+      expect(version?.timestamp, DateTime.parse('2024-01-01 00:00:00.000Z'));
     });
 
     test('should return null object for invalid header', () {
