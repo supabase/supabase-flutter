@@ -229,7 +229,6 @@ class SupabaseClient {
     if (_authInstance.currentSession?.isExpired ?? false) {
       try {
         await _authInstance.refreshSession();
-        return _authInstance.currentSession?.accessToken;
       } catch (error) {
         final expiresAt = _authInstance.currentSession?.expiresAt;
         if (expiresAt != null) {
@@ -243,7 +242,7 @@ class SupabaseClient {
         }
       }
     }
-    return null;
+    return _authInstance.currentSession?.accessToken;
   }
 
   Future<void> dispose() async {
