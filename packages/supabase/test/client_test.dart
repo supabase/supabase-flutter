@@ -186,6 +186,16 @@ void main() {
 
       mockServer.close();
     });
+
+    test('create a client with third-party auth accessToken', () async {
+      final supabase = SupabaseClient('URL', 'KEY', accessToken: () async {
+        return 'jwt';
+      });
+      expect(
+          supabase.auth.currentUser,
+          throwsA(AuthException(
+              'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.')));
+    });
   });
 
   group('Custom Header', () {

@@ -24,6 +24,13 @@ import 'counter.dart';
 ///
 /// [realtimeClientOptions] specifies different options you can pass to `RealtimeClient`.
 ///
+/// [accessToken] Optional function for using a third-party authentication system with Supabase.
+/// The function should return an access token or ID token (JWT) by obtaining
+/// it from the third-party auth client library. Note that this function may be
+/// called concurrently and many times. Use memoization and locking techniques
+/// if this is not supported by the client libraries. When set, the `auth`
+/// namespace of the Supabase client cannot be used.
+///
 /// Pass an instance of `YAJsonIsolate` to [isolate] to use your own persisted
 /// isolate instance. A new instance will be created if [isolate] is omitted.
 ///
@@ -43,7 +50,7 @@ class SupabaseClient {
   final Client? _httpClient;
   late final Client _authHttpClient;
 
-  late final GoTrueClient auth;
+  late final GoTrueClient _authInstance;
 
   /// Supabase Functions allows you to deploy and invoke edge functions.
   late final FunctionsClient functions;
@@ -54,6 +61,7 @@ class SupabaseClient {
   late final PostgrestClient rest;
   late StreamSubscription<AuthState> _authStateSubscription;
   late final YAJsonIsolate _isolate;
+  final Future<String> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each stream
   final _incrementId = Counter();
@@ -106,6 +114,7 @@ class SupabaseClient {
     AuthClientOptions authOptions = const AuthClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
     YAJsonIsolate? isolate,
@@ -122,18 +131,30 @@ class SupabaseClient {
         },
         _httpClient = httpClient,
         _isolate = isolate ?? (YAJsonIsolate()..initialize()) {
-    auth = _initSupabaseAuthClient(
+    _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
       gotrueAsyncStorage: authOptions.pkceAsyncStorage,
       authFlowType: authOptions.authFlowType,
     );
     _authHttpClient =
-        AuthHttpClient(_supabaseKey, httpClient ?? Client(), auth);
+        AuthHttpClient(_supabaseKey, httpClient ?? Client(), _getAccessToken);
     rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(storageOptions.retryAttempts);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
-    _listenForAuthEvents();
+    if (accessToken != null) {
+      _listenForAuthEvents();
+    }
+  }
+
+  GoTrueClient get auth {
+    if (accessToken == null) {
+      return _authInstance;
+    } else {
+      throw AuthException(
+        'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
+      );
+    }
   }
 
   /// Perform a table operation.
@@ -198,6 +219,31 @@ class SupabaseClient {
   ///  Unsubscribes and removes all Realtime channels from Realtime client.
   Future<List<String>> removeAllChannels() {
     return realtime.removeAllChannels();
+  }
+
+  Future<String?> _getAccessToken() async {
+    if (accessToken != null) {
+      return await accessToken!();
+    }
+
+    if (_authInstance.currentSession?.isExpired ?? false) {
+      try {
+        await _authInstance.refreshSession();
+        return _authInstance.currentSession?.accessToken;
+      } catch (error) {
+        final expiresAt = _authInstance.currentSession?.expiresAt;
+        if (expiresAt != null) {
+          // Failed to refresh the token.
+          final isExpiredWithoutMargin = DateTime.now()
+              .isAfter(DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000));
+          if (isExpiredWithoutMargin) {
+            // Throw the error instead of making an API request with an expired token.
+            rethrow;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   Future<void> dispose() async {
