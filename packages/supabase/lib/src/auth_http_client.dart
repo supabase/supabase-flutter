@@ -5,7 +5,6 @@ class AuthHttpClient extends BaseClient {
 
   final String _supabaseKey;
   final Future<String?> Function() _getAccessToken;
-
   AuthHttpClient(this._supabaseKey, this._inner, this._getAccessToken);
 
   @override
