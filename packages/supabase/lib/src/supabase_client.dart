@@ -59,7 +59,7 @@ class SupabaseClient {
   late final SupabaseStorageClient storage;
   late final RealtimeClient realtime;
   late final PostgrestClient rest;
-  late StreamSubscription<AuthState> _authStateSubscription;
+  StreamSubscription<AuthState>? _authStateSubscription;
   late final YAJsonIsolate _isolate;
   final Future<String> Function()? accessToken;
 
@@ -247,7 +247,7 @@ class SupabaseClient {
   }
 
   Future<void> dispose() async {
-    await _authStateSubscription.cancel();
+    await _authStateSubscription?.cancel();
     await _isolate.dispose();
   }
 
