@@ -75,6 +75,7 @@ class Supabase {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
+    Future<String> Function()? accessToken,
     bool? debug,
   }) async {
     assert(
@@ -103,6 +104,7 @@ class Supabase {
       authOptions: authOptions,
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
+      accessToken: accessToken,
     );
     _instance._debugEnable = debug ?? kDebugMode;
     _instance.log('***** Supabase init completed $_instance');
@@ -154,6 +156,7 @@ class Supabase {
     required PostgrestClientOptions postgrestOptions,
     required StorageClientOptions storageOptions,
     required AuthClientOptions authOptions,
+    required Future<String> Function()? accessToken,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
@@ -168,6 +171,7 @@ class Supabase {
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
       authOptions: authOptions,
+      accessToken: accessToken,
     );
     _initialized = true;
   }
