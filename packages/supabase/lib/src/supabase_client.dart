@@ -91,13 +91,15 @@ class SupabaseClient {
       ..clear()
       ..addAll(_headers);
 
-    auth.headers
-      ..clear()
-      ..addAll({
-        ...Constants.defaultHeaders,
-        ..._getAuthHeaders(),
-        ...headers,
-      });
+    if (accessToken == null) {
+      auth.headers
+        ..clear()
+        ..addAll({
+          ...Constants.defaultHeaders,
+          ..._getAuthHeaders(),
+          ...headers,
+        });
+    }
 
     // To apply the new headers in the realtime client,
     // manually unsubscribe and resubscribe to all channels.
@@ -142,7 +144,7 @@ class SupabaseClient {
     functions = _initFunctionsClient();
     storage = _initStorageClient(storageOptions.retryAttempts);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
-    if (accessToken != null) {
+    if (accessToken == null) {
       _listenForAuthEvents();
     }
   }

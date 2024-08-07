@@ -192,7 +192,7 @@ void main() {
         return 'jwt';
       });
       expect(
-          supabase.auth.currentUser,
+          () => supabase.auth.currentUser,
           throwsA(AuthException(
               'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.')));
     });
