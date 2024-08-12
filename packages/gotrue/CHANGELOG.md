@@ -1,3 +1,7 @@
+## 2.8.4
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+
 ## 2.8.3
 
  - **FIX**: Add error_code from url to AuthException ([#968](https://github.com/supabase/supabase-flutter/issues/968)). ([c741fe9d](https://github.com/supabase/supabase-flutter/commit/c741fe9d7458e7aaadf779a8d8f14636b4aeb136))
