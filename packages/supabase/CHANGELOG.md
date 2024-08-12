@@ -1,3 +1,8 @@
+## 2.3.0
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+ - **FEAT**: Add third-party auth support ([#999](https://github.com/supabase/supabase-flutter/issues/999)). ([c68d44d1](https://github.com/supabase/supabase-flutter/commit/c68d44d10ac4bf8180e5b1833fe0e2bfa2c83515))
+
 ## 2.2.7
 
  - Update a dependency to the latest release.

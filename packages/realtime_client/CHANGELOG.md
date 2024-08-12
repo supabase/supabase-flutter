@@ -1,3 +1,7 @@
+## 2.2.1
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+
 ## 2.2.0
 
  - **FEAT**(realtime_client): Add support for authorized realtime channels with broadcast and presence. ([#970](https://github.com/supabase/supabase-flutter/issues/970)). ([8305fef6](https://github.com/supabase/supabase-flutter/commit/8305fef65eecbcca5d7d39ad7fc684d4134a578d))
