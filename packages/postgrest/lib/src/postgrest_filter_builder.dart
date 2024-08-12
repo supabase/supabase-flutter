@@ -484,4 +484,10 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     query.forEach((k, v) => url = appendSearchParams(k, 'eq.$v', url));
     return copyWithUrl(url);
   }
+
+  PostgrestFilterBuilder<T> setHeader(String key, String value) {
+    return PostgrestFilterBuilder(
+      _copyWith(headers: {..._headers, key: value}),
+    );
+  }
 }
