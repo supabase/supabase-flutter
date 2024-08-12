@@ -3,6 +3,65 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-08-13
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.3.2`](#functions_client---v232)
+ - [`gotrue` - `v2.8.4`](#gotrue---v284)
+ - [`postgrest` - `v2.1.4`](#postgrest---v214)
+ - [`realtime_client` - `v2.2.1`](#realtime_client---v221)
+ - [`storage_client` - `v2.0.3`](#storage_client---v203)
+ - [`supabase` - `v2.3.0`](#supabase---v230)
+ - [`supabase_flutter` - `v2.6.0`](#supabase_flutter---v260)
+ - [`yet_another_json_isolate` - `v2.0.2`](#yet_another_json_isolate---v202)
+
+---
+
+#### `functions_client` - `v2.3.2`
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+
+#### `gotrue` - `v2.8.4`
+
+ - **FIX**: Added missing error codes for AuthException ([#995](https://github.com/supabase/supabase-flutter/issues/995)). ([4e0270a0](https://github.com/supabase/supabase-flutter/commit/4e0270a069ecf5aae42031c77200d268519ac99b))
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+
+#### `postgrest` - `v2.1.4`
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+
+#### `realtime_client` - `v2.2.1`
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+
+#### `storage_client` - `v2.0.3`
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+
+#### `supabase` - `v2.3.0`
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+ - **FEAT**: Add third-party auth support ([#999](https://github.com/supabase/supabase-flutter/issues/999)). ([c68d44d1](https://github.com/supabase/supabase-flutter/commit/c68d44d10ac4bf8180e5b1833fe0e2bfa2c83515))
+
+#### `supabase_flutter` - `v2.6.0`
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+ - **FEAT**: Add third-party auth support ([#999](https://github.com/supabase/supabase-flutter/issues/999)). ([c68d44d1](https://github.com/supabase/supabase-flutter/commit/c68d44d10ac4bf8180e5b1833fe0e2bfa2c83515))
+
+#### `yet_another_json_isolate` - `v2.0.2`
+
+ - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
+
+
 ## 2024-07-26
 
 ### Changes
