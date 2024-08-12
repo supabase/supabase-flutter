@@ -1,7 +1,10 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:gotrue/src/constants.dart';
+import 'package:gotrue/src/types/api_version.dart';
 import 'package:gotrue/src/types/auth_exception.dart';
+import 'package:gotrue/src/types/error_code.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 
@@ -28,6 +31,16 @@ class GotrueFetch {
     return error.toString();
   }
 
+  String? _getErrorCode(dynamic error, String key) {
+    if (error is Map) {
+      final dynamic errorCode = error[key];
+      if (errorCode is String) {
+        return errorCode;
+      }
+    }
+    return null;
+  }
+
   AuthException _handleError(dynamic error) {
     if (error is! Response) {
       throw AuthRetryableFetchException(message: error.toString());
@@ -50,24 +63,44 @@ class GotrueFetch {
           message: error.toString(), originalError: error);
     }
 
-    // Check if weak password reasons only contain strings
-    if (data is Map &&
-        data['weak_password'] is Map &&
-        data['weak_password']['reasons'] is List &&
-        (data['weak_password']['reasons'] as List).isNotEmpty &&
-        (data['weak_password']['reasons'] as List)
-            .whereNot((element) => element is String)
-            .isEmpty) {
+    String? errorCode;
+
+    final responseApiVersion = ApiVersion.fromResponse(error);
+
+    if (responseApiVersion?.isSameOrAfter(ApiVersions.v20240101) ?? false) {
+      errorCode = _getErrorCode(data, 'code');
+    } else {
+      errorCode = _getErrorCode(data, 'error_code');
+    }
+
+    if (errorCode == null) {
+      // Legacy support for weak password errors, when there were no error codes
+      // Check if weak password reasons only contain strings
+      if (data is Map &&
+          data['weak_password'] is Map &&
+          data['weak_password']['reasons'] is List &&
+          (data['weak_password']['reasons'] as List).isNotEmpty &&
+          (data['weak_password']['reasons'] as List)
+              .whereNot((element) => element is String)
+              .isEmpty) {
+        throw AuthWeakPasswordException(
+          message: _getErrorMessage(data),
+          statusCode: error.statusCode.toString(),
+          reasons: List<String>.from(data['weak_password']['reasons']),
+        );
+      }
+    } else if (errorCode == ErrorCode.weakPassword.code) {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
         statusCode: error.statusCode.toString(),
-        reasons: List<String>.from(data['weak_password']['reasons']),
+        reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
       );
     }
 
     throw AuthApiException(
       _getErrorMessage(data),
       statusCode: error.statusCode.toString(),
+      code: errorCode,
     );
   }
 
@@ -77,6 +110,12 @@ class GotrueFetch {
     GotrueRequestOptions? options,
   }) async {
     final headers = options?.headers ?? {};
+
+    // Set the API version header if not already set
+    if (!headers.containsKey(Constants.apiVersionHeaderName)) {
+      headers[Constants.apiVersionHeaderName] = ApiVersions.v20240101.name;
+    }
+
     if (options?.jwt != null) {
       headers['Authorization'] = 'Bearer ${options!.jwt}';
     }
