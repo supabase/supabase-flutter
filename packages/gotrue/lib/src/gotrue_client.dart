@@ -607,7 +607,7 @@ class GoTrueClient {
   /// If the current session's refresh token is invalid, an error will be thrown.
   Future<AuthResponse> refreshSession([String? refreshToken]) async {
     if (currentSession?.accessToken == null) {
-      throw AuthException('Not logged in.');
+      throw AuthSessionMissingException();
     }
 
     final currentSessionRefreshToken =
@@ -626,7 +626,7 @@ class GoTrueClient {
   Future<void> reauthenticate() async {
     final session = currentSession;
     if (session == null) {
-      throw AuthException('Not logged in.');
+      throw AuthSessionMissingException();
     }
 
     final options =
@@ -691,7 +691,7 @@ class GoTrueClient {
   /// Gets the current user details from current session or custom [jwt]
   Future<UserResponse> getUser([String? jwt]) async {
     if (jwt == null && currentSession?.accessToken == null) {
-      throw AuthException('Cannot get user: no current session.');
+      throw AuthSessionMissingException();
     }
     final options = GotrueRequestOptions(
       headers: _headers,
@@ -712,7 +712,7 @@ class GoTrueClient {
   }) async {
     final accessToken = currentSession?.accessToken;
     if (accessToken == null) {
-      throw AuthException('Not logged in.');
+      throw AuthSessionMissingException();
     }
 
     final body = attributes.toJson();
@@ -736,7 +736,7 @@ class GoTrueClient {
   /// Sets the session data from refresh_token and returns the current session.
   Future<AuthResponse> setSession(String refreshToken) async {
     if (refreshToken.isEmpty) {
-      throw AuthException('No current session.');
+      throw AuthSessionMissingException('Refresh token cannot be empty');
     }
     return await _callRefreshToken(refreshToken);
   }
@@ -757,8 +757,13 @@ class GoTrueClient {
 
     final errorDescription = url.queryParameters['error_description'];
     final errorCode = url.queryParameters['error_code'];
+    final error = url.queryParameters['error'];
     if (errorDescription != null) {
-      throw AuthException(errorDescription, statusCode: errorCode);
+      throw AuthException(
+        errorDescription,
+        statusCode: errorCode,
+        code: error,
+      );
     }
 
     if (_flowType == AuthFlowType.pkce) {

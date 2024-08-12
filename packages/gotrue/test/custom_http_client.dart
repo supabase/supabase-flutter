@@ -146,3 +146,25 @@ class RetryTestHttpClient extends BaseClient {
     );
   }
 }
+
+class MockedHttpClient extends BaseClient {
+  MockedHttpClient(
+    this.response, {
+    this.headers = const {},
+    this.statusCode = 200,
+  });
+
+  final Map<String, dynamic> response;
+  final Map<String, String> headers;
+  final int statusCode;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    return StreamedResponse(
+      Stream.value(utf8.encode(jsonEncode(response))),
+      statusCode,
+      request: request,
+      headers: headers,
+    );
+  }
+}
