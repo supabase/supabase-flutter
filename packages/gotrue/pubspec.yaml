@@ -14,7 +14,7 @@ dependencies:
   http: '>=0.13.0 <2.0.0'
   jwt_decode: ^0.3.1
   retry: ^3.1.0
-  rxdart: ^0.27.7
+  rxdart: '>=0.27.7 <0.29.0'
   meta: ^1.7.0
 
 dev_dependencies:
