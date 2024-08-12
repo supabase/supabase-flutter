@@ -91,11 +91,15 @@ void main() {
       final httpClient = CustomHttpClient();
       final postgrest = PostgrestClient(rootUrl, httpClient: httpClient);
 
-      await postgrest.rpc('func').setHeader("myKey", "myValue").select();
+      await postgrest
+          .rpc('empty-succ')
+          .setHeader("myKey", "myValue")
+          .select()
+          .head();
       expect(httpClient.lastRequest!.headers, containsPair("myKey", "myValue"));
 
       // Other following requests should not have the header
-      await postgrest.rpc('func').select();
+      await postgrest.rpc('empty-succ').select().head();
       expect(httpClient.lastRequest!.headers,
           isNot(containsPair("myKey", "myValue")));
     });
@@ -104,11 +108,15 @@ void main() {
       final httpClient = CustomHttpClient();
       final postgrest = PostgrestClient(rootUrl, httpClient: httpClient);
 
-      await postgrest.from('users').setHeader("myKey", "myValue").select();
+      await postgrest
+          .from('empty-succ')
+          .setHeader("myKey", "myValue")
+          .select()
+          .head();
       expect(httpClient.lastRequest!.headers, containsPair("myKey", "myValue"));
 
       // Other following requests should not have the header
-      await postgrest.from('users').select();
+      await postgrest.from('empty-succ').select().head();
       expect(httpClient.lastRequest!.headers,
           isNot(containsPair("myKey", "myValue")));
     });

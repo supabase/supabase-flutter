@@ -6,6 +6,13 @@ class CustomHttpClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     lastRequest = request;
 
+    if (request.url.path.endsWith("empty-succ")) {
+      return StreamedResponse(
+        Stream.empty(),
+        200,
+        request: request,
+      );
+    }
     //Return custom status code to check for usage of this client.
     return StreamedResponse(
       request.finalize(),
