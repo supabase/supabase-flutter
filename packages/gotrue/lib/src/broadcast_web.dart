@@ -7,5 +7,6 @@ BroadcastChannel getBroadcastChannel(String broadcastKey) {
   return (
     onMessage: broadcast.onMessage.map((event) => event.data.toString()),
     postMessage: broadcast.postMessage,
+    close: broadcast.close,
   );
 }

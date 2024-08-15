@@ -1173,6 +1173,14 @@ class GoTrueClient {
     }
   }
 
+  void dispose() {
+    _onAuthStateChangeController.close();
+    _onAuthStateChangeControllerSync.close();
+    _broadcastChannel?.close();
+    _refreshTokenCompleter?.completeError(AuthException('Disposed'));
+    _autoRefreshTicker?.cancel();
+  }
+
   /// Generates a new JWT.
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].

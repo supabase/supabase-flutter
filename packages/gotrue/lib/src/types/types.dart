@@ -1,6 +1,7 @@
 typedef BroadcastChannel = ({
   Stream<String> onMessage,
   void Function(String) postMessage,
+  void Function() close,
 });
 
 enum AuthFlowType {
