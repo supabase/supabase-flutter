@@ -9,11 +9,15 @@ import 'package:gotrue/src/fetch.dart';
 import 'package:gotrue/src/helper.dart';
 import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
+import 'package:gotrue/src/types/types.dart';
 import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:meta/meta.dart';
 import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
+
+import 'broadcast_stub.dart' if (dart.library.html) './broadcast_web.dart'
+    as web;
 
 part 'gotrue_mfa_api.dart';
 
@@ -83,6 +87,9 @@ class GoTrueClient {
       _onAuthStateChangeControllerSync.stream;
 
   final AuthFlowType _flowType;
+  final bool _broadcastSession;
+
+  BroadcastChannel? _broadcastChannel;
 
   /// {@macro gotrue_client}
   GoTrueClient({
@@ -92,11 +99,13 @@ class GoTrueClient {
     Client? httpClient,
     GotrueAsyncStorage? asyncStorage,
     AuthFlowType flowType = AuthFlowType.pkce,
+    bool broadcastSession = true,
   })  : _url = url ?? Constants.defaultGotrueUrl,
         _headers = headers ?? {},
         _httpClient = httpClient,
         _asyncStorage = asyncStorage,
-        _flowType = flowType {
+        _flowType = flowType,
+        _broadcastSession = broadcastSession {
     _autoRefreshToken = autoRefreshToken ?? true;
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
@@ -116,6 +125,8 @@ class GoTrueClient {
     if (_autoRefreshToken) {
       startAutoRefresh();
     }
+
+    mayStartBroadcastChannel();
   }
 
   /// Getter for the headers
@@ -1128,6 +1139,41 @@ class GoTrueClient {
     _currentUser = null;
   }
 
+  void mayStartBroadcastChannel() {
+    if (const bool.fromEnvironment('dart.library.html') && _broadcastSession) {
+      // Used by the js library as well
+      final broadcastKey =
+          "sb-${Uri.parse(_url).host.split(".").first}-auth-token";
+
+      _broadcastChannel = web.getBroadcastChannel(broadcastKey);
+      _broadcastChannel?.onMessage.listen((messageEvent) {
+        final Map parsedMessageEvent = json.decode(messageEvent);
+        final rawEvent = parsedMessageEvent['event'];
+        final event = switch (rawEvent) {
+          // Handle events from js library as well
+          'INITIAL_SESSION' => AuthChangeEvent.initialSession,
+          'PASSWORD_RECOVERY' => AuthChangeEvent.passwordRecovery,
+          'SIGNED_IN' => AuthChangeEvent.signedIn,
+          'SIGNED_OUT' => AuthChangeEvent.signedOut,
+          'TOKEN_REFRESHED' => AuthChangeEvent.tokenRefreshed,
+          'USER_UPDATED' => AuthChangeEvent.userUpdated,
+          _ => AuthChangeEvent.values
+              .firstWhereOrNull((event) => event.name == rawEvent),
+        };
+
+        if (event != null) {
+          Session? session;
+          try {
+            session = Session.fromJson(parsedMessageEvent['session']);
+          } catch (e) {
+            // ignore
+          }
+          notifyAllSubscribers(event, session: session, broadcast: false);
+        }
+      });
+    }
+  }
+
   /// Generates a new JWT.
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
@@ -1182,8 +1228,18 @@ class GoTrueClient {
 
   /// For internal use only.
   @internal
-  void notifyAllSubscribers(AuthChangeEvent event) {
-    final state = AuthState(event, currentSession);
+  void notifyAllSubscribers(
+    AuthChangeEvent event, {
+    Session? session,
+    bool broadcast = true,
+  }) {
+    if (broadcast) {
+      _broadcastChannel?.postMessage(json.encode({
+        'event': event.name,
+        'session': session?.toJson(),
+      }));
+    }
+    final state = AuthState(event, session ?? currentSession);
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }

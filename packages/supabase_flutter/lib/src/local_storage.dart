@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import './local_storage_stub.dart'
     if (dart.library.html) './local_storage_web.dart' as web;
 
+@Deprecated("No longer in use")
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 
 /// LocalStorage is used to persist the user session in the device.
