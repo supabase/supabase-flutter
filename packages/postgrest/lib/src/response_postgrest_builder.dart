@@ -16,6 +16,13 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
           converter: builder._converter,
         );
 
+  @override
+  ResponsePostgrestBuilder<T, S, R> setHeader(String key, String value) {
+    return ResponsePostgrestBuilder(
+      _copyWith(headers: {..._headers, key: value}),
+    );
+  }
+
   /// Converts any response that comes from the server into a type-safe response.
   ///
   /// ```dart

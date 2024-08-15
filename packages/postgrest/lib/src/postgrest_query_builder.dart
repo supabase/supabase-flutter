@@ -257,6 +257,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     ));
   }
 
+  @override
   PostgrestQueryBuilder<T> setHeader(String key, String value) {
     return PostgrestQueryBuilder(
       url: _url,

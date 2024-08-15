@@ -485,6 +485,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
+  @override
   PostgrestFilterBuilder<T> setHeader(String key, String value) {
     return PostgrestFilterBuilder(
       _copyWith(headers: {..._headers, key: value}),
