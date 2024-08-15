@@ -87,6 +87,40 @@ void main() {
       );
     });
 
+    test('set header on rpc', () async {
+      final httpClient = CustomHttpClient();
+      final postgrest = PostgrestClient(rootUrl, httpClient: httpClient);
+
+      await postgrest
+          .rpc('empty-succ')
+          .setHeader("myKey", "myValue")
+          .select()
+          .head();
+      expect(httpClient.lastRequest!.headers, containsPair("myKey", "myValue"));
+
+      // Other following requests should not have the header
+      await postgrest.rpc('empty-succ').select().head();
+      expect(httpClient.lastRequest!.headers,
+          isNot(containsPair("myKey", "myValue")));
+    });
+
+    test('set header on query builder', () async {
+      final httpClient = CustomHttpClient();
+      final postgrest = PostgrestClient(rootUrl, httpClient: httpClient);
+
+      await postgrest
+          .from('empty-succ')
+          .setHeader("myKey", "myValue")
+          .select()
+          .head();
+      expect(httpClient.lastRequest!.headers, containsPair("myKey", "myValue"));
+
+      // Other following requests should not have the header
+      await postgrest.from('empty-succ').select().head();
+      expect(httpClient.lastRequest!.headers,
+          isNot(containsPair("myKey", "myValue")));
+    });
+
     test('switch schema', () async {
       final postgrest = PostgrestClient(rootUrl, schema: 'personal');
       final res = await postgrest.from('users').select();

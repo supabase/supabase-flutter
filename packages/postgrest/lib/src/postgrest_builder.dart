@@ -93,6 +93,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     );
   }
 
+  PostgrestBuilder<T, S, R> setHeader(String key, String value) {
+    return _copyWith(
+      headers: {..._headers, key: value},
+    );
+  }
+
   Future<T> _execute() async {
     final String? method = _method;
 

@@ -41,6 +41,13 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     ));
   }
 
+  @override
+  RawPostgrestBuilder<T, S, R> setHeader(String key, String value) {
+    return PostgrestFilterBuilder(
+      _copyWithType(headers: {..._headers, key: value}),
+    );
+  }
+
   /// Converts any response that comes from the server into a type-safe response.
   ///
   /// ```dart

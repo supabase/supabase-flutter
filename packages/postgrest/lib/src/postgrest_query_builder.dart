@@ -256,4 +256,16 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       count: option,
     ));
   }
+
+  @override
+  PostgrestQueryBuilder<T> setHeader(String key, String value) {
+    return PostgrestQueryBuilder(
+      url: _url,
+      headers: {..._headers, key: value},
+      httpClient: _httpClient,
+      method: _method,
+      schema: _schema,
+      isolate: _isolate,
+    );
+  }
 }
