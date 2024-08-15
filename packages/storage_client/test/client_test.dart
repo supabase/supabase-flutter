@@ -246,7 +246,6 @@ void main() {
       final originalFileSize = await file.length();
       expect(size, isPositive);
       expect(size, lessThan(originalFileSize));
-      expect(originalFileSize, lessThan(size));
       expect(type, 'image/jpeg');
     });
 
