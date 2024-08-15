@@ -243,7 +243,10 @@ void main() {
       await downloadedFile.writeAsBytes(bytesArray);
       final size = await downloadedFile.length();
       final type = lookupMimeType(downloadedFile.path);
+      final originalFileSize = await file.length();
       expect(size, isPositive);
+      expect(size, lessThan(originalFileSize));
+      expect(originalFileSize, lessThan(size));
       expect(type, 'image/jpeg');
     });
 
