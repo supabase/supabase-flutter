@@ -1174,6 +1174,9 @@ class GoTrueClient {
           } catch (e) {
             // ignore
           }
+          if (session != null) {
+            _saveSession(session);
+          }
           notifyAllSubscribers(event, session: session, broadcast: false);
         }
       });
