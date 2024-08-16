@@ -340,8 +340,7 @@ class SupabaseClient {
         event == AuthChangeEvent.tokenRefreshed ||
         event == AuthChangeEvent.signedIn) {
       realtime.setAuth(token);
-    } else if (event == AuthChangeEvent.signedOut ||
-        event == AuthChangeEvent.userDeleted) {
+    } else if (event == AuthChangeEvent.signedOut) {
       // Token is removed
 
       realtime.setAuth(_supabaseKey);
