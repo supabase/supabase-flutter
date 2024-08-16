@@ -31,6 +31,8 @@ part 'gotrue_mfa_api.dart';
 ///
 /// [asyncStorage] local storage to store pkce code verifiers. Required when using the pkce flow.
 ///
+/// [broadcastSession] whether to broadcast session changes to other tabs on web. Defaults to true.
+///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 /// {@endtemplate}
 class GoTrueClient {
@@ -86,8 +88,11 @@ class GoTrueClient {
       _onAuthStateChangeControllerSync.stream;
 
   final AuthFlowType _flowType;
+
+  /// Whether to broadcast session changes to other tabs on web.
   final bool _broadcastSession;
 
+  /// Proxy to the web BroadcastChannel API. Should be null on non-web platforms.
   BroadcastChannel? _broadcastChannel;
 
   /// {@macro gotrue_client}
@@ -1146,16 +1151,18 @@ class GoTrueClient {
 
       _broadcastChannel = web.getBroadcastChannel(broadcastKey);
       _broadcastChannel?.onMessage.listen((messageEvent) {
-        final Map parsedMessageEvent = json.decode(messageEvent);
-        final rawEvent = parsedMessageEvent['event'];
+        final rawEvent = messageEvent['event'];
         final event = switch (rawEvent) {
-          // Handle events from js library as well
+          // This library sends the js name of the event to be comptabile with
+          // the js library, so we need to convert it back to the dart name
           'INITIAL_SESSION' => AuthChangeEvent.initialSession,
           'PASSWORD_RECOVERY' => AuthChangeEvent.passwordRecovery,
           'SIGNED_IN' => AuthChangeEvent.signedIn,
           'SIGNED_OUT' => AuthChangeEvent.signedOut,
           'TOKEN_REFRESHED' => AuthChangeEvent.tokenRefreshed,
           'USER_UPDATED' => AuthChangeEvent.userUpdated,
+          'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
+          // This case should never happen though
           _ => AuthChangeEvent.values
               .firstWhereOrNull((event) => event.name == rawEvent),
         };
@@ -1163,7 +1170,7 @@ class GoTrueClient {
         if (event != null) {
           Session? session;
           try {
-            session = Session.fromJson(parsedMessageEvent['session']);
+            session = Session.fromJson(messageEvent['session']);
           } catch (e) {
             // ignore
           }
@@ -1240,11 +1247,11 @@ class GoTrueClient {
     Session? session,
     bool broadcast = true,
   }) {
-    if (broadcast) {
-      _broadcastChannel?.postMessage(json.encode({
-        'event': event.name,
+    if (broadcast && event != AuthChangeEvent.initialSession) {
+      _broadcastChannel?.postMessage({
+        'event': event.jsName,
         'session': session?.toJson(),
-      }));
+      });
     }
     final state = AuthState(event, session ?? currentSession);
     _onAuthStateChangeController.add(state);

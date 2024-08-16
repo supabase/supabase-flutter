@@ -1,6 +1,6 @@
 typedef BroadcastChannel = ({
-  Stream<String> onMessage,
-  void Function(String) postMessage,
+  Stream<Map<String, dynamic>> onMessage,
+  void Function(Map) postMessage,
   void Function() close,
 });
 
