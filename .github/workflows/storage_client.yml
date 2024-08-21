@@ -6,11 +6,11 @@ on:
       - main
     paths:
       - 'packages/storage_client/**'
-      - '.github/workflows/storage_client.yaml'
+      - '.github/workflows/storage_client.yml'
   pull_request:
     paths:
       - 'packages/storage_client/**'
-      - '.github/workflows/storage_client.yaml'
+      - '.github/workflows/storage_client.yml'
 
 jobs:
   test:

@@ -6,12 +6,12 @@ on:
       - main
     paths:
       - 'packages/realtime_client/**'
-      - '.github/workflows/realtime_client.yaml'
+      - '.github/workflows/realtime_client.yml'
 
   pull_request:
     paths:
       - 'packages/realtime_client/**'
-      - '.github/workflows/realtime_client.yaml'
+      - '.github/workflows/realtime_client.yml'
 
 jobs:
   test:
