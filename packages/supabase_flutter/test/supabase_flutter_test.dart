@@ -145,7 +145,7 @@ void main() {
       // Wait for the initial app link to be handled, as this is an async
       // process when mocking the event channel.
       if (mockEventChannel) {
-        await AppLinks().uriLinkStream.first;
+        await Future.delayed(const Duration(milliseconds: 500));
       }
       expect(pkceHttpClient.requestCount, 1);
       expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
