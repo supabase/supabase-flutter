@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'packages/supabase/**'
-      - '.github/workflows/supabase.yaml'
+      - '.github/workflows/supabase.yml'
       - 'packages/functions_client/**'
       - 'packages/gotrue/**'
       - 'packages/postgrest/**'
@@ -16,7 +16,7 @@ on:
   pull_request:
     paths:
       - 'packages/supabase/**'
-      - '.github/workflows/supabase.yaml'
+      - '.github/workflows/supabase.yml'
       - 'packages/functions_client/**'
       - 'packages/gotrue/**'
       - 'packages/postgrest/**'
@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Checks-out repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Dart
         uses: dart-lang/setup-dart@v1

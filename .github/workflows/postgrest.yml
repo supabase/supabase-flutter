@@ -6,13 +6,13 @@ on:
       - main
     paths:
       - 'packages/postgrest/**'
-      - '.github/workflows/postgrest.yaml'
+      - '.github/workflows/postgrest.yml'
       - 'packages/yet_another_json_isolate/**'
 
   pull_request:
     paths:
       - 'packages/postgrest/**'
-      - '.github/workflows/postgrest.yaml'
+      - '.github/workflows/postgrest.yml'
       - 'packages/yet_another_json_isolate/**'
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checks-out repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Dart
         uses: dart-lang/setup-dart@v1

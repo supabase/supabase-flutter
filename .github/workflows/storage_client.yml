@@ -6,11 +6,11 @@ on:
       - main
     paths:
       - 'packages/storage_client/**'
-      - '.github/workflows/storage_client.yaml'
+      - '.github/workflows/storage_client.yml'
   pull_request:
     paths:
       - 'packages/storage_client/**'
-      - '.github/workflows/storage_client.yaml'
+      - '.github/workflows/storage_client.yml'
 
 jobs:
   test:
@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checks-out repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Dart
         uses: dart-lang/setup-dart@v1

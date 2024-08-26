@@ -6,13 +6,13 @@ on:
       - main
     paths:
       - 'packages/functions_client/**'
-      - '.github/workflows/functions_client.yaml'
+      - '.github/workflows/functions_client.yml'
       - 'packages/yet_another_json_isolate/**'
 
   pull_request:
     paths:
       - 'packages/functions_client/**'
-      - '.github/workflows/functions_client.yaml'
+      - '.github/workflows/functions_client.yml'
       - 'packages/yet_another_json_isolate/**'
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Checks-out repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Dart
         uses: dart-lang/setup-dart@v1
