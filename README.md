@@ -21,6 +21,32 @@ To install on a locally developed app:
     path: <your-path-to-the-local-supabase-flutter-repo>/packages/supabase_flutter
   ```
 
+## Testing
+
+The tests for the packages `postgrest`, `gotrue` and `storage_client` need some Supabase services running.
+To run these tests locally, you need to have the `docker` cli with `docker-compose` installed.
+
+The needed configuration for starting the services are in the `infra` directory.
+
+To start the services change working directory to `infa/<package>` and run the following command:
+
+```bash
+docker compose up -d
+```
+
+Run the Dart tests within the package directory in `packages/<package>` with the following command:
+The `-j 1` flag runs the tests not concurrently, which works better since the tests are running against the same services.
+
+```bash
+dart test -j 1
+```
+
+To stop the services run the following command in the `infra/<package>` directory:
+
+```bash
+docker compose down
+```
+
 ## Contributing
 
 - Fork the repo on [GitHub](https://github.com/supabase/supabase-flutter)
