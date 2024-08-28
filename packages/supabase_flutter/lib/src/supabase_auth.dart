@@ -119,7 +119,9 @@ class SupabaseAuth with WidgetsBindingObserver {
       case AppLifecycleState.detached:
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
-        Supabase.instance.client.auth.stopAutoRefresh();
+        if (Supabase.instance.client.realtime.getChannels().isEmpty) {
+          Supabase.instance.client.auth.stopAutoRefresh();
+        }
       default:
     }
   }
