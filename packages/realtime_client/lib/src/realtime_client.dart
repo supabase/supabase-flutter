@@ -353,7 +353,7 @@ class RealtimeClient {
 
     for (final channel in channels) {
       if (token != null) {
-        channel.updateJoinPayload({'user_token': token});
+        channel.updateJoinPayload({'access_token': token});
       }
       if (channel.joinedOnce && channel.isJoined) {
         channel.push(ChannelEvents.accessToken, {'access_token': token});
