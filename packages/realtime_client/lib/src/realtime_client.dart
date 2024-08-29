@@ -45,6 +45,11 @@ class RealtimeCloseEvent {
     required this.code,
     required this.reason,
   });
+
+  @override
+  String toString() {
+    return 'RealtimeCloseEvent{code: $code, reason: $reason}';
+  }
 }
 
 class RealtimeClient {
