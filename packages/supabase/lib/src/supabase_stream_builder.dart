@@ -31,6 +31,18 @@ class _Order {
   final bool ascending;
 }
 
+class RealtimeSubscribeException implements Exception {
+  RealtimeSubscribeException(this.status, [this.details]);
+
+  final RealtimeSubscribeStatus status;
+  final Object? details;
+
+  @override
+  String toString() {
+    return 'RealtimeSubscribeException(status: $status, details: $details)';
+  }
+}
+
 typedef SupabaseStreamEvent = List<Map<String, dynamic>>;
 
 class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
@@ -195,12 +207,29 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
               }
             })
         .subscribe((status, [error]) {
-      if (error != null) {
-        _addException(error);
+      switch (status) {
+        case RealtimeSubscribeStatus.subscribed:
+          // Get first data when realtime is subscribed and reload all data
+          // from postgrest if e.g. got a channel error and is resubscribed
+          _getPostgrestData();
+          break;
+        case RealtimeSubscribeStatus.closed:
+          if (!(_streamController?.isClosed ?? true)) {
+            _streamController?.close();
+          }
+          break;
+        case RealtimeSubscribeStatus.timedOut:
+          _addException(RealtimeSubscribeException(status, error));
+          break;
+        case RealtimeSubscribeStatus.channelError:
+          _addException(RealtimeSubscribeException(status, error));
+          break;
       }
     });
+  }
 
-    PostgrestFilterBuilder query = _queryBuilder.select();
+  Future<void> _getPostgrestData() async {
+    PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select();
     if (_streamFilter != null) {
       switch (_streamFilter!.type) {
         case PostgresChangeFilterType.eq:
@@ -226,7 +255,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           break;
       }
     }
-    PostgrestTransformBuilder? transformQuery;
+    PostgrestTransformBuilder<PostgrestList>? transformQuery;
     if (_orderBy != null) {
       transformQuery =
           query.order(_orderBy!.column, ascending: _orderBy!.ascending);
@@ -237,8 +266,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     try {
       final data = await (transformQuery ?? query);
-      final rows = SupabaseStreamEvent.from(data as List);
-      _streamData.addAll(rows);
+      final rows = SupabaseStreamEvent.from(data);
+      _streamData = rows;
       _addStream();
     } catch (error, stackTrace) {
       _addException(error, stackTrace);
