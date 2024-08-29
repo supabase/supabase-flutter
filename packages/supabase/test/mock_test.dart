@@ -165,7 +165,7 @@ void main() {
           webSocket!.add(replyString);
 
           // Send an insert event
-          await Future.delayed(Duration(milliseconds: 10));
+          await Future.delayed(Duration(milliseconds: 100));
           final insertString = jsonEncode({
             'topic': topic,
             'event': 'postgres_changes',

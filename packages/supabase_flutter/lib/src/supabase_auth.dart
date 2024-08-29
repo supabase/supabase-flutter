@@ -119,6 +119,9 @@ class SupabaseAuth with WidgetsBindingObserver {
       case AppLifecycleState.detached:
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
+        // Realtime channels are kept alive in the background for some amount
+        // of time after the app is paused. If we stop refreshing the token
+        // here, the channels will be closed.
         if (Supabase.instance.client.realtime.getChannels().isEmpty) {
           Supabase.instance.client.auth.stopAutoRefresh();
         }
