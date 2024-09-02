@@ -423,7 +423,7 @@ void main() {
   });
 
   group('setAuth', () {
-    final updateJoinPayload = {'acess_token': 'token123'};
+    final updateJoinPayload = {'access_token': 'token123'};
     final pushPayload = {'access_token': 'token123'};
 
     test(
