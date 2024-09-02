@@ -76,6 +76,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Count of record to be returned
   int? _limit;
 
+  /// Flag if the stream has at least one time been subscribed to realtime
+  bool _gotSubscribed = false;
+
   SupabaseStreamBuilder({
     required PostgrestQueryBuilder queryBuilder,
     required String realtimeTopic,
@@ -209,14 +212,15 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         .subscribe((status, [error]) {
       switch (status) {
         case RealtimeSubscribeStatus.subscribed:
-          // Get first data when realtime is subscribed and reload all data
-          // from postgrest if e.g. got a channel error and is resubscribed
-          _getPostgrestData();
+          // Reload all data after a reconnect from postgrest
+          // First data from postgrest gets loaded before the realtime connect
+          if (_gotSubscribed) {
+            _getPostgrestData();
+          }
+          _gotSubscribed = true;
           break;
         case RealtimeSubscribeStatus.closed:
-          if (!(_streamController?.isClosed ?? true)) {
-            _streamController?.close();
-          }
+          _streamController?.close();
           break;
         case RealtimeSubscribeStatus.timedOut:
           _addException(RealtimeSubscribeException(status, error));
@@ -226,6 +230,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           break;
       }
     });
+    _getPostgrestData();
   }
 
   Future<void> _getPostgrestData() async {
@@ -271,6 +276,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       _addStream();
     } catch (error, stackTrace) {
       _addException(error, stackTrace);
+      // In case the postgrest call fails, there is no need to keep the
+      // realtime connection open
+      _channel?.unsubscribe();
+      _streamController?.close();
     }
   }
 
