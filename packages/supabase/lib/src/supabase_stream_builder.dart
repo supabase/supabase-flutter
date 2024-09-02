@@ -76,8 +76,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Count of record to be returned
   int? _limit;
 
-  /// Flag if the stream has at least one time been subscribed to realtime
-  bool _gotSubscribed = false;
+  /// Flag that the stream has at least one time been subscribed to realtime
+  bool _wasSubscribed = false;
 
   SupabaseStreamBuilder({
     required PostgrestQueryBuilder queryBuilder,
@@ -214,10 +214,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         case RealtimeSubscribeStatus.subscribed:
           // Reload all data after a reconnect from postgrest
           // First data from postgrest gets loaded before the realtime connect
-          if (_gotSubscribed) {
+          if (_wasSubscribed) {
             _getPostgrestData();
           }
-          _gotSubscribed = true;
+          _wasSubscribed = true;
           break;
         case RealtimeSubscribeStatus.closed:
           _streamController?.close();
