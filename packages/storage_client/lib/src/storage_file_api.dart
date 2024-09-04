@@ -413,11 +413,18 @@ class StorageFileApi {
   Future<bool> exists(String path) async {
     final finalPath = _getFinalPath(path);
     final options = FetchOptions(headers: headers);
-    final response = await _storageFetch.head(
-      '$url/object/$finalPath',
-      options: options,
-    );
-    return true;
+    try {
+      await _storageFetch.head(
+        '$url/object/$finalPath',
+        options: options,
+      );
+      return true;
+    } on StorageException catch (e) {
+      if (e.statusCode == '400' || e.statusCode == '404') {
+        return false;
+      }
+      rethrow;
+    }
   }
 
   /// Retrieve URLs for assets in public buckets
@@ -481,7 +488,6 @@ class StorageFileApi {
       body,
       options: options,
     );
-    print(response[0]);
     final fileObjects = List<FileObject>.from(
       (response as List).map(
         (item) => FileObject.fromJson(item),

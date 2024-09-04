@@ -30,7 +30,13 @@ class Fetch {
     StackTrace stack,
     FetchOptions? options,
   ) {
-    if (error is http.Response && !(options?.noResolveJson == true)) {
+    if (error is http.Response) {
+      if (options?.noResolveJson == true) {
+        return StorageException(
+          error.body.isEmpty ? error.reasonPhrase ?? '' : error.body,
+          statusCode: '${error.statusCode}',
+        );
+      }
       try {
         final data = json.decode(error.body) as Map<String, dynamic>;
         return StorageException.fromJson(data, '${error.statusCode}');

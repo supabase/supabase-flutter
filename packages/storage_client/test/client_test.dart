@@ -410,7 +410,7 @@ void main() {
   });
 
   test('check if object exists', () async {
-    await storage.from(newBucketName).upload(uploadPath, file);
+    await storage.from(newBucketName).upload('$uploadPath-exists', file);
     final res = await storage.from(newBucketName).exists(uploadPath);
     expect(res, true);
 
