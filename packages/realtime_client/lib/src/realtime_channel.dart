@@ -412,7 +412,7 @@ class RealtimeChannel {
 
   /// Sets up a listener for realtime system events for debugging purposes.
   RealtimeChannel onSystemEvents(
-    void Function(Map<String, dynamic> payload) callback,
+    void Function(dynamic payload) callback,
   ) {
     return onEvents(
       'system',
