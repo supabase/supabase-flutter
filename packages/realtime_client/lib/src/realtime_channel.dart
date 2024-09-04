@@ -417,7 +417,7 @@ class RealtimeChannel {
     return onEvents(
       'system',
       ChannelFilter(),
-      (payload, [ref]) => callback(Map<String, dynamic>.from(payload)),
+      (payload, [ref]) => callback(payload),
     );
   }
 
