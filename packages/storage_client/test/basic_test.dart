@@ -36,7 +36,7 @@ void main() {
   late SupabaseStorageClient client;
   late CustomHttpClient customHttpClient = CustomHttpClient();
 
-  group('Client with default http client', () {
+  group('Client with custom http client', () {
     setUp(() {
       // init SupabaseClient with test url & test key
       client = SupabaseStorageClient(

@@ -389,4 +389,32 @@ void main() {
       await storage.from(newBucketName).copy(uploadPath, "$uploadPath 2");
     });
   });
+
+  test('upload with custom metadata', () async {
+    final metadata = {
+      'custom': 'metadata',
+      'second': 'second',
+      'third': 'third',
+    };
+    final path = "$uploadPath-metadata";
+    await storage.from(newBucketName).upload(
+          path,
+          file,
+          fileOptions: FileOptions(
+            metadata: metadata,
+          ),
+        );
+
+    final updateRes = await storage.from(newBucketName).info(path);
+    expect(updateRes.metadata, metadata);
+  });
+
+  test('check if object exists', () async {
+    await storage.from(newBucketName).upload(uploadPath, file);
+    final res = await storage.from(newBucketName).exists(uploadPath);
+    expect(res, true);
+
+    final res2 = await storage.from(newBucketName).exists('not-exist');
+    expect(res2, false);
+  });
 }
