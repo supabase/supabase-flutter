@@ -410,6 +410,17 @@ class RealtimeChannel {
     );
   }
 
+  /// Sets up a listener for realtime system events for debugging purposes.
+  RealtimeChannel onSystemEvents(
+    void Function(dynamic payload) callback,
+  ) {
+    return onEvents(
+      'system',
+      ChannelFilter(),
+      (payload, [ref]) => callback(payload),
+    );
+  }
+
   @internal
   RealtimeChannel onEvents(
       String type, ChannelFilter filter, BindingCallback callback) {
