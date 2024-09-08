@@ -99,7 +99,7 @@ void _compute(SendPort p) async {
 
       /// `true` for encoding and `false` for decoding
       final bool method = event[1];
-      final bool formatted = event.last;
+      final bool formatted = event.length > 2 ? event[2] : false;
       late final List<dynamic> computationResult;
 
       try {
