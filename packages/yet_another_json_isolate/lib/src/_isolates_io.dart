@@ -50,12 +50,12 @@ class YAJsonIsolate {
     return _handleRes(await _events.next);
   }
 
-  Future<String> encode(Object? json) async {
+  Future<String> encode(Object? json, {bool formatted = false}) async {
     if (!_createdIsolate.isCompleted) {
       if (!_hasStartedInitialize) initialize();
       await _createdIsolate.future;
     }
-    _sendPort.send([json, true]);
+    _sendPort.send([json, true, formatted]);
     return _handleRes(await _events.next);
   }
 
@@ -98,13 +98,18 @@ void _compute(SendPort p) async {
       final input = event.first;
 
       /// `true` for encoding and `false` for decoding
-      final bool method = event.last;
+      final bool method = event[1];
+      final bool formatted = event.last;
       late final List<dynamic> computationResult;
 
       try {
         final dynamic res;
         if (method == true) {
-          res = jsonEncode(input);
+          if (formatted == true) {
+            res = const JsonEncoder.withIndent('  ').convert(input);
+          } else {
+            res = jsonEncode(input);
+          }
         } else {
           res = jsonDecode(input);
         }
