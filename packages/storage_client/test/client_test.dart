@@ -240,11 +240,15 @@ void main() {
 
       final downloadedFile =
           await File('${Directory.current.path}/public-image.jpg').create();
-      await downloadedFile.writeAsBytes(bytesArray);
-      final size = await downloadedFile.length();
-      final type = lookupMimeType(downloadedFile.path);
-      expect(size, isPositive);
-      expect(type, 'image/jpeg');
+      try {
+        await downloadedFile.writeAsBytes(bytesArray);
+        final size = await downloadedFile.length();
+        final type = lookupMimeType(downloadedFile.path);
+        expect(size, isPositive);
+        expect(type, 'image/jpeg');
+      } finally {
+        await downloadedFile.delete();
+      }
     });
 
     test('will download an authenticated transformed file', () async {
@@ -259,15 +263,19 @@ void main() {
 
       final downloadedFile =
           await File('${Directory.current.path}/private-image.jpg').create();
-      await downloadedFile.writeAsBytes(bytesArray);
-      final size = await downloadedFile.length();
-      final type = lookupMimeType(
-        downloadedFile.path,
-        headerBytes: downloadedFile.readAsBytesSync(),
-      );
+      try {
+        await downloadedFile.writeAsBytes(bytesArray);
+        final size = await downloadedFile.length();
+        final type = lookupMimeType(
+          downloadedFile.path,
+          headerBytes: downloadedFile.readAsBytesSync(),
+        );
 
-      expect(size, isPositive);
-      expect(type, 'image/jpeg');
+        expect(size, isPositive);
+        expect(type, 'image/jpeg');
+      } finally {
+        await downloadedFile.delete();
+      }
     });
 
     test('will return the image as webp when the browser support it', () async {
@@ -283,15 +291,19 @@ void main() {
           );
       final downloadedFile =
           await File('${Directory.current.path}/webpimage').create();
-      await downloadedFile.writeAsBytes(bytesArray);
-      final size = await downloadedFile.length();
-      final type = lookupMimeType(
-        downloadedFile.path,
-        headerBytes: downloadedFile.readAsBytesSync(),
-      );
+      try {
+        await downloadedFile.writeAsBytes(bytesArray);
+        final size = await downloadedFile.length();
+        final type = lookupMimeType(
+          downloadedFile.path,
+          headerBytes: downloadedFile.readAsBytesSync(),
+        );
 
-      expect(size, isPositive);
-      expect(type, 'image/webp');
+        expect(size, isPositive);
+        expect(type, 'image/webp');
+      } finally {
+        await downloadedFile.delete();
+      }
     });
 
     test('will return the original image format when format is origin',
@@ -309,15 +321,19 @@ void main() {
           );
       final downloadedFile =
           await File('${Directory.current.path}/jpegimage').create();
-      await downloadedFile.writeAsBytes(bytesArray);
-      final size = await downloadedFile.length();
-      final type = lookupMimeType(
-        downloadedFile.path,
-        headerBytes: downloadedFile.readAsBytesSync(),
-      );
+      try {
+        await downloadedFile.writeAsBytes(bytesArray);
+        final size = await downloadedFile.length();
+        final type = lookupMimeType(
+          downloadedFile.path,
+          headerBytes: downloadedFile.readAsBytesSync(),
+        );
 
-      expect(size, isPositive);
-      expect(type, 'image/jpeg');
+        expect(size, isPositive);
+        expect(type, 'image/jpeg');
+      } finally {
+        await downloadedFile.delete();
+      }
     });
   });
 
