@@ -1173,9 +1173,12 @@ class GoTrueClient {
             session = Session.fromJson(messageEvent['session']);
           } catch (e) {
             // ignore
+            return;
           }
           if (session != null) {
             _saveSession(session);
+          } else {
+            _removeSession();
           }
           notifyAllSubscribers(event, session: session, broadcast: false);
         }
@@ -1244,19 +1247,23 @@ class GoTrueClient {
   }
 
   /// For internal use only.
+  ///
+  /// [broadcast] is used to determine if the event should be broadcasted to
+  /// other tabs.
   @internal
   void notifyAllSubscribers(
     AuthChangeEvent event, {
     Session? session,
     bool broadcast = true,
   }) {
+    session ??= currentSession;
     if (broadcast && event != AuthChangeEvent.initialSession) {
       _broadcastChannel?.postMessage({
         'event': event.jsName,
         'session': session?.toJson(),
       });
     }
-    final state = AuthState(event, session ?? currentSession);
+    final state = AuthState(event, session, fromBroadcast: !broadcast);
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }
