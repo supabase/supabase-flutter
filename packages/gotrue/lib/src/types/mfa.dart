@@ -257,7 +257,24 @@ class AuthMFAGetAuthenticatorAssuranceLevelResponse {
   });
 }
 
-enum AMRMethod { password, otp, oauth, totp, magiclink }
+enum AMRMethod {
+  password('password'),
+  otp('otp'),
+  oauth('oauth'),
+  totp('totp'),
+  magiclink('magiclink'),
+  recovery('recovery'),
+  invite('invite'),
+  ssoSaml('sso/saml'),
+  emailSignUp('email/signup'),
+  emailChange('email_change'),
+  tokenRefresh('token_refresh'),
+  anonymous('anonymous'),
+  mfaPhone('mfa/phone');
+
+  final String code;
+  const AMRMethod(this.code);
+}
 
 /// An authentication method reference (AMR) entry.
 ///
@@ -278,7 +295,7 @@ class AMREntry {
   factory AMREntry.fromJson(Map<String, dynamic> json) {
     return AMREntry(
       method: AMRMethod.values.firstWhere(
-        (e) => e.name == json['method'],
+        (e) => e.code == json['method'],
       ),
       timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] * 1000),
     );
