@@ -1169,11 +1169,13 @@ class GoTrueClient {
 
         if (event != null) {
           Session? session;
-          try {
-            session = Session.fromJson(messageEvent['session']);
-          } catch (e) {
-            // ignore
-            return;
+          if (messageEvent['session'] != null) {
+            try {
+              session = Session.fromJson(messageEvent['session']);
+            } catch (e) {
+              // ignore
+              return;
+            }
           }
           if (session != null) {
             _saveSession(session);
