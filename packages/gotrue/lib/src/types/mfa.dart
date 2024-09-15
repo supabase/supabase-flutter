@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:gotrue/gotrue.dart';
 
 class AuthMFAEnrollResponse {
@@ -270,7 +271,8 @@ enum AMRMethod {
   emailChange('email_change'),
   tokenRefresh('token_refresh'),
   anonymous('anonymous'),
-  mfaPhone('mfa/phone');
+  mfaPhone('mfa/phone'),
+  unknown('unknown');
 
   final String code;
   const AMRMethod(this.code);
@@ -294,9 +296,10 @@ class AMREntry {
 
   factory AMREntry.fromJson(Map<String, dynamic> json) {
     return AMREntry(
-      method: AMRMethod.values.firstWhere(
-        (e) => e.code == json['method'],
-      ),
+      method: AMRMethod.values.firstWhereOrNull(
+            (e) => e.code == json['method'],
+          ) ??
+          AMRMethod.unknown,
       timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] * 1000),
     );
   }
