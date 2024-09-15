@@ -6,7 +6,7 @@ class AuthState {
   final Session? session;
   final bool fromBroadcast;
 
-  AuthState(this.event, this.session, {this.fromBroadcast = false});
+  const AuthState(this.event, this.session, {this.fromBroadcast = false});
 
   @override
   String toString() {

@@ -89,11 +89,10 @@ class GoTrueClient {
 
   final AuthFlowType _flowType;
 
-  /// Whether to broadcast session changes to other tabs on web.
-  final bool _broadcastSession;
-
   /// Proxy to the web BroadcastChannel API. Should be null on non-web platforms.
   BroadcastChannel? _broadcastChannel;
+
+  StreamSubscription? _broadcastChannelSubscription;
 
   /// {@macro gotrue_client}
   GoTrueClient({
@@ -108,8 +107,7 @@ class GoTrueClient {
         _headers = headers ?? {},
         _httpClient = httpClient,
         _asyncStorage = asyncStorage,
-        _flowType = flowType,
-        _broadcastSession = broadcastSession {
+        _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
@@ -130,7 +128,7 @@ class GoTrueClient {
       startAutoRefresh();
     }
 
-    mayStartBroadcastChannel();
+    _mayStartBroadcastChannel();
   }
 
   /// Getter for the headers
@@ -1143,55 +1141,59 @@ class GoTrueClient {
     _currentUser = null;
   }
 
-  void mayStartBroadcastChannel() {
-    if (const bool.fromEnvironment('dart.library.html') && _broadcastSession) {
+  void _mayStartBroadcastChannel() {
+    if (const bool.fromEnvironment('dart.library.html')) {
       // Used by the js library as well
       final broadcastKey =
           "sb-${Uri.parse(_url).host.split(".").first}-auth-token";
 
-      _broadcastChannel = web.getBroadcastChannel(broadcastKey);
-      _broadcastChannel?.onMessage.listen((messageEvent) {
-        final rawEvent = messageEvent['event'];
-        final event = switch (rawEvent) {
-          // This library sends the js name of the event to be comptabile with
-          // the js library, so we need to convert it back to the dart name
-          'INITIAL_SESSION' => AuthChangeEvent.initialSession,
-          'PASSWORD_RECOVERY' => AuthChangeEvent.passwordRecovery,
-          'SIGNED_IN' => AuthChangeEvent.signedIn,
-          'SIGNED_OUT' => AuthChangeEvent.signedOut,
-          'TOKEN_REFRESHED' => AuthChangeEvent.tokenRefreshed,
-          'USER_UPDATED' => AuthChangeEvent.userUpdated,
-          'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
-          // This case should never happen though
-          _ => AuthChangeEvent.values
-              .firstWhereOrNull((event) => event.name == rawEvent),
-        };
+      assert(_broadcastChannel == null,
+          'Broadcast channel should not be started more than once.');
+      try {
+        _broadcastChannel = web.getBroadcastChannel(broadcastKey);
+        _broadcastChannelSubscription =
+            _broadcastChannel?.onMessage.listen((messageEvent) {
+          final rawEvent = messageEvent['event'];
+          final event = switch (rawEvent) {
+            // This library sends the js name of the event to be comptabile with
+            // the js library, so we need to convert it back to the dart name
+            'INITIAL_SESSION' => AuthChangeEvent.initialSession,
+            'PASSWORD_RECOVERY' => AuthChangeEvent.passwordRecovery,
+            'SIGNED_IN' => AuthChangeEvent.signedIn,
+            'SIGNED_OUT' => AuthChangeEvent.signedOut,
+            'TOKEN_REFRESHED' => AuthChangeEvent.tokenRefreshed,
+            'USER_UPDATED' => AuthChangeEvent.userUpdated,
+            'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
+            // This case should never happen though
+            _ => AuthChangeEvent.values
+                .firstWhereOrNull((event) => event.name == rawEvent),
+          };
 
-        if (event != null) {
-          Session? session;
-          if (messageEvent['session'] != null) {
-            try {
+          if (event != null) {
+            Session? session;
+            if (messageEvent['session'] != null) {
               session = Session.fromJson(messageEvent['session']);
-            } catch (e) {
-              // ignore
-              return;
             }
+            if (session != null) {
+              _saveSession(session);
+            } else {
+              _removeSession();
+            }
+            notifyAllSubscribers(event, session: session, broadcast: false);
           }
-          if (session != null) {
-            _saveSession(session);
-          } else {
-            _removeSession();
-          }
-          notifyAllSubscribers(event, session: session, broadcast: false);
-        }
-      });
+        });
+      } catch (e) {
+        // Ignoring
+      }
     }
   }
 
+  @mustCallSuper
   void dispose() {
     _onAuthStateChangeController.close();
     _onAuthStateChangeControllerSync.close();
     _broadcastChannel?.close();
+    _broadcastChannelSubscription?.cancel();
     _refreshTokenCompleter?.completeError(AuthException('Disposed'));
     _autoRefreshTicker?.cancel();
   }
