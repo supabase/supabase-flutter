@@ -288,8 +288,7 @@ void main() {
       channel.subscribe(subscribeCallback);
 
       await Future.delayed(Duration(milliseconds: 200));
-      await client.conn!.sink
-          .close(Constants.wsCloseNormal, "heartbeat timeout");
+      await webSocket?.close(Constants.wsCloseNormal, "heartbeat timeout");
     });
   });
 
