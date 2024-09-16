@@ -110,7 +110,7 @@ enum ChannelResponse {
   error
 }
 
-enum RealtimeListenTypes { postgresChanges, broadcast, presence }
+enum RealtimeListenTypes { postgresChanges, broadcast, presence, system }
 
 enum PresenceEvent { sync, join, leave }
 
