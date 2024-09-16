@@ -158,8 +158,13 @@ class RealtimeClient {
       connState = SocketStates.connecting;
       conn = transport(endPointURL, headers);
 
-      // handle connection errors
-      conn!.ready.catchError(_onConnError);
+      try {
+        await conn!.ready;
+      } catch (error) {
+        _onConnError(error);
+        reconnectTimer.scheduleTimeout();
+        return;
+      }
 
       connState = SocketStates.open;
 
@@ -187,17 +192,20 @@ class RealtimeClient {
   void disconnect({int? code, String? reason}) {
     final conn = this.conn;
     if (conn != null) {
+      final connectionWasOpen = connState == SocketStates.open;
       connState = SocketStates.disconnected;
-      if (code != null) {
-        conn.sink.close(code, reason ?? '');
-      } else {
-        conn.sink.close();
+      if (connectionWasOpen) {
+        if (code != null) {
+          conn.sink.close(code, reason ?? '');
+        } else {
+          conn.sink.close();
+        }
+        reconnectTimer.reset();
       }
       this.conn = null;
 
       // remove open handles
       if (heartbeatTimer != null) heartbeatTimer?.cancel();
-      reconnectTimer.reset();
     }
   }
 
@@ -404,7 +412,7 @@ class RealtimeClient {
     /// SocketStates.disconnected: by user with socket.disconnect()
     /// SocketStates.closed: NOT by user, should try to reconnect
     if (connState == SocketStates.closed) {
-      _triggerChanError();
+      _triggerChanError(event);
       reconnectTimer.scheduleTimeout();
     }
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
@@ -415,15 +423,15 @@ class RealtimeClient {
 
   void _onConnError(dynamic error) {
     log('transport', error.toString());
-    _triggerChanError();
+    _triggerChanError(error);
     for (final callback in stateChangeCallbacks['error']!) {
       callback(error);
     }
   }
 
-  void _triggerChanError() {
+  void _triggerChanError([dynamic error]) {
     for (final channel in channels) {
-      channel.trigger(ChannelEvents.error.eventName());
+      channel.trigger(ChannelEvents.error.eventName(), error);
     }
   }
 
