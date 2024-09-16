@@ -171,6 +171,7 @@ void main() {
       });
 
       socket.connect();
+      await Future.delayed(const Duration(milliseconds: 200));
       expect(opens, 1);
 
       socket.sendHeartbeat();
@@ -229,7 +230,7 @@ void main() {
       expect(closes, 1);
     });
 
-    test('calls connection close callback', () {
+    test('calls connection close callback', () async {
       final mockedSocketChannel = MockIOWebSocketChannel();
       final mockedSocket = RealtimeClient(
         socketEndpoint,
@@ -247,7 +248,10 @@ void main() {
       const tReason = 'reason';
 
       mockedSocket.connect();
+      mockedSocket.connState = SocketStates.open;
+      await Future.delayed(const Duration(milliseconds: 200));
       mockedSocket.disconnect(code: tCode, reason: tReason);
+      await Future.delayed(const Duration(milliseconds: 200));
 
       verify(
         () => mockedSink.close(

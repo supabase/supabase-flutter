@@ -268,7 +268,9 @@ void main() {
       final subscribeCallback =
           expectAsync2((RealtimeSubscribeStatus event, error) {
         if (event == RealtimeSubscribeStatus.channelError) {
-          expect(error, isNull);
+          expect(error, isA<RealtimeCloseEvent>());
+          error as RealtimeCloseEvent;
+          expect(error.reason, "heartbeat timeout");
         } else {
           expect(event, RealtimeSubscribeStatus.closed);
         }
@@ -285,6 +287,7 @@ void main() {
 
       channel.subscribe(subscribeCallback);
 
+      await Future.delayed(Duration(milliseconds: 200));
       await client.conn!.sink
           .close(Constants.wsCloseNormal, "heartbeat timeout");
     });

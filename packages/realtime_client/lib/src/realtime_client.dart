@@ -48,7 +48,7 @@ class RealtimeCloseEvent {
 
   @override
   String toString() {
-    return 'RealtimeCloseEvent{code: $code, reason: $reason}';
+    return 'RealtimeCloseEvent(code: $code, reason: $reason)';
   }
 }
 

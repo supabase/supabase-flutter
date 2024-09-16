@@ -70,7 +70,7 @@ class RealtimeChannel {
       socket.remove(this);
     });
 
-    _onError((String? reason) {
+    _onError((reason) {
       if (isLeaving || isClosed) {
         return;
       }
@@ -260,9 +260,9 @@ class RealtimeChannel {
   }
 
   /// Registers a callback that will be executed when the channel encounteres an error.
-  void _onError(void Function(String?) callback) {
+  void _onError(Function callback) {
     onEvents(ChannelEvents.error.eventName(), ChannelFilter(),
-        (reason, [ref]) => callback(reason?.toString()));
+        (reason, [ref]) => callback(reason));
   }
 
   /// Sets up a listener on your Supabase database.
