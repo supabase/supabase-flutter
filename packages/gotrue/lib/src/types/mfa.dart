@@ -296,10 +296,10 @@ class AMREntry {
 
   factory AMREntry.fromJson(Map<String, dynamic> json) {
     return AMREntry(
-      method: AMRMethod.values.firstWhereOrNull(
-            (e) => e.code == json['method'],
-          ) ??
-          AMRMethod.unknown,
+      method: AMRMethod.values.firstWhere(
+        (e) => e.code == json['method'],
+        orElse: () => AMRMethod.unknown,
+      ),
       timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] * 1000),
     );
   }
