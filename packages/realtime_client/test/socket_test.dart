@@ -215,8 +215,8 @@ void main() {
     });
 
     test('removes existing connection', () async {
-      socket.connect();
-      socket.disconnect();
+      await socket.connect();
+      await socket.disconnect();
 
       expect(socket.conn, null);
     });

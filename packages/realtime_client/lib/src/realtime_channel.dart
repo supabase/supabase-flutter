@@ -646,6 +646,19 @@ class RealtimeChannel {
     joinPush.resend(timeout ?? _timeout);
   }
 
+  /// Usually a rejoin only happens when the channel timeouts or errors out.
+  /// When manually disconnecting, the channel is still marked as
+  /// [ChannelStates.joined]. Calling [RealtimeClient.leaveOpenTopic] will
+  /// unsubscribe itself, which causes issues when trying to rejoin. This method
+  /// therefore doesn't call [RealtimeClient.leaveOpenTopic].
+  void forceRejoin([Duration? timeout]) {
+    if (isLeaving) {
+      return;
+    }
+    _state = ChannelStates.joining;
+    joinPush.resend(timeout ?? _timeout);
+  }
+
   void trigger(String type, [dynamic payload, String? ref]) {
     final typeLower = type.toLowerCase();
 

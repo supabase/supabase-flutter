@@ -139,9 +139,9 @@ class RealtimeClient {
         (String payload, Function(dynamic result) callback) =>
             callback(json.decode(payload));
     reconnectTimer = RetryTimer(
-      () {
-        disconnect();
-        connect();
+      () async {
+        await disconnect();
+        await connect();
       },
       this.reconnectAfterMs,
     );
@@ -149,7 +149,7 @@ class RealtimeClient {
 
   /// Connects the socket.
   @internal
-  void connect() async {
+  Future<void> connect() async {
     if (conn != null) {
       return;
     }
@@ -161,8 +161,15 @@ class RealtimeClient {
       try {
         await conn!.ready;
       } catch (error) {
-        _onConnError(error);
-        reconnectTimer.scheduleTimeout();
+        // Don't schedule a reconnect and emit error if connection has been
+        // closed by the user or [disconnect] waits for the connection to be
+        // ready before closing it.
+        if (connState != SocketStates.disconnected &&
+            connState != SocketStates.disconnecting) {
+          connState = SocketStates.closed;
+          _onConnError(error);
+          reconnectTimer.scheduleTimeout();
+        }
         return;
       }
 
@@ -176,7 +183,8 @@ class RealtimeClient {
         onError: _onConnError,
         onDone: () {
           // communication has been closed
-          if (connState != SocketStates.disconnected) {
+          if (connState != SocketStates.disconnected &&
+              connState != SocketStates.disconnecting) {
             connState = SocketStates.closed;
           }
           _onConnClose();
@@ -189,17 +197,26 @@ class RealtimeClient {
   }
 
   /// Disconnects the socket with status [code] and [reason] for the disconnect
-  void disconnect({int? code, String? reason}) {
+  Future<void> disconnect({int? code, String? reason}) async {
     final conn = this.conn;
     if (conn != null) {
-      final connectionWasOpen = connState == SocketStates.open;
-      connState = SocketStates.disconnected;
-      if (connectionWasOpen) {
+      final oldState = connState;
+      connState = SocketStates.disconnecting;
+
+      // Connection cannot be closed while it's still connecting. Wait for connection to
+      // be ready and then close it.
+      if (oldState == SocketStates.connecting) {
+        await conn.ready.catchError((_) {});
+      }
+
+      if (oldState == SocketStates.open ||
+          oldState == SocketStates.connecting) {
         if (code != null) {
-          conn.sink.close(code, reason ?? '');
+          await conn.sink.close(code, reason ?? '');
         } else {
-          conn.sink.close();
+          await conn.sink.close();
         }
+        connState = SocketStates.disconnected;
         reconnectTimer.reset();
       }
       this.conn = null;
@@ -264,8 +281,8 @@ class RealtimeClient {
         return 'connecting';
       case SocketStates.open:
         return 'open';
-      case SocketStates.closing:
-        return 'closing';
+      case SocketStates.disconnecting:
+        return 'disconnecting';
       case SocketStates.disconnected:
         return 'disconnected';
       case SocketStates.closed:
@@ -275,7 +292,7 @@ class RealtimeClient {
   }
 
   /// Retuns `true` is the connection is open.
-  bool get isConnected => connectionState == 'open';
+  bool get isConnected => connState == SocketStates.open;
 
   /// Removes a subscription from the socket.
   @internal
@@ -374,7 +391,7 @@ class RealtimeClient {
     }
   }
 
-  /// Unsubscribe from channels with the specified topic.
+  /// Unsubscribe from joined or joining channels with the specified topic.
   @internal
   void leaveOpenTopic(String topic) {
     final dupChannel = channels.firstWhereOrNull(
