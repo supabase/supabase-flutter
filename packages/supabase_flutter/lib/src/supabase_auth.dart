@@ -141,13 +141,21 @@ class SupabaseAuth with WidgetsBindingObserver {
 
         bool cancel = false;
         final connectFuture = realtime.conn!.sink.done.then(
-          (_) {
+          (_) async {
             // Make this connect cancelable so that it does not connect if the
             // disconnect took so long that the app is already in background
             // again.
 
-            // ignore: invalid_use_of_internal_member
-            if (!cancel) return realtime.connect();
+            if (!cancel) {
+              // ignore: invalid_use_of_internal_member
+              await realtime.connect();
+              for (final channel in realtime.channels) {
+                // ignore: invalid_use_of_internal_member
+                if (channel.isJoined) {
+                  channel.forceRejoin();
+                }
+              }
+            }
           },
           onError: (error) {},
         );
