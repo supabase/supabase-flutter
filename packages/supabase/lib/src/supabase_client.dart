@@ -250,6 +250,7 @@ class SupabaseClient {
   Future<void> dispose() async {
     await _authStateSubscription?.cancel();
     await _isolate.dispose();
+    auth.dispose();
   }
 
   GoTrueClient _initSupabaseAuthClient({
@@ -339,8 +340,7 @@ class SupabaseClient {
         event == AuthChangeEvent.tokenRefreshed ||
         event == AuthChangeEvent.signedIn) {
       realtime.setAuth(token);
-    } else if (event == AuthChangeEvent.signedOut ||
-        event == AuthChangeEvent.userDeleted) {
+    } else if (event == AuthChangeEvent.signedOut) {
       // Token is removed
 
       realtime.setAuth(_supabaseKey);

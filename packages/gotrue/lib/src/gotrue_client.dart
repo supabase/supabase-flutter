@@ -15,6 +15,9 @@ import 'package:meta/meta.dart';
 import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
 
+import 'broadcast_stub.dart' if (dart.library.html) './broadcast_web.dart'
+    as web;
+
 part 'gotrue_mfa_api.dart';
 
 /// {@template gotrue_client}
@@ -84,6 +87,11 @@ class GoTrueClient {
 
   final AuthFlowType _flowType;
 
+  /// Proxy to the web BroadcastChannel API. Should be null on non-web platforms.
+  BroadcastChannel? _broadcastChannel;
+
+  StreamSubscription? _broadcastChannelSubscription;
+
   /// {@macro gotrue_client}
   GoTrueClient({
     String? url,
@@ -116,6 +124,8 @@ class GoTrueClient {
     if (_autoRefreshToken) {
       startAutoRefresh();
     }
+
+    _mayStartBroadcastChannel();
   }
 
   /// Getter for the headers
@@ -1128,6 +1138,63 @@ class GoTrueClient {
     _currentUser = null;
   }
 
+  void _mayStartBroadcastChannel() {
+    if (const bool.fromEnvironment('dart.library.html')) {
+      // Used by the js library as well
+      final broadcastKey =
+          "sb-${Uri.parse(_url).host.split(".").first}-auth-token";
+
+      assert(_broadcastChannel == null,
+          'Broadcast channel should not be started more than once.');
+      try {
+        _broadcastChannel = web.getBroadcastChannel(broadcastKey);
+        _broadcastChannelSubscription =
+            _broadcastChannel?.onMessage.listen((messageEvent) {
+          final rawEvent = messageEvent['event'];
+          final event = switch (rawEvent) {
+            // This library sends the js name of the event to be comptabile with
+            // the js library, so we need to convert it back to the dart name
+            'INITIAL_SESSION' => AuthChangeEvent.initialSession,
+            'PASSWORD_RECOVERY' => AuthChangeEvent.passwordRecovery,
+            'SIGNED_IN' => AuthChangeEvent.signedIn,
+            'SIGNED_OUT' => AuthChangeEvent.signedOut,
+            'TOKEN_REFRESHED' => AuthChangeEvent.tokenRefreshed,
+            'USER_UPDATED' => AuthChangeEvent.userUpdated,
+            'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
+            // This case should never happen though
+            _ => AuthChangeEvent.values
+                .firstWhereOrNull((event) => event.name == rawEvent),
+          };
+
+          if (event != null) {
+            Session? session;
+            if (messageEvent['session'] != null) {
+              session = Session.fromJson(messageEvent['session']);
+            }
+            if (session != null) {
+              _saveSession(session);
+            } else {
+              _removeSession();
+            }
+            notifyAllSubscribers(event, session: session, broadcast: false);
+          }
+        });
+      } catch (e) {
+        // Ignoring
+      }
+    }
+  }
+
+  @mustCallSuper
+  void dispose() {
+    _onAuthStateChangeController.close();
+    _onAuthStateChangeControllerSync.close();
+    _broadcastChannel?.close();
+    _broadcastChannelSubscription?.cancel();
+    _refreshTokenCompleter?.completeError(AuthException('Disposed'));
+    _autoRefreshTicker?.cancel();
+  }
+
   /// Generates a new JWT.
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
@@ -1181,9 +1248,23 @@ class GoTrueClient {
   }
 
   /// For internal use only.
+  ///
+  /// [broadcast] is used to determine if the event should be broadcasted to
+  /// other tabs.
   @internal
-  void notifyAllSubscribers(AuthChangeEvent event) {
-    final state = AuthState(event, currentSession);
+  void notifyAllSubscribers(
+    AuthChangeEvent event, {
+    Session? session,
+    bool broadcast = true,
+  }) {
+    session ??= currentSession;
+    if (broadcast && event != AuthChangeEvent.initialSession) {
+      _broadcastChannel?.postMessage({
+        'event': event.jsName,
+        'session': session?.toJson(),
+      });
+    }
+    final state = AuthState(event, session, fromBroadcast: !broadcast);
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }

@@ -34,14 +34,19 @@ class ApiVersions {
 }
 
 enum AuthChangeEvent {
-  initialSession,
-  passwordRecovery,
-  signedIn,
-  signedOut,
-  tokenRefreshed,
-  userUpdated,
-  userDeleted,
-  mfaChallengeVerified,
+  initialSession('INITIAL_SESSION'),
+  passwordRecovery('PASSWORD_RECOVERY'),
+  signedIn('SIGNED_IN'),
+  signedOut('SIGNED_OUT'),
+  tokenRefreshed('TOKEN_REFRESHED'),
+  userUpdated('USER_UPDATED'),
+
+  @Deprecated('Was never in use and might be removed in the future.')
+  userDeleted(''),
+  mfaChallengeVerified('MFA_CHALLENGE_VERIFIED');
+
+  final String jsName;
+  const AuthChangeEvent(this.jsName);
 }
 
 extension AuthChangeEventExtended on AuthChangeEvent {
