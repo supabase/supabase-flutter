@@ -3,7 +3,9 @@ import 'dart:html' as html;
 import 'dart:js_util' as js_util;
 
 import 'package:gotrue/src/types/types.dart';
+import 'package:logging/logging.dart';
 
+final _log = Logger('supabase.gotrue');
 BroadcastChannel getBroadcastChannel(String broadcastKey) {
   final broadcast = html.BroadcastChannel(broadcastKey);
   return (
@@ -15,6 +17,7 @@ BroadcastChannel getBroadcastChannel(String broadcastKey) {
       return json.decode(json.encode(dataMap));
     }),
     postMessage: (message) {
+      _log.fine('Broadcasting message: $message');
       final jsMessage = js_util.jsify(message);
       broadcast.postMessage(jsMessage);
     },
