@@ -276,7 +276,13 @@ class StorageFileApi {
   /// example `folder/image.png`.
   /// [toPath] is the new file path, including the new file name. For example
   /// `folder/image-new.png`.
-  Future<String> move(String fromPath, String toPath) async {
+  ///
+  /// When copying to a different bucket, you have to specify the [destinationBucket].
+  Future<String> move(
+    String fromPath,
+    String toPath, {
+    String? destinationBucket,
+  }) async {
     final options = FetchOptions(headers: headers);
     final response = await _storageFetch.post(
       '$url/object/move',
@@ -284,6 +290,7 @@ class StorageFileApi {
         'bucketId': bucketId,
         'sourceKey': fromPath,
         'destinationKey': toPath,
+        if (destinationBucket != null) 'destinationBucket': destinationBucket,
       },
       options: options,
     );
@@ -297,7 +304,13 @@ class StorageFileApi {
   ///
   /// [toPath] is the new file path, including the new file name. For example
   /// `folder/image-copy.png`.
-  Future<String> copy(String fromPath, String toPath) async {
+  ///
+  /// When copying to a different bucket, you have to specify the [destinationBucket].
+  Future<String> copy(
+    String fromPath,
+    String toPath, {
+    String? destinationBucket,
+  }) async {
     final options = FetchOptions(headers: headers);
     final response = await _storageFetch.post(
       '$url/object/copy',
@@ -305,6 +318,7 @@ class StorageFileApi {
         'bucketId': bucketId,
         'sourceKey': fromPath,
         'destinationKey': toPath,
+        if (destinationBucket != null) 'destinationBucket': destinationBucket,
       },
       options: options,
     );
