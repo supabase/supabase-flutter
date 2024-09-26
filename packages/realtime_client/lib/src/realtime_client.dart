@@ -45,6 +45,11 @@ class RealtimeCloseEvent {
     required this.code,
     required this.reason,
   });
+
+  @override
+  String toString() {
+    return 'RealtimeCloseEvent(code: $code, reason: $reason)';
+  }
 }
 
 class RealtimeClient {
@@ -134,9 +139,9 @@ class RealtimeClient {
         (String payload, Function(dynamic result) callback) =>
             callback(json.decode(payload));
     reconnectTimer = RetryTimer(
-      () {
-        disconnect();
-        connect();
+      () async {
+        await disconnect();
+        await connect();
       },
       this.reconnectAfterMs,
     );
@@ -144,7 +149,7 @@ class RealtimeClient {
 
   /// Connects the socket.
   @internal
-  void connect() async {
+  Future<void> connect() async {
     if (conn != null) {
       return;
     }
@@ -153,8 +158,20 @@ class RealtimeClient {
       connState = SocketStates.connecting;
       conn = transport(endPointURL, headers);
 
-      // handle connection errors
-      conn!.ready.catchError(_onConnError);
+      try {
+        await conn!.ready;
+      } catch (error) {
+        // Don't schedule a reconnect and emit error if connection has been
+        // closed by the user or [disconnect] waits for the connection to be
+        // ready before closing it.
+        if (connState != SocketStates.disconnected &&
+            connState != SocketStates.disconnecting) {
+          connState = SocketStates.closed;
+          _onConnError(error);
+          reconnectTimer.scheduleTimeout();
+        }
+        return;
+      }
 
       connState = SocketStates.open;
 
@@ -166,7 +183,8 @@ class RealtimeClient {
         onError: _onConnError,
         onDone: () {
           // communication has been closed
-          if (connState != SocketStates.disconnected) {
+          if (connState != SocketStates.disconnected &&
+              connState != SocketStates.disconnecting) {
             connState = SocketStates.closed;
           }
           _onConnClose();
@@ -179,20 +197,32 @@ class RealtimeClient {
   }
 
   /// Disconnects the socket with status [code] and [reason] for the disconnect
-  void disconnect({int? code, String? reason}) {
+  Future<void> disconnect({int? code, String? reason}) async {
     final conn = this.conn;
     if (conn != null) {
-      connState = SocketStates.disconnected;
-      if (code != null) {
-        conn.sink.close(code, reason ?? '');
-      } else {
-        conn.sink.close();
+      final oldState = connState;
+      connState = SocketStates.disconnecting;
+
+      // Connection cannot be closed while it's still connecting. Wait for connection to
+      // be ready and then close it.
+      if (oldState == SocketStates.connecting) {
+        await conn.ready.catchError((_) {});
+      }
+
+      if (oldState == SocketStates.open ||
+          oldState == SocketStates.connecting) {
+        if (code != null) {
+          await conn.sink.close(code, reason ?? '');
+        } else {
+          await conn.sink.close();
+        }
+        connState = SocketStates.disconnected;
+        reconnectTimer.reset();
       }
       this.conn = null;
 
       // remove open handles
       if (heartbeatTimer != null) heartbeatTimer?.cancel();
-      reconnectTimer.reset();
     }
   }
 
@@ -251,8 +281,8 @@ class RealtimeClient {
         return 'connecting';
       case SocketStates.open:
         return 'open';
-      case SocketStates.closing:
-        return 'closing';
+      case SocketStates.disconnecting:
+        return 'disconnecting';
       case SocketStates.disconnected:
         return 'disconnected';
       case SocketStates.closed:
@@ -262,7 +292,7 @@ class RealtimeClient {
   }
 
   /// Retuns `true` is the connection is open.
-  bool get isConnected => connectionState == 'open';
+  bool get isConnected => connState == SocketStates.open;
 
   /// Removes a subscription from the socket.
   @internal
@@ -353,7 +383,7 @@ class RealtimeClient {
 
     for (final channel in channels) {
       if (token != null) {
-        channel.updateJoinPayload({'user_token': token});
+        channel.updateJoinPayload({'access_token': token});
       }
       if (channel.joinedOnce && channel.isJoined) {
         channel.push(ChannelEvents.accessToken, {'access_token': token});
@@ -361,7 +391,7 @@ class RealtimeClient {
     }
   }
 
-  /// Unsubscribe from channels with the specified topic.
+  /// Unsubscribe from joined or joining channels with the specified topic.
   @internal
   void leaveOpenTopic(String topic) {
     final dupChannel = channels.firstWhereOrNull(
@@ -399,7 +429,7 @@ class RealtimeClient {
     /// SocketStates.disconnected: by user with socket.disconnect()
     /// SocketStates.closed: NOT by user, should try to reconnect
     if (connState == SocketStates.closed) {
-      _triggerChanError();
+      _triggerChanError(event);
       reconnectTimer.scheduleTimeout();
     }
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
@@ -410,15 +440,15 @@ class RealtimeClient {
 
   void _onConnError(dynamic error) {
     log('transport', error.toString());
-    _triggerChanError();
+    _triggerChanError(error);
     for (final callback in stateChangeCallbacks['error']!) {
       callback(error);
     }
   }
 
-  void _triggerChanError() {
+  void _triggerChanError([dynamic error]) {
     for (final channel in channels) {
-      channel.trigger(ChannelEvents.error.eventName());
+      channel.trigger(ChannelEvents.error.eventName(), error);
     }
   }
 

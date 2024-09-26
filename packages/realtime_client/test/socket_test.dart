@@ -171,6 +171,7 @@ void main() {
       });
 
       socket.connect();
+      await Future.delayed(const Duration(milliseconds: 200));
       expect(opens, 1);
 
       socket.sendHeartbeat();
@@ -214,8 +215,8 @@ void main() {
     });
 
     test('removes existing connection', () async {
-      socket.connect();
-      socket.disconnect();
+      await socket.connect();
+      await socket.disconnect();
 
       expect(socket.conn, null);
     });
@@ -229,7 +230,7 @@ void main() {
       expect(closes, 1);
     });
 
-    test('calls connection close callback', () {
+    test('calls connection close callback', () async {
       final mockedSocketChannel = MockIOWebSocketChannel();
       final mockedSocket = RealtimeClient(
         socketEndpoint,
@@ -247,7 +248,10 @@ void main() {
       const tReason = 'reason';
 
       mockedSocket.connect();
+      mockedSocket.connState = SocketStates.open;
+      await Future.delayed(const Duration(milliseconds: 200));
       mockedSocket.disconnect(code: tCode, reason: tReason);
+      await Future.delayed(const Duration(milliseconds: 200));
 
       verify(
         () => mockedSink.close(
@@ -423,7 +427,7 @@ void main() {
   });
 
   group('setAuth', () {
-    final updateJoinPayload = {'user_token': 'token123'};
+    final updateJoinPayload = {'access_token': 'token123'};
     final pushPayload = {'access_token': 'token123'};
 
     test(

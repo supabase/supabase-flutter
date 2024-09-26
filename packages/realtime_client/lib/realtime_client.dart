@@ -1,4 +1,5 @@
-export 'src/constants.dart' show RealtimeConstants, RealtimeLogLevel;
+export 'src/constants.dart'
+    show RealtimeConstants, RealtimeLogLevel, SocketStates;
 export 'src/realtime_channel.dart';
 export 'src/realtime_client.dart';
 export 'src/realtime_presence.dart';

@@ -70,7 +70,7 @@ class RealtimeChannel {
       socket.remove(this);
     });
 
-    _onError((String? reason) {
+    _onError((reason) {
       if (isLeaving || isClosed) {
         return;
       }
@@ -260,9 +260,9 @@ class RealtimeChannel {
   }
 
   /// Registers a callback that will be executed when the channel encounteres an error.
-  void _onError(void Function(String?) callback) {
+  void _onError(Function callback) {
     onEvents(ChannelEvents.error.eventName(), ChannelFilter(),
-        (reason, [ref]) => callback(reason?.toString()));
+        (reason, [ref]) => callback(reason));
   }
 
   /// Sets up a listener on your Supabase database.
@@ -642,6 +642,23 @@ class RealtimeChannel {
       return;
     }
     socket.leaveOpenTopic(topic);
+    _state = ChannelStates.joining;
+    joinPush.resend(timeout ?? _timeout);
+  }
+
+  /// Resends [joinPush] to tell the server we join this channel again and marks
+  /// the channel as [ChannelStates.joining].
+  ///
+  /// Usually [rejoin] only happens when the channel timeouts or errors out.
+  /// When manually disconnecting, the channel is still marked as
+  /// [ChannelStates.joined]. Calling [RealtimeClient.leaveOpenTopic] will
+  /// unsubscribe itself, which causes issues when trying to rejoin. This method
+  /// therefore doesn't call [RealtimeClient.leaveOpenTopic].
+  @internal
+  void forceRejoin([Duration? timeout]) {
+    if (isLeaving) {
+      return;
+    }
     _state = ChannelStates.joining;
     joinPush.resend(timeout ?? _timeout);
   }
