@@ -646,11 +646,15 @@ class RealtimeChannel {
     joinPush.resend(timeout ?? _timeout);
   }
 
-  /// Usually a rejoin only happens when the channel timeouts or errors out.
+  /// Resends [joinPush] to tell the server we join this channel again and marks
+  /// the channel as [ChannelStates.joining].
+  ///
+  /// Usually [rejoin] only happens when the channel timeouts or errors out.
   /// When manually disconnecting, the channel is still marked as
   /// [ChannelStates.joined]. Calling [RealtimeClient.leaveOpenTopic] will
   /// unsubscribe itself, which causes issues when trying to rejoin. This method
   /// therefore doesn't call [RealtimeClient.leaveOpenTopic].
+  @internal
   void forceRejoin([Duration? timeout]) {
     if (isLeaving) {
       return;
