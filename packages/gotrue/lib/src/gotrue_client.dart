@@ -18,6 +18,7 @@ import 'package:logging/logging.dart';
 
 import 'broadcast_stub.dart' if (dart.library.html) './broadcast_web.dart'
     as web;
+import 'version.dart';
 
 part 'gotrue_mfa_api.dart';
 
@@ -111,7 +112,7 @@ class GoTrueClient {
     _autoRefreshToken = autoRefreshToken ?? true;
 
     _log.config(
-        'GoTrueClient initialized with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}');
+        'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}');
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
     final gotrueHeader = {
@@ -626,6 +627,7 @@ class GoTrueClient {
       _log.warning("Can't refresh session, no current session found.");
       throw AuthSessionMissingException();
     }
+    _log.info('Refresh session');
 
     final currentSessionRefreshToken =
         refreshToken ?? _currentSession?.refreshToken;
