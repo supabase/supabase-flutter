@@ -23,11 +23,16 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
           url: Uri.parse(url),
         );
 
-  /// Returns real-time data from your table as a `Stream`.
+  /// Combines the current state of your table from PostgREST with changes from the realtime server to return real-time data from your table as a [Stream].
   ///
   /// Realtime is disabled by default for new tables. You can turn it on by [managing replication](https://supabase.com/docs/guides/realtime/extensions/postgres-changes#replication-setup).
   ///
-  /// Pass the list of primary key column names to [primaryKey], which will be used to updating and deleting the proper records internally as the library receives real-time updates.
+  /// Pass the list of primary key column names to [primaryKey], which will be used to update and delete the proper records internally as the stream receives real-time updates.
+  ///
+  /// It handles the lifecycle of the realtime connection and automatically refetches data from PostgREST when needed.
+  ///
+  /// Make sure to provide `onError` and `onDone` callbacks to [Stream.listen] to handle errors and completion of the stream.
+  /// The stream gets closed when the realtime connection is closed.
   ///
   /// ```dart
   /// supabase.from('chats').stream(primaryKey: ['id']).listen(_onChatsReceived);

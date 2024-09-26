@@ -31,6 +31,18 @@ class _Order {
   final bool ascending;
 }
 
+class RealtimeSubscribeException implements Exception {
+  RealtimeSubscribeException(this.status, [this.details]);
+
+  final RealtimeSubscribeStatus status;
+  final Object? details;
+
+  @override
+  String toString() {
+    return 'RealtimeSubscribeException(status: $status, details: $details)';
+  }
+}
+
 typedef SupabaseStreamEvent = List<Map<String, dynamic>>;
 
 class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
@@ -63,6 +75,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Count of record to be returned
   int? _limit;
+
+  /// Flag that the stream has at least one time been subscribed to realtime
+  bool _wasSubscribed = false;
 
   SupabaseStreamBuilder({
     required PostgrestQueryBuilder queryBuilder,
@@ -195,12 +210,31 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
               }
             })
         .subscribe((status, [error]) {
-      if (error != null) {
-        _addException(error);
+      switch (status) {
+        case RealtimeSubscribeStatus.subscribed:
+          // Reload all data after a reconnect from postgrest
+          // First data from postgrest gets loaded before the realtime connect
+          if (_wasSubscribed) {
+            _getPostgrestData();
+          }
+          _wasSubscribed = true;
+          break;
+        case RealtimeSubscribeStatus.closed:
+          _streamController?.close();
+          break;
+        case RealtimeSubscribeStatus.timedOut:
+          _addException(RealtimeSubscribeException(status, error));
+          break;
+        case RealtimeSubscribeStatus.channelError:
+          _addException(RealtimeSubscribeException(status, error));
+          break;
       }
     });
+    _getPostgrestData();
+  }
 
-    PostgrestFilterBuilder query = _queryBuilder.select();
+  Future<void> _getPostgrestData() async {
+    PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select();
     if (_streamFilter != null) {
       switch (_streamFilter!.type) {
         case PostgresChangeFilterType.eq:
@@ -226,7 +260,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           break;
       }
     }
-    PostgrestTransformBuilder? transformQuery;
+    PostgrestTransformBuilder<PostgrestList>? transformQuery;
     if (_orderBy != null) {
       transformQuery =
           query.order(_orderBy!.column, ascending: _orderBy!.ascending);
@@ -237,11 +271,15 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     try {
       final data = await (transformQuery ?? query);
-      final rows = SupabaseStreamEvent.from(data as List);
-      _streamData.addAll(rows);
+      final rows = SupabaseStreamEvent.from(data);
+      _streamData = rows;
       _addStream();
     } catch (error, stackTrace) {
       _addException(error, stackTrace);
+      // In case the postgrest call fails, there is no need to keep the
+      // realtime connection open
+      _channel?.unsubscribe();
+      _streamController?.close();
     }
   }
 

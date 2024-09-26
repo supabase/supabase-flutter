@@ -107,7 +107,7 @@ class Supabase {
       accessToken: accessToken,
     );
     _instance._debugEnable = debug ?? kDebugMode;
-    _instance.log('***** Supabase init completed $_instance');
+    _instance.log('***** Supabase init completed *****');
 
     _instance._supabaseAuth = SupabaseAuth();
     await _instance._supabaseAuth.initialize(options: authOptions);
