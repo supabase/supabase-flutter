@@ -1,4 +1,5 @@
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -11,6 +12,7 @@ class PostgrestClient {
   final Client? httpClient;
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
+  final _log = Logger('supabase.postgrest');
 
   /// To create a [PostgrestClient], you need to provide an [url] endpoint.
   ///
@@ -42,6 +44,7 @@ class PostgrestClient {
   }
 
   PostgrestClient setAuth(String? token) {
+    _log.fine("setAuth with: $token");
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     } else {
@@ -95,6 +98,7 @@ class PostgrestClient {
   }
 
   Future<void> dispose() async {
+    _log.fine("dispose client");
     if (!_hasCustomIsolate) {
       return _isolate.dispose();
     }
