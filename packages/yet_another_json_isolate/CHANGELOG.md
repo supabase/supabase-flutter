@@ -1,3 +1,7 @@
+## 2.0.3
+
+ - **FIX**(yet_another_json_isolate): Conditional export now works correctly with Dart 3.5+ ([#1048](https://github.com/supabase/supabase-flutter/issues/1048)). ([6c80a745](https://github.com/supabase/supabase-flutter/commit/6c80a745cd387250995fa3140aac54169466f5bb))
+
 ## 2.0.2
 
  - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))
