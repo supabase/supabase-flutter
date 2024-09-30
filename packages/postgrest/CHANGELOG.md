@@ -1,3 +1,7 @@
+## 2.2.0
+
+ - **FEAT**: Add setHeader method on postgrest builder ([#1003](https://github.com/supabase/supabase-flutter/issues/1003)). ([efe8e5df](https://github.com/supabase/supabase-flutter/commit/efe8e5df7935b75b580e2ead01b9c08ac7b94c2c))
+
 ## 2.1.4
 
  - **FIX**: Upgrade `web_socket_channel` for supporting `web: ^1.0.0` and therefore WASM compilation on web ([#992](https://github.com/supabase/supabase-flutter/issues/992)). ([7da68565](https://github.com/supabase/supabase-flutter/commit/7da68565a7aa578305b099d7af755a7b0bcaca46))

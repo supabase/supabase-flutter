@@ -3,6 +3,69 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-09-30
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.9.0`](#gotrue---v290)
+ - [`postgrest` - `v2.2.0`](#postgrest---v220)
+ - [`realtime_client` - `v2.3.0`](#realtime_client---v230)
+ - [`storage_client` - `v2.1.0`](#storage_client---v210)
+ - [`supabase` - `v2.4.0`](#supabase---v240)
+ - [`supabase_flutter` - `v2.7.0`](#supabase_flutter---v270)
+ - [`yet_another_json_isolate` - `v2.0.3`](#yet_another_json_isolate---v203)
+ - [`functions_client` - `v2.3.3`](#functions_client---v233)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `functions_client` - `v2.3.3`
+
+---
+
+#### `gotrue` - `v2.9.0`
+
+ - **FIX**: Support all mfa auth methods ([#1030](https://github.com/supabase/supabase-flutter/issues/1030)). ([773b7de7](https://github.com/supabase/supabase-flutter/commit/773b7de74461ca3ea857d11b1abdfdf35fb540d4))
+ - **FEAT**: Broadcast auth events to other tabs on web ([#1005](https://github.com/supabase/supabase-flutter/issues/1005)). ([8f473f1a](https://github.com/supabase/supabase-flutter/commit/8f473f1a99e0cbb9d570eb3fff0786ed5084351c))
+
+#### `postgrest` - `v2.2.0`
+
+ - **FEAT**: Add setHeader method on postgrest builder ([#1003](https://github.com/supabase/supabase-flutter/issues/1003)). ([efe8e5df](https://github.com/supabase/supabase-flutter/commit/efe8e5df7935b75b580e2ead01b9c08ac7b94c2c))
+
+#### `realtime_client` - `v2.3.0`
+
+ - **FIX**: Better stream and access token management ([#1019](https://github.com/supabase/supabase-flutter/issues/1019)). ([4a8b6416](https://github.com/supabase/supabase-flutter/commit/4a8b641661da4ce9b6ddaea64793df58411809f7))
+ - **FEAT**: Added onSystemEvents listener ([#1025](https://github.com/supabase/supabase-flutter/issues/1025)). ([a12b097f](https://github.com/supabase/supabase-flutter/commit/a12b097ff76270d6108e97335a3a6ea0adf0b460))
+
+#### `storage_client` - `v2.1.0`
+
+ - **FEAT**(storage_client): Support copy/move to different bucket ([#1043](https://github.com/supabase/supabase-flutter/issues/1043)). ([e095c14e](https://github.com/supabase/supabase-flutter/commit/e095c14e29e82cceb96220b5d73e67d991909478))
+
+#### `supabase` - `v2.4.0`
+
+ - **FIX**: Better stream and access token management ([#1019](https://github.com/supabase/supabase-flutter/issues/1019)). ([4a8b6416](https://github.com/supabase/supabase-flutter/commit/4a8b641661da4ce9b6ddaea64793df58411809f7))
+ - **FEAT**: Broadcast auth events to other tabs on web ([#1005](https://github.com/supabase/supabase-flutter/issues/1005)). ([8f473f1a](https://github.com/supabase/supabase-flutter/commit/8f473f1a99e0cbb9d570eb3fff0786ed5084351c))
+
+#### `supabase_flutter` - `v2.7.0`
+
+ - **FIX**: Better stream and access token management ([#1019](https://github.com/supabase/supabase-flutter/issues/1019)). ([4a8b6416](https://github.com/supabase/supabase-flutter/commit/4a8b641661da4ce9b6ddaea64793df58411809f7))
+ - **FIX**: Update example native code ([#1029](https://github.com/supabase/supabase-flutter/issues/1029)). ([588b5000](https://github.com/supabase/supabase-flutter/commit/588b5000d64a5d71b45ed57f70f0ed812dd34619))
+ - **FEAT**: Broadcast auth events to other tabs on web ([#1005](https://github.com/supabase/supabase-flutter/issues/1005)). ([8f473f1a](https://github.com/supabase/supabase-flutter/commit/8f473f1a99e0cbb9d570eb3fff0786ed5084351c))
+
+#### `yet_another_json_isolate` - `v2.0.3`
+
+ - **FIX**(yet_another_json_isolate): Conditional export now works correctly with Dart 3.5+ ([#1048](https://github.com/supabase/supabase-flutter/issues/1048)). ([6c80a745](https://github.com/supabase/supabase-flutter/commit/6c80a745cd387250995fa3140aac54169466f5bb))
+
+
 ## 2024-08-13
 
 ### Changes
