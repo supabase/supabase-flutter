@@ -154,6 +154,7 @@ class SupabaseAuth with WidgetsBindingObserver {
               for (final channel in realtime.channels) {
                 // ignore: invalid_use_of_internal_member
                 if (channel.isJoined) {
+                  // ignore: invalid_use_of_internal_member
                   channel.forceRejoin();
                 }
               }
@@ -180,6 +181,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
           // ignore: invalid_use_of_internal_member
           if (channel.isJoined) {
+            // ignore: invalid_use_of_internal_member
             channel.forceRejoin();
           }
         }
