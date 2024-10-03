@@ -288,7 +288,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   Future<void> _handleDeeplink(Uri uri) async {
     if (!_isAuthCallbackDeeplink(uri)) return;
 
-    _log.fine('handle deeplink uri: $uri');
+    _log.finest('handle deeplink uri: $uri');
     _log.info('handle deeplink uri');
 
     try {

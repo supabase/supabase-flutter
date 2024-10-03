@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as dev;
 
 import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
@@ -90,7 +91,7 @@ class Supabase {
     _instance._debugEnable = debug ?? kDebugMode;
 
     if (_instance._debugEnable) {
-      _log.onRecord.listen((record) {
+      _instance._logSubscription = Logger('supabase').onRecord.listen((record) {
         if (record.level >= Level.INFO) {
           debugPrint(
               '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}');
@@ -157,9 +158,12 @@ class Supabase {
   /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
   late CancelableOperation _restoreSessionCancellableOperation;
 
+  StreamSubscription? _logSubscription;
+
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {
     await _restoreSessionCancellableOperation.cancel();
+    _logSubscription?.cancel();
     client.dispose();
     _instance._supabaseAuth.dispose();
     _initialized = false;
