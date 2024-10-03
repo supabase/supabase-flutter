@@ -70,7 +70,7 @@ class Supabase {
   /// PKCE flow uses shared preferences for storing the code verifier by default.
   /// Pass a custom storage to [pkceAsyncStorage] to override the behavior.
   ///
-  /// If [debug] is set to `true`, debug logs will be printed in debug console.
+  /// If [debug] is set to `true`, debug logs will be printed in debug console. Default is `kDebugMode`.
   static Future<Supabase> initialize({
     required String url,
     required String anonKey,
