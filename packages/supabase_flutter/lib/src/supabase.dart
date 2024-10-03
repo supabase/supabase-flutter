@@ -3,11 +3,16 @@ import 'dart:async';
 import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_flutter/src/constants.dart';
 import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
+
+import 'version.dart';
+
+final _log = Logger('supabase.supabase_flutter');
 
 /// Supabase instance.
 ///
@@ -82,6 +87,19 @@ class Supabase {
       !_instance._initialized,
       'This instance is already initialized',
     );
+    _instance._debugEnable = debug ?? kDebugMode;
+
+    if (_instance._debugEnable) {
+      _log.onRecord.listen((record) {
+        if (record.level >= Level.INFO) {
+          debugPrint(
+              '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}');
+        }
+      });
+    }
+
+    _log.config("Initialize Supabase v$version");
+
     if (authOptions.pkceAsyncStorage == null) {
       authOptions = authOptions.copyWith(
         pkceAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
@@ -106,8 +124,6 @@ class Supabase {
       storageOptions: storageOptions,
       accessToken: accessToken,
     );
-    _instance._debugEnable = debug ?? kDebugMode;
-    _instance.log('***** Supabase init completed *****');
 
     _instance._supabaseAuth = SupabaseAuth();
     await _instance._supabaseAuth.initialize(options: authOptions);
@@ -118,6 +134,8 @@ class Supabase {
         CancelableOperation.fromFuture(
       _instance._supabaseAuth.recoverSession(),
     );
+
+    _log.info('***** Supabase init completed *****');
 
     return _instance;
   }
@@ -174,14 +192,5 @@ class Supabase {
       accessToken: accessToken,
     );
     _initialized = true;
-  }
-
-  void log(String msg, [StackTrace? stackTrace]) {
-    if (_debugEnable) {
-      debugPrint(msg);
-      if (stackTrace != null) {
-        debugPrintStack(stackTrace: stackTrace);
-      }
-    }
   }
 }

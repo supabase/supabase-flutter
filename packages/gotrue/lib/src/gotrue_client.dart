@@ -1290,7 +1290,7 @@ class GoTrueClient {
       });
     }
     final state = AuthState(event, session, fromBroadcast: !broadcast);
-    _log.fine('Notifying subscribers: $state');
+    _log.fine('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }
