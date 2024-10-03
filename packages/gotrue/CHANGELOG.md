@@ -1,3 +1,8 @@
+## 2.9.0
+
+ - **FIX**: Support all mfa auth methods ([#1030](https://github.com/supabase/supabase-flutter/issues/1030)). ([773b7de7](https://github.com/supabase/supabase-flutter/commit/773b7de74461ca3ea857d11b1abdfdf35fb540d4))
+ - **FEAT**: Broadcast auth events to other tabs on web ([#1005](https://github.com/supabase/supabase-flutter/issues/1005)). ([8f473f1a](https://github.com/supabase/supabase-flutter/commit/8f473f1a99e0cbb9d570eb3fff0786ed5084351c))
+
 ## 2.8.4
 
  - **FIX**: Added missing error codes for AuthException ([#995](https://github.com/supabase/supabase-flutter/issues/995)). ([4e0270a0](https://github.com/supabase/supabase-flutter/commit/4e0270a069ecf5aae42031c77200d268519ac99b))
