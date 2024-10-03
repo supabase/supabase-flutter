@@ -190,6 +190,8 @@ class GoTrueClient {
   /// [data] sets [User.userMetadata] without an extra call to [updateUser]
   ///
   /// [channel] Messaging channel to use (e.g. whatsapp or sms)
+  /// 
+  /// [saveSession] save the user session after signUp
   Future<AuthResponse> signUp({
     String? email,
     String? phone,
@@ -198,6 +200,7 @@ class GoTrueClient {
     Map<String, dynamic>? data,
     String? captchaToken,
     OtpChannel channel = OtpChannel.sms,
+    bool saveSession = true,
   }) async {
     assert((email != null && phone == null) || (email == null && phone != null),
         'You must provide either an email or phone number');
@@ -252,7 +255,7 @@ class GoTrueClient {
     final authResponse = AuthResponse.fromJson(response);
 
     final session = authResponse.session;
-    if (session != null) {
+    if (session != null && saveSession) {
       _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
