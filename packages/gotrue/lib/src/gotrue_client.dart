@@ -1147,13 +1147,14 @@ class GoTrueClient {
 
   /// set currentSession and currentUser
   void _saveSession(Session session) {
-    _log.fine('Save session: $session');
+    _log.finer('Saving session: $session');
+    _log.fine('Saving session');
     _currentSession = session;
     _currentUser = session.user;
   }
 
   void _removeSession() {
-    _log.fine('Remove session');
+    _log.fine('Removing session');
     _currentSession = null;
     _currentUser = null;
   }
@@ -1170,8 +1171,9 @@ class GoTrueClient {
         _broadcastChannel = web.getBroadcastChannel(broadcastKey);
         _broadcastChannelSubscription =
             _broadcastChannel?.onMessage.listen((messageEvent) {
-          _log.info('Received broadcast message: $messageEvent');
           final rawEvent = messageEvent['event'];
+          _log.finer('Received broadcast message: $messageEvent');
+          _log.info('Received broadcast event: $rawEvent');
           final event = switch (rawEvent) {
             // This library sends the js name of the event to be comptabile with
             // the js library, so we need to convert it back to the dart name

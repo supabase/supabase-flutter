@@ -216,7 +216,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             message: 'JSON object requested, multiple (or no) rows returned',
           );
 
-          _log.fine('$exception for request $_url');
+          _log.finer('$exception for request $_url');
           throw exception;
         } else if (body.length == 1) {
           body = body.first;
@@ -293,7 +293,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         );
       }
 
-      _log.fine('$error for request $_url');
+      _log.finer('$error from request: $_url');
+      _log.fine('$error from request');
 
       throw error;
     }

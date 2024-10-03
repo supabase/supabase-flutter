@@ -44,7 +44,7 @@ class PostgrestClient {
   }
 
   PostgrestClient setAuth(String? token) {
-    _log.fine("setAuth with: $token");
+    _log.finer("setAuth with: $token");
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     } else {
@@ -98,7 +98,7 @@ class PostgrestClient {
   }
 
   Future<void> dispose() async {
-    _log.fine("dispose client");
+    _log.fine("dispose PostgrestClient");
     if (!_hasCustomIsolate) {
       return _isolate.dispose();
     }
