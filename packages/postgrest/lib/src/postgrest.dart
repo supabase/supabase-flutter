@@ -44,7 +44,7 @@ class PostgrestClient {
   }
 
   PostgrestClient setAuth(String? token) {
-    _log.finer("setAuth with: $token");
+    _log.finest("setAuth with: $token");
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     } else {

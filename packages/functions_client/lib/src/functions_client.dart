@@ -134,7 +134,7 @@ class FunctionsClient {
       request.headers[key] = value;
     });
 
-    _log.finer('Request: ${request.method} ${request.url} ${request.headers}');
+    _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
 
     final response = await (_httpClient?.send(request) ?? request.send());
     final responseType = (response.headers['Content-Type'] ??

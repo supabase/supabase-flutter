@@ -18,7 +18,7 @@ BroadcastChannel getBroadcastChannel(String broadcastKey) {
       return json.decode(json.encode(dataMap));
     }),
     postMessage: (message) {
-      _log.finer('Broadcasting message: $message');
+      _log.finest('Broadcasting message: $message');
       _log.fine('Broadcasting event: ${message['event']}');
       final jsMessage = js_util.jsify(message);
       broadcast.postMessage(jsMessage);

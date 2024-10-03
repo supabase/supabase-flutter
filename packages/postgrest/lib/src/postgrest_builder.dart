@@ -134,7 +134,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         _headers['Content-Type'] = 'application/json';
       }
       final bodyStr = jsonEncode(_body);
-      _log.finer("Request: $uppercaseMethod $_url");
+      _log.finest("Request: $uppercaseMethod $_url");
 
       if (uppercaseMethod == METHOD_GET) {
         response = await (_httpClient?.get ?? http.get)(
@@ -216,7 +216,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             message: 'JSON object requested, multiple (or no) rows returned',
           );
 
-          _log.finer('$exception for request $_url');
+          _log.finest('$exception for request $_url');
           throw exception;
         } else if (body.length == 1) {
           body = body.first;
@@ -293,7 +293,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         );
       }
 
-      _log.finer('$error from request: $_url');
+      _log.finest('$error from request: $_url');
       _log.fine('$error from request');
 
       throw error;

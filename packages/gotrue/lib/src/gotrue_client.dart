@@ -1147,7 +1147,7 @@ class GoTrueClient {
 
   /// set currentSession and currentUser
   void _saveSession(Session session) {
-    _log.finer('Saving session: $session');
+    _log.finest('Saving session: $session');
     _log.fine('Saving session');
     _currentSession = session;
     _currentUser = session.user;
@@ -1172,7 +1172,7 @@ class GoTrueClient {
         _broadcastChannelSubscription =
             _broadcastChannel?.onMessage.listen((messageEvent) {
           final rawEvent = messageEvent['event'];
-          _log.finer('Received broadcast message: $messageEvent');
+          _log.finest('Received broadcast message: $messageEvent');
           _log.info('Received broadcast event: $rawEvent');
           final event = switch (rawEvent) {
             // This library sends the js name of the event to be comptabile with
@@ -1290,7 +1290,7 @@ class GoTrueClient {
       });
     }
     final state = AuthState(event, session, fromBroadcast: !broadcast);
-    _log.fine('onAuthStateChange: $state');
+    _log.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }

@@ -263,7 +263,7 @@ class RealtimeClient {
 
   /// Logs the message. Override `this.logger` for specialized logging.
   void log([String? kind, String? msg, dynamic data]) {
-    _log.finer('$kind: $msg', data);
+    _log.finest('$kind: $msg', data);
     logger?.call(kind, msg, data);
   }
 
