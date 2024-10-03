@@ -28,7 +28,8 @@ class FunctionsClient {
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
         _hasCustomIsolate = isolate != null,
         _httpClient = httpClient {
-    _log.config("Initialize FunctionsClient v$version");
+    _log.config("Initialize FunctionsClient v$version with url: $url");
+    _log.finest("Initialize with headers: $headers");
   }
 
   /// Getter for the headers

@@ -1,10 +1,13 @@
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:storage_client/src/constants.dart';
 import 'package:storage_client/src/storage_bucket_api.dart';
 import 'package:storage_client/src/storage_file_api.dart';
+import 'package:storage_client/src/version.dart';
 
 class SupabaseStorageClient extends StorageBucketApi {
   final int _defaultRetryAttempts;
+  final _log = Logger('supabase.storage');
 
   /// To create a [SupabaseStorageClient], you need to provide an [url] and [headers].
   ///
@@ -42,7 +45,11 @@ class SupabaseStorageClient extends StorageBucketApi {
           url,
           {...Constants.defaultHeaders, ...headers},
           httpClient: httpClient,
-        );
+        ) {
+    _log.config(
+        'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts');
+    _log.finest('Initialize with headers: $headers');
+  }
 
   /// Perform file operation in a bucket.
   ///

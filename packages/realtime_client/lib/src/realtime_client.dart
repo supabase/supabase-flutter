@@ -140,6 +140,9 @@ class RealtimeClient {
           if (headers != null) ...headers,
         },
         transport = transport ?? createWebSocketClient {
+    _log.config(
+        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, longpollerTimeout: $longpollerTimeout, logLevel: $logLevel');
+    _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
 

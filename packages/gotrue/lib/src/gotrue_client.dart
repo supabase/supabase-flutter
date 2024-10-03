@@ -105,23 +105,22 @@ class GoTrueClient {
     GotrueAsyncStorage? asyncStorage,
     AuthFlowType flowType = AuthFlowType.pkce,
   })  : _url = url ?? Constants.defaultGotrueUrl,
-        _headers = headers ?? {},
+        _headers = {
+          ...Constants.defaultHeaders,
+          ...?headers,
+        },
         _httpClient = httpClient,
         _asyncStorage = asyncStorage,
         _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
 
+    final gotrueUrl = url ?? Constants.defaultGotrueUrl;
     _log.config(
         'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}');
-
-    final gotrueUrl = url ?? Constants.defaultGotrueUrl;
-    final gotrueHeader = {
-      ...Constants.defaultHeaders,
-      if (headers != null) ...headers,
-    };
+    _log.finest('Initialize with headers: $_headers');
     admin = GoTrueAdminApi(
       gotrueUrl,
-      headers: gotrueHeader,
+      headers: _headers,
       httpClient: httpClient,
     );
     mfa = GoTrueMFAApi(

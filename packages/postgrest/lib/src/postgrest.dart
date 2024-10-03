@@ -34,7 +34,10 @@ class PostgrestClient {
   })  : _schema = schema,
         headers = {...defaultHeaders, if (headers != null) ...headers},
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null;
+        _hasCustomIsolate = isolate != null {
+    _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
+    _log.finest('Initialize with headers: $headers');
+  }
 
   /// Authenticates the request with JWT.
   @Deprecated("Use setAuth() instead")
