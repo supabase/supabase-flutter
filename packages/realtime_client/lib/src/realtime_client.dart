@@ -171,7 +171,8 @@ class RealtimeClient {
     }
 
     try {
-      log('transport', 'connecting to $endPointURL');
+      log('transport', 'connecting to $endPointURL', null);
+      log('transport', 'connecting', null, Level.FINE);
       connState = SocketStates.connecting;
       conn = transport(endPointURL, headers);
 
@@ -219,7 +220,8 @@ class RealtimeClient {
     if (conn != null) {
       final oldState = connState;
       connState = SocketStates.disconnecting;
-      log('transport', 'disconnecting', {'code': code, 'reason': reason});
+      log('transport', 'disconnecting', {'code': code, 'reason': reason},
+          Level.FINE);
 
       // Connection cannot be closed while it's still connecting. Wait for connection to
       // be ready and then close it.
@@ -236,7 +238,7 @@ class RealtimeClient {
         }
         connState = SocketStates.disconnected;
         reconnectTimer.reset();
-        log('transport', 'disconnected');
+        log('transport', 'disconnected', null, Level.FINE);
       }
       this.conn = null;
 
@@ -265,8 +267,11 @@ class RealtimeClient {
   }
 
   /// Logs the message. Override `this.logger` for specialized logging.
-  void log([String? kind, String? msg, dynamic data]) {
-    _log.finest('$kind: $msg', data);
+  ///
+  /// [level] must be [Level.FINEST] for senitive data
+  void log(
+      [String? kind, String? msg, dynamic data, Level level = Level.FINEST]) {
+    _log.log(level, '$kind: $msg', data);
     logger?.call(kind, msg, data);
   }
 
@@ -425,6 +430,7 @@ class RealtimeClient {
 
   void _onConnOpen() {
     log('transport', 'connected to $endPointURL');
+    log('transport', 'connected', null, Level.FINE);
     _flushSendBuffer();
     reconnectTimer.reset();
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
@@ -444,7 +450,7 @@ class RealtimeClient {
     if (statusCode != null) {
       event = RealtimeCloseEvent(code: statusCode, reason: conn?.closeReason);
     }
-    log('transport', 'close', event);
+    log('transport', 'close', event, Level.FINE);
 
     /// SocketStates.disconnected: by user with socket.disconnect()
     /// SocketStates.closed: NOT by user, should try to reconnect
