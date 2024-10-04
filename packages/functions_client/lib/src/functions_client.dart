@@ -3,8 +3,10 @@ import 'dart:typed_data';
 
 import 'package:functions_client/src/constants.dart';
 import 'package:functions_client/src/types.dart';
+import 'package:functions_client/src/version.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show MultipartRequest;
+import 'package:logging/logging.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 class FunctionsClient {
@@ -13,6 +15,7 @@ class FunctionsClient {
   final http.Client? _httpClient;
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
+  final _log = Logger("supabase.functions");
 
   /// In case you don't provide your own isolate, call [dispose] when you're done
   FunctionsClient(
@@ -24,7 +27,10 @@ class FunctionsClient {
         _headers = {...Constants.defaultHeaders, ...headers},
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
         _hasCustomIsolate = isolate != null,
-        _httpClient = httpClient;
+        _httpClient = httpClient {
+    _log.config("Initialize FunctionsClient v$version with url: $url");
+    _log.finest("Initialize with headers: $headers");
+  }
 
   /// Getter for the headers
   Map<String, String> get headers {
@@ -129,6 +135,8 @@ class FunctionsClient {
       request.headers[key] = value;
     });
 
+    _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
+
     final response = await (_httpClient?.send(request) ?? request.send());
     final responseType = (response.headers['Content-Type'] ??
             response.headers['content-type'] ??
@@ -167,6 +175,7 @@ class FunctionsClient {
   ///
   /// Does nothing if you pass your own isolate
   Future<void> dispose() async {
+    _log.fine("Dispose FunctionsClient");
     if (!_hasCustomIsolate) {
       return _isolate.dispose();
     }

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:supabase/src/constants.dart';
+import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -65,6 +67,8 @@ class SupabaseClient {
 
   /// Increment ID of the stream to create different realtime topic for each stream
   final _incrementId = Counter();
+
+  final _log = Logger('supabase.supabase');
 
   /// Getter for the HTTP headers
   Map<String, String> get headers {
@@ -145,7 +149,12 @@ class SupabaseClient {
     storage = _initStorageClient(storageOptions.retryAttempts);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
+      _log.config(
+          'Initialize SupabaseClient v$version with no custom access token');
       _listenForAuthEvents();
+    } else {
+      _log.config(
+          'Initialize SupabaseClient v$version with custom access token');
     }
   }
 
@@ -223,6 +232,8 @@ class SupabaseClient {
     return realtime.removeAllChannels();
   }
 
+  /// Get either the custom access token from [accessToken] or the supabase one
+  /// from [_authInstance]
   Future<String?> _getAccessToken() async {
     if (accessToken != null) {
       return await accessToken!();
@@ -231,7 +242,7 @@ class SupabaseClient {
     if (_authInstance.currentSession?.isExpired ?? false) {
       try {
         await _authInstance.refreshSession();
-      } catch (error) {
+      } catch (error, stackTrace) {
         final expiresAt = _authInstance.currentSession?.expiresAt;
         if (expiresAt != null) {
           // Failed to refresh the token.
@@ -239,6 +250,11 @@ class SupabaseClient {
               .isAfter(DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000));
           if (isExpiredWithoutMargin) {
             // Throw the error instead of making an API request with an expired token.
+            _log.warning(
+              'Access token is expired and refreshing failed, aborting api request',
+              error,
+              stackTrace,
+            );
             rethrow;
           }
         }
@@ -248,6 +264,7 @@ class SupabaseClient {
   }
 
   Future<void> dispose() async {
+    _log.fine('Dispose SupabaseClient');
     await _authStateSubscription?.cancel();
     await _isolate.dispose();
     auth.dispose();

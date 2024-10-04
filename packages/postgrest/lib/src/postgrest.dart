@@ -1,4 +1,5 @@
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -11,6 +12,7 @@ class PostgrestClient {
   final Client? httpClient;
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
+  final _log = Logger('supabase.postgrest');
 
   /// To create a [PostgrestClient], you need to provide an [url] endpoint.
   ///
@@ -32,7 +34,10 @@ class PostgrestClient {
   })  : _schema = schema,
         headers = {...defaultHeaders, if (headers != null) ...headers},
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null;
+        _hasCustomIsolate = isolate != null {
+    _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
+    _log.finest('Initialize with headers: $headers');
+  }
 
   /// Authenticates the request with JWT.
   @Deprecated("Use setAuth() instead")
@@ -42,6 +47,7 @@ class PostgrestClient {
   }
 
   PostgrestClient setAuth(String? token) {
+    _log.finest("setAuth with: $token");
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     } else {
@@ -95,6 +101,7 @@ class PostgrestClient {
   }
 
   Future<void> dispose() async {
+    _log.fine("dispose PostgrestClient");
     if (!_hasCustomIsolate) {
       return _isolate.dispose();
     }

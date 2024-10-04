@@ -4,6 +4,7 @@ import 'dart:core';
 
 import 'package:collection/collection.dart';
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
@@ -62,6 +63,7 @@ class RealtimeClient {
   final Duration timeout;
   final WebSocketTransport transport;
   final Client? httpClient;
+  final _log = Logger('supabase.realtime');
   int heartbeatIntervalMs = 30000;
   Timer? heartbeatTimer;
 
@@ -90,18 +92,29 @@ class RealtimeClient {
 
   /// Initializes the Socket
   ///
-  /// `endPoint` The string WebSocket endpoint, ie, "ws://example.com/socket", "wss://example.com", "/socket" (inherited host & protocol)
-  /// `httpEndpoint` The string HTTP endpoint, ie, "https://example.com", "/" (inherited host & protocol)
-  /// `transport` The Websocket Transport, for example WebSocket.
-  /// `timeout` The default timeout in milliseconds to trigger push timeouts.
-  /// `params` The optional params to pass when connecting.
-  /// `headers` The optional headers to pass when connecting.
-  /// `heartbeatIntervalMs` The millisec interval to send a heartbeat message.
-  /// `logger` The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`$kind: $msg`, data) }
-  /// `encode` The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
-  /// `decode` The function to decode incoming messages. Defaults to JSON: (payload, callback) => callback(JSON.parse(payload))
-  /// `longpollerTimeout` The maximum timeout of a long poll AJAX request. Defaults to 20s (double the server long poll timer).
-  /// `reconnectAfterMs` The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
+  /// [endPoint] The string WebSocket endpoint, ie, "ws://example.com/socket", "wss://example.com", "/socket" (inherited host & protocol
+  ///
+  /// [transport] The Websocket Transport, for example WebSocket.
+  ///
+  /// [timeout] The default timeout in milliseconds to trigger push timeouts.
+  ///
+  /// [params] The optional params to pass when connecting.
+  ///
+  /// [headers] The optional headers to pass when connecting.
+  ///
+  /// [heartbeatIntervalMs] The millisec interval to send a heartbeat message.
+  ///
+  /// [logger] The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`$kind: $msg`, data) }
+  ///
+  /// [encode] The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
+  ///
+  /// [decode] The function to decode incoming messages. Defaults to JSON: (payload, callback) => callback(JSON.parse(payload))
+  ///
+  /// [longpollerTimeout] The maximum timeout of a long poll AJAX request. Defaults to 20s (double the server long poll timer).
+  ///
+  /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
+  ///
+  /// [logLevel] Specifies the log level for the connection on the server.
   RealtimeClient(
     String endPoint, {
     WebSocketTransport? transport,
@@ -127,6 +140,9 @@ class RealtimeClient {
           if (headers != null) ...headers,
         },
         transport = transport ?? createWebSocketClient {
+    _log.config(
+        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, longpollerTimeout: $longpollerTimeout, logLevel: $logLevel');
+    _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
 
@@ -155,6 +171,8 @@ class RealtimeClient {
     }
 
     try {
+      log('transport', 'connecting to $endPointURL', null);
+      log('transport', 'connecting', null, Level.FINE);
       connState = SocketStates.connecting;
       conn = transport(endPointURL, headers);
 
@@ -202,6 +220,8 @@ class RealtimeClient {
     if (conn != null) {
       final oldState = connState;
       connState = SocketStates.disconnecting;
+      log('transport', 'disconnecting', {'code': code, 'reason': reason},
+          Level.FINE);
 
       // Connection cannot be closed while it's still connecting. Wait for connection to
       // be ready and then close it.
@@ -218,6 +238,7 @@ class RealtimeClient {
         }
         connState = SocketStates.disconnected;
         reconnectTimer.reset();
+        log('transport', 'disconnected', null, Level.FINE);
       }
       this.conn = null;
 
@@ -246,7 +267,11 @@ class RealtimeClient {
   }
 
   /// Logs the message. Override `this.logger` for specialized logging.
-  void log([String? kind, String? msg, dynamic data]) {
+  ///
+  /// [level] must be [Level.FINEST] for senitive data
+  void log(
+      [String? kind, String? msg, dynamic data, Level level = Level.FINEST]) {
+    _log.log(level, '$kind: $msg', data);
     logger?.call(kind, msg, data);
   }
 
@@ -405,6 +430,7 @@ class RealtimeClient {
 
   void _onConnOpen() {
     log('transport', 'connected to $endPointURL');
+    log('transport', 'connected', null, Level.FINE);
     _flushSendBuffer();
     reconnectTimer.reset();
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
@@ -424,7 +450,7 @@ class RealtimeClient {
     if (statusCode != null) {
       event = RealtimeCloseEvent(code: statusCode, reason: conn?.closeReason);
     }
-    log('transport', 'close', event);
+    log('transport', 'close', event, Level.FINE);
 
     /// SocketStates.disconnected: by user with socket.disconnect()
     /// SocketStates.closed: NOT by user, should try to reconnect

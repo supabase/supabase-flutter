@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase/supabase.dart';
 
@@ -60,6 +61,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Used to identify which row has changed
   final List<String> _uniqueColumns;
+
+  final _log = Logger('supabase.supabase');
 
   /// StreamController for `stream()` method.
   BehaviorSubject<SupabaseStreamEvent>? _streamController;
@@ -144,6 +147,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         _getStreamData();
       },
       onCancel: () {
+        _log.fine('stream controller for table: $_table got closed');
         _channel?.unsubscribe();
         _streamController?.close();
         _streamController = null;

@@ -14,9 +14,11 @@ import 'package:jwt_decode/jwt_decode.dart';
 import 'package:meta/meta.dart';
 import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
+import 'package:logging/logging.dart';
 
 import 'broadcast_stub.dart' if (dart.library.html) './broadcast_web.dart'
     as web;
+import 'version.dart';
 
 part 'gotrue_mfa_api.dart';
 
@@ -87,6 +89,8 @@ class GoTrueClient {
 
   final AuthFlowType _flowType;
 
+  final _log = Logger('supabase.gotrue');
+
   /// Proxy to the web BroadcastChannel API. Should be null on non-web platforms.
   BroadcastChannel? _broadcastChannel;
 
@@ -101,20 +105,22 @@ class GoTrueClient {
     GotrueAsyncStorage? asyncStorage,
     AuthFlowType flowType = AuthFlowType.pkce,
   })  : _url = url ?? Constants.defaultGotrueUrl,
-        _headers = headers ?? {},
+        _headers = {
+          ...Constants.defaultHeaders,
+          ...?headers,
+        },
         _httpClient = httpClient,
         _asyncStorage = asyncStorage,
         _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
-    final gotrueHeader = {
-      ...Constants.defaultHeaders,
-      if (headers != null) ...headers,
-    };
+    _log.config(
+        'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}');
+    _log.finest('Initialize with headers: $_headers');
     admin = GoTrueAdminApi(
       gotrueUrl,
-      headers: gotrueHeader,
+      headers: _headers,
       httpClient: httpClient,
     );
     mfa = GoTrueMFAApi(
@@ -617,8 +623,10 @@ class GoTrueClient {
   /// If the current session's refresh token is invalid, an error will be thrown.
   Future<AuthResponse> refreshSession([String? refreshToken]) async {
     if (currentSession?.accessToken == null) {
+      _log.warning("Can't refresh session, no current session found.");
       throw AuthSessionMissingException();
     }
+    _log.info('Refresh session');
 
     final currentSessionRefreshToken =
         refreshToken ?? _currentSession?.refreshToken;
@@ -842,6 +850,7 @@ class GoTrueClient {
   Future<void> signOut({
     SignOutScope scope = SignOutScope.local,
   }) async {
+    _log.info('Signing out user with scope: $scope');
     final accessToken = currentSession?.accessToken;
 
     if (scope != SignOutScope.others) {
@@ -966,6 +975,7 @@ class GoTrueClient {
     try {
       final session = Session.fromJson(json.decode(jsonStr));
       if (session == null) {
+        _log.warning("Can't recover session from string, session is null");
         await signOut();
         throw notifyException(
           AuthException('Current session is missing data.'),
@@ -973,6 +983,7 @@ class GoTrueClient {
       }
 
       if (session.isExpired) {
+        _log.fine('Session from recovery is expired');
         final refreshToken = session.refreshToken;
         if (_autoRefreshToken && refreshToken != null) {
           return await _callRefreshToken(refreshToken);
@@ -1002,6 +1013,7 @@ class GoTrueClient {
   void startAutoRefresh() async {
     stopAutoRefresh();
 
+    _log.fine('Starting auto refresh');
     _autoRefreshTicker = Timer.periodic(
       Constants.autoRefreshTickDuration,
       (Timer t) => _autoRefreshTokenTick(),
@@ -1013,6 +1025,7 @@ class GoTrueClient {
 
   /// Stops an active auto refresh process running in the background (if any).
   void stopAutoRefresh() {
+    _log.fine('Stopping auto refresh');
     _autoRefreshTicker?.cancel();
     _autoRefreshTicker = null;
   }
@@ -1037,12 +1050,15 @@ class GoTrueClient {
                   Constants.autoRefreshTickDuration.inMilliseconds)
               .floor();
 
+      _log.finer('Access token expires in $expiresInTicks ticks');
+
       // Only tick if the next tick comes after the retry threshold
       if (expiresInTicks <= Constants.autoRefreshTickThreshold) {
         await _callRefreshToken(refreshToken);
       }
     } catch (error) {
-      // Do nothing. JS client prints here
+      // Do nothing. JS client prints here, but error is already tracked via
+      // [notifyException]
     }
   }
 
@@ -1055,6 +1071,7 @@ class GoTrueClient {
       // Make a GET request
       () async {
         attempt++;
+        _log.fine('Attempt $attempt to refresh token');
         final options = GotrueRequestOptions(
             headers: _headers,
             body: {'refresh_token': refreshToken},
@@ -1129,11 +1146,14 @@ class GoTrueClient {
 
   /// set currentSession and currentUser
   void _saveSession(Session session) {
+    _log.finest('Saving session: $session');
+    _log.fine('Saving session');
     _currentSession = session;
     _currentUser = session.user;
   }
 
   void _removeSession() {
+    _log.fine('Removing session');
     _currentSession = null;
     _currentUser = null;
   }
@@ -1151,6 +1171,8 @@ class GoTrueClient {
         _broadcastChannelSubscription =
             _broadcastChannel?.onMessage.listen((messageEvent) {
           final rawEvent = messageEvent['event'];
+          _log.finest('Received broadcast message: $messageEvent');
+          _log.info('Received broadcast event: $rawEvent');
           final event = switch (rawEvent) {
             // This library sends the js name of the event to be comptabile with
             // the js library, so we need to convert it back to the dart name
@@ -1202,6 +1224,7 @@ class GoTrueClient {
   Future<AuthResponse> _callRefreshToken(String refreshToken) async {
     // Refreshing is already in progress
     if (_refreshTokenCompleter != null) {
+      _log.finer("Don't call refresh token, already in progress");
       return _refreshTokenCompleter!.future;
     }
 
@@ -1213,6 +1236,7 @@ class GoTrueClient {
         (_) => null,
         onError: (_, __) => null,
       );
+      _log.fine('Refresh access token');
 
       final data = await _refreshAccessToken(refreshToken);
 
@@ -1232,7 +1256,7 @@ class GoTrueClient {
         _removeSession();
         notifyAllSubscribers(AuthChangeEvent.signedOut);
       } else {
-        _onAuthStateChangeController.addError(error, stack);
+        notifyException(error, stack);
       }
 
       _refreshTokenCompleter?.completeError(error);
@@ -1240,7 +1264,7 @@ class GoTrueClient {
       rethrow;
     } catch (error, stack) {
       _refreshTokenCompleter?.completeError(error);
-      _onAuthStateChangeController.addError(error, stack);
+      notifyException(error, stack);
       rethrow;
     } finally {
       _refreshTokenCompleter = null;
@@ -1265,6 +1289,7 @@ class GoTrueClient {
       });
     }
     final state = AuthState(event, session, fromBroadcast: !broadcast);
+    _log.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }
@@ -1272,6 +1297,7 @@ class GoTrueClient {
   /// For internal use only.
   @internal
   Object notifyException(Object exception, [StackTrace? stackTrace]) {
+    _log.warning('Notifying exception', exception, stackTrace);
     _onAuthStateChangeController.addError(
       exception,
       stackTrace ?? StackTrace.current,

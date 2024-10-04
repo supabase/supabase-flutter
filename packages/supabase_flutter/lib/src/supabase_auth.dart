@@ -8,6 +8,7 @@ import 'package:async/async.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -34,6 +35,8 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   final _appLinks = AppLinks();
 
+  final _log = Logger('supabase.supabase_flutter');
+
   /// - Obtains session from local storage and sets it as the current session
   /// - Starts a deep link observer
   /// - Emits an initial session if there were no session stored in local storage
@@ -48,9 +51,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       (data) {
         _onAuthStateChange(data.event, data.session);
       },
-      onError: (error, stackTrace) {
-        Supabase.instance.log(error.toString(), stackTrace);
-      },
+      onError: (error, stackTrace) {},
     );
 
     await _localStorage.initialize();
@@ -65,7 +66,8 @@ class SupabaseAuth with WidgetsBindingObserver {
               .setInitialSession(persistedSession);
           shouldEmitInitialSession = false;
         } catch (error, stackTrace) {
-          Supabase.instance.log(error.toString(), stackTrace);
+          _log.warning(
+              'Error while setting initial session', error, stackTrace);
         }
       }
     }
@@ -96,9 +98,9 @@ class SupabaseAuth with WidgetsBindingObserver {
         }
       }
     } on AuthException catch (error, stackTrace) {
-      Supabase.instance.log(error.message, stackTrace);
+      _log.warning(error.message, error, stackTrace);
     } catch (error, stackTrace) {
-      Supabase.instance.log(error.toString(), stackTrace);
+      _log.warning("Error while recovering session", error, stackTrace);
     }
   }
 
@@ -152,6 +154,7 @@ class SupabaseAuth with WidgetsBindingObserver {
               for (final channel in realtime.channels) {
                 // ignore: invalid_use_of_internal_member
                 if (channel.isJoined) {
+                  // ignore: invalid_use_of_internal_member
                   channel.forceRejoin();
                 }
               }
@@ -178,6 +181,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
           // ignore: invalid_use_of_internal_member
           if (channel.isJoined) {
+            // ignore: invalid_use_of_internal_member
             channel.forceRejoin();
           }
         }
@@ -186,9 +190,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
-    Supabase.instance.log('**** onAuthStateChange: $event');
     if (session != null) {
-      Supabase.instance.log(jsonEncode(session.toJson()));
       _localStorage.persistSession(jsonEncode(session.toJson()));
     } else if (event == AuthChangeEvent.signedOut) {
       _localStorage.removePersistedSession();
@@ -206,7 +208,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Enable deep link observer to handle deep links
   Future<void> _startDeeplinkObserver() async {
-    Supabase.instance.log('***** SupabaseDeepLinkingMixin startAuthObserver');
+    _log.fine('Starting deeplink observer');
     _handleIncomingLinks();
     await _handleInitialUri();
   }
@@ -216,7 +218,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Automatically called on dispose().
   void _stopDeeplinkObserver() {
     if (_deeplinkSubscription != null) {
-      Supabase.instance.log('***** SupabaseDeepLinkingMixin stopAuthObserver');
+      _log.fine('Stopping deeplink observer');
       _deeplinkSubscription?.cancel();
     }
   }
@@ -234,7 +236,7 @@ class SupabaseAuth with WidgetsBindingObserver {
           }
         },
         onError: (Object err, StackTrace stackTrace) {
-          _onErrorReceivingDeeplink(err.toString(), stackTrace);
+          _onErrorReceivingDeeplink(err, stackTrace);
         },
       );
     }
@@ -273,12 +275,12 @@ class SupabaseAuth with WidgetsBindingObserver {
         await _handleDeeplink(uri);
       }
     } on PlatformException catch (err, stackTrace) {
-      _onErrorReceivingDeeplink(err.message ?? err.toString(), stackTrace);
+      _onErrorReceivingDeeplink(err.message ?? err, stackTrace);
       // Platform messages may fail but we ignore the exception
     } on FormatException catch (err, stackTrace) {
       _onErrorReceivingDeeplink(err.message, stackTrace);
     } catch (err, stackTrace) {
-      _onErrorReceivingDeeplink(err.toString(), stackTrace);
+      _onErrorReceivingDeeplink(err, stackTrace);
     }
   }
 
@@ -286,26 +288,22 @@ class SupabaseAuth with WidgetsBindingObserver {
   Future<void> _handleDeeplink(Uri uri) async {
     if (!_isAuthCallbackDeeplink(uri)) return;
 
-    Supabase.instance.log('***** SupabaseAuthState handleDeeplink $uri');
-
-    // notify auth deeplink received
-    Supabase.instance.log('onReceivedAuthDeeplink uri: $uri');
+    _log.finest('handle deeplink uri: $uri');
+    _log.info('handle deeplink uri');
 
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
     } on AuthException catch (error, stackTrace) {
       // ignore: invalid_use_of_internal_member
       Supabase.instance.client.auth.notifyException(error, stackTrace);
-      Supabase.instance.log(error.toString(), stackTrace);
     } catch (error, stackTrace) {
-      Supabase.instance.log(error.toString(), stackTrace);
+      _log.warning('Error while getSessionFromUrl', error, stackTrace);
     }
   }
 
   /// Callback when deeplink receiving throw error
-  void _onErrorReceivingDeeplink(String message, StackTrace stackTrace) {
-    Supabase.instance
-        .log('onErrorReceivingDeepLink message: $message', stackTrace);
+  void _onErrorReceivingDeeplink(Object error, StackTrace stackTrace) {
+    _log.warning('Error while receiving deeplink', error, stackTrace);
   }
 }
 
