@@ -52,6 +52,7 @@ final supabase = Supabase.instance.client;
 * [Edge Functions](#edge-functions)
 * [Deep Links](#deep-links)
 * [Custom LocalStorage](#custom-localstorage)
+- [Logging](#logging)
 
 
 ### <a id="authentication"></a>[Authentication](https://supabase.com/docs/guides/auth)
@@ -621,7 +622,7 @@ supabaseLogger.onRecord.listen((record) {
 - `supabase_flutter`: `Logger('supabase.supabase_flutter')`
 - `supabase`: `Logger('supabase.supabase')`
 - `postgrest`: `Logger('supabase.postgrest')`
-- `gotrue`: `Logger('supabase.gotrue')`
+- `gotrue`: `Logger('supabase.auth')`
 - `realtime_client`: `Logger('supabase.realtime')`
 - `storage_client`: `Logger('supabase.storage')`
 - `functions_client`: `Logger('supabase.functions')`
