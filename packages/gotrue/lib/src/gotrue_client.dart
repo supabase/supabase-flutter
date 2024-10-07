@@ -89,7 +89,7 @@ class GoTrueClient {
 
   final AuthFlowType _flowType;
 
-  final _log = Logger('supabase.gotrue');
+  final _log = Logger('supabase.auth');
 
   /// Proxy to the web BroadcastChannel API. Should be null on non-web platforms.
   BroadcastChannel? _broadcastChannel;

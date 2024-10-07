@@ -5,7 +5,7 @@ import 'dart:js_util' as js_util;
 import 'package:gotrue/src/types/types.dart';
 import 'package:logging/logging.dart';
 
-final _log = Logger('supabase.gotrue');
+final _log = Logger('supabase.auth');
 
 BroadcastChannel getBroadcastChannel(String broadcastKey) {
   final broadcast = html.BroadcastChannel(broadcastKey);
