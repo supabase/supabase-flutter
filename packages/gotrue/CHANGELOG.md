@@ -1,3 +1,8 @@
+## 2.10.0
+
+ - **FIX**: Rename logger from gotrue to auth ([#1055](https://github.com/supabase/supabase-flutter/issues/1055)). ([eea1ea6c](https://github.com/supabase/supabase-flutter/commit/eea1ea6c4e200e8ffc52d8343c0684c19670e3ed))
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
 ## 2.9.0
 
  - **FIX**: Support all mfa auth methods ([#1030](https://github.com/supabase/supabase-flutter/issues/1030)). ([773b7de7](https://github.com/supabase/supabase-flutter/commit/773b7de74461ca3ea857d11b1abdfdf35fb540d4))

@@ -1,3 +1,7 @@
+## 2.3.0
+
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
 ## 2.2.0
 
  - **FEAT**: Add setHeader method on postgrest builder ([#1003](https://github.com/supabase/supabase-flutter/issues/1003)). ([efe8e5df](https://github.com/supabase/supabase-flutter/commit/efe8e5df7935b75b580e2ead01b9c08ac7b94c2c))

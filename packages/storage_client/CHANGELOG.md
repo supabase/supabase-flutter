@@ -1,3 +1,7 @@
+## 2.2.0
+
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
 ## 2.1.0
 
  - **FEAT**(storage_client): Support copy/move to different bucket ([#1043](https://github.com/supabase/supabase-flutter/issues/1043)). ([e095c14e](https://github.com/supabase/supabase-flutter/commit/e095c14e29e82cceb96220b5d73e67d991909478))

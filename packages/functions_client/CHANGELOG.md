@@ -1,3 +1,7 @@
+## 2.4.0
+
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
 ## 2.3.3
 
  - Update a dependency to the latest release.
