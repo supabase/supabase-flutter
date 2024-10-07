@@ -3,6 +3,59 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-10-07
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.4.0`](#functions_client---v240)
+ - [`gotrue` - `v2.10.0`](#gotrue---v2100)
+ - [`postgrest` - `v2.3.0`](#postgrest---v230)
+ - [`realtime_client` - `v2.4.0`](#realtime_client---v240)
+ - [`storage_client` - `v2.2.0`](#storage_client---v220)
+ - [`supabase` - `v2.5.0`](#supabase---v250)
+ - [`supabase_flutter` - `v2.8.0`](#supabase_flutter---v280)
+
+---
+
+#### `functions_client` - `v2.4.0`
+
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
+#### `gotrue` - `v2.10.0`
+
+ - **FIX**: Rename logger from gotrue to auth ([#1055](https://github.com/supabase/supabase-flutter/issues/1055)). ([eea1ea6c](https://github.com/supabase/supabase-flutter/commit/eea1ea6c4e200e8ffc52d8343c0684c19670e3ed))
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
+#### `postgrest` - `v2.3.0`
+
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
+#### `realtime_client` - `v2.4.0`
+
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
+#### `storage_client` - `v2.2.0`
+
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
+#### `supabase` - `v2.5.0`
+
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
+#### `supabase_flutter` - `v2.8.0`
+
+ - **FIX**: Rename logger from gotrue to auth ([#1055](https://github.com/supabase/supabase-flutter/issues/1055)). ([eea1ea6c](https://github.com/supabase/supabase-flutter/commit/eea1ea6c4e200e8ffc52d8343c0684c19670e3ed))
+ - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))
+
+
 ## 2024-09-30
 
 ### Changes
