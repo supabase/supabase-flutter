@@ -105,7 +105,10 @@ class GoTrueAdminApi {
     String? redirectTo,
     Map<String, dynamic>? data,
   }) async {
-    final body = {'email': email};
+    final body = {
+      'email': email,
+      if (data != null) 'data': data,
+    };
     final fetchOptions = GotrueRequestOptions(
       headers: _headers,
       body: body,
