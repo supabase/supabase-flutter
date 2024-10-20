@@ -25,6 +25,7 @@ enum OAuthProvider {
   linkedinOidc,
   notion,
   slack,
+  slackOidc,
   spotify,
   twitch,
   twitter,
