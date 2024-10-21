@@ -382,7 +382,7 @@ class GoTrueClient {
 
   /// Allows signing in with an ID token issued by certain supported providers.
   /// The [idToken] is verified for validity and a new session is established.
-  /// This method of signing in only supports [OAuthProvider.google], [OAuthProvider.apple] or [OAuthProvider.kakao].
+  /// This method of signing in only supports [OAuthProvider.keycloak], [OAuthProvider.google], [OAuthProvider.apple] or [OAuthProvider.kakao].
   ///
   /// If the ID token contains an `at_hash` claim, then [accessToken] must be
   /// provided to compare its hash with the value in the ID token.
@@ -402,11 +402,12 @@ class GoTrueClient {
     String? nonce,
     String? captchaToken,
   }) async {
-    if (provider != OAuthProvider.google &&
+    if (provider != OAuthProvider.keycloak &&
+        provider != OAuthProvider.google &&
         provider != OAuthProvider.apple &&
         provider != OAuthProvider.kakao) {
       throw AuthException('Provider must be '
-          '${OAuthProvider.google.name}, ${OAuthProvider.apple.name} or ${OAuthProvider.kakao.name}.');
+          '${OAuthProvider.keycloak.name}, ${OAuthProvider.google.name}, ${OAuthProvider.apple.name} or ${OAuthProvider.kakao.name}.');
     }
 
     final response = await _fetch.request(
