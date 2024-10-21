@@ -26,6 +26,7 @@ enum OAuthProvider {
   notion,
   slack,
   spotify,
+  tiktok,
   twitch,
   twitter,
   workos,
