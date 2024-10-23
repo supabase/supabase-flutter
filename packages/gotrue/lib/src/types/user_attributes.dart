@@ -40,14 +40,17 @@ class UserAttributes {
   }
 
   @override
-  bool operator ==(covariant UserAttributes other) {
+  bool operator ==(Object other) {
     if (identical(this, other)) return true;
+    if (other is! UserAttributes) return false;
+
+    final mapEquals = const DeepCollectionEquality().equals;
 
     return other.email == email &&
         other.phone == phone &&
         other.password == password &&
         other.nonce == nonce &&
-        other.data == data;
+        mapEquals(other.data, data);
   }
 
   @override
@@ -127,8 +130,10 @@ class AdminUserAttributes extends UserAttributes {
   }
 
   @override
-  bool operator ==(covariant AdminUserAttributes other) {
+  bool operator ==(Object other) {
     if (identical(this, other)) return true;
+    if (other is! AdminUserAttributes) return false;
+
     final mapEquals = const DeepCollectionEquality().equals;
 
     return mapEquals(other.userMetadata, userMetadata) &&
@@ -140,7 +145,8 @@ class AdminUserAttributes extends UserAttributes {
 
   @override
   int get hashCode {
-    return userMetadata.hashCode ^
+    return super.hashCode ^
+        userMetadata.hashCode ^
         appMetadata.hashCode ^
         emailConfirm.hashCode ^
         phoneConfirm.hashCode ^
