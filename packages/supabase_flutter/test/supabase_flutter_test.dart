@@ -53,6 +53,10 @@ void main() {
       url: supabaseUrl,
       anonKey: supabaseUrl,
       debug: false,
+      authOptions: FlutterAuthClientOptions(
+        localStorage: MockLocalStorage(),
+        pkceAsyncStorage: MockAsyncStorage(),
+      ),
       accessToken: () async => 'my-access-token',
     );
 
