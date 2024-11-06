@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 class UserAttributes {
   /// The user's email.
   String? email;
@@ -34,6 +36,29 @@ class UserAttributes {
       if (password != null) 'password': password,
       if (data != null) 'data': data,
     };
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! UserAttributes) return false;
+
+    final mapEquals = const DeepCollectionEquality().equals;
+
+    return other.email == email &&
+        other.phone == phone &&
+        other.password == password &&
+        other.nonce == nonce &&
+        mapEquals(other.data, data);
+  }
+
+  @override
+  int get hashCode {
+    return email.hashCode ^
+        phone.hashCode ^
+        password.hashCode ^
+        nonce.hashCode ^
+        data.hashCode;
   }
 }
 
@@ -101,5 +126,29 @@ class AdminUserAttributes extends UserAttributes {
       if (phoneConfirm != null) 'phone_confirm': phoneConfirm,
       if (banDuration != null) 'ban_duration': banDuration,
     };
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AdminUserAttributes) return false;
+
+    final mapEquals = const DeepCollectionEquality().equals;
+
+    return mapEquals(other.userMetadata, userMetadata) &&
+        mapEquals(other.appMetadata, appMetadata) &&
+        other.emailConfirm == emailConfirm &&
+        other.phoneConfirm == phoneConfirm &&
+        other.banDuration == banDuration;
+  }
+
+  @override
+  int get hashCode {
+    return super.hashCode ^
+        userMetadata.hashCode ^
+        appMetadata.hashCode ^
+        emailConfirm.hashCode ^
+        phoneConfirm.hashCode ^
+        banDuration.hashCode;
   }
 }
