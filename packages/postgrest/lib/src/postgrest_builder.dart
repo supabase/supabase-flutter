@@ -348,6 +348,15 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     return _url.replace(queryParameters: searchParams);
   }
 
+  /// Convert list filter to query params string
+  String _cleanFilterArray(List filter) {
+    if (filter.every((element) => element is num)) {
+      return filter.map((s) => '$s').join(',');
+    } else {
+      return filter.map((s) => '"$s"').join(',');
+    }
+  }
+
   @override
   Stream<T> asStream() {
     final controller = StreamController<T>.broadcast();

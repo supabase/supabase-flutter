@@ -48,13 +48,18 @@ class SupabaseQuerySchema {
     );
   }
 
-  /// Perform a stored procedure call.
+  /// {@macro postgrest_rpc}
   PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map<String, dynamic>? params,
+    bool get = false,
   }) {
     _rest.headers.addAll({..._rest.headers, ..._headers});
-    return _rest.rpc(fn, params: params);
+    return _rest.rpc(
+      fn,
+      params: params,
+      get: get,
+    );
   }
 
   SupabaseQuerySchema schema(String schema) {

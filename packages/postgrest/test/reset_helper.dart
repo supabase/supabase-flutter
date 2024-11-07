@@ -15,7 +15,6 @@ class ResetHelper {
     _users = (await _postgrest.from('users').select());
     _channels = await _postgrest.from('channels').select();
     _messages = await _postgrest.from('messages').select();
-    print('messages has ${_messages.length} items');
     _reactions = await _postgrest.from('reactions').select();
     _addresses = await _postgrest.from('addresses').select();
   }
