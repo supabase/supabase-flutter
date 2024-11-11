@@ -81,7 +81,17 @@ class PostgrestClient {
     );
   }
 
-  /// Perform a stored procedure call.
+  /// {@template postgrest_rpc}
+  /// Performs a stored procedure call.
+  ///
+  /// [fn] is the name of the function to call.
+  ///
+  /// [params] is an optinal object to pass as arguments to the function call.
+  ///
+  /// When [get] is set to `true`, the function will be called with read-only
+  /// access mode.
+  ///
+  /// {@endtemplate}
   ///
   /// ```dart
   /// supabase.rpc('get_status', params: {'name_param': 'supabot'})
@@ -89,6 +99,7 @@ class PostgrestClient {
   PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map? params,
+    bool get = false,
   }) {
     final url = '${this.url}/rpc/$fn';
     return PostgrestRpcBuilder(
@@ -97,7 +108,7 @@ class PostgrestClient {
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
-    ).rpc(params);
+    ).rpc(params, get);
   }
 
   Future<void> dispose() async {

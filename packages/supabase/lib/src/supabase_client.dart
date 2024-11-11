@@ -200,13 +200,14 @@ class SupabaseClient {
     );
   }
 
-  /// Perform a stored procedure call.
+  /// {@macro postgrest_rpc}
   PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map<String, dynamic>? params,
+    get = false,
   }) {
     rest.headers.addAll({...rest.headers, ...headers});
-    return rest.rpc(fn, params: params);
+    return rest.rpc(fn, params: params, get: get);
   }
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.

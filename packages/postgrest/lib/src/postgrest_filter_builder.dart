@@ -7,15 +7,6 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   PostgrestFilterBuilder<T> copyWithUrl(Uri url) =>
       PostgrestFilterBuilder(_copyWith(url: url));
 
-  /// Convert list filter to query params string
-  String _cleanFilterArray(List filter) {
-    if (filter.every((element) => element is num)) {
-      return filter.map((s) => '$s').join(',');
-    } else {
-      return filter.map((s) => '"$s"').join(',');
-    }
-  }
-
   /// Finds all rows which doesn't satisfy the filter.
   ///
   /// ```dart

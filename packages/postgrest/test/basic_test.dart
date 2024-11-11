@@ -63,6 +63,29 @@ void main() {
       expect(res, isA<int>());
     });
 
+    test('stored procedure with array parameter', () async {
+      final res = await postgrest.rpc<int>(
+        'get_array_element',
+        params: {
+          'arr': [37, 420, 64],
+          'index': 2
+        },
+      );
+      expect(res, 420);
+    });
+
+    test('stored procedure with read-only access mode', () async {
+      final res = await postgrest.rpc<int>(
+        'get_array_element',
+        params: {
+          'arr': [37, 420, 64],
+          'index': 2
+        },
+        get: true,
+      );
+      expect(res, 420);
+    });
+
     test('custom headers', () async {
       final postgrest = PostgrestClient(rootUrl, headers: {'apikey': 'foo'});
       expect(postgrest.headers['apikey'], 'foo');
@@ -448,10 +471,12 @@ void main() {
     });
   });
   group("Custom http client", () {
+    CustomHttpClient customHttpClient = CustomHttpClient();
     setUp(() {
+      customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
         rootUrl,
-        httpClient: CustomHttpClient(),
+        httpClient: customHttpClient,
       );
     });
 
@@ -486,6 +511,23 @@ void main() {
             'Stored procedure was able to be called, even tho it does not exist');
       } on PostgrestException catch (error) {
         expect(error.code, '420');
+        expect(customHttpClient.lastRequest?.method, "POST");
+      }
+    });
+
+    test('stored procedure call in read-only access mode', () async {
+      try {
+        await postgrestCustomHttpClient.rpc<String>(
+          'get_status',
+          params: {'name_param': 'supabot'},
+          get: true,
+        );
+        fail(
+            'Stored procedure was able to be called, even tho it does not exist');
+      } on PostgrestException catch (error) {
+        expect(error.code, '420');
+        expect(customHttpClient.lastRequest?.method, "GET");
+        expect(customHttpClient.lastBody, isEmpty);
       }
     });
   });

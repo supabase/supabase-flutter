@@ -68,6 +68,13 @@ CREATE FUNCTION public.get_integer()
     End;
 $$ LANGUAGE plpgsql;
 
+CREATE FUNCTION public.get_array_element(arr integer[], index integer)
+    RETURNS integer AS $$
+    BEGIN
+        RETURN arr[index];
+    END;
+$$ LANGUAGE plpgsql;
+
 -- SECOND SCHEMA USERS
 CREATE TYPE personal.user_status AS ENUM ('ONLINE', 'OFFLINE');
 CREATE TABLE personal.users(
