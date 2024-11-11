@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:developer' as dev;
 
 import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase/supabase.dart';
@@ -32,7 +32,7 @@ final _log = Logger('supabase.supabase_flutter');
 /// See also:
 ///
 ///   * [SupabaseAuth]
-class Supabase {
+class Supabase with WidgetsBindingObserver {
   /// Gets the current supabase instance.
   ///
   /// An [AssertionError] is thrown if supabase isn't initialized yet.
@@ -126,15 +126,18 @@ class Supabase {
       accessToken: accessToken,
     );
 
-    _instance._supabaseAuth = SupabaseAuth();
-    await _instance._supabaseAuth.initialize(options: authOptions);
+    if (accessToken == null) {
+      final supabaseAuth = SupabaseAuth();
+      _instance._supabaseAuth = supabaseAuth;
+      await supabaseAuth.initialize(options: authOptions);
 
-    // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
-    // if still in progress
-    _instance._restoreSessionCancellableOperation =
-        CancelableOperation.fromFuture(
-      _instance._supabaseAuth.recoverSession(),
-    );
+      // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
+      // if still in progress
+      _instance._restoreSessionCancellableOperation =
+          CancelableOperation.fromFuture(
+        supabaseAuth.recoverSession(),
+      );
+    }
 
     _log.info('***** Supabase init completed *****');
 
@@ -144,6 +147,8 @@ class Supabase {
   Supabase._();
   static final Supabase _instance = Supabase._();
 
+  static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
+
   bool _initialized = false;
 
   /// The supabase client for this instance
@@ -151,12 +156,14 @@ class Supabase {
   /// Throws an error if [Supabase.initialize] was not called.
   late SupabaseClient client;
 
-  late SupabaseAuth _supabaseAuth;
+  SupabaseAuth? _supabaseAuth;
 
   bool _debugEnable = false;
 
   /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
   late CancelableOperation _restoreSessionCancellableOperation;
+
+  CancelableOperation<void>? _realtimeReconnectOperation;
 
   StreamSubscription? _logSubscription;
 
@@ -165,7 +172,8 @@ class Supabase {
     await _restoreSessionCancellableOperation.cancel();
     _logSubscription?.cancel();
     client.dispose();
-    _instance._supabaseAuth.dispose();
+    _instance._supabaseAuth?.dispose();
+    _widgetsBindingInstance?.removeObserver(this);
     _initialized = false;
   }
 
@@ -195,6 +203,76 @@ class Supabase {
       authOptions: authOptions,
       accessToken: accessToken,
     );
+    _widgetsBindingInstance?.addObserver(this);
     _initialized = true;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        onResumed();
+      case AppLifecycleState.detached:
+      case AppLifecycleState.paused:
+        _realtimeReconnectOperation?.cancel();
+        Supabase.instance.client.realtime.disconnect();
+      default:
+    }
+  }
+
+  Future<void> onResumed() async {
+    final realtime = Supabase.instance.client.realtime;
+    if (realtime.channels.isNotEmpty) {
+      if (realtime.connState == SocketStates.disconnecting) {
+        // If the socket is still disconnecting from e.g.
+        // [AppLifecycleState.paused] we should wait for it to finish before
+        // reconnecting.
+
+        bool cancel = false;
+        final connectFuture = realtime.conn!.sink.done.then(
+          (_) async {
+            // Make this connect cancelable so that it does not connect if the
+            // disconnect took so long that the app is already in background
+            // again.
+
+            if (!cancel) {
+              // ignore: invalid_use_of_internal_member
+              await realtime.connect();
+              for (final channel in realtime.channels) {
+                // ignore: invalid_use_of_internal_member
+                if (channel.isJoined) {
+                  // ignore: invalid_use_of_internal_member
+                  channel.forceRejoin();
+                }
+              }
+            }
+          },
+          onError: (error) {},
+        );
+        _realtimeReconnectOperation = CancelableOperation.fromFuture(
+          connectFuture,
+          onCancel: () => cancel = true,
+        );
+      } else if (!realtime.isConnected) {
+        // Reconnect if the socket is currently not connected.
+        // When coming from [AppLifecycleState.paused] this should be the case,
+        // but when coming from [AppLifecycleState.inactive] no disconnect
+        // happened and therefore connection should still be intanct and we
+        // should not reconnect.
+
+        // ignore: invalid_use_of_internal_member
+        await realtime.connect();
+        for (final channel in realtime.channels) {
+          // Only rejoin channels that think they are still joined and not
+          // which were manually unsubscribed by the user while in background
+
+          // ignore: invalid_use_of_internal_member
+          if (channel.isJoined) {
+            // ignore: invalid_use_of_internal_member
+            channel.forceRejoin();
+          }
+        }
+      }
+    }
   }
 }

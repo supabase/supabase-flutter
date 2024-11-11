@@ -52,7 +52,7 @@ class SupabaseClient {
   final Client? _httpClient;
   late final Client _authHttpClient;
 
-  late final GoTrueClient _authInstance;
+  GoTrueClient? _authInstance;
 
   /// Supabase Functions allows you to deploy and invoke edge functions.
   late final FunctionsClient functions;
@@ -160,7 +160,7 @@ class SupabaseClient {
 
   GoTrueClient get auth {
     if (accessToken == null) {
-      return _authInstance;
+      return _authInstance!;
     } else {
       throw AuthException(
         'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
@@ -240,11 +240,13 @@ class SupabaseClient {
       return await accessToken!();
     }
 
-    if (_authInstance.currentSession?.isExpired ?? false) {
+    final authInstance = _authInstance!;
+
+    if (authInstance.currentSession?.isExpired ?? false) {
       try {
-        await _authInstance.refreshSession();
+        await authInstance.refreshSession();
       } catch (error, stackTrace) {
-        final expiresAt = _authInstance.currentSession?.expiresAt;
+        final expiresAt = authInstance.currentSession?.expiresAt;
         if (expiresAt != null) {
           // Failed to refresh the token.
           final isExpiredWithoutMargin = DateTime.now()
@@ -261,14 +263,14 @@ class SupabaseClient {
         }
       }
     }
-    return _authInstance.currentSession?.accessToken;
+    return authInstance.currentSession?.accessToken;
   }
 
   Future<void> dispose() async {
     _log.fine('Dispose SupabaseClient');
     await _authStateSubscription?.cancel();
     await _isolate.dispose();
-    auth.dispose();
+    _authInstance?.dispose();
   }
 
   GoTrueClient _initSupabaseAuthClient({
@@ -333,6 +335,7 @@ class SupabaseClient {
     );
   }
 
+  /// Requires the `auth` instance, so no custom `accessToken` is allowed.
   Map<String, String> _getAuthHeaders() {
     final authBearer = auth.currentSession?.accessToken ?? _supabaseKey;
     final defaultHeaders = {

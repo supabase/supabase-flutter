@@ -9,7 +9,7 @@ void main() {
   const supabaseKey = '';
   tearDown(() async => await Supabase.instance.dispose());
 
-  group("Valid session", () {
+  group("Initialize", () {
     setUp(() async {
       mockAppLink();
       // Initialize the Supabase singleton
@@ -46,6 +46,27 @@ void main() {
       final newClient = Supabase.instance.client;
       expect(supabase, isNot(newClient));
     });
+  });
+
+  test('with custom access token', () async {
+    final supabase = await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseUrl,
+      debug: false,
+      authOptions: FlutterAuthClientOptions(
+        localStorage: MockLocalStorage(),
+        pkceAsyncStorage: MockAsyncStorage(),
+      ),
+      accessToken: () async => 'my-access-token',
+    );
+
+    // print(supabase.client.auth.runtimeType);
+
+    void accessAuth() {
+      supabase.client.auth;
+    }
+
+    expect(accessAuth, throwsA(isA<AuthException>()));
   });
 
   group("Expired session", () {

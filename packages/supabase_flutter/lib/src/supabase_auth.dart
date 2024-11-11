@@ -4,7 +4,6 @@ import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:app_links/app_links.dart';
-import 'package:async/async.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,8 +29,6 @@ class SupabaseAuth with WidgetsBindingObserver {
   StreamSubscription<AuthState>? _authSubscription;
 
   StreamSubscription<Uri?>? _deeplinkSubscription;
-
-  CancelableOperation<void>? _realtimeReconnectOperation;
 
   final _appLinks = AppLinks();
 
@@ -118,74 +115,15 @@ class SupabaseAuth with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        onResumed();
+        if (_autoRefreshToken) {
+          Supabase.instance.client.auth.startAutoRefresh();
+        }
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
         if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
           Supabase.instance.client.auth.stopAutoRefresh();
-          _realtimeReconnectOperation?.cancel();
-          Supabase.instance.client.realtime.disconnect();
         }
       default:
-    }
-  }
-
-  Future<void> onResumed() async {
-    if (_autoRefreshToken) {
-      Supabase.instance.client.auth.startAutoRefresh();
-    }
-    final realtime = Supabase.instance.client.realtime;
-    if (realtime.channels.isNotEmpty) {
-      if (realtime.connState == SocketStates.disconnecting) {
-        // If the socket is still disconnecting from e.g.
-        // [AppLifecycleState.paused] we should wait for it to finish before
-        // reconnecting.
-
-        bool cancel = false;
-        final connectFuture = realtime.conn!.sink.done.then(
-          (_) async {
-            // Make this connect cancelable so that it does not connect if the
-            // disconnect took so long that the app is already in background
-            // again.
-
-            if (!cancel) {
-              // ignore: invalid_use_of_internal_member
-              await realtime.connect();
-              for (final channel in realtime.channels) {
-                // ignore: invalid_use_of_internal_member
-                if (channel.isJoined) {
-                  // ignore: invalid_use_of_internal_member
-                  channel.forceRejoin();
-                }
-              }
-            }
-          },
-          onError: (error) {},
-        );
-        _realtimeReconnectOperation = CancelableOperation.fromFuture(
-          connectFuture,
-          onCancel: () => cancel = true,
-        );
-      } else if (!realtime.isConnected) {
-        // Reconnect if the socket is currently not connected.
-        // When coming from [AppLifecycleState.paused] this should be the case,
-        // but when coming from [AppLifecycleState.inactive] no disconnect
-        // happened and therefore connection should still be intanct and we
-        // should not reconnect.
-
-        // ignore: invalid_use_of_internal_member
-        await realtime.connect();
-        for (final channel in realtime.channels) {
-          // Only rejoin channels that think they are still joined and not
-          // which were manually unsubscribed by the user while in background
-
-          // ignore: invalid_use_of_internal_member
-          if (channel.isJoined) {
-            // ignore: invalid_use_of_internal_member
-            channel.forceRejoin();
-          }
-        }
-      }
     }
   }
 
