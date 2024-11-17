@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-11-17
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.11.0`](#gotrue---v2110)
+ - [`postgrest` - `v2.4.0`](#postgrest---v240)
+ - [`supabase` - `v2.6.0`](#supabase---v260)
+ - [`supabase_flutter` - `v2.8.1`](#supabase_flutter---v281)
+
+---
+
+#### `gotrue` - `v2.11.0`
+
+ - **FIX**: Add equality to user attributes classes ([#1070](https://github.com/supabase/supabase-flutter/issues/1070)). ([7e7bc0ca](https://github.com/supabase/supabase-flutter/commit/7e7bc0cac722c0f3404b3f9320c536454bc51cea))
+ - **FIX**: Updated gotrue types.dart to include slackOidc ([#1066](https://github.com/supabase/supabase-flutter/issues/1066)). ([12007b32](https://github.com/supabase/supabase-flutter/commit/12007b3206c15a87c373af46bc5f4a17aa646f62))
+ - **FIX**: Send metadata inviteUserByEmail() ([#1061](https://github.com/supabase/supabase-flutter/issues/1061)). ([598540d2](https://github.com/supabase/supabase-flutter/commit/598540d2aac27d64e6be5d4a2e855d928f87fda6))
+ - **FEAT**: Add Keycloak Provider on signInWithIdToken ([#1068](https://github.com/supabase/supabase-flutter/issues/1068)). ([be998fda](https://github.com/supabase/supabase-flutter/commit/be998fda6365bcf157dc96e3e4ea7009415045ee))
+
+#### `postgrest` - `v2.4.0`
+
+ - **FEAT**: Read-only access mode rpc ([#1081](https://github.com/supabase/supabase-flutter/issues/1081)). ([d0a04154](https://github.com/supabase/supabase-flutter/commit/d0a04154ff56d40d00e1c9282d8ba859681c7275))
+
+#### `supabase` - `v2.6.0`
+
+ - **FIX**: Support custom access token ([#1073](https://github.com/supabase/supabase-flutter/issues/1073)). ([fc9ad2c9](https://github.com/supabase/supabase-flutter/commit/fc9ad2c94a02921ca8ced4564d9bcd8cde2c2397))
+ - **FEAT**: Read-only access mode rpc ([#1081](https://github.com/supabase/supabase-flutter/issues/1081)). ([d0a04154](https://github.com/supabase/supabase-flutter/commit/d0a04154ff56d40d00e1c9282d8ba859681c7275))
+
+#### `supabase_flutter` - `v2.8.1`
+
+ - **FIX**: Support custom access token ([#1073](https://github.com/supabase/supabase-flutter/issues/1073)). ([fc9ad2c9](https://github.com/supabase/supabase-flutter/commit/fc9ad2c94a02921ca8ced4564d9bcd8cde2c2397))
+
+
 ## 2024-10-07
 
 ### Changes
