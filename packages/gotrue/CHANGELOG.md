@@ -1,3 +1,10 @@
+## 2.11.0
+
+ - **FIX**: Add equality to user attributes classes ([#1070](https://github.com/supabase/supabase-flutter/issues/1070)). ([7e7bc0ca](https://github.com/supabase/supabase-flutter/commit/7e7bc0cac722c0f3404b3f9320c536454bc51cea))
+ - **FIX**: Updated gotrue types.dart to include slackOidc ([#1066](https://github.com/supabase/supabase-flutter/issues/1066)). ([12007b32](https://github.com/supabase/supabase-flutter/commit/12007b3206c15a87c373af46bc5f4a17aa646f62))
+ - **FIX**: Send metadata inviteUserByEmail() ([#1061](https://github.com/supabase/supabase-flutter/issues/1061)). ([598540d2](https://github.com/supabase/supabase-flutter/commit/598540d2aac27d64e6be5d4a2e855d928f87fda6))
+ - **FEAT**: Add Keycloak Provider on signInWithIdToken ([#1068](https://github.com/supabase/supabase-flutter/issues/1068)). ([be998fda](https://github.com/supabase/supabase-flutter/commit/be998fda6365bcf157dc96e3e4ea7009415045ee))
+
 ## 2.10.0
 
  - **FIX**: Rename logger from gotrue to auth ([#1055](https://github.com/supabase/supabase-flutter/issues/1055)). ([eea1ea6c](https://github.com/supabase/supabase-flutter/commit/eea1ea6c4e200e8ffc52d8343c0684c19670e3ed))
