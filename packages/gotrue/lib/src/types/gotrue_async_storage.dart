@@ -2,6 +2,9 @@
 abstract class GotrueAsyncStorage {
   const GotrueAsyncStorage();
 
+  /// May be implemented to allow for initialization of the storage before use.
+  Future<void> initialize() async {}
+
   /// Retrieves an item asynchronously from the storage with the key.
   Future<String?> getItem({required String key});
 

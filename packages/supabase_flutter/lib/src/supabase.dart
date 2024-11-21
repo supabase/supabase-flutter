@@ -101,18 +101,38 @@ class Supabase with WidgetsBindingObserver {
 
     _log.config("Initialize Supabase v$version");
 
+    // ignore: deprecated_member_use
     if (authOptions.pkceAsyncStorage == null) {
       authOptions = authOptions.copyWith(
         pkceAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
       );
     }
+    // ignore: deprecated_member_use_from_same_package
     if (authOptions.localStorage == null) {
       authOptions = authOptions.copyWith(
         localStorage: SharedPreferencesLocalStorage(
           persistSessionKey:
               "sb-${Uri.parse(url).host.split(".").first}-auth-token",
+          // For now we don't set the above key that is used by supabase-js too
+          // as [AuthClientOptions.storageKey], because this would change
+          // the key for exsting pkce items. For v3 we should change this.
         ),
       );
+    }
+    if (authOptions.persistSession == null) {
+      authOptions = authOptions.copyWith(
+        persistSession: true,
+      );
+    }
+
+    if (authOptions.asyncStorage == null) {
+      authOptions = authOptions.copyWith(
+          asyncStorage: PkceAndSessionLocalStorage(
+        // ignore: deprecated_member_use_from_same_package
+        authOptions.localStorage!,
+        // ignore: deprecated_member_use
+        authOptions.pkceAsyncStorage!,
+      ));
     }
     _instance._init(
       url,
@@ -130,13 +150,6 @@ class Supabase with WidgetsBindingObserver {
       final supabaseAuth = SupabaseAuth();
       _instance._supabaseAuth = supabaseAuth;
       await supabaseAuth.initialize(options: authOptions);
-
-      // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
-      // if still in progress
-      _instance._restoreSessionCancellableOperation =
-          CancelableOperation.fromFuture(
-        supabaseAuth.recoverSession(),
-      );
     }
 
     _log.info('***** Supabase init completed *****');
@@ -160,16 +173,12 @@ class Supabase with WidgetsBindingObserver {
 
   bool _debugEnable = false;
 
-  /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
-  late CancelableOperation _restoreSessionCancellableOperation;
-
   CancelableOperation<void>? _realtimeReconnectOperation;
 
   StreamSubscription? _logSubscription;
 
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {
-    await _restoreSessionCancellableOperation.cancel();
     _logSubscription?.cancel();
     client.dispose();
     _instance._supabaseAuth?.dispose();

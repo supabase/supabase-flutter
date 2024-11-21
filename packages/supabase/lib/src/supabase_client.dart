@@ -137,11 +137,7 @@ class SupabaseClient {
         },
         _httpClient = httpClient,
         _isolate = isolate ?? (YAJsonIsolate()..initialize()) {
-    _authInstance = _initSupabaseAuthClient(
-      autoRefreshToken: authOptions.autoRefreshToken,
-      gotrueAsyncStorage: authOptions.pkceAsyncStorage,
-      authFlowType: authOptions.authFlowType,
-    );
+    _authInstance = _initSupabaseAuthClient(authOptions: authOptions);
     _authHttpClient =
         AuthHttpClient(_supabaseKey, httpClient ?? Client(), _getAccessToken);
     rest = _initRestClient();
@@ -273,11 +269,8 @@ class SupabaseClient {
     _authInstance?.dispose();
   }
 
-  GoTrueClient _initSupabaseAuthClient({
-    bool? autoRefreshToken,
-    required GotrueAsyncStorage? gotrueAsyncStorage,
-    required AuthFlowType authFlowType,
-  }) {
+  GoTrueClient _initSupabaseAuthClient(
+      {required AuthClientOptions authOptions}) {
     final authHeaders = {...headers};
     authHeaders['apikey'] = _supabaseKey;
     authHeaders['Authorization'] = 'Bearer $_supabaseKey';
@@ -285,10 +278,12 @@ class SupabaseClient {
     return GoTrueClient(
       url: _authUrl,
       headers: authHeaders,
-      autoRefreshToken: autoRefreshToken,
+      autoRefreshToken: authOptions.autoRefreshToken,
       httpClient: _httpClient,
-      asyncStorage: gotrueAsyncStorage,
-      flowType: authFlowType,
+      asyncStorage: authOptions.asyncStorage,
+      storageKey: authOptions.storageKey,
+      persistSession: authOptions.persistSession,
+      flowType: authOptions.authFlowType,
     );
   }
 
