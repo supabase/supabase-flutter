@@ -126,7 +126,7 @@ class GoTrueClient {
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
     _log.config(
-        'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}');
+        'Initialize GoTrueClient v$version with url: $_url, persistSession: $_persistSession, _storageKey: $storageKey, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}');
     _log.finest('Initialize with headers: $_headers');
     admin = GoTrueAdminApi(
       gotrueUrl,

@@ -37,9 +37,9 @@ class FlutterAuthClientOptions extends AuthClientOptions {
       localStorage: localStorage ?? this.localStorage,
       // ignore: deprecated_member_use
       pkceAsyncStorage: pkceAsyncStorage ?? this.pkceAsyncStorage,
-      asyncStorage: asyncStorage,
-      storageKey: storageKey,
-      persistSession: persistSession,
+      asyncStorage: asyncStorage ?? this.asyncStorage,
+      storageKey: storageKey ?? this.storageKey,
+      persistSession: persistSession ?? this.persistSession,
       detectSessionInUri: detectSessionInUri ?? this.detectSessionInUri,
     );
   }
