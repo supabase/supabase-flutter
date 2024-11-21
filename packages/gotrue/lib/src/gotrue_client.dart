@@ -1222,7 +1222,7 @@ class GoTrueClient {
   }
 
   void _mayStartBroadcastChannel() {
-    if (const bool.fromEnvironment('dart.library.html')) {
+    if (_persistSession && const bool.fromEnvironment('dart.library.html')) {
       // Used by the js library as well
       final broadcastKey =
           "sb-${Uri.parse(_url).host.split(".").first}-auth-token";
