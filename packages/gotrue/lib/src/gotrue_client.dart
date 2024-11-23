@@ -29,9 +29,17 @@ part 'gotrue_mfa_api.dart';
 ///
 /// [autoRefreshToken] whether to refresh the token automatically or not. Defaults to true.
 ///
+/// [persistSession] whether to persist the session via [asyncStorage] or not.
+/// Defaults to false. Session is only broadcasted via [BroadcastChannel] if
+/// set to true.
+///
 /// [httpClient] custom http client.
 ///
-/// [asyncStorage] local storage to store pkce code verifiers. Required when using the pkce flow.
+/// [asyncStorage] local storage to store sessions and pkce code verifiers.
+/// Required when using the pkce flow and persisting sessions.
+///
+/// [storageKey] key to store the session with in [asyncStorage].
+/// The pkce code verifiers are suffixed with `-code-verifier`
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 /// {@endtemplate}

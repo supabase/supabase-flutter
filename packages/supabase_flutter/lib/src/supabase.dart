@@ -48,28 +48,26 @@ class Supabase with WidgetsBindingObserver {
   /// Initialize the current supabase instance
   ///
   /// This must be called only once. If called more than once, an
-  /// [AssertionError] is thrown
+  /// [AssertionError] is thrown.
+  /// (after calling [dispose], [initialize] can be called again)
   ///
   /// [url] and [anonKey] can be found on your Supabase dashboard.
   ///
-  /// You can access none public schema by passing different [schema].
-  ///
   /// Default headers can be overridden by specifying [headers].
-  ///
-  /// Pass [localStorage] to override the default local storage option used to
-  /// persist auth.
   ///
   /// Custom http client can be used by passing [httpClient] parameter.
   ///
-  /// [storageRetryAttempts] specifies how many retry attempts there should be
-  /// to upload a file to Supabase storage when failed due to network
-  /// interruption.
+  /// [realtimeClientOptions], [authOptions], [storageOptions],
+  /// [postgrestOptions] specify different options you can pass to
+  /// [RealtimeClient], [GoTrueClient], [SupabaseStorageClient],
+  /// [PostgrestClient].
   ///
-  /// Set [authFlowType] to [AuthFlowType.implicit] to use the old implicit flow for authentication
-  /// involving deep links.
-  ///
-  /// PKCE flow uses shared preferences for storing the code verifier by default.
-  /// Pass a custom storage to [pkceAsyncStorage] to override the behavior.
+  /// [accessToken] Optional function for using a third-party authentication system with Supabase.
+  /// The function should return an access token or ID token (JWT) by obtaining
+  /// it from the third-party auth client library. Note that this function may be
+  /// called concurrently and many times. Use memoization and locking techniques
+  /// if this is not supported by the client libraries. When set, the `auth`
+  /// namespace of the Supabase client cannot be used.
   ///
   /// If [debug] is set to `true`, debug logs will be printed in debug console. Default is `kDebugMode`.
   static Future<Supabase> initialize({
@@ -117,11 +115,6 @@ class Supabase with WidgetsBindingObserver {
           // as [AuthClientOptions.storageKey], because this would change
           // the key for exsting pkce items. For v3 we should change this.
         ),
-      );
-    }
-    if (authOptions.persistSession == null) {
-      authOptions = authOptions.copyWith(
-        persistSession: true,
       );
     }
 
