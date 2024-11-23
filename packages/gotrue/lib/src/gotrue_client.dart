@@ -39,7 +39,7 @@ part 'gotrue_mfa_api.dart';
 /// Required when using the pkce flow and persisting sessions.
 ///
 /// [storageKey] key to store the session with in [asyncStorage].
-/// The pkce code verifiers are suffixed with `-code-verifier`
+/// The pkce code verifiers are suffixed with `-code-verifier`.
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 /// {@endtemplate}
@@ -73,7 +73,9 @@ class GoTrueClient {
   final _onAuthStateChangeControllerSync =
       BehaviorSubject<AuthState>(sync: true);
 
-  /// Local storage to store pkce code verifiers.
+  /// Local storage to store session and pkce code verifiers.
+  ///
+  /// check [_initializedStorage] before usage.
   final GotrueAsyncStorage? _asyncStorage;
 
   /// Receive a notification every time an auth event happens.
@@ -95,12 +97,18 @@ class GoTrueClient {
   Stream<AuthState> get onAuthStateChangeSync =>
       _onAuthStateChangeControllerSync.stream;
 
-  final Completer<void> _initalizedStorage = Completer<void>();
+  /// Completes when the [_asyncStorage] is initialized.
+  ///
+  /// Initialization is started in the constructor and should be awaited before
+  /// accessing the storage.
+  final Completer<void> _initializedStorage = Completer<void>();
 
   final AuthFlowType _flowType;
 
   final bool _persistSession;
 
+  /// Key to store the session with in [_asyncStorage].
+  /// The pkce code verifiers are suffixed with `-code-verifier`.
   final String _storageKey;
 
   final _log = Logger('supabase.auth');
@@ -149,7 +157,7 @@ class GoTrueClient {
     assert(asyncStorage != null || !_persistSession,
         'You need to provide asyncStorage to persist session.');
     if (asyncStorage != null) {
-      _initalizedStorage.complete(
+      _initializedStorage.complete(
           asyncStorage.initialize().catchError((e) => notifyException(e)));
     }
 
@@ -179,7 +187,7 @@ class GoTrueClient {
   Future<void> _initialize() async {
     try {
       if (_persistSession && _asyncStorage != null) {
-        await _initalizedStorage.future;
+        await _initializedStorage.future;
         final jsonStr = await _asyncStorage!.getItem(key: _storageKey);
         var shouldEmitInitialSession = true;
         if (jsonStr != null) {
@@ -1204,8 +1212,8 @@ class GoTrueClient {
     _currentUser = session.user;
 
     if (_persistSession && _asyncStorage != null) {
-      if (!_initalizedStorage.isCompleted) {
-        await _initalizedStorage.future;
+      if (!_initializedStorage.isCompleted) {
+        await _initializedStorage.future;
       }
       _asyncStorage!.setItem(
         key: _storageKey,
@@ -1220,12 +1228,10 @@ class GoTrueClient {
     _currentUser = null;
 
     if (_persistSession && _asyncStorage != null) {
-      if (!_initalizedStorage.isCompleted) {
-        await _initalizedStorage.future;
+      if (!_initializedStorage.isCompleted) {
+        await _initializedStorage.future;
       }
-      _asyncStorage!.removeItem(
-        key: _storageKey,
-      );
+      _asyncStorage!.removeItem(key: _storageKey);
     }
   }
 
