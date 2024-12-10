@@ -171,46 +171,44 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     _channel!
         .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
+            event: PostgresChangeEvent.all,
             schema: _schema,
             table: _table,
             filter: realtimeFilter,
             callback: (payload) {
-              final newRecord = payload.newRecord;
-              _streamData.add(newRecord);
-              _addStream();
-            })
-        .onPostgresChanges(
-            event: PostgresChangeEvent.update,
-            schema: _schema,
-            table: _table,
-            filter: realtimeFilter,
-            callback: (payload) {
-              final updatedIndex = _streamData.indexWhere(
-                (element) => _isTargetRecord(record: element, payload: payload),
-              );
+              switch (payload.eventType) {
+                case PostgresChangeEvent.insert:
+                  final newRecord = payload.newRecord;
+                  _streamData.add(newRecord);
+                  _addStream();
+                  break;
+                case PostgresChangeEvent.update:
+                  final updatedIndex = _streamData.indexWhere(
+                    (element) =>
+                        _isTargetRecord(record: element, payload: payload),
+                  );
 
-              final updatedRecord = payload.newRecord;
-              if (updatedIndex >= 0) {
-                _streamData[updatedIndex] = updatedRecord;
-              } else {
-                _streamData.add(updatedRecord);
-              }
-              _addStream();
-            })
-        .onPostgresChanges(
-            event: PostgresChangeEvent.delete,
-            schema: _schema,
-            table: _table,
-            filter: realtimeFilter,
-            callback: (payload) {
-              final deletedIndex = _streamData.indexWhere(
-                (element) => _isTargetRecord(record: element, payload: payload),
-              );
-              if (deletedIndex >= 0) {
-                /// Delete the data from in memory cache if it was found
-                _streamData.removeAt(deletedIndex);
-                _addStream();
+                  final updatedRecord = payload.newRecord;
+                  if (updatedIndex >= 0) {
+                    _streamData[updatedIndex] = updatedRecord;
+                  } else {
+                    _streamData.add(updatedRecord);
+                  }
+                  _addStream();
+                  break;
+                case PostgresChangeEvent.delete:
+                  final deletedIndex = _streamData.indexWhere(
+                    (element) =>
+                        _isTargetRecord(record: element, payload: payload),
+                  );
+                  if (deletedIndex >= 0) {
+                    /// Delete the data from in memory cache if it was found
+                    _streamData.removeAt(deletedIndex);
+                    _addStream();
+                  }
+                  break;
+                default:
+                  break;
               }
             })
         .subscribe((status, [error]) {
