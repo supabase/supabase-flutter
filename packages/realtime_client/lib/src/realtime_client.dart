@@ -54,6 +54,7 @@ class RealtimeCloseEvent {
 }
 
 class RealtimeClient {
+  // This is named `accessTokenValue` in supabase-js
   String? accessToken;
   List<RealtimeChannel> channels = [];
   final String endPoint;
@@ -89,6 +90,8 @@ class RealtimeClient {
   };
   int longpollerTimeout = 20000;
   SocketStates? connState;
+  // This is called `accessToken` in realtime-js
+  Future<String> Function()? customAccessToken;
 
   /// Initializes the Socket
   ///
@@ -403,15 +406,42 @@ class RealtimeClient {
   /// Sets the JWT access token used for channel subscription authorization and Realtime RLS.
   ///
   /// `token` A JWT strings.
-  void setAuth(String? token) {
-    accessToken = token;
+  Future<void> setAuth(String? token) async {
+    final tokenToSend =
+        token ?? (await customAccessToken?.call()) ?? accessToken;
+
+    if (tokenToSend != null) {
+      Map<String, dynamic>? parsed;
+      try {
+        final decoded =
+            utf8.decode(base64Url.decode(tokenToSend.split('.')[1]));
+        parsed = json.decode(decoded);
+      } catch (e) {
+        // ignore parsing errors
+      }
+      if (parsed != null && parsed['exp'] != null) {
+        final now = (DateTime.now().millisecondsSinceEpoch / 1000).floor();
+        final valid = now - parsed['exp'] < 0;
+        if (!valid) {
+          log(
+            'auth',
+            'InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed['exp']}',
+            null,
+            Level.FINE,
+          );
+          throw 'InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed['exp']}';
+        }
+      }
+    }
+
+    accessToken = tokenToSend;
 
     for (final channel in channels) {
-      if (token != null) {
-        channel.updateJoinPayload({'access_token': token});
+      if (tokenToSend != null) {
+        channel.updateJoinPayload({'access_token': tokenToSend});
       }
       if (channel.joinedOnce && channel.isJoined) {
-        channel.push(ChannelEvents.accessToken, {'access_token': token});
+        channel.push(ChannelEvents.accessToken, {'access_token': tokenToSend});
       }
     }
   }
