@@ -15,7 +15,6 @@ import 'package:url_launcher/url_launcher.dart';
 class SupabaseAuth with WidgetsBindingObserver {
   static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
 
-  late LocalStorage _localStorage;
   late AuthFlowType _authFlowType;
 
   /// Whether to automatically refresh the token
@@ -25,8 +24,6 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
   static bool _initialDeeplinkIsHandled = false;
-
-  StreamSubscription<AuthState>? _authSubscription;
 
   StreamSubscription<Uri?>? _deeplinkSubscription;
 
@@ -40,64 +37,13 @@ class SupabaseAuth with WidgetsBindingObserver {
   Future<void> initialize({
     required FlutterAuthClientOptions options,
   }) async {
-    _localStorage = options.localStorage!;
     _authFlowType = options.authFlowType;
     _autoRefreshToken = options.autoRefreshToken;
 
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
-      (data) {
-        _onAuthStateChange(data.event, data.session);
-      },
-      onError: (error, stackTrace) {},
-    );
-
-    await _localStorage.initialize();
-
-    final hasPersistedSession = await _localStorage.hasAccessToken();
-    var shouldEmitInitialSession = true;
-    if (hasPersistedSession) {
-      final persistedSession = await _localStorage.accessToken();
-      if (persistedSession != null) {
-        try {
-          await Supabase.instance.client.auth
-              .setInitialSession(persistedSession);
-          shouldEmitInitialSession = false;
-        } catch (error, stackTrace) {
-          _log.warning(
-              'Error while setting initial session', error, stackTrace);
-        }
-      }
-    }
-    if (shouldEmitInitialSession) {
-      Supabase.instance.client.auth
-          // ignore: invalid_use_of_internal_member
-          .notifyAllSubscribers(AuthChangeEvent.initialSession);
-    }
     _widgetsBindingInstance?.addObserver(this);
 
     if (options.detectSessionInUri) {
       await _startDeeplinkObserver();
-    }
-
-    // Emit a null session if the user did not have persisted session
-  }
-
-  /// Recovers the session from local storage.
-  ///
-  /// Called lazily after `.initialize()` by `Supabase` instance
-  Future<void> recoverSession() async {
-    try {
-      final hasPersistedSession = await _localStorage.hasAccessToken();
-      if (hasPersistedSession) {
-        final persistedSession = await _localStorage.accessToken();
-        if (persistedSession != null) {
-          await Supabase.instance.client.auth.recoverSession(persistedSession);
-        }
-      }
-    } on AuthException catch (error, stackTrace) {
-      _log.warning(error.message, error, stackTrace);
-    } catch (error, stackTrace) {
-      _log.warning("Error while recovering session", error, stackTrace);
     }
   }
 
@@ -106,7 +52,6 @@ class SupabaseAuth with WidgetsBindingObserver {
     if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
       _initialDeeplinkIsHandled = false;
     }
-    _authSubscription?.cancel();
     _stopDeeplinkObserver();
     _widgetsBindingInstance?.removeObserver(this);
   }
@@ -124,14 +69,6 @@ class SupabaseAuth with WidgetsBindingObserver {
           Supabase.instance.client.auth.stopAutoRefresh();
         }
       default:
-    }
-  }
-
-  void _onAuthStateChange(AuthChangeEvent event, Session? session) {
-    if (session != null) {
-      _localStorage.persistSession(jsonEncode(session.toJson()));
-    } else if (event == AuthChangeEvent.signedOut) {
-      _localStorage.removePersistedSession();
     }
   }
 
