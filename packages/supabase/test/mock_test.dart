@@ -136,25 +136,11 @@ void main() {
                 'postgres_changes': [
                   {
                     'id': 77086988,
-                    'event': 'INSERT',
+                    'event': '*',
                     'schema': 'public',
                     'table': 'todos',
                     if (realtimeFilter != null) 'filter': realtimeFilter,
                   },
-                  {
-                    'id': 25993878,
-                    'event': 'UPDATE',
-                    'schema': 'public',
-                    'table': 'todos',
-                    if (realtimeFilter != null) 'filter': realtimeFilter,
-                  },
-                  {
-                    'id': 48673474,
-                    'event': 'DELETE',
-                    'schema': 'public',
-                    'table': 'todos',
-                    if (realtimeFilter != null) 'filter': realtimeFilter,
-                  }
                 ]
               },
               'status': 'ok'
@@ -208,7 +194,7 @@ void main() {
             'ref': null,
             'event': 'postgres_changes',
             'payload': {
-              'ids': [25993878],
+              'ids': [77086988],
               'data': {
                 'columns': [
                   {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
@@ -257,7 +243,7 @@ void main() {
                 'type': 'DELETE',
                 if (realtimeFilter != null) 'filter': realtimeFilter,
               },
-              'ids': [48673474]
+              'ids': [77086988]
             },
           });
           webSocket!.add(deleteString);
@@ -271,7 +257,7 @@ void main() {
             'ref': null,
             'event': 'postgres_changes',
             'payload': {
-              'ids': [25993878],
+              'ids': [77086988],
               'data': {
                 'columns': [
                   {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
@@ -321,7 +307,7 @@ void main() {
                 'type': 'DELETE',
                 if (realtimeFilter != null) 'filter': realtimeFilter,
               },
-              'ids': [48673474]
+              'ids': [77086988]
             },
           });
           webSocket!.add(ignoredDeleteString);
