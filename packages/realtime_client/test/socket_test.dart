@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
@@ -15,6 +16,31 @@ typedef WebSocketChannelClosure = WebSocketChannel Function(
   String url,
   Map<String, String> headers,
 );
+
+/// Generate a JWT token for testing purposes
+///
+/// [exp] in seconds since Epoch
+String generateJwt([int? exp]) {
+  final header = {'alg': 'HS256', 'typ': 'JWT'};
+
+  final now = DateTime.now();
+  final expiry = exp ??
+      (now.add(Duration(hours: 1)).millisecondsSinceEpoch / 1000).floor();
+
+  final payload = {'exp': expiry};
+
+  final key = 'your-256-bit-secret';
+
+  final encodedHeader = base64Url.encode(utf8.encode(json.encode(header)));
+  final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
+
+  final signatureInput = '$encodedHeader.$encodedPayload';
+  final hmac = Hmac(sha256, utf8.encode(key));
+  final digest = hmac.convert(utf8.encode(signatureInput));
+  final signature = base64Url.encode(digest.bytes);
+
+  return '$encodedHeader.$encodedPayload.$signature';
+}
 
 void main() {
   const int int64MaxValue = 9223372036854775807;
@@ -427,8 +453,9 @@ void main() {
   });
 
   group('setAuth', () {
-    final updateJoinPayload = {'access_token': 'token123'};
-    final pushPayload = {'access_token': 'token123'};
+    final token = generateJwt();
+    final updateJoinPayload = {'access_token': token};
+    final pushPayload = {'access_token': token};
 
     test(
         "sets access token, updates channels' join payload, and pushes token to channels",
@@ -457,13 +484,71 @@ void main() {
       final channel1 = mockedSocket.channel(tTopic1);
       final channel2 = mockedSocket.channel(tTopic2);
 
-      mockedSocket.setAuth('token123');
+      mockedSocket.setAuth(token);
+
+      expect(mockedSocket.accessToken, token);
 
       verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
       verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
       verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
           .called(1);
       verify(() => channel2.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+    });
+
+    test(
+        "sets access token, updates channels' join payload, and pushes token to channels if is not a jwt",
+        () {
+      final mockedChannel1 = MockChannel();
+      final mockedChannel2 = MockChannel();
+      final mockedChannel3 = MockChannel();
+
+      when(() => mockedChannel1.joinedOnce).thenReturn(true);
+      when(() => mockedChannel1.isJoined).thenReturn(true);
+      when(() => mockedChannel1.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
+
+      when(() => mockedChannel2.joinedOnce).thenReturn(false);
+      when(() => mockedChannel2.isJoined).thenReturn(false);
+      when(() => mockedChannel2.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
+
+      when(() => mockedChannel3.joinedOnce).thenReturn(true);
+      when(() => mockedChannel3.isJoined).thenReturn(true);
+      when(() => mockedChannel3.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
+
+      const tTopic1 = 'test-topic1';
+      const tTopic2 = 'test-topic2';
+      const tTopic3 = 'test-topic3';
+
+      final mockedSocket = SocketWithMockedChannel(socketEndpoint);
+      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+        tTopic1: mockedChannel1,
+        tTopic2: mockedChannel2,
+        tTopic3: mockedChannel3,
+      });
+
+      final channel1 = mockedSocket.channel(tTopic1);
+      final channel2 = mockedSocket.channel(tTopic2);
+      final channel3 = mockedSocket.channel(tTopic3);
+
+      const token = 'sb-key';
+      final pushPayload = {'access_token': token};
+      final updateJoinPayload = {'access_token': token};
+
+      mockedSocket.setAuth(token);
+
+      expect(mockedSocket.accessToken, token);
+
+      verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel3.updateJoinPayload(updateJoinPayload)).called(1);
+
+      verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+      verifyNever(() => channel2.push(ChannelEvents.accessToken, pushPayload));
+      verify(() => channel3.push(ChannelEvents.accessToken, pushPayload))
           .called(1);
     });
   });
