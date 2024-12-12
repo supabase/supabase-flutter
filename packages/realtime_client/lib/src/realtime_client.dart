@@ -429,7 +429,8 @@ class RealtimeClient {
             null,
             Level.FINE,
           );
-          throw 'InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed['exp']}';
+          throw FormatException(
+              'InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed['exp']}');
         }
       }
     }

@@ -350,7 +350,17 @@ class SupabaseClient {
     // ignore: invalid_use_of_internal_member
     _authStateSubscription = auth.onAuthStateChangeSync.listen(
       (data) {
-        _handleTokenChanged(data.event, data.session?.accessToken);
+        try {
+          _handleTokenChanged(data.event, data.session?.accessToken);
+        } on FormatException catch (e) {
+          if (e.message.contains('InvalidJWTToken')) {
+            // The exception is thrown by RealtimeClient when the token is
+            // expired for example on app launch after the app has been closed
+            // for a while.
+          } else {
+            rethrow;
+          }
+        }
       },
       onError: (error, stack) {},
     );
