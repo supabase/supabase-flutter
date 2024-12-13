@@ -538,33 +538,38 @@ class GoTrueClient {
     assert(token != null || tokenHash != null,
         '`token` or `tokenHash` needs to be specified.');
 
-    final body = {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
-      if (token != null) 'token': token,
-      'type': type.snakeCase,
-      'redirect_to': redirectTo,
-      'gotrue_meta_security': {'captchaToken': captchaToken},
-      if (tokenHash != null) 'token_hash': tokenHash,
-    };
-    final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
-    final response = await _fetch
-        .request('$_url/verify', RequestMethodType.post, options: fetchOptions);
+    try {
+      final body = {
+        if (email != null) 'email': email,
+        if (phone != null) 'phone': phone,
+        if (token != null) 'token': token,
+        'type': type.snakeCase,
+        'redirect_to': redirectTo,
+        'gotrue_meta_security': {'captchaToken': captchaToken},
+        if (tokenHash != null) 'token_hash': tokenHash,
+      };
+      final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
+      final response = await _fetch.request(
+          '$_url/verify', RequestMethodType.post,
+          options: fetchOptions);
 
-    final authResponse = AuthResponse.fromJson(response);
+      final authResponse = AuthResponse.fromJson(response);
 
-    if (authResponse.session == null) {
-      throw AuthException(
-        'An error occurred on token verification.',
-      );
+      if (authResponse.session == null) {
+        throw AuthException(
+          'An error occurred on token verification.',
+        );
+      }
+
+      _saveSession(authResponse.session!);
+      notifyAllSubscribers(type == OtpType.recovery
+          ? AuthChangeEvent.passwordRecovery
+          : AuthChangeEvent.signedIn);
+
+      return authResponse;
+    } catch (e) {
+      return AuthResponse(session: null, user: null);
     }
-
-    _saveSession(authResponse.session!);
-    notifyAllSubscribers(type == OtpType.recovery
-        ? AuthChangeEvent.passwordRecovery
-        : AuthChangeEvent.signedIn);
-
-    return authResponse;
   }
 
   /// Obtains a URL to perform a single-sign on using an enterprise Identity
