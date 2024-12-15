@@ -467,7 +467,7 @@ class RealtimeClient {
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
     heartbeatTimer = Timer.periodic(
       Duration(milliseconds: heartbeatIntervalMs),
-      (Timer t) => sendHeartbeat(),
+      (Timer t) async => await sendHeartbeat(),
     );
     for (final callback in stateChangeCallbacks['open']!) {
       callback();
@@ -533,7 +533,7 @@ class RealtimeClient {
   }
 
   @internal
-  void sendHeartbeat() {
+  Future<void> sendHeartbeat() async {
     if (!isConnected) {
       return;
     }
@@ -555,6 +555,6 @@ class RealtimeClient {
       payload: {},
       ref: pendingHeartbeatRef!,
     ));
-    setAuth(accessToken);
+    await setAuth(accessToken);
   }
 }

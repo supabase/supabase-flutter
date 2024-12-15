@@ -200,7 +200,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 200));
       expect(opens, 1);
 
-      socket.sendHeartbeat();
+      await socket.sendHeartbeat();
       // need to wait for event to trigger
       await Future.delayed(const Duration(seconds: 1));
       expect(lastMsg['event'], 'heartbeat');
@@ -459,7 +459,7 @@ void main() {
 
     test(
         "sets access token, updates channels' join payload, and pushes token to channels",
-        () {
+        () async {
       final mockedChannel1 = MockChannel();
       when(() => mockedChannel1.joinedOnce).thenReturn(true);
       when(() => mockedChannel1.isJoined).thenReturn(true);
@@ -484,7 +484,7 @@ void main() {
       final channel1 = mockedSocket.channel(tTopic1);
       final channel2 = mockedSocket.channel(tTopic2);
 
-      mockedSocket.setAuth(token);
+      await mockedSocket.setAuth(token);
 
       expect(mockedSocket.accessToken, token);
 
@@ -498,7 +498,7 @@ void main() {
 
     test(
         "sets access token, updates channels' join payload, and pushes token to channels if is not a jwt",
-        () {
+        () async {
       final mockedChannel1 = MockChannel();
       final mockedChannel2 = MockChannel();
       final mockedChannel3 = MockChannel();
@@ -537,7 +537,7 @@ void main() {
       final pushPayload = {'access_token': token};
       final updateJoinPayload = {'access_token': token};
 
-      mockedSocket.setAuth(token);
+      await mockedSocket.setAuth(token);
 
       expect(mockedSocket.accessToken, token);
 
@@ -581,18 +581,18 @@ void main() {
 
     //! Unimplemented Test: closes socket when heartbeat is not ack'd within heartbeat window
 
-    test('pushes heartbeat data when connected', () {
+    test('pushes heartbeat data when connected', () async {
       mockedSocket.connState = SocketStates.open;
 
-      mockedSocket.sendHeartbeat();
+      await mockedSocket.sendHeartbeat();
 
       verify(() => mockedSink.add(captureAny(that: equals(data)))).called(1);
     });
 
-    test('no ops when not connected', () {
+    test('no ops when not connected', () async {
       mockedSocket.connState = SocketStates.connecting;
 
-      mockedSocket.sendHeartbeat();
+      await mockedSocket.sendHeartbeat();
       verifyNever(() => mockedSink.add(any()));
     });
   });
