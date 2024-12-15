@@ -132,6 +132,7 @@ class RealtimeClient {
     this.longpollerTimeout = 20000,
     RealtimeLogLevel? logLevel,
     this.httpClient,
+    this.customAccessToken,
   })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
             .replace(
               queryParameters:
