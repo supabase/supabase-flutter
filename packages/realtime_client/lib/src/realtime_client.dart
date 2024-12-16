@@ -54,6 +54,7 @@ class RealtimeCloseEvent {
 }
 
 class RealtimeClient {
+  // This is named `accessTokenValue` in supabase-js
   String? accessToken;
   List<RealtimeChannel> channels = [];
   final String endPoint;
@@ -89,6 +90,8 @@ class RealtimeClient {
   };
   int longpollerTimeout = 20000;
   SocketStates? connState;
+  // This is called `accessToken` in realtime-js
+  Future<String> Function()? customAccessToken;
 
   /// Initializes the Socket
   ///
@@ -129,6 +132,7 @@ class RealtimeClient {
     this.longpollerTimeout = 20000,
     RealtimeLogLevel? logLevel,
     this.httpClient,
+    this.customAccessToken,
   })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
             .replace(
               queryParameters:
@@ -403,15 +407,43 @@ class RealtimeClient {
   /// Sets the JWT access token used for channel subscription authorization and Realtime RLS.
   ///
   /// `token` A JWT strings.
-  void setAuth(String? token) {
-    accessToken = token;
+  Future<void> setAuth(String? token) async {
+    final tokenToSend =
+        token ?? (await customAccessToken?.call()) ?? accessToken;
+
+    if (tokenToSend != null) {
+      Map<String, dynamic>? parsed;
+      try {
+        final decoded =
+            base64.decode(base64.normalize(tokenToSend.split('.')[1]));
+        parsed = json.decode(utf8.decode(decoded));
+      } catch (e) {
+        // ignore parsing errors
+      }
+      if (parsed != null && parsed['exp'] != null) {
+        final now = (DateTime.now().millisecondsSinceEpoch / 1000).floor();
+        final valid = now - parsed['exp'] < 0;
+        if (!valid) {
+          log(
+            'auth',
+            'InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed['exp']}',
+            null,
+            Level.FINE,
+          );
+          throw FormatException(
+              'InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed['exp']}');
+        }
+      }
+    }
+
+    accessToken = tokenToSend;
 
     for (final channel in channels) {
-      if (token != null) {
-        channel.updateJoinPayload({'access_token': token});
+      if (tokenToSend != null) {
+        channel.updateJoinPayload({'access_token': tokenToSend});
       }
       if (channel.joinedOnce && channel.isJoined) {
-        channel.push(ChannelEvents.accessToken, {'access_token': token});
+        channel.push(ChannelEvents.accessToken, {'access_token': tokenToSend});
       }
     }
   }
@@ -436,7 +468,7 @@ class RealtimeClient {
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
     heartbeatTimer = Timer.periodic(
       Duration(milliseconds: heartbeatIntervalMs),
-      (Timer t) => sendHeartbeat(),
+      (Timer t) async => await sendHeartbeat(),
     );
     for (final callback in stateChangeCallbacks['open']!) {
       callback();
@@ -502,7 +534,7 @@ class RealtimeClient {
   }
 
   @internal
-  void sendHeartbeat() {
+  Future<void> sendHeartbeat() async {
     if (!isConnected) {
       return;
     }
@@ -524,6 +556,6 @@ class RealtimeClient {
       payload: {},
       ref: pendingHeartbeatRef!,
     ));
-    setAuth(accessToken);
+    await setAuth(accessToken);
   }
 }

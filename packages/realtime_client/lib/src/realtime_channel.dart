@@ -150,9 +150,11 @@ class RealtimeChannel {
 
       joinPush.receive(
         'ok',
-        (response) {
+        (response) async {
           final serverPostgresFilters = response['postgres_changes'];
-          if (socket.accessToken != null) socket.setAuth(socket.accessToken);
+          if (socket.accessToken != null) {
+            await socket.setAuth(socket.accessToken);
+          }
 
           if (serverPostgresFilters == null) {
             if (callback != null) {

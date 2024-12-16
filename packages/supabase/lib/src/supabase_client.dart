@@ -332,6 +332,7 @@ class SupabaseClient {
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
+      customAccessToken: accessToken,
     );
   }
 
@@ -349,22 +350,32 @@ class SupabaseClient {
   void _listenForAuthEvents() {
     // ignore: invalid_use_of_internal_member
     _authStateSubscription = auth.onAuthStateChangeSync.listen(
-      (data) {
-        _handleTokenChanged(data.event, data.session?.accessToken);
+      (data) async {
+        await _handleTokenChanged(data.event, data.session?.accessToken);
       },
       onError: (error, stack) {},
     );
   }
 
-  void _handleTokenChanged(AuthChangeEvent event, String? token) {
+  Future<void> _handleTokenChanged(AuthChangeEvent event, String? token) async {
     if (event == AuthChangeEvent.initialSession ||
         event == AuthChangeEvent.tokenRefreshed ||
         event == AuthChangeEvent.signedIn) {
-      realtime.setAuth(token);
+      try {
+        await realtime.setAuth(token);
+      } on FormatException catch (e) {
+        if (e.message.contains('InvalidJWTToken')) {
+          // The exception is thrown by RealtimeClient when the token is
+          // expired for example on app launch after the app has been closed
+          // for a while.
+        } else {
+          rethrow;
+        }
+      }
     } else if (event == AuthChangeEvent.signedOut) {
       // Token is removed
 
-      realtime.setAuth(_supabaseKey);
+      await realtime.setAuth(_supabaseKey);
     }
   }
 }
