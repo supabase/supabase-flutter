@@ -415,8 +415,8 @@ class RealtimeClient {
       Map<String, dynamic>? parsed;
       try {
         final decoded =
-            utf8.decode(base64Url.decode(tokenToSend.split('.')[1]));
-        parsed = json.decode(decoded);
+            base64.decode(base64.normalize(tokenToSend.split('.')[1]));
+        parsed = json.decode(utf8.decode(decoded));
       } catch (e) {
         // ignore parsing errors
       }
