@@ -1,3 +1,7 @@
+## 2.8.2
+
+ - Update a dependency to the latest release.
+
 ## 2.8.1
 
  - **FIX**: Support custom access token ([#1073](https://github.com/supabase/supabase-flutter/issues/1073)). ([fc9ad2c9](https://github.com/supabase/supabase-flutter/commit/fc9ad2c94a02921ca8ced4564d9bcd8cde2c2397))

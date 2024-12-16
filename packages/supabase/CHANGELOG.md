@@ -1,3 +1,8 @@
+## 2.6.1
+
+ - **FIX**(realtime_client): Prevent sending expired tokens ([#1095](https://github.com/supabase/supabase-flutter/issues/1095)). ([1bb034f0](https://github.com/supabase/supabase-flutter/commit/1bb034f0f82b03d629edc733688c8648cf01e5b9))
+ - **FIX**(realtime_client): Consolidate realtime subscription for stream ([#1096](https://github.com/supabase/supabase-flutter/issues/1096)). ([4e351155](https://github.com/supabase/supabase-flutter/commit/4e3511551cb0d6da673fa5c4187f7ada2a1f8865))
+
 ## 2.6.0
 
  - **FIX**: Support custom access token ([#1073](https://github.com/supabase/supabase-flutter/issues/1073)). ([fc9ad2c9](https://github.com/supabase/supabase-flutter/commit/fc9ad2c94a02921ca8ced4564d9bcd8cde2c2397))

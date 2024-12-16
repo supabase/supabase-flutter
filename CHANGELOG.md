@@ -3,6 +3,45 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2024-12-17
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.11.1`](#gotrue---v2111)
+ - [`realtime_client` - `v2.4.1`](#realtime_client---v241)
+ - [`supabase` - `v2.6.1`](#supabase---v261)
+ - [`supabase_flutter` - `v2.8.2`](#supabase_flutter---v282)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_flutter` - `v2.8.2`
+
+---
+
+#### `gotrue` - `v2.11.1`
+
+ - **FIX**: Ignore email and phone assertions when token hash is being verified ([#1097](https://github.com/supabase/supabase-flutter/issues/1097)). ([c9717861](https://github.com/supabase/supabase-flutter/commit/c97178610e8cd7a65a2f6a926ab559987e786d75))
+
+#### `realtime_client` - `v2.4.1`
+
+ - **FIX**(realtime_client): Prevent sending expired tokens ([#1095](https://github.com/supabase/supabase-flutter/issues/1095)). ([1bb034f0](https://github.com/supabase/supabase-flutter/commit/1bb034f0f82b03d629edc733688c8648cf01e5b9))
+
+#### `supabase` - `v2.6.1`
+
+ - **FIX**(realtime_client): Prevent sending expired tokens ([#1095](https://github.com/supabase/supabase-flutter/issues/1095)). ([1bb034f0](https://github.com/supabase/supabase-flutter/commit/1bb034f0f82b03d629edc733688c8648cf01e5b9))
+ - **FIX**(realtime_client): Consolidate realtime subscription for stream ([#1096](https://github.com/supabase/supabase-flutter/issues/1096)). ([4e351155](https://github.com/supabase/supabase-flutter/commit/4e3511551cb0d6da673fa5c4187f7ada2a1f8865))
+
+
 ## 2024-11-17
 
 ### Changes
