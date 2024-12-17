@@ -17,6 +17,7 @@ Packages with other changes:
 
  - [`gotrue` - `v2.11.1`](#gotrue---v2111)
  - [`realtime_client` - `v2.4.1`](#realtime_client---v241)
+ - [`storage_client` - `v2.3.0`](#storage_client---v230)
  - [`supabase` - `v2.6.1`](#supabase---v261)
  - [`supabase_flutter` - `v2.8.2`](#supabase_flutter---v282)
 
@@ -35,6 +36,10 @@ Packages with dependency updates only:
 #### `realtime_client` - `v2.4.1`
 
  - **FIX**(realtime_client): Prevent sending expired tokens ([#1095](https://github.com/supabase/supabase-flutter/issues/1095)). ([1bb034f0](https://github.com/supabase/supabase-flutter/commit/1bb034f0f82b03d629edc733688c8648cf01e5b9))
+
+#### `storage_client` - `v2.3.0`
+
+- **FEAT**: Support mime 2.0.0 ([#1079](https://github.com/supabase/supabase-flutter/pull/1079)).
 
 #### `supabase` - `v2.6.1`
 

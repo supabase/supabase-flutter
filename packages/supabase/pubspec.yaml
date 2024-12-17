@@ -14,7 +14,7 @@ dependencies:
   http: '>=0.13.5 <2.0.0'
   postgrest: 2.4.0
   realtime_client: 2.4.1
-  storage_client: 2.2.0
+  storage_client: 2.3.0
   rxdart: '>=0.27.5 <0.29.0'
   yet_another_json_isolate: 2.0.3
   logging: ^1.2.0
