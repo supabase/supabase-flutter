@@ -1,3 +1,7 @@
+## 2.11.1
+
+ - **FIX**: Ignore email and phone assertions when token hash is being verified ([#1097](https://github.com/supabase/supabase-flutter/issues/1097)). ([c9717861](https://github.com/supabase/supabase-flutter/commit/c97178610e8cd7a65a2f6a926ab559987e786d75))
+
 ## 2.11.0
 
  - **FIX**: Add equality to user attributes classes ([#1070](https://github.com/supabase/supabase-flutter/issues/1070)). ([7e7bc0ca](https://github.com/supabase/supabase-flutter/commit/7e7bc0cac722c0f3404b3f9320c536454bc51cea))
