@@ -36,5 +36,6 @@ platforms:
   macos:
   web:
   windows:
+  linux:
 
 flutter:
