@@ -86,7 +86,7 @@ class PostgrestClient {
   ///
   /// [fn] is the name of the function to call.
   ///
-  /// [params] is an optinal object to pass as arguments to the function call.
+  /// [params] is an optional object to pass as arguments to the function call.
   ///
   /// When [get] is set to `true`, the function will be called with read-only
   /// access mode.
