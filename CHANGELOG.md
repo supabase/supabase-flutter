@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-01-01
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`postgrest` - `v2.4.1`](#postgrest---v241)
+ - [`supabase` - `v2.6.2`](#supabase---v262)
+ - [`supabase_flutter` - `v2.8.3`](#supabase_flutter---v283)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.6.2`
+ - `supabase_flutter` - `v2.8.3`
+
+---
+
+#### `postgrest` - `v2.4.1`
+
+ - **DOCS**: Fix typo for RPC docs ([#1105](https://github.com/supabase/supabase-flutter/issues/1105)). ([7c8c8630](https://github.com/supabase/supabase-flutter/commit/7c8c8630257984f429406b0d85a8601881712343))
+
+
 ## 2024-12-17
 
 ### Changes
