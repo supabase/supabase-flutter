@@ -1,3 +1,7 @@
+## 2.6.2
+
+ - Update a dependency to the latest release.
+
 ## 2.6.1
 
  - **FIX**(realtime_client): Prevent sending expired tokens ([#1095](https://github.com/supabase/supabase-flutter/issues/1095)). ([1bb034f0](https://github.com/supabase/supabase-flutter/commit/1bb034f0f82b03d629edc733688c8648cf01e5b9))

@@ -1,3 +1,7 @@
+## 2.4.1
+
+ - **DOCS**: Fix typo for RPC docs ([#1105](https://github.com/supabase/supabase-flutter/issues/1105)). ([7c8c8630](https://github.com/supabase/supabase-flutter/commit/7c8c8630257984f429406b0d85a8601881712343))
+
 ## 2.4.0
 
  - **FEAT**: Read-only access mode rpc ([#1081](https://github.com/supabase/supabase-flutter/issues/1081)). ([d0a04154](https://github.com/supabase/supabase-flutter/commit/d0a04154ff56d40d00e1c9282d8ba859681c7275))
