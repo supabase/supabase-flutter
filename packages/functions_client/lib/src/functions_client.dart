@@ -39,7 +39,7 @@ class FunctionsClient {
 
   /// Updates the authorization header
   ///
-  /// [token] - the new jwt token sent in the authorisation header
+  /// [token] - the new jwt token sent in the authorization header
   void setAuth(String token) {
     _headers['Authorization'] = 'Bearer $token';
   }
@@ -53,7 +53,7 @@ class FunctionsClient {
   /// [body] of the request when [files] is null and can be of type String
   /// or an Object that is encodable to JSON with `jsonEncode`.
   /// If [files] is not null, [body] represents the fields of the
-  /// [MultipartRequest] and must be be of type `Map<String, String>`.
+  /// [MultipartRequest] and must be of type `Map<String, String>`.
   ///
   /// [files] to send in a `MultipartRequest`. [body] is used for the fields.
   ///
