@@ -38,7 +38,7 @@ class SupabaseStorageClient extends StorageBucketApi {
     int retryAttempts = 0,
   })  : assert(
           retryAttempts >= 0,
-          'retryAttempts has to be great than or equal to 0',
+          'retryAttempts has to be greater than or equal to 0',
         ),
         _defaultRetryAttempts = retryAttempts,
         super(
