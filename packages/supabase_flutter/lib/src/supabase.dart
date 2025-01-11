@@ -257,7 +257,7 @@ class Supabase with WidgetsBindingObserver {
         // Reconnect if the socket is currently not connected.
         // When coming from [AppLifecycleState.paused] this should be the case,
         // but when coming from [AppLifecycleState.inactive] no disconnect
-        // happened and therefore connection should still be intanct and we
+        // happened and therefore connection should still be intact and we
         // should not reconnect.
 
         // ignore: invalid_use_of_internal_member
