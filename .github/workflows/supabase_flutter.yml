@@ -68,7 +68,7 @@ jobs:
         run: flutter analyze --fatal-warnings --fatal-infos .
 
       - name: Run tests
-        run: flutter test --concurrency=1
+        run: flutter test --concurrency=1 --coverage
 
       - name: Run tests with downgraded app_links
         run: |
@@ -79,3 +79,6 @@ jobs:
         run: |
           cd example
           flutter build web
+
+      - name: Update coverage
+        run: melos run update-coverage

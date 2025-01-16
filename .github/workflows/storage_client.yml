@@ -61,4 +61,7 @@ jobs:
           time: '5s'
 
       - name: Run tests
-        run: dart test
+        run: dart test --coverage=./coverage
+
+      - name: Update coverage
+        run: melos run update-coverage
