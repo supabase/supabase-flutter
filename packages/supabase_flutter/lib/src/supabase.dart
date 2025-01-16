@@ -81,7 +81,7 @@ class Supabase with WidgetsBindingObserver {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
-    Future<String> Function()? accessToken,
+    Future<String?> Function()? accessToken,
     bool? debug,
   }) async {
     assert(
@@ -186,7 +186,7 @@ class Supabase with WidgetsBindingObserver {
     required PostgrestClientOptions postgrestOptions,
     required StorageClientOptions storageOptions,
     required AuthClientOptions authOptions,
-    required Future<String> Function()? accessToken,
+    required Future<String?> Function()? accessToken,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
