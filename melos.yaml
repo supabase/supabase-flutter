@@ -64,6 +64,3 @@ scripts:
 
       # Format coverage
       dart pub global run coverage:format_coverage --lcov --in="./coverage/test" --out="./coverage/lcov.info" --report-on="./lib"
-
-      # Combine coverage
-      dart pub global run combine_coverage --repo-path="../../"

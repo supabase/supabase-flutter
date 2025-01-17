@@ -68,3 +68,9 @@ jobs:
 
       - name: Update coverage
         run: melos run update-coverage
+
+      - name: Upload coverage results to Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./coverage/lcov.info
