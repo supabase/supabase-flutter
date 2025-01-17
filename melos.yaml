@@ -58,9 +58,8 @@ scripts:
   update-coverage:
     description: Updates the coverage for the workspace
     run: |
-      # Activate coverage and combine_coverage
+      # Activate coverage
       dart pub global activate coverage
-      dart pub global activate combine_coverage
 
       # Format coverage
       dart pub global run coverage:format_coverage --lcov --in="./coverage/test" --out="./coverage/lcov.info" --report-on="./lib"

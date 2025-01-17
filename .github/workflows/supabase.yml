@@ -63,11 +63,9 @@ jobs:
       - name: Run tests
         run: dart test --concurrency=1 --coverage=./coverage
 
-      - name: Update coverage
-        run: |
-          dart pub global activate combine_coverage
-          melos run update-coverage
-          dart pub global run combine_coverage --repo-path="../../"
+      - name: Format coverage
+        run: melos run format-coverage
+
 
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@master

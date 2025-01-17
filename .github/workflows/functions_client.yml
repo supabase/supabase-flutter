@@ -56,8 +56,8 @@ jobs:
       - name: Run tests
         run: dart test --coverage=./coverage
 
-      - name: Update coverage
-        run: melos run update-coverage
+      - name: Format coverage
+        run: melos run format-coverage
 
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@master
