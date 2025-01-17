@@ -55,7 +55,7 @@ scripts:
       git add packages/*/lib/src/version.dart
     description: Updates the version.dart file for each packages except yet_another_json_isolate
 
-  update-coverage:
+  format-coverage:
     description: Updates the coverage for the workspace
     run: |
       # Activate coverage
