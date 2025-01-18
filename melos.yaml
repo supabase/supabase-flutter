@@ -58,6 +58,7 @@ scripts:
   format-coverage:
     description: Updates the coverage for the workspace
     run: |
+      pwd
       # Activate coverage
       dart pub global activate coverage
 
