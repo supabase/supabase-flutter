@@ -51,7 +51,7 @@ jobs:
         run: dart analyze --fatal-warnings --fatal-infos .
 
       - name: Run tests
-        run: dart test --coverage=./coverage
+        run: dart test --concurrency=1 --coverage=./coverage
 
       - name: Format coverage
         run: |
