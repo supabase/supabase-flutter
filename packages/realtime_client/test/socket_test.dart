@@ -393,6 +393,7 @@ void main() {
       mockedSink = MockWebSocketSink();
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
     });
 
     test('sends data to connection when connected', () {
@@ -575,6 +576,7 @@ void main() {
       mockedSink = MockWebSocketSink();
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
 
       mockedSocket.connect();
     });
