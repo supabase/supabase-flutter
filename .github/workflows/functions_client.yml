@@ -57,7 +57,10 @@ jobs:
         run: dart test --coverage=./coverage
 
       - name: Format coverage
-        run: melos run format-coverage
+        run: |
+          melos run format-coverage
+          dart pub global activate coverage
+          dart pub global run coverage:format_coverage --lcov --in="./coverage/test" --out="./coverage/lcov.info" --report-on="./lib"
 
       - name: Upload coverage results to Coveralls
         uses: coverallsapp/github-action@master

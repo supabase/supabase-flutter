@@ -54,13 +54,3 @@ scripts:
       # Stage the version.dart file change
       git add packages/*/lib/src/version.dart
     description: Updates the version.dart file for each packages except yet_another_json_isolate
-
-  format-coverage:
-    description: Updates the coverage for the workspace
-    run: |
-      pwd
-      # Activate coverage
-      dart pub global activate coverage
-
-      # Format coverage
-      dart pub global run coverage:format_coverage --lcov --in="./coverage/test" --out="./coverage/lcov.info" --report-on="./lib"
