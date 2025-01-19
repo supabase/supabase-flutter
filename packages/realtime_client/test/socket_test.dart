@@ -393,9 +393,8 @@ void main() {
       mockedSink = MockWebSocketSink();
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
       when(() => mockedSink.close()).thenAnswer((_) => Future.value());
-      when(() => mockedSink.close(any(), any()))
-          .thenAnswer((_) => Future.value());
     });
 
     test('sends data to connection when connected', () {
@@ -410,7 +409,7 @@ void main() {
           .called(1);
     });
 
-    test('buffers data when not connected', () {
+    test('buffers data when not connected', () async {
       mockedSocket.connect();
       mockedSocket.connState = SocketStates.connecting;
 
@@ -579,6 +578,7 @@ void main() {
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
       when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
 
       mockedSocket.connect();
     });
