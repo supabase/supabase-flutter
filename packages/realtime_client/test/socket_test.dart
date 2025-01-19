@@ -394,6 +394,8 @@ void main() {
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
       when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+      when(() => mockedSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
     });
 
     test('sends data to connection when connected', () {
