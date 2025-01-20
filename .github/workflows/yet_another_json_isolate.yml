@@ -4,14 +4,7 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'packages/yet_another_json_isolate/**'
-      - '.github/workflows/yet_another_json_isolate.yml'
-
   pull_request:
-    paths:
-      - 'packages/yet_another_json_isolate/**'
-      - '.github/workflows/yet_another_json_isolate.yml'
 
 jobs:
   test:
@@ -63,8 +56,9 @@ jobs:
           dart pub global activate coverage
           dart pub global run coverage:format_coverage --lcov --in="./coverage/test" --out="./coverage/lcov.info" --report-on="./lib"
 
-      - name: Upload coverage results to Coveralls
-        uses: coverallsapp/github-action@master
+      - name: Upload coverage artifact
+        if: ${{ matrix.sdk == 'stable'}}
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./packages/yet_another_json_isolate/coverage/lcov.info
+          name: coverage-flutter-yet-another-json-isolate
+          path: ./packages/yet_another_json_isolate/coverage/lcov.info

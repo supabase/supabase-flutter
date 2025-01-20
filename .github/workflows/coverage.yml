@@ -1,0 +1,52 @@
+name: Combined Coverage Report
+
+on:
+  workflow_run:
+    workflows:
+      - 'functions_client'
+      - 'gotrue'
+      - 'postgrest'
+      - 'realtime_client'
+      - 'storage_client'
+      - 'supabase'
+      - 'supabase_flutter'
+      - 'yet_another_json_isolate'
+    types:
+      - completed
+
+jobs:
+  combine-coverage:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install coverage tool
+        run: dart pub global activate coverage
+
+      - name: Create coverage directory
+        run: mkdir -p coverage
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-flutter-*
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Combine coverage reports
+        run: |
+          find coverage -name "lcov.info" -exec cat {} + > coverage/combined_lcov.info
+
+      - name: Upload combined coverage to Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: coverage/combined_lcov.info
