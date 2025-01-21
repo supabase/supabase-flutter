@@ -49,16 +49,4 @@ jobs:
         run: dart analyze
 
       - name: Run tests
-        run: dart test --concurrency=1 --coverage=./coverage
-
-      - name: Format coverage
-        run: |
-          dart pub global activate coverage
-          dart pub global run coverage:format_coverage --lcov --in="./coverage/test" --out="./coverage/lcov.info" --report-on="./lib"
-
-      - name: Upload coverage artifact
-        if: ${{ matrix.sdk == 'stable'}}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-flutter-realtime-client
-          path: ./packages/realtime_client/coverage/lcov.info
+        run: dart test --concurrency=1

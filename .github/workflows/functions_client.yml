@@ -50,17 +50,4 @@ jobs:
         run: dart analyze
 
       - name: Run tests
-        run: dart test --coverage=./coverage
-
-      - name: Format coverage
-        if: ${{ matrix.sdk == 'stable'}}
-        run: |
-          dart pub global activate coverage
-          dart pub global run coverage:format_coverage --lcov --in="./coverage/test" --out="./coverage/lcov.info" --report-on="./lib"
-
-      - name: Upload coverage artifact
-        if: ${{ matrix.sdk == 'stable'}}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-flutter-functions-client
-          path: ./packages/functions_client/coverage/lcov.info
+        run: dart test

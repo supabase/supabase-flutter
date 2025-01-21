@@ -1,52 +1,59 @@
 name: Combined Coverage Report
 
 on:
-  workflow_run:
-    workflows:
-      - 'functions_client'
-      - 'gotrue'
-      - 'postgrest'
-      - 'realtime_client'
-      - 'storage_client'
-      - 'supabase'
-      - 'supabase_flutter'
-      - 'yet_another_json_isolate'
-    types:
-      - completed
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-  combine-coverage:
+  coverage:
+    name: Generate Combined Coverage
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Dart
-        uses: dart-lang/setup-dart@v1
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
         with:
-          sdk: stable
-
-      - name: Install coverage tool
-        run: dart pub global activate coverage
-
-      - name: Create coverage directory
-        run: mkdir -p coverage
-
-      - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-flutter-*
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
-
+          flutter-version: '3.x'
+          channel: 'stable'
+          
+      - name: Install dependencies
+        run: |
+          dart pub global activate melos
+          dart pub global activate coverage
+          dart pub global activate combine_coverage
+          melos bootstrap
+          
+      - name: Run tests with coverage for all packages
+        run: |
+          # Create directory for combined coverage
+          mkdir coverage
+          
+          # Run tests for each package and generate coverage
+          cd packages
+          for d in */ ; do
+            cd "$d"
+            if [ -f "pubspec.yaml" ]; then
+              echo "Running tests for $d"
+              if [[ "$d" == "supabase_flutter/"* ]]; then
+                flutter test --coverage --concurrency=1
+              else
+                dart test --coverage=coverage
+                dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+              fi
+            fi
+            cd ..
+          done
+          cd ..
+          
       - name: Combine coverage reports
         run: |
-          find coverage -name "lcov.info" -exec cat {} + > coverage/combined_lcov.info
-
-      - name: Upload combined coverage to Coveralls
-        uses: coverallsapp/github-action@master
+          dart pub global run combine_coverage:combine_coverage --repo-path="./" --output-directory="coverage"
+          
+      - name: Upload combined coverage report
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage/combined_lcov.info
+          name: combined-coverage-report
+          path: coverage/lcov.info

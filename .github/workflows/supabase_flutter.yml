@@ -47,7 +47,7 @@ jobs:
         run: flutter analyze --fatal-warnings --fatal-infos .
 
       - name: Run tests
-        run: flutter test --concurrency=1 --coverage
+        run: flutter test --concurrency=1
 
       - name: Run tests with downgraded app_links
         run: |
@@ -58,10 +58,3 @@ jobs:
         run: |
           cd example
           flutter build web
-
-      - name: Upload coverage artifact
-        if: ${{ matrix.sdk == 'stable'}}
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-flutter-supabase-flutter
-          path: ./packages/supabase_flutter/coverage/lcov.info
