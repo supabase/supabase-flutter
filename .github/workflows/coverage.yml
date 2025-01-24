@@ -40,23 +40,28 @@ jobs:
               if [[ "$d" == "supabase_flutter/"* ]]; then
                 flutter test --coverage --concurrency=1
               else
+                # Set up Docker containers based on package
                 if [[ "$d" == "postgrest/"* ]]; then
                   cd ../../infra/postgrest
                   docker compose down
                   docker compose up -d
+                  sleep 5s
                   cd ../../packages/postgrest
                 elif [[ "$d" == "gotrue/"* ]]; then
                   cd ../../infra/gotrue
                   docker compose down
                   docker compose up -d
+                  sleep 5s
                   cd ../../packages/gotrue
                 elif [[ "$d" == "storage_client/"* ]]; then
                   cd ../../infra/storage_client
                   docker compose down
                   docker compose up -d
+                  sleep 5s
                   cd ../../packages/storage_client
                 fi
-                dart test --coverage=coverage
+                # Run tests with coverage
+                dart test --coverage=coverage --concurrency=1
                 dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
               fi
             fi
