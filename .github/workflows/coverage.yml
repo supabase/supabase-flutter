@@ -44,20 +44,20 @@ jobs:
                 if [[ "$d" == "postgrest/"* ]]; then
                   cd ../../infra/postgrest
                   docker compose down
-                  docker compose up -d
                   sleep 5s
+                  docker compose up -d
                   cd ../../packages/postgrest
                 elif [[ "$d" == "gotrue/"* ]]; then
                   cd ../../infra/gotrue
                   docker compose down
-                  docker compose up -d
                   sleep 5s
+                  docker compose up -d
                   cd ../../packages/gotrue
                 elif [[ "$d" == "storage_client/"* ]]; then
                   cd ../../infra/storage_client
                   docker compose down
-                  docker compose up -d
                   sleep 5s
+                  docker compose up -d
                   cd ../../packages/storage_client
                 fi
                 # Run tests with coverage
