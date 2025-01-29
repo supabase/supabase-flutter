@@ -48,8 +48,10 @@ jobs:
                   cd ../../packages/postgrest
                   dart test --coverage=coverage --concurrency=1
                   dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  cd ../../infra/postgrest
                   docker compose down
                   sleep 5s
+                  cd ../../packages/postgrest
                 elif [[ "$d" == "gotrue/"* ]]; then
                   cd ../../infra/gotrue
                   docker compose down
@@ -57,8 +59,10 @@ jobs:
                   cd ../../packages/gotrue
                   dart test --coverage=coverage --concurrency=1
                   dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  cd ../../infra/gotrue
                   docker compose down
                   sleep 5s
+                  cd ../../packages/gotrue
                 elif [[ "$d" == "storage_client/"* ]]; then
                   cd ../../infra/storage_client
                   docker compose down
@@ -66,8 +70,10 @@ jobs:
                   cd ../../packages/storage_client
                   dart test --coverage=coverage --concurrency=1
                   dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  cd ../../infra/storage_client
                   docker compose down
                   sleep 5s
+                  cd ../../packages/storage_client
                 else
                   cd ../../packages/$d
                   dart test --coverage=coverage --concurrency=1
