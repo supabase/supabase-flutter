@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'packages/storage_client/**'
+      - '.github/workflows/storage_client.yml'
   pull_request:
+    paths:
+      - 'packages/storage_client/**'
+      - '.github/workflows/storage_client.yml'
 
 jobs:
   test:

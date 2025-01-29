@@ -4,7 +4,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'packages/gotrue/**'
+      - '.github/workflows/gotrue.yml'
+
   pull_request:
+    paths:
+      - 'packages/gotrue/**'
+      - '.github/workflows/gotrue.yml'
 
 jobs:
   test:

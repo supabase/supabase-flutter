@@ -4,7 +4,24 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'packages/supabase/**'
+      - '.github/workflows/supabase.yml'
+      - 'packages/functions_client/**'
+      - 'packages/gotrue/**'
+      - 'packages/postgrest/**'
+      - 'packages/realtime_client/**'
+      - 'packages/storage_client/**'
+
   pull_request:
+    paths:
+      - 'packages/supabase/**'
+      - '.github/workflows/supabase.yml'
+      - 'packages/functions_client/**'
+      - 'packages/gotrue/**'
+      - 'packages/postgrest/**'
+      - 'packages/realtime_client/**'
+      - 'packages/storage_client/**'
 
 jobs:
   test:

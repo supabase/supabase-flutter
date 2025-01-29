@@ -4,7 +4,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'packages/yet_another_json_isolate/**'
+      - '.github/workflows/yet_another_json_isolate.yml'
+
   pull_request:
+    paths:
+      - 'packages/yet_another_json_isolate/**'
+      - '.github/workflows/yet_another_json_isolate.yml'
 
 jobs:
   test:

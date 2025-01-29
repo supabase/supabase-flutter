@@ -4,7 +4,28 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'packages/supabase_flutter/**'
+      - '.github/workflows/supabase_flutter.yml'
+      - 'packages/functions_client/**'
+      - 'packages/gotrue/**'
+      - 'packages/postgrest/**'
+      - 'packages/realtime_client/**'
+      - 'packages/storage_client/**'
+      - 'packages/supabase/**'
+      - 'packages/yet_another_json_isolate/**'
+
   pull_request:
+    paths:
+      - 'packages/supabase_flutter/**'
+      - '.github/workflows/supabase_flutter.yml'
+      - 'packages/functions_client/**'
+      - 'packages/gotrue/**'
+      - 'packages/postgrest/**'
+      - 'packages/realtime_client/**'
+      - 'packages/storage_client/**'
+      - 'packages/supabase/**'
+      - 'packages/yet_another_json_isolate/**'
 
 jobs:
   test:

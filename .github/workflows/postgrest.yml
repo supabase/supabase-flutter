@@ -4,7 +4,16 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'packages/postgrest/**'
+      - '.github/workflows/postgrest.yml'
+      - 'packages/yet_another_json_isolate/**'
+
   pull_request:
+    paths:
+      - 'packages/postgrest/**'
+      - '.github/workflows/postgrest.yml'
+      - 'packages/yet_another_json_isolate/**'
 
 jobs:
   test:
