@@ -44,25 +44,35 @@ jobs:
                 if [[ "$d" == "postgrest/"* ]]; then
                   cd ../../infra/postgrest
                   docker compose down
-                  sleep 5s
                   docker compose up -d
                   cd ../../packages/postgrest
+                  dart test --coverage=coverage --concurrency=1
+                  dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  docker compose down
+                  sleep 5s
                 elif [[ "$d" == "gotrue/"* ]]; then
                   cd ../../infra/gotrue
                   docker compose down
-                  sleep 5s
                   docker compose up -d
                   cd ../../packages/gotrue
+                  dart test --coverage=coverage --concurrency=1
+                  dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  docker compose down
+                  sleep 5s
                 elif [[ "$d" == "storage_client/"* ]]; then
                   cd ../../infra/storage_client
                   docker compose down
-                  sleep 5s
                   docker compose up -d
                   cd ../../packages/storage_client
+                  dart test --coverage=coverage --concurrency=1
+                  dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  docker compose down
+                  sleep 5s
+                else
+                  cd ../../packages/$d
+                  dart test --coverage=coverage --concurrency=1
+                  dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
                 fi
-                # Run tests with coverage
-                dart test --coverage=coverage --concurrency=1
-                dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
               fi
             fi
             cd ..
