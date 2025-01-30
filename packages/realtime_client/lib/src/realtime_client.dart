@@ -91,7 +91,7 @@ class RealtimeClient {
   int longpollerTimeout = 20000;
   SocketStates? connState;
   // This is called `accessToken` in realtime-js
-  Future<String> Function()? customAccessToken;
+  Future<String?> Function()? customAccessToken;
 
   /// Initializes the Socket
   ///

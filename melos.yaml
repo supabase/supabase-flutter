@@ -39,6 +39,7 @@ scripts:
     exec: dart pub outdated
 
   update-version:
+    description: Updates the version.dart file for each packages except yet_another_json_isolate
     run: |
       # Loop through the packages directory
       for d in packages/*/ ; do
@@ -53,4 +54,4 @@ scripts:
       rm packages/yet_another_json_isolate/lib/src/version.dart
       # Stage the version.dart file change
       git add packages/*/lib/src/version.dart
-    description: Updates the version.dart file for each packages except yet_another_json_isolate
+    

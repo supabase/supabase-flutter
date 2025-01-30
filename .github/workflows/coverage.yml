@@ -1,0 +1,96 @@
+name: Combined Coverage Report
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  coverage:
+    name: Generate Combined Coverage
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+          
+      - name: Install dependencies
+        run: |
+          dart pub global activate melos
+          dart pub global activate coverage
+          dart pub global activate combine_coverage
+          melos bootstrap
+          
+      - name: Run tests with coverage for all packages
+        run: |
+          # Create directory for combined coverage
+          mkdir coverage
+          
+          # Run tests for each package and generate coverage
+          cd packages
+          for d in */ ; do
+            cd "$d"
+            if [ -f "pubspec.yaml" ]; then
+              echo "Running tests for $d"
+              if [[ "$d" == "supabase_flutter/"* ]]; then
+                flutter test --coverage --concurrency=1
+              else
+                # Set up Docker containers based on package
+                if [[ "$d" == "postgrest/"* ]]; then
+                  cd ../../infra/postgrest
+                  docker compose down
+                  docker compose up -d
+                  cd ../../packages/postgrest
+                  dart test --coverage=coverage --concurrency=1
+                  dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  cd ../../infra/postgrest
+                  docker compose down
+                  sleep 5s
+                  cd ../../packages/postgrest
+                elif [[ "$d" == "gotrue/"* ]]; then
+                  cd ../../infra/gotrue
+                  docker compose down
+                  docker compose up -d
+                  cd ../../packages/gotrue
+                  dart test --coverage=coverage --concurrency=1
+                  dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  cd ../../infra/gotrue
+                  docker compose down
+                  sleep 5s
+                  cd ../../packages/gotrue
+                elif [[ "$d" == "storage_client/"* ]]; then
+                  cd ../../infra/storage_client
+                  docker compose down
+                  docker compose up -d
+                  cd ../../packages/storage_client
+                  dart test --coverage=coverage --concurrency=1
+                  dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  cd ../../infra/storage_client
+                  docker compose down
+                  sleep 5s
+                  cd ../../packages/storage_client
+                else
+                  cd ../../packages/$d
+                  dart test --coverage=coverage --concurrency=1
+                  dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                fi
+              fi
+            fi
+            cd ..
+          done
+          cd ..
+          
+      - name: Combine coverage reports
+        run: |
+          dart pub global run combine_coverage:combine_coverage --repo-path="./" --output-directory="coverage"
+          
+      - name: Upload combined coverage report
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./coverage/lcov.info

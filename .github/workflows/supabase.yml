@@ -58,7 +58,12 @@ jobs:
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
+        if: ${{ matrix.sdk == 'stable'}}
         run: dart analyze --fatal-warnings --fatal-infos .
+
+      - name: analyzer
+        if: ${{ matrix.sdk == 'beta' || matrix.sdk == 'dev' }}
+        run: dart analyze
 
       - name: Run tests
         run: dart test --concurrency=1
