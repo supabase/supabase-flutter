@@ -90,7 +90,7 @@ jobs:
           dart pub global run combine_coverage:combine_coverage --repo-path="./" --output-directory="coverage"
           
       - name: Upload combined coverage report
-        uses: actions/upload-artifact@v4
+        uses: coverallsapp/github-action@v2
         with:
-          name: combined-coverage-report
-          path: coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./coverage/lcov.info
