@@ -413,7 +413,7 @@ void main() {
         await storage.from('bucket2').download(uploadPath);
         fail('File that does not exist was found');
       } on StorageException catch (error) {
-        expect(error.error, 'not_found');
+        expect(error.statusCode, '400');
       }
       await storage
           .from(newBucketName)
@@ -433,7 +433,7 @@ void main() {
         await storage.from('bucket2').download('$uploadPath 3');
         fail('File that does not exist was found');
       } on StorageException catch (error) {
-        expect(error.error, 'not_found');
+        expect(error.statusCode, '400');
       }
       await storage
           .from(newBucketName)
@@ -447,7 +447,7 @@ void main() {
         await storage.from(newBucketName).download(uploadPath);
         fail('File that was moved was found');
       } on StorageException catch (error) {
-        expect(error.error, 'not_found');
+        expect(error.statusCode, '400');
       }
     });
   });
@@ -473,7 +473,7 @@ void main() {
 
   test('check if object exists', () async {
     await storage.from(newBucketName).upload('$uploadPath-exists', file);
-    final res = await storage.from(newBucketName).exists(uploadPath);
+    final res = await storage.from(newBucketName).exists('$uploadPath-exists');
     expect(res, true);
 
     final res2 = await storage.from(newBucketName).exists('not-exist');

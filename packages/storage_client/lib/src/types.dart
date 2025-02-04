@@ -79,7 +79,7 @@ class FileObjectV2 {
   final String id;
   final String version;
   final String name;
-  final String? bucketId;
+  final String bucketId;
   final String? updatedAt;
   final String createdAt;
   final String? lastAccessedAt;
@@ -110,7 +110,7 @@ class FileObjectV2 {
       : id = json['id'] as String,
         version = json['version'] as String,
         name = json['name'] as String,
-        bucketId = json['bucket_id'] as String?,
+        bucketId = json['bucket_id'] as String,
         updatedAt = json['updated_at'] as String?,
         createdAt = json['created_at'] as String,
         lastAccessedAt = json['last_accessed_at'] as String?,
