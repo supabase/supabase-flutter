@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:supabase/supabase.dart';
 
@@ -31,6 +32,18 @@ class _Order {
   final bool ascending;
 }
 
+class RealtimeSubscribeException implements Exception {
+  RealtimeSubscribeException(this.status, [this.details]);
+
+  final RealtimeSubscribeStatus status;
+  final Object? details;
+
+  @override
+  String toString() {
+    return 'RealtimeSubscribeException(status: $status, details: $details)';
+  }
+}
+
 typedef SupabaseStreamEvent = List<Map<String, dynamic>>;
 
 class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
@@ -49,6 +62,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Used to identify which row has changed
   final List<String> _uniqueColumns;
 
+  final _log = Logger('supabase.supabase');
+
   /// StreamController for `stream()` method.
   BehaviorSubject<SupabaseStreamEvent>? _streamController;
 
@@ -63,6 +78,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Count of record to be returned
   int? _limit;
+
+  /// Flag that the stream has at least one time been subscribed to realtime
+  bool _wasSubscribed = false;
 
   SupabaseStreamBuilder({
     required PostgrestQueryBuilder queryBuilder,
@@ -129,6 +147,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         _getStreamData();
       },
       onCancel: () {
+        _log.fine('stream controller for table: $_table got closed');
         _channel?.unsubscribe();
         _streamController?.close();
         _streamController = null;
@@ -152,55 +171,72 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     _channel!
         .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
+            event: PostgresChangeEvent.all,
             schema: _schema,
             table: _table,
             filter: realtimeFilter,
             callback: (payload) {
-              final newRecord = payload.newRecord;
-              _streamData.add(newRecord);
-              _addStream();
-            })
-        .onPostgresChanges(
-            event: PostgresChangeEvent.update,
-            schema: _schema,
-            table: _table,
-            filter: realtimeFilter,
-            callback: (payload) {
-              final updatedIndex = _streamData.indexWhere(
-                (element) => _isTargetRecord(record: element, payload: payload),
-              );
+              switch (payload.eventType) {
+                case PostgresChangeEvent.insert:
+                  final newRecord = payload.newRecord;
+                  _streamData.add(newRecord);
+                  _addStream();
+                  break;
+                case PostgresChangeEvent.update:
+                  final updatedIndex = _streamData.indexWhere(
+                    (element) =>
+                        _isTargetRecord(record: element, payload: payload),
+                  );
 
-              final updatedRecord = payload.newRecord;
-              if (updatedIndex >= 0) {
-                _streamData[updatedIndex] = updatedRecord;
-              } else {
-                _streamData.add(updatedRecord);
-              }
-              _addStream();
-            })
-        .onPostgresChanges(
-            event: PostgresChangeEvent.delete,
-            schema: _schema,
-            table: _table,
-            filter: realtimeFilter,
-            callback: (payload) {
-              final deletedIndex = _streamData.indexWhere(
-                (element) => _isTargetRecord(record: element, payload: payload),
-              );
-              if (deletedIndex >= 0) {
-                /// Delete the data from in memory cache if it was found
-                _streamData.removeAt(deletedIndex);
-                _addStream();
+                  final updatedRecord = payload.newRecord;
+                  if (updatedIndex >= 0) {
+                    _streamData[updatedIndex] = updatedRecord;
+                  } else {
+                    _streamData.add(updatedRecord);
+                  }
+                  _addStream();
+                  break;
+                case PostgresChangeEvent.delete:
+                  final deletedIndex = _streamData.indexWhere(
+                    (element) =>
+                        _isTargetRecord(record: element, payload: payload),
+                  );
+                  if (deletedIndex >= 0) {
+                    /// Delete the data from in memory cache if it was found
+                    _streamData.removeAt(deletedIndex);
+                    _addStream();
+                  }
+                  break;
+                default:
+                  break;
               }
             })
         .subscribe((status, [error]) {
-      if (error != null) {
-        _addException(error);
+      switch (status) {
+        case RealtimeSubscribeStatus.subscribed:
+          // Reload all data after a reconnect from postgrest
+          // First data from postgrest gets loaded before the realtime connect
+          if (_wasSubscribed) {
+            _getPostgrestData();
+          }
+          _wasSubscribed = true;
+          break;
+        case RealtimeSubscribeStatus.closed:
+          _streamController?.close();
+          break;
+        case RealtimeSubscribeStatus.timedOut:
+          _addException(RealtimeSubscribeException(status, error));
+          break;
+        case RealtimeSubscribeStatus.channelError:
+          _addException(RealtimeSubscribeException(status, error));
+          break;
       }
     });
+    _getPostgrestData();
+  }
 
-    PostgrestFilterBuilder query = _queryBuilder.select();
+  Future<void> _getPostgrestData() async {
+    PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select();
     if (_streamFilter != null) {
       switch (_streamFilter!.type) {
         case PostgresChangeFilterType.eq:
@@ -226,7 +262,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           break;
       }
     }
-    PostgrestTransformBuilder? transformQuery;
+    PostgrestTransformBuilder<PostgrestList>? transformQuery;
     if (_orderBy != null) {
       transformQuery =
           query.order(_orderBy!.column, ascending: _orderBy!.ascending);
@@ -237,11 +273,15 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     try {
       final data = await (transformQuery ?? query);
-      final rows = SupabaseStreamEvent.from(data as List);
-      _streamData.addAll(rows);
+      final rows = SupabaseStreamEvent.from(data);
+      _streamData = rows;
       _addStream();
     } catch (error, stackTrace) {
       _addException(error, stackTrace);
+      // In case the postgrest call fails, there is no need to keep the
+      // realtime connection open
+      _channel?.unsubscribe();
+      _streamController?.close();
     }
   }
 

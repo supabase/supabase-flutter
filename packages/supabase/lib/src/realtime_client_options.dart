@@ -11,7 +11,7 @@ class RealtimeClientOptions {
       'Client side rate limit has been removed. This option will be ignored.')
   final int? eventsPerSecond;
 
-  /// Level of realtime server logs to to be logged
+  /// Level of realtime server logs to be logged
   final RealtimeLogLevel? logLevel;
 
   /// the timeout to trigger push timeouts

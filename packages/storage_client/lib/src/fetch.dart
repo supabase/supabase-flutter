@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:http_parser/http_parser.dart' show MediaType;
+import 'package:logging/logging.dart';
 import 'package:mime/mime.dart';
 import 'package:retry/retry.dart';
 import 'package:storage_client/src/types.dart';
@@ -13,6 +14,7 @@ import 'file_io.dart' if (dart.library.js) './file_stub.dart';
 
 class Fetch {
   final Client? httpClient;
+  final _log = Logger('supabase.storage');
 
   Fetch([this.httpClient]);
 
@@ -28,6 +30,7 @@ class Fetch {
   StorageException _handleError(
     dynamic error,
     StackTrace stack,
+    Uri? url,
     FetchOptions? options,
   ) {
     if (error is http.Response) {
@@ -39,14 +42,20 @@ class Fetch {
       }
       try {
         final data = json.decode(error.body) as Map<String, dynamic>;
-        return StorageException.fromJson(data, '${error.statusCode}');
+
+        final exception =
+            StorageException.fromJson(data, '${error.statusCode}');
+        _log.fine('StorageException for $url', exception, stack);
+        return exception;
       } on FormatException catch (_) {
+        _log.fine('StorageException for $url', error.body, stack);
         return StorageException(
           error.body,
           statusCode: '${error.statusCode}',
         );
       }
     } else {
+      _log.fine('StorageException for $url', error, stack);
       return StorageException(
         error.toString(),
         statusCode: error.runtimeType.toString(),
@@ -71,6 +80,7 @@ class Fetch {
       request.body = json.encode(body);
     }
 
+    _log.finest('Request: $method $url $headers');
     final http.StreamedResponse streamedResponse;
     if (httpClient != null) {
       streamedResponse = await httpClient!.send(request);
@@ -163,8 +173,11 @@ class Fetch {
 
     final http.StreamedResponse streamedResponse;
     final r = RetryOptions(maxAttempts: (retryAttempts + 1));
+    var attempts = 0;
     streamedResponse = await r.retry<http.StreamedResponse>(
       () async {
+        attempts++;
+        _log.finest('Request: attempt: $attempts $method $url $headers');
         if (httpClient != null) {
           return httpClient!.send(request);
         } else {
@@ -192,7 +205,12 @@ class Fetch {
         return jsonBody;
       }
     } else {
-      throw _handleError(response, StackTrace.current, options);
+      throw _handleError(
+        response,
+        StackTrace.current,
+        response.request?.url,
+        options,
+      );
     }
   }
 

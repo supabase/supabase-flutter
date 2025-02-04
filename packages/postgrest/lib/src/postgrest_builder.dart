@@ -6,6 +6,7 @@ import 'dart:core';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -44,6 +45,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final Client? _httpClient;
   final YAJsonIsolate? _isolate;
   final CountOption? _count;
+  final _log = Logger('supabase.postgrest');
 
   PostgrestBuilder({
     required Uri url,
@@ -132,6 +134,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         _headers['Content-Type'] = 'application/json';
       }
       final bodyStr = jsonEncode(_body);
+      _log.finest("Request: $uppercaseMethod $_url");
+
       if (uppercaseMethod == METHOD_GET) {
         response = await (_httpClient?.get ?? http.get)(
           _url,
@@ -203,7 +207,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       // Workaround for https://github.com/supabase/supabase-flutter/issues/560
       if (_maybeSingle && method.toUpperCase() == 'GET' && body is List) {
         if (body.length > 1) {
-          throw PostgrestException(
+          final exception = PostgrestException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
             code: '406',
             details:
@@ -211,6 +215,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             hint: null,
             message: 'JSON object requested, multiple (or no) rows returned',
           );
+
+          _log.finest('$exception for request $_url');
+          throw exception;
         } else if (body.length == 1) {
           body = body.first;
         } else {
@@ -286,6 +293,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         );
       }
 
+      _log.finest('$error from request: $_url');
+      _log.fine('$error from request');
+
       throw error;
     }
   }
@@ -336,6 +346,15 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
     searchParams[key] = value;
     return _url.replace(queryParameters: searchParams);
+  }
+
+  /// Convert list filter to query params string
+  String _cleanFilterArray(List filter) {
+    if (filter.every((element) => element is num)) {
+      return filter.map((s) => '$s').join(',');
+    } else {
+      return filter.map((s) => '"$s"').join(',');
+    }
   }
 
   @override

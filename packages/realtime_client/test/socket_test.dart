@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
@@ -15,6 +16,31 @@ typedef WebSocketChannelClosure = WebSocketChannel Function(
   String url,
   Map<String, String> headers,
 );
+
+/// Generate a JWT token for testing purposes
+///
+/// [exp] in seconds since Epoch
+String generateJwt([int? exp]) {
+  final header = {'alg': 'HS256', 'typ': 'JWT'};
+
+  final now = DateTime.now();
+  final expiry = exp ??
+      (now.add(Duration(hours: 1)).millisecondsSinceEpoch / 1000).floor();
+
+  final payload = {'exp': expiry};
+
+  final key = 'your-256-bit-secret';
+
+  final encodedHeader = base64Url.encode(utf8.encode(json.encode(header)));
+  final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
+
+  final signatureInput = '$encodedHeader.$encodedPayload';
+  final hmac = Hmac(sha256, utf8.encode(key));
+  final digest = hmac.convert(utf8.encode(signatureInput));
+  final signature = base64Url.encode(digest.bytes);
+
+  return '$encodedHeader.$encodedPayload.$signature';
+}
 
 void main() {
   const int int64MaxValue = 9223372036854775807;
@@ -171,9 +197,10 @@ void main() {
       });
 
       socket.connect();
+      await Future.delayed(const Duration(milliseconds: 200));
       expect(opens, 1);
 
-      socket.sendHeartbeat();
+      await socket.sendHeartbeat();
       // need to wait for event to trigger
       await Future.delayed(const Duration(seconds: 1));
       expect(lastMsg['event'], 'heartbeat');
@@ -214,8 +241,8 @@ void main() {
     });
 
     test('removes existing connection', () async {
-      socket.connect();
-      socket.disconnect();
+      await socket.connect();
+      await socket.disconnect();
 
       expect(socket.conn, null);
     });
@@ -229,7 +256,7 @@ void main() {
       expect(closes, 1);
     });
 
-    test('calls connection close callback', () {
+    test('calls connection close callback', () async {
       final mockedSocketChannel = MockIOWebSocketChannel();
       final mockedSocket = RealtimeClient(
         socketEndpoint,
@@ -247,7 +274,10 @@ void main() {
       const tReason = 'reason';
 
       mockedSocket.connect();
+      mockedSocket.connState = SocketStates.open;
+      await Future.delayed(const Duration(milliseconds: 200));
       mockedSocket.disconnect(code: tCode, reason: tReason);
+      await Future.delayed(const Duration(milliseconds: 200));
 
       verify(
         () => mockedSink.close(
@@ -363,6 +393,8 @@ void main() {
       mockedSink = MockWebSocketSink();
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
     });
 
     test('sends data to connection when connected', () {
@@ -377,7 +409,7 @@ void main() {
           .called(1);
     });
 
-    test('buffers data when not connected', () {
+    test('buffers data when not connected', () async {
       mockedSocket.connect();
       mockedSocket.connState = SocketStates.connecting;
 
@@ -423,12 +455,13 @@ void main() {
   });
 
   group('setAuth', () {
-    final updateJoinPayload = {'user_token': 'token123'};
-    final pushPayload = {'access_token': 'token123'};
+    final token = generateJwt();
+    final updateJoinPayload = {'access_token': token};
+    final pushPayload = {'access_token': token};
 
     test(
         "sets access token, updates channels' join payload, and pushes token to channels",
-        () {
+        () async {
       final mockedChannel1 = MockChannel();
       when(() => mockedChannel1.joinedOnce).thenReturn(true);
       when(() => mockedChannel1.isJoined).thenReturn(true);
@@ -453,13 +486,71 @@ void main() {
       final channel1 = mockedSocket.channel(tTopic1);
       final channel2 = mockedSocket.channel(tTopic2);
 
-      mockedSocket.setAuth('token123');
+      await mockedSocket.setAuth(token);
+
+      expect(mockedSocket.accessToken, token);
 
       verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
       verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
       verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
           .called(1);
       verify(() => channel2.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+    });
+
+    test(
+        "sets access token, updates channels' join payload, and pushes token to channels if is not a jwt",
+        () async {
+      final mockedChannel1 = MockChannel();
+      final mockedChannel2 = MockChannel();
+      final mockedChannel3 = MockChannel();
+
+      when(() => mockedChannel1.joinedOnce).thenReturn(true);
+      when(() => mockedChannel1.isJoined).thenReturn(true);
+      when(() => mockedChannel1.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
+
+      when(() => mockedChannel2.joinedOnce).thenReturn(false);
+      when(() => mockedChannel2.isJoined).thenReturn(false);
+      when(() => mockedChannel2.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
+
+      when(() => mockedChannel3.joinedOnce).thenReturn(true);
+      when(() => mockedChannel3.isJoined).thenReturn(true);
+      when(() => mockedChannel3.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
+
+      const tTopic1 = 'test-topic1';
+      const tTopic2 = 'test-topic2';
+      const tTopic3 = 'test-topic3';
+
+      final mockedSocket = SocketWithMockedChannel(socketEndpoint);
+      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+        tTopic1: mockedChannel1,
+        tTopic2: mockedChannel2,
+        tTopic3: mockedChannel3,
+      });
+
+      final channel1 = mockedSocket.channel(tTopic1);
+      final channel2 = mockedSocket.channel(tTopic2);
+      final channel3 = mockedSocket.channel(tTopic3);
+
+      const token = 'sb-key';
+      final pushPayload = {'access_token': token};
+      final updateJoinPayload = {'access_token': token};
+
+      await mockedSocket.setAuth(token);
+
+      expect(mockedSocket.accessToken, token);
+
+      verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel3.updateJoinPayload(updateJoinPayload)).called(1);
+
+      verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+      verifyNever(() => channel2.push(ChannelEvents.accessToken, pushPayload));
+      verify(() => channel3.push(ChannelEvents.accessToken, pushPayload))
           .called(1);
     });
   });
@@ -486,24 +577,26 @@ void main() {
       mockedSink = MockWebSocketSink();
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
 
       mockedSocket.connect();
     });
 
     //! Unimplemented Test: closes socket when heartbeat is not ack'd within heartbeat window
 
-    test('pushes heartbeat data when connected', () {
+    test('pushes heartbeat data when connected', () async {
       mockedSocket.connState = SocketStates.open;
 
-      mockedSocket.sendHeartbeat();
+      await mockedSocket.sendHeartbeat();
 
       verify(() => mockedSink.add(captureAny(that: equals(data)))).called(1);
     });
 
-    test('no ops when not connected', () {
+    test('no ops when not connected', () async {
       mockedSocket.connState = SocketStates.connecting;
 
-      mockedSocket.sendHeartbeat();
+      await mockedSocket.sendHeartbeat();
       verifyNever(() => mockedSink.add(any()));
     });
   });

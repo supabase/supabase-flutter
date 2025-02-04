@@ -5,5 +5,14 @@ class AuthState {
   final AuthChangeEvent event;
   final Session? session;
 
-  AuthState(this.event, this.session);
+  /// Whether this state was broadcasted via `html.ChannelBroadcast` on web from
+  /// another tab or window.
+  final bool fromBroadcast;
+
+  const AuthState(this.event, this.session, {this.fromBroadcast = false});
+
+  @override
+  String toString() {
+    return 'AuthState{event: $event, session: $session, fromBroadcast: $fromBroadcast}';
+  }
 }

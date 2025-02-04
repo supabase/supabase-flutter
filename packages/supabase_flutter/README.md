@@ -52,6 +52,7 @@ final supabase = Supabase.instance.client;
 * [Edge Functions](#edge-functions)
 * [Deep Links](#deep-links)
 * [Custom LocalStorage](#custom-localstorage)
+- [Logging](#logging)
 
 
 ### <a id="authentication"></a>[Authentication](https://supabase.com/docs/guides/auth)
@@ -595,6 +596,36 @@ Supabase.initialize(
   ),
 );
 ```
+
+## Logging
+
+All Supabase packages use the [logging](https://pub.dev/packages/logging) package to log information. Each sub-package has its own logger instance. You can listen to logs and set custom log levels for each logger.
+
+In debug mode, or depending on the value for `debug` from `Supabase.initialize()`, records with `Level.INFO` and above are printed to the console.
+
+Records containing sensitive data like access tokens and which requests are made are logged with `Level.FINEST`, so you can handle them accordingly.
+
+### Listen to all Supabase logs
+
+```dart
+import 'package:logging/logging.dart';
+
+final supabaseLogger = Logger('supabase');
+supabaseLogger.level = Level.ALL; // custom log level filtering, default is Level.INFO
+supabaseLogger.onRecord.listen((record) {
+    print('${record.level.name}: ${record.time}: ${record.message}');
+});
+```
+
+### Sub-package loggers
+
+- `supabase_flutter`: `Logger('supabase.supabase_flutter')`
+- `supabase`: `Logger('supabase.supabase')`
+- `postgrest`: `Logger('supabase.postgrest')`
+- `gotrue`: `Logger('supabase.auth')`
+- `realtime_client`: `Logger('supabase.realtime')`
+- `storage_client`: `Logger('supabase.storage')`
+- `functions_client`: `Logger('supabase.functions')`
 
 ---
 

@@ -404,6 +404,52 @@ void main() {
 
       await storage.from(newBucketName).copy(uploadPath, "$uploadPath 2");
     });
+
+    test('copy to different bucket', () async {
+      final storage = SupabaseStorageClient(
+          storageUrl, {'Authorization': 'Bearer $storageKey'});
+
+      try {
+        await storage.from('bucket2').download(uploadPath);
+        fail('File that does not exist was found');
+      } on StorageException catch (error) {
+        expect(error.error, 'not_found');
+      }
+      await storage
+          .from(newBucketName)
+          .copy(uploadPath, uploadPath, destinationBucket: 'bucket2');
+      try {
+        await storage.from('bucket2').download(uploadPath);
+      } catch (error) {
+        fail('File that was copied was not found');
+      }
+    });
+
+    test('move to different bucket', () async {
+      final storage = SupabaseStorageClient(
+          storageUrl, {'Authorization': 'Bearer $storageKey'});
+
+      try {
+        await storage.from('bucket2').download('$uploadPath 3');
+        fail('File that does not exist was found');
+      } on StorageException catch (error) {
+        expect(error.error, 'not_found');
+      }
+      await storage
+          .from(newBucketName)
+          .move(uploadPath, '$uploadPath 3', destinationBucket: 'bucket2');
+      try {
+        await storage.from('bucket2').download('$uploadPath 3');
+      } catch (error) {
+        fail('File that was moved was not found');
+      }
+      try {
+        await storage.from(newBucketName).download(uploadPath);
+        fail('File that was moved was found');
+      } on StorageException catch (error) {
+        expect(error.error, 'not_found');
+      }
+    });
   });
 
   test('upload with custom metadata', () async {

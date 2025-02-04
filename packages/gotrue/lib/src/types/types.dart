@@ -1,3 +1,14 @@
+typedef BroadcastChannel = ({
+  Stream<Map<String, dynamic>> onMessage,
+  void Function(Map) postMessage,
+  void Function() close,
+});
+
+enum AuthFlowType {
+  implicit,
+  pkce,
+}
+
 enum OAuthProvider {
   apple,
   azure,
@@ -14,6 +25,7 @@ enum OAuthProvider {
   linkedinOidc,
   notion,
   slack,
+  slackOidc,
   spotify,
   twitch,
   twitter,

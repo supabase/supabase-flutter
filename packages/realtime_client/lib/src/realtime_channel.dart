@@ -70,7 +70,7 @@ class RealtimeChannel {
       socket.remove(this);
     });
 
-    _onError((String? reason) {
+    _onError((reason) {
       if (isLeaving || isClosed) {
         return;
       }
@@ -150,9 +150,11 @@ class RealtimeChannel {
 
       joinPush.receive(
         'ok',
-        (response) {
+        (response) async {
           final serverPostgresFilters = response['postgres_changes'];
-          if (socket.accessToken != null) socket.setAuth(socket.accessToken);
+          if (socket.accessToken != null) {
+            await socket.setAuth(socket.accessToken);
+          }
 
           if (serverPostgresFilters == null) {
             if (callback != null) {
@@ -260,9 +262,9 @@ class RealtimeChannel {
   }
 
   /// Registers a callback that will be executed when the channel encounteres an error.
-  void _onError(void Function(String?) callback) {
+  void _onError(Function callback) {
     onEvents(ChannelEvents.error.eventName(), ChannelFilter(),
-        (reason, [ref]) => callback(reason?.toString()));
+        (reason, [ref]) => callback(reason));
   }
 
   /// Sets up a listener on your Supabase database.
@@ -407,6 +409,17 @@ class RealtimeChannel {
         callback(RealtimePresenceLeavePayload.fromJson(
             Map<String, dynamic>.from(payload)));
       },
+    );
+  }
+
+  /// Sets up a listener for realtime system events for debugging purposes.
+  RealtimeChannel onSystemEvents(
+    void Function(dynamic payload) callback,
+  ) {
+    return onEvents(
+      'system',
+      ChannelFilter(),
+      (payload, [ref]) => callback(payload),
     );
   }
 
@@ -631,6 +644,23 @@ class RealtimeChannel {
       return;
     }
     socket.leaveOpenTopic(topic);
+    _state = ChannelStates.joining;
+    joinPush.resend(timeout ?? _timeout);
+  }
+
+  /// Resends [joinPush] to tell the server we join this channel again and marks
+  /// the channel as [ChannelStates.joining].
+  ///
+  /// Usually [rejoin] only happens when the channel timeouts or errors out.
+  /// When manually disconnecting, the channel is still marked as
+  /// [ChannelStates.joined]. Calling [RealtimeClient.leaveOpenTopic] will
+  /// unsubscribe itself, which causes issues when trying to rejoin. This method
+  /// therefore doesn't call [RealtimeClient.leaveOpenTopic].
+  @internal
+  void forceRejoin([Duration? timeout]) {
+    if (isLeaving) {
+      return;
+    }
     _state = ChannelStates.joining;
     joinPush.resend(timeout ?? _timeout);
   }

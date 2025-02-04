@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:supabase/src/constants.dart';
+import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -50,7 +52,7 @@ class SupabaseClient {
   final Client? _httpClient;
   late final Client _authHttpClient;
 
-  late final GoTrueClient _authInstance;
+  GoTrueClient? _authInstance;
 
   /// Supabase Functions allows you to deploy and invoke edge functions.
   late final FunctionsClient functions;
@@ -61,10 +63,12 @@ class SupabaseClient {
   late final PostgrestClient rest;
   StreamSubscription<AuthState>? _authStateSubscription;
   late final YAJsonIsolate _isolate;
-  final Future<String> Function()? accessToken;
+  final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each stream
   final _incrementId = Counter();
+
+  final _log = Logger('supabase.supabase');
 
   /// Getter for the HTTP headers
   Map<String, String> get headers {
@@ -145,13 +149,18 @@ class SupabaseClient {
     storage = _initStorageClient(storageOptions.retryAttempts);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
+      _log.config(
+          'Initialize SupabaseClient v$version with no custom access token');
       _listenForAuthEvents();
+    } else {
+      _log.config(
+          'Initialize SupabaseClient v$version with custom access token');
     }
   }
 
   GoTrueClient get auth {
     if (accessToken == null) {
-      return _authInstance;
+      return _authInstance!;
     } else {
       throw AuthException(
         'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
@@ -191,13 +200,14 @@ class SupabaseClient {
     );
   }
 
-  /// Perform a stored procedure call.
+  /// {@macro postgrest_rpc}
   PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map<String, dynamic>? params,
+    get = false,
   }) {
     rest.headers.addAll({...rest.headers, ...headers});
-    return rest.rpc(fn, params: params);
+    return rest.rpc(fn, params: params, get: get);
   }
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
@@ -223,33 +233,44 @@ class SupabaseClient {
     return realtime.removeAllChannels();
   }
 
+  /// Get either the custom access token from [accessToken] or the supabase one
+  /// from [_authInstance]
   Future<String?> _getAccessToken() async {
     if (accessToken != null) {
       return await accessToken!();
     }
 
-    if (_authInstance.currentSession?.isExpired ?? false) {
+    final authInstance = _authInstance!;
+
+    if (authInstance.currentSession?.isExpired ?? false) {
       try {
-        await _authInstance.refreshSession();
-      } catch (error) {
-        final expiresAt = _authInstance.currentSession?.expiresAt;
+        await authInstance.refreshSession();
+      } catch (error, stackTrace) {
+        final expiresAt = authInstance.currentSession?.expiresAt;
         if (expiresAt != null) {
           // Failed to refresh the token.
           final isExpiredWithoutMargin = DateTime.now()
               .isAfter(DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000));
           if (isExpiredWithoutMargin) {
             // Throw the error instead of making an API request with an expired token.
+            _log.warning(
+              'Access token is expired and refreshing failed, aborting api request',
+              error,
+              stackTrace,
+            );
             rethrow;
           }
         }
       }
     }
-    return _authInstance.currentSession?.accessToken;
+    return authInstance.currentSession?.accessToken;
   }
 
   Future<void> dispose() async {
+    _log.fine('Dispose SupabaseClient');
     await _authStateSubscription?.cancel();
     await _isolate.dispose();
+    _authInstance?.dispose();
   }
 
   GoTrueClient _initSupabaseAuthClient({
@@ -311,9 +332,11 @@ class SupabaseClient {
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
+      customAccessToken: accessToken,
     );
   }
 
+  /// Requires the `auth` instance, so no custom `accessToken` is allowed.
   Map<String, String> _getAuthHeaders() {
     final authBearer = auth.currentSession?.accessToken ?? _supabaseKey;
     final defaultHeaders = {
@@ -327,23 +350,32 @@ class SupabaseClient {
   void _listenForAuthEvents() {
     // ignore: invalid_use_of_internal_member
     _authStateSubscription = auth.onAuthStateChangeSync.listen(
-      (data) {
-        _handleTokenChanged(data.event, data.session?.accessToken);
+      (data) async {
+        await _handleTokenChanged(data.event, data.session?.accessToken);
       },
       onError: (error, stack) {},
     );
   }
 
-  void _handleTokenChanged(AuthChangeEvent event, String? token) {
+  Future<void> _handleTokenChanged(AuthChangeEvent event, String? token) async {
     if (event == AuthChangeEvent.initialSession ||
         event == AuthChangeEvent.tokenRefreshed ||
         event == AuthChangeEvent.signedIn) {
-      realtime.setAuth(token);
-    } else if (event == AuthChangeEvent.signedOut ||
-        event == AuthChangeEvent.userDeleted) {
+      try {
+        await realtime.setAuth(token);
+      } on FormatException catch (e) {
+        if (e.message.contains('InvalidJWTToken')) {
+          // The exception is thrown by RealtimeClient when the token is
+          // expired for example on app launch after the app has been closed
+          // for a while.
+        } else {
+          rethrow;
+        }
+      }
+    } else if (event == AuthChangeEvent.signedOut) {
       // Token is removed
 
-      realtime.setAuth(_supabaseKey);
+      await realtime.setAuth(_supabaseKey);
     }
   }
 }

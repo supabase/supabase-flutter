@@ -1,4 +1,5 @@
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -11,6 +12,7 @@ class PostgrestClient {
   final Client? httpClient;
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
+  final _log = Logger('supabase.postgrest');
 
   /// To create a [PostgrestClient], you need to provide an [url] endpoint.
   ///
@@ -32,7 +34,10 @@ class PostgrestClient {
   })  : _schema = schema,
         headers = {...defaultHeaders, if (headers != null) ...headers},
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null;
+        _hasCustomIsolate = isolate != null {
+    _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
+    _log.finest('Initialize with headers: $headers');
+  }
 
   /// Authenticates the request with JWT.
   @Deprecated("Use setAuth() instead")
@@ -42,6 +47,7 @@ class PostgrestClient {
   }
 
   PostgrestClient setAuth(String? token) {
+    _log.finest("setAuth with: $token");
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     } else {
@@ -75,7 +81,17 @@ class PostgrestClient {
     );
   }
 
-  /// Perform a stored procedure call.
+  /// {@template postgrest_rpc}
+  /// Performs a stored procedure call.
+  ///
+  /// [fn] is the name of the function to call.
+  ///
+  /// [params] is an optional object to pass as arguments to the function call.
+  ///
+  /// When [get] is set to `true`, the function will be called with read-only
+  /// access mode.
+  ///
+  /// {@endtemplate}
   ///
   /// ```dart
   /// supabase.rpc('get_status', params: {'name_param': 'supabot'})
@@ -83,6 +99,7 @@ class PostgrestClient {
   PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
     Map? params,
+    bool get = false,
   }) {
     final url = '${this.url}/rpc/$fn';
     return PostgrestRpcBuilder(
@@ -91,10 +108,11 @@ class PostgrestClient {
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
-    ).rpc(params);
+    ).rpc(params, get);
   }
 
   Future<void> dispose() async {
+    _log.fine("dispose PostgrestClient");
     if (!_hasCustomIsolate) {
       return _isolate.dispose();
     }
