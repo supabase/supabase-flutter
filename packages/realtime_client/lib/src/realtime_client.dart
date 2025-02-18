@@ -65,7 +65,7 @@ class RealtimeClient {
   final WebSocketTransport transport;
   final Client? httpClient;
   final _log = Logger('supabase.realtime');
-  int heartbeatIntervalMs = 30000;
+  final Duration heartbeatInterval;
   Timer? heartbeatTimer;
 
   /// reference ID of the most recently sent heartbeat.
@@ -122,7 +122,7 @@ class RealtimeClient {
     String endPoint, {
     WebSocketTransport? transport,
     this.timeout = Constants.defaultTimeout,
-    this.heartbeatIntervalMs = 30000,
+    this.heartbeatInterval = Constants.defaultHeartbeatInterval,
     this.logger,
     RealtimeEncode? encode,
     RealtimeDecode? decode,
@@ -145,7 +145,7 @@ class RealtimeClient {
         },
         transport = transport ?? createWebSocketClient {
     _log.config(
-        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, longpollerTimeout: $longpollerTimeout, logLevel: $logLevel');
+        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatInterval: $heartbeatInterval, longpollerTimeout: $longpollerTimeout, logLevel: $logLevel');
     _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
@@ -467,7 +467,7 @@ class RealtimeClient {
     reconnectTimer.reset();
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
     heartbeatTimer = Timer.periodic(
-      Duration(milliseconds: heartbeatIntervalMs),
+      heartbeatInterval,
       (Timer t) async => await sendHeartbeat(),
     );
     for (final callback in stateChangeCallbacks['open']!) {

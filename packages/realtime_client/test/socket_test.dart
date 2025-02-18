@@ -79,7 +79,7 @@ void main() {
       });
       expect(socket.timeout, const Duration(milliseconds: 10000));
       expect(socket.longpollerTimeout, 20000);
-      expect(socket.heartbeatIntervalMs, 30000);
+      expect(socket.heartbeatInterval, Constants.defaultHeartbeatInterval);
       expect(
         socket.logger is void Function(
           String? kind,
@@ -100,7 +100,7 @@ void main() {
         'wss://example.com/socket',
         timeout: const Duration(milliseconds: 40000),
         longpollerTimeout: 50000,
-        heartbeatIntervalMs: 60000,
+        heartbeatInterval: const Duration(seconds: 60),
         // ignore: avoid_print
         logger: (kind, msg, data) => print('[$kind] $msg $data'),
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
@@ -117,7 +117,7 @@ void main() {
       });
       expect(socket.timeout, const Duration(milliseconds: 40000));
       expect(socket.longpollerTimeout, 50000);
-      expect(socket.heartbeatIntervalMs, 60000);
+      expect(socket.heartbeatInterval, const Duration(seconds: 60));
       expect(
         socket.logger is void Function(
           String? kind,
