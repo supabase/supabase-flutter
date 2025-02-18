@@ -65,7 +65,7 @@ class RealtimeClient {
   final WebSocketTransport transport;
   final Client? httpClient;
   final _log = Logger('supabase.realtime');
-  int heartbeatIntervalMs = 30000;
+  int heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs;
   Timer? heartbeatTimer;
 
   /// reference ID of the most recently sent heartbeat.
@@ -122,7 +122,7 @@ class RealtimeClient {
     String endPoint, {
     WebSocketTransport? transport,
     this.timeout = Constants.defaultTimeout,
-    this.heartbeatIntervalMs = 30000,
+    this.heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs,
     this.logger,
     RealtimeEncode? encode,
     RealtimeDecode? decode,

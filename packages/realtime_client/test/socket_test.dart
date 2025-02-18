@@ -79,7 +79,7 @@ void main() {
       });
       expect(socket.timeout, const Duration(milliseconds: 10000));
       expect(socket.longpollerTimeout, 20000);
-      expect(socket.heartbeatIntervalMs, 30000);
+      expect(socket.heartbeatIntervalMs, Constants.defaultHeartbeatIntervalMs);
       expect(
         socket.logger is void Function(
           String? kind,
