@@ -411,6 +411,36 @@ class StorageFileApi {
     return response as Uint8List;
   }
 
+  /// Retrieves the details of an existing file
+  Future<FileObjectV2> info(String path) async {
+    final finalPath = _getFinalPath(path);
+    final options = FetchOptions(headers: headers);
+    final response = await _storageFetch.get(
+      '$url/object/info/$finalPath',
+      options: options,
+    );
+    final fileObjects = FileObjectV2.fromJson(response);
+    return fileObjects;
+  }
+
+  /// Checks the existence of a file
+  Future<bool> exists(String path) async {
+    final finalPath = _getFinalPath(path);
+    final options = FetchOptions(headers: headers);
+    try {
+      await _storageFetch.head(
+        '$url/object/$finalPath',
+        options: options,
+      );
+      return true;
+    } on StorageException catch (e) {
+      if (e.statusCode == '400' || e.statusCode == '404') {
+        return false;
+      }
+      rethrow;
+    }
+  }
+
   /// Retrieve URLs for assets in public buckets
   ///
   /// [path] is the file path to be downloaded, including the current file name.
