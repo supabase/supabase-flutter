@@ -1,3 +1,7 @@
+## 2.4.2
+
+ - **FIX**(realtime): Lower heartbeat interval to 25s ([#1119](https://github.com/supabase/supabase-flutter/issues/1119)). ([f58ed2ce](https://github.com/supabase/supabase-flutter/commit/f58ed2cecc967a116fa675d75c331c752686b7e2))
+
 ## 2.4.1
 
  - **FIX**(realtime_client): Prevent sending expired tokens ([#1095](https://github.com/supabase/supabase-flutter/issues/1095)). ([1bb034f0](https://github.com/supabase/supabase-flutter/commit/1bb034f0f82b03d629edc733688c8648cf01e5b9))

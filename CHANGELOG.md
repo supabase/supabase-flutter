@@ -3,6 +3,49 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-02-24
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.4.1`](#functions_client---v241)
+ - [`realtime_client` - `v2.4.2`](#realtime_client---v242)
+ - [`storage_client` - `v2.3.1`](#storage_client---v231)
+ - [`supabase` - `v2.6.3`](#supabase---v263)
+ - [`supabase_flutter` - `v2.8.4`](#supabase_flutter---v284)
+
+---
+
+#### `functions_client` - `v2.4.1`
+
+ - **DOCS**: Fix typos ([#1108](https://github.com/supabase/supabase-flutter/issues/1108)). ([46b483f8](https://github.com/supabase/supabase-flutter/commit/46b483f83a70fb7785ef3bccca6849fa6b07852c))
+
+#### `realtime_client` - `v2.4.2`
+
+ - **FIX**(realtime): Lower heartbeat interval to 25s ([#1119](https://github.com/supabase/supabase-flutter/issues/1119)). ([f58ed2ce](https://github.com/supabase/supabase-flutter/commit/f58ed2cecc967a116fa675d75c331c752686b7e2))
+
+#### `storage_client` - `v2.3.1`
+
+ - **DOCS**: Fix typos ([#1108](https://github.com/supabase/supabase-flutter/issues/1108)). ([46b483f8](https://github.com/supabase/supabase-flutter/commit/46b483f83a70fb7785ef3bccca6849fa6b07852c))
+
+#### `supabase` - `v2.6.3`
+
+ - **FIX**: Allow null to be returned from accessToken function when the user is not signed in ([#1099](https://github.com/supabase/supabase-flutter/issues/1099)). ([d04d9e63](https://github.com/supabase/supabase-flutter/commit/d04d9e63bcc46c2ee71e311b4c3addb216f0f520))
+ - **DOCS**: Fix typos ([#1108](https://github.com/supabase/supabase-flutter/issues/1108)). ([46b483f8](https://github.com/supabase/supabase-flutter/commit/46b483f83a70fb7785ef3bccca6849fa6b07852c))
+
+#### `supabase_flutter` - `v2.8.4`
+
+ - **FIX**: Allow null to be returned from accessToken function when the user is not signed in ([#1099](https://github.com/supabase/supabase-flutter/issues/1099)). ([d04d9e63](https://github.com/supabase/supabase-flutter/commit/d04d9e63bcc46c2ee71e311b4c3addb216f0f520))
+ - **DOCS**: Fix typos ([#1108](https://github.com/supabase/supabase-flutter/issues/1108)). ([46b483f8](https://github.com/supabase/supabase-flutter/commit/46b483f83a70fb7785ef3bccca6849fa6b07852c))
+
+
 ## 2025-01-01
 
 ### Changes
