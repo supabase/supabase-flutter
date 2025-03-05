@@ -172,4 +172,79 @@ void main() {
       expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
     });
   });
+  group('EmptyLocalStorage', () {
+    late EmptyLocalStorage localStorage;
+
+    setUp(() async {
+      mockAppLink();
+
+      localStorage = const EmptyLocalStorage();
+      // Initialize the Supabase singleton
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseKey,
+        debug: false,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: localStorage,
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
+      );
+    });
+
+    test('initialize does nothing', () async {
+      // Should not throw any exceptions
+      await localStorage.initialize();
+    });
+
+    test('hasAccessToken returns false', () async {
+      final result = await localStorage.hasAccessToken();
+      expect(result, false);
+    });
+
+    test('accessToken returns null', () async {
+      final result = await localStorage.accessToken();
+      expect(result, null);
+    });
+
+    test('removePersistedSession does nothing', () async {
+      // Should not throw any exceptions
+      await localStorage.removePersistedSession();
+    });
+
+    test('persistSession does nothing', () async {
+      // Should not throw any exceptions
+      await localStorage.persistSession('test-session-string');
+    });
+
+    test('all methods work together in a typical flow', () async {
+      // Initialize the storage
+      await localStorage.initialize();
+
+      // Check if there's a token (should be false)
+      final hasToken = await localStorage.hasAccessToken();
+      expect(hasToken, false);
+
+      // Get the token (should be null)
+      final token = await localStorage.accessToken();
+      expect(token, null);
+
+      // Try to persist a session
+      await localStorage.persistSession('test-session-data');
+
+      // Check if there's a token after persisting (should still be false)
+      final hasTokenAfterPersist = await localStorage.hasAccessToken();
+      expect(hasTokenAfterPersist, false);
+
+      // Get the token after persisting (should still be null)
+      final tokenAfterPersist = await localStorage.accessToken();
+      expect(tokenAfterPersist, null);
+
+      // Try to remove the session
+      await localStorage.removePersistedSession();
+
+      // Check if there's a token after removing (should still be false)
+      final hasTokenAfterRemove = await localStorage.hasAccessToken();
+      expect(hasTokenAfterRemove, false);
+    });
+  });
 }
