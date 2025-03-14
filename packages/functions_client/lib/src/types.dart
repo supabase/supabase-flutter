@@ -26,7 +26,7 @@ class FunctionResponse {
   });
 }
 
-class FunctionException {
+class FunctionException implements Exception {
   final int status;
   final dynamic details;
   final String? reasonPhrase;
