@@ -35,6 +35,51 @@ void main() {
       await supabase.dispose();
     });
 
+    test('X-Supabase-Client-Platform header is set properly', () {
+      expect(supabase.headers['X-Supabase-Client-Platform'],
+          Platform.operatingSystem);
+      expect(supabase.headers['X-Supabase-Client-Platform-Version'],
+          Platform.operatingSystemVersion);
+    });
+    test('X-Supabase-Client-Platform header is set properly on auth', () {
+      expect(supabase.auth.headers['X-Supabase-Client-Platform'],
+          Platform.operatingSystem);
+      expect(supabase.auth.headers['X-Supabase-Client-Platform-Version'],
+          Platform.operatingSystemVersion);
+    });
+
+    test('X-Supabase-Client-Platform header is set properly on storage', () {
+      expect(supabase.storage.headers['X-Supabase-Client-Platform'],
+          Platform.operatingSystem);
+      expect(supabase.storage.headers['X-Supabase-Client-Platform-Version'],
+          Platform.operatingSystemVersion);
+    });
+
+    test('X-Supabase-Client-Platform header is set properly on functions', () {
+      expect(supabase.functions.headers['X-Supabase-Client-Platform'],
+          Platform.operatingSystem);
+      expect(supabase.functions.headers['X-Supabase-Client-Platform-Version'],
+          Platform.operatingSystemVersion);
+    });
+
+    test('X-Supabase-Client-Platform header is set properly on rest', () {
+      expect(supabase.rest.headers['X-Supabase-Client-Platform'],
+          Platform.operatingSystem);
+      expect(supabase.rest.headers['X-Supabase-Client-Platform-Version'],
+          Platform.operatingSystemVersion);
+    });
+
+    test('X-Supabase-Client-Platform header is set properly on realtime',
+        () async {
+      final request = await getRealtimeRequest(
+        server: mockServer,
+        supabaseClient: supabase,
+      );
+      expect(request.headers['X-Supabase-Client-Platform']?.first,
+          Platform.operatingSystem);
+      expect(request.headers['X-Supabase-Client-Platform-Version']?.first,
+          Platform.operatingSystemVersion);
+    });
     test('X-Client-Info header is set properly on realtime', () async {
       final request = await getRealtimeRequest(
         server: mockServer,
