@@ -1,3 +1,5 @@
+/// An interface to use [html.BroadcastChannel] on web to broadcast sessions to
+/// other tabs.
 typedef BroadcastChannel = ({
   Stream<Map<String, dynamic>> onMessage,
   void Function(Map) postMessage,
