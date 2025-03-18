@@ -1,28 +1,37 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:html' as html;
-import 'dart:js_util' as js_util;
+import 'dart:js_interop';
 
 import 'package:gotrue/src/types/types.dart';
 import 'package:logging/logging.dart';
+import 'package:web/web.dart' as web;
 
 final _log = Logger('supabase.auth');
 
 BroadcastChannel getBroadcastChannel(String broadcastKey) {
-  final broadcast = html.BroadcastChannel(broadcastKey);
-  return (
-    onMessage: broadcast.onMessage.map((event) {
-      final dataMap = js_util.dartify(event.data);
+  final broadcast = web.BroadcastChannel(broadcastKey);
+  final controller = StreamController<Map<String, dynamic>>();
 
-      // some parts have the wrong map type. This is an easy workaround and
-      // should be efficient enough for the small session and user data
-      return json.decode(json.encode(dataMap));
-    }),
+  broadcast.addEventListener(
+    'message',
+    (web.Event event) {
+      if (event is web.MessageEvent) {
+        final dataMap = event.data.dartify();
+        controller.add(json.decode(json.encode(dataMap)));
+      }
+    } as web.EventListener,
+  );
+
+  return (
+    onMessage: controller.stream,
     postMessage: (message) {
       _log.finest('Broadcasting message: $message');
       _log.fine('Broadcasting event: ${message['event']}');
-      final jsMessage = js_util.jsify(message);
-      broadcast.postMessage(jsMessage);
+      broadcast.postMessage(message.jsify() as JSAny);
     },
-    close: broadcast.close,
+    close: () {
+      broadcast.close();
+      controller.close();
+    },
   );
 }

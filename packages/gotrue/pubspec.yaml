@@ -17,6 +17,7 @@ dependencies:
   rxdart: '>=0.27.7 <0.29.0'
   meta: ^1.7.0
   logging: ^1.2.0
+  web: ^1.0.0
 
 dev_dependencies:
   dart_jsonwebtoken: ^2.4.1
