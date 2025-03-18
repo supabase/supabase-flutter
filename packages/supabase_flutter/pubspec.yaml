@@ -6,8 +6,8 @@ repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/sup
 documentation: 'https://supabase.com/docs/reference/dart/introduction'
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: '>=3.0.0'
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
 
 dependencies:
   app_links: '>=3.5.0 <7.0.0'
