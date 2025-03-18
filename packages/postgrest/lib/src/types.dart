@@ -88,11 +88,14 @@ enum CountOption {
   estimated,
 }
 
+// Not used anywhere. Will be removed in the next major version.
+// coverage:ignore-[start]
 /// Returns count as part of the response when specified.
 enum ReturningOption {
   minimal,
   representation,
 }
+// coverage:ignore-[end]
 
 /// The type of tsquery conversion to use on [query].
 enum TextSearchType {
