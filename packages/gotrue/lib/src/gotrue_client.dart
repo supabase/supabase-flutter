@@ -11,10 +11,10 @@ import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
+import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
-import 'package:logging/logging.dart';
 
 import 'broadcast_stub.dart' if (dart.library.html) './broadcast_web.dart'
     as web;
@@ -363,8 +363,8 @@ class GoTrueClient {
       ),
     );
 
-    await _asyncStorage!
-        .removeItem(key: '${Constants.defaultStorageKey}-code-verifier');
+    await _asyncStorage.removeItem(
+        key: '${Constants.defaultStorageKey}-code-verifier');
 
     final authSessionUrlResponse = AuthSessionUrlResponse(
         session: Session.fromJson(response)!, redirectType: redirectType?.name);
