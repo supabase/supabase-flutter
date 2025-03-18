@@ -34,7 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        flutter-version: ['3.13.x', '3.x']
+        flutter-version: ['3.16.x', '3.x']
 
     defaults:
       run:
