@@ -16,7 +16,7 @@ import 'package:meta/meta.dart';
 import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
 
-import 'broadcast_stub.dart' if (dart.library.html) './broadcast_web.dart'
+import 'broadcast_stub.dart' if (dart.library.js_interop) './broadcast_web.dart'
     as web;
 import 'version.dart';
 
@@ -1163,7 +1163,7 @@ class GoTrueClient {
   }
 
   void _mayStartBroadcastChannel() {
-    if (const bool.fromEnvironment('dart.library.html')) {
+    if (const bool.fromEnvironment('dart.library.js_interop')) {
       // Used by the js library as well
       final broadcastKey =
           "sb-${Uri.parse(_url).host.split(".").first}-auth-token";
