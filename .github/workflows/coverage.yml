@@ -13,6 +13,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper source code mapping
       
       - uses: subosito/flutter-action@v2
         with:
@@ -89,8 +91,36 @@ jobs:
         run: |
           dart pub global run combine_coverage:combine_coverage --repo-path="./" --output-directory="coverage"
           
+      - name: Prepare coverage for Coveralls
+        run: |
+          # Make sure source file paths are correct in the LCOV file
+          echo "LCOV file contents (first few lines):"
+          head -n 20 ./coverage/lcov.info
+          
+          # Check if source files exist in the expected locations
+          grep -A 1 "SF:" ./coverage/lcov.info | head -n 10
+          
+          # Verify file paths in the repository
+          find . -type f -name "*.dart" | head -n 10
+          
+          # If needed, fix paths by ensuring they're relative to the workspace instead of absolute
+          # This pattern replaces absolute paths and ensures paths are relative to repo root
+          sed -i -E 's|SF:(/[^/]+)*?/packages/|SF:packages/|g' ./coverage/lcov.info
+          
+          echo "Updated LCOV file contents (first few lines):"
+          head -n 20 ./coverage/lcov.info
+          
+          # Create a list of source files that are referenced in the LCOV file
+          echo "Creating list of source files referenced in LCOV"
+          grep "SF:" ./coverage/lcov.info | sed 's/SF://' | sort > source_files.txt
+          echo "First 10 source files referenced:"
+          head -n 10 source_files.txt
+          
       - name: Upload combined coverage report
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./coverage/lcov.info
+          base-path: ${{ github.workspace }}
+          flag-name: Unit
+          debug: true
