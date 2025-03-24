@@ -6,7 +6,7 @@ repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/got
 documentation: 'https://supabase.com/docs/reference/dart/auth-signup'
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   collection: ^1.15.0
@@ -17,6 +17,7 @@ dependencies:
   rxdart: '>=0.27.7 <0.29.0'
   meta: ^1.7.0
   logging: ^1.2.0
+  web: '>=0.5.0 <2.0.0'
 
 dev_dependencies:
   dart_jsonwebtoken: ^2.4.1

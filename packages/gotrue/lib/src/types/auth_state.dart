@@ -5,7 +5,7 @@ class AuthState {
   final AuthChangeEvent event;
   final Session? session;
 
-  /// Whether this state was broadcasted via `html.ChannelBroadcast` on web from
+  /// Whether this state was broadcasted via `web.BroadcastChannel` on web from
   /// another tab or window.
   final bool fromBroadcast;
 
