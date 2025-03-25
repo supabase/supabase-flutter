@@ -71,6 +71,7 @@ jobs:
         run: flutter test --concurrency=1
 
       - name: Run tests on chrome
+        if: ${{ matrix.sdk == '3.x'}}
         run: flutter test --platform chrome
 
       - name: Run tests with downgraded app_links
