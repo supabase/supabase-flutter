@@ -70,6 +70,9 @@ jobs:
       - name: Run tests
         run: flutter test --concurrency=1
 
+      - name: Run tests on chrome
+        run: flutter test --platform chrome
+
       - name: Run tests with downgraded app_links
         run: |
           flutter pub downgrade app_links
