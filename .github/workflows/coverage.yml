@@ -13,8 +13,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for proper source code mapping
       
       - uses: subosito/flutter-action@v2
         with:
@@ -94,27 +92,69 @@ jobs:
       - name: Prepare coverage for Coveralls
         run: |
           # Make sure source file paths are correct in the LCOV file
-          echo "LCOV file contents (first few lines):"
+          echo "Original LCOV file contents (first few lines):"
           head -n 20 ./coverage/lcov.info
           
-          # Check if source files exist in the expected locations
-          grep -A 1 "SF:" ./coverage/lcov.info | head -n 10
+          # Check current paths in LCOV file
+          echo "Original source file paths in LCOV:"
+          grep -e "^SF:" ./coverage/lcov.info | head -n 10
           
-          # Verify file paths in the repository
-          find . -type f -name "*.dart" | head -n 10
+          # First, ensure all paths are correctly pointing to package sources
+          # This specifically fixes paths for combined package coverage
+          # Replace paths like "lib/file.dart" with "packages/package_name/lib/file.dart"
+          cp ./coverage/lcov.info ./coverage/lcov.info.bak
           
-          # If needed, fix paths by ensuring they're relative to the workspace instead of absolute
-          # This pattern replaces absolute paths and ensures paths are relative to repo root
-          sed -i -E 's|SF:(/[^/]+)*?/packages/|SF:packages/|g' ./coverage/lcov.info
+          # Extract package names from LCOV
+          echo "Extracting package names from LCOV..."
+          PACKAGES=$(grep -e "^SF:" ./coverage/lcov.info | grep -o "packages/[^/]*" | sort -u)
+          echo "Found packages: $PACKAGES"
           
-          echo "Updated LCOV file contents (first few lines):"
+          # Fix paths that are missing the correct package prefix
+          echo "Normalizing paths in LCOV file..."
+          while IFS= read -r line; do
+            if [[ "$line" =~ ^SF: ]]; then
+              path="${line#SF:}"
+              # If the path doesn't start with "packages/" and isn't a relative path
+              if [[ ! "$path" == packages/* && ! "$path" == ./packages/* && "$path" == lib/* ]]; then
+                # Look for the right package for this file
+                for pkg in $PACKAGES; do
+                  pkg_name="${pkg#packages/}"
+                  if grep -q "^SF:$pkg/lib" ./coverage/lcov.info; then
+                    # Add the correct package prefix to the path
+                    echo "SF:$pkg/$path" >> ./coverage/lcov.info.fixed
+                    continue 2
+                  fi
+                done
+                # If we can't determine the package, just keep the original line
+                echo "$line" >> ./coverage/lcov.info.fixed
+              else
+                # Path already has package prefix or is relative, keep as is
+                echo "$line" >> ./coverage/lcov.info.fixed
+              fi
+            else
+              # Non-SF lines, copy as is
+              echo "$line" >> ./coverage/lcov.info.fixed
+            fi
+          done < ./coverage/lcov.info
+          
+          # Replace the original with the fixed version
+          mv ./coverage/lcov.info.fixed ./coverage/lcov.info
+          
+          # Ensure all paths start with ./
+          sed -i 's|^SF:packages/|SF:./packages/|g' ./coverage/lcov.info
+          sed -i 's|^SF:\([^.]\)|SF:./\1|g' ./coverage/lcov.info
+          
+          echo "Final LCOV file contents (first few lines):"
           head -n 20 ./coverage/lcov.info
           
-          # Create a list of source files that are referenced in the LCOV file
-          echo "Creating list of source files referenced in LCOV"
-          grep "SF:" ./coverage/lcov.info | sed 's/SF://' | sort > source_files.txt
-          echo "First 10 source files referenced:"
-          head -n 10 source_files.txt
+          echo "Final source file paths in LCOV:"
+          grep -e "^SF:" ./coverage/lcov.info | head -n 10
+          
+          # Verify existence of the referenced source files
+          echo "Verifying existence of source files..."
+          for file in $(grep -e "^SF:" ./coverage/lcov.info | sed 's/^SF://' | head -n 10); do
+            echo "Checking $file: $(test -f "$file" && echo "FOUND" || echo "NOT FOUND")"
+          done
           
       - name: Upload combined coverage report
         uses: coverallsapp/github-action@v2
