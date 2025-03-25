@@ -70,9 +70,13 @@ jobs:
       - name: Run tests
         run: flutter test --concurrency=1
 
-      - name: Run tests on chrome
+      - name: Run tests on chrome with js
         if: ${{ matrix.sdk == '3.x'}}
         run: flutter test --platform chrome
+
+      - name: Run tests on chrome with wasm
+        if: ${{ matrix.sdk == '3.x'}}
+        run: flutter test --platform chrome --wasm
 
       - name: Run tests with downgraded app_links
         run: |
