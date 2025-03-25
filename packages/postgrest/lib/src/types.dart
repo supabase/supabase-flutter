@@ -88,9 +88,9 @@ enum CountOption {
   estimated,
 }
 
-// Not used anywhere. Will be removed in the next major version.
 // coverage:ignore-[start]
 /// Returns count as part of the response when specified.
+@Deprecated('Not used anywhere. Will be removed in the next major version.')
 enum ReturningOption {
   minimal,
   representation,
