@@ -98,6 +98,8 @@ class _LoginFormState extends State<_LoginForm> {
                   setState(() {
                     _loading = true;
                   });
+                  final ScaffoldMessengerState scaffoldMessenger =
+                      ScaffoldMessenger.of(context);
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
@@ -106,7 +108,7 @@ class _LoginFormState extends State<_LoginForm> {
                       password: password,
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    scaffoldMessenger.showSnackBar(const SnackBar(
                       content: Text('Login failed'),
                       backgroundColor: Colors.red,
                     ));
@@ -123,6 +125,8 @@ class _LoginFormState extends State<_LoginForm> {
                   setState(() {
                     _loading = true;
                   });
+                  final ScaffoldMessengerState scaffoldMessenger =
+                      ScaffoldMessenger.of(context);
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
@@ -131,7 +135,7 @@ class _LoginFormState extends State<_LoginForm> {
                       password: password,
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    scaffoldMessenger.showSnackBar(const SnackBar(
                       content: Text('Signup failed'),
                       backgroundColor: Colors.red,
                     ));
@@ -173,6 +177,8 @@ class _ProfileFormState extends State<_ProfileForm> {
   }
 
   Future<void> _loadProfile() async {
+    final ScaffoldMessengerState scaffoldMessenger =
+        ScaffoldMessenger.of(context);
     try {
       final userId = Supabase.instance.client.auth.currentUser!.id;
       final data = (await Supabase.instance.client
@@ -186,7 +192,7 @@ class _ProfileFormState extends State<_ProfileForm> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      scaffoldMessenger.showSnackBar(const SnackBar(
         content: Text('Error occurred while getting profile'),
         backgroundColor: Colors.red,
       ));
@@ -219,6 +225,8 @@ class _ProfileFormState extends State<_ProfileForm> {
               const SizedBox(height: 16),
               ElevatedButton(
                   onPressed: () async {
+                    final ScaffoldMessengerState scaffoldMessenger =
+                        ScaffoldMessenger.of(context);
                     try {
                       setState(() {
                         _loading = true;
@@ -233,13 +241,12 @@ class _ProfileFormState extends State<_ProfileForm> {
                         'website': website,
                       });
                       if (mounted) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
+                        scaffoldMessenger.showSnackBar(const SnackBar(
                           content: Text('Saved profile'),
                         ));
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      scaffoldMessenger.showSnackBar(const SnackBar(
                         content: Text('Error saving profile'),
                         backgroundColor: Colors.red,
                       ));
