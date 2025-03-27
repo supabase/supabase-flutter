@@ -88,6 +88,8 @@ class RealtimeClient {
     'error': [],
     'message': []
   };
+
+  @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
   SocketStates? connState;
   // This is called `accessToken` in realtime-js
@@ -112,8 +114,6 @@ class RealtimeClient {
   /// [encode] The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
   ///
   /// [decode] The function to decode incoming messages. Defaults to JSON: (payload, callback) => callback(JSON.parse(payload))
-  ///
-  /// [longpollerTimeout] The maximum timeout of a long poll AJAX request. Defaults to 20s (double the server long poll timer).
   ///
   /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
   ///
@@ -198,7 +198,6 @@ class RealtimeClient {
       connState = SocketStates.open;
 
       _onConnOpen();
-      conn!.stream.timeout(Duration(milliseconds: longpollerTimeout));
       conn!.stream.listen(
         // incoming messages
         (message) => onConnMessage(message as String),

@@ -12,7 +12,7 @@ external JSFunction? supabaseFlutterWSToClose;
 ///
 /// This causes old dart code that is still associated with the WebSocket
 /// connection to be still running and causes unexpected behavior like type
-/// errors and the fact that the events to the old connection may still be
+/// errors and the fact that the events of the old connection may still be
 /// logged.
 void markRealtimeClientToBeDisconnected(RealtimeClient client) {
   void disconnect() {
