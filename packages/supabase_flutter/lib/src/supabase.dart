@@ -210,8 +210,8 @@ class Supabase with WidgetsBindingObserver {
     // Close any previous realtime client that may still be connected due to
     // flutter web hot-restart.
     if (kDebugMode) {
-      disconnectPreviousRealtimeClient();
-      markRealtimeClientToBeDisconnected(client);
+      disposePreviousClient();
+      markClientToDispose(client);
     }
     _widgetsBindingInstance?.addObserver(this);
     _initialized = true;

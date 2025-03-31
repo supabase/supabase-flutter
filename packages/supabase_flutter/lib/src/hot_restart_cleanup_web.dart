@@ -14,7 +14,7 @@ external JSFunction? supabaseFlutterWSToClose;
 /// connections to be still running and causes unexpected behavior like type
 /// errors and the fact that the events of the old connection may still be
 /// logged.
-void markRealtimeClientToBeDisconnected(SupabaseClient client) {
+void markClientToDispose(SupabaseClient client) {
   void disconnect() {
     client.realtime.disconnect(
         code: 1000, reason: 'Closed due to Flutter Web hot-restart');
@@ -27,8 +27,8 @@ void markRealtimeClientToBeDisconnected(SupabaseClient client) {
 /// Disconnect the previous [SupabaseClient] if it exists.
 ///
 /// This is done by calling the function stored by
-/// [markRealtimeClientToBeDisconnected] from the js context
-void disconnectPreviousRealtimeClient() {
+/// [markClientToDispose] from the js context
+void disposePreviousClient() {
   if (supabaseFlutterWSToClose != null) {
     supabaseFlutterWSToClose!.callAsFunction();
     supabaseFlutterWSToClose = null;

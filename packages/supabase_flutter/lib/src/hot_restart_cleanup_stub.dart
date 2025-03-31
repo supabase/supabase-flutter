@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-void markRealtimeClientToBeDisconnected(SupabaseClient client) {}
+void markClientToDispose(SupabaseClient client) {}
 
-void disconnectPreviousRealtimeClient() {}
+void disposePreviousClient() {}
