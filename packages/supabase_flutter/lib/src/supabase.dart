@@ -11,8 +11,8 @@ import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
-import 'realtime_cleanup_stub.dart'
-    if (dart.library.js_interop) 'realtime_cleanup_web.dart';
+import 'hot_restart_cleanup_stub.dart'
+    if (dart.library.js_interop) 'hot_restart_cleanup_web.dart';
 
 import 'version.dart';
 
@@ -211,7 +211,7 @@ class Supabase with WidgetsBindingObserver {
     // flutter web hot-restart.
     if (kDebugMode) {
       disconnectPreviousRealtimeClient();
-      markRealtimeClientToBeDisconnected(client.realtime);
+      markRealtimeClientToBeDisconnected(client);
     }
     _widgetsBindingInstance?.addObserver(this);
     _initialized = true;
