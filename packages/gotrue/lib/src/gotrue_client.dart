@@ -1006,8 +1006,8 @@ class GoTrueClient {
 
         return AuthResponse(session: session);
       }
-    } catch (error) {
-      notifyException(error);
+    } catch (error, stackTrace) {
+      notifyException(error, stackTrace);
       rethrow;
     }
   }

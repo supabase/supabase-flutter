@@ -45,27 +45,38 @@ class GotrueFetch {
     if (error is! Response) {
       throw AuthRetryableFetchException(message: error.toString());
     }
+    final response = error;
 
     // If the status is 500 or above, it's likely a server error,
     // and can be retried.
-    if (error.statusCode >= 500) {
+    if (response.statusCode >= 500) {
       throw AuthRetryableFetchException(
-        message: error.body,
-        statusCode: error.statusCode.toString(),
+        message: response.body,
+        statusCode: response.statusCode.toString(),
       );
     }
 
     final dynamic data;
+
+    // Catch this case as trying to decode it will throw a misleading [FormatException]
+    if (response.body.isEmpty) {
+      throw AuthUnknownException(
+        message:
+            'Received an empty response with status code ${response.statusCode}',
+        originalError: response,
+      );
+    }
     try {
-      data = jsonDecode(error.body);
+      data = jsonDecode(response.body);
     } catch (error) {
       throw AuthUnknownException(
-          message: error.toString(), originalError: error);
+        message: 'Failed to decode error response',
+        originalError: error,
+      );
     }
-
     String? errorCode;
 
-    final responseApiVersion = ApiVersion.fromResponse(error);
+    final responseApiVersion = ApiVersion.fromResponse(response);
 
     if (responseApiVersion?.isSameOrAfter(ApiVersions.v20240101) ?? false) {
       errorCode = _getErrorCode(data, 'code');
@@ -85,21 +96,21 @@ class GotrueFetch {
               .isEmpty) {
         throw AuthWeakPasswordException(
           message: _getErrorMessage(data),
-          statusCode: error.statusCode.toString(),
+          statusCode: response.statusCode.toString(),
           reasons: List<String>.from(data['weak_password']['reasons']),
         );
       }
     } else if (errorCode == ErrorCode.weakPassword.code) {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
-        statusCode: error.statusCode.toString(),
+        statusCode: response.statusCode.toString(),
         reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
       );
     }
 
     throw AuthApiException(
       _getErrorMessage(data),
-      statusCode: error.statusCode.toString(),
+      statusCode: response.statusCode.toString(),
       code: errorCode,
     );
   }

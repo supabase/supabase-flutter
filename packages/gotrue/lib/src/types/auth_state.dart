@@ -13,6 +13,6 @@ class AuthState {
 
   @override
   String toString() {
-    return 'AuthState{event: $event, session: $session, fromBroadcast: $fromBroadcast}';
+    return 'AuthState(event: $event, session: $session, fromBroadcast: $fromBroadcast)';
   }
 }
