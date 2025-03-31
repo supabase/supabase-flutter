@@ -10,7 +10,7 @@ class CustomHttpClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     //Return custom status code to check for usage of this client.
     return StreamedResponse(
-      request.finalize(),
+      Stream.empty(),
       420,
       request: request,
     );
