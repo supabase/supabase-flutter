@@ -151,7 +151,7 @@ class AuthMFAAdminDeleteFactorResponse {
 
 enum FactorStatus { verified, unverified }
 
-enum FactorType { totp }
+enum FactorType { totp, phone }
 
 class Factor {
   /// ID of the factor.
