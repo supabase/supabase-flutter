@@ -484,8 +484,11 @@ void main() {
       try {
         await client.signInWithPassword(email: email1, password: password);
       } catch (error) {
-        expect(error, isA<AuthException>());
-        expect((error as AuthException).statusCode, '420');
+        expect(error, isA<AuthUnknownException>());
+        error as AuthUnknownException;
+        expect(error.statusCode, '420');
+        expect(error.originalError, isA<http.Response>());
+        expect(error.message, contains('empty response'));
       }
     });
   });
