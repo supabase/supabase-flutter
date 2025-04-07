@@ -1,18 +1,21 @@
 import 'package:supabase/src/version.dart';
 import 'dart:io' show Platform;
 
+const bool kIsWeb = bool.fromEnvironment('dart.library.js_util');
+
 class Constants {
-  static String get platform {
-    return Platform.operatingSystem;
+  static String? get platform {
+    return kIsWeb ? null : Platform.operatingSystem;
   }
 
-  static String get platformVersion {
-    return Platform.operatingSystemVersion;
+  static String? get platformVersion {
+    return kIsWeb ? null : Platform.operatingSystemVersion;
   }
 
   static final Map<String, String> defaultHeaders = {
     'X-Client-Info': 'supabase-dart/$version',
-    'X-Supabase-Client-Platform': platform,
-    'X-Supabase-Client-Platform-Version': platformVersion,
+    if (platform != null) 'X-Supabase-Client-Platform': platform!,
+    if (platformVersion != null)
+      'X-Supabase-Client-Platform-Version': platformVersion!,
   };
 }
