@@ -1,6 +1,7 @@
 name: supabase
 description: A dart client for Supabase. This client makes it simple for developers to build secure and scalable products.
 version: 2.6.3
+publish_to: none
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/supabase'
 documentation: 'https://supabase.com/docs/reference/dart/introduction'
@@ -10,7 +11,11 @@ environment:
 
 dependencies:
   functions_client: 2.4.1
-  gotrue: 2.11.1
+  gotrue:
+    git:
+      url: https://github.com/NEON-Software-Solutions/supabase-flutter.git
+      path: packages/gotrue
+      ref: feat/phone_mfa
   http: '>=0.13.5 <2.0.0'
   postgrest: 2.4.1
   realtime_client: 2.4.2

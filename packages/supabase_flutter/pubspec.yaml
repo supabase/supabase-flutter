@@ -1,6 +1,7 @@
 name: supabase_flutter
 description: Flutter integration for Supabase. This package makes it simple for developers to build secure and scalable products.
 version: 2.8.4
+publish_to: none
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_flutter'
 documentation: 'https://supabase.com/docs/reference/dart/introduction'
@@ -17,7 +18,12 @@ dependencies:
     sdk: flutter
   http: '>=0.13.4 <2.0.0'
   meta: ^1.7.0
-  supabase: 2.6.3
+  supabase:
+    git:
+      url: https://github.com/NEON-Software-Solutions/supabase-flutter.git
+      path: packages/supabase
+      ref: feat/phone_mfa
+  
   url_launcher: ^6.1.2
   path_provider: ^2.0.0
   shared_preferences: ^2.0.0
