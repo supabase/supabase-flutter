@@ -43,7 +43,7 @@ class GoTrueMFAApi {
     FactorType factorType = FactorType.totp,
     String? issuer,
     String? friendlyName,
-    String? phoneNumber,
+    String? phone,
   }) async {
     final session = _client.currentSession;
     final data = await _fetch.request(
@@ -55,7 +55,7 @@ class GoTrueMFAApi {
           'friendly_name': friendlyName,
           'factor_type': factorType.name,
           'issuer': issuer,
-          'phone_number': phoneNumber,
+          'phone': phone,
         },
         jwt: session?.accessToken,
       ),
