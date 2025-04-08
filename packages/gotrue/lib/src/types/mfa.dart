@@ -8,19 +8,24 @@ class AuthMFAEnrollResponse {
   final FactorType type;
 
   /// TOTP enrollment information.
-  final TOTPEnrollment totp;
+  final TOTPEnrollment? totp;
+
+  /// Phone enrollment information.
+  final String phone;
 
   const AuthMFAEnrollResponse({
     required this.id,
     required this.type,
     required this.totp,
+    required this.phone,
   });
 
   factory AuthMFAEnrollResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAEnrollResponse(
       id: json['id'],
       type: FactorType.values.firstWhere((e) => e.name == json['type']),
-      totp: TOTPEnrollment.fromJson(json['totp']),
+      totp: json['totp'] != null ? TOTPEnrollment.fromJson(json['totp']) : null,
+      phone: json['phone'],
     );
   }
 }
@@ -151,7 +156,7 @@ class AuthMFAAdminDeleteFactorResponse {
 
 enum FactorStatus { verified, unverified }
 
-enum FactorType { totp }
+enum FactorType { totp, phone }
 
 class Factor {
   /// ID of the factor.
