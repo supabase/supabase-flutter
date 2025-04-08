@@ -8,29 +8,24 @@ class AuthMFAEnrollResponse {
   final FactorType type;
 
   /// TOTP enrollment information.
-  final TOTPEnrollment totp;
+  final TOTPEnrollment? totp;
 
   /// Phone enrollment information.
   final String phone;
-
-  /// Friendly name of the factor.
-  final String friendlyName;
 
   const AuthMFAEnrollResponse({
     required this.id,
     required this.type,
     required this.totp,
     required this.phone,
-    required this.friendlyName,
   });
 
   factory AuthMFAEnrollResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAEnrollResponse(
       id: json['id'],
       type: FactorType.values.firstWhere((e) => e.name == json['type']),
-      totp: TOTPEnrollment.fromJson(json['totp']),
+      totp: json['totp'] != null ? TOTPEnrollment.fromJson(json['totp']) : null,
       phone: json['phone'],
-      friendlyName: json['friendly_name'],
     );
   }
 }
