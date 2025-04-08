@@ -55,6 +55,7 @@ class GoTrueMFAApi {
           'friendly_name': friendlyName,
           'factor_type': factorType.name,
           'issuer': issuer,
+          'phone_number': phoneNumber,
         },
         jwt: session?.accessToken,
       ),
