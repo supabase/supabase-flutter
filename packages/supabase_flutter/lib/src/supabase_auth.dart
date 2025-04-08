@@ -195,7 +195,11 @@ class SupabaseAuth with WidgetsBindingObserver {
       Uri? uri;
       try {
         // before app_links 6.0.0
-        uri = await (_appLinks as dynamic).getInitialAppLink();
+        // uri = await (_appLinks as dynamic).getInitialAppLink();
+
+        _appLinks.uriLinkStream.listen(( Uri? _uri) {
+          uri = _uri;
+        });
       } on NoSuchMethodError catch (_) {
         // The AppLinks package contains the initial link in the uriLinkStream
         // starting from version 6.0.0. Before this version, getting the
@@ -206,11 +210,15 @@ class SupabaseAuth with WidgetsBindingObserver {
         // app_links claims that the initial link will be included in the
         // `uriLinkStream`, but that is not the case for web
         if (kIsWeb) {
-          uri = await (_appLinks as dynamic).getInitialLink();
+          // uri = await (_appLinks as dynamic).getInitialLink();
+          
+          _appLinks.uriLinkStream.listen(( Uri? _uri) {
+            uri = _uri;
+          });
         }
       }
       if (uri != null) {
-        await _handleDeeplink(uri);
+        await _handleDeeplink(uri!);
       }
     } on PlatformException catch (err, stackTrace) {
       _onErrorReceivingDeeplink(err.message ?? err, stackTrace);
