@@ -61,8 +61,10 @@ class GoTrueMFAApi {
       ),
     );
 
-    data['totp']['qr_code'] =
-        'data:image/svg+xml;utf-8,${data['totp']['qr_code']}';
+    if (factorType == FactorType.totp) {
+      data['totp']['qr_code'] =
+          'data:image/svg+xml;utf-8,${data['totp']['qr_code']}';
+    }
 
     final response = AuthMFAEnrollResponse.fromJson(data);
     return response;
