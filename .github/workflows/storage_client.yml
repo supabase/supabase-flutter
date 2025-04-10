@@ -12,6 +12,9 @@ on:
       - 'packages/storage_client/**'
       - '.github/workflows/storage_client.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test SDK ${{ matrix.sdk }}

@@ -23,6 +23,9 @@ on:
       - 'packages/realtime_client/**'
       - 'packages/storage_client/**'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test SDK ${{ matrix.sdk }}

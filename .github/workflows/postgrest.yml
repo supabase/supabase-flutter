@@ -15,6 +15,9 @@ on:
       - '.github/workflows/postgrest.yml'
       - 'packages/yet_another_json_isolate/**'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test SDK ${{ matrix.sdk }}

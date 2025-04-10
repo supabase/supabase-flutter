@@ -13,6 +13,9 @@ on:
       - 'packages/realtime_client/**'
       - '.github/workflows/realtime_client.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test SDK ${{ matrix.sdk }}
