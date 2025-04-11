@@ -11,6 +11,8 @@ import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
+import 'platform_http_io.dart'
+    if (dart.library.js_interop) 'platform_http_web.dart';
 import 'version.dart';
 
 final _log = Logger('supabase.supabase_flutter');
@@ -114,6 +116,13 @@ class Supabase with WidgetsBindingObserver {
         ),
       );
     }
+    if (realtimeClientOptions.webSocketTransport == null) {
+      final platformWebSocketChannel = getPlatformWebSocketChannel(url);
+      if (platformWebSocketChannel != null) {
+        realtimeClientOptions = realtimeClientOptions.copyWith(
+            webSocketTransport: (url, headers) => platformWebSocketChannel);
+      }
+    }
     _instance._init(
       url,
       anonKey,
@@ -192,10 +201,16 @@ class Supabase with WidgetsBindingObserver {
       ...Constants.defaultHeaders,
       if (customHeaders != null) ...customHeaders
     };
+    final Client platformHttpClient;
+    if (httpClient != null) {
+      platformHttpClient = httpClient;
+    } else {
+      platformHttpClient = getPlatformHttpClient();
+    }
     client = SupabaseClient(
       supabaseUrl,
       supabaseAnonKey,
-      httpClient: httpClient,
+      httpClient: platformHttpClient,
       headers: headers,
       realtimeClientOptions: realtimeClientOptions,
       postgrestOptions: postgrestOptions,

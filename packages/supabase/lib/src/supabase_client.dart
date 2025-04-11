@@ -329,6 +329,7 @@ class SupabaseClient {
         'apikey': _supabaseKey,
       },
       headers: {'apikey': _supabaseKey, ...headers},
+      transport: options.webSocketTransport,
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
