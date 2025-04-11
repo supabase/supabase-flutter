@@ -13,6 +13,9 @@ on:
       - 'packages/gotrue/**'
       - '.github/workflows/gotrue.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test SDK ${{ matrix.sdk }}

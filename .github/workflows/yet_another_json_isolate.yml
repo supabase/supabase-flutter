@@ -13,6 +13,9 @@ on:
       - 'packages/yet_another_json_isolate/**'
       - '.github/workflows/yet_another_json_isolate.yml'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test SDK ${{ matrix.sdk }}
