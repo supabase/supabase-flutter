@@ -89,7 +89,11 @@ class GoTrueMFAApi {
 
   /// Verifies a code against a [challengeId].
   ///
+  /// TOTP factors:
   /// The verification [code] is provided by the user by entering a code seen in their authenticator app.
+  ///
+  /// Phone factors:
+  /// The verification [code] is provided by the user by entering the code received via SMS.
   Future<AuthMFAVerifyResponse> verify({
     required String factorId,
     required String challengeId,
