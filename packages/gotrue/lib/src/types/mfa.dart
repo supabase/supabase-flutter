@@ -4,28 +4,35 @@ class AuthMFAEnrollResponse {
   /// ID of the factor that was just enrolled (in an unverified state).
   final String id;
 
-  /// Type of MFA factor. Only `[FactorType.totp] supported for now.
+  /// Type of MFA factor (TOTP or phone).
   final FactorType type;
 
-  /// TOTP enrollment information.
+  /// TOTP enrollment information. Only provided when type is [FactorType.totp].
   final TOTPEnrollment? totp;
 
-  /// Phone enrollment information.
-  final String phone;
+  /// Phone enrollment information. Only provided when type is [FactorType.phone].
+  final String? phone;
 
   const AuthMFAEnrollResponse({
     required this.id,
     required this.type,
-    required this.totp,
-    required this.phone,
+    this.totp,
+    this.phone,
   });
 
   factory AuthMFAEnrollResponse.fromJson(Map<String, dynamic> json) {
+    final factorType =
+        FactorType.values.firstWhere((e) => e.name == json['type']);
+
     return AuthMFAEnrollResponse(
       id: json['id'],
-      type: FactorType.values.firstWhere((e) => e.name == json['type']),
-      totp: json['totp'] != null ? TOTPEnrollment.fromJson(json['totp']) : null,
-      phone: json['phone'],
+      type: factorType,
+      totp: factorType == FactorType.totp && json['totp'] != null
+          ? TOTPEnrollment.fromJson(json['totp'])
+          : null,
+      phone: factorType == FactorType.phone && json['phone'] != null
+          ? json['phone']
+          : null,
     );
   }
 }

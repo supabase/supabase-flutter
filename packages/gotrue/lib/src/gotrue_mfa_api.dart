@@ -28,40 +28,57 @@ class GoTrueMFAApi {
 
   /// Starts the enrollment process for a new Multi-Factor Authentication (MFA) factor.
   /// This method creates a new `unverified` factor.
-  /// To verify a factor, present the QR code or secret to the user and ask them to add it to their authenticator app.
   ///
+  /// TOTP factors:
+  /// To verify a factor, present the QR code or secret to the user and ask them to add it to their authenticator app.
   /// The user has to enter the code from their authenticator app to verify it.
+  ///
+  /// Phone factors:
+  /// A SMS with a code will be sent to the provided phone number. The user needs to enter this code to verify the factor.
   ///
   /// Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
   ///
-  /// [factorType] : Type of factor being enrolled.
+  /// [factorType] : Type of factor being enrolled (TOTP or phone).
   ///
-  /// [issuer] : Domain which the user is enrolled with.
+  /// [issuer] : Domain which the user is enrolled with. Required for [FactorType.totp].
   ///
   /// [friendlyName] : Human readable name assigned to the factor.
+  ///
+  /// [phone] : Phone number in E.164 format. Required for [FactorType.phone].
   Future<AuthMFAEnrollResponse> enroll({
-    FactorType factorType = FactorType.totp,
+    required FactorType factorType,
     String? issuer,
     String? friendlyName,
     String? phone,
   }) async {
+    if (factorType == FactorType.phone && (phone == null || phone.isEmpty)) {
+      throw ArgumentError(
+          'Phone number is required for phone factor enrollment');
+    }
+
+    final Map<String, dynamic> body = {
+      'friendly_name': friendlyName,
+      'factor_type': factorType.name,
+    };
+
+    if (factorType == FactorType.totp) {
+      body['issuer'] = issuer;
+    } else if (factorType == FactorType.phone) {
+      body['phone'] = phone;
+    }
+
     final session = _client.currentSession;
     final data = await _fetch.request(
       '${_client._url}/factors',
       RequestMethodType.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
-        body: {
-          'friendly_name': friendlyName,
-          'factor_type': factorType.name,
-          'issuer': issuer,
-          'phone': phone,
-        },
+        body: body,
         jwt: session?.accessToken,
       ),
     );
 
-    if (factorType == FactorType.totp) {
+    if (factorType == FactorType.totp && data['totp'] != null) {
       data['totp']['qr_code'] =
           'data:image/svg+xml;utf-8,${data['totp']['qr_code']}';
     }
@@ -72,7 +89,11 @@ class GoTrueMFAApi {
 
   /// Verifies a code against a [challengeId].
   ///
+  /// TOTP factors:
   /// The verification [code] is provided by the user by entering a code seen in their authenticator app.
+  ///
+  /// Phone factors:
+  /// The verification [code] is provided by the user by entering the code received via SMS.
   Future<AuthMFAVerifyResponse> verify({
     required String factorId,
     required String challengeId,
