@@ -1205,7 +1205,8 @@ class GoTrueClient {
             notifyAllSubscribers(event, session: session, broadcast: false);
           }
         });
-      } catch (e) {
+      } catch (error, stackTrace) {
+        _log.warning('Failed to start broadcast channel', error, stackTrace);
         // Ignoring
       }
     }

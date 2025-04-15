@@ -78,7 +78,6 @@ void main() {
         'message': [],
       });
       expect(socket.timeout, const Duration(milliseconds: 10000));
-      expect(socket.longpollerTimeout, 20000);
       expect(socket.heartbeatIntervalMs, Constants.defaultHeartbeatIntervalMs);
       expect(
         socket.logger is void Function(
@@ -99,7 +98,6 @@ void main() {
       final socket = RealtimeClient(
         'wss://example.com/socket',
         timeout: const Duration(milliseconds: 40000),
-        longpollerTimeout: 50000,
         heartbeatIntervalMs: 60000,
         // ignore: avoid_print
         logger: (kind, msg, data) => print('[$kind] $msg $data'),
@@ -116,7 +114,6 @@ void main() {
         'message': [],
       });
       expect(socket.timeout, const Duration(milliseconds: 40000));
-      expect(socket.longpollerTimeout, 50000);
       expect(socket.heartbeatIntervalMs, 60000);
       expect(
         socket.logger is void Function(

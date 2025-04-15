@@ -11,6 +11,9 @@ import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
+import 'hot_restart_cleanup_stub.dart'
+    if (dart.library.js_interop) 'hot_restart_cleanup_web.dart';
+
 import 'version.dart';
 
 final _log = Logger('supabase.supabase_flutter');
@@ -203,6 +206,13 @@ class Supabase with WidgetsBindingObserver {
       authOptions: authOptions,
       accessToken: accessToken,
     );
+
+    // Close any previous realtime client that may still be connected due to
+    // flutter web hot-restart.
+    if (kDebugMode) {
+      disposePreviousClient();
+      markClientToDispose(client);
+    }
     _widgetsBindingInstance?.addObserver(this);
     _initialized = true;
   }

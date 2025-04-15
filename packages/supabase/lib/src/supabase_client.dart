@@ -268,6 +268,7 @@ class SupabaseClient {
 
   Future<void> dispose() async {
     _log.fine('Dispose SupabaseClient');
+    await realtime.disconnect();
     await _authStateSubscription?.cancel();
     await _isolate.dispose();
     _authInstance?.dispose();
