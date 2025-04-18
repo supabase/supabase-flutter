@@ -259,8 +259,15 @@ class Fetch {
     required int retryAttempts,
     required StorageRetryController? retryController,
   }) async {
-    return _handleFileRequest('POST', url, file, fileOptions, options,
-        retryAttempts, retryController);
+    return _handleFileRequest(
+      'POST',
+      url,
+      file,
+      fileOptions,
+      options,
+      retryAttempts,
+      retryController,
+    );
   }
 
   Future<dynamic> putFile(
