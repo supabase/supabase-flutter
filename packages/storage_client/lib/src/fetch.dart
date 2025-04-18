@@ -27,8 +27,19 @@ class Fetch {
     return MediaType.parse(mime ?? 'application/octet-stream');
   }
 
-  StorageException _handleError(dynamic error, StackTrace stack, Uri? url) {
+  StorageException _handleError(
+    dynamic error,
+    StackTrace stack,
+    Uri? url,
+    FetchOptions? options,
+  ) {
     if (error is http.Response) {
+      if (options?.noResolveJson == true) {
+        return StorageException(
+          error.body.isEmpty ? error.reasonPhrase ?? '' : error.body,
+          statusCode: '${error.statusCode}',
+        );
+      }
       try {
         final data = json.decode(error.body) as Map<String, dynamic>;
 
@@ -79,7 +90,7 @@ class Fetch {
     return _handleResponse(streamedResponse, options);
   }
 
-  Future<dynamic> _handleMultipartRequest(
+  Future<dynamic> _handleFileRequest(
     String method,
     String url,
     File file,
@@ -88,7 +99,6 @@ class Fetch {
     int retryAttempts,
     StorageRetryController? retryController,
   ) async {
-    final headers = options?.headers ?? {};
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
         : _parseMediaType(file.path);
@@ -98,31 +108,15 @@ class Fetch {
       filename: file.path,
       contentType: contentType,
     );
-    final request = http.MultipartRequest(method, Uri.parse(url))
-      ..headers.addAll(headers)
-      ..files.add(multipartFile)
-      ..fields['cacheControl'] = fileOptions.cacheControl
-      ..headers['x-upsert'] = fileOptions.upsert.toString();
-
-    final http.StreamedResponse streamedResponse;
-    final r = RetryOptions(maxAttempts: (retryAttempts + 1));
-    var attempts = 0;
-    streamedResponse = await r.retry<http.StreamedResponse>(
-      () async {
-        attempts++;
-        _log.finest('Request: attempt: $attempts $method $url $headers');
-        if (httpClient != null) {
-          return httpClient!.send(request);
-        } else {
-          return request.send();
-        }
-      },
-      retryIf: (error) =>
-          retryController?.cancelled != true &&
-          (error is ClientException || error is TimeoutException),
+    return _handleMultipartRequest(
+      method,
+      url,
+      multipartFile,
+      fileOptions,
+      options,
+      retryAttempts,
+      retryController,
     );
-
-    return _handleResponse(streamedResponse, options);
   }
 
   Future<dynamic> _handleBinaryFileRequest(
@@ -134,7 +128,6 @@ class Fetch {
     int retryAttempts,
     StorageRetryController? retryController,
   ) async {
-    final headers = options?.headers ?? {};
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
         : _parseMediaType(url);
@@ -145,11 +138,38 @@ class Fetch {
       filename: '',
       contentType: contentType,
     );
+    return _handleMultipartRequest(
+      method,
+      url,
+      multipartFile,
+      fileOptions,
+      options,
+      retryAttempts,
+      retryController,
+    );
+  }
+
+  Future<dynamic> _handleMultipartRequest(
+    String method,
+    String url,
+    MultipartFile multipartFile,
+    FileOptions fileOptions,
+    FetchOptions? options,
+    int retryAttempts,
+    StorageRetryController? retryController,
+  ) async {
+    final headers = options?.headers ?? {};
     final request = http.MultipartRequest(method, Uri.parse(url))
       ..headers.addAll(headers)
       ..files.add(multipartFile)
       ..fields['cacheControl'] = fileOptions.cacheControl
       ..headers['x-upsert'] = fileOptions.upsert.toString();
+    if (fileOptions.metadata != null) {
+      request.fields['metadata'] = json.encode(fileOptions.metadata);
+    }
+    if (fileOptions.headers != null) {
+      request.headers.addAll(fileOptions.headers!);
+    }
 
     final http.StreamedResponse streamedResponse;
     final r = RetryOptions(maxAttempts: (retryAttempts + 1));
@@ -185,8 +205,22 @@ class Fetch {
         return jsonBody;
       }
     } else {
-      throw _handleError(response, StackTrace.current, response.request?.url);
+      throw _handleError(
+        response,
+        StackTrace.current,
+        response.request?.url,
+        options,
+      );
     }
+  }
+
+  Future<dynamic> head(String url, {FetchOptions? options}) async {
+    return _handleRequest(
+      'HEAD',
+      url,
+      null,
+      FetchOptions(headers: options?.headers, noResolveJson: true),
+    );
   }
 
   Future<dynamic> get(String url, {FetchOptions? options}) async {
@@ -225,8 +259,15 @@ class Fetch {
     required int retryAttempts,
     required StorageRetryController? retryController,
   }) async {
-    return _handleMultipartRequest('POST', url, file, fileOptions, options,
-        retryAttempts, retryController);
+    return _handleFileRequest(
+      'POST',
+      url,
+      file,
+      fileOptions,
+      options,
+      retryAttempts,
+      retryController,
+    );
   }
 
   Future<dynamic> putFile(
@@ -237,7 +278,7 @@ class Fetch {
     required int retryAttempts,
     required StorageRetryController? retryController,
   }) async {
-    return _handleMultipartRequest(
+    return _handleFileRequest(
       'PUT',
       url,
       file,
