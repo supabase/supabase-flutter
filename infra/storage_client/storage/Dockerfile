@@ -1,3 +1,3 @@
-FROM supabase/storage-api:v1.22.3
+FROM supabase/storage-api:v1.18.1
 
 RUN apk add curl --no-cache
