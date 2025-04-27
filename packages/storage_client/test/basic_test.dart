@@ -35,8 +35,12 @@ String get objectUrl => '$supabaseUrl/storage/v1/object';
 void main() {
   late SupabaseStorageClient client;
   late CustomHttpClient customHttpClient = CustomHttpClient();
+  tearDown(() {
+    final file = File('a.txt');
+    if (file.existsSync()) file.deleteSync();
+  });
 
-  group('Client with default http client', () {
+  group('Client with custom http client', () {
     setUp(() {
       // init SupabaseClient with test url & test key
       client = SupabaseStorageClient(
@@ -46,11 +50,6 @@ void main() {
         },
         httpClient: customHttpClient,
       );
-    });
-
-    tearDown(() {
-      final file = File('a.txt');
-      if (file.existsSync()) file.deleteSync();
     });
 
     test('should list buckets', () async {

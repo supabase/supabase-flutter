@@ -75,6 +75,53 @@ class FileObject {
             json['buckets'] != null ? Bucket.fromJson(json['buckets']) : null;
 }
 
+class FileObjectV2 {
+  final String id;
+  final String version;
+  final String name;
+  final String bucketId;
+  final String? updatedAt;
+  final String createdAt;
+  final String? lastAccessedAt;
+  final int? size;
+  final String? cacheControl;
+  final String? contentType;
+  final String? etag;
+  final String? lastModified;
+  final Map<String, dynamic>? metadata;
+
+  const FileObjectV2({
+    required this.id,
+    required this.version,
+    required this.name,
+    required this.bucketId,
+    required this.updatedAt,
+    required this.createdAt,
+    required this.lastAccessedAt,
+    required this.size,
+    required this.cacheControl,
+    required this.contentType,
+    required this.etag,
+    required this.lastModified,
+    required this.metadata,
+  });
+
+  FileObjectV2.fromJson(Map<String, dynamic> json)
+      : id = json['id'] as String,
+        version = json['version'] as String,
+        name = json['name'] as String,
+        bucketId = json['bucket_id'] as String,
+        updatedAt = json['updated_at'] as String?,
+        createdAt = json['created_at'] as String,
+        lastAccessedAt = json['last_accessed_at'] as String?,
+        size = json['size'] as int?,
+        cacheControl = json['cache_control'] as String?,
+        contentType = json['content_type'] as String?,
+        etag = json['etag'] as String?,
+        lastModified = json['last_modified'] as String?,
+        metadata = json['metadata'] as Map<String, dynamic>?;
+}
+
 /// [public] The visibility of the bucket. Public buckets don't require an
 /// authorization token to download objects, but still require a valid token for
 /// all other operations. By default, buckets are private.
@@ -115,10 +162,20 @@ class FileOptions {
   /// Throws a FormatError if the media type is invalid.
   final String? contentType;
 
+  /// The metadata option is an object that allows you to store additional
+  /// information about the file. This information can be used to filter and
+  /// search for files.
+  final Map<String, dynamic>? metadata;
+
+  /// Optionally add extra headers.
+  final Map<String, String>? headers;
+
   const FileOptions({
     this.cacheControl = '3600',
     this.upsert = false,
     this.contentType,
+    this.metadata,
+    this.headers,
   });
 }
 
