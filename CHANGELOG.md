@@ -3,6 +3,70 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-04-28
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.4.2`](#functions_client---v242)
+ - [`gotrue` - `v2.12.0`](#gotrue---v2120)
+ - [`realtime_client` - `v2.5.0`](#realtime_client---v250)
+ - [`storage_client` - `v2.4.0`](#storage_client---v240)
+ - [`supabase` - `v2.7.0`](#supabase---v270)
+ - [`supabase_flutter` - `v2.9.0`](#supabase_flutter---v290)
+ - [`yet_another_json_isolate` - `v2.1.0`](#yet_another_json_isolate---v210)
+ - [`postgrest` - `v2.4.2`](#postgrest---v242)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `postgrest` - `v2.4.2`
+
+---
+
+#### `functions_client` - `v2.4.2`
+
+ - **FIX**: FunctionException implements Exception ([#1134](https://github.com/supabase/supabase-flutter/issues/1134)). ([79edb81c](https://github.com/supabase/supabase-flutter/commit/79edb81c478ade80baab32c70740e988a692c85d))
+
+#### `gotrue` - `v2.12.0`
+
+ - **FIX**: Dispose supabase client after flutter web hot-restart ([#1142](https://github.com/supabase/supabase-flutter/issues/1142)). ([ce582e3e](https://github.com/supabase/supabase-flutter/commit/ce582e3ee7e5d9922d5e38554dfe36a97a47d988))
+ - **FIX**(gotrue): AuthException .toString method ([#1148](https://github.com/supabase/supabase-flutter/issues/1148)). ([42fdc910](https://github.com/supabase/supabase-flutter/commit/42fdc910e4e71904f99ecaa9b68778c1d8b50a62))
+ - **FIX**(gotrue): Handle empty error response ([#1143](https://github.com/supabase/supabase-flutter/issues/1143)). ([591bb82f](https://github.com/supabase/supabase-flutter/commit/591bb82f3fe114b071be82832984c68551c1920d))
+ - **FEAT**(gotrue,supabase,supabase_flutter,realtime_client): Use web package to access web APIs ([#1135](https://github.com/supabase/supabase-flutter/issues/1135)). ([dfa71c9a](https://github.com/supabase/supabase-flutter/commit/dfa71c9a308b9c51f037f379196ed6f6a9e78f18))
+
+#### `realtime_client` - `v2.5.0`
+
+ - **FIX**: Dispose supabase client after flutter web hot-restart ([#1142](https://github.com/supabase/supabase-flutter/issues/1142)). ([ce582e3e](https://github.com/supabase/supabase-flutter/commit/ce582e3ee7e5d9922d5e38554dfe36a97a47d988))
+ - **FEAT**(gotrue,supabase,supabase_flutter,realtime_client): Use web package to access web APIs ([#1135](https://github.com/supabase/supabase-flutter/issues/1135)). ([dfa71c9a](https://github.com/supabase/supabase-flutter/commit/dfa71c9a308b9c51f037f379196ed6f6a9e78f18))
+
+#### `storage_client` - `v2.4.0`
+
+ - **FEAT**(storage_client): Custom-metadata, exists, info methods ([#1023](https://github.com/supabase/supabase-flutter/issues/1023)). ([4d3f4bf5](https://github.com/supabase/supabase-flutter/commit/4d3f4bf5aee3216e76c063400b80de4aad0d3644))
+
+#### `supabase` - `v2.7.0`
+
+ - **FIX**: Dispose supabase client after flutter web hot-restart ([#1142](https://github.com/supabase/supabase-flutter/issues/1142)). ([ce582e3e](https://github.com/supabase/supabase-flutter/commit/ce582e3ee7e5d9922d5e38554dfe36a97a47d988))
+ - **FEAT**(gotrue,supabase,supabase_flutter,realtime_client): Use web package to access web APIs ([#1135](https://github.com/supabase/supabase-flutter/issues/1135)). ([dfa71c9a](https://github.com/supabase/supabase-flutter/commit/dfa71c9a308b9c51f037f379196ed6f6a9e78f18))
+
+#### `supabase_flutter` - `v2.9.0`
+
+ - **FIX**: Dispose supabase client after flutter web hot-restart ([#1142](https://github.com/supabase/supabase-flutter/issues/1142)). ([ce582e3e](https://github.com/supabase/supabase-flutter/commit/ce582e3ee7e5d9922d5e38554dfe36a97a47d988))
+ - **FEAT**(gotrue,supabase,supabase_flutter,realtime_client): Use web package to access web APIs ([#1135](https://github.com/supabase/supabase-flutter/issues/1135)). ([dfa71c9a](https://github.com/supabase/supabase-flutter/commit/dfa71c9a308b9c51f037f379196ed6f6a9e78f18))
+
+#### `yet_another_json_isolate` - `v2.1.0`
+
+ - **FEAT**: Add debugName parameter to YAJsonIsolate. ([#1118](https://github.com/supabase/supabase-flutter/issues/1118)). ([23ffc0e9](https://github.com/supabase/supabase-flutter/commit/23ffc0e9e3145adf49f7bb3d85c0cf4191ba9b99))
+
+
 ## 2025-02-24
 
 ### Changes

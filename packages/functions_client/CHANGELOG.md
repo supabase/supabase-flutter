@@ -1,3 +1,7 @@
+## 2.4.2
+
+ - **FIX**: FunctionException implements Exception ([#1134](https://github.com/supabase/supabase-flutter/issues/1134)). ([79edb81c](https://github.com/supabase/supabase-flutter/commit/79edb81c478ade80baab32c70740e988a692c85d))
+
 ## 2.4.1
 
  - **DOCS**: Fix typos ([#1108](https://github.com/supabase/supabase-flutter/issues/1108)). ([46b483f8](https://github.com/supabase/supabase-flutter/commit/46b483f83a70fb7785ef3bccca6849fa6b07852c))
