@@ -1,3 +1,7 @@
+## 2.1.0
+
+ - **FEAT**: Add debugName parameter to YAJsonIsolate. ([#1118](https://github.com/supabase/supabase-flutter/issues/1118)). ([23ffc0e9](https://github.com/supabase/supabase-flutter/commit/23ffc0e9e3145adf49f7bb3d85c0cf4191ba9b99))
+
 ## 2.0.3
 
  - **FIX**(yet_another_json_isolate): Conditional export now works correctly with Dart 3.5+ ([#1048](https://github.com/supabase/supabase-flutter/issues/1048)). ([6c80a745](https://github.com/supabase/supabase-flutter/commit/6c80a745cd387250995fa3140aac54169466f5bb))
