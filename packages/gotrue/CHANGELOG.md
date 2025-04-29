@@ -1,5 +1,6 @@
 ## 2.12.0
 
+ - Require Dart >=3.3.0
  - **FIX**: Dispose supabase client after flutter web hot-restart ([#1142](https://github.com/supabase/supabase-flutter/issues/1142)). ([ce582e3e](https://github.com/supabase/supabase-flutter/commit/ce582e3ee7e5d9922d5e38554dfe36a97a47d988))
  - **FIX**(gotrue): AuthException .toString method ([#1148](https://github.com/supabase/supabase-flutter/issues/1148)). ([42fdc910](https://github.com/supabase/supabase-flutter/commit/42fdc910e4e71904f99ecaa9b68778c1d8b50a62))
  - **FIX**(gotrue): Handle empty error response ([#1143](https://github.com/supabase/supabase-flutter/issues/1143)). ([591bb82f](https://github.com/supabase/supabase-flutter/commit/591bb82f3fe114b071be82832984c68551c1920d))
