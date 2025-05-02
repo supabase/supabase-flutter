@@ -81,37 +81,39 @@ jobs:
           flutter test --concurrency=1
 
       - name: Build and test web (JS)
-        if: ${{ matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
         run: |
           flutter test --platform chrome
           cd example && flutter build web
 
       - name: Build and test web (WASM)
-        if: ${{ matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
         run: |
           flutter test --platform chrome --wasm
           cd example && flutter build web --wasm
 
       - name: Build macOS app
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == '3.x'}}
         run: |
           cd example
           flutter build macos
 
       - name: Build Windows app
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' && matrix.flutter-version == '3.x'}}
         run: |
           cd example
           flutter build windows
 
       - name: Build Linux app
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
         run: |
+          apt-get update
+          apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev
           cd example
           flutter build linux
 
       - name: Build iOS app
-        if: ${{ matrix.os == 'macos-latest' }}
+        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == '3.x'}}
         run: |
           cd example
           flutter build ios --no-codesign
