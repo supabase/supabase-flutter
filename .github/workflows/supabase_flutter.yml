@@ -83,16 +83,14 @@ jobs:
       - name: Build and test web (JS)
         if: ${{ matrix.flutter-version == '3.x'}}
         run: |
-          cd example
           flutter test --platform chrome
-          flutter build web
+          cd example && flutter build web
 
       - name: Build and test web (WASM)
         if: ${{ matrix.flutter-version == '3.x'}}
         run: |
-          cd example
           flutter test --platform chrome --wasm
-          flutter build web --wasm
+          cd example && flutter build web --wasm
 
       - name: Build macOS app
         if: ${{ matrix.os == 'macos-latest' }}
