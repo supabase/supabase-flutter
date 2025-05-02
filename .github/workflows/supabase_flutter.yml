@@ -107,8 +107,8 @@ jobs:
       - name: Build Linux app
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
         run: |
-          apt-get update
-          apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev
           cd example
           flutter build linux
 
