@@ -117,3 +117,10 @@ jobs:
         run: |
           cd example
           flutter build ios --no-codesign
+
+      - name: Build Android app
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
+        run: |
+          cd example
+          flutter build apk
+          
