@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cupertino_http/cupertino_http.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:web_socket_channel/adapter_web_socket_channel.dart';
@@ -11,6 +12,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 ///
 /// This is used to make HTTP requests use the platform's native HTTP client.
 http.Client getPlatformHttpClient() {
+  if (isInWidgetTest) return http.Client();
   if (Platform.isIOS || Platform.isMacOS) {
     return CupertinoClient.defaultSessionConfiguration();
   } else {
@@ -24,9 +26,16 @@ http.Client getPlatformHttpClient() {
 /// It may return `null` because the differentiation for the other platforms
 /// is done in [RealtimeClient].
 WebSocketChannel Function(String url)? getPlatformWebSocketChannel() {
+  if (isInWidgetTest) return null;
   if (Platform.isIOS || Platform.isMacOS) {
     return (String url) =>
         AdapterWebSocketChannel(CupertinoWebSocket.connect(Uri.parse(url)));
   }
   return null;
+}
+
+bool get isInWidgetTest {
+  return WidgetsBinding.instance.runtimeType
+      .toString()
+      .contains('TestWidgetsFlutterBinding');
 }
