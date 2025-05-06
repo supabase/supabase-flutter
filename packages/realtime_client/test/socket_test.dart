@@ -453,7 +453,10 @@ void main() {
 
   group('setAuth', () {
     final token = generateJwt();
-    final updateJoinPayload = {'access_token': token};
+    final updateJoinPayload = {
+      'access_token': token,
+      'version': Constants.defaultHeaders['X-Client-Info'],
+    };
     final pushPayload = {'access_token': token};
 
     test(
@@ -534,7 +537,10 @@ void main() {
 
       const token = 'sb-key';
       final pushPayload = {'access_token': token};
-      final updateJoinPayload = {'access_token': token};
+      final updateJoinPayload = {
+        'access_token': token,
+        'version': Constants.defaultHeaders['X-Client-Info'],
+      };
 
       await mockedSocket.setAuth(token);
 
