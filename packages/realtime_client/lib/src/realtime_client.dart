@@ -410,36 +410,18 @@ class RealtimeClient {
     final tokenToSend =
         token ?? (await customAccessToken?.call()) ?? accessToken;
 
-    if (tokenToSend != null) {
-      Map<String, dynamic>? parsed;
-      try {
-        final decoded =
-            base64.decode(base64.normalize(tokenToSend.split('.')[1]));
-        parsed = json.decode(utf8.decode(decoded));
-      } catch (e) {
-        // ignore parsing errors
-      }
-      if (parsed != null && parsed['exp'] != null) {
-        final now = (DateTime.now().millisecondsSinceEpoch / 1000).floor();
-        final valid = now - parsed['exp'] < 0;
-        if (!valid) {
-          log(
-            'auth',
-            'InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed['exp']}',
-            null,
-            Level.FINE,
-          );
-          throw FormatException(
-              'InvalidJWTToken: Invalid value for JWT claim "exp" with value ${parsed['exp']}');
-        }
-      }
+    if (accessToken == tokenToSend) {
+      return;
     }
 
     accessToken = tokenToSend;
 
     for (final channel in channels) {
       if (tokenToSend != null) {
-        channel.updateJoinPayload({'access_token': tokenToSend});
+        channel.updateJoinPayload({
+          'access_token': tokenToSend,
+          'version': Constants.defaultHeaders['X-Client-Info'],
+        });
       }
       if (channel.joinedOnce && channel.isJoined) {
         channel.push(ChannelEvents.accessToken, {'access_token': tokenToSend});
