@@ -120,10 +120,11 @@ class Supabase with WidgetsBindingObserver {
       );
     }
     if (realtimeClientOptions.webSocketTransport == null) {
-      final platformWebSocketChannel = getPlatformWebSocketChannel(url);
+      final platformWebSocketChannel = getPlatformWebSocketChannel();
       if (platformWebSocketChannel != null) {
         realtimeClientOptions = realtimeClientOptions.copyWith(
-            webSocketTransport: (url, headers) => platformWebSocketChannel);
+            webSocketTransport: (url, headers) =>
+                platformWebSocketChannel(url));
       }
     }
     _instance._init(

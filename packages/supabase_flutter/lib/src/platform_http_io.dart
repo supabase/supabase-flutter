@@ -23,11 +23,10 @@ http.Client getPlatformHttpClient() {
 ///
 /// It may return `null` because the differentiation for the other platforms
 /// is done in [RealtimeClient].
-WebSocketChannel? getPlatformWebSocketChannel(String url) {
+WebSocketChannel Function(String url)? getPlatformWebSocketChannel() {
   if (Platform.isIOS || Platform.isMacOS) {
-    return AdapterWebSocketChannel(
-      CupertinoWebSocket.connect(Uri.parse(url)),
-    );
+    return (String url) =>
+        AdapterWebSocketChannel(CupertinoWebSocket.connect(Uri.parse(url)));
   }
   return null;
 }
