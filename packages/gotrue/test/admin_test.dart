@@ -137,14 +137,13 @@ void main() {
 
     test('deleteFactor() validates ids', () {
       expect(
-          () => client.admin
-            ..mfa.deleteFactor(
-                userId: 'invalid-id', factorId: 'invalid-factor-id'),
+          () => client.admin.mfa.deleteFactor(
+              userId: 'invalid-id', factorId: 'invalid-factor-id'),
           throwsA(isA<ArgumentError>()));
 
       expect(
-          () => client.admin
-            ..mfa.deleteFactor(userId: userId1, factorId: 'invalid-factor-id'),
+          () => client.admin.mfa
+              .deleteFactor(userId: userId1, factorId: 'invalid-factor-id'),
           throwsA(isA<ArgumentError>()));
     });
   });
