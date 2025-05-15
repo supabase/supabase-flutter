@@ -1,4 +1,5 @@
 import 'fetch.dart';
+import 'helper.dart';
 import 'types/fetch_options.dart';
 import 'types/mfa.dart';
 
@@ -17,6 +18,8 @@ class GoTrueAdminMFAApi {
 
   Future<AuthMFAAdminListFactorsResponse> listFactors(
       {required String userId}) async {
+    validateUuid(userId);
+
     final data = await _fetch.request(
       '$_url/admin/users/$userId/factors',
       RequestMethodType.get,
@@ -33,6 +36,9 @@ class GoTrueAdminMFAApi {
     required String userId,
     required String factorId,
   }) async {
+    validateUuid(userId);
+    validateUuid(factorId);
+
     final data = await _fetch.request(
       '$_url/admin/users/$userId/factors/$factorId',
       RequestMethodType.delete,

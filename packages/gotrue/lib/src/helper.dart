@@ -21,3 +21,12 @@ String generatePKCEChallenge(String verifier) {
   return base64UrlEncode(sha256.convert(ascii.encode(verifier)).bytes)
       .split('=')[0];
 }
+
+final uuidRegex =
+    RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+
+void validateUuid(String id) {
+  if (!uuidRegex.hasMatch(id)) {
+    throw ArgumentError('Invalid id: $id, must be a valid UUID');
+  }
+}
