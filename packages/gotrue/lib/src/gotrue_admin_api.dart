@@ -1,5 +1,6 @@
 import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/fetch.dart';
+import 'package:gotrue/src/helper.dart';
 import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
@@ -70,6 +71,7 @@ class GoTrueAdminApi {
   ///
   /// This function should only be called on a server. Never expose your `service_role` key on the client.
   Future<void> deleteUser(String id) async {
+    validateUuid(id);
     final options = GotrueRequestOptions(headers: _headers);
     await _fetch.request(
       '$_url/admin/users/$id',
@@ -173,6 +175,7 @@ class GoTrueAdminApi {
 
   /// Gets the user by their id.
   Future<UserResponse> getUserById(String uid) async {
+    validateUuid(uid);
     final options = GotrueRequestOptions(headers: _headers);
     final response = await _fetch.request(
       '$_url/admin/users/$uid',
@@ -187,6 +190,7 @@ class GoTrueAdminApi {
     String uid, {
     required AdminUserAttributes attributes,
   }) async {
+    validateUuid(uid);
     final body = attributes.toJson();
     final options = GotrueRequestOptions(headers: _headers, body: body);
     final response = await _fetch.request(
