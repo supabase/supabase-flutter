@@ -64,18 +64,11 @@ class EmptyLocalStorage extends LocalStorage {
 /// A [LocalStorage] implementation that implements SharedPreferences as the
 /// storage method.
 class SharedPreferencesLocalStorage extends LocalStorage {
-  late final SharedPreferences _syncPrefs;
+  late final SharedPreferences _prefs;
 
-  late final SharedPreferencesAsync _asyncPrefs;
-
-  SharedPreferencesLocalStorage({
-    required this.persistSessionKey,
-    this.useSharedPreferencesAsync = false,
-  });
+  SharedPreferencesLocalStorage({required this.persistSessionKey});
 
   final String persistSessionKey;
-
-  final bool useSharedPreferencesAsync;
 
   static const _useWebLocalStorage =
       kIsWeb && bool.fromEnvironment("dart.library.js_interop");
@@ -84,12 +77,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   Future<void> initialize() async {
     if (!_useWebLocalStorage) {
       WidgetsFlutterBinding.ensureInitialized();
-
-      if (useSharedPreferencesAsync) {
-        _asyncPrefs = SharedPreferencesAsync();
-      } else {
-        _syncPrefs = await SharedPreferences.getInstance();
-      }
+      _prefs = await SharedPreferences.getInstance();
     }
   }
 
@@ -98,11 +86,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       return web.hasAccessToken(persistSessionKey);
     }
-
-    return switch (useSharedPreferencesAsync) {
-      true => _asyncPrefs.containsKey(persistSessionKey),
-      false => Future.value(_syncPrefs.containsKey(persistSessionKey)),
-    };
+    return _prefs.containsKey(persistSessionKey);
   }
 
   @override
@@ -110,11 +94,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       return web.accessToken(persistSessionKey);
     }
-
-    return switch (useSharedPreferencesAsync) {
-      true => _asyncPrefs.getString(persistSessionKey),
-      false => Future.value(_syncPrefs.getString(persistSessionKey)),
-    };
+    return _prefs.getString(persistSessionKey);
   }
 
   @override
@@ -122,12 +102,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       web.removePersistedSession(persistSessionKey);
     } else {
-      switch (useSharedPreferencesAsync) {
-        case true:
-          await _asyncPrefs.remove(persistSessionKey);
-        case false:
-          await _syncPrefs.remove(persistSessionKey);
-      }
+      await _prefs.remove(persistSessionKey);
     }
   }
 
@@ -136,10 +111,61 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       return web.persistSession(persistSessionKey, persistSessionString);
     }
-    return switch (useSharedPreferencesAsync) {
-      true => _asyncPrefs.setString(persistSessionKey, persistSessionString),
-      false => _syncPrefs.setString(persistSessionKey, persistSessionString),
-    };
+    return _prefs.setString(persistSessionKey, persistSessionString);
+  }
+}
+
+/// A [LocalStorage] implementation that implements SharedPreferencesAsync as the
+/// storage method.
+class SharedPreferencesAsyncLocalStorage extends LocalStorage {
+  late final SharedPreferencesAsync _prefs;
+
+  SharedPreferencesAsyncLocalStorage({required this.persistSessionKey});
+
+  final String persistSessionKey;
+
+  static const _useWebLocalStorage =
+      kIsWeb && bool.fromEnvironment("dart.library.js_interop");
+
+  @override
+  Future<void> initialize() async {
+    if (!_useWebLocalStorage) {
+      WidgetsFlutterBinding.ensureInitialized();
+      _prefs = SharedPreferencesAsync();
+    }
+  }
+
+  @override
+  Future<bool> hasAccessToken() async {
+    if (_useWebLocalStorage) {
+      return web.hasAccessToken(persistSessionKey);
+    }
+    return _prefs.containsKey(persistSessionKey);
+  }
+
+  @override
+  Future<String?> accessToken() async {
+    if (_useWebLocalStorage) {
+      return web.accessToken(persistSessionKey);
+    }
+    return _prefs.getString(persistSessionKey);
+  }
+
+  @override
+  Future<void> removePersistedSession() async {
+    if (_useWebLocalStorage) {
+      web.removePersistedSession(persistSessionKey);
+    } else {
+      await _prefs.remove(persistSessionKey);
+    }
+  }
+
+  @override
+  Future<void> persistSession(String persistSessionString) {
+    if (_useWebLocalStorage) {
+      return web.persistSession(persistSessionKey, persistSessionString);
+    }
+    return _prefs.setString(persistSessionKey, persistSessionString);
   }
 }
 
