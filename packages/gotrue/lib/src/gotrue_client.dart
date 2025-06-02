@@ -134,12 +134,7 @@ class GoTrueClient {
   /// Getter for the headers
   Map<String, String> get headers => _headers;
 
-  /// Returns the current logged in user, if any;
-  ///
-  /// Use [currentSession] to determine whether the user has an active session,
-  /// because [currentUser] can be null with an active session, such as
-  /// when the user signed up using email and password but has not confirmed
-  /// their email address.
+  /// Returns the current logged in user, asociated to [currentSession] if any;
   User? get currentUser => _currentSession?.user;
 
   /// Returns the current session, if any;
@@ -745,7 +740,7 @@ class GoTrueClient {
         options: options);
     final userResponse = UserResponse.fromJson(response);
 
-    _currentSession = currentSession!.copyWith(user: userResponse.user);
+    _currentSession = currentSession?.copyWith(user: userResponse.user);
     notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
     return userResponse;
