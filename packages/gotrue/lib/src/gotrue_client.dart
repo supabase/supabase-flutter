@@ -43,9 +43,6 @@ class GoTrueClient {
   /// Namespace for the GoTrue MFA API methods.
   late final GoTrueMFAApi mfa;
 
-  /// The currently logged in user or null.
-  User? _currentUser;
-
   /// The session object for the currently logged in user or null.
   Session? _currentSession;
 
@@ -137,13 +134,8 @@ class GoTrueClient {
   /// Getter for the headers
   Map<String, String> get headers => _headers;
 
-  /// Returns the current logged in user, if any;
-  ///
-  /// Use [currentSession] to determine whether the user has an active session,
-  /// because [currentUser] can be non-null without an active session, such as
-  /// when the user signed up using email and password but has not confirmed
-  /// their email address.
-  User? get currentUser => _currentUser;
+  /// Returns the current logged in user, asociated to [currentSession] if any;
+  User? get currentUser => _currentSession?.user;
 
   /// Returns the current session, if any;
   Session? get currentSession => _currentSession;
@@ -748,7 +740,6 @@ class GoTrueClient {
         options: options);
     final userResponse = UserResponse.fromJson(response);
 
-    _currentUser = userResponse.user;
     _currentSession = currentSession?.copyWith(user: userResponse.user);
     notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
@@ -970,7 +961,6 @@ class GoTrueClient {
     }
 
     _currentSession = session;
-    _currentUser = session.user;
     notifyAllSubscribers(AuthChangeEvent.initialSession);
   }
 
@@ -997,7 +987,7 @@ class GoTrueClient {
         }
       } else {
         final shouldEmitEvent = _currentSession == null ||
-            _currentSession?.user.id != session.user.id;
+            _currentSession!.user.id != session.user.id;
         _saveSession(session);
 
         if (shouldEmitEvent) {
@@ -1153,13 +1143,11 @@ class GoTrueClient {
     _log.finest('Saving session: $session');
     _log.fine('Saving session');
     _currentSession = session;
-    _currentUser = session.user;
   }
 
   void _removeSession() {
     _log.fine('Removing session');
     _currentSession = null;
-    _currentUser = null;
   }
 
   void _mayStartBroadcastChannel() {
