@@ -34,7 +34,6 @@ void main() {
         expect(Supabase.instance, isNotNull);
         expect(Supabase.instance.client, isNotNull);
       });
-
     });
 
     group('Custom storage initialization', () {
@@ -81,8 +80,6 @@ void main() {
         expect(Supabase.instance, isNotNull);
         expect(Supabase.instance.client, isNotNull);
       });
-
-
     });
 
     group('Custom client initialization', () {

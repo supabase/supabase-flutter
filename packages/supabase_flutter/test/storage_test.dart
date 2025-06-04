@@ -104,6 +104,5 @@ void main() {
         expect(await asyncStorage.getItem(key: testKey), null);
       });
     });
-
   });
 }
