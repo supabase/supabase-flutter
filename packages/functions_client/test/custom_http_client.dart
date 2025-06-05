@@ -63,7 +63,7 @@ class CustomHttpClient extends BaseClient {
     } else {
       final Stream<List<int>> stream;
       final Map<String, String> headers;
-      
+
       if (request is MultipartRequest) {
         stream = Stream.value(
           utf8.encode(jsonEncode([
@@ -77,14 +77,16 @@ class CustomHttpClient extends BaseClient {
         headers = {"Content-Type": "application/json"};
       } else {
         // Check if the request contains binary data (Uint8List)
-        final isOctetStream = request.headers['Content-Type'] == 'application/octet-stream';
+        final isOctetStream =
+            request.headers['Content-Type'] == 'application/octet-stream';
         if (isOctetStream) {
           // Return the original binary data
           final bodyBytes = (request as Request).bodyBytes;
           stream = Stream.value(bodyBytes);
           headers = {"Content-Type": "application/octet-stream"};
         } else {
-          stream = Stream.value(utf8.encode(jsonEncode({"key": "Hello World"})));
+          stream =
+              Stream.value(utf8.encode(jsonEncode({"key": "Hello World"})));
           headers = {"Content-Type": "application/json"};
         }
       }
