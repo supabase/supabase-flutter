@@ -92,8 +92,14 @@ jobs:
         run: |
           dart pub global run combine_coverage:combine_coverage --repo-path="./" --output-directory="coverage"
           
+      - name: Fix source file paths in LCOV
+        run: |
+          # Remove leading slash from source file paths to make them relative
+          sed -i 's|^SF:/|SF:|g' coverage/lcov.info
+          
       - name: Upload combined coverage report
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./coverage/lcov.info
+          base-path: ./
