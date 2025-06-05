@@ -96,10 +96,21 @@ jobs:
         run: |
           # Remove leading slash from source file paths to make them relative
           sed -i 's|^SF:/|SF:|g' coverage/lcov.info
+          # Also ensure paths are properly formatted for Coveralls
+          sed -i 's|^SF:packages/|SF:./packages/|g' coverage/lcov.info
+          
+      - name: Debug coverage file
+        run: |
+          echo "First 20 lines of coverage file:"
+          head -n 20 coverage/lcov.info
+          echo "Total source files in coverage:"
+          grep -c "^SF:" coverage/lcov.info || true
           
       - name: Upload combined coverage report
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./coverage/lcov.info
-          base-path: ./
+          path-to-lcov: coverage/lcov.info
+          format: lcov
+          flag-name: combined
+          parallel: false
