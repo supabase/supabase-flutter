@@ -104,18 +104,9 @@ jobs:
           echo "Total source files in coverage:"
           grep -c "^SF:" coverage/lcov.info || true
           
-      - name: Install Coveralls CLI
-        run: npm install -g coveralls
-        
-      - name: Upload coverage to Coveralls
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERALLS_SERVICE_NAME: github
-          COVERALLS_SERVICE_NUMBER: ${{ github.run_number }}
-          COVERALLS_SERVICE_JOB_ID: ${{ github.run_id }}
-          COVERALLS_GIT_BRANCH: ${{ github.ref_name }}
-          COVERALLS_GIT_COMMIT: ${{ github.sha }}
-          COVERALLS_PARALLEL: false
-        run: |
-          echo "Uploading coverage for build #${{ github.run_number }}"
-          cat coverage/lcov.info | coveralls --verbose
+      - name: Upload combined coverage report
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./coverage/lcov.info
+          git-path: .
