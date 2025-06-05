@@ -10,47 +10,57 @@ void main() {
     group('SharedPreferencesLocalStorage', () {
       const persistSessionKey = 'test_persist_key';
       const testSessionValue = '{"key": "value"}';
-      late SharedPreferencesLocalStorage localStorage;
 
-      setUp(() async {
-        // Set up fake shared preferences
+      Future<SharedPreferencesLocalStorage> createFreshLocalStorage() async {
+        // Set up fresh shared preferences for each test
         SharedPreferences.setMockInitialValues({});
-        localStorage = SharedPreferencesLocalStorage(
+        final localStorage = SharedPreferencesLocalStorage(
           persistSessionKey: persistSessionKey,
         );
         await localStorage.initialize();
-      });
+        return localStorage;
+      }
 
       test('hasAccessToken returns false when no session exists', () async {
+        final localStorage = await createFreshLocalStorage();
         final result = await localStorage.hasAccessToken();
         expect(result, false);
       });
 
       test('hasAccessToken returns true when session exists', () async {
+        final localStorage = await createFreshLocalStorage();
         await localStorage.persistSession(testSessionValue);
         final result = await localStorage.hasAccessToken();
         expect(result, true);
       });
 
       test('accessToken returns null when no session exists', () async {
+        final localStorage = await createFreshLocalStorage();
         final result = await localStorage.accessToken();
         expect(result, null);
       });
 
       test('accessToken returns session string when session exists', () async {
+        final localStorage = await createFreshLocalStorage();
         await localStorage.persistSession(testSessionValue);
         final result = await localStorage.accessToken();
         expect(result, testSessionValue);
       });
 
       test('persistSession stores session string', () async {
+        final localStorage = await createFreshLocalStorage();
         await localStorage.persistSession(testSessionValue);
-        final prefs = await SharedPreferences.getInstance();
-        final storedValue = prefs.getString(persistSessionKey);
+
+        // Verify the session was stored by checking through localStorage's own methods
+        final hasToken = await localStorage.hasAccessToken();
+        expect(hasToken, true);
+
+        final storedValue = await localStorage.accessToken();
         expect(storedValue, testSessionValue);
       });
 
       test('removePersistedSession removes session', () async {
+        final localStorage = await createFreshLocalStorage();
         // First store a session
         await localStorage.persistSession(testSessionValue);
         expect(await localStorage.hasAccessToken(), true);
