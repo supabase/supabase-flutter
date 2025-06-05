@@ -24,6 +24,7 @@ class CustomHttpClient extends BaseClient {
         headers: {
           "Content-Type": "application/json",
         },
+        reasonPhrase: "Enhance Your Calm",
       );
     } else if (request.url.path.endsWith('sse')) {
       return StreamedResponse(
@@ -32,8 +33,37 @@ class CustomHttpClient extends BaseClient {
           headers: {
             "Content-Type": "text/event-stream",
           });
+    } else if (request.url.path.endsWith('binary')) {
+      return StreamedResponse(
+        Stream.value([1, 2, 3, 4, 5]),
+        200,
+        request: request,
+        headers: {
+          "Content-Type": "application/octet-stream",
+        },
+      );
+    } else if (request.url.path.endsWith('text')) {
+      return StreamedResponse(
+        Stream.value(utf8.encode('Hello World')),
+        200,
+        request: request,
+        headers: {
+          "Content-Type": "text/plain",
+        },
+      );
+    } else if (request.url.path.endsWith('empty-json')) {
+      return StreamedResponse(
+        Stream.value([]),
+        200,
+        request: request,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      );
     } else {
       final Stream<List<int>> stream;
+      final Map<String, String> headers;
+      
       if (request is MultipartRequest) {
         stream = Stream.value(
           utf8.encode(jsonEncode([
@@ -44,16 +74,25 @@ class CustomHttpClient extends BaseClient {
               }
           ])),
         );
+        headers = {"Content-Type": "application/json"};
       } else {
-        stream = Stream.value(utf8.encode(jsonEncode({"key": "Hello World"})));
+        // Check if the request contains binary data (Uint8List)
+        final isOctetStream = request.headers['Content-Type'] == 'application/octet-stream';
+        if (isOctetStream) {
+          // Return the original binary data
+          final bodyBytes = (request as Request).bodyBytes;
+          stream = Stream.value(bodyBytes);
+          headers = {"Content-Type": "application/octet-stream"};
+        } else {
+          stream = Stream.value(utf8.encode(jsonEncode({"key": "Hello World"})));
+          headers = {"Content-Type": "application/json"};
+        }
       }
       return StreamedResponse(
         stream,
         200,
         request: request,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: headers,
       );
     }
   }

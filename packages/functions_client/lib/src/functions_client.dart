@@ -119,15 +119,16 @@ class FunctionsClient {
     } else {
       final bodyRequest = http.Request(method.name, uri);
 
-      final String? bodyStr;
       if (body == null) {
-        bodyStr = null;
+        // No body to set
       } else if (body is String) {
-        bodyStr = body;
+        bodyRequest.body = body;
+      } else if (body is Uint8List) {
+        bodyRequest.bodyBytes = body;
       } else {
-        bodyStr = await _isolate.encode(body);
+        final bodyStr = await _isolate.encode(body);
+        bodyRequest.body = bodyStr;
       }
-      if (bodyStr != null) bodyRequest.body = bodyStr;
       request = bodyRequest;
     }
 
