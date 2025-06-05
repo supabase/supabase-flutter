@@ -97,16 +97,11 @@ jobs:
           # Convert absolute CI paths to relative paths
           sed -i 's|^SF:/home/runner/work/supabase-flutter/supabase-flutter/|SF:|g' coverage/lcov.info
           
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          
-      # Keep Coveralls for backward compatibility
+      # Upload to Coveralls with dedicated repo token
       - name: Upload to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./coverage/lcov.info
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
