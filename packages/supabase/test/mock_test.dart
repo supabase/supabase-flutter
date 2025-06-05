@@ -679,4 +679,118 @@ void main() {
       expect(stream, emits(isList));
     });
   });
+
+  group('Deprecated execute method', () {
+    test('should work with deprecated execute method', () {
+      handleRequests(mockServer);
+      final streamBuilder = supabase.from('todos').stream(primaryKey: ['id']);
+      final stream = streamBuilder.execute();
+      expect(stream, emits(isList));
+    });
+  });
+
+  group('Error Handling', () {
+    group('RealtimeSubscribeException', () {
+      test('should create exception with status only', () {
+        final exception =
+            RealtimeSubscribeException(RealtimeSubscribeStatus.timedOut);
+
+        expect(exception.status, RealtimeSubscribeStatus.timedOut);
+        expect(exception.details, isNull);
+        expect(exception.toString(), contains('timedOut'));
+      });
+
+      test('should create exception with status and details', () {
+        final exception = RealtimeSubscribeException(
+            RealtimeSubscribeStatus.channelError, 'Connection failed');
+
+        expect(exception.status, RealtimeSubscribeStatus.channelError);
+        expect(exception.details, 'Connection failed');
+        expect(exception.toString(), contains('channelError'));
+        expect(exception.toString(), contains('Connection failed'));
+      });
+    });
+
+    group('Stream Error Handling', () {
+      test('should handle postgrest errors gracefully', () async {
+        final errorServer = await HttpServer.bind('localhost', 0);
+
+        // Setup server to return error for rest requests
+        errorServer.listen((request) {
+          if (request.uri.path.contains('/rest/')) {
+            request.response
+              ..statusCode = HttpStatus.unauthorized
+              ..headers.contentType = ContentType.json
+              ..write('{"error": "Unauthorized"}')
+              ..close();
+          } else {
+            request.response
+              ..statusCode = HttpStatus.ok
+              ..close();
+          }
+        });
+
+        final errorClient = SupabaseClient(
+          'http://${errorServer.address.host}:${errorServer.port}',
+          'test-key',
+          headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+        );
+
+        final stream = errorClient.from('todos').stream(primaryKey: ['id']);
+
+        bool errorReceived = false;
+        final completer = Completer<void>();
+
+        final subscription = stream.listen(
+          (_) {},
+          onError: (error) {
+            errorReceived = true;
+            completer.complete();
+          },
+        );
+
+        await completer.future.timeout(Duration(seconds: 5));
+        expect(errorReceived, isTrue);
+
+        await subscription.cancel();
+        await errorClient.dispose();
+        await errorServer.close();
+      });
+
+      test('should handle access token retrieval errors', () async {
+        final clientWithFailingToken = SupabaseClient(
+          'http://${mockServer.address.host}:${mockServer.port}',
+          'test-key',
+          accessToken: () async {
+            throw Exception('Token retrieval failed');
+          },
+          headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+        );
+
+        // Should handle token errors gracefully
+        expect(
+          () async => await clientWithFailingToken.from('test').select(),
+          throwsA(isA<Exception>()),
+        );
+
+        await clientWithFailingToken.dispose();
+      });
+    });
+
+    group('Dispose Error Handling', () {
+      test('should handle dispose errors gracefully', () async {
+        final client = SupabaseClient(
+          'http://${mockServer.address.host}:${mockServer.port}',
+          'test-key',
+          headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+        );
+
+        // First dispose should succeed
+        await client.dispose();
+
+        // Operations after dispose should not throw
+        expect(() => client.from('test'), returnsNormally);
+      });
+    });
+  });
 }
