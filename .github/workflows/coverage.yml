@@ -94,19 +94,19 @@ jobs:
           
       - name: Fix source file paths in LCOV
         run: |
-          # Convert absolute CI paths to relative paths for Coveralls
+          # Convert absolute CI paths to relative paths
           sed -i 's|^SF:/home/runner/work/supabase-flutter/supabase-flutter/|SF:|g' coverage/lcov.info
           
-      - name: Debug coverage file
-        run: |
-          echo "First 20 lines of coverage file:"
-          head -n 20 coverage/lcov.info
-          echo "Total source files in coverage:"
-          grep -c "^SF:" coverage/lcov.info || true
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
           
-      - name: Upload combined coverage report
+      # Keep Coveralls for backward compatibility
+      - name: Upload to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./coverage/lcov.info
-          git-path: .
