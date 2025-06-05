@@ -2,7 +2,7 @@
 version: '3'
 services:
   gotrue: # Signup enabled, autoconfirm on
-    image: supabase/auth:v2.151.0
+    image: supabase/auth:v2.175.0
     ports:
       - '9998:9998'
     environment:

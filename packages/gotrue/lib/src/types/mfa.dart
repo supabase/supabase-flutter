@@ -8,19 +8,53 @@ class AuthMFAEnrollResponse {
   final FactorType type;
 
   /// TOTP enrollment information.
-  final TOTPEnrollment totp;
+  final TOTPEnrollment? totp;
+
+  /// Phone enrollment information.
+  final PhoneEnrollment? phone;
 
   const AuthMFAEnrollResponse({
     required this.id,
     required this.type,
     required this.totp,
+    required this.phone,
   });
 
   factory AuthMFAEnrollResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAEnrollResponse(
       id: json['id'],
       type: FactorType.values.firstWhere((e) => e.name == json['type']),
-      totp: TOTPEnrollment.fromJson(json['totp']),
+      totp: json['totp'] != null ? TOTPEnrollment.fromJson(json['totp']) : null,
+      phone: json['phone'] != null ? PhoneEnrollment.fromJson(json['phone']) : null,
+    );
+  }
+}
+
+class PhoneEnrollment {
+  /// ID of the factor that was just enrolled (in an unverified state).
+  final String id;
+
+  /// Type of MFA factor.
+  final FactorType type;
+
+  /// Phone number of the MFA factor in E.164 format. Used to send messages.
+  final String phone;
+
+  /// Friendly name of the factor, useful to disambiguate between multiple factors.
+  final String? friendlyName;
+
+  const PhoneEnrollment(
+      {required this.id,
+      required this.type,
+      required this.phone,
+      required this.friendlyName});
+
+  factory PhoneEnrollment.fromJson(Map<String, dynamic> json) {
+    return PhoneEnrollment(
+      id: json['id'],
+      type: FactorType.values.firstWhere((e) => e.name == json['type']),
+      phone: json['phone'],
+      friendlyName: json['friendly_name'],
     );
   }
 }
@@ -151,7 +185,7 @@ class AuthMFAAdminDeleteFactorResponse {
 
 enum FactorStatus { verified, unverified }
 
-enum FactorType { totp }
+enum FactorType { totp, phone }
 
 class Factor {
   /// ID of the factor.
@@ -160,7 +194,7 @@ class Factor {
   /// Friendly name of the factor, useful to disambiguate between multiple factors.
   final String? friendlyName;
 
-  /// Type of factor. Only `totp` supported with this version but may change in future versions.
+  /// Type of factor.
   final FactorType factorType;
 
   /// Factor's status.

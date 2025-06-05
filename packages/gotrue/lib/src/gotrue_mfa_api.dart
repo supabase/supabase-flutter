@@ -38,12 +38,23 @@ class GoTrueMFAApi {
   ///
   /// [issuer] : Domain which the user is enrolled with.
   ///
+  /// [phone] : Phone number of the MFA factor in E.164 format. Used to send messages.
+  ///
   /// [friendlyName] : Human readable name assigned to the factor.
   Future<AuthMFAEnrollResponse> enroll({
     FactorType factorType = FactorType.totp,
     String? issuer,
+    String? phone,
     String? friendlyName,
   }) async {
+    if (factorType == FactorType.phone && phone == null) {
+      throw ArgumentError('Phone number is required for phone factor type');
+    }
+
+    if (factorType == FactorType.totp && issuer == null) {
+      throw ArgumentError('Issuer is required for totp factor type');
+    }
+
     final session = _client.currentSession;
     final data = await _fetch.request(
       '${_client._url}/factors',
@@ -53,14 +64,19 @@ class GoTrueMFAApi {
         body: {
           'friendly_name': friendlyName,
           'factor_type': factorType.name,
-          'issuer': issuer,
+          if (factorType == FactorType.totp) 'issuer': issuer,
+          if (factorType == FactorType.phone) 'phone': phone,
         },
         jwt: session?.accessToken,
       ),
     );
 
-    data['totp']['qr_code'] =
-        'data:image/svg+xml;utf-8,${data['totp']['qr_code']}';
+    if (factorType == FactorType.totp &&
+        data['totp'] != null &&
+        data['totp']['qr_code'] != null) {
+      data['totp']['qr_code'] =
+          'data:image/svg+xml;utf-8,${data['totp']['qr_code']}';
+    }
 
     final response = AuthMFAEnrollResponse.fromJson(data);
     return response;

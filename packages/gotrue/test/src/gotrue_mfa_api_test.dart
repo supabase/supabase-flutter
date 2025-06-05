@@ -33,16 +33,57 @@ void main() {
     );
   });
 
-  test('enroll', () async {
-    await client.signInWithPassword(password: password, email: email1);
+  group('enroll', () {
+    test('totp', () async {
+      await client.signInWithPassword(password: password, email: email1);
 
-    final res = await client.mfa
-        .enroll(issuer: 'MyFriend', friendlyName: 'MyFriendName');
-    final uri = Uri.parse(res.totp.uri);
+      final res = await client.mfa
+          .enroll(issuer: 'MyFriend', friendlyName: 'MyFriendName');
+      final uri = Uri.parse(res.totp!.uri);
 
-    expect(res.type, FactorType.totp);
-    expect(uri.queryParameters['issuer'], 'MyFriend');
-    expect(uri.scheme, 'otpauth');
+      expect(res.type, FactorType.totp);
+      expect(uri.queryParameters['issuer'], 'MyFriend');
+      expect(uri.scheme, 'otpauth');
+    });
+
+    test('phone', () async {
+      await client.signInWithPassword(password: password, email: email1);
+
+      expect(
+        () => client.mfa
+            .enroll(factorType: FactorType.phone, phone: '+1234567890'),
+        throwsA(isA<AuthApiException>().having(
+          (e) => e.message,
+          'message',
+          'MFA enroll is disabled for Phone',
+        )),
+      );
+    });
+
+    test(
+        'throws ArgumentError when phone factor type is used without phone number',
+        () async {
+      expect(
+        () => client.mfa.enroll(factorType: FactorType.phone),
+        throwsA(isA<ArgumentError>().having(
+          (e) => e.message,
+          'message',
+          'Phone number is required for phone factor type',
+        )),
+      );
+    });
+
+    test('throws ArgumentError when totp factor type is used without issuer',
+        () async {
+      expect(
+        () => client.mfa.enroll(factorType: FactorType.totp),
+        throwsA(isA<ArgumentError>().having(
+          (e) => e.message,
+          'message',
+          'Issuer is required for totp factor type',
+        )),
+      );
+    });
   });
 
   test('challenge', () async {
