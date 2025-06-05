@@ -8,14 +8,17 @@ void main() {
   group('Storage Tests', () {
     // SharedPreferencesLocalStorage Tests
     group('SharedPreferencesLocalStorage', () {
-      const persistSessionKey = 'test_persist_key';
       const testSessionValue = '{"key": "value"}';
 
       Future<SharedPreferencesLocalStorage> createFreshLocalStorage() async {
+        // Use a unique key for each test to ensure complete isolation
+        final uniqueKey = 'test_persist_key_${DateTime.now().microsecondsSinceEpoch}';
+        
         // Set up fresh shared preferences for each test
         SharedPreferences.setMockInitialValues({});
+        
         final localStorage = SharedPreferencesLocalStorage(
-          persistSessionKey: persistSessionKey,
+          persistSessionKey: uniqueKey,
         );
         await localStorage.initialize();
         return localStorage;
