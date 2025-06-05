@@ -41,20 +41,36 @@ class GoTrueMFAApi {
   /// [phone] : Phone number of the MFA factor in E.164 format. Used to send messages.
   ///
   /// [friendlyName] : Human readable name assigned to the factor.
+  @Deprecated('Use enrollWithParams instead for better type safety')
   Future<AuthMFAEnrollResponse> enroll({
     FactorType factorType = FactorType.totp,
     String? issuer,
     String? phone,
     String? friendlyName,
   }) async {
-    if (factorType == FactorType.phone && phone == null) {
-      throw ArgumentError('Phone number is required for phone factor type');
+    if (factorType == FactorType.phone && phone != null) {
+      return enrollWithParams(
+          PhoneEnrollParams(phone: phone, friendlyName: friendlyName));
     }
 
-    if (factorType == FactorType.totp && issuer == null) {
-      throw ArgumentError('Issuer is required for totp factor type');
+    if (factorType == FactorType.totp && issuer != null) {
+      return enrollWithParams(
+          TOTPEnrollParams(issuer: issuer, friendlyName: friendlyName));
     }
 
+    throw ArgumentError('Invalid arguments, expected either phone or issuer.');
+  }
+
+  /// Starts the enrollment process for a new Multi-Factor Authentication (MFA) factor.
+  /// This method creates a new `unverified` factor.
+  /// To verify a factor, present the QR code or secret to the user and ask them to add it to their authenticator app.
+  ///
+  /// The user has to enter the code from their authenticator app to verify it.
+  ///
+  /// Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
+  ///
+  /// [params] : Type-safe parameters for enrolling a new MFA factor.
+  Future<AuthMFAEnrollResponse> enrollWithParams(MFAEnrollParams params) async {
     final session = _client.currentSession;
     final data = await _fetch.request(
       '${_client._url}/factors',
@@ -62,16 +78,19 @@ class GoTrueMFAApi {
       options: GotrueRequestOptions(
         headers: _client._headers,
         body: {
-          'friendly_name': friendlyName,
-          'factor_type': factorType.name,
-          if (factorType == FactorType.totp) 'issuer': issuer,
-          if (factorType == FactorType.phone) 'phone': phone,
+          'friendly_name': params.friendlyName,
+          'factor_type': switch (params) {
+            TOTPEnrollParams() => FactorType.totp.name,
+            PhoneEnrollParams() => FactorType.phone.name,
+          },
+          if (params is TOTPEnrollParams) 'issuer': params.issuer,
+          if (params is PhoneEnrollParams) 'phone': params.phone,
         },
         jwt: session?.accessToken,
       ),
     );
 
-    if (factorType == FactorType.totp &&
+    if (params is TOTPEnrollParams &&
         data['totp'] != null &&
         data['totp']['qr_code'] != null) {
       data['totp']['qr_code'] =

@@ -25,7 +25,9 @@ class AuthMFAEnrollResponse {
       id: json['id'],
       type: FactorType.values.firstWhere((e) => e.name == json['type']),
       totp: json['totp'] != null ? TOTPEnrollment.fromJson(json['totp']) : null,
-      phone: json['phone'] != null ? PhoneEnrollment.fromJson(json['phone']) : null,
+      phone: json['phone'] != null
+          ? PhoneEnrollment.fromJson(json['phone'])
+          : null,
     );
   }
 }
@@ -336,4 +338,39 @@ class AMREntry {
       timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] * 1000),
     );
   }
+}
+
+/// Parameters for enrolling a new MFA factor
+sealed class MFAEnrollParams {
+  /// Friendly name of the factor, useful to disambiguate between multiple factors.
+  final String? friendlyName;
+
+  /// Type of factor being enrolled.
+  final FactorType factorType;
+
+  const MFAEnrollParams({this.friendlyName, required this.factorType});
+}
+
+/// Parameters for enrolling a TOTP factor
+class TOTPEnrollParams extends MFAEnrollParams {
+  /// Domain which the user is enrolled with.
+  final String issuer;
+
+  const TOTPEnrollParams({
+    required this.issuer,
+    super.friendlyName,
+    super.factorType = FactorType.totp,
+  });
+}
+
+/// Parameters for enrolling a phone factor
+class PhoneEnrollParams extends MFAEnrollParams {
+  /// Phone number of the MFA factor in E.164 format. Used to send messages.
+  final String phone;
+
+  const PhoneEnrollParams({
+    required this.phone,
+    super.friendlyName,
+    super.factorType = FactorType.phone,
+  });
 }
