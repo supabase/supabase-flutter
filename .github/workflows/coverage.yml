@@ -94,10 +94,8 @@ jobs:
           
       - name: Fix source file paths in LCOV
         run: |
-          # Remove leading slash from source file paths to make them relative
-          sed -i 's|^SF:/|SF:|g' coverage/lcov.info
-          # Also ensure paths are properly formatted for Coveralls
-          sed -i 's|^SF:packages/|SF:./packages/|g' coverage/lcov.info
+          # Convert absolute CI paths to relative paths for Coveralls
+          sed -i 's|^SF:/home/runner/work/supabase-flutter/supabase-flutter/|SF:|g' coverage/lcov.info
           
       - name: Debug coverage file
         run: |
