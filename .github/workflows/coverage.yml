@@ -104,12 +104,12 @@ jobs:
           echo "Total source files in coverage:"
           grep -c "^SF:" coverage/lcov.info || true
           
-      - name: Upload combined coverage report
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage/lcov.info
-          format: lcov
-          base-path: .
-          flag-name: combined
-          parallel: false
+      - name: Install Coveralls CLI
+        run: npm install -g coveralls
+        
+      - name: Upload coverage to Coveralls
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_SERVICE_NAME: github-actions
+        run: |
+          cat coverage/lcov.info | coveralls
