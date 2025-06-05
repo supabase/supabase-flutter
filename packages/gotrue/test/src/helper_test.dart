@@ -128,11 +128,14 @@ void main() {
             returnsNormally);
       });
 
-      test('accepts valid UUID with different cases', () {
+      test('accepts valid UUID with lowercase only', () {
         expect(() => validateUuid('550e8400-e29b-41d4-a716-446655440000'),
             returnsNormally);
+      });
+
+      test('rejects UUID with uppercase characters', () {
         expect(() => validateUuid('550E8400-E29B-41D4-A716-446655440000'),
-            returnsNormally);
+            throwsArgumentError);
       });
 
       test('accepts nil UUID', () {

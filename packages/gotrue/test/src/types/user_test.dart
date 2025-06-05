@@ -107,7 +107,7 @@ void main() {
       test('handles null user_metadata', () {
         final json = <String, dynamic>{
           'id': '123',
-          'app_metadata': {},
+          'app_metadata': <String, dynamic>{},
           'user_metadata': null,
           'aud': 'authenticated',
           'created_at': '2023-01-01T00:00:00Z',

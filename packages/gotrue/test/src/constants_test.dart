@@ -72,7 +72,7 @@ void main() {
 
   group('AuthChangeEvent', () {
     test('has correct enum values', () {
-      expect(AuthChangeEvent.values.length, equals(7));
+      expect(AuthChangeEvent.values.length, equals(8));
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.initialSession));
       expect(
           AuthChangeEvent.values, contains(AuthChangeEvent.passwordRecovery));
