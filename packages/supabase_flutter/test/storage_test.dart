@@ -12,11 +12,12 @@ void main() {
 
       Future<SharedPreferencesLocalStorage> createFreshLocalStorage() async {
         // Use a unique key for each test to ensure complete isolation
-        final uniqueKey = 'test_persist_key_${DateTime.now().microsecondsSinceEpoch}';
-        
+        final uniqueKey =
+            'test_persist_key_${DateTime.now().microsecondsSinceEpoch}';
+
         // Set up fresh shared preferences for each test
         SharedPreferences.setMockInitialValues({});
-        
+
         final localStorage = SharedPreferencesLocalStorage(
           persistSessionKey: uniqueKey,
         );
