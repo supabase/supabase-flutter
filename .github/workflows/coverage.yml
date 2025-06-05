@@ -110,5 +110,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: coverage/lcov.info
           format: lcov
+          base-path: .
           flag-name: combined
           parallel: false
