@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:gotrue/gotrue.dart';
+import 'package:http/http.dart';
 import 'package:test/test.dart';
 
 import 'mocks/otp_mock_client.dart';
@@ -98,6 +101,34 @@ void main() {
       expect(client.currentSession, isNotNull);
       expect(client.currentUser, isNotNull);
       expect(client.currentUser?.email, testEmail);
+    });
+
+    test('verifyOTP() sends correct parameters in request body', () async {
+      // Test with specific email and token values from the issue
+      const testOtp = '329169';
+      const specificEmail = 'test@test.com';
+      
+      // Create a custom mock client that verifies the request body
+      final verifyingMockClient = VerifyingOtpMockClient(
+        expectedEmail: specificEmail,
+        expectedToken: testOtp,
+      );
+      
+      final verifyingClient = GoTrueClient(
+        url: 'https://example.com',
+        httpClient: verifyingMockClient,
+        asyncStorage: asyncStorage,
+      );
+      
+      // This should succeed if parameters are sent correctly
+      await verifyingClient.verifyOTP(
+        email: specificEmail,
+        token: testOtp,
+        type: OtpType.email,
+      );
+      
+      // Test passes if no exceptions were thrown
+      expect(verifyingMockClient.requestWasValid, isTrue);
     });
 
     test('verifyOTP() with recovery type', () async {
@@ -601,4 +632,86 @@ void main() {
       expect(mockClient.lastRequestBody?['type'], 'email_change');
     });
   });
+}
+
+/// A mock client that verifies the request body contains expected email and token values
+class VerifyingOtpMockClient extends BaseClient {
+  final String expectedEmail;
+  final String expectedToken;
+  bool requestWasValid = false;
+
+  VerifyingOtpMockClient({
+    required this.expectedEmail,
+    required this.expectedToken,
+  });
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    if (request.url.toString().contains('/verify') && request is Request) {
+      final requestBody = json.decode(request.body) as Map<String, dynamic>;
+      
+      // Verify that email parameter maps to 'email' field
+      if (requestBody['email'] != expectedEmail) {
+        throw Exception(
+          'Expected email "$expectedEmail" in request body "email" field, '
+          'but got "${requestBody['email']}"'
+        );
+      }
+      
+      // Verify that token parameter maps to 'token' field
+      if (requestBody['token'] != expectedToken) {
+        throw Exception(
+          'Expected token "$expectedToken" in request body "token" field, '
+          'but got "${requestBody['token']}"'
+        );
+      }
+      
+      // Verify parameters are not swapped
+      if (requestBody['email'] == expectedToken || requestBody['token'] == expectedEmail) {
+        throw Exception(
+          'Parameters appear to be swapped! '
+          'email field contains: "${requestBody['email']}", '
+          'token field contains: "${requestBody['token']}"'
+        );
+      }
+      
+      requestWasValid = true;
+      
+      // Return a valid response
+      final now = DateTime.now().toIso8601String();
+      return StreamedResponse(
+        Stream.value(utf8.encode(jsonEncode({
+          'access_token': 'mock-access-token',
+          'token_type': 'bearer',
+          'expires_in': 3600,
+          'refresh_token': 'mock-refresh-token',
+          'user': {
+            'id': 'mock-user-id',
+            'aud': 'authenticated',
+            'role': 'authenticated',
+            'email': expectedEmail,
+            'email_confirmed_at': now,
+            'confirmed_at': now,
+            'last_sign_in_at': now,
+            'created_at': now,
+            'updated_at': now,
+            'app_metadata': {
+              'provider': 'email',
+              'providers': ['email'],
+            },
+            'user_metadata': {},
+            'identities': [],
+          },
+        }))),
+        200,
+        request: request,
+      );
+    }
+    
+    return StreamedResponse(
+      Stream.value(utf8.encode(jsonEncode({'error': 'Unhandled request'}))),
+      404,
+      request: request,
+    );
+  }
 }
