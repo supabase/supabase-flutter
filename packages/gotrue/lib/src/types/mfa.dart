@@ -29,7 +29,7 @@ class AuthMFAEnrollResponse {
           ? TOTPEnrollment.fromJson(json['totp'])
           : null,
       phone: type == FactorType.phone && json['phone'] != null
-          ? PhoneEnrollment.fromJson(json['phone'])
+          ? PhoneEnrollment._fromJsonValue(json['phone'])
           : null,
     );
   }
@@ -76,6 +76,19 @@ class PhoneEnrollment {
     return PhoneEnrollment(
       phone: json['phone'],
     );
+  }
+
+  factory PhoneEnrollment._fromJsonValue(dynamic value) {
+    if (value is String) {
+      // Server returns phone number as a string directly
+      return PhoneEnrollment(phone: value);
+    } else if (value is Map<String, dynamic>) {
+      // Server returns phone data as an object
+      return PhoneEnrollment.fromJson(value);
+    } else {
+      throw ArgumentError(
+          'Invalid phone enrollment data type: ${value.runtimeType}');
+    }
   }
 }
 
