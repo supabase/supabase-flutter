@@ -85,8 +85,8 @@ void main() {
     // Create a challenge first
     final challengeRes = await client.mfa.challenge(factorId: factorId1);
 
-    final res = await client.mfa
-        .verify(factorId: factorId1, challengeId: challengeRes.id, code: getTOTP());
+    final res = await client.mfa.verify(
+        factorId: factorId1, challengeId: challengeRes.id, code: getTOTP());
 
     expect(client.currentSession?.accessToken, res.accessToken);
     expect(client.currentUser, res.user);
@@ -155,20 +155,20 @@ void main() {
 
     // Should have 1 phone factor (unverified) and 0 verified phone factors
     expect(listRes.all.length, greaterThanOrEqualTo(1));
-    
+
     // Find the phone factor we just enrolled
     final phoneFactor = listRes.all.firstWhere(
       (factor) => factor.factorType == FactorType.phone,
     );
-    
+
     expect(phoneFactor.id, enrollRes.id);
     expect(phoneFactor.factorType, FactorType.phone);
     expect(phoneFactor.friendlyName, 'TestPhone');
     expect(phoneFactor.status, FactorStatus.unverified);
-    
+
     // Verified phone factors should be empty since we haven't verified yet
     expect(listRes.phone.length, 0);
-    
+
     // But the factor should appear in the all list
     expect(listRes.all.any((f) => f.factorType == FactorType.phone), true);
   });
