@@ -4,23 +4,33 @@ class AuthMFAEnrollResponse {
   /// ID of the factor that was just enrolled (in an unverified state).
   final String id;
 
-  /// Type of MFA factor. Only `[FactorType.totp] supported for now.
+  /// Type of MFA factor. Supports both `[FactorType.totp]` and `[FactorType.phone]`.
   final FactorType type;
 
-  /// TOTP enrollment information.
-  final TOTPEnrollment totp;
+  /// TOTP enrollment information (only present when type is totp).
+  final TOTPEnrollment? totp;
+
+  /// Phone enrollment information (only present when type is phone).
+  final PhoneEnrollment? phone;
 
   const AuthMFAEnrollResponse({
     required this.id,
     required this.type,
-    required this.totp,
+    this.totp,
+    this.phone,
   });
 
   factory AuthMFAEnrollResponse.fromJson(Map<String, dynamic> json) {
+    final type = FactorType.values.firstWhere((e) => e.name == json['type']);
     return AuthMFAEnrollResponse(
       id: json['id'],
-      type: FactorType.values.firstWhere((e) => e.name == json['type']),
-      totp: TOTPEnrollment.fromJson(json['totp']),
+      type: type,
+      totp: type == FactorType.totp && json['totp'] != null
+          ? TOTPEnrollment.fromJson(json['totp'])
+          : null,
+      phone: type == FactorType.phone && json['phone'] != null
+          ? PhoneEnrollment.fromJson(json['phone'])
+          : null,
     );
   }
 }
@@ -50,6 +60,21 @@ class TOTPEnrollment {
       qrCode: json['qr_code'],
       secret: json['secret'],
       uri: json['uri'],
+    );
+  }
+}
+
+class PhoneEnrollment {
+  /// The phone number that will receive the SMS OTP.
+  final String phone;
+
+  const PhoneEnrollment({
+    required this.phone,
+  });
+
+  factory PhoneEnrollment.fromJson(Map<String, dynamic> json) {
+    return PhoneEnrollment(
+      phone: json['phone'],
     );
   }
 }
@@ -120,8 +145,13 @@ class AuthMFAUnenrollResponse {
 class AuthMFAListFactorsResponse {
   final List<Factor> all;
   final List<Factor> totp;
+  final List<Factor> phone;
 
-  AuthMFAListFactorsResponse({required this.all, required this.totp});
+  AuthMFAListFactorsResponse({
+    required this.all,
+    required this.totp,
+    required this.phone,
+  });
 }
 
 class AuthMFAAdminListFactorsResponse {
@@ -151,7 +181,7 @@ class AuthMFAAdminDeleteFactorResponse {
 
 enum FactorStatus { verified, unverified }
 
-enum FactorType { totp }
+enum FactorType { totp, phone }
 
 class Factor {
   /// ID of the factor.
@@ -160,7 +190,7 @@ class Factor {
   /// Friendly name of the factor, useful to disambiguate between multiple factors.
   final String? friendlyName;
 
-  /// Type of factor. Only `totp` supported with this version but may change in future versions.
+  /// Type of factor. Supports both `totp` and `phone`.
   final FactorType factorType;
 
   /// Factor's status.

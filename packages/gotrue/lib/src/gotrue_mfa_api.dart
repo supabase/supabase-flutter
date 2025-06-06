@@ -28,39 +28,57 @@ class GoTrueMFAApi {
 
   /// Starts the enrollment process for a new Multi-Factor Authentication (MFA) factor.
   /// This method creates a new `unverified` factor.
-  /// To verify a factor, present the QR code or secret to the user and ask them to add it to their authenticator app.
+  /// 
+  /// For TOTP: To verify a factor, present the QR code or secret to the user and ask them to add it to their authenticator app.
+  /// For Phone: The user will receive an SMS with a verification code.
   ///
-  /// The user has to enter the code from their authenticator app to verify it.
+  /// The user has to enter the code from their authenticator app or SMS to verify it.
   ///
   /// Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
   ///
   /// [factorType] : Type of factor being enrolled.
   ///
-  /// [issuer] : Domain which the user is enrolled with.
+  /// [issuer] : Domain which the user is enrolled with (TOTP only).
   ///
   /// [friendlyName] : Human readable name assigned to the factor.
+  ///
+  /// [phone] : Phone number to enroll for Phone factor type.
   Future<AuthMFAEnrollResponse> enroll({
     FactorType factorType = FactorType.totp,
     String? issuer,
     String? friendlyName,
+    String? phone,
   }) async {
     final session = _client.currentSession;
+    
+    final body = <String, dynamic>{
+      'friendly_name': friendlyName,
+      'factor_type': factorType.name,
+    };
+    
+    if (factorType == FactorType.totp) {
+      body['issuer'] = issuer;
+    } else if (factorType == FactorType.phone) {
+      if (phone == null) {
+        throw ArgumentError('Phone number is required for phone factor type');
+      }
+      body['phone'] = phone;
+    }
+    
     final data = await _fetch.request(
       '${_client._url}/factors',
       RequestMethodType.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
-        body: {
-          'friendly_name': friendlyName,
-          'factor_type': factorType.name,
-          'issuer': issuer,
-        },
+        body: body,
         jwt: session?.accessToken,
       ),
     );
 
-    data['totp']['qr_code'] =
-        'data:image/svg+xml;utf-8,${data['totp']['qr_code']}';
+    if (factorType == FactorType.totp && data['totp'] != null) {
+      data['totp']['qr_code'] =
+          'data:image/svg+xml;utf-8,${data['totp']['qr_code']}';
+    }
 
     final response = AuthMFAEnrollResponse.fromJson(data);
     return response;
@@ -150,8 +168,13 @@ class GoTrueMFAApi {
             factor.factorType == FactorType.totp &&
             factor.status == FactorStatus.verified)
         .toList();
+    final phone = factors
+        .where((factor) =>
+            factor.factorType == FactorType.phone &&
+            factor.status == FactorStatus.verified)
+        .toList();
 
-    return AuthMFAListFactorsResponse(all: factors, totp: totp);
+    return AuthMFAListFactorsResponse(all: factors, totp: totp, phone: phone);
   }
 
   /// Returns the Authenticator Assurance Level (AAL) for the active session.
