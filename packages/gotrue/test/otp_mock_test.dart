@@ -107,26 +107,26 @@ void main() {
       // Test with specific email and token values from the issue
       const testOtp = '329169';
       const specificEmail = 'test@test.com';
-      
+
       // Create a custom mock client that verifies the request body
       final verifyingMockClient = VerifyingOtpMockClient(
         expectedEmail: specificEmail,
         expectedToken: testOtp,
       );
-      
+
       final verifyingClient = GoTrueClient(
         url: 'https://example.com',
         httpClient: verifyingMockClient,
         asyncStorage: asyncStorage,
       );
-      
+
       // This should succeed if parameters are sent correctly
       await verifyingClient.verifyOTP(
         email: specificEmail,
         token: testOtp,
         type: OtpType.email,
       );
-      
+
       // Test passes if no exceptions were thrown
       expect(verifyingMockClient.requestWasValid, isTrue);
     });
@@ -649,34 +649,31 @@ class VerifyingOtpMockClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     if (request.url.toString().contains('/verify') && request is Request) {
       final requestBody = json.decode(request.body) as Map<String, dynamic>;
-      
+
       // Verify that email parameter maps to 'email' field
       if (requestBody['email'] != expectedEmail) {
         throw Exception(
-          'Expected email "$expectedEmail" in request body "email" field, '
-          'but got "${requestBody['email']}"'
-        );
+            'Expected email "$expectedEmail" in request body "email" field, '
+            'but got "${requestBody['email']}"');
       }
-      
+
       // Verify that token parameter maps to 'token' field
       if (requestBody['token'] != expectedToken) {
         throw Exception(
-          'Expected token "$expectedToken" in request body "token" field, '
-          'but got "${requestBody['token']}"'
-        );
+            'Expected token "$expectedToken" in request body "token" field, '
+            'but got "${requestBody['token']}"');
       }
-      
+
       // Verify parameters are not swapped
-      if (requestBody['email'] == expectedToken || requestBody['token'] == expectedEmail) {
-        throw Exception(
-          'Parameters appear to be swapped! '
-          'email field contains: "${requestBody['email']}", '
-          'token field contains: "${requestBody['token']}"'
-        );
+      if (requestBody['email'] == expectedToken ||
+          requestBody['token'] == expectedEmail) {
+        throw Exception('Parameters appear to be swapped! '
+            'email field contains: "${requestBody['email']}", '
+            'token field contains: "${requestBody['token']}"');
       }
-      
+
       requestWasValid = true;
-      
+
       // Return a valid response
       final now = DateTime.now().toIso8601String();
       return StreamedResponse(
@@ -707,7 +704,7 @@ class VerifyingOtpMockClient extends BaseClient {
         request: request,
       );
     }
-    
+
     return StreamedResponse(
       Stream.value(utf8.encode(jsonEncode({'error': 'Unhandled request'}))),
       404,
