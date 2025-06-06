@@ -28,7 +28,7 @@ class GoTrueMFAApi {
 
   /// Starts the enrollment process for a new Multi-Factor Authentication (MFA) factor.
   /// This method creates a new `unverified` factor.
-  /// 
+  ///
   /// For TOTP: To verify a factor, present the QR code or secret to the user and ask them to add it to their authenticator app.
   /// For Phone: The user will receive an SMS with a verification code.
   ///
@@ -50,12 +50,12 @@ class GoTrueMFAApi {
     String? phone,
   }) async {
     final session = _client.currentSession;
-    
+
     final body = <String, dynamic>{
       'friendly_name': friendlyName,
       'factor_type': factorType.name,
     };
-    
+
     if (factorType == FactorType.totp) {
       body['issuer'] = issuer;
     } else if (factorType == FactorType.phone) {
@@ -64,7 +64,7 @@ class GoTrueMFAApi {
       }
       body['phone'] = phone;
     }
-    
+
     final data = await _fetch.request(
       '${_client._url}/factors',
       RequestMethodType.post,
