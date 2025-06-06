@@ -2,7 +2,7 @@
 version: '3'
 services:
   gotrue: # Signup enabled, autoconfirm on
-    image: supabase/auth:v2.151.0
+    image: supabase/auth:v2.175.0
     ports:
       - '9998:9998'
     environment:
@@ -27,6 +27,8 @@ services:
       GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: http://localhost:9998/callback
       GOTRUE_SECURITY_MANUAL_LINKING_ENABLED: 'true'
       GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: 'true'
+      GOTRUE_MFA_PHONE_ENROLL_ENABLED: 'true'
+      GOTRUE_MFA_PHONE_VERIFY_ENABLED: 'true'
 
     depends_on:
       - db
