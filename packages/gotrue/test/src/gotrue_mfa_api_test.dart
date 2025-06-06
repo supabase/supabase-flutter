@@ -82,10 +82,11 @@ void main() {
   test('verify', () async {
     await client.signInWithPassword(password: password, email: email1);
 
-    final challengeId = 'b824ca10-cc13-4250-adba-20ee6e5e7dcd';
+    // Create a challenge first
+    final challengeRes = await client.mfa.challenge(factorId: factorId1);
 
     final res = await client.mfa
-        .verify(factorId: factorId1, challengeId: challengeId, code: getTOTP());
+        .verify(factorId: factorId1, challengeId: challengeRes.id, code: getTOTP());
 
     expect(client.currentSession?.accessToken, res.accessToken);
     expect(client.currentUser, res.user);
