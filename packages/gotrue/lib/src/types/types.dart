@@ -28,6 +28,7 @@ enum OAuthProvider {
   slackOidc,
   spotify,
   twitch,
+  tiktok,
   twitter,
   workos,
   zoom,
