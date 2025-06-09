@@ -61,7 +61,8 @@ class GoTrueMFAApi {
     } else if (factorType == FactorType.phone && phone != null) {
       body['phone'] = phone;
     } else {
-      throw ArgumentError('Invalid arguments, expected an issuer for totp factor type or phone for phone factor. type');
+      throw ArgumentError(
+          'Invalid arguments, expected an issuer for totp factor type or phone for phone factor. type');
     }
 
     final data = await _fetch.request(
