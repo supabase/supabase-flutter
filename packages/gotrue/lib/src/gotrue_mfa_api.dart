@@ -56,13 +56,12 @@ class GoTrueMFAApi {
       'factor_type': factorType.name,
     };
 
-    if (factorType == FactorType.totp) {
+    if (factorType == FactorType.totp && issuer != null) {
       body['issuer'] = issuer;
-    } else if (factorType == FactorType.phone) {
-      if (phone == null) {
-        throw ArgumentError('Phone number is required for phone factor type');
-      }
+    } else if (factorType == FactorType.phone && phone != null) {
       body['phone'] = phone;
+    } else {
+      throw ArgumentError('Invalid arguments, expected an issuer for totp factor type or phone for phone factor. type');
     }
 
     final data = await _fetch.request(
