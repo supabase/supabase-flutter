@@ -78,6 +78,21 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (!_useWebLocalStorage) {
       WidgetsFlutterBinding.ensureInitialized();
       _prefs = SharedPreferencesAsync();
+
+      await _maybeMigrateAccessToken();
+    }
+  }
+
+  Future<void> _maybeMigrateAccessToken() async {
+    final legacyPrefs = await SharedPreferences.getInstance();
+
+    if (legacyPrefs.containsKey(persistSessionKey)) {
+      final accessToken = legacyPrefs.getString(persistSessionKey);
+
+      if (accessToken != null) {
+        await legacyPrefs.remove(persistSessionKey);
+        await _prefs.setString(persistSessionKey, accessToken);
+      }
     }
   }
 
