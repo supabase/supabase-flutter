@@ -1,3 +1,7 @@
+## 2.9.1
+
+ - Update a dependency to the latest release.
+
 ## 2.9.0
 
  - Require Dart >=3.3.0 and flutter >=3.19.0
