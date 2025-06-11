@@ -1,6 +1,7 @@
 ## 2.9.1
 
  - Update a dependency to the latest release.
+ - The `auth.mfa.enroll()` method return value now has a nullable `totp` property to support phone MFA enrollment.
 
 ## 2.9.0
 
