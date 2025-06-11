@@ -1,3 +1,7 @@
+## 2.5.1
+
+ - **FIX**(realtime): Send version when joining channel and remove jwt check ([#1166](https://github.com/supabase/supabase-flutter/issues/1166)). ([9ccd890d](https://github.com/supabase/supabase-flutter/commit/9ccd890d950a1c009fd77320033fc7a87783dbcd))
+
 ## 2.5.0
 
  - Require Dart >=3.3.0

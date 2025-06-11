@@ -1,3 +1,9 @@
+## 2.13.0
+
+ - **REFACTOR**(gotrue): Remove unused _currentUser field and update currentUser documentation.  ([#1168](https://github.com/supabase/supabase-flutter/issues/1168)). ([88ed5d88](https://github.com/supabase/supabase-flutter/commit/88ed5d88508842465a7085c95c93e5059297e9c1))
+ - **FIX**(auth): Validate uuid params in admin methods ([#1171](https://github.com/supabase/supabase-flutter/issues/1171)). ([369dcc24](https://github.com/supabase/supabase-flutter/commit/369dcc24313bfe8fa95ad6eac50041916f88cad3))
+ - **FEAT**(gotrue): Add phone mfa enrollment ([#1188](https://github.com/supabase/supabase-flutter/issues/1188)). ([944afcde](https://github.com/supabase/supabase-flutter/commit/944afcde66e2b52621f5a01c849b62ea37081c66))
+
 ## 2.12.0
 
  - Require Dart >=3.3.0
