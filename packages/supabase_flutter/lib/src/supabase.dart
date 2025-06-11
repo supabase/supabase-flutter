@@ -233,7 +233,8 @@ class Supabase with WidgetsBindingObserver {
   Future<void> onResumed() async {
     final realtime = Supabase.instance.client.realtime;
     if (realtime.channels.isNotEmpty) {
-      if (realtime.connState == SocketStates.disconnecting) {
+      if (realtime.connState == SocketStates.disconnecting &&
+          realtime.conn != null) {
         // If the socket is still disconnecting from e.g.
         // [AppLifecycleState.paused] we should wait for it to finish before
         // reconnecting.
