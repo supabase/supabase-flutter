@@ -147,15 +147,15 @@ void main() {
 
       test('inPendingSyncState works correctly', () {
         when(() => mockChannel.joinRef).thenReturn('channel_ref');
-        
+
         // Null joinRef
         presence.joinRef = null;
         expect(presence.inPendingSyncState(), isTrue);
-        
+
         // Different refs
         presence.joinRef = 'old_ref';
         expect(presence.inPendingSyncState(), isTrue);
-        
+
         // Matching refs
         presence.joinRef = 'channel_ref';
         expect(presence.inPendingSyncState(), isFalse);
@@ -546,12 +546,16 @@ void main() {
         test('handles joins with preservation and deduplication', () {
           // Test simple preservation
           var state = <String, List<Presence>>{
-            'user1': [Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1})],
+            'user1': [
+              Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1})
+            ],
           };
           var diff = <String, dynamic>{
             'joins': <String, dynamic>{
               'user1': <String, dynamic>{
-                'metas': [<String, dynamic>{'phx_ref': 'ref2', 'user_id': 2}],
+                'metas': [
+                  <String, dynamic>{'phx_ref': 'ref2', 'user_id': 2}
+                ],
               },
             },
             'leaves': <String, dynamic>{},
@@ -573,7 +577,10 @@ void main() {
             'joins': <String, dynamic>{
               'user1': <String, dynamic>{
                 'metas': [
-                  <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1}, // Duplicate
+                  <String, dynamic>{
+                    'phx_ref': 'ref1',
+                    'user_id': 1
+                  }, // Duplicate
                   <String, dynamic>{'phx_ref': 'ref3', 'user_id': 3}, // New
                 ],
               },
@@ -683,7 +690,6 @@ void main() {
           expect(callbackLeftPresences!.length, 1);
           expect(callbackLeftPresences![0].presenceRef, 'ref1');
         });
-
       });
     });
 
