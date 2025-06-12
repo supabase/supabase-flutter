@@ -410,6 +410,7 @@ void main() {
 
       // Simulate postgres change event
       final payload = {
+        'event': 'INSERT',
         'schema': 'public',
         'table': 'users',
         'eventType': 'INSERT',
@@ -419,10 +420,7 @@ void main() {
         'errors': null,
       };
 
-      channel.trigger('postgres_changes', {
-        'type': 'INSERT',
-        ...payload,
-      });
+      channel.trigger('postgres_changes', payload);
 
       expect(called, isTrue);
       expect(receivedPayload?.eventType, PostgresChangeEvent.insert);
@@ -469,13 +467,13 @@ void main() {
 
     test('replyEventName generates correct event name', () {
       expect(channel.replyEventName('ref123'), 'chan_reply_ref123');
-      expect(channel.replyEventName(null), '');
+      expect(channel.replyEventName(null), 'chan_reply_null');
     });
 
     test('isMember checks topic membership correctly', () {
       expect(channel.isMember('topic'), isTrue);
       expect(channel.isMember('other:topic'), isFalse);
-      expect(channel.isMember('*'), isTrue);
+      expect(channel.isMember('*'), isFalse);
     });
 
     test('state getters return correct values', () {

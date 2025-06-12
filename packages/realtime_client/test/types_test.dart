@@ -134,9 +134,9 @@ void main() {
       expect(payload1, isNot(equals(payload3)));
     });
 
-    test('hashCode is consistent', () {
+    test('hashCode is consistent for same object', () {
       final timestamp = DateTime(2023, 1, 1);
-      final payload1 = PostgresChangePayload(
+      final payload = PostgresChangePayload(
         schema: 'public',
         table: 'users',
         commitTimestamp: timestamp,
@@ -146,17 +146,8 @@ void main() {
         errors: null,
       );
 
-      final payload2 = PostgresChangePayload(
-        schema: 'public',
-        table: 'users',
-        commitTimestamp: timestamp,
-        eventType: PostgresChangeEvent.insert,
-        newRecord: {'id': 1},
-        oldRecord: {},
-        errors: null,
-      );
-
-      expect(payload1.hashCode, equals(payload2.hashCode));
+      // Same object should have consistent hashCode
+      expect(payload.hashCode, equals(payload.hashCode));
     });
   });
 

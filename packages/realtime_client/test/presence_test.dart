@@ -456,15 +456,15 @@ void main() {
       group('syncDiff', () {
         test('handles joins', () {
           final state = <String, List<Presence>>{};
-          final diff = {
-            'joins': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref1', 'user_id': 1},
+                  <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1},
                 ],
               },
             },
-            'leaves': {},
+            'leaves': <String, dynamic>{},
           };
 
           var joinCalled = false;
@@ -482,18 +482,22 @@ void main() {
         });
 
         test('handles leaves', () {
-          final state = {
+          final state = <String, List<Presence>>{
             'user1': [
               Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1}),
               Presence.fromJson({'presence_ref': 'ref2', 'user_id': 2}),
             ],
           };
-          final diff = {
-            'joins': {},
-            'leaves': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{},
+            'leaves': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref1', 'phx_ref_prev': 'ref0', 'user_id': 1},
+                  <String, dynamic>{
+                    'phx_ref': 'ref1',
+                    'phx_ref_prev': 'ref0',
+                    'user_id': 1
+                  },
                 ],
               },
             },
@@ -517,17 +521,17 @@ void main() {
         });
 
         test('removes key when all presences leave', () {
-          final state = {
+          final state = <String, List<Presence>>{
             'user1': [
               Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1}),
             ],
           };
-          final diff = {
-            'joins': {},
-            'leaves': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{},
+            'leaves': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref1', 'user_id': 1},
+                  <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1},
                 ],
               },
             },
@@ -539,20 +543,20 @@ void main() {
         });
 
         test('merges new presences with existing ones', () {
-          final state = {
+          final state = <String, List<Presence>>{
             'user1': [
               Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1}),
             ],
           };
-          final diff = {
-            'joins': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref2', 'user_id': 2},
+                  <String, dynamic>{'phx_ref': 'ref2', 'user_id': 2},
                 ],
               },
             },
-            'leaves': {},
+            'leaves': <String, dynamic>{},
           };
 
           final result = RealtimePresence.syncDiff(state, diff);
@@ -564,15 +568,15 @@ void main() {
 
         test('handles null callbacks gracefully', () {
           final state = <String, List<Presence>>{};
-          final diff = {
-            'joins': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref1', 'user_id': 1},
+                  <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1},
                 ],
               },
             },
-            'leaves': {},
+            'leaves': <String, dynamic>{},
           };
 
           // Should not throw
@@ -582,20 +586,20 @@ void main() {
         });
 
         test('preserves existing presences when new ones join', () {
-          final state = {
+          final state = <String, List<Presence>>{
             'user1': [
               Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1}),
             ],
           };
-          final diff = {
-            'joins': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref2', 'user_id': 2},
+                  <String, dynamic>{'phx_ref': 'ref2', 'user_id': 2},
                 ],
               },
             },
-            'leaves': {},
+            'leaves': <String, dynamic>{},
           };
 
           final result = RealtimePresence.syncDiff(state, diff);
@@ -606,22 +610,25 @@ void main() {
         });
 
         test('correctly removes duplicate presence refs during joins', () {
-          final state = {
+          final state = <String, List<Presence>>{
             'user1': [
               Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1}),
               Presence.fromJson({'presence_ref': 'ref2', 'user_id': 2}),
             ],
           };
-          final diff = {
-            'joins': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref1', 'user_id': 1}, // Duplicate
-                  {'phx_ref': 'ref3', 'user_id': 3}, // New
+                  <String, dynamic>{
+                    'phx_ref': 'ref1',
+                    'user_id': 1
+                  }, // Duplicate
+                  <String, dynamic>{'phx_ref': 'ref3', 'user_id': 3}, // New
                 ],
               },
             },
-            'leaves': {},
+            'leaves': <String, dynamic>{},
           };
 
           final result = RealtimePresence.syncDiff(state, diff);
@@ -634,12 +641,12 @@ void main() {
 
         test('handles leaves when current presences is null', () {
           final state = <String, List<Presence>>{};
-          final diff = {
-            'joins': {},
-            'leaves': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{},
+            'leaves': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref1', 'user_id': 1},
+                  <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1},
                 ],
               },
             },
@@ -652,20 +659,20 @@ void main() {
         });
 
         test('calls onJoin callback with correct parameters', () {
-          final state = {
+          final state = <String, List<Presence>>{
             'user1': [
               Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1}),
             ],
           };
-          final diff = {
-            'joins': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref2', 'user_id': 2},
+                  <String, dynamic>{'phx_ref': 'ref2', 'user_id': 2},
                 ],
               },
             },
-            'leaves': {},
+            'leaves': <String, dynamic>{},
           };
 
           String? callbackKey;
@@ -690,18 +697,18 @@ void main() {
         });
 
         test('calls onLeave callback with correct parameters', () {
-          final state = {
+          final state = <String, List<Presence>>{
             'user1': [
               Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1}),
               Presence.fromJson({'presence_ref': 'ref2', 'user_id': 2}),
             ],
           };
-          final diff = {
-            'joins': {},
-            'leaves': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{},
+            'leaves': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref1', 'user_id': 1},
+                  <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1},
                 ],
               },
             },
@@ -731,15 +738,15 @@ void main() {
 
         test('clones presences during join to avoid reference issues', () {
           final state = <String, List<Presence>>{};
-          final diff = {
-            'joins': {
-              'user1': {
+          final diff = <String, dynamic>{
+            'joins': <String, dynamic>{
+              'user1': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref1', 'user_id': 1},
+                  <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1},
                 ],
               },
             },
-            'leaves': {},
+            'leaves': <String, dynamic>{},
           };
 
           final result = RealtimePresence.syncDiff(state, diff);
@@ -804,15 +811,15 @@ void main() {
         presence.joinRef = null; // Simulate pending state
 
         // Simulate diff event
-        final diff = {
-          'joins': {
-            'user1': {
+        final diff = <String, dynamic>{
+          'joins': <String, dynamic>{
+            'user1': <String, dynamic>{
               'metas': [
-                {'phx_ref': 'ref1', 'user_id': 1},
+                <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1},
               ],
             },
           },
-          'leaves': {},
+          'leaves': <String, dynamic>{},
         };
 
         diffCallback[0](diff);
@@ -842,15 +849,15 @@ void main() {
 
         // Add pending diff
         presence.pendingDiffs = [
-          {
-            'joins': {
-              'user2': {
+          <String, dynamic>{
+            'joins': <String, dynamic>{
+              'user2': <String, dynamic>{
                 'metas': [
-                  {'phx_ref': 'ref2', 'user_id': 2},
+                  <String, dynamic>{'phx_ref': 'ref2', 'user_id': 2},
                 ],
               },
             },
-            'leaves': {},
+            'leaves': <String, dynamic>{},
           },
         ];
 
@@ -890,15 +897,15 @@ void main() {
         presence.joinRef = 'join_ref_1'; // Not in pending state
 
         // Simulate diff event
-        final diff = {
-          'joins': {
-            'user1': {
+        final diff = <String, dynamic>{
+          'joins': <String, dynamic>{
+            'user1': <String, dynamic>{
               'metas': [
-                {'phx_ref': 'ref1', 'user_id': 1},
+                <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1},
               ],
             },
           },
-          'leaves': {},
+          'leaves': <String, dynamic>{},
         };
 
         diffCallback[0](diff);
