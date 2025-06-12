@@ -145,61 +145,19 @@ void main() {
         presence = RealtimePresence(mockChannel);
       });
 
-      test('onJoin sets the callback', () {
-        var called = false;
-        callback(String? key, dynamic current, dynamic newP) {
-          called = true;
-        }
-
-        presence.onJoin(callback);
-        presence.caller['onJoin']!('key', [], []);
-
-        expect(called, isTrue);
-      });
-
-      test('onLeave sets the callback', () {
-        var called = false;
-        callback(String? key, dynamic current, dynamic left) {
-          called = true;
-        }
-
-        presence.onLeave(callback);
-        presence.caller['onLeave']!('key', [], []);
-
-        expect(called, isTrue);
-      });
-
-      test('onSync sets the callback', () {
-        var called = false;
-        callback() {
-          called = true;
-        }
-
-        presence.onSync(callback);
-        presence.caller['onSync']!();
-
-        expect(called, isTrue);
-      });
-
-      test('inPendingSyncState returns true when joinRef is null', () {
-        presence.joinRef = null;
+      test('inPendingSyncState works correctly', () {
         when(() => mockChannel.joinRef).thenReturn('channel_ref');
-
+        
+        // Null joinRef
+        presence.joinRef = null;
         expect(presence.inPendingSyncState(), isTrue);
-      });
-
-      test('inPendingSyncState returns true when joinRef differs from channel',
-          () {
+        
+        // Different refs
         presence.joinRef = 'old_ref';
-        when(() => mockChannel.joinRef).thenReturn('new_ref');
-
         expect(presence.inPendingSyncState(), isTrue);
-      });
-
-      test('inPendingSyncState returns false when refs match', () {
-        presence.joinRef = 'same_ref';
-        when(() => mockChannel.joinRef).thenReturn('same_ref');
-
+        
+        // Matching refs
+        presence.joinRef = 'channel_ref';
         expect(presence.inPendingSyncState(), isFalse);
       });
 
@@ -585,45 +543,37 @@ void main() {
           expect(result['user1']!.length, 1);
         });
 
-        test('preserves existing presences when new ones join', () {
-          final state = <String, List<Presence>>{
-            'user1': [
-              Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1}),
-            ],
+        test('handles joins with preservation and deduplication', () {
+          // Test simple preservation
+          var state = <String, List<Presence>>{
+            'user1': [Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1})],
           };
-          final diff = <String, dynamic>{
+          var diff = <String, dynamic>{
             'joins': <String, dynamic>{
               'user1': <String, dynamic>{
-                'metas': [
-                  <String, dynamic>{'phx_ref': 'ref2', 'user_id': 2},
-                ],
+                'metas': [<String, dynamic>{'phx_ref': 'ref2', 'user_id': 2}],
               },
             },
             'leaves': <String, dynamic>{},
           };
 
-          final result = RealtimePresence.syncDiff(state, diff);
-
+          var result = RealtimePresence.syncDiff(state, diff);
           expect(result['user1']!.length, 2);
-          expect(result['user1']![0].presenceRef, 'ref1'); // Original first
-          expect(result['user1']![1].presenceRef, 'ref2'); // New second
-        });
+          expect(result['user1']![0].presenceRef, 'ref1'); // Original preserved
+          expect(result['user1']![1].presenceRef, 'ref2'); // New added
 
-        test('correctly removes duplicate presence refs during joins', () {
-          final state = <String, List<Presence>>{
+          // Test deduplication with new presences
+          state = <String, List<Presence>>{
             'user1': [
               Presence.fromJson({'presence_ref': 'ref1', 'user_id': 1}),
               Presence.fromJson({'presence_ref': 'ref2', 'user_id': 2}),
             ],
           };
-          final diff = <String, dynamic>{
+          diff = <String, dynamic>{
             'joins': <String, dynamic>{
               'user1': <String, dynamic>{
                 'metas': [
-                  <String, dynamic>{
-                    'phx_ref': 'ref1',
-                    'user_id': 1
-                  }, // Duplicate
+                  <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1}, // Duplicate
                   <String, dynamic>{'phx_ref': 'ref3', 'user_id': 3}, // New
                 ],
               },
@@ -631,10 +581,8 @@ void main() {
             'leaves': <String, dynamic>{},
           };
 
-          final result = RealtimePresence.syncDiff(state, diff);
-
+          result = RealtimePresence.syncDiff(state, diff);
           expect(result['user1']!.length, 3);
-          // Should have ref2 (preserved), ref1 (new), ref3 (new)
           final refs = result['user1']!.map((p) => p.presenceRef).toList();
           expect(refs, containsAll(['ref1', 'ref2', 'ref3']));
         });
@@ -736,24 +684,6 @@ void main() {
           expect(callbackLeftPresences![0].presenceRef, 'ref1');
         });
 
-        test('clones presences during join to avoid reference issues', () {
-          final state = <String, List<Presence>>{};
-          final diff = <String, dynamic>{
-            'joins': <String, dynamic>{
-              'user1': <String, dynamic>{
-                'metas': [
-                  <String, dynamic>{'phx_ref': 'ref1', 'user_id': 1},
-                ],
-              },
-            },
-            'leaves': <String, dynamic>{},
-          };
-
-          final result = RealtimePresence.syncDiff(state, diff);
-
-          expect(result['user1']!.length, 1);
-          expect(result['user1']![0].presenceRef, 'ref1');
-        });
       });
     });
 

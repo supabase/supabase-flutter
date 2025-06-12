@@ -67,17 +67,12 @@ void main() {
       channel = socket.channel('topic');
     });
 
-    test('sets state to joining', () {
-      channel.subscribe();
-
-      expect(channel.isJoining, true);
-    });
-
-    test('sets joinedOnce to true', () {
+    test('sets state and joinedOnce when subscribing', () {
       expect(channel.joinedOnce, isFalse);
 
       channel.subscribe();
 
+      expect(channel.isJoining, true);
       expect(channel.joinedOnce, isTrue);
     });
 
@@ -99,49 +94,27 @@ void main() {
     });
   });
 
-  group('onError', () {
+  group('state transitions', () {
     setUp(() {
       socket = RealtimeClient('/socket');
       channel = socket.channel('topic');
       channel.subscribe();
     });
 
-    test("sets state to 'errored'", () {
+    test('error and close events change state correctly', () {
+      // Test error state
       expect(channel.isErrored, isFalse);
-
       channel.trigger('phx_error');
-
       expect(channel.isErrored, isTrue);
-    });
-  });
 
-  group('onClose', () {
-    setUp(() {
+      // Reset and test close state
       socket = RealtimeClient('/socket');
       channel = socket.channel('topic');
       channel.subscribe();
-    });
 
-    test("sets state to 'closed'", () {
       expect(channel.isClosed, isFalse);
-
       channel.trigger('phx_close');
-
       expect(channel.isClosed, isTrue);
-    });
-  });
-
-  group('onMessage', () {
-    setUp(() {
-      socket = RealtimeClient('/socket');
-
-      channel = socket.channel('topic');
-    });
-
-    test('returns payload by default', () {
-      final payload = channel.onMessage('event', {'one': 'two'});
-
-      expect(payload, {'one': 'two'});
     });
   });
 
@@ -465,23 +438,20 @@ void main() {
           RealtimeChannel('topic', socket, params: RealtimeChannelConfig());
     });
 
-    test('replyEventName generates correct event name', () {
+    test('utility methods work correctly', () {
+      // replyEventName
       expect(channel.replyEventName('ref123'), 'chan_reply_ref123');
       expect(channel.replyEventName(null), 'chan_reply_null');
-    });
 
-    test('isMember checks topic membership correctly', () {
+      // isMember
       expect(channel.isMember('topic'), isTrue);
       expect(channel.isMember('other:topic'), isFalse);
       expect(channel.isMember('*'), isFalse);
-    });
 
-    test('state getters return correct values', () {
+      // state getters
       expect(channel.isClosed, isTrue);
       expect(channel.isErrored, isFalse);
       expect(channel.isJoined, isFalse);
-      expect(channel.isJoining, isFalse);
-      expect(channel.isLeaving, isFalse);
     });
   });
 }

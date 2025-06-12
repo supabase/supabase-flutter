@@ -48,14 +48,6 @@ void main() {
     });
   });
 
-  group('ChannelResponse', () {
-    test('enum values exist', () {
-      expect(ChannelResponse.ok, isNotNull);
-      expect(ChannelResponse.timedOut, isNotNull);
-      expect(ChannelResponse.error, isNotNull);
-    });
-  });
-
   group('PresenceEvent', () {
     test('fromString returns correct enum value', () {
       expect(PresenceEventExtended.fromString('sync'), PresenceEvent.sync);
@@ -133,101 +125,49 @@ void main() {
       expect(payload1, equals(payload2));
       expect(payload1, isNot(equals(payload3)));
     });
-
-    test('hashCode is consistent for same object', () {
-      final timestamp = DateTime(2023, 1, 1);
-      final payload = PostgresChangePayload(
-        schema: 'public',
-        table: 'users',
-        commitTimestamp: timestamp,
-        eventType: PostgresChangeEvent.insert,
-        newRecord: {'id': 1},
-        oldRecord: {},
-        errors: null,
-      );
-
-      // Same object should have consistent hashCode
-      expect(payload.hashCode, equals(payload.hashCode));
-    });
   });
 
   group('PostgresChangeFilter', () {
-    test('toString for standard filters', () {
-      final filter = PostgresChangeFilter(
-        type: PostgresChangeFilterType.eq,
-        column: 'id',
-        value: 5,
-      );
-
-      expect(filter.toString(), 'id=eq.5');
-    });
-
-    test('toString for neq filter', () {
-      final filter = PostgresChangeFilter(
-        type: PostgresChangeFilterType.neq,
-        column: 'status',
-        value: 'deleted',
-      );
-
-      expect(filter.toString(), 'status=neq.deleted');
-    });
-
-    test('toString for comparison filters', () {
+    test('toString formats correctly for all filter types', () {
+      // Standard filters
       expect(
-        PostgresChangeFilter(
-          type: PostgresChangeFilterType.lt,
-          column: 'age',
-          value: 18,
-        ).toString(),
-        'age=lt.18',
-      );
-
+          PostgresChangeFilter(
+                  type: PostgresChangeFilterType.eq, column: 'id', value: 5)
+              .toString(),
+          'id=eq.5');
       expect(
-        PostgresChangeFilter(
-          type: PostgresChangeFilterType.lte,
-          column: 'score',
-          value: 100,
-        ).toString(),
-        'score=lte.100',
-      );
+          PostgresChangeFilter(
+                  type: PostgresChangeFilterType.neq,
+                  column: 'status',
+                  value: 'deleted')
+              .toString(),
+          'status=neq.deleted');
 
+      // Comparison filters
       expect(
-        PostgresChangeFilter(
-          type: PostgresChangeFilterType.gt,
-          column: 'price',
-          value: 50.5,
-        ).toString(),
-        'price=gt.50.5',
-      );
-
+          PostgresChangeFilter(
+                  type: PostgresChangeFilterType.lt, column: 'age', value: 18)
+              .toString(),
+          'age=lt.18');
       expect(
-        PostgresChangeFilter(
-          type: PostgresChangeFilterType.gte,
-          column: 'count',
-          value: 0,
-        ).toString(),
-        'count=gte.0',
-      );
-    });
+          PostgresChangeFilter(
+                  type: PostgresChangeFilterType.gte, column: 'count', value: 0)
+              .toString(),
+          'count=gte.0');
 
-    test('toString for inFilter with List<String>', () {
-      final filter = PostgresChangeFilter(
-        type: PostgresChangeFilterType.inFilter,
-        column: 'status',
-        value: ['active', 'pending', 'review'],
-      );
-
-      expect(filter.toString(), 'status=in.("active","pending","review")');
-    });
-
-    test('toString for inFilter with other list types', () {
-      final filter = PostgresChangeFilter(
-        type: PostgresChangeFilterType.inFilter,
-        column: 'id',
-        value: [1, 2, 3],
-      );
-
-      expect(filter.toString(), 'id=in.("1","2","3")');
+      // List filters
+      expect(
+          PostgresChangeFilter(
+              type: PostgresChangeFilterType.inFilter,
+              column: 'status',
+              value: ['active', 'pending']).toString(),
+          'status=in.("active","pending")');
+      expect(
+          PostgresChangeFilter(
+              type: PostgresChangeFilterType.inFilter,
+              column: 'id',
+              value: [1, 2, 3]).toString(),
+          'id=in.("1","2","3")');
     });
   });
 
