@@ -128,17 +128,18 @@ void main() {
       test('setItem overwrites existing value', () async {
         const initialValue = 'initial';
         const newValue = 'new';
-        
+
         await asyncStorage.setItem(key: testKey, value: initialValue);
         expect(await asyncStorage.getItem(key: testKey), initialValue);
-        
+
         await asyncStorage.setItem(key: testKey, value: newValue);
         expect(await asyncStorage.getItem(key: testKey), newValue);
       });
 
       test('removeItem handles non-existent key gracefully', () async {
         // Should not throw when removing a key that doesn't exist
-        expect(() => asyncStorage.removeItem(key: 'non_existent_key'), returnsNormally);
+        expect(() => asyncStorage.removeItem(key: 'non_existent_key'),
+            returnsNormally);
         await asyncStorage.removeItem(key: 'non_existent_key');
       });
     });
@@ -164,16 +165,17 @@ void main() {
       test('persistSession does nothing and returns normally', () async {
         expect(() => emptyStorage.persistSession('test'), returnsNormally);
         await emptyStorage.persistSession('test');
-        
+
         // Should still return null/false after persist attempt
         expect(await emptyStorage.hasAccessToken(), false);
         expect(await emptyStorage.accessToken(), null);
       });
 
-      test('removePersistedSession does nothing and returns normally', () async {
+      test('removePersistedSession does nothing and returns normally',
+          () async {
         expect(() => emptyStorage.removePersistedSession(), returnsNormally);
         await emptyStorage.removePersistedSession();
-        
+
         // Should still return null/false after remove attempt
         expect(await emptyStorage.hasAccessToken(), false);
         expect(await emptyStorage.accessToken(), null);
@@ -187,7 +189,7 @@ void main() {
           persistSessionKey: 'test_empty_session',
         );
         await localStorage.initialize();
-        
+
         await localStorage.persistSession('');
         expect(await localStorage.hasAccessToken(), true);
         expect(await localStorage.accessToken(), '');
@@ -198,8 +200,9 @@ void main() {
           persistSessionKey: 'test_special_chars',
         );
         await localStorage.initialize();
-        
-        const specialSession = '{"access_token": "áéíóú-test-token-!@#\$%^&*()"}';
+
+        const specialSession =
+            '{"access_token": "áéíóú-test-token-!@#\$%^&*()"}';
         await localStorage.persistSession(specialSession);
         expect(await localStorage.hasAccessToken(), true);
         expect(await localStorage.accessToken(), specialSession);
@@ -210,16 +213,16 @@ void main() {
           persistSessionKey: 'test_multiple_ops',
         );
         await localStorage.initialize();
-        
+
         // Multiple persist operations
         await localStorage.persistSession('session1');
         await localStorage.persistSession('session2');
         expect(await localStorage.accessToken(), 'session2');
-        
+
         // Remove then add again
         await localStorage.removePersistedSession();
         expect(await localStorage.hasAccessToken(), false);
-        
+
         await localStorage.persistSession('session3');
         expect(await localStorage.accessToken(), 'session3');
       });
