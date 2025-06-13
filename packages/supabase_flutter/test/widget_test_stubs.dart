@@ -232,3 +232,69 @@ class PkceHttpClient extends BaseClient {
     );
   }
 }
+
+/// Custom HTTP client to test OAuth and SSO flows.
+class MockOAuthHttpClient extends BaseClient {
+  int requestCount = 0;
+  Map<String, dynamic> lastRequestBody = {};
+  String? lastRequestUrl;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    requestCount++;
+    lastRequestUrl = request.url.toString();
+
+    if (request is Request) {
+      if (request.body.isNotEmpty) {
+        lastRequestBody = jsonDecode(request.body);
+      }
+    }
+
+    // Handle OAuth authorize endpoint
+    if (request.url.path.endsWith('/authorize')) {
+      final queryParams = request.url.queryParameters;
+      final provider = queryParams['provider'] ?? '';
+      final redirectTo = queryParams['redirect_to'] ?? '';
+      final scopes = queryParams['scopes'] ?? '';
+      
+      final responseUrl = 'https://test.supabase.co/auth/v1/authorize?provider=$provider&redirect_to=${Uri.encodeComponent(redirectTo)}&scopes=${Uri.encodeComponent(scopes)}';
+      
+      return StreamedResponse(
+        Stream.value(utf8.encode(jsonEncode({'url': responseUrl}))),
+        200,
+        request: request,
+      );
+    }
+
+    // Handle SSO endpoint
+    if (request.url.path.endsWith('/sso')) {
+      final body = lastRequestBody;
+      final domain = body['domain'] ?? '';
+      final providerId = body['provider_id'] ?? '';
+      final redirectTo = body['redirect_to'] ?? '';
+      
+      var responseUrl = 'https://test.supabase.co/auth/v1/sso?';
+      if (providerId.isNotEmpty) {
+        responseUrl += 'provider_id=${Uri.encodeComponent(providerId)}';
+      } else if (domain.isNotEmpty) {
+        responseUrl += 'domain=${Uri.encodeComponent(domain)}';
+      }
+      if (redirectTo.isNotEmpty) {
+        responseUrl += '&redirect_to=${Uri.encodeComponent(redirectTo)}';
+      }
+      
+      return StreamedResponse(
+        Stream.value(utf8.encode(jsonEncode({'url': responseUrl}))),
+        200,
+        request: request,
+      );
+    }
+
+    // Default response for other endpoints
+    return StreamedResponse(
+      Stream.value(utf8.encode(jsonEncode({}))),
+      200,
+      request: request,
+    );
+  }
+}

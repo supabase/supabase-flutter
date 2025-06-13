@@ -117,6 +117,112 @@ void main() {
         await asyncStorage.removeItem(key: testKey);
         expect(await asyncStorage.getItem(key: testKey), null);
       });
+
+      test('setItem handles null value', () async {
+        // Remove the item first to ensure clean state
+        await asyncStorage.removeItem(key: testKey);
+        final result = await asyncStorage.getItem(key: testKey);
+        expect(result, null);
+      });
+
+      test('setItem overwrites existing value', () async {
+        const initialValue = 'initial';
+        const newValue = 'new';
+        
+        await asyncStorage.setItem(key: testKey, value: initialValue);
+        expect(await asyncStorage.getItem(key: testKey), initialValue);
+        
+        await asyncStorage.setItem(key: testKey, value: newValue);
+        expect(await asyncStorage.getItem(key: testKey), newValue);
+      });
+
+      test('removeItem handles non-existent key gracefully', () async {
+        // Should not throw when removing a key that doesn't exist
+        expect(() => asyncStorage.removeItem(key: 'non_existent_key'), returnsNormally);
+        await asyncStorage.removeItem(key: 'non_existent_key');
+      });
+    });
+
+    // Test EmptyLocalStorage error handling
+    group('EmptyLocalStorage', () {
+      late EmptyLocalStorage emptyStorage;
+
+      setUp(() {
+        emptyStorage = const EmptyLocalStorage();
+      });
+
+      test('hasAccessToken always returns false', () async {
+        final result = await emptyStorage.hasAccessToken();
+        expect(result, false);
+      });
+
+      test('accessToken always returns null', () async {
+        final result = await emptyStorage.accessToken();
+        expect(result, null);
+      });
+
+      test('persistSession does nothing and returns normally', () async {
+        expect(() => emptyStorage.persistSession('test'), returnsNormally);
+        await emptyStorage.persistSession('test');
+        
+        // Should still return null/false after persist attempt
+        expect(await emptyStorage.hasAccessToken(), false);
+        expect(await emptyStorage.accessToken(), null);
+      });
+
+      test('removePersistedSession does nothing and returns normally', () async {
+        expect(() => emptyStorage.removePersistedSession(), returnsNormally);
+        await emptyStorage.removePersistedSession();
+        
+        // Should still return null/false after remove attempt
+        expect(await emptyStorage.hasAccessToken(), false);
+        expect(await emptyStorage.accessToken(), null);
+      });
+    });
+
+    // Test edge cases for SharedPreferencesLocalStorage
+    group('SharedPreferencesLocalStorage edge cases', () {
+      test('handles empty session string', () async {
+        final localStorage = SharedPreferencesLocalStorage(
+          persistSessionKey: 'test_empty_session',
+        );
+        await localStorage.initialize();
+        
+        await localStorage.persistSession('');
+        expect(await localStorage.hasAccessToken(), true);
+        expect(await localStorage.accessToken(), '');
+      });
+
+      test('handles special characters in session string', () async {
+        final localStorage = SharedPreferencesLocalStorage(
+          persistSessionKey: 'test_special_chars',
+        );
+        await localStorage.initialize();
+        
+        const specialSession = '{"access_token": "áéíóú-test-token-!@#\$%^&*()"}';
+        await localStorage.persistSession(specialSession);
+        expect(await localStorage.hasAccessToken(), true);
+        expect(await localStorage.accessToken(), specialSession);
+      });
+
+      test('multiple operations work correctly', () async {
+        final localStorage = SharedPreferencesLocalStorage(
+          persistSessionKey: 'test_multiple_ops',
+        );
+        await localStorage.initialize();
+        
+        // Multiple persist operations
+        await localStorage.persistSession('session1');
+        await localStorage.persistSession('session2');
+        expect(await localStorage.accessToken(), 'session2');
+        
+        // Remove then add again
+        await localStorage.removePersistedSession();
+        expect(await localStorage.hasAccessToken(), false);
+        
+        await localStorage.persistSession('session3');
+        expect(await localStorage.accessToken(), 'session3');
+      });
     });
   });
 }
