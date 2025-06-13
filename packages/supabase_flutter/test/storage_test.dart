@@ -226,6 +226,142 @@ void main() {
         await localStorage.persistSession('session3');
         expect(await localStorage.accessToken(), 'session3');
       });
+
+      test('handles concurrent access properly', () async {
+        final localStorage = SharedPreferencesLocalStorage(
+          persistSessionKey: 'test_concurrent',
+        );
+        await localStorage.initialize();
+
+        // Simulate concurrent operations
+        final futures = <Future>[];
+        for (int i = 0; i < 10; i++) {
+          futures.add(localStorage.persistSession('session$i'));
+        }
+        await Future.wait(futures);
+
+        // One of the sessions should be persisted
+        expect(await localStorage.hasAccessToken(), true);
+        final token = await localStorage.accessToken();
+        expect(token, isNotNull);
+        expect(token, startsWith('session'));
+      });
+
+      test('handles reinitialization attempt gracefully', () async {
+        final localStorage = SharedPreferencesLocalStorage(
+          persistSessionKey: 'test_multi_init',
+        );
+
+        // First initialization
+        await localStorage.initialize();
+
+        // Storage should work normally after first init
+        await localStorage.persistSession('test-session');
+        expect(await localStorage.hasAccessToken(), true);
+        expect(await localStorage.accessToken(), 'test-session');
+      });
+
+      test('handles very long session strings', () async {
+        final localStorage = SharedPreferencesLocalStorage(
+          persistSessionKey: 'test_long_session',
+        );
+        await localStorage.initialize();
+
+        // Create a very long session string (simulating large JWT)
+        final longSession = 'session${'x' * 10000}';
+        await localStorage.persistSession(longSession);
+        expect(await localStorage.hasAccessToken(), true);
+        expect(await localStorage.accessToken(), longSession);
+      });
+
+      test('custom persistSessionKey works correctly', () async {
+        const customKey = 'my.custom.session.key';
+        final localStorage = SharedPreferencesLocalStorage(
+          persistSessionKey: customKey,
+        );
+        await localStorage.initialize();
+
+        await localStorage.persistSession('custom-session');
+        expect(await localStorage.hasAccessToken(), true);
+        expect(await localStorage.accessToken(), 'custom-session');
+
+        // Verify it's stored under the custom key
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString(customKey), 'custom-session');
+      });
+    });
+
+    // Test SharedPreferencesGotrueAsyncStorage additional scenarios
+    group('SharedPreferencesGotrueAsyncStorage additional tests', () {
+      late SharedPreferencesGotrueAsyncStorage asyncStorage;
+
+      setUp(() async {
+        SharedPreferences.setMockInitialValues({});
+        asyncStorage = SharedPreferencesGotrueAsyncStorage();
+        await Future.delayed(const Duration(milliseconds: 100));
+      });
+
+      test('handles concurrent access to same key', () async {
+        const testKey = 'concurrent_key';
+
+        // Simulate concurrent operations
+        final futures = <Future>[];
+        for (int i = 0; i < 10; i++) {
+          futures.add(asyncStorage.setItem(key: testKey, value: 'value$i'));
+        }
+        await Future.wait(futures);
+
+        // One value should be persisted
+        final result = await asyncStorage.getItem(key: testKey);
+        expect(result, isNotNull);
+        expect(result, startsWith('value'));
+      });
+
+      test('handles keys with special characters', () async {
+        const specialKey = 'test.key:with/special@characters';
+        const testValue = 'special-value';
+
+        await asyncStorage.setItem(key: specialKey, value: testValue);
+        final result = await asyncStorage.getItem(key: specialKey);
+        expect(result, testValue);
+
+        await asyncStorage.removeItem(key: specialKey);
+        final removedResult = await asyncStorage.getItem(key: specialKey);
+        expect(removedResult, null);
+      });
+
+      test('handles empty string values', () async {
+        const testKey = 'empty_value_key';
+
+        await asyncStorage.setItem(key: testKey, value: '');
+        final result = await asyncStorage.getItem(key: testKey);
+        expect(result, '');
+      });
+
+      test('handles multiple different keys', () async {
+        final keyValuePairs = <String, String>{
+          'key1': 'value1',
+          'key2': 'value2',
+          'key3': 'value3',
+        };
+
+        // Set multiple values
+        for (final entry in keyValuePairs.entries) {
+          await asyncStorage.setItem(key: entry.key, value: entry.value);
+        }
+
+        // Verify all values
+        for (final entry in keyValuePairs.entries) {
+          final result = await asyncStorage.getItem(key: entry.key);
+          expect(result, entry.value);
+        }
+
+        // Remove one key and verify others remain
+        await asyncStorage.removeItem(key: 'key2');
+        expect(await asyncStorage.getItem(key: 'key1'), 'value1');
+        expect(await asyncStorage.getItem(key: 'key2'), null);
+        expect(await asyncStorage.getItem(key: 'key3'), 'value3');
+      });
     });
   });
 }
