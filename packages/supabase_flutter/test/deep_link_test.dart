@@ -2,6 +2,7 @@
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'widget_test_stubs.dart';
@@ -80,6 +81,7 @@ void main() {
 
   group('Deep Link Error Handling', () {
     setUp(() {
+      SharedPreferences.setMockInitialValues({});
       mockAppLink();
     });
 

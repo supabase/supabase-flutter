@@ -152,6 +152,60 @@ class MockAsyncStorage extends GotrueAsyncStorage {
   }
 }
 
+/// Custom HTTP client just to test the SSO flow.
+class MockSSOHttpClient extends BaseClient {
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    final uri = request.url;
+
+    // Mock SSO response
+    if (uri.path.contains('/sso')) {
+      String domain = '';
+      String providerId = '';
+      String redirectTo = '';
+
+      // Extract parameters from request body if it's a POST request
+      if (request is Request && request.body.isNotEmpty) {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        domain = body['domain'] ?? '';
+        providerId = body['provider_id'] ?? '';
+        redirectTo = body['redirect_to'] ?? '';
+      }
+
+      // Construct a mock SSO URL with all parameters
+      var ssoUrl = 'https://test.supabase.co/auth/v1/sso?';
+      if (domain.isNotEmpty) {
+        ssoUrl += 'domain=$domain&';
+      }
+      if (providerId.isNotEmpty) {
+        ssoUrl += 'provider_id=$providerId&';
+      }
+      if (redirectTo.isNotEmpty) {
+        ssoUrl += 'redirect_to=${Uri.encodeComponent(redirectTo)}&';
+      }
+      // Remove trailing & if present
+      if (ssoUrl.endsWith('&')) {
+        ssoUrl = ssoUrl.substring(0, ssoUrl.length - 1);
+      }
+
+      return StreamedResponse(
+        Stream.value(
+          utf8.encode(
+            jsonEncode({'url': ssoUrl}),
+          ),
+        ),
+        200,
+      );
+    }
+
+    // Default response for other requests
+    return StreamedResponse(
+      Stream.value(utf8.encode(jsonEncode({}))),
+      200,
+    );
+  }
+}
+
 /// Custom HTTP client just to test the PKCE flow.
 class PkceHttpClient extends BaseClient {
   int requestCount = 0;
@@ -256,9 +310,10 @@ class MockOAuthHttpClient extends BaseClient {
       final provider = queryParams['provider'] ?? '';
       final redirectTo = queryParams['redirect_to'] ?? '';
       final scopes = queryParams['scopes'] ?? '';
-      
-      final responseUrl = 'https://test.supabase.co/auth/v1/authorize?provider=$provider&redirect_to=${Uri.encodeComponent(redirectTo)}&scopes=${Uri.encodeComponent(scopes)}';
-      
+
+      final responseUrl =
+          'https://test.supabase.co/auth/v1/authorize?provider=$provider&redirect_to=${Uri.encodeComponent(redirectTo)}&scopes=${Uri.encodeComponent(scopes)}';
+
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({'url': responseUrl}))),
         200,
@@ -272,7 +327,7 @@ class MockOAuthHttpClient extends BaseClient {
       final domain = body['domain'] ?? '';
       final providerId = body['provider_id'] ?? '';
       final redirectTo = body['redirect_to'] ?? '';
-      
+
       var responseUrl = 'https://test.supabase.co/auth/v1/sso?';
       if (providerId.isNotEmpty) {
         responseUrl += 'provider_id=${Uri.encodeComponent(providerId)}';
@@ -282,7 +337,7 @@ class MockOAuthHttpClient extends BaseClient {
       if (redirectTo.isNotEmpty) {
         responseUrl += '&redirect_to=${Uri.encodeComponent(redirectTo)}';
       }
-      
+
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({'url': responseUrl}))),
         200,

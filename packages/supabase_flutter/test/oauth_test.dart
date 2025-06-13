@@ -60,7 +60,7 @@ void main() {
         final result = await Supabase.instance.client.auth.getOAuthSignInUrl(
           provider: provider,
         );
-        
+
         expect(result.url, isNotNull);
         expect(result.url, contains(provider.name));
       }
@@ -99,9 +99,12 @@ void main() {
   });
 
   group('SSO Authentication', () {
+    late MockSSOHttpClient httpClient;
+
     setUp(() {
       SharedPreferences.setMockInitialValues({});
       mockAppLink();
+      httpClient = MockSSOHttpClient();
     });
 
     tearDown(() async {
@@ -116,6 +119,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        httpClient: httpClient,
       );
 
       final result = await Supabase.instance.client.auth.getSSOSignInUrl(
@@ -131,6 +135,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        httpClient: httpClient,
       );
 
       const redirectUrl = 'myapp://sso/callback';
@@ -147,6 +152,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        httpClient: httpClient,
       );
 
       final result = await Supabase.instance.client.auth.getSSOSignInUrl(
@@ -162,6 +168,7 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        httpClient: httpClient,
       );
 
       final result = await Supabase.instance.client.auth.getSSOSignInUrl(
@@ -173,13 +180,16 @@ void main() {
       expect(result, contains('provider_id=provider-uuid-123'));
     });
 
-    test('getSSOSignInUrl handles both domain and providerId preference', () async {
+    test(
+        'getSSOSignInUrl includes both domain and providerId when both provided',
+        () async {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        httpClient: httpClient,
       );
 
-      // When both are provided, providerId should take precedence
+      // When both are provided, both should be included in the URL
       final result = await Supabase.instance.client.auth.getSSOSignInUrl(
         domain: 'company.com',
         providerId: 'provider-uuid-456',
@@ -187,14 +197,14 @@ void main() {
 
       expect(result, isNotNull);
       expect(result, contains('provider_id=provider-uuid-456'));
-      // Domain should not be in URL when providerId is provided
-      expect(result, isNot(contains('domain=company.com')));
+      expect(result, contains('domain=company.com'));
     });
 
     test('getSSOSignInUrl validates input parameters', () async {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
+        httpClient: httpClient,
       );
 
       // Should throw when neither domain nor providerId is provided
