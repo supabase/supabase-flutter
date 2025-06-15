@@ -180,6 +180,16 @@ void main() {
         expect(await emptyStorage.hasAccessToken(), false);
         expect(await emptyStorage.accessToken(), null);
       });
+
+      test('initialize does nothing and returns normally', () async {
+        const emptyStorage = EmptyLocalStorage();
+        expect(() => emptyStorage.initialize(), returnsNormally);
+        await emptyStorage.initialize();
+
+        // Should still work normally after initialization
+        expect(await emptyStorage.hasAccessToken(), false);
+        expect(await emptyStorage.accessToken(), null);
+      });
     });
 
     // Test edge cases for SharedPreferencesLocalStorage
