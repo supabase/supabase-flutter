@@ -94,6 +94,48 @@ class MockEmptyLocalStorage extends LocalStorage {
   Future<void> removePersistedSession() async {}
 }
 
+/// Local storage that throws an invalid session error
+class MockInvalidSessionStorage extends LocalStorage {
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<String?> accessToken() async {
+    throw const AuthException('Invalid session data');
+  }
+
+  @override
+  Future<bool> hasAccessToken() async => true;
+  @override
+  Future<void> persistSession(String persistSessionString) async {}
+  @override
+  Future<void> removePersistedSession() async {}
+}
+
+/// Local storage that throws generic errors for testing error recovery
+class MockErrorStorage extends LocalStorage {
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<String?> accessToken() async {
+    throw Exception('Storage access error');
+  }
+
+  @override
+  Future<bool> hasAccessToken() async {
+    throw Exception('Storage check error');
+  }
+
+  @override
+  Future<void> persistSession(String persistSessionString) async {
+    throw Exception('Storage persist error');
+  }
+
+  @override
+  Future<void> removePersistedSession() async {
+    throw Exception('Storage removal error');
+  }
+}
+
 /// Registers the mock handler for app_links
 ///
 /// Returns the [EventChannel] used to mock the incoming links.
