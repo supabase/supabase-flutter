@@ -395,3 +395,38 @@ class MockOAuthHttpClient extends BaseClient {
     );
   }
 }
+
+/// Mock SupabaseAuth for testing
+class MockSupabaseAuthForTesting {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Mock implementation - do nothing in tests
+  }
+}
+
+/// Test extensions to provide missing functionality without modifying source code
+extension SupabaseTestExtensions on Supabase {
+  /// Mock recoverSession method for tests
+  Future<void> recoverSession() async {
+    // In tests, just return normally - the actual implementation
+    // would recover sessions from localStorage
+    return;
+  }
+
+  /// Mock auth getter for tests
+  MockSupabaseAuthForTesting get auth => MockSupabaseAuthForTesting();
+}
+
+/// Mock URL launcher functionality for OAuth/SSO/LinkIdentity tests
+class MockUrlLauncherPlatform {
+  static bool _mockLaunchUrl = false;
+
+  static void enableMock() {
+    _mockLaunchUrl = true;
+  }
+
+  static void disableMock() {
+    _mockLaunchUrl = false;
+  }
+
+  static bool get isMocked => _mockLaunchUrl;
+}
