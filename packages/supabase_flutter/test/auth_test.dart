@@ -62,39 +62,61 @@ void main() {
     });
 
     group('Session recovery', () {
-      test('handles corrupted session data gracefully', () async {
-        final corruptedStorage = MockExpiredStorage();
-
+      test('handles expired session with auto-refresh disabled', () async {
         await Supabase.initialize(
           url: supabaseUrl,
           anonKey: supabaseKey,
           debug: false,
           authOptions: FlutterAuthClientOptions(
-            localStorage: corruptedStorage,
+            localStorage: MockExpiredStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
+            autoRefreshToken: false,
           ),
         );
 
-        // MockExpiredStorage returns an expired session, not null
-        expect(Supabase.instance.client.auth.currentSession, isNotNull);
-        expect(Supabase.instance.client.auth.currentSession?.isExpired, isTrue);
+        // Give it a delay to wait for recoverSession to throw
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        await expectLater(Supabase.instance.client.auth.onAuthStateChange,
+            emitsError(isA<AuthException>()));
       });
 
       test('handles null session during initialization', () async {
-        final emptyStorage = MockEmptyLocalStorage();
-
         await Supabase.initialize(
           url: supabaseUrl,
           anonKey: supabaseKey,
           debug: false,
           authOptions: FlutterAuthClientOptions(
-            localStorage: emptyStorage,
+            localStorage: MockEmptyLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
 
         // Should handle empty storage gracefully
         expect(Supabase.instance.client.auth.currentSession, isNull);
+
+        // Verify initial session event
+        final event =
+            await Supabase.instance.client.auth.onAuthStateChange.first;
+        expect(event.event, AuthChangeEvent.initialSession);
+        expect(event.session, isNull);
+      });
+
+      test('handles expired session with auto-refresh enabled', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          anonKey: supabaseKey,
+          debug: false,
+          authOptions: FlutterAuthClientOptions(
+            localStorage: MockExpiredStorage(),
+            pkceAsyncStorage: MockAsyncStorage(),
+            autoRefreshToken: true,
+          ),
+        );
+
+        // With auto-refresh enabled, expired session should be handled
+        expect(Supabase.instance.client.auth.currentSession, isNotNull);
+        expect(Supabase.instance.client.auth.currentSession?.isExpired, isTrue);
       });
     });
   });
