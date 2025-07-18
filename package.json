@@ -1,0 +1,28 @@
+{
+  "name": "supabase-flutter-monorepo",
+  "private": true,
+  "description": "Flutter integration for Supabase",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "release": "semantic-release",
+    "release:dry-run": "semantic-release --dry-run",
+    "postinstall": "dart pub global activate melos && melos bootstrap"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.0",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.0",
+    "@semantic-release/release-notes-generator": "^14.0.1",
+    "conventional-changelog-conventionalcommits": "^8.0.0",
+    "semantic-release": "^24.0.0",
+    "semantic-release-monorepo": "^8.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/supabase/supabase-flutter.git"
+  }
+}
