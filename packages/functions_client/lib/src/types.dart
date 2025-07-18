@@ -4,11 +4,15 @@ import 'dart:typed_data';
 import 'package:http/http.dart';
 
 enum HttpMethod {
-  get,
-  post,
-  put,
-  delete,
-  patch,
+  get("GET"),
+  post("POST"),
+  put("PUT"),
+  delete("DELETE"),
+  patch("PAtch");
+
+  /// The uppercase HTTP method name. This should be used for a [Request]
+  final String value;
+  const HttpMethod(this.value);
 }
 
 class FunctionResponse {

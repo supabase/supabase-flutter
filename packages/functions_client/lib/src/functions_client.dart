@@ -113,11 +113,11 @@ class FunctionsClient {
       );
       final fields = body as Map<String, String>?;
 
-      request = http.MultipartRequest(method.name, uri)
+      request = http.MultipartRequest(method.value, uri)
         ..fields.addAll(fields ?? {})
         ..files.addAll(files);
     } else {
-      final bodyRequest = http.Request(method.name, uri);
+      final bodyRequest = http.Request(method.value, uri);
 
       final String? bodyStr;
       if (body == null) {
