@@ -1,0 +1,269 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - rc
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Comma-separated list of packages to release (leave empty for auto-detection)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run (no actual publishing)'
+        required: false
+        type: boolean
+        default: false
+      test_mode:
+        description: 'Test mode (validate configuration only)'
+        required: false
+        type: boolean
+        default: false
+      release_channel:
+        description: 'Release channel (stable, rc)'
+        required: false
+        type: choice
+        options:
+          - stable
+          - rc
+        default: stable
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.changes.outputs.packages }}
+      matrix: ${{ steps.changes.outputs.matrix }}
+      release_channel: ${{ steps.channel.outputs.release_channel }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine release channel
+        id: channel
+        run: |
+          if [[ "${{ github.event.inputs.release_channel }}" != "" ]]; then
+            echo "release_channel=${{ github.event.inputs.release_channel }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/rc" ]]; then
+            echo "release_channel=rc" >> $GITHUB_OUTPUT
+          else
+            echo "release_channel=stable" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect changed packages
+        id: changes
+        run: |
+          if [[ -n "${{ github.event.inputs.packages }}" ]]; then
+            # Manual trigger with specific packages
+            IFS=',' read -ra PACKAGES <<< "${{ github.event.inputs.packages }}"
+            PACKAGES_JSON=$(printf '%s\n' "${PACKAGES[@]}" | jq -R . | jq -s .)
+            echo "packages=$PACKAGES_JSON" >> $GITHUB_OUTPUT
+            echo "matrix={\"package\":$(echo $PACKAGES_JSON)}" >> $GITHUB_OUTPUT
+          else
+            # Auto-detect changed packages
+            node scripts/detect-changed-packages.js
+            PACKAGES=$(cat $GITHUB_OUTPUT | grep 'packages=' | cut -d'=' -f2)
+            if [[ "$PACKAGES" != "[]" ]]; then
+              echo "matrix={\"package\":$PACKAGES}" >> $GITHUB_OUTPUT
+            else
+              echo "matrix={\"package\":[]}" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  test-configuration:
+    if: github.event.inputs.test_mode == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test semantic-release configuration
+        run: |
+          echo "Testing semantic-release configuration..."
+          npx semantic-release --dry-run --no-ci
+          echo "✅ Configuration is valid"
+
+      - name: Test package detection
+        run: |
+          echo "Testing package detection..."
+          node scripts/detect-changed-packages.js
+          echo "✅ Package detection works"
+
+  release:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.packages != '[]' && github.event.inputs.test_mode != 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJSON(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+      max-parallel: 1  # Release packages one at a time to avoid conflicts
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.x'
+          channel: 'stable'
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Install Dart dependencies
+        run: |
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: Configure pub.dev credentials
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          mkdir -p ~/.pub-cache
+          echo '${{ secrets.PUB_DEV_CREDENTIALS }}' > ~/.pub-cache/credentials.json
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run tests for ${{ matrix.package }}
+        run: |
+          cd packages/${{ matrix.package }}
+          
+          # Start required services for packages that need them
+          case "${{ matrix.package }}" in
+            "gotrue"|"postgrest"|"storage_client")
+              cd ../../infra/${{ matrix.package }}
+              docker compose up -d
+              cd ../../packages/${{ matrix.package }}
+              ;;
+          esac
+          
+          # Run tests
+          if [[ "${{ matrix.package }}" == "supabase_flutter" ]]; then
+            flutter test --concurrency=1
+          else
+            dart test -j 1
+          fi
+
+      - name: Run linting for ${{ matrix.package }}
+        run: |
+          cd packages/${{ matrix.package }}
+          dart analyze --fatal-warnings --fatal-infos .
+          dart format lib test -l 80 --set-exit-if-changed
+
+      - name: Release ${{ matrix.package }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE_NAME: ${{ matrix.package }}
+          RELEASE_CHANNEL: ${{ needs.detect-changes.outputs.release_channel }}
+        run: |
+          export PACKAGE_NAME=${{ matrix.package }}
+          export RELEASE_CHANNEL=${{ needs.detect-changes.outputs.release_channel }}
+          if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
+            echo "Running dry-run for ${{ matrix.package }} on $RELEASE_CHANNEL channel..."
+            npx semantic-release --dry-run
+          else
+            echo "Running release for ${{ matrix.package }} on $RELEASE_CHANNEL channel..."
+            npx semantic-release
+          fi
+
+      - name: Cleanup Docker services
+        if: always()
+        run: |
+          case "${{ matrix.package }}" in
+            "gotrue"|"postgrest"|"storage_client")
+              cd infra/${{ matrix.package }}
+              docker compose down
+              ;;
+          esac
+
+  update-changelog:
+    needs: [detect-changes, release]
+    if: needs.detect-changes.outputs.packages != '[]' && github.event.inputs.dry_run != 'true' && github.event.inputs.test_mode != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: Update workspace changelog
+        run: |
+          # Run melos version to update the workspace changelog
+          melos version --no-release --yes
+          
+          # Commit the updated changelog if there are changes
+          if git diff --quiet; then
+            echo "No changelog changes to commit"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .
+            git commit -m "chore: update workspace changelog [skip ci]"
+            git push
+          fi
