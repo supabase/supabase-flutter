@@ -8,7 +8,7 @@ enum HttpMethod {
   post("POST"),
   put("PUT"),
   delete("DELETE"),
-  patch("PAtch");
+  patch("PATCH");
 
   /// The uppercase HTTP method name. This should be used for a [Request]
   final String value;
