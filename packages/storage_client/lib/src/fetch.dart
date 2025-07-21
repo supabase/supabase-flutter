@@ -82,11 +82,15 @@ class Fetch {
 
     _log.finest('Request: $method $url $headers');
     final http.StreamedResponse streamedResponse;
-    if (httpClient != null) {
-      streamedResponse = await httpClient!.send(request);
-    } else {
-      streamedResponse = await request.send();
-    }
+    // if (httpClient != null) {
+    //   streamedResponse = await httpClient!.send(request);
+    // } else {
+    //   streamedResponse = await request.send();
+    // }
+    streamedResponse = httpClient != null
+        ? await httpClient!.send(request)
+        : await request.send();
+
     return _handleResponse(streamedResponse, options);
   }
 
