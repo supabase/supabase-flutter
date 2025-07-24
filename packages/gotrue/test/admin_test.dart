@@ -111,4 +111,40 @@ void main() {
       expect(userLengthBefore - 1, userLengthAfter);
     });
   });
+
+  group('validates ids', () {
+    test('deleteUser() validates ids', () {
+      expect(() => client.admin.deleteUser('invalid-id'),
+          throwsA(isA<ArgumentError>()));
+    });
+
+    test('getUserById() validates ids', () {
+      expect(() => client.admin.getUserById('invalid-id'),
+          throwsA(isA<ArgumentError>()));
+    });
+
+    test('updateUserById() validates ids', () {
+      expect(
+          () => client.admin.updateUserById('invalid-id',
+              attributes: AdminUserAttributes(email: 'test@test.com')),
+          throwsA(isA<ArgumentError>()));
+    });
+
+    test('listFactors() validates ids', () {
+      expect(() => client.admin.mfa.listFactors(userId: 'invalid-id'),
+          throwsA(isA<ArgumentError>()));
+    });
+
+    test('deleteFactor() validates ids', () {
+      expect(
+          () => client.admin.mfa.deleteFactor(
+              userId: 'invalid-id', factorId: 'invalid-factor-id'),
+          throwsA(isA<ArgumentError>()));
+
+      expect(
+          () => client.admin.mfa
+              .deleteFactor(userId: userId1, factorId: 'invalid-factor-id'),
+          throwsA(isA<ArgumentError>()));
+    });
+  });
 }

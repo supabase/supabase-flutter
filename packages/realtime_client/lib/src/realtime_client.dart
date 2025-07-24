@@ -222,9 +222,14 @@ class RealtimeClient {
     final conn = this.conn;
     if (conn != null) {
       final oldState = connState;
-      connState = SocketStates.disconnecting;
-      log('transport', 'disconnecting', {'code': code, 'reason': reason},
-          Level.FINE);
+      final shouldCloseSink =
+          oldState == SocketStates.open || oldState == SocketStates.connecting;
+      if (shouldCloseSink) {
+        // Don't set the state to `disconnecting` if the connection is already closed.
+        connState = SocketStates.disconnecting;
+        log('transport', 'disconnecting', {'code': code, 'reason': reason},
+            Level.FINE);
+      }
 
       // Connection cannot be closed while it's still connecting. Wait for connection to
       // be ready and then close it.
@@ -232,8 +237,7 @@ class RealtimeClient {
         await conn.ready.catchError((_) {});
       }
 
-      if (oldState == SocketStates.open ||
-          oldState == SocketStates.connecting) {
+      if (shouldCloseSink) {
         if (code != null) {
           await conn.sink.close(code, reason ?? '');
         } else {
@@ -319,7 +323,7 @@ class RealtimeClient {
     }
   }
 
-  /// Retuns `true` is the connection is open.
+  /// Returns `true` is the connection is open.
   bool get isConnected => connState == SocketStates.open;
 
   /// Removes a subscription from the socket.

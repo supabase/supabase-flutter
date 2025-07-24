@@ -42,7 +42,7 @@ class Supabase with WidgetsBindingObserver {
   /// Call [Supabase.initialize] to initialize it.
   static Supabase get instance {
     assert(
-      _instance._initialized,
+      _instance._isInitialized,
       'You must initialize the supabase instance before calling Supabase.instance',
     );
     return _instance;
@@ -87,10 +87,11 @@ class Supabase with WidgetsBindingObserver {
     Future<String?> Function()? accessToken,
     bool? debug,
   }) async {
-    assert(
-      !_instance._initialized,
-      'This instance is already initialized',
-    );
+    if (_instance._isInitialized) {
+      _log.info('Supabase is already initialized. Skipping reinitialization.');
+      return _instance;
+    }
+
     _instance._debugEnable = debug ?? kDebugMode;
 
     if (_instance._debugEnable) {
@@ -152,7 +153,10 @@ class Supabase with WidgetsBindingObserver {
 
   static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
 
-  bool _initialized = false;
+  bool _isInitialized = false;
+
+  /// Whether the Supabase instance has been initialized. Useful for debugging.
+  bool get isInitialized => _isInitialized;
 
   /// The supabase client for this instance
   ///
@@ -177,7 +181,7 @@ class Supabase with WidgetsBindingObserver {
     client.dispose();
     _instance._supabaseAuth?.dispose();
     _widgetsBindingInstance?.removeObserver(this);
-    _initialized = false;
+    _isInitialized = false;
   }
 
   void _init(
@@ -214,7 +218,7 @@ class Supabase with WidgetsBindingObserver {
       markClientToDispose(client);
     }
     _widgetsBindingInstance?.addObserver(this);
-    _initialized = true;
+    _isInitialized = true;
   }
 
   @override
@@ -233,7 +237,8 @@ class Supabase with WidgetsBindingObserver {
   Future<void> onResumed() async {
     final realtime = Supabase.instance.client.realtime;
     if (realtime.channels.isNotEmpty) {
-      if (realtime.connState == SocketStates.disconnecting) {
+      if (realtime.connState == SocketStates.disconnecting &&
+          realtime.conn != null) {
         // If the socket is still disconnecting from e.g.
         // [AppLifecycleState.paused] we should wait for it to finish before
         // reconnecting.

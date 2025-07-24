@@ -14,8 +14,11 @@ class Constants {
 
   static final Map<String, String> defaultHeaders = {
     'X-Client-Info': 'supabase-dart/$version',
-    if (platform != null) 'X-Supabase-Client-Platform': platform!,
+    if (platform != null)
+      'X-Supabase-Client-Platform':
+          Uri.encodeFull(platform!).replaceAll("%20", " "),
     if (platformVersion != null)
-      'X-Supabase-Client-Platform-Version': platformVersion!,
+      'X-Supabase-Client-Platform-Version':
+          Uri.encodeFull(platformVersion!).replaceAll("%20", " "),
   };
 }

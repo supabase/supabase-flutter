@@ -51,11 +51,15 @@ void main() {
 
   setUp(() async {
     mockServer = await HttpServer.bind('localhost', 0);
+    WebSocketChannel? channel;
+
     mockServer.transform(WebSocketTransformer()).listen((webSocket) {
-      final channel = IOWebSocketChannel(webSocket);
-      channel.stream.listen((request) {
-        channel.sink.add(request);
+      channel = IOWebSocketChannel(webSocket);
+      channel!.stream.listen((request) {
+        channel!.sink.add(request);
       });
+    }, onDone: () {
+      channel?.sink.close();
     });
   });
 
@@ -170,10 +174,14 @@ void main() {
       socket.disconnect();
     });
 
-    test('establishes websocket connection with endpoint', () {
-      socket.connect();
+    test('establishes websocket connection with endpoint', () async {
+      final connFuture = socket.connect();
+      expect(socket.connState, SocketStates.connecting);
 
       final conn = socket.conn;
+
+      await connFuture;
+      expect(socket.connState, SocketStates.open);
 
       expect(conn, isA<IOWebSocketChannel>());
       //! Not verifying connection url
@@ -239,9 +247,11 @@ void main() {
 
     test('removes existing connection', () async {
       await socket.connect();
+
+      expect(socket.conn, isNotNull);
       await socket.disconnect();
 
-      expect(socket.conn, null);
+      expect(socket.conn, isNull);
     });
 
     test('calls callback', () async {
@@ -282,6 +292,36 @@ void main() {
           captureAny(that: equals(tReason)),
         ),
       ).called(1);
+    });
+
+    test('disconnecting a closed connections stays closed', () async {
+      await socket.connect();
+      expect(socket.connState, SocketStates.open);
+      await mockServer.close();
+      await Future.delayed(const Duration(milliseconds: 200));
+      expect(socket.connState, SocketStates.closed);
+      expect(socket.conn, isNotNull);
+
+      final disconnectFuture = socket.disconnect();
+
+      // `connState` stays `closed` during disconnect
+      expect(socket.connState, SocketStates.closed);
+      await disconnectFuture;
+      expect(socket.connState, SocketStates.closed);
+      expect(socket.conn, isNull);
+    });
+
+    test('disconnecting an open connection', () async {
+      await socket.connect();
+      expect(socket.connState, SocketStates.open);
+
+      final disconnectFuture = socket.disconnect();
+
+      // `connState` stays `closed` during disconnect
+      expect(socket.connState, SocketStates.disconnecting);
+      await disconnectFuture;
+      expect(socket.connState, SocketStates.disconnected);
+      expect(socket.conn, isNull);
     });
 
     test('does not throw when no connection', () {
