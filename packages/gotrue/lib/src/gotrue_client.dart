@@ -372,27 +372,14 @@ class GoTrueClient {
     return authSessionUrlResponse;
   }
 
-  /// Allows signing in with an ID token issued by certain supported providers.
-  /// The [idToken] is verified for validity and a new session is established.
-  /// This method of signing in only supports [OAuthProvider.google], [OAuthProvider.apple], [OAuthProvider.kakao] or [OAuthProvider.keycloak].
-  ///
-  /// If the ID token contains an `at_hash` claim, then [accessToken] must be
-  /// provided to compare its hash with the value in the ID token.
-  ///
-  /// If the ID token contains a `nonce` claim, then [nonce] must be
-  /// provided to compare its hash with the value in the ID token.
-  ///
-  /// [captchaToken] is the verification token received when the user
-  /// completes the captcha on the app.
-  ///
-  /// This method is experimental.
-  @experimental
-  Future<AuthResponse> signInWithIdToken({
+  /// Sign in with ID token (internal helper method).
+  Future<AuthResponse> _signInWithIdToken({
     required OAuthProvider provider,
     required String idToken,
     String? accessToken,
     String? nonce,
     String? captchaToken,
+    required bool linkIdentity,
   }) async {
     if (provider != OAuthProvider.google &&
         provider != OAuthProvider.apple &&
@@ -402,18 +389,24 @@ class GoTrueClient {
           '${OAuthProvider.google.name}, ${OAuthProvider.apple.name}, ${OAuthProvider.kakao.name} or ${OAuthProvider.keycloak.name}.');
     }
 
+    final body = {
+      'provider': provider.snakeCase,
+      'id_token': idToken,
+      'nonce': nonce,
+      'gotrue_meta_security': {'captcha_token': captchaToken},
+      'access_token': accessToken,
+    };
+
+    if (linkIdentity) {
+      body['link_identity'] = true;
+    }
+
     final response = await _fetch.request(
       '$_url/token',
       RequestMethodType.post,
       options: GotrueRequestOptions(
         headers: _headers,
-        body: {
-          'provider': provider.snakeCase,
-          'id_token': idToken,
-          'nonce': nonce,
-          'gotrue_meta_security': {'captcha_token': captchaToken},
-          'access_token': accessToken,
-        },
+        body: body,
         query: {'grant_type': 'id_token'},
       ),
     );
@@ -430,6 +423,35 @@ class GoTrueClient {
     notifyAllSubscribers(AuthChangeEvent.signedIn);
 
     return authResponse;
+  }
+
+  /// Allows signing in with an ID token issued by certain supported providers.
+  /// The [idToken] is verified for validity and a new session is established.
+  /// This method of signing in only supports [OAuthProvider.google], [OAuthProvider.apple], [OAuthProvider.kakao] or [OAuthProvider.keycloak].
+  ///
+  /// If the ID token contains an `at_hash` claim, then [accessToken] must be
+  /// provided to compare its hash with the value in the ID token.
+  ///
+  /// If the ID token contains a `nonce` claim, then [nonce] must be
+  /// provided to compare its hash with the value in the ID token.
+  ///
+  /// [captchaToken] is the verification token received when the user
+  /// completes the captcha on the app.
+  Future<AuthResponse> signInWithIdToken({
+    required OAuthProvider provider,
+    required String idToken,
+    String? accessToken,
+    String? nonce,
+    String? captchaToken,
+  }) async {
+    return _signInWithIdToken(
+      provider: provider,
+      idToken: idToken,
+      accessToken: accessToken,
+      nonce: nonce,
+      captchaToken: captchaToken,
+      linkIdentity: false,
+    );
   }
 
   /// Log in a user using magiclink or a one-time password (OTP).
@@ -912,6 +934,35 @@ class GoTrueClient {
   Future<List<UserIdentity>> getUserIdentities() async {
     final res = await getUser();
     return res.user?.identities ?? [];
+  }
+
+  /// Link an identity to the current user using an ID token.
+  ///
+  /// [provider] is the OAuth provider (google, apple, kakao, or keycloak)
+  ///
+  /// [idToken] is the ID token from the OAuth provider
+  ///
+  /// [accessToken] is the access token from the OAuth provider
+  ///
+  /// [nonce] is the nonce used for the OAuth flow
+  ///
+  /// [captchaToken] is the verification token received when the user
+  /// completes the captcha on the app.
+  Future<AuthResponse> linkIdentityWithIdToken({
+    required OAuthProvider provider,
+    required String idToken,
+    String? accessToken,
+    String? nonce,
+    String? captchaToken,
+  }) async {
+    return _signInWithIdToken(
+      provider: provider,
+      idToken: idToken,
+      accessToken: accessToken,
+      nonce: nonce,
+      captchaToken: captchaToken,
+      linkIdentity: true,
+    );
   }
 
   /// Returns the URL to link the user's identity with an OAuth provider.
