@@ -54,4 +54,12 @@ scripts:
       rm packages/yet_another_json_isolate/lib/src/version.dart
       # Stage the version.dart file change
       git add packages/*/lib/src/version.dart
+
+  semantic-release:
+    description: Run semantic-release for automatic package publishing
+    run: npm run release
+    
+  semantic-release:dry-run:
+    description: Run semantic-release in dry-run mode (no actual publishing)
+    run: npm run release:dry-run
     
