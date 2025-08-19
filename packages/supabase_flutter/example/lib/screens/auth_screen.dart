@@ -149,7 +149,7 @@ class _AuthScreenState extends State<AuthScreen> {
       if (result.status == LoginStatus.success) {
         final accessToken = result.accessToken!.tokenString;
         
-        final AuthResponse response = await Supabase.instance.client.auth.signInWithIdToken(
+        await Supabase.instance.client.auth.signInWithIdToken(
           provider: OAuthProvider.facebook,
           idToken: accessToken,
         );
