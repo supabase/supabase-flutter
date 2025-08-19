@@ -309,7 +309,7 @@ class _StorageScreenState extends State<StorageScreen> {
                       const Text('No buckets found. Create one above.'),
                     ] else ...[
                       DropdownButtonFormField<String>(
-                        value: _selectedBucket,
+                        initialValue: _selectedBucket,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                         ),
