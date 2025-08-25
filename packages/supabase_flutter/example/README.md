@@ -1,7 +1,25 @@
-# Profile Example
+# Supabase Flutter Examples
 
-Basic example of how to signup/login using Supabase auth and read and write from your Supabase
-database. 
+Comprehensive examples showcasing the Supabase Flutter library features including authentication, database operations, realtime subscriptions, and file storage.
+
+## Features Included
+
+- **Authentication**: Sign up, sign in, social login (Facebook), password reset, and session management
+- **Database**: CRUD operations with PostgreSQL database
+- **Realtime**: Listen to database changes in real-time using WebSocket connections  
+- **Storage**: File upload, download, and management functionality
+
+## Getting Started
+
+1. Set up your Supabase project at [https://supabase.com](https://supabase.com)
+2. Copy your project URL and anon key
+3. Set environment variables or update the default values in `lib/main.dart`:
+   ```
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+4. Run the SQL setup below in your Supabase SQL editor
+5. For Facebook authentication, follow the Facebook auth setup guide 
 
 ## SQL
 
