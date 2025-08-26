@@ -1,3 +1,8 @@
+## 2.5.2
+
+ - **FIX**(supabase_flutter): Safely check if conn is not null to avoid null check operator ([#1178](https://github.com/supabase/supabase-flutter/issues/1178)). ([6a5be512](https://github.com/supabase/supabase-flutter/commit/6a5be5124026d27d48675749d2c5759d8c61a9b3))
+ - **FIX**(realtime): Send version when joining channel and remove jwt check ([#1166](https://github.com/supabase/supabase-flutter/issues/1166)). ([9ccd890d](https://github.com/supabase/supabase-flutter/commit/9ccd890d950a1c009fd77320033fc7a87783dbcd))
+
 ## 2.5.1
 
  - **FIX**(realtime): Send version when joining channel and remove jwt check ([#1166](https://github.com/supabase/supabase-flutter/issues/1166)). ([9ccd890d](https://github.com/supabase/supabase-flutter/commit/9ccd890d950a1c009fd77320033fc7a87783dbcd))

@@ -3,6 +3,60 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-08-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.4.4`](#functions_client---v244)
+ - [`gotrue` - `v2.14.0`](#gotrue---v2140)
+ - [`realtime_client` - `v2.5.2`](#realtime_client---v252)
+ - [`storage_client` - `v2.4.1`](#storage_client---v241)
+ - [`supabase` - `v2.9.0`](#supabase---v290)
+ - [`supabase_flutter` - `v2.10.0`](#supabase_flutter---v2100)
+
+---
+
+#### `functions_client` - `v2.4.4`
+
+ - **FIX**(functions_client): Handle binary data request properly and improve test coverage ([#1184](https://github.com/supabase/supabase-flutter/issues/1184)). ([e6c9420e](https://github.com/supabase/supabase-flutter/commit/e6c9420e5c3c310c2aac7f9626727e68e1b7ddf3))
+
+#### `gotrue` - `v2.14.0`
+
+ - **REFACTOR**(gotrue): Remove unused _currentUser field and update currentUser documentation.  ([#1168](https://github.com/supabase/supabase-flutter/issues/1168)). ([88ed5d88](https://github.com/supabase/supabase-flutter/commit/88ed5d88508842465a7085c95c93e5059297e9c1))
+ - **FIX**(auth): Validate uuid params in admin methods ([#1171](https://github.com/supabase/supabase-flutter/issues/1171)). ([369dcc24](https://github.com/supabase/supabase-flutter/commit/369dcc24313bfe8fa95ad6eac50041916f88cad3))
+ - **FEAT**(gotrue): Remove client-side provider validation for signInWithIdToken ([#1209](https://github.com/supabase/supabase-flutter/issues/1209)). ([e8d40d64](https://github.com/supabase/supabase-flutter/commit/e8d40d649a13fd79034980de808e20801333bc92))
+ - **FEAT**(gotrue): Add phone mfa enrollment ([#1188](https://github.com/supabase/supabase-flutter/issues/1188)). ([944afcde](https://github.com/supabase/supabase-flutter/commit/944afcde66e2b52621f5a01c849b62ea37081c66))
+ - **DOCS**: Update auth error codes link ([#1215](https://github.com/supabase/supabase-flutter/issues/1215)). ([86330d19](https://github.com/supabase/supabase-flutter/commit/86330d19f82e63f6be944187963446a418b3b703))
+
+#### `realtime_client` - `v2.5.2`
+
+ - **FIX**(supabase_flutter): Safely check if conn is not null to avoid null check operator ([#1178](https://github.com/supabase/supabase-flutter/issues/1178)). ([6a5be512](https://github.com/supabase/supabase-flutter/commit/6a5be5124026d27d48675749d2c5759d8c61a9b3))
+ - **FIX**(realtime): Send version when joining channel and remove jwt check ([#1166](https://github.com/supabase/supabase-flutter/issues/1166)). ([9ccd890d](https://github.com/supabase/supabase-flutter/commit/9ccd890d950a1c009fd77320033fc7a87783dbcd))
+
+#### `storage_client` - `v2.4.1`
+
+ - **REFACTOR**: Remove unnecessary parentheses in Bucket.fromJson ([#1201](https://github.com/supabase/supabase-flutter/issues/1201)). ([d729fa46](https://github.com/supabase/supabase-flutter/commit/d729fa46c7a914e2705048b1e490adcc0270143c))
+ - **FIX**(storage): Resolve MultipartRequest finalization error in retry mechanism ([#1208](https://github.com/supabase/supabase-flutter/issues/1208)). ([2b818e08](https://github.com/supabase/supabase-flutter/commit/2b818e08e0f946bef21f0e8e9462f8122d3aa997))
+
+#### `supabase` - `v2.9.0`
+
+ - **FIX**: Uri encode platform information ([#1196](https://github.com/supabase/supabase-flutter/issues/1196)). ([7fe6b301](https://github.com/supabase/supabase-flutter/commit/7fe6b301414c1f4258f45bf1bd6d9f65bbe465e2))
+ - **FEAT**: Add standard client headers ([#1130](https://github.com/supabase/supabase-flutter/issues/1130)). ([f33c9fe2](https://github.com/supabase/supabase-flutter/commit/f33c9fe2f67fc83d19904a53e0b71e7cec5cee53))
+
+#### `supabase_flutter` - `v2.10.0`
+
+ - **FIX**(supabase_flutter): Safely check if conn is not null to avoid null check operator ([#1178](https://github.com/supabase/supabase-flutter/issues/1178)). ([6a5be512](https://github.com/supabase/supabase-flutter/commit/6a5be5124026d27d48675749d2c5759d8c61a9b3))
+ - **FEAT**(supabase_flutter): Make `Supabase.initialize()` idempotent ([#1194](https://github.com/supabase/supabase-flutter/issues/1194)). ([cc058e70](https://github.com/supabase/supabase-flutter/commit/cc058e709850e178641060942be7de3ca643049c))
+
+
 ## 2025-06-10
 
 ### Changes

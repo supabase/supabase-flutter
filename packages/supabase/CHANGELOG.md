@@ -1,3 +1,8 @@
+## 2.9.0
+
+ - **FIX**: Uri encode platform information ([#1196](https://github.com/supabase/supabase-flutter/issues/1196)). ([7fe6b301](https://github.com/supabase/supabase-flutter/commit/7fe6b301414c1f4258f45bf1bd6d9f65bbe465e2))
+ - **FEAT**: Add standard client headers ([#1130](https://github.com/supabase/supabase-flutter/issues/1130)). ([f33c9fe2](https://github.com/supabase/supabase-flutter/commit/f33c9fe2f67fc83d19904a53e0b71e7cec5cee53))
+
 ## 2.8.0
 
  - **FEAT**: Add standard client headers ([#1130](https://github.com/supabase/supabase-flutter/issues/1130)). ([f33c9fe2](https://github.com/supabase/supabase-flutter/commit/f33c9fe2f67fc83d19904a53e0b71e7cec5cee53))
