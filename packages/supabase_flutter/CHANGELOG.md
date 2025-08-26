@@ -1,3 +1,8 @@
+## 2.10.0
+
+ - **FIX**(supabase_flutter): Safely check if conn is not null to avoid null check operator ([#1178](https://github.com/supabase/supabase-flutter/issues/1178)). ([6a5be512](https://github.com/supabase/supabase-flutter/commit/6a5be5124026d27d48675749d2c5759d8c61a9b3))
+ - **FEAT**(supabase_flutter): Make `Supabase.initialize()` idempotent ([#1194](https://github.com/supabase/supabase-flutter/issues/1194)). ([cc058e70](https://github.com/supabase/supabase-flutter/commit/cc058e709850e178641060942be7de3ca643049c))
+
 ## 2.9.1
 
  - Update a dependency to the latest release.

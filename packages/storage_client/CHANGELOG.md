@@ -1,3 +1,8 @@
+## 2.4.1
+
+ - **REFACTOR**: Remove unnecessary parentheses in Bucket.fromJson ([#1201](https://github.com/supabase/supabase-flutter/issues/1201)). ([d729fa46](https://github.com/supabase/supabase-flutter/commit/d729fa46c7a914e2705048b1e490adcc0270143c))
+ - **FIX**(storage): Resolve MultipartRequest finalization error in retry mechanism ([#1208](https://github.com/supabase/supabase-flutter/issues/1208)). ([2b818e08](https://github.com/supabase/supabase-flutter/commit/2b818e08e0f946bef21f0e8e9462f8122d3aa997))
+
 ## 2.4.0
 
  - **FEAT**(storage_client): Custom-metadata, exists, info methods ([#1023](https://github.com/supabase/supabase-flutter/issues/1023)). ([4d3f4bf5](https://github.com/supabase/supabase-flutter/commit/4d3f4bf5aee3216e76c063400b80de4aad0d3644))

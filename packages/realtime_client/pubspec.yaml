@@ -1,6 +1,6 @@
 name: realtime_client
 description: Listens to changes in a PostgreSQL Database and via websockets. This is for usage with Supabase Realtime server.
-version: 2.5.1
+version: 2.5.2
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/realtime_client'
 documentation: 'https://supabase.com/docs/reference/dart/subscribe'

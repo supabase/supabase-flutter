@@ -1,6 +1,6 @@
 name: storage_client
 description: Dart client library to interact with Supabase Storage. Supabase Storage provides an interface for managing Files stored in S3, using Postgres to manage permissions.
-version: 2.4.0
+version: 2.4.1
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/storage_client'
 documentation: 'https://supabase.com/docs/reference/dart/storage-createbucket'
