@@ -143,7 +143,7 @@ class _AuthScreenState extends State<AuthScreen> {
     
     try {
       final LoginResult result = await FacebookAuth.instance.login(
-        permissions: ['email', 'public_profile'],
+        permissions: ['public_profile'],
       );
       
       if (result.status == LoginStatus.success) {
