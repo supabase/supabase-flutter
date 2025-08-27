@@ -1,5 +1,5 @@
 # See https://github.com/amannn/action-semantic-pull-request
-name: 'PR Title is Conventional'
+name: "PR Title is Conventional"
 
 on:
   pull_request:
@@ -33,6 +33,3 @@ jobs:
             revert
             style
             test
-          subjectPattern: ^[A-Z].+$
-          subjectPatternError: |
-            The subject of the PR must begin with an uppercase letter.
