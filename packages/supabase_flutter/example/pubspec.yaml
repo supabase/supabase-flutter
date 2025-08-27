@@ -13,7 +13,7 @@ dependencies:
     sdk: flutter
   supabase_flutter: ^2.10.0
   cupertino_icons: ^1.0.8
-  flutter_facebook_auth: ^7.1.1
+  flutter_facebook_auth: ^7.1.0
 
 dev_dependencies:
   flutter_test:
