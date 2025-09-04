@@ -28,7 +28,7 @@ To run these tests locally, you need to have the `docker` cli with `docker-compo
 
 The needed configuration for starting the services are in the `infra` directory.
 
-To start the services change working directory to `infa/<package>` and run the following command:
+To start the services change working directory to `infra/<package>` and run the following command:
 
 ```bash
 docker compose up -d
@@ -57,7 +57,7 @@ docker compose down
 
 ## License
 
-This repo is licenced under MIT.
+This repo is licensed under MIT.
 
 ## Resources
 
