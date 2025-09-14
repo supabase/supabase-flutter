@@ -13,7 +13,7 @@ dependencies:
   supabase: ^2.9.0
 
 dev_dependencies:
-  build_runner: ^2.4.15
-  build_web_compilers: ^4.1.6
+  build_runner: any
+  build_web_compilers: any
   lints: ^4.0.0
 
