@@ -1,9 +1,9 @@
 import 'dart:io';
 
-String? get platform {
+String? get condPlatform {
   return Platform.operatingSystem;
 }
 
-String? get platformVersion {
+String? get condPlatformVersion {
   return Platform.operatingSystemVersion;
 }

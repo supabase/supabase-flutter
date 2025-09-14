@@ -1,7 +1,7 @@
-String? get platform {
+String? get condPlatform {
   return null;
 }
 
-String? get platformVersion {
+String? get condPlatformVersion {
   return null;
 }
