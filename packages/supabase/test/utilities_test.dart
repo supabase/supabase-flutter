@@ -9,6 +9,8 @@ import 'package:supabase/src/counter.dart';
 import 'package:supabase/src/supabase_event_types.dart';
 import 'package:test/test.dart';
 
+const bool kIsWeb = bool.fromEnvironment('dart.library.js_util');
+
 void main() {
   group('Counter', () {
     late Counter counter;
