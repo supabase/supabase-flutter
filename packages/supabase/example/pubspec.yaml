@@ -1,13 +1,11 @@
 name: supabase_example
 description: An absolute bare-bones supabase web app.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
 publish_to: none
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
 
-# Add regular dependencies here.
 dependencies:
   web: '>=0.5.0 <2.0.0'
   supabase: ^2.9.0
