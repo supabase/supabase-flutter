@@ -70,3 +70,9 @@ jobs:
 
       - name: Run tests
         run: dart test --concurrency=1
+
+      - name: Build Dart web app
+        run: |
+          dart pub global activate webdev
+          cd example
+          webdev build

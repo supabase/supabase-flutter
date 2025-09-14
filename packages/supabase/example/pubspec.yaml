@@ -1,0 +1,19 @@
+name: supabase_example
+description: An absolute bare-bones supabase web app.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+publish_to: none
+
+environment:
+  sdk: ^3.9.0
+
+# Add regular dependencies here.
+dependencies:
+  web: ^1.1.1
+  supabase: ^2.9.0
+
+dev_dependencies:
+  build_runner: ^2.4.15
+  build_web_compilers: ^4.1.6
+  lints: ^6.0.0
+
