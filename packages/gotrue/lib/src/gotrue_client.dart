@@ -390,20 +390,18 @@ class GoTrueClient {
     String? nonce,
     String? captchaToken,
   }) async {
-    final body = {
-      'provider': provider.snakeCase,
-      'id_token': idToken,
-      'nonce': nonce,
-      'gotrue_meta_security': {'captcha_token': captchaToken},
-      'access_token': accessToken,
-    };
-
     final response = await _fetch.request(
       '$_url/token',
       RequestMethodType.post,
       options: GotrueRequestOptions(
         headers: _headers,
-        body: body,
+        body: {
+          'provider': provider.snakeCase,
+          'id_token': idToken,
+          'nonce': nonce,
+          'gotrue_meta_security': {'captcha_token': captchaToken},
+          'access_token': accessToken,
+        },
         query: {'grant_type': 'id_token'},
       ),
     );
@@ -923,22 +921,20 @@ class GoTrueClient {
     String? nonce,
     String? captchaToken,
   }) async {
-    final body = {
-      'provider': provider.snakeCase,
-      'id_token': idToken,
-      'nonce': nonce,
-      'gotrue_meta_security': {'captcha_token': captchaToken},
-      'access_token': accessToken,
-      'link_identity': true,
-    };
-
     final response = await _fetch.request(
       '$_url/token',
       RequestMethodType.post,
       options: GotrueRequestOptions(
         headers: _headers,
         jwt: _currentSession?.accessToken,
-        body: body,
+        body: {
+          'provider': provider.snakeCase,
+          'id_token': idToken,
+          'nonce': nonce,
+          'gotrue_meta_security': {'captcha_token': captchaToken},
+          'access_token': accessToken,
+          'link_identity': true,
+        },
         query: {'grant_type': 'id_token'},
       ),
     );
