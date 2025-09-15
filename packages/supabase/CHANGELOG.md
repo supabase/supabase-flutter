@@ -1,3 +1,7 @@
+## 2.9.1
+
+ - **FIX**: Prevent web incompatibility due to import of dart:io ([#1220](https://github.com/supabase/supabase-flutter/issues/1220)). ([3c8d4db6](https://github.com/supabase/supabase-flutter/commit/3c8d4db62aec26835e5d8ff387c4b32c91ce8676))
+
 ## 2.9.0
 
  - **FIX**: Uri encode platform information ([#1196](https://github.com/supabase/supabase-flutter/issues/1196)). ([7fe6b301](https://github.com/supabase/supabase-flutter/commit/7fe6b301414c1f4258f45bf1bd6d9f65bbe465e2))
