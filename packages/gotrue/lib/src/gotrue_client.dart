@@ -902,6 +902,57 @@ class GoTrueClient {
     return res.user?.identities ?? [];
   }
 
+  /// Link an identity to the current user using an ID token.
+  ///
+  /// [provider] is the OAuth provider
+  ///
+  /// [idToken] is the ID token from the OAuth provider
+  ///
+  /// [accessToken] is the access token from the OAuth provider
+  ///
+  /// [nonce] is the nonce used for the OAuth flow
+  ///
+  /// [captchaToken] is the verification token received when the user
+  /// completes the captcha on the app.
+  Future<AuthResponse> linkIdentityWithIdToken({
+    required OAuthProvider provider,
+    required String idToken,
+    String? accessToken,
+    String? nonce,
+    String? captchaToken,
+  }) async {
+    final response = await _fetch.request(
+      '$_url/token',
+      RequestMethodType.post,
+      options: GotrueRequestOptions(
+        headers: _headers,
+        jwt: _currentSession?.accessToken,
+        body: {
+          'provider': provider.snakeCase,
+          'id_token': idToken,
+          'nonce': nonce,
+          'gotrue_meta_security': {'captcha_token': captchaToken},
+          'access_token': accessToken,
+          'link_identity': true,
+        },
+        query: {'grant_type': 'id_token'},
+      ),
+    );
+
+    final authResponse = AuthResponse.fromJson(response);
+
+    if (authResponse.session == null) {
+      throw AuthException(
+        'An error occurred on token verification.',
+      );
+    }
+
+    _saveSession(authResponse.session!);
+    notifyAllSubscribers(AuthChangeEvent.userUpdated);
+
+    return authResponse;
+  }
+
   /// Returns the URL to link the user's identity with an OAuth provider.
   Future<OAuthResponse> getLinkIdentityUrl(
     OAuthProvider provider, {
