@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-09-15
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.15.0`](#gotrue---v2150)
+ - [`supabase` - `v2.9.1`](#supabase---v291)
+ - [`supabase_flutter` - `v2.10.1`](#supabase_flutter---v2101)
+
+---
+
+#### `gotrue` - `v2.15.0`
+
+ - **FEAT**(gotrue): Implement `linkIdentityWithIdToken` method ([#1206](https://github.com/supabase/supabase-flutter/issues/1206)). ([53a2427a](https://github.com/supabase/supabase-flutter/commit/53a2427ac5204e440935a45d645a485db84fc437))
+
+#### `supabase` - `v2.9.1`
+
+ - **FIX**: Prevent web incompatibility due to import of dart:io ([#1220](https://github.com/supabase/supabase-flutter/issues/1220)). ([3c8d4db6](https://github.com/supabase/supabase-flutter/commit/3c8d4db62aec26835e5d8ff387c4b32c91ce8676))
+
+#### `supabase_flutter` - `v2.10.1`
+
+ - **FIX**: Prevent web incompatibility due to import of dart:io ([#1220](https://github.com/supabase/supabase-flutter/issues/1220)). ([3c8d4db6](https://github.com/supabase/supabase-flutter/commit/3c8d4db62aec26835e5d8ff387c4b32c91ce8676))
+
+
 ## 2025-08-26
 
 ### Changes

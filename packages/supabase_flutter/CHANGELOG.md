@@ -1,3 +1,7 @@
+## 2.10.1
+
+ - **FIX**: Prevent web incompatibility due to import of dart:io ([#1220](https://github.com/supabase/supabase-flutter/issues/1220)). ([3c8d4db6](https://github.com/supabase/supabase-flutter/commit/3c8d4db62aec26835e5d8ff387c4b32c91ce8676))
+
 ## 2.10.0
 
  - **FIX**(supabase_flutter): Safely check if conn is not null to avoid null check operator ([#1178](https://github.com/supabase/supabase-flutter/issues/1178)). ([6a5be512](https://github.com/supabase/supabase-flutter/commit/6a5be5124026d27d48675749d2c5759d8c61a9b3))

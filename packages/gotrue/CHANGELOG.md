@@ -1,3 +1,7 @@
+## 2.15.0
+
+ - **FEAT**(gotrue): Implement `linkIdentityWithIdToken` method ([#1206](https://github.com/supabase/supabase-flutter/issues/1206)). ([53a2427a](https://github.com/supabase/supabase-flutter/commit/53a2427ac5204e440935a45d645a485db84fc437))
+
 ## 2.14.0
 
  - **REFACTOR**(gotrue): Remove unused _currentUser field and update currentUser documentation.  ([#1168](https://github.com/supabase/supabase-flutter/issues/1168)). ([88ed5d88](https://github.com/supabase/supabase-flutter/commit/88ed5d88508842465a7085c95c93e5059297e9c1))
