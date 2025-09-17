@@ -80,3 +80,12 @@ packages/**/pubspec.lock
 !**/ios/**/default.perspectivev3
 
 /packages/*/coverage
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Semantic Release
+.semanticdb/
