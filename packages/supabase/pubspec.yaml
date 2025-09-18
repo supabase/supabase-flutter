@@ -10,7 +10,12 @@ environment:
 
 dependencies:
   functions_client: 2.4.4
-  gotrue: 2.15.0
+  gotrue: 
+    git:
+      url: https://github.com/ahmtydn/supabase-flutter.git
+      ref: feat/banned-user-support
+      path: packages/gotrue
+      
   http: '>=0.13.5 <2.0.0'
   postgrest: 2.4.2
   realtime_client: 2.5.2
