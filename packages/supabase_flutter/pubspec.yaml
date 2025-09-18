@@ -17,11 +17,7 @@ dependencies:
     sdk: flutter
   http: '>=0.13.4 <2.0.0'
   meta: ^1.7.0
-  supabase: 
-    git:
-      url: https://github.com/ahmtydn/supabase-flutter.git
-      ref: feat/banned-user-support
-      path: packages/supabase
+  supabase: 2.9.1
   url_launcher: ^6.1.2
   path_provider: ^2.0.0
   shared_preferences: ^2.0.0
