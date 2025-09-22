@@ -27,6 +27,7 @@ class User {
   final List<UserIdentity>? identities;
   final List<Factor>? factors;
   final bool isAnonymous;
+  final String? bannedUntil;
 
   const User({
     required this.id,
@@ -51,7 +52,18 @@ class User {
     this.identities,
     this.factors,
     this.isAnonymous = false,
+    this.bannedUntil,
   });
+
+  /// Returns true if the user is currently banned
+  /// Compares the current UTC time with the bannedUntil timestamp
+  bool get isBanned {
+    if (bannedUntil == null) return false;
+    final banExpiration = DateTime.tryParse(bannedUntil!);
+    if (banExpiration == null) return false;
+    final now = DateTime.now().toUtc();
+    return now.isBefore(banExpiration);
+  }
 
   /// Returns a `User` object from a map of json
   /// returns `null` if there is no `id` present
@@ -82,12 +94,14 @@ class User {
       updatedAt: json['updated_at'],
       identities: json['identities'] != null
           ? List<UserIdentity>.from(
-              json['identities']?.map((x) => UserIdentity.fromMap(x)))
+              json['identities']?.map((x) => UserIdentity.fromMap(x)),
+            )
           : null,
       factors: json['factors'] != null
           ? List<Factor>.from(json['factors']?.map((x) => Factor.fromJson(x)))
           : null,
       isAnonymous: json['is_anonymous'] ?? false,
+      bannedUntil: json['banned_until'],
     );
   }
 
@@ -115,12 +129,13 @@ class User {
       'identities': identities?.map((identity) => identity.toJson()).toList(),
       'factors': factors?.map((factor) => factor.toJson()).toList(),
       'is_anonymous': isAnonymous,
+      'banned_until': bannedUntil,
     };
   }
 
   @override
   String toString() {
-    return 'User(id: $id, appMetadata: $appMetadata, userMetadata: $userMetadata, aud: $aud, confirmationSentAt: $confirmationSentAt, recoverySentAt: $recoverySentAt, emailChangeSentAt: $emailChangeSentAt, newEmail: $newEmail, invitedAt: $invitedAt, actionLink: $actionLink, email: $email, phone: $phone, createdAt: $createdAt, confirmedAt: $confirmedAt, emailConfirmedAt: $emailConfirmedAt, phoneConfirmedAt: $phoneConfirmedAt, lastSignInAt: $lastSignInAt, role: $role, updatedAt: $updatedAt, identities: $identities, factors: $factors, isAnonymous: $isAnonymous)';
+    return 'User(id: $id, appMetadata: $appMetadata, userMetadata: $userMetadata, aud: $aud, confirmationSentAt: $confirmationSentAt, recoverySentAt: $recoverySentAt, emailChangeSentAt: $emailChangeSentAt, newEmail: $newEmail, invitedAt: $invitedAt, actionLink: $actionLink, email: $email, phone: $phone, createdAt: $createdAt, confirmedAt: $confirmedAt, emailConfirmedAt: $emailConfirmedAt, phoneConfirmedAt: $phoneConfirmedAt, lastSignInAt: $lastSignInAt, role: $role, updatedAt: $updatedAt, identities: $identities, factors: $factors, isAnonymous: $isAnonymous, bannedUntil: $bannedUntil, isBanned: $isBanned)';
   }
 
   @override
@@ -150,7 +165,8 @@ class User {
         other.updatedAt == updatedAt &&
         collectionEquals(other.identities, identities) &&
         collectionEquals(other.factors, factors) &&
-        other.isAnonymous == isAnonymous;
+        other.isAnonymous == isAnonymous &&
+        other.bannedUntil == bannedUntil;
   }
 
   @override
@@ -176,7 +192,8 @@ class User {
         updatedAt.hashCode ^
         identities.hashCode ^
         factors.hashCode ^
-        isAnonymous.hashCode;
+        isAnonymous.hashCode ^
+        bannedUntil.hashCode;
   }
 }
 
