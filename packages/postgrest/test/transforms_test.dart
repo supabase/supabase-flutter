@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
+import 'custom_http_client.dart';
 import 'reset_helper.dart';
 
 void main() {
@@ -342,5 +343,140 @@ void main() {
     final res = await postgrest.from('addresses').select().geojson();
     expect(res, isNotNull);
     expect(res['type'], 'FeatureCollection');
+  });
+
+  group('maxAffected', () {
+    test('maxAffected method can be called on update operations', () {
+      expect(
+        () => postgrest
+            .from('users')
+            .update({'status': 'INACTIVE'})
+            .eq('id', 1)
+            .maxAffected(1),
+        returnsNormally,
+      );
+    });
+
+    test('maxAffected method can be called on delete operations', () {
+      expect(
+        () => postgrest
+            .from('channels')
+            .delete()
+            .eq('id', 999)
+            .maxAffected(5),
+        returnsNormally,
+      );
+    });
+
+    test('maxAffected method can be called on select operations', () {
+      expect(
+        () => postgrest.from('users').select().maxAffected(1),
+        returnsNormally,
+      );
+    });
+
+    test('maxAffected method can be called on insert operations', () {
+      expect(
+        () => postgrest
+            .from('users')
+            .insert({'username': 'test'})
+            .maxAffected(1),
+        returnsNormally,
+      );
+    });
+
+    test('maxAffected method can be chained with select', () {
+      expect(
+        () => postgrest
+            .from('users')
+            .update({'status': 'INACTIVE'})
+            .eq('id', 1)
+            .maxAffected(1)
+            .select(),
+        returnsNormally,
+      );
+    });
+  });
+
+  group('maxAffected integration', () {
+    late CustomHttpClient customHttpClient;
+    late PostgrestClient postgrestCustomHttpClient;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      postgrestCustomHttpClient = PostgrestClient(
+        rootUrl,
+        httpClient: customHttpClient,
+      );
+    });
+
+    test('maxAffected sets correct headers for update', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .update({'status': 'INACTIVE'})
+            .eq('id', 1)
+            .maxAffected(5);
+      } catch (_) {
+        // Expected to fail with custom client, we just want to check headers
+      }
+
+      expect(customHttpClient.lastRequest, isNotNull);
+      expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
+      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('handling=strict'));
+      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('max-affected=5'));
+    });
+
+    test('maxAffected sets correct headers for delete', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .delete()
+            .eq('id', 1)
+            .maxAffected(10);
+      } catch (_) {
+        // Expected to fail with custom client, we just want to check headers
+      }
+
+      expect(customHttpClient.lastRequest, isNotNull);
+      expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
+      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('handling=strict'));
+      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('max-affected=10'));
+    });
+
+    test('maxAffected preserves existing Prefer headers', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .update({'status': 'INACTIVE'})
+            .eq('id', 1)
+            .select()
+            .maxAffected(3);
+      } catch (_) {
+        // Expected to fail with custom client, we just want to check headers
+      }
+
+      expect(customHttpClient.lastRequest, isNotNull);
+      final preferHeader = customHttpClient.lastRequest!.headers['Prefer']!;
+      expect(preferHeader, contains('return=representation'));
+      expect(preferHeader, contains('handling=strict'));
+      expect(preferHeader, contains('max-affected=3'));
+    });
+
+    test('maxAffected works with select operations (sets headers but likely ineffective)', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .select()
+            .maxAffected(2);
+      } catch (_) {
+        // Expected to fail with custom client, we just want to check headers
+      }
+
+      expect(customHttpClient.lastRequest, isNotNull);
+      expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
+      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('handling=strict'));
+      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('max-affected=2'));
+    });
   });
 }
