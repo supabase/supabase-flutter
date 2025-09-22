@@ -59,15 +59,10 @@ class User {
   /// Compares the current UTC time with the bannedUntil timestamp
   bool get isBanned {
     if (bannedUntil == null) return false;
-
-    try {
-      final banExpiration = DateTime.parse(bannedUntil!);
-      final now = DateTime.now().toUtc();
-      return now.isBefore(banExpiration);
-    } catch (e) {
-      // If bannedUntil cannot be parsed, consider user not banned
-      return false;
-    }
+    final banExpiration = DateTime.tryParse(bannedUntil!);
+    if (banExpiration == null) return false;
+    final now = DateTime.now().toUtc();
+    return now.isBefore(banExpiration);
   }
 
   /// Returns a `User` object from a map of json
@@ -99,7 +94,8 @@ class User {
       updatedAt: json['updated_at'],
       identities: json['identities'] != null
           ? List<UserIdentity>.from(
-              json['identities']?.map((x) => UserIdentity.fromMap(x)))
+              json['identities']?.map((x) => UserIdentity.fromMap(x)),
+            )
           : null,
       factors: json['factors'] != null
           ? List<Factor>.from(json['factors']?.map((x) => Factor.fromJson(x)))
