@@ -359,11 +359,7 @@ void main() {
 
     test('maxAffected method can be called on delete operations', () {
       expect(
-        () => postgrest
-            .from('channels')
-            .delete()
-            .eq('id', 999)
-            .maxAffected(5),
+        () => postgrest.from('channels').delete().eq('id', 999).maxAffected(5),
         returnsNormally,
       );
     });
@@ -377,10 +373,8 @@ void main() {
 
     test('maxAffected method can be called on insert operations', () {
       expect(
-        () => postgrest
-            .from('users')
-            .insert({'username': 'test'})
-            .maxAffected(1),
+        () =>
+            postgrest.from('users').insert({'username': 'test'}).maxAffected(1),
         returnsNormally,
       );
     });
@@ -423,8 +417,10 @@ void main() {
 
       expect(customHttpClient.lastRequest, isNotNull);
       expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
-      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('handling=strict'));
-      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('max-affected=5'));
+      expect(customHttpClient.lastRequest!.headers['Prefer'],
+          contains('handling=strict'));
+      expect(customHttpClient.lastRequest!.headers['Prefer'],
+          contains('max-affected=5'));
     });
 
     test('maxAffected sets correct headers for delete', () async {
@@ -440,8 +436,10 @@ void main() {
 
       expect(customHttpClient.lastRequest, isNotNull);
       expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
-      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('handling=strict'));
-      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('max-affected=10'));
+      expect(customHttpClient.lastRequest!.headers['Prefer'],
+          contains('handling=strict'));
+      expect(customHttpClient.lastRequest!.headers['Prefer'],
+          contains('max-affected=10'));
     });
 
     test('maxAffected preserves existing Prefer headers', () async {
@@ -463,20 +461,21 @@ void main() {
       expect(preferHeader, contains('max-affected=3'));
     });
 
-    test('maxAffected works with select operations (sets headers but likely ineffective)', () async {
+    test(
+        'maxAffected works with select operations (sets headers but likely ineffective)',
+        () async {
       try {
-        await postgrestCustomHttpClient
-            .from('users')
-            .select()
-            .maxAffected(2);
+        await postgrestCustomHttpClient.from('users').select().maxAffected(2);
       } catch (_) {
         // Expected to fail with custom client, we just want to check headers
       }
 
       expect(customHttpClient.lastRequest, isNotNull);
       expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
-      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('handling=strict'));
-      expect(customHttpClient.lastRequest!.headers['Prefer'], contains('max-affected=2'));
+      expect(customHttpClient.lastRequest!.headers['Prefer'],
+          contains('handling=strict'));
+      expect(customHttpClient.lastRequest!.headers['Prefer'],
+          contains('max-affected=2'));
     });
   });
 }
