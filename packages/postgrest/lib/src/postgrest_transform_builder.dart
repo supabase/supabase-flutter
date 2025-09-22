@@ -246,6 +246,38 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     return ResponsePostgrestBuilder(_copyWithType(headers: newHeaders));
   }
 
+  /// Sets the maximum number of rows that can be affected by the query.
+  ///
+  /// Only available with PATCH and DELETE operations. Requires PostgREST v13 or higher.
+  /// When the limit is exceeded, the query will fail with an error.
+  ///
+  /// ```dart
+  /// supabase.from('users').update({'active': false}).eq('status', 'inactive').maxAffected(5);
+  /// ```
+  ///
+  /// ```dart
+  /// supabase.from('users').delete().eq('active', false).maxAffected(10);
+  /// ```
+  PostgrestTransformBuilder<T> maxAffected(int value) {
+    final newHeaders = {..._headers};
+
+    // Add handling=strict and max-affected headers
+    if (newHeaders['Prefer'] != null) {
+      var preferHeader = newHeaders['Prefer']!;
+      if (!preferHeader.contains('handling=strict')) {
+        preferHeader += ',handling=strict';
+      }
+      if (!preferHeader.contains('max-affected=')) {
+        preferHeader += ',max-affected=$value';
+      }
+      newHeaders['Prefer'] = preferHeader;
+    } else {
+      newHeaders['Prefer'] = 'handling=strict,max-affected=$value';
+    }
+
+    return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
+  }
+
   /// Obtains the EXPLAIN plan for this request.
   ///
   /// Before using this method, you need to enable `explain()` on your
