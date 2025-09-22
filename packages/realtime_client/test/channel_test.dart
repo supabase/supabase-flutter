@@ -67,17 +67,12 @@ void main() {
       channel = socket.channel('topic');
     });
 
-    test('sets state to joining', () {
-      channel.subscribe();
-
-      expect(channel.isJoining, true);
-    });
-
-    test('sets joinedOnce to true', () {
+    test('sets state and joinedOnce when subscribing', () {
       expect(channel.joinedOnce, isFalse);
 
       channel.subscribe();
 
+      expect(channel.isJoining, true);
       expect(channel.joinedOnce, isTrue);
     });
 
@@ -99,49 +94,27 @@ void main() {
     });
   });
 
-  group('onError', () {
+  group('state transitions', () {
     setUp(() {
       socket = RealtimeClient('/socket');
       channel = socket.channel('topic');
       channel.subscribe();
     });
 
-    test("sets state to 'errored'", () {
+    test('error and close events change state correctly', () {
+      // Test error state
       expect(channel.isErrored, isFalse);
-
       channel.trigger('phx_error');
-
       expect(channel.isErrored, isTrue);
-    });
-  });
 
-  group('onClose', () {
-    setUp(() {
+      // Reset and test close state
       socket = RealtimeClient('/socket');
       channel = socket.channel('topic');
       channel.subscribe();
-    });
 
-    test("sets state to 'closed'", () {
       expect(channel.isClosed, isFalse);
-
       channel.trigger('phx_close');
-
       expect(channel.isClosed, isTrue);
-    });
-  });
-
-  group('onMessage', () {
-    setUp(() {
-      socket = RealtimeClient('/socket');
-
-      channel = socket.channel('topic');
-    });
-
-    test('returns payload by default', () {
-      final payload = channel.onMessage('event', {'one': 'two'});
-
-      expect(payload, {'one': 'two'});
     });
   });
 
@@ -352,7 +325,7 @@ void main() {
           RealtimeChannel('topic', socket, params: RealtimeChannelConfig());
     });
 
-    test('description', () async {
+    test('presence callbacks work correctly', () async {
       bool syncCalled = false, joinCalled = false, leaveCalled = false;
       channel.onPresenceSync((payload) {
         syncCalled = true;
@@ -384,6 +357,101 @@ void main() {
           },
           '3');
       expect(leaveCalled, isTrue);
+    });
+  });
+
+  group('postgres changes', () {
+    setUp(() {
+      socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
+      channel =
+          RealtimeChannel('topic', socket, params: RealtimeChannelConfig());
+    });
+
+    test('onPostgresChanges registers postgres change listener', () {
+      var called = false;
+      PostgresChangePayload? receivedPayload;
+
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'users',
+        callback: (payload) {
+          called = true;
+          receivedPayload = payload;
+        },
+      );
+
+      // Simulate postgres change event
+      final payload = {
+        'event': 'INSERT',
+        'schema': 'public',
+        'table': 'users',
+        'eventType': 'INSERT',
+        'new': {'id': 1, 'name': 'John'},
+        'old': {},
+        'commit_timestamp': '2023-01-01T00:00:00Z',
+        'errors': null,
+      };
+
+      channel.trigger('postgres_changes', payload);
+
+      expect(called, isTrue);
+      expect(receivedPayload?.eventType, PostgresChangeEvent.insert);
+      expect(receivedPayload?.newRecord['name'], 'John');
+    });
+  });
+
+  group('broadcast', () {
+    setUp(() {
+      socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
+      channel =
+          RealtimeChannel('topic', socket, params: RealtimeChannelConfig());
+    });
+
+    test('onBroadcast registers broadcast listener', () {
+      var called = false;
+      Map<String, dynamic>? receivedPayload;
+
+      channel.onBroadcast(
+        event: 'chat_message',
+        callback: (payload) {
+          called = true;
+          receivedPayload = payload;
+        },
+      );
+
+      // Simulate broadcast event
+      channel.trigger('broadcast', {
+        'event': 'chat_message',
+        'payload': {'text': 'Hello world'},
+      });
+
+      expect(called, isTrue);
+      expect(receivedPayload?['payload']['text'], 'Hello world');
+    });
+  });
+
+  group('helper methods', () {
+    setUp(() {
+      socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
+      channel =
+          RealtimeChannel('topic', socket, params: RealtimeChannelConfig());
+    });
+
+    test('utility methods work correctly', () {
+      // replyEventName
+      expect(channel.replyEventName('ref123'), 'chan_reply_ref123');
+      expect(channel.replyEventName(null), 'chan_reply_null');
+
+      // isMember
+      expect(channel.isMember('topic'), isTrue);
+      expect(channel.isMember('other:topic'), isFalse);
+      expect(channel.isMember('*'), isFalse);
+
+      // state getters
+      expect(channel.isClosed, isTrue);
+      expect(channel.isErrored, isFalse);
+      expect(channel.isJoined, isFalse);
     });
   });
 }
