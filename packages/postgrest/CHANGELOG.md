@@ -2,6 +2,13 @@
 
  - Update a dependency to the latest release.
 
+## [2.5.0](https://github.com/supabase/supabase-flutter/compare/postgrest-v2.4.2...postgrest-v2.5.0) (2025-09-25)
+
+
+### Features
+
+* **postgrest:** Implement maxAffected method ([#1226](https://github.com/supabase/supabase-flutter/issues/1226)) ([ae2d12d](https://github.com/supabase/supabase-flutter/commit/ae2d12d91f234261760578a55c4ef9dc939fc551))
+
 ## 2.4.1
 
  - **DOCS**: Fix typo for RPC docs ([#1105](https://github.com/supabase/supabase-flutter/issues/1105)). ([7c8c8630](https://github.com/supabase/supabase-flutter/commit/7c8c8630257984f429406b0d85a8601881712343))
