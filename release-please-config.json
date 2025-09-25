@@ -1,0 +1,76 @@
+{
+  "release-type": "dart",
+  "bootstrap-sha": "ae2d12d0c8a1e2f3b4c5d6e7f8a9b0c1d2e3f4a5",
+  "packages": {
+    "packages/functions_client": {
+      "release-type": "dart",
+      "package-name": "functions_client",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "packages/gotrue": {
+      "release-type": "dart",
+      "package-name": "gotrue",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "packages/postgrest": {
+      "release-type": "dart",
+      "package-name": "postgrest",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "packages/realtime_client": {
+      "release-type": "dart",
+      "package-name": "realtime_client",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "packages/storage_client": {
+      "release-type": "dart",
+      "package-name": "storage_client",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "packages/supabase": {
+      "release-type": "dart",
+      "package-name": "supabase",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "packages/supabase_flutter": {
+      "release-type": "dart",
+      "package-name": "supabase_flutter",
+      "changelog-path": "CHANGELOG.md"
+    },
+    "packages/yet_another_json_isolate": {
+      "release-type": "dart",
+      "package-name": "yet_another_json_isolate",
+      "changelog-path": "CHANGELOG.md"
+    }
+  },
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "group-name": "supabase-flutter-packages",
+      "components": [
+        "packages/functions_client",
+        "packages/gotrue",
+        "packages/postgrest",
+        "packages/realtime_client",
+        "packages/storage_client",
+        "packages/supabase",
+        "packages/supabase_flutter",
+        "packages/yet_another_json_isolate"
+      ]
+    }
+  ],
+  "group-pull-request-title-pattern": "chore(release): release ${version}",
+  "pull-request-title-pattern": "chore(${scope}): release ${version}",
+  "changelog-sections": [
+    {"type": "feat", "section": "Features"},
+    {"type": "fix", "section": "Bug Fixes"},
+    {"type": "chore", "section": "Miscellaneous Chores", "hidden": false},
+    {"type": "docs", "section": "Documentation"},
+    {"type": "style", "section": "Styles", "hidden": true},
+    {"type": "refactor", "section": "Code Refactoring"},
+    {"type": "perf", "section": "Performance Improvements"},
+    {"type": "test", "section": "Tests", "hidden": true},
+    {"type": "build", "section": "Build System", "hidden": true},
+    {"type": "ci", "section": "Continuous Integration", "hidden": true}
+  ]
+}

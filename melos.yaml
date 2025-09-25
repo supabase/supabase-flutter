@@ -32,6 +32,12 @@ scripts:
   format:
     exec: dart format lib test -l 80 --set-exit-if-changed
 
+  test:
+    exec: dart test --concurrency=1
+    description: Run tests for all packages
+    packageFilters:
+      dirExists: test
+
   upgrade:
     exec: dart pub upgrade
 
@@ -44,7 +50,7 @@ scripts:
       # Loop through the packages directory
       for d in packages/*/ ; do
         # Get version number
-        version=$(awk '/version:/ { 
+        version=$(awk '/version:/ {
           pos=match($2, /[0-9]+\.[0-9]+\.[0-9]+/);
           print substr($2, pos); }' $d/pubspec.yaml)
         # Update version.dart file
@@ -54,4 +60,10 @@ scripts:
       rm packages/yet_another_json_isolate/lib/src/version.dart
       # Stage the version.dart file change
       git add packages/*/lib/src/version.dart
+
+  release:prepare:
+    description: Prepare packages for release by running tests and lints
+    run: |
+      melos run lint:all --no-select
+      melos run test --no-select
     
