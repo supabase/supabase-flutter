@@ -1,7 +1,7 @@
 {
   "packages/functions_client": "2.4.4",
   "packages/gotrue": "2.15.0",
-  "packages/postgrest": "2.4.2",
+  "packages/postgrest": "2.5.0",
   "packages/realtime_client": "2.5.2",
   "packages/storage_client": "2.4.1",
   "packages/supabase": "2.9.1",
