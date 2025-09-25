@@ -5,37 +5,58 @@
     "packages/functions_client": {
       "release-type": "dart",
       "package-name": "functions_client",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "lib/src/version.dart"
+      ]
     },
     "packages/gotrue": {
       "release-type": "dart",
       "package-name": "gotrue",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "lib/src/version.dart"
+      ]
     },
     "packages/postgrest": {
       "release-type": "dart",
       "package-name": "postgrest",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "lib/src/version.dart"
+      ]
     },
     "packages/realtime_client": {
       "release-type": "dart",
       "package-name": "realtime_client",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "lib/src/version.dart"
+      ]
     },
     "packages/storage_client": {
       "release-type": "dart",
       "package-name": "storage_client",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "lib/src/version.dart"
+      ]
     },
     "packages/supabase": {
       "release-type": "dart",
       "package-name": "supabase",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "lib/src/version.dart"
+      ]
     },
     "packages/supabase_flutter": {
       "release-type": "dart",
       "package-name": "supabase_flutter",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        "lib/src/version.dart"
+      ]
     },
     "packages/yet_another_json_isolate": {
       "release-type": "dart",
@@ -58,19 +79,5 @@
         "packages/yet_another_json_isolate"
       ]
     }
-  ],
-  "group-pull-request-title-pattern": "chore(release): release ${version}",
-  "pull-request-title-pattern": "chore(${scope}): release ${version}",
-  "changelog-sections": [
-    {"type": "feat", "section": "Features"},
-    {"type": "fix", "section": "Bug Fixes"},
-    {"type": "chore", "section": "Miscellaneous Chores", "hidden": false},
-    {"type": "docs", "section": "Documentation"},
-    {"type": "style", "section": "Styles", "hidden": true},
-    {"type": "refactor", "section": "Code Refactoring"},
-    {"type": "perf", "section": "Performance Improvements"},
-    {"type": "test", "section": "Tests", "hidden": true},
-    {"type": "build", "section": "Build System", "hidden": true},
-    {"type": "ci", "section": "Continuous Integration", "hidden": true}
   ]
 }

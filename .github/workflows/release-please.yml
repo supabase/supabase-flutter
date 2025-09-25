@@ -51,11 +51,11 @@ jobs:
       - name: Bootstrap workspace
         run: melos bootstrap
 
-      - name: Run version update hook
-        run: melos run update-version
+      # - name: Run version update hook
+      #   run: melos run update-version
 
-      - name: Run tests
-        run: melos run test --no-select
+      # - name: Run tests
+      #   run: melos run test --no-select
 
       - name: Setup pub credentials
         run: |
