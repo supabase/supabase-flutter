@@ -19,7 +19,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  preapre-release:
+  prepare-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
