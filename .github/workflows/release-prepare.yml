@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - chore/setup-release-please
     
 permissions:
   contents: write
