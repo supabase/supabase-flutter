@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - chore/setup-release-please
 
 permissions:
   contents: write
@@ -20,6 +21,7 @@ jobs:
         id: release
         uses: googleapis/release-please-action@v4
         with:
+          target-branch: ${{ github.ref_name }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           token: ${{ secrets.GITHUB_TOKEN }}
