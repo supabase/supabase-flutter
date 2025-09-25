@@ -1,10 +1,18 @@
 name: Prepare Release
 
 on:
-  push:
-    branches:
-      - main
-      - chore/setup-release-please
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: 'Version as prerelease'
+        required: false
+        default: false
+        type: boolean
+      graduate:
+        description: 'Graduate prereleases to stable'
+        required: false
+        default: false
+        type: boolean
     
 permissions:
   contents: write
@@ -13,7 +21,6 @@ permissions:
 jobs:
   preapre-release:
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, 'chore(release):') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,6 +34,8 @@ jobs:
       - name: Setup Melos
         uses: bluefireteam/melos-action@v3
         with:
-          run-versioning: true
+          run-versioning: ${{ inputs.prerelease == false }}
+          run-versioning-prerelease: ${{ inputs.prerelease == true }}
+          run-versioning-graduate: ${{ inputs.graduate == true }}
           publish-dry-run: true
           create-pr: true

@@ -1,13 +1,11 @@
 name: Publish Packages
 
 on:
-  push:
-    tags:
-      - '*@*'  # Matches tags like package_name@version
   workflow_dispatch:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   publish-packages:
@@ -18,40 +16,27 @@ jobs:
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
-
-      - name: Setup pub credentials
-        run: |
-          mkdir -p ~/.config/dart
-          cat <<EOF > ~/.config/dart/pub-credentials.json
-          {
-            "accessToken":"${{ secrets.PUB_DEV_ACCESS_TOKEN }}",
-            "refreshToken":"${{ secrets.PUB_DEV_REFRESH_TOKEN }}",
-            "tokenEndpoint":"https://accounts.google.com/o/oauth2/token",
-            "scopes":["https://www.googleapis.com/auth/userinfo.email","openid"],
-            "expiration":${{ secrets.PUB_DEV_TOKEN_EXPIRATION }}
-          }
-          EOF
   
       - name: Publish to pub.dev
         uses: bluefireteam/melos-action@v3
         with:
           publish: true
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          body: |
-            ## Package Release
+      # - name: Create GitHub Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     tag_name: ${{ github.ref_name }}
+      #     name: Release ${{ github.ref_name }}
+      #     body: |
+      #       ## Package Release
 
-            Released package: ${{ github.ref_name }}
+      #       Released package: ${{ github.ref_name }}
 
-            See the package CHANGELOG for detailed changes.
+      #       See the package CHANGELOG for detailed changes.
 
-            ---
-            *This release was created automatically by the Publish Packages workflow.*
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #       ---
+      #       *This release was created automatically by the Publish Packages workflow.*
+      #     draft: false
+      #     prerelease: false
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,1 +1,1 @@
-const version = '2.15.0'; // {x-release-please-version}
+const version = '2.15.0';
