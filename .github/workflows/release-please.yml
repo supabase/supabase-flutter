@@ -16,6 +16,8 @@ jobs:
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
       paths_released: ${{ steps.release.outputs.paths_released }}
+      pr_created: ${{ steps.release.outputs.pr_created }}
+      pr_number: ${{ steps.release.outputs.pr_number }}
     steps:
       - name: Release Please
         id: release
@@ -25,6 +27,59 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  update-dependencies:
+    needs: release-please
+    if: needs.release-please.outputs.pr_created == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: release-please--branches--${{ github.ref_name }}
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          channel: 'stable'
+
+      - name: Get Dart dependencies
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Update dependency versions using melos
+        run: |
+          # Run melos version in dry-run to update dependency versions in pubspec.yaml
+          # This will update dependencies between packages to match new versions
+          echo "Updating dependency versions..."
+
+          # Read the current versions and update dependencies manually
+          node scripts/update-dependencies.js
+
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit dependency updates
+        run: |
+          if git diff --quiet; then
+            echo "No dependency updates needed"
+          else
+            git add packages/*/pubspec.yaml
+            git commit -m "chore: update package dependencies"
+            git push origin release-please--branches--${{ github.ref_name }}
+            echo "Pushed dependency updates to release PR"
+          fi
 
   publish:
     needs: release-please
@@ -50,12 +105,6 @@ jobs:
 
       - name: Bootstrap workspace
         run: melos bootstrap
-
-      # - name: Run version update hook
-      #   run: melos run update-version
-
-      # - name: Run tests
-      #   run: melos run test --no-select
 
       - name: Setup pub credentials
         run: |
