@@ -18,8 +18,6 @@ jobs:
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
 
       - name: Setup pub credentials
         run: |
@@ -37,7 +35,6 @@ jobs:
       - name: Publish to pub.dev
         uses: bluefireteam/melos-action@v3
         with:
-          melos-version: 'latest'
           publish: true
 
       - name: Create GitHub Release
