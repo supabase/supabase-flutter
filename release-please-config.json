@@ -1,6 +1,6 @@
 {
   "release-type": "dart",
-  "bootstrap-sha": "ae2d12d0c8a1e2f3b4c5d6e7f8a9b0c1d2e3f4a5",
+  "bootstrap-sha": "91981988fb0dec7855fff920252b508aa5a10771",
   "packages": {
     "packages/functions_client": {
       "release-type": "dart",
