@@ -1,5 +1,6 @@
 {
-  "last-release-sha": "91981988fb0dec7855fff920252b508aa5a10771",
+  "bootstrap-sha": "323735262b358167da66e4237874d2c1daf1f191",
+  "last-release-sha": "323735262b358167da66e4237874d2c1daf1f191",
   "packages": {
     "packages/functions_client": {
       "release-type": "dart",
