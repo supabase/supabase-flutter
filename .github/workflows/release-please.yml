@@ -30,7 +30,6 @@ jobs:
 
   update-dependencies:
     needs: release-please
-    if: needs.release-please.outputs.pr_created == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
