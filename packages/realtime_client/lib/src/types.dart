@@ -148,6 +148,9 @@ class RealtimeChannelConfig {
   /// [key] option is used to track presence payload across clients
   final String key;
 
+  /// Enables presence even without presence bindings
+  final bool enabled;
+
   /// Defines if the channel is private or not and if RLS policies will be used to check data
   final bool private;
 
@@ -155,6 +158,7 @@ class RealtimeChannelConfig {
     this.ack = false,
     this.self = false,
     this.key = '',
+    this.enabled = false,
     this.private = false,
   });
 
@@ -167,6 +171,7 @@ class RealtimeChannelConfig {
         },
         'presence': {
           'key': key,
+          'enabled': enabled,
         },
         'private': private,
       }

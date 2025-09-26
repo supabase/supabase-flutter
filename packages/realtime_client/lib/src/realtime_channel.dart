@@ -130,10 +130,14 @@ class RealtimeChannel {
         if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
       });
 
+      final presenceEnabled =
+          (_bindings['presence']?.isNotEmpty == true) ||
+          (params['config']['presence']['enabled'] == true);
+
       final accessTokenPayload = <String, String>{};
       final config = <String, dynamic>{
         'broadcast': broadcast,
-        'presence': presence,
+        'presence': {...presence, 'enabled': presenceEnabled},
         'postgres_changes':
             _bindings['postgres_changes']?.map((r) => r.filter).toList() ?? [],
         'private': isPrivate == true,
