@@ -153,18 +153,20 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     if (!defaultToNull) {
       newHeaders['Prefer'] = '${newHeaders['Prefer']!},missing=default';
     }
+
     Uri url = _url;
-    if (onConflict != null) {
-      url = _url.replace(
-        queryParameters: {
-          'on_conflict': onConflict,
-          ..._url.queryParameters,
-        },
-      );
-    }
 
     if (values is List) {
       url = _setColumnsSearchParam(values);
+    }
+
+    if (onConflict != null) {
+      url = url.replace(
+        queryParameters: {
+          'on_conflict': onConflict,
+          ...url.queryParameters,
+        },
+      );
     }
 
     return PostgrestFilterBuilder<T>(_copyWith(
