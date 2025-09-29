@@ -37,5 +37,4 @@ jobs:
           run-versioning: ${{ inputs.prerelease == false }}
           run-versioning-prerelease: ${{ inputs.prerelease == true }}
           run-versioning-graduate: ${{ inputs.graduate == true }}
-          publish-dry-run: true
           create-pr: true
