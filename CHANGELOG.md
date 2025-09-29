@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-09-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`postgrest` - `v2.5.0`](#postgrest---v250)
+ - [`realtime_client` - `v2.5.3`](#realtime_client---v253)
+ - [`supabase` - `v2.9.2`](#supabase---v292)
+ - [`supabase_flutter` - `v2.10.2`](#supabase_flutter---v2102)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.9.2`
+ - `supabase_flutter` - `v2.10.2`
+
+---
+
+#### `postgrest` - `v2.5.0`
+
+ - **FIX**(postgrest): URL replacement logic in query builder ([#1228](https://github.com/supabase/supabase-flutter/issues/1228)). ([908976c5](https://github.com/supabase/supabase-flutter/commit/908976c5d16ef1e8bea336f4981d2a2b3af06de1))
+ - **FEAT**(postgrest): Implement maxAffected method ([#1226](https://github.com/supabase/supabase-flutter/issues/1226)). ([ae2d12d9](https://github.com/supabase/supabase-flutter/commit/ae2d12d91f234261760578a55c4ef9dc939fc551))
+
+#### `realtime_client` - `v2.5.3`
+
+ - **FIX**(realtime): add presence flag ([#1233](https://github.com/supabase/supabase-flutter/issues/1233)). ([ae121eae](https://github.com/supabase/supabase-flutter/commit/ae121eae661691b8887eecc52eaa8b2ee5832564))
+
+
 ## 2025-09-15
 
 ### Changes
