@@ -1,0 +1,42 @@
+name: Publish Packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+  
+      - name: Publish to pub.dev
+        uses: bluefireteam/melos-action@v3
+        with:
+          publish: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Package Release
+
+            Released package: ${{ github.ref_name }}
+
+            See the package CHANGELOG for detailed changes.
+
+            ---
+            *This release was created automatically by the Publish Packages workflow.*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
