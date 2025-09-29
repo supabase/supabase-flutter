@@ -1,3 +1,8 @@
+## 2.5.0
+
+ - **FIX**(postgrest): URL replacement logic in query builder ([#1228](https://github.com/supabase/supabase-flutter/issues/1228)). ([908976c5](https://github.com/supabase/supabase-flutter/commit/908976c5d16ef1e8bea336f4981d2a2b3af06de1))
+ - **FEAT**(postgrest): Implement maxAffected method ([#1226](https://github.com/supabase/supabase-flutter/issues/1226)). ([ae2d12d9](https://github.com/supabase/supabase-flutter/commit/ae2d12d91f234261760578a55c4ef9dc939fc551))
+
 ## 2.4.2
 
  - Update a dependency to the latest release.
