@@ -104,6 +104,25 @@ class RealtimeChannel {
     }
   }
 
+  bool _shouldEnablePresence() {
+    return (_bindings['presence']?.isNotEmpty == true) ||
+        (params['config']['presence']['enabled'] == true);
+  }
+
+  void _handlePresenceUpdate() {
+    if (joinedOnce && isJoined) {
+      final currentPresenceEnabled = params['config']['presence']['enabled'];
+      final shouldEnablePresence = _shouldEnablePresence();
+
+      if (!currentPresenceEnabled && shouldEnablePresence) {
+        final config = Map<String, dynamic>.from(params['config']);
+        config['presence']['enabled'] = true;
+        updateJoinPayload({'config': config});
+        rejoin();
+      }
+    }
+  }
+
   /// Subscribes to receive real-time changes
   ///
   /// Pass a [callback] to react to different status changes.
@@ -130,8 +149,7 @@ class RealtimeChannel {
         if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
       });
 
-      final presenceEnabled = (_bindings['presence']?.isNotEmpty == true) ||
-          (params['config']['presence']['enabled'] == true);
+      final presenceEnabled = _shouldEnablePresence();
 
       final accessTokenPayload = <String, String>{};
       final config = <String, dynamic>{
@@ -351,7 +369,7 @@ class RealtimeChannel {
   RealtimeChannel onPresenceSync(
     void Function(RealtimePresenceSyncPayload payload) callback,
   ) {
-    return onEvents(
+    final result = onEvents(
       'presence',
       ChannelFilter(
         event: PresenceEvent.sync.name,
@@ -361,6 +379,8 @@ class RealtimeChannel {
             Map<String, dynamic>.from(payload)));
       },
     );
+    _handlePresenceUpdate();
+    return result;
   }
 
   /// Sets up a listener for realtime presence join event.
@@ -377,7 +397,7 @@ class RealtimeChannel {
   RealtimeChannel onPresenceJoin(
     void Function(RealtimePresenceJoinPayload payload) callback,
   ) {
-    return onEvents(
+    final result = onEvents(
       'presence',
       ChannelFilter(
         event: PresenceEvent.join.name,
@@ -387,6 +407,8 @@ class RealtimeChannel {
             Map<String, dynamic>.from(payload)));
       },
     );
+    _handlePresenceUpdate();
+    return result;
   }
 
   /// Sets up a listener for realtime presence leave event.
@@ -403,7 +425,7 @@ class RealtimeChannel {
   RealtimeChannel onPresenceLeave(
     void Function(RealtimePresenceLeavePayload payload) callback,
   ) {
-    return onEvents(
+    final result = onEvents(
       'presence',
       ChannelFilter(
         event: PresenceEvent.leave.name,
@@ -413,6 +435,8 @@ class RealtimeChannel {
             Map<String, dynamic>.from(payload)));
       },
     );
+    _handlePresenceUpdate();
+    return result;
   }
 
   /// Sets up a listener for realtime system events for debugging purposes.
