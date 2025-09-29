@@ -116,7 +116,9 @@ class RealtimeChannel {
 
       if (!currentPresenceEnabled && shouldEnablePresence) {
         final config = Map<String, dynamic>.from(params['config']);
+        config['presence'] = Map<String, dynamic>.from(config['presence']);
         config['presence']['enabled'] = true;
+        params['config'] = config;
         updateJoinPayload({'config': config});
         rejoin();
       }

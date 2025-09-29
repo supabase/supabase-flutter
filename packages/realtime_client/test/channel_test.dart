@@ -496,6 +496,7 @@ void main() {
       );
 
       channel.subscribe();
+      channel.joinPush.trigger('ok', {});
       expect(channel.params['config']['presence']['enabled'], isFalse);
 
       channel.onPresenceSync((payload) {});
@@ -513,6 +514,7 @@ void main() {
       );
 
       channel.subscribe();
+      channel.joinPush.trigger('ok', {});
       final initialPayload = Map.from(channel.params);
 
       channel.onPresenceSync((payload) {});
@@ -531,6 +533,7 @@ void main() {
       );
 
       channel.subscribe();
+      channel.joinPush.trigger('ok', {});
       expect(channel.params['config']['presence']['enabled'], isFalse);
 
       channel.onPresenceSync((payload) {});
@@ -570,6 +573,7 @@ void main() {
       );
 
       channel.subscribe();
+      channel.joinPush.trigger('ok', {});
 
       bool syncCalled = false;
       channel.onPresenceSync((payload) {
@@ -589,6 +593,7 @@ void main() {
       );
 
       channel.subscribe();
+      channel.joinPush.trigger('ok', {});
       expect(channel.params['config']['presence']['enabled'], isFalse);
 
       channel.onPresenceJoin((payload) {});
@@ -604,6 +609,7 @@ void main() {
       );
 
       channel.subscribe();
+      channel.joinPush.trigger('ok', {});
       expect(channel.params['config']['presence']['enabled'], isFalse);
 
       channel.onPresenceLeave((payload) {});
