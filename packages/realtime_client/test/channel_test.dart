@@ -392,7 +392,9 @@ void main() {
       socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
     });
 
-    test('should enable presence when config.presence.enabled is true even without bindings', () {
+    test(
+        'should enable presence when config.presence.enabled is true even without bindings',
+        () {
       channel = RealtimeChannel(
         'topic',
         socket,
@@ -419,7 +421,9 @@ void main() {
       expect(joinPayload['config']['presence']['enabled'], isTrue);
     });
 
-    test('should enable presence when both bindings exist and config.presence.enabled is true', () {
+    test(
+        'should enable presence when both bindings exist and config.presence.enabled is true',
+        () {
       channel = RealtimeChannel(
         'topic',
         socket,
@@ -433,7 +437,9 @@ void main() {
       expect(joinPayload['config']['presence']['enabled'], isTrue);
     });
 
-    test('should not enable presence when neither bindings exist nor config.presence.enabled is true', () {
+    test(
+        'should not enable presence when neither bindings exist nor config.presence.enabled is true',
+        () {
       channel = RealtimeChannel(
         'topic',
         socket,

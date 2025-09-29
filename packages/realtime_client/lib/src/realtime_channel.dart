@@ -130,8 +130,7 @@ class RealtimeChannel {
         if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
       });
 
-      final presenceEnabled =
-          (_bindings['presence']?.isNotEmpty == true) ||
+      final presenceEnabled = (_bindings['presence']?.isNotEmpty == true) ||
           (params['config']['presence']['enabled'] == true);
 
       final accessTokenPayload = <String, String>{};
