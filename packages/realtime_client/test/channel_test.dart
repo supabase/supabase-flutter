@@ -523,8 +523,7 @@ void main() {
       expect(channel.params, equals(initialPayload));
     });
 
-    test(
-        'should only resubscribe once when multiple presence callbacks added',
+    test('should only resubscribe once when multiple presence callbacks added',
         () {
       channel = RealtimeChannel(
         'topic',
