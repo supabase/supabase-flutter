@@ -1,3 +1,7 @@
+## 2.5.3
+
+ - **FIX**(realtime): add presence flag ([#1233](https://github.com/supabase/supabase-flutter/issues/1233)). ([ae121eae](https://github.com/supabase/supabase-flutter/commit/ae121eae661691b8887eecc52eaa8b2ee5832564))
+
 ## 2.5.2
 
  - **FIX**(supabase_flutter): Safely check if conn is not null to avoid null check operator ([#1178](https://github.com/supabase/supabase-flutter/issues/1178)). ([6a5be512](https://github.com/supabase/supabase-flutter/commit/6a5be5124026d27d48675749d2c5759d8c61a9b3))

@@ -1,3 +1,7 @@
+## 2.10.2
+
+ - Update a dependency to the latest release.
+
 ## 2.10.1
 
  - **FIX**: Prevent web incompatibility due to import of dart:io ([#1220](https://github.com/supabase/supabase-flutter/issues/1220)). ([3c8d4db6](https://github.com/supabase/supabase-flutter/commit/3c8d4db62aec26835e5d8ff387c4b32c91ce8676))
