@@ -153,7 +153,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     if (!defaultToNull) {
       newHeaders['Prefer'] = '${newHeaders['Prefer']!},missing=default';
     }
-    
+
     Uri url = _url;
 
     if (values is List) {
