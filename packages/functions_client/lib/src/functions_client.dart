@@ -31,7 +31,8 @@ class FunctionsClient {
         _hasCustomIsolate = isolate != null,
         _httpClient = httpClient,
         _region = region {
-    _log.config("Initialize FunctionsClient v$version with url: $url");
+    _log.config(
+        "Initialize FunctionsClient v$version with url '$url' and region '$region'");
     _log.finest("Initialize with headers: $headers");
   }
 
