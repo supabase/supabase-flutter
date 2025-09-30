@@ -191,34 +191,22 @@ class SupabaseAuth with WidgetsBindingObserver {
     if (_initialDeeplinkIsHandled) return;
     _initialDeeplinkIsHandled = true;
 
-    try {
-      Uri? uri;
+    // Only web needs to handle initial uri. On mobile, the initial uri is
+    // included in the uriLinkStream.
+    if (kIsWeb) {
       try {
-        // before app_links 6.0.0
-        uri = await (_appLinks as dynamic).getInitialAppLink();
-      } on NoSuchMethodError catch (_) {
-        // The AppLinks package contains the initial link in the uriLinkStream
-        // starting from version 6.0.0. Before this version, getting the
-        // initial link was done with getInitialAppLink. Being in this catch
-        // handler means we are in at least version 6.0.0, meaning we do not
-        // need to handle the initial link manually.
-        //
-        // app_links claims that the initial link will be included in the
-        // `uriLinkStream`, but that is not the case for web
-        if (kIsWeb) {
-          uri = await (_appLinks as dynamic).getInitialLink();
+        final Uri? uri = await _appLinks.getInitialLink();
+        if (uri != null) {
+          await _handleDeeplink(uri);
         }
+      } on PlatformException catch (err, stackTrace) {
+        _onErrorReceivingDeeplink(err.message ?? err, stackTrace);
+        // Platform messages may fail but we ignore the exception
+      } on FormatException catch (err, stackTrace) {
+        _onErrorReceivingDeeplink(err.message, stackTrace);
+      } catch (err, stackTrace) {
+        _onErrorReceivingDeeplink(err, stackTrace);
       }
-      if (uri != null) {
-        await _handleDeeplink(uri);
-      }
-    } on PlatformException catch (err, stackTrace) {
-      _onErrorReceivingDeeplink(err.message ?? err, stackTrace);
-      // Platform messages may fail but we ignore the exception
-    } on FormatException catch (err, stackTrace) {
-      _onErrorReceivingDeeplink(err.message, stackTrace);
-    } catch (err, stackTrace) {
-      _onErrorReceivingDeeplink(err, stackTrace);
     }
   }
 
