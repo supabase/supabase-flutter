@@ -42,6 +42,7 @@ import 'counter.dart';
 class SupabaseClient {
   final String _supabaseKey;
   final PostgrestClientOptions _postgrestOptions;
+  final FunctionsClientOptions _functionsOptions;
 
   final String _restUrl;
   final String _realtimeUrl;
@@ -119,12 +120,14 @@ class SupabaseClient {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     AuthClientOptions authOptions = const AuthClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
+    FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
     YAJsonIsolate? isolate,
   })  : _supabaseKey = supabaseKey,
+        _functionsOptions = functionsOptions,
         _restUrl = '$supabaseUrl/rest/v1',
         _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
         _authUrl = '$supabaseUrl/auth/v1',
@@ -309,6 +312,7 @@ class SupabaseClient {
       {...headers},
       httpClient: _authHttpClient,
       isolate: _isolate,
+      region: _functionsOptions.region,
     );
   }
 

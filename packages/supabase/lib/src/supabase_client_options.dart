@@ -23,3 +23,9 @@ class StorageClientOptions {
 
   const StorageClientOptions({this.retryAttempts = 0});
 }
+
+class FunctionsClientOptions {
+  final String? region;
+
+  const FunctionsClientOptions({this.region});
+}
