@@ -138,12 +138,38 @@ extension ToType on RealtimeListenTypes {
   }
 }
 
+/// Configuration for broadcast replay feature.
+/// Allows replaying broadcast messages from a specific timestamp.
+class ReplayOption {
+  /// Unix timestamp (in milliseconds) from which to start replaying messages
+  final int since;
+
+  /// Optional limit on the number of messages to replay
+  final int? limit;
+
+  const ReplayOption({
+    required this.since,
+    this.limit,
+  });
+
+  Map<String, dynamic> toMap() {
+    final map = <String, dynamic>{'since': since};
+    if (limit != null) {
+      map['limit'] = limit;
+    }
+    return map;
+  }
+}
+
 class RealtimeChannelConfig {
   /// [ack] option instructs server to acknowlege that broadcast message was received
   final bool ack;
 
   /// [self] option enables client to receive message it broadcasted
   final bool self;
+
+  /// [replay] option configures broadcast replay from a specific timestamp
+  final ReplayOption? replay;
 
   /// [key] option is used to track presence payload across clients
   final String key;
@@ -157,18 +183,24 @@ class RealtimeChannelConfig {
   const RealtimeChannelConfig({
     this.ack = false,
     this.self = false,
+    this.replay,
     this.key = '',
     this.enabled = false,
     this.private = false,
   });
 
   Map<String, dynamic> toMap() {
+    final broadcastConfig = <String, dynamic>{
+      'ack': ack,
+      'self': self,
+    };
+    if (replay != null) {
+      broadcastConfig['replay'] = replay!.toMap();
+    }
+
     return {
       'config': {
-        'broadcast': {
-          'ack': ack,
-          'self': self,
-        },
+        'broadcast': broadcastConfig,
         'presence': {
           'key': key,
           'enabled': enabled,
