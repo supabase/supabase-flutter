@@ -144,7 +144,7 @@ class ReplayOption {
   /// Unix timestamp (in milliseconds) from which to start replaying messages
   final int since;
 
-  /// Optional limit on the number of messages to replay
+  /// Optional limit on the number of messages to replay, maximum value of 25.
   final int? limit;
 
   const ReplayOption({
@@ -168,7 +168,7 @@ class RealtimeChannelConfig {
   /// [self] option enables client to receive message it broadcasted
   final bool self;
 
-  /// [replay] option configures broadcast replay from a specific timestamp
+  /// [replay] enables **private** channels to access messages that were sent earlier. Only messages published via [Broadcast From the Database](https://supabase.com/docs/guides/realtime/broadcast#trigger-broadcast-messages-from-your-database) are available for replay.
   final ReplayOption? replay;
 
   /// [key] option is used to track presence payload across clients
