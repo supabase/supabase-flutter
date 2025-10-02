@@ -6,6 +6,7 @@ import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 
 import 'gotrue_admin_mfa_api.dart';
+import 'gotrue_admin_oauth_api.dart';
 
 class GoTrueAdminApi {
   final String _url;
@@ -15,6 +16,10 @@ class GoTrueAdminApi {
   late final GotrueFetch _fetch = GotrueFetch(_httpClient);
   late final GoTrueAdminMFAApi mfa;
 
+  /// Contains all OAuth client administration methods.
+  /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+  late final GoTrueAdminOAuthApi oauth;
+
   GoTrueAdminApi(
     this._url, {
     Map<String, String>? headers,
@@ -22,6 +27,11 @@ class GoTrueAdminApi {
   })  : _headers = headers ?? {},
         _httpClient = httpClient {
     mfa = GoTrueAdminMFAApi(
+      url: _url,
+      headers: _headers,
+      fetch: _fetch,
+    );
+    oauth = GoTrueAdminOAuthApi(
       url: _url,
       headers: _headers,
       fetch: _fetch,
