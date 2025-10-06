@@ -103,3 +103,15 @@ class AuthWeakPasswordException extends AuthException {
   String toString() =>
       'AuthWeakPasswordException(message: $message, statusCode: $statusCode, reasons: $reasons)';
 }
+
+class AuthInvalidJwtException extends AuthException {
+  AuthInvalidJwtException(super.message)
+      : super(
+          statusCode: '400',
+          code: 'invalid_jwt',
+        );
+
+  @override
+  String toString() =>
+      'AuthInvalidJwtException(message: $message, statusCode: $statusCode, code: $code)';
+}
