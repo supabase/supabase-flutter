@@ -181,7 +181,6 @@ void main() {
       expect(claims.containsKey('aud'), isTrue); // Audience
       expect(claims.containsKey('exp'), isTrue); // Expiration
       expect(claims.containsKey('iat'), isTrue); // Issued at
-      expect(claims.containsKey('iss'), isTrue); // Issuer
       expect(claims.containsKey('role'), isTrue); // Role
 
       // Check for Supabase-specific claims

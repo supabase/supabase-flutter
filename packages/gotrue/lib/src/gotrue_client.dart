@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:gotrue/gotrue.dart';
+import 'package:gotrue/src/base64url.dart';
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
 import 'package:gotrue/src/helper.dart';
@@ -13,6 +15,7 @@ import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
+import 'package:pointycastle/export.dart';
 import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
 
@@ -57,6 +60,9 @@ class GoTrueClient {
 
   /// Completer to combine multiple simultaneous token refresh requests.
   Completer<AuthResponse>? _refreshTokenCompleter;
+
+  JWKSet? _jwks;
+  DateTime? _jwksCachedAt;
 
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
   final _onAuthStateChangeControllerSync =
@@ -1337,6 +1343,45 @@ class GoTrueClient {
     return exception;
   }
 
+  Future<JWK?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
+    // try fetching from the supplied jwks
+    final jwk = suppliedJwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    if (jwk != null) {
+      return jwk;
+    }
+
+    final now = DateTime.now();
+
+    // try fetching from cache
+    final cachedJwk = _jwks?.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+
+    // jwks exists and it isn't stale
+    if (cachedJwk != null &&
+        _jwksCachedAt != null &&
+        _jwksCachedAt!.add(Constants.jwksTtl).isAfter(now)) {
+      return cachedJwk;
+    }
+
+    // jwk isn't cached in memory so we need to fetch it from the well-known endpoint
+    final jwksResponse = await _fetch.request(
+      '$_url/.well-known/jwks.json',
+      RequestMethodType.get,
+      options: GotrueRequestOptions(headers: _headers),
+    );
+
+    final jwks = JWKSet.fromJson(jwksResponse as Map<String, dynamic>);
+
+    if (jwks.keys.isEmpty) {
+      return null;
+    }
+
+    _jwks = jwks;
+    _jwksCachedAt = now;
+
+    // find the signing key
+    return jwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+  }
+
   /// Extracts the JWT claims present in the access token by first verifying the
   /// JWT against the server. Prefer this method over [getUser] when you only
   /// need to access the claims and not the full user object.
@@ -1357,45 +1402,65 @@ class GoTrueClient {
     String? jwt,
     GetClaimsOptions? options,
   ]) async {
-    try {
-      String token = jwt ?? '';
+    String token = jwt ?? '';
 
-      if (token.isEmpty) {
-        final session = currentSession;
-        if (session == null) {
-          throw AuthSessionMissingException('No session found');
-        }
-        token = session.accessToken;
+    if (token.isEmpty) {
+      final session = currentSession;
+      if (session == null) {
+        throw AuthSessionMissingException('No session found');
       }
-
-      // Decode the JWT to get the payload
-      final decoded = decodeJwt(token);
-
-      // Validate expiration unless allowExpired is true
-      if (!(options?.allowExpired ?? false)) {
-        validateExp(decoded.payload.exp);
-      }
-
-      // Verify the JWT against the Auth server by calling getUser.
-      // This serves as the fallback verification method that works for all JWT types
-      // and gracefully handles edge cases like:
-      // - Key rotation (when JWKS cache might not have the new signing key)
-      // - Symmetric JWTs (HS256) that require server-side verification
-      // - Revoked or invalidated tokens that are still unexpired
-      final userResponse = await getUser(token);
-      if (userResponse.user == null) {
-        throw AuthException('Failed to verify JWT');
-      }
-
-      // If getUser succeeds, the JWT is valid and we can trust the claims
-      return GetClaimsResponse(claims: decoded.payload.claims);
-    } on AuthException {
-      rethrow;
-    } catch (error) {
-      throw AuthUnknownException(
-        message: 'Unknown error occurred while getting claims',
-        originalError: error,
-      );
+      token = session.accessToken;
     }
+
+    // Decode the JWT to get the payload
+    final decoded = decodeJwt(token);
+
+    // Validate expiration unless allowExpired is true
+    if (!(options?.allowExpired ?? false)) {
+      validateExp(decoded.payload.exp);
+    }
+
+    // For symmetric algorithms (HS256, HS384, HS512) or missing kid, use server verification
+    if (decoded.header.kid == null || decoded.header.alg.startsWith('HS')) {
+      await getUser(token);
+      return GetClaimsResponse(
+          claims: decoded.payload,
+          header: decoded.header,
+          signature: decoded.signature);
+    }
+
+    final signingKey =
+        (decoded.header.kid == null || decoded.header.alg.startsWith('HS'))
+            ? null
+            : await _fetchJwk(decoded.header.kid!, _jwks!);
+
+    // If symmetric algorithm, fallback to getUser()
+    if (signingKey == null) {
+      await getUser(token);
+      return GetClaimsResponse(
+          claims: decoded.payload,
+          header: decoded.header,
+          signature: decoded.signature);
+    }
+
+    final publicKey = RSAPublicKey(signingKey['n'], signingKey['e']);
+    final signer = RSASigner(SHA256Digest(), '0609608648016503040201'); // PKCS1
+    signer.init(false, PublicKeyParameter<RSAPublicKey>(publicKey));
+
+    final signature = RSASignature(Uint8List.fromList(decoded.signature));
+    final isValidSignature = signer.verifySignature(
+      Uint8List.fromList(
+          utf8.encode('${decoded.raw.header}.${decoded.raw.payload}')),
+      signature,
+    );
+
+    if (!isValidSignature) {
+      throw AuthException('Invalid JWT signature');
+    }
+
+    return GetClaimsResponse(
+        claims: decoded.payload,
+        header: decoded.header,
+        signature: decoded.signature);
   }
 }
