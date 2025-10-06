@@ -1341,9 +1341,11 @@ class GoTrueClient {
   /// JWT against the server. Prefer this method over [getUser] when you only
   /// need to access the claims and not the full user object.
   ///
-  /// If the project is not using an asymmetric JWT signing key (like ECC or
-  /// RSA), it always sends a request to the Auth server (similar to [getUser])
-  /// to verify the JWT.
+  /// This method always verifies the JWT by calling [getUser] to validate
+  /// against the Auth server. This approach:
+  /// - Works for both symmetric (HS256) and asymmetric (RS256, ES256) JWTs
+  /// - Handles key rotation gracefully without caching issues
+  /// - Ensures the JWT is valid and hasn't been revoked
   ///
   /// [jwt] An optional specific JWT you wish to verify, not the one you
   ///       can obtain from [currentSession].
@@ -1374,8 +1376,12 @@ class GoTrueClient {
         validateExp(decoded.payload.exp);
       }
 
-      // Verify the JWT by calling getUser
-      // This works for both symmetric and asymmetric JWTs
+      // Verify the JWT against the Auth server by calling getUser.
+      // This serves as the fallback verification method that works for all JWT types
+      // and gracefully handles edge cases like:
+      // - Key rotation (when JWKS cache might not have the new signing key)
+      // - Symmetric JWTs (HS256) that require server-side verification
+      // - Revoked or invalidated tokens that are still unexpired
       final userResponse = await getUser(token);
       if (userResponse.user == null) {
         throw AuthException('Failed to verify JWT');
