@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:http/http.dart' as http;
@@ -47,7 +45,6 @@ void main() {
       );
 
       expect(response.session, isNotNull);
-      final session = response.session!;
 
       // Get claims from current session
       final claimsResponse = await client.getClaims();
@@ -109,6 +106,45 @@ void main() {
         () => client.getClaims(expiredJwt),
         throwsA(isA<AuthException>()),
       );
+    });
+
+    test('getClaims() with allowExpired option allows expired JWT', () async {
+      // This is an expired JWT token (exp is in the past)
+      const expiredJwt =
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNTE2MjM5MDIyfQ.4Adcj0vVzr2Nzz_KKAKrVZsLZyTBGv9-Ey8SN0p7Kzs';
+
+      // With allowExpired, we should be able to decode the JWT
+      // Note: This will still fail at getUser() because the token is invalid on the server
+      // but the expiration check should pass
+      try {
+        await client.getClaims(
+          expiredJwt,
+          GetClaimsOptions(allowExpired: true),
+        );
+        // If we get here, the exp validation was skipped
+      } on AuthException catch (e) {
+        // We expect this to fail during getUser() verification,
+        // not during exp validation
+        expect(e.message, isNot(contains('expired')));
+      }
+    });
+
+    test('getClaims() with options parameter (allowExpired false)', () async {
+      final response = await client.signUp(
+        email: newEmail,
+        password: password,
+      );
+
+      expect(response.session, isNotNull);
+
+      // Should work normally with allowExpired: false
+      final claimsResponse = await client.getClaims(
+        null,
+        GetClaimsOptions(allowExpired: false),
+      );
+
+      expect(claimsResponse.claims, isNotNull);
+      expect(claimsResponse.claims['email'], newEmail);
     });
 
     test('getClaims() verifies JWT with server', () async {

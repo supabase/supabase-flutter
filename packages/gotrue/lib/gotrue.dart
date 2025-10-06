@@ -4,6 +4,7 @@ export 'src/constants.dart'
     hide Constants, GenerateLinkTypeExtended, AuthChangeEventExtended;
 export 'src/gotrue_admin_api.dart';
 export 'src/gotrue_client.dart';
+export 'src/helper.dart' show decodeJwt, validateExp;
 export 'src/types/auth_exception.dart';
 export 'src/types/auth_response.dart' hide ToSnakeCase;
 export 'src/types/auth_state.dart';
