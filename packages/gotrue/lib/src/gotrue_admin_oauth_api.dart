@@ -12,7 +12,7 @@ class OAuthClientResponse {
 
   factory OAuthClientResponse.fromJson(Map<String, dynamic> json) {
     return OAuthClientResponse(
-      client: OAuthClient.fromJson(json),
+      client: json.isEmpty ? null : OAuthClient.fromJson(json),
     );
   }
 }
@@ -21,11 +21,11 @@ class OAuthClientResponse {
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthClientListResponse {
   final List<OAuthClient> clients;
-  final String aud;
+  final String? aud;
 
   OAuthClientListResponse({
     required this.clients,
-    required this.aud,
+    this.aud,
   });
 
   factory OAuthClientListResponse.fromJson(Map<String, dynamic> json) {
@@ -33,7 +33,7 @@ class OAuthClientListResponse {
       clients: (json['clients'] as List)
           .map((e) => OAuthClient.fromJson(e as Map<String, dynamic>))
           .toList(),
-      aud: json['aud'] as String,
+      aud: json['aud'] as String?,
     );
   }
 }

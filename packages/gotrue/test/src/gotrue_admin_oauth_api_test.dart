@@ -62,7 +62,7 @@ void main() {
 
       final res = await client.admin.oauth.listClients();
       expect(res.clients, isNotEmpty);
-      expect(res.aud, isNotEmpty);
+      // aud is optional
     });
 
     test('get OAuth client by ID', () async {
@@ -105,9 +105,10 @@ void main() {
       final createRes = await client.admin.oauth.createClient(params);
       final clientId = createRes.client!.clientId;
 
+      // Delete returns 204 No Content with empty body
       final res = await client.admin.oauth.deleteClient(clientId);
-      expect(res.client, isNotNull);
-      expect(res.client?.clientId, clientId);
+      // The server returns 204 with no body, so client will be null
+      expect(res.client, isNull);
     });
   });
 
