@@ -1336,4 +1336,51 @@ class GoTrueClient {
     );
     return exception;
   }
+
+  /// Gets the claims from a JWT token.
+  ///
+  /// This method verifies the JWT by calling [getUser] to validate against the server.
+  /// It supports both symmetric (HS256) and asymmetric (RS256, ES256) JWTs.
+  ///
+  /// [jwt] The JWT token to get claims from. If not provided, uses the current session's access token.
+  ///
+  /// Returns a [GetClaimsResponse] containing the JWT claims, or throws an [AuthException] on error.
+  ///
+  /// Note: This is an experimental API and may change in future versions.
+  Future<GetClaimsResponse> getClaims([String? jwt]) async {
+    try {
+      String token = jwt ?? '';
+
+      if (token.isEmpty) {
+        final session = currentSession;
+        if (session == null) {
+          throw AuthSessionMissingException('No session found');
+        }
+        token = session.accessToken;
+      }
+
+      // Decode the JWT to get the payload
+      final decoded = decodeJwt(token);
+
+      // Validate expiration
+      validateExp(decoded.payload.exp);
+
+      // Verify the JWT by calling getUser
+      // This works for both symmetric and asymmetric JWTs
+      final userResponse = await getUser(token);
+      if (userResponse.user == null) {
+        throw AuthException('Failed to verify JWT');
+      }
+
+      // If getUser succeeds, the JWT is valid and we can trust the claims
+      return GetClaimsResponse(claims: decoded.payload.claims);
+    } on AuthException {
+      rethrow;
+    } catch (error) {
+      throw AuthUnknownException(
+        message: 'Unknown error occurred while getting claims',
+        originalError: error,
+      );
+    }
+  }
 }
