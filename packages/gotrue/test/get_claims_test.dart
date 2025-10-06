@@ -48,14 +48,14 @@ void main() {
 
       // Get claims from current session
       final claimsResponse = await client.getClaims();
+      final claims = claimsResponse.claims;
 
-      expect(claimsResponse.claims, isA<Map<String, dynamic>>());
-      expect(claimsResponse.claims['sub'], isNotNull);
-      expect(claimsResponse.claims['email'], newEmail);
-      expect(claimsResponse.claims['role'], isNotNull);
-      expect(claimsResponse.claims['aud'], isNotNull);
-      expect(claimsResponse.claims['exp'], isNotNull);
-      expect(claimsResponse.claims['iat'], isNotNull);
+      expect(claims.sub, isNotNull);
+      expect(claims.claims['email'], newEmail);
+      expect(claims.claims['role'], isNotNull);
+      expect(claimsResponse.claims.aud, isNotNull);
+      expect(claims.exp, isNotNull);
+      expect(claims.iat, isNotNull);
     });
 
     test('getClaims() with explicit JWT parameter', () async {
@@ -70,10 +70,10 @@ void main() {
 
       // Get claims by passing JWT explicitly
       final claimsResponse = await client.getClaims(accessToken);
+      final claims = claimsResponse.claims;
 
-      expect(claimsResponse.claims, isA<Map<String, dynamic>>());
-      expect(claimsResponse.claims['sub'], isNotNull);
-      expect(claimsResponse.claims['email'], newEmail);
+      expect(claims.sub, isNotNull);
+      expect(claims.claims['email'], newEmail);
     });
 
     test('getClaims() throws when no session exists', () async {
@@ -144,7 +144,7 @@ void main() {
       );
 
       expect(claimsResponse.claims, isNotNull);
-      expect(claimsResponse.claims['email'], newEmail);
+      expect(claimsResponse.claims.claims['email'], newEmail);
     });
 
     test('getClaims() verifies JWT with server', () async {
@@ -162,7 +162,7 @@ void main() {
 
       // If we get here without error, verification succeeded
       expect(claimsResponse.claims, isNotNull);
-      expect(claimsResponse.claims['email'], newEmail);
+      expect(claimsResponse.claims.claims['email'], newEmail);
     });
 
     test('getClaims() contains all standard JWT claims', () async {
@@ -177,14 +177,14 @@ void main() {
       final claims = claimsResponse.claims;
 
       // Check for standard JWT claims
-      expect(claims.containsKey('sub'), isTrue); // Subject
-      expect(claims.containsKey('aud'), isTrue); // Audience
-      expect(claims.containsKey('exp'), isTrue); // Expiration
-      expect(claims.containsKey('iat'), isTrue); // Issued at
-      expect(claims.containsKey('role'), isTrue); // Role
+      expect(claims.sub, isNotNull); // Subject
+      expect(claims.aud, isNotNull); // Audience
+      expect(claims.exp, isNotNull); // Expiration
+      expect(claims.iat, isNotNull); // Issued at
+      expect(claims.claims['role'], isNotNull); // Role
 
       // Check for Supabase-specific claims
-      expect(claims.containsKey('email'), isTrue);
+      expect(claims.claims['email'], isNotNull);
     });
 
     test('getClaims() with user metadata in claims', () async {

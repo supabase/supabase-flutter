@@ -1383,15 +1383,13 @@ class GoTrueClient {
   }
 
   /// Extracts the JWT claims present in the access token by first verifying the
-  /// JWT against the server. Prefer this method over [getUser] when you only
-  /// need to access the claims and not the full user object.
+  /// JWT against the server's JSON Web Key Set endpoint
+  /// `/.well-known/jwks.json` which is often cached, resulting in significantly
+  /// faster responses. Prefer this method over [getUser] which always
+  /// sends a request to the Auth server for each JWT.
   ///
-  /// This method always verifies the JWT by calling [getUser] to validate
-  /// against the Auth server. This approach:
-  /// - Works for both symmetric (HS256) and asymmetric (RS256, ES256) JWTs
-  /// - Handles key rotation gracefully without caching issues
-  /// - Ensures the JWT is valid and hasn't been revoked
-  ///
+  /// If the project is not using an asymmetric JWT signing key (like ECC or
+  /// RSA) it always sends a request to the Auth server (similar to [getUser]) to verify the JWT.
   /// [jwt] An optional specific JWT you wish to verify, not the one you
   ///       can obtain from [currentSession].
   /// [options] Various additional options that allow you to customize the
