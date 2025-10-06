@@ -136,6 +136,8 @@ Once you have registered your app and created the client IDs, add the web client
 
 At this point you can perform native Google sign in using the following code. Be sure to replace the `webClientId` and `iosClientId` with your own.
 
+The following example is very basic. Please refer to the [google_sign_in](https://pub.dev/packages/google_sign_in) package for the correct details.
+
 ```dart
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -156,18 +158,19 @@ Future<AuthResponse> _googleSignIn() async {
   // Google sign in on Android will work without providing the Android
   // Client ID registered on Google Cloud.
 
-  final GoogleSignIn googleSignIn = GoogleSignIn(
-    clientId: iosClientId,
-    serverClientId: webClientId,
-  );
-  final googleUser = await googleSignIn.signIn();
-  final googleAuth = await googleUser!.authentication;
-  final accessToken = googleAuth.accessToken;
-  final idToken = googleAuth.idToken;
+  final GoogleSignIn signIn = GoogleSignIn.instance;
 
-  if (accessToken == null) {
-    throw 'No Access Token found.';
-  }
+  // At the start of your app, initialize the GoogleSignIn instance
+  unawaited(
+    signIn.initialize(clientId: iosClientId, serverClientId: webClientId));
+
+  // Perform the sign in
+  final googleAccount = await signIn.authenticate();
+  final googleAuthorization = await googleAccount.authorizationClient.authorizationForScopes([]);
+  final googleAuthentication = googleAccount!.authentication;
+  final idToken = googleAuthentication.idToken;
+  final accessToken = googleAuthorization.accessToken;
+
   if (idToken == null) {
     throw 'No ID Token found.';
   }
