@@ -1337,17 +1337,24 @@ class GoTrueClient {
     return exception;
   }
 
-  /// Gets the claims from a JWT token.
+  /// Extracts the JWT claims present in the access token by first verifying the
+  /// JWT against the server. Prefer this method over [getUser] when you only
+  /// need to access the claims and not the full user object.
   ///
-  /// This method verifies the JWT by calling [getUser] to validate against the server.
-  /// It supports both symmetric (HS256) and asymmetric (RS256, ES256) JWTs.
+  /// If the project is not using an asymmetric JWT signing key (like ECC or
+  /// RSA), it always sends a request to the Auth server (similar to [getUser])
+  /// to verify the JWT.
   ///
-  /// [jwt] The JWT token to get claims from. If not provided, uses the current session's access token.
+  /// [jwt] An optional specific JWT you wish to verify, not the one you
+  ///       can obtain from [currentSession].
+  /// [options] Various additional options that allow you to customize the
+  ///           behavior of this method.
   ///
   /// Returns a [GetClaimsResponse] containing the JWT claims, or throws an [AuthException] on error.
-  ///
-  /// Note: This is an experimental API and may change in future versions.
-  Future<GetClaimsResponse> getClaims([String? jwt]) async {
+  Future<GetClaimsResponse> getClaims([
+    String? jwt,
+    GetClaimsOptions? options,
+  ]) async {
     try {
       String token = jwt ?? '';
 
@@ -1362,8 +1369,10 @@ class GoTrueClient {
       // Decode the JWT to get the payload
       final decoded = decodeJwt(token);
 
-      // Validate expiration
-      validateExp(decoded.payload.exp);
+      // Validate expiration unless allowExpired is true
+      if (!(options?.allowExpired ?? false)) {
+        validateExp(decoded.payload.exp);
+      }
 
       // Verify the JWT by calling getUser
       // This works for both symmetric and asymmetric JWTs

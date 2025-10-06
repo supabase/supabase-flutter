@@ -134,3 +134,14 @@ class GetClaimsResponse {
 
   GetClaimsResponse({required this.claims});
 }
+
+/// Options for getClaims method
+class GetClaimsOptions {
+  /// If set to `true`, the `exp` claim will not be validated against the current time.
+  /// This allows you to extract claims from expired JWTs without getting an error.
+  final bool allowExpired;
+
+  const GetClaimsOptions({
+    this.allowExpired = false,
+  });
+}
