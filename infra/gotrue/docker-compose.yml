@@ -2,7 +2,7 @@
 version: '3'
 services:
   gotrue: # Signup enabled, autoconfirm on
-    image: supabase/auth:v2.175.0
+    image: supabase/auth:v2.180.0
     ports:
       - '9998:9998'
     environment:
@@ -29,6 +29,8 @@ services:
       GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: 'true'
       GOTRUE_MFA_PHONE_ENROLL_ENABLED: 'true'
       GOTRUE_MFA_PHONE_VERIFY_ENABLED: 'true'
+      GOTRUE_OAUTH_SERVER_ENABLED: 'true'
+      GOTRUE_OAUTH_SERVER_ALLOW_DYNAMIC_REGISTRATION: 'true'
 
     depends_on:
       - db
