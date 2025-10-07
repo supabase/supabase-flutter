@@ -66,8 +66,8 @@ class Base64Url {
 
   /// Converts base64 to base64url format
   static String _base64ToBase64url(String base64) {
-    // Remove padding and replace characters
-    return base64.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+    // Replace characters (keep padding as-is)
+    return base64.replaceAll('+', '-').replaceAll('/', '_');
   }
 
   /// Loose decoding for malformed base64url strings
