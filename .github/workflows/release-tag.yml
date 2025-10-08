@@ -14,6 +14,12 @@ jobs:
     if: ${{ contains(github.event.head_commit.message, 'chore(release):') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -31,4 +37,4 @@ jobs:
           gh workflow run release-publish.yml \
           --ref \$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
