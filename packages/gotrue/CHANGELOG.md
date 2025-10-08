@@ -1,7 +1,3 @@
-## 2.16.0-dev.0
-
- - **FEAT**(gotrue): add OAuth 2.1 client admin endpoints ([#1244](https://github.com/supabase/supabase-flutter/issues/1244)). ([ebc4c208](https://github.com/supabase/supabase-flutter/commit/ebc4c208578f81a7c78aba31c8d3f3376b8b5f9f))
-
 ## 2.15.0
 
  - **FEAT**(gotrue): Implement `linkIdentityWithIdToken` method ([#1206](https://github.com/supabase/supabase-flutter/issues/1206)). ([53a2427a](https://github.com/supabase/supabase-flutter/commit/53a2427ac5204e440935a45d645a485db84fc437))
