@@ -1,7 +1,3 @@
-## 2.6.0-dev.0
-
- - **FEAT**: add support for broadcast replay configuration ([#1242](https://github.com/supabase/supabase-flutter/issues/1242)). ([334cd2be](https://github.com/supabase/supabase-flutter/commit/334cd2be056ace8216e10e0882bb57771de803fb))
-
 ## 2.5.3
 
  - **FIX**(realtime): add presence flag ([#1233](https://github.com/supabase/supabase-flutter/issues/1233)). ([ae121eae](https://github.com/supabase/supabase-flutter/commit/ae121eae661691b8887eecc52eaa8b2ee5832564))
