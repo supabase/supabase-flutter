@@ -3,6 +3,47 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-10-08
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.5.0`](#functions_client---v250)
+ - [`gotrue` - `v2.16.0`](#gotrue---v2160)
+ - [`realtime_client` - `v2.6.0`](#realtime_client---v260)
+ - [`supabase` - `v2.10.0`](#supabase---v2100)
+ - [`supabase_flutter` - `v2.10.3`](#supabase_flutter---v2103)
+
+---
+
+#### `functions_client` - `v2.5.0`
+
+ - **FEAT**: add region as forceFunctionRegion query parameter ([#1243](https://github.com/supabase/supabase-flutter/issues/1243)). ([06c35baf](https://github.com/supabase/supabase-flutter/commit/06c35baf9974e87c06c65f7666165ef3c119d087))
+
+#### `gotrue` - `v2.16.0`
+
+ - **FEAT**(gotrue): add OAuth 2.1 client admin endpoints ([#1244](https://github.com/supabase/supabase-flutter/issues/1244)). ([ebc4c208](https://github.com/supabase/supabase-flutter/commit/ebc4c208578f81a7c78aba31c8d3f3376b8b5f9f))
+
+#### `realtime_client` - `v2.6.0`
+
+ - **FEAT**: add support for broadcast replay configuration ([#1242](https://github.com/supabase/supabase-flutter/issues/1242)). ([334cd2be](https://github.com/supabase/supabase-flutter/commit/334cd2be056ace8216e10e0882bb57771de803fb))
+
+#### `supabase` - `v2.10.0`
+
+ - **FEAT**: add region as forceFunctionRegion query parameter ([#1243](https://github.com/supabase/supabase-flutter/issues/1243)). ([06c35baf](https://github.com/supabase/supabase-flutter/commit/06c35baf9974e87c06c65f7666165ef3c119d087))
+
+#### `supabase_flutter` - `v2.10.3`
+
+ - **DOCS**: update google_sign_in example ([#1240](https://github.com/supabase/supabase-flutter/issues/1240)). ([cad17842](https://github.com/supabase/supabase-flutter/commit/cad1784261bdfa43c2bf6169b6d1e75df8dcfa61))
+
+
 ## 2025-09-29
 
 ### Changes

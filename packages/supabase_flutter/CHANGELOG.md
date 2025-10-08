@@ -1,3 +1,7 @@
+## 2.10.3
+
+ - **DOCS**: update google_sign_in example ([#1240](https://github.com/supabase/supabase-flutter/issues/1240)). ([cad17842](https://github.com/supabase/supabase-flutter/commit/cad1784261bdfa43c2bf6169b6d1e75df8dcfa61))
+
 ## 2.10.2
 
  - Update a dependency to the latest release.

@@ -1,3 +1,7 @@
+## 2.5.0
+
+ - **FEAT**: add region as forceFunctionRegion query parameter ([#1243](https://github.com/supabase/supabase-flutter/issues/1243)). ([06c35baf](https://github.com/supabase/supabase-flutter/commit/06c35baf9974e87c06c65f7666165ef3c119d087))
+
 ## 2.4.4
 
  - **FIX**(functions_client): Handle binary data request properly and improve test coverage ([#1184](https://github.com/supabase/supabase-flutter/issues/1184)). ([e6c9420e](https://github.com/supabase/supabase-flutter/commit/e6c9420e5c3c310c2aac7f9626727e68e1b7ddf3))
