@@ -616,4 +616,116 @@ void main() {
       expect(channel.params['config']['presence']['enabled'], isTrue);
     });
   });
+
+  group('httpSend', () {
+    late HttpServer mockServer;
+
+    setUp(() async {
+      mockServer = await HttpServer.bind('localhost', 0);
+    });
+
+    tearDown(() async {
+      await mockServer.close();
+    });
+
+    test('sends message via http endpoint with correct headers and payload',
+        () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        headers: {'apikey': 'supabaseKey'},
+        params: {'apikey': 'supabaseKey'},
+      );
+      channel =
+          socket.channel('myTopic', const RealtimeChannelConfig(private: true));
+
+      final requestFuture = mockServer.first;
+      final sendFuture =
+          channel.httpSend(event: 'test', payload: {'myKey': 'myValue'});
+
+      final req = await requestFuture;
+      expect(req.uri.toString(), '/realtime/v1/api/broadcast');
+      expect(req.headers.value('apikey'), 'supabaseKey');
+
+      final body = json.decode(await utf8.decodeStream(req));
+      final message = body['messages'][0];
+      expect(message['topic'], 'myTopic');
+      expect(message['event'], 'test');
+      expect(message['payload'], {'myKey': 'myValue'});
+      expect(message['private'], true);
+
+      req.response.statusCode = 202;
+      await req.response.close();
+
+      await sendFuture;
+    });
+
+    test('sends with Authorization header when access token is set', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        params: {'apikey': 'abc123'},
+        customAccessToken: () async => 'token123',
+      );
+      await socket.setAuth('token123');
+      channel = socket.channel('topic');
+
+      final requestFuture = mockServer.first;
+      final sendFuture =
+          channel.httpSend(event: 'test', payload: {'data': 'test'});
+
+      final req = await requestFuture;
+      expect(req.headers.value('Authorization'), 'Bearer token123');
+      expect(req.headers.value('apikey'), 'abc123');
+
+      req.response.statusCode = 202;
+      await req.response.close();
+
+      await sendFuture;
+    });
+
+    test('throws error on non-202 status', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        params: {'apikey': 'abc123'},
+      );
+      channel = socket.channel('topic');
+
+      final requestFuture = mockServer.first;
+      final sendFuture =
+          channel.httpSend(event: 'test', payload: {'data': 'test'});
+
+      final req = await requestFuture;
+      req.response.statusCode = 500;
+      req.response.write(json.encode({'error': 'Server error'}));
+      await req.response.close();
+
+      await expectLater(
+        sendFuture,
+        throwsA(predicate((e) => e.toString().contains('Server error'))),
+      );
+    });
+
+    test('handles timeout', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        params: {'apikey': 'abc123'},
+      );
+      channel = socket.channel('topic');
+
+      // Don't await the server - let it hang to trigger timeout
+      mockServer.first.then((req) async {
+        await Future.delayed(const Duration(seconds: 1));
+        req.response.statusCode = 202;
+        await req.response.close();
+      });
+
+      await expectLater(
+        channel.httpSend(
+          event: 'test',
+          payload: {'data': 'test'},
+          timeout: const Duration(milliseconds: 100),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+  });
 }
