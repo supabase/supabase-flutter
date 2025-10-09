@@ -504,6 +504,85 @@ class RealtimeChannel {
     return pushEvent;
   }
 
+  /// Sends a broadcast message explicitly via REST API.
+  ///
+  /// This method always uses the REST API endpoint regardless of WebSocket connection state.
+  /// Useful when you want to guarantee REST delivery or when gradually migrating from implicit REST fallback.
+  ///
+  /// [event] is the name of the broadcast event.
+  /// [payload] is the payload to be sent (required).
+  /// [timeout] is an optional timeout duration.
+  ///
+  /// Returns a [Future] that resolves when the message is sent successfully,
+  /// or throws an error if the message fails to send.
+  ///
+  /// ```dart
+  /// try {
+  ///   await channel.httpSend(
+  ///     event: 'cursor-pos',
+  ///     payload: {'x': 123, 'y': 456},
+  ///   );
+  /// } catch (e) {
+  ///   print('Failed to send message: $e');
+  /// }
+  /// ```
+  Future<void> httpSend({
+    required String event,
+    required Map<String, dynamic> payload,
+    Duration? timeout,
+  }) async {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
+      ...socket.headers,
+      if (socket.accessToken != null)
+        'Authorization': 'Bearer ${socket.accessToken}',
+    };
+
+    final body = {
+      'messages': [
+        {
+          'topic': subTopic,
+          'event': event,
+          'payload': payload,
+          'private': _private,
+        }
+      ]
+    };
+
+    try {
+      final res = await (socket.httpClient?.post ?? post)(
+        Uri.parse(broadcastEndpointURL),
+        headers: headers,
+        body: json.encode(body),
+      ).timeout(
+        timeout ?? _timeout,
+        onTimeout: () => throw TimeoutException('Request timeout'),
+      );
+
+      if (res.statusCode == 202) {
+        return;
+      }
+
+      String errorMessage = res.reasonPhrase ?? 'Unknown error';
+      try {
+        final errorBody = json.decode(res.body) as Map<String, dynamic>;
+        errorMessage = (errorBody['error'] ??
+            errorBody['message'] ??
+            errorMessage) as String;
+      } catch (_) {
+        // If JSON parsing fails, use the default error message
+      }
+
+      throw Exception(errorMessage);
+    } catch (e) {
+      if (e is TimeoutException) {
+        rethrow;
+      }
+      throw Exception(e.toString());
+    }
+  }
+
   /// Sends a realtime broadcast message.
   Future<ChannelResponse> sendBroadcastMessage({
     required String event,
@@ -531,6 +610,13 @@ class RealtimeChannel {
     }
 
     if (!canPush && type == RealtimeListenTypes.broadcast) {
+      socket.log(
+        'channel',
+        'send() is automatically falling back to REST API. '
+            'This behavior will be deprecated in the future. '
+            'Please use httpSend() explicitly for REST delivery.',
+      );
+
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
