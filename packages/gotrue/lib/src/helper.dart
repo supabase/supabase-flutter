@@ -50,15 +50,15 @@ DecodedJwt decodeJwt(String token) {
 
   try {
     // Decode header
-    final headerJson = Base64Url.decodeToString(rawHeader, loose: true);
+    final headerJson = Base64Url.decodeToString(rawHeader);
     final header = JwtHeader.fromJson(json.decode(headerJson));
 
     // Decode payload
-    final payloadJson = Base64Url.decodeToString(rawPayload, loose: true);
+    final payloadJson = Base64Url.decodeToString(rawPayload);
     final payload = JwtPayload.fromJson(json.decode(payloadJson));
 
     // Decode signature
-    final signature = Base64Url.decode(rawSignature, loose: true);
+    final signature = Base64Url.decodeToBytes(rawSignature);
 
     return DecodedJwt(
       header: header,
