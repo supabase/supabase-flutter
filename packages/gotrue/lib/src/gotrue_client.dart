@@ -1417,17 +1417,8 @@ class GoTrueClient {
       validateExp(decoded.payload.exp);
     }
 
-    // For symmetric algorithms (HS256, HS384, HS512) or missing kid, use server verification
-    if (decoded.header.kid == null || decoded.header.alg.startsWith('HS')) {
-      await getUser(token);
-      return GetClaimsResponse(
-          claims: decoded.payload,
-          header: decoded.header,
-          signature: decoded.signature);
-    }
-
     final signingKey =
-        (decoded.header.kid == null || decoded.header.alg.startsWith('HS'))
+        (decoded.header.alg.startsWith('HS') || decoded.header.kid == null)
             ? null
             : await _fetchJwk(decoded.header.kid!, _jwks!);
 
