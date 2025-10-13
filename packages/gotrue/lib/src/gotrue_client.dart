@@ -1433,6 +1433,8 @@ class GoTrueClient {
 
     final publicKey = RSAPublicKey(signingKey['n'], signingKey['e']);
     final signer = RSASigner(SHA256Digest(), '0609608648016503040201'); // PKCS1
+
+    // initialize with false, which means verify
     signer.init(false, PublicKeyParameter<RSAPublicKey>(publicKey));
 
     final signature = RSASignature(Uint8List.fromList(decoded.signature));
