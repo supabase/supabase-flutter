@@ -1445,7 +1445,7 @@ class GoTrueClient {
     );
 
     if (!isValidSignature) {
-      throw AuthException('Invalid JWT signature');
+      throw AuthInvalidJwtException('Invalid JWT signature');
     }
 
     return GetClaimsResponse(
