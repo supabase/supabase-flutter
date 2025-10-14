@@ -1341,10 +1341,9 @@ class GoTrueClient {
     return exception;
   }
 
-  Future<JWTKey?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
+  Future<JWK?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
     // try fetching from the supplied jwks
-    final jwk = suppliedJwks.keys
-        .firstWhereOrNull((jwk) => jwk.toJWK(keyID: kid)['kid'] == kid);
+    final jwk = suppliedJwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
     if (jwk != null) {
       return jwk;
     }
@@ -1352,8 +1351,7 @@ class GoTrueClient {
     final now = DateTime.now();
 
     // try fetching from cache
-    final cachedJwk = _jwks?.keys
-        .firstWhereOrNull((jwk) => jwk.toJWK(keyID: kid)['kid'] == kid);
+    final cachedJwk = _jwks?.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
 
     // jwks exists and it isn't stale
     if (cachedJwk != null &&
@@ -1379,8 +1377,7 @@ class GoTrueClient {
     _jwksCachedAt = now;
 
     // find the signing key
-    return jwks.keys
-        .firstWhereOrNull((jwk) => jwk.toJWK(keyID: kid)['kid'] == kid);
+    return jwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
   }
 
   /// Extracts the JWT claims present in the access token by first verifying the
@@ -1434,7 +1431,7 @@ class GoTrueClient {
     }
 
     try {
-      JWT.verify(token, signingKey);
+      JWT.verify(token, signingKey.rsaPublicKey);
       return GetClaimsResponse(
           claims: decoded.payload,
           header: decoded.header,
