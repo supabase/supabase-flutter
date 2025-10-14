@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
@@ -14,7 +14,6 @@ import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
-import 'package:pointycastle/export.dart';
 import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
 
@@ -1342,9 +1341,10 @@ class GoTrueClient {
     return exception;
   }
 
-  Future<JWK?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
+  Future<JWTKey?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
     // try fetching from the supplied jwks
-    final jwk = suppliedJwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    final jwk = suppliedJwks.keys
+        .firstWhereOrNull((jwk) => jwk.toJWK(keyID: kid)['kid'] == kid);
     if (jwk != null) {
       return jwk;
     }
@@ -1352,7 +1352,8 @@ class GoTrueClient {
     final now = DateTime.now();
 
     // try fetching from cache
-    final cachedJwk = _jwks?.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    final cachedJwk = _jwks?.keys
+        .firstWhereOrNull((jwk) => jwk.toJWK(keyID: kid)['kid'] == kid);
 
     // jwks exists and it isn't stale
     if (cachedJwk != null &&
@@ -1378,7 +1379,8 @@ class GoTrueClient {
     _jwksCachedAt = now;
 
     // find the signing key
-    return jwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    return jwks.keys
+        .firstWhereOrNull((jwk) => jwk.toJWK(keyID: kid)['kid'] == kid);
   }
 
   /// Extracts the JWT claims present in the access token by first verifying the
@@ -1431,26 +1433,14 @@ class GoTrueClient {
           signature: decoded.signature);
     }
 
-    final publicKey = RSAPublicKey(signingKey['n'], signingKey['e']);
-    final signer = RSASigner(SHA256Digest(), '0609608648016503040201'); // PKCS1
-
-    // initialize with false, which means verify
-    signer.init(false, PublicKeyParameter<RSAPublicKey>(publicKey));
-
-    final signature = RSASignature(Uint8List.fromList(decoded.signature));
-    final isValidSignature = signer.verifySignature(
-      Uint8List.fromList(
-          utf8.encode('${decoded.raw.header}.${decoded.raw.payload}')),
-      signature,
-    );
-
-    if (!isValidSignature) {
-      throw AuthInvalidJwtException('Invalid JWT signature');
+    try {
+      JWT.verify(token, signingKey);
+      return GetClaimsResponse(
+          claims: decoded.payload,
+          header: decoded.header,
+          signature: decoded.signature);
+    } catch (e) {
+      throw AuthInvalidJwtException('Invalid JWT signature: $e');
     }
-
-    return GetClaimsResponse(
-        claims: decoded.payload,
-        header: decoded.header,
-        signature: decoded.signature);
   }
 }

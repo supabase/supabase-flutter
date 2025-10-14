@@ -1,3 +1,5 @@
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+
 /// JWT Header structure
 class JwtHeader {
   /// Algorithm used to sign the JWT (e.g., 'RS256', 'ES256', 'HS256')
@@ -157,13 +159,13 @@ class GetClaimsOptions {
 }
 
 class JWKSet {
-  final List<JWK> keys;
+  final List<JWTKey> keys;
 
   JWKSet({required this.keys});
 
   factory JWKSet.fromJson(Map<String, dynamic> json) {
     final keys = (json['keys'] as List<dynamic>?)
-            ?.map((e) => JWK.fromJson(e as Map<String, dynamic>))
+            ?.map((e) => JWTKey.fromJWK(e as Map<String, dynamic>))
             .toList() ??
         [];
     return JWKSet(keys: keys);
@@ -171,95 +173,7 @@ class JWKSet {
 
   Map<String, dynamic> toJson() {
     return {
-      'keys': keys.map((e) => e.toJson()).toList(),
+      'keys': keys.map((e) => e.toJWK()).toList(),
     };
-  }
-}
-
-/// {@template jwk}
-/// JSON Web Key (JWK) representation.
-/// {@endtemplate}
-class JWK {
-  /// The "kty" (key type) parameter identifies the cryptographic algorithm
-  /// family used with the key, such as "RSA" or "EC".
-  final String kty;
-
-  /// The "key_ops" (key operations) parameter identifies the cryptographic
-  /// operations for which the key is intended to be used.
-  final List<String> keyOps;
-
-  /// The "alg" (algorithm) parameter identifies the algorithm intended for
-  /// use with the key.
-  final String? alg;
-
-  /// The "kid" (key ID) parameter is used to match a specific key.
-  final String? kid;
-
-  /// Additional arbitrary properties of the JWK.
-  final Map<String, dynamic> _additionalProperties;
-
-  /// {@macro jwk}
-  JWK({
-    required this.kty,
-    required this.keyOps,
-    this.alg,
-    this.kid,
-    Map<String, dynamic>? additionalProperties,
-  }) : _additionalProperties = additionalProperties ?? {};
-
-  /// Creates a [JWK] from a JSON map.
-  factory JWK.fromJson(Map<String, dynamic> json) {
-    final kty = json['kty'] as String;
-    final keyOps =
-        (json['key_ops'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-            [];
-    final alg = json['alg'] as String?;
-    final kid = json['kid'] as String?;
-
-    final Map<String, dynamic> additionalProperties = Map.from(json);
-    additionalProperties.remove('kty');
-    additionalProperties.remove('key_ops');
-    additionalProperties.remove('alg');
-    additionalProperties.remove('kid');
-
-    return JWK(
-      kty: kty,
-      keyOps: keyOps,
-      alg: alg,
-      kid: kid,
-      additionalProperties: additionalProperties,
-    );
-  }
-
-  /// Allows accessing additional properties using operator[].
-  dynamic operator [](String key) {
-    switch (key) {
-      case 'kty':
-        return kty;
-      case 'key_ops':
-        return keyOps;
-      case 'alg':
-        return alg;
-      case 'kid':
-        return kid;
-      default:
-        return _additionalProperties[key];
-    }
-  }
-
-  /// Converts this [JWK] to a JSON map.
-  Map<String, dynamic> toJson() {
-    final Map<String, dynamic> json = {
-      'kty': kty,
-      'key_ops': keyOps,
-      ..._additionalProperties,
-    };
-    if (alg != null) {
-      json['alg'] = alg;
-    }
-    if (kid != null) {
-      json['kid'] = kid;
-    }
-    return json;
   }
 }
