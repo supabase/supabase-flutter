@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
@@ -57,6 +58,9 @@ class GoTrueClient {
 
   /// Completer to combine multiple simultaneous token refresh requests.
   Completer<AuthResponse>? _refreshTokenCompleter;
+
+  JWKSet? _jwks;
+  DateTime? _jwksCachedAt;
 
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
   final _onAuthStateChangeControllerSync =
@@ -1335,5 +1339,105 @@ class GoTrueClient {
       stackTrace ?? StackTrace.current,
     );
     return exception;
+  }
+
+  Future<JWK?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
+    // try fetching from the supplied jwks
+    final jwk = suppliedJwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    if (jwk != null) {
+      return jwk;
+    }
+
+    final now = DateTime.now();
+
+    // try fetching from cache
+    final cachedJwk = _jwks?.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+
+    // jwks exists and it isn't stale
+    if (cachedJwk != null &&
+        _jwksCachedAt != null &&
+        _jwksCachedAt!.add(Constants.jwksTtl).isAfter(now)) {
+      return cachedJwk;
+    }
+
+    // jwk isn't cached in memory so we need to fetch it from the well-known endpoint
+    final jwksResponse = await _fetch.request(
+      '$_url/.well-known/jwks.json',
+      RequestMethodType.get,
+      options: GotrueRequestOptions(headers: _headers),
+    );
+
+    final jwks = JWKSet.fromJson(jwksResponse as Map<String, dynamic>);
+
+    if (jwks.keys.isEmpty) {
+      return null;
+    }
+
+    _jwks = jwks;
+    _jwksCachedAt = now;
+
+    // find the signing key
+    return jwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+  }
+
+  /// Extracts the JWT claims present in the access token by first verifying the
+  /// JWT against the server's JSON Web Key Set endpoint
+  /// `/.well-known/jwks.json` which is often cached, resulting in significantly
+  /// faster responses. Prefer this method over [getUser] which always
+  /// sends a request to the Auth server for each JWT.
+  ///
+  /// If the project is not using an asymmetric JWT signing key (like ECC or
+  /// RSA) it always sends a request to the Auth server (similar to [getUser]) to verify the JWT.
+  /// [jwt] An optional specific JWT you wish to verify, not the one you
+  ///       can obtain from [currentSession].
+  /// [options] Various additional options that allow you to customize the
+  ///           behavior of this method.
+  ///
+  /// Returns a [GetClaimsResponse] containing the JWT claims, or throws an [AuthException] on error.
+  Future<GetClaimsResponse> getClaims([
+    String? jwt,
+    GetClaimsOptions? options,
+  ]) async {
+    String token = jwt ?? '';
+
+    if (token.isEmpty) {
+      final session = currentSession;
+      if (session == null) {
+        throw AuthSessionMissingException('No session found');
+      }
+      token = session.accessToken;
+    }
+
+    // Decode the JWT to get the payload
+    final decoded = decodeJwt(token);
+
+    // Validate expiration unless allowExpired is true
+    if (!(options?.allowExpired ?? false)) {
+      validateExp(decoded.payload.exp);
+    }
+
+    final signingKey =
+        (decoded.header.alg.startsWith('HS') || decoded.header.kid == null)
+            ? null
+            : await _fetchJwk(decoded.header.kid!, _jwks!);
+
+    // If symmetric algorithm, fallback to getUser()
+    if (signingKey == null) {
+      await getUser(token);
+      return GetClaimsResponse(
+          claims: decoded.payload,
+          header: decoded.header,
+          signature: decoded.signature);
+    }
+
+    try {
+      JWT.verify(token, signingKey.rsaPublicKey);
+      return GetClaimsResponse(
+          claims: decoded.payload,
+          header: decoded.header,
+          signature: decoded.signature);
+    } catch (e) {
+      throw AuthInvalidJwtException('Invalid JWT signature: $e');
+    }
   }
 }

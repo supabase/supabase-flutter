@@ -24,6 +24,9 @@ class Constants {
 
   /// The name of the header that contains API version.
   static const apiVersionHeaderName = 'x-supabase-api-version';
+
+  /// The TTL for the JWKS cache.
+  static const jwksTtl = Duration(minutes: 10);
 }
 
 class ApiVersions {
