@@ -1,3 +1,7 @@
+## 2.11.0
+
+ - **FEAT**(gotrue): introduce getClaims method to verify and extract JWT claims ([#1246](https://github.com/supabase/supabase-flutter/issues/1246)). ([615d687f](https://github.com/supabase/supabase-flutter/commit/615d687f012040c89df1f7349ba59fe4026969ff))
+
 ## 2.10.3
 
  - **DOCS**: update google_sign_in example ([#1240](https://github.com/supabase/supabase-flutter/issues/1240)). ([cad17842](https://github.com/supabase/supabase-flutter/commit/cad1784261bdfa43c2bf6169b6d1e75df8dcfa61))

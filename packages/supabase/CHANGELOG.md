@@ -1,3 +1,7 @@
+## 2.10.1
+
+ - Update a dependency to the latest release.
+
 ## 2.10.0
 
  - **FEAT**: add region as forceFunctionRegion query parameter ([#1243](https://github.com/supabase/supabase-flutter/issues/1243)). ([06c35baf](https://github.com/supabase/supabase-flutter/commit/06c35baf9974e87c06c65f7666165ef3c119d087))

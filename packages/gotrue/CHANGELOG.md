@@ -1,3 +1,7 @@
+## 2.17.0
+
+ - **FEAT**(gotrue): introduce getClaims method to verify and extract JWT claims ([#1246](https://github.com/supabase/supabase-flutter/issues/1246)). ([615d687f](https://github.com/supabase/supabase-flutter/commit/615d687f012040c89df1f7349ba59fe4026969ff))
+
 ## 2.16.0
 
  - **FEAT**(gotrue): add OAuth 2.1 client admin endpoints ([#1244](https://github.com/supabase/supabase-flutter/issues/1244)). ([ebc4c208](https://github.com/supabase/supabase-flutter/commit/ebc4c208578f81a7c78aba31c8d3f3376b8b5f9f))
