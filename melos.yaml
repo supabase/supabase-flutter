@@ -4,6 +4,7 @@ repository: https://github.com/supabase/supabase-flutter
 packages:
   - packages/*
   - packages/supabase_flutter/example
+  - examples/token_refresh_debug_app
 
 command:
   version:

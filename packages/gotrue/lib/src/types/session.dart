@@ -1,8 +1,11 @@
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/types/user.dart';
 import 'package:jwt_decode/jwt_decode.dart';
+import 'package:logging/logging.dart';
 
 class Session {
+  static final _log = Logger('supabase.auth.session');
+
   final String? providerToken;
   final String? providerRefreshToken;
   final String accessToken;
@@ -62,20 +65,33 @@ class Session {
   int? get _expiresAt {
     try {
       final payload = Jwt.parseJwt(accessToken);
-      return payload['exp'] as int;
-    } catch (_) {
+      final exp = payload['exp'] as int;
+      _log.finest('Parsed expiresAt from JWT: $exp');
+      return exp;
+    } catch (error) {
+      _log.warning('Failed to parse expiresAt from JWT: $error');
       return null;
     }
   }
 
-  /// Returns 'true` if the token is expired or will expire in the next 10 seconds.
+  /// Returns 'true` if the token is expired or will expire in the next 30 seconds.
   ///
-  /// The 10 second buffer is to account for latency issues.
+  /// The 30 second buffer is to account for latency issues.
   bool get isExpired {
-    if (expiresAt == null) return false;
-    return DateTime.now().add(Constants.expiryMargin).isAfter(
-          DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
-        );
+    if (expiresAt == null) {
+      _log.finest('Session.isExpired: false (no expiresAt)');
+      return false;
+    }
+    final now = DateTime.now();
+    final expiryTime = DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000);
+    final timeWithMargin = now.add(Constants.expiryMargin);
+    final expired = timeWithMargin.isAfter(expiryTime);
+    final secondsUntilExpiry = expiryTime.difference(now).inSeconds;
+
+    _log.finest(
+        'Session.isExpired: $expired (secondsUntilExpiry=$secondsUntilExpiry, expiryMargin=${Constants.expiryMargin.inSeconds}s, expiresAt=${expiryTime.toIso8601String()})');
+
+    return expired;
   }
 
   Session copyWith({
