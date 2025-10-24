@@ -40,24 +40,31 @@ class SupabaseAuth with WidgetsBindingObserver {
   Future<void> initialize({
     required FlutterAuthClientOptions options,
   }) async {
+    _log.info(
+        'Initializing SupabaseAuth with autoRefreshToken=${options.autoRefreshToken}, authFlowType=${options.authFlowType}');
     _localStorage = options.localStorage!;
     _authFlowType = options.authFlowType;
     _autoRefreshToken = options.autoRefreshToken;
 
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
+        _log.fine('Auth state change event: ${data.event.name}');
         _onAuthStateChange(data.event, data.session);
       },
-      onError: (error, stackTrace) {},
+      onError: (error, stackTrace) {
+        _log.warning('Error in auth state change listener', error, stackTrace);
+      },
     );
 
     await _localStorage.initialize();
 
     final hasPersistedSession = await _localStorage.hasAccessToken();
+    _log.info('Local storage has persisted session: $hasPersistedSession');
     var shouldEmitInitialSession = true;
     if (hasPersistedSession) {
       final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
+        _log.fine('Found persisted session, setting as initial session');
         try {
           await Supabase.instance.client.auth
               .setInitialSession(persistedSession);
@@ -69,6 +76,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       }
     }
     if (shouldEmitInitialSession) {
+      _log.fine('Emitting initial session event (no persisted session found)');
       Supabase.instance.client.auth
           // ignore: invalid_use_of_internal_member
           .notifyAllSubscribers(AuthChangeEvent.initialSession);
@@ -79,6 +87,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       await _startDeeplinkObserver();
     }
 
+    _log.info('SupabaseAuth initialization completed');
     // Emit a null session if the user did not have persisted session
   }
 
@@ -86,18 +95,29 @@ class SupabaseAuth with WidgetsBindingObserver {
   ///
   /// Called lazily after `.initialize()` by `Supabase` instance
   Future<void> recoverSession() async {
+    _log.info('Starting session recovery from local storage');
     try {
       final hasPersistedSession = await _localStorage.hasAccessToken();
+      _log.fine('Has persisted session for recovery: $hasPersistedSession');
       if (hasPersistedSession) {
         final persistedSession = await _localStorage.accessToken();
         if (persistedSession != null) {
+          _log.fine('Calling recoverSession on auth client');
           await Supabase.instance.client.auth.recoverSession(persistedSession);
+          _log.info('Session recovery completed successfully');
+        } else {
+          _log.warning(
+              'Persisted session was null despite hasAccessToken being true');
         }
+      } else {
+        _log.info('No persisted session to recover');
       }
     } on AuthException catch (error, stackTrace) {
-      _log.warning(error.message, error, stackTrace);
+      _log.warning('AuthException during session recovery: ${error.message}',
+          error, stackTrace);
     } catch (error, stackTrace) {
-      _log.warning("Error while recovering session", error, stackTrace);
+      _log.warning(
+          "Unexpected error during session recovery", error, stackTrace);
     }
   }
 
@@ -113,24 +133,48 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _log.info('App lifecycle state changed to: ${state.name}');
+
+    final currentSession = Supabase.instance.client.auth.currentSession;
+    final isExpired = currentSession?.isExpired ?? false;
+    final expiresAt = currentSession?.expiresAt;
+    final expiresAtTime = expiresAt != null
+        ? DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)
+            .toIso8601String()
+        : 'null';
+
+    _log.fine(
+        'Current session state: hasSession=${currentSession != null}, isExpired=$isExpired, expiresAt=$expiresAtTime');
+
     switch (state) {
       case AppLifecycleState.resumed:
+        _log.info('App resumed, autoRefreshToken=$_autoRefreshToken');
         if (_autoRefreshToken) {
           Supabase.instance.client.auth.startAutoRefresh();
         }
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
         if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
+          _log.info('App paused/detached, stopping auto-refresh');
           Supabase.instance.client.auth.stopAutoRefresh();
         }
       default:
+        _log.fine('App lifecycle state: ${state.name}');
     }
   }
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
+    _log.fine(
+        'Handling auth state change: ${event.name}, hasSession=${session != null}');
     if (session != null) {
+      final expiresAt = session.expiresAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(session.expiresAt! * 1000)
+              .toIso8601String()
+          : 'null';
+      _log.fine('Persisting session to local storage: expiresAt=$expiresAt');
       _localStorage.persistSession(jsonEncode(session.toJson()));
     } else if (event == AuthChangeEvent.signedOut) {
+      _log.info('User signed out, removing persisted session');
       _localStorage.removePersistedSession();
     }
   }
