@@ -387,6 +387,8 @@ class GoTrueClient {
   ///
   /// [captchaToken] is the verification token received when the user
   /// completes the captcha on the app.
+  /// Note: Supported providers for signInWithIdToken are Google, Apple, Kakao, Keycloak. Facebook is NOT supported (see issue #1259 and OAuthProvider enum for details).
+
   Future<AuthResponse> signInWithIdToken({
     required OAuthProvider provider,
     required String idToken,
