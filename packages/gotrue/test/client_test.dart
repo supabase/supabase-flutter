@@ -291,6 +291,30 @@ void main() {
       }
     });
 
+    test('Refresh session with refreshToken when no current session exists',
+        () async {
+      await client.signInWithPassword(email: email1, password: password);
+
+      final refreshToken = client.currentSession?.refreshToken ?? '';
+      expect(refreshToken, isNotEmpty);
+
+      final newClient = GoTrueClient(
+        url: gotrueUrl,
+        headers: {
+          'apikey': anonToken,
+        },
+      );
+
+      expect(newClient.currentSession, isNull);
+
+      // This should work even though there's no current session,
+      // because we're providing a refreshToken parameter
+      final response = await newClient.refreshSession(refreshToken);
+      expect(response.session, isNotNull);
+      expect(response.session?.accessToken, isNotEmpty);
+      expect(newClient.currentSession?.accessToken, isNotEmpty);
+    });
+
     test('Update user', () async {
       await client.signInWithPassword(email: email1, password: password);
 
