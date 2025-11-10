@@ -376,7 +376,8 @@ class GoTrueClient {
     return authSessionUrlResponse;
   }
 
-  /// Allows signing in with an ID token issued by certain supported providers.
+  /// Allows signing in with an ID token issued by supported providers.
+  /// Common supported providers include Apple, Google, Facebook, Kakao, and Keycloak.
   /// The [idToken] is verified for validity and a new session is established.
   ///
   /// If the ID token contains an `at_hash` claim, then [accessToken] must be

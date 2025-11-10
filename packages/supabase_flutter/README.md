@@ -186,7 +186,7 @@ Future<AuthResponse> _googleSignIn() async {
 
 ### <a id="oauth-login"></a>OAuth login
 
-For providers other than Apple or Google, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
+The `signInWithIdToken()` method supports providers like Apple, Google, Facebook, Kakao, and Keycloak. For other providers, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
 
 Use the `redirectTo` parameter to redirect the user to a deep link to bring the user back to the app. Learn more about setting up deep links in [Deep link config](#deep-link-config).
 
