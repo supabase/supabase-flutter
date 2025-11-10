@@ -607,19 +607,16 @@ class GoTrueClient {
   }
 
   /// Returns a new session, regardless of expiry status.
-  /// Takes in an optional current session. If not passed in, then refreshSession() will attempt to retrieve it from getSession().
-  /// If the current session's refresh token is invalid, an error will be thrown.
+  /// Takes in an optional [refreshToken]. If not provided, then refreshSession() will attempt to retrieve it from the current session.
+  /// If no refresh token is available (neither provided nor in current session), an error will be thrown.
   Future<AuthResponse> refreshSession([String? refreshToken]) async {
-    if (currentSession?.accessToken == null) {
-      _log.warning("Can't refresh session, no current session found.");
-      throw AuthSessionMissingException();
-    }
     _log.info('Refresh session');
 
     final currentSessionRefreshToken =
         refreshToken ?? _currentSession?.refreshToken;
 
     if (currentSessionRefreshToken == null) {
+      _log.warning("Can't refresh session, no refresh token found.");
       throw AuthSessionMissingException();
     }
 
