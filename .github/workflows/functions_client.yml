@@ -7,12 +7,14 @@ on:
     paths:
       - 'packages/functions_client/**'
       - '.github/workflows/functions_client.yml'
+      - '.github/workflows/dart-package-test.yml'
       - 'packages/yet_another_json_isolate/**'
 
   pull_request:
     paths:
       - 'packages/functions_client/**'
       - '.github/workflows/functions_client.yml'
+      - '.github/workflows/dart-package-test.yml'
       - 'packages/yet_another_json_isolate/**'
 
 concurrency:
@@ -24,58 +26,8 @@ permissions:
 
 jobs:
   test:
-    name: Test SDK ${{ matrix.sdk }}
-    timeout-minutes: 20
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        sdk: [stable, beta, dev]
-
-    defaults:
-      run:
-        working-directory: packages/functions_client
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Checks-out repo
-        uses: actions/checkout@v4
-
-      - name: Setup Dart
-        uses: dart-lang/setup-dart@v1
-        with:
-          sdk: ${{ matrix.sdk }}
-
-      - name: Cache pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.PUB_CACHE }}
-            ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ matrix.sdk }}-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-${{ matrix.sdk }}-
-            ${{ runner.os }}-pub-
-
-      - name: Bootstrap workspace
-        run: |
-          cd ../../
-          dart pub global activate melos
-          melos bootstrap --no-flutter
-
-      - name: dartfmt
-        if: ${{ matrix.sdk == 'stable'}}
-        run: dart format lib test -l 80 --set-exit-if-changed
-
-      - name: analyzer
-        run: |
-          if [ "${{ matrix.sdk }}" == "stable" ]; then
-            dart analyze --fatal-warnings .
-          else
-            dart analyze
-          fi
-
-      - name: Run tests
-        run: dart test
+    uses: ./.github/workflows/dart-package-test.yml
+    with:
+      package-name: functions_client
+      working-directory: packages/functions_client
+      melos-no-flutter: true

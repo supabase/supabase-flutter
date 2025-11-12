@@ -32,6 +32,10 @@ scripts:
   format:
     exec: dart format lib test -l 80 --set-exit-if-changed
 
+  test:coverage:
+    exec: dart test --coverage=coverage
+    description: Run tests with coverage for all packages
+
   upgrade:
     exec: dart pub upgrade
 
