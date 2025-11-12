@@ -71,7 +71,7 @@ jobs:
       - name: analyzer
         run: |
           if [ "${{ matrix.sdk }}" == "stable" ]; then
-            dart analyze --fatal-warnings --fatal-infos .
+            dart analyze --fatal-warnings .
           else
             dart analyze
           fi

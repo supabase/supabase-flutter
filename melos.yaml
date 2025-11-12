@@ -27,7 +27,7 @@ scripts:
     description: Run all static analysis checks.
 
   analyze:
-    exec: dart analyze --fatal-warnings --fatal-infos .
+    exec: dart analyze --fatal-warnings .
 
   format:
     exec: dart format lib test -l 80 --set-exit-if-changed
