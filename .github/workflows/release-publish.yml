@@ -27,11 +27,13 @@ jobs:
           cache: true
 
       - name: Publish to pub.dev
+        id: publish
         uses: bluefireteam/melos-action@v3
         with:
           publish: true
 
       - name: Create GitHub Release
+        id: create_release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref_name }}
@@ -49,3 +51,30 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Generate workflow summary
+        if: always()
+        run: |
+          echo "## Package Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Package:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.publish.outcome }}" == "success" ]; then
+            echo "✅ **Pub.dev Publishing:** Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Pub.dev Publishing:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ steps.create_release.outcome }}" == "success" ]; then
+            echo "✅ **GitHub Release:** Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **GitHub Release:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.publish.outcome }}" == "success" ] && [ "${{ steps.create_release.outcome }}" == "success" ]; then
+            echo "🎉 Package published successfully!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Some steps failed. Please review the logs above." >> $GITHUB_STEP_SUMMARY
+          fi
