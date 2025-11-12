@@ -28,4 +28,3 @@ jobs:
     with:
       package-name: yet_another_json_isolate
       working-directory: packages/yet_another_json_isolate
-      melos-no-flutter: true

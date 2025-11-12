@@ -25,11 +25,6 @@ on:
         type: number
         default: 0
         description: 'Test concurrency level (0 means no flag, 1 means --concurrency=1)'
-      melos-no-flutter:
-        required: false
-        type: boolean
-        default: false
-        description: 'Whether to use --no-flutter flag with melos bootstrap'
 
 jobs:
   test:
@@ -71,11 +66,7 @@ jobs:
         run: |
           cd ../../
           dart pub global activate melos
-          if [ "${{ inputs.melos-no-flutter }}" == "true" ]; then
-            melos bootstrap --no-flutter
-          else
-            melos bootstrap
-          fi
+          melos bootstrap --no-flutter
 
       - name: dartfmt
         if: ${{ matrix.sdk == 'stable'}}

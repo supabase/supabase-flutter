@@ -31,4 +31,3 @@ jobs:
       needs-docker: true
       docker-compose-dir: infra/gotrue
       test-concurrency: 1
-      melos-no-flutter: true

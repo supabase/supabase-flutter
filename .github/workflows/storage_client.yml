@@ -31,4 +31,3 @@ jobs:
       needs-docker: true
       docker-compose-dir: infra/storage_client
       test-concurrency: 1
-      melos-no-flutter: true

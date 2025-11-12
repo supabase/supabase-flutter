@@ -29,4 +29,3 @@ jobs:
       package-name: realtime_client
       working-directory: packages/realtime_client
       test-concurrency: 1
-      melos-no-flutter: true

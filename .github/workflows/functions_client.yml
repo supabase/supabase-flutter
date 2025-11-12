@@ -30,4 +30,3 @@ jobs:
     with:
       package-name: functions_client
       working-directory: packages/functions_client
-      melos-no-flutter: true
