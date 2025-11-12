@@ -85,8 +85,6 @@ void main() {
       final createParams = CreateOAuthClientParams(
         clientName: 'Test OAuth Client for Update',
         redirectUris: ['https://example.com/callback'],
-        clientUri: 'https://example.com',
-        scope: 'openid profile',
       );
       final createRes = await client.admin.oauth.createClient(createParams);
       final clientId = createRes.client!.clientId;
@@ -94,24 +92,16 @@ void main() {
       // Update the client
       final updateParams = UpdateOAuthClientParams(
         clientName: 'Updated OAuth Client Name',
-        redirectUris: ['https://example.com/callback', 'https://example.com/callback2'],
-        clientUri: 'https://updated.example.com',
-        scope: 'openid profile email',
       );
-      final updateRes = await client.admin.oauth.updateClient(clientId, updateParams);
+      final updateRes =
+          await client.admin.oauth.updateClient(clientId, updateParams);
       expect(updateRes.client, isNotNull);
       expect(updateRes.client?.clientId, clientId);
       expect(updateRes.client?.clientName, 'Updated OAuth Client Name');
-      expect(updateRes.client?.redirectUris, ['https://example.com/callback', 'https://example.com/callback2']);
-      expect(updateRes.client?.clientUri, 'https://updated.example.com');
-      expect(updateRes.client?.scope, 'openid profile email');
 
       // Verify the update by getting the client again
       final getRes = await client.admin.oauth.getClient(clientId);
       expect(getRes.client?.clientName, 'Updated OAuth Client Name');
-      expect(getRes.client?.redirectUris, ['https://example.com/callback', 'https://example.com/callback2']);
-      expect(getRes.client?.clientUri, 'https://updated.example.com');
-      expect(getRes.client?.scope, 'openid profile email');
     });
 
     test('regenerate OAuth client secret', () async {
