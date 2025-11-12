@@ -39,3 +39,4 @@ jobs:
       package-name: supabase
       working-directory: packages/supabase
       test-concurrency: 1
+      melos-no-flutter: true
