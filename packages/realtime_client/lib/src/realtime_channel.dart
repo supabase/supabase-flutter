@@ -550,37 +550,30 @@ class RealtimeChannel {
       ]
     };
 
-    try {
-      final res = await (socket.httpClient?.post ?? post)(
-        Uri.parse(broadcastEndpointURL),
-        headers: headers,
-        body: json.encode(body),
-      ).timeout(
-        timeout ?? _timeout,
-        onTimeout: () => throw TimeoutException('Request timeout'),
-      );
+    final res = await (socket.httpClient?.post ?? post)(
+      Uri.parse(broadcastEndpointURL),
+      headers: headers,
+      body: json.encode(body),
+    ).timeout(
+      timeout ?? _timeout,
+      onTimeout: () => throw TimeoutException('Request timeout'),
+    );
 
-      if (res.statusCode == 202) {
-        return;
-      }
-
-      String errorMessage = res.reasonPhrase ?? 'Unknown error';
-      try {
-        final errorBody = json.decode(res.body) as Map<String, dynamic>;
-        errorMessage = (errorBody['error'] ??
-            errorBody['message'] ??
-            errorMessage) as String;
-      } catch (_) {
-        // If JSON parsing fails, use the default error message
-      }
-
-      throw Exception(errorMessage);
-    } catch (e) {
-      if (e is TimeoutException) {
-        rethrow;
-      }
-      throw Exception(e.toString());
+    if (res.statusCode == 202) {
+      return;
     }
+
+    String errorMessage = res.reasonPhrase ?? 'Unknown error';
+    try {
+      final errorBody = json.decode(res.body) as Map<String, dynamic>;
+      errorMessage = (errorBody['error'] ??
+          errorBody['message'] ??
+          errorMessage) as String;
+    } catch (_) {
+      // If JSON parsing fails, use the default error message
+    }
+
+    throw Exception(errorMessage);
   }
 
   /// Sends a realtime broadcast message.
