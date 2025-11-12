@@ -208,3 +208,47 @@ class CreateOAuthClientParams {
     };
   }
 }
+
+/// Parameters for updating an existing OAuth client.
+/// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+class UpdateOAuthClientParams {
+  /// Human-readable name of the OAuth client
+  final String? clientName;
+
+  /// URI of the OAuth client
+  final String? clientUri;
+
+  /// Array of allowed redirect URIs
+  final List<String>? redirectUris;
+
+  /// Array of allowed grant types
+  final List<OAuthClientGrantType>? grantTypes;
+
+  /// Array of allowed response types
+  final List<OAuthClientResponseType>? responseTypes;
+
+  /// Scope of the OAuth client
+  final String? scope;
+
+  UpdateOAuthClientParams({
+    this.clientName,
+    this.clientUri,
+    this.redirectUris,
+    this.grantTypes,
+    this.responseTypes,
+    this.scope,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (clientName != null) 'client_name': clientName,
+      if (clientUri != null) 'client_uri': clientUri,
+      if (redirectUris != null) 'redirect_uris': redirectUris,
+      if (grantTypes != null)
+        'grant_types': grantTypes!.map((e) => e.value).toList(),
+      if (responseTypes != null)
+        'response_types': responseTypes!.map((e) => e.value).toList(),
+      if (scope != null) 'scope': scope,
+    };
+  }
+}

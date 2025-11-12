@@ -22,10 +22,16 @@ class OAuthClientResponse {
 class OAuthClientListResponse {
   final List<OAuthClient> clients;
   final String? aud;
+  final int? nextPage;
+  final int? lastPage;
+  final int total;
 
   OAuthClientListResponse({
     required this.clients,
     this.aud,
+    this.nextPage,
+    this.lastPage,
+    this.total = 0,
   });
 
   factory OAuthClientListResponse.fromJson(Map<String, dynamic> json) {
@@ -34,6 +40,9 @@ class OAuthClientListResponse {
           .map((e) => OAuthClient.fromJson(e as Map<String, dynamic>))
           .toList(),
       aud: json['aud'] as String?,
+      nextPage: json['nextPage'] as int?,
+      lastPage: json['lastPage'] as int?,
+      total: json['total'] as int? ?? 0,
     );
   }
 }
@@ -107,6 +116,28 @@ class GoTrueAdminOAuthApi {
       RequestMethodType.get,
       options: GotrueRequestOptions(
         headers: _headers,
+      ),
+    );
+
+    return OAuthClientResponse.fromJson(data);
+  }
+
+  /// Updates an existing OAuth client.
+  /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+  ///
+  /// This function should only be called on a server. Never expose your `service_role` key in the browser.
+  Future<OAuthClientResponse> updateClient(
+    String clientId,
+    UpdateOAuthClientParams params,
+  ) async {
+    validateUuid(clientId);
+
+    final data = await _fetch.request(
+      '$_url/admin/oauth/clients/$clientId',
+      RequestMethodType.put,
+      options: GotrueRequestOptions(
+        headers: _headers,
+        body: params.toJson(),
       ),
     );
 

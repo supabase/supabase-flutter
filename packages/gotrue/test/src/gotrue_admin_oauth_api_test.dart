@@ -80,6 +80,30 @@ void main() {
       expect(res.client?.clientName, 'Test OAuth Client for Get');
     });
 
+    test('update OAuth client', () async {
+      // First create a client
+      final createParams = CreateOAuthClientParams(
+        clientName: 'Test OAuth Client for Update',
+        redirectUris: ['https://example.com/callback'],
+      );
+      final createRes = await client.admin.oauth.createClient(createParams);
+      final clientId = createRes.client!.clientId;
+
+      // Update the client
+      final updateParams = UpdateOAuthClientParams(
+        clientName: 'Updated OAuth Client Name',
+      );
+      final updateRes =
+          await client.admin.oauth.updateClient(clientId, updateParams);
+      expect(updateRes.client, isNotNull);
+      expect(updateRes.client?.clientId, clientId);
+      expect(updateRes.client?.clientName, 'Updated OAuth Client Name');
+
+      // Verify the update by getting the client again
+      final getRes = await client.admin.oauth.getClient(clientId);
+      expect(getRes.client?.clientName, 'Updated OAuth Client Name');
+    });
+
     test('regenerate OAuth client secret', () async {
       // First create a client
       final params = CreateOAuthClientParams(
@@ -125,6 +149,12 @@ void main() {
 
     test('regenerateClientSecret() validates ids', () {
       expect(() => client.admin.oauth.regenerateClientSecret('invalid-id'),
+          throwsA(isA<ArgumentError>()));
+    });
+
+    test('updateClient() validates ids', () {
+      final params = UpdateOAuthClientParams(clientName: 'Updated Name');
+      expect(() => client.admin.oauth.updateClient('invalid-id', params),
           throwsA(isA<ArgumentError>()));
     });
   });
