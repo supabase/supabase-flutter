@@ -27,12 +27,17 @@ on:
       - 'packages/supabase/**'
       - 'packages/yet_another_json_isolate/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   test:
     name: Test Flutter v${{ matrix.flutter-version }} on ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

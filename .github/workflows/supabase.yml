@@ -23,12 +23,17 @@ on:
       - 'packages/realtime_client/**'
       - 'packages/storage_client/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   test:
     name: Test SDK ${{ matrix.sdk }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:

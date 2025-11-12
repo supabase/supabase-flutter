@@ -15,12 +15,17 @@ on:
       - '.github/workflows/postgrest.yml'
       - 'packages/yet_another_json_isolate/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   test:
     name: Test SDK ${{ matrix.sdk }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -66,10 +71,8 @@ jobs:
           docker compose down
           docker compose up -d
 
-      - name: Sleep for 5 seconds
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '5s'
+      - name: Wait for services to be ready
+        run: sleep 5
 
       - name: Run tests
         run: dart test --concurrency=1
