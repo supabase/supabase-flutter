@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:http/http.dart';
+import 'package:http/http.dart' show Client, MediaType, MultipartFile;
 import 'package:logging/logging.dart';
 import 'package:mime/mime.dart';
 import 'package:retry/retry.dart';
