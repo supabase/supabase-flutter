@@ -47,6 +47,17 @@ jobs:
         with:
           sdk: ${{ matrix.sdk }}
 
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ matrix.sdk }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-${{ matrix.sdk }}-
+            ${{ runner.os }}-pub-
+
       - name: Bootstrap workspace
         run: |
           cd ../../
@@ -58,12 +69,12 @@ jobs:
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
-        if: ${{ matrix.sdk == 'stable'}}
-        run: dart analyze --fatal-warnings --fatal-infos .
-
-      - name: analyzer
-        if: ${{ matrix.sdk == 'beta' || matrix.sdk == 'dev' }}
-        run: dart analyze
+        run: |
+          if [ "${{ matrix.sdk }}" == "stable" ]; then
+            dart analyze --fatal-warnings --fatal-infos .
+          else
+            dart analyze
+          fi
 
       - name: Build Docker image
         run: |

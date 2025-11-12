@@ -31,6 +31,8 @@ jobs:
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
+        with:
+          cache: true
 
       - name: Setup Melos
         uses: bluefireteam/melos-action@v3
