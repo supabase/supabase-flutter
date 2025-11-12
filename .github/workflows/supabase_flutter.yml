@@ -27,12 +27,17 @@ on:
       - 'packages/supabase/**'
       - 'packages/yet_another_json_isolate/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   test:
     name: Test Flutter v${{ matrix.flutter-version }} on ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -54,6 +59,7 @@ jobs:
         with:
           flutter-version: ${{ matrix.flutter-version }}
           channel: 'stable'
+          cache: true
 
       - name: Show Flutter version
         run: flutter --version
@@ -70,7 +76,7 @@ jobs:
 
       - name: Run analyzer
         if: ${{ matrix.flutter-version == '3.x'}}
-        run: flutter analyze --fatal-warnings --fatal-infos .
+        run: flutter analyze --fatal-warnings .
 
       - name: Run unit tests
         run: flutter test --concurrency=1

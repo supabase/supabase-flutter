@@ -7,56 +7,25 @@ on:
     paths:
       - 'packages/realtime_client/**'
       - '.github/workflows/realtime_client.yml'
+      - '.github/workflows/dart-package-test.yml'
 
   pull_request:
     paths:
       - 'packages/realtime_client/**'
       - '.github/workflows/realtime_client.yml'
+      - '.github/workflows/dart-package-test.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   test:
-    name: Test SDK ${{ matrix.sdk }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        sdk: [stable, beta, dev]
-
-    defaults:
-      run:
-        working-directory: packages/realtime_client
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Checks-out repo
-        uses: actions/checkout@v4
-
-      - name: Setup Dart
-        uses: dart-lang/setup-dart@v1
-        with:
-          sdk: ${{ matrix.sdk }}
-
-      - name: Bootstrap workspace
-        run: |
-          cd ../../
-          dart pub global activate melos
-          melos bootstrap --no-flutter
-
-      - name: dartfmt
-        if: ${{ matrix.sdk == 'stable'}}
-        run: dart format lib test -l 80 --set-exit-if-changed
-
-      - name: analyzer
-        if: ${{ matrix.sdk == 'stable'}}
-        run: dart analyze --fatal-warnings --fatal-infos .
-
-      - name: analyzer
-        if: ${{ matrix.sdk == 'beta' || matrix.sdk == 'dev' }}
-        run: dart analyze
-
-      - name: Run tests
-        run: dart test --concurrency=1
+    uses: ./.github/workflows/dart-package-test.yml
+    with:
+      package-name: realtime_client
+      working-directory: packages/realtime_client
+      test-concurrency: 1
