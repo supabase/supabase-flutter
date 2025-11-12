@@ -62,3 +62,23 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.event.head_commit.message }}" >> $GITHUB_STEP_SUMMARY
           echo "**Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+
+  notify-success:
+    name: Notify Slack on Success
+    needs: create-tags
+    if: ${{ needs.create-tags.result == 'success' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Release Tags Created'
+      status: 'success'
+
+  notify-failure:
+    name: Notify Slack on Failure
+    needs: create-tags
+    if: ${{ always() && needs.create-tags.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Release Tags Creation'
+      status: 'failure'

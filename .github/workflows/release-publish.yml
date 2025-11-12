@@ -78,3 +78,25 @@ jobs:
           else
             echo "⚠️ Some steps failed. Please review the logs above." >> $GITHUB_STEP_SUMMARY
           fi
+
+  notify-success:
+    name: Notify Slack on Success
+    needs: publish-packages
+    if: ${{ needs.publish-packages.result == 'success' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Package Release'
+      status: 'success'
+      version: ${{ github.ref_name }}
+
+  notify-failure:
+    name: Notify Slack on Failure
+    needs: publish-packages
+    if: ${{ always() && needs.publish-packages.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Package Release'
+      status: 'failure'
+      version: ${{ github.ref_name }}

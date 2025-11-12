@@ -2,6 +2,8 @@
 
 # `Supabase Flutter`
 
+[![Dependency Scan](https://github.com/supabase/supabase-flutter/actions/workflows/dependency-scan.yml/badge.svg)](https://github.com/supabase/supabase-flutter/actions/workflows/dependency-scan.yml)
+
 Flutter Client library for [Supabase](https://supabase.com/).
 
 - Documentation: https://supabase.com/docs/reference/dart/introduction
