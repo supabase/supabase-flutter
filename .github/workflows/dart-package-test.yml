@@ -51,21 +51,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Dart
-        uses: dart-lang/setup-dart@v1
+      - name: Setup Flutter (includes Dart)
+        uses: subosito/flutter-action@v2
         with:
-          sdk: ${{ matrix.sdk }}
-
-      - name: Cache pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ env.PUB_CACHE }}
-            ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ matrix.sdk }}-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-${{ matrix.sdk }}-
-            ${{ runner.os }}-pub-
+          channel: ${{ matrix.sdk }}
+          cache: true
 
       - name: Bootstrap workspace
         run: |
