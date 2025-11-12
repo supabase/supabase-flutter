@@ -91,12 +91,51 @@ jobs:
         run: sleep 5
 
       - name: Run tests
+        id: run_tests
+        continue-on-error: true
         run: |
           if [ "${{ inputs.test-concurrency }}" == "1" ]; then
             dart test --concurrency=1
           else
             dart test
           fi
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## Test Results for ${{ inputs.package-name }} (SDK: ${{ matrix.sdk }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.run_tests.outcome }}" == "success" ]; then
+            echo "✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Package:** \`${{ inputs.package-name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**SDK Version:** \`${{ matrix.sdk }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Working Directory:** \`${{ inputs.working-directory }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.needs-docker }}" == "true" ]; then
+            echo "**Docker Services:** ✓ Required" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check test results
+        if: steps.run_tests.outcome != 'success'
+        run: exit 1
+
+      - name: Generate coverage report
+        if: matrix.sdk == 'stable'
+        run: |
+          dart pub global activate coverage
+          dart test --coverage=coverage
+          dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
+
+      - name: Upload coverage artifact
+        if: matrix.sdk == 'stable'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ inputs.package-name }}
+          path: ${{ inputs.working-directory }}/coverage/
+          retention-days: 7
 
       - name: Stop Docker services
         if: ${{ inputs.needs-docker && always() }}

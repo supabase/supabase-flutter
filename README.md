@@ -2,6 +2,15 @@
 
 # `Supabase Flutter`
 
+[![gotrue](https://github.com/supabase/supabase-flutter/actions/workflows/gotrue.yml/badge.svg)](https://github.com/supabase/supabase-flutter/actions/workflows/gotrue.yml)
+[![postgrest](https://github.com/supabase/supabase-flutter/actions/workflows/postgrest.yml/badge.svg)](https://github.com/supabase/supabase-flutter/actions/workflows/postgrest.yml)
+[![storage_client](https://github.com/supabase/supabase-flutter/actions/workflows/storage_client.yml/badge.svg)](https://github.com/supabase/supabase-flutter/actions/workflows/storage_client.yml)
+[![realtime_client](https://github.com/supabase/supabase-flutter/actions/workflows/realtime_client.yml/badge.svg)](https://github.com/supabase/supabase-flutter/actions/workflows/realtime_client.yml)
+[![functions_client](https://github.com/supabase/supabase-flutter/actions/workflows/functions_client.yml/badge.svg)](https://github.com/supabase/supabase-flutter/actions/workflows/functions_client.yml)
+[![supabase](https://github.com/supabase/supabase-flutter/actions/workflows/supabase.yml/badge.svg)](https://github.com/supabase/supabase-flutter/actions/workflows/supabase.yml)
+[![supabase_flutter](https://github.com/supabase/supabase-flutter/actions/workflows/supabase_flutter.yml/badge.svg)](https://github.com/supabase/supabase-flutter/actions/workflows/supabase_flutter.yml)
+[![coverage](https://github.com/supabase/supabase-flutter/actions/workflows/coverage.yml/badge.svg)](https://github.com/supabase/supabase-flutter/actions/workflows/coverage.yml)
+
 Flutter Client library for [Supabase](https://supabase.com/).
 
 - Documentation: https://supabase.com/docs/reference/dart/introduction
