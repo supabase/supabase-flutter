@@ -477,6 +477,42 @@ void main() {
     expect(res[0]['username'], 'supabot');
   });
 
+  test('matchRegex - regex match (case sensitive)', () async {
+    final res = await postgrest
+        .from('users')
+        .select('username')
+        .matchRegex('username', '^supa.*');
+    expect(res, isNotEmpty);
+    for (final item in res) {
+      expect((item['username'] as String).startsWith('supa'), true);
+    }
+  });
+
+  test('imatchRegex - regex match (case insensitive)', () async {
+    final res = await postgrest
+        .from('users')
+        .select('username')
+        .imatchRegex('username', '^SUPA.*');
+    expect(res, isNotEmpty);
+    for (final item in res) {
+      expect(
+          (item['username'] as String).toLowerCase().startsWith('supa'), true);
+    }
+  });
+
+  test('isDistinct - treats NULL as comparable', () async {
+    final res = await postgrest
+        .from('users')
+        .select('username, data')
+        .isDistinct('data', null);
+    expect(res, isNotEmpty);
+    // isDistinct should return rows where data IS DISTINCT FROM null
+    // which means rows where data is NOT null
+    for (final item in res) {
+      expect(item['data'] != null, true);
+    }
+  });
+
   test('filter on rpc', () async {
     final List res = await postgrest.rpc('get_username_and_status',
         params: {'name_param': 'supabot'}).neq('status', 'ONLINE');

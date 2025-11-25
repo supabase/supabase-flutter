@@ -476,6 +476,45 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
+  /// Finds all rows whose value in the stated [column] matches the supplied [pattern] using PostgreSQL regular expression (case sensitive).
+  ///
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .matchRegex('username', '^sup.*');
+  /// ```
+  PostgrestFilterBuilder<T> matchRegex(String column, String pattern) {
+    return copyWithUrl(appendSearchParams(column, 'match.$pattern'));
+  }
+
+  /// Finds all rows whose value in the stated [column] matches the supplied [pattern] using PostgreSQL regular expression (case insensitive).
+  ///
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .imatchRegex('username', '^SUP.*');
+  /// ```
+  PostgrestFilterBuilder<T> imatchRegex(String column, String pattern) {
+    return copyWithUrl(appendSearchParams(column, 'imatch.$pattern'));
+  }
+
+  /// Finds all rows whose value on the stated [column] is not equal to the specified [value], treating `NULL` as a comparable value.
+  ///
+  /// This is different from [neq] which treats `NULL` specially.
+  ///
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .isDistinct('age', null);
+  /// ```
+  // ignore: non_constant_identifier_names
+  PostgrestFilterBuilder<T> isDistinct(String column, Object? value) {
+    return copyWithUrl(appendSearchParams(column, 'isdistinct.$value'));
+  }
+
   @override
   PostgrestFilterBuilder<T> setHeader(String key, String value) {
     return PostgrestFilterBuilder(
