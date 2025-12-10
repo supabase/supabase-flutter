@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2025-12-10
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.18.0`](#gotrue---v2180)
+ - [`postgrest` - `v2.6.0`](#postgrest---v260)
+ - [`realtime_client` - `v2.7.0`](#realtime_client---v270)
+ - [`supabase_flutter` - `v2.12.0`](#supabase_flutter---v2120)
+ - [`supabase` - `v2.10.2`](#supabase---v2102)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.10.2`
+
+---
+
+#### `gotrue` - `v2.18.0`
+
+ - **FIX**(gotrue): allow refreshSession with refreshToken when no current session exists ([#1263](https://github.com/supabase/supabase-flutter/issues/1263)). ([1d142c12](https://github.com/supabase/supabase-flutter/commit/1d142c129c2574f3b1cd39d2d3c118031acaa631))
+ - **FEAT**(oauth): add updateClient method to admin OAuth API ([#1262](https://github.com/supabase/supabase-flutter/issues/1262)). ([36d73343](https://github.com/supabase/supabase-flutter/commit/36d73343e8adf68a0b141dc62ad369488ed4f9e6))
+ - **DOCS**: update signInWithIdToken provider documentation ([#1264](https://github.com/supabase/supabase-flutter/issues/1264)). ([b10d0c88](https://github.com/supabase/supabase-flutter/commit/b10d0c88171d9d257694743d1ad24b7b6a1c190f))
+
+#### `postgrest` - `v2.6.0`
+
+ - **FEAT**(postgrest): add missing PostgREST v12 operators ([#1273](https://github.com/supabase/supabase-flutter/issues/1273)). ([f6270260](https://github.com/supabase/supabase-flutter/commit/f627026038344d6f2fdaa8ff8f7e0c968a8dad1b))
+
+#### `realtime_client` - `v2.7.0`
+
+ - **FEAT**(realtime): add explicit REST API call method for broadcast messages ([#1253](https://github.com/supabase/supabase-flutter/issues/1253)). ([8237ca57](https://github.com/supabase/supabase-flutter/commit/8237ca578efbd69f154bb29176aecc7bd841bb91))
+
+#### `supabase_flutter` - `v2.12.0`
+
+ - **FEAT**(postgrest): add missing PostgREST v12 operators ([#1273](https://github.com/supabase/supabase-flutter/issues/1273)). ([f6270260](https://github.com/supabase/supabase-flutter/commit/f627026038344d6f2fdaa8ff8f7e0c968a8dad1b))
+ - **DOCS**: update signInWithIdToken provider documentation ([#1264](https://github.com/supabase/supabase-flutter/issues/1264)). ([b10d0c88](https://github.com/supabase/supabase-flutter/commit/b10d0c88171d9d257694743d1ad24b7b6a1c190f))
+
+
 ## 2025-10-16
 
 ### Changes

@@ -1,3 +1,9 @@
+## 2.18.0
+
+ - **FIX**(gotrue): allow refreshSession with refreshToken when no current session exists ([#1263](https://github.com/supabase/supabase-flutter/issues/1263)). ([1d142c12](https://github.com/supabase/supabase-flutter/commit/1d142c129c2574f3b1cd39d2d3c118031acaa631))
+ - **FEAT**(oauth): add updateClient method to admin OAuth API ([#1262](https://github.com/supabase/supabase-flutter/issues/1262)). ([36d73343](https://github.com/supabase/supabase-flutter/commit/36d73343e8adf68a0b141dc62ad369488ed4f9e6))
+ - **DOCS**: update signInWithIdToken provider documentation ([#1264](https://github.com/supabase/supabase-flutter/issues/1264)). ([b10d0c88](https://github.com/supabase/supabase-flutter/commit/b10d0c88171d9d257694743d1ad24b7b6a1c190f))
+
 ## 2.17.0
 
  - **FEAT**(gotrue): introduce getClaims method to verify and extract JWT claims ([#1246](https://github.com/supabase/supabase-flutter/issues/1246)). ([615d687f](https://github.com/supabase/supabase-flutter/commit/615d687f012040c89df1f7349ba59fe4026969ff))
