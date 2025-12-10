@@ -7,7 +7,7 @@ documentation: 'https://supabase.com/docs/reference/dart/introduction'
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
-  flutter: '>=3.19.0'
+  flutter: '>=3.24.0'
 
 dependencies:
   app_links: ^7.0.0
