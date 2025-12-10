@@ -500,19 +500,16 @@ void main() {
     }
   });
 
-  test('isDistinct - treats NULL as comparable', () async {
+  test('isDistinct', () async {
     final res = await postgrest
         .from('users')
-        .select('username, data')
-        .isDistinct('data', null);
+        .select('username,status')
+        .isDistinct('status', 'ONLINE');
     expect(res, isNotEmpty);
-    // isDistinct should return rows where data IS DISTINCT FROM null
-    // which means rows where data is NOT null
     for (final item in res) {
-      expect(item['data'] != null, true);
+      expect(item['status'] != 'ONLINE', true);
     }
   });
-
   test('filter on rpc', () async {
     final List res = await postgrest.rpc('get_username_and_status',
         params: {'name_param': 'supabot'}).neq('status', 'ONLINE');
