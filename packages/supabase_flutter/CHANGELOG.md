@@ -1,3 +1,8 @@
+## 2.12.0
+
+ - **FEAT**(postgrest): add missing PostgREST v12 operators ([#1273](https://github.com/supabase/supabase-flutter/issues/1273)). ([f6270260](https://github.com/supabase/supabase-flutter/commit/f627026038344d6f2fdaa8ff8f7e0c968a8dad1b))
+ - **DOCS**: update signInWithIdToken provider documentation ([#1264](https://github.com/supabase/supabase-flutter/issues/1264)). ([b10d0c88](https://github.com/supabase/supabase-flutter/commit/b10d0c88171d9d257694743d1ad24b7b6a1c190f))
+
 ## 2.11.0
 
  - **FEAT**(gotrue): introduce getClaims method to verify and extract JWT claims ([#1246](https://github.com/supabase/supabase-flutter/issues/1246)). ([615d687f](https://github.com/supabase/supabase-flutter/commit/615d687f012040c89df1f7349ba59fe4026969ff))

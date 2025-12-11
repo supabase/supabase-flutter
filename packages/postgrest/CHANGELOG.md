@@ -1,3 +1,7 @@
+## 2.6.0
+
+ - **FEAT**(postgrest): add missing PostgREST v12 operators ([#1273](https://github.com/supabase/supabase-flutter/issues/1273)). ([f6270260](https://github.com/supabase/supabase-flutter/commit/f627026038344d6f2fdaa8ff8f7e0c968a8dad1b))
+
 ## 2.5.0
 
  - **FIX**(postgrest): URL replacement logic in query builder ([#1228](https://github.com/supabase/supabase-flutter/issues/1228)). ([908976c5](https://github.com/supabase/supabase-flutter/commit/908976c5d16ef1e8bea336f4981d2a2b3af06de1))
