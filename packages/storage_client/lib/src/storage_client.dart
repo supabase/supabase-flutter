@@ -73,10 +73,12 @@ class SupabaseStorageClient extends StorageBucketApi {
       final newHostname = hostname.replaceAll('supabase.', 'storage.supabase.');
 
       // Reconstruct the URI
-      return uri.replace(
-        host: newHostname,
-        path: newPath,
-      ).toString();
+      return uri
+          .replace(
+            host: newHostname,
+            path: newPath,
+          )
+          .toString();
     }
 
     return url;
