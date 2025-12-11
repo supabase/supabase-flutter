@@ -42,13 +42,44 @@ class SupabaseStorageClient extends StorageBucketApi {
         ),
         _defaultRetryAttempts = retryAttempts,
         super(
-          url,
+          _transformStorageUrl(url),
           {...Constants.defaultHeaders, ...headers},
           httpClient: httpClient,
         ) {
     _log.config(
         'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts');
     _log.finest('Initialize with headers: $headers');
+  }
+
+  /// Transforms legacy storage URLs to use the dedicated storage host.
+  ///
+  /// If legacy URI is used, replace with new storage host (disables request buffering to allow > 50GB uploads).
+  /// "project-ref.supabase.co/storage/v1" becomes "project-ref.storage.supabase.co/v1"
+  static String _transformStorageUrl(String url) {
+    final uri = Uri.parse(url);
+    final hostname = uri.host;
+
+    // Check if it's a Supabase host (supabase.co, supabase.in, or supabase.red)
+    final isSupabaseHost = RegExp(r'supabase\.(co|in|red)$').hasMatch(hostname);
+
+    // If it's a legacy storage URL, transform it
+    const legacyStoragePrefix = '/storage';
+    if (isSupabaseHost &&
+        !hostname.contains('storage.supabase.') &&
+        uri.path.startsWith(legacyStoragePrefix)) {
+      // Remove /storage from pathname
+      final newPath = uri.path.substring(legacyStoragePrefix.length);
+      // Replace supabase. with storage.supabase. in hostname
+      final newHostname = hostname.replaceAll('supabase.', 'storage.supabase.');
+
+      // Reconstruct the URI
+      return uri.replace(
+        host: newHostname,
+        path: newPath,
+      ).toString();
+    }
+
+    return url;
   }
 
   /// Perform file operation in a bucket.

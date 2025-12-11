@@ -287,4 +287,60 @@ void main() {
       expect(client.headers['X-Client-Info'], 'supabase-dart/0.0.0');
     });
   });
+
+  group('URL Construction', () {
+    test('should update legacy prod host to new host', () {
+      const inputUrl = 'https://blah.supabase.co/storage/v1';
+      const expectedUrl = 'https://blah.storage.supabase.co/v1';
+      client = SupabaseStorageClient(inputUrl, {
+        'Authorization': 'Bearer $supabaseKey',
+      });
+      expect(client.url, expectedUrl);
+    });
+
+    test('should update legacy staging host to new host', () {
+      const inputUrl = 'https://blah.supabase.red/storage/v1';
+      const expectedUrl = 'https://blah.storage.supabase.red/v1';
+      client = SupabaseStorageClient(inputUrl, {
+        'Authorization': 'Bearer $supabaseKey',
+      });
+      expect(client.url, expectedUrl);
+    });
+
+    test('should accept new host without modification', () {
+      const inputUrl = 'https://blah.storage.supabase.co/v1';
+      const expectedUrl = 'https://blah.storage.supabase.co/v1';
+      client = SupabaseStorageClient(inputUrl, {
+        'Authorization': 'Bearer $supabaseKey',
+      });
+      expect(client.url, expectedUrl);
+    });
+
+    test('should not modify non-platform hosts', () {
+      const inputUrl = 'https://blah.supabase.co.example.com/storage/v1';
+      const expectedUrl = 'https://blah.supabase.co.example.com/storage/v1';
+      client = SupabaseStorageClient(inputUrl, {
+        'Authorization': 'Bearer $supabaseKey',
+      });
+      expect(client.url, expectedUrl);
+    });
+
+    test('should support local host with port without modification', () {
+      const inputUrl = 'http://localhost:1234/storage/v1';
+      const expectedUrl = 'http://localhost:1234/storage/v1';
+      client = SupabaseStorageClient(inputUrl, {
+        'Authorization': 'Bearer $supabaseKey',
+      });
+      expect(client.url, expectedUrl);
+    });
+
+    test('should update legacy supabase.in host to new host', () {
+      const inputUrl = 'https://blah.supabase.in/storage/v1';
+      const expectedUrl = 'https://blah.storage.supabase.in/v1';
+      client = SupabaseStorageClient(inputUrl, {
+        'Authorization': 'Bearer $supabaseKey',
+      });
+      expect(client.url, expectedUrl);
+    });
+  });
 }
