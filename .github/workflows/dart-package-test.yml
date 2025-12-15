@@ -20,6 +20,10 @@ on:
         required: false
         type: string
         description: 'The directory containing docker-compose.yml (e.g., infra/gotrue)'
+      docker-compose-files:
+        required: false
+        type: string
+        description: 'Optional whitespace/newline-separated list of docker compose files to pass via -f (e.g., "docker-compose.yml docker-compose.override.yml"). If omitted, runs `docker compose up` with default file discovery.'
       test-concurrency:
         required: false
         type: number
@@ -84,7 +88,16 @@ jobs:
         if: ${{ inputs.needs-docker }}
         run: |
           cd ../../${{ inputs.docker-compose-dir }}
-          docker compose up -d
+          COMPOSE_FILES='${{ inputs.docker-compose-files }}'
+          if [ -n "${COMPOSE_FILES//[[:space:]]/}" ]; then
+            COMPOSE_ARGS=""
+            for f in $COMPOSE_FILES; do
+              COMPOSE_ARGS="$COMPOSE_ARGS -f $f"
+            done
+            docker compose $COMPOSE_ARGS up -d
+          else
+            docker compose up -d
+          fi
 
       - name: Wait for services to be ready
         if: ${{ inputs.needs-docker }}
@@ -102,4 +115,13 @@ jobs:
         if: ${{ inputs.needs-docker && always() }}
         run: |
           cd ../../${{ inputs.docker-compose-dir }}
-          docker compose down
+          COMPOSE_FILES='${{ inputs.docker-compose-files }}'
+          if [ -n "${COMPOSE_FILES//[[:space:]]/}" ]; then
+            COMPOSE_ARGS=""
+            for f in $COMPOSE_FILES; do
+              COMPOSE_ARGS="$COMPOSE_ARGS -f $f"
+            done
+            docker compose $COMPOSE_ARGS down
+          else
+            docker compose down
+          fi

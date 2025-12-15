@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
-
 /// JWT Header structure
 class JwtHeader {
   /// Algorithm used to sign the JWT (e.g., 'RS256', 'ES256', 'HS256')
@@ -265,10 +261,5 @@ class JWK {
       json['kid'] = kid;
     }
     return json;
-  }
-
-  RSAPublicKey get rsaPublicKey {
-    final bytes = utf8.encode(json.encode(toJson()));
-    return RSAPublicKey.bytes(bytes);
   }
 }

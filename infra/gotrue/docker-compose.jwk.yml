@@ -1,0 +1,6 @@
+services:
+  gotrue:
+    # Minimal override for asymmetric JWT signing + JWKS publishing.
+    # Used with: docker compose -f docker-compose.yml -f docker-compose.jwk.yml up
+    environment:
+      GOTRUE_JWT_KEYS: '[{"kty":"EC","kid":"23203d4b-184b-4915-bb30-e70047967f88","use":"sig","key_ops":["sign","verify"],"alg":"ES256","ext":true,"d":"sVoSxECYxh-gfZFCYU3U8vbjH2cHSwtc4_uDmhMRIUo","crv":"P-256","x":"uXsLvkycPMsWg8v-8CGqbwhqCG9YNrlQKFyZL96puXo","y":"xGyOad6_Dg0UpiTmpdOP1kn9W8LNM3afTpqAv2ZHM8M"}]'

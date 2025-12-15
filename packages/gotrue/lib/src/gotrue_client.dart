@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
@@ -11,6 +10,7 @@ import 'package:gotrue/src/helper.dart';
 import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
+import 'package:jose_plus/jose.dart' as jose;
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
@@ -1417,7 +1417,10 @@ class GoTrueClient {
     final signingKey =
         (decoded.header.alg.startsWith('HS') || decoded.header.kid == null)
             ? null
-            : await _fetchJwk(decoded.header.kid!, _jwks!);
+            : await _fetchJwk(
+                decoded.header.kid!,
+                _jwks ?? JWKSet(keys: const <JWK>[]),
+              );
 
     // If symmetric algorithm, fallback to getUser()
     if (signingKey == null) {
@@ -1429,11 +1432,20 @@ class GoTrueClient {
     }
 
     try {
-      JWT.verify(token, signingKey.rsaPublicKey);
+      final keyStore = jose.JsonWebKeyStore();
+      keyStore.addKey(jose.JsonWebKey.fromJson(signingKey.toJson()));
+
+      final jwt = jose.JsonWebToken.unverified(token);
+      final isValid = await jwt.verify(keyStore);
+      if (!isValid) {
+        throw AuthInvalidJwtException('Invalid JWT signature');
+      }
       return GetClaimsResponse(
           claims: decoded.payload,
           header: decoded.header,
           signature: decoded.signature);
+    } on AuthInvalidJwtException {
+      rethrow;
     } catch (e) {
       throw AuthInvalidJwtException('Invalid JWT signature: $e');
     }

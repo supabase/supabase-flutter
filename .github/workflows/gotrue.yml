@@ -31,3 +31,13 @@ jobs:
       needs-docker: true
       docker-compose-dir: infra/gotrue
       test-concurrency: 1
+
+  test-jwks:
+    uses: ./.github/workflows/dart-package-test.yml
+    with:
+      package-name: gotrue
+      working-directory: packages/gotrue
+      needs-docker: true
+      docker-compose-dir: infra/gotrue
+      docker-compose-files: docker-compose.yml docker-compose.jwk.yml
+      test-concurrency: 1

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
+import 'package:jose_plus/jose.dart' as jose;
 
 /// Email of a user with unverified factor
 const email1 = 'fake1@email.com';
@@ -39,15 +40,66 @@ String getNewPhone() {
   return '$timestamp';
 }
 
+/// Generates a service role JWT token for authentication with GoTrue.
+///
+/// Supports two modes:
+/// 1. Symmetric signing (HS256): Uses GOTRUE_JWT_SECRET
+/// 2. Asymmetric signing (ES256/RS256): Uses GOTRUE_JWT_KEYS
+///
+/// The mode is automatically detected based on the presence of GOTRUE_JWT_KEYS.
 String getServiceRoleToken(DotEnv env) {
+  final jwtKeys = env['GOTRUE_JWT_KEYS'];
+
+  // If GOTRUE_JWT_KEYS is set, use asymmetric signing (ES256/RS256)
+  if (jwtKeys != null && jwtKeys.isNotEmpty) {
+    return _getServiceRoleTokenAsymmetric(jwtKeys);
+  }
+
+  // Otherwise, use symmetric signing (HS256)
+  final secret =
+      env['GOTRUE_JWT_SECRET'] ?? '37c304f8-51aa-419a-a1af-06154e63707a';
+  return _getServiceRoleTokenSymmetric(secret);
+}
+
+/// Creates a service role token using symmetric HS256 signing.
+String _getServiceRoleTokenSymmetric(String secret) {
   return JWT(
     {
       'role': 'service_role',
     },
-  ).sign(
-    SecretKey(
-        env['GOTRUE_JWT_SECRET'] ?? '37c304f8-51aa-419a-a1af-06154e63707a'),
-  );
+  ).sign(SecretKey(secret));
+}
+
+/// Creates a service role token using asymmetric signing (ES256/RS256).
+///
+/// [jwtKeysJson] should be a JSON array of JWKs (JSON Web Keys), typically from the GOTRUE_JWT_KEYS environment variable.
+/// The first key in the array is used to sign the token.
+String _getServiceRoleTokenAsymmetric(String jwtKeysJson) {
+  try {
+    final List<dynamic> keysArray = json.decode(jwtKeysJson) as List<dynamic>;
+    if (keysArray.isEmpty) {
+      throw Exception('Input json array has no JWT keys');
+    }
+
+    // Use the first key from the array
+    final keyData = keysArray.first as Map<String, dynamic>;
+    final jwk = jose.JsonWebKey.fromJson(keyData);
+
+    // Create JWT claims
+    final claims = jose.JsonWebTokenClaims.fromJson({
+      'role': 'service_role',
+    });
+
+    // Create and sign the token
+    final builder = jose.JsonWebSignatureBuilder()
+      ..jsonContent = claims.toJson()
+      ..addRecipient(jwk, algorithm: keyData['alg'] as String?);
+
+    final jws = builder.build();
+    return jws.toCompactSerialization();
+  } catch (e) {
+    throw Exception('Failed to create asymmetric service role token: $e');
+  }
 }
 
 /// Construct session data for a given expiration date

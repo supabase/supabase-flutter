@@ -165,6 +165,38 @@ void main() {
       expect(claimsResponse.claims.claims['email'], newEmail);
     });
 
+    test('getClaims() verifies asymmetric JWT via JWKS (ES*/RS*)', () async {
+      final response = await client.signUp(
+        email: newEmail,
+        password: password,
+      );
+
+      expect(response.session, isNotNull);
+      final accessToken = response.session!.accessToken;
+
+      final decoded = decodeJwt(accessToken);
+
+      // The default local test stack uses HS* signing (via GOTRUE_JWT_SECRET).
+      // This test is meant to exercise the JWKS verification path, so we skip
+      // unless the server is issuing asymmetric JWTs with a kid.
+      if (decoded.header.alg.startsWith('HS')) {
+        markTestSkipped(
+          'Server is issuing HS* JWTs; Skipping Asymmetric JWKS verification test.',
+        );
+        return;
+      }
+
+      expect(decoded.header.kid, isNotNull);
+
+      // First call should fetch /.well-known/jwks.json and verify.
+      final claimsResponse1 = await client.getClaims(accessToken);
+      expect(claimsResponse1.claims.claims['email'], newEmail);
+
+      // Second call should succeed too (exercise cached JWKS path).
+      final claimsResponse2 = await client.getClaims(accessToken);
+      expect(claimsResponse2.claims.claims['email'], newEmail);
+    });
+
     test('getClaims() contains all standard JWT claims', () async {
       final response = await client.signUp(
         email: newEmail,
