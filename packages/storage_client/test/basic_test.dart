@@ -153,6 +153,24 @@ void main() {
       expect(String.fromCharCodes(response), 'Updated content');
     });
 
+    test('should download public file with query params', () async {
+      final file = File('a.txt');
+      file.writeAsStringSync('Updated content');
+
+      customHttpClient.response = file.readAsBytesSync();
+
+      final response = await client
+          .from('public_bucket')
+          .download('b.txt', queryParams: {'version': '1'});
+      expect(response, isA<Uint8List>());
+      expect(String.fromCharCodes(response), 'Updated content');
+
+      expect(customHttpClient.receivedRequests.length, 1);
+
+      final request = customHttpClient.receivedRequests.first;
+      expect(request.url.queryParameters, {'version': '1'});
+    });
+
     test('should get public URL of a path', () {
       final response = client.from('files').getPublicUrl('b.txt');
       expect(response, '$objectUrl/public/files/b.txt');

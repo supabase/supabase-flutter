@@ -395,16 +395,22 @@ class StorageFileApi {
   /// name. For example `download('folder/image.png')`.
   ///
   /// [transform] download a transformed variant of the image with the provided options
-  Future<Uint8List> download(String path, {TransformOptions? transform}) async {
+  ///
+  /// [queryParams] additional query parameters to be added to the URL
+  Future<Uint8List> download(String path,
+      {TransformOptions? transform, Map<String, String>? queryParams}) async {
     final wantsTransformations = transform != null;
     final finalPath = _getFinalPath(path);
     final renderPath =
         wantsTransformations ? 'render/image/authenticated' : 'object';
-    final queryParams = transform?.toQueryParams;
+
+    Map<String, String> query = transform?.toQueryParams ?? {};
+    query.addAll(queryParams ?? {});
+
     final options = FetchOptions(headers: headers, noResolveJson: true);
 
     var fetchUrl = Uri.parse('$url/$renderPath/$finalPath');
-    fetchUrl = fetchUrl.replace(queryParameters: queryParams);
+    fetchUrl = fetchUrl.replace(queryParameters: query);
 
     final response =
         await _storageFetch.get(fetchUrl.toString(), options: options);
