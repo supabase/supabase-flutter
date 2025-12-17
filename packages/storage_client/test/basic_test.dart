@@ -38,6 +38,7 @@ void main() {
   tearDown(() {
     final file = File('a.txt');
     if (file.existsSync()) file.deleteSync();
+    customHttpClient.receivedRequests.clear();
   });
 
   group('Client with custom http client', () {
