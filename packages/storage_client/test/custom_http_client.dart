@@ -34,10 +34,13 @@ class RetryHttpClient extends BaseClient {
 }
 
 class CustomHttpClient extends BaseClient {
+  int statusCode = 201;
   dynamic response;
+  List<BaseRequest> receivedRequests = <BaseRequest>[];
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
+    receivedRequests.add(request);
     final dynamic body;
     if (response is Uint8List) {
       body = response;
@@ -47,7 +50,7 @@ class CustomHttpClient extends BaseClient {
 
     return StreamedResponse(
       Stream.value(body),
-      201,
+      statusCode,
       request: request,
     );
   }
