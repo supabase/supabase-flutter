@@ -73,12 +73,8 @@ jobs:
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: analyzer
-        run: |
-          if [ "${{ matrix.sdk }}" == "stable" ]; then
-            dart analyze --fatal-warnings .
-          else
-            dart analyze
-          fi
+        if: ${{ matrix.sdk == 'stable'}}
+        run: dart analyze --fatal-warnings .
 
       - name: Start Docker services
         if: ${{ inputs.needs-docker }}
