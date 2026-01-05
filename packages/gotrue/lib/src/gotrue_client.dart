@@ -518,17 +518,28 @@ class GoTrueClient {
     String? captchaToken,
     String? tokenHash,
   }) async {
-    assert(
-        ((email != null && phone == null) ||
-                (email == null && phone != null)) ||
-            (tokenHash != null),
-        '`email` or `phone` needs to be specified.');
-    assert(token != null || tokenHash != null,
-        '`token` or `tokenHash` needs to be specified.');
+    // For recovery type with tokenHash, only tokenHash and type are required
+    final isRecoveryWithTokenHash =
+        type == OtpType.recovery && tokenHash != null;
+
+    if (!isRecoveryWithTokenHash) {
+      assert(
+          ((email != null && phone == null) ||
+                  (email == null && phone != null)) ||
+              (tokenHash != null),
+          '`email` or `phone` needs to be specified.');
+      assert(token != null || tokenHash != null,
+          '`token` or `tokenHash` needs to be specified.');
+    } else {
+      // For recovery with tokenHash, email/phone should not be provided
+      assert(email == null && phone == null,
+          'For recovery type with tokenHash, only tokenHash and type should be provided.');
+    }
 
     final body = {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
+      // For recovery type with tokenHash, exclude email/phone
+      if (!isRecoveryWithTokenHash && email != null) 'email': email,
+      if (!isRecoveryWithTokenHash && phone != null) 'phone': phone,
       if (token != null) 'token': token,
       'type': type.snakeCase,
       'redirect_to': redirectTo,
