@@ -10,6 +10,19 @@ Flutter Client library for [Supabase](https://supabase.com/).
 
 This repo is a monorepo powered by [Melos](https://melos.invertase.dev/) containing [supabase_flutter](https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_flutter) and its sub-libraries. All packages are located in the `packages` directory.
 
+### Flutter SDK (FVM)
+
+This project uses [FVM](https://fvm.app/) to manage the Flutter SDK
+version. Contributors should install FVM and use it when running Flutter
+or Dart commands.
+
+Steps for contributors:
+
+- Install FVM (see https://fvm.app/)
+- Install the project's Flutter SDK: `fvm install stable`
+- Use the SDK in this repo: `fvm use stable`
+- Run Flutter/Dart via FVM, e.g. `fvm flutter --version`
+
 To install on a locally developed app:
 
 - Clone this repo
@@ -38,7 +51,7 @@ Run the Dart tests within the package directory in `packages/<package>` with the
 The `-j 1` flag runs the tests not concurrently, which works better since the tests are running against the same services.
 
 ```bash
-dart test -j 1
+fvm dart test -j 1
 ```
 
 To stop the services run the following command in the `infra/<package>` directory:

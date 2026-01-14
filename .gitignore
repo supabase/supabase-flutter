@@ -80,3 +80,6 @@ packages/**/pubspec.lock
 !**/ios/**/default.perspectivev3
 
 /packages/*/coverage
+
+# FVM Version Cache
+.fvm/
