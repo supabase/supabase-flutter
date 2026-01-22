@@ -20,5 +20,13 @@ dev_dependencies:
 
   flutter_lints: ^6.0.0
 
+dependency_overrides:
+  flutter_secure_storage: ^10.0.0
+  flutter_secure_storage_platform_interface: ^2.0.1
+  flutter_secure_storage_web: ^2.0.0
+  flutter_secure_storage_linux: ^2.0.0
+  flutter_secure_storage_macos: ^4.0.0
+  flutter_secure_storage_windows: ^4.0.0
+
 flutter:
   uses-material-design: true
