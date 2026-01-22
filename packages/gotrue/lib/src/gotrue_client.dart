@@ -1397,6 +1397,11 @@ class GoTrueClient {
   ///
   /// If the project is not using an asymmetric JWT signing key (like ECC or
   /// RSA) it always sends a request to the Auth server (similar to [getUser]) to verify the JWT.
+  ///
+  /// For JWTs signed with asymmetric algorithms (RS256, ES256, etc.), the JWKS
+  /// is fetched from the server on the first call and cached for subsequent calls.
+  /// The cache is refreshed automatically after 10 minutes.
+  ///
   /// [jwt] An optional specific JWT you wish to verify, not the one you
   ///       can obtain from [currentSession].
   /// [options] Various additional options that allow you to customize the
@@ -1428,7 +1433,7 @@ class GoTrueClient {
     final signingKey =
         (decoded.header.alg.startsWith('HS') || decoded.header.kid == null)
             ? null
-            : await _fetchJwk(decoded.header.kid!, _jwks!);
+            : await _fetchJwk(decoded.header.kid!, _jwks ?? JWKSet(keys: []));
 
     // If symmetric algorithm, fallback to getUser()
     if (signingKey == null) {

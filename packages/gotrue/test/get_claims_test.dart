@@ -207,6 +207,54 @@ void main() {
     });
   });
 
+  group('getClaims with asymmetric JWTs', () {
+    late GoTrueClient client;
+
+    setUp(() {
+      final asyncStorage = TestAsyncStorage();
+
+      client = GoTrueClient(
+        url: gotrueUrl,
+        headers: {
+          'Authorization': 'Bearer $anonToken',
+          'apikey': anonToken,
+        },
+        asyncStorage: asyncStorage,
+        flowType: AuthFlowType.implicit,
+      );
+    });
+
+    test('getClaims() with RS256 JWT on first call should not crash (SDK-627)',
+        () async {
+      // This test reproduces the bug reported in SDK-627
+      // A JWT with RS256 algorithm and kid in header
+      // Header: {"alg":"RS256","typ":"JWT","kid":"test-key-id"}
+      // Payload: {"sub":"1234567890","aud":"authenticated","exp":9999999999,"iat":1516239022,"email":"test@example.com","role":"authenticated"}
+      // Signature: dummy base64url encoded signature (not cryptographically valid, but structurally valid)
+      const rs256Jwt =
+          'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNTE2MjM5MDIyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.SW52YWxpZFNpZ25hdHVyZURhdGFIZXJlVGhhdElzTm90UmVhbEJ1dFZhbGlkQmFzZTY0VXJs';
+
+      // Before the fix, this would crash with:
+      // "Null check operator used on a null value"
+      // because _jwks is null on first call and the code does _jwks!
+      //
+      // After the fix, this should attempt to fetch JWKS from the server
+      // and fail gracefully (either with network error or invalid signature)
+      // but NOT crash with null error
+      try {
+        await client.getClaims(rs256Jwt);
+        // If we get here, the server responded successfully (unlikely in test env)
+      } catch (e) {
+        // The important part is that it should NOT crash with null error
+        // It may fail with network error, invalid signature, etc.
+        // but the error message should not contain null-related errors
+        expect(e.toString(), isNot(contains('Unexpected null value')));
+        expect(e.toString(), isNot(contains('Null check operator')));
+      }
+      // Test passes if we get here without null error
+    });
+  });
+
   group('JWT helper functions', () {
     test('decodeJwt() successfully decodes valid JWT', () {
       // A sample JWT with known values
