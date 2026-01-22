@@ -58,3 +58,4 @@ scripts:
       rm packages/yet_another_json_isolate/lib/src/version.dart
       # Stage the version.dart file change
       git add packages/*/lib/src/version.dart
+sdkPath: .fvm/flutter_sdk
