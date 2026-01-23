@@ -31,6 +31,20 @@ class Session {
     if (json['access_token'] == null) {
       return null;
     }
+    final userJson = json['user'];
+    if (userJson is! Map<String, dynamic>) {
+      throw FormatException(
+        'Expected user to be an object, got ${userJson.runtimeType}',
+        json.toString(),
+      );
+    }
+    final user = User.fromJson(userJson);
+    if (user == null) {
+      throw FormatException(
+        'Failed to parse user: missing required id field',
+        json.toString(),
+      );
+    }
     return Session(
       accessToken: json['access_token'] as String,
       expiresIn: json['expires_in'] as int?,
@@ -38,7 +52,7 @@ class Session {
       tokenType: json['token_type'] as String,
       providerToken: json['provider_token'] as String?,
       providerRefreshToken: json['provider_refresh_token'] as String?,
-      user: User.fromJson(json['user'] as Map<String, dynamic>)!,
+      user: user,
     );
   }
 
