@@ -1258,7 +1258,10 @@ class GoTrueClient {
     _onAuthStateChangeControllerSync.close();
     _broadcastChannel?.close();
     _broadcastChannelSubscription?.cancel();
-    _refreshTokenCompleter?.completeError(AuthException('Disposed'));
+    final completer = _refreshTokenCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.completeError(AuthException('Disposed'));
+    }
     _autoRefreshTicker?.cancel();
   }
 
