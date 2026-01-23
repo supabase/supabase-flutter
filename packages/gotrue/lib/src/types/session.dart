@@ -35,14 +35,12 @@ class Session {
     if (userJson is! Map<String, dynamic>) {
       throw FormatException(
         'Expected user to be an object, got ${userJson.runtimeType}',
-        json.toString(),
       );
     }
     final user = User.fromJson(userJson);
     if (user == null) {
       throw FormatException(
         'Failed to parse user: missing required id field',
-        json.toString(),
       );
     }
     return Session(
