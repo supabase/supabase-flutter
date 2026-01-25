@@ -1,0 +1,130 @@
+name: Slack Notification (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      title:
+        required: true
+        type: string
+        description: 'Notification title (e.g., "Package Release", "Release Tags Created")'
+      status:
+        required: false
+        type: string
+        default: 'info'
+        description: 'Notification status: success, failure, or info'
+      version:
+        required: false
+        type: string
+        description: 'Version string to display (e.g., "supabase-v2.0.0")'
+      package:
+        required: false
+        type: string
+        description: 'Package name (e.g., "gotrue", "postgrest")'
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: Send Slack Notification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Send Slack notification
+        run: |
+          # Determine status emoji and color
+          if [ "${{ inputs.status }}" == "success" ]; then
+            STATUS_EMOJI="✅"
+            COLOR="#36a64f"
+          elif [ "${{ inputs.status }}" == "failure" ]; then
+            STATUS_EMOJI="❌"
+            COLOR="#ff0000"
+          else
+            STATUS_EMOJI="ℹ️"
+            COLOR="#3498db"
+          fi
+
+          # Build version text
+          VERSION_TEXT=""
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION_TEXT="\n*Version:* \`${{ inputs.version }}\`"
+          fi
+
+          # Build package text
+          PACKAGE_TEXT=""
+          if [ -n "${{ inputs.package }}" ]; then
+            PACKAGE_TEXT="\n*Package:* \`${{ inputs.package }}\`"
+          fi
+
+          # Build Slack message payload
+          PAYLOAD=$(cat <<EOF
+          {
+            "blocks": [
+              {
+                "type": "header",
+                "text": {
+                  "type": "plain_text",
+                  "text": "${STATUS_EMOJI} ${{ inputs.title }} - ${{ inputs.status }}"
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Workflow:*\n${{ github.workflow }}"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Branch:*\n\`${{ github.ref_name }}\`"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Triggered by:*\n${{ github.actor }}"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Commit:*\n<https://github.com/${{ github.repository }}/commit/${{ github.sha }}|\`${GITHUB_SHA:0:7}\`> - ${{ github.event.head_commit.message }}${VERSION_TEXT}${PACKAGE_TEXT}"
+                }
+              },
+              {
+                "type": "actions",
+                "elements": [
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Workflow Run"
+                    },
+                    "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  },
+                  {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Commit"
+                    },
+                    "url": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+          )
+
+          # Send to Slack
+          curl -X POST "${{ secrets.SLACK_CLIENT_LIBS_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+
+          echo "Slack notification sent successfully"

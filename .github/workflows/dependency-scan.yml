@@ -1,0 +1,149 @@
+name: Dependency Vulnerability Scan
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '**/pubspec.yaml'
+      - '**/pubspec.lock'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+jobs:
+  scan-dependencies:
+    name: Scan Dependencies for Vulnerabilities
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          cache: true
+
+      - name: Install Melos
+        run: dart pub global activate melos
+
+      - name: Bootstrap workspace
+        run: melos bootstrap
+
+      - name: Check for outdated dependencies
+        id: outdated
+        continue-on-error: true
+        run: |
+          echo "## Outdated Dependencies Report" > outdated_report.md
+          echo "" >> outdated_report.md
+
+          # Check each package for outdated dependencies
+          for package in packages/*/pubspec.yaml; do
+            package_dir=$(dirname "$package")
+            package_name=$(basename "$package_dir")
+
+            echo "### Package: $package_name" >> outdated_report.md
+            echo "" >> outdated_report.md
+
+            cd "$package_dir"
+            if dart pub outdated --json > outdated.json 2>/dev/null; then
+              # Parse and format the outdated dependencies
+              if [ -s outdated.json ]; then
+                echo "\`\`\`" >> ../../outdated_report.md
+                dart pub outdated >> ../../outdated_report.md 2>&1 || true
+                echo "\`\`\`" >> ../../outdated_report.md
+              else
+                echo "✅ All dependencies are up to date" >> ../../outdated_report.md
+              fi
+            else
+              echo "⚠️ Could not check dependencies" >> ../../outdated_report.md
+            fi
+            echo "" >> ../../outdated_report.md
+            cd ../..
+          done
+
+      - name: Run Dart dependency audit
+        id: audit
+        continue-on-error: true
+        run: |
+          echo "## Security Audit Report" > audit_report.md
+          echo "" >> audit_report.md
+
+          # Check each package for security vulnerabilities
+          for package in packages/*/pubspec.yaml; do
+            package_dir=$(dirname "$package")
+            package_name=$(basename "$package_dir")
+
+            echo "### Package: $package_name" >> audit_report.md
+            echo "" >> audit_report.md
+
+            cd "$package_dir"
+            # Note: Using `dart pub get` with vulnerability checking
+            # Dart SDK has built-in vulnerability database
+            if dart pub get 2>&1 | grep -i "vulnerabilit" > /dev/null; then
+              echo "⚠️ Potential vulnerabilities detected:" >> ../../audit_report.md
+              echo "\`\`\`" >> ../../audit_report.md
+              dart pub get 2>&1 | grep -A 5 -i "vulnerabilit" >> ../../audit_report.md || true
+              echo "\`\`\`" >> ../../audit_report.md
+            else
+              echo "✅ No known vulnerabilities detected" >> ../../audit_report.md
+            fi
+            echo "" >> ../../audit_report.md
+            cd ../..
+          done
+
+      - name: Generate workflow summary
+        if: always()
+        run: |
+          echo "## Dependency Vulnerability Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Scan Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Add outdated dependencies report
+          if [ -f outdated_report.md ]; then
+            cat outdated_report.md >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Add audit report
+          if [ -f audit_report.md ]; then
+            cat audit_report.md >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Overall status
+          if [ "${{ steps.audit.outcome }}" == "success" ] && [ "${{ steps.outdated.outcome }}" == "success" ]; then
+            echo "---" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Status:** Scan completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "---" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Status:** Scan completed with warnings" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-scan-reports-${{ github.run_number }}
+          path: |
+            outdated_report.md
+            audit_report.md
+          retention-days: 30

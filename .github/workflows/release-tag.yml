@@ -39,9 +39,46 @@ jobs:
         uses: bluefireteam/melos-action@v3
         with:
           tag: true
-      - run: |
-          melos exec -c 1 --no-published --no-private --order-dependents -- \
-          gh workflow run release-publish.yml \
-          --ref \$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION
+
+      - name: Trigger package release workflows
+        id: trigger_releases
+        run: .github/scripts/trigger-package-releases.sh
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Generate workflow summary
+        if: always()
+        run: |
+          echo "## Release Tag Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.trigger_releases.outcome }}" == "success" ]; then
+            echo "✅ **Status:** All package release workflows triggered successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed to trigger some package release workflows" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Error Details:**" >> $GITHUB_STEP_SUMMARY
+            echo "Please check the logs for the 'Trigger package release workflows' step for more information." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.event.head_commit.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+
+  notify-success:
+    name: Notify Slack on Success
+    needs: create-tags
+    if: ${{ needs.create-tags.result == 'success' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Release Tags Created'
+      status: 'success'
+
+  notify-failure:
+    name: Notify Slack on Failure
+    needs: create-tags
+    if: ${{ always() && needs.create-tags.result == 'failure' }}
+    uses: ./.github/workflows/slack-notify.yml
+    secrets: inherit
+    with:
+      title: 'Release Tags Creation'
+      status: 'failure'
