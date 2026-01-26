@@ -1030,6 +1030,17 @@ class GoTrueClient {
 
       if (session.isExpired) {
         _log.fine('Session from recovery is expired');
+
+        // Check if we already have a valid session for the same user.
+        // This can happen when another code path (e.g., _autoRefreshTokenTick) already refreshed.
+        if (_currentSession != null &&
+            _currentSession!.isExpired == false &&
+            _currentSession!.user.id == session.user.id) {
+          _log.fine(
+              'Session from recovery is expired, but current session is valid. Returning current session.');
+          return AuthResponse(session: _currentSession);
+        }
+
         final refreshToken = session.refreshToken;
         if (_autoRefreshToken && refreshToken != null) {
           return await _callRefreshToken(refreshToken);
@@ -1266,11 +1277,26 @@ class GoTrueClient {
   ///
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
   /// If that's not null and not completed it returns the future of the ongoing request.
+  ///
+  /// Also handles the case where the passed [refreshToken] is stale (already consumed by another refresh).
+  /// If the current session has a different refresh token and is still valid, returns the current session.
   Future<AuthResponse> _callRefreshToken(String refreshToken) async {
     // Refreshing is already in progress
     if (_refreshTokenCompleter != null) {
       _log.finer("Don't call refresh token, already in progress");
       return _refreshTokenCompleter!.future;
+    }
+
+    // Check if the passed refresh token is stale (already consumed by another refresh).
+    // This can happen when multiple code paths (e.g., recoverSession and _autoRefreshTokenTick)
+    // capture the same token before either refresh completes.
+    final currentRefreshToken = _currentSession?.refreshToken;
+    if (currentRefreshToken != null &&
+        currentRefreshToken != refreshToken &&
+        _currentSession?.isExpired == false) {
+      _log.fine(
+          'Refresh token is stale, session was already refreshed. Returning current session.');
+      return AuthResponse(session: _currentSession);
     }
 
     try {
@@ -1297,6 +1323,19 @@ class GoTrueClient {
       _refreshTokenCompleter?.complete(data);
       return data;
     } on AuthException catch (error, stack) {
+      // Handle "refresh_token_already_used" error gracefully.
+      // If we have a valid current session, another refresh succeeded - return it instead of signing out.
+      if (error is AuthApiException &&
+          error.code == 'refresh_token_already_used') {
+        if (_currentSession != null && _currentSession!.isExpired == false) {
+          _log.fine(
+              'Refresh token was already used, but session is still valid. Returning current session.');
+          final response = AuthResponse(session: _currentSession);
+          _refreshTokenCompleter?.complete(response);
+          return response;
+        }
+      }
+
       if (error is! AuthRetryableFetchException) {
         _removeSession();
         notifyAllSubscribers(AuthChangeEvent.signedOut);
