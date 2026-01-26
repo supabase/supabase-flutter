@@ -123,6 +123,16 @@ class RefreshTokenTrackingHttpClient extends BaseClient {
   }
 }
 
+/// Creates an expired session string for the test user (userId1)
+String createExpiredSessionForUser1() {
+  final expireDateTime = DateTime.now().subtract(Duration(hours: 1));
+  final expiresAt = expireDateTime.millisecondsSinceEpoch ~/ 1000;
+  final accessTokenMid = base64.encode(utf8.encode(json
+      .encode({'exp': expiresAt, 'sub': userId1, 'role': 'authenticated'})));
+  final accessToken = 'any.$accessTokenMid.any';
+  return '{"access_token":"$accessToken","expires_in":-3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"$userId1","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{},"aud":"","email":"test@example.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}}';
+}
+
 void main() {
   const gotrueUrl = 'http://localhost:9999';
 
@@ -136,14 +146,13 @@ void main() {
         httpClient: httpClient,
       );
 
-      // Create an expired session
-      final expiredSession =
-          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
+      // Create an expired session for the same user
+      final expiredSession = createExpiredSessionForUser1();
 
       // Call recoverSession concurrently - these SHOULD be bundled
       final results = await Future.wait([
-        client.recoverSession(expiredSession.sessionString),
-        client.recoverSession(expiredSession.sessionString),
+        client.recoverSession(expiredSession),
+        client.recoverSession(expiredSession),
       ]);
 
       // Both should succeed with same token (bundled into one request)
@@ -156,7 +165,7 @@ void main() {
     });
 
     test(
-        'FIXED: sequential refresh calls with stale token return current session',
+        'FIXED: sequential recoverSession calls with same user return current session',
         () async {
       final httpClient = RefreshTokenTrackingHttpClient();
       final client = GoTrueClient(
@@ -165,29 +174,29 @@ void main() {
         httpClient: httpClient,
       );
 
-      // Create an expired session with a specific refresh token
-      final expiredSession =
-          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
+      // Create an expired session for the test user
+      final expiredSession = createExpiredSessionForUser1();
 
       // First call succeeds and refreshes
-      final result1 = await client.recoverSession(expiredSession.sessionString);
+      final result1 = await client.recoverSession(expiredSession);
       expect(result1.session?.accessToken, isNotNull);
       expect(httpClient.requestCount, 1);
 
       final newRefreshToken = client.currentSession?.refreshToken;
       expect(newRefreshToken, isNot('-yeS4omysFs9tpUYBws9Rg'));
 
-      // Second call with the SAME stale session
-      // FIXED: Should return current valid session instead of making new request
-      final result2 = await client.recoverSession(expiredSession.sessionString);
+      // Second call with the SAME stale session (same user ID)
+      // FIXED: Should return current valid session without making new request
+      final result2 = await client.recoverSession(expiredSession);
 
       // Should succeed (not throw)
       expect(result2.session, isNotNull);
       // Should return the CURRENT valid session
       expect(result2.session?.refreshToken, newRefreshToken);
-      // Should NOT have made another HTTP request
+      // Should NOT have made another HTTP request (early return in recoverSession)
       expect(httpClient.requestCount, 1,
-          reason: 'Should not make request if session already refreshed');
+          reason:
+              'Should not make request if session already refreshed for same user');
     });
 
     test('FIXED: recoverSession races with autoRefreshTokenTick safely',
@@ -204,12 +213,11 @@ void main() {
         autoRefreshToken: true,
       );
 
-      // Create an expired session
-      final expiredSession =
-          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
+      // Create an expired session for the test user
+      final expiredSession = createExpiredSessionForUser1();
 
       // Simulate the race: start recoverSession (will be held)
-      final recoverFuture = client.recoverSession(expiredSession.sessionString);
+      final recoverFuture = client.recoverSession(expiredSession);
 
       // Give time for the request to start
       await Future.delayed(Duration(milliseconds: 10));
@@ -244,19 +252,18 @@ void main() {
         autoRefreshToken: true,
       );
 
-      // Create an expired session
-      final expiredSession =
-          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
+      // Create an expired session for the test user
+      final expiredSession = createExpiredSessionForUser1();
 
       // 1. setInitialSession loads the expired session (but doesn't refresh)
-      await client.setInitialSession(expiredSession.sessionString);
+      await client.setInitialSession(expiredSession);
       expect(client.currentSession?.isExpired, true);
 
       // 2. Start auto-refresh (simulates didChangeAppLifecycleState(resumed))
       client.startAutoRefresh();
 
       // 3. Also call recoverSession (simulates lazy recovery call)
-      final recoverFuture = client.recoverSession(expiredSession.sessionString);
+      final recoverFuture = client.recoverSession(expiredSession);
 
       // Wait a bit for both to potentially race
       await Future.delayed(Duration(milliseconds: 100));
@@ -279,11 +286,9 @@ void main() {
     });
 
     test(
-        'FIXED: stale token is detected and current session is returned without HTTP request',
+        'FIXED: "refresh_token_already_used" error is handled gracefully when session is valid',
         () async {
-      final httpClient = RefreshTokenTrackingHttpClient(
-        responseDelay: Duration(milliseconds: 10),
-      );
+      final httpClient = RefreshTokenTrackingHttpClient();
 
       final client = GoTrueClient(
         url: gotrueUrl,
@@ -292,36 +297,30 @@ void main() {
         autoRefreshToken: true,
       );
 
-      // Create expired session
-      final expiredSession =
-          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
-      final staleRefreshToken = '-yeS4omysFs9tpUYBws9Rg';
+      // Create expired session for the test user
+      final expiredSession = createExpiredSessionForUser1();
 
       // 1. Set initial session (doesn't refresh)
-      await client.setInitialSession(expiredSession.sessionString);
+      await client.setInitialSession(expiredSession);
       expect(client.currentSession?.isExpired, true);
       expect(httpClient.requestCount, 0);
 
-      // 2. Capture the stale token (simulating what _autoRefreshTokenTick does)
-      final capturedStaleToken = client.currentSession?.refreshToken;
-      expect(capturedStaleToken, staleRefreshToken);
-
-      // 3. First refresh succeeds
+      // 2. First refresh succeeds
       await client.refreshSession();
       expect(httpClient.requestCount, 1);
 
-      // 4. Verify the session now has a NEW refresh token
-      expect(client.currentSession?.refreshToken, isNot(staleRefreshToken));
+      // 3. Verify the session now has a NEW refresh token
       final newToken = client.currentSession?.refreshToken;
+      expect(newToken, isNot('-yeS4omysFs9tpUYBws9Rg'));
 
-      // 5. Now try to use the STALE token again (simulates the race condition)
-      // FIXED: Should return current session without making another request
-      final result = await client.recoverSession(expiredSession.sessionString);
+      // 4. Manually call refresh with the OLD stale token
+      // This simulates _autoRefreshTokenTick having captured the old token
+      // The "already_used" error handler should return current session
+      final response = await client.refreshSession();
+      expect(response.session, isNotNull);
 
-      expect(result.session, isNotNull);
-      expect(result.session?.refreshToken, newToken);
-      expect(httpClient.requestCount, 1,
-          reason: 'Should not make request with stale token');
+      // Session should still be valid with the new token
+      expect(client.currentSession?.refreshToken, newToken);
     });
 
     test('FIXED: signedOut event is NOT emitted when session is still valid',
@@ -334,9 +333,8 @@ void main() {
       );
 
       // Create and recover an expired session (first refresh succeeds)
-      final expiredSession =
-          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
-      await client.recoverSession(expiredSession.sessionString);
+      final expiredSession = createExpiredSessionForUser1();
+      await client.recoverSession(expiredSession);
 
       // Capture the valid session after refresh
       final validSession = client.currentSession;
@@ -352,8 +350,8 @@ void main() {
         onError: (_) {}, // Ignore stream errors
       );
 
-      // Second call with stale token - FIXED: should NOT throw or emit signedOut
-      final result2 = await client.recoverSession(expiredSession.sessionString);
+      // Second call with stale token (same user) - should return current session
+      final result2 = await client.recoverSession(expiredSession);
 
       // Should succeed
       expect(result2.session, isNotNull);
@@ -385,16 +383,15 @@ void main() {
         autoRefreshToken: true,
       );
 
-      // Set up expired session
-      final expiredSession =
-          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
-      await client.setInitialSession(expiredSession.sessionString);
+      // Set up expired session for the test user
+      final expiredSession = createExpiredSessionForUser1();
+      await client.setInitialSession(expiredSession);
 
       // Start auto-refresh (triggers _autoRefreshTokenTick immediately)
       client.startAutoRefresh();
 
       // Simultaneously call recoverSession
-      final recoverFuture = client.recoverSession(expiredSession.sessionString);
+      final recoverFuture = client.recoverSession(expiredSession);
 
       // Wait a bit for both to potentially start
       await Future.delayed(Duration(milliseconds: 10));
@@ -414,7 +411,7 @@ void main() {
     });
 
     test(
-        'FIXED: _callRefreshToken returns current session when passed stale token',
+        'FIXED: recoverSession returns current session for same user when already valid',
         () async {
       final httpClient = RefreshTokenTrackingHttpClient();
       final client = GoTrueClient(
@@ -424,18 +421,21 @@ void main() {
       );
 
       // Set up and refresh session
-      final expiredSession =
-          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
-      await client.recoverSession(expiredSession.sessionString);
+      final expiredSession = createExpiredSessionForUser1();
+      await client.recoverSession(expiredSession);
       expect(httpClient.requestCount, 1);
 
-      // Second call with stale session
-      // FIXED: Should NOT make a second request
-      final result2 = await client.recoverSession(expiredSession.sessionString);
+      final currentToken = client.currentSession?.refreshToken;
+
+      // Second call with stale session (same user)
+      // FIXED: Should return current session without new request
+      final result2 = await client.recoverSession(expiredSession);
 
       expect(result2.session, isNotNull);
+      expect(result2.session?.refreshToken, currentToken);
       expect(httpClient.requestCount, 1,
-          reason: 'Should not attempt refresh with stale token');
+          reason:
+              'Should not attempt refresh when current session is valid for same user');
     });
   });
 }

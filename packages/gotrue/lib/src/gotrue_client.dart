@@ -1278,25 +1278,12 @@ class GoTrueClient {
   /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
   /// If that's not null and not completed it returns the future of the ongoing request.
   ///
-  /// Also handles the case where the passed [refreshToken] is stale (already consumed by another refresh).
-  /// If the current session has a different refresh token and is still valid, returns the current session.
+  /// Also handles "refresh_token_already_used" errors gracefully when another refresh already succeeded.
   Future<AuthResponse> _callRefreshToken(String refreshToken) async {
     // Refreshing is already in progress
     if (_refreshTokenCompleter != null) {
       _log.finer("Don't call refresh token, already in progress");
       return _refreshTokenCompleter!.future;
-    }
-
-    // Check if the passed refresh token is stale (already consumed by another refresh).
-    // This can happen when multiple code paths (e.g., recoverSession and _autoRefreshTokenTick)
-    // capture the same token before either refresh completes.
-    final currentRefreshToken = _currentSession?.refreshToken;
-    if (currentRefreshToken != null &&
-        currentRefreshToken != refreshToken &&
-        _currentSession?.isExpired == false) {
-      _log.fine(
-          'Refresh token is stale, session was already refreshed. Returning current session.');
-      return AuthResponse(session: _currentSession);
     }
 
     try {
