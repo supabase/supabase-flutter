@@ -220,6 +220,38 @@ void main() {
       expect(callbackEventCalled2, 0);
       expect(callbackOtherCalled, 1);
     });
+
+    test('maintains type safety after off() - reproduces web hot restart issue',
+        () {
+      // This test reproduces the issue where .where().toList() returns
+      // List<dynamic> on Flutter web during hot restart, causing a TypeError
+      // when the result is assigned back to Map<String, List<Binding>>
+
+      // Add multiple bindings
+      channel.onEvents('postgres_changes', ChannelFilter(),
+          (dynamic payload, [dynamic ref]) {});
+      channel.onEvents('postgres_changes', ChannelFilter(),
+          (dynamic payload, [dynamic ref]) {});
+      channel.onEvents(
+          'broadcast', ChannelFilter(), (dynamic payload, [dynamic ref]) {});
+
+      // Call off() which internally uses .where().toList()
+      // Without explicit type cast, this would fail on web with:
+      // TypeError: Instance of 'JSArray<dynamic>': type 'List<dynamic>' is not a subtype of type 'List<Binding>'
+      expect(() => channel.off('postgres_changes', {}), returnsNormally);
+
+      // Verify the bindings map still has proper type after off()
+      // This would throw a type error if off() returned List<dynamic>
+      channel.onEvents('postgres_changes', ChannelFilter(),
+          (dynamic payload, [dynamic ref]) {});
+
+      // Verify functionality still works
+      var broadcastCalled = 0;
+      channel.onEvents('broadcast', ChannelFilter(),
+          (dynamic payload, [dynamic ref]) => broadcastCalled++);
+      channel.trigger('broadcast', {}, defaultRef);
+      expect(broadcastCalled, 1);
+    });
   });
 
   group('leave', () {
