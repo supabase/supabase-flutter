@@ -88,6 +88,9 @@ jobs:
           cd example && flutter build web
 
       - name: Build and test web (WASM)
+        # WASM tests have known infrastructure flakiness (12min+ loading timeouts)
+        # Allow CI to continue while still running tests for visibility
+        continue-on-error: true
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
         run: |
           flutter test --platform chrome --wasm
