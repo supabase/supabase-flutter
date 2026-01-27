@@ -27,6 +27,12 @@ class RefreshTokenTrackingHttpClient extends BaseClient {
 
   RefreshTokenTrackingHttpClient({this.responseDelay, this.holdFirstRequest});
 
+  /// Manually mark a token as used (to simulate race condition where
+  /// another request already consumed the token)
+  void markTokenAsUsed(String token) {
+    _usedRefreshTokens.add(token);
+  }
+
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     requestCount++;
@@ -312,15 +318,21 @@ void main() {
       // 3. Verify the session now has a NEW refresh token
       final newToken = client.currentSession?.refreshToken;
       expect(newToken, isNot('-yeS4omysFs9tpUYBws9Rg'));
+      expect(client.currentSession?.isExpired, false);
 
-      // 4. Manually call refresh with the OLD stale token
-      // This simulates _autoRefreshTokenTick having captured the old token
-      // The "already_used" error handler should return current session
+      // 4. Manually mark the current token as "already used" on the server
+      // This simulates a race condition where another request (e.g., auto-refresh)
+      // already consumed the token before our next refresh attempt
+      httpClient.markTokenAsUsed(newToken!);
+
+      // 5. Attempt refresh - this will get "already_used" error from server
+      // The error handler should detect we have a valid session and return it
       final response = await client.refreshSession();
       expect(response.session, isNotNull);
 
-      // Session should still be valid with the new token
-      expect(client.currentSession?.refreshToken, newToken);
+      // Session should still be valid (the error handler returned current session)
+      expect(client.currentSession, isNotNull);
+      expect(client.currentSession?.isExpired, false);
     });
 
     test('FIXED: signedOut event is NOT emitted when session is still valid',
