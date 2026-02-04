@@ -410,8 +410,7 @@ void main() {
         );
 
         // First caller starts the operation - ignore its error
-        final firstFuture = handler.refresh('token');
-        unawaited(firstFuture.catchError((_) {}));
+        handler.refresh('token').ignore();
 
         // Second caller joins the same operation
         final secondCallerFuture = handler.refresh('token');
@@ -441,8 +440,7 @@ void main() {
         );
 
         // Start first refresh - ignore its error
-        final firstFuture = handler.refresh('token1');
-        unawaited(firstFuture.catchError((_) {}));
+        handler.refresh('token1').ignore();
 
         // Queue second refresh with different token
         final queuedFuture = handler.refresh('token2');
@@ -475,8 +473,7 @@ void main() {
         );
 
         // Start a refresh - ignore any error from this future
-        final refreshFuture = handler.refresh('token');
-        unawaited(refreshFuture.catchError((_) {}));
+        handler.refresh('token').ignore();
 
         // Dispose while in progress
         handler.dispose();
