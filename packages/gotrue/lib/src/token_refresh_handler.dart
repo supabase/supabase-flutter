@@ -203,10 +203,15 @@ class TokenRefreshHandler {
   ) {
     final isRetryable = error is AuthRetryableFetchException;
 
-    // Notify error handler
-    _onError(error, stack, isRetryable);
+    // Notify error handler, but ensure operation is always completed
+    try {
+      _onError(error, stack, isRetryable);
+    } catch (callbackError, callbackStack) {
+      _log.warning('Failed to handle refresh error callback', callbackError,
+          callbackStack);
+    }
 
-    // Complete the operation with error
+    // Always complete the operation with error
     operation.completeError(error, stack);
   }
 

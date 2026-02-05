@@ -484,7 +484,7 @@ void main() {
         // Wait for any async operations to settle
         await Future.delayed(const Duration(milliseconds: 10));
 
-        // Success callback should NOT have been called because _isDisposed check
+        // Success callback should NOT be called after dispose
         expect(successCalled, isFalse);
       });
     });
