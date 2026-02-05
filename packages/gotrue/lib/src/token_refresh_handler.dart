@@ -193,7 +193,7 @@ class TokenRefreshHandler {
         originalError: error,
       );
       _handleError(authError, stack, operation);
-      rethrow;
+      throw authError;
     } finally {
       // Only clear if we're still the current operation
       if (_currentOperation == operation) {
