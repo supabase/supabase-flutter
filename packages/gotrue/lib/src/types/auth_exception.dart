@@ -115,3 +115,21 @@ class AuthInvalidJwtException extends AuthException {
   String toString() =>
       'AuthInvalidJwtException(message: $message, statusCode: $statusCode, code: $code)';
 }
+
+/// Exception thrown when an auth operation is attempted on a disposed client.
+class AuthClientDisposedException extends AuthException {
+  /// The operation that was in progress when the client was disposed.
+  final String? operation;
+
+  AuthClientDisposedException({
+    String message = 'Auth client has been disposed',
+    this.operation,
+  }) : super(
+          operation != null ? '$message during $operation' : message,
+          code: 'client_disposed',
+        );
+
+  @override
+  String toString() =>
+      'AuthClientDisposedException(message: $message, operation: $operation)';
+}

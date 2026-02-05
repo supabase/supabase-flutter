@@ -19,6 +19,7 @@ import 'package:rxdart/subjects.dart';
 
 import 'broadcast_stub.dart' if (dart.library.js_interop) './broadcast_web.dart'
     as web;
+import 'token_refresh_handler.dart';
 import 'version.dart';
 
 part 'gotrue_mfa_api.dart';
@@ -56,8 +57,8 @@ class GoTrueClient {
 
   Timer? _autoRefreshTicker;
 
-  /// Completer to combine multiple simultaneous token refresh requests.
-  Completer<AuthResponse>? _refreshTokenCompleter;
+  /// Handles token refresh operations with proper synchronization.
+  late final TokenRefreshHandler _tokenRefreshHandler;
 
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
@@ -114,6 +115,14 @@ class GoTrueClient {
         _asyncStorage = asyncStorage,
         _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
+
+    // Initialize token refresh handler
+    _tokenRefreshHandler = TokenRefreshHandler(
+      logger: _log,
+      refreshCallback: _refreshAccessToken,
+      onSuccess: _handleRefreshSuccess,
+      onError: _handleRefreshError,
+    );
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
     _log.config(
@@ -632,7 +641,7 @@ class GoTrueClient {
       throw AuthSessionMissingException();
     }
 
-    return await _callRefreshToken(currentSessionRefreshToken);
+    return await _tokenRefreshHandler.refresh(currentSessionRefreshToken);
   }
 
   /// Sends a reauthentication OTP to the user's email or phone number.
@@ -752,7 +761,7 @@ class GoTrueClient {
     if (refreshToken.isEmpty) {
       throw AuthSessionMissingException('Refresh token cannot be empty');
     }
-    return await _callRefreshToken(refreshToken);
+    return await _tokenRefreshHandler.refresh(refreshToken);
   }
 
   /// Gets the session data from a magic link or oauth2 callback URL
@@ -1032,7 +1041,7 @@ class GoTrueClient {
         _log.fine('Session from recovery is expired');
         final refreshToken = session.refreshToken;
         if (_autoRefreshToken && refreshToken != null) {
-          return await _callRefreshToken(refreshToken);
+          return await _tokenRefreshHandler.refresh(refreshToken);
         } else {
           await signOut();
           throw notifyException(AuthException('Session expired.'));
@@ -1077,6 +1086,17 @@ class GoTrueClient {
   }
 
   Future<void> _autoRefreshTokenTick() async {
+    // Skip if handler is disposed
+    if (_tokenRefreshHandler.isDisposed) {
+      return;
+    }
+
+    // Skip if a refresh is already in progress
+    if (_tokenRefreshHandler.isRefreshing) {
+      _log.finer('Auto-refresh tick skipped: refresh already in progress');
+      return;
+    }
+
     try {
       final now = DateTime.now();
       final refreshToken = _currentSession?.refreshToken;
@@ -1098,24 +1118,45 @@ class GoTrueClient {
 
       _log.finer('Access token expires in $expiresInTicks ticks');
 
-      // Only tick if the next tick comes after the retry threshold
+      // Only refresh if token is expiring soon
       if (expiresInTicks <= Constants.autoRefreshTickThreshold) {
-        await _callRefreshToken(refreshToken);
+        await _tokenRefreshHandler.refresh(refreshToken);
       }
     } catch (error) {
-      // Do nothing. JS client prints here, but error is already tracked via
-      // [notifyException]
+      // Error is already tracked via notifyException in _handleRefreshError
+      _log.fine('Auto-refresh tick failed: $error');
     }
   }
 
-  /// Generates a new JWT.
+  /// Generates a new JWT using exponential backoff retry.
+  ///
   /// [refreshToken] A valid refresh token that was returned on login.
+  ///
+  /// Disposed state checks (layered defense):
+  /// 1. Early check before retry loop - prevents starting if already disposed
+  /// 2. Check at each retry attempt - fails fast if disposed between retries,
+  ///    avoiding unnecessary network requests
+  /// 3. retryIf check - stops retry loop gracefully if disposed during a request
+  ///
+  /// All three checks serve different purposes: the throwing checks (1, 2) ensure
+  /// proper error propagation with AuthClientDisposedException, while retryIf (3)
+  /// ensures the retry loop terminates cleanly.
   Future<AuthResponse> _refreshAccessToken(String refreshToken) async {
+    // Check disposed state early (prevents starting if already disposed)
+    if (_tokenRefreshHandler.isDisposed) {
+      throw AuthClientDisposedException(operation: 'token refresh API call');
+    }
+
     final startedAt = DateTime.now();
     var attempt = 0;
     return await retry<AuthResponse>(
-      // Make a GET request
       () async {
+        // Check disposed state on each retry (fails fast, avoids unnecessary requests)
+        if (_tokenRefreshHandler.isDisposed) {
+          throw AuthClientDisposedException(
+              operation: 'token refresh API call');
+        }
+
         attempt++;
         _log.fine('Attempt $attempt to refresh token');
         final options = GotrueRequestOptions(
@@ -1128,6 +1169,11 @@ class GoTrueClient {
         return authResponse;
       },
       retryIf: (e) {
+        // Don't retry if client is disposed (graceful termination)
+        if (_tokenRefreshHandler.isDisposed) {
+          return false;
+        }
+
         // Do not retry if the next retry comes after the next tick.
         final nextBackOff =
             Duration(milliseconds: (200 * pow(2, attempt - 1).floor()));
@@ -1254,66 +1300,58 @@ class GoTrueClient {
 
   @mustCallSuper
   void dispose() {
+    if (_tokenRefreshHandler.isDisposed) {
+      _log.warning('dispose() called on already disposed client');
+      return;
+    }
+
+    _log.fine('Disposing GoTrueClient');
+
+    // Cancel auto-refresh timer first to prevent new refresh attempts
+    _autoRefreshTicker?.cancel();
+    _autoRefreshTicker = null;
+
+    // Dispose token refresh handler (completes pending operations with error)
+    _tokenRefreshHandler.dispose();
+
+    // Close streams
     _onAuthStateChangeController.close();
     _onAuthStateChangeControllerSync.close();
+
+    // Close broadcast channel
     _broadcastChannel?.close();
     _broadcastChannelSubscription?.cancel();
-    _refreshTokenCompleter?.completeError(AuthException('Disposed'));
-    _autoRefreshTicker?.cancel();
   }
 
-  /// Generates a new JWT.
-  ///
-  /// To prevent multiple simultaneous requests it catches an already ongoing request by using the global [_refreshTokenCompleter].
-  /// If that's not null and not completed it returns the future of the ongoing request.
-  Future<AuthResponse> _callRefreshToken(String refreshToken) async {
-    // Refreshing is already in progress
-    if (_refreshTokenCompleter != null) {
-      _log.finer("Don't call refresh token, already in progress");
-      return _refreshTokenCompleter!.future;
+  /// Callback for successful token refresh.
+  void _handleRefreshSuccess(AuthResponse response) {
+    // Skip if disposed to avoid operating on closed streams
+    if (_tokenRefreshHandler.isDisposed) {
+      _log.fine('Skipping refresh success handling: client is disposed');
+      return;
     }
 
-    try {
-      _refreshTokenCompleter = Completer<AuthResponse>();
-
-      // Catch any error in case nobody awaits the future
-      _refreshTokenCompleter!.future.then(
-        (_) => null,
-        onError: (_, __) => null,
-      );
-      _log.fine('Refresh access token');
-
-      final data = await _refreshAccessToken(refreshToken);
-
-      final session = data.session;
-
-      if (session == null) {
-        throw AuthSessionMissingException();
-      }
-
+    final session = response.session;
+    if (session != null) {
       _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-
-      _refreshTokenCompleter?.complete(data);
-      return data;
-    } on AuthException catch (error, stack) {
-      if (error is! AuthRetryableFetchException) {
-        _removeSession();
-        notifyAllSubscribers(AuthChangeEvent.signedOut);
-      } else {
-        notifyException(error, stack);
-      }
-
-      _refreshTokenCompleter?.completeError(error);
-
-      rethrow;
-    } catch (error, stack) {
-      _refreshTokenCompleter?.completeError(error);
-      notifyException(error, stack);
-      rethrow;
-    } finally {
-      _refreshTokenCompleter = null;
     }
+  }
+
+  /// Callback for token refresh errors.
+  void _handleRefreshError(
+    AuthException error,
+    StackTrace stack,
+    bool isRetryable,
+  ) {
+    if (!isRetryable) {
+      // Non-retryable error: sign out and notify
+      _removeSession();
+      notifyAllSubscribers(AuthChangeEvent.signedOut);
+    }
+
+    // Always notify exception (this logs it)
+    notifyException(error, stack);
   }
 
   /// For internal use only.

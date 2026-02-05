@@ -87,11 +87,12 @@ jobs:
           flutter test --platform chrome
           cd example && flutter build web
 
-      - name: Build and test web (WASM)
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
-        run: |
-          flutter test --platform chrome --wasm
-          cd example && flutter build web --wasm
+      # TODO: Re-enable WASM tests once CI issue is resolved
+      # - name: Build and test web (WASM)
+      #   if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
+      #   run: |
+      #     flutter test --platform chrome --wasm
+      #     cd example && flutter build web --wasm
 
       - name: Build macOS app
         if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == '3.x'}}

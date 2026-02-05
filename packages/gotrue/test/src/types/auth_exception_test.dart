@@ -558,4 +558,73 @@ void main() {
       expect(exception, isA<AuthException>());
     });
   });
+
+  group('AuthClientDisposedException', () {
+    test('extends AuthException', () {
+      final exception = AuthClientDisposedException();
+      expect(exception, isA<AuthException>());
+    });
+
+    test('creates with default message when no parameters provided', () {
+      final exception = AuthClientDisposedException();
+
+      expect(exception.message, equals('Auth client has been disposed'));
+      expect(exception.code, equals('client_disposed'));
+      expect(exception.operation, isNull);
+      expect(exception.statusCode, isNull);
+    });
+
+    test('creates with custom message', () {
+      final exception = AuthClientDisposedException(
+        message: 'Custom disposed message',
+      );
+
+      expect(exception.message, equals('Custom disposed message'));
+      expect(exception.code, equals('client_disposed'));
+    });
+
+    test('creates with operation context', () {
+      final exception = AuthClientDisposedException(
+        operation: 'token refresh',
+      );
+
+      expect(
+        exception.message,
+        equals('Auth client has been disposed during token refresh'),
+      );
+      expect(exception.operation, equals('token refresh'));
+      expect(exception.code, equals('client_disposed'));
+    });
+
+    test('creates with custom message and operation context', () {
+      final exception = AuthClientDisposedException(
+        message: 'Client was terminated',
+        operation: 'session recovery',
+      );
+
+      expect(
+        exception.message,
+        equals('Client was terminated during session recovery'),
+      );
+      expect(exception.operation, equals('session recovery'));
+    });
+
+    test('toString includes operation when provided', () {
+      final exception = AuthClientDisposedException(
+        operation: 'test operation',
+      );
+
+      final string = exception.toString();
+      expect(string, contains('AuthClientDisposedException'));
+      expect(string, contains('operation: test operation'));
+    });
+
+    test('toString handles null operation', () {
+      final exception = AuthClientDisposedException();
+
+      final string = exception.toString();
+      expect(string, contains('AuthClientDisposedException'));
+      expect(string, contains('operation: null'));
+    });
+  });
 }
