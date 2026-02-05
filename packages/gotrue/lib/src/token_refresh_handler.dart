@@ -141,8 +141,16 @@ class TokenRefreshHandler {
   }
 
   /// Starts a new refresh operation and manages its lifecycle.
-  Future<AuthResponse> _startOperation(String refreshToken) async {
-    final operation = RefreshOperation(refreshToken);
+  ///
+  /// If [existingOperation] is provided (e.g., from a queued operation),
+  /// it will be used instead of creating a new one. This ensures the queued
+  /// caller's operation is tracked as [_currentOperation] so dispose() can
+  /// properly fail it if called during execution.
+  Future<AuthResponse> _startOperation(
+    String refreshToken, [
+    RefreshOperation? existingOperation,
+  ]) async {
+    final operation = existingOperation ?? RefreshOperation(refreshToken);
     _currentOperation = operation;
     _log.fine('Starting token refresh operation');
 
@@ -217,16 +225,9 @@ class TokenRefreshHandler {
 
   /// Processes the next queued refresh operation, if any.
   ///
-  /// Note on the dual-operation pattern:
-  /// This method uses `nextOperation` (from the queue) to track the caller's future,
-  /// while `_startOperation` creates its own internal `RefreshOperation` for
-  /// deduplication tracking. This design allows:
-  /// 1. The queued caller to await their original future (`nextOperation.future`)
-  /// 2. New callers during execution to join via `_currentOperation.future`
-  /// 3. Clean separation between queue management and operation execution
-  ///
-  /// The result/error from `_startOperation` is forwarded to `nextOperation`
-  /// to complete the queued caller's future.
+  /// The queued operation is passed to `_startOperation` so it becomes the
+  /// tracked `_currentOperation`. This ensures that if dispose() is called
+  /// while the operation is in-flight, it will be properly failed.
   void _processNextQueued() {
     if (_pendingOperations.isEmpty) {
       return;
@@ -244,16 +245,18 @@ class TokenRefreshHandler {
       return;
     }
 
-    // Start the next operation and forward result to queued caller
+    // Pass nextOperation to _startOperation so it's tracked as _currentOperation
+    // and can be failed by dispose() if called during execution.
+    // _startOperation will complete nextOperation directly (success or error).
     _log.fine('Processing queued refresh operation');
-    _startOperation(nextOperation.refreshToken).then(
-      (result) => nextOperation.complete(result),
+    _startOperation(nextOperation.refreshToken, nextOperation).then(
+      (_) {
+        // Operation completed successfully - nextOperation already completed
+        // by _startOperation via operation.complete(data)
+      },
       onError: (Object error, StackTrace stack) {
-        // Error is already handled in _startOperation
-        // Just ensure the queued operation's completer is completed
-        if (!nextOperation.isCompleted) {
-          nextOperation.completeError(error, stack);
-        }
+        // Error already handled in _startOperation via _handleError
+        // which calls operation.completeError(error, stack)
       },
     );
   }
