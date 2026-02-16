@@ -329,7 +329,10 @@ class RealtimeClient {
   /// Removes a subscription from the socket.
   @internal
   void remove(RealtimeChannel channel) {
-    channels = channels.where((c) => c.joinRef != channel.joinRef).toList();
+    channels = channels
+        .where((c) => c.joinRef != channel.joinRef)
+        .toList()
+        .cast<RealtimeChannel>();
   }
 
   RealtimeChannel channel(
