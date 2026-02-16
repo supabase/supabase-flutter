@@ -60,3 +60,33 @@ create policy "Anyone can update an avatar." on storage.objects
 - Flutter user management: https://github.com/supabase/supabase/tree/master/examples/user-management/flutter-user-management
 - Extended flutter user management with web support, github login, recovery password flow: https://github.com/phamhieu/supabase-flutter-demo
 - Real time chat application: https://github.com/supabase-community/flutter-chat
+
+## Facebook SDK login setup
+
+This example uses `flutter_facebook_auth` and `signInWithIdToken`. To make the
+SDK login work end-to-end, configure Facebook and Supabase, then update the
+platform files below.
+
+### Supabase
+
+- Enable Facebook in Auth providers.
+- Add your Facebook App ID and App Secret in the Supabase dashboard.
+
+### Android
+
+1. Update `android/app/src/main/res/values/strings.xml`:
+   - `facebook_app_id`
+   - `facebook_client_token`
+   - `fb_login_protocol_scheme` (use `fb<APP_ID>`)
+2. Ensure `android/app/src/main/AndroidManifest.xml` keeps the Facebook
+   activity and metadata entries.
+3. Add your package name and key hashes in the Facebook developer console.
+
+### iOS
+
+1. Update `ios/Runner/Info.plist`:
+   - `FacebookAppID`
+   - `FacebookClientToken`
+   - `CFBundleURLTypes` scheme `fb<APP_ID>`
+2. Ensure `ios/Runner/AppDelegate.swift` initializes `FBSDKCoreKit`.
+3. Add your bundle ID in the Facebook developer console.

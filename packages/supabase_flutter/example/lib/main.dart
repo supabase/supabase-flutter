@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
-  await Supabase.initialize(url: 'SUPABASE_URL', anonKey: 'SUPABASE_ANON_KEY');
+  await Supabase.initialize(
+    url: 'SUPABASE_URL',
+    anonKey: 'SUPABASE_ANON_KEY',
+  );
   runApp(const MyApp());
 }
 
@@ -72,6 +76,45 @@ class _LoginFormState extends State<_LoginForm> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signInWithFacebook() async {
+    setState(() {
+      _loading = true;
+    });
+    final ScaffoldMessengerState scaffoldMessenger =
+        ScaffoldMessenger.of(context);
+    try {
+      final result = await FacebookAuth.instance.login();
+      if (result.status != LoginStatus.success) {
+        scaffoldMessenger.showSnackBar(SnackBar(
+          content: Text(result.message ?? 'Facebook sign-in cancelled'),
+          backgroundColor: Colors.red,
+        ));
+        setState(() {
+          _loading = false;
+        });
+        return;
+      }
+      final idToken = result.accessToken?.tokenString;
+      if (idToken == null) {
+        scaffoldMessenger.showSnackBar(const SnackBar(
+          content: Text('Facebook ID token is required'),
+          backgroundColor: Colors.red,
+        ));
+        return;
+      }
+      await Supabase.instance.client.auth.signInWithIdToken(
+          provider: OAuthProvider.facebook, idToken: idToken);
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(SnackBar(
+        content: Text('Facebook sign-in failed: ${e.toString()}'),
+        backgroundColor: Colors.red,
+      ));
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -146,6 +189,11 @@ class _LoginFormState extends State<_LoginForm> {
                 },
                 child: const Text('Signup'),
               ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _signInWithFacebook,
+                child: const Text('Sign in with Facebook (SDK)'),
+              ),
             ],
           );
   }
@@ -177,29 +225,31 @@ class _ProfileFormState extends State<_ProfileForm> {
   }
 
   Future<void> _loadProfile() async {
-    final ScaffoldMessengerState scaffoldMessenger =
-        ScaffoldMessenger.of(context);
     try {
       final userId = Supabase.instance.client.auth.currentUser!.id;
       final data = (await Supabase.instance.client
           .from('profiles')
           .select()
           .match({'id': userId}).maybeSingle());
-      if (data != null) {
+      if (data != null && mounted) {
         setState(() {
           _usernameController.text = data['username'];
           _websiteController.text = data['website'];
         });
       }
     } catch (e) {
-      scaffoldMessenger.showSnackBar(const SnackBar(
-        content: Text('Error occurred while getting profile'),
-        backgroundColor: Colors.red,
-      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Error occurred while getting profile'),
+          backgroundColor: Colors.red,
+        ));
+      }
     }
-    setState(() {
-      _loading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
   @override
