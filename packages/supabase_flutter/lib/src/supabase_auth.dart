@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' show StreamSubscription, unawaited;
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:math';
@@ -115,6 +115,23 @@ class SupabaseAuth with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
+        _log.fine('App resumed, checking session status');
+
+        // Proactively refresh if token is expired to prevent race condition
+        // where API calls happen before the first auto-refresh tick (10s)
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session != null && session.isExpired) {
+          _log.fine('Session expired on resume, refreshing proactively');
+          // Don't await - let it happen in background while auto-refresh starts
+          unawaited(
+            Supabase.instance.client.auth.refreshSession().catchError((error) {
+              _log.warning('Proactive refresh on resume failed', error);
+              // Error will be handled by onAuthStateChange listener
+              return null;
+            }),
+          );
+        }
+
         if (_autoRefreshToken) {
           Supabase.instance.client.auth.startAutoRefresh();
         }
