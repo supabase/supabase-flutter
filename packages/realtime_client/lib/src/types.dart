@@ -231,15 +231,35 @@ class PostgresChangePayload {
   });
 
   /// Creates a PostgresChangePayload instance from the enriched postgres change payload
-  PostgresChangePayload.fromPayload(Map<String, dynamic> payload)
-      : schema = payload['schema'],
-        table = payload['table'],
-        commitTimestamp =
-            DateTime.parse(payload['commit_timestamp'] ?? '19700101'),
-        eventType = PostgresChangeEventMethods.fromString(payload['eventType']),
-        newRecord = Map<String, dynamic>.from(payload['new']),
-        oldRecord = Map<String, dynamic>.from(payload['old']),
-        errors = payload['errors'];
+  factory PostgresChangePayload.fromPayload(Map<String, dynamic> payload) {
+    final commitTimestampStr = payload['commit_timestamp'] as String?;
+    DateTime commitTimestamp;
+    try {
+      commitTimestamp = commitTimestampStr != null
+          ? DateTime.parse(commitTimestampStr)
+          : DateTime.fromMillisecondsSinceEpoch(0);
+    } on FormatException {
+      commitTimestamp = DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
+    final newData = payload['new'];
+    final oldData = payload['old'];
+
+    return PostgresChangePayload(
+      schema: payload['schema'] as String,
+      table: payload['table'] as String,
+      commitTimestamp: commitTimestamp,
+      eventType:
+          PostgresChangeEventMethods.fromString(payload['eventType'] as String),
+      newRecord: newData is Map
+          ? Map<String, dynamic>.from(newData)
+          : <String, dynamic>{},
+      oldRecord: oldData is Map
+          ? Map<String, dynamic>.from(oldData)
+          : <String, dynamic>{},
+      errors: payload['errors'],
+    );
+  }
 
   @override
   String toString() {

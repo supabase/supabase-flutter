@@ -61,7 +61,18 @@ class GenerateLinkResponse {
 
   GenerateLinkResponse.fromJson(Map<String, dynamic> json)
       : properties = GenerateLinkProperties.fromJson(json),
-        user = User.fromJson(json)!;
+        user = _parseUser(json);
+
+  static User _parseUser(Map<String, dynamic> json) {
+    final user = User.fromJson(json);
+    if (user == null) {
+      throw FormatException(
+        'Failed to parse user: missing required id field',
+        json.toString(),
+      );
+    }
+    return user;
+  }
 }
 
 class GenerateLinkProperties {
