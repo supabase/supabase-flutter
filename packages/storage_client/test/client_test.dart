@@ -5,6 +5,8 @@ import "package:path/path.dart" show join;
 import 'package:storage_client/storage_client.dart';
 import 'package:test/test.dart';
 
+import 'custom_http_client.dart';
+
 const storageUrl = 'http://localhost:8000/storage/v1';
 const storageKey =
     'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTYwMzk2ODgzNCwiZXhwIjoyNTUwNjUzNjM0LCJhdWQiOiIiLCJzdWIiOiIzMTdlYWRjZS02MzFhLTQ0MjktYTBiYi1mMTlhN2E1MTdiNGEiLCJSb2xlIjoicG9zdGdyZXMifQ.pZobPtp6gDcX0UbzMmG3FHSlg4m4Q-22tKtGWalOrNo';
@@ -478,5 +480,132 @@ void main() {
 
     final res2 = await storage.from(newBucketName).exists('not-exist');
     expect(res2, false);
+  });
+
+  group('setHeader', () {
+    late CustomHttpClient customHttpClient;
+    late SupabaseStorageClient client;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      client = SupabaseStorageClient(
+        storageUrl,
+        {'Authorization': 'Bearer $storageKey'},
+        httpClient: customHttpClient,
+      );
+    });
+
+    test('sets custom header on storage client', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('x-custom-header', 'custom-value');
+      await client.listBuckets();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['x-custom-header'],
+        'custom-value',
+      );
+    });
+
+    test('returns this for method chaining', () {
+      final result = client.setHeader('x-header-a', 'value-a');
+      expect(identical(result, client), isTrue);
+    });
+
+    test('supports chaining multiple setHeader calls', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      client
+          .setHeader('x-header-a', 'value-a')
+          .setHeader('x-header-b', 'value-b');
+      await client.listBuckets();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      final headers = customHttpClient.receivedRequests.first.headers;
+      expect(headers['x-header-a'], 'value-a');
+      expect(headers['x-header-b'], 'value-b');
+    });
+
+    test('headers set on client are included in file operations', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('x-custom-header', 'custom-value');
+      await client.from('test-bucket').list();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['x-custom-header'],
+        'custom-value',
+      );
+    });
+
+    test('setHeader on StorageFileApi sets header for that instance', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      final fileApi = client.from('test-bucket');
+      fileApi.setHeader('x-file-header', 'file-value');
+      await fileApi.list();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['x-file-header'],
+        'file-value',
+      );
+    });
+
+    test(
+        'setHeader on StorageFileApi does not affect other StorageFileApi instances',
+        () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      final fileApi1 = client.from('bucket1');
+      final fileApi2 = client.from('bucket2');
+
+      fileApi1.setHeader('x-header', 'value1');
+
+      await fileApi1.list();
+      await fileApi2.list();
+
+      expect(customHttpClient.receivedRequests.length, 2);
+      expect(
+        customHttpClient.receivedRequests[0].headers['x-header'],
+        'value1',
+      );
+      // fileApi2 should not have the header set on fileApi1
+      expect(
+        customHttpClient.receivedRequests[1].headers['x-header'],
+        isNull,
+      );
+    });
+
+    test('setHeader on StorageFileApi returns this for chaining', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      final fileApi = client.from('test-bucket');
+      final result = fileApi.setHeader('x-header', 'value');
+
+      expect(identical(result, fileApi), isTrue);
+    });
+
+    test('setHeader can override existing headers', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('Authorization', 'Bearer new-token');
+      await client.listBuckets();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['Authorization'],
+        'Bearer new-token',
+      );
+    });
   });
 }

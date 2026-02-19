@@ -100,4 +100,17 @@ class SupabaseStorageClient extends StorageBucketApi {
   void setAuth(String jwt) {
     headers['Authorization'] = 'Bearer $jwt';
   }
+
+  /// Sets an HTTP header for subsequent requests.
+  ///
+  /// Creates a shallow copy of headers to avoid mutating shared state.
+  /// Returns this for method chaining.
+  ///
+  /// ```dart
+  /// storage.setHeader('x-custom-header', 'value').from('bucket').upload(...);
+  /// ```
+  SupabaseStorageClient setHeader(String key, String value) {
+    headers[key] = value;
+    return this;
+  }
 }
