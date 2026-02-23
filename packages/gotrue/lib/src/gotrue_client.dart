@@ -717,7 +717,15 @@ class GoTrueClient {
       RequestMethodType.get,
       options: options,
     );
-    return UserResponse.fromJson(response);
+    final userResponse = UserResponse.fromJson(response);
+
+    if (userResponse.user == _currentSession?.user) return userResponse;
+
+    _currentSession = currentSession?.copyWith(user: userResponse.user);
+
+    notifyAllSubscribers(AuthChangeEvent.userUpdated);
+
+    return userResponse;
   }
 
   /// Updates user data, if there is a logged in user.
