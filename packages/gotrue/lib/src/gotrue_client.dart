@@ -719,6 +719,8 @@ class GoTrueClient {
     );
     final userResponse = UserResponse.fromJson(response);
 
+    if (userResponse.user == null) return userResponse;
+
     // np need to update the local user when the user is the same
     if (userResponse.user == _currentSession?.user) return userResponse;
 
