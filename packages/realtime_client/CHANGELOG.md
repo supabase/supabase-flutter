@@ -1,3 +1,9 @@
+## 2.7.1
+
+ - **FIX**(realtime): add explicit type cast to fix web hot restart TypeError ([#1308](https://github.com/supabase/supabase-flutter/issues/1308)). ([bfa480a1](https://github.com/supabase/supabase-flutter/commit/bfa480a1417ffa288ae3ae39bc62cd7e5a90da05))
+ - **FIX**: delete toJson parser print ([#1293](https://github.com/supabase/supabase-flutter/issues/1293)). ([0d68e505](https://github.com/supabase/supabase-flutter/commit/0d68e505236894bf2e3528378a0a39ba49efd329))
+ - **FIX**(realtime_client): make ref field optional in Message class ([#1284](https://github.com/supabase/supabase-flutter/issues/1284)). ([0b194e4c](https://github.com/supabase/supabase-flutter/commit/0b194e4cf9886e6c52e0bdc6ef2f378edcd35f68))
+
 ## 2.7.0
 
  - **FEAT**(realtime): add explicit REST API call method for broadcast messages ([#1253](https://github.com/supabase/supabase-flutter/issues/1253)). ([8237ca57](https://github.com/supabase/supabase-flutter/commit/8237ca578efbd69f154bb29176aecc7bd841bb91))

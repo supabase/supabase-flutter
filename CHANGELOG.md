@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-02-24
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.19.0`](#gotrue---v2190)
+ - [`realtime_client` - `v2.7.1`](#realtime_client---v271)
+ - [`storage_client` - `v2.5.0`](#storage_client---v250)
+ - [`supabase` - `v2.10.3`](#supabase---v2103)
+ - [`supabase_flutter` - `v2.12.1`](#supabase_flutter---v2121)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.10.3`
+ - `supabase_flutter` - `v2.12.1`
+
+---
+
+#### `gotrue` - `v2.19.0`
+
+ - **FIX**(auth): fix getClaims() crash with asymmetric JWTs on first call ([#1300](https://github.com/supabase/supabase-flutter/issues/1300)). ([207ed5f7](https://github.com/supabase/supabase-flutter/commit/207ed5f7b6307fa64121debba2012f9c8e6cd85a))
+ - **FIX**(auth): fix verifyOTP parameter validation for OtpType.recovery with tokenHash ([#1295](https://github.com/supabase/supabase-flutter/issues/1295)). ([0719e55b](https://github.com/supabase/supabase-flutter/commit/0719e55b6a98fc63ef6b94fa60e86c0ac1b8d9e3))
+ - **FEAT**(auth): add X (OAuth 2.0) provider ([#1290](https://github.com/supabase/supabase-flutter/issues/1290)). ([c2305388](https://github.com/supabase/supabase-flutter/commit/c23053888d0a3fefc17b5ca31b162a94b7827748))
+
+#### `realtime_client` - `v2.7.1`
+
+ - **FIX**(realtime): add explicit type cast to fix web hot restart TypeError ([#1308](https://github.com/supabase/supabase-flutter/issues/1308)). ([bfa480a1](https://github.com/supabase/supabase-flutter/commit/bfa480a1417ffa288ae3ae39bc62cd7e5a90da05))
+ - **FIX**: delete toJson parser print ([#1293](https://github.com/supabase/supabase-flutter/issues/1293)). ([0d68e505](https://github.com/supabase/supabase-flutter/commit/0d68e505236894bf2e3528378a0a39ba49efd329))
+ - **FIX**(realtime_client): make ref field optional in Message class ([#1284](https://github.com/supabase/supabase-flutter/issues/1284)). ([0b194e4c](https://github.com/supabase/supabase-flutter/commit/0b194e4cf9886e6c52e0bdc6ef2f378edcd35f68))
+
+#### `storage_client` - `v2.5.0`
+
+ - **FEAT**(storage): add setHeader method for custom HTTP headers ([#1313](https://github.com/supabase/supabase-flutter/issues/1313)). ([99231538](https://github.com/supabase/supabase-flutter/commit/9923153836438c35e47482658f3156e997c8be1f))
+ - **FEAT**(storage): add queryParams support to download method ([#1291](https://github.com/supabase/supabase-flutter/issues/1291)). ([6f56c193](https://github.com/supabase/supabase-flutter/commit/6f56c193c51d165ec23b4a31de7f2fce632529e8))
+ - **FEAT**(storage_client): use dedicated storage host for storage lib (allows >50GB uploads) ([#1285](https://github.com/supabase/supabase-flutter/issues/1285)). ([8e0993c6](https://github.com/supabase/supabase-flutter/commit/8e0993c64cbb7f7aaaa6b989c85a26ac7249f884))
+
+
 ## 2025-12-10
 
 ### Changes

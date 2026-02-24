@@ -1,3 +1,9 @@
+## 2.5.0
+
+ - **FEAT**(storage): add setHeader method for custom HTTP headers ([#1313](https://github.com/supabase/supabase-flutter/issues/1313)). ([99231538](https://github.com/supabase/supabase-flutter/commit/9923153836438c35e47482658f3156e997c8be1f))
+ - **FEAT**(storage): add queryParams support to download method ([#1291](https://github.com/supabase/supabase-flutter/issues/1291)). ([6f56c193](https://github.com/supabase/supabase-flutter/commit/6f56c193c51d165ec23b4a31de7f2fce632529e8))
+ - **FEAT**(storage_client): use dedicated storage host for storage lib (allows >50GB uploads) ([#1285](https://github.com/supabase/supabase-flutter/issues/1285)). ([8e0993c6](https://github.com/supabase/supabase-flutter/commit/8e0993c64cbb7f7aaaa6b989c85a26ac7249f884))
+
 ## 2.4.1
 
  - **REFACTOR**: Remove unnecessary parentheses in Bucket.fromJson ([#1201](https://github.com/supabase/supabase-flutter/issues/1201)). ([d729fa46](https://github.com/supabase/supabase-flutter/commit/d729fa46c7a914e2705048b1e490adcc0270143c))
