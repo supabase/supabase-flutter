@@ -23,11 +23,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -35,9 +42,10 @@ jobs:
           cache: true
 
       - name: Setup Melos
-        uses: bluefireteam/melos-action@v3
+        uses: grdsdev/melos-action@feat/custom-token-for-create-pr
         with:
           run-versioning: ${{ inputs.prerelease == false }}
           run-versioning-prerelease: ${{ inputs.prerelease == true }}
           run-versioning-graduate: ${{ inputs.graduate == true }}
           create-pr: true
+          token: ${{ steps.app-token.outputs.token }}

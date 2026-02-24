@@ -36,7 +36,7 @@ jobs:
           cache: true
 
       - name: Setup Melos
-        uses: bluefireteam/melos-action@v3
+        uses: grdsdev/melos-action@feat/custom-token-for-create-pr
         with:
           tag: true
       - name: Trigger publish workflows
