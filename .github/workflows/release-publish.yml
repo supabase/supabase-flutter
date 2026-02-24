@@ -57,7 +57,8 @@ jobs:
         run: |
           VERSION="${{ inputs.package-version }}"
           PACKAGE="${{ inputs.package-name }}"
-          CHANGELOG_CONTENT=$(awk "/^## ${VERSION}/{flag=1; next} /^## /{flag=0} flag" "packages/${PACKAGE}/CHANGELOG.md")
+          HEADER="## ${VERSION}"
+          CHANGELOG_CONTENT=$(awk -v header="$HEADER" 'index($0,header)==1{flag=1;next} /^## /{flag=0} flag' "packages/${PACKAGE}/CHANGELOG.md")
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "${CHANGELOG_CONTENT}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
