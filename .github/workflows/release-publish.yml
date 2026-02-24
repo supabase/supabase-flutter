@@ -44,7 +44,7 @@ jobs:
           cache: true
 
       - name: Bootstrap with Melos
-        uses: bluefireteam/melos-action@v3
+        uses: grdsdev/melos-action@feat/custom-token-for-create-pr
 
       - name: Publish dry run
         run: melos publish --scope ${{ inputs.package-name }} --dry-run
