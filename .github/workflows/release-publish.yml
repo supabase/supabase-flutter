@@ -2,13 +2,26 @@ name: Publish Packages
 
 on:
   workflow_dispatch:
+    inputs:
+      package-name:
+        description: 'Name of the package to publish'
+        required: true
+        type: string
+      package-version:
+        description: 'Version to publish (without v prefix, e.g. 2.18.0)'
+        required: true
+        type: string
+
+concurrency:
+  group: release-publish-${{ inputs.package-name }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
   id-token: write
 
 jobs:
-  publish-packages:
+  publish-package:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -18,34 +31,48 @@ jobs:
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.package-name }}-v${{ inputs.package-version }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           cache: true
 
-      - name: Publish to pub.dev
+      - name: Bootstrap with Melos
         uses: bluefireteam/melos-action@v3
-        with:
-          publish: true
+
+      - name: Publish dry run
+        run: melos publish --scope ${{ inputs.package-name }} --dry-run
+
+      - name: Publish to pub.dev
+        run: melos publish --scope ${{ inputs.package-name }}
+
+      - name: Extract CHANGELOG section
+        id: changelog
+        run: |
+          VERSION="${{ inputs.package-version }}"
+          PACKAGE="${{ inputs.package-name }}"
+          CHANGELOG_CONTENT=$(awk "/^## ${VERSION}/{flag=1; next} /^## /{flag=0} flag" "packages/${PACKAGE}/CHANGELOG.md")
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "${CHANGELOG_CONTENT}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ inputs.package-name }}-v${{ inputs.package-version }}
+          name: ${{ inputs.package-name }} v${{ inputs.package-version }}
           body: |
-            ## Package Release
-
-            Released package: ${{ github.ref_name }}
-
-            See the package CHANGELOG for detailed changes.
+            ${{ steps.changelog.outputs.changelog }}
 
             ---
-            *This release was created automatically by the Publish Packages workflow.*
+            Published to pub.dev: https://pub.dev/packages/${{ inputs.package-name }}/versions/${{ inputs.package-version }}
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(inputs.package-version, '-') }}
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
