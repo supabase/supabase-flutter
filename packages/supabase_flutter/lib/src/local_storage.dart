@@ -61,14 +61,15 @@ class EmptyLocalStorage extends LocalStorage {
   Future<void> persistSession(persistSessionString) async {}
 }
 
-/// A [LocalStorage] implementation that implements SharedPreferences as the
+/// A [LocalStorage] implementation that implements SharedPreferencesAsync as the
 /// storage method.
 class SharedPreferencesLocalStorage extends LocalStorage {
-  late final SharedPreferences _prefs;
+  late final SharedPreferencesAsync _prefs;
 
   SharedPreferencesLocalStorage({required this.persistSessionKey});
 
   final String persistSessionKey;
+
   static const _useWebLocalStorage =
       kIsWeb && bool.fromEnvironment("dart.library.js_interop");
 
@@ -76,7 +77,22 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   Future<void> initialize() async {
     if (!_useWebLocalStorage) {
       WidgetsFlutterBinding.ensureInitialized();
-      _prefs = await SharedPreferences.getInstance();
+      _prefs = SharedPreferencesAsync();
+
+      await _maybeMigrateAccessToken();
+    }
+  }
+
+  Future<void> _maybeMigrateAccessToken() async {
+    final legacyPrefs = await SharedPreferences.getInstance();
+
+    if (legacyPrefs.containsKey(persistSessionKey)) {
+      final accessToken = legacyPrefs.getString(persistSessionKey);
+
+      if (accessToken != null) {
+        await legacyPrefs.remove(persistSessionKey);
+        await _prefs.setString(persistSessionKey, accessToken);
+      }
     }
   }
 
