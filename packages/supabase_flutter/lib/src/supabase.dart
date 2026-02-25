@@ -131,16 +131,25 @@ class Supabase with WidgetsBindingObserver {
     );
 
     if (accessToken == null) {
+      _log.fine('Initializing SupabaseAuth and session recovery');
       final supabaseAuth = SupabaseAuth();
       _instance._supabaseAuth = supabaseAuth;
       await supabaseAuth.initialize(options: authOptions);
 
       // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
       // if still in progress
+      _log.fine('Starting lazy session recovery in background');
       _instance._restoreSessionCancellableOperation =
           CancelableOperation.fromFuture(
-        supabaseAuth.recoverSession(),
+        supabaseAuth.recoverSession().then((_) {
+          _log.fine('Session recovery completed');
+        }).catchError((error, stackTrace) {
+          _log.warning('Session recovery failed', error, stackTrace);
+        }),
       );
+    } else {
+      _log.info(
+          'Using custom accessToken callback, skipping SupabaseAuth initialization');
     }
 
     _log.info('***** Supabase init completed *****');
@@ -223,11 +232,14 @@ class Supabase with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _log.fine('Supabase app lifecycle state changed to: ${state.name}');
     switch (state) {
       case AppLifecycleState.resumed:
+        _log.fine('App resumed, calling onResumed()');
         onResumed();
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
+        _log.fine('App paused/detached, disconnecting realtime');
         _realtimeReconnectOperation?.cancel();
         Supabase.instance.client.realtime.disconnect();
       default:

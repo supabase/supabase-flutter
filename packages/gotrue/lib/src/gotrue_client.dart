@@ -1005,12 +1005,21 @@ class GoTrueClient {
 
   /// Set the initial session to the session obtained from local storage
   Future<void> setInitialSession(String jsonStr) async {
+    _log.fine('Setting initial session from storage');
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
+      _log.warning('Initial session is missing data, signing out');
       // sign out to delete the local storage from supabase_flutter
       await signOut();
       throw notifyException(AuthException('Initial session is missing data.'));
     }
+
+    final expiresAt = session.expiresAt != null
+        ? DateTime.fromMillisecondsSinceEpoch(session.expiresAt! * 1000)
+            .toIso8601String()
+        : 'null';
+    _log.info(
+        'Initial session set: userId=${session.user.id}, expiresAt=$expiresAt, isExpired=${session.isExpired}');
 
     _currentSession = session;
     notifyAllSubscribers(AuthChangeEvent.initialSession);
@@ -1018,6 +1027,7 @@ class GoTrueClient {
 
   /// Recover session from stringified [Session].
   Future<AuthResponse> recoverSession(String jsonStr) async {
+    _log.info('Recovering session from storage');
     try {
       final session = Session.fromJson(json.decode(jsonStr));
       if (session == null) {
@@ -1028,18 +1038,28 @@ class GoTrueClient {
         );
       }
 
+      final expiresAt = session.expiresAt != null
+          ? DateTime.fromMillisecondsSinceEpoch(session.expiresAt! * 1000)
+          : null;
+      _log.info(
+          'Session recovered: userId=${session.user.id}, expiresAt=${expiresAt?.toIso8601String()}, isExpired=${session.isExpired}, autoRefreshToken=$_autoRefreshToken');
+
       if (session.isExpired) {
-        _log.fine('Session from recovery is expired');
+        _log.info('Recovered session is expired, attempting refresh');
         final refreshToken = session.refreshToken;
         if (_autoRefreshToken && refreshToken != null) {
           return await _callRefreshToken(refreshToken);
         } else {
+          _log.warning(
+              'Cannot refresh expired session: autoRefreshToken=$_autoRefreshToken, hasRefreshToken=${refreshToken != null}');
           await signOut();
           throw notifyException(AuthException('Session expired.'));
         }
       } else {
         final shouldEmitEvent = _currentSession == null ||
             _currentSession!.user.id != session.user.id;
+        _log.fine(
+            'Recovered session is valid, shouldEmitEvent=$shouldEmitEvent');
         _saveSession(session);
 
         if (shouldEmitEvent) {
@@ -1049,6 +1069,7 @@ class GoTrueClient {
         return AuthResponse(session: session);
       }
     } catch (error, stackTrace) {
+      _log.warning('Error during session recovery', error, stackTrace);
       notifyException(error, stackTrace);
       rethrow;
     }
@@ -1059,19 +1080,30 @@ class GoTrueClient {
   void startAutoRefresh() async {
     stopAutoRefresh();
 
-    _log.fine('Starting auto refresh');
+    final session = _currentSession;
+    final expiresAt = session?.expiresAt;
+    final expiresAtTime = expiresAt != null
+        ? DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)
+            .toIso8601String()
+        : 'null';
+    final isExpired = session?.isExpired ?? false;
+
+    _log.fine(
+        'Starting auto refresh with session state: expiresAt=$expiresAtTime, isExpired=$isExpired, hasRefreshToken=${session?.refreshToken != null}');
     _autoRefreshTicker = Timer.periodic(
       Constants.autoRefreshTickDuration,
       (Timer t) => _autoRefreshTokenTick(),
     );
 
     await Future.delayed(Duration.zero);
+    _log.fine('Triggering immediate auto-refresh tick after startAutoRefresh');
     await _autoRefreshTokenTick();
   }
 
   /// Stops an active auto refresh process running in the background (if any).
   void stopAutoRefresh() {
-    _log.fine('Stopping auto refresh');
+    final wasRunning = _autoRefreshTicker != null;
+    _log.fine('Stopping auto refresh (was running: $wasRunning)');
     _autoRefreshTicker?.cancel();
     _autoRefreshTicker = null;
   }
@@ -1081,30 +1113,36 @@ class GoTrueClient {
       final now = DateTime.now();
       final refreshToken = _currentSession?.refreshToken;
       if (refreshToken == null) {
+        _log.fine('Auto-refresh tick skipped: no refresh token available');
         return;
       }
 
       final expiresAt = _currentSession?.expiresAt;
       if (expiresAt == null) {
+        _log.fine('Auto-refresh tick skipped: no expiresAt in session');
         return;
       }
 
-      final expiresInTicks =
-          (DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)
-                      .difference(now)
-                      .inMilliseconds /
-                  Constants.autoRefreshTickDuration.inMilliseconds)
-              .floor();
+      final expiresAtTime =
+          DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000);
+      final timeUntilExpiry = expiresAtTime.difference(now);
+      final expiresInTicks = (timeUntilExpiry.inMilliseconds /
+              Constants.autoRefreshTickDuration.inMilliseconds)
+          .floor();
 
-      _log.finer('Access token expires in $expiresInTicks ticks');
+      _log.fine(
+          'Auto-refresh tick: expires in $expiresInTicks ticks (${timeUntilExpiry.inSeconds}s), threshold=${Constants.autoRefreshTickThreshold}, expiresAt=${expiresAtTime.toIso8601String()}');
 
       // Only tick if the next tick comes after the retry threshold
       if (expiresInTicks <= Constants.autoRefreshTickThreshold) {
+        _log.info(
+            'Auto-refresh threshold reached, triggering token refresh (expiresInTicks=$expiresInTicks <= threshold=${Constants.autoRefreshTickThreshold})');
         await _callRefreshToken(refreshToken);
       }
-    } catch (error) {
+    } catch (error, stackTrace) {
       // Do nothing. JS client prints here, but error is already tracked via
       // [notifyException]
+      _log.warning('Error in auto-refresh tick', error, stackTrace);
     }
   }
 
@@ -1269,7 +1307,8 @@ class GoTrueClient {
   Future<AuthResponse> _callRefreshToken(String refreshToken) async {
     // Refreshing is already in progress
     if (_refreshTokenCompleter != null) {
-      _log.finer("Don't call refresh token, already in progress");
+      _log.fine(
+          "Concurrent refresh detected, waiting for existing refresh to complete");
       return _refreshTokenCompleter!.future;
     }
 
@@ -1281,26 +1320,34 @@ class GoTrueClient {
         (_) => null,
         onError: (_, __) => null,
       );
-      _log.fine('Refresh access token');
+      _log.info(
+          'Starting token refresh (refreshToken: ${refreshToken.substring(0, refreshToken.length < 20 ? refreshToken.length : 20)}...)');
 
       final data = await _refreshAccessToken(refreshToken);
 
       final session = data.session;
 
       if (session == null) {
+        _log.warning('Token refresh returned null session');
         throw AuthSessionMissingException();
       }
 
+      _log.info('Token refresh successful, new expiresAt=${session.expiresAt}');
       _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
 
       _refreshTokenCompleter?.complete(data);
       return data;
     } on AuthException catch (error, stack) {
+      _log.warning(
+          'Token refresh failed with AuthException: ${error.message}, statusCode=${error.statusCode}, code=${error.code}, isRetryable=${error is AuthRetryableFetchException}');
+
       if (error is! AuthRetryableFetchException) {
+        _log.warning('Non-retryable auth error, signing out user');
         _removeSession();
         notifyAllSubscribers(AuthChangeEvent.signedOut);
       } else {
+        _log.info('Retryable auth error, preserving session for retry');
         notifyException(error, stack);
       }
 
@@ -1308,6 +1355,7 @@ class GoTrueClient {
 
       rethrow;
     } catch (error, stack) {
+      _log.warning('Token refresh failed with unexpected error: $error');
       _refreshTokenCompleter?.completeError(error);
       notifyException(error, stack);
       rethrow;

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -65,6 +66,7 @@ class EmptyLocalStorage extends LocalStorage {
 /// storage method.
 class SharedPreferencesLocalStorage extends LocalStorage {
   late final SharedPreferences _prefs;
+  final _log = Logger('supabase.local_storage');
 
   SharedPreferencesLocalStorage({required this.persistSessionKey});
 
@@ -74,39 +76,56 @@ class SharedPreferencesLocalStorage extends LocalStorage {
 
   @override
   Future<void> initialize() async {
+    _log.fine(
+        'Initializing SharedPreferencesLocalStorage (key: $persistSessionKey, useWeb: $_useWebLocalStorage)');
     if (!_useWebLocalStorage) {
       WidgetsFlutterBinding.ensureInitialized();
       _prefs = await SharedPreferences.getInstance();
+      _log.fine('SharedPreferences initialized');
     }
   }
 
   @override
   Future<bool> hasAccessToken() async {
     if (_useWebLocalStorage) {
-      return web.hasAccessToken(persistSessionKey);
+      final result = web.hasAccessToken(persistSessionKey);
+      _log.finest('hasAccessToken (web): $result');
+      return result;
     }
-    return _prefs.containsKey(persistSessionKey);
+    final result = _prefs.containsKey(persistSessionKey);
+    _log.finest('hasAccessToken: $result');
+    return result;
   }
 
   @override
   Future<String?> accessToken() async {
     if (_useWebLocalStorage) {
-      return web.accessToken(persistSessionKey);
+      final token = await web.accessToken(persistSessionKey);
+      _log.finest(
+          'accessToken (web): ${token != null ? "found (${token.length} chars)" : "null"}');
+      return token;
     }
-    return _prefs.getString(persistSessionKey);
+    final token = _prefs.getString(persistSessionKey);
+    _log.finest(
+        'accessToken: ${token != null ? "found (${token.length} chars)" : "null"}');
+    return token;
   }
 
   @override
   Future<void> removePersistedSession() async {
+    _log.fine('Removing persisted session from storage');
     if (_useWebLocalStorage) {
       web.removePersistedSession(persistSessionKey);
     } else {
       await _prefs.remove(persistSessionKey);
     }
+    _log.fine('Persisted session removed');
   }
 
   @override
   Future<void> persistSession(String persistSessionString) {
+    _log.fine(
+        'Persisting session to storage (${persistSessionString.length} chars)');
     if (_useWebLocalStorage) {
       return web.persistSession(persistSessionKey, persistSessionString);
     }
@@ -116,6 +135,8 @@ class SharedPreferencesLocalStorage extends LocalStorage {
 
 /// local storage to store pkce flow code verifier.
 class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
+  final _log = Logger('supabase.async_storage');
+
   SharedPreferencesGotrueAsyncStorage() {
     _initialize();
   }
@@ -125,26 +146,33 @@ class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
   late final SharedPreferences _prefs;
 
   Future<void> _initialize() async {
+    _log.fine('Initializing SharedPreferencesGotrueAsyncStorage');
     WidgetsFlutterBinding.ensureInitialized();
     _prefs = await SharedPreferences.getInstance();
     _initializationCompleter.complete();
+    _log.fine('SharedPreferencesGotrueAsyncStorage initialized');
   }
 
   @override
   Future<String?> getItem({required String key}) async {
     await _initializationCompleter.future;
-    return _prefs.getString(key);
+    final value = _prefs.getString(key);
+    _log.finest(
+        'getItem($key): ${value != null ? "found (${value.length} chars)" : "null"}');
+    return value;
   }
 
   @override
   Future<void> removeItem({required String key}) async {
     await _initializationCompleter.future;
+    _log.fine('removeItem($key)');
     await _prefs.remove(key);
   }
 
   @override
   Future<void> setItem({required String key, required String value}) async {
     await _initializationCompleter.future;
+    _log.fine('setItem($key, ${value.length} chars)');
     await _prefs.setString(key, value);
   }
 }
