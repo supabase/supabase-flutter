@@ -52,30 +52,30 @@ jobs:
                 # Set up Docker containers based on package
                 if [[ "$d" == "postgrest/"* ]]; then
                   cd ../../infra/postgrest
-                  docker compose down
                   docker compose up -d
+                  sleep 5
                   cd ../../packages/postgrest
                   dart test --coverage=coverage --concurrency=1
                   dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
                   cd ../../infra/postgrest
                   docker compose down
-                  sleep 5s
+                  sleep 10s
                   cd ../../packages/postgrest
                 elif [[ "$d" == "gotrue/"* ]]; then
                   cd ../../infra/gotrue
-                  docker compose down
                   docker compose up -d
+                  sleep 5
                   cd ../../packages/gotrue
                   dart test --coverage=coverage --concurrency=1
                   dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
                   cd ../../infra/gotrue
                   docker compose down
-                  sleep 5s
+                  sleep 10s
                   cd ../../packages/gotrue
                 elif [[ "$d" == "storage_client/"* ]]; then
                   cd ../../infra/storage_client
-                  docker compose down
                   docker compose up -d
+                  sleep 5
                   cd ../../packages/storage_client
                   dart test --coverage=coverage --concurrency=1
                   dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
