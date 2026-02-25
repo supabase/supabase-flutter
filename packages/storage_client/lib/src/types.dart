@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 class FetchOptions {
   final Map<String, String>? headers;
   final bool? noResolveJson;
@@ -46,6 +48,7 @@ class FileObject {
   final String? id;
   final String? updatedAt;
   final String? createdAt;
+  @Deprecated("")
   final String? lastAccessedAt;
   final Map<String, dynamic>? metadata;
   final Bucket? buckets;
@@ -82,6 +85,7 @@ class FileObjectV2 {
   final String bucketId;
   final String? updatedAt;
   final String createdAt;
+  @Deprecated("")
   final String? lastAccessedAt;
   final int? size;
   final String? cacheControl;
