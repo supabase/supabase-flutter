@@ -98,7 +98,8 @@ class Supabase with WidgetsBindingObserver {
       _instance._logSubscription = Logger('supabase').onRecord.listen((record) {
         if (record.level >= Level.INFO) {
           debugPrint(
-              '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}');
+            '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}',
+          );
         }
       });
     }
@@ -138,9 +139,7 @@ class Supabase with WidgetsBindingObserver {
       // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
       // if still in progress
       _instance._restoreSessionCancellableOperation =
-          CancelableOperation.fromFuture(
-        supabaseAuth.recoverSession(),
-      );
+          CancelableOperation.fromFuture(supabaseAuth.recoverSession());
     }
 
     _log.info('***** Supabase init completed *****');
@@ -172,6 +171,8 @@ class Supabase with WidgetsBindingObserver {
 
   CancelableOperation<void>? _realtimeReconnectOperation;
 
+  Future<void>? _disconnectFuture;
+
   StreamSubscription? _logSubscription;
 
   /// Dispose the instance to free up resources.
@@ -197,7 +198,7 @@ class Supabase with WidgetsBindingObserver {
   }) {
     final headers = {
       ...Constants.defaultHeaders,
-      if (customHeaders != null) ...customHeaders
+      if (customHeaders != null) ...customHeaders,
     };
     client = SupabaseClient(
       supabaseUrl,
@@ -229,7 +230,7 @@ class Supabase with WidgetsBindingObserver {
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
         _realtimeReconnectOperation?.cancel();
-        Supabase.instance.client.realtime.disconnect();
+        _disconnectFuture = Supabase.instance.client.realtime.disconnect();
       default:
     }
   }
@@ -237,33 +238,31 @@ class Supabase with WidgetsBindingObserver {
   Future<void> onResumed() async {
     final realtime = Supabase.instance.client.realtime;
     if (realtime.channels.isNotEmpty) {
-      if (realtime.connState == SocketStates.disconnecting &&
-          realtime.conn != null) {
-        // If the socket is still disconnecting from e.g.
+      final disconnectFuture = _disconnectFuture;
+      if (disconnectFuture != null) {
+        // If a disconnect is still in progress from e.g.
         // [AppLifecycleState.paused] we should wait for it to finish before
-        // reconnecting.
+        // reconnecting. This avoids accessing conn! which may be nullified.
+        _disconnectFuture = null;
 
         bool cancel = false;
-        final connectFuture = realtime.conn!.sink.done.then(
-          (_) async {
-            // Make this connect cancelable so that it does not connect if the
-            // disconnect took so long that the app is already in background
-            // again.
+        final connectFuture = disconnectFuture.then((_) async {
+          // Make this connect cancelable so that it does not connect if the
+          // disconnect took so long that the app is already in background
+          // again.
 
-            if (!cancel) {
+          if (!cancel) {
+            // ignore: invalid_use_of_internal_member
+            await realtime.connect();
+            for (final channel in realtime.channels) {
               // ignore: invalid_use_of_internal_member
-              await realtime.connect();
-              for (final channel in realtime.channels) {
+              if (channel.isJoined) {
                 // ignore: invalid_use_of_internal_member
-                if (channel.isJoined) {
-                  // ignore: invalid_use_of_internal_member
-                  channel.forceRejoin();
-                }
+                channel.forceRejoin();
               }
             }
-          },
-          onError: (error) {},
-        );
+          }
+        }, onError: (error) {});
         _realtimeReconnectOperation = CancelableOperation.fromFuture(
           connectFuture,
           onCancel: () => cancel = true,
