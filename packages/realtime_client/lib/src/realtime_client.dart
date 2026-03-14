@@ -178,7 +178,7 @@ class RealtimeClient {
       log('transport', 'connecting to $endPointURL', null);
       log('transport', 'connecting', null, Level.FINE);
       connState = SocketStates.connecting;
-      final localConn = transport(endPointURL, headers);
+      final WebSocketChannel localConn = transport(endPointURL, headers);
       conn = localConn;
 
       try {
