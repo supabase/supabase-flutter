@@ -226,6 +226,19 @@ Future<AuthResponse> _facebookSignIn() async {
 }
 ```
 
+Alternatively, if you do not want to use the native Facebook SDK, you can use the web-based `signInWithOAuth()` method. This will open the device's web browser to perform the classic Facebook OAuth 2.0 login flow.
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> _facebookSignInWeb() async {
+  await Supabase.instance.client.auth.signInWithOAuth(
+    OAuthProvider.facebook,
+    redirectTo: 'io.supabase.flutterdemo://login-callback',
+  );
+}
+```
+
 ### <a id="oauth-login"></a>OAuth login
 
 The `signInWithIdToken()` method supports providers like Apple, Google, Facebook, Kakao, and Keycloak. For other providers, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
