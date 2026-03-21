@@ -184,6 +184,10 @@ class RealtimeClient {
       try {
         await localConn.ready;
       } catch (error) {
+        // Bail out if disconnect() ran or a new connect() started during await
+        if (conn != localConn) {
+          return;
+        }
         // Don't schedule a reconnect and emit error if connection has been
         // closed by the user or [disconnect] waits for the connection to be
         // ready before closing it.
@@ -197,7 +201,7 @@ class RealtimeClient {
       }
 
       // Guard: bail out if disconnect() ran during the await
-      if (conn != localConn) {
+      if (conn != localConn || connState != SocketStates.connecting) {
         return;
       }
 
