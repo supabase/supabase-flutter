@@ -167,7 +167,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       );
     }
 
-    _channel = _realtimeClient.channel(_realtimeTopic);
+    _channel = _realtimeClient.channel(
+      _realtimeTopic,
+      const RealtimeChannelConfig(private: true),
+    );
 
     _channel!
         .onPostgresChanges(
