@@ -243,14 +243,23 @@ class Supabase with WidgetsBindingObserver {
         // If a disconnect is still in progress from e.g.
         // [AppLifecycleState.paused] we should wait for it to finish before
         // reconnecting. This avoids accessing conn! which may be nullified.
-        _disconnectFuture = null;
+        //
+        // We clear _disconnectFuture only after the future completes (not
+        // eagerly) so that a second resumed event (e.g. inactive → resumed)
+        // still sees the in-progress disconnect and waits for it instead of
+        // falling through to the else branch where connect() would no-op.
 
         bool cancel = false;
         final connectFuture = disconnectFuture.then((_) async {
+          // Only clear if not replaced by a newer disconnect from a
+          // subsequent paused event.
+          if (_disconnectFuture == disconnectFuture) {
+            _disconnectFuture = null;
+          }
+
           // Make this connect cancelable so that it does not connect if the
           // disconnect took so long that the app is already in background
           // again.
-
           if (!cancel) {
             // ignore: invalid_use_of_internal_member
             await realtime.connect();
@@ -262,7 +271,11 @@ class Supabase with WidgetsBindingObserver {
               }
             }
           }
-        }, onError: (error) {});
+        }, onError: (error) {
+          if (_disconnectFuture == disconnectFuture) {
+            _disconnectFuture = null;
+          }
+        });
         _realtimeReconnectOperation = CancelableOperation.fromFuture(
           connectFuture,
           onCancel: () => cancel = true,
