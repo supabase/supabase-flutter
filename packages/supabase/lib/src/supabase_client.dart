@@ -338,6 +338,7 @@ class SupabaseClient {
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
       customAccessToken: accessToken,
+      transport: options.transport,
     );
   }
 
