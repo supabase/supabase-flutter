@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/auth_response.dart';
 import 'package:logging/logging.dart';
@@ -125,8 +126,8 @@ class TokenRefreshHandler {
 
     // Check if we already have a queued operation for this token
     final existingQueued = _pendingOperations
-        .cast<RefreshOperation?>()
-        .firstWhere((op) => op!.isForToken(refreshToken), orElse: () => null);
+        .where((op) => op.isForToken(refreshToken))
+        .firstOrNull;
 
     if (existingQueued != null) {
       _log.finer('Joining existing queued operation for same token');

@@ -341,9 +341,8 @@ void main() {
           caughtError = e;
         }
 
-        // The original exception is rethrown
-        expect(caughtError, isA<Exception>());
-        // But the error callback receives the wrapped AuthUnknownException
+        // Non-AuthException errors are wrapped in AuthUnknownException and thrown
+        expect(caughtError, isA<AuthUnknownException>());
         expect(errorCallbackErrors.first, isA<AuthUnknownException>());
       });
     });

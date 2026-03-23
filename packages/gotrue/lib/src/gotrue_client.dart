@@ -1344,8 +1344,11 @@ class GoTrueClient {
     StackTrace stack,
     bool isRetryable,
   ) {
-    if (!isRetryable) {
-      // Non-retryable error: sign out and notify
+    // Skip if disposed — streams are already closed and the error is expected
+    if (_tokenRefreshHandler.isDisposed) return;
+
+    if (!isRetryable && error is! AuthClientDisposedException) {
+      // Non-retryable auth error: sign out and notify
       _removeSession();
       notifyAllSubscribers(AuthChangeEvent.signedOut);
     }
