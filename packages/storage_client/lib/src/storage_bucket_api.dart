@@ -18,7 +18,9 @@ class StorageBucketApi {
     final FetchOptions options = FetchOptions(headers: headers);
     final response = await storageFetch.get('$url/bucket', options: options);
     final buckets = List<Bucket>.from(
-      (response as List).map((value) => Bucket.fromJson(value)),
+      (response as List).map(
+        (value) => Bucket.fromJson(value),
+      ),
     );
     return buckets;
   }
@@ -28,10 +30,8 @@ class StorageBucketApi {
   /// [id] is the unique identifier of the bucket you would like to retrieve.
   Future<Bucket> getBucket(String id) async {
     final FetchOptions options = FetchOptions(headers: headers);
-    final response = await storageFetch.get(
-      '$url/bucket/$id',
-      options: options,
-    );
+    final response =
+        await storageFetch.get('$url/bucket/$id', options: options);
     return Bucket.fromJson(response);
   }
 
@@ -56,15 +56,19 @@ class StorageBucketApi {
     BucketOptions bucketOptions = const BucketOptions(public: false),
   ]) async {
     final FetchOptions options = FetchOptions(headers: headers);
-    final response = await storageFetch.post('$url/bucket', {
-      'id': id,
-      'name': id,
-      'public': bucketOptions.public,
-      if (bucketOptions.fileSizeLimit != null)
-        'file_size_limit': bucketOptions.fileSizeLimit,
-      if (bucketOptions.allowedMimeTypes != null)
-        'allowed_mime_types': bucketOptions.allowedMimeTypes,
-    }, options: options);
+    final response = await storageFetch.post(
+      '$url/bucket',
+      {
+        'id': id,
+        'name': id,
+        'public': bucketOptions.public,
+        if (bucketOptions.fileSizeLimit != null)
+          'file_size_limit': bucketOptions.fileSizeLimit,
+        if (bucketOptions.allowedMimeTypes != null)
+          'allowed_mime_types': bucketOptions.allowedMimeTypes,
+      },
+      options: options,
+    );
     final bucketId = (response as Map<String, dynamic>)['name'] as String;
     return bucketId;
   }
@@ -74,17 +78,24 @@ class StorageBucketApi {
   /// [id] is a unique identifier for the bucket you are creating.
   ///
   /// [bucketOptions] is a parameter to set the publicity of the bucket.
-  Future<String> updateBucket(String id, BucketOptions bucketOptions) async {
+  Future<String> updateBucket(
+    String id,
+    BucketOptions bucketOptions,
+  ) async {
     final FetchOptions options = FetchOptions(headers: headers);
-    final response = await storageFetch.put('$url/bucket/$id', {
-      'id': id,
-      'name': id,
-      'public': bucketOptions.public,
-      if (bucketOptions.fileSizeLimit != null)
-        'file_size_limit': bucketOptions.fileSizeLimit,
-      if (bucketOptions.allowedMimeTypes != null)
-        'allowed_mime_types': bucketOptions.allowedMimeTypes,
-    }, options: options);
+    final response = await storageFetch.put(
+      '$url/bucket/$id',
+      {
+        'id': id,
+        'name': id,
+        'public': bucketOptions.public,
+        if (bucketOptions.fileSizeLimit != null)
+          'file_size_limit': bucketOptions.fileSizeLimit,
+        if (bucketOptions.allowedMimeTypes != null)
+          'allowed_mime_types': bucketOptions.allowedMimeTypes,
+      },
+      options: options,
+    );
     final message = (response as Map<String, dynamic>)['message'] as String;
     return message;
   }
@@ -94,11 +105,8 @@ class StorageBucketApi {
   /// [id] is the unique identifier of the bucket you would like to empty.
   Future<String> emptyBucket(String id) async {
     final FetchOptions options = FetchOptions(headers: headers);
-    final response = await storageFetch.post(
-      '$url/bucket/$id/empty',
-      {},
-      options: options,
-    );
+    final response =
+        await storageFetch.post('$url/bucket/$id/empty', {}, options: options);
     return (response as Map<String, dynamic>)['message'] as String;
   }
 

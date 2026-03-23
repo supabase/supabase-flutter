@@ -43,15 +43,16 @@ class Fetch {
       try {
         final data = json.decode(error.body) as Map<String, dynamic>;
 
-        final exception = StorageException.fromJson(
-          data,
-          '${error.statusCode}',
-        );
+        final exception =
+            StorageException.fromJson(data, '${error.statusCode}');
         _log.fine('StorageException for $url', exception, stack);
         return exception;
       } on FormatException catch (_) {
         _log.fine('StorageException for $url', error.body, stack);
-        return StorageException(error.body, statusCode: '${error.statusCode}');
+        return StorageException(
+          error.body,
+          statusCode: '${error.statusCode}',
+        );
       }
     } else {
       _log.fine('StorageException for $url', error, stack);

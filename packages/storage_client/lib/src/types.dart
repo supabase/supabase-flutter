@@ -27,16 +27,16 @@ class Bucket {
   });
 
   Bucket.fromJson(Map<String, dynamic> json)
-    : id = json['id'] as String,
-      name = json['name'] as String,
-      owner = json['owner'] as String,
-      createdAt = json['created_at'] as String,
-      updatedAt = json['updated_at'] as String,
-      public = json['public'] as bool,
-      fileSizeLimit = json['file_size_limit'] as int?,
-      allowedMimeTypes = json['allowed_mime_types'] == null
-          ? null
-          : List<String>.from(json['allowed_mime_types'] as List);
+      : id = json['id'] as String,
+        name = json['name'] as String,
+        owner = json['owner'] as String,
+        createdAt = json['created_at'] as String,
+        updatedAt = json['updated_at'] as String,
+        public = json['public'] as bool,
+        fileSizeLimit = json['file_size_limit'] as int?,
+        allowedMimeTypes = json['allowed_mime_types'] == null
+            ? null
+            : List<String>.from(json['allowed_mime_types'] as List);
 }
 
 class FileObject {
@@ -63,17 +63,16 @@ class FileObject {
   });
 
   FileObject.fromJson(dynamic json)
-    : id = (json as Map<String, dynamic>)['id'] as String?,
-      name = json['name'] as String,
-      bucketId = json['bucket_id'] as String?,
-      owner = json['owner'] as String?,
-      updatedAt = json['updated_at'] as String?,
-      createdAt = json['created_at'] as String?,
-      lastAccessedAt = json['last_accessed_at'] as String?,
-      metadata = json['metadata'] as Map<String, dynamic>?,
-      buckets = json['buckets'] != null
-          ? Bucket.fromJson(json['buckets'])
-          : null;
+      : id = (json as Map<String, dynamic>)['id'] as String?,
+        name = json['name'] as String,
+        bucketId = json['bucket_id'] as String?,
+        owner = json['owner'] as String?,
+        updatedAt = json['updated_at'] as String?,
+        createdAt = json['created_at'] as String?,
+        lastAccessedAt = json['last_accessed_at'] as String?,
+        metadata = json['metadata'] as Map<String, dynamic>?,
+        buckets =
+            json['buckets'] != null ? Bucket.fromJson(json['buckets']) : null;
 }
 
 class FileObjectV2 {
@@ -108,19 +107,19 @@ class FileObjectV2 {
   });
 
   FileObjectV2.fromJson(Map<String, dynamic> json)
-    : id = json['id'] as String,
-      version = json['version'] as String,
-      name = json['name'] as String,
-      bucketId = json['bucket_id'] as String,
-      updatedAt = json['updated_at'] as String?,
-      createdAt = json['created_at'] as String,
-      lastAccessedAt = json['last_accessed_at'] as String?,
-      size = json['size'] as int?,
-      cacheControl = json['cache_control'] as String?,
-      contentType = json['content_type'] as String?,
-      etag = json['etag'] as String?,
-      lastModified = json['last_modified'] as String?,
-      metadata = json['metadata'] as Map<String, dynamic>?;
+      : id = json['id'] as String,
+        version = json['version'] as String,
+        name = json['name'] as String,
+        bucketId = json['bucket_id'] as String,
+        updatedAt = json['updated_at'] as String?,
+        createdAt = json['created_at'] as String,
+        lastAccessedAt = json['last_accessed_at'] as String?,
+        size = json['size'] as int?,
+        cacheControl = json['cache_control'] as String?,
+        contentType = json['content_type'] as String?,
+        etag = json['etag'] as String?,
+        lastModified = json['last_modified'] as String?,
+        metadata = json['metadata'] as Map<String, dynamic>?;
 }
 
 /// [public] The visibility of the bucket. Public buckets don't require an
@@ -196,7 +195,10 @@ class SearchOptions {
   const SearchOptions({
     this.limit = 100,
     this.offset = 0,
-    this.sortBy = const SortBy(column: 'name', order: 'asc'),
+    this.sortBy = const SortBy(
+      column: 'name',
+      order: 'asc',
+    ),
     this.search,
   });
 
@@ -217,7 +219,10 @@ class SortBy {
   const SortBy({this.column, this.order});
 
   Map<String, dynamic> toMap() {
-    return {'column': column, 'order': order};
+    return {
+      'column': column,
+      'order': order,
+    };
   }
 }
 
@@ -228,7 +233,10 @@ class SignedUrl {
   /// Full signed URL of the files.
   final String signedUrl;
 
-  const SignedUrl({required this.path, required this.signedUrl});
+  const SignedUrl({
+    required this.path,
+    required this.signedUrl,
+  });
 
   @override
   String toString() => 'SignedUrl(path: $path, signedUrl: $signedUrl)';
@@ -245,7 +253,10 @@ class SignedUrl {
   @override
   int get hashCode => path.hashCode ^ signedUrl.hashCode;
 
-  SignedUrl copyWith({String? path, String? signedUrl}) {
+  SignedUrl copyWith({
+    String? path,
+    String? signedUrl,
+  }) {
     return SignedUrl(
       path: path ?? this.path,
       signedUrl: signedUrl ?? this.signedUrl,
@@ -274,11 +285,12 @@ class StorageException implements Exception {
   factory StorageException.fromJson(
     Map<String, dynamic> json, [
     String? statusCode,
-  ]) => StorageException(
-    json['message'] as String? ?? json.toString(),
-    error: json['error'] as String?,
-    statusCode: (json['statusCode'] as String?) ?? statusCode,
-  );
+  ]) =>
+      StorageException(
+        json['message'] as String? ?? json.toString(),
+        error: json['error'] as String?,
+        statusCode: (json['statusCode'] as String?) ?? statusCode,
+      );
 
   @override
   String toString() {
@@ -314,7 +326,9 @@ enum ResizeMode {
   fill,
 }
 
-enum RequestImageFormat { origin }
+enum RequestImageFormat {
+  origin,
+}
 
 /// {@template transform_options}
 /// Specifies the dimensions and the resize mode of the requesting image.

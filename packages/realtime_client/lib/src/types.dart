@@ -10,7 +10,12 @@ class Binding {
   BindingCallback callback;
   String? id;
 
-  Binding(this.type, this.filter, this.callback, [this.id]);
+  Binding(
+    this.type,
+    this.filter,
+    this.callback, [
+    this.id,
+  ]);
 
   Binding copyWith({
     String? type,
@@ -60,8 +65,7 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
         return PostgresChangeEvent.delete;
     }
     throw ArgumentError(
-      'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.',
-    );
+        'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.');
   }
 }
 
@@ -80,7 +84,12 @@ class ChannelFilter {
   /// Only one filter can be applied
   final String? filter;
 
-  ChannelFilter({this.event, this.schema, this.table, this.filter});
+  ChannelFilter({
+    this.event,
+    this.schema,
+    this.table,
+    this.filter,
+  });
 
   Map<String, String> toMap() {
     return {
@@ -96,10 +105,9 @@ enum ChannelResponse {
   ok,
   timedOut,
   @Deprecated(
-    'Client side rate limiting has been removed, and this enum value will never be returned.',
-  )
+      'Client side rate limiting has been removed, and this enum value will never be returned.')
   rateLimited,
-  error,
+  error
 }
 
 enum RealtimeListenTypes { postgresChanges, broadcast, presence, system }
@@ -114,8 +122,7 @@ extension PresenceEventExtended on PresenceEvent {
       }
     }
     throw ArgumentError(
-      'Only "sync", "join", or "leave" can be can be passed to `fromString()` method.',
-    );
+        'Only "sync", "join", or "leave" can be can be passed to `fromString()` method.');
   }
 }
 
@@ -140,7 +147,10 @@ class ReplayOption {
   /// Optional limit on the number of messages to replay, maximum value of 25.
   final int? limit;
 
-  const ReplayOption({required this.since, this.limit});
+  const ReplayOption({
+    required this.since,
+    this.limit,
+  });
 
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{'since': since};
@@ -180,7 +190,10 @@ class RealtimeChannelConfig {
   });
 
   Map<String, dynamic> toMap() {
-    final broadcastConfig = <String, dynamic>{'ack': ack, 'self': self};
+    final broadcastConfig = <String, dynamic>{
+      'ack': ack,
+      'self': self,
+    };
     if (replay != null) {
       broadcastConfig['replay'] = replay!.toMap();
     }
@@ -188,9 +201,12 @@ class RealtimeChannelConfig {
     return {
       'config': {
         'broadcast': broadcastConfig,
-        'presence': {'key': key, 'enabled': enabled},
+        'presence': {
+          'key': key,
+          'enabled': enabled,
+        },
         'private': private,
-      },
+      }
     };
   }
 }
@@ -216,15 +232,14 @@ class PostgresChangePayload {
 
   /// Creates a PostgresChangePayload instance from the enriched postgres change payload
   PostgresChangePayload.fromPayload(Map<String, dynamic> payload)
-    : schema = payload['schema'],
-      table = payload['table'],
-      commitTimestamp = DateTime.parse(
-        payload['commit_timestamp'] ?? '19700101',
-      ),
-      eventType = PostgresChangeEventMethods.fromString(payload['eventType']),
-      newRecord = Map<String, dynamic>.from(payload['new']),
-      oldRecord = Map<String, dynamic>.from(payload['old']),
-      errors = payload['errors'];
+      : schema = payload['schema'],
+        table = payload['table'],
+        commitTimestamp =
+            DateTime.parse(payload['commit_timestamp'] ?? '19700101'),
+        eventType = PostgresChangeEventMethods.fromString(payload['eventType']),
+        newRecord = Map<String, dynamic>.from(payload['new']),
+        oldRecord = Map<String, dynamic>.from(payload['old']),
+        errors = payload['errors'];
 
   @override
   String toString() {
@@ -278,7 +293,7 @@ enum PostgresChangeFilterType {
   gte,
 
   /// Listen to changes when a column's value in a table equals any of the values specified.
-  inFilter,
+  inFilter;
 }
 
 /// {@template postgres_change_filter}
@@ -319,10 +334,12 @@ abstract class RealtimePresencePayload {
   /// Name of the presence event.
   final PresenceEvent event;
 
-  RealtimePresencePayload({required this.event});
+  RealtimePresencePayload({
+    required this.event,
+  });
 
   RealtimePresencePayload.fromJson(Map<String, dynamic> json)
-    : event = PresenceEventExtended.fromString(json['event']);
+      : event = PresenceEventExtended.fromString(json['event']);
 
   @override
   String toString() => 'PresencePayload(event: $event)';
@@ -330,7 +347,9 @@ abstract class RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.sync] callback.
 class RealtimePresenceSyncPayload extends RealtimePresencePayload {
-  RealtimePresenceSyncPayload({required super.event});
+  RealtimePresenceSyncPayload({
+    required super.event,
+  });
 
   factory RealtimePresenceSyncPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceSyncPayload(
@@ -418,7 +437,10 @@ class SinglePresenceState {
   /// List of shared payloads of the client.
   final List<Presence> presences;
 
-  SinglePresenceState({required this.key, required this.presences});
+  SinglePresenceState({
+    required this.key,
+    required this.presences,
+  });
 
   @override
   String toString() => 'PresenceState(key: $key, presences: $presences)';

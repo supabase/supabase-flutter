@@ -12,8 +12,10 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'socket_test_stubs.dart';
 
-typedef WebSocketChannelClosure =
-    WebSocketChannel Function(String url, Map<String, String> headers);
+typedef WebSocketChannelClosure = WebSocketChannel Function(
+  String url,
+  Map<String, String> headers,
+);
 
 /// Generate a JWT token for testing purposes
 ///
@@ -22,8 +24,7 @@ String generateJwt([int? exp]) {
   final header = {'alg': 'HS256', 'typ': 'JWT'};
 
   final now = DateTime.now();
-  final expiry =
-      exp ??
+  final expiry = exp ??
       (now.add(Duration(hours: 1)).millisecondsSinceEpoch / 1000).floor();
 
   final payload = {'exp': expiry};
@@ -52,19 +53,14 @@ void main() {
     mockServer = await HttpServer.bind('localhost', 0);
     WebSocketChannel? channel;
 
-    mockServer
-        .transform(WebSocketTransformer())
-        .listen(
-          (webSocket) {
-            channel = IOWebSocketChannel(webSocket);
-            channel!.stream.listen((request) {
-              channel!.sink.add(request);
-            });
-          },
-          onDone: () {
-            channel?.sink.close();
-          },
-        );
+    mockServer.transform(WebSocketTransformer()).listen((webSocket) {
+      channel = IOWebSocketChannel(webSocket);
+      channel!.stream.listen((request) {
+        channel!.sink.add(request);
+      });
+    }, onDone: () {
+      channel?.sink.close();
+    });
   });
 
   tearDown(() async {
@@ -73,10 +69,8 @@ void main() {
 
   group('constructor', () {
     test('sets defaults', () async {
-      final socket = RealtimeClient(
-        'wss://example.com/socket',
-        params: {'apikey': '123'},
-      );
+      final socket =
+          RealtimeClient('wss://example.com/socket', params: {'apikey': '123'});
       expect(socket.channels.length, 0);
       expect(socket.sendBuffer.length, 0);
       expect(socket.ref, 0);
@@ -90,7 +84,11 @@ void main() {
       expect(socket.timeout, const Duration(milliseconds: 10000));
       expect(socket.heartbeatIntervalMs, Constants.defaultHeartbeatIntervalMs);
       expect(
-        socket.logger is void Function(String? kind, String? msg, dynamic data),
+        socket.logger is void Function(
+          String? kind,
+          String? msg,
+          dynamic data,
+        ),
         false,
       );
       expect(
@@ -122,7 +120,11 @@ void main() {
       expect(socket.timeout, const Duration(milliseconds: 40000));
       expect(socket.heartbeatIntervalMs, 60000);
       expect(
-        socket.logger is void Function(String? kind, String? msg, dynamic data),
+        socket.logger is void Function(
+          String? kind,
+          String? msg,
+          dynamic data,
+        ),
         true,
       );
       expect(socket.headers['X-Client-Info'], 'supabase-dart/0.0.0');
@@ -132,14 +134,15 @@ void main() {
   group('endpointURL', () {
     test('returns endpoint for given full url', () {
       final socket = RealtimeClient('wss://example.org/chat');
-      expect(socket.endPointURL, 'wss://example.org/chat/websocket?vsn=1.0.0');
+      expect(
+        socket.endPointURL,
+        'wss://example.org/chat/websocket?vsn=1.0.0',
+      );
     });
 
     test('returns endpoint with parameters', () {
-      final socket = RealtimeClient(
-        'ws://example.org/chat',
-        params: {'foo': 'bar'},
-      );
+      final socket =
+          RealtimeClient('ws://example.org/chat', params: {'foo': 'bar'});
       expect(
         socket.endPointURL,
         'ws://example.org/chat/websocket?foo=bar&vsn=1.0.0',
@@ -149,7 +152,9 @@ void main() {
     test('returns endpoint with apikey', () {
       final socket = RealtimeClient(
         'ws://example.org/chat',
-        params: {'apikey': '123456789'},
+        params: {
+          'apikey': '123456789',
+        },
       );
       expect(
         socket.endPointURL,
@@ -269,9 +274,8 @@ void main() {
       final mockedSink = MockWebSocketSink();
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
-      when(
-        () => mockedSink.close(any(), any()),
-      ).thenAnswer((_) => Future.value());
+      when(() => mockedSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
 
       const tCode = 12;
       const tReason = 'reason';
@@ -340,7 +344,10 @@ void main() {
     });
 
     test('returns channel with given topic and params', () {
-      final channel = socket.channel(tTopic, tParams);
+      final channel = socket.channel(
+        tTopic,
+        tParams,
+      );
 
       expect(channel.socket, socket);
       expect(channel.topic, 'realtime:topic');
@@ -349,14 +356,17 @@ void main() {
           'broadcast': {'ack': false, 'self': false},
           'presence': {'key': '', 'enabled': false},
           'private': false,
-        },
+        }
       });
     });
 
     test('adds channel to sockets channels list', () {
       expect(socket.channels.length, 0);
 
-      final channel = socket.channel(tTopic, tParams);
+      final channel = socket.channel(
+        tTopic,
+        tParams,
+      );
 
       expect(socket.channels.length, 1);
 
@@ -402,7 +412,7 @@ void main() {
       'topic': topic,
       'event': event.eventName(),
       'payload': payload,
-      'ref': ref,
+      'ref': ref
     });
 
     IOWebSocketChannel mockedSocketChannel;
@@ -428,17 +438,12 @@ void main() {
       mockedSocket.connect();
       mockedSocket.connState = SocketStates.open;
 
-      final message = Message(
-        topic: topic,
-        payload: payload,
-        event: event,
-        ref: ref,
-      );
+      final message =
+          Message(topic: topic, payload: payload, event: event, ref: ref);
       mockedSocket.push(message);
 
-      verify(
-        () => mockedSink.add(captureAny(that: equals(jsonData))),
-      ).called(1);
+      verify(() => mockedSink.add(captureAny(that: equals(jsonData))))
+          .called(1);
     });
 
     test('buffers data when not connected', () async {
@@ -447,12 +452,8 @@ void main() {
 
       expect(mockedSocket.sendBuffer.length, 0);
 
-      final message = Message(
-        topic: topic,
-        payload: payload,
-        event: event,
-        ref: ref,
-      );
+      final message =
+          Message(topic: topic, payload: payload, event: event, ref: ref);
       mockedSocket.push(message);
 
       verifyNever(() => mockedSink.add(any()));
@@ -460,9 +461,8 @@ void main() {
 
       final callback = mockedSocket.sendBuffer[0];
       callback();
-      verify(
-        () => mockedSink.add(captureAny(that: equals(jsonData))),
-      ).called(1);
+      verify(() => mockedSink.add(captureAny(that: equals(jsonData))))
+          .called(1);
     });
   });
 
@@ -500,115 +500,102 @@ void main() {
     final pushPayload = {'access_token': token};
 
     test(
-      "sets access token, updates channels' join payload, and pushes token to channels",
-      () async {
-        final mockedChannel1 = MockChannel();
-        when(() => mockedChannel1.joinedOnce).thenReturn(true);
-        when(() => mockedChannel1.isJoined).thenReturn(true);
-        when(
-          () => mockedChannel1.push(ChannelEvents.accessToken, pushPayload),
-        ).thenReturn(MockPush());
+        "sets access token, updates channels' join payload, and pushes token to channels",
+        () async {
+      final mockedChannel1 = MockChannel();
+      when(() => mockedChannel1.joinedOnce).thenReturn(true);
+      when(() => mockedChannel1.isJoined).thenReturn(true);
+      when(() => mockedChannel1.push(ChannelEvents.accessToken, pushPayload))
+          .thenReturn(MockPush());
 
-        final mockedChannel2 = MockChannel();
-        when(() => mockedChannel2.joinedOnce).thenReturn(true);
-        when(() => mockedChannel2.isJoined).thenReturn(true);
-        when(
-          () => mockedChannel2.push(ChannelEvents.accessToken, pushPayload),
-        ).thenReturn(MockPush());
+      final mockedChannel2 = MockChannel();
+      when(() => mockedChannel2.joinedOnce).thenReturn(true);
+      when(() => mockedChannel2.isJoined).thenReturn(true);
+      when(() => mockedChannel2.push(ChannelEvents.accessToken, pushPayload))
+          .thenReturn(MockPush());
 
-        const tTopic1 = 'topic-1';
-        const tTopic2 = 'topic-2';
+      const tTopic1 = 'topic-1';
+      const tTopic2 = 'topic-2';
 
-        final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-        mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
-          tTopic1: mockedChannel1,
-          tTopic2: mockedChannel2,
-        });
+      final mockedSocket = SocketWithMockedChannel(socketEndpoint);
+      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+        tTopic1: mockedChannel1,
+        tTopic2: mockedChannel2,
+      });
 
-        final channel1 = mockedSocket.channel(tTopic1);
-        final channel2 = mockedSocket.channel(tTopic2);
+      final channel1 = mockedSocket.channel(tTopic1);
+      final channel2 = mockedSocket.channel(tTopic2);
 
-        await mockedSocket.setAuth(token);
+      await mockedSocket.setAuth(token);
 
-        expect(mockedSocket.accessToken, token);
+      expect(mockedSocket.accessToken, token);
 
-        verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
-        verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
-        verify(
-          () => channel1.push(ChannelEvents.accessToken, pushPayload),
-        ).called(1);
-        verify(
-          () => channel2.push(ChannelEvents.accessToken, pushPayload),
-        ).called(1);
-      },
-    );
+      verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+      verify(() => channel2.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+    });
 
     test(
-      "sets access token, updates channels' join payload, and pushes token to channels if is not a jwt",
-      () async {
-        final mockedChannel1 = MockChannel();
-        final mockedChannel2 = MockChannel();
-        final mockedChannel3 = MockChannel();
+        "sets access token, updates channels' join payload, and pushes token to channels if is not a jwt",
+        () async {
+      final mockedChannel1 = MockChannel();
+      final mockedChannel2 = MockChannel();
+      final mockedChannel3 = MockChannel();
 
-        when(() => mockedChannel1.joinedOnce).thenReturn(true);
-        when(() => mockedChannel1.isJoined).thenReturn(true);
-        when(
-          () => mockedChannel1.push(ChannelEvents.accessToken, any()),
-        ).thenReturn(MockPush());
+      when(() => mockedChannel1.joinedOnce).thenReturn(true);
+      when(() => mockedChannel1.isJoined).thenReturn(true);
+      when(() => mockedChannel1.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
 
-        when(() => mockedChannel2.joinedOnce).thenReturn(false);
-        when(() => mockedChannel2.isJoined).thenReturn(false);
-        when(
-          () => mockedChannel2.push(ChannelEvents.accessToken, any()),
-        ).thenReturn(MockPush());
+      when(() => mockedChannel2.joinedOnce).thenReturn(false);
+      when(() => mockedChannel2.isJoined).thenReturn(false);
+      when(() => mockedChannel2.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
 
-        when(() => mockedChannel3.joinedOnce).thenReturn(true);
-        when(() => mockedChannel3.isJoined).thenReturn(true);
-        when(
-          () => mockedChannel3.push(ChannelEvents.accessToken, any()),
-        ).thenReturn(MockPush());
+      when(() => mockedChannel3.joinedOnce).thenReturn(true);
+      when(() => mockedChannel3.isJoined).thenReturn(true);
+      when(() => mockedChannel3.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
 
-        const tTopic1 = 'test-topic1';
-        const tTopic2 = 'test-topic2';
-        const tTopic3 = 'test-topic3';
+      const tTopic1 = 'test-topic1';
+      const tTopic2 = 'test-topic2';
+      const tTopic3 = 'test-topic3';
 
-        final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-        mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
-          tTopic1: mockedChannel1,
-          tTopic2: mockedChannel2,
-          tTopic3: mockedChannel3,
-        });
+      final mockedSocket = SocketWithMockedChannel(socketEndpoint);
+      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+        tTopic1: mockedChannel1,
+        tTopic2: mockedChannel2,
+        tTopic3: mockedChannel3,
+      });
 
-        final channel1 = mockedSocket.channel(tTopic1);
-        final channel2 = mockedSocket.channel(tTopic2);
-        final channel3 = mockedSocket.channel(tTopic3);
+      final channel1 = mockedSocket.channel(tTopic1);
+      final channel2 = mockedSocket.channel(tTopic2);
+      final channel3 = mockedSocket.channel(tTopic3);
 
-        const token = 'sb-key';
-        final pushPayload = {'access_token': token};
-        final updateJoinPayload = {
-          'access_token': token,
-          'version': Constants.defaultHeaders['X-Client-Info'],
-        };
+      const token = 'sb-key';
+      final pushPayload = {'access_token': token};
+      final updateJoinPayload = {
+        'access_token': token,
+        'version': Constants.defaultHeaders['X-Client-Info'],
+      };
 
-        await mockedSocket.setAuth(token);
+      await mockedSocket.setAuth(token);
 
-        expect(mockedSocket.accessToken, token);
+      expect(mockedSocket.accessToken, token);
 
-        verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
-        verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
-        verify(() => channel3.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel3.updateJoinPayload(updateJoinPayload)).called(1);
 
-        verify(
-          () => channel1.push(ChannelEvents.accessToken, pushPayload),
-        ).called(1);
-        verifyNever(
-          () => channel2.push(ChannelEvents.accessToken, pushPayload),
-        );
-        verify(
-          () => channel3.push(ChannelEvents.accessToken, pushPayload),
-        ).called(1);
-      },
-    );
+      verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+      verifyNever(() => channel2.push(ChannelEvents.accessToken, pushPayload));
+      verify(() => channel3.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+    });
   });
 
   group('sendHeartbeat', () {

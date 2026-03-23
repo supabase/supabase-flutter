@@ -34,9 +34,9 @@ void main() {
           /// to the realtime subscription, so include the filter if the request
           /// includes a filter.
           final requestJson = jsonDecode(request);
-          final String? postgresFilter =
-              requestJson['payload']['config']['postgres_changes']
-                  .first['filter'];
+          final String? postgresFilter = requestJson['payload']['config']
+                  ['postgres_changes']
+              .first['filter'];
 
           final topic = (jsonDecode(request as String) as Map)['topic'];
 
@@ -57,7 +57,11 @@ void main() {
                   'type': 'INSERT',
                   if (postgresFilter != null) 'filter': postgresFilter,
                   'columns': [
-                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
+                    {
+                      'name': 'id',
+                      'type': 'int4',
+                      'type_modifier': 4294967295,
+                    },
                     {
                       'name': 'task',
                       'type': 'text',
@@ -90,7 +94,7 @@ void main() {
                   {
                     'name': 'status',
                     'type': 'bool',
-                    'type_modifier': 4294967295,
+                    'type_modifier': 4294967295
                   },
                 ],
                 'commit_timestamp': '2021-08-01T08:00:30Z',
@@ -120,7 +124,7 @@ void main() {
                   {
                     'name': 'status',
                     'type': 'bool',
-                    'type_modifier': 4294967295,
+                    'type_modifier': 4294967295
                   },
                 ],
                 'commit_timestamp': '2022-09-14T02:12:52Z',
@@ -131,7 +135,7 @@ void main() {
                 'type': 'DELETE',
                 if (postgresFilter != null) 'filter': postgresFilter,
               },
-              'ids': [48673474],
+              'ids': [48673474]
             },
           });
           webSocket!.add(deleteString);
@@ -174,13 +178,12 @@ void main() {
       client
           .channel('public:todos')
           .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'todos',
+              callback: (payload) {
+                streamController.add(payload);
+              })
           .subscribe();
 
       expect(
@@ -193,7 +196,7 @@ void main() {
             'eventType': 'INSERT',
             'new': {'id': 3, 'task': 'task 3', 'status': true},
             'old': {},
-            'errors': null,
+            'errors': null
           }),
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -202,7 +205,7 @@ void main() {
             'eventType': 'UPDATE',
             'new': {'id': 2, 'task': 'task 2 updated', 'status': false},
             'old': {'id': 2},
-            'errors': null,
+            'errors': null
           }),
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -211,7 +214,7 @@ void main() {
             'eventType': 'DELETE',
             'new': {},
             'old': {'id': 2},
-            'errors': null,
+            'errors': null
           }),
         ]),
       );
@@ -223,18 +226,17 @@ void main() {
       client
           .channel('public:todos')
           .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'id',
-              value: 2,
-            ),
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'todos',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'id',
+                value: 2,
+              ),
+              callback: (payload) {
+                streamController.add(payload);
+              })
           .subscribe();
 
       expect(
@@ -247,7 +249,7 @@ void main() {
             'eventType': 'UPDATE',
             'new': {'id': 2, 'task': 'task 2 updated', 'status': false},
             'old': {'id': 2},
-            'errors': null,
+            'errors': null
           }),
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -256,17 +258,15 @@ void main() {
             'eventType': 'DELETE',
             'new': {},
             'old': {'id': 2},
-            'errors': null,
-          }),
+            'errors': null
+          })
         ]),
       );
     });
 
     test("correct CHANNEL_ERROR data on heartbeat timeout", () async {
-      final subscribeCallback = expectAsync2((
-        RealtimeSubscribeStatus event,
-        error,
-      ) {
+      final subscribeCallback =
+          expectAsync2((RealtimeSubscribeStatus event, error) {
         if (event == RealtimeSubscribeStatus.channelError) {
           expect(error, isA<RealtimeCloseEvent>());
           error as RealtimeCloseEvent;
@@ -276,17 +276,12 @@ void main() {
         }
       }, count: 2);
 
-      final channel = client
-          .channel('public:todos')
-          .onPostgresChanges(
+      final channel = client.channel('public:todos').onPostgresChanges(
             event: PostgresChangeEvent.all,
             schema: 'public',
             table: 'todos',
             filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'id',
-              value: 2,
-            ),
+                type: PostgresChangeFilterType.eq, column: 'id', value: 2),
             callback: (payload) {},
           );
 
@@ -319,9 +314,9 @@ void main() {
           /// includes a filter.
           final requestJson = jsonDecode(request);
 
-          final String? postgresFilter =
-              requestJson['payload']['config']['postgres_changes']
-                  .first['filter'];
+          final String? postgresFilter = requestJson['payload']['config']
+                  ['postgres_changes']
+              .first['filter'];
 
           final topic = requestJson['topic'];
 
@@ -329,7 +324,7 @@ void main() {
             "event": "phx_reply",
             "payload": {"response": {}, "status": "ok"},
             "ref": "1",
-            "topic": topic,
+            "topic": topic
           });
           webSocket!.add(replyString);
 
@@ -342,17 +337,17 @@ void main() {
                 "columns": [
                   {"name": "id", "type": "int4"},
                   {"name": "task", "type": "text"},
-                  {"name": "status", "type": "bool"},
+                  {"name": "status", "type": "bool"}
                 ],
                 "commit_timestamp": "2022-09-24T05:42:01.303668+00:00",
                 "errors": null,
                 "record": {"id": 1, "status": true, "task": "task 1"},
                 "schema": "public",
                 "table": "todos",
-                "type": "INSERT",
+                "type": "INSERT"
               },
               "ref": null,
-              "topic": topic,
+              "topic": topic
             });
             webSocket!.add(insertString);
           }
@@ -365,7 +360,7 @@ void main() {
               "columns": [
                 {"name": "id", "type": "int4"},
                 {"name": "task", "type": "text"},
-                {"name": "status", "type": "bool"},
+                {"name": "status", "type": "bool"}
               ],
               "commit_timestamp": "2022-09-24T05:42:01.303668+00:00",
               "errors": null,
@@ -373,10 +368,10 @@ void main() {
               "record": {"id": 2, "status": false, "task": "task 2 updated"},
               "schema": "public",
               "table": "todos",
-              "type": "UPDATE",
+              "type": "UPDATE"
             },
             "ref": null,
-            "topic": topic,
+            "topic": topic
           });
           webSocket!.add(updateString);
 
@@ -388,7 +383,7 @@ void main() {
               "columns": [
                 {"name": "id", "type": "int4"},
                 {"name": "task", "type": "text"},
-                {"name": "status", "type": "bool"},
+                {"name": "status", "type": "bool"}
               ],
               "commit_timestamp": "2022-09-24T05:42:01.303668+00:00",
               "errors": null,
@@ -396,10 +391,10 @@ void main() {
               "record": {},
               "schema": "public",
               "table": "todos",
-              "type": "DELETE",
+              "type": "DELETE"
             },
             "ref": null,
-            "topic": topic,
+            "topic": topic
           });
           webSocket!.add(deleteString);
         });
@@ -429,13 +424,12 @@ void main() {
       client
           .channel('public:todos')
           .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'todos',
+              callback: (payload) {
+                streamController.add(payload);
+              })
           .subscribe();
 
       expect(
@@ -448,7 +442,7 @@ void main() {
             'eventType': 'INSERT',
             'new': {'id': 1, 'task': 'task 1', 'status': true},
             'old': {},
-            'errors': null,
+            'errors': null
           }),
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -457,7 +451,7 @@ void main() {
             'eventType': 'UPDATE',
             'new': {'id': 2, 'task': 'task 2 updated', 'status': false},
             'old': {'id': 2},
-            'errors': null,
+            'errors': null
           }),
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -466,7 +460,7 @@ void main() {
             'eventType': 'DELETE',
             'new': {},
             'old': {'id': 2},
-            'errors': null,
+            'errors': null
           }),
         ]),
       );
@@ -478,18 +472,14 @@ void main() {
       client
           .channel('public:todos')
           .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'id',
-              value: 2,
-            ),
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'todos',
+              filter: PostgresChangeFilter(
+                  type: PostgresChangeFilterType.eq, column: 'id', value: 2),
+              callback: (payload) {
+                streamController.add(payload);
+              })
           .subscribe();
 
       expect(
@@ -502,7 +492,7 @@ void main() {
             'eventType': 'UPDATE',
             'new': {'id': 2, 'task': 'task 2 updated', 'status': false},
             'old': {'id': 2},
-            'errors': null,
+            'errors': null
           }),
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -511,7 +501,7 @@ void main() {
             'eventType': 'DELETE',
             'new': {},
             'old': {'id': 2},
-            'errors': null,
+            'errors': null
           }),
         ]),
       );
