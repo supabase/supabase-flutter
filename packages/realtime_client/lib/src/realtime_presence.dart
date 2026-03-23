@@ -11,14 +11,11 @@ class Presence {
   final Map<String, dynamic> payload;
 
   Presence.fromJson(Map<String, dynamic> map)
-      : presenceRef = map['presence_ref'],
-        payload = map..remove('presence_ref');
+    : presenceRef = map['presence_ref'],
+      payload = map..remove('presence_ref');
 
   Presence deepClone() {
-    return Presence.fromJson({
-      'presence_ref': presenceRef,
-      ...payload,
-    });
+    return Presence.fromJson({'presence_ref': presenceRef, ...payload});
   }
 
   @override
@@ -27,11 +24,11 @@ class Presence {
 
 typedef PresenceChooser<T> = T Function(String key, dynamic presence);
 
-typedef PresenceOnJoinCallback = void Function(
-    String? key, dynamic currentPresences, dynamic newPresences);
+typedef PresenceOnJoinCallback =
+    void Function(String? key, dynamic currentPresences, dynamic newPresences);
 
-typedef PresenceOnLeaveCallback = void Function(
-    String? key, dynamic currentPresences, dynamic newPresences);
+typedef PresenceOnLeaveCallback =
+    void Function(String? key, dynamic currentPresences, dynamic newPresences);
 
 class PresenceOpts {
   final PresenceEvents events;
@@ -53,7 +50,7 @@ class RealtimePresence {
   Map<String, dynamic> caller = {
     'onJoin': (_, __, ___) {},
     'onLeave': (_, __, ___) {},
-    'onSync': () {}
+    'onSync': () {},
   };
 
   final RealtimeChannel channel;
@@ -64,7 +61,8 @@ class RealtimePresence {
   ///
   /// `opts` - The options, for example `PresenceOpts(events: PresenceEvents(state: 'state', diff: 'diff'))`
   RealtimePresence(this.channel, [PresenceOpts? opts]) {
-    final events = opts?.events ??
+    final events =
+        opts?.events ??
         PresenceEvents(state: 'presence_state', diff: 'presence_diff');
 
     channel.onEvents(events.state, ChannelFilter(), (newState, [_]) {
@@ -74,20 +72,10 @@ class RealtimePresence {
 
       joinRef = channel.joinRef;
 
-      state = RealtimePresence.syncState(
-        state,
-        newState,
-        onJoin,
-        onLeave,
-      );
+      state = RealtimePresence.syncState(state, newState, onJoin, onLeave);
 
       for (final diff in pendingDiffs) {
-        state = RealtimePresence.syncDiff(
-          state,
-          diff,
-          onJoin,
-          onLeave,
-        );
+        state = RealtimePresence.syncDiff(state, diff, onJoin, onLeave);
       }
 
       pendingDiffs = [];
@@ -103,39 +91,28 @@ class RealtimePresence {
       if (inPendingSyncState()) {
         pendingDiffs.add(diff);
       } else {
-        state = RealtimePresence.syncDiff(
-          state,
-          diff,
-          onJoin,
-          onLeave,
-        );
+        state = RealtimePresence.syncDiff(state, diff, onJoin, onLeave);
 
         onSync();
       }
     });
 
     onJoin((key, currentPresences, newPresences) {
-      channel.trigger(
-        'presence',
-        {
-          'event': 'join',
-          'key': key,
-          'currentPresences': currentPresences,
-          'newPresences': newPresences,
-        },
-      );
+      channel.trigger('presence', {
+        'event': 'join',
+        'key': key,
+        'currentPresences': currentPresences,
+        'newPresences': newPresences,
+      });
     });
 
     onLeave((key, currentPresences, leftPresences) {
-      channel.trigger(
-        'presence',
-        {
-          'event': 'leave',
-          'key': key,
-          'currentPresences': currentPresences,
-          'leftPresences': leftPresences,
-        },
-      );
+      channel.trigger('presence', {
+        'event': 'leave',
+        'key': key,
+        'currentPresences': currentPresences,
+        'leftPresences': leftPresences,
+      });
     });
 
     onSync(() => channel.trigger('presence', {'event': 'sync'}));
@@ -168,13 +145,17 @@ class RealtimePresence {
       final currentPresences = state[key];
 
       if (currentPresences != null) {
-        final newPresenceRefs =
-            (newPresences as List).map((m) => m.presenceRef as String).toList();
-        final curPresenceRefs =
-            currentPresences.map((m) => m.presenceRef).toList();
-        final joinedPresences = newPresences
-            .where((m) => !curPresenceRefs.contains(m.presenceRef))
-            .toList() as List<Presence>;
+        final newPresenceRefs = (newPresences as List)
+            .map((m) => m.presenceRef as String)
+            .toList();
+        final curPresenceRefs = currentPresences
+            .map((m) => m.presenceRef)
+            .toList();
+        final joinedPresences =
+            newPresences
+                    .where((m) => !curPresenceRefs.contains(m.presenceRef))
+                    .toList()
+                as List<Presence>;
         final leftPresences = currentPresences
             .where((m) => !newPresenceRefs.contains(m.presenceRef))
             .toList();
@@ -220,8 +201,9 @@ class RealtimePresence {
       }).toList();
 
       if (currentPresences.isNotEmpty) {
-        final joinedPresenceRefs =
-            state[key]!.map((m) => m.presenceRef).toList();
+        final joinedPresenceRefs = state[key]!
+            .map((m) => m.presenceRef)
+            .toList();
         final curPresences = currentPresences
             .where((m) => !joinedPresenceRefs.contains(m.presenceRef))
             .toList();
@@ -242,8 +224,9 @@ class RealtimePresence {
           .toList();
 
       currentPresences = currentPresences
-          .where((presence) =>
-              !presenceRefsToRemove.contains(presence.presenceRef))
+          .where(
+            (presence) => !presenceRefsToRemove.contains(presence.presenceRef),
+          )
           .toList();
 
       state[key] = currentPresences;
@@ -299,8 +282,9 @@ class RealtimePresence {
 
       // if (presences.keys.contains('metas')) {
       if (presences is Map) {
-        newStateMap[key] =
-            (presences['metas'] as List).map<Presence>((presence) {
+        newStateMap[key] = (presences['metas'] as List).map<Presence>((
+          presence,
+        ) {
           presence['presence_ref'] = presence['phx_ref'] as String;
 
           presence.remove('phx_ref');
@@ -317,10 +301,16 @@ class RealtimePresence {
   }
 
   static Map<String, List<Presence>> _cloneDeep(
-      Map<String, List<Presence>> obj) {
-    return Map<String, List<Presence>>.fromEntries(obj.entries.map((entry) =>
-        MapEntry(entry.key,
-            entry.value.map((presence) => presence.deepClone()).toList())));
+    Map<String, List<Presence>> obj,
+  ) {
+    return Map<String, List<Presence>>.fromEntries(
+      obj.entries.map(
+        (entry) => MapEntry(
+          entry.key,
+          entry.value.map((presence) => presence.deepClone()).toList(),
+        ),
+      ),
+    );
   }
 
   void onJoin(PresenceOnJoinCallback callback) {

@@ -7,11 +7,7 @@ class FailingHttpClient extends BaseClient {
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     //Return custom status code to check for usage of this client.
-    return StreamedResponse(
-      request.finalize(),
-      420,
-      request: request,
-    );
+    return StreamedResponse(request.finalize(), 420, request: request);
   }
 }
 
@@ -48,10 +44,6 @@ class CustomHttpClient extends BaseClient {
       body = utf8.encode(jsonEncode(response));
     }
 
-    return StreamedResponse(
-      Stream.value(body),
-      statusCode,
-      request: request,
-    );
+    return StreamedResponse(Stream.value(body), statusCode, request: request);
   }
 }

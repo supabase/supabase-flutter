@@ -125,10 +125,7 @@ class Push {
     _timeoutTimer = null;
   }
 
-  void _matchReceive(
-    String status,
-    dynamic response,
-  ) {
+  void _matchReceive(String status, dynamic response) {
     _recHooks.where((h) => h.status == status).forEach((h) {
       h.callback(response);
     });

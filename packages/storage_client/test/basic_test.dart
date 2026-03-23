@@ -10,24 +10,24 @@ const String supabaseUrl = 'SUPABASE_TEST_URL';
 const String supabaseKey = 'SUPABASE_TEST_KEY';
 
 Map<String, dynamic> get testBucketJson => {
-      'id': 'test_bucket',
-      'name': 'test_bucket',
-      'owner': 'owner_id',
-      'created_at': '',
-      'updated_at': '',
-      'public': false,
-    };
+  'id': 'test_bucket',
+  'name': 'test_bucket',
+  'owner': 'owner_id',
+  'created_at': '',
+  'updated_at': '',
+  'public': false,
+};
 
 Map<String, dynamic> get testFileObjectJson => {
-      'name': 'test_bucket',
-      'id': 'test_bucket',
-      'bucket_id': 'public',
-      'owner': 'owner_id',
-      'updated_at': null,
-      'created_at': null,
-      'last_accessed_at': null,
-      'buckets': testBucketJson
-    };
+  'name': 'test_bucket',
+  'id': 'test_bucket',
+  'bucket_id': 'public',
+  'owner': 'owner_id',
+  'updated_at': null,
+  'created_at': null,
+  'last_accessed_at': null,
+  'buckets': testBucketJson,
+};
 
 String get bucketUrl => '$supabaseUrl/storage/v1/bucket';
 String get objectUrl => '$supabaseUrl/storage/v1/object';
@@ -44,13 +44,9 @@ void main() {
   group('Client with custom http client', () {
     setUp(() {
       // init SupabaseClient with test url & test key
-      client = SupabaseStorageClient(
-        '$supabaseUrl/storage/v1',
-        {
-          'Authorization': 'Bearer $supabaseKey',
-        },
-        httpClient: customHttpClient,
-      );
+      client = SupabaseStorageClient('$supabaseUrl/storage/v1', {
+        'Authorization': 'Bearer $supabaseKey',
+      }, httpClient: customHttpClient);
     });
 
     test('should list buckets', () async {
@@ -202,8 +198,9 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('File content');
 
-      final uploadTask =
-          client.from('public').upload('a.txt', file, retryAttempts: 1);
+      final uploadTask = client
+          .from('public')
+          .upload('a.txt', file, retryAttempts: 1);
       expect(uploadTask, throwsException);
     });
 
@@ -222,11 +219,9 @@ void main() {
 
       final retryController = StorageRetryController();
 
-      final future = client.from('public').upload(
-            'a.txt',
-            file,
-            retryController: retryController,
-          );
+      final future = client
+          .from('public')
+          .upload('a.txt', file, retryController: retryController);
 
       await Future.delayed(Duration(milliseconds: 500));
       retryController.cancel();
@@ -268,13 +263,9 @@ void main() {
   group('Client with custom http client', () {
     setUp(() {
       // init SupabaseClient with test url & test key
-      client = SupabaseStorageClient(
-        '$supabaseUrl/storage/v1',
-        {
-          'Authorization': 'Bearer $supabaseKey',
-        },
-        httpClient: FailingHttpClient(),
-      );
+      client = SupabaseStorageClient('$supabaseUrl/storage/v1', {
+        'Authorization': 'Bearer $supabaseKey',
+      }, httpClient: FailingHttpClient());
     });
     test('should list buckets', () async {
       try {
@@ -287,12 +278,9 @@ void main() {
 
   group('header', () {
     test('X-Client-Info header is set', () {
-      client = SupabaseStorageClient(
-        '$supabaseUrl/storage/v1',
-        {
-          'Authorization': 'Bearer $supabaseKey',
-        },
-      );
+      client = SupabaseStorageClient('$supabaseUrl/storage/v1', {
+        'Authorization': 'Bearer $supabaseKey',
+      });
 
       expect(client.headers['X-Client-Info']!.split('/').first, 'storage-dart');
     });
@@ -300,7 +288,7 @@ void main() {
     test('X-Client-Info header can be overridden', () {
       client = SupabaseStorageClient('$supabaseUrl/storage/v1', {
         'Authorization': 'Bearer $supabaseKey',
-        'X-Client-Info': 'supabase-dart/0.0.0'
+        'X-Client-Info': 'supabase-dart/0.0.0',
       });
 
       expect(client.headers['X-Client-Info'], 'supabase-dart/0.0.0');
