@@ -36,18 +36,18 @@ class SupabaseStorageClient extends StorageBucketApi {
     Map<String, String> headers, {
     Client? httpClient,
     int retryAttempts = 0,
-  })  : assert(
-          retryAttempts >= 0,
-          'retryAttempts has to be greater than or equal to 0',
-        ),
-        _defaultRetryAttempts = retryAttempts,
-        super(
-          _transformStorageUrl(url),
-          {...Constants.defaultHeaders, ...headers},
-          httpClient: httpClient,
-        ) {
+  }) : assert(
+         retryAttempts >= 0,
+         'retryAttempts has to be greater than or equal to 0',
+       ),
+       _defaultRetryAttempts = retryAttempts,
+       super(_transformStorageUrl(url), {
+         ...Constants.defaultHeaders,
+         ...headers,
+       }, httpClient: httpClient) {
     _log.config(
-        'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts');
+      'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts',
+    );
     _log.finest('Initialize with headers: $headers');
   }
 
@@ -73,12 +73,7 @@ class SupabaseStorageClient extends StorageBucketApi {
       final newHostname = hostname.replaceAll('supabase.', 'storage.supabase.');
 
       // Reconstruct the URI
-      return uri
-          .replace(
-            host: newHostname,
-            path: newPath,
-          )
-          .toString();
+      return uri.replace(host: newHostname, path: newPath).toString();
     }
 
     return url;
@@ -99,5 +94,18 @@ class SupabaseStorageClient extends StorageBucketApi {
 
   void setAuth(String jwt) {
     headers['Authorization'] = 'Bearer $jwt';
+  }
+
+  /// Sets an HTTP header for subsequent requests.
+  ///
+  /// Creates a shallow copy of headers to avoid mutating shared state.
+  /// Returns this for method chaining.
+  ///
+  /// ```dart
+  /// storage.setHeader('x-custom-header', 'value').from('bucket').upload(...);
+  /// ```
+  SupabaseStorageClient setHeader(String key, String value) {
+    headers[key] = value;
+    return this;
   }
 }

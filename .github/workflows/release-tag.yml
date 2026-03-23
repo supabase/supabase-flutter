@@ -39,9 +39,13 @@ jobs:
         uses: bluefireteam/melos-action@v3
         with:
           tag: true
-      - run: |
+      - name: Trigger publish workflows
+        run: |
           melos exec -c 1 --no-published --no-private --order-dependents -- \
-          gh workflow run release-publish.yml \
-          --ref \$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION
+          bash -c "gh workflow run release-publish.yml \
+            --ref \$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION \
+            --field package-name=\$MELOS_PACKAGE_NAME \
+            --field package-version=\$MELOS_PACKAGE_VERSION && \
+          sleep 30"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}

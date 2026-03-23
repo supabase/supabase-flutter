@@ -7,18 +7,34 @@ import 'file_io.dart' if (dart.library.js) './file_stub.dart';
 
 class StorageFileApi {
   final String url;
-  final Map<String, String> headers;
+  Map<String, String> _headers;
   final String? bucketId;
   final int _retryAttempts;
   final Fetch _storageFetch;
 
-  const StorageFileApi(
+  StorageFileApi(
     this.url,
-    this.headers,
+    Map<String, String> headers,
     this.bucketId,
     this._retryAttempts,
     this._storageFetch,
-  );
+  ) : _headers = {...headers};
+
+  /// The headers used for requests.
+  Map<String, String> get headers => _headers;
+
+  /// Sets an HTTP header for subsequent requests.
+  ///
+  /// Creates a shallow copy of headers to avoid mutating shared state.
+  /// Returns this for method chaining.
+  ///
+  /// ```dart
+  /// storage.from('bucket').setHeader('x-custom-header', 'value').upload(...);
+  /// ```
+  StorageFileApi setHeader(String key, String value) {
+    _headers = {..._headers, key: value};
+    return this;
+  }
 
   String _getFinalPath(String path) {
     return '$bucketId/$path';
@@ -50,8 +66,10 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    assert(
+      retryAttempts == null || retryAttempts >= 0,
+      'retryAttempts has to be greater or equal to 0',
+    );
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.postFile(
       '$url/object/$finalPath',
@@ -85,8 +103,10 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    assert(
+      retryAttempts == null || retryAttempts >= 0,
+      'retryAttempts has to be greater or equal to 0',
+    );
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.postBinaryFile(
       '$url/object/$finalPath',
@@ -115,8 +135,10 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   ]) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    assert(
+      retryAttempts == null || retryAttempts >= 0,
+      'retryAttempts has to be greater or equal to 0',
+    );
 
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -149,8 +171,10 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   ]) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    assert(
+      retryAttempts == null || retryAttempts >= 0,
+      'retryAttempts has to be greater or equal to 0',
+    );
 
     final cleanPath = _removeEmptyFolders(path);
     final path0 = _getFinalPath(cleanPath);
@@ -219,8 +243,10 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    assert(
+      retryAttempts == null || retryAttempts >= 0,
+      'retryAttempts has to be greater or equal to 0',
+    );
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.putFile(
       '$url/object/$finalPath',
@@ -255,8 +281,10 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    assert(
+      retryAttempts == null || retryAttempts >= 0,
+      'retryAttempts has to be greater or equal to 0',
+    );
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.putBinaryFile(
       '$url/object/$finalPath',
@@ -284,16 +312,12 @@ class StorageFileApi {
     String? destinationBucket,
   }) async {
     final options = FetchOptions(headers: headers);
-    final response = await _storageFetch.post(
-      '$url/object/move',
-      {
-        'bucketId': bucketId,
-        'sourceKey': fromPath,
-        'destinationKey': toPath,
-        if (destinationBucket != null) 'destinationBucket': destinationBucket,
-      },
-      options: options,
-    );
+    final response = await _storageFetch.post('$url/object/move', {
+      'bucketId': bucketId,
+      'sourceKey': fromPath,
+      'destinationKey': toPath,
+      if (destinationBucket != null) 'destinationBucket': destinationBucket,
+    }, options: options);
     return (response as Map<String, dynamic>)['message'] as String;
   }
 
@@ -312,16 +336,12 @@ class StorageFileApi {
     String? destinationBucket,
   }) async {
     final options = FetchOptions(headers: headers);
-    final response = await _storageFetch.post(
-      '$url/object/copy',
-      {
-        'bucketId': bucketId,
-        'sourceKey': fromPath,
-        'destinationKey': toPath,
-        if (destinationBucket != null) 'destinationBucket': destinationBucket,
-      },
-      options: options,
-    );
+    final response = await _storageFetch.post('$url/object/copy', {
+      'bucketId': bucketId,
+      'sourceKey': fromPath,
+      'destinationKey': toPath,
+      if (destinationBucket != null) 'destinationBucket': destinationBucket,
+    }, options: options);
     return (response as Map<String, dynamic>)['Key'] as String;
   }
 
@@ -342,14 +362,10 @@ class StorageFileApi {
   }) async {
     final finalPath = _getFinalPath(path);
     final options = FetchOptions(headers: headers);
-    final response = await _storageFetch.post(
-      '$url/object/sign/$finalPath',
-      {
-        'expiresIn': expiresIn,
-        if (transform != null) 'transform': transform.toQueryParams,
-      },
-      options: options,
-    );
+    final response = await _storageFetch.post('$url/object/sign/$finalPath', {
+      'expiresIn': expiresIn,
+      if (transform != null) 'transform': transform.toQueryParams,
+    }, options: options);
     final signedUrlPath = (response as Map<String, dynamic>)['signedURL'];
     final signedUrl = '$url$signedUrlPath';
     return signedUrl;
@@ -370,14 +386,10 @@ class StorageFileApi {
     int expiresIn,
   ) async {
     final options = FetchOptions(headers: headers);
-    final response = await _storageFetch.post(
-      '$url/object/sign/$bucketId',
-      {
-        'expiresIn': expiresIn,
-        'paths': paths,
-      },
-      options: options,
-    );
+    final response = await _storageFetch.post('$url/object/sign/$bucketId', {
+      'expiresIn': expiresIn,
+      'paths': paths,
+    }, options: options);
     final List<SignedUrl> urls = (response as List).map((e) {
       return SignedUrl(
         // Prevents exceptions being thrown when null value is returned
@@ -397,12 +409,16 @@ class StorageFileApi {
   /// [transform] download a transformed variant of the image with the provided options
   ///
   /// [queryParams] additional query parameters to be added to the URL
-  Future<Uint8List> download(String path,
-      {TransformOptions? transform, Map<String, String>? queryParams}) async {
+  Future<Uint8List> download(
+    String path, {
+    TransformOptions? transform,
+    Map<String, String>? queryParams,
+  }) async {
     final wantsTransformations = transform != null;
     final finalPath = _getFinalPath(path);
-    final renderPath =
-        wantsTransformations ? 'render/image/authenticated' : 'object';
+    final renderPath = wantsTransformations
+        ? 'render/image/authenticated'
+        : 'object';
 
     Map<String, String> query = transform?.toQueryParams ?? {};
     query.addAll(queryParams ?? {});
@@ -412,8 +428,10 @@ class StorageFileApi {
     var fetchUrl = Uri.parse('$url/$renderPath/$finalPath');
     fetchUrl = fetchUrl.replace(queryParameters: query);
 
-    final response =
-        await _storageFetch.get(fetchUrl.toString(), options: options);
+    final response = await _storageFetch.get(
+      fetchUrl.toString(),
+      options: options,
+    );
     return response as Uint8List;
   }
 
@@ -434,10 +452,7 @@ class StorageFileApi {
     final finalPath = _getFinalPath(path);
     final options = FetchOptions(headers: headers);
     try {
-      await _storageFetch.head(
-        '$url/object/$finalPath',
-        options: options,
-      );
+      await _storageFetch.head('$url/object/$finalPath', options: options);
       return true;
     } on StorageException catch (e) {
       if (e.statusCode == '400' || e.statusCode == '404') {
@@ -453,10 +468,7 @@ class StorageFileApi {
   /// For example `getPublicUrl('folder/image.png')`.
   ///
   /// [transform] adds image transformations parameters to the generated url.
-  String getPublicUrl(
-    String path, {
-    TransformOptions? transform,
-  }) {
+  String getPublicUrl(String path, {TransformOptions? transform}) {
     final finalPath = _getFinalPath(path);
 
     final wantsTransformation = transform != null;
@@ -476,15 +488,11 @@ class StorageFileApi {
   /// name. For example: `remove(['folder/image.png'])`.
   Future<List<FileObject>> remove(List<String> paths) async {
     final options = FetchOptions(headers: headers);
-    final response = await _storageFetch.delete(
-      '$url/object/$bucketId',
-      {'prefixes': paths},
-      options: options,
-    );
+    final response = await _storageFetch.delete('$url/object/$bucketId', {
+      'prefixes': paths,
+    }, options: options);
     final fileObjects = List<FileObject>.from(
-      (response as List).map(
-        (item) => FileObject.fromJson(item),
-      ),
+      (response as List).map((item) => FileObject.fromJson(item)),
     );
     return fileObjects;
   }
@@ -509,9 +517,7 @@ class StorageFileApi {
       options: options,
     );
     final fileObjects = List<FileObject>.from(
-      (response as List).map(
-        (item) => FileObject.fromJson(item),
-      ),
+      (response as List).map((item) => FileObject.fromJson(item)),
     );
     return fileObjects;
   }
