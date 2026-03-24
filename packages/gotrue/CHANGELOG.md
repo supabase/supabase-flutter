@@ -1,3 +1,9 @@
+## 2.19.0
+
+ - **FIX**(auth): fix getClaims() crash with asymmetric JWTs on first call ([#1300](https://github.com/supabase/supabase-flutter/issues/1300)). ([207ed5f7](https://github.com/supabase/supabase-flutter/commit/207ed5f7b6307fa64121debba2012f9c8e6cd85a))
+ - **FIX**(auth): fix verifyOTP parameter validation for OtpType.recovery with tokenHash ([#1295](https://github.com/supabase/supabase-flutter/issues/1295)). ([0719e55b](https://github.com/supabase/supabase-flutter/commit/0719e55b6a98fc63ef6b94fa60e86c0ac1b8d9e3))
+ - **FEAT**(auth): add X (OAuth 2.0) provider ([#1290](https://github.com/supabase/supabase-flutter/issues/1290)). ([c2305388](https://github.com/supabase/supabase-flutter/commit/c23053888d0a3fefc17b5ca31b162a94b7827748))
+
 ## 2.18.0
 
  - **FIX**(gotrue): allow refreshSession with refreshToken when no current session exists ([#1263](https://github.com/supabase/supabase-flutter/issues/1263)). ([1d142c12](https://github.com/supabase/supabase-flutter/commit/1d142c129c2574f3b1cd39d2d3c118031acaa631))

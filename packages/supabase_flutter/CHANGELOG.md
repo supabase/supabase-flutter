@@ -1,3 +1,7 @@
+## 2.12.1
+
+ - Update a dependency to the latest release.
+
 ## 2.12.0
 
  - **FEAT**(postgrest): add missing PostgREST v12 operators ([#1273](https://github.com/supabase/supabase-flutter/issues/1273)). ([f6270260](https://github.com/supabase/supabase-flutter/commit/f627026038344d6f2fdaa8ff8f7e0c968a8dad1b))
