@@ -747,12 +747,60 @@ class GoTrueClient {
     return userResponse;
   }
 
-  /// Sets the session data from refresh_token and returns the current session.
-  Future<AuthResponse> setSession(String refreshToken) async {
+  /// Sets the session data from [refreshToken] and returns the current session.
+  ///
+  /// If [accessToken] is provided and not yet expired, the session is restored
+  /// directly from the supplied tokens without a network round-trip. The user
+  /// is fetched via [getUser] to populate the session's user object.
+  ///
+  /// If [accessToken] is expired (or not provided), the method falls back to
+  /// calling [_callRefreshToken] with [refreshToken], matching the existing
+  /// behaviour.
+  Future<AuthResponse> setSession(
+    String refreshToken, {
+    String? accessToken,
+  }) async {
     if (refreshToken.isEmpty) {
       throw AuthSessionMissingException('Refresh token cannot be empty');
     }
-    return await _callRefreshToken(refreshToken);
+
+    if (accessToken == null) {
+      return await _callRefreshToken(refreshToken);
+    }
+
+    if (accessToken.isEmpty) {
+      throw AuthSessionMissingException('Access token cannot be empty');
+    }
+
+    final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+    // Throws AuthInvalidJwtException if the token is malformed.
+    final decoded = decodeJwt(accessToken);
+    final exp = decoded.payload.exp;
+    final hasExpired = exp == null || exp <= timeNow;
+
+    if (hasExpired) {
+      return await _callRefreshToken(refreshToken);
+    }
+
+    final userResponse = await getUser(accessToken);
+    final user = userResponse.user;
+    if (user == null) {
+      throw AuthSessionMissingException();
+    }
+
+    final session = Session(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      user: user,
+      tokenType: 'bearer',
+      expiresIn: exp - timeNow,
+    );
+
+    _saveSession(session);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
+
+    return AuthResponse(session: session);
   }
 
   /// Gets the session data from a magic link or oauth2 callback URL
