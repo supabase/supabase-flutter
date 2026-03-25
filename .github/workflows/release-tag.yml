@@ -36,7 +36,7 @@ jobs:
           cache: true
 
       - name: Setup Melos
-        uses: bluefireteam/melos-action@v3
+        uses: bluefireteam/melos-action@705015c3d2bc4ab94201ac24accb2bbe070cf533 # v3.6.0
         with:
           tag: true
       - name: Trigger publish workflows
