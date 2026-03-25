@@ -778,7 +778,8 @@ class GoTrueClient {
     // Throws AuthInvalidJwtException if the token is malformed.
     final decoded = decodeJwt(accessToken);
     final exp = decoded.payload.exp;
-    final hasExpired = exp == null || exp <= timeNow;
+    final hasExpired =
+        exp == null || exp <= timeNow + Constants.expiryMargin.inSeconds;
 
     if (hasExpired) {
       return await _callRefreshToken(refreshToken);
