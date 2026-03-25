@@ -1,3 +1,7 @@
+## 2.10.4
+
+ - **FIX**(storage): make dedicated storage host opt-in via useNewHostname flag ([#1329](https://github.com/supabase/supabase-flutter/issues/1329)). ([a6640823](https://github.com/supabase/supabase-flutter/commit/a66408231ac3451c7b761425d3609908fa9394bd))
+
 ## 2.10.3
 
  - Update a dependency to the latest release.
