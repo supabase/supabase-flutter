@@ -178,11 +178,16 @@ class RealtimeClient {
       log('transport', 'connecting to $endPointURL', null);
       log('transport', 'connecting', null, Level.FINE);
       connState = SocketStates.connecting;
-      conn = transport(endPointURL, headers);
+      final WebSocketChannel localConn = transport(endPointURL, headers);
+      conn = localConn;
 
       try {
-        await conn!.ready;
+        await localConn.ready;
       } catch (error) {
+        // Bail out if disconnect() ran or a new connect() started during await
+        if (conn != localConn) {
+          return;
+        }
         // Don't schedule a reconnect and emit error if connection has been
         // closed by the user or [disconnect] waits for the connection to be
         // ready before closing it.
@@ -195,10 +200,15 @@ class RealtimeClient {
         return;
       }
 
+      // Guard: bail out if disconnect() ran during the await
+      if (conn != localConn || connState != SocketStates.connecting) {
+        return;
+      }
+
       connState = SocketStates.open;
 
       _onConnOpen();
-      conn!.stream.listen(
+      localConn.stream.listen(
         // incoming messages
         (message) => onConnMessage(message as String),
         onError: _onConnError,

@@ -221,7 +221,8 @@ void main() {
       expect(callbackOtherCalled, 1);
     });
 
-    test('maintains type safety after off() - '
+    test(
+        'maintains type safety after off() - '
         'reproduces web hot restart issue', () {
       // This test reproduces the issue where .where().toList() returns
       // List<dynamic> on Flutter web during hot restart, causing a
