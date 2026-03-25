@@ -149,7 +149,8 @@ class SupabaseClient {
         AuthHttpClient(_supabaseKey, httpClient ?? Client(), _getAccessToken);
     rest = _initRestClient();
     functions = _initFunctionsClient();
-    storage = _initStorageClient(storageOptions.retryAttempts);
+    storage = _initStorageClient(
+        storageOptions.retryAttempts, storageOptions.useNewHostname);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
       _log.config(
@@ -316,12 +317,14 @@ class SupabaseClient {
     );
   }
 
-  SupabaseStorageClient _initStorageClient(int storageRetryAttempts) {
+  SupabaseStorageClient _initStorageClient(
+      int storageRetryAttempts, bool useNewHostname) {
     return SupabaseStorageClient(
       _storageUrl,
       {...headers},
       httpClient: _authHttpClient,
       retryAttempts: storageRetryAttempts,
+      useNewHostname: useNewHostname,
     );
   }
 
