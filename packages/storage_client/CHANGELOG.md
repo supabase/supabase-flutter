@@ -1,3 +1,7 @@
+## 2.5.1
+
+ - **FIX**(storage): make dedicated storage host opt-in via useNewHostname flag ([#1329](https://github.com/supabase/supabase-flutter/issues/1329)). ([a6640823](https://github.com/supabase/supabase-flutter/commit/a66408231ac3451c7b761425d3609908fa9394bd))
+
 ## 2.5.0
 
  - **FEAT**(storage): add setHeader method for custom HTTP headers ([#1313](https://github.com/supabase/supabase-flutter/issues/1313)). ([99231538](https://github.com/supabase/supabase-flutter/commit/9923153836438c35e47482658f3156e997c8be1f))
