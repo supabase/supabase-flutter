@@ -31,18 +31,25 @@ class SupabaseStorageClient extends StorageBucketApi {
   ///  8. 30000 ms +/- 25%
   ///
   /// Anything beyond the 8th try will have 30 second delay.
+  ///
+  /// [useNewHostname] controls whether legacy storage URLs are rewritten to use
+  /// the dedicated storage host (`<ref>.storage.supabase.co`). Set to `true`
+  /// only if your project has the dedicated storage host enabled; otherwise
+  /// every storage request will fail with an `Invalid Storage request` error.
+  /// Defaults to `false` (opt-in).
   SupabaseStorageClient(
     String url,
     Map<String, String> headers, {
     Client? httpClient,
     int retryAttempts = 0,
+    bool useNewHostname = false,
   })  : assert(
           retryAttempts >= 0,
           'retryAttempts has to be greater than or equal to 0',
         ),
         _defaultRetryAttempts = retryAttempts,
         super(
-          _transformStorageUrl(url),
+          useNewHostname ? _transformStorageUrl(url) : url,
           {...Constants.defaultHeaders, ...headers},
           httpClient: httpClient,
         ) {
