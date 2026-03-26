@@ -20,7 +20,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     Client? httpClient,
     YAJsonIsolate? isolate,
     bool clientRetryEnabled = true,
-    @visibleForTesting Duration Function(int attempt)? retryDelay,
+    Duration Function(int attempt)? retryDelay,
   }) : super(
           PostgrestBuilder(
             url: url,
