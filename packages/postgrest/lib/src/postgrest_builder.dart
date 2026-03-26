@@ -131,13 +131,17 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
   Future<T> _execute() async {
     final String? method = _method;
+    // Work with a local copy so repeated awaits and shared-map siblings are
+    // not affected by per-execution header mutations (Prefer, schema headers,
+    // X-Retry-Count, etc.).
+    final execHeaders = {..._headers};
 
     if (_count != null) {
-      if (_headers['Prefer'] != null) {
-        final oldPreferHeader = _headers['Prefer'];
-        _headers['Prefer'] = '$oldPreferHeader,count=${_count!.name}';
+      if (execHeaders['Prefer'] != null) {
+        final oldPreferHeader = execHeaders['Prefer'];
+        execHeaders['Prefer'] = '$oldPreferHeader,count=${_count!.name}';
       } else {
-        _headers['Prefer'] = 'count=${_count!.name}';
+        execHeaders['Prefer'] = 'count=${_count!.name}';
       }
     }
 
@@ -153,47 +157,49 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       if (_schema == null) {
         // skip
       } else if ([METHOD_GET, METHOD_HEAD].contains(method)) {
-        _headers['Accept-Profile'] = _schema!;
+        execHeaders['Accept-Profile'] = _schema!;
       } else {
-        _headers['Content-Profile'] = _schema!;
+        execHeaders['Content-Profile'] = _schema!;
       }
       if (method != METHOD_GET && method != METHOD_HEAD) {
-        _headers['Content-Type'] = 'application/json';
+        execHeaders['Content-Type'] = 'application/json';
       }
       final bodyStr = jsonEncode(_body);
       _log.finest("Request: $uppercaseMethod $_url");
 
       final Future<http.Response> Function() send;
       if (uppercaseMethod == METHOD_GET) {
-        send = () => (_httpClient?.get ?? http.get)(_url, headers: _headers);
+        send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
       } else if (uppercaseMethod == METHOD_POST) {
         send = () => (_httpClient?.post ?? http.post)(
               _url,
-              headers: _headers,
+              headers: execHeaders,
               body: bodyStr,
             );
       } else if (uppercaseMethod == METHOD_PUT) {
         send = () => (_httpClient?.put ?? http.put)(
               _url,
-              headers: _headers,
+              headers: execHeaders,
               body: bodyStr,
             );
       } else if (uppercaseMethod == METHOD_PATCH) {
         send = () => (_httpClient?.patch ?? http.patch)(
               _url,
-              headers: _headers,
+              headers: execHeaders,
               body: bodyStr,
             );
       } else if (uppercaseMethod == METHOD_DELETE) {
-        send =
-            () => (_httpClient?.delete ?? http.delete)(_url, headers: _headers);
+        send = () =>
+            (_httpClient?.delete ?? http.delete)(_url, headers: execHeaders);
       } else if (uppercaseMethod == METHOD_HEAD) {
-        send = () => (_httpClient?.head ?? http.head)(_url, headers: _headers);
+        send =
+            () => (_httpClient?.head ?? http.head)(_url, headers: execHeaders);
       } else {
         throw StateError('Unknown HTTP method: $uppercaseMethod');
       }
 
-      final response = await _executeWithRetry(send, uppercaseMethod);
+      final response =
+          await _executeWithRetry(send, uppercaseMethod, execHeaders);
       return _parseResponse(response, method);
     } catch (error) {
       rethrow;
@@ -203,6 +209,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   Future<http.Response> _executeWithRetry(
     Future<http.Response> Function() send,
     String method,
+    Map<String, String> execHeaders,
   ) async {
     const maxRetries = 3;
     const retryableStatusCodes = {520};
@@ -216,7 +223,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
     for (var attempt = 0; attempt <= maxRetries; attempt++) {
       if (attempt > 0) {
-        _headers['X-Retry-Count'] = attempt.toString();
+        execHeaders['X-Retry-Count'] = attempt.toString();
       }
 
       try {
