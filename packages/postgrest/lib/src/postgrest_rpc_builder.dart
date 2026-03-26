@@ -7,6 +7,8 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
     String? schema,
     Client? httpClient,
     required YAJsonIsolate isolate,
+    bool clientRetryEnabled = true,
+    @visibleForTesting Duration Function(int attempt)? retryDelay,
   }) : super(
           PostgrestBuilder(
             url: Uri.parse(url),
@@ -14,6 +16,8 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
             schema: schema,
             httpClient: httpClient,
             isolate: isolate,
+            clientRetryEnabled: clientRetryEnabled,
+            retryDelay: retryDelay,
           ),
         );
 

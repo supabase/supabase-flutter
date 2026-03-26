@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
@@ -45,7 +46,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final Client? _httpClient;
   final YAJsonIsolate? _isolate;
   final CountOption? _count;
+  final bool _clientRetryEnabled;
+  final bool? _retryEnabled;
+  final Duration Function(int attempt) _retryDelay;
   final _log = Logger('supabase.postgrest');
+
+  static Duration _defaultRetryDelay(int attempt) =>
+      Duration(seconds: math.min(math.pow(2, attempt).toInt(), 30));
 
   PostgrestBuilder({
     required Uri url,
@@ -58,6 +65,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
+    bool clientRetryEnabled = true,
+    bool? retryEnabled,
+    @visibleForTesting Duration Function(int attempt)? retryDelay,
   })  : _maybeSingle = maybeSingle,
         _method = method,
         _converter = converter,
@@ -67,7 +77,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         _httpClient = httpClient,
         _isolate = isolate,
         _count = count,
-        _body = body;
+        _body = body,
+        _clientRetryEnabled = clientRetryEnabled,
+        _retryEnabled = retryEnabled,
+        _retryDelay = retryDelay ?? _defaultRetryDelay;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
@@ -80,6 +93,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
+    bool? clientRetryEnabled,
+    bool? retryEnabled,
+    Duration Function(int attempt)? retryDelay,
   }) {
     return PostgrestBuilder<T, S, R>(
       url: url ?? _url,
@@ -92,8 +108,20 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
+      clientRetryEnabled: clientRetryEnabled ?? _clientRetryEnabled,
+      retryEnabled: retryEnabled ?? _retryEnabled,
+      retryDelay: retryDelay ?? _retryDelay,
     );
   }
+
+  /// Overrides the retry behavior for this specific request.
+  ///
+  /// When [enabled] is `false`, retries are disabled for this request even if
+  /// [PostgrestClient] was configured with `retryEnabled: true`.
+  /// When [enabled] is `true`, retries are enabled for this request even if
+  /// [PostgrestClient] was configured with `retryEnabled: false`.
+  PostgrestBuilder<T, S, R> retry({required bool enabled}) =>
+      _copyWith(retryEnabled: enabled);
 
   PostgrestBuilder<T, S, R> setHeader(String key, String value) {
     return _copyWith(
@@ -121,7 +149,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
 
       final uppercaseMethod = method.toUpperCase();
-      late http.Response response;
 
       if (_schema == null) {
         // skip
@@ -136,45 +163,76 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       final bodyStr = jsonEncode(_body);
       _log.finest("Request: $uppercaseMethod $_url");
 
+      final Future<http.Response> Function() send;
       if (uppercaseMethod == METHOD_GET) {
-        response = await (_httpClient?.get ?? http.get)(
-          _url,
-          headers: _headers,
-        );
+        send = () => (_httpClient?.get ?? http.get)(_url, headers: _headers);
       } else if (uppercaseMethod == METHOD_POST) {
-        response = await (_httpClient?.post ?? http.post)(
-          _url,
-          headers: _headers,
-          body: bodyStr,
-        );
+        send = () => (_httpClient?.post ?? http.post)(
+              _url,
+              headers: _headers,
+              body: bodyStr,
+            );
       } else if (uppercaseMethod == METHOD_PUT) {
-        response = await (_httpClient?.put ?? http.put)(
-          _url,
-          headers: _headers,
-          body: bodyStr,
-        );
+        send = () => (_httpClient?.put ?? http.put)(
+              _url,
+              headers: _headers,
+              body: bodyStr,
+            );
       } else if (uppercaseMethod == METHOD_PATCH) {
-        response = await (_httpClient?.patch ?? http.patch)(
-          _url,
-          headers: _headers,
-          body: bodyStr,
-        );
+        send = () => (_httpClient?.patch ?? http.patch)(
+              _url,
+              headers: _headers,
+              body: bodyStr,
+            );
       } else if (uppercaseMethod == METHOD_DELETE) {
-        response = await (_httpClient?.delete ?? http.delete)(
-          _url,
-          headers: _headers,
-        );
+        send =
+            () => (_httpClient?.delete ?? http.delete)(_url, headers: _headers);
       } else if (uppercaseMethod == METHOD_HEAD) {
-        response = await (_httpClient?.head ?? http.head)(
-          _url,
-          headers: _headers,
-        );
+        send = () => (_httpClient?.head ?? http.head)(_url, headers: _headers);
+      } else {
+        throw StateError('Unknown HTTP method: $uppercaseMethod');
       }
 
+      final response = await _executeWithRetry(send, uppercaseMethod);
       return _parseResponse(response, method);
     } catch (error) {
       rethrow;
     }
+  }
+
+  Future<http.Response> _executeWithRetry(
+    Future<http.Response> Function() send,
+    String method,
+  ) async {
+    const maxRetries = 3;
+    const retryableStatusCodes = {520};
+
+    final effectiveRetryEnabled = _retryEnabled ?? _clientRetryEnabled;
+    final isRetryableMethod = method == METHOD_GET || method == METHOD_HEAD;
+
+    if (!effectiveRetryEnabled || !isRetryableMethod) {
+      return send();
+    }
+
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      if (attempt > 0) {
+        _headers['X-Retry-Count'] = attempt.toString();
+      }
+
+      try {
+        final response = await send();
+        if (!retryableStatusCodes.contains(response.statusCode) ||
+            attempt == maxRetries) {
+          return response;
+        }
+      } on Exception {
+        if (attempt == maxRetries) rethrow;
+      }
+
+      await Future.delayed(_retryDelay(attempt));
+    }
+
+    throw StateError('unreachable');
   }
 
   /// Parse request response to json object if possible
