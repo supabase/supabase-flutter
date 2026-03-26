@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-03-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v2.7.2`](#realtime_client---v272)
+ - [`supabase` - `v2.10.5`](#supabase---v2105)
+ - [`supabase_flutter` - `v2.12.3`](#supabase_flutter---v2123)
+
+---
+
+#### `realtime_client` - `v2.7.2`
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+#### `supabase` - `v2.10.5`
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+#### `supabase_flutter` - `v2.12.3`
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+
 ## 2026-03-25
 
 ### Changes

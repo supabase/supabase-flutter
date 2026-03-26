@@ -1,3 +1,7 @@
+## 2.7.2
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
 ## 2.7.1
 
  - **FIX**(realtime): add explicit type cast to fix web hot restart TypeError ([#1308](https://github.com/supabase/supabase-flutter/issues/1308)). ([bfa480a1](https://github.com/supabase/supabase-flutter/commit/bfa480a1417ffa288ae3ae39bc62cd7e5a90da05))
