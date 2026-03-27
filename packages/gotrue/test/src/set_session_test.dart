@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:http/http.dart';
 import 'package:test/test.dart';
@@ -50,8 +49,8 @@ class _SetSessionMockClient extends BaseClient {
       // Refresh-token fallback response with a freshly minted access token.
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       final iat = exp - 3600;
-      final freshAt = JWT({'exp': exp, 'iat': iat}, subject: 'mock-user-id')
-          .sign(SecretKey('test-secret'));
+      final freshAt =
+          _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({
           'access_token': freshAt,
@@ -68,12 +67,17 @@ class _SetSessionMockClient extends BaseClient {
   }
 }
 
-/// Returns a signed JWT with the given [exp] and optional [iat] claims.
-/// If [iat] is null, the claim is omitted entirely.
-String _makeJwt({required int exp, int? iat}) {
-  final payload = <String, dynamic>{'exp': exp};
-  if (iat != null) payload['iat'] = iat;
-  return JWT(payload, subject: 'mock-user-id').sign(SecretKey('test-secret'));
+/// Crafts a JWT by base64url-encoding [payload] directly.
+///
+/// Unlike using dart_jsonwebtoken, this gives exact control over every claim —
+/// no auto-injected `iat`, no claim overrides. The signature is a stub;
+/// [decodeJwt] does not verify signatures.
+String _makeRawJwt(Map<String, dynamic> payload) {
+  final header =
+      base64Url.encode(utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})));
+  final body = base64Url.encode(utf8.encode(jsonEncode(payload)));
+  const sig = 'AAAA';
+  return '$header.$body.$sig';
 }
 
 void main() {
@@ -94,7 +98,8 @@ void main() {
         'empty refresh token with a non-null access token throws before '
         'inspecting the access token', () async {
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
-      final at = _makeJwt(exp: exp, iat: exp - 3600);
+      final at =
+          _makeRawJwt({'exp': exp, 'iat': exp - 3600, 'sub': 'mock-user-id'});
 
       await expectLater(
         () => client.setSession('', accessToken: at),
@@ -109,7 +114,8 @@ void main() {
         'as expired and falls back to the refresh-token path', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // exp is 20 s in the future, inside the 30 s Constants.expiryMargin.
-      final at = _makeJwt(exp: timeNow + 20, iat: timeNow - 3580);
+      final at = _makeRawJwt(
+          {'exp': timeNow + 20, 'iat': timeNow - 3580, 'sub': 'mock-user-id'});
 
       final response =
           await client.setSession('some-refresh-token', accessToken: at);
@@ -124,8 +130,7 @@ void main() {
         'access token with no exp claim is treated as expired and falls back '
         'to the refresh-token path', () async {
       // JWT without an exp claim: decodeJwt succeeds but exp == null.
-      final at = JWT({'role': 'authenticated'}, subject: 'mock-user-id')
-          .sign(SecretKey('test-secret'));
+      final at = _makeRawJwt({'role': 'authenticated', 'sub': 'mock-user-id'});
 
       final response =
           await client.setSession('some-refresh-token', accessToken: at);
@@ -141,7 +146,7 @@ void main() {
         () async {
       final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final exp = iat + 3600;
-      final at = _makeJwt(exp: exp, iat: iat);
+      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
 
       final response =
           await client.setSession('some-refresh-token', accessToken: at);
@@ -153,7 +158,7 @@ void main() {
     test('expiresIn is null when iat claim is absent', () async {
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       // JWT without iat.
-      final at = _makeJwt(exp: exp);
+      final at = _makeRawJwt({'exp': exp, 'sub': 'mock-user-id'});
 
       final response =
           await client.setSession('some-refresh-token', accessToken: at);
@@ -164,7 +169,7 @@ void main() {
     test('expiresAt matches the exp claim in the JWT', () async {
       final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final exp = iat + 3600;
-      final at = _makeJwt(exp: exp, iat: iat);
+      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
 
       final response =
           await client.setSession('some-refresh-token', accessToken: at);
@@ -178,7 +183,7 @@ void main() {
       final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final exp = iat + 3600;
       const refreshToken = 'my-refresh-token';
-      final at = _makeJwt(exp: exp, iat: iat);
+      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
 
       final response = await client.setSession(refreshToken, accessToken: at);
 
@@ -192,7 +197,7 @@ void main() {
     test('fast path emits signedIn (not tokenRefreshed)', () async {
       final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final exp = iat + 3600;
-      final at = _makeJwt(exp: exp, iat: iat);
+      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
 
       expect(
         client.onAuthStateChange,
@@ -205,7 +210,8 @@ void main() {
     test('expired-fallback path emits tokenRefreshed (not signedIn)', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // Clearly expired token (exp well in the past).
-      final at = _makeJwt(exp: timeNow - 100, iat: timeNow - 3700);
+      final at = _makeRawJwt(
+          {'exp': timeNow - 100, 'iat': timeNow - 3700, 'sub': 'mock-user-id'});
 
       expect(
         client.onAuthStateChange,
@@ -223,7 +229,7 @@ void main() {
         'and both receive the same response', () async {
       final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final exp = iat + 3600;
-      final at = _makeJwt(exp: exp, iat: iat);
+      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
 
       // Pause the mock /user response so both calls are in-flight together.
       final pause = Completer<void>();
@@ -245,7 +251,7 @@ void main() {
     test('deduplicated call emits signedIn exactly once', () async {
       final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final exp = iat + 3600;
-      final at = _makeJwt(exp: exp, iat: iat);
+      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
 
       final pause = Completer<void>();
       mockClient.userCallPause = pause;
