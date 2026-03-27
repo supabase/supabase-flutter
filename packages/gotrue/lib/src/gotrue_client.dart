@@ -785,24 +785,44 @@ class GoTrueClient {
       return await _callRefreshToken(refreshToken);
     }
 
-    final userResponse = await getUser(accessToken);
-    final user = userResponse.user;
-    if (user == null) {
-      throw AuthSessionMissingException();
+    // Join an in-progress session operation rather than racing with it.
+    if (_refreshTokenCompleter != null) {
+      return _refreshTokenCompleter!.future;
     }
 
-    final session = Session(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-      user: user,
-      tokenType: 'bearer',
-      expiresIn: exp - timeNow,
-    );
+    try {
+      _refreshTokenCompleter = Completer<AuthResponse>();
+      // Catch any error in case nobody awaits the future
+      _refreshTokenCompleter!.future
+          .then((_) => null, onError: (_, __) => null);
 
-    _saveSession(session);
-    notifyAllSubscribers(AuthChangeEvent.signedIn);
+      final userResponse = await getUser(accessToken);
+      final user = userResponse.user;
+      if (user == null) {
+        throw AuthSessionMissingException();
+      }
 
-    return AuthResponse(session: session);
+      final iat = decoded.payload.iat;
+      final session = Session(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        user: user,
+        tokenType: 'bearer',
+        expiresIn: (iat != null) ? exp - iat : null,
+      );
+
+      _saveSession(session);
+      notifyAllSubscribers(AuthChangeEvent.signedIn);
+
+      final response = AuthResponse(session: session);
+      _refreshTokenCompleter?.complete(response);
+      return response;
+    } catch (error) {
+      _refreshTokenCompleter?.completeError(error);
+      rethrow;
+    } finally {
+      _refreshTokenCompleter = null;
+    }
   }
 
   /// Gets the session data from a magic link or oauth2 callback URL

@@ -363,24 +363,20 @@ void main() {
     test(
         'Set session with empty access token throws AuthSessionMissingException',
         () async {
-      try {
-        await client.setSession('some-refresh-token', accessToken: '');
-        fail('setSession did not throw');
-      } catch (error) {
-        expect(error, isA<AuthSessionMissingException>());
-      }
+      await expectLater(
+        () => client.setSession('some-refresh-token', accessToken: ''),
+        throwsA(isA<AuthSessionMissingException>()),
+      );
     });
 
     test(
         'Set session with malformed access token throws AuthInvalidJwtException',
         () async {
-      try {
-        await client.setSession('some-refresh-token',
-            accessToken: 'not-a-valid-jwt');
-        fail('setSession did not throw');
-      } catch (error) {
-        expect(error, isA<AuthInvalidJwtException>());
-      }
+      await expectLater(
+        () => client.setSession('some-refresh-token',
+            accessToken: 'not-a-valid-jwt'),
+        throwsA(isA<AuthInvalidJwtException>()),
+      );
     });
 
     test('Refresh session with refreshToken when no current session exists',
