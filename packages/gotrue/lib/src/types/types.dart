@@ -21,7 +21,7 @@ enum AuthFlowType {
 /// OAuthProvider('custom:my-provider')
 /// ```
 final class OAuthProvider {
-  /// The provider identifier sent to the GoTrue API (snake_case wire format).
+  /// The provider identifier sent to the GoTrue API.
   final String name;
 
   /// Creates an [OAuthProvider] with an arbitrary [name].
@@ -85,7 +85,12 @@ final class OAuthProvider {
     zoom,
   ];
 
-  /// The snake_case API wire value for this provider.
+  /// The API wire value for this provider.
+  ///
+  /// Returns [name] as-is without any case conversion. The getter name is
+  /// misleading for custom providers whose names may not be snake_case.
+  /// Use [name] directly instead.
+  @Deprecated('Use name instead.')
   String get snakeCase => name;
 
   @override

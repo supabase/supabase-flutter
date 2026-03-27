@@ -4,6 +4,8 @@
 // a compile-time error. It has been converted to a final class so arbitrary
 // provider strings are supported, as the docs show.
 
+import 'dart:io';
+
 import 'package:gotrue/gotrue.dart';
 import 'package:test/test.dart';
 
@@ -33,7 +35,9 @@ void main() {
 
       expect(res.provider, provider);
       expect(res.url, startsWith('$gotrueUrl/authorize?'));
-      expect(res.url, contains('provider=custom%3Amy-provider'));
+
+      final uri = Uri.parse(res.url);
+      expect(uri.queryParameters['provider'], 'custom:my-provider');
     });
 
     test('built-in providers still work as static constants', () {
@@ -53,9 +57,26 @@ void main() {
     });
 
     test('OAuthProvider.values contains all built-in providers', () {
+      // Derive the expected count from the source file so this test stays
+      // accurate when new static const providers are added without updating
+      // the values list.
+      final src = File('lib/src/types/types.dart').readAsStringSync();
+      // Matches `static const foo = OAuthProvider(` but not the `values` field
+      // (which is typed `List<OAuthProvider>` and uses a list literal, not a
+      // direct OAuthProvider constructor call).
+      final declaredCount = RegExp(
+        r'^\s*static\s+const\s+\w+\s*=\s*OAuthProvider\(',
+        multiLine: true,
+      ).allMatches(src).length;
+
       expect(OAuthProvider.values, contains(OAuthProvider.google));
       expect(OAuthProvider.values, contains(OAuthProvider.linkedinOidc));
-      expect(OAuthProvider.values, hasLength(22));
+      expect(
+        OAuthProvider.values,
+        hasLength(declaredCount),
+        reason: 'A static const OAuthProvider field is missing from '
+            'OAuthProvider.values. Add it to the values list in types.dart.',
+      );
     });
   });
 }
