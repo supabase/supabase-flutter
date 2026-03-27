@@ -283,12 +283,10 @@ void main() {
     test(
         'Set session with an empty refresh token throws AuthSessionMissingException',
         () async {
-      try {
-        await client.setSession('');
-        fail('setSession did not throw');
-      } catch (error) {
-        expect(error, isA<AuthSessionMissingException>());
-      }
+      await expectLater(
+        () => client.setSession(''),
+        throwsA(isA<AuthSessionMissingException>()),
+      );
     });
 
     test(
