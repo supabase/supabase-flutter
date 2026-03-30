@@ -238,8 +238,9 @@ class Supabase {
           case AppLifecycleState.paused:
           case AppLifecycleState.detached:
             _targetLifecycleState = state;
-            _pendingLifecycleOperation =
-                _pendingLifecycleOperation.then((_) => _processLifecycle(state)).catchError((_) {});
+            _pendingLifecycleOperation = _pendingLifecycleOperation
+                .then((_) => _processLifecycle(state))
+                .catchError((_) {});
           default:
             break;
         }

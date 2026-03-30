@@ -12,9 +12,11 @@ import 'widget_test_stubs.dart';
 class FakeWebSocketChannel extends Fake implements WebSocketChannel {
   final Completer<void> readyCompleter;
   late final FakeWebSocketSink fakeSink = FakeWebSocketSink(_streamController);
-  final StreamController<dynamic> _streamController = StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _streamController =
+      StreamController<dynamic>.broadcast();
 
-  FakeWebSocketChannel({Completer<void>? readyCompleter}) : readyCompleter = readyCompleter ?? Completer<void>();
+  FakeWebSocketChannel({Completer<void>? readyCompleter})
+      : readyCompleter = readyCompleter ?? Completer<void>();
 
   @override
   Future<void> get ready => readyCompleter.future;
