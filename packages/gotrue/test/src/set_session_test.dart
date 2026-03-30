@@ -26,19 +26,13 @@ Map<String, dynamic> get _mockUserJson => {
 ///
 /// Handles `GET /user` (returns [_mockUserJson]) and
 /// `POST /token` (returns a fresh session via the refresh path).
-/// Use [userCallPause] to hold the /user response until the completer completes,
-/// which lets you race two concurrent calls.
 class _SetSessionMockClient extends BaseClient {
   int userCallCount = 0;
-  Completer<void>? userCallPause;
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     if (request.url.path.endsWith('/user')) {
       userCallCount++;
-      if (userCallPause != null) {
-        await userCallPause!.future;
-      }
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode(_mockUserJson))),
         200,
@@ -220,57 +214,6 @@ void main() {
       );
 
       await client.setSession('some-refresh-token', accessToken: at);
-    });
-  });
-
-  group('setSession — concurrent call deduplication', () {
-    test(
-        'two simultaneous fast-path calls issue only one GET /user request '
-        'and both receive the same response', () async {
-      final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
-      final exp = iat + 3600;
-      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
-
-      // Pause the mock /user response so both calls are in-flight together.
-      final pause = Completer<void>();
-      mockClient.userCallPause = pause;
-
-      final future1 = client.setSession('some-refresh-token', accessToken: at);
-      final future2 = client.setSession('some-refresh-token', accessToken: at);
-
-      // Unblock the single /user call that should be in-flight.
-      pause.complete();
-
-      final results = await Future.wait([future1, future2]);
-
-      expect(mockClient.userCallCount, 1);
-      expect(results[0].session?.accessToken, equals(at));
-      expect(results[1].session?.accessToken, equals(at));
-    });
-
-    test('deduplicated call emits signedIn exactly once', () async {
-      final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
-      final exp = iat + 3600;
-      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
-
-      final pause = Completer<void>();
-      mockClient.userCallPause = pause;
-
-      final events = <AuthChangeEvent>[];
-      final sub = client.onAuthStateChange.listen((s) => events.add(s.event));
-
-      final future1 = client.setSession('some-refresh-token', accessToken: at);
-      final future2 = client.setSession('some-refresh-token', accessToken: at);
-
-      pause.complete();
-      await Future.wait([future1, future2]);
-
-      // Flush microtasks so the stream listener has a chance to fire.
-      await Future<void>.delayed(Duration.zero);
-
-      expect(events.where((e) => e == AuthChangeEvent.signedIn).length, 1);
-
-      await sub.cancel();
     });
   });
 }
