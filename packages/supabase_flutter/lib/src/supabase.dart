@@ -34,7 +34,7 @@ final _log = Logger('supabase.supabase_flutter');
 /// See also:
 ///
 ///   * [SupabaseAuth]
-class Supabase with WidgetsBindingObserver {
+class Supabase {
   /// Gets the current supabase instance.
   ///
   /// An [AssertionError] is thrown if supabase isn't initialized yet.
@@ -149,8 +149,6 @@ class Supabase with WidgetsBindingObserver {
   Supabase._();
   static final Supabase _instance = Supabase._();
 
-  static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
-
   bool _isInitialized = false;
 
   /// Whether the Supabase instance has been initialized. Useful for debugging.
@@ -168,12 +166,12 @@ class Supabase with WidgetsBindingObserver {
   /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
   late CancelableOperation _restoreSessionCancellableOperation;
 
+  // Listener for app lifecycle events to handle Realtime reconnection.
+  AppLifecycleListener? _lifecycleListener;
+
   /// Serial queue for lifecycle operations (connect/disconnect). Each event
   /// appends via `.then()` so operations never overlap.
   Future<void> _pendingLifecycleOperation = Future.value();
-
-  @visibleForTesting
-  Future<void> get pendingLifecycleOperation => _pendingLifecycleOperation;
 
   /// The most recently requested lifecycle state. Checked inside
   /// [_processLifecycle] after each `await` to skip stale operations
@@ -189,7 +187,7 @@ class Supabase with WidgetsBindingObserver {
     _logSubscription?.cancel();
     client.dispose();
     _instance._supabaseAuth?.dispose();
-    _widgetsBindingInstance?.removeObserver(this);
+    _lifecycleListener?.dispose();
     _isInitialized = false;
   }
 
@@ -226,23 +224,27 @@ class Supabase with WidgetsBindingObserver {
       disposePreviousClient();
       markClientToDispose(client);
     }
-    _widgetsBindingInstance?.addObserver(this);
+
+    _setupLifecycleListener();
+
     _isInitialized = true;
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-      case AppLifecycleState.paused:
-      case AppLifecycleState.detached:
-        _targetLifecycleState = state;
-        _pendingLifecycleOperation = _pendingLifecycleOperation
-            .then((_) => _processLifecycle(state))
-            .catchError((_) {});
-      default:
-        break;
-    }
+  void _setupLifecycleListener() {
+    _lifecycleListener = AppLifecycleListener(
+      onStateChange: (state) {
+        switch (state) {
+          case AppLifecycleState.resumed:
+          case AppLifecycleState.paused:
+          case AppLifecycleState.detached:
+            _targetLifecycleState = state;
+            _pendingLifecycleOperation =
+                _pendingLifecycleOperation.then((_) => _processLifecycle(state)).catchError((_) {});
+          default:
+            break;
+        }
+      },
+    );
   }
 
   /// Processes a lifecycle state change. Operations are serialized via
