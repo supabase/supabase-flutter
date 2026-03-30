@@ -68,22 +68,10 @@ void main() {
   const supabaseKey = '';
 
   group('Lifecycle realtime reconnection', () {
-    late List<FakeWebSocketChannel> createdChannels;
     late List<Completer<void>> readyCompleters;
 
-    setUp(() {
-      mockAppLink();
-      createdChannels = [];
+    setUp(() async {
       readyCompleters = [];
-    });
-
-    tearDown(() async {
-      try {
-        await Supabase.instance.dispose();
-      } catch (_) {}
-    });
-
-    Future<void> initWithMockTransport() async {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
@@ -96,13 +84,17 @@ void main() {
           transport: (url, headers) {
             final completer = Completer<void>();
             readyCompleters.add(completer);
-            final channel = FakeWebSocketChannel(readyCompleter: completer);
-            createdChannels.add(channel);
-            return channel;
+            return FakeWebSocketChannel(readyCompleter: completer);
           },
         ),
       );
-    }
+    });
+
+    tearDown(() async {
+      try {
+        await Supabase.instance.dispose();
+      } catch (_) {}
+    });
 
     /// Helper: call connect() and immediately complete the
     /// ready future created by the transport factory.
@@ -114,10 +106,17 @@ void main() {
       await future;
     }
 
+    // Helper: complete all pending ready futures to unblock connect()
+    void completeReadyCompleters() async {
+      for (final completer in readyCompleters) {
+        if (!completer.isCompleted) completer.complete();
+      }
+      readyCompleters.clear();
+    }
+
     test(
         'paused then resumed waits for disconnect '
         'before reconnecting', () async {
-      await initWithMockTransport();
       final realtime = Supabase.instance.client.realtime;
 
       // Add a channel so onResumed() processes reconnection
@@ -129,25 +128,23 @@ void main() {
 
       // paused → triggers disconnect
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.paused);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // resumed → waits for disconnect, then reconnects
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.resumed);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // Complete any pending ready futures (reconnect)
-      for (final c in readyCompleters) {
-        if (!c.isCompleted) c.complete();
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      completeReadyCompleters();
+      await Supabase.instance.pendingLifecycleOperation;
 
       expect(realtime.connState, SocketStates.open);
+      expect(realtime.conn, isNotNull);
     });
 
     test(
         'paused → resumed → inactive → resumed '
         'still reconnects', () async {
-      await initWithMockTransport();
       final realtime = Supabase.instance.client.realtime;
 
       realtime.channel('test');
@@ -157,35 +154,32 @@ void main() {
 
       // paused → starts disconnect
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.paused);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // first resumed → queues reconnect after disconnect
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.resumed);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // inactive → does nothing (not a tracked lifecycle state)
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.inactive);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // second resumed → queues another reconnect (idempotent)
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.resumed);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // Complete all pending ready futures
-      for (final c in readyCompleters) {
-        if (!c.isCompleted) c.complete();
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      completeReadyCompleters();
+      await Supabase.instance.pendingLifecycleOperation;
 
       // Should have reconnected, not stuck disconnecting
-      expect(realtime.connState, isNot(SocketStates.disconnecting));
+      expect(realtime.connState, SocketStates.open);
       expect(realtime.conn, isNotNull);
     });
 
     test(
         'rapid paused → resumed → paused → resumed '
         'ends up connected', () async {
-      await initWithMockTransport();
       final realtime = Supabase.instance.client.realtime;
 
       realtime.channel('test');
@@ -200,24 +194,16 @@ void main() {
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.resumed);
 
       // Complete all pending ready futures as they appear
-      for (final c in readyCompleters) {
-        if (!c.isCompleted) c.complete();
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-
-      // Also complete any new ready futures created during processing
-      for (final c in readyCompleters) {
-        if (!c.isCompleted) c.complete();
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      completeReadyCompleters();
+      await Supabase.instance.pendingLifecycleOperation;
 
       expect(realtime.connState, SocketStates.open);
+      expect(realtime.conn, isNotNull);
     });
 
     test(
         'resumed then paused before connect completes '
         'cancels reconnect', () async {
-      await initWithMockTransport();
       final realtime = Supabase.instance.client.realtime;
 
       realtime.channel('test');
@@ -227,24 +213,23 @@ void main() {
 
       // paused → triggers disconnect
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.paused);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // resumed → queues reconnect
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.resumed);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // paused again before connect completes → should cancel the
       // reconnect (target state is now paused)
       Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.paused);
 
       // Complete all pending ready futures
-      for (final c in readyCompleters) {
-        if (!c.isCompleted) c.complete();
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      completeReadyCompleters();
+      await Supabase.instance.pendingLifecycleOperation;
 
       // Should be disconnected since the last event was paused
       expect(realtime.connState, SocketStates.disconnected);
+      expect(realtime.conn, isNull);
     });
   });
 }

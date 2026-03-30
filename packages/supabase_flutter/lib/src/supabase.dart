@@ -172,6 +172,9 @@ class Supabase with WidgetsBindingObserver {
   /// appends via `.then()` so operations never overlap.
   Future<void> _pendingLifecycleOperation = Future.value();
 
+  @visibleForTesting
+  Future<void> get pendingLifecycleOperation => _pendingLifecycleOperation;
+
   /// The most recently requested lifecycle state. Checked inside
   /// [_processLifecycle] after each `await` to skip stale operations
   /// (e.g. abort a reconnect if the app went back to background).
