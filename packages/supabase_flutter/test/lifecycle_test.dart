@@ -11,12 +11,10 @@ import 'widget_test_stubs.dart';
 /// implementing all [StreamChannelMixin] methods.
 class FakeWebSocketChannel extends Fake implements WebSocketChannel {
   final Completer<void> readyCompleter;
-  final FakeWebSocketSink fakeSink = FakeWebSocketSink();
-  final StreamController<dynamic> _streamController =
-      StreamController<dynamic>.broadcast();
+  late final FakeWebSocketSink fakeSink = FakeWebSocketSink(_streamController);
+  final StreamController<dynamic> _streamController = StreamController<dynamic>.broadcast();
 
-  FakeWebSocketChannel({Completer<void>? readyCompleter})
-      : readyCompleter = readyCompleter ?? Completer<void>();
+  FakeWebSocketChannel({Completer<void>? readyCompleter}) : readyCompleter = readyCompleter ?? Completer<void>();
 
   @override
   Future<void> get ready => readyCompleter.future;
@@ -35,9 +33,12 @@ class FakeWebSocketChannel extends Fake implements WebSocketChannel {
 }
 
 class FakeWebSocketSink extends Fake implements WebSocketSink {
+  final StreamController<dynamic> _streamController;
   final Completer<void> _doneCompleter = Completer<void>();
   int? closeCode;
   String? closeReason;
+
+  FakeWebSocketSink(this._streamController);
 
   @override
   Future<void> close([int? code, String? reason]) async {
@@ -45,6 +46,9 @@ class FakeWebSocketSink extends Fake implements WebSocketSink {
     closeReason = reason;
     if (!_doneCompleter.isCompleted) {
       _doneCompleter.complete();
+    }
+    if (!_streamController.isClosed) {
+      await _streamController.close();
     }
   }
 
