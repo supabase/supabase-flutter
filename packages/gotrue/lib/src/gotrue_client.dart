@@ -750,13 +750,7 @@ class GoTrueClient {
   /// Sets the session data from [refreshToken] and returns the current session.
   ///
   /// If [accessToken] is provided and not yet expired, the session is restored
-  /// directly from the supplied tokens, skipping the `/token` refresh
-  /// round-trip. A `/user` request is still made to populate the session's
-  /// user object.
-  ///
-  /// If [accessToken] is expired (or not provided), the method falls back to
-  /// calling [_callRefreshToken] with [refreshToken], matching the existing
-  /// behaviour.
+  /// directly from the supplied tokens, skipping the `/token` refresh round-trip.
   Future<AuthResponse> setSession(
     String refreshToken, {
     String? accessToken,
