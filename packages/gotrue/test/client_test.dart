@@ -283,12 +283,98 @@ void main() {
     test(
         'Set session with an empty refresh token throws AuthSessionMissingException',
         () async {
-      try {
-        await client.setSession('');
-        fail('setSession did not throw');
-      } catch (error) {
-        expect(error, isA<AuthSessionMissingException>());
-      }
+      await expectLater(
+        () => client.setSession(''),
+        throwsA(isA<AuthSessionMissingException>()),
+      );
+    });
+
+    test(
+        'Set session with both access token and refresh token skips network refresh',
+        () async {
+      await client.signInWithPassword(email: email1, password: password);
+
+      final refreshToken = client.currentSession?.refreshToken ?? '';
+      final accessToken = client.currentSession?.accessToken ?? '';
+      expect(refreshToken, isNotEmpty);
+      expect(accessToken, isNotEmpty);
+
+      final newClient = GoTrueClient(
+        url: gotrueUrl,
+        headers: {
+          'apikey': anonToken,
+        },
+      );
+
+      expect(newClient.currentSession, isNull);
+
+      expect(
+        newClient.onAuthStateChange,
+        emits(predicate<AuthState>((s) => s.event == AuthChangeEvent.signedIn)),
+      );
+
+      final response = await newClient.setSession(
+        refreshToken,
+        accessToken: accessToken,
+      );
+
+      expect(response.session, isNotNull);
+      expect(response.session?.accessToken, equals(accessToken));
+      expect(response.session?.refreshToken, equals(refreshToken));
+      expect(response.user, isNotNull);
+      expect(newClient.currentSession?.accessToken, equals(accessToken));
+    });
+
+    test('Set session with expired access token falls back to refresh token',
+        () async {
+      await client.signInWithPassword(email: email1, password: password);
+
+      final refreshToken = client.currentSession?.refreshToken ?? '';
+      expect(refreshToken, isNotEmpty);
+
+      // A JWT that is syntactically valid but expired (exp in the past).
+      // Header: {"alg":"HS256","typ":"JWT"}
+      // Payload: {"sub":"user","exp":1}  (epoch second 1 = Jan 1, 1970)
+      // Signature: 3 zero bytes as valid base64url ("AAAA")
+      const expiredAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+          '.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxfQ'
+          '.AAAA';
+
+      final newClient = GoTrueClient(
+        url: gotrueUrl,
+        headers: {
+          'apikey': anonToken,
+        },
+      );
+
+      // Should fall back to _callRefreshToken and succeed.
+      final response = await newClient.setSession(
+        refreshToken,
+        accessToken: expiredAccessToken,
+      );
+
+      expect(response.session, isNotNull);
+      expect(response.session?.accessToken, isNot(equals(expiredAccessToken)));
+      expect(newClient.currentSession?.accessToken, isNotEmpty);
+    });
+
+    test(
+        'Set session with empty access token throws AuthSessionMissingException',
+        () async {
+      await expectLater(
+        () => client.setSession('some-refresh-token', accessToken: ''),
+        throwsA(isA<AuthSessionMissingException>()),
+      );
+    });
+
+    test(
+        'Set session with malformed access token throws AuthInvalidJwtException',
+        () async {
+      await expectLater(
+        () => client.setSession('some-refresh-token',
+            accessToken: 'not-a-valid-jwt'),
+        throwsA(isA<AuthInvalidJwtException>()),
+      );
     });
 
     test('Refresh session with refreshToken when no current session exists',
