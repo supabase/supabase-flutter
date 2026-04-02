@@ -30,7 +30,7 @@ class PostgrestClient {
   /// [isolate] is optional and can be used to provide a custom isolate, which is used for heavy json computation
   ///
   /// [retryEnabled] controls whether automatic retries are performed for GET and
-  /// HEAD requests that fail with HTTP 520 or a network error. Defaults to `true`.
+  /// HEAD requests that fail with HTTP 503, HTTP 520, or a network error. Defaults to `true`.
   /// Use [PostgrestBuilder.retry] to override this per request.
   PostgrestClient(
     this.url, {
