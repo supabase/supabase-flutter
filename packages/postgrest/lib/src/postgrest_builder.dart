@@ -212,7 +212,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Map<String, String> execHeaders,
   ) async {
     const maxRetries = 3;
-    const retryableStatusCodes = {520};
+    const retryableStatusCodes = {503, 520};
 
     final effectiveRetryEnabled = _retryEnabled ?? _clientRetryEnabled;
     final isRetryableMethod = method == METHOD_GET || method == METHOD_HEAD;

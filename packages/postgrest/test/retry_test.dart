@@ -106,6 +106,18 @@ void main() {
       expect(mock.callCount, 1);
     });
 
+    test('GET retries on 503 then succeeds', () async {
+      final mock = _MockRetryClient([_status(503), _ok()]);
+      final client = _buildClient(mock);
+
+      final result = await client.from('users').select();
+
+      expect(result, isEmpty);
+      expect(mock.callCount, 2);
+      expect(mock.requests[0].headers['x-retry-count'], isNull);
+      expect(mock.requests[1].headers['x-retry-count'], '1');
+    });
+
     test('GET does not retry on non-520 error (e.g., 400)', () async {
       final mock = _MockRetryClient([_status(400)]);
       final client = _buildClient(mock);
