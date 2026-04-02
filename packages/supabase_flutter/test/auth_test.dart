@@ -80,9 +80,9 @@ void main() {
             );
 
         // Trigger an error on the auth state change stream via notifyException.
+        final auth = Supabase.instance.client.auth;
         // ignore: invalid_use_of_internal_member
-        Supabase.instance.client.auth
-            .notifyException(Exception('test auth error'), StackTrace.current);
+        auth.notifyException(Exception('test auth error'), StackTrace.current);
 
         // Allow the stream listener to process the error.
         await Future.delayed(Duration.zero);
