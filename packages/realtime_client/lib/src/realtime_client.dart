@@ -13,20 +13,14 @@ import 'package:realtime_client/src/retry_timer.dart';
 import 'package:realtime_client/src/websocket/websocket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-typedef WebSocketTransport = WebSocketChannel Function(
-  String url,
-  Map<String, String> headers,
-);
+typedef WebSocketTransport =
+    WebSocketChannel Function(String url, Map<String, String> headers);
 
-typedef RealtimeEncode = void Function(
-  dynamic payload,
-  void Function(String result) callback,
-);
+typedef RealtimeEncode =
+    void Function(dynamic payload, void Function(String result) callback);
 
-typedef RealtimeDecode = void Function(
-  String payload,
-  void Function(dynamic result) callback,
-);
+typedef RealtimeDecode =
+    void Function(String payload, void Function(dynamic result) callback);
 
 /// Event details for when the connection closed.
 class RealtimeCloseEvent {
@@ -42,10 +36,7 @@ class RealtimeCloseEvent {
   /// https://datatracker.ietf.org/doc/html/rfc6455#section-7.1.6
   final String? reason;
 
-  const RealtimeCloseEvent({
-    required this.code,
-    required this.reason,
-  });
+  const RealtimeCloseEvent({required this.code, required this.reason});
 
   @override
   String toString() {
@@ -53,6 +44,41 @@ class RealtimeCloseEvent {
   }
 }
 
+/// Manages a persistent WebSocket connection to the Supabase Realtime server.
+///
+/// [RealtimeClient] is the central hub for all real-time communication. It owns
+/// the WebSocket lifecycle — opening, closing, and reconnecting with exponential
+/// backoff — and multiplexes multiple [RealtimeChannel] subscriptions over a
+/// single connection.
+///
+/// **Responsibilities:**
+/// - Establishes and maintains the WebSocket connection to [endPoint].
+/// - Sends periodic heartbeat messages to detect stale connections and
+///   reconnects automatically when a heartbeat goes unanswered.
+/// - Encodes outgoing messages and decodes incoming messages (JSON by default).
+/// - Manages a registry of [RealtimeChannel] instances, routing inbound
+///   messages to the correct channel by topic.
+/// - Refreshes the access token and propagates it to all joined channels so
+///   that subscriptions remain authorized across token rotations.
+///
+/// **Key collaborators:**
+/// - [RealtimeChannel] — created via [channel] and registered here; the client
+///   dispatches server messages to each channel by topic.
+/// - `RetryTimer` — drives the reconnect backoff strategy.
+/// - [WebSocketTransport] — injectable transport layer used in tests.
+///
+/// **Lifecycle:**
+/// 1. Construct with an endpoint URL and optional configuration.
+/// 2. Call [connect] to open the WebSocket. The client begins heartbeating
+///    immediately and reconnects on unexpected disconnections.
+/// 3. Create channels with [channel], subscribe to events, and call
+///    `RealtimeChannel.subscribe()` to join server-side topics.
+/// 4. Call [disconnect] when real-time functionality is no longer needed; this
+///    removes all channels and closes the underlying socket.
+///
+/// **Platform notes:**
+/// - Works on all Dart platforms (Flutter mobile/desktop, web, server).
+/// - On web, the underlying [WebSocketChannel] uses the browser WebSocket API.
 class RealtimeClient {
   // This is named `accessTokenValue` in supabase-js
   String? accessToken;
@@ -86,7 +112,7 @@ class RealtimeClient {
     'open': [],
     'close': [],
     'error': [],
-    'message': []
+    'message': [],
   };
 
   @Deprecated("No longer used. Will be removed in the next major version.")
@@ -133,38 +159,36 @@ class RealtimeClient {
     RealtimeLogLevel? logLevel,
     this.httpClient,
     this.customAccessToken,
-  })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
-            .replace(
-              queryParameters:
-                  logLevel == null ? null : {'log_level': logLevel.name},
-            )
-            .toString(),
-        headers = {
-          ...Constants.defaultHeaders,
-          if (headers != null) ...headers,
-        },
-        transport = transport ?? createWebSocketClient {
+  }) : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
+           .replace(
+             queryParameters: logLevel == null
+                 ? null
+                 : {'log_level': logLevel.name},
+           )
+           .toString(),
+       headers = {...Constants.defaultHeaders, if (headers != null) ...headers},
+       transport = transport ?? createWebSocketClient {
     _log.config(
-        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: $logLevel');
+      'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: $logLevel',
+    );
     _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
 
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
-    this.encode = encode ??
+    this.encode =
+        encode ??
         (dynamic payload, Function(String result) callback) =>
             callback(json.encode(payload));
-    this.decode = decode ??
+    this.decode =
+        decode ??
         (String payload, Function(dynamic result) callback) =>
             callback(json.decode(payload));
-    reconnectTimer = RetryTimer(
-      () async {
-        await disconnect();
-        await connect();
-      },
-      this.reconnectAfterMs,
-    );
+    reconnectTimer = RetryTimer(() async {
+      await disconnect();
+      await connect();
+    }, this.reconnectAfterMs);
   }
 
   /// Connects the socket.
@@ -237,8 +261,10 @@ class RealtimeClient {
       if (shouldCloseSink) {
         // Don't set the state to `disconnecting` if the connection is already closed.
         connState = SocketStates.disconnecting;
-        log('transport', 'disconnecting', {'code': code, 'reason': reason},
-            Level.FINE);
+        log('transport', 'disconnecting', {
+          'code': code,
+          'reason': reason,
+        }, Level.FINE);
       }
 
       // Connection cannot be closed while it's still connecting. Wait for connection to
@@ -277,8 +303,9 @@ class RealtimeClient {
   }
 
   Future<List<String>> removeAllChannels() async {
-    final values =
-        await Future.wait(channels.map((channel) => channel.unsubscribe()));
+    final values = await Future.wait(
+      channels.map((channel) => channel.unsubscribe()),
+    );
     disconnect();
     return values;
   }
@@ -286,8 +313,12 @@ class RealtimeClient {
   /// Logs the message. Override `this.logger` for specialized logging.
   ///
   /// [level] must be [Level.FINEST] for senitive data
-  void log(
-      [String? kind, String? msg, dynamic data, Level level = Level.FINEST]) {
+  void log([
+    String? kind,
+    String? msg,
+    dynamic data,
+    Level level = Level.FINEST,
+  ]) {
     _log.log(level, '$kind: $msg', data);
     logger?.call(kind, msg, data);
   }
@@ -362,8 +393,11 @@ class RealtimeClient {
       encode(message.toJson(), (result) => conn?.sink.add(result));
     }
 
-    log('push', '${message.topic} ${message.event} (${message.ref})',
-        message.payload);
+    log(
+      'push',
+      '${message.topic} ${message.event} (${message.ref})',
+      message.payload,
+    );
 
     if (isConnected) {
       callback();
@@ -391,11 +425,7 @@ class RealtimeClient {
 
       channels
           .where((channel) => channel.isMember(topic))
-          .forEach((channel) => channel.trigger(
-                event,
-                payload,
-                ref,
-              ));
+          .forEach((channel) => channel.trigger(event, payload, ref));
       for (final callback in stateChangeCallbacks['message']!) {
         callback(msg);
       }
@@ -514,10 +544,9 @@ class RealtimeClient {
     }
 
     var endpoint = Uri.parse(url);
-    endpoint = endpoint.replace(queryParameters: {
-      ...endpoint.queryParameters,
-      ...params,
-    });
+    endpoint = endpoint.replace(
+      queryParameters: {...endpoint.queryParameters, ...params},
+    );
 
     return endpoint.toString();
   }
@@ -548,12 +577,14 @@ class RealtimeClient {
       return;
     }
     pendingHeartbeatRef = makeRef();
-    push(Message(
-      topic: 'phoenix',
-      event: ChannelEvents.heartbeat,
-      payload: {},
-      ref: pendingHeartbeatRef!,
-    ));
+    push(
+      Message(
+        topic: 'phoenix',
+        event: ChannelEvents.heartbeat,
+        payload: {},
+        ref: pendingHeartbeatRef!,
+      ),
+    );
     await setAuth(accessToken);
   }
 }
