@@ -11,7 +11,7 @@ import 'widget_test_stubs.dart';
 /// implementing all [StreamChannelMixin] methods.
 class FakeWebSocketChannel extends Fake implements WebSocketChannel {
   final Completer<void> readyCompleter;
-  final FakeWebSocketSink fakeSink = FakeWebSocketSink();
+  late final FakeWebSocketSink fakeSink = FakeWebSocketSink(_streamController);
   final StreamController<dynamic> _streamController =
       StreamController<dynamic>.broadcast();
 
@@ -35,9 +35,12 @@ class FakeWebSocketChannel extends Fake implements WebSocketChannel {
 }
 
 class FakeWebSocketSink extends Fake implements WebSocketSink {
+  final StreamController<dynamic> _streamController;
   final Completer<void> _doneCompleter = Completer<void>();
   int? closeCode;
   String? closeReason;
+
+  FakeWebSocketSink(this._streamController);
 
   @override
   Future<void> close([int? code, String? reason]) async {
@@ -45,6 +48,9 @@ class FakeWebSocketSink extends Fake implements WebSocketSink {
     closeReason = reason;
     if (!_doneCompleter.isCompleted) {
       _doneCompleter.complete();
+    }
+    if (!_streamController.isClosed) {
+      await _streamController.close();
     }
   }
 
@@ -68,22 +74,11 @@ void main() {
   const supabaseKey = '';
 
   group('Lifecycle realtime reconnection', () {
-    late List<FakeWebSocketChannel> createdChannels;
     late List<Completer<void>> readyCompleters;
 
-    setUp(() {
+    setUp(() async {
       mockAppLink();
-      createdChannels = [];
       readyCompleters = [];
-    });
-
-    tearDown(() async {
-      try {
-        await Supabase.instance.dispose();
-      } catch (_) {}
-    });
-
-    Future<void> initWithMockTransport() async {
       await Supabase.initialize(
         url: supabaseUrl,
         anonKey: supabaseKey,
@@ -96,13 +91,17 @@ void main() {
           transport: (url, headers) {
             final completer = Completer<void>();
             readyCompleters.add(completer);
-            final channel = FakeWebSocketChannel(readyCompleter: completer);
-            createdChannels.add(channel);
-            return channel;
+            return FakeWebSocketChannel(readyCompleter: completer);
           },
         ),
       );
-    }
+    });
+
+    tearDown(() async {
+      try {
+        await Supabase.instance.dispose();
+      } catch (_) {}
+    });
 
     /// Helper: call connect() and immediately complete the
     /// ready future created by the transport factory.
@@ -114,11 +113,25 @@ void main() {
       await future;
     }
 
+    /// Repeatedly complete pending ready futures and pump the event queue
+    /// until no new completers appear. This handles the case where lifecycle
+    /// processing triggers a connect() that creates a new completer.
+    Future<void> settleLifecycle() async {
+      var previousCount = -1;
+      while (readyCompleters.length != previousCount) {
+        previousCount = readyCompleters.length;
+        for (final c in readyCompleters) {
+          if (!c.isCompleted) c.complete();
+        }
+        await pumpEventQueue();
+      }
+    }
+
     test(
         'paused then resumed waits for disconnect '
         'before reconnecting', () async {
-      await initWithMockTransport();
       final realtime = Supabase.instance.client.realtime;
+      final binding = TestWidgetsFlutterBinding.instance;
 
       // Add a channel so onResumed() processes reconnection
       realtime.channel('test');
@@ -128,27 +141,26 @@ void main() {
       expect(realtime.connState, SocketStates.open);
 
       // paused → triggers disconnect
-      Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.paused);
-      await Future<void>.delayed(Duration.zero);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
 
       // resumed → waits for disconnect, then reconnects
-      Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.resumed);
-      await Future<void>.delayed(Duration.zero);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.detached);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
 
       // Complete any pending ready futures (reconnect)
-      for (final c in readyCompleters) {
-        if (!c.isCompleted) c.complete();
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await settleLifecycle();
 
       expect(realtime.connState, SocketStates.open);
+      expect(realtime.conn, isNotNull);
     });
 
     test(
         'paused → resumed → inactive → resumed '
         'still reconnects', () async {
-      await initWithMockTransport();
       final realtime = Supabase.instance.client.realtime;
+      final binding = TestWidgetsFlutterBinding.instance;
 
       realtime.channel('test');
 
@@ -156,31 +168,93 @@ void main() {
       expect(realtime.connState, SocketStates.open);
 
       // paused → starts disconnect
-      Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.paused);
-      await Future<void>.delayed(Duration.zero);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
 
-      // first resumed → captures _disconnectFuture
-      Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.resumed);
-      await Future<void>.delayed(Duration.zero);
+      // first resumed → queues reconnect after disconnect
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.detached);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
 
-      // inactive → does nothing
-      Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.inactive);
-      await Future<void>.delayed(Duration.zero);
+      // inactive → does nothing (not a tracked lifecycle state)
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
 
-      // second resumed → should still see _disconnectFuture
-      // (not eagerly cleared)
-      Supabase.instance.didChangeAppLifecycleState(AppLifecycleState.resumed);
-      await Future<void>.delayed(Duration.zero);
+      // second resumed → queues another reconnect (idempotent)
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
 
       // Complete all pending ready futures
-      for (final c in readyCompleters) {
-        if (!c.isCompleted) c.complete();
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await settleLifecycle();
 
       // Should have reconnected, not stuck disconnecting
-      expect(realtime.connState, isNot(SocketStates.disconnecting));
+      expect(realtime.connState, SocketStates.open);
       expect(realtime.conn, isNotNull);
+    });
+
+    test(
+        'rapid paused → resumed → paused → resumed '
+        'ends up connected', () async {
+      final realtime = Supabase.instance.client.realtime;
+      final binding = TestWidgetsFlutterBinding.instance;
+
+      realtime.channel('test');
+
+      await connectAndReady(realtime);
+      expect(realtime.connState, SocketStates.open);
+
+      // Rapid lifecycle flapping
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.detached);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.detached);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+      // Complete all pending ready futures as they appear
+      await settleLifecycle();
+
+      expect(realtime.connState, SocketStates.open);
+      expect(realtime.conn, isNotNull);
+    });
+
+    test(
+        'resumed then paused before connect completes '
+        'cancels reconnect', () async {
+      final realtime = Supabase.instance.client.realtime;
+      final binding = TestWidgetsFlutterBinding.instance;
+
+      realtime.channel('test');
+
+      await connectAndReady(realtime);
+      expect(realtime.connState, SocketStates.open);
+
+      // paused → triggers disconnect
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+
+      // resumed → queues reconnect
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.detached);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+
+      // paused again before connect completes → should cancel the
+      // reconnect (target state is now paused)
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+
+      // Complete all pending ready futures
+      await settleLifecycle();
+
+      // Should be disconnected since the last event was paused
+      expect(realtime.connState, SocketStates.disconnected);
+      expect(realtime.conn, isNull);
     });
   });
 }
