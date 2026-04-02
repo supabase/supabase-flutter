@@ -77,6 +77,7 @@ void main() {
     late List<Completer<void>> readyCompleters;
 
     setUp(() async {
+      mockAppLink();
       readyCompleters = [];
       await Supabase.initialize(
         url: supabaseUrl,
@@ -112,12 +113,18 @@ void main() {
       await future;
     }
 
-    // Helper: complete all pending ready futures to unblock connect()
-    void completeReadyCompleters() async {
-      for (final completer in readyCompleters) {
-        if (!completer.isCompleted) completer.complete();
+    /// Repeatedly complete pending ready futures and pump the event queue
+    /// until no new completers appear. This handles the case where lifecycle
+    /// processing triggers a connect() that creates a new completer.
+    Future<void> settleLifecycle() async {
+      var previousCount = -1;
+      while (readyCompleters.length != previousCount) {
+        previousCount = readyCompleters.length;
+        for (final c in readyCompleters) {
+          if (!c.isCompleted) c.complete();
+        }
+        await pumpEventQueue();
       }
-      readyCompleters.clear();
     }
 
     test(
@@ -143,8 +150,7 @@ void main() {
       binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
 
       // Complete any pending ready futures (reconnect)
-      completeReadyCompleters();
-      await pumpEventQueue();
+      await settleLifecycle();
 
       expect(realtime.connState, SocketStates.open);
       expect(realtime.conn, isNotNull);
@@ -177,8 +183,7 @@ void main() {
       binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
 
       // Complete all pending ready futures
-      completeReadyCompleters();
-      await pumpEventQueue();
+      await settleLifecycle();
 
       // Should have reconnected, not stuck disconnecting
       expect(realtime.connState, SocketStates.open);
@@ -212,8 +217,7 @@ void main() {
       binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
 
       // Complete all pending ready futures as they appear
-      completeReadyCompleters();
-      await pumpEventQueue();
+      await settleLifecycle();
 
       expect(realtime.connState, SocketStates.open);
       expect(realtime.conn, isNotNull);
@@ -246,8 +250,7 @@ void main() {
       binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
 
       // Complete all pending ready futures
-      completeReadyCompleters();
-      await pumpEventQueue();
+      await settleLifecycle();
 
       // Should be disconnected since the last event was paused
       expect(realtime.connState, SocketStates.disconnected);
