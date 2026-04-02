@@ -23,9 +23,9 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
     bool get = false,
   ]) {
     var newUrl = _url;
-    final String method;
+    final _HttpMethod method;
     if (get) {
-      method = METHOD_GET;
+      method = _HttpMethod.get;
       if (params is Map) {
         for (final entry in params.entries) {
           assert(entry.key is String,
@@ -41,7 +41,7 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
         throw ArgumentError.value(params, 'params', 'argument must be a Map');
       }
     } else {
-      method = METHOD_POST;
+      method = _HttpMethod.post;
     }
 
     return PostgrestFilterBuilder(_copyWithType(

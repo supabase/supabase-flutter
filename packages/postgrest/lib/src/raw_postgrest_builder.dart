@@ -21,7 +21,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     Uri? url,
     Headers? headers,
     String? schema,
-    String? method,
+    _HttpMethod? method,
     Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
