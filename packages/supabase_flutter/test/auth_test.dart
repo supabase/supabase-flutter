@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gotrue/gotrue.dart';
+import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'widget_test_stubs.dart';
@@ -58,6 +60,47 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 100));
 
         expect(mockStorage.initializeCalled, isTrue);
+      });
+    });
+
+    group('Auth state stream error handling', () {
+      test('logs auth state stream errors at warning level', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          anonKey: supabaseKey,
+          debug: false,
+          authOptions: FlutterAuthClientOptions(
+            localStorage: MockEmptyLocalStorage(),
+            pkceAsyncStorage: MockAsyncStorage(),
+          ),
+        );
+
+        final logRecords = <LogRecord>[];
+        final sub = Logger('supabase.supabase_flutter').onRecord.listen(
+              (record) => logRecords.add(record),
+            );
+
+        // Trigger an error on the auth state change stream via notifyException.
+        // ignore: invalid_use_of_internal_member
+        Supabase.instance.client.auth
+            .notifyException(Exception('test auth error'), StackTrace.current);
+
+        // Allow the stream listener to process the error.
+        await Future.delayed(Duration.zero);
+
+        await sub.cancel();
+
+        expect(
+          logRecords,
+          contains(
+            predicate<LogRecord>(
+              (r) =>
+                  r.level == Level.WARNING &&
+                  r.message == 'Auth state change stream error' &&
+                  r.error.toString().contains('test auth error'),
+            ),
+          ),
+        );
       });
     });
 

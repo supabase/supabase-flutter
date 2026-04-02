@@ -37,6 +37,10 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// - Obtains session from local storage and sets it as the current session
   /// - Starts a deep link observer
   /// - Emits an initial session if there were no session stored in local storage
+  ///
+  /// Errors emitted by the auth state change stream (e.g. during token refresh
+  /// or network failures) are logged at `warning` level and do not propagate
+  /// to the caller.
   Future<void> initialize({
     required FlutterAuthClientOptions options,
   }) async {
@@ -48,7 +52,9 @@ class SupabaseAuth with WidgetsBindingObserver {
       (data) {
         _onAuthStateChange(data.event, data.session);
       },
-      onError: (error, stackTrace) {},
+      onError: (error, stackTrace) {
+        _log.warning('Auth state change stream error', error, stackTrace);
+      },
     );
 
     await _localStorage.initialize();
