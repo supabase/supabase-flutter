@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
+import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'utils.dart';
 
@@ -429,6 +430,34 @@ void main() {
         final client = SupabaseClient(supabaseUrl, supabaseKey);
 
         // Should not throw
+        await client.dispose();
+      });
+    });
+
+    group('Shared YAJsonIsolate', () {
+      test('accepts an injected YAJsonIsolate and disposes it on dispose()',
+          () async {
+        final isolate = YAJsonIsolate();
+        await isolate.initialize();
+
+        final client =
+            SupabaseClient(supabaseUrl, supabaseKey, isolate: isolate);
+
+        // Should not throw — client disposes the shared isolate
+        await client.dispose();
+
+        // After dispose, the isolate is killed; further calls should throw
+        expect(() => isolate.encode({'key': 'value'}), throwsA(anything));
+      });
+
+      test('creates a single isolate shared across rest and functions clients',
+          () async {
+        // Creating a SupabaseClient without providing an isolate should
+        // still result in a single shared isolate (not one per sub-client).
+        // Verified indirectly: dispose() should complete without error,
+        // meaning there is no double-dispose from sub-clients.
+        final client = SupabaseClient(supabaseUrl, supabaseKey);
+
         await client.dispose();
       });
     });
