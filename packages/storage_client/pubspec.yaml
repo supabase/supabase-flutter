@@ -6,7 +6,7 @@ repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/sto
 documentation: 'https://supabase.com/docs/reference/dart/storage-createbucket'
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   http: '>=0.13.4 <2.0.0'

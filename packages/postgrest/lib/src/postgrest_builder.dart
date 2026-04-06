@@ -110,9 +110,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (_count != null) {
       if (_headers['Prefer'] != null) {
         final oldPreferHeader = _headers['Prefer'];
-        _headers['Prefer'] = '$oldPreferHeader,count=${_count!.name}';
+        _headers['Prefer'] = '$oldPreferHeader,count=${_count.name}';
       } else {
-        _headers['Prefer'] = 'count=${_count!.name}';
+        _headers['Prefer'] = 'count=${_count.name}';
       }
     }
 
@@ -128,9 +128,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       if (_schema == null) {
         // skip
       } else if (method == _HttpMethod.get || method == _HttpMethod.head) {
-        _headers['Accept-Profile'] = _schema!;
+        _headers['Accept-Profile'] = _schema;
       } else {
-        _headers['Content-Profile'] = _schema!;
+        _headers['Content-Profile'] = _schema;
       }
       if (method != _HttpMethod.get && method != _HttpMethod.head) {
         _headers['Content-Type'] = 'application/json';
@@ -196,7 +196,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         } else {
           try {
             if ((response.contentLength ?? 0) > 10000 && _isolate != null) {
-              body = await _isolate!.decode(response.body);
+              body = await _isolate.decode(response.body);
             } else {
               body = jsonDecode(response.body);
             }
@@ -251,7 +251,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       body as R;
 
       if (_converter != null) {
-        converted = _converter!(body);
+        converted = _converter(body);
       } else {
         converted = body as S;
       }
@@ -314,14 +314,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       if (_count != null &&
           response.request!.method != _HttpMethod.head.value) {
         if (_converter != null) {
-          return PostgrestResponse<S>(data: _converter!(null as R), count: 0)
+          return PostgrestResponse<S>(data: _converter(null as R), count: 0)
               as T;
         } else {
           return null as T;
         }
       } else {
         if (_converter != null) {
-          return _converter!(null as R) as T;
+          return _converter(null as R) as T;
         } else {
           return null as T;
         }
