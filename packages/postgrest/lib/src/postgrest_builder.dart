@@ -27,7 +27,7 @@ enum _HttpMethod {
   String get value => name.toUpperCase();
 }
 
-Type _typeOf<T>() => T;
+typedef _Nullable<T> = T?;
 
 /// The base builder class.
 ///
@@ -241,7 +241,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         body = PostgrestList.from(body);
       } else if (R == PostgrestMap) {
         body = PostgrestMap.from(body);
-      } else if (R == _typeOf<PostgrestMap?>()) {
+      } else if (R == _Nullable<PostgrestMap>) {
         if (body != null) {
           body = PostgrestMap.from(body);
         }
