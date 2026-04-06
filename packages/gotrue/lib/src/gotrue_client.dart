@@ -56,7 +56,13 @@ class GoTrueClient {
 
   Timer? _autoRefreshTicker;
 
-  /// Completer to combine multiple simultaneous token refresh requests.
+  /// Deduplicates concurrent token refresh requests.
+  ///
+  /// When multiple callers detect an expired token simultaneously (e.g. several
+  /// in-flight API requests all fail with 401), only the first creates a new
+  /// refresh network request. Subsequent callers receive the same [Future] and
+  /// wait for the single in-flight request to complete. The completer is cleared
+  /// after resolution so the next expiry cycle starts a fresh request.
   Completer<AuthResponse>? _refreshTokenCompleter;
 
   JWKSet? _jwks;
