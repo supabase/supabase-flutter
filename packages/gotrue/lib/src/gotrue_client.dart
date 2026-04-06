@@ -17,8 +17,7 @@ import 'package:meta/meta.dart';
 import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
 
-import 'broadcast_stub.dart'
-    if (dart.library.js_interop) './broadcast_web.dart'
+import 'broadcast_stub.dart' if (dart.library.js_interop) './broadcast_web.dart'
     as web;
 import 'version.dart';
 
@@ -70,9 +69,8 @@ class GoTrueClient {
   DateTime? _jwksCachedAt;
 
   final _onAuthStateChangeController = BehaviorSubject<AuthState>();
-  final _onAuthStateChangeControllerSync = BehaviorSubject<AuthState>(
-    sync: true,
-  );
+  final _onAuthStateChangeControllerSync =
+      BehaviorSubject<AuthState>(sync: true);
 
   /// Local storage to store pkce code verifiers.
   final GotrueAsyncStorage? _asyncStorage;
@@ -113,24 +111,29 @@ class GoTrueClient {
     Client? httpClient,
     GotrueAsyncStorage? asyncStorage,
     AuthFlowType flowType = AuthFlowType.pkce,
-  }) : _url = url ?? Constants.defaultGotrueUrl,
-       _headers = {...Constants.defaultHeaders, ...?headers},
-       _httpClient = httpClient,
-       _asyncStorage = asyncStorage,
-       _flowType = flowType {
+  })  : _url = url ?? Constants.defaultGotrueUrl,
+        _headers = {
+          ...Constants.defaultHeaders,
+          ...?headers,
+        },
+        _httpClient = httpClient,
+        _asyncStorage = asyncStorage,
+        _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
     _log.config(
-      'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}',
-    );
+        'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}');
     _log.finest('Initialize with headers: $_headers');
     admin = GoTrueAdminApi(
       gotrueUrl,
       headers: _headers,
       httpClient: httpClient,
     );
-    mfa = GoTrueMFAApi(client: this, fetch: _fetch);
+    mfa = GoTrueMFAApi(
+      client: this,
+      fetch: _fetch,
+    );
     if (_autoRefreshToken) {
       startAutoRefresh();
     }
@@ -204,10 +207,8 @@ class GoTrueClient {
     String? captchaToken,
     OtpChannel channel = OtpChannel.sms,
   }) async {
-    assert(
-      (email != null && phone == null) || (email == null && phone != null),
-      'You must provide either an email or phone number',
-    );
+    assert((email != null && phone == null) || (email == null && phone != null),
+        'You must provide either an email or phone number');
 
     late final Map<String, dynamic> response;
 
@@ -215,15 +216,12 @@ class GoTrueClient {
       String? codeChallenge;
 
       if (_flowType == AuthFlowType.pkce) {
-        assert(
-          _asyncStorage != null,
-          'You need to provide asyncStorage to perform pkce flow.',
-        );
+        assert(_asyncStorage != null,
+            'You need to provide asyncStorage to perform pkce flow.');
         final codeVerifier = generatePKCEVerifier();
         await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier,
-        );
+            key: '${Constants.defaultStorageKey}-code-verifier',
+            value: codeVerifier);
         codeChallenge = generatePKCEChallenge(codeVerifier);
       }
 
@@ -252,17 +250,11 @@ class GoTrueClient {
         'channel': channel.name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
-      response =
-          await _fetch.request(
-                '$_url/signup',
-                RequestMethodType.post,
-                options: fetchOptions,
-              )
-              as Map<String, dynamic>;
+      response = await _fetch.request('$_url/signup', RequestMethodType.post,
+          options: fetchOptions) as Map<String, dynamic>;
     } else {
       throw AuthException(
-        'You must provide either an email or phone number and a password',
-      );
+          'You must provide either an email or phone number and a password');
     }
 
     final authResponse = AuthResponse.fromJson(response);
@@ -346,14 +338,11 @@ class GoTrueClient {
 
   /// Verifies the PKCE code verifyer and retrieves a session.
   Future<AuthSessionUrlResponse> exchangeCodeForSession(String authCode) async {
-    assert(
-      _asyncStorage != null,
-      'You need to provide asyncStorage to perform pkce flow.',
-    );
+    assert(_asyncStorage != null,
+        'You need to provide asyncStorage to perform pkce flow.');
 
-    final codeVerifierRawString = await _asyncStorage!.getItem(
-      key: '${Constants.defaultStorageKey}-code-verifier',
-    );
+    final codeVerifierRawString = await _asyncStorage!
+        .getItem(key: '${Constants.defaultStorageKey}-code-verifier');
     if (codeVerifierRawString == null) {
       throw AuthException('Code verifier could not be found in local storage.');
     }
@@ -366,19 +355,21 @@ class GoTrueClient {
       RequestMethodType.post,
       options: GotrueRequestOptions(
         headers: _headers,
-        body: {'auth_code': authCode, 'code_verifier': codeVerifier},
-        query: {'grant_type': 'pkce'},
+        body: {
+          'auth_code': authCode,
+          'code_verifier': codeVerifier,
+        },
+        query: {
+          'grant_type': 'pkce',
+        },
       ),
     );
 
     await _asyncStorage.removeItem(
-      key: '${Constants.defaultStorageKey}-code-verifier',
-    );
+        key: '${Constants.defaultStorageKey}-code-verifier');
 
     final authSessionUrlResponse = AuthSessionUrlResponse(
-      session: Session.fromJson(response)!,
-      redirectType: redirectType?.name,
-    );
+        session: Session.fromJson(response)!, redirectType: redirectType?.name);
 
     final session = authSessionUrlResponse.session;
     _saveSession(session);
@@ -429,7 +420,9 @@ class GoTrueClient {
     final authResponse = AuthResponse.fromJson(response);
 
     if (authResponse.session == null) {
-      throw AuthException('An error occurred on token verification.');
+      throw AuthException(
+        'An error occurred on token verification.',
+      );
     }
 
     _saveSession(authResponse.session!);
@@ -467,15 +460,12 @@ class GoTrueClient {
     if (email != null) {
       String? codeChallenge;
       if (_flowType == AuthFlowType.pkce) {
-        assert(
-          _asyncStorage != null,
-          'You need to provide asyncStorage to perform pkce flow.',
-        );
+        assert(_asyncStorage != null,
+            'You need to provide asyncStorage to perform pkce flow.');
         final codeVerifier = generatePKCEVerifier();
         await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier,
-        );
+            key: '${Constants.defaultStorageKey}-code-verifier',
+            value: codeVerifier);
         codeChallenge = generatePKCEChallenge(codeVerifier);
       }
       await _fetch.request(
@@ -540,21 +530,16 @@ class GoTrueClient {
 
     if (!isRecoveryWithTokenHash) {
       assert(
-        ((email != null && phone == null) ||
-                (email == null && phone != null)) ||
-            (tokenHash != null),
-        '`email` or `phone` needs to be specified.',
-      );
-      assert(
-        token != null || tokenHash != null,
-        '`token` or `tokenHash` needs to be specified.',
-      );
+          ((email != null && phone == null) ||
+                  (email == null && phone != null)) ||
+              (tokenHash != null),
+          '`email` or `phone` needs to be specified.');
+      assert(token != null || tokenHash != null,
+          '`token` or `tokenHash` needs to be specified.');
     } else {
       // For recovery with tokenHash, email/phone should not be provided
-      assert(
-        email == null && phone == null,
-        'For recovery type with tokenHash, only tokenHash and type should be provided.',
-      );
+      assert(email == null && phone == null,
+          'For recovery type with tokenHash, only tokenHash and type should be provided.');
     }
 
     final body = {
@@ -568,24 +553,21 @@ class GoTrueClient {
       if (tokenHash != null) 'token_hash': tokenHash,
     };
     final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
-    final response = await _fetch.request(
-      '$_url/verify',
-      RequestMethodType.post,
-      options: fetchOptions,
-    );
+    final response = await _fetch
+        .request('$_url/verify', RequestMethodType.post, options: fetchOptions);
 
     final authResponse = AuthResponse.fromJson(response);
 
     if (authResponse.session == null) {
-      throw AuthException('An error occurred on token verification.');
+      throw AuthException(
+        'An error occurred on token verification.',
+      );
     }
 
     _saveSession(authResponse.session!);
-    notifyAllSubscribers(
-      type == OtpType.recovery
-          ? AuthChangeEvent.passwordRecovery
-          : AuthChangeEvent.signedIn,
-    );
+    notifyAllSubscribers(type == OtpType.recovery
+        ? AuthChangeEvent.passwordRecovery
+        : AuthChangeEvent.signedIn);
 
     return authResponse;
   }
@@ -614,36 +596,30 @@ class GoTrueClient {
     String? codeChallenge;
     String? codeChallengeMethod;
     if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
+      assert(_asyncStorage != null,
+          'You need to provide asyncStorage to perform pkce flow.');
       final codeVerifier = generatePKCEVerifier();
       await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: codeVerifier,
-      );
+          key: '${Constants.defaultStorageKey}-code-verifier',
+          value: codeVerifier);
       codeChallenge = generatePKCEChallenge(codeVerifier);
       codeChallengeMethod = codeVerifier == codeChallenge ? 'plain' : 's256';
     }
 
-    final res = await _fetch.request(
-      '$_url/sso',
-      RequestMethodType.post,
-      options: GotrueRequestOptions(
-        body: {
-          if (providerId != null) 'provider_id': providerId,
-          if (domain != null) 'domain': domain,
-          if (redirectTo != null) 'redirect_to': redirectTo,
-          if (captchaToken != null)
-            'gotrue_meta_security': {'captcha_token': captchaToken},
-          'skip_http_redirect': true,
-          'code_challenge': codeChallenge,
-          'code_challenge_method': codeChallengeMethod,
-        },
-        headers: _headers,
-      ),
-    );
+    final res = await _fetch.request('$_url/sso', RequestMethodType.post,
+        options: GotrueRequestOptions(
+          body: {
+            if (providerId != null) 'provider_id': providerId,
+            if (domain != null) 'domain': domain,
+            if (redirectTo != null) 'redirect_to': redirectTo,
+            if (captchaToken != null)
+              'gotrue_meta_security': {'captcha_token': captchaToken},
+            'skip_http_redirect': true,
+            'code_challenge': codeChallenge,
+            'code_challenge_method': codeChallengeMethod,
+          },
+          headers: _headers,
+        ));
 
     return res['url'] as String;
   }
@@ -674,10 +650,8 @@ class GoTrueClient {
       throw AuthSessionMissingException();
     }
 
-    final options = GotrueRequestOptions(
-      headers: headers,
-      jwt: session.accessToken,
-    );
+    final options =
+        GotrueRequestOptions(headers: headers, jwt: session.accessToken);
 
     await _fetch.request(
       '$_url/reauthenticate',
@@ -698,21 +672,15 @@ class GoTrueClient {
     String? emailRedirectTo,
     String? captchaToken,
   }) async {
-    assert(
-      (email != null && phone == null) || (email == null && phone != null),
-      '`email` or `phone` needs to be specified.',
-    );
+    assert((email != null && phone == null) || (email == null && phone != null),
+        '`email` or `phone` needs to be specified.');
     if (email != null) {
-      assert(
-        [OtpType.signup, OtpType.emailChange].contains(type),
-        'email must be provided for type ${type.name}',
-      );
+      assert([OtpType.signup, OtpType.emailChange].contains(type),
+          'email must be provided for type ${type.name}');
     }
     if (phone != null) {
-      assert(
-        [OtpType.sms, OtpType.phoneChange].contains(type),
-        'phone must be provided for type ${type.name}',
-      );
+      assert([OtpType.sms, OtpType.phoneChange].contains(type),
+          'phone must be provided for type ${type.name}');
     }
 
     final body = {
@@ -775,11 +743,8 @@ class GoTrueClient {
       jwt: accessToken,
       redirectTo: emailRedirectTo,
     );
-    final response = await _fetch.request(
-      '$_url/user',
-      RequestMethodType.put,
-      options: options,
-    );
+    final response = await _fetch.request('$_url/user', RequestMethodType.put,
+        options: options);
     final userResponse = UserResponse.fromJson(response);
 
     _currentSession = currentSession?.copyWith(user: userResponse.user);
@@ -860,15 +825,18 @@ class GoTrueClient {
     final errorCode = url.queryParameters['error_code'];
     final error = url.queryParameters['error'];
     if (errorDescription != null) {
-      throw AuthException(errorDescription, statusCode: errorCode, code: error);
+      throw AuthException(
+        errorDescription,
+        statusCode: errorCode,
+        code: error,
+      );
     }
 
     if (_flowType == AuthFlowType.pkce) {
       final authCode = originUrl.queryParameters['code'];
       if (authCode == null) {
         throw AuthPKCEGrantCodeExchangeError(
-          'No code detected in query parameters.',
-        );
+            'No code detected in query parameters.');
       }
       return await exchangeCodeForSession(authCode);
     }
@@ -927,15 +895,16 @@ class GoTrueClient {
   /// [scope] determines which sessions should be logged out.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
-  Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
+  Future<void> signOut({
+    SignOutScope scope = SignOutScope.local,
+  }) async {
     _log.info('Signing out user with scope: $scope');
     final accessToken = currentSession?.accessToken;
 
     if (scope != SignOutScope.others) {
       _removeSession();
       await _asyncStorage?.removeItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-      );
+          key: '${Constants.defaultStorageKey}-code-verifier');
       notifyAllSubscribers(AuthChangeEvent.signedOut);
     }
 
@@ -963,10 +932,8 @@ class GoTrueClient {
   }) async {
     String? codeChallenge;
     if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
+      assert(_asyncStorage != null,
+          'You need to provide asyncStorage to perform pkce flow.');
       final codeVerifier = generatePKCEVerifier();
       await _asyncStorage!.setItem(
         key: '${Constants.defaultStorageKey}-code-verifier',
@@ -1040,7 +1007,9 @@ class GoTrueClient {
     final authResponse = AuthResponse.fromJson(response);
 
     if (authResponse.session == null) {
-      throw AuthException('An error occurred on token verification.');
+      throw AuthException(
+        'An error occurred on token verification.',
+      );
     }
 
     _saveSession(authResponse.session!);
@@ -1064,14 +1033,11 @@ class GoTrueClient {
       queryParams: queryParams,
       skipBrowserRedirect: true,
     );
-    final res = await _fetch.request(
-      urlResponse.url,
-      RequestMethodType.get,
-      options: GotrueRequestOptions(
-        headers: _headers,
-        jwt: _currentSession?.accessToken,
-      ),
-    );
+    final res = await _fetch.request(urlResponse.url, RequestMethodType.get,
+        options: GotrueRequestOptions(
+          headers: _headers,
+          jwt: _currentSession?.accessToken,
+        ));
     return OAuthResponse(provider: provider, url: res['url']);
   }
 
@@ -1124,8 +1090,7 @@ class GoTrueClient {
           throw notifyException(AuthException('Session expired.'));
         }
       } else {
-        final shouldEmitEvent =
-            _currentSession == null ||
+        final shouldEmitEvent = _currentSession == null ||
             _currentSession!.user.id != session.user.id;
         _saveSession(session);
 
@@ -1177,9 +1142,9 @@ class GoTrueClient {
       }
 
       final expiresInTicks =
-          (DateTime.fromMillisecondsSinceEpoch(
-                    expiresAt * 1000,
-                  ).difference(now).inMilliseconds /
+          (DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)
+                      .difference(now)
+                      .inMilliseconds /
                   Constants.autoRefreshTickDuration.inMilliseconds)
               .floor();
 
@@ -1206,23 +1171,18 @@ class GoTrueClient {
         attempt++;
         _log.fine('Attempt $attempt to refresh token');
         final options = GotrueRequestOptions(
-          headers: _headers,
-          body: {'refresh_token': refreshToken},
-          query: {'grant_type': 'refresh_token'},
-        );
-        final response = await _fetch.request(
-          '$_url/token',
-          RequestMethodType.post,
-          options: options,
-        );
+            headers: _headers,
+            body: {'refresh_token': refreshToken},
+            query: {'grant_type': 'refresh_token'});
+        final response = await _fetch
+            .request('$_url/token', RequestMethodType.post, options: options);
         final authResponse = AuthResponse.fromJson(response);
         return authResponse;
       },
       retryIf: (e) {
         // Do not retry if the next retry comes after the next tick.
-        final nextBackOff = Duration(
-          milliseconds: (200 * pow(2, attempt - 1).floor()),
-        );
+        final nextBackOff =
+            Duration(milliseconds: (200 * pow(2, attempt - 1).floor()));
 
         return e is AuthRetryableFetchException &&
             (DateTime.now().millisecondsSinceEpoch +
@@ -1259,10 +1219,8 @@ class GoTrueClient {
       urlParams.addAll(queryParams);
     }
     if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
+      assert(_asyncStorage != null,
+          'You need to provide asyncStorage to perform pkce flow.');
       final codeVerifier = generatePKCEVerifier();
       await _asyncStorage!.setItem(
         key: '${Constants.defaultStorageKey}-code-verifier',
@@ -1302,15 +1260,12 @@ class GoTrueClient {
       final broadcastKey =
           "sb-${Uri.parse(_url).host.split(".").first}-auth-token";
 
-      assert(
-        _broadcastChannel == null,
-        'Broadcast channel should not be started more than once.',
-      );
+      assert(_broadcastChannel == null,
+          'Broadcast channel should not be started more than once.');
       try {
         _broadcastChannel = web.getBroadcastChannel(broadcastKey);
-        _broadcastChannelSubscription = _broadcastChannel?.onMessage.listen((
-          messageEvent,
-        ) {
+        _broadcastChannelSubscription =
+            _broadcastChannel?.onMessage.listen((messageEvent) {
           final rawEvent = messageEvent['event'];
           _log.finest('Received broadcast message: $messageEvent');
           _log.info('Received broadcast event: $rawEvent');
@@ -1325,9 +1280,8 @@ class GoTrueClient {
             'USER_UPDATED' => AuthChangeEvent.userUpdated,
             'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
             // This case should never happen though
-            _ => AuthChangeEvent.values.firstWhereOrNull(
-              (event) => event.name == rawEvent,
-            ),
+            _ => AuthChangeEvent.values
+                .firstWhereOrNull((event) => event.name == rawEvent),
           };
 
           if (event != null) {
@@ -1530,26 +1484,24 @@ class GoTrueClient {
 
     final signingKey =
         (decoded.header.alg.startsWith('HS') || decoded.header.kid == null)
-        ? null
-        : await _fetchJwk(decoded.header.kid!, _jwks ?? JWKSet(keys: []));
+            ? null
+            : await _fetchJwk(decoded.header.kid!, _jwks ?? JWKSet(keys: []));
 
     // If symmetric algorithm, fallback to getUser()
     if (signingKey == null) {
       await getUser(token);
       return GetClaimsResponse(
-        claims: decoded.payload,
-        header: decoded.header,
-        signature: decoded.signature,
-      );
+          claims: decoded.payload,
+          header: decoded.header,
+          signature: decoded.signature);
     }
 
     try {
       JWT.verify(token, signingKey.rsaPublicKey);
       return GetClaimsResponse(
-        claims: decoded.payload,
-        header: decoded.header,
-        signature: decoded.signature,
-      );
+          claims: decoded.payload,
+          header: decoded.header,
+          signature: decoded.signature);
     } catch (e) {
       throw AuthInvalidJwtException('Invalid JWT signature: $e');
     }
