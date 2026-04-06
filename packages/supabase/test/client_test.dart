@@ -435,7 +435,8 @@ void main() {
     });
 
     group('Shared YAJsonIsolate', () {
-      test('accepts an injected YAJsonIsolate and disposes it on dispose()',
+      test(
+          'does not dispose an injected YAJsonIsolate so the caller retains ownership',
           () async {
         final isolate = YAJsonIsolate();
         await isolate.initialize();
@@ -443,11 +444,12 @@ void main() {
         final client =
             SupabaseClient(supabaseUrl, supabaseKey, isolate: isolate);
 
-        // Should not throw — client disposes the shared isolate
         await client.dispose();
 
-        // After dispose, the isolate is killed; further calls should throw
-        expect(() => isolate.encode({'key': 'value'}), throwsA(anything));
+        // Isolate is still alive — caller owns the lifecycle
+        expect(await isolate.encode({'key': 'value'}), isA<String>());
+
+        await isolate.dispose();
       });
 
       test('creates a single isolate shared across rest and functions clients',
