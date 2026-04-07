@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'widget_test_stubs.dart';
@@ -63,7 +62,8 @@ void main() {
     });
 
     group('Auth state stream error handling', () {
-      test('logs auth state stream errors at warning level', () async {
+      test('does not propagate auth state stream errors as unhandled exceptions',
+          () async {
         await Supabase.initialize(
           url: supabaseUrl,
           anonKey: supabaseKey,
@@ -74,12 +74,8 @@ void main() {
           ),
         );
 
-        final logRecords = <LogRecord>[];
-        final sub = Logger('supabase.supabase_flutter').onRecord.listen(
-              (record) => logRecords.add(record),
-            );
-
         // Trigger an error on the auth state change stream via notifyException.
+        // This should not throw or cause an unhandled zone error.
         final auth = Supabase.instance.client.auth;
         // ignore: invalid_use_of_internal_member
         auth.notifyException(Exception('test auth error'), StackTrace.current);
@@ -87,19 +83,7 @@ void main() {
         // Allow the stream listener to process the error.
         await Future.delayed(Duration.zero);
 
-        await sub.cancel();
-
-        expect(
-          logRecords,
-          contains(
-            predicate<LogRecord>(
-              (r) =>
-                  r.level == Level.WARNING &&
-                  r.message == 'Auth state change stream error' &&
-                  r.error.toString().contains('test auth error'),
-            ),
-          ),
-        );
+        // If we reach here the error was not rethrown as an unhandled exception.
       });
     });
 

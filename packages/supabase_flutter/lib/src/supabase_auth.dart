@@ -39,8 +39,8 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// - Emits an initial session if there were no session stored in local storage
   ///
   /// Errors emitted by the auth state change stream (e.g. during token refresh
-  /// or network failures) are logged at `warning` level and do not propagate
-  /// to the caller.
+  /// or network failures) are logged by the underlying auth client and do not
+  /// propagate as unhandled zone errors.
   Future<void> initialize({
     required FlutterAuthClientOptions options,
   }) async {
@@ -53,7 +53,9 @@ class SupabaseAuth with WidgetsBindingObserver {
         _onAuthStateChange(data.event, data.session);
       },
       onError: (error, stackTrace) {
-        _log.warning('Auth state change stream error', error, stackTrace);
+        // Errors are already logged by GoTrueClient.notifyException before
+        // being added to the stream. The empty handler prevents them from
+        // being rethrown as unhandled zone errors.
       },
     );
 
