@@ -19,6 +19,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     String? schema,
     Client? httpClient,
     YAJsonIsolate? isolate,
+    bool retryEnabled = true,
+    Duration Function(int attempt)? retryDelay,
   }) : super(
           PostgrestBuilder(
             url: url,
@@ -27,6 +29,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
             schema: schema,
             httpClient: httpClient,
             isolate: isolate,
+            retryEnabled: retryEnabled,
+            retryDelay: retryDelay,
           ),
         );
 
@@ -260,6 +264,20 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   }
 
   @override
+  PostgrestQueryBuilder<T> retry({required bool enabled}) {
+    return PostgrestQueryBuilder(
+      url: _url,
+      headers: _headers,
+      httpClient: _httpClient,
+      method: _method,
+      schema: _schema,
+      isolate: _isolate,
+      retryEnabled: enabled,
+      retryDelay: _retryDelay,
+    );
+  }
+
+  @override
   PostgrestQueryBuilder<T> setHeader(String key, String value) {
     return PostgrestQueryBuilder(
       url: _url,
@@ -268,6 +286,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       method: _method,
       schema: _schema,
       isolate: _isolate,
+      retryEnabled: _retryEnabled,
+      retryDelay: _retryDelay,
     );
   }
 }

@@ -516,6 +516,11 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   }
 
   @override
+  PostgrestFilterBuilder<T> retry({required bool enabled}) {
+    return PostgrestFilterBuilder(_copyWith(retryEnabled: enabled));
+  }
+
+  @override
   PostgrestFilterBuilder<T> setHeader(String key, String value) {
     return PostgrestFilterBuilder(
       _copyWith(headers: {..._headers, key: value}),

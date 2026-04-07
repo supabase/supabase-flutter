@@ -21,24 +21,26 @@ void main() {
       expect(provider.snakeCase, 'custom:my-provider');
     });
 
-    test('getOAuthSignInUrl builds correct URL for a custom provider',
-        () async {
-      const gotrueUrl = 'http://localhost:9998';
-      final client = GoTrueClient(
-        url: gotrueUrl,
-        headers: {},
-        flowType: AuthFlowType.implicit,
-      );
+    test(
+      'getOAuthSignInUrl builds correct URL for a custom provider',
+      () async {
+        const gotrueUrl = 'http://localhost:9998';
+        final client = GoTrueClient(
+          url: gotrueUrl,
+          headers: {},
+          flowType: AuthFlowType.implicit,
+        );
 
-      final provider = OAuthProvider('custom:my-provider');
-      final res = await client.getOAuthSignInUrl(provider: provider);
+        final provider = OAuthProvider('custom:my-provider');
+        final res = await client.getOAuthSignInUrl(provider: provider);
 
-      expect(res.provider, provider);
-      expect(res.url, startsWith('$gotrueUrl/authorize?'));
+        expect(res.provider, provider);
+        expect(res.url, startsWith('$gotrueUrl/authorize?'));
 
-      final uri = Uri.parse(res.url);
-      expect(uri.queryParameters['provider'], 'custom:my-provider');
-    });
+        final uri = Uri.parse(res.url);
+        expect(uri.queryParameters['provider'], 'custom:my-provider');
+      },
+    );
 
     test('built-in providers still work as static constants', () {
       expect(OAuthProvider.google.name, 'google');
@@ -53,7 +55,9 @@ void main() {
       expect(OAuthProvider('google'), equals(OAuthProvider.google));
       expect(OAuthProvider('custom:x'), equals(OAuthProvider('custom:x')));
       expect(
-          OAuthProvider('custom:x'), isNot(equals(OAuthProvider('custom:y'))));
+        OAuthProvider('custom:x'),
+        isNot(equals(OAuthProvider('custom:y'))),
+      );
     });
 
     test('OAuthProvider.values contains all built-in providers', () {
