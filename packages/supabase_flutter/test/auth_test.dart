@@ -62,7 +62,8 @@ void main() {
     });
 
     group('Auth state stream error handling', () {
-      test('does not propagate auth state stream errors as unhandled exceptions',
+      test(
+          'does not propagate auth state stream errors as unhandled exceptions',
           () async {
         await Supabase.initialize(
           url: supabaseUrl,
