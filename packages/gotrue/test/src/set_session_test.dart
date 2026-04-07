@@ -9,18 +9,18 @@ import '../utils.dart';
 
 // Minimal user payload accepted by User.fromJson.
 Map<String, dynamic> get _mockUserJson => {
-  'id': 'mock-user-id',
-  'aud': 'authenticated',
-  'role': 'authenticated',
-  'email': 'mock@example.com',
-  'app_metadata': {
-    'provider': 'email',
-    'providers': ['email'],
-  },
-  'user_metadata': {},
-  'created_at': '2024-01-01T00:00:00.000Z',
-  'updated_at': '2024-01-01T00:00:00.000Z',
-};
+      'id': 'mock-user-id',
+      'aud': 'authenticated',
+      'role': 'authenticated',
+      'email': 'mock@example.com',
+      'app_metadata': {
+        'provider': 'email',
+        'providers': ['email'],
+      },
+      'user_metadata': {},
+      'created_at': '2024-01-01T00:00:00.000Z',
+      'updated_at': '2024-01-01T00:00:00.000Z',
+    };
 
 /// Mock HTTP client for setSession tests.
 ///
@@ -96,7 +96,8 @@ void main() {
   });
 
   group('setSession — validation edge cases', () {
-    test('empty refresh token with a non-null access token throws before '
+    test(
+        'empty refresh token with a non-null access token throws before '
         'inspecting the access token', () async {
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       final at = _makeRawJwt({
@@ -113,7 +114,8 @@ void main() {
       expect(mockClient.userCallCount, 0);
     });
 
-    test('access token with exp within the 30-second expiry margin is treated '
+    test(
+        'access token with exp within the 30-second expiry margin is treated '
         'as expired and falls back to the refresh-token path', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // exp is 20 s in the future, inside the 30 s Constants.expiryMargin.
@@ -134,7 +136,8 @@ void main() {
       expect(mockClient.userCallCount, 0); // /user was NOT called
     });
 
-    test('access token with no exp claim is treated as expired and falls back '
+    test(
+        'access token with no exp claim is treated as expired and falls back '
         'to the refresh-token path', () async {
       // JWT without an exp claim: decodeJwt succeeds but exp == null.
       final at = _makeRawJwt({'role': 'authenticated', 'sub': 'mock-user-id'});

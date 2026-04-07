@@ -342,8 +342,7 @@ void main() {
         // Header: {"alg":"HS256","typ":"JWT"}
         // Payload: {"sub":"user","exp":1}  (epoch second 1 = Jan 1, 1970)
         // Signature: 3 zero bytes as valid base64url ("AAAA")
-        const expiredAccessToken =
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+        const expiredAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
             '.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxfQ'
             '.AAAA';
 

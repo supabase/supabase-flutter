@@ -16,7 +16,7 @@ class FakeWebSocketChannel extends Fake implements WebSocketChannel {
       StreamController<dynamic>.broadcast();
 
   FakeWebSocketChannel({Completer<void>? readyCompleter})
-    : readyCompleter = readyCompleter ?? Completer<void>();
+      : readyCompleter = readyCompleter ?? Completer<void>();
 
   @override
   Future<void> get ready => readyCompleter.future;
@@ -127,7 +127,8 @@ void main() {
       }
     }
 
-    test('paused then resumed waits for disconnect '
+    test(
+        'paused then resumed waits for disconnect '
         'before reconnecting', () async {
       final realtime = Supabase.instance.client.realtime;
       final binding = TestWidgetsFlutterBinding.instance;
@@ -155,7 +156,8 @@ void main() {
       expect(realtime.conn, isNotNull);
     });
 
-    test('paused → resumed → inactive → resumed '
+    test(
+        'paused → resumed → inactive → resumed '
         'still reconnects', () async {
       final realtime = Supabase.instance.client.realtime;
       final binding = TestWidgetsFlutterBinding.instance;
@@ -188,7 +190,8 @@ void main() {
       expect(realtime.conn, isNotNull);
     });
 
-    test('rapid paused → resumed → paused → resumed '
+    test(
+        'rapid paused → resumed → paused → resumed '
         'ends up connected', () async {
       final realtime = Supabase.instance.client.realtime;
       final binding = TestWidgetsFlutterBinding.instance;
@@ -220,7 +223,8 @@ void main() {
       expect(realtime.conn, isNotNull);
     });
 
-    test('resumed then paused before connect completes '
+    test(
+        'resumed then paused before connect completes '
         'cancels reconnect', () async {
       final realtime = Supabase.instance.client.realtime;
       final binding = TestWidgetsFlutterBinding.instance;
