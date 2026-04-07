@@ -11,7 +11,43 @@ import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// SupabaseAuth
+/// Integrates Supabase Auth with the Flutter application lifecycle.
+///
+/// [SupabaseAuth] acts as the bridge between the Flutter widget tree and the
+/// underlying [GoTrueClient]. It is an internal singleton managed by [Supabase]
+/// and should not be instantiated directly by application code — use
+/// `Supabase.instance.client.auth` for auth operations.
+///
+/// **Responsibilities:**
+/// - Persists and restores sessions via a [LocalStorage] implementation so
+///   that users remain signed in across app restarts.
+/// - Observes deep links (universal links / custom URL schemes) and exchanges
+///   auth codes or tokens found in those links for a valid session, supporting
+///   both PKCE and Implicit OAuth flows.
+/// - Forwards Flutter `AppLifecycleState` changes (via `WidgetsBindingObserver`)
+///   to the auth client so that token refresh resumes correctly after the app
+///   returns to the foreground.
+/// - Emits an [AuthChangeEvent.initialSession] event at startup so that
+///   listeners receive a consistent first event regardless of whether a stored
+///   session exists.
+///
+/// **Key collaborators:**
+/// - [GoTrueClient] (`Supabase.instance.client.auth`) — the underlying auth
+///   client that [SupabaseAuth] coordinates with.
+/// - [LocalStorage] — pluggable storage backend for session persistence.
+/// - `AppLinks` — provides the incoming deep link stream and the initial link
+///   that launched the app.
+///
+/// **Lifecycle:**
+/// 1. Created lazily when [Supabase.initialize] runs.
+/// 2. [initialize] restores any persisted session, registers the deep link
+///    observer, and adds this instance as a `WidgetsBindingObserver`.
+/// 3. [dispose] cancels all subscriptions, removes the binding observer, and
+///    stops deep link monitoring.
+///
+/// **Platform notes:**
+/// - Deep link handling is skipped on web (`kIsWeb`) because the browser
+///   handles URL-based redirects directly.
 class SupabaseAuth with WidgetsBindingObserver {
   static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
 

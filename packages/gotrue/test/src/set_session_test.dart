@@ -15,7 +15,7 @@ Map<String, dynamic> get _mockUserJson => {
       'email': 'mock@example.com',
       'app_metadata': {
         'provider': 'email',
-        'providers': ['email']
+        'providers': ['email'],
       },
       'user_metadata': {},
       'created_at': '2024-01-01T00:00:00.000Z',
@@ -43,16 +43,23 @@ class _SetSessionMockClient extends BaseClient {
       // Refresh-token fallback response with a freshly minted access token.
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       final iat = exp - 3600;
-      final freshAt =
-          _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
+      final freshAt = _makeRawJwt({
+        'exp': exp,
+        'iat': iat,
+        'sub': 'mock-user-id',
+      });
       return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode({
-          'access_token': freshAt,
-          'token_type': 'bearer',
-          'expires_in': 3600,
-          'refresh_token': 'new-refresh-token',
-          'user': _mockUserJson,
-        }))),
+        Stream.value(
+          utf8.encode(
+            jsonEncode({
+              'access_token': freshAt,
+              'token_type': 'bearer',
+              'expires_in': 3600,
+              'refresh_token': 'new-refresh-token',
+              'user': _mockUserJson,
+            }),
+          ),
+        ),
         200,
       );
     }
@@ -67,8 +74,9 @@ class _SetSessionMockClient extends BaseClient {
 /// no auto-injected `iat`, no claim overrides. The signature is a stub;
 /// [decodeJwt] does not verify signatures.
 String _makeRawJwt(Map<String, dynamic> payload) {
-  final header =
-      base64Url.encode(utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})));
+  final header = base64Url.encode(
+    utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
+  );
   final body = base64Url.encode(utf8.encode(jsonEncode(payload)));
   const sig = 'AAAA';
   return '$header.$body.$sig';
@@ -92,8 +100,11 @@ void main() {
         'empty refresh token with a non-null access token throws before '
         'inspecting the access token', () async {
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
-      final at =
-          _makeRawJwt({'exp': exp, 'iat': exp - 3600, 'sub': 'mock-user-id'});
+      final at = _makeRawJwt({
+        'exp': exp,
+        'iat': exp - 3600,
+        'sub': 'mock-user-id',
+      });
 
       await expectLater(
         () => client.setSession('', accessToken: at),
@@ -108,11 +119,16 @@ void main() {
         'as expired and falls back to the refresh-token path', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // exp is 20 s in the future, inside the 30 s Constants.expiryMargin.
-      final at = _makeRawJwt(
-          {'exp': timeNow + 20, 'iat': timeNow - 3580, 'sub': 'mock-user-id'});
+      final at = _makeRawJwt({
+        'exp': timeNow + 20,
+        'iat': timeNow - 3580,
+        'sub': 'mock-user-id',
+      });
 
-      final response =
-          await client.setSession('some-refresh-token', accessToken: at);
+      final response = await client.setSession(
+        'some-refresh-token',
+        accessToken: at,
+      );
 
       expect(response.session, isNotNull);
       // The returned token must be the freshly refreshed one, not our near-expired JWT.
@@ -126,8 +142,10 @@ void main() {
       // JWT without an exp claim: decodeJwt succeeds but exp == null.
       final at = _makeRawJwt({'role': 'authenticated', 'sub': 'mock-user-id'});
 
-      final response =
-          await client.setSession('some-refresh-token', accessToken: at);
+      final response = await client.setSession(
+        'some-refresh-token',
+        accessToken: at,
+      );
 
       expect(response.session, isNotNull);
       expect(response.session?.accessToken, isNot(equals(at)));
@@ -136,26 +154,32 @@ void main() {
   });
 
   group('setSession — fast path session fields', () {
-    test('expiresIn equals exp minus iat when both claims are present',
-        () async {
-      final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
-      final exp = iat + 3600;
-      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
+    test(
+      'expiresIn equals exp minus iat when both claims are present',
+      () async {
+        final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
+        final exp = iat + 3600;
+        final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
 
-      final response =
-          await client.setSession('some-refresh-token', accessToken: at);
+        final response = await client.setSession(
+          'some-refresh-token',
+          accessToken: at,
+        );
 
-      // expiresIn should be the total token lifetime (exp - iat = 3600).
-      expect(response.session?.expiresIn, equals(exp - iat));
-    });
+        // expiresIn should be the total token lifetime (exp - iat = 3600).
+        expect(response.session?.expiresIn, equals(exp - iat));
+      },
+    );
 
     test('expiresIn is null when iat claim is absent', () async {
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       // JWT without iat.
       final at = _makeRawJwt({'exp': exp, 'sub': 'mock-user-id'});
 
-      final response =
-          await client.setSession('some-refresh-token', accessToken: at);
+      final response = await client.setSession(
+        'some-refresh-token',
+        accessToken: at,
+      );
 
       expect(response.session?.expiresIn, isNull);
     });
@@ -165,26 +189,30 @@ void main() {
       final exp = iat + 3600;
       final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
 
-      final response =
-          await client.setSession('some-refresh-token', accessToken: at);
+      final response = await client.setSession(
+        'some-refresh-token',
+        accessToken: at,
+      );
 
       // expiresAt is re-derived from the JWT's own exp, not from expiresIn.
       expect(response.session?.expiresAt, equals(exp));
     });
 
-    test('returned session preserves the supplied access and refresh tokens',
-        () async {
-      final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
-      final exp = iat + 3600;
-      const refreshToken = 'my-refresh-token';
-      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
+    test(
+      'returned session preserves the supplied access and refresh tokens',
+      () async {
+        final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
+        final exp = iat + 3600;
+        const refreshToken = 'my-refresh-token';
+        final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
 
-      final response = await client.setSession(refreshToken, accessToken: at);
+        final response = await client.setSession(refreshToken, accessToken: at);
 
-      expect(response.session?.accessToken, equals(at));
-      expect(response.session?.refreshToken, equals(refreshToken));
-      expect(response.session?.tokenType, equals('bearer'));
-    });
+        expect(response.session?.accessToken, equals(at));
+        expect(response.session?.refreshToken, equals(refreshToken));
+        expect(response.session?.tokenType, equals('bearer'));
+      },
+    );
   });
 
   group('setSession — auth state events', () {
@@ -204,13 +232,19 @@ void main() {
     test('expired-fallback path emits tokenRefreshed (not signedIn)', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // Clearly expired token (exp well in the past).
-      final at = _makeRawJwt(
-          {'exp': timeNow - 100, 'iat': timeNow - 3700, 'sub': 'mock-user-id'});
+      final at = _makeRawJwt({
+        'exp': timeNow - 100,
+        'iat': timeNow - 3700,
+        'sub': 'mock-user-id',
+      });
 
       expect(
         client.onAuthStateChange,
-        emits(predicate<AuthState>(
-            (s) => s.event == AuthChangeEvent.tokenRefreshed)),
+        emits(
+          predicate<AuthState>(
+            (s) => s.event == AuthChangeEvent.tokenRefreshed,
+          ),
+        ),
       );
 
       await client.setSession('some-refresh-token', accessToken: at);

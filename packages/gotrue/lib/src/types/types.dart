@@ -4,10 +4,7 @@ typedef BroadcastChannel = ({
   void Function() close,
 });
 
-enum AuthFlowType {
-  implicit,
-  pkce,
-}
+enum AuthFlowType { implicit, pkce }
 
 /// An OAuth provider identifier.
 ///
@@ -147,8 +144,9 @@ enum OAuthClientRegistrationType {
   const OAuthClientRegistrationType(this.value);
 
   static OAuthClientRegistrationType fromString(String value) {
-    return OAuthClientRegistrationType.values
-        .firstWhere((e) => e.value == value);
+    return OAuthClientRegistrationType.values.firstWhere(
+      (e) => e.value == value,
+    );
   }
 }
 
@@ -218,16 +216,23 @@ class OAuthClient {
       clientType: OAuthClientType.fromString(json['client_type'] as String),
       tokenEndpointAuthMethod: json['token_endpoint_auth_method'] as String,
       registrationType: OAuthClientRegistrationType.fromString(
-          json['registration_type'] as String),
+        json['registration_type'] as String,
+      ),
       clientUri: json['client_uri'] as String?,
       redirectUris: (json['redirect_uris'] as List).cast<String>(),
       grantTypes: (json['grant_types'] as List)
-          .map((e) => OAuthClientGrantType.values
-              .firstWhere((gt) => gt.value == e as String))
+          .map(
+            (e) => OAuthClientGrantType.values.firstWhere(
+              (gt) => gt.value == e as String,
+            ),
+          )
           .toList(),
       responseTypes: (json['response_types'] as List)
-          .map((e) => OAuthClientResponseType.values
-              .firstWhere((rt) => rt.value == e as String))
+          .map(
+            (e) => OAuthClientResponseType.values.firstWhere(
+              (rt) => rt.value == e as String,
+            ),
+          )
           .toList(),
       scope: json['scope'] as String?,
       createdAt: json['created_at'] as String,

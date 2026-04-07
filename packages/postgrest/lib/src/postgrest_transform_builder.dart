@@ -7,6 +7,11 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       PostgrestTransformBuilder(_copyWith(url: url));
 
   @override
+  PostgrestTransformBuilder<T> retry({required bool enabled}) {
+    return PostgrestTransformBuilder(_copyWith(retryEnabled: enabled));
+  }
+
+  @override
   PostgrestTransformBuilder<T> setHeader(String key, String value) {
     return PostgrestTransformBuilder(
       _copyWith(headers: {..._headers, key: value}),
