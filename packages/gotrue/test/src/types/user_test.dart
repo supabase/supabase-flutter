@@ -83,9 +83,13 @@ void main() {
         expect(user, isNotNull);
         expect(user!.id, equals('123'));
         expect(
-            user.appMetadata, equals(<String, dynamic>{'provider': 'email'}));
+          user.appMetadata,
+          equals(<String, dynamic>{'provider': 'email'}),
+        );
         expect(
-            user.userMetadata, equals(<String, dynamic>{'name': 'John Doe'}));
+          user.userMetadata,
+          equals(<String, dynamic>{'name': 'John Doe'}),
+        );
         expect(user.aud, equals('authenticated'));
         expect(user.confirmationSentAt, equals('2023-01-01T00:00:00Z'));
         expect(user.recoverySentAt, equals('2023-01-01T01:00:00Z'));
@@ -180,7 +184,7 @@ void main() {
               'provider': 'email',
               'created_at': '2023-01-01T00:00:00Z',
               'last_sign_in_at': '2023-01-01T00:00:00Z',
-            }
+            },
           ],
         };
 
@@ -208,7 +212,7 @@ void main() {
               'status': 'verified',
               'created_at': '2023-01-01T00:00:00Z',
               'updated_at': '2023-01-01T00:00:00Z',
-            }
+            },
           ],
         };
 
@@ -441,10 +445,10 @@ void main() {
         const user1 = User(
           id: '123',
           appMetadata: <String, dynamic>{
-            'nested': <String, dynamic>{'key': 'value'}
+            'nested': <String, dynamic>{'key': 'value'},
           },
           userMetadata: <String, dynamic>{
-            'list': [1, 2, 3]
+            'list': [1, 2, 3],
           },
           aud: 'authenticated',
           createdAt: '2023-01-01T00:00:00Z',
@@ -453,10 +457,10 @@ void main() {
         const user2 = User(
           id: '123',
           appMetadata: <String, dynamic>{
-            'nested': <String, dynamic>{'key': 'value'}
+            'nested': <String, dynamic>{'key': 'value'},
           },
           userMetadata: <String, dynamic>{
-            'list': [1, 2, 3]
+            'list': [1, 2, 3],
           },
           aud: 'authenticated',
           createdAt: '2023-01-01T00:00:00Z',
@@ -503,11 +507,11 @@ void main() {
           appMetadata: <String, dynamic>{
             'provider': 'oauth',
             'providers': ['google', 'facebook'],
-            'nested': <String, dynamic>{'deep': 'value'}
+            'nested': <String, dynamic>{'deep': 'value'},
           },
           userMetadata: <String, dynamic>{
             'profile': <String, dynamic>{'name': 'John', 'age': 30},
-            'preferences': ['dark_mode', 'notifications']
+            'preferences': ['dark_mode', 'notifications'],
           },
           aud: 'authenticated',
           createdAt: '2023-01-01T00:00:00Z',
@@ -539,8 +543,10 @@ void main() {
 
         expect(identity.id, equals('identity-1'));
         expect(identity.userId, equals('123'));
-        expect(identity.identityData,
-            equals(<String, dynamic>{'email': 'test@example.com'}));
+        expect(
+          identity.identityData,
+          equals(<String, dynamic>{'email': 'test@example.com'}),
+        );
         expect(identity.identityId, equals('identity-1'));
         expect(identity.provider, equals('email'));
         expect(identity.createdAt, equals('2023-01-01T00:00:00Z'));
@@ -613,8 +619,10 @@ void main() {
 
         expect(json['id'], equals('identity-1'));
         expect(json['user_id'], equals('123'));
-        expect(json['identity_data'],
-            equals(<String, dynamic>{'email': 'test@example.com'}));
+        expect(
+          json['identity_data'],
+          equals(<String, dynamic>{'email': 'test@example.com'}),
+        );
         expect(json['identity_id'], equals('identity-1'));
         expect(json['provider'], equals('email'));
         expect(json['created_at'], equals('2023-01-01T00:00:00Z'));
@@ -642,8 +650,10 @@ void main() {
 
         expect(copy.id, equals(original.id));
         expect(copy.userId, equals(original.userId));
-        expect(copy.identityData,
-            equals(<String, dynamic>{'email': 'new@example.com'}));
+        expect(
+          copy.identityData,
+          equals(<String, dynamic>{'email': 'new@example.com'}),
+        );
         expect(copy.identityId, equals(original.identityId));
         expect(copy.provider, equals(original.provider));
         expect(copy.createdAt, equals(original.createdAt));
@@ -750,7 +760,7 @@ void main() {
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{
-            'nested': <String, dynamic>{'key': 'value'}
+            'nested': <String, dynamic>{'key': 'value'},
           },
           identityId: 'identity-1',
           provider: 'email',
@@ -762,7 +772,7 @@ void main() {
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{
-            'nested': <String, dynamic>{'key': 'value'}
+            'nested': <String, dynamic>{'key': 'value'},
           },
           identityId: 'identity-1',
           provider: 'email',
@@ -795,7 +805,7 @@ void main() {
           userId: '123',
           identityData: <String, dynamic>{
             'email': 'test@example.com',
-            'verified': true
+            'verified': true,
           },
           identityId: 'identity-1',
           provider: 'email',

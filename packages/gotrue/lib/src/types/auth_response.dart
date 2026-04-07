@@ -6,15 +6,12 @@ class AuthResponse {
   final Session? session;
   final User? user;
 
-  AuthResponse({
-    this.session,
-    User? user,
-  }) : user = user ?? session?.user;
+  AuthResponse({this.session, User? user}) : user = user ?? session?.user;
 
   /// Instanciates an `AuthResponse` object from json response.
   AuthResponse.fromJson(Map<String, dynamic> json)
-      : session = Session.fromJson(json),
-        user = User.fromJson(json) ?? Session.fromJson(json)?.user;
+    : session = Session.fromJson(json),
+      user = User.fromJson(json) ?? Session.fromJson(json)?.user;
 }
 
 /// Response of OAuth signin
@@ -23,10 +20,7 @@ class OAuthResponse {
   final String url;
 
   /// Instanciates an `OAuthResponse` object from json response.
-  const OAuthResponse({
-    required this.provider,
-    required this.url,
-  });
+  const OAuthResponse({required this.provider, required this.url});
 }
 
 /// Response that contains a user
@@ -40,9 +34,7 @@ class ResendResponse {
   /// Only set for phone resend
   String? messageId;
 
-  ResendResponse({
-    this.messageId,
-  });
+  ResendResponse({this.messageId});
 }
 
 class AuthSessionUrlResponse {
@@ -60,8 +52,8 @@ class GenerateLinkResponse {
   final User user;
 
   GenerateLinkResponse.fromJson(Map<String, dynamic> json)
-      : properties = GenerateLinkProperties.fromJson(json),
-        user = User.fromJson(json)!;
+    : properties = GenerateLinkProperties.fromJson(json),
+      user = User.fromJson(json)!;
 }
 
 class GenerateLinkProperties {
@@ -83,12 +75,13 @@ class GenerateLinkProperties {
   final GenerateLinkType verificationType;
 
   GenerateLinkProperties.fromJson(Map<String, dynamic> json)
-      : actionLink = json['action_link'] ?? '',
-        emailOtp = json['email_otp'] ?? '',
-        hashedToken = json['hashed_token'] ?? '',
-        redirectTo = json['redirect_to'] ?? '',
-        verificationType =
-            GenerateLinkTypeExtended.fromString(json['verification_type']);
+    : actionLink = json['action_link'] ?? '',
+      emailOtp = json['email_otp'] ?? '',
+      hashedToken = json['hashed_token'] ?? '',
+      redirectTo = json['redirect_to'] ?? '',
+      verificationType = GenerateLinkTypeExtended.fromString(
+        json['verification_type'],
+      );
 }
 
 extension ToSnakeCase on Enum {

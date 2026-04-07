@@ -7,9 +7,11 @@ void main() {
   group('ApiVersion', () {
     test('should return non null object for valid header', () {
       final String validHeader = '2024-01-01';
-      final Response response = Response('', 200, headers: {
-        Constants.apiVersionHeaderName: validHeader,
-      });
+      final Response response = Response(
+        '',
+        200,
+        headers: {Constants.apiVersionHeaderName: validHeader},
+      );
       final version = ApiVersion.fromResponse(response);
       expect(version?.name, validHeader);
       expect(version?.timestamp, DateTime.parse('2024-01-01 00:00:00.000Z'));
@@ -25,9 +27,11 @@ void main() {
       ];
 
       for (final value in invalidValues) {
-        final Response response = Response('', 200, headers: {
-          Constants.apiVersionHeaderName: value,
-        });
+        final Response response = Response(
+          '',
+          200,
+          headers: {Constants.apiVersionHeaderName: value},
+        );
         final version = ApiVersion.fromResponse(response);
         expect(version, isNull);
       }

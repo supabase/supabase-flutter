@@ -31,7 +31,7 @@ void main() {
       // Send message from channel1
       final testMessage = {
         'event': 'test-event',
-        'data': {'foo': 'bar'}
+        'data': {'foo': 'bar'},
       };
       channel1.postMessage(testMessage);
 
@@ -48,10 +48,7 @@ void main() {
       channel1.close();
 
       // Verify that sending messages after closing throws
-      expect(
-        () => channel1.postMessage({'event': 'test'}),
-        throwsA(anything),
-      );
+      expect(() => channel1.postMessage({'event': 'test'}), throwsA(anything));
     });
   });
 }

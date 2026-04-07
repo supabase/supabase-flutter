@@ -87,8 +87,10 @@ void main() {
       // Give it a delay to wait for recoverSession to throw
       await Future.delayed(const Duration(milliseconds: 100));
 
-      await expectLater(Supabase.instance.client.auth.onAuthStateChange,
-          emitsError(isA<AuthException>()));
+      await expectLater(
+        Supabase.instance.client.auth.onAuthStateChange,
+        emitsError(isA<AuthException>()),
+      );
     });
   });
 

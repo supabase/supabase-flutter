@@ -12,24 +12,24 @@ class GoTrueAdminMFAApi {
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,
-  })  : _url = url,
-        _headers = headers,
-        _fetch = fetch;
+  }) : _url = url,
+       _headers = headers,
+       _fetch = fetch;
 
-  Future<AuthMFAAdminListFactorsResponse> listFactors(
-      {required String userId}) async {
+  Future<AuthMFAAdminListFactorsResponse> listFactors({
+    required String userId,
+  }) async {
     validateUuid(userId);
 
     final data = await _fetch.request(
       '$_url/admin/users/$userId/factors',
       RequestMethodType.get,
-      options: GotrueRequestOptions(
-        headers: _headers,
-      ),
+      options: GotrueRequestOptions(headers: _headers),
     );
 
     return AuthMFAAdminListFactorsResponse(
-        factors: (data as List).map((e) => Factor.fromJson(e)).toList());
+      factors: (data as List).map((e) => Factor.fromJson(e)).toList(),
+    );
   }
 
   Future<AuthMFAAdminDeleteFactorResponse> deleteFactor({
@@ -42,9 +42,7 @@ class GoTrueAdminMFAApi {
     final data = await _fetch.request(
       '$_url/admin/users/$userId/factors/$factorId',
       RequestMethodType.delete,
-      options: GotrueRequestOptions(
-        headers: _headers,
-      ),
+      options: GotrueRequestOptions(headers: _headers),
     );
 
     return AuthMFAAdminDeleteFactorResponse.fromJson(data);

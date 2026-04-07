@@ -20,13 +20,8 @@ class UserAttributes {
   /// The `data` should be a JSON object that includes user-specific info, such as their first and last name.
   Object? data;
 
-  UserAttributes({
-    this.email,
-    this.phone,
-    this.password,
-    this.nonce,
-    this.data,
-  }) : assert(data == null || data is List || data is Map);
+  UserAttributes({this.email, this.phone, this.password, this.nonce, this.data})
+    : assert(data == null || data is List || data is Map);
 
   Map<String, dynamic> toJson() {
     return {

@@ -18,8 +18,9 @@ void main() {
 
     setUp(() async {
       final res = await http.post(
-          Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-          headers: {'x-forwarded-for': '127.0.0.1'});
+        Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
+        headers: {'x-forwarded-for': '127.0.0.1'},
+      );
       if (res.body.isNotEmpty) throw res.body;
 
       newEmail = getNewEmail();
@@ -28,10 +29,7 @@ void main() {
 
       client = GoTrueClient(
         url: gotrueUrl,
-        headers: {
-          'Authorization': 'Bearer $anonToken',
-          'apikey': anonToken,
-        },
+        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,
       );
@@ -39,10 +37,7 @@ void main() {
 
     test('getClaims() with valid JWT from current session', () async {
       // Sign up a user first
-      final response = await client.signUp(
-        email: newEmail,
-        password: password,
-      );
+      final response = await client.signUp(email: newEmail, password: password);
 
       expect(response.session, isNotNull);
 
@@ -60,10 +55,7 @@ void main() {
 
     test('getClaims() with explicit JWT parameter', () async {
       // Sign up a user first
-      final response = await client.signUp(
-        email: newEmail,
-        password: password,
-      );
+      final response = await client.signUp(email: newEmail, password: password);
 
       expect(response.session, isNotNull);
       final accessToken = response.session!.accessToken;
@@ -102,10 +94,7 @@ void main() {
       const expiredJwt =
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNTE2MjM5MDIyfQ.4Adcj0vVzr2Nzz_KKAKrVZsLZyTBGv9-Ey8SN0p7Kzs';
 
-      expect(
-        () => client.getClaims(expiredJwt),
-        throwsA(isA<AuthException>()),
-      );
+      expect(() => client.getClaims(expiredJwt), throwsA(isA<AuthException>()));
     });
 
     test('getClaims() with allowExpired option allows expired JWT', () async {
@@ -130,10 +119,7 @@ void main() {
     });
 
     test('getClaims() with options parameter (allowExpired false)', () async {
-      final response = await client.signUp(
-        email: newEmail,
-        password: password,
-      );
+      final response = await client.signUp(email: newEmail, password: password);
 
       expect(response.session, isNotNull);
 
@@ -149,10 +135,7 @@ void main() {
 
     test('getClaims() verifies JWT with server', () async {
       // Sign up a user
-      final response = await client.signUp(
-        email: newEmail,
-        password: password,
-      );
+      final response = await client.signUp(email: newEmail, password: password);
 
       expect(response.session, isNotNull);
       final accessToken = response.session!.accessToken;
@@ -166,10 +149,7 @@ void main() {
     });
 
     test('getClaims() contains all standard JWT claims', () async {
-      final response = await client.signUp(
-        email: newEmail,
-        password: password,
-      );
+      final response = await client.signUp(email: newEmail, password: password);
 
       expect(response.session, isNotNull);
 
@@ -215,44 +195,43 @@ void main() {
 
       client = GoTrueClient(
         url: gotrueUrl,
-        headers: {
-          'Authorization': 'Bearer $anonToken',
-          'apikey': anonToken,
-        },
+        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,
       );
     });
 
-    test('getClaims() with RS256 JWT on first call should not crash (SDK-627)',
-        () async {
-      // This test reproduces the bug reported in SDK-627
-      // A JWT with RS256 algorithm and kid in header
-      // Header: {"alg":"RS256","typ":"JWT","kid":"test-key-id"}
-      // Payload: {"sub":"1234567890","aud":"authenticated","exp":9999999999,"iat":1516239022,"email":"test@example.com","role":"authenticated"}
-      // Signature: dummy base64url encoded signature (not cryptographically valid, but structurally valid)
-      const rs256Jwt =
-          'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNTE2MjM5MDIyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.SW52YWxpZFNpZ25hdHVyZURhdGFIZXJlVGhhdElzTm90UmVhbEJ1dFZhbGlkQmFzZTY0VXJs';
+    test(
+      'getClaims() with RS256 JWT on first call should not crash (SDK-627)',
+      () async {
+        // This test reproduces the bug reported in SDK-627
+        // A JWT with RS256 algorithm and kid in header
+        // Header: {"alg":"RS256","typ":"JWT","kid":"test-key-id"}
+        // Payload: {"sub":"1234567890","aud":"authenticated","exp":9999999999,"iat":1516239022,"email":"test@example.com","role":"authenticated"}
+        // Signature: dummy base64url encoded signature (not cryptographically valid, but structurally valid)
+        const rs256Jwt =
+            'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNTE2MjM5MDIyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.SW52YWxpZFNpZ25hdHVyZURhdGFIZXJlVGhhdElzTm90UmVhbEJ1dFZhbGlkQmFzZTY0VXJs';
 
-      // Before the fix, this would crash with:
-      // "Null check operator used on a null value"
-      // because _jwks is null on first call and the code does _jwks!
-      //
-      // After the fix, this should attempt to fetch JWKS from the server
-      // and fail gracefully (either with network error or invalid signature)
-      // but NOT crash with null error
-      try {
-        await client.getClaims(rs256Jwt);
-        // If we get here, the server responded successfully (unlikely in test env)
-      } catch (e) {
-        // The important part is that it should NOT crash with null error
-        // It may fail with network error, invalid signature, etc.
-        // but the error message should not contain null-related errors
-        expect(e.toString(), isNot(contains('Unexpected null value')));
-        expect(e.toString(), isNot(contains('Null check operator')));
-      }
-      // Test passes if we get here without null error
-    });
+        // Before the fix, this would crash with:
+        // "Null check operator used on a null value"
+        // because _jwks is null on first call and the code does _jwks!
+        //
+        // After the fix, this should attempt to fetch JWKS from the server
+        // and fail gracefully (either with network error or invalid signature)
+        // but NOT crash with null error
+        try {
+          await client.getClaims(rs256Jwt);
+          // If we get here, the server responded successfully (unlikely in test env)
+        } catch (e) {
+          // The important part is that it should NOT crash with null error
+          // It may fail with network error, invalid signature, etc.
+          // but the error message should not contain null-related errors
+          expect(e.toString(), isNot(contains('Unexpected null value')));
+          expect(e.toString(), isNot(contains('Null check operator')));
+        }
+        // Test passes if we get here without null error
+      },
+    );
   });
 
   group('JWT helper functions', () {
@@ -304,10 +283,7 @@ void main() {
       final pastTime = DateTime.now().subtract(Duration(hours: 1));
       final exp = pastTime.millisecondsSinceEpoch ~/ 1000;
 
-      expect(
-        () => validateExp(exp),
-        throwsA(isA<AuthException>()),
-      );
+      expect(() => validateExp(exp), throwsA(isA<AuthException>()));
     });
 
     test('validateExp() succeeds on valid token', () {
@@ -318,10 +294,7 @@ void main() {
     });
 
     test('validateExp() throws on null exp', () {
-      expect(
-        () => validateExp(null),
-        throwsA(isA<AuthException>()),
-      );
+      expect(() => validateExp(null), throwsA(isA<AuthException>()));
     });
   });
 }

@@ -13,11 +13,7 @@ class JwtHeader {
   /// Token type - typically 'JWT'
   final String? typ;
 
-  JwtHeader({
-    required this.alg,
-    this.kid,
-    this.typ,
-  });
+  JwtHeader({required this.alg, this.kid, this.typ});
 
   factory JwtHeader.fromJson(Map<String, dynamic> json) {
     return JwtHeader(
@@ -155,9 +151,7 @@ class GetClaimsOptions {
   /// This allows you to extract claims from expired JWTs without getting an error.
   final bool allowExpired;
 
-  const GetClaimsOptions({
-    this.allowExpired = false,
-  });
+  const GetClaimsOptions({this.allowExpired = false});
 }
 
 class JWKSet {
@@ -166,7 +160,8 @@ class JWKSet {
   JWKSet({required this.keys});
 
   factory JWKSet.fromJson(Map<String, dynamic> json) {
-    final keys = (json['keys'] as List<dynamic>?)
+    final keys =
+        (json['keys'] as List<dynamic>?)
             ?.map((e) => JWK.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
@@ -174,9 +169,7 @@ class JWKSet {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'keys': keys.map((e) => e.toJson()).toList(),
-    };
+    return {'keys': keys.map((e) => e.toJson()).toList()};
   }
 }
 
@@ -216,7 +209,7 @@ class JWK {
     final kty = json['kty'] as String;
     final keyOps =
         (json['key_ops'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-            [];
+        [];
     final alg = json['alg'] as String?;
     final kid = json['kid'] as String?;
 

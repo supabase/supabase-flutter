@@ -19,17 +19,15 @@ void main() {
   setUp(() async {
     client = GoTrueClient(
       url: gotrueUrl,
-      headers: {
-        'Authorization': 'Bearer $anonToken',
-        'apikey': anonToken,
-      },
+      headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
       flowType: AuthFlowType.implicit,
     );
   });
   group('Provider sign in', () {
     test('signIn() with Provider', () async {
-      final res =
-          await client.getOAuthSignInUrl(provider: OAuthProvider.google);
+      final res = await client.getOAuthSignInUrl(
+        provider: OAuthProvider.google,
+      );
       final url = res.url;
       final provider = res.provider;
       expect(url, startsWith('$gotrueUrl/authorize?provider=google'));
@@ -47,7 +45,8 @@ void main() {
       expect(
         url,
         startsWith(
-            '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL'),
+          '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL',
+        ),
       );
       expect(provider, OAuthProvider.github);
     });
@@ -56,8 +55,9 @@ void main() {
   group('getSessionFromUrl()', () {
     setUp(() async {
       final res = await http.post(
-          Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-          headers: {'x-forwarded-for': '127.0.0.1'});
+        Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
+        headers: {'x-forwarded-for': '127.0.0.1'},
+      );
       if (res.body.isNotEmpty) throw res.body;
 
       await client.signInWithPassword(email: email1, password: password);

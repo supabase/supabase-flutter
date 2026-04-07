@@ -70,7 +70,8 @@ class OtpMockClient extends BaseClient {
     // Default response for unhandled requests
     return StreamedResponse(
       Stream.value(
-          utf8.encode(jsonEncode({'error': 'Unhandled mock request'}))),
+        utf8.encode(jsonEncode({'error': 'Unhandled mock request'})),
+      ),
       501,
       request: request,
     );
@@ -80,10 +81,14 @@ class OtpMockClient extends BaseClient {
     // Check if it's a phone OTP request
     if (requestBody?['phone'] != null) {
       return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode({
-          'message': 'OTP sent to phone',
-          'message_id': 'mock-message-id-phone',
-        }))),
+        Stream.value(
+          utf8.encode(
+            jsonEncode({
+              'message': 'OTP sent to phone',
+              'message_id': 'mock-message-id-phone',
+            }),
+          ),
+        ),
         200,
         request: null,
       );
@@ -92,10 +97,14 @@ class OtpMockClient extends BaseClient {
     // Check if it's an email OTP request
     if (requestBody?['email'] != null) {
       return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode({
-          'message': 'OTP sent to email',
-          'message_id': 'mock-message-id-email',
-        }))),
+        Stream.value(
+          utf8.encode(
+            jsonEncode({
+              'message': 'OTP sent to email',
+              'message_id': 'mock-message-id-email',
+            }),
+          ),
+        ),
         200,
         request: null,
       );
@@ -103,10 +112,14 @@ class OtpMockClient extends BaseClient {
 
     // Invalid OTP request
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'error': 'Invalid OTP request',
-        'message': 'Email or phone number required',
-      }))),
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'error': 'Invalid OTP request',
+            'message': 'Email or phone number required',
+          }),
+        ),
+      ),
       400,
       request: null,
     );
@@ -117,44 +130,50 @@ class OtpMockClient extends BaseClient {
 
     // OTP token verification response
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'access_token': accessToken,
-        'token_type': 'bearer',
-        'expires_in': 3600,
-        'refresh_token': refreshToken,
-        'user': {
-          'id': userId,
-          'aud': 'authenticated',
-          'role': 'authenticated',
-          'email': requestBody?['email'] ?? email,
-          'phone': requestBody?['phone'] ?? phoneNumber,
-          'phone_confirmed_at': now,
-          'confirmed_at': now,
-          'last_sign_in_at': now,
-          'created_at': now,
-          'updated_at': now,
-          'app_metadata': {
-            'provider': requestBody?['email'] != null ? 'email' : 'phone',
-            'providers': [requestBody?['email'] != null ? 'email' : 'phone'],
-          },
-          'user_metadata': {},
-          'identities': [
-            {
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'access_token': accessToken,
+            'token_type': 'bearer',
+            'expires_in': 3600,
+            'refresh_token': refreshToken,
+            'user': {
               'id': userId,
-              'user_id': userId,
-              'identity_data': {
-                'sub': userId,
-                'email': requestBody?['email'] ?? email,
-                'phone': requestBody?['phone'] ?? phoneNumber,
-              },
-              'provider': requestBody?['email'] != null ? 'email' : 'phone',
+              'aud': 'authenticated',
+              'role': 'authenticated',
+              'email': requestBody?['email'] ?? email,
+              'phone': requestBody?['phone'] ?? phoneNumber,
+              'phone_confirmed_at': now,
+              'confirmed_at': now,
               'last_sign_in_at': now,
               'created_at': now,
               'updated_at': now,
-            }
-          ],
-        }
-      }))),
+              'app_metadata': {
+                'provider': requestBody?['email'] != null ? 'email' : 'phone',
+                'providers': [
+                  requestBody?['email'] != null ? 'email' : 'phone',
+                ],
+              },
+              'user_metadata': {},
+              'identities': [
+                {
+                  'id': userId,
+                  'user_id': userId,
+                  'identity_data': {
+                    'sub': userId,
+                    'email': requestBody?['email'] ?? email,
+                    'phone': requestBody?['phone'] ?? phoneNumber,
+                  },
+                  'provider': requestBody?['email'] != null ? 'email' : 'phone',
+                  'last_sign_in_at': now,
+                  'created_at': now,
+                  'updated_at': now,
+                },
+              ],
+            },
+          }),
+        ),
+      ),
       200,
       request: null,
     );
@@ -164,90 +183,99 @@ class OtpMockClient extends BaseClient {
     final now = DateTime.now().toIso8601String();
 
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'access_token': accessToken,
-        'token_type': 'bearer',
-        'expires_in': 3600,
-        'refresh_token': refreshToken,
-        'user': {
-          'id': userId,
-          'aud': 'authenticated',
-          'role': 'authenticated',
-          'email': null,
-          'phone': requestBody?['phone'] ?? phoneNumber,
-          'phone_confirmed_at': now,
-          'confirmed_at': now,
-          'last_sign_in_at': now,
-          'created_at': now,
-          'updated_at': now,
-          'app_metadata': {
-            'provider': 'phone',
-            'providers': ['phone'],
-          },
-          'user_metadata': requestBody?['data'] ?? {},
-          'identities': [
-            {
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'access_token': accessToken,
+            'token_type': 'bearer',
+            'expires_in': 3600,
+            'refresh_token': refreshToken,
+            'user': {
               'id': userId,
-              'user_id': userId,
-              'identity_data': {
-                'sub': userId,
-                'phone': requestBody?['phone'] ?? phoneNumber,
-              },
-              'provider': 'phone',
+              'aud': 'authenticated',
+              'role': 'authenticated',
+              'email': null,
+              'phone': requestBody?['phone'] ?? phoneNumber,
+              'phone_confirmed_at': now,
+              'confirmed_at': now,
               'last_sign_in_at': now,
               'created_at': now,
               'updated_at': now,
-            }
-          ],
-        }
-      }))),
+              'app_metadata': {
+                'provider': 'phone',
+                'providers': ['phone'],
+              },
+              'user_metadata': requestBody?['data'] ?? {},
+              'identities': [
+                {
+                  'id': userId,
+                  'user_id': userId,
+                  'identity_data': {
+                    'sub': userId,
+                    'phone': requestBody?['phone'] ?? phoneNumber,
+                  },
+                  'provider': 'phone',
+                  'last_sign_in_at': now,
+                  'created_at': now,
+                  'updated_at': now,
+                },
+              ],
+            },
+          }),
+        ),
+      ),
       200,
       request: null,
     );
   }
 
   StreamedResponse _handlePhoneSignInWithPassword(
-      Map<String, dynamic>? requestBody) {
+    Map<String, dynamic>? requestBody,
+  ) {
     final now = DateTime.now().toIso8601String();
 
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'access_token': accessToken,
-        'token_type': 'bearer',
-        'expires_in': 3600,
-        'refresh_token': refreshToken,
-        'user': {
-          'id': userId,
-          'aud': 'authenticated',
-          'role': 'authenticated',
-          'email': null,
-          'phone': requestBody?['phone'] ?? phoneNumber,
-          'phone_confirmed_at': now,
-          'confirmed_at': now,
-          'last_sign_in_at': now,
-          'created_at': now,
-          'updated_at': now,
-          'app_metadata': {
-            'provider': 'phone',
-            'providers': ['phone'],
-          },
-          'user_metadata': {},
-          'identities': [
-            {
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'access_token': accessToken,
+            'token_type': 'bearer',
+            'expires_in': 3600,
+            'refresh_token': refreshToken,
+            'user': {
               'id': userId,
-              'user_id': userId,
-              'identity_data': {
-                'sub': userId,
-                'phone': requestBody?['phone'] ?? phoneNumber,
-              },
-              'provider': 'phone',
+              'aud': 'authenticated',
+              'role': 'authenticated',
+              'email': null,
+              'phone': requestBody?['phone'] ?? phoneNumber,
+              'phone_confirmed_at': now,
+              'confirmed_at': now,
               'last_sign_in_at': now,
               'created_at': now,
               'updated_at': now,
-            }
-          ],
-        }
-      }))),
+              'app_metadata': {
+                'provider': 'phone',
+                'providers': ['phone'],
+              },
+              'user_metadata': {},
+              'identities': [
+                {
+                  'id': userId,
+                  'user_id': userId,
+                  'identity_data': {
+                    'sub': userId,
+                    'phone': requestBody?['phone'] ?? phoneNumber,
+                  },
+                  'provider': 'phone',
+                  'last_sign_in_at': now,
+                  'created_at': now,
+                  'updated_at': now,
+                },
+              ],
+            },
+          }),
+        ),
+      ),
       200,
       request: null,
     );
@@ -255,9 +283,9 @@ class OtpMockClient extends BaseClient {
 
   StreamedResponse _handleReauthenticate() {
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'message': 'Reauthentication succeeded',
-      }))),
+      Stream.value(
+        utf8.encode(jsonEncode({'message': 'Reauthentication succeeded'})),
+      ),
       200,
       request: null,
     );
@@ -265,10 +293,14 @@ class OtpMockClient extends BaseClient {
 
   StreamedResponse _handleResend(Map<String, dynamic>? requestBody) {
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'message': 'OTP resent',
-        'message_id': 'mock-message-id-resend',
-      }))),
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'message': 'OTP resent',
+            'message_id': 'mock-message-id-resend',
+          }),
+        ),
+      ),
       200,
       request: null,
     );
@@ -299,30 +331,34 @@ class ChannelMockClient extends BaseClient {
       final now = DateTime.now().toIso8601String();
 
       return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode({
-          'access_token': 'mock-access-token',
-          'token_type': 'bearer',
-          'expires_in': 3600,
-          'refresh_token': 'mock-refresh-token',
-          'user': {
-            'id': 'mock-user-id',
-            'aud': 'authenticated',
-            'role': 'authenticated',
-            'email': 'test@example.com',
-            'phone': '+11234567890',
-            'phone_confirmed_at': now,
-            'confirmed_at': now,
-            'last_sign_in_at': now,
-            'created_at': now,
-            'updated_at': now,
-            'app_metadata': {
-              'provider': 'phone',
-              'providers': ['phone'],
-            },
-            'user_metadata': {},
-            'identities': [],
-          }
-        }))),
+        Stream.value(
+          utf8.encode(
+            jsonEncode({
+              'access_token': 'mock-access-token',
+              'token_type': 'bearer',
+              'expires_in': 3600,
+              'refresh_token': 'mock-refresh-token',
+              'user': {
+                'id': 'mock-user-id',
+                'aud': 'authenticated',
+                'role': 'authenticated',
+                'email': 'test@example.com',
+                'phone': '+11234567890',
+                'phone_confirmed_at': now,
+                'confirmed_at': now,
+                'last_sign_in_at': now,
+                'created_at': now,
+                'updated_at': now,
+                'app_metadata': {
+                  'provider': 'phone',
+                  'providers': ['phone'],
+                },
+                'user_metadata': {},
+                'identities': [],
+              },
+            }),
+          ),
+        ),
         200,
         request: request,
       );
@@ -330,10 +366,11 @@ class ChannelMockClient extends BaseClient {
 
     // Default response for other requests
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'message': 'OTP sent',
-        'message_id': 'mock-message-id',
-      }))),
+      Stream.value(
+        utf8.encode(
+          jsonEncode({'message': 'OTP sent', 'message_id': 'mock-message-id'}),
+        ),
+      ),
       200,
       request: request,
     );
@@ -384,10 +421,14 @@ class ConditionalErrorClient extends BaseClient {
     if (url.contains('/verify') && method == 'POST') {
       // Simulate expired OTP
       return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode({
-          'error': 'expired_token',
-          'message': 'The OTP has expired',
-        }))),
+        Stream.value(
+          utf8.encode(
+            jsonEncode({
+              'error': 'expired_token',
+              'message': 'The OTP has expired',
+            }),
+          ),
+        ),
         401,
         request: request,
       );
@@ -396,10 +437,14 @@ class ConditionalErrorClient extends BaseClient {
     if (url.contains('/token') && method == 'POST') {
       // Simulate wrong password
       return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode({
-          'error': 'invalid_grant',
-          'message': 'Invalid login credentials',
-        }))),
+        Stream.value(
+          utf8.encode(
+            jsonEncode({
+              'error': 'invalid_grant',
+              'message': 'Invalid login credentials',
+            }),
+          ),
+        ),
         401,
         request: request,
       );
@@ -416,10 +461,14 @@ class ConditionalErrorClient extends BaseClient {
       if (body?['phone'] != null) {
         // Simulate phone number already exists
         return StreamedResponse(
-          Stream.value(utf8.encode(jsonEncode({
-            'error': 'phone_taken',
-            'message': 'Phone number is already registered',
-          }))),
+          Stream.value(
+            utf8.encode(
+              jsonEncode({
+                'error': 'phone_taken',
+                'message': 'Phone number is already registered',
+              }),
+            ),
+          ),
           400,
           request: request,
         );
@@ -428,10 +477,14 @@ class ConditionalErrorClient extends BaseClient {
 
     // Simulate unknown error for other requests
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'error': 'internal_error',
-        'message': 'An unknown error occurred',
-      }))),
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'error': 'internal_error',
+            'message': 'An unknown error occurred',
+          }),
+        ),
+      ),
       500,
       request: request,
     );
@@ -459,12 +512,13 @@ class NullSessionClient extends BaseClient {
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'user': {
-          'id': 'user-id',
-          'email': email,
-        },
-      }))),
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'user': {'id': 'user-id', 'email': email},
+          }),
+        ),
+      ),
       200,
       request: request,
     );

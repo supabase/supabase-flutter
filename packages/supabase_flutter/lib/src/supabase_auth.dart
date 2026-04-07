@@ -37,19 +37,16 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// - Obtains session from local storage and sets it as the current session
   /// - Starts a deep link observer
   /// - Emits an initial session if there were no session stored in local storage
-  Future<void> initialize({
-    required FlutterAuthClientOptions options,
-  }) async {
+  Future<void> initialize({required FlutterAuthClientOptions options}) async {
     _localStorage = options.localStorage!;
     _authFlowType = options.authFlowType;
     _autoRefreshToken = options.autoRefreshToken;
 
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
-      (data) {
-        _onAuthStateChange(data.event, data.session);
-      },
-      onError: (error, stackTrace) {},
-    );
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
+      _onAuthStateChange(data.event, data.session);
+    }, onError: (error, stackTrace) {});
 
     await _localStorage.initialize();
 
@@ -59,19 +56,23 @@ class SupabaseAuth with WidgetsBindingObserver {
       final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
         try {
-          await Supabase.instance.client.auth
-              .setInitialSession(persistedSession);
+          await Supabase.instance.client.auth.setInitialSession(
+            persistedSession,
+          );
           shouldEmitInitialSession = false;
         } catch (error, stackTrace) {
           _log.warning(
-              'Error while setting initial session', error, stackTrace);
+            'Error while setting initial session',
+            error,
+            stackTrace,
+          );
         }
       }
     }
     if (shouldEmitInitialSession) {
       Supabase.instance.client.auth
-          // ignore: invalid_use_of_internal_member
-          .notifyAllSubscribers(AuthChangeEvent.initialSession);
+      // ignore: invalid_use_of_internal_member
+      .notifyAllSubscribers(AuthChangeEvent.initialSession);
     }
     _widgetsBindingInstance?.addObserver(this);
 

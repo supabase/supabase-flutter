@@ -100,8 +100,10 @@ void main() {
       });
 
       test('returns false for exceptions with different codes', () {
-        const exception1 =
-            AuthException('Test error', code: 'validation_failed');
+        const exception1 = AuthException(
+          'Test error',
+          code: 'validation_failed',
+        );
         const exception2 = AuthException('Test error', code: 'bad_json');
 
         expect(exception1, isNot(equals(exception2)));
@@ -109,8 +111,11 @@ void main() {
 
       test('handles null values correctly in equality', () {
         const exception1 = AuthException('Test error');
-        const exception2 =
-            AuthException('Test error', statusCode: null, code: null);
+        const exception2 = AuthException(
+          'Test error',
+          statusCode: null,
+          code: null,
+        );
 
         expect(exception1, equals(exception2));
       });
@@ -346,8 +351,10 @@ void main() {
       expect(exception.message, equals('Password is too weak'));
       expect(exception.statusCode, equals('422'));
       expect(exception.code, equals(ErrorCode.weakPassword.code));
-      expect(exception.reasons,
-          equals(['too_short', 'no_uppercase', 'no_numbers']));
+      expect(
+        exception.reasons,
+        equals(['too_short', 'no_uppercase', 'no_numbers']),
+      );
     });
 
     test('automatically sets code to weak_password', () {
@@ -470,7 +477,9 @@ void main() {
         AuthRetryableFetchException(),
         AuthApiException('api error'),
         AuthUnknownException(
-            message: 'unknown error', originalError: 'original'),
+          message: 'unknown error',
+          originalError: 'original',
+        ),
         AuthWeakPasswordException(
           message: 'weak password',
           statusCode: '422',

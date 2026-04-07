@@ -1,5 +1,4 @@
 @TestOn('!browser')
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -29,20 +28,22 @@ void main() {
           localStorage: MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage()
             ..setItem(
-                key: 'supabase.auth.token-code-verifier',
-                value: 'raw-code-verifier'),
+              key: 'supabase.auth.token-code-verifier',
+              value: 'raw-code-verifier',
+            ),
         ),
       );
     });
 
     test(
-        'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
-        () async {
-      // Wait for the initial app link to be handled, as this is an async
-      // process when mocking the event channel.
-      await Future.delayed(const Duration(milliseconds: 500));
-      expect(pkceHttpClient.requestCount, 1);
-      expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
-    });
+      'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
+      () async {
+        // Wait for the initial app link to be handled, as this is an async
+        // process when mocking the event channel.
+        await Future.delayed(const Duration(milliseconds: 500));
+        expect(pkceHttpClient.requestCount, 1);
+        expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
+      },
+    );
   });
 }

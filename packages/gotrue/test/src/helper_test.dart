@@ -7,9 +7,11 @@ void main() {
       test('generates verifier with correct character set', () {
         final codeVerifier = generatePKCEVerifier();
         final regex = RegExp(r'^[A-Za-z0-9_-]*$');
-        expect(regex.hasMatch(codeVerifier), isTrue,
-            reason:
-                'Code verifier "$codeVerifier" contains invalid characters');
+        expect(
+          regex.hasMatch(codeVerifier),
+          isTrue,
+          reason: 'Code verifier "$codeVerifier" contains invalid characters',
+        );
       });
 
       test('generates verifier with correct length', () {
@@ -45,9 +47,11 @@ void main() {
         final codeVerifier = generatePKCEVerifier();
         final codeChallenge = generatePKCEChallenge(codeVerifier);
         final regex = RegExp(r'^[A-Za-z0-9_-]*$');
-        expect(regex.hasMatch(codeChallenge), isTrue,
-            reason:
-                'Code challenge "$codeChallenge" contains invalid characters');
+        expect(
+          regex.hasMatch(codeChallenge),
+          isTrue,
+          reason: 'Code challenge "$codeChallenge" contains invalid characters',
+        );
       });
 
       test('generates same challenge for same verifier', () {
@@ -84,8 +88,9 @@ void main() {
       });
 
       test('handles special characters in verifier', () {
-        final codeChallenge =
-            generatePKCEChallenge('test-verifier_with.special~chars');
+        final codeChallenge = generatePKCEChallenge(
+          'test-verifier_with.special~chars',
+        );
         expect(codeChallenge, isNotEmpty);
         final regex = RegExp(r'^[A-Za-z0-9_-]*$');
         expect(regex.hasMatch(codeChallenge), isTrue);
@@ -120,73 +125,115 @@ void main() {
   group('UUID validation', () {
     group('validateUuid', () {
       test('accepts valid UUID v4', () {
-        expect(() => validateUuid('550e8400-e29b-41d4-a716-446655440000'),
-            returnsNormally);
-        expect(() => validateUuid('6ba7b810-9dad-11d1-80b4-00c04fd430c8'),
-            returnsNormally);
-        expect(() => validateUuid('6ba7b811-9dad-11d1-80b4-00c04fd430c8'),
-            returnsNormally);
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716-446655440000'),
+          returnsNormally,
+        );
+        expect(
+          () => validateUuid('6ba7b810-9dad-11d1-80b4-00c04fd430c8'),
+          returnsNormally,
+        );
+        expect(
+          () => validateUuid('6ba7b811-9dad-11d1-80b4-00c04fd430c8'),
+          returnsNormally,
+        );
       });
 
       test('accepts valid UUID with lowercase only', () {
-        expect(() => validateUuid('550e8400-e29b-41d4-a716-446655440000'),
-            returnsNormally);
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716-446655440000'),
+          returnsNormally,
+        );
       });
 
       test('rejects UUID with uppercase characters', () {
-        expect(() => validateUuid('550E8400-E29B-41D4-A716-446655440000'),
-            throwsArgumentError);
+        expect(
+          () => validateUuid('550E8400-E29B-41D4-A716-446655440000'),
+          throwsArgumentError,
+        );
       });
 
       test('accepts nil UUID', () {
-        expect(() => validateUuid('00000000-0000-0000-0000-000000000000'),
-            returnsNormally);
+        expect(
+          () => validateUuid('00000000-0000-0000-0000-000000000000'),
+          returnsNormally,
+        );
       });
 
       test('rejects invalid UUID formats', () {
         expect(() => validateUuid('invalid-uuid'), throwsArgumentError);
         expect(
-            () => validateUuid('550e8400-e29b-41d4-a716'), throwsArgumentError);
-        expect(() => validateUuid('550e8400-e29b-41d4-a716-446655440000-extra'),
-            throwsArgumentError);
-        expect(() => validateUuid('550e8400e29b41d4a716446655440000'),
-            throwsArgumentError);
+          () => validateUuid('550e8400-e29b-41d4-a716'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716-446655440000-extra'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400e29b41d4a716446655440000'),
+          throwsArgumentError,
+        );
       });
 
       test('rejects UUID with wrong character count', () {
-        expect(() => validateUuid('550e8400-e29b-41d4-a716-44665544000'),
-            throwsArgumentError);
-        expect(() => validateUuid('550e8400-e29b-41d4-a716-4466554400000'),
-            throwsArgumentError);
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716-44665544000'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716-4466554400000'),
+          throwsArgumentError,
+        );
       });
 
       test('rejects UUID with invalid characters', () {
-        expect(() => validateUuid('550e8400-e29b-41d4-a716-44665544000g'),
-            throwsArgumentError);
-        expect(() => validateUuid('550e8400-e29b-41d4-a716-44665544000G'),
-            throwsArgumentError);
-        expect(() => validateUuid('550e8400-e29b-41d4-a716-44665544000!'),
-            throwsArgumentError);
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716-44665544000g'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716-44665544000G'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716-44665544000!'),
+          throwsArgumentError,
+        );
       });
 
       test('rejects UUID with missing hyphens', () {
-        expect(() => validateUuid('550e8400e29b-41d4-a716-446655440000'),
-            throwsArgumentError);
-        expect(() => validateUuid('550e8400-e29b41d4-a716-446655440000'),
-            throwsArgumentError);
-        expect(() => validateUuid('550e8400-e29b-41d4a716-446655440000'),
-            throwsArgumentError);
-        expect(() => validateUuid('550e8400-e29b-41d4-a716446655440000'),
-            throwsArgumentError);
+        expect(
+          () => validateUuid('550e8400e29b-41d4-a716-446655440000'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400-e29b41d4-a716-446655440000'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400-e29b-41d4a716-446655440000'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716446655440000'),
+          throwsArgumentError,
+        );
       });
 
       test('rejects UUID with extra hyphens', () {
-        expect(() => validateUuid('550e-8400-e29b-41d4-a716-446655440000'),
-            throwsArgumentError);
-        expect(() => validateUuid('550e8400--e29b-41d4-a716-446655440000'),
-            throwsArgumentError);
-        expect(() => validateUuid('550e8400-e29b-41d4-a716-446655440000-'),
-            throwsArgumentError);
+        expect(
+          () => validateUuid('550e-8400-e29b-41d4-a716-446655440000'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400--e29b-41d4-a716-446655440000'),
+          throwsArgumentError,
+        );
+        expect(
+          () => validateUuid('550e8400-e29b-41d4-a716-446655440000-'),
+          throwsArgumentError,
+        );
       });
 
       test('rejects empty string', () {
@@ -224,37 +271,51 @@ void main() {
     group('uuidRegex', () {
       test('matches valid UUIDs', () {
         expect(
-            uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000'), isTrue);
+          uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000'),
+          isTrue,
+        );
         expect(
-            uuidRegex.hasMatch('6ba7b810-9dad-11d1-80b4-00c04fd430c8'), isTrue);
+          uuidRegex.hasMatch('6ba7b810-9dad-11d1-80b4-00c04fd430c8'),
+          isTrue,
+        );
         expect(
-            uuidRegex.hasMatch('00000000-0000-0000-0000-000000000000'), isTrue);
+          uuidRegex.hasMatch('00000000-0000-0000-0000-000000000000'),
+          isTrue,
+        );
       });
 
       test('does not match invalid UUIDs', () {
         expect(uuidRegex.hasMatch('invalid-uuid'), isFalse);
         expect(uuidRegex.hasMatch('550e8400-e29b-41d4-a716'), isFalse);
         expect(uuidRegex.hasMatch('550e8400e29b41d4a716446655440000'), isFalse);
-        expect(uuidRegex.hasMatch('550e8400-e29b-41d4-a716-44665544000g'),
-            isFalse);
+        expect(
+          uuidRegex.hasMatch('550e8400-e29b-41d4-a716-44665544000g'),
+          isFalse,
+        );
       });
 
       test('only matches lowercase hexadecimal characters', () {
         // Note: The uuidRegex specifically checks for lowercase hex characters
         // while validateUuid accepts both cases
-        expect(uuidRegex.hasMatch('550E8400-E29B-41D4-A716-446655440000'),
-            isFalse);
         expect(
-            uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000'), isTrue);
+          uuidRegex.hasMatch('550E8400-E29B-41D4-A716-446655440000'),
+          isFalse,
+        );
+        expect(
+          uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000'),
+          isTrue,
+        );
       });
 
       test('matches exact pattern without partial matches', () {
         expect(
-            uuidRegex.hasMatch('prefix-550e8400-e29b-41d4-a716-446655440000'),
-            isFalse);
+          uuidRegex.hasMatch('prefix-550e8400-e29b-41d4-a716-446655440000'),
+          isFalse,
+        );
         expect(
-            uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000-suffix'),
-            isFalse);
+          uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000-suffix'),
+          isFalse,
+        );
       });
     });
   });
@@ -283,8 +344,11 @@ void main() {
     test('always returns two characters', () {
       for (int i = 0; i < 100; i++) {
         final result = dec2hex(i);
-        expect(result.length, equals(2),
-            reason: 'dec2hex($i) returned "$result"');
+        expect(
+          result.length,
+          equals(2),
+          reason: 'dec2hex($i) returned "$result"',
+        );
       }
     });
 

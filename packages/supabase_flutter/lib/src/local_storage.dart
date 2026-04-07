@@ -6,7 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import './local_storage_stub.dart'
-    if (dart.library.js_interop) './local_storage_web.dart' as web;
+    if (dart.library.js_interop) './local_storage_web.dart'
+    as web;
 
 /// Only used for migration from Hive to SharedPreferences. Not actually in use.
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';

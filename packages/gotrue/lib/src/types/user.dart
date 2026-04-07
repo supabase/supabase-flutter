@@ -82,7 +82,8 @@ class User {
       updatedAt: json['updated_at'],
       identities: json['identities'] != null
           ? List<UserIdentity>.from(
-              json['identities']?.map((x) => UserIdentity.fromMap(x)))
+              json['identities']?.map((x) => UserIdentity.fromMap(x)),
+            )
           : null,
       factors: json['factors'] != null
           ? List<Factor>.from(json['factors']?.map((x) => Factor.fromJson(x)))

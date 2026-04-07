@@ -17,16 +17,19 @@ String generatePKCEVerifier() {
   const verifierLength = 56;
   final random = Random.secure();
   return base64UrlEncode(
-      List.generate(verifierLength, (_) => random.nextInt(256))).split('=')[0];
+    List.generate(verifierLength, (_) => random.nextInt(256)),
+  ).split('=')[0];
 }
 
 String generatePKCEChallenge(String verifier) {
-  return base64UrlEncode(sha256.convert(ascii.encode(verifier)).bytes)
-      .split('=')[0];
+  return base64UrlEncode(
+    sha256.convert(ascii.encode(verifier)).bytes,
+  ).split('=')[0];
 }
 
-final uuidRegex =
-    RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+final uuidRegex = RegExp(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+);
 
 void validateUuid(String id) {
   if (!uuidRegex.hasMatch(id)) {
