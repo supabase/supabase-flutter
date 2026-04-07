@@ -139,11 +139,7 @@ class GotrueFetch {
     uri = uri.replace(queryParameters: {...uri.queryParameters, ...qs});
 
     return await _handleRequest(
-      method: method,
-      uri: uri,
-      options: options,
-      headers: headers,
-    );
+        method: method, uri: uri, options: options, headers: headers);
   }
 
   Future<dynamic> _handleRequest({
@@ -161,7 +157,10 @@ class GotrueFetch {
     try {
       switch (method) {
         case RequestMethodType.get:
-          response = await (httpClient?.get ?? get)(uri, headers: headers);
+          response = await (httpClient?.get ?? get)(
+            uri,
+            headers: headers,
+          );
 
           break;
         case RequestMethodType.post:

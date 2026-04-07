@@ -19,9 +19,8 @@ void main() {
   late GoTrueClient client;
   setUp(() async {
     final res = await http.post(
-      Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-      headers: {'x-forwarded-for': '127.0.0.1'},
-    );
+        Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
+        headers: {'x-forwarded-for': '127.0.0.1'});
     if (res.body.isNotEmpty) throw res.body;
 
     client = GoTrueClient(
@@ -29,7 +28,7 @@ void main() {
       headers: {
         'Authorization': 'Bearer $anonToken',
         'apikey': anonToken,
-        'x-forwarded-for': '127.0.0.1',
+        'x-forwarded-for': '127.0.0.1'
       },
     );
   });
@@ -37,10 +36,8 @@ void main() {
   test('enroll totp', () async {
     await client.signInWithPassword(password: password, email: email1);
 
-    final res = await client.mfa.enroll(
-      issuer: 'MyFriend',
-      friendlyName: 'MyFriendName',
-    );
+    final res = await client.mfa
+        .enroll(issuer: 'MyFriend', friendlyName: 'MyFriendName');
     final uri = Uri.parse(res.totp!.uri);
 
     expect(res.type, FactorType.totp);
@@ -89,10 +86,7 @@ void main() {
     final challengeRes = await client.mfa.challenge(factorId: factorId1);
 
     final res = await client.mfa.verify(
-      factorId: factorId1,
-      challengeId: challengeRes.id,
-      code: getTOTP(),
-    );
+        factorId: factorId1, challengeId: challengeRes.id, code: getTOTP());
 
     expect(client.currentSession?.accessToken, res.accessToken);
     expect(client.currentUser, res.user);
@@ -105,10 +99,8 @@ void main() {
 
     expect(client.currentUser!.factors!.length, 1);
     expect(client.currentUser!.factors!.first.status, FactorStatus.unverified);
-    final res = await client.mfa.challengeAndVerify(
-      factorId: factorId1,
-      code: getTOTP(),
-    );
+    final res = await client.mfa
+        .challengeAndVerify(factorId: factorId1, code: getTOTP());
     expect(client.currentUser, res.user);
     expect(client.currentUser!.factors!.length, 1);
     expect(client.currentUser!.factors!.first.id, factorId1);
@@ -135,13 +127,13 @@ void main() {
     expect(res.all.first.id, factorId2);
     expect(res.all.first.status, FactorStatus.verified);
     expect(
-      res.all.first.createdAt.difference(DateTime.now()) < Duration(seconds: 2),
-      true,
-    );
+        res.all.first.createdAt.difference(DateTime.now()) <
+            Duration(seconds: 2),
+        true);
     expect(
-      res.all.first.updatedAt.difference(DateTime.now()) < Duration(seconds: 2),
-      true,
-    );
+        res.all.first.updatedAt.difference(DateTime.now()) <
+            Duration(seconds: 2),
+        true);
   });
 
   test('list factors with phone enrollment', () async {
@@ -194,18 +186,15 @@ void main() {
     final res = client.mfa.getAuthenticatorAssuranceLevel();
     expect(res.currentLevel, AuthenticatorAssuranceLevels.aal2);
     expect(res.nextLevel, AuthenticatorAssuranceLevels.aal2);
-    final passwordEntry = res.currentAuthenticationMethods.firstWhereOrNull(
-      (element) => element.method == AMRMethod.password,
-    );
-    final totpEntry = res.currentAuthenticationMethods.firstWhereOrNull(
-      (element) => element.method == AMRMethod.totp,
-    );
+    final passwordEntry = res.currentAuthenticationMethods
+        .firstWhereOrNull((element) => element.method == AMRMethod.password);
+    final totpEntry = res.currentAuthenticationMethods
+        .firstWhereOrNull((element) => element.method == AMRMethod.totp);
     expect(passwordEntry, isNotNull);
     expect(totpEntry, isNotNull);
     expect(
-      totpEntry!.timestamp.difference(DateTime.now()) < Duration(seconds: 2),
-      true,
-    );
+        totpEntry!.timestamp.difference(DateTime.now()) < Duration(seconds: 2),
+        true);
   });
 
   test('Session object can be properly json serielized', () async {

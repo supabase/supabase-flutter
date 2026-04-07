@@ -92,11 +92,14 @@ enum OtpType {
   magiclink,
   recovery,
   emailChange,
-  email,
+  email
 }
 
 /// Messaging channel to use (e.g. whatsapp or sms)
-enum OtpChannel { sms, whatsapp }
+enum OtpChannel {
+  sms,
+  whatsapp,
+}
 
 /// Determines which sessions should be logged out.
 enum SignOutScope {

@@ -20,11 +20,22 @@ class GoTrueAdminApi {
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   late final GoTrueAdminOAuthApi oauth;
 
-  GoTrueAdminApi(this._url, {Map<String, String>? headers, Client? httpClient})
-    : _headers = headers ?? {},
-      _httpClient = httpClient {
-    mfa = GoTrueAdminMFAApi(url: _url, headers: _headers, fetch: _fetch);
-    oauth = GoTrueAdminOAuthApi(url: _url, headers: _headers, fetch: _fetch);
+  GoTrueAdminApi(
+    this._url, {
+    Map<String, String>? headers,
+    Client? httpClient,
+  })  : _headers = headers ?? {},
+        _httpClient = httpClient {
+    mfa = GoTrueAdminMFAApi(
+      url: _url,
+      headers: _headers,
+      fetch: _fetch,
+    );
+    oauth = GoTrueAdminOAuthApi(
+      url: _url,
+      headers: _headers,
+      fetch: _fetch,
+    );
   }
 
   /// Removes a logged-in session.
@@ -106,7 +117,10 @@ class GoTrueAdminApi {
     String? redirectTo,
     Map<String, dynamic>? data,
   }) async {
-    final body = {'email': email, if (data != null) 'data': data};
+    final body = {
+      'email': email,
+      if (data != null) 'data': data,
+    };
     final fetchOptions = GotrueRequestOptions(
       headers: _headers,
       body: body,

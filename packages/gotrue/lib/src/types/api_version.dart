@@ -9,7 +9,10 @@ const String _apiVersionRegex =
 
 /// Represents the API version specified by a [name] in the format YYYY-MM-DD.
 class ApiVersion {
-  const ApiVersion({required this.name, required this.timestamp});
+  const ApiVersion({
+    required this.name,
+    required this.timestamp,
+  });
 
   final String name;
   final DateTime timestamp;

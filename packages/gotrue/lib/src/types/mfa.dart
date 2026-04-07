@@ -68,10 +68,14 @@ class PhoneEnrollment {
   /// The phone number that will receive the SMS OTP.
   final String phone;
 
-  const PhoneEnrollment({required this.phone});
+  const PhoneEnrollment({
+    required this.phone,
+  });
 
   factory PhoneEnrollment.fromJson(Map<String, dynamic> json) {
-    return PhoneEnrollment(phone: json['phone']);
+    return PhoneEnrollment(
+      phone: json['phone'],
+    );
   }
 
   factory PhoneEnrollment._fromJsonValue(dynamic value) {
@@ -83,8 +87,7 @@ class PhoneEnrollment {
       return PhoneEnrollment.fromJson(value);
     } else {
       throw ArgumentError(
-        'Invalid phone enrollment data type: ${value.runtimeType}',
-      );
+          'Invalid phone enrollment data type: ${value.runtimeType}');
     }
   }
 }
@@ -172,9 +175,8 @@ class AuthMFAAdminListFactorsResponse {
 
   factory AuthMFAAdminListFactorsResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAAdminListFactorsResponse(
-      factors: (json['factors'] as List)
-          .map((e) => Factor.fromJson(e))
-          .toList(),
+      factors:
+          (json['factors'] as List).map((e) => Factor.fromJson(e)).toList(),
     );
   }
 }
@@ -226,7 +228,9 @@ class Factor {
       factorType: FactorType.values.firstWhere(
         (e) => e.name == json['factor_type'],
       ),
-      status: FactorStatus.values.firstWhere((e) => e.name == json['status']),
+      status: FactorStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+      ),
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );

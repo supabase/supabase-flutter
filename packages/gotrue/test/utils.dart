@@ -28,39 +28,34 @@ const factorId2 = '2d3aa138-da96-4aea-8217-af07daa6b82d';
 final password = 'secret';
 
 String getNewEmail() {
-  final timestamp = (DateTime.now().microsecondsSinceEpoch / (1000 * 1000))
-      .round();
+  final timestamp =
+      (DateTime.now().microsecondsSinceEpoch / (1000 * 1000)).round();
   return 'fake$timestamp@email.com';
 }
 
 String getNewPhone() {
-  final timestamp = (DateTime.now().microsecondsSinceEpoch / (1000 * 1000))
-      .round();
+  final timestamp =
+      (DateTime.now().microsecondsSinceEpoch / (1000 * 1000)).round();
   return '$timestamp';
 }
 
 String getServiceRoleToken(DotEnv env) {
-  return JWT({'role': 'service_role'}).sign(
+  return JWT(
+    {
+      'role': 'service_role',
+    },
+  ).sign(
     SecretKey(
-      env['GOTRUE_JWT_SECRET'] ?? '37c304f8-51aa-419a-a1af-06154e63707a',
-    ),
+        env['GOTRUE_JWT_SECRET'] ?? '37c304f8-51aa-419a-a1af-06154e63707a'),
   );
 }
 
 /// Construct session data for a given expiration date
 ({String accessToken, String sessionString}) getSessionData(
-  DateTime expireDateTime,
-) {
+    DateTime expireDateTime) {
   final expiresAt = expireDateTime.millisecondsSinceEpoch ~/ 1000;
-  final accessTokenMid = base64.encode(
-    utf8.encode(
-      json.encode({
-        'exp': expiresAt,
-        'sub': '1234567890',
-        'role': 'authenticated',
-      }),
-    ),
-  );
+  final accessTokenMid = base64.encode(utf8.encode(json.encode(
+      {'exp': expiresAt, 'sub': '1234567890', 'role': 'authenticated'})));
   final accessToken = 'any.$accessTokenMid.any';
   final sessionString =
       '{"access_token":"$accessToken","expires_in":${expireDateTime.difference(DateTime.now()).inSeconds},"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}}';

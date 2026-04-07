@@ -71,7 +71,7 @@ void main() {
     setUp(() {
       userMetadata = {'first_name': 'John', 'last_name': 'Doe'};
       appMetadata = {
-        'roles': ['admin'],
+        'roles': ['admin']
       };
       emailConfirm = true;
       phoneConfirm = true;

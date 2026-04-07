@@ -43,7 +43,10 @@ class AuthPKCEGrantCodeExchangeError extends AuthException {
 
 class AuthSessionMissingException extends AuthException {
   AuthSessionMissingException([String? message])
-    : super(message ?? 'Auth session missing!', statusCode: '400');
+      : super(
+          message ?? 'Auth session missing!',
+          statusCode: '400',
+        );
   @override
   String toString() =>
       'AuthSessionMissingException(message: $message, statusCode: $statusCode)';
@@ -72,13 +75,15 @@ class AuthUnknownException extends AuthException {
   /// May contain a non 2xx [http.Response] object or the original thrown error.
   final Object originalError;
 
-  AuthUnknownException({required String message, required this.originalError})
-    : super(
-        message,
-        statusCode: originalError is http.Response
-            ? originalError.statusCode.toString()
-            : null,
-      );
+  AuthUnknownException({
+    required String message,
+    required this.originalError,
+  }) : super(
+          message,
+          statusCode: originalError is http.Response
+              ? originalError.statusCode.toString()
+              : null,
+        );
 
   @override
   String toString() =>
@@ -101,7 +106,10 @@ class AuthWeakPasswordException extends AuthException {
 
 class AuthInvalidJwtException extends AuthException {
   AuthInvalidJwtException(super.message)
-    : super(statusCode: '400', code: 'invalid_jwt');
+      : super(
+          statusCode: '400',
+          code: 'invalid_jwt',
+        );
 
   @override
   String toString() =>

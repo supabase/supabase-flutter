@@ -10,19 +10,19 @@ void main() {
   env.load(); // Load env variables from .env file
 
   final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final serviceRoleToken = JWT({'role': 'service_role'}).sign(
+  final serviceRoleToken = JWT(
+    {'role': 'service_role'},
+  ).sign(
     SecretKey(
-      env['GOTRUE_JWT_SECRET'] ?? '37c304f8-51aa-419a-a1af-06154e63707a',
-    ),
+        env['GOTRUE_JWT_SECRET'] ?? '37c304f8-51aa-419a-a1af-06154e63707a'),
   );
 
   late GoTrueClient client;
 
   setUp(() async {
     final res = await http.post(
-      Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-      headers: {'x-forwarded-for': '127.0.0.1'},
-    );
+        Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
+        headers: {'x-forwarded-for': '127.0.0.1'});
     if (res.body.isNotEmpty) throw res.body;
 
     client = GoTrueClient(
@@ -30,7 +30,7 @@ void main() {
       headers: {
         'Authorization': 'Bearer $serviceRoleToken',
         'apikey': serviceRoleToken,
-        'x-forwarded-for': '127.0.0.1',
+        'x-forwarded-for': '127.0.0.1'
       },
     );
   });
@@ -93,10 +93,8 @@ void main() {
       final updateParams = UpdateOAuthClientParams(
         clientName: 'Updated OAuth Client Name',
       );
-      final updateRes = await client.admin.oauth.updateClient(
-        clientId,
-        updateParams,
-      );
+      final updateRes =
+          await client.admin.oauth.updateClient(clientId, updateParams);
       expect(updateRes.client, isNotNull);
       expect(updateRes.client?.clientId, clientId);
       expect(updateRes.client?.clientName, 'Updated OAuth Client Name');
@@ -140,32 +138,24 @@ void main() {
 
   group('validates ids', () {
     test('getClient() validates ids', () {
-      expect(
-        () => client.admin.oauth.getClient('invalid-id'),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => client.admin.oauth.getClient('invalid-id'),
+          throwsA(isA<ArgumentError>()));
     });
 
     test('deleteClient() validates ids', () {
-      expect(
-        () => client.admin.oauth.deleteClient('invalid-id'),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => client.admin.oauth.deleteClient('invalid-id'),
+          throwsA(isA<ArgumentError>()));
     });
 
     test('regenerateClientSecret() validates ids', () {
-      expect(
-        () => client.admin.oauth.regenerateClientSecret('invalid-id'),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => client.admin.oauth.regenerateClientSecret('invalid-id'),
+          throwsA(isA<ArgumentError>()));
     });
 
     test('updateClient() validates ids', () {
       final params = UpdateOAuthClientParams(clientName: 'Updated Name');
-      expect(
-        () => client.admin.oauth.updateClient('invalid-id', params),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => client.admin.oauth.updateClient('invalid-id', params),
+          throwsA(isA<ArgumentError>()));
     });
   });
 }

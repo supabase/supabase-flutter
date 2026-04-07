@@ -26,7 +26,10 @@ void main() {
 
     group('Basic initialization', () {
       test('initialize successfully with default options', () async {
-        await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+        await Supabase.initialize(
+          url: supabaseUrl,
+          anonKey: supabaseKey,
+        );
 
         expect(Supabase.instance, isNotNull);
         expect(Supabase.instance.client, isNotNull);
@@ -39,7 +42,9 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           anonKey: supabaseKey,
-          authOptions: FlutterAuthClientOptions(localStorage: localStorage),
+          authOptions: FlutterAuthClientOptions(
+            localStorage: localStorage,
+          ),
         );
 
         expect(Supabase.instance, isNotNull);
@@ -111,7 +116,10 @@ void main() {
     group('Multiple initialization and disposal', () {
       test('dispose and reinitialize works', () async {
         // First initialization
-        await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+        await Supabase.initialize(
+          url: supabaseUrl,
+          anonKey: supabaseKey,
+        );
 
         expect(Supabase.instance, isNotNull);
 
@@ -122,7 +130,10 @@ void main() {
         await Future.delayed(Duration.zero);
 
         // Re-initialize should work without errors
-        await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+        await Supabase.initialize(
+          url: supabaseUrl,
+          anonKey: supabaseKey,
+        );
 
         expect(Supabase.instance, isNotNull);
       });

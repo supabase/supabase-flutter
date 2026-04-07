@@ -73,9 +73,9 @@ class Session {
   /// The 10 second buffer is to account for latency issues.
   bool get isExpired {
     if (expiresAt == null) return false;
-    return DateTime.now()
-        .add(Constants.expiryMargin)
-        .isAfter(DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000));
+    return DateTime.now().add(Constants.expiryMargin).isAfter(
+          DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
+        );
   }
 
   Session copyWith({

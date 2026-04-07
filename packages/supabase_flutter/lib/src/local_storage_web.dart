@@ -12,6 +12,5 @@ Future<void> removePersistedSession(String persistSessionKey) async =>
     _localStorage.removeItem(persistSessionKey);
 
 Future<void> persistSession(
-  String persistSessionKey,
-  persistSessionString,
-) async => _localStorage.setItem(persistSessionKey, persistSessionString);
+        String persistSessionKey, persistSessionString) async =>
+    _localStorage.setItem(persistSessionKey, persistSessionString);

@@ -58,15 +58,18 @@ class GoTrueAdminOAuthApi {
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,
-  }) : _url = url,
-       _headers = headers,
-       _fetch = fetch;
+  })  : _url = url,
+        _headers = headers,
+        _fetch = fetch;
 
   /// Lists all OAuth clients with optional pagination.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   ///
   /// This function should only be called on a server. Never expose your `service_role` key in the browser.
-  Future<OAuthClientListResponse> listClients({int? page, int? perPage}) async {
+  Future<OAuthClientListResponse> listClients({
+    int? page,
+    int? perPage,
+  }) async {
     final data = await _fetch.request(
       '$_url/admin/oauth/clients',
       RequestMethodType.get,
@@ -92,7 +95,10 @@ class GoTrueAdminOAuthApi {
     final data = await _fetch.request(
       '$_url/admin/oauth/clients',
       RequestMethodType.post,
-      options: GotrueRequestOptions(headers: _headers, body: params.toJson()),
+      options: GotrueRequestOptions(
+        headers: _headers,
+        body: params.toJson(),
+      ),
     );
 
     return OAuthClientResponse.fromJson(data);
@@ -108,7 +114,9 @@ class GoTrueAdminOAuthApi {
     final data = await _fetch.request(
       '$_url/admin/oauth/clients/$clientId',
       RequestMethodType.get,
-      options: GotrueRequestOptions(headers: _headers),
+      options: GotrueRequestOptions(
+        headers: _headers,
+      ),
     );
 
     return OAuthClientResponse.fromJson(data);
@@ -127,7 +135,10 @@ class GoTrueAdminOAuthApi {
     final data = await _fetch.request(
       '$_url/admin/oauth/clients/$clientId',
       RequestMethodType.put,
-      options: GotrueRequestOptions(headers: _headers, body: params.toJson()),
+      options: GotrueRequestOptions(
+        headers: _headers,
+        body: params.toJson(),
+      ),
     );
 
     return OAuthClientResponse.fromJson(data);
@@ -143,7 +154,9 @@ class GoTrueAdminOAuthApi {
     final data = await _fetch.request(
       '$_url/admin/oauth/clients/$clientId',
       RequestMethodType.delete,
-      options: GotrueRequestOptions(headers: _headers),
+      options: GotrueRequestOptions(
+        headers: _headers,
+      ),
     );
 
     return OAuthClientResponse.fromJson(data);
@@ -159,7 +172,9 @@ class GoTrueAdminOAuthApi {
     final data = await _fetch.request(
       '$_url/admin/oauth/clients/$clientId/regenerate_secret',
       RequestMethodType.post,
-      options: GotrueRequestOptions(headers: _headers),
+      options: GotrueRequestOptions(
+        headers: _headers,
+      ),
     );
 
     return OAuthClientResponse.fromJson(data);

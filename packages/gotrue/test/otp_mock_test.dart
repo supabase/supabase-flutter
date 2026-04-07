@@ -34,19 +34,15 @@ void main() {
     test('signInWithOtp() with phone number', () async {
       await client.signInWithOtp(phone: testPhone);
       // This test passes if no exceptions are thrown
-      expect(
-        client.currentSession,
-        isNull,
-      ); // No session should be set yet as OTP is not verified
+      expect(client.currentSession,
+          isNull); // No session should be set yet as OTP is not verified
     });
 
     test('signInWithOtp() with email', () async {
       await client.signInWithOtp(email: testEmail);
       // This test passes if no exceptions are thrown
-      expect(
-        client.currentSession,
-        isNull,
-      ); // No session should be set yet as OTP is not verified
+      expect(client.currentSession,
+          isNull); // No session should be set yet as OTP is not verified
     });
 
     test('signInWithOtp() with phone number and custom data', () async {
@@ -56,10 +52,8 @@ void main() {
         data: {'name': 'Test User'},
       );
       // This test passes if no exceptions are thrown
-      expect(
-        client.currentSession,
-        isNull,
-      ); // No session should be set yet as OTP is not verified
+      expect(client.currentSession,
+          isNull); // No session should be set yet as OTP is not verified
     });
 
     test('signInWithOtp() without email or phone should throw', () async {
@@ -67,10 +61,8 @@ void main() {
         await client.signInWithOtp();
         fail('Should have thrown an exception');
       } on AuthException catch (e) {
-        expect(
-          e.message,
-          contains('You must provide either an email, phone number'),
-        );
+        expect(e.message,
+            contains('You must provide either an email, phone number'));
       }
     });
 
@@ -154,31 +146,31 @@ void main() {
     });
 
     test(
-      'verifyOTP() with recovery type and tokenHash should reject email/phone',
-      () async {
-        // Recovery type with tokenHash should not accept email/phone
-        try {
-          await client.verifyOTP(
-            email: testEmail,
-            tokenHash: 'mock-token-hash',
-            type: OtpType.recovery,
-          );
-          fail('Should have thrown an assertion error');
-        } catch (e) {
-          expect(e, isA<AssertionError>());
-          expect(
+        'verifyOTP() with recovery type and tokenHash should reject email/phone',
+        () async {
+      // Recovery type with tokenHash should not accept email/phone
+      try {
+        await client.verifyOTP(
+          email: testEmail,
+          tokenHash: 'mock-token-hash',
+          type: OtpType.recovery,
+        );
+        fail('Should have thrown an assertion error');
+      } catch (e) {
+        expect(e, isA<AssertionError>());
+        expect(
             e.toString(),
             contains(
-              'For recovery type with tokenHash, only tokenHash and type should be provided',
-            ),
-          );
-        }
-      },
-    );
+                'For recovery type with tokenHash, only tokenHash and type should be provided'));
+      }
+    });
 
     test('verifyOTP() without token should throw', () async {
       try {
-        await client.verifyOTP(email: testEmail, type: OtpType.email);
+        await client.verifyOTP(
+          email: testEmail,
+          type: OtpType.email,
+        );
         fail('Should have thrown an exception');
       } catch (e) {
         expect(e, isA<AssertionError>());
@@ -232,7 +224,10 @@ void main() {
 
     test('reauthenticate() works correctly', () async {
       // First sign in to set the session
-      await client.signInWithPassword(phone: testPhone, password: testPassword);
+      await client.signInWithPassword(
+        phone: testPhone,
+        password: testPassword,
+      );
 
       // Then reauthenticate
       await client.reauthenticate();
@@ -249,7 +244,10 @@ void main() {
     });
 
     test('resend() with phone type', () async {
-      final response = await client.resend(phone: testPhone, type: OtpType.sms);
+      final response = await client.resend(
+        phone: testPhone,
+        type: OtpType.sms,
+      );
 
       expect(response, isA<ResendResponse>());
     });
@@ -313,7 +311,10 @@ void main() {
       );
 
       // Test SMS channel (default)
-      await client.signInWithOtp(phone: testPhone, channel: OtpChannel.sms);
+      await client.signInWithOtp(
+        phone: testPhone,
+        channel: OtpChannel.sms,
+      );
     });
   });
 
@@ -338,25 +339,24 @@ void main() {
     });
 
     test(
-      'signInWithPassword() with phone and wrong password throws AuthException',
-      () async {
-        final client = GoTrueClient(
-          url: 'https://example.com',
-          httpClient: ConditionalErrorClient(),
-          asyncStorage: TestAsyncStorage(),
-        );
+        'signInWithPassword() with phone and wrong password throws AuthException',
+        () async {
+      final client = GoTrueClient(
+        url: 'https://example.com',
+        httpClient: ConditionalErrorClient(),
+        asyncStorage: TestAsyncStorage(),
+      );
 
-        try {
-          await client.signInWithPassword(
-            phone: testPhone,
-            password: 'wrong-password',
-          );
-          fail('Should have thrown an exception');
-        } on AuthException catch (e) {
-          expect(e.message, 'Invalid login credentials');
-        }
-      },
-    );
+      try {
+        await client.signInWithPassword(
+          phone: testPhone,
+          password: 'wrong-password',
+        );
+        fail('Should have thrown an exception');
+      } on AuthException catch (e) {
+        expect(e.message, 'Invalid login credentials');
+      }
+    });
 
     test('signUp() with existing phone number throws AuthException', () async {
       final client = GoTrueClient(
@@ -366,7 +366,10 @@ void main() {
       );
 
       try {
-        await client.signUp(phone: testPhone, password: testPassword);
+        await client.signUp(
+          phone: testPhone,
+          password: testPassword,
+        );
         fail('Should have thrown an exception');
       } on AuthException catch (e) {
         expect(e.message, 'Phone number is already registered');
@@ -384,23 +387,24 @@ void main() {
       await client.signInWithOtp(phone: testPhone);
     });
 
-    test(
-      'verifyOTP() with neither email nor phone throws assertion error',
-      () async {
-        final client = GoTrueClient(
-          url: 'https://example.com',
-          httpClient: EmptyResponseClient(),
-          asyncStorage: TestAsyncStorage(),
-        );
+    test('verifyOTP() with neither email nor phone throws assertion error',
+        () async {
+      final client = GoTrueClient(
+        url: 'https://example.com',
+        httpClient: EmptyResponseClient(),
+        asyncStorage: TestAsyncStorage(),
+      );
 
-        try {
-          await client.verifyOTP(token: '123456', type: OtpType.sms);
-          fail('Should have thrown an exception');
-        } catch (e) {
-          expect(e, isA<AssertionError>());
-        }
-      },
-    );
+      try {
+        await client.verifyOTP(
+          token: '123456',
+          type: OtpType.sms,
+        );
+        fail('Should have thrown an exception');
+      } catch (e) {
+        expect(e, isA<AssertionError>());
+      }
+    });
 
     test('verifyOTP() with expired token throws AuthException', () async {
       final client = GoTrueClient(
@@ -455,23 +459,21 @@ void main() {
       }
     });
 
-    test(
-      'signInWithPassword() without email or phone throws exception',
-      () async {
-        final client = GoTrueClient(
-          url: 'https://example.com',
-          httpClient: EmptyResponseClient(),
-          asyncStorage: TestAsyncStorage(),
-        );
+    test('signInWithPassword() without email or phone throws exception',
+        () async {
+      final client = GoTrueClient(
+        url: 'https://example.com',
+        httpClient: EmptyResponseClient(),
+        asyncStorage: TestAsyncStorage(),
+      );
 
-        try {
-          await client.signInWithPassword(password: testPassword);
-          fail('Should have thrown an exception');
-        } on AuthException catch (e) {
-          expect(e.message.contains('You must provide either an'), isTrue);
-        }
-      },
-    );
+      try {
+        await client.signInWithPassword(password: testPassword);
+        fail('Should have thrown an exception');
+      } on AuthException catch (e) {
+        expect(e.message.contains('You must provide either an'), isTrue);
+      }
+    });
 
     test('empty response on server error', () async {
       final client = GoTrueClient(
@@ -547,17 +549,26 @@ void main() {
     });
 
     test('signUp() uses sms channel by default', () async {
-      await client.signUp(phone: testPhone, password: testPassword);
+      await client.signUp(
+        phone: testPhone,
+        password: testPassword,
+      );
       expect(mockClient.lastChannelUsed, 'sms');
     });
 
     test('resend() with sms type sets channel to sms', () async {
-      await client.resend(phone: testPhone, type: OtpType.sms);
+      await client.resend(
+        phone: testPhone,
+        type: OtpType.sms,
+      );
       expect(mockClient.lastRequestBody?['type'], 'sms');
     });
 
     test('resend() with phone_change type sets correct type', () async {
-      await client.resend(phone: testPhone, type: OtpType.phoneChange);
+      await client.resend(
+        phone: testPhone,
+        type: OtpType.phoneChange,
+      );
       expect(mockClient.lastRequestBody?['type'], 'phone_change');
     });
 
@@ -567,10 +578,16 @@ void main() {
       expect(OtpChannel.whatsapp.name, 'whatsapp');
 
       // Test that the enum is used correctly in the request
-      client.signInWithOtp(phone: testPhone, channel: OtpChannel.whatsapp);
+      client.signInWithOtp(
+        phone: testPhone,
+        channel: OtpChannel.whatsapp,
+      );
       expect(mockClient.lastChannelUsed, 'whatsapp');
 
-      client.signInWithOtp(phone: testPhone, channel: OtpChannel.sms);
+      client.signInWithOtp(
+        phone: testPhone,
+        channel: OtpChannel.sms,
+      );
       expect(mockClient.lastChannelUsed, 'sms');
     });
 

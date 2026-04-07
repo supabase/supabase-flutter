@@ -83,6 +83,8 @@ enum ErrorCode {
   const ErrorCode(this.code);
 
   static ErrorCode? fromCode(String code) {
-    return ErrorCode.values.firstWhereOrNull((value) => value.code == code);
+    return ErrorCode.values.firstWhereOrNull(
+      (value) => value.code == code,
+    );
   }
 }
