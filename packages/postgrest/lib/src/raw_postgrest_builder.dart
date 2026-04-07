@@ -14,7 +14,6 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
           isolate: builder._isolate,
           maybeSingle: builder._maybeSingle,
           converter: builder._converter,
-          clientRetryEnabled: builder._clientRetryEnabled,
           retryEnabled: builder._retryEnabled,
           retryDelay: builder._retryDelay,
         );
@@ -41,7 +40,6 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       isolate: isolate ?? _isolate,
       count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
-      clientRetryEnabled: _clientRetryEnabled,
       retryEnabled: _retryEnabled,
       retryDelay: _retryDelay,
     ));
@@ -77,7 +75,6 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       count: _count,
       maybeSingle: _maybeSingle,
       converter: converter,
-      clientRetryEnabled: _clientRetryEnabled,
       retryEnabled: _retryEnabled,
       retryDelay: _retryDelay,
     );

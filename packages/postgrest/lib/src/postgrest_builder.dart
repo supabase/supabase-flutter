@@ -46,8 +46,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final Client? _httpClient;
   final YAJsonIsolate? _isolate;
   final CountOption? _count;
-  final bool _clientRetryEnabled;
-  final bool? _retryEnabled;
+  final bool _retryEnabled;
   final Duration Function(int attempt) _retryDelay;
   final _log = Logger('supabase.postgrest');
 
@@ -65,8 +64,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
-    bool clientRetryEnabled = true,
-    bool? retryEnabled,
+    bool retryEnabled = true,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
   })  : _maybeSingle = maybeSingle,
         _method = method,
@@ -78,7 +76,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         _isolate = isolate,
         _count = count,
         _body = body,
-        _clientRetryEnabled = clientRetryEnabled,
         _retryEnabled = retryEnabled,
         _retryDelay = retryDelay ?? _defaultRetryDelay;
 
@@ -93,7 +90,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
-    bool? clientRetryEnabled,
     bool? retryEnabled,
     Duration Function(int attempt)? retryDelay,
   }) {
@@ -108,7 +104,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
-      clientRetryEnabled: clientRetryEnabled ?? _clientRetryEnabled,
       retryEnabled: retryEnabled ?? _retryEnabled,
       retryDelay: retryDelay ?? _retryDelay,
     );
@@ -139,9 +134,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (_count != null) {
       if (execHeaders['Prefer'] != null) {
         final oldPreferHeader = execHeaders['Prefer'];
-        execHeaders['Prefer'] = '$oldPreferHeader,count=${_count!.name}';
+        execHeaders['Prefer'] = '$oldPreferHeader,count=${_count.name}';
       } else {
-        execHeaders['Prefer'] = 'count=${_count!.name}';
+        execHeaders['Prefer'] = 'count=${_count.name}';
       }
     }
 
@@ -157,9 +152,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       if (_schema == null) {
         // skip
       } else if ([METHOD_GET, METHOD_HEAD].contains(method)) {
-        execHeaders['Accept-Profile'] = _schema!;
+        execHeaders['Accept-Profile'] = _schema;
       } else {
-        execHeaders['Content-Profile'] = _schema!;
+        execHeaders['Content-Profile'] = _schema;
       }
       if (method != METHOD_GET && method != METHOD_HEAD) {
         execHeaders['Content-Type'] = 'application/json';
@@ -214,10 +209,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     const maxRetries = 3;
     const retryableStatusCodes = {503, 520};
 
-    final effectiveRetryEnabled = _retryEnabled ?? _clientRetryEnabled;
     final isRetryableMethod = method == METHOD_GET || method == METHOD_HEAD;
 
-    if (!effectiveRetryEnabled || !isRetryableMethod) {
+    if (!_retryEnabled || !isRetryableMethod) {
       return send();
     }
 
@@ -259,7 +253,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         } else {
           try {
             if ((response.contentLength ?? 0) > 10000 && _isolate != null) {
-              body = await _isolate!.decode(response.body);
+              body = await _isolate.decode(response.body);
             } else {
               body = jsonDecode(response.body);
             }
@@ -314,7 +308,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       body as R;
 
       if (_converter != null) {
-        converted = _converter!(body);
+        converted = _converter(body);
       } else {
         converted = body as S;
       }
@@ -376,14 +370,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         error.details.toString().contains('Results contain 0 rows')) {
       if (_count != null && response.request!.method != METHOD_HEAD) {
         if (_converter != null) {
-          return PostgrestResponse<S>(data: _converter!(null as R), count: 0)
+          return PostgrestResponse<S>(data: _converter(null as R), count: 0)
               as T;
         } else {
           return null as T;
         }
       } else {
         if (_converter != null) {
-          return _converter!(null as R) as T;
+          return _converter(null as R) as T;
         } else {
           return null as T;
         }

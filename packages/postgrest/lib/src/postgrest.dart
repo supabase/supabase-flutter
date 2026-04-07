@@ -75,7 +75,7 @@ class PostgrestClient {
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
-      clientRetryEnabled: retryEnabled,
+      retryEnabled: retryEnabled,
       retryDelay: _retryDelay,
     );
   }
@@ -122,7 +122,7 @@ class PostgrestClient {
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
-      clientRetryEnabled: retryEnabled,
+      retryEnabled: retryEnabled,
       retryDelay: _retryDelay,
     ).rpc(params, get);
   }
