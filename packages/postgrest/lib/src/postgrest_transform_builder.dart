@@ -7,6 +7,11 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       PostgrestTransformBuilder(_copyWith(url: url));
 
   @override
+  PostgrestTransformBuilder<T> retry({required bool enabled}) {
+    return PostgrestTransformBuilder(_copyWith(retryEnabled: enabled));
+  }
+
+  @override
   PostgrestTransformBuilder<T> setHeader(String key, String value) {
     return PostgrestTransformBuilder(
       _copyWith(headers: {..._headers, key: value}),
@@ -164,7 +169,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
     final newHeaders = {..._headers};
 
-    if (_method?.toUpperCase() == 'GET') {
+    if (_method == _HttpMethod.get) {
       newHeaders['Accept'] = 'application/json';
     } else {
       newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
@@ -230,7 +235,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// supabase.rpc("function").head();
   ///```
   PostgrestBuilder<void, void, void> head() {
-    return _copyWithType(method: METHOD_HEAD);
+    return _copyWithType(method: _HttpMethod.head);
   }
 
   /// Enables support for GeoJSON for use with PostGIS data types

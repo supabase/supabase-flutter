@@ -64,6 +64,7 @@ class SupabaseClient {
   late final PostgrestClient rest;
   StreamSubscription<AuthState>? _authStateSubscription;
   late final YAJsonIsolate _isolate;
+  late final bool _hasCustomIsolate;
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each stream
@@ -139,7 +140,8 @@ class SupabaseClient {
           if (headers != null) ...headers
         },
         _httpClient = httpClient,
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()) {
+        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+        _hasCustomIsolate = isolate != null {
     _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
       gotrueAsyncStorage: authOptions.pkceAsyncStorage,
@@ -149,7 +151,8 @@ class SupabaseClient {
         AuthHttpClient(_supabaseKey, httpClient ?? Client(), _getAccessToken);
     rest = _initRestClient();
     functions = _initFunctionsClient();
-    storage = _initStorageClient(storageOptions.retryAttempts);
+    storage = _initStorageClient(
+        storageOptions.retryAttempts, storageOptions.useNewHostname);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
       _log.config(
@@ -273,7 +276,9 @@ class SupabaseClient {
     _log.fine('Dispose SupabaseClient');
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
-    await _isolate.dispose();
+    if (!_hasCustomIsolate) {
+      await _isolate.dispose();
+    }
     _authInstance?.dispose();
   }
 
@@ -316,12 +321,14 @@ class SupabaseClient {
     );
   }
 
-  SupabaseStorageClient _initStorageClient(int storageRetryAttempts) {
+  SupabaseStorageClient _initStorageClient(
+      int storageRetryAttempts, bool useNewHostname) {
     return SupabaseStorageClient(
       _storageUrl,
       {...headers},
       httpClient: _authHttpClient,
       retryAttempts: storageRetryAttempts,
+      useNewHostname: useNewHostname,
     );
   }
 
@@ -338,6 +345,7 @@ class SupabaseClient {
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
       customAccessToken: accessToken,
+      transport: options.transport,
     );
   }
 

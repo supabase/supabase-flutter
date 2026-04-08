@@ -472,10 +472,13 @@ class RealtimeChannel {
   RealtimeChannel off(String type, Map<String, String> filter) {
     final typeLower = type.toLowerCase();
 
-    _bindings[typeLower] = _bindings[typeLower]!.where((bind) {
-      return !(bind.type.toLowerCase() == typeLower &&
-          RealtimeChannel._isEqual(bind.filter, filter));
-    }).toList();
+    _bindings[typeLower] = _bindings[typeLower]!
+        .where((bind) {
+          return !(bind.type.toLowerCase() == typeLower &&
+              RealtimeChannel._isEqual(bind.filter, filter));
+        })
+        .toList()
+        .cast<Binding>();
     return this;
   }
 

@@ -53,6 +53,41 @@ class RealtimeCloseEvent {
   }
 }
 
+/// Manages a persistent WebSocket connection to the Supabase Realtime server.
+///
+/// [RealtimeClient] is the central hub for all real-time communication. It owns
+/// the WebSocket lifecycle — opening, closing, and reconnecting with exponential
+/// backoff — and multiplexes multiple [RealtimeChannel] subscriptions over a
+/// single connection.
+///
+/// **Responsibilities:**
+/// - Establishes and maintains the WebSocket connection to [endPoint].
+/// - Sends periodic heartbeat messages to detect stale connections and
+///   reconnects automatically when a heartbeat goes unanswered.
+/// - Encodes outgoing messages and decodes incoming messages (JSON by default).
+/// - Manages a registry of [RealtimeChannel] instances, routing inbound
+///   messages to the correct channel by topic.
+/// - Refreshes the access token and propagates it to all joined channels so
+///   that subscriptions remain authorized across token rotations.
+///
+/// **Key collaborators:**
+/// - [RealtimeChannel] — created via [channel] and registered here; the client
+///   dispatches server messages to each channel by topic.
+/// - `RetryTimer` — drives the reconnect backoff strategy.
+/// - [WebSocketTransport] — injectable transport layer used in tests.
+///
+/// **Lifecycle:**
+/// 1. Construct with an endpoint URL and optional configuration.
+/// 2. Call [connect] to open the WebSocket. The client begins heartbeating
+///    immediately and reconnects on unexpected disconnections.
+/// 3. Create channels with [channel], subscribe to events, and call
+///    `RealtimeChannel.subscribe()` to join server-side topics.
+/// 4. Call [disconnect] when real-time functionality is no longer needed; this
+///    removes all channels and closes the underlying socket.
+///
+/// **Platform notes:**
+/// - Works on all Dart platforms (Flutter mobile/desktop, web, server).
+/// - On web, the underlying [WebSocketChannel] uses the browser WebSocket API.
 class RealtimeClient {
   // This is named `accessTokenValue` in supabase-js
   String? accessToken;
@@ -178,11 +213,16 @@ class RealtimeClient {
       log('transport', 'connecting to $endPointURL', null);
       log('transport', 'connecting', null, Level.FINE);
       connState = SocketStates.connecting;
-      conn = transport(endPointURL, headers);
+      final WebSocketChannel localConn = transport(endPointURL, headers);
+      conn = localConn;
 
       try {
-        await conn!.ready;
+        await localConn.ready;
       } catch (error) {
+        // Bail out if disconnect() ran or a new connect() started during await
+        if (conn != localConn) {
+          return;
+        }
         // Don't schedule a reconnect and emit error if connection has been
         // closed by the user or [disconnect] waits for the connection to be
         // ready before closing it.
@@ -195,10 +235,15 @@ class RealtimeClient {
         return;
       }
 
+      // Guard: bail out if disconnect() ran during the await
+      if (conn != localConn || connState != SocketStates.connecting) {
+        return;
+      }
+
       connState = SocketStates.open;
 
       _onConnOpen();
-      conn!.stream.listen(
+      localConn.stream.listen(
         // incoming messages
         (message) => onConnMessage(message as String),
         onError: _onConnError,
@@ -329,7 +374,10 @@ class RealtimeClient {
   /// Removes a subscription from the socket.
   @internal
   void remove(RealtimeChannel channel) {
-    channels = channels.where((c) => c.joinRef != channel.joinRef).toList();
+    channels = channels
+        .where((c) => c.joinRef != channel.joinRef)
+        .toList()
+        .cast<RealtimeChannel>();
   }
 
   RealtimeChannel channel(

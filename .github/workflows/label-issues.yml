@@ -1,0 +1,31 @@
+name: Auto-Label Issues and PRs
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+  issues:
+    types:
+      - opened
+      - edited
+
+jobs:
+  label:
+    uses: supabase/actions/.github/workflows/label-issues.yml@659b3cd74a64ee2f1ca0a527922f134707e54671
+    with:
+      label_mappings: |
+        {
+          "gotrue": "auth",
+          "auth": "auth",
+          "storage": "storage",
+          "storage_client": "storage",
+          "realtime": "realtime",
+          "realtime_client": "realtime",
+          "postgrest": "postgrest",
+          "functions": "functions",
+          "functions_client": "functions",
+          "auth_ui": "auth-ui",
+          "supabase": "supabase",
+          "supabase_flutter": "supabase_flutter"
+        }

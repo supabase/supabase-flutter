@@ -14,6 +14,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
           isolate: builder._isolate,
           maybeSingle: builder._maybeSingle,
           converter: builder._converter,
+          retryEnabled: builder._retryEnabled,
+          retryDelay: builder._retryDelay,
         );
 
   /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
@@ -21,7 +23,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     Uri? url,
     Headers? headers,
     String? schema,
-    String? method,
+    _HttpMethod? method,
     Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
@@ -38,6 +40,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       isolate: isolate ?? _isolate,
       count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
+      retryEnabled: _retryEnabled,
+      retryDelay: _retryDelay,
     ));
   }
 
@@ -71,6 +75,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       count: _count,
       maybeSingle: _maybeSingle,
       converter: converter,
+      retryEnabled: _retryEnabled,
+      retryDelay: _retryDelay,
     );
   }
 }

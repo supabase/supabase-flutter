@@ -1,8 +1,7 @@
-// ignore_for_file: constant_identifier_names
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
@@ -18,12 +17,16 @@ part 'postgrest_transform_builder.dart';
 part 'raw_postgrest_builder.dart';
 part 'response_postgrest_builder.dart';
 
-const METHOD_GET = 'GET';
-const METHOD_HEAD = 'HEAD';
-const METHOD_POST = 'POST';
-const METHOD_PUT = 'PUT';
-const METHOD_PATCH = 'PATCH';
-const METHOD_DELETE = 'DELETE';
+enum _HttpMethod {
+  get,
+  head,
+  post,
+  put,
+  patch,
+  delete;
+
+  String get value => name.toUpperCase();
+}
 
 typedef _Nullable<T> = T?;
 
@@ -38,26 +41,34 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final Object? _body;
   final Headers _headers;
   final bool _maybeSingle;
-  final String? _method;
+  final _HttpMethod? _method;
   final String? _schema;
   final Uri _url;
   final PostgrestConverter<S, R>? _converter;
   final Client? _httpClient;
   final YAJsonIsolate? _isolate;
   final CountOption? _count;
+  final bool _retryEnabled;
+  final Duration Function(int attempt) _retryDelay;
   final _log = Logger('supabase.postgrest');
+
+  static Duration _defaultRetryDelay(int attempt) =>
+      Duration(seconds: math.min(math.pow(2, attempt).toInt(), 30));
 
   PostgrestBuilder({
     required Uri url,
     required Headers headers,
     String? schema,
-    String? method,
+    // ignore: library_private_types_in_public_api
+    _HttpMethod? method,
     Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
     CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
+    bool retryEnabled = true,
+    @visibleForTesting Duration Function(int attempt)? retryDelay,
   })  : _maybeSingle = maybeSingle,
         _method = method,
         _converter = converter,
@@ -67,19 +78,23 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         _httpClient = httpClient,
         _isolate = isolate,
         _count = count,
-        _body = body;
+        _body = body,
+        _retryEnabled = retryEnabled,
+        _retryDelay = retryDelay ?? _defaultRetryDelay;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
     Headers? headers,
     String? schema,
-    String? method,
+    _HttpMethod? method,
     Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
     CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
+    bool? retryEnabled,
+    Duration Function(int attempt)? retryDelay,
   }) {
     return PostgrestBuilder<T, S, R>(
       url: url ?? _url,
@@ -92,8 +107,19 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
+      retryEnabled: retryEnabled ?? _retryEnabled,
+      retryDelay: retryDelay ?? _retryDelay,
     );
   }
+
+  /// Overrides the retry behavior for this specific request.
+  ///
+  /// When [enabled] is `false`, retries are disabled for this request even if
+  /// [PostgrestClient] was configured with `retryEnabled: true`.
+  /// When [enabled] is `true`, retries are enabled for this request even if
+  /// [PostgrestClient] was configured with `retryEnabled: false`.
+  PostgrestBuilder<T, S, R> retry({required bool enabled}) =>
+      _copyWith(retryEnabled: enabled);
 
   PostgrestBuilder<T, S, R> setHeader(String key, String value) {
     return _copyWith(
@@ -102,14 +128,18 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   }
 
   Future<T> _execute() async {
-    final String? method = _method;
+    final _HttpMethod? method = _method;
+    // Work with a local copy so repeated awaits and shared-map siblings are
+    // not affected by per-execution header mutations (Prefer, schema headers,
+    // X-Retry-Count, etc.).
+    final execHeaders = {..._headers};
 
     if (_count != null) {
-      if (_headers['Prefer'] != null) {
-        final oldPreferHeader = _headers['Prefer'];
-        _headers['Prefer'] = '$oldPreferHeader,count=${_count!.name}';
+      if (execHeaders['Prefer'] != null) {
+        final oldPreferHeader = execHeaders['Prefer'];
+        execHeaders['Prefer'] = '$oldPreferHeader,count=${_count.name}';
       } else {
-        _headers['Prefer'] = 'count=${_count!.name}';
+        execHeaders['Prefer'] = 'count=${_count.name}';
       }
     }
 
@@ -120,70 +150,100 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         );
       }
 
-      final uppercaseMethod = method.toUpperCase();
-      late http.Response response;
-
       if (_schema == null) {
         // skip
-      } else if ([METHOD_GET, METHOD_HEAD].contains(method)) {
-        _headers['Accept-Profile'] = _schema!;
+      } else if (method == _HttpMethod.get || method == _HttpMethod.head) {
+        execHeaders['Accept-Profile'] = _schema;
       } else {
-        _headers['Content-Profile'] = _schema!;
+        execHeaders['Content-Profile'] = _schema;
       }
-      if (method != METHOD_GET && method != METHOD_HEAD) {
-        _headers['Content-Type'] = 'application/json';
+      if (method != _HttpMethod.get && method != _HttpMethod.head) {
+        execHeaders['Content-Type'] = 'application/json';
       }
       final bodyStr = jsonEncode(_body);
-      _log.finest("Request: $uppercaseMethod $_url");
+      _log.finest("Request: ${method.value} $_url");
 
-      if (uppercaseMethod == METHOD_GET) {
-        response = await (_httpClient?.get ?? http.get)(
-          _url,
-          headers: _headers,
-        );
-      } else if (uppercaseMethod == METHOD_POST) {
-        response = await (_httpClient?.post ?? http.post)(
-          _url,
-          headers: _headers,
-          body: bodyStr,
-        );
-      } else if (uppercaseMethod == METHOD_PUT) {
-        response = await (_httpClient?.put ?? http.put)(
-          _url,
-          headers: _headers,
-          body: bodyStr,
-        );
-      } else if (uppercaseMethod == METHOD_PATCH) {
-        response = await (_httpClient?.patch ?? http.patch)(
-          _url,
-          headers: _headers,
-          body: bodyStr,
-        );
-      } else if (uppercaseMethod == METHOD_DELETE) {
-        response = await (_httpClient?.delete ?? http.delete)(
-          _url,
-          headers: _headers,
-        );
-      } else if (uppercaseMethod == METHOD_HEAD) {
-        response = await (_httpClient?.head ?? http.head)(
-          _url,
-          headers: _headers,
-        );
+      final Future<http.Response> Function() send;
+      if (method == _HttpMethod.get) {
+        send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
+      } else if (method == _HttpMethod.post) {
+        send = () => (_httpClient?.post ?? http.post)(
+              _url,
+              headers: execHeaders,
+              body: bodyStr,
+            );
+      } else if (method == _HttpMethod.put) {
+        send = () => (_httpClient?.put ?? http.put)(
+              _url,
+              headers: execHeaders,
+              body: bodyStr,
+            );
+      } else if (method == _HttpMethod.patch) {
+        send = () => (_httpClient?.patch ?? http.patch)(
+              _url,
+              headers: execHeaders,
+              body: bodyStr,
+            );
+      } else if (method == _HttpMethod.delete) {
+        send = () =>
+            (_httpClient?.delete ?? http.delete)(_url, headers: execHeaders);
+      } else if (method == _HttpMethod.head) {
+        send =
+            () => (_httpClient?.head ?? http.head)(_url, headers: execHeaders);
+      } else {
+        throw StateError('Unknown HTTP method: ${method.value}');
       }
 
+      final response = await _executeWithRetry(send, method, execHeaders);
       return _parseResponse(response, method);
     } catch (error) {
       rethrow;
     }
   }
 
+  Future<http.Response> _executeWithRetry(
+    Future<http.Response> Function() send,
+    _HttpMethod method,
+    Map<String, String> execHeaders,
+  ) async {
+    const maxRetries = 3;
+    const retryableStatusCodes = {503, 520};
+
+    final isRetryableMethod =
+        method == _HttpMethod.get || method == _HttpMethod.head;
+
+    if (!_retryEnabled || !isRetryableMethod) {
+      return send();
+    }
+
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      if (attempt > 0) {
+        execHeaders['X-Retry-Count'] = attempt.toString();
+      }
+
+      try {
+        final response = await send();
+        if (!retryableStatusCodes.contains(response.statusCode) ||
+            attempt == maxRetries) {
+          return response;
+        }
+      } on Exception {
+        if (attempt == maxRetries) rethrow;
+      }
+
+      await Future.delayed(_retryDelay(attempt));
+    }
+
+    throw StateError('unreachable');
+  }
+
   /// Parse request response to json object if possible
-  Future<T> _parseResponse(http.Response response, String method) async {
+  Future<T> _parseResponse(http.Response response, _HttpMethod method) async {
     if (response.statusCode >= 200 && response.statusCode <= 299) {
       Object? body;
       int? count;
 
-      if (response.request!.method != METHOD_HEAD) {
+      if (response.request!.method != _HttpMethod.head.value) {
         if (response.bodyBytes.isEmpty) {
           body = null;
         } else if (response.request!.headers['Accept'] == 'text/csv') {
@@ -194,7 +254,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         } else {
           try {
             if ((response.contentLength ?? 0) > 10000 && _isolate != null) {
-              body = await _isolate!.decode(response.body);
+              body = await _isolate.decode(response.body);
             } else {
               body = jsonDecode(response.body);
             }
@@ -205,7 +265,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
 
       // Workaround for https://github.com/supabase/supabase-flutter/issues/560
-      if (_maybeSingle && method.toUpperCase() == 'GET' && body is List) {
+      if (_maybeSingle && method == _HttpMethod.get && body is List) {
         if (body.length > 1) {
           final exception = PostgrestException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
@@ -249,12 +309,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       body as R;
 
       if (_converter != null) {
-        converted = _converter!(body);
+        converted = _converter(body);
       } else {
         converted = body as S;
       }
 
-      if (_count != null && method != METHOD_HEAD) {
+      if (_count != null && method != _HttpMethod.head) {
         return PostgrestResponse<S>(
           data: converted,
           count: count!,
@@ -264,7 +324,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
     } else {
       late PostgrestException error;
-      if (response.request!.method != METHOD_HEAD) {
+      if (response.request!.method != _HttpMethod.head.value) {
         try {
           final errorJson = jsonDecode(response.body) as Map<String, dynamic>;
           error = PostgrestException.fromJson(
@@ -309,16 +369,17 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ) {
     if (error.details is String &&
         error.details.toString().contains('Results contain 0 rows')) {
-      if (_count != null && response.request!.method != METHOD_HEAD) {
+      if (_count != null &&
+          response.request!.method != _HttpMethod.head.value) {
         if (_converter != null) {
-          return PostgrestResponse<S>(data: _converter!(null as R), count: 0)
+          return PostgrestResponse<S>(data: _converter(null as R), count: 0)
               as T;
         } else {
           return null as T;
         }
       } else {
         if (_converter != null) {
-          return _converter!(null as R) as T;
+          return _converter(null as R) as T;
         } else {
           return null as T;
         }

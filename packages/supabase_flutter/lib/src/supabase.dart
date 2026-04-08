@@ -13,7 +13,6 @@ import 'package:supabase_flutter/src/supabase_auth.dart';
 
 import 'hot_restart_cleanup_stub.dart'
     if (dart.library.js_interop) 'hot_restart_cleanup_web.dart';
-
 import 'version.dart';
 
 final _log = Logger('supabase.supabase_flutter');
@@ -35,7 +34,7 @@ final _log = Logger('supabase.supabase_flutter');
 /// See also:
 ///
 ///   * [SupabaseAuth]
-class Supabase with WidgetsBindingObserver {
+class Supabase {
   /// Gets the current supabase instance.
   ///
   /// An [AssertionError] is thrown if supabase isn't initialized yet.
@@ -98,7 +97,8 @@ class Supabase with WidgetsBindingObserver {
       _instance._logSubscription = Logger('supabase').onRecord.listen((record) {
         if (record.level >= Level.INFO) {
           debugPrint(
-              '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}');
+            '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}',
+          );
         }
       });
     }
@@ -138,9 +138,7 @@ class Supabase with WidgetsBindingObserver {
       // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
       // if still in progress
       _instance._restoreSessionCancellableOperation =
-          CancelableOperation.fromFuture(
-        supabaseAuth.recoverSession(),
-      );
+          CancelableOperation.fromFuture(supabaseAuth.recoverSession());
     }
 
     _log.info('***** Supabase init completed *****');
@@ -150,8 +148,6 @@ class Supabase with WidgetsBindingObserver {
 
   Supabase._();
   static final Supabase _instance = Supabase._();
-
-  static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
 
   bool _isInitialized = false;
 
@@ -170,17 +166,28 @@ class Supabase with WidgetsBindingObserver {
   /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
   late CancelableOperation _restoreSessionCancellableOperation;
 
-  CancelableOperation<void>? _realtimeReconnectOperation;
+  // Listener for app lifecycle events to handle Realtime reconnection.
+  AppLifecycleListener? _lifecycleListener;
+
+  /// Serial queue for lifecycle operations (connect/disconnect). Each event
+  /// appends via `.then()` so operations never overlap.
+  Future<void> _pendingLifecycleOperation = Future.value();
+
+  /// The most recently requested lifecycle state. Checked inside
+  /// [_processLifecycle] after each `await` to skip stale operations
+  /// (e.g. abort a reconnect if the app went back to background).
+  AppLifecycleState? _targetLifecycleState;
 
   StreamSubscription? _logSubscription;
 
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {
+    _targetLifecycleState = null;
     await _restoreSessionCancellableOperation.cancel();
     _logSubscription?.cancel();
     client.dispose();
     _instance._supabaseAuth?.dispose();
-    _widgetsBindingInstance?.removeObserver(this);
+    _lifecycleListener?.dispose();
     _isInitialized = false;
   }
 
@@ -197,7 +204,7 @@ class Supabase with WidgetsBindingObserver {
   }) {
     final headers = {
       ...Constants.defaultHeaders,
-      if (customHeaders != null) ...customHeaders
+      if (customHeaders != null) ...customHeaders,
     };
     client = SupabaseClient(
       supabaseUrl,
@@ -217,76 +224,71 @@ class Supabase with WidgetsBindingObserver {
       disposePreviousClient();
       markClientToDispose(client);
     }
-    _widgetsBindingInstance?.addObserver(this);
+
+    _setupLifecycleListener();
+
     _isInitialized = true;
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        onResumed();
-      case AppLifecycleState.detached:
-      case AppLifecycleState.paused:
-        _realtimeReconnectOperation?.cancel();
-        Supabase.instance.client.realtime.disconnect();
-      default:
-    }
+  void _setupLifecycleListener() {
+    _lifecycleListener = AppLifecycleListener(
+      onStateChange: (state) {
+        switch (state) {
+          case AppLifecycleState.resumed:
+          case AppLifecycleState.paused:
+          case AppLifecycleState.detached:
+            _targetLifecycleState = state;
+            _pendingLifecycleOperation = _pendingLifecycleOperation
+                .then((_) => _processLifecycle(state))
+                .catchError((_) {});
+          default:
+            break;
+        }
+      },
+    );
   }
 
-  Future<void> onResumed() async {
+  /// Processes a lifecycle state change. Operations are serialized via
+  /// [_pendingLifecycleOp] so that disconnect and connect never overlap.
+  ///
+  /// [captured] is the lifecycle state at the time the event was enqueued.
+  /// If a newer event has arrived since, this one is skipped (stale).
+  Future<void> _processLifecycle(AppLifecycleState captured) async {
+    // Skip if a newer lifecycle event has superseded this one.
+    if (captured != _targetLifecycleState) return;
+
     final realtime = Supabase.instance.client.realtime;
-    if (realtime.channels.isNotEmpty) {
-      if (realtime.connState == SocketStates.disconnecting &&
-          realtime.conn != null) {
-        // If the socket is still disconnecting from e.g.
-        // [AppLifecycleState.paused] we should wait for it to finish before
-        // reconnecting.
 
-        bool cancel = false;
-        final connectFuture = realtime.conn!.sink.done.then(
-          (_) async {
-            // Make this connect cancelable so that it does not connect if the
-            // disconnect took so long that the app is already in background
-            // again.
+    if (captured == AppLifecycleState.resumed) {
+      // No channels subscribed — nothing to reconnect.
+      if (realtime.channels.isEmpty) return;
 
-            if (!cancel) {
-              // ignore: invalid_use_of_internal_member
-              await realtime.connect();
-              for (final channel in realtime.channels) {
-                // ignore: invalid_use_of_internal_member
-                if (channel.isJoined) {
-                  // ignore: invalid_use_of_internal_member
-                  channel.forceRejoin();
-                }
-              }
-            }
-          },
-          onError: (error) {},
-        );
-        _realtimeReconnectOperation = CancelableOperation.fromFuture(
-          connectFuture,
-          onCancel: () => cancel = true,
-        );
-      } else if (!realtime.isConnected) {
-        // Reconnect if the socket is currently not connected.
-        // When coming from [AppLifecycleState.paused] this should be the case,
-        // but when coming from [AppLifecycleState.inactive] no disconnect
-        // happened and therefore connection should still be intact and we
-        // should not reconnect.
+      // Already connected (e.g. coming from [AppLifecycleState.inactive]
+      // where no disconnect happened).
+      if (realtime.isConnected) return;
 
+      // ignore: invalid_use_of_internal_member
+      await realtime.connect();
+
+      // Abort rejoin if app went back to background during connect.
+      if (_targetLifecycleState != AppLifecycleState.resumed) return;
+
+      // Re-send join messages for channels that were previously joined.
+      // After a disconnect/reconnect the WebSocket is fresh, but the
+      // channel objects still have joined state — forceRejoin() restores
+      // the server-side subscriptions.
+      for (final channel in realtime.channels) {
         // ignore: invalid_use_of_internal_member
-        await realtime.connect();
-        for (final channel in realtime.channels) {
-          // Only rejoin channels that think they are still joined and not
-          // which were manually unsubscribed by the user while in background
-
+        if (channel.isJoined) {
           // ignore: invalid_use_of_internal_member
-          if (channel.isJoined) {
-            // ignore: invalid_use_of_internal_member
-            channel.forceRejoin();
-          }
+          channel.forceRejoin();
         }
+      }
+    } else {
+      // paused or detached — disconnect the WebSocket if it is active.
+      if (realtime.isConnected ||
+          realtime.connState == SocketStates.connecting) {
+        await realtime.disconnect();
       }
     }
   }
