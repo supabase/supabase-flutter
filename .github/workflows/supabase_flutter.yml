@@ -68,7 +68,13 @@ jobs:
         run: |
           cd ../../
           dart pub global activate melos
-          melos bootstrap
+          melos bootstrap --ignore="supabase_flutter_example"
+
+      - name: Bootstrap example
+        if: ${{ matrix.flutter-version == '3.x' }}
+        run: |
+          cd ../../
+          melos bootstrap --scope="supabase_flutter_example"
 
       - name: Run formatter
         if: ${{ matrix.flutter-version == '3.x'}}
@@ -104,7 +110,7 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev
+          sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev libsecret-1-dev
           cd example
           flutter build linux
 
