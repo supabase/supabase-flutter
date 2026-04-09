@@ -16,6 +16,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
           converter: builder._converter,
           retryEnabled: builder._retryEnabled,
           retryDelay: builder._retryDelay,
+          timeout: builder._timeout,
+          urlLengthLimit: builder._urlLengthLimit,
         );
 
   /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
@@ -42,6 +44,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       maybeSingle: maybeSingle ?? _maybeSingle,
       retryEnabled: _retryEnabled,
       retryDelay: _retryDelay,
+      timeout: _timeout,
+      urlLengthLimit: _urlLengthLimit,
     ));
   }
 
@@ -77,6 +81,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       converter: converter,
       retryEnabled: _retryEnabled,
       retryDelay: _retryDelay,
+      timeout: _timeout,
+      urlLengthLimit: _urlLengthLimit,
     );
   }
 }

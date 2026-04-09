@@ -45,6 +45,8 @@ class SupabaseQuerySchema {
       httpClient: _authHttpClient,
       incrementId: _counter.increment(),
       isolate: _isolate,
+      timeout: _rest.timeout,
+      urlLengthLimit: _rest.urlLengthLimit,
     );
   }
 

@@ -186,6 +186,8 @@ class SupabaseClient {
       httpClient: _authHttpClient,
       incrementId: _incrementId.increment(),
       isolate: _isolate,
+      timeout: _postgrestOptions.timeout,
+      urlLengthLimit: _postgrestOptions.urlLengthLimit,
     );
   }
 
@@ -308,6 +310,8 @@ class SupabaseClient {
       schema: _postgrestOptions.schema,
       httpClient: _authHttpClient,
       isolate: _isolate,
+      timeout: _postgrestOptions.timeout,
+      urlLengthLimit: _postgrestOptions.urlLengthLimit,
     );
   }
 

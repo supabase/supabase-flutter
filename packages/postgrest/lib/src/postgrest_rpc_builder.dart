@@ -9,6 +9,8 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
     required YAJsonIsolate isolate,
     bool retryEnabled = true,
     Duration Function(int attempt)? retryDelay,
+    int? timeout,
+    int urlLengthLimit = 8000,
   }) : super(
           PostgrestBuilder(
             url: Uri.parse(url),
@@ -18,6 +20,8 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
             isolate: isolate,
             retryEnabled: retryEnabled,
             retryDelay: retryDelay,
+            timeout: timeout,
+            urlLengthLimit: urlLengthLimit,
           ),
         );
 

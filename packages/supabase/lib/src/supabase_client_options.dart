@@ -3,7 +3,19 @@ import 'package:supabase/supabase.dart';
 class PostgrestClientOptions {
   final String schema;
 
-  const PostgrestClientOptions({this.schema = 'public'});
+  /// Optional timeout in milliseconds for PostgREST requests. When set,
+  /// requests automatically abort after this duration to prevent indefinite hangs.
+  final int? timeout;
+
+  /// Maximum URL length in characters before a warning is logged. Defaults to 8000.
+  /// Protects against exceeding server URL limits with large queries.
+  final int urlLengthLimit;
+
+  const PostgrestClientOptions({
+    this.schema = 'public',
+    this.timeout,
+    this.urlLengthLimit = 8000,
+  });
 }
 
 class AuthClientOptions {

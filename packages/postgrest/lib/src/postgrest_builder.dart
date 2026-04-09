@@ -50,6 +50,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final CountOption? _count;
   final bool _retryEnabled;
   final Duration Function(int attempt) _retryDelay;
+
+  /// Optional timeout in milliseconds for this request. When set, the request
+  /// automatically aborts after this duration to prevent indefinite hangs.
+  final int? _timeout;
+
+  /// Maximum URL length in characters before a warning is logged. Defaults to 8000.
+  final int _urlLengthLimit;
+
   final _log = Logger('supabase.postgrest');
 
   static Duration _defaultRetryDelay(int attempt) =>
@@ -69,6 +77,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     PostgrestConverter<S, R>? converter,
     bool retryEnabled = true,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
+    int? timeout,
+    int urlLengthLimit = 8000,
   })  : _maybeSingle = maybeSingle,
         _method = method,
         _converter = converter,
@@ -80,7 +90,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         _count = count,
         _body = body,
         _retryEnabled = retryEnabled,
-        _retryDelay = retryDelay ?? _defaultRetryDelay;
+        _retryDelay = retryDelay ?? _defaultRetryDelay,
+        _timeout = timeout,
+        _urlLengthLimit = urlLengthLimit;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
@@ -109,6 +121,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       converter: converter ?? _converter,
       retryEnabled: retryEnabled ?? _retryEnabled,
       retryDelay: retryDelay ?? _retryDelay,
+      timeout: _timeout,
+      urlLengthLimit: _urlLengthLimit,
     );
   }
 
@@ -141,6 +155,15 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       } else {
         execHeaders['Prefer'] = 'count=${_count.name}';
       }
+    }
+
+    final urlLength = _url.toString().length;
+    if (urlLength > _urlLengthLimit) {
+      _log.warning(
+        'Request URL is $urlLength characters, which exceeds the limit of $_urlLengthLimit. '
+        'If selecting many fields, consider using a view. '
+        'If filtering with large arrays, consider using an RPC function.',
+      );
     }
 
     try {
@@ -194,7 +217,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         throw StateError('Unknown HTTP method: ${method.value}');
       }
 
-      final response = await _executeWithRetry(send, method, execHeaders);
+      final response =
+          await _executeWithRetry(send, method, execHeaders);
       return _parseResponse(response, method);
     } catch (error) {
       rethrow;
@@ -213,7 +237,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         method == _HttpMethod.get || method == _HttpMethod.head;
 
     if (!_retryEnabled || !isRetryableMethod) {
-      return send();
+      final responseFuture = send();
+      if (_timeout != null) {
+        return responseFuture.timeout(Duration(milliseconds: _timeout!));
+      }
+      return responseFuture;
     }
 
     for (var attempt = 0; attempt <= maxRetries; attempt++) {
@@ -222,7 +250,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
 
       try {
-        final response = await send();
+        final responseFuture = send();
+        final response = _timeout != null
+            ? await responseFuture.timeout(Duration(milliseconds: _timeout!))
+            : await responseFuture;
         if (!retryableStatusCodes.contains(response.statusCode) ||
             attempt == maxRetries) {
           return response;

@@ -22,6 +22,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     YAJsonIsolate? isolate,
     bool retryEnabled = true,
     Duration Function(int attempt)? retryDelay,
+    int? timeout,
+    int urlLengthLimit = 8000,
   }) : super(
           PostgrestBuilder(
             url: url,
@@ -32,6 +34,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
             isolate: isolate,
             retryEnabled: retryEnabled,
             retryDelay: retryDelay,
+            timeout: timeout,
+            urlLengthLimit: urlLengthLimit,
           ),
         );
 
@@ -275,6 +279,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       isolate: _isolate,
       retryEnabled: enabled,
       retryDelay: _retryDelay,
+      timeout: _timeout,
+      urlLengthLimit: _urlLengthLimit,
     );
   }
 
@@ -289,6 +295,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       isolate: _isolate,
       retryEnabled: _retryEnabled,
       retryDelay: _retryDelay,
+      timeout: _timeout,
+      urlLengthLimit: _urlLengthLimit,
     );
   }
 }
