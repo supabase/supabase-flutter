@@ -219,8 +219,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         throw StateError('Unknown HTTP method: ${method.value}');
       }
 
-      final response =
-          await _executeWithRetry(send, method, execHeaders);
+      final response = await _executeWithRetry(send, method, execHeaders);
       return _parseResponse(response, method);
     } catch (error) {
       rethrow;
