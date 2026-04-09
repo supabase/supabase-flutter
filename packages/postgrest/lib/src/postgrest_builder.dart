@@ -148,12 +148,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     // X-Retry-Count, etc.).
     final execHeaders = {..._headers};
 
-    if (_count != null) {
+    final count = _count;
+    if (count != null) {
       if (execHeaders['Prefer'] != null) {
         final oldPreferHeader = execHeaders['Prefer'];
-        execHeaders['Prefer'] = '$oldPreferHeader,count=${_count.name}';
+        execHeaders['Prefer'] = '$oldPreferHeader,count=${count.name}';
       } else {
-        execHeaders['Prefer'] = 'count=${_count.name}';
+        execHeaders['Prefer'] = 'count=${count.name}';
       }
     }
 
@@ -173,12 +174,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         );
       }
 
-      if (_schema == null) {
+      final schema = _schema;
+      if (schema == null) {
         // skip
       } else if (method == _HttpMethod.get || method == _HttpMethod.head) {
-        execHeaders['Accept-Profile'] = _schema;
+        execHeaders['Accept-Profile'] = schema;
       } else {
-        execHeaders['Content-Profile'] = _schema;
+        execHeaders['Content-Profile'] = schema;
       }
       if (method != _HttpMethod.get && method != _HttpMethod.head) {
         execHeaders['Content-Type'] = 'application/json';
@@ -284,8 +286,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           body = response.body;
         } else {
           try {
-            if ((response.contentLength ?? 0) > 10000 && _isolate != null) {
-              body = await _isolate.decode(response.body);
+            final isolate = _isolate;
+            if ((response.contentLength ?? 0) > 10000 && isolate != null) {
+              body = await isolate.decode(response.body);
             } else {
               body = jsonDecode(response.body);
             }
@@ -339,16 +342,17 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
       body as R;
 
-      if (_converter != null) {
-        converted = _converter(body);
+      final converter = _converter;
+      if (converter != null) {
+        converted = converter(body);
       } else {
         converted = body as S;
       }
 
-      if (_count != null && method != _HttpMethod.head) {
+      if (count != null && method != _HttpMethod.head) {
         return PostgrestResponse<S>(
           data: converted,
-          count: count!,
+          count: count,
         ) as T;
       } else {
         return converted as T;
@@ -400,17 +404,18 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ) {
     if (error.details is String &&
         error.details.toString().contains('Results contain 0 rows')) {
+      final converter = _converter;
       if (_count != null &&
           response.request!.method != _HttpMethod.head.value) {
-        if (_converter != null) {
-          return PostgrestResponse<S>(data: _converter(null as R), count: 0)
+        if (converter != null) {
+          return PostgrestResponse<S>(data: converter(null as R), count: 0)
               as T;
         } else {
           return null as T;
         }
       } else {
-        if (_converter != null) {
-          return _converter(null as R) as T;
+        if (converter != null) {
+          return converter(null as R) as T;
         } else {
           return null as T;
         }
