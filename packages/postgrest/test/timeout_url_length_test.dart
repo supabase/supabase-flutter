@@ -8,37 +8,30 @@ import 'package:test/test.dart';
 
 class _DelayedHttpClient extends BaseClient {
   final Duration delay;
-  final int statusCode;
-  final String body;
 
-  _DelayedHttpClient({
-    required this.delay,
-    this.statusCode = 200,
-    this.body = '[]',
-  });
+  _DelayedHttpClient({required this.delay});
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     await Future.delayed(delay);
     return StreamedResponse(
-      Stream.value(Uint8List.fromList(body.codeUnits)),
-      statusCode,
+      Stream.value(Uint8List.fromList('[]'.codeUnits)),
+      200,
       request: request,
     );
   }
 }
 
 class _InstantHttpClient extends BaseClient {
-  final int statusCode;
   final String body;
 
-  _InstantHttpClient({this.statusCode = 200, this.body = '[]'});
+  _InstantHttpClient({this.body = '[]'});
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     return StreamedResponse(
       Stream.value(Uint8List.fromList(body.codeUnits)),
-      statusCode,
+      200,
       request: request,
     );
   }

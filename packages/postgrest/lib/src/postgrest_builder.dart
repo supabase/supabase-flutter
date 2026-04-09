@@ -240,7 +240,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (!_retryEnabled || !isRetryableMethod) {
       final responseFuture = send();
       if (_timeout != null) {
-        return responseFuture.timeout(Duration(milliseconds: _timeout!));
+        return responseFuture.timeout(Duration(milliseconds: _timeout));
       }
       return responseFuture;
     }
@@ -253,7 +253,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       try {
         final responseFuture = send();
         final response = _timeout != null
-            ? await responseFuture.timeout(Duration(milliseconds: _timeout!))
+            ? await responseFuture.timeout(Duration(milliseconds: _timeout))
             : await responseFuture;
         if (!retryableStatusCodes.contains(response.statusCode) ||
             attempt == maxRetries) {
