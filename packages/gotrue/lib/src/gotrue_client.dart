@@ -1402,7 +1402,8 @@ class GoTrueClient {
     // share its future.
     final active = _activeRefresh;
     if (active != null && active.refreshToken == refreshToken) {
-      _log.finer("Don't call refresh token, already in progress for same token");
+      _log.finer(
+          "Don't call refresh token, already in progress for same token");
       return active.completer.future;
     }
 
