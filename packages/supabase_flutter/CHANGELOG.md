@@ -1,3 +1,11 @@
+## 2.12.4
+
+ - **FIX**(supabase_flutter): log instead of swallow auth state stream errors ([#1346](https://github.com/supabase/supabase-flutter/issues/1346)). ([77ca5dbe](https://github.com/supabase/supabase-flutter/commit/77ca5dbe96681c72b21be550ee48befcf24f8616))
+ - **FIX**(postgrest): replace SCREAMING_SNAKE_CASE HTTP method constants with enum ([#1347](https://github.com/supabase/supabase-flutter/issues/1347)). ([13e8b39e](https://github.com/supabase/supabase-flutter/commit/13e8b39e791c85d532b078bccaaf9027b774e9c0))
+ - **FIX**(supabase_flutter): simplify lifecycle reconnection with serial Future chain ([#1340](https://github.com/supabase/supabase-flutter/issues/1340)). ([7121ac2b](https://github.com/supabase/supabase-flutter/commit/7121ac2bcfb0eba5697b22a08eac6c016c933b66))
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+ - **DOCS**(realtime,supabase_flutter): add class-level dartdoc to RealtimeClient and SupabaseAuth ([#1344](https://github.com/supabase/supabase-flutter/issues/1344)). ([b662dfd5](https://github.com/supabase/supabase-flutter/commit/b662dfd538ecef275cb684545dc51df351c2a269))
+
 ## 2.12.3
 
  - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
