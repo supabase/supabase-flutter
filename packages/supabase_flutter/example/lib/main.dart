@@ -37,11 +37,18 @@ class _MyWidgetState extends State<MyWidget> {
     setState(() {
       _user = Supabase.instance.client.auth.currentUser;
     });
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      setState(() {
-        _user = data.session?.user;
-      });
-    });
+    Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        setState(() {
+          _user = data.session?.user;
+        });
+      },
+      onError: (error, stackTrace) {
+        // Network errors (e.g. offline) are emitted as stream errors.
+        // Handle or log them here; omitting this handler causes an unhandled
+        // exception when the device has no connectivity.
+      },
+    );
   }
 
   @override
