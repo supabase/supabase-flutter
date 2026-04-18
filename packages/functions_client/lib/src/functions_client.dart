@@ -132,11 +132,11 @@ class FunctionsClient {
       );
       final fields = body as Map<String, String>?;
 
-      request = http.MultipartRequest(method.name, uri)
+      request = http.MultipartRequest(method.name.toUpperCase(), uri)
         ..fields.addAll(fields ?? {})
         ..files.addAll(files);
     } else {
-      final bodyRequest = http.Request(method.name, uri);
+      final bodyRequest = http.Request(method.name.toUpperCase(), uri);
 
       if (body == null) {
         // No body to set
