@@ -78,14 +78,26 @@ class GoTrueClient {
 
   /// Receive a notification every time an auth event happens.
   ///
+  /// Network errors (e.g. when the device is offline) are emitted as stream
+  /// errors. You **must** supply an `onError` handler when calling `.listen()`,
+  /// otherwise Dart will rethrow the error as an unhandled zone exception and
+  /// crash the app.
+  ///
   /// ```dart
-  /// supabase.auth.onAuthStateChange.listen((data) {
-  ///   final AuthChangeEvent event = data.event;
-  ///   final Session? session = data.session;
-  ///   if(event == AuthChangeEvent.signedIn) {
-  ///     // handle signIn event
-  ///   }
-  /// });
+  /// supabase.auth.onAuthStateChange.listen(
+  ///   (data) {
+  ///     final AuthChangeEvent event = data.event;
+  ///     final Session? session = data.session;
+  ///     if (event == AuthChangeEvent.signedIn) {
+  ///       // handle signIn event
+  ///     }
+  ///   },
+  ///   onError: (error, stackTrace) {
+  ///     // Handle or log network / auth errors here.
+  ///     // Omitting this handler causes an unhandled exception when the
+  ///     // device has no connectivity and a token refresh is attempted.
+  ///   },
+  /// );
   /// ```
   Stream<AuthState> get onAuthStateChange =>
       _onAuthStateChangeController.stream;
