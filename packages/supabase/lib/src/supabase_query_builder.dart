@@ -25,9 +25,11 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
 
   /// Combines the current state of your table from PostgREST with changes from the realtime server to return real-time data from your table as a [Stream].
   ///
-  /// Realtime is disabled by default for new tables. You can turn it on by [managing replication](https://supabase.com/docs/guides/realtime/extensions/postgres-changes#replication-setup).
+  /// Realtime is disabled by default for new tables. You can turn it on by [managing replication](https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#enable-postgres-changes).
   ///
   /// Pass the list of primary key column names to [primaryKey], which will be used to update and delete the proper records internally as the stream receives real-time updates.
+  ///
+  /// You may pass an optional [channelConfig] to configure the realtime channel to e.g., make it private.
   ///
   /// It handles the lifecycle of the realtime connection and automatically refetches data from PostgREST when needed.
   ///
@@ -43,7 +45,10 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   /// ```dart
   /// supabase.from('chats').stream(primaryKey: ['id']).eq('room_id','123').order('created_at').limit(20).listen(_onChatsReceived);
   /// ```
-  SupabaseStreamFilterBuilder stream({required List<String> primaryKey}) {
+  SupabaseStreamFilterBuilder stream({
+    required List<String> primaryKey,
+    RealtimeChannelConfig? channelConfig,
+  }) {
     assert(primaryKey.isNotEmpty, 'Please specify primary key column(s).');
     return SupabaseStreamFilterBuilder(
       queryBuilder: this,
@@ -52,6 +57,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
       schema: _schema,
       table: _table,
       primaryKey: primaryKey,
+      channelConfig: channelConfig,
     );
   }
 }
