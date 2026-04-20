@@ -23,6 +23,7 @@ void main() {
   Future<void> handleRequests(
     HttpServer server, {
     String? expectedFilter,
+    bool? expectedPrivate,
   }) async {
     await for (final HttpRequest request in server) {
       final headers = request.headers;
@@ -113,8 +114,9 @@ void main() {
           final requestJson = jsonDecode(request);
           final topic = requestJson['topic'];
           final ref = requestJson["ref"];
+          final event = requestJson['event'];
 
-          if (requestJson["event"] == "phx_leave") {
+          if (event == 'phx_leave') {
             listeners.remove(topic);
             return;
           }
@@ -126,9 +128,14 @@ void main() {
           final String? realtimeFilter = requestJson['payload']['config']
                   ['postgres_changes']
               .first['filter'];
+          final bool isPrivate =
+              requestJson['payload']['config']['private'] as bool;
 
           if (expectedFilter != null) {
             expect(realtimeFilter, expectedFilter);
+          }
+          if (expectedPrivate != null) {
+            expect(isPrivate, expectedPrivate);
           }
 
           final replyString = jsonEncode({
@@ -678,6 +685,27 @@ void main() {
       handleRequests(mockServer, expectedFilter: 'id=lte.2');
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).lte('id', 2);
+      expect(stream, emits(isList));
+    });
+  });
+
+  group('stream() channel config', () {
+    test('forwards channelConfig.private=true to realtime join payload', () {
+      handleRequests(mockServer, expectedPrivate: true);
+
+      final stream = supabase.from('todos').stream(
+        primaryKey: ['id'],
+        channelConfig: const RealtimeChannelConfig(private: true),
+      );
+
+      expect(stream, emits(isList));
+    });
+
+    test('uses default private=false when channelConfig is omitted', () {
+      handleRequests(mockServer, expectedPrivate: false);
+
+      final stream = supabase.from('todos').stream(primaryKey: ['id']);
+
       expect(stream, emits(isList));
     });
   });
