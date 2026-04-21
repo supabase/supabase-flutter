@@ -29,7 +29,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   ///
   /// Pass the list of primary key column names to [primaryKey], which will be used to update and delete the proper records internally as the stream receives real-time updates.
   ///
-  /// You may pass an optional [channelConfig] to configure the realtime channel to e.g., make it private.
+  /// The underlying [RealtimeChannel] is public by default. Set [private] to `true` to make it private, which requires additional RLS policies to be set up. See https://supabase.com/docs/guides/realtime/authorization for more details.
   ///
   /// It handles the lifecycle of the realtime connection and automatically refetches data from PostgREST when needed.
   ///
@@ -47,7 +47,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   /// ```
   SupabaseStreamFilterBuilder stream({
     required List<String> primaryKey,
-    RealtimeChannelConfig? channelConfig,
+    bool private = false,
   }) {
     assert(primaryKey.isNotEmpty, 'Please specify primary key column(s).');
     return SupabaseStreamFilterBuilder(
@@ -57,7 +57,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
       schema: _schema,
       table: _table,
       primaryKey: primaryKey,
-      channelConfig: channelConfig,
+      private: private,
     );
   }
 }

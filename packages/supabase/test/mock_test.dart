@@ -693,10 +693,8 @@ void main() {
     test('forwards channelConfig.private=true to realtime join payload', () {
       handleRequests(mockServer, expectedPrivate: true);
 
-      final stream = supabase.from('todos').stream(
-        primaryKey: ['id'],
-        channelConfig: const RealtimeChannelConfig(private: true),
-      );
+      final stream =
+          supabase.from('todos').stream(primaryKey: ['id'], private: true);
 
       expect(stream, emits(isList));
     });
