@@ -56,23 +56,26 @@ class GoTrueClient {
 
   Timer? _autoRefreshTicker;
 
-  /// Monotonically increasing counter, incremented on every session write
-  /// ([_saveSession] / [_removeSession]). Used inside [_executeRefresh] to
-  /// detect that the session changed while a network request was in-flight,
-  /// so the stale refresh result can be discarded instead of overwriting a
-  /// newer session (e.g. from a concurrent signIn or signOut).
+  /// Monotonically increasing counter, incremented on every session write.
+  /// Used inside [_executeRefresh] to detect that the session changed while
+  /// a network request was in-flight, so the stale refresh result can be
+  /// discarded instead of overwriting a newer session.
   int _sessionVersion = 0;
 
   /// Serial future chain for refresh operations. Each call to
   /// [_callRefreshToken] appends via `.then()` so that refreshes with
   /// *different* tokens execute sequentially rather than overlapping.
-  /// Same-token calls still de-duplicate via [_activeRefresh].
+  /// Same-token calls still de-duplicate via [_pendingRefreshes].
   Future<void> _pendingRefreshOperation = Future.value();
 
-  /// Tracks the in-flight refresh for de-duplication. When non-null, a
-  /// concurrent call with the *same* [refreshToken] returns the existing
-  /// [Completer.future] instead of starting a second network request.
-  ({String refreshToken, Completer<AuthResponse> completer})? _activeRefresh;
+  /// Tracks all pending (queued or in-flight) refreshes keyed by token.
+  /// Concurrent calls with the same token return the existing
+  /// [Completer.future] instead of enqueuing a duplicate refresh.
+  final Map<String, Completer<AuthResponse>> _pendingRefreshes = {};
+
+  /// Set by [dispose] to prevent [_executeRefresh] from mutating state
+  /// or emitting events on closed stream controllers.
+  bool _isDisposed = false;
 
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
@@ -788,6 +791,7 @@ class GoTrueClient {
     );
     final userResponse = UserResponse.fromJson(response);
 
+    _sessionVersion++;
     _currentSession = currentSession?.copyWith(user: userResponse.user);
     notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
@@ -1104,6 +1108,7 @@ class GoTrueClient {
       throw notifyException(AuthException('Initial session is missing data.'));
     }
 
+    _sessionVersion++;
     _currentSession = session;
     notifyAllSubscribers(AuthChangeEvent.initialSession);
   }
@@ -1362,50 +1367,46 @@ class GoTrueClient {
 
   @mustCallSuper
   void dispose() {
+    _isDisposed = true;
     _onAuthStateChangeController.close();
     _onAuthStateChangeControllerSync.close();
     _broadcastChannel?.close();
     _broadcastChannelSubscription?.cancel();
-    final active = _activeRefresh;
-    if (active != null && !active.completer.isCompleted) {
-      active.completer.completeError(AuthException('Disposed'));
+    for (final completer in _pendingRefreshes.values) {
+      if (!completer.isCompleted) {
+        completer.completeError(AuthException('Disposed'));
+      }
     }
-    _activeRefresh = null;
+    _pendingRefreshes.clear();
     _autoRefreshTicker?.cancel();
   }
 
   /// Generates a new JWT.
   ///
-  /// Concurrent calls with the **same** [refreshToken] are de-duplicated: only
-  /// the first starts a network request; subsequent callers receive the same
-  /// [Future]. Calls with **different** tokens are serialised via
+  /// Concurrent calls with the **same** [refreshToken] are de-duplicated:
+  /// only the first enqueues a network request; subsequent callers receive
+  /// the same [Future]. Calls with **different** tokens are serialised via
   /// [_pendingRefreshOperation] so they never overlap.
   ///
-  /// After the network round-trip, the result is only applied (session saved,
-  /// [AuthChangeEvent.tokenRefreshed] emitted) when [_sessionVersion] has not
-  /// changed — meaning no sign-in, sign-out, or other session mutation
-  /// occurred while the request was in-flight.
+  /// After the network round-trip, the result is only applied (session
+  /// saved, [AuthChangeEvent.tokenRefreshed] emitted) when
+  /// [_sessionVersion] has not changed — meaning no sign-in, sign-out,
+  /// or other session mutation occurred while the request was in-flight.
   Future<AuthResponse> _callRefreshToken(String refreshToken) {
-    // De-duplicate: if a refresh for the same token is already in-flight,
-    // share its future.
-    final active = _activeRefresh;
-    if (active != null && active.refreshToken == refreshToken) {
-      _log.finer(
-          "Don't call refresh token, already in progress for same token");
-      return active.completer.future;
+    // De-duplicate: return existing future if this token is already
+    // pending (queued or in-flight).
+    final existing = _pendingRefreshes[refreshToken];
+    if (existing != null) {
+      _log.finer('Refresh already pending for this token');
+      return existing.future;
     }
 
     final completer = Completer<AuthResponse>();
-
-    // Prevent unhandled-error if nobody awaits the future.
     completer.future.ignore();
+    _pendingRefreshes[refreshToken] = completer;
 
-    // Register immediately so that a synchronous second call with the same
-    // token hits the de-dup check above rather than creating a second entry
-    // in the serial queue.
-    _activeRefresh = (refreshToken: refreshToken, completer: completer);
-
-    // Chain onto the serial queue so different-token refreshes never overlap.
+    // Chain onto the serial queue so different-token refreshes
+    // never overlap.
     _pendingRefreshOperation = _pendingRefreshOperation
         .then((_) => _executeRefresh(refreshToken, completer))
         .catchError((_) {});
@@ -1419,6 +1420,8 @@ class GoTrueClient {
     String refreshToken,
     Completer<AuthResponse> completer,
   ) async {
+    if (_isDisposed) return;
+
     final versionBeforeRefresh = _sessionVersion;
 
     try {
@@ -1426,18 +1429,21 @@ class GoTrueClient {
 
       final data = await _refreshAccessToken(refreshToken);
 
+      if (_isDisposed) return;
+
       final session = data.session;
       if (session == null) {
         throw AuthSessionMissingException();
       }
 
-      // Guard: if the session was mutated while we were awaiting the network
-      // request (e.g. a concurrent signIn or signOut), discard this result
-      // to avoid overwriting the newer session.
+      // Guard: if the session was mutated while we were awaiting
+      // the network request (e.g. a concurrent signIn or signOut),
+      // discard this result to avoid overwriting the newer session.
       if (_sessionVersion != versionBeforeRefresh) {
         _log.fine(
-          'Session changed during refresh (version $versionBeforeRefresh → '
-          '$_sessionVersion). Discarding stale refresh result.',
+          'Session changed during refresh '
+          '(version $versionBeforeRefresh → $_sessionVersion). '
+          'Discarding stale refresh result.',
         );
         if (!completer.isCompleted) completer.complete(data);
         return;
@@ -1448,25 +1454,29 @@ class GoTrueClient {
       if (!completer.isCompleted) completer.complete(data);
     } on AuthException catch (error, stack) {
       if (error is! AuthRetryableFetchException) {
-        // Only remove the session if it hasn't been replaced while we were
-        // refreshing — otherwise we'd sign out a user who just signed in.
-        if (_sessionVersion == versionBeforeRefresh) {
+        // Only remove the session if it hasn't been replaced
+        // while we were refreshing — otherwise we'd sign out a
+        // user who just signed in.
+        if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
           _removeSession();
           notifyAllSubscribers(AuthChangeEvent.signedOut);
         }
-      } else {
+      } else if (!_isDisposed) {
         notifyException(error, stack);
       }
 
-      if (!completer.isCompleted) completer.completeError(error);
-    } catch (error, stack) {
-      if (!completer.isCompleted) completer.completeError(error);
-      notifyException(error, stack);
-    } finally {
-      // Only clear if this is still the active refresh.
-      if (_activeRefresh?.completer == completer) {
-        _activeRefresh = null;
+      if (!completer.isCompleted) {
+        completer.completeError(error, stack);
       }
+    } catch (error, stack) {
+      if (!completer.isCompleted) {
+        completer.completeError(error, stack);
+      }
+      if (!_isDisposed) {
+        notifyException(error, stack);
+      }
+    } finally {
+      _pendingRefreshes.remove(refreshToken);
     }
   }
 
