@@ -235,6 +235,37 @@ void main() {
       expect(completionOrder, ['A', 'B']);
     });
 
+    test(
+        'A-B-A pattern: repeated token request deduplicates '
+        'even when another token is queued', () async {
+      mockClient.tokenGate = Completer<void>();
+
+      // refresh(A) — in-flight, blocked on gate
+      final futureA1 = client.setSession('token-A');
+      await Future<void>.delayed(Duration.zero);
+
+      // refresh(B) — queued behind A
+      final futureB = client.setSession('token-B');
+
+      // refresh(A) again — must dedup with the pending A,
+      // not enqueue a third refresh
+      final futureA2 = client.setSession('token-A');
+
+      mockClient.tokenGate!.complete();
+
+      final results =
+          await Future.wait([futureA1, futureB, futureA2]);
+
+      // Both A calls get the same access token
+      expect(
+        results[0].session?.accessToken,
+        results[2].session?.accessToken,
+      );
+
+      // Only 2 HTTP requests: one for A, one for B
+      expect(mockClient.tokenRequestCount, 2);
+    });
+
     test('dispose completes active refresh with error', () async {
       mockClient.tokenGate = Completer<void>();
 
