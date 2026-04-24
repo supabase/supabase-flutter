@@ -53,6 +53,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   final String _realtimeTopic;
 
+  /// Whether the underlying [_channel] should be initialized as private
+  /// or not. Default is false, which means the channel is public.
+  final bool _private;
+
   RealtimeChannel? _channel;
 
   final String _schema;
@@ -89,12 +93,14 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     required String schema,
     required String table,
     required List<String> primaryKey,
+    required bool private,
   })  : _queryBuilder = queryBuilder,
         _realtimeTopic = realtimeTopic,
         _realtimeClient = realtimeClient,
         _schema = schema,
         _table = table,
-        _uniqueColumns = primaryKey;
+        _uniqueColumns = primaryKey,
+        _private = private;
 
   /// Orders the result with the specified [column].
   ///
@@ -167,7 +173,12 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       );
     }
 
-    _channel = _realtimeClient.channel(_realtimeTopic);
+    _channel = _realtimeClient.channel(
+      _realtimeTopic,
+      RealtimeChannelConfig(
+        private: _private,
+      ),
+    );
 
     _channel!
         .onPostgresChanges(
