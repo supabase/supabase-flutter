@@ -253,8 +253,7 @@ void main() {
 
       mockClient.tokenGate!.complete();
 
-      final results =
-          await Future.wait([futureA1, futureB, futureA2]);
+      final results = await Future.wait([futureA1, futureB, futureA2]);
 
       // Both A calls get the same access token
       expect(
