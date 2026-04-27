@@ -71,8 +71,8 @@ class Fetch {
   ) async {
     final headers = Map<String, String>.from(options?.headers ?? {});
     if (method != 'GET') {
-      final hasContentType = headers.keys
-          .any((key) => key.toLowerCase() == 'content-type');
+      final hasContentType =
+          headers.keys.any((key) => key.toLowerCase() == 'content-type');
       if (!hasContentType) {
         headers['Content-Type'] = 'application/json';
       }
