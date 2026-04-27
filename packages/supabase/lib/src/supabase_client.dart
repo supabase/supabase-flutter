@@ -14,6 +14,8 @@ import 'counter.dart';
 /// Creates a Supabase client to interact with your Supabase instance.
 ///
 /// [supabaseUrl] and [supabaseKey] can be found on your Supabase dashboard.
+/// Pass the `publishable` (anon) key for client-side usage or the `secret`
+/// key for trusted server-side environments.
 ///
 /// You can access none public schema by passing different [schema].
 ///

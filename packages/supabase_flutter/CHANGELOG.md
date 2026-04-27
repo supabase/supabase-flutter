@@ -335,7 +335,7 @@
   // Initialize Supabase with AuthFlowType.pkce to enable PKCE flow for deep link related auth
   await Supabase.initialize(
     url: supabaseUrl,
-    supabaseKey: supabaseKey,
+    anonKey: supabaseKey,
     authFlowType: AuthFlowType.pkce,
   );
   ```
@@ -478,7 +478,7 @@
   // which is about 10 minutes of retrying.
   await Supabase.initialize(
     supabaseUrl,
-    supabasePublishableKey,
+    supabaseAnonKey,
     storageRetryAttempts: 25,
   );
   ```
@@ -703,7 +703,7 @@
 
 await Supabase.initialize(
   url: 'SUPABASE_URL',
-  supabaseKey: 'SUPABASE_KEY',
+  anonKey: 'SUPABASE_ANON_KEY',
 );
 ...
 
@@ -719,7 +719,7 @@ class AuthState<T extends StatefulWidget> extends SupabaseAuthState<T> {
 // Deep links will also be automatically handled when you initialize Supabase.
 await Supabase.initialize(
   url: 'SUPABASE_URL',
-  supabaseKey: 'SUPABASE_KEY',
+  anonKey: 'SUPABASE_ANON_KEY',
 );
 
 ...
