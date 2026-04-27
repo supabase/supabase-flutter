@@ -608,4 +608,58 @@ void main() {
       );
     });
   });
+
+  group('Content-Type header handling', () {
+    late CustomHttpClient customHttpClient;
+    late SupabaseStorageClient client;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      client = SupabaseStorageClient(
+        storageUrl,
+        {'Authorization': 'Bearer $storageKey'},
+        httpClient: customHttpClient,
+      );
+    });
+
+    test('defaults to application/json for non-GET requests', () async {
+      customHttpClient.response = {'message': 'Emptied'};
+      customHttpClient.statusCode = 200;
+
+      await client.emptyBucket('bucket1');
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['content-type'],
+        contains('application/json'),
+      );
+    });
+
+    test('preserves custom Content-Type set via setHeader', () async {
+      customHttpClient.response = {'message': 'Emptied'};
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('Content-Type', 'application/octet-stream');
+      await client.emptyBucket('bucket1');
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['content-type'],
+        startsWith('application/octet-stream'),
+      );
+    });
+
+    test('does not mutate the stored headers map after a non-GET request',
+        () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      final fileApi = client.from('test-bucket');
+      final headersBefore = Map<String, String>.from(fileApi.headers);
+
+      await fileApi.list();
+
+      expect(fileApi.headers, equals(headersBefore));
+    });
+  });
 }

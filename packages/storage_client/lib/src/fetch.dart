@@ -69,9 +69,13 @@ class Fetch {
     Map<String, dynamic>? body,
     FetchOptions? options,
   ) async {
-    final headers = options?.headers ?? {};
+    final headers = Map<String, String>.from(options?.headers ?? {});
     if (method != 'GET') {
-      headers['Content-Type'] = 'application/json';
+      final hasContentType = headers.keys
+          .any((key) => key.toLowerCase() == 'content-type');
+      if (!hasContentType) {
+        headers['Content-Type'] = 'application/json';
+      }
     }
 
     final request = http.Request(method, Uri.parse(url))
