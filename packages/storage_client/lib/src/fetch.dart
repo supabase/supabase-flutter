@@ -69,7 +69,7 @@ class Fetch {
     Map<String, dynamic>? body,
     FetchOptions? options,
   ) async {
-    final headers = Map<String, String>.from(options?.headers ?? {});
+    final headers = {...?options?.headers};
     if (method != 'GET') {
       final hasContentType =
           headers.keys.any((key) => key.toLowerCase() == 'content-type');
