@@ -10,7 +10,7 @@ void main() {
   env.load();
 
   final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final publishableToken = env['GOTRUE_TOKEN'] ?? 'publishableKey';
+  final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
 
   group('getClaims', () {
     late GoTrueClient client;
@@ -29,8 +29,8 @@ void main() {
       client = GoTrueClient(
         url: gotrueUrl,
         headers: {
-          'Authorization': 'Bearer $publishableToken',
-          'apikey': publishableToken,
+          'Authorization': 'Bearer $anonToken',
+          'apikey': anonToken,
         },
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,
@@ -216,8 +216,8 @@ void main() {
       client = GoTrueClient(
         url: gotrueUrl,
         headers: {
-          'Authorization': 'Bearer $publishableToken',
-          'apikey': publishableToken,
+          'Authorization': 'Bearer $anonToken',
+          'apikey': anonToken,
         },
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,

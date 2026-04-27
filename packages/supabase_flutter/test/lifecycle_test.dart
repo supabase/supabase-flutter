@@ -81,7 +81,7 @@ void main() {
       readyCompleters = [];
       await Supabase.initialize(
         url: supabaseUrl,
-        publishableKey: supabaseKey,
+        supabaseKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockEmptyLocalStorage(),

@@ -22,7 +22,7 @@ void main() {
       );
       await Supabase.initialize(
         url: supabaseUrl,
-        publishableKey: supabaseKey,
+        supabaseKey: supabaseKey,
         debug: false,
         httpClient: pkceHttpClient,
         authOptions: FlutterAuthClientOptions(

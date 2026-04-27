@@ -52,7 +52,7 @@ class Supabase {
   /// This must be called only once. If called more than once, an
   /// [AssertionError] is thrown
   ///
-  /// [url] and [publishableKey] can be found on your Supabase dashboard.
+  /// [url] and [supabaseKey] can be found on your Supabase dashboard.
   ///
   /// You can access none public schema by passing different [schema].
   ///
@@ -76,9 +76,9 @@ class Supabase {
   /// If [debug] is set to `true`, debug logs will be printed in debug console. Default is `kDebugMode`.
   static Future<Supabase> initialize({
     required String url,
-    String? publishableKey,
+    String? supabaseKey,
     @Deprecated(
-      'Use publishableKey instead. anonKey will be removed in a future major version.',
+      'Use supabaseKey instead. anonKey will be removed in a future major version.',
     )
     String? anonKey,
     Map<String, String>? headers,
@@ -91,10 +91,10 @@ class Supabase {
     bool? debug,
   }) async {
     assert(
-      publishableKey != null || anonKey != null,
-      'Either publishableKey or anonKey must be provided.',
+      supabaseKey != null || anonKey != null,
+      'Either supabaseKey or anonKey must be provided.',
     );
-    final effectiveKey = publishableKey ?? anonKey!;
+    final effectiveKey = supabaseKey ?? anonKey!;
 
     if (_instance._isInitialized) {
       _log.info('Supabase is already initialized. Skipping reinitialization.');

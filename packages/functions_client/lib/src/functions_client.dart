@@ -83,7 +83,7 @@ class FunctionsClient {
   /// final fetchClient = FetchClient(mode: RequestMode.cors);
   /// await Supabase.initialize(
   ///   url: supabaseUrl,
-  ///   publishableKey: supabaseKey,
+  ///   supabaseKey: supabaseKey,
   ///   httpClient: fetchClient,
   /// );
   /// ```

@@ -14,7 +14,7 @@ void main() {
       // Initialize the Supabase singleton
       await Supabase.initialize(
         url: supabaseUrl,
-        publishableKey: supabaseKey,
+        supabaseKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockLocalStorage(),
@@ -34,7 +34,7 @@ void main() {
       await Supabase.instance.dispose();
       await Supabase.initialize(
         url: supabaseUrl,
-        publishableKey: supabaseKey,
+        supabaseKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockLocalStorage(),
@@ -50,7 +50,7 @@ void main() {
   test('with custom access token', () async {
     final supabase = await Supabase.initialize(
       url: supabaseUrl,
-      publishableKey: supabaseUrl,
+      supabaseKey: supabaseUrl,
       debug: false,
       authOptions: FlutterAuthClientOptions(
         localStorage: MockLocalStorage(),
@@ -73,7 +73,7 @@ void main() {
       mockAppLink();
       await Supabase.initialize(
         url: supabaseUrl,
-        publishableKey: supabaseKey,
+        supabaseKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockExpiredStorage(),
@@ -97,7 +97,7 @@ void main() {
       mockAppLink();
       await Supabase.initialize(
         url: supabaseUrl,
-        publishableKey: supabaseKey,
+        supabaseKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: MockEmptyLocalStorage(),
@@ -123,7 +123,7 @@ void main() {
       // Initialize the Supabase singleton
       await Supabase.initialize(
         url: supabaseUrl,
-        publishableKey: supabaseKey,
+        supabaseKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: localStorage,
