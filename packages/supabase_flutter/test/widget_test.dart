@@ -17,7 +17,7 @@ void main() {
     // Initialize the Supabase singleton
     await Supabase.initialize(
       url: supabaseUrl,
-      anonKey: supabaseKey,
+      publishableKey: supabaseKey,
       authOptions: FlutterAuthClientOptions(
         localStorage: MockLocalStorage(),
         pkceAsyncStorage: MockAsyncStorage(),

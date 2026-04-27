@@ -5,7 +5,7 @@ import 'package:web/web.dart' as web;
 
 void main() {
   const supabaseUrl = 'YOUR_SUPABASE_URL';
-  const supabaseKey = 'YOUR_ANON_KEY';
+  const supabaseKey = 'YOUR_SUPABASE_KEY';
   final supabase = SupabaseClient(supabaseUrl, supabaseKey);
 
   final element = web.document.querySelector('#output') as web.HTMLDivElement;
@@ -16,10 +16,8 @@ void main() {
 
 void exampleUsage(SupabaseClient supabase) async {
   // query data
-  final data = await supabase
-      .from('countries')
-      .select()
-      .order('name', ascending: true);
+  final data =
+      await supabase.from('countries').select().order('name', ascending: true);
   print(data);
 
   // insert data
@@ -76,15 +74,13 @@ void exampleUsage(SupabaseClient supabase) async {
   print('upload response : $storageResponse');
 
   // Get download url
-  final urlResponse = await supabase.storage
-      .from('public')
-      .createSignedUrl('example.txt', 60);
+  final urlResponse =
+      await supabase.storage.from('public').createSignedUrl('example.txt', 60);
   print('download url : $urlResponse');
 
   // Download text file
-  final fileResponse = await supabase.storage
-      .from('public')
-      .download('example.txt');
+  final fileResponse =
+      await supabase.storage.from('public').download('example.txt');
   print('downloaded file : ${String.fromCharCodes(fileResponse)}');
 
   // Delete file

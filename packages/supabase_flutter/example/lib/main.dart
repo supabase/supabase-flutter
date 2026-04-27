@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
-  await Supabase.initialize(url: 'SUPABASE_URL', anonKey: 'SUPABASE_ANON_KEY');
+  await Supabase.initialize(
+      url: 'SUPABASE_URL', publishableKey: 'SUPABASE_PUBLISHABLE_KEY');
   runApp(const MyApp());
 }
 

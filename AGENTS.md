@@ -196,7 +196,7 @@ For integration testing, you may want to point to a local Supabase instance:
 ```dart
 await Supabase.initialize(
   url: 'http://localhost:54321',
-  anonKey: 'your-local-anon-key',
+  publishableKey: 'your-local-supabase-key',
 );
 ```
 
