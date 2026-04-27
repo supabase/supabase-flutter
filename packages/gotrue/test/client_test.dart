@@ -40,7 +40,10 @@ void main() {
 
       client = GoTrueClient(
         url: gotrueUrl,
-        headers: {'Authorization': 'Bearer $publishableToken', 'apikey': publishableToken},
+        headers: {
+          'Authorization': 'Bearer $publishableToken',
+          'apikey': publishableToken
+        },
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,
       );
@@ -57,7 +60,10 @@ void main() {
       clientWithAuthConfirmOff = GoTrueClient(
         url: gotrueUrl,
         httpClient: NoEmailConfirmationHttpClient(),
-        headers: {'Authorization': 'Bearer $publishableToken', 'apikey': publishableToken},
+        headers: {
+          'Authorization': 'Bearer $publishableToken',
+          'apikey': publishableToken
+        },
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,
       );
@@ -541,7 +547,10 @@ void main() {
       final httpClient = RetryTestHttpClient();
       final client = GoTrueClient(
         url: gotrueUrl,
-        headers: {'Authorization': 'Bearer $publishableToken', 'apikey': publishableToken},
+        headers: {
+          'Authorization': 'Bearer $publishableToken',
+          'apikey': publishableToken
+        },
         asyncStorage: TestAsyncStorage(),
         httpClient: httpClient,
       );
