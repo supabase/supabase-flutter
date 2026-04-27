@@ -17,7 +17,7 @@ void main() {
   env.load(); // Load env variables from .env file
 
   final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
+  final publishableToken = env['GOTRUE_TOKEN'] ?? 'publishableKey';
   late String newEmail;
   late String newPhone;
 
@@ -40,7 +40,7 @@ void main() {
 
       client = GoTrueClient(
         url: gotrueUrl,
-        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
+        headers: {'Authorization': 'Bearer $publishableToken', 'apikey': publishableToken},
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,
       );
@@ -57,7 +57,7 @@ void main() {
       clientWithAuthConfirmOff = GoTrueClient(
         url: gotrueUrl,
         httpClient: NoEmailConfirmationHttpClient(),
-        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
+        headers: {'Authorization': 'Bearer $publishableToken', 'apikey': publishableToken},
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,
       );
@@ -274,7 +274,7 @@ void main() {
 
       final newClient = GoTrueClient(
         url: gotrueUrl,
-        headers: {'apikey': anonToken},
+        headers: {'apikey': publishableToken},
       );
 
       expect(newClient.currentSession?.refreshToken ?? '', isEmpty);
@@ -305,7 +305,7 @@ void main() {
 
         final newClient = GoTrueClient(
           url: gotrueUrl,
-          headers: {'apikey': anonToken},
+          headers: {'apikey': publishableToken},
         );
 
         expect(newClient.currentSession, isNull);
@@ -348,7 +348,7 @@ void main() {
 
         final newClient = GoTrueClient(
           url: gotrueUrl,
-          headers: {'apikey': anonToken},
+          headers: {'apikey': publishableToken},
         );
 
         // Should fall back to _callRefreshToken and succeed.
@@ -399,7 +399,7 @@ void main() {
 
         final newClient = GoTrueClient(
           url: gotrueUrl,
-          headers: {'apikey': anonToken},
+          headers: {'apikey': publishableToken},
         );
 
         expect(newClient.currentSession, isNull);
@@ -541,7 +541,7 @@ void main() {
       final httpClient = RetryTestHttpClient();
       final client = GoTrueClient(
         url: gotrueUrl,
-        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
+        headers: {'Authorization': 'Bearer $publishableToken', 'apikey': publishableToken},
         asyncStorage: TestAsyncStorage(),
         httpClient: httpClient,
       );

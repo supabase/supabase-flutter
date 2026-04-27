@@ -14,7 +14,7 @@ void main() {
 
   final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
 
-  final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
+  final publishableToken = env['GOTRUE_TOKEN'] ?? 'publishableKey';
 
   late GoTrueClient client;
   setUp(() async {
@@ -26,8 +26,8 @@ void main() {
     client = GoTrueClient(
       url: gotrueUrl,
       headers: {
-        'Authorization': 'Bearer $anonToken',
-        'apikey': anonToken,
+        'Authorization': 'Bearer $publishableToken',
+        'apikey': publishableToken,
         'x-forwarded-for': '127.0.0.1'
       },
     );

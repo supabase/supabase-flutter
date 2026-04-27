@@ -65,7 +65,7 @@ class GoTrueAdminOAuthApi {
   /// Lists all OAuth clients with optional pagination.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key in the browser.
+  /// This function should only be called on a server. Never expose your `secret` key in the browser.
   Future<OAuthClientListResponse> listClients({
     int? page,
     int? perPage,
@@ -88,7 +88,7 @@ class GoTrueAdminOAuthApi {
   /// Creates a new OAuth client.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key in the browser.
+  /// This function should only be called on a server. Never expose your `secret` key in the browser.
   Future<OAuthClientResponse> createClient(
     CreateOAuthClientParams params,
   ) async {
@@ -107,7 +107,7 @@ class GoTrueAdminOAuthApi {
   /// Gets details of a specific OAuth client.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key in the browser.
+  /// This function should only be called on a server. Never expose your `secret` key in the browser.
   Future<OAuthClientResponse> getClient(String clientId) async {
     validateUuid(clientId);
 
@@ -125,7 +125,7 @@ class GoTrueAdminOAuthApi {
   /// Updates an existing OAuth client.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key in the browser.
+  /// This function should only be called on a server. Never expose your `secret` key in the browser.
   Future<OAuthClientResponse> updateClient(
     String clientId,
     UpdateOAuthClientParams params,
@@ -147,7 +147,7 @@ class GoTrueAdminOAuthApi {
   /// Deletes an OAuth client.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key in the browser.
+  /// This function should only be called on a server. Never expose your `secret` key in the browser.
   Future<OAuthClientResponse> deleteClient(String clientId) async {
     validateUuid(clientId);
 
@@ -165,7 +165,7 @@ class GoTrueAdminOAuthApi {
   /// Regenerates the secret for an OAuth client.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key in the browser.
+  /// This function should only be called on a server. Never expose your `secret` key in the browser.
   Future<OAuthClientResponse> regenerateClientSecret(String clientId) async {
     validateUuid(clientId);
 

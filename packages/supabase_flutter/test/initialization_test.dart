@@ -28,7 +28,7 @@ void main() {
       test('initialize successfully with default options', () async {
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
         );
 
         expect(Supabase.instance, isNotNull);
@@ -41,7 +41,7 @@ void main() {
         final localStorage = MockLocalStorage();
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
           authOptions: FlutterAuthClientOptions(
             localStorage: localStorage,
           ),
@@ -54,7 +54,7 @@ void main() {
       test('handles initialization with expired session in storage', () async {
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
             localStorage: MockExpiredStorage(),
@@ -71,7 +71,7 @@ void main() {
       test('initialize successfully with PKCE auth flow', () async {
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
           authOptions: const FlutterAuthClientOptions(
             authFlowType: AuthFlowType.pkce,
           ),
@@ -87,7 +87,7 @@ void main() {
         final httpClient = PkceHttpClient();
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
           httpClient: httpClient,
         );
 
@@ -98,7 +98,7 @@ void main() {
       test('initialize successfully with custom access token', () async {
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
           accessToken: () async => 'custom-access-token',
         );
 
@@ -118,7 +118,7 @@ void main() {
         // First initialization
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
         );
 
         expect(Supabase.instance, isNotNull);
@@ -132,7 +132,7 @@ void main() {
         // Re-initialize should work without errors
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
         );
 
         expect(Supabase.instance, isNotNull);
@@ -141,7 +141,7 @@ void main() {
       test('handles multiple initializations correctly', () async {
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
           debug: false,
           authOptions: FlutterAuthClientOptions(
             localStorage: MockLocalStorage(),
@@ -157,7 +157,7 @@ void main() {
 
         await Supabase.initialize(
           url: supabaseUrl,
-          anonKey: supabaseKey,
+          publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
             localStorage: MockEmptyLocalStorage(),

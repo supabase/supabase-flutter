@@ -11,7 +11,7 @@ void main() {
   env.load(); // Load env variables from .env file
 
   final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
+  final publishableToken = env['GOTRUE_TOKEN'] ?? 'publishableKey';
 
   late GoTrueClient client;
   late Session session;
@@ -20,8 +20,8 @@ void main() {
     client = GoTrueClient(
       url: gotrueUrl,
       headers: {
-        'Authorization': 'Bearer $anonToken',
-        'apikey': anonToken,
+        'Authorization': 'Bearer $publishableToken',
+        'apikey': publishableToken,
       },
       flowType: AuthFlowType.implicit,
     );

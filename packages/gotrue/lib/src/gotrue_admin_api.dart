@@ -59,7 +59,7 @@ class GoTrueAdminApi {
 
   /// Creates a new user.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key on the client.
+  /// This function should only be called on a server. Never expose your `secret` key on the client.
   ///
   /// Requires either an email or phone
   Future<UserResponse> createUser(AdminUserAttributes attributes) async {
@@ -75,11 +75,11 @@ class GoTrueAdminApi {
     return UserResponse.fromJson(response);
   }
 
-  /// Delete a user. Requires a `service_role` key.
+  /// Delete a user. Requires a `secret` key.
   ///
   ///  [id] is the user id of the user you want to remove.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key on the client.
+  /// This function should only be called on a server. Never expose your `secret` key on the client.
   Future<void> deleteUser(String id) async {
     validateUuid(id);
     final options = GotrueRequestOptions(headers: _headers);
@@ -92,7 +92,7 @@ class GoTrueAdminApi {
 
   /// Get a list of users.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key on the client.
+  /// This function should only be called on a server. Never expose your `secret` key on the client.
   ///
   /// The result is paginated. Use the [page] and [perPage] parameters to paginate the result.
   Future<List<User>> listUsers({int? page, int? perPage}) async {

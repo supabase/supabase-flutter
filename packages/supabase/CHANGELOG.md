@@ -410,7 +410,7 @@
   ```dart
   // The following will initialize a supabase client that will retry failed uploads up to 25 times,
   // which is about 10 minutes of retrying.
-  final supabase = SupabaseClient('Supabase_URL', 'Anon_key', storageRetryAttempts: 25);
+  final supabase = SupabaseClient('Supabase_URL', 'Publishable_key', storageRetryAttempts: 25);
   ```
 - feat: update storage to v1.1.0
 - feat: update gotrue to v1.2.0

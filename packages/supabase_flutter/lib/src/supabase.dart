@@ -52,7 +52,7 @@ class Supabase {
   /// This must be called only once. If called more than once, an
   /// [AssertionError] is thrown
   ///
-  /// [url] and [anonKey] can be found on your Supabase dashboard.
+  /// [url] and [publishableKey] can be found on your Supabase dashboard.
   ///
   /// You can access none public schema by passing different [schema].
   ///
@@ -76,7 +76,7 @@ class Supabase {
   /// If [debug] is set to `true`, debug logs will be printed in debug console. Default is `kDebugMode`.
   static Future<Supabase> initialize({
     required String url,
-    required String anonKey,
+    required String publishableKey,
     Map<String, String>? headers,
     Client? httpClient,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
@@ -120,7 +120,7 @@ class Supabase {
     }
     _instance._init(
       url,
-      anonKey,
+      publishableKey,
       httpClient: httpClient,
       customHeaders: headers,
       realtimeClientOptions: realtimeClientOptions,
@@ -193,7 +193,7 @@ class Supabase {
 
   void _init(
     String supabaseUrl,
-    String supabaseAnonKey, {
+    String supabasePublishableKey, {
     Client? httpClient,
     Map<String, String>? customHeaders,
     required RealtimeClientOptions realtimeClientOptions,
@@ -208,7 +208,7 @@ class Supabase {
     };
     client = SupabaseClient(
       supabaseUrl,
-      supabaseAnonKey,
+      supabasePublishableKey,
       httpClient: httpClient,
       headers: headers,
       realtimeClientOptions: realtimeClientOptions,

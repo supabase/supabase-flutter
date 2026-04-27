@@ -27,7 +27,7 @@ void main() async {
 
   await Supabase.initialize(
     url: SUPABASE_URL,
-    anonKey: SUPABASE_ANON_KEY,
+    publishableKey: SUPABASE_PUBLISHABLE_KEY,
   );
 
   runApp(MyApp());

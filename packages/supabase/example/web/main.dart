@@ -5,7 +5,7 @@ import 'package:web/web.dart' as web;
 
 void main() {
   const supabaseUrl = 'YOUR_SUPABASE_URL';
-  const supabaseKey = 'YOUR_ANON_KEY';
+  const supabaseKey = 'YOUR_PUBLISHABLE_KEY';
   final supabase = SupabaseClient(supabaseUrl, supabaseKey);
 
   final element = web.document.querySelector('#output') as web.HTMLDivElement;
