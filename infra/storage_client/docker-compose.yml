@@ -22,7 +22,7 @@ services:
         condition: service_healthy
     restart: always
     environment:
-      PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxMzUzMTk4NSwiZXhwIjoxOTI5MTA3OTg1fQ.ReNhHIoXIOa-8tL1DO3e26mJmOTnYuvdgobwIYGzrLQ
+      ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxMzUzMTk4NSwiZXhwIjoxOTI5MTA3OTg1fQ.ReNhHIoXIOa-8tL1DO3e26mJmOTnYuvdgobwIYGzrLQ
       SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaWF0IjoxNjEzNTMxOTg1LCJleHAiOjE5MjkxMDc5ODV9.FhK1kZdHmWdCIEZELt0QDCw6FIlCS8rVmp4RzaeI2LM
       PROJECT_REF: bjwdssmqcnupljrqypxz # can be any random string
       REGION: us-east-1 # region where your bucket is located

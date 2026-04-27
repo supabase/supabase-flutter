@@ -76,7 +76,11 @@ class Supabase {
   /// If [debug] is set to `true`, debug logs will be printed in debug console. Default is `kDebugMode`.
   static Future<Supabase> initialize({
     required String url,
-    required String publishableKey,
+    String? publishableKey,
+    @Deprecated(
+      'Use publishableKey instead. anonKey will be removed in a future major version.',
+    )
+    String? anonKey,
     Map<String, String>? headers,
     Client? httpClient,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
@@ -86,6 +90,12 @@ class Supabase {
     Future<String?> Function()? accessToken,
     bool? debug,
   }) async {
+    assert(
+      publishableKey != null || anonKey != null,
+      'Either publishableKey or anonKey must be provided.',
+    );
+    final effectiveKey = publishableKey ?? anonKey!;
+
     if (_instance._isInitialized) {
       _log.info('Supabase is already initialized. Skipping reinitialization.');
       return _instance;
@@ -120,7 +130,7 @@ class Supabase {
     }
     _instance._init(
       url,
-      publishableKey,
+      effectiveKey,
       httpClient: httpClient,
       customHeaders: headers,
       realtimeClientOptions: realtimeClientOptions,
