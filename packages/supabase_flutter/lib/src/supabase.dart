@@ -203,7 +203,7 @@ class Supabase {
 
   void _init(
     String supabaseUrl,
-    String supabasePublishableKey, {
+    String supabaseKey, {
     Client? httpClient,
     Map<String, String>? customHeaders,
     required RealtimeClientOptions realtimeClientOptions,
@@ -218,7 +218,7 @@ class Supabase {
     };
     client = SupabaseClient(
       supabaseUrl,
-      supabasePublishableKey,
+      supabaseKey,
       httpClient: httpClient,
       headers: headers,
       realtimeClientOptions: realtimeClientOptions,
