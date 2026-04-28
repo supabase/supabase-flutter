@@ -42,7 +42,8 @@ void main() {
           containsPair('X-Client-Info', startsWith('supabase-dart/')));
     });
 
-    test('should include structured platform metadata in X-Client-Info when not on web',
+    test(
+        'should include structured platform metadata in X-Client-Info when not on web',
         () {
       if (!kIsWeb) {
         final clientInfo = Constants.defaultHeaders['X-Client-Info']!;
