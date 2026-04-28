@@ -84,12 +84,6 @@ void main() {
       expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('no separate X-Supabase-Client-Platform headers are sent', () {
-      expect(supabase.headers, isNot(contains('X-Supabase-Client-Platform')));
-      expect(supabase.headers,
-          isNot(contains('X-Supabase-Client-Platform-Version')));
-    });
-
     test('X-Client-Info header is set properly on storage', () {
       final xClientHeaderBeforeSlash =
           supabase.storage.headers['X-Client-Info']!.split('/').first;

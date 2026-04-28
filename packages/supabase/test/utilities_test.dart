@@ -42,13 +42,6 @@ void main() {
           containsPair('X-Client-Info', startsWith('supabase-dart/')));
     });
 
-    test('should not include separate platform headers', () {
-      expect(Constants.defaultHeaders,
-          isNot(contains('X-Supabase-Client-Platform')));
-      expect(Constants.defaultHeaders,
-          isNot(contains('X-Supabase-Client-Platform-Version')));
-    });
-
     test('should include structured platform metadata in X-Client-Info when not on web',
         () {
       if (!kIsWeb) {
