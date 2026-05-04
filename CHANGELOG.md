@@ -3,6 +3,51 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-05-04
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.6.0`](#functions_client---v260)
+ - [`gotrue` - `v2.21.0`](#gotrue---v2210)
+ - [`storage_client` - `v2.5.3`](#storage_client---v253)
+ - [`supabase` - `v2.11.0`](#supabase---v2110)
+ - [`supabase_flutter` - `v2.13.0`](#supabase_flutter---v2130)
+
+---
+
+#### `functions_client` - `v2.6.0`
+
+ - **FIX**(functions_client): use uppercase HTTP method in requests ([#1353](https://github.com/supabase/supabase-flutter/issues/1353)). ([61cc7c03](https://github.com/supabase/supabase-flutter/commit/61cc7c03108a660beafd8cb2ca66a3789f88bb3f))
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+
+#### `gotrue` - `v2.21.0`
+
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+ - **DOCS**(gotrue): require onError handler in onAuthStateChange ([#1355](https://github.com/supabase/supabase-flutter/issues/1355)). ([74bb1725](https://github.com/supabase/supabase-flutter/commit/74bb1725d3ba61c6d07a7f5fe81f9ebcf0088188))
+
+#### `storage_client` - `v2.5.3`
+
+ - **FIX**(storage): avoid duplicate Content-Type headers and header mutation ([#1359](https://github.com/supabase/supabase-flutter/issues/1359)). ([99d91367](https://github.com/supabase/supabase-flutter/commit/99d913673525cabdcf8c2466e58dcd406ab680e7))
+
+#### `supabase` - `v2.11.0`
+
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+ - **FEAT**: optionally configure stream method to use a private channel ([#1357](https://github.com/supabase/supabase-flutter/issues/1357)). ([9d0de9e8](https://github.com/supabase/supabase-flutter/commit/9d0de9e8b691b9e28f79341dbc50c989ab47c150))
+
+#### `supabase_flutter` - `v2.13.0`
+
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+ - **DOCS**(gotrue): require onError handler in onAuthStateChange ([#1355](https://github.com/supabase/supabase-flutter/issues/1355)). ([74bb1725](https://github.com/supabase/supabase-flutter/commit/74bb1725d3ba61c6d07a7f5fe81f9ebcf0088188))
+
+
 ## 2026-04-15
 
 ### Changes

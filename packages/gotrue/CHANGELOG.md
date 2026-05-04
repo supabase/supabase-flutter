@@ -1,3 +1,8 @@
+## 2.21.0
+
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+ - **DOCS**(gotrue): require onError handler in onAuthStateChange ([#1355](https://github.com/supabase/supabase-flutter/issues/1355)). ([74bb1725](https://github.com/supabase/supabase-flutter/commit/74bb1725d3ba61c6d07a7f5fe81f9ebcf0088188))
+
 ## 2.20.0
 
  - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))
