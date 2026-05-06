@@ -1081,7 +1081,14 @@ class GoTrueClient {
         jwt: _currentSession?.accessToken,
       ),
     );
-    return OAuthResponse(provider: provider, url: res['url']);
+    final url = res['url'] as String?;
+    if (url == null) {
+      throw AuthException(
+        'OAuth provider did not return a URL. '
+        'Ensure the provider is enabled in your Supabase project.',
+      );
+    }
+    return OAuthResponse(provider: provider, url: url);
   }
 
   /// Unlinks an identity from a user by deleting it.
@@ -1266,12 +1273,15 @@ class GoTrueClient {
       urlParams.addAll(queryParams);
     }
     if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
+      final storage = _asyncStorage;
+      if (storage == null) {
+        throw AuthException(
+          'asyncStorage is required for PKCE flow. '
+          'Provide a GotrueAsyncStorage implementation when initializing GoTrueClient.',
+        );
+      }
       final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
+      await storage.setItem(
         key: '${Constants.defaultStorageKey}-code-verifier',
         value: codeVerifier,
       );
