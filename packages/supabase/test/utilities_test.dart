@@ -42,12 +42,15 @@ void main() {
           containsPair('X-Client-Info', startsWith('supabase-dart/')));
     });
 
-    test('should include platform headers when not on web', () {
+    test(
+        'should include structured platform metadata in X-Client-Info when not on web',
+        () {
       if (!kIsWeb) {
-        expect(
-            Constants.defaultHeaders, contains('X-Supabase-Client-Platform'));
-        expect(Constants.defaultHeaders,
-            contains('X-Supabase-Client-Platform-Version'));
+        final clientInfo = Constants.defaultHeaders['X-Client-Info']!;
+        expect(clientInfo, contains('; platform='));
+        expect(clientInfo, contains('; platform-version='));
+        expect(clientInfo, contains('; runtime=dart'));
+        expect(clientInfo, contains('; runtime-version='));
       }
     });
 
@@ -66,6 +69,17 @@ void main() {
       } else {
         expect(Constants.platformVersion, isNotNull);
         expect(Constants.platformVersion, isA<String>());
+      }
+    });
+
+    test('should have runtimeVersion getter', () {
+      if (kIsWeb) {
+        expect(Constants.runtimeVersion, isNull);
+      } else {
+        expect(Constants.runtimeVersion, isNotNull);
+        expect(Constants.runtimeVersion, isA<String>());
+        // Version should be a semver-like string (e.g. "3.7.2")
+        expect(Constants.runtimeVersion, matches(RegExp(r'^\d+\.\d+\.\d+')));
       }
     });
   });
