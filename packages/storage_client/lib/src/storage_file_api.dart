@@ -366,7 +366,11 @@ class StorageFileApi {
       },
       options: options,
     );
-    final signedUrlPath = (response as Map<String, dynamic>)['signedURL'];
+    final signedUrlPath =
+        (response as Map<String, dynamic>)['signedURL'] as String?;
+    if (signedUrlPath == null) {
+      throw StorageException('No signed URL returned by API');
+    }
     final signedUrl = '$url$signedUrlPath';
     return signedUrl;
   }
@@ -395,11 +399,11 @@ class StorageFileApi {
       options: options,
     );
     final List<SignedUrl> urls = (response as List).map((e) {
+      final signedUrlPath = e['signedURL'] as String?;
       return SignedUrl(
-        // Prevents exceptions being thrown when null value is returned
-        // https://github.com/supabase/storage-api/issues/353
         path: e['path'] ?? '',
-        signedUrl: '$url${e['signedURL']}',
+        signedUrl: signedUrlPath != null ? '$url$signedUrlPath' : null,
+        error: e['error'] as String?,
       );
     }).toList();
     return urls;

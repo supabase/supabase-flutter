@@ -246,16 +246,22 @@ class SignedUrl {
   /// The file path, including the current file name. For example `folder/image.png`.
   final String path;
 
-  /// Full signed URL of the files.
-  final String signedUrl;
+  /// Full signed URL of the file. Null when the path does not exist or the
+  /// server returned an error for this item; check [error] for details.
+  final String? signedUrl;
+
+  /// Per-item error message returned by the server when [signedUrl] is null.
+  final String? error;
 
   const SignedUrl({
     required this.path,
     required this.signedUrl,
+    this.error,
   });
 
   @override
-  String toString() => 'SignedUrl(path: $path, signedUrl: $signedUrl)';
+  String toString() =>
+      'SignedUrl(path: $path, signedUrl: $signedUrl, error: $error)';
 
   @override
   bool operator ==(Object other) {
@@ -263,19 +269,22 @@ class SignedUrl {
 
     return other is SignedUrl &&
         other.path == path &&
-        other.signedUrl == signedUrl;
+        other.signedUrl == signedUrl &&
+        other.error == error;
   }
 
   @override
-  int get hashCode => path.hashCode ^ signedUrl.hashCode;
+  int get hashCode => path.hashCode ^ signedUrl.hashCode ^ error.hashCode;
 
   SignedUrl copyWith({
     String? path,
     String? signedUrl,
+    String? error,
   }) {
     return SignedUrl(
       path: path ?? this.path,
       signedUrl: signedUrl ?? this.signedUrl,
+      error: error ?? this.error,
     );
   }
 }

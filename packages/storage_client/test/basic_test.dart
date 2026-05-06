@@ -129,10 +129,51 @@ void main() {
     });
 
     test('should createSignedUrl file', () async {
-      customHttpClient.response = {'signedURL': 'url'};
+      customHttpClient.response = {'signedURL': '/signed/url'};
 
       final response = await client.from('public').createSignedUrl('b.txt', 60);
       expect(response, isA<String>());
+      expect(response, endsWith('/signed/url'));
+    });
+
+    test('createSignedUrl throws StorageException when signedURL is null',
+        () async {
+      customHttpClient.response = {'signedURL': null};
+
+      expect(
+        () => client.from('public').createSignedUrl('missing.txt', 60),
+        throwsA(isA<StorageException>()),
+      );
+    });
+
+    test(
+        'createSignedUrls returns null signedUrl and error for missing path',
+        () async {
+      customHttpClient.response = [
+        {
+          'path': 'exists.txt',
+          'signedURL':
+              '/storage/v1/object/sign/public/exists.txt?token=abc',
+        },
+        {
+          'path': 'missing.txt',
+          'signedURL': null,
+          'error': 'not_found',
+        },
+      ];
+
+      final urls = await client
+          .from('public')
+          .createSignedUrls(['exists.txt', 'missing.txt'], 60);
+
+      expect(urls.length, 2);
+      expect(urls[0].signedUrl, isNotNull);
+      expect(
+        urls[0].signedUrl,
+        '$supabaseUrl/storage/v1/storage/v1/object/sign/public/exists.txt?token=abc',
+      );
+      expect(urls[1].signedUrl, isNull);
+      expect(urls[1].error, 'not_found');
     });
 
     test('should list files', () async {
