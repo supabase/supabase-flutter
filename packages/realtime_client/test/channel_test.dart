@@ -99,6 +99,76 @@ void main() {
     });
   });
 
+  group("joinPush 'ok' setAuth error handling", () {
+    // Re-authorizing the channel on rejoin can throw `FormatException`
+    // ('InvalidJWTToken: ...') when the cached access token has expired
+    // by the time the server responds with 'ok'. The handler must swallow
+    // that specific message so it does not escape as an unhandled async
+    // error (which Sentry/Crashlytics surface as a fatal). See
+    // https://github.com/supabase/supabase-flutter/issues/1363.
+    test(
+        "swallows FormatException with 'InvalidJWTToken' from setAuth and "
+        "still emits 'subscribed' status", () async {
+      final socket = _SetAuthThrowingSocket(
+        '/socket',
+        thrown: const FormatException(
+          'InvalidJWTToken: Invalid value for JWT claim "exp" with value 0',
+        ),
+      );
+      socket.accessToken = 'expired-token';
+
+      final channel = socket.channel('topic');
+
+      RealtimeSubscribeStatus? status;
+      channel.subscribe((s, _) => status = s);
+      channel.joinPush.trigger('ok', {});
+
+      // Drain the microtask queue so the async 'ok' callback completes.
+      await Future<void>.value();
+      await Future<void>.value();
+
+      expect(socket.setAuthCalls, 1);
+      expect(
+        status,
+        RealtimeSubscribeStatus.subscribed,
+        reason:
+            "If the catch is missing the 'ok' callback aborts at setAuth "
+            "and the subscribed status is never emitted.",
+      );
+    });
+
+    test(
+        "non-InvalidJWTToken FormatExceptions from setAuth still abort the "
+        "rejoin handler", () async {
+      final socket = _SetAuthThrowingSocket(
+        '/socket',
+        thrown: const FormatException('some other parsing failure'),
+      );
+      socket.accessToken = 'some-token';
+
+      final channel = socket.channel('topic');
+
+      RealtimeSubscribeStatus? status;
+      // Use runZonedGuarded so the rethrown async error does not pollute
+      // the test runner zone.
+      await runZonedGuarded(() async {
+        channel.subscribe((s, _) => status = s);
+        channel.joinPush.trigger('ok', {});
+        await Future<void>.value();
+        await Future<void>.value();
+      }, (_, __) {/* expected: rethrown FormatException */});
+
+      expect(socket.setAuthCalls, 1);
+      expect(
+        status,
+        isNull,
+        reason:
+            'A non-InvalidJWTToken FormatException should propagate out of '
+            'the callback before subscribed is emitted.',
+      );
+    });
+  });
+
   group('onError', () {
     setUp(() {
       socket = RealtimeClient('/socket');
@@ -766,4 +836,23 @@ void main() {
       );
     });
   });
+}
+
+class _SetAuthThrowingSocket extends RealtimeClient {
+  _SetAuthThrowingSocket(super.endPoint, {required this.thrown});
+
+  final FormatException thrown;
+  int setAuthCalls = 0;
+
+  @override
+  Future<void> connect() async {
+    // No-op: avoid opening a real WebSocket so async transport failures
+    // don't leak into the test runner zone.
+  }
+
+  @override
+  Future<void> setAuth(String? token) async {
+    setAuthCalls++;
+    throw thrown;
+  }
 }
