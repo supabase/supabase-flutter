@@ -14,6 +14,8 @@ import 'counter.dart';
 /// Creates a Supabase client to interact with your Supabase instance.
 ///
 /// [supabaseUrl] and [supabaseKey] can be found on your Supabase dashboard.
+/// Pass the `publishable` (anon) key for client-side usage or the `secret`
+/// key for trusted server-side environments.
 ///
 /// You can access none public schema by passing different [schema].
 ///
@@ -42,6 +44,7 @@ import 'counter.dart';
 class SupabaseClient {
   final String _supabaseKey;
   final PostgrestClientOptions _postgrestOptions;
+  final FunctionsClientOptions _functionsOptions;
 
   final String _restUrl;
   final String _realtimeUrl;
@@ -63,6 +66,7 @@ class SupabaseClient {
   late final PostgrestClient rest;
   StreamSubscription<AuthState>? _authStateSubscription;
   late final YAJsonIsolate _isolate;
+  late final bool _hasCustomIsolate;
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each stream
@@ -119,12 +123,14 @@ class SupabaseClient {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     AuthClientOptions authOptions = const AuthClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
+    FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
     YAJsonIsolate? isolate,
   })  : _supabaseKey = supabaseKey,
+        _functionsOptions = functionsOptions,
         _restUrl = '$supabaseUrl/rest/v1',
         _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
         _authUrl = '$supabaseUrl/auth/v1',
@@ -136,7 +142,8 @@ class SupabaseClient {
           if (headers != null) ...headers
         },
         _httpClient = httpClient,
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()) {
+        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+        _hasCustomIsolate = isolate != null {
     _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
       gotrueAsyncStorage: authOptions.pkceAsyncStorage,
@@ -146,7 +153,8 @@ class SupabaseClient {
         AuthHttpClient(_supabaseKey, httpClient ?? Client(), _getAccessToken);
     rest = _initRestClient();
     functions = _initFunctionsClient();
-    storage = _initStorageClient(storageOptions.retryAttempts);
+    storage = _initStorageClient(
+        storageOptions.retryAttempts, storageOptions.useNewHostname);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
       _log.config(
@@ -270,7 +278,9 @@ class SupabaseClient {
     _log.fine('Dispose SupabaseClient');
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
-    await _isolate.dispose();
+    if (!_hasCustomIsolate) {
+      await _isolate.dispose();
+    }
     _authInstance?.dispose();
   }
 
@@ -309,15 +319,18 @@ class SupabaseClient {
       {...headers},
       httpClient: _authHttpClient,
       isolate: _isolate,
+      region: _functionsOptions.region,
     );
   }
 
-  SupabaseStorageClient _initStorageClient(int storageRetryAttempts) {
+  SupabaseStorageClient _initStorageClient(
+      int storageRetryAttempts, bool useNewHostname) {
     return SupabaseStorageClient(
       _storageUrl,
       {...headers},
       httpClient: _authHttpClient,
       retryAttempts: storageRetryAttempts,
+      useNewHostname: useNewHostname,
     );
   }
 
@@ -335,6 +348,7 @@ class SupabaseClient {
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
       customAccessToken: accessToken,
+      transport: options.transport,
     );
   }
 

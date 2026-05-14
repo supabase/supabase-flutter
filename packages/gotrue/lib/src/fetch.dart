@@ -199,7 +199,11 @@ class GotrueFetch {
     }
 
     try {
-      return json.decode(utf8.decode(response.bodyBytes));
+      final bodyString = utf8.decode(response.bodyBytes);
+      if (bodyString.isEmpty) {
+        return <String, dynamic>{};
+      }
+      return json.decode(bodyString);
     } catch (error) {
       throw _handleError(error);
     }

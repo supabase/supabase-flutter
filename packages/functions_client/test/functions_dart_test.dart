@@ -260,6 +260,80 @@ void main() {
       });
     });
 
+    group('Region support', () {
+      test(
+          'region parameter adds x-region header and forceFunctionRegion query param',
+          () async {
+        await functionsCustomHttpClient.invoke(
+          'function',
+          region: 'us-west-1',
+        );
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req.headers['x-region'], 'us-west-1');
+        expect(req.url.queryParameters['forceFunctionRegion'], 'us-west-1');
+      });
+
+      test('region "any" does not add header or query param', () async {
+        await functionsCustomHttpClient.invoke(
+          'function',
+          region: 'any',
+        );
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req.headers.containsKey('x-region'), isFalse);
+        expect(req.url.queryParameters.containsKey('forceFunctionRegion'),
+            isFalse);
+      });
+
+      test('client region is used when invoke region is not specified',
+          () async {
+        final client = FunctionsClient(
+          "",
+          {},
+          httpClient: customHttpClient,
+          region: 'eu-west-1',
+        );
+
+        await client.invoke('function');
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req.headers['x-region'], 'eu-west-1');
+        expect(req.url.queryParameters['forceFunctionRegion'], 'eu-west-1');
+      });
+
+      test('invoke region overrides client region', () async {
+        final client = FunctionsClient(
+          "",
+          {},
+          httpClient: customHttpClient,
+          region: 'eu-west-1',
+        );
+
+        await client.invoke('function', region: 'us-east-1');
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req.headers['x-region'], 'us-east-1');
+        expect(req.url.queryParameters['forceFunctionRegion'], 'us-east-1');
+      });
+
+      test('region works with other query parameters', () async {
+        await functionsCustomHttpClient.invoke(
+          'function',
+          region: 'ap-south-1',
+          queryParameters: {'key': 'value', 'foo': 'bar'},
+        );
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req.headers['x-region'], 'ap-south-1');
+        expect(req.url.queryParameters, {
+          'key': 'value',
+          'foo': 'bar',
+          'forceFunctionRegion': 'ap-south-1',
+        });
+      });
+    });
+
     group('Constructor variations', () {
       test('constructor with all parameters', () {
         final isolate = YAJsonIsolate();

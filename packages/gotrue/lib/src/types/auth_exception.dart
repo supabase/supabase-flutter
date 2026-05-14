@@ -14,7 +14,7 @@ class AuthException implements Exception {
   /// In that case [statusCode] will also be null.
   ///
   /// Find the full list of error codes in our documentation.
-  /// https://supabase.com/docs/reference/dart/auth-error-codes
+  /// https://supabase.com/docs/guides/auth/debugging/error-codes
   final String? code;
 
   const AuthException(this.message, {this.statusCode, this.code});
@@ -102,4 +102,16 @@ class AuthWeakPasswordException extends AuthException {
   @override
   String toString() =>
       'AuthWeakPasswordException(message: $message, statusCode: $statusCode, reasons: $reasons)';
+}
+
+class AuthInvalidJwtException extends AuthException {
+  AuthInvalidJwtException(super.message)
+      : super(
+          statusCode: '400',
+          code: 'invalid_jwt',
+        );
+
+  @override
+  String toString() =>
+      'AuthInvalidJwtException(message: $message, statusCode: $statusCode, code: $code)';
 }

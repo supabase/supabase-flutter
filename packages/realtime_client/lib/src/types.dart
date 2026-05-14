@@ -138,6 +138,29 @@ extension ToType on RealtimeListenTypes {
   }
 }
 
+/// Configuration for broadcast replay feature.
+/// Allows replaying broadcast messages from a specific timestamp.
+class ReplayOption {
+  /// Unix timestamp (in milliseconds) from which to start replaying messages
+  final int since;
+
+  /// Optional limit on the number of messages to replay, maximum value of 25.
+  final int? limit;
+
+  const ReplayOption({
+    required this.since,
+    this.limit,
+  });
+
+  Map<String, dynamic> toMap() {
+    final map = <String, dynamic>{'since': since};
+    if (limit != null) {
+      map['limit'] = limit;
+    }
+    return map;
+  }
+}
+
 class RealtimeChannelConfig {
   /// [ack] option instructs server to acknowlege that broadcast message was received
   final bool ack;
@@ -145,8 +168,14 @@ class RealtimeChannelConfig {
   /// [self] option enables client to receive message it broadcasted
   final bool self;
 
+  /// [replay] enables **private** channels to access messages that were sent earlier. Only messages published via [Broadcast From the Database](https://supabase.com/docs/guides/realtime/broadcast#trigger-broadcast-messages-from-your-database) are available for replay.
+  final ReplayOption? replay;
+
   /// [key] option is used to track presence payload across clients
   final String key;
+
+  /// Enables presence even without presence bindings
+  final bool enabled;
 
   /// Defines if the channel is private or not and if RLS policies will be used to check data
   final bool private;
@@ -154,19 +183,27 @@ class RealtimeChannelConfig {
   const RealtimeChannelConfig({
     this.ack = false,
     this.self = false,
+    this.replay,
     this.key = '',
+    this.enabled = false,
     this.private = false,
   });
 
   Map<String, dynamic> toMap() {
+    final broadcastConfig = <String, dynamic>{
+      'ack': ack,
+      'self': self,
+    };
+    if (replay != null) {
+      broadcastConfig['replay'] = replay!.toMap();
+    }
+
     return {
       'config': {
-        'broadcast': {
-          'ack': ack,
-          'self': self,
-        },
+        'broadcast': broadcastConfig,
         'presence': {
           'key': key,
+          'enabled': enabled,
         },
         'private': private,
       }
@@ -194,15 +231,35 @@ class PostgresChangePayload {
   });
 
   /// Creates a PostgresChangePayload instance from the enriched postgres change payload
-  PostgresChangePayload.fromPayload(Map<String, dynamic> payload)
-      : schema = payload['schema'],
-        table = payload['table'],
-        commitTimestamp =
-            DateTime.parse(payload['commit_timestamp'] ?? '19700101'),
-        eventType = PostgresChangeEventMethods.fromString(payload['eventType']),
-        newRecord = Map<String, dynamic>.from(payload['new']),
-        oldRecord = Map<String, dynamic>.from(payload['old']),
-        errors = payload['errors'];
+  factory PostgresChangePayload.fromPayload(Map<String, dynamic> payload) {
+    final commitTimestampStr = payload['commit_timestamp'] as String?;
+    DateTime commitTimestamp;
+    try {
+      commitTimestamp = commitTimestampStr != null
+          ? DateTime.parse(commitTimestampStr)
+          : DateTime.fromMillisecondsSinceEpoch(0);
+    } on FormatException {
+      commitTimestamp = DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
+    final newData = payload['new'];
+    final oldData = payload['old'];
+
+    return PostgresChangePayload(
+      schema: payload['schema'] as String,
+      table: payload['table'] as String,
+      commitTimestamp: commitTimestamp,
+      eventType:
+          PostgresChangeEventMethods.fromString(payload['eventType'] as String),
+      newRecord: newData is Map
+          ? Map<String, dynamic>.from(newData)
+          : <String, dynamic>{},
+      oldRecord: oldData is Map
+          ? Map<String, dynamic>.from(oldData)
+          : <String, dynamic>{},
+      errors: payload['errors'],
+    );
+  }
 
   @override
   String toString() {

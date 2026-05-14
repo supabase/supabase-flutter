@@ -69,9 +69,13 @@ class Fetch {
     Map<String, dynamic>? body,
     FetchOptions? options,
   ) async {
-    final headers = options?.headers ?? {};
+    final headers = {...?options?.headers};
     if (method != 'GET') {
-      headers['Content-Type'] = 'application/json';
+      final hasContentType =
+          headers.keys.any((key) => key.toLowerCase() == 'content-type');
+      if (!hasContentType) {
+        headers['Content-Type'] = 'application/json';
+      }
     }
 
     final request = http.Request(method, Uri.parse(url))
@@ -159,16 +163,21 @@ class Fetch {
     StorageRetryController? retryController,
   ) async {
     final headers = options?.headers ?? {};
-    final request = http.MultipartRequest(method, Uri.parse(url))
-      ..headers.addAll(headers)
-      ..files.add(multipartFile)
-      ..fields['cacheControl'] = fileOptions.cacheControl
-      ..headers['x-upsert'] = fileOptions.upsert.toString();
-    if (fileOptions.metadata != null) {
-      request.fields['metadata'] = json.encode(fileOptions.metadata);
-    }
-    if (fileOptions.headers != null) {
-      request.headers.addAll(fileOptions.headers!);
+
+    // Create a factory function that generates a fresh MultipartRequest for each attempt
+    http.MultipartRequest createRequest() {
+      final request = http.MultipartRequest(method, Uri.parse(url))
+        ..headers.addAll(headers)
+        ..files.add(multipartFile)
+        ..fields['cacheControl'] = fileOptions.cacheControl
+        ..headers['x-upsert'] = fileOptions.upsert.toString();
+      if (fileOptions.metadata != null) {
+        request.fields['metadata'] = json.encode(fileOptions.metadata);
+      }
+      if (fileOptions.headers != null) {
+        request.headers.addAll(fileOptions.headers!);
+      }
+      return request;
     }
 
     final http.StreamedResponse streamedResponse;
@@ -178,6 +187,10 @@ class Fetch {
       () async {
         attempts++;
         _log.finest('Request: attempt: $attempts $method $url $headers');
+
+        // Create a fresh request for each retry attempt
+        final request = createRequest();
+
         if (httpClient != null) {
           return httpClient!.send(request);
         } else {

@@ -15,6 +15,7 @@ class FunctionsClient {
   final http.Client? _httpClient;
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
+  final String? _region;
   final _log = Logger("supabase.functions");
 
   /// In case you don't provide your own isolate, call [dispose] when you're done
@@ -23,12 +24,15 @@ class FunctionsClient {
     Map<String, String> headers, {
     http.Client? httpClient,
     YAJsonIsolate? isolate,
+    String? region,
   })  : _url = url,
         _headers = {...Constants.defaultHeaders, ...headers},
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
         _hasCustomIsolate = isolate != null,
-        _httpClient = httpClient {
-    _log.config("Initialize FunctionsClient v$version with url: $url");
+        _httpClient = httpClient,
+        _region = region {
+    _log.config(
+        "Initialize FunctionsClient v$version with url '$url' and region '$region'");
     _log.finest("Initialize with headers: $headers");
   }
 
@@ -57,6 +61,8 @@ class FunctionsClient {
   ///
   /// [files] to send in a `MultipartRequest`. [body] is used for the fields.
   ///
+  /// [region] optionally specify the region to invoke the function in.
+  /// When specified, adds both `x-region` header and `forceFunctionRegion` query parameter.
   ///
   /// ```dart
   /// // Call a standard function
@@ -77,7 +83,7 @@ class FunctionsClient {
   /// final fetchClient = FetchClient(mode: RequestMode.cors);
   /// await Supabase.initialize(
   ///   url: supabaseUrl,
-  ///   anonKey: supabaseKey,
+  ///   publishableKey: supabaseKey,
   ///   httpClient: fetchClient,
   /// );
   /// ```
@@ -88,13 +94,26 @@ class FunctionsClient {
     Iterable<http.MultipartFile>? files,
     Map<String, dynamic>? queryParameters,
     HttpMethod method = HttpMethod.post,
+    String? region,
   }) async {
-    final uri = Uri.parse('$_url/$functionName')
-        .replace(queryParameters: queryParameters);
+    final effectiveRegion = region ?? _region;
+
+    // Merge query parameters with forceFunctionRegion if region is specified
+    final effectiveQueryParams = <String, dynamic>{
+      if (queryParameters != null) ...queryParameters,
+      if (effectiveRegion != null && effectiveRegion != 'any')
+        'forceFunctionRegion': effectiveRegion,
+    };
+
+    final uri = Uri.parse('$_url/$functionName').replace(
+        queryParameters:
+            effectiveQueryParams.isNotEmpty ? effectiveQueryParams : null);
 
     final finalHeaders = <String, String>{
       ..._headers,
-      if (headers != null) ...headers
+      if (headers != null) ...headers,
+      if (effectiveRegion != null && effectiveRegion != 'any')
+        'x-region': effectiveRegion,
     };
 
     if (body != null &&
@@ -113,11 +132,11 @@ class FunctionsClient {
       );
       final fields = body as Map<String, String>?;
 
-      request = http.MultipartRequest(method.value, uri)
+      request = http.MultipartRequest(method.name.toUpperCase(), uri)
         ..fields.addAll(fields ?? {})
         ..files.addAll(files);
     } else {
-      final bodyRequest = http.Request(method.value, uri);
+      final bodyRequest = http.Request(method.name.toUpperCase(), uri);
 
       if (body == null) {
         // No body to set

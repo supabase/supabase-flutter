@@ -1,5 +1,6 @@
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -12,6 +13,8 @@ class PostgrestClient {
   final Client? httpClient;
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
+  final bool retryEnabled;
+  final Duration Function(int attempt)? _retryDelay;
   final _log = Logger('supabase.postgrest');
 
   /// To create a [PostgrestClient], you need to provide an [url] endpoint.
@@ -25,16 +28,23 @@ class PostgrestClient {
   /// [httpClient] is optional and can be used to provide a custom http client
   ///
   /// [isolate] is optional and can be used to provide a custom isolate, which is used for heavy json computation
+  ///
+  /// [retryEnabled] controls whether automatic retries are performed for GET and
+  /// HEAD requests that fail with HTTP 503, HTTP 520, or a network error. Defaults to `true`.
+  /// Use [PostgrestBuilder.retry] to override this per request.
   PostgrestClient(
     this.url, {
     Map<String, String>? headers,
     String? schema,
     this.httpClient,
     YAJsonIsolate? isolate,
+    this.retryEnabled = true,
+    @visibleForTesting Duration Function(int attempt)? retryDelay,
   })  : _schema = schema,
         headers = {...defaultHeaders, if (headers != null) ...headers},
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null {
+        _hasCustomIsolate = isolate != null,
+        _retryDelay = retryDelay {
     _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
     _log.finest('Initialize with headers: $headers');
   }
@@ -65,6 +75,8 @@ class PostgrestClient {
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
+      retryEnabled: retryEnabled,
+      retryDelay: _retryDelay,
     );
   }
 
@@ -78,6 +90,8 @@ class PostgrestClient {
       schema: schema,
       httpClient: httpClient,
       isolate: _isolate,
+      retryEnabled: retryEnabled,
+      retryDelay: _retryDelay,
     );
   }
 
@@ -108,6 +122,8 @@ class PostgrestClient {
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
+      retryEnabled: retryEnabled,
+      retryDelay: _retryDelay,
     ).rpc(params, get);
   }
 

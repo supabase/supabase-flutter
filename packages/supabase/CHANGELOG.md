@@ -1,3 +1,49 @@
+## 2.11.0
+
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+ - **FEAT**: optionally configure stream method to use a private channel ([#1357](https://github.com/supabase/supabase-flutter/issues/1357)). ([9d0de9e8](https://github.com/supabase/supabase-flutter/commit/9d0de9e8b691b9e28f79341dbc50c989ab47c150))
+
+## 2.10.6
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+## 2.10.5
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+## 2.10.4
+
+ - **FIX**(storage): make dedicated storage host opt-in via useNewHostname flag ([#1329](https://github.com/supabase/supabase-flutter/issues/1329)). ([a6640823](https://github.com/supabase/supabase-flutter/commit/a66408231ac3451c7b761425d3609908fa9394bd))
+
+## 2.10.3
+
+ - Update a dependency to the latest release.
+
+## 2.10.2
+
+ - Update a dependency to the latest release.
+
+## 2.10.1
+
+ - Update a dependency to the latest release.
+
+## 2.10.0
+
+ - **FEAT**: add region as forceFunctionRegion query parameter ([#1243](https://github.com/supabase/supabase-flutter/issues/1243)). ([06c35baf](https://github.com/supabase/supabase-flutter/commit/06c35baf9974e87c06c65f7666165ef3c119d087))
+
+## 2.9.2
+
+ - Update a dependency to the latest release.
+
+## 2.9.1
+
+ - **FIX**: Prevent web incompatibility due to import of dart:io ([#1220](https://github.com/supabase/supabase-flutter/issues/1220)). ([3c8d4db6](https://github.com/supabase/supabase-flutter/commit/3c8d4db62aec26835e5d8ff387c4b32c91ce8676))
+
+## 2.9.0
+
+ - **FIX**: Uri encode platform information ([#1196](https://github.com/supabase/supabase-flutter/issues/1196)). ([7fe6b301](https://github.com/supabase/supabase-flutter/commit/7fe6b301414c1f4258f45bf1bd6d9f65bbe465e2))
+ - **FEAT**: Add standard client headers ([#1130](https://github.com/supabase/supabase-flutter/issues/1130)). ([f33c9fe2](https://github.com/supabase/supabase-flutter/commit/f33c9fe2f67fc83d19904a53e0b71e7cec5cee53))
+
 ## 2.8.0
 
  - **FEAT**: Add standard client headers ([#1130](https://github.com/supabase/supabase-flutter/issues/1130)). ([f33c9fe2](https://github.com/supabase/supabase-flutter/commit/f33c9fe2f67fc83d19904a53e0b71e7cec5cee53))
