@@ -131,8 +131,7 @@ void main() {
       expect(
         status,
         RealtimeSubscribeStatus.subscribed,
-        reason:
-            "If the catch is missing the 'ok' callback aborts at setAuth "
+        reason: "If the catch is missing the 'ok' callback aborts at setAuth "
             "and the subscribed status is never emitted.",
       );
     });
@@ -162,8 +161,7 @@ void main() {
       expect(
         status,
         isNull,
-        reason:
-            'A non-InvalidJWTToken FormatException should propagate out of '
+        reason: 'A non-InvalidJWTToken FormatException should propagate out of '
             'the callback before subscribed is emitted.',
       );
     });
