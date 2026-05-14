@@ -54,32 +54,32 @@ class RealtimeClientOptions {
   /// Level of realtime server logs to be logged
   final RealtimeLogLevel? logLevel;
 
-  /// the timeout to trigger push timeouts
+  /// The timeout to trigger push timeouts
   final Duration? timeout;
 
-  /// The WebSocket implementation to use
-  final WebSocketTransport? webSocketTransport;
+  /// Custom WebSocket implementation to use
+  final WebSocketTransport? transport;
 
   /// {@macro realtime_client_options}
   const RealtimeClientOptions({
     this.eventsPerSecond,
     this.logLevel,
     this.timeout,
-    this.webSocketTransport,
+    this.transport,
   });
 
   RealtimeClientOptions copyWith({
     int? eventsPerSecond,
     RealtimeLogLevel? logLevel,
     Duration? timeout,
-    WebSocketTransport? webSocketTransport,
+    WebSocketTransport? transport,
   }) {
     return RealtimeClientOptions(
       // ignore: deprecated_member_use_from_same_package
       eventsPerSecond: eventsPerSecond ?? this.eventsPerSecond,
       logLevel: logLevel ?? this.logLevel,
       timeout: timeout ?? this.timeout,
-      webSocketTransport: webSocketTransport ?? this.webSocketTransport,
+      transport: transport ?? this.transport,
     );
   }
 }
