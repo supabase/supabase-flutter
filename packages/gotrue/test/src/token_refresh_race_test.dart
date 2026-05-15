@@ -211,44 +211,31 @@ void main() {
       expect(mockClient.tokenRequestCount, 1);
     });
 
-    test('concurrent refresh with different tokens serializes', () async {
-      final completionOrder = <String>[];
-
-      mockClient.responseRefreshToken = 'response-A';
-      final future1 = client.setSession('token-A').then((r) {
-        completionOrder.add('A');
-        return r;
-      });
-
-      mockClient.responseRefreshToken = 'response-B';
-      final future2 = client.setSession('token-B').then((r) {
-        completionOrder.add('B');
-        return r;
-      });
+    test(
+        'concurrent refresh with different tokens '
+        'both execute (version guard ensures correctness)', () async {
+      final future1 = client.setSession('token-A');
+      final future2 = client.setSession('token-B');
 
       await Future.wait([future1, future2]);
 
-      // Two separate HTTP requests should have been made.
+      // Both tokens trigger separate HTTP requests.
       expect(mockClient.tokenRequestCount, 2);
-
-      // They should have executed sequentially: A before B.
-      expect(completionOrder, ['A', 'B']);
     });
 
     test(
         'A-B-A pattern: repeated token request deduplicates '
-        'even when another token is queued', () async {
+        'even when another token is in-flight', () async {
       mockClient.tokenGate = Completer<void>();
 
       // refresh(A) — in-flight, blocked on gate
       final futureA1 = client.setSession('token-A');
       await Future<void>.delayed(Duration.zero);
 
-      // refresh(B) — queued behind A
+      // refresh(B) — also in-flight concurrently
       final futureB = client.setSession('token-B');
 
-      // refresh(A) again — must dedup with the pending A,
-      // not enqueue a third refresh
+      // refresh(A) again — must dedup with the pending A
       final futureA2 = client.setSession('token-A');
 
       mockClient.tokenGate!.complete();

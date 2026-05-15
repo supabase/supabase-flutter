@@ -62,15 +62,9 @@ class GoTrueClient {
   /// discarded instead of overwriting a newer session.
   int _sessionVersion = 0;
 
-  /// Serial future chain for refresh operations. Each call to
-  /// [_callRefreshToken] appends via `.then()` so that refreshes with
-  /// *different* tokens execute sequentially rather than overlapping.
-  /// Same-token calls still de-duplicate via [_pendingRefreshes].
-  Future<void> _pendingRefreshOperation = Future.value();
-
-  /// Tracks all pending (queued or in-flight) refreshes keyed by token.
+  /// Tracks all pending (in-flight) refreshes keyed by token.
   /// Concurrent calls with the same token return the existing
-  /// [Completer.future] instead of enqueuing a duplicate refresh.
+  /// [Completer.future] instead of starting a duplicate request.
   final Map<String, Completer<AuthResponse>> _pendingRefreshes = {};
 
   /// Set by [dispose] to prevent [_executeRefresh] from mutating state
@@ -1396,9 +1390,8 @@ class GoTrueClient {
   /// Generates a new JWT.
   ///
   /// Concurrent calls with the **same** [refreshToken] are de-duplicated:
-  /// only the first enqueues a network request; subsequent callers receive
-  /// the same [Future]. Calls with **different** tokens are serialised via
-  /// [_pendingRefreshOperation] so they never overlap.
+  /// only the first starts a network request; subsequent callers receive
+  /// the same [Future].
   ///
   /// After the network round-trip, the result is only applied (session
   /// saved, [AuthChangeEvent.tokenRefreshed] emitted) when
@@ -1406,7 +1399,7 @@ class GoTrueClient {
   /// or other session mutation occurred while the request was in-flight.
   Future<AuthResponse> _callRefreshToken(String refreshToken) {
     // De-duplicate: return existing future if this token is already
-    // pending (queued or in-flight).
+    // in-flight.
     final existing = _pendingRefreshes[refreshToken];
     if (existing != null) {
       _log.finer('Refresh already pending for this token');
@@ -1417,17 +1410,12 @@ class GoTrueClient {
     completer.future.ignore();
     _pendingRefreshes[refreshToken] = completer;
 
-    // Chain onto the serial queue so different-token refreshes
-    // never overlap.
-    _pendingRefreshOperation = _pendingRefreshOperation
-        .then((_) => _executeRefresh(refreshToken, completer))
-        .catchError((_) {});
+    _executeRefresh(refreshToken, completer);
 
     return completer.future;
   }
 
-  /// Executes a single token refresh. Called from the
-  /// [_pendingRefreshOperation] chain — never directly.
+  /// Executes a single token refresh.
   Future<void> _executeRefresh(
     String refreshToken,
     Completer<AuthResponse> completer,
