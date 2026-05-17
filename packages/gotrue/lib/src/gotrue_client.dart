@@ -197,7 +197,7 @@ class GoTrueClient {
     try {
       if (_persistSession && _asyncStorage != null) {
         await _initializedStorage.future;
-        final jsonStr = await _asyncStorage!.getItem(key: _storageKey);
+        final jsonStr = await _asyncStorage.getItem(key: _storageKey);
         var shouldEmitInitialSession = true;
         if (jsonStr != null) {
           await setInitialSession(jsonStr);
@@ -442,7 +442,7 @@ class GoTrueClient {
       ),
     );
 
-    await _asyncStorage!.removeItem(key: '$_storageKey-code-verifier');
+    await _asyncStorage.removeItem(key: '$_storageKey-code-verifier');
 
     final authSessionUrlResponse = AuthSessionUrlResponse(
       session: Session.fromJson(response)!,
@@ -1350,7 +1350,7 @@ class GoTrueClient {
       if (!_initializedStorage.isCompleted) {
         await _initializedStorage.future;
       }
-      _asyncStorage!.setItem(
+      _asyncStorage.setItem(
         key: _storageKey,
         value: jsonEncode(session.toJson()),
       );
@@ -1365,7 +1365,7 @@ class GoTrueClient {
       if (!_initializedStorage.isCompleted) {
         await _initializedStorage.future;
       }
-      _asyncStorage!.removeItem(key: _storageKey);
+      _asyncStorage.removeItem(key: _storageKey);
     }
   }
 
