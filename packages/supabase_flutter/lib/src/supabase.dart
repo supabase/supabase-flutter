@@ -11,6 +11,8 @@ import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
+import 'hot_restart_cleanup_stub.dart'
+    if (dart.library.js_interop) 'hot_restart_cleanup_web.dart';
 import 'version.dart';
 
 final _log = Logger('supabase.supabase_flutter');
@@ -32,14 +34,14 @@ final _log = Logger('supabase.supabase_flutter');
 /// See also:
 ///
 ///   * [SupabaseAuth]
-class Supabase with WidgetsBindingObserver {
+class Supabase {
   /// Gets the current supabase instance.
   ///
   /// An [AssertionError] is thrown if supabase isn't initialized yet.
   /// Call [Supabase.initialize] to initialize it.
   static Supabase get instance {
     assert(
-      _instance._initialized,
+      _instance._isInitialized,
       'You must initialize the supabase instance before calling Supabase.instance',
     );
     return _instance;
@@ -51,7 +53,9 @@ class Supabase with WidgetsBindingObserver {
   /// [AssertionError] is thrown.
   /// (after calling [dispose], [initialize] can be called again)
   ///
-  /// [url] and [anonKey] can be found on your Supabase dashboard.
+  /// [url] and [publishableKey] can be found on your Supabase dashboard.
+  /// Use the `publishable` (anon) key here — never the secret key in a
+  /// Flutter app.
   ///
   /// Default headers can be overridden by specifying [headers].
   ///
@@ -72,27 +76,39 @@ class Supabase with WidgetsBindingObserver {
   /// If [debug] is set to `true`, debug logs will be printed in debug console. Default is `kDebugMode`.
   static Future<Supabase> initialize({
     required String url,
-    required String anonKey,
+    String? publishableKey,
+    @Deprecated(
+      'Use publishableKey instead. anonKey will be removed in a future major version.',
+    )
+    String? anonKey,
     Map<String, String>? headers,
     Client? httpClient,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
-    Future<String> Function()? accessToken,
+    Future<String?> Function()? accessToken,
     bool? debug,
   }) async {
     assert(
-      !_instance._initialized,
-      'This instance is already initialized',
+      publishableKey != null || anonKey != null,
+      'Either publishableKey or anonKey must be provided.',
     );
+    final effectiveKey = publishableKey ?? anonKey!;
+
+    if (_instance._isInitialized) {
+      _log.info('Supabase is already initialized. Skipping reinitialization.');
+      return _instance;
+    }
+
     _instance._debugEnable = debug ?? kDebugMode;
 
     if (_instance._debugEnable) {
       _instance._logSubscription = Logger('supabase').onRecord.listen((record) {
         if (record.level >= Level.INFO) {
           debugPrint(
-              '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}');
+            '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}',
+          );
         }
       });
     }
@@ -129,7 +145,7 @@ class Supabase with WidgetsBindingObserver {
     }
     _instance._init(
       url,
-      anonKey,
+      effectiveKey,
       httpClient: httpClient,
       customHeaders: headers,
       realtimeClientOptions: realtimeClientOptions,
@@ -153,9 +169,10 @@ class Supabase with WidgetsBindingObserver {
   Supabase._();
   static final Supabase _instance = Supabase._();
 
-  static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
+  bool _isInitialized = false;
 
-  bool _initialized = false;
+  /// Whether the Supabase instance has been initialized. Useful for debugging.
+  bool get isInitialized => _isInitialized;
 
   /// The supabase client for this instance
   ///
@@ -166,37 +183,51 @@ class Supabase with WidgetsBindingObserver {
 
   bool _debugEnable = false;
 
-  CancelableOperation<void>? _realtimeReconnectOperation;
+  /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
+  late CancelableOperation _restoreSessionCancellableOperation;
+
+  // Listener for app lifecycle events to handle Realtime reconnection.
+  AppLifecycleListener? _lifecycleListener;
+
+  /// Serial queue for lifecycle operations (connect/disconnect). Each event
+  /// appends via `.then()` so operations never overlap.
+  Future<void> _pendingLifecycleOperation = Future.value();
+
+  /// The most recently requested lifecycle state. Checked inside
+  /// [_processLifecycle] after each `await` to skip stale operations
+  /// (e.g. abort a reconnect if the app went back to background).
+  AppLifecycleState? _targetLifecycleState;
 
   StreamSubscription? _logSubscription;
 
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {
+    _targetLifecycleState = null;
     _logSubscription?.cancel();
     client.dispose();
     _instance._supabaseAuth?.dispose();
-    _widgetsBindingInstance?.removeObserver(this);
-    _initialized = false;
+    _lifecycleListener?.dispose();
+    _isInitialized = false;
   }
 
   void _init(
     String supabaseUrl,
-    String supabaseAnonKey, {
+    String supabaseKey, {
     Client? httpClient,
     Map<String, String>? customHeaders,
     required RealtimeClientOptions realtimeClientOptions,
     required PostgrestClientOptions postgrestOptions,
     required StorageClientOptions storageOptions,
     required AuthClientOptions authOptions,
-    required Future<String> Function()? accessToken,
+    required Future<String?> Function()? accessToken,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
-      if (customHeaders != null) ...customHeaders
+      if (customHeaders != null) ...customHeaders,
     };
     client = SupabaseClient(
       supabaseUrl,
-      supabaseAnonKey,
+      supabaseKey,
       httpClient: httpClient,
       headers: headers,
       realtimeClientOptions: realtimeClientOptions,
@@ -205,75 +236,78 @@ class Supabase with WidgetsBindingObserver {
       authOptions: authOptions,
       accessToken: accessToken,
     );
-    _widgetsBindingInstance?.addObserver(this);
-    _initialized = true;
-  }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        onResumed();
-      case AppLifecycleState.detached:
-      case AppLifecycleState.paused:
-        _realtimeReconnectOperation?.cancel();
-        Supabase.instance.client.realtime.disconnect();
-      default:
+    // Close any previous realtime client that may still be connected due to
+    // flutter web hot-restart.
+    if (kDebugMode) {
+      disposePreviousClient();
+      markClientToDispose(client);
     }
+
+    _setupLifecycleListener();
+
+    _isInitialized = true;
   }
 
-  Future<void> onResumed() async {
-    final realtime = Supabase.instance.client.realtime;
-    if (realtime.channels.isNotEmpty) {
-      if (realtime.connState == SocketStates.disconnecting) {
-        // If the socket is still disconnecting from e.g.
-        // [AppLifecycleState.paused] we should wait for it to finish before
-        // reconnecting.
-
-        bool cancel = false;
-        final connectFuture = realtime.conn!.sink.done.then(
-          (_) async {
-            // Make this connect cancelable so that it does not connect if the
-            // disconnect took so long that the app is already in background
-            // again.
-
-            if (!cancel) {
-              // ignore: invalid_use_of_internal_member
-              await realtime.connect();
-              for (final channel in realtime.channels) {
-                // ignore: invalid_use_of_internal_member
-                if (channel.isJoined) {
-                  // ignore: invalid_use_of_internal_member
-                  channel.forceRejoin();
-                }
-              }
-            }
-          },
-          onError: (error) {},
-        );
-        _realtimeReconnectOperation = CancelableOperation.fromFuture(
-          connectFuture,
-          onCancel: () => cancel = true,
-        );
-      } else if (!realtime.isConnected) {
-        // Reconnect if the socket is currently not connected.
-        // When coming from [AppLifecycleState.paused] this should be the case,
-        // but when coming from [AppLifecycleState.inactive] no disconnect
-        // happened and therefore connection should still be intanct and we
-        // should not reconnect.
-
-        // ignore: invalid_use_of_internal_member
-        await realtime.connect();
-        for (final channel in realtime.channels) {
-          // Only rejoin channels that think they are still joined and not
-          // which were manually unsubscribed by the user while in background
-
-          // ignore: invalid_use_of_internal_member
-          if (channel.isJoined) {
-            // ignore: invalid_use_of_internal_member
-            channel.forceRejoin();
-          }
+  void _setupLifecycleListener() {
+    _lifecycleListener = AppLifecycleListener(
+      onStateChange: (state) {
+        switch (state) {
+          case AppLifecycleState.resumed:
+          case AppLifecycleState.paused:
+          case AppLifecycleState.detached:
+            _targetLifecycleState = state;
+            _pendingLifecycleOperation = _pendingLifecycleOperation
+                .then((_) => _processLifecycle(state))
+                .catchError((_) {});
+          default:
+            break;
         }
+      },
+    );
+  }
+
+  /// Processes a lifecycle state change. Operations are serialized via
+  /// [_pendingLifecycleOp] so that disconnect and connect never overlap.
+  ///
+  /// [captured] is the lifecycle state at the time the event was enqueued.
+  /// If a newer event has arrived since, this one is skipped (stale).
+  Future<void> _processLifecycle(AppLifecycleState captured) async {
+    // Skip if a newer lifecycle event has superseded this one.
+    if (captured != _targetLifecycleState) return;
+
+    final realtime = Supabase.instance.client.realtime;
+
+    if (captured == AppLifecycleState.resumed) {
+      // No channels subscribed — nothing to reconnect.
+      if (realtime.channels.isEmpty) return;
+
+      // Already connected (e.g. coming from [AppLifecycleState.inactive]
+      // where no disconnect happened).
+      if (realtime.isConnected) return;
+
+      // ignore: invalid_use_of_internal_member
+      await realtime.connect();
+
+      // Abort rejoin if app went back to background during connect.
+      if (_targetLifecycleState != AppLifecycleState.resumed) return;
+
+      // Re-send join messages for channels that were previously joined.
+      // After a disconnect/reconnect the WebSocket is fresh, but the
+      // channel objects still have joined state — forceRejoin() restores
+      // the server-side subscriptions.
+      for (final channel in realtime.channels) {
+        // ignore: invalid_use_of_internal_member
+        if (channel.isJoined) {
+          // ignore: invalid_use_of_internal_member
+          channel.forceRejoin();
+        }
+      }
+    } else {
+      // paused or detached — disconnect the WebSocket if it is active.
+      if (realtime.isConnected ||
+          realtime.connState == SocketStates.connecting) {
+        await realtime.disconnect();
       }
     }
   }

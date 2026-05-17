@@ -1,3 +1,26 @@
+## 2.7.0
+
+ - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))
+ - **FIX**(postgrest): replace SCREAMING_SNAKE_CASE HTTP method constants with enum ([#1347](https://github.com/supabase/supabase-flutter/issues/1347)). ([13e8b39e](https://github.com/supabase/supabase-flutter/commit/13e8b39e791c85d532b078bccaaf9027b774e9c0))
+ - **FEAT**(postgrest): add automatic retry for transient failures ([#1338](https://github.com/supabase/supabase-flutter/issues/1338)). ([fb1da8b2](https://github.com/supabase/supabase-flutter/commit/fb1da8b2e82208166fbc597532efe96824d8c14f))
+
+## 2.6.0
+
+ - **FEAT**(postgrest): add missing PostgREST v12 operators ([#1273](https://github.com/supabase/supabase-flutter/issues/1273)). ([f6270260](https://github.com/supabase/supabase-flutter/commit/f627026038344d6f2fdaa8ff8f7e0c968a8dad1b))
+
+## 2.5.0
+
+ - **FIX**(postgrest): URL replacement logic in query builder ([#1228](https://github.com/supabase/supabase-flutter/issues/1228)). ([908976c5](https://github.com/supabase/supabase-flutter/commit/908976c5d16ef1e8bea336f4981d2a2b3af06de1))
+ - **FEAT**(postgrest): Implement maxAffected method ([#1226](https://github.com/supabase/supabase-flutter/issues/1226)). ([ae2d12d9](https://github.com/supabase/supabase-flutter/commit/ae2d12d91f234261760578a55c4ef9dc939fc551))
+
+## 2.4.2
+
+ - Update a dependency to the latest release.
+
+## 2.4.1
+
+ - **DOCS**: Fix typo for RPC docs ([#1105](https://github.com/supabase/supabase-flutter/issues/1105)). ([7c8c8630](https://github.com/supabase/supabase-flutter/commit/7c8c8630257984f429406b0d85a8601881712343))
+
 ## 2.4.0
 
  - **FEAT**: Read-only access mode rpc ([#1081](https://github.com/supabase/supabase-flutter/issues/1081)). ([d0a04154](https://github.com/supabase/supabase-flutter/commit/d0a04154ff56d40d00e1c9282d8ba859681c7275))

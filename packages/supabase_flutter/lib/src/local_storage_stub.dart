@@ -1,3 +1,4 @@
+// coverage:ignore-file
 Future<bool> hasAccessToken(_) => throw UnimplementedError();
 
 Future<String?> accessToken(_) async => throw UnimplementedError();

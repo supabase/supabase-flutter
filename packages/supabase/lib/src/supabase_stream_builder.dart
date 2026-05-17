@@ -53,6 +53,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   final String _realtimeTopic;
 
+  /// Whether the underlying [_channel] should be initialized as private
+  /// or not. Default is false, which means the channel is public.
+  final bool _private;
+
   RealtimeChannel? _channel;
 
   final String _schema;
@@ -89,12 +93,14 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     required String schema,
     required String table,
     required List<String> primaryKey,
+    required bool private,
   })  : _queryBuilder = queryBuilder,
         _realtimeTopic = realtimeTopic,
         _realtimeClient = realtimeClient,
         _schema = schema,
         _table = table,
-        _uniqueColumns = primaryKey;
+        _uniqueColumns = primaryKey,
+        _private = private;
 
   /// Orders the result with the specified [column].
   ///
@@ -167,50 +173,53 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       );
     }
 
-    _channel = _realtimeClient.channel(_realtimeTopic);
+    _channel = _realtimeClient.channel(
+      _realtimeTopic,
+      RealtimeChannelConfig(
+        private: _private,
+      ),
+    );
 
     _channel!
         .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
+            event: PostgresChangeEvent.all,
             schema: _schema,
             table: _table,
             filter: realtimeFilter,
             callback: (payload) {
-              final newRecord = payload.newRecord;
-              _streamData.add(newRecord);
-              _addStream();
-            })
-        .onPostgresChanges(
-            event: PostgresChangeEvent.update,
-            schema: _schema,
-            table: _table,
-            filter: realtimeFilter,
-            callback: (payload) {
-              final updatedIndex = _streamData.indexWhere(
-                (element) => _isTargetRecord(record: element, payload: payload),
-              );
+              switch (payload.eventType) {
+                case PostgresChangeEvent.insert:
+                  final newRecord = payload.newRecord;
+                  _streamData.add(newRecord);
+                  _addStream();
+                  break;
+                case PostgresChangeEvent.update:
+                  final updatedIndex = _streamData.indexWhere(
+                    (element) =>
+                        _isTargetRecord(record: element, payload: payload),
+                  );
 
-              final updatedRecord = payload.newRecord;
-              if (updatedIndex >= 0) {
-                _streamData[updatedIndex] = updatedRecord;
-              } else {
-                _streamData.add(updatedRecord);
-              }
-              _addStream();
-            })
-        .onPostgresChanges(
-            event: PostgresChangeEvent.delete,
-            schema: _schema,
-            table: _table,
-            filter: realtimeFilter,
-            callback: (payload) {
-              final deletedIndex = _streamData.indexWhere(
-                (element) => _isTargetRecord(record: element, payload: payload),
-              );
-              if (deletedIndex >= 0) {
-                /// Delete the data from in memory cache if it was found
-                _streamData.removeAt(deletedIndex);
-                _addStream();
+                  final updatedRecord = payload.newRecord;
+                  if (updatedIndex >= 0) {
+                    _streamData[updatedIndex] = updatedRecord;
+                  } else {
+                    _streamData.add(updatedRecord);
+                  }
+                  _addStream();
+                  break;
+                case PostgresChangeEvent.delete:
+                  final deletedIndex = _streamData.indexWhere(
+                    (element) =>
+                        _isTargetRecord(record: element, payload: payload),
+                  );
+                  if (deletedIndex >= 0) {
+                    /// Delete the data from in memory cache if it was found
+                    _streamData.removeAt(deletedIndex);
+                    _addStream();
+                  }
+                  break;
+                default:
+                  break;
               }
             })
         .subscribe((status, [error]) {

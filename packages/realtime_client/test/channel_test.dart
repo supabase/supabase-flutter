@@ -34,7 +34,7 @@ void main() {
       expect(channel.params, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
-          'presence': {'key': ''},
+          'presence': {'key': '', 'enabled': false},
           'private': false,
         }
       });
@@ -54,7 +54,7 @@ void main() {
       expect(joinPush.payload, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
-          'presence': {'key': ''},
+          'presence': {'key': '', 'enabled': false},
           'private': true,
         },
       });
@@ -220,6 +220,44 @@ void main() {
       expect(callbackEventCalled2, 0);
       expect(callbackOtherCalled, 1);
     });
+
+    test(
+        'maintains type safety after off() - '
+        'reproduces web hot restart issue', () {
+      // This test reproduces the issue where .where().toList() returns
+      // List<dynamic> on Flutter web during hot restart, causing a
+      // TypeError when the result is assigned back to
+      // Map<String, List<Binding>>
+
+      // Add multiple bindings
+      channel.onEvents('postgres_changes', ChannelFilter(),
+          (dynamic payload, [dynamic ref]) {});
+      channel.onEvents('postgres_changes', ChannelFilter(),
+          (dynamic payload, [dynamic ref]) {});
+      channel.onEvents(
+          'broadcast', ChannelFilter(), (dynamic payload, [dynamic ref]) {});
+
+      // Call off() which internally uses .where().toList()
+      // Without explicit type cast, this would fail on web with:
+      // TypeError: Instance of 'JSArray<dynamic>': type 'List<dynamic>' is
+      // not a subtype of type 'List<Binding>'
+      expect(
+        () => channel.off('postgres_changes', {}),
+        returnsNormally,
+      );
+
+      // Verify the bindings map still has proper type after off()
+      // This would throw a type error if off() returned List<dynamic>
+      channel.onEvents('postgres_changes', ChannelFilter(),
+          (dynamic payload, [dynamic ref]) {});
+
+      // Verify functionality still works
+      var broadcastCalled = 0;
+      channel.onEvents('broadcast', ChannelFilter(),
+          (dynamic payload, [dynamic ref]) => broadcastCalled++);
+      channel.trigger('broadcast', {}, defaultRef);
+      expect(broadcastCalled, 1);
+    });
   });
 
   group('leave', () {
@@ -384,6 +422,348 @@ void main() {
           },
           '3');
       expect(leaveCalled, isTrue);
+    });
+  });
+
+  group('presence enabled', () {
+    setUp(() {
+      socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
+    });
+
+    test(
+        'should enable presence when config.presence.enabled is true even without bindings',
+        () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(enabled: true),
+      );
+
+      channel.subscribe();
+
+      final joinPayload = channel.joinPush.payload;
+      expect(joinPayload['config']['presence']['enabled'], isTrue);
+    });
+
+    test('should enable presence when presence listeners exist', () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      channel.onPresenceSync((payload) {});
+      channel.subscribe();
+
+      final joinPayload = channel.joinPush.payload;
+      expect(joinPayload['config']['presence']['enabled'], isTrue);
+    });
+
+    test(
+        'should enable presence when both bindings exist and config.presence.enabled is true',
+        () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(enabled: true),
+      );
+
+      channel.onPresenceSync((payload) {});
+      channel.subscribe();
+
+      final joinPayload = channel.joinPush.payload;
+      expect(joinPayload['config']['presence']['enabled'], isTrue);
+    });
+
+    test(
+        'should not enable presence when neither bindings exist nor config.presence.enabled is true',
+        () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      channel.subscribe();
+
+      final joinPayload = channel.joinPush.payload;
+      expect(joinPayload['config']['presence']['enabled'], isFalse);
+    });
+
+    test('should enable presence when join listener exists', () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      channel.onPresenceJoin((payload) {});
+      channel.subscribe();
+
+      final joinPayload = channel.joinPush.payload;
+      expect(joinPayload['config']['presence']['enabled'], isTrue);
+    });
+
+    test('should enable presence when leave listener exists', () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      channel.onPresenceLeave((payload) {});
+      channel.subscribe();
+
+      final joinPayload = channel.joinPush.payload;
+      expect(joinPayload['config']['presence']['enabled'], isTrue);
+    });
+  });
+
+  group('presence resubscription', () {
+    setUp(() {
+      socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
+    });
+
+    test(
+        'should resubscribe when presence callback added to subscribed channel without initial presence',
+        () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      channel.subscribe();
+      channel.joinPush.trigger('ok', {});
+      expect(channel.params['config']['presence']['enabled'], isFalse);
+
+      channel.onPresenceSync((payload) {});
+
+      expect(channel.params['config']['presence']['enabled'], isTrue);
+    });
+
+    test(
+        'should not resubscribe when presence callback added to channel with existing presence',
+        () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(enabled: true),
+      );
+
+      channel.subscribe();
+      channel.joinPush.trigger('ok', {});
+      final initialPayload = Map.from(channel.params);
+
+      channel.onPresenceSync((payload) {});
+
+      expect(channel.params['config']['presence']['enabled'], isTrue);
+      expect(channel.params, equals(initialPayload));
+    });
+
+    test('should only resubscribe once when multiple presence callbacks added',
+        () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      channel.subscribe();
+      channel.joinPush.trigger('ok', {});
+      expect(channel.params['config']['presence']['enabled'], isFalse);
+
+      channel.onPresenceSync((payload) {});
+      expect(channel.params['config']['presence']['enabled'], isTrue);
+
+      final payloadAfterFirst = Map.from(channel.params);
+
+      channel.onPresenceJoin((payload) {});
+      channel.onPresenceLeave((payload) {});
+
+      expect(channel.params, equals(payloadAfterFirst));
+    });
+
+    test(
+        'should not resubscribe when presence callback added to unsubscribed channel',
+        () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      expect(channel.joinedOnce, isFalse);
+
+      channel.onPresenceSync((payload) {});
+
+      expect(channel.params['config']['presence']['enabled'], isFalse);
+    });
+
+    test(
+        'should receive presence events after resubscription triggered by adding callback',
+        () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      channel.subscribe();
+      channel.joinPush.trigger('ok', {});
+
+      bool syncCalled = false;
+      channel.onPresenceSync((payload) {
+        syncCalled = true;
+      });
+
+      channel.trigger('presence', {'event': 'sync'}, '1');
+
+      expect(syncCalled, isTrue);
+    });
+
+    test('should handle presence join callback resubscription', () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      channel.subscribe();
+      channel.joinPush.trigger('ok', {});
+      expect(channel.params['config']['presence']['enabled'], isFalse);
+
+      channel.onPresenceJoin((payload) {});
+
+      expect(channel.params['config']['presence']['enabled'], isTrue);
+    });
+
+    test('should handle presence leave callback resubscription', () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: const RealtimeChannelConfig(),
+      );
+
+      channel.subscribe();
+      channel.joinPush.trigger('ok', {});
+      expect(channel.params['config']['presence']['enabled'], isFalse);
+
+      channel.onPresenceLeave((payload) {});
+
+      expect(channel.params['config']['presence']['enabled'], isTrue);
+    });
+  });
+
+  group('httpSend', () {
+    late HttpServer mockServer;
+
+    setUp(() async {
+      mockServer = await HttpServer.bind('localhost', 0);
+    });
+
+    tearDown(() async {
+      await mockServer.close();
+    });
+
+    test('sends message via http endpoint with correct headers and payload',
+        () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        headers: {'apikey': 'supabaseKey'},
+        params: {'apikey': 'supabaseKey'},
+      );
+      channel =
+          socket.channel('myTopic', const RealtimeChannelConfig(private: true));
+
+      final requestFuture = mockServer.first;
+      final sendFuture =
+          channel.httpSend(event: 'test', payload: {'myKey': 'myValue'});
+
+      final req = await requestFuture;
+      expect(req.uri.toString(), '/realtime/v1/api/broadcast');
+      expect(req.headers.value('apikey'), 'supabaseKey');
+
+      final body = json.decode(await utf8.decodeStream(req));
+      final message = body['messages'][0];
+      expect(message['topic'], 'myTopic');
+      expect(message['event'], 'test');
+      expect(message['payload'], {'myKey': 'myValue'});
+      expect(message['private'], true);
+
+      req.response.statusCode = 202;
+      await req.response.close();
+
+      await sendFuture;
+    });
+
+    test('sends with Authorization header when access token is set', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        params: {'apikey': 'abc123'},
+        customAccessToken: () async => 'token123',
+      );
+      await socket.setAuth('token123');
+      channel = socket.channel('topic');
+
+      final requestFuture = mockServer.first;
+      final sendFuture =
+          channel.httpSend(event: 'test', payload: {'data': 'test'});
+
+      final req = await requestFuture;
+      expect(req.headers.value('Authorization'), 'Bearer token123');
+      expect(req.headers.value('apikey'), 'abc123');
+
+      req.response.statusCode = 202;
+      await req.response.close();
+
+      await sendFuture;
+    });
+
+    test('throws error on non-202 status', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        params: {'apikey': 'abc123'},
+      );
+      channel = socket.channel('topic');
+
+      final requestFuture = mockServer.first;
+      final sendFuture =
+          channel.httpSend(event: 'test', payload: {'data': 'test'});
+
+      final req = await requestFuture;
+      req.response.statusCode = 500;
+      req.response.write(json.encode({'error': 'Server error'}));
+      await req.response.close();
+
+      await expectLater(
+        sendFuture,
+        throwsA(predicate((e) => e.toString().contains('Server error'))),
+      );
+    });
+
+    test('handles timeout', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        params: {'apikey': 'abc123'},
+      );
+      channel = socket.channel('topic');
+
+      // Don't await the server - let it hang to trigger timeout
+      mockServer.first.then((req) async {
+        await Future.delayed(const Duration(seconds: 1));
+        req.response.statusCode = 202;
+        await req.response.close();
+      });
+
+      await expectLater(
+        channel.httpSend(
+          event: 'test',
+          payload: {'data': 'test'},
+          timeout: const Duration(milliseconds: 100),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
     });
   });
 }

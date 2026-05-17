@@ -8,6 +8,13 @@ import 'package:async/async.dart';
 
 // One instance manages one isolate
 class YAJsonIsolate {
+  YAJsonIsolate({
+    this.debugName,
+  });
+
+  /// The debug name used for the isolate spawned by this instance.
+  final String? debugName;
+
   final _receivePort = ReceivePort();
   late final SendPort _sendPort;
   final _createdIsolate = Completer<void>();
@@ -26,6 +33,7 @@ class YAJsonIsolate {
       _receivePort.sendPort,
       onExit: _receivePort.sendPort,
       onError: _receivePort.sendPort,
+      debugName: debugName,
     );
     _sendPort = await _events.next;
     _createdIsolate.complete();

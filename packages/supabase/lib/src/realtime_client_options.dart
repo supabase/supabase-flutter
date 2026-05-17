@@ -11,16 +11,20 @@ class RealtimeClientOptions {
       'Client side rate limit has been removed. This option will be ignored.')
   final int? eventsPerSecond;
 
-  /// Level of realtime server logs to to be logged
+  /// Level of realtime server logs to be logged
   final RealtimeLogLevel? logLevel;
 
   /// the timeout to trigger push timeouts
   final Duration? timeout;
+
+  /// Custom WebSocket transport factory for the RealtimeClient.
+  final WebSocketTransport? transport;
 
   /// {@macro realtime_client_options}
   const RealtimeClientOptions({
     this.eventsPerSecond,
     this.logLevel,
     this.timeout,
+    this.transport,
   });
 }

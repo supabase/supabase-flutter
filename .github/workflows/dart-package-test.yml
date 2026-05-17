@@ -1,0 +1,101 @@
+name: Dart Package Test (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      package-name:
+        required: true
+        type: string
+        description: 'The name of the package to test (e.g., gotrue, postgrest)'
+      working-directory:
+        required: true
+        type: string
+        description: 'The working directory for the package (e.g., packages/gotrue)'
+      needs-docker:
+        required: false
+        type: boolean
+        default: false
+        description: 'Whether this package needs Docker services to run tests'
+      docker-compose-dir:
+        required: false
+        type: string
+        description: 'The directory containing docker-compose.yml (e.g., infra/gotrue)'
+      test-concurrency:
+        required: false
+        type: number
+        default: 0
+        description: 'Test concurrency level (0 means no flag, 1 means --concurrency=1)'
+
+jobs:
+  test:
+    name: Test SDK ${{ matrix.sdk }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        sdk: [stable, beta, dev]
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c # v1.7.1
+        with:
+          sdk: ${{ matrix.sdk }}
+
+      - name: Cache pub dependencies
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ matrix.sdk }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-${{ matrix.sdk }}-
+            ${{ runner.os }}-pub-
+
+      - name: Bootstrap workspace
+        run: |
+          cd ../../
+          dart pub global activate melos
+          melos bootstrap --no-flutter
+
+      - name: dartfmt
+        if: ${{ matrix.sdk == 'stable'}}
+        run: dart format lib test -l 80 --set-exit-if-changed
+
+      - name: analyzer
+        if: ${{ matrix.sdk == 'stable'}}
+        run: dart analyze --fatal-warnings .
+
+      - name: Start Docker services
+        if: ${{ inputs.needs-docker }}
+        run: |
+          cd ../../${{ inputs.docker-compose-dir }}
+          docker compose up -d
+
+      - name: Wait for services to be ready
+        if: ${{ inputs.needs-docker }}
+        run: sleep 5
+
+      - name: Run tests
+        run: |
+          if [ "${{ inputs.test-concurrency }}" == "1" ]; then
+            dart test --concurrency=1
+          else
+            dart test
+          fi
+
+      - name: Stop Docker services
+        if: ${{ inputs.needs-docker && always() }}
+        run: |
+          cd ../../${{ inputs.docker-compose-dir }}
+          docker compose down

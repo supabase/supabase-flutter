@@ -53,7 +53,43 @@ class RealtimeCloseEvent {
   }
 }
 
+/// Manages a persistent WebSocket connection to the Supabase Realtime server.
+///
+/// [RealtimeClient] is the central hub for all real-time communication. It owns
+/// the WebSocket lifecycle — opening, closing, and reconnecting with exponential
+/// backoff — and multiplexes multiple [RealtimeChannel] subscriptions over a
+/// single connection.
+///
+/// **Responsibilities:**
+/// - Establishes and maintains the WebSocket connection to [endPoint].
+/// - Sends periodic heartbeat messages to detect stale connections and
+///   reconnects automatically when a heartbeat goes unanswered.
+/// - Encodes outgoing messages and decodes incoming messages (JSON by default).
+/// - Manages a registry of [RealtimeChannel] instances, routing inbound
+///   messages to the correct channel by topic.
+/// - Refreshes the access token and propagates it to all joined channels so
+///   that subscriptions remain authorized across token rotations.
+///
+/// **Key collaborators:**
+/// - [RealtimeChannel] — created via [channel] and registered here; the client
+///   dispatches server messages to each channel by topic.
+/// - `RetryTimer` — drives the reconnect backoff strategy.
+/// - [WebSocketTransport] — injectable transport layer used in tests.
+///
+/// **Lifecycle:**
+/// 1. Construct with an endpoint URL and optional configuration.
+/// 2. Call [connect] to open the WebSocket. The client begins heartbeating
+///    immediately and reconnects on unexpected disconnections.
+/// 3. Create channels with [channel], subscribe to events, and call
+///    `RealtimeChannel.subscribe()` to join server-side topics.
+/// 4. Call [disconnect] when real-time functionality is no longer needed; this
+///    removes all channels and closes the underlying socket.
+///
+/// **Platform notes:**
+/// - Works on all Dart platforms (Flutter mobile/desktop, web, server).
+/// - On web, the underlying [WebSocketChannel] uses the browser WebSocket API.
 class RealtimeClient {
+  // This is named `accessTokenValue` in supabase-js
   String? accessToken;
   List<RealtimeChannel> channels = [];
   final String endPoint;
@@ -64,7 +100,7 @@ class RealtimeClient {
   final WebSocketTransport transport;
   final Client? httpClient;
   final _log = Logger('supabase.realtime');
-  int heartbeatIntervalMs = 30000;
+  int heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs;
   Timer? heartbeatTimer;
 
   /// reference ID of the most recently sent heartbeat.
@@ -87,8 +123,12 @@ class RealtimeClient {
     'error': [],
     'message': []
   };
+
+  @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
   SocketStates? connState;
+  // This is called `accessToken` in realtime-js
+  Future<String?> Function()? customAccessToken;
 
   /// Initializes the Socket
   ///
@@ -110,8 +150,6 @@ class RealtimeClient {
   ///
   /// [decode] The function to decode incoming messages. Defaults to JSON: (payload, callback) => callback(JSON.parse(payload))
   ///
-  /// [longpollerTimeout] The maximum timeout of a long poll AJAX request. Defaults to 20s (double the server long poll timer).
-  ///
   /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
@@ -119,7 +157,7 @@ class RealtimeClient {
     String endPoint, {
     WebSocketTransport? transport,
     this.timeout = Constants.defaultTimeout,
-    this.heartbeatIntervalMs = 30000,
+    this.heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs,
     this.logger,
     RealtimeEncode? encode,
     RealtimeDecode? decode,
@@ -129,6 +167,7 @@ class RealtimeClient {
     this.longpollerTimeout = 20000,
     RealtimeLogLevel? logLevel,
     this.httpClient,
+    this.customAccessToken,
   })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
             .replace(
               queryParameters:
@@ -141,7 +180,7 @@ class RealtimeClient {
         },
         transport = transport ?? createWebSocketClient {
     _log.config(
-        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, longpollerTimeout: $longpollerTimeout, logLevel: $logLevel');
+        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: $logLevel');
     _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
@@ -174,11 +213,16 @@ class RealtimeClient {
       log('transport', 'connecting to $endPointURL', null);
       log('transport', 'connecting', null, Level.FINE);
       connState = SocketStates.connecting;
-      conn = transport(endPointURL, headers);
+      final WebSocketChannel localConn = transport(endPointURL, headers);
+      conn = localConn;
 
       try {
-        await conn!.ready;
+        await localConn.ready;
       } catch (error) {
+        // Bail out if disconnect() ran or a new connect() started during await
+        if (conn != localConn) {
+          return;
+        }
         // Don't schedule a reconnect and emit error if connection has been
         // closed by the user or [disconnect] waits for the connection to be
         // ready before closing it.
@@ -191,11 +235,15 @@ class RealtimeClient {
         return;
       }
 
+      // Guard: bail out if disconnect() ran during the await
+      if (conn != localConn || connState != SocketStates.connecting) {
+        return;
+      }
+
       connState = SocketStates.open;
 
       _onConnOpen();
-      conn!.stream.timeout(Duration(milliseconds: longpollerTimeout));
-      conn!.stream.listen(
+      localConn.stream.listen(
         // incoming messages
         (message) => onConnMessage(message as String),
         onError: _onConnError,
@@ -219,9 +267,14 @@ class RealtimeClient {
     final conn = this.conn;
     if (conn != null) {
       final oldState = connState;
-      connState = SocketStates.disconnecting;
-      log('transport', 'disconnecting', {'code': code, 'reason': reason},
-          Level.FINE);
+      final shouldCloseSink =
+          oldState == SocketStates.open || oldState == SocketStates.connecting;
+      if (shouldCloseSink) {
+        // Don't set the state to `disconnecting` if the connection is already closed.
+        connState = SocketStates.disconnecting;
+        log('transport', 'disconnecting', {'code': code, 'reason': reason},
+            Level.FINE);
+      }
 
       // Connection cannot be closed while it's still connecting. Wait for connection to
       // be ready and then close it.
@@ -229,8 +282,7 @@ class RealtimeClient {
         await conn.ready.catchError((_) {});
       }
 
-      if (oldState == SocketStates.open ||
-          oldState == SocketStates.connecting) {
+      if (shouldCloseSink) {
         if (code != null) {
           await conn.sink.close(code, reason ?? '');
         } else {
@@ -316,13 +368,16 @@ class RealtimeClient {
     }
   }
 
-  /// Retuns `true` is the connection is open.
+  /// Returns `true` is the connection is open.
   bool get isConnected => connState == SocketStates.open;
 
   /// Removes a subscription from the socket.
   @internal
   void remove(RealtimeChannel channel) {
-    channels = channels.where((c) => c.joinRef != channel.joinRef).toList();
+    channels = channels
+        .where((c) => c.joinRef != channel.joinRef)
+        .toList()
+        .cast<RealtimeChannel>();
   }
 
   RealtimeChannel channel(
@@ -403,15 +458,25 @@ class RealtimeClient {
   /// Sets the JWT access token used for channel subscription authorization and Realtime RLS.
   ///
   /// `token` A JWT strings.
-  void setAuth(String? token) {
-    accessToken = token;
+  Future<void> setAuth(String? token) async {
+    final tokenToSend =
+        token ?? (await customAccessToken?.call()) ?? accessToken;
+
+    if (accessToken == tokenToSend) {
+      return;
+    }
+
+    accessToken = tokenToSend;
 
     for (final channel in channels) {
-      if (token != null) {
-        channel.updateJoinPayload({'access_token': token});
+      if (tokenToSend != null) {
+        channel.updateJoinPayload({
+          'access_token': tokenToSend,
+          'version': Constants.defaultHeaders['X-Client-Info'],
+        });
       }
       if (channel.joinedOnce && channel.isJoined) {
-        channel.push(ChannelEvents.accessToken, {'access_token': token});
+        channel.push(ChannelEvents.accessToken, {'access_token': tokenToSend});
       }
     }
   }
@@ -436,7 +501,7 @@ class RealtimeClient {
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
     heartbeatTimer = Timer.periodic(
       Duration(milliseconds: heartbeatIntervalMs),
-      (Timer t) => sendHeartbeat(),
+      (Timer t) async => await sendHeartbeat(),
     );
     for (final callback in stateChangeCallbacks['open']!) {
       callback();
@@ -502,7 +567,7 @@ class RealtimeClient {
   }
 
   @internal
-  void sendHeartbeat() {
+  Future<void> sendHeartbeat() async {
     if (!isConnected) {
       return;
     }
@@ -524,6 +589,6 @@ class RealtimeClient {
       payload: {},
       ref: pendingHeartbeatRef!,
     ));
-    setAuth(accessToken);
+    await setAuth(accessToken);
   }
 }

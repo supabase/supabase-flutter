@@ -1,3 +1,73 @@
+## 2.11.0
+
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+ - **FEAT**: optionally configure stream method to use a private channel ([#1357](https://github.com/supabase/supabase-flutter/issues/1357)). ([9d0de9e8](https://github.com/supabase/supabase-flutter/commit/9d0de9e8b691b9e28f79341dbc50c989ab47c150))
+
+## 2.10.6
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+## 2.10.5
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+## 2.10.4
+
+ - **FIX**(storage): make dedicated storage host opt-in via useNewHostname flag ([#1329](https://github.com/supabase/supabase-flutter/issues/1329)). ([a6640823](https://github.com/supabase/supabase-flutter/commit/a66408231ac3451c7b761425d3609908fa9394bd))
+
+## 2.10.3
+
+ - Update a dependency to the latest release.
+
+## 2.10.2
+
+ - Update a dependency to the latest release.
+
+## 2.10.1
+
+ - Update a dependency to the latest release.
+
+## 2.10.0
+
+ - **FEAT**: add region as forceFunctionRegion query parameter ([#1243](https://github.com/supabase/supabase-flutter/issues/1243)). ([06c35baf](https://github.com/supabase/supabase-flutter/commit/06c35baf9974e87c06c65f7666165ef3c119d087))
+
+## 2.9.2
+
+ - Update a dependency to the latest release.
+
+## 2.9.1
+
+ - **FIX**: Prevent web incompatibility due to import of dart:io ([#1220](https://github.com/supabase/supabase-flutter/issues/1220)). ([3c8d4db6](https://github.com/supabase/supabase-flutter/commit/3c8d4db62aec26835e5d8ff387c4b32c91ce8676))
+
+## 2.9.0
+
+ - **FIX**: Uri encode platform information ([#1196](https://github.com/supabase/supabase-flutter/issues/1196)). ([7fe6b301](https://github.com/supabase/supabase-flutter/commit/7fe6b301414c1f4258f45bf1bd6d9f65bbe465e2))
+ - **FEAT**: Add standard client headers ([#1130](https://github.com/supabase/supabase-flutter/issues/1130)). ([f33c9fe2](https://github.com/supabase/supabase-flutter/commit/f33c9fe2f67fc83d19904a53e0b71e7cec5cee53))
+
+## 2.8.0
+
+ - **FEAT**: Add standard client headers ([#1130](https://github.com/supabase/supabase-flutter/issues/1130)). ([f33c9fe2](https://github.com/supabase/supabase-flutter/commit/f33c9fe2f67fc83d19904a53e0b71e7cec5cee53))
+
+## 2.7.0
+
+ - Require Dart >=3.3.0
+ - **FIX**: Dispose supabase client after flutter web hot-restart ([#1142](https://github.com/supabase/supabase-flutter/issues/1142)). ([ce582e3e](https://github.com/supabase/supabase-flutter/commit/ce582e3ee7e5d9922d5e38554dfe36a97a47d988))
+ - **FEAT**(gotrue,supabase,supabase_flutter,realtime_client): Use web package to access web APIs ([#1135](https://github.com/supabase/supabase-flutter/issues/1135)). ([dfa71c9a](https://github.com/supabase/supabase-flutter/commit/dfa71c9a308b9c51f037f379196ed6f6a9e78f18))
+
+## 2.6.3
+
+ - **FIX**: Allow null to be returned from accessToken function when the user is not signed in ([#1099](https://github.com/supabase/supabase-flutter/issues/1099)). ([d04d9e63](https://github.com/supabase/supabase-flutter/commit/d04d9e63bcc46c2ee71e311b4c3addb216f0f520))
+ - **DOCS**: Fix typos ([#1108](https://github.com/supabase/supabase-flutter/issues/1108)). ([46b483f8](https://github.com/supabase/supabase-flutter/commit/46b483f83a70fb7785ef3bccca6849fa6b07852c))
+
+## 2.6.2
+
+ - Update a dependency to the latest release.
+
+## 2.6.1
+
+ - **FIX**(realtime_client): Prevent sending expired tokens ([#1095](https://github.com/supabase/supabase-flutter/issues/1095)). ([1bb034f0](https://github.com/supabase/supabase-flutter/commit/1bb034f0f82b03d629edc733688c8648cf01e5b9))
+ - **FIX**(realtime_client): Consolidate realtime subscription for stream ([#1096](https://github.com/supabase/supabase-flutter/issues/1096)). ([4e351155](https://github.com/supabase/supabase-flutter/commit/4e3511551cb0d6da673fa5c4187f7ada2a1f8865))
+
 ## 2.6.0
 
  - **FIX**: Support custom access token ([#1073](https://github.com/supabase/supabase-flutter/issues/1073)). ([fc9ad2c9](https://github.com/supabase/supabase-flutter/commit/fc9ad2c94a02921ca8ced4564d9bcd8cde2c2397))

@@ -4,23 +4,36 @@ class AuthMFAEnrollResponse {
   /// ID of the factor that was just enrolled (in an unverified state).
   final String id;
 
-  /// Type of MFA factor. Only `[FactorType.totp] supported for now.
+  /// Type of MFA factor. Supports both `[FactorType.totp]` and `[FactorType.phone]`.
   final FactorType type;
 
-  /// TOTP enrollment information.
-  final TOTPEnrollment totp;
+  /// TOTP enrollment information (only present when type is totp).
+  final TOTPEnrollment? totp;
+
+  /// Phone enrollment information (only present when type is phone).
+  final PhoneEnrollment? phone;
 
   const AuthMFAEnrollResponse({
     required this.id,
     required this.type,
-    required this.totp,
+    this.totp,
+    this.phone,
   });
 
   factory AuthMFAEnrollResponse.fromJson(Map<String, dynamic> json) {
+    final type = FactorType.values.firstWhere(
+      (e) => e.name == json['type'],
+      orElse: () => FactorType.unknown,
+    );
     return AuthMFAEnrollResponse(
-      id: json['id'],
-      type: FactorType.values.firstWhere((e) => e.name == json['type']),
-      totp: TOTPEnrollment.fromJson(json['totp']),
+      id: json['id'] as String,
+      type: type,
+      totp: type == FactorType.totp && json['totp'] != null
+          ? TOTPEnrollment.fromJson(json['totp'] as Map<String, dynamic>)
+          : null,
+      phone: type == FactorType.phone && json['phone'] != null
+          ? PhoneEnrollment._fromJsonValue(json['phone'])
+          : null,
     );
   }
 }
@@ -47,10 +60,38 @@ class TOTPEnrollment {
 
   factory TOTPEnrollment.fromJson(Map<String, dynamic> json) {
     return TOTPEnrollment(
-      qrCode: json['qr_code'],
-      secret: json['secret'],
-      uri: json['uri'],
+      qrCode: json['qr_code'] as String,
+      secret: json['secret'] as String,
+      uri: json['uri'] as String,
     );
+  }
+}
+
+class PhoneEnrollment {
+  /// The phone number that will receive the SMS OTP.
+  final String phone;
+
+  const PhoneEnrollment({
+    required this.phone,
+  });
+
+  factory PhoneEnrollment.fromJson(Map<String, dynamic> json) {
+    return PhoneEnrollment(
+      phone: json['phone'] as String,
+    );
+  }
+
+  factory PhoneEnrollment._fromJsonValue(dynamic value) {
+    if (value is String) {
+      // Server returns phone number as a string directly
+      return PhoneEnrollment(phone: value);
+    } else if (value is Map<String, dynamic>) {
+      // Server returns phone data as an object
+      return PhoneEnrollment.fromJson(value);
+    } else {
+      throw ArgumentError(
+          'Invalid phone enrollment data type: ${value.runtimeType}');
+    }
   }
 }
 
@@ -64,9 +105,17 @@ class AuthMFAChallengeResponse {
   const AuthMFAChallengeResponse({required this.id, required this.expiresAt});
 
   factory AuthMFAChallengeResponse.fromJson(Map<String, dynamic> json) {
+    final expiresAtValue = json['expires_at'];
+    if (expiresAtValue is! num) {
+      throw FormatException(
+        'Expected expires_at to be a number, got ${expiresAtValue.runtimeType}',
+        json.toString(),
+      );
+    }
+    final expiresAt = expiresAtValue.toInt();
     return AuthMFAChallengeResponse(
-      id: json['id'],
-      expiresAt: DateTime.fromMillisecondsSinceEpoch(json['expires_at'] * 1000),
+      id: json['id'] as String,
+      expiresAt: DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000),
     );
   }
 }
@@ -96,12 +145,34 @@ class AuthMFAVerifyResponse {
   });
 
   factory AuthMFAVerifyResponse.fromJson(Map<String, dynamic> json) {
+    final expiresInValue = json['expires_in'];
+    if (expiresInValue is! num) {
+      throw FormatException(
+        'Expected expires_in to be a number, got ${expiresInValue.runtimeType}',
+        json.toString(),
+      );
+    }
+    final expiresIn = expiresInValue.toInt();
+    final userJson = json['user'];
+    if (userJson is! Map<String, dynamic>) {
+      throw FormatException(
+        'Expected user to be an object, got ${userJson.runtimeType}',
+        json.toString(),
+      );
+    }
+    final user = User.fromJson(userJson);
+    if (user == null) {
+      throw FormatException(
+        'Failed to parse user object: missing required fields',
+        json.toString(),
+      );
+    }
     return AuthMFAVerifyResponse(
-      accessToken: json['access_token'],
-      tokenType: json['token_type'],
-      expiresIn: Duration(seconds: json['expires_in']),
-      refreshToken: json['refresh_token'],
-      user: User.fromJson(json['user'])!,
+      accessToken: json['access_token'] as String,
+      tokenType: json['token_type'] as String,
+      expiresIn: Duration(seconds: expiresIn),
+      refreshToken: json['refresh_token'] as String,
+      user: user,
     );
   }
 }
@@ -113,15 +184,20 @@ class AuthMFAUnenrollResponse {
   const AuthMFAUnenrollResponse({required this.id});
 
   factory AuthMFAUnenrollResponse.fromJson(Map<String, dynamic> json) {
-    return AuthMFAUnenrollResponse(id: json['id']);
+    return AuthMFAUnenrollResponse(id: json['id'] as String);
   }
 }
 
 class AuthMFAListFactorsResponse {
   final List<Factor> all;
   final List<Factor> totp;
+  final List<Factor> phone;
 
-  AuthMFAListFactorsResponse({required this.all, required this.totp});
+  AuthMFAListFactorsResponse({
+    required this.all,
+    required this.totp,
+    required this.phone,
+  });
 }
 
 class AuthMFAAdminListFactorsResponse {
@@ -131,9 +207,17 @@ class AuthMFAAdminListFactorsResponse {
   const AuthMFAAdminListFactorsResponse({required this.factors});
 
   factory AuthMFAAdminListFactorsResponse.fromJson(Map<String, dynamic> json) {
+    final factorsList = json['factors'];
+    if (factorsList is! List) {
+      throw FormatException(
+        'Expected factors to be a list, got ${factorsList.runtimeType}',
+        json.toString(),
+      );
+    }
     return AuthMFAAdminListFactorsResponse(
-      factors:
-          (json['factors'] as List).map((e) => Factor.fromJson(e)).toList(),
+      factors: factorsList
+          .map((e) => Factor.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }
@@ -145,13 +229,27 @@ class AuthMFAAdminDeleteFactorResponse {
   const AuthMFAAdminDeleteFactorResponse({required this.id});
 
   factory AuthMFAAdminDeleteFactorResponse.fromJson(Map<String, dynamic> json) {
-    return AuthMFAAdminDeleteFactorResponse(id: json['id']);
+    return AuthMFAAdminDeleteFactorResponse(id: json['id'] as String);
   }
 }
 
-enum FactorStatus { verified, unverified }
+enum FactorStatus {
+  verified,
+  unverified,
 
-enum FactorType { totp }
+  /// Returned when the backend sends an unknown status value.
+  /// This allows forward compatibility with new status types.
+  unknown,
+}
+
+enum FactorType {
+  totp,
+  phone,
+
+  /// Returned when the backend sends an unknown factor type.
+  /// This allows forward compatibility with new factor types.
+  unknown,
+}
 
 class Factor {
   /// ID of the factor.
@@ -160,7 +258,7 @@ class Factor {
   /// Friendly name of the factor, useful to disambiguate between multiple factors.
   final String? friendlyName;
 
-  /// Type of factor. Only `totp` supported with this version but may change in future versions.
+  /// Type of factor. Supports both `totp` and `phone`.
   final FactorType factorType;
 
   /// Factor's status.
@@ -179,17 +277,37 @@ class Factor {
   });
 
   factory Factor.fromJson(Map<String, dynamic> json) {
+    DateTime parseDateTime(String key) {
+      final value = json[key];
+      if (value is! String) {
+        throw FormatException(
+          'Expected $key to be a string, got ${value.runtimeType}',
+          json.toString(),
+        );
+      }
+      try {
+        return DateTime.parse(value);
+      } on FormatException {
+        throw FormatException(
+          'Invalid date format for $key: $value',
+          json.toString(),
+        );
+      }
+    }
+
     return Factor(
-      id: json['id'],
-      friendlyName: json['friendly_name'],
+      id: json['id'] as String,
+      friendlyName: json['friendly_name'] as String?,
       factorType: FactorType.values.firstWhere(
         (e) => e.name == json['factor_type'],
+        orElse: () => FactorType.unknown,
       ),
       status: FactorStatus.values.firstWhere(
         (e) => e.name == json['status'],
+        orElse: () => FactorStatus.unknown,
       ),
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: parseDateTime('created_at'),
+      updatedAt: parseDateTime('updated_at'),
     );
   }
 
@@ -294,12 +412,20 @@ class AMREntry {
   const AMREntry({required this.method, required this.timestamp});
 
   factory AMREntry.fromJson(Map<String, dynamic> json) {
+    final timestampValue = json['timestamp'];
+    if (timestampValue is! num) {
+      throw FormatException(
+        'Expected timestamp to be a number, got ${timestampValue.runtimeType}',
+        json.toString(),
+      );
+    }
+    final timestamp = timestampValue.toInt();
     return AMREntry(
       method: AMRMethod.values.firstWhere(
         (e) => e.code == json['method'],
         orElse: () => AMRMethod.unknown,
       ),
-      timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
     );
   }
 }

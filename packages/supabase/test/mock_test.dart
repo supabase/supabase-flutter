@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -21,6 +23,7 @@ void main() {
   Future<void> handleRequests(
     HttpServer server, {
     String? expectedFilter,
+    bool? expectedPrivate,
   }) async {
     await for (final HttpRequest request in server) {
       final headers = request.headers;
@@ -111,8 +114,9 @@ void main() {
           final requestJson = jsonDecode(request);
           final topic = requestJson['topic'];
           final ref = requestJson["ref"];
+          final event = requestJson['event'];
 
-          if (requestJson["event"] == "phx_leave") {
+          if (event == 'phx_leave') {
             listeners.remove(topic);
             return;
           }
@@ -124,9 +128,14 @@ void main() {
           final String? realtimeFilter = requestJson['payload']['config']
                   ['postgres_changes']
               .first['filter'];
+          final bool isPrivate =
+              requestJson['payload']['config']['private'] as bool;
 
           if (expectedFilter != null) {
             expect(realtimeFilter, expectedFilter);
+          }
+          if (expectedPrivate != null) {
+            expect(isPrivate, expectedPrivate);
           }
 
           final replyString = jsonEncode({
@@ -136,25 +145,11 @@ void main() {
                 'postgres_changes': [
                   {
                     'id': 77086988,
-                    'event': 'INSERT',
+                    'event': '*',
                     'schema': 'public',
                     'table': 'todos',
                     if (realtimeFilter != null) 'filter': realtimeFilter,
                   },
-                  {
-                    'id': 25993878,
-                    'event': 'UPDATE',
-                    'schema': 'public',
-                    'table': 'todos',
-                    if (realtimeFilter != null) 'filter': realtimeFilter,
-                  },
-                  {
-                    'id': 48673474,
-                    'event': 'DELETE',
-                    'schema': 'public',
-                    'table': 'todos',
-                    if (realtimeFilter != null) 'filter': realtimeFilter,
-                  }
                 ]
               },
               'status': 'ok'
@@ -208,7 +203,7 @@ void main() {
             'ref': null,
             'event': 'postgres_changes',
             'payload': {
-              'ids': [25993878],
+              'ids': [77086988],
               'data': {
                 'columns': [
                   {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
@@ -257,7 +252,7 @@ void main() {
                 'type': 'DELETE',
                 if (realtimeFilter != null) 'filter': realtimeFilter,
               },
-              'ids': [48673474]
+              'ids': [77086988]
             },
           });
           webSocket!.add(deleteString);
@@ -271,7 +266,7 @@ void main() {
             'ref': null,
             'event': 'postgres_changes',
             'payload': {
-              'ids': [25993878],
+              'ids': [77086988],
               'data': {
                 'columns': [
                   {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
@@ -321,7 +316,7 @@ void main() {
                 'type': 'DELETE',
                 if (realtimeFilter != null) 'filter': realtimeFilter,
               },
-              'ids': [48673474]
+              'ids': [77086988]
             },
           });
           webSocket!.add(ignoredDeleteString);
@@ -691,6 +686,139 @@ void main() {
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).lte('id', 2);
       expect(stream, emits(isList));
+    });
+  });
+
+  group('stream() channel config', () {
+    test('forwards channelConfig.private=true to realtime join payload', () {
+      handleRequests(mockServer, expectedPrivate: true);
+
+      final stream =
+          supabase.from('todos').stream(primaryKey: ['id'], private: true);
+
+      expect(stream, emits(isList));
+    });
+
+    test('uses default private=false when channelConfig is omitted', () {
+      handleRequests(mockServer, expectedPrivate: false);
+
+      final stream = supabase.from('todos').stream(primaryKey: ['id']);
+
+      expect(stream, emits(isList));
+    });
+  });
+
+  group('Deprecated execute method', () {
+    test('should work with deprecated execute method', () {
+      handleRequests(mockServer);
+      final streamBuilder = supabase.from('todos').stream(primaryKey: ['id']);
+      final stream = streamBuilder.execute();
+      expect(stream, emits(isList));
+    });
+  });
+
+  group('Error Handling', () {
+    group('RealtimeSubscribeException', () {
+      test('should create exception with status only', () {
+        final exception =
+            RealtimeSubscribeException(RealtimeSubscribeStatus.timedOut);
+
+        expect(exception.status, RealtimeSubscribeStatus.timedOut);
+        expect(exception.details, isNull);
+        expect(exception.toString(), contains('timedOut'));
+      });
+
+      test('should create exception with status and details', () {
+        final exception = RealtimeSubscribeException(
+            RealtimeSubscribeStatus.channelError, 'Connection failed');
+
+        expect(exception.status, RealtimeSubscribeStatus.channelError);
+        expect(exception.details, 'Connection failed');
+        expect(exception.toString(), contains('channelError'));
+        expect(exception.toString(), contains('Connection failed'));
+      });
+    });
+
+    group('Stream Error Handling', () {
+      test('should handle postgrest errors gracefully', () async {
+        final errorServer = await HttpServer.bind('localhost', 0);
+
+        // Setup server to return error for rest requests
+        errorServer.listen((request) {
+          if (request.uri.path.contains('/rest/')) {
+            request.response
+              ..statusCode = HttpStatus.unauthorized
+              ..headers.contentType = ContentType.json
+              ..write('{"error": "Unauthorized"}')
+              ..close();
+          } else {
+            request.response
+              ..statusCode = HttpStatus.ok
+              ..close();
+          }
+        });
+
+        final errorClient = SupabaseClient(
+          'http://${errorServer.address.host}:${errorServer.port}',
+          'test-key',
+          headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+        );
+
+        final stream = errorClient.from('todos').stream(primaryKey: ['id']);
+
+        bool errorReceived = false;
+        final completer = Completer<void>();
+
+        final subscription = stream.listen(
+          (_) {},
+          onError: (error) {
+            errorReceived = true;
+            completer.complete();
+          },
+        );
+
+        await completer.future.timeout(Duration(seconds: 5));
+        expect(errorReceived, isTrue);
+
+        await subscription.cancel();
+        await errorClient.dispose();
+        await errorServer.close();
+      });
+
+      test('should handle access token retrieval errors', () async {
+        final clientWithFailingToken = SupabaseClient(
+          'http://${mockServer.address.host}:${mockServer.port}',
+          'test-key',
+          accessToken: () async {
+            throw Exception('Token retrieval failed');
+          },
+          headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+        );
+
+        // Should handle token errors gracefully
+        expect(
+          () async => await clientWithFailingToken.from('test').select(),
+          throwsA(isA<Exception>()),
+        );
+
+        await clientWithFailingToken.dispose();
+      });
+    });
+
+    group('Dispose Error Handling', () {
+      test('should handle dispose errors gracefully', () async {
+        final client = SupabaseClient(
+          'http://${mockServer.address.host}:${mockServer.port}',
+          'test-key',
+          headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+        );
+
+        // First dispose should succeed
+        await client.dispose();
+
+        // Operations after dispose should not throw
+        expect(() => client.from('test'), returnsNormally);
+      });
     });
   });
 }

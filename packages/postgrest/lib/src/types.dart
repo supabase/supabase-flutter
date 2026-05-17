@@ -59,11 +59,19 @@ class PostgrestResponse<T> {
 
   final int count;
 
-  factory PostgrestResponse.fromJson(Map<String, dynamic> json) =>
-      PostgrestResponse<T>(
-        data: json['data'] as T,
-        count: json['count'] as int,
+  factory PostgrestResponse.fromJson(Map<String, dynamic> json) {
+    final countValue = json['count'];
+    if (countValue is! num) {
+      throw FormatException(
+        'Expected count to be a number, got ${countValue.runtimeType}',
+        json.toString(),
       );
+    }
+    return PostgrestResponse<T>(
+      data: json['data'] as T,
+      count: countValue.toInt(),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'data': data,
@@ -88,11 +96,14 @@ enum CountOption {
   estimated,
 }
 
+// coverage:ignore-[start]
 /// Returns count as part of the response when specified.
+@Deprecated('Not used anywhere. Will be removed in the next major version.')
 enum ReturningOption {
   minimal,
   representation,
 }
+// coverage:ignore-[end]
 
 /// The type of tsquery conversion to use on [query].
 enum TextSearchType {

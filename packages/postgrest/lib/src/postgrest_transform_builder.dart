@@ -7,6 +7,11 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       PostgrestTransformBuilder(_copyWith(url: url));
 
   @override
+  PostgrestTransformBuilder<T> retry({required bool enabled}) {
+    return PostgrestTransformBuilder(_copyWith(retryEnabled: enabled));
+  }
+
+  @override
   PostgrestTransformBuilder<T> setHeader(String key, String value) {
     return PostgrestTransformBuilder(
       _copyWith(headers: {..._headers, key: value}),
@@ -164,7 +169,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
     final newHeaders = {..._headers};
 
-    if (_method?.toUpperCase() == 'GET') {
+    if (_method == _HttpMethod.get) {
       newHeaders['Accept'] = 'application/json';
     } else {
       newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
@@ -230,7 +235,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// supabase.rpc("function").head();
   ///```
   PostgrestBuilder<void, void, void> head() {
-    return _copyWithType(method: METHOD_HEAD);
+    return _copyWithType(method: _HttpMethod.head);
   }
 
   /// Enables support for GeoJSON for use with PostGIS data types
@@ -244,6 +249,38 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'application/geo+json;';
     return ResponsePostgrestBuilder(_copyWithType(headers: newHeaders));
+  }
+
+  /// Sets the maximum number of rows that can be affected by the query.
+  ///
+  /// Only available with PATCH and DELETE operations. Requires PostgREST v13 or higher.
+  /// When the limit is exceeded, the query will fail with an error.
+  ///
+  /// ```dart
+  /// supabase.from('users').update({'active': false}).eq('status', 'inactive').maxAffected(5);
+  /// ```
+  ///
+  /// ```dart
+  /// supabase.from('users').delete().eq('active', false).maxAffected(10);
+  /// ```
+  PostgrestTransformBuilder<T> maxAffected(int value) {
+    final newHeaders = {..._headers};
+
+    // Add handling=strict and max-affected headers
+    if (newHeaders['Prefer'] != null) {
+      var preferHeader = newHeaders['Prefer']!;
+      if (!preferHeader.contains('handling=strict')) {
+        preferHeader += ',handling=strict';
+      }
+      if (!preferHeader.contains('max-affected=')) {
+        preferHeader += ',max-affected=$value';
+      }
+      newHeaders['Prefer'] = preferHeader;
+    } else {
+      newHeaders['Prefer'] = 'handling=strict,max-affected=$value';
+    }
+
+    return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
   }
 
   /// Obtains the EXPLAIN plan for this request.

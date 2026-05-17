@@ -5,14 +5,14 @@ class Message {
   final String topic;
   final ChannelEvents event;
   final dynamic payload;
-  final String ref;
+  final String? ref;
   final String? joinRef;
 
   Message({
     required this.topic,
     required this.event,
     required this.payload,
-    required this.ref,
+    this.ref,
     this.joinRef,
   });
 
@@ -48,7 +48,7 @@ class Message {
       'event':
           event != ChannelEvents.heartbeat ? event.eventName() : 'heartbeat',
       'payload': processedPayload,
-      'ref': ref,
+      if (ref != null) 'ref': ref,
       if (joinRef != null) 'join_ref': joinRef,
     };
   }

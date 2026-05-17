@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
-  await Supabase.initialize(url: 'SUPABASE_URL', anonKey: 'SUPABASE_ANON_KEY');
+  await Supabase.initialize(
+      url: 'SUPABASE_URL', publishableKey: 'SUPABASE_PUBLISHABLE_KEY');
   runApp(const MyApp());
 }
 
@@ -37,11 +38,18 @@ class _MyWidgetState extends State<MyWidget> {
     setState(() {
       _user = Supabase.instance.client.auth.currentUser;
     });
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      setState(() {
-        _user = data.session?.user;
-      });
-    });
+    Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        setState(() {
+          _user = data.session?.user;
+        });
+      },
+      onError: (error, stackTrace) {
+        // Network errors (e.g. offline) are emitted as stream errors.
+        // Handle or log them here; omitting this handler causes an unhandled
+        // exception when the device has no connectivity.
+      },
+    );
   }
 
   @override
@@ -98,6 +106,8 @@ class _LoginFormState extends State<_LoginForm> {
                   setState(() {
                     _loading = true;
                   });
+                  final ScaffoldMessengerState scaffoldMessenger =
+                      ScaffoldMessenger.of(context);
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
@@ -106,7 +116,7 @@ class _LoginFormState extends State<_LoginForm> {
                       password: password,
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    scaffoldMessenger.showSnackBar(const SnackBar(
                       content: Text('Login failed'),
                       backgroundColor: Colors.red,
                     ));
@@ -123,6 +133,8 @@ class _LoginFormState extends State<_LoginForm> {
                   setState(() {
                     _loading = true;
                   });
+                  final ScaffoldMessengerState scaffoldMessenger =
+                      ScaffoldMessenger.of(context);
                   try {
                     final email = _emailController.text;
                     final password = _passwordController.text;
@@ -131,7 +143,7 @@ class _LoginFormState extends State<_LoginForm> {
                       password: password,
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    scaffoldMessenger.showSnackBar(const SnackBar(
                       content: Text('Signup failed'),
                       backgroundColor: Colors.red,
                     ));
@@ -173,6 +185,8 @@ class _ProfileFormState extends State<_ProfileForm> {
   }
 
   Future<void> _loadProfile() async {
+    final ScaffoldMessengerState scaffoldMessenger =
+        ScaffoldMessenger.of(context);
     try {
       final userId = Supabase.instance.client.auth.currentUser!.id;
       final data = (await Supabase.instance.client
@@ -186,7 +200,7 @@ class _ProfileFormState extends State<_ProfileForm> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      scaffoldMessenger.showSnackBar(const SnackBar(
         content: Text('Error occurred while getting profile'),
         backgroundColor: Colors.red,
       ));
@@ -219,6 +233,8 @@ class _ProfileFormState extends State<_ProfileForm> {
               const SizedBox(height: 16),
               ElevatedButton(
                   onPressed: () async {
+                    final ScaffoldMessengerState scaffoldMessenger =
+                        ScaffoldMessenger.of(context);
                     try {
                       setState(() {
                         _loading = true;
@@ -233,13 +249,12 @@ class _ProfileFormState extends State<_ProfileForm> {
                         'website': website,
                       });
                       if (mounted) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
+                        scaffoldMessenger.showSnackBar(const SnackBar(
                           content: Text('Saved profile'),
                         ));
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      scaffoldMessenger.showSnackBar(const SnackBar(
                         content: Text('Error saving profile'),
                         backgroundColor: Colors.red,
                       ));

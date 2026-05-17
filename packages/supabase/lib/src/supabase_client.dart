@@ -15,6 +15,8 @@ import 'counter.dart';
 /// Creates a Supabase client to interact with your Supabase instance.
 ///
 /// [supabaseUrl] and [supabaseKey] can be found on your Supabase dashboard.
+/// Pass the `publishable` (anon) key for client-side usage or the `secret`
+/// key for trusted server-side environments.
 ///
 /// Default headers can be overridden by specifying [headers].
 ///
@@ -39,6 +41,7 @@ import 'counter.dart';
 class SupabaseClient {
   final String _supabaseKey;
   final PostgrestClientOptions _postgrestOptions;
+  final FunctionsClientOptions _functionsOptions;
 
   final String _restUrl;
   final String _realtimeUrl;
@@ -60,7 +63,8 @@ class SupabaseClient {
   late final PostgrestClient rest;
   StreamSubscription<AuthState>? _authStateSubscription;
   late final YAJsonIsolate _isolate;
-  final Future<String> Function()? accessToken;
+  late final bool _hasCustomIsolate;
+  final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each stream
   final _incrementId = Counter();
@@ -116,12 +120,14 @@ class SupabaseClient {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     AuthClientOptions authOptions = const AuthClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
+    FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
     YAJsonIsolate? isolate,
   })  : _supabaseKey = supabaseKey,
+        _functionsOptions = functionsOptions,
         _restUrl = '$supabaseUrl/rest/v1',
         _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
         _authUrl = '$supabaseUrl/auth/v1',
@@ -133,13 +139,15 @@ class SupabaseClient {
           if (headers != null) ...headers
         },
         _httpClient = httpClient,
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()) {
+        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+        _hasCustomIsolate = isolate != null {
     _authInstance = _initSupabaseAuthClient(authOptions: authOptions);
     _authHttpClient =
         AuthHttpClient(_supabaseKey, httpClient ?? Client(), _getAccessToken);
     rest = _initRestClient();
     functions = _initFunctionsClient();
-    storage = _initStorageClient(storageOptions.retryAttempts);
+    storage = _initStorageClient(
+        storageOptions.retryAttempts, storageOptions.useNewHostname);
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
       _log.config(
@@ -261,8 +269,11 @@ class SupabaseClient {
 
   Future<void> dispose() async {
     _log.fine('Dispose SupabaseClient');
+    await realtime.disconnect();
     await _authStateSubscription?.cancel();
-    await _isolate.dispose();
+    if (!_hasCustomIsolate) {
+      await _isolate.dispose();
+    }
     _authInstance?.dispose();
   }
 
@@ -300,15 +311,18 @@ class SupabaseClient {
       {...headers},
       httpClient: _authHttpClient,
       isolate: _isolate,
+      region: _functionsOptions.region,
     );
   }
 
-  SupabaseStorageClient _initStorageClient(int storageRetryAttempts) {
+  SupabaseStorageClient _initStorageClient(
+      int storageRetryAttempts, bool useNewHostname) {
     return SupabaseStorageClient(
       _storageUrl,
       {...headers},
       httpClient: _authHttpClient,
       retryAttempts: storageRetryAttempts,
+      useNewHostname: useNewHostname,
     );
   }
 
@@ -324,6 +338,8 @@ class SupabaseClient {
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
+      customAccessToken: accessToken,
+      transport: options.transport,
     );
   }
 
@@ -341,22 +357,32 @@ class SupabaseClient {
   void _listenForAuthEvents() {
     // ignore: invalid_use_of_internal_member
     _authStateSubscription = auth.onAuthStateChangeSync.listen(
-      (data) {
-        _handleTokenChanged(data.event, data.session?.accessToken);
+      (data) async {
+        await _handleTokenChanged(data.event, data.session?.accessToken);
       },
       onError: (error, stack) {},
     );
   }
 
-  void _handleTokenChanged(AuthChangeEvent event, String? token) {
+  Future<void> _handleTokenChanged(AuthChangeEvent event, String? token) async {
     if (event == AuthChangeEvent.initialSession ||
         event == AuthChangeEvent.tokenRefreshed ||
         event == AuthChangeEvent.signedIn) {
-      realtime.setAuth(token);
+      try {
+        await realtime.setAuth(token);
+      } on FormatException catch (e) {
+        if (e.message.contains('InvalidJWTToken')) {
+          // The exception is thrown by RealtimeClient when the token is
+          // expired for example on app launch after the app has been closed
+          // for a while.
+        } else {
+          rethrow;
+        }
+      }
     } else if (event == AuthChangeEvent.signedOut) {
       // Token is removed
 
-      realtime.setAuth(_supabaseKey);
+      await realtime.setAuth(_supabaseKey);
     }
   }
 }

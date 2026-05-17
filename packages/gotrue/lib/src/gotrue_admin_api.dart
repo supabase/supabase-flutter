@@ -1,10 +1,12 @@
 import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/fetch.dart';
+import 'package:gotrue/src/helper.dart';
 import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 
 import 'gotrue_admin_mfa_api.dart';
+import 'gotrue_admin_oauth_api.dart';
 
 class GoTrueAdminApi {
   final String _url;
@@ -14,6 +16,10 @@ class GoTrueAdminApi {
   late final GotrueFetch _fetch = GotrueFetch(_httpClient);
   late final GoTrueAdminMFAApi mfa;
 
+  /// Contains all OAuth client administration methods.
+  /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+  late final GoTrueAdminOAuthApi oauth;
+
   GoTrueAdminApi(
     this._url, {
     Map<String, String>? headers,
@@ -21,6 +27,11 @@ class GoTrueAdminApi {
   })  : _headers = headers ?? {},
         _httpClient = httpClient {
     mfa = GoTrueAdminMFAApi(
+      url: _url,
+      headers: _headers,
+      fetch: _fetch,
+    );
+    oauth = GoTrueAdminOAuthApi(
       url: _url,
       headers: _headers,
       fetch: _fetch,
@@ -48,7 +59,7 @@ class GoTrueAdminApi {
 
   /// Creates a new user.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key on the client.
+  /// This function should only be called on a server. Never expose your `secret` key on the client.
   ///
   /// Requires either an email or phone
   Future<UserResponse> createUser(AdminUserAttributes attributes) async {
@@ -64,12 +75,13 @@ class GoTrueAdminApi {
     return UserResponse.fromJson(response);
   }
 
-  /// Delete a user. Requires a `service_role` key.
+  /// Delete a user. Requires a `secret` key.
   ///
   ///  [id] is the user id of the user you want to remove.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key on the client.
+  /// This function should only be called on a server. Never expose your `secret` key on the client.
   Future<void> deleteUser(String id) async {
+    validateUuid(id);
     final options = GotrueRequestOptions(headers: _headers);
     await _fetch.request(
       '$_url/admin/users/$id',
@@ -80,7 +92,7 @@ class GoTrueAdminApi {
 
   /// Get a list of users.
   ///
-  /// This function should only be called on a server. Never expose your `service_role` key on the client.
+  /// This function should only be called on a server. Never expose your `secret` key on the client.
   ///
   /// The result is paginated. Use the [page] and [perPage] parameters to paginate the result.
   Future<List<User>> listUsers({int? page, int? perPage}) async {
@@ -173,6 +185,7 @@ class GoTrueAdminApi {
 
   /// Gets the user by their id.
   Future<UserResponse> getUserById(String uid) async {
+    validateUuid(uid);
     final options = GotrueRequestOptions(headers: _headers);
     final response = await _fetch.request(
       '$_url/admin/users/$uid',
@@ -187,6 +200,7 @@ class GoTrueAdminApi {
     String uid, {
     required AdminUserAttributes attributes,
   }) async {
+    validateUuid(uid);
     final body = attributes.toJson();
     final options = GotrueRequestOptions(headers: _headers, body: body);
     final response = await _fetch.request(

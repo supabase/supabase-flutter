@@ -27,7 +27,7 @@ void main() async {
 
   await Supabase.initialize(
     url: SUPABASE_URL,
-    anonKey: SUPABASE_ANON_KEY,
+    publishableKey: SUPABASE_KEY,
   );
 
   runApp(MyApp());
@@ -136,6 +136,8 @@ Once you have registered your app and created the client IDs, add the web client
 
 At this point you can perform native Google sign in using the following code. Be sure to replace the `webClientId` and `iosClientId` with your own.
 
+The following example is very basic. Please refer to the [google_sign_in](https://pub.dev/packages/google_sign_in) package for the correct details.
+
 ```dart
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -156,18 +158,19 @@ Future<AuthResponse> _googleSignIn() async {
   // Google sign in on Android will work without providing the Android
   // Client ID registered on Google Cloud.
 
-  final GoogleSignIn googleSignIn = GoogleSignIn(
-    clientId: iosClientId,
-    serverClientId: webClientId,
-  );
-  final googleUser = await googleSignIn.signIn();
-  final googleAuth = await googleUser!.authentication;
-  final accessToken = googleAuth.accessToken;
-  final idToken = googleAuth.idToken;
+  final GoogleSignIn signIn = GoogleSignIn.instance;
 
-  if (accessToken == null) {
-    throw 'No Access Token found.';
-  }
+  // At the start of your app, initialize the GoogleSignIn instance
+  unawaited(
+    signIn.initialize(clientId: iosClientId, serverClientId: webClientId));
+
+  // Perform the sign in
+  final googleAccount = await signIn.authenticate();
+  final googleAuthorization = await googleAccount.authorizationClient.authorizationForScopes([]);
+  final googleAuthentication = googleAccount!.authentication;
+  final idToken = googleAuthentication.idToken;
+  final accessToken = googleAuthorization.accessToken;
+
   if (idToken == null) {
     throw 'No ID Token found.';
   }
@@ -183,7 +186,7 @@ Future<AuthResponse> _googleSignIn() async {
 
 ### <a id="oauth-login"></a>OAuth login
 
-For providers other than Apple or Google, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
+The `signInWithIdToken()` method supports providers like Apple, Google, Facebook, Kakao, and Keycloak. For other providers, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
 
 Use the `redirectTo` parameter to redirect the user to a deep link to bring the user back to the app. Learn more about setting up deep links in [Deep link config](#deep-link-config).
 

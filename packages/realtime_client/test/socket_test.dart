@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
@@ -16,6 +18,31 @@ typedef WebSocketChannelClosure = WebSocketChannel Function(
   Map<String, String> headers,
 );
 
+/// Generate a JWT token for testing purposes
+///
+/// [exp] in seconds since Epoch
+String generateJwt([int? exp]) {
+  final header = {'alg': 'HS256', 'typ': 'JWT'};
+
+  final now = DateTime.now();
+  final expiry = exp ??
+      (now.add(Duration(hours: 1)).millisecondsSinceEpoch / 1000).floor();
+
+  final payload = {'exp': expiry};
+
+  final key = 'your-256-bit-secret';
+
+  final encodedHeader = base64Url.encode(utf8.encode(json.encode(header)));
+  final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
+
+  final signatureInput = '$encodedHeader.$encodedPayload';
+  final hmac = Hmac(sha256, utf8.encode(key));
+  final digest = hmac.convert(utf8.encode(signatureInput));
+  final signature = base64Url.encode(digest.bytes);
+
+  return '$encodedHeader.$encodedPayload.$signature';
+}
+
 void main() {
   const int int64MaxValue = 9223372036854775807;
 
@@ -25,11 +52,15 @@ void main() {
 
   setUp(() async {
     mockServer = await HttpServer.bind('localhost', 0);
+    WebSocketChannel? channel;
+
     mockServer.transform(WebSocketTransformer()).listen((webSocket) {
-      final channel = IOWebSocketChannel(webSocket);
-      channel.stream.listen((request) {
-        channel.sink.add(request);
+      channel = IOWebSocketChannel(webSocket);
+      channel!.stream.listen((request) {
+        channel!.sink.add(request);
       });
+    }, onDone: () {
+      channel?.sink.close();
     });
   });
 
@@ -52,8 +83,7 @@ void main() {
         'message': [],
       });
       expect(socket.timeout, const Duration(milliseconds: 10000));
-      expect(socket.longpollerTimeout, 20000);
-      expect(socket.heartbeatIntervalMs, 30000);
+      expect(socket.heartbeatIntervalMs, Constants.defaultHeartbeatIntervalMs);
       expect(
         socket.logger is void Function(
           String? kind,
@@ -73,7 +103,6 @@ void main() {
       final socket = RealtimeClient(
         'wss://example.com/socket',
         timeout: const Duration(milliseconds: 40000),
-        longpollerTimeout: 50000,
         heartbeatIntervalMs: 60000,
         // ignore: avoid_print
         logger: (kind, msg, data) => print('[$kind] $msg $data'),
@@ -90,7 +119,6 @@ void main() {
         'message': [],
       });
       expect(socket.timeout, const Duration(milliseconds: 40000));
-      expect(socket.longpollerTimeout, 50000);
       expect(socket.heartbeatIntervalMs, 60000);
       expect(
         socket.logger is void Function(
@@ -147,10 +175,14 @@ void main() {
       socket.disconnect();
     });
 
-    test('establishes websocket connection with endpoint', () {
-      socket.connect();
+    test('establishes websocket connection with endpoint', () async {
+      final connFuture = socket.connect();
+      expect(socket.connState, SocketStates.connecting);
 
       final conn = socket.conn;
+
+      await connFuture;
+      expect(socket.connState, SocketStates.open);
 
       expect(conn, isA<IOWebSocketChannel>());
       //! Not verifying connection url
@@ -174,7 +206,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 200));
       expect(opens, 1);
 
-      socket.sendHeartbeat();
+      await socket.sendHeartbeat();
       // need to wait for event to trigger
       await Future.delayed(const Duration(seconds: 1));
       expect(lastMsg['event'], 'heartbeat');
@@ -216,9 +248,11 @@ void main() {
 
     test('removes existing connection', () async {
       await socket.connect();
+
+      expect(socket.conn, isNotNull);
       await socket.disconnect();
 
-      expect(socket.conn, null);
+      expect(socket.conn, isNull);
     });
 
     test('calls callback', () async {
@@ -261,6 +295,36 @@ void main() {
       ).called(1);
     });
 
+    test('disconnecting a closed connections stays closed', () async {
+      await socket.connect();
+      expect(socket.connState, SocketStates.open);
+      await mockServer.close();
+      await Future.delayed(const Duration(milliseconds: 200));
+      expect(socket.connState, SocketStates.closed);
+      expect(socket.conn, isNotNull);
+
+      final disconnectFuture = socket.disconnect();
+
+      // `connState` stays `closed` during disconnect
+      expect(socket.connState, SocketStates.closed);
+      await disconnectFuture;
+      expect(socket.connState, SocketStates.closed);
+      expect(socket.conn, isNull);
+    });
+
+    test('disconnecting an open connection', () async {
+      await socket.connect();
+      expect(socket.connState, SocketStates.open);
+
+      final disconnectFuture = socket.disconnect();
+
+      // `connState` stays `closed` during disconnect
+      expect(socket.connState, SocketStates.disconnecting);
+      await disconnectFuture;
+      expect(socket.connState, SocketStates.disconnected);
+      expect(socket.conn, isNull);
+    });
+
     test('does not throw when no connection', () {
       expect(() => socket.disconnect(), returnsNormally);
     });
@@ -291,7 +355,7 @@ void main() {
       expect(channel.params, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
-          'presence': {'key': ''},
+          'presence': {'key': '', 'enabled': false},
           'private': false,
         }
       });
@@ -367,6 +431,8 @@ void main() {
       mockedSink = MockWebSocketSink();
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
     });
 
     test('sends data to connection when connected', () {
@@ -381,7 +447,7 @@ void main() {
           .called(1);
     });
 
-    test('buffers data when not connected', () {
+    test('buffers data when not connected', () async {
       mockedSocket.connect();
       mockedSocket.connState = SocketStates.connecting;
 
@@ -427,12 +493,16 @@ void main() {
   });
 
   group('setAuth', () {
-    final updateJoinPayload = {'access_token': 'token123'};
-    final pushPayload = {'access_token': 'token123'};
+    final token = generateJwt();
+    final updateJoinPayload = {
+      'access_token': token,
+      'version': Constants.defaultHeaders['X-Client-Info'],
+    };
+    final pushPayload = {'access_token': token};
 
     test(
         "sets access token, updates channels' join payload, and pushes token to channels",
-        () {
+        () async {
       final mockedChannel1 = MockChannel();
       when(() => mockedChannel1.joinedOnce).thenReturn(true);
       when(() => mockedChannel1.isJoined).thenReturn(true);
@@ -457,13 +527,74 @@ void main() {
       final channel1 = mockedSocket.channel(tTopic1);
       final channel2 = mockedSocket.channel(tTopic2);
 
-      mockedSocket.setAuth('token123');
+      await mockedSocket.setAuth(token);
+
+      expect(mockedSocket.accessToken, token);
 
       verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
       verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
       verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
           .called(1);
       verify(() => channel2.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+    });
+
+    test(
+        "sets access token, updates channels' join payload, and pushes token to channels if is not a jwt",
+        () async {
+      final mockedChannel1 = MockChannel();
+      final mockedChannel2 = MockChannel();
+      final mockedChannel3 = MockChannel();
+
+      when(() => mockedChannel1.joinedOnce).thenReturn(true);
+      when(() => mockedChannel1.isJoined).thenReturn(true);
+      when(() => mockedChannel1.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
+
+      when(() => mockedChannel2.joinedOnce).thenReturn(false);
+      when(() => mockedChannel2.isJoined).thenReturn(false);
+      when(() => mockedChannel2.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
+
+      when(() => mockedChannel3.joinedOnce).thenReturn(true);
+      when(() => mockedChannel3.isJoined).thenReturn(true);
+      when(() => mockedChannel3.push(ChannelEvents.accessToken, any()))
+          .thenReturn(MockPush());
+
+      const tTopic1 = 'test-topic1';
+      const tTopic2 = 'test-topic2';
+      const tTopic3 = 'test-topic3';
+
+      final mockedSocket = SocketWithMockedChannel(socketEndpoint);
+      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+        tTopic1: mockedChannel1,
+        tTopic2: mockedChannel2,
+        tTopic3: mockedChannel3,
+      });
+
+      final channel1 = mockedSocket.channel(tTopic1);
+      final channel2 = mockedSocket.channel(tTopic2);
+      final channel3 = mockedSocket.channel(tTopic3);
+
+      const token = 'sb-key';
+      final pushPayload = {'access_token': token};
+      final updateJoinPayload = {
+        'access_token': token,
+        'version': Constants.defaultHeaders['X-Client-Info'],
+      };
+
+      await mockedSocket.setAuth(token);
+
+      expect(mockedSocket.accessToken, token);
+
+      verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
+      verify(() => channel3.updateJoinPayload(updateJoinPayload)).called(1);
+
+      verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
+          .called(1);
+      verifyNever(() => channel2.push(ChannelEvents.accessToken, pushPayload));
+      verify(() => channel3.push(ChannelEvents.accessToken, pushPayload))
           .called(1);
     });
   });
@@ -490,25 +621,154 @@ void main() {
       mockedSink = MockWebSocketSink();
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
 
       mockedSocket.connect();
     });
 
     //! Unimplemented Test: closes socket when heartbeat is not ack'd within heartbeat window
 
-    test('pushes heartbeat data when connected', () {
+    test('pushes heartbeat data when connected', () async {
       mockedSocket.connState = SocketStates.open;
 
-      mockedSocket.sendHeartbeat();
+      await mockedSocket.sendHeartbeat();
 
       verify(() => mockedSink.add(captureAny(that: equals(data)))).called(1);
     });
 
-    test('no ops when not connected', () {
+    test('no ops when not connected', () async {
       mockedSocket.connState = SocketStates.connecting;
 
-      mockedSocket.sendHeartbeat();
+      await mockedSocket.sendHeartbeat();
       verifyNever(() => mockedSink.add(any()));
+    });
+  });
+
+  group('connect/disconnect race condition', () {
+    test(
+        'connect does not crash if disconnect nullifies conn during await ready',
+        () async {
+      final readyCompleter = Completer<void>();
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+
+      when(() => mockedSocketChannel.ready)
+          .thenAnswer((_) => readyCompleter.future);
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedSocketChannel,
+      );
+
+      // Start connect — it will suspend at await ready
+      final connectFuture = socket.connect();
+
+      // Start disconnect (also suspends on ready since state is connecting)
+      final disconnectFuture = socket.disconnect();
+
+      // Now complete the ready future — both connect and disconnect can proceed
+      readyCompleter.complete();
+      await disconnectFuture;
+      await connectFuture;
+
+      // Should NOT have transitioned to open because disconnect nullified conn
+      expect(socket.connState, isNot(SocketStates.open));
+      expect(socket.conn, isNull);
+    });
+
+    test('connect bails out when connState changes during await ready',
+        () async {
+      final readyCompleter = Completer<void>();
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+
+      when(() => mockedSocketChannel.ready)
+          .thenAnswer((_) => readyCompleter.future);
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedSocketChannel,
+      );
+
+      // Start connect
+      final connectFuture = socket.connect();
+
+      // Start disconnect — also awaits ready
+      final disconnectFuture = socket.disconnect();
+
+      // Complete ready — both proceed
+      readyCompleter.complete();
+      await disconnectFuture;
+      await connectFuture;
+
+      expect(socket.connState, isNot(SocketStates.open));
+    });
+
+    test('rapid connect-disconnect-connect cycle does not crash', () async {
+      final readyCompleter1 = Completer<void>();
+      final mockedSocketChannel1 = MockIOWebSocketChannel();
+      final mockedSink1 = MockWebSocketSink();
+
+      when(() => mockedSocketChannel1.ready)
+          .thenAnswer((_) => readyCompleter1.future);
+      when(() => mockedSocketChannel1.sink).thenReturn(mockedSink1);
+      when(() => mockedSink1.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => mockedSink1.close()).thenAnswer((_) => Future.value());
+
+      final readyCompleter2 = Completer<void>();
+      final mockedSocketChannel2 = MockIOWebSocketChannel();
+      final mockedSink2 = MockWebSocketSink();
+      final streamController2 = StreamController<dynamic>.broadcast();
+
+      when(() => mockedSocketChannel2.ready)
+          .thenAnswer((_) => readyCompleter2.future);
+      when(() => mockedSocketChannel2.sink).thenReturn(mockedSink2);
+      when(() => mockedSocketChannel2.stream)
+          .thenAnswer((_) => streamController2.stream);
+      when(() => mockedSink2.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => mockedSink2.close()).thenAnswer((_) => Future.value());
+
+      var callCount = 0;
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) {
+          callCount++;
+          if (callCount == 1) return mockedSocketChannel1;
+          return mockedSocketChannel2;
+        },
+      );
+
+      // First connect — suspends at await ready
+      final connectFuture1 = socket.connect();
+
+      // Start disconnect (also suspends on ready)
+      final disconnectFuture = socket.disconnect();
+
+      // Complete the first ready — both proceed, connect bails out
+      readyCompleter1.complete();
+      await disconnectFuture;
+      await connectFuture1;
+
+      // Second connect with a fresh mock
+      readyCompleter2.complete();
+      await socket.connect();
+
+      expect(socket.connState, SocketStates.open);
+      expect(socket.conn, mockedSocketChannel2);
+
+      await socket.disconnect();
+      await streamController2.close();
     });
   });
 }

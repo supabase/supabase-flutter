@@ -26,17 +26,20 @@ class Bucket {
     this.allowedMimeTypes,
   });
 
-  Bucket.fromJson(Map<String, dynamic> json)
-      : id = (json)['id'] as String,
-        name = json['name'] as String,
-        owner = json['owner'] as String,
-        createdAt = json['created_at'] as String,
-        updatedAt = json['updated_at'] as String,
-        public = json['public'] as bool,
-        fileSizeLimit = json['file_size_limit'] as int?,
-        allowedMimeTypes = json['allowed_mime_types'] == null
-            ? null
-            : List<String>.from(json['allowed_mime_types'] as List);
+  factory Bucket.fromJson(Map<String, dynamic> json) {
+    final allowedMimeTypes = json['allowed_mime_types'];
+    return Bucket(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      owner: json['owner'] as String? ?? '',
+      createdAt: json['created_at'] as String,
+      updatedAt: json['updated_at'] as String,
+      public: json['public'] as bool,
+      fileSizeLimit: json['file_size_limit'] as int?,
+      allowedMimeTypes:
+          allowedMimeTypes is List ? allowedMimeTypes.cast<String>() : null,
+    );
+  }
 }
 
 class FileObject {
@@ -62,17 +65,77 @@ class FileObject {
     required this.buckets,
   });
 
-  FileObject.fromJson(dynamic json)
-      : id = (json as Map<String, dynamic>)['id'] as String?,
-        name = json['name'] as String,
-        bucketId = json['bucket_id'] as String?,
-        owner = json['owner'] as String?,
-        updatedAt = json['updated_at'] as String?,
-        createdAt = json['created_at'] as String?,
-        lastAccessedAt = json['last_accessed_at'] as String?,
-        metadata = json['metadata'] as Map<String, dynamic>?,
-        buckets =
-            json['buckets'] != null ? Bucket.fromJson(json['buckets']) : null;
+  factory FileObject.fromJson(dynamic json) {
+    if (json is! Map<String, dynamic>) {
+      throw FormatException(
+        'Expected JSON object for FileObject, got ${json.runtimeType}',
+      );
+    }
+    final bucketsJson = json['buckets'];
+    return FileObject(
+      id: json['id'] as String?,
+      name: json['name'] as String,
+      bucketId: json['bucket_id'] as String?,
+      owner: json['owner'] as String?,
+      updatedAt: json['updated_at'] as String?,
+      createdAt: json['created_at'] as String?,
+      lastAccessedAt: json['last_accessed_at'] as String?,
+      metadata: json['metadata'] as Map<String, dynamic>?,
+      buckets: bucketsJson is Map<String, dynamic>
+          ? Bucket.fromJson(bucketsJson)
+          : null,
+    );
+  }
+}
+
+class FileObjectV2 {
+  final String id;
+  final String version;
+  final String name;
+  final String bucketId;
+  final String? updatedAt;
+  final String createdAt;
+  final String? lastAccessedAt;
+  final int? size;
+  final String? cacheControl;
+  final String? contentType;
+  final String? etag;
+  final String? lastModified;
+  final Map<String, dynamic>? metadata;
+
+  const FileObjectV2({
+    required this.id,
+    required this.version,
+    required this.name,
+    required this.bucketId,
+    required this.updatedAt,
+    required this.createdAt,
+    required this.lastAccessedAt,
+    required this.size,
+    required this.cacheControl,
+    required this.contentType,
+    required this.etag,
+    required this.lastModified,
+    required this.metadata,
+  });
+
+  factory FileObjectV2.fromJson(Map<String, dynamic> json) {
+    return FileObjectV2(
+      id: json['id'] as String,
+      version: json['version'] as String,
+      name: json['name'] as String,
+      bucketId: json['bucket_id'] as String,
+      updatedAt: json['updated_at'] as String?,
+      createdAt: json['created_at'] as String,
+      lastAccessedAt: json['last_accessed_at'] as String?,
+      size: json['size'] as int?,
+      cacheControl: json['cache_control'] as String?,
+      contentType: json['content_type'] as String?,
+      etag: json['etag'] as String?,
+      lastModified: json['last_modified'] as String?,
+      metadata: json['metadata'] as Map<String, dynamic>?,
+    );
+  }
 }
 
 /// [public] The visibility of the bucket. Public buckets don't require an
@@ -115,10 +178,20 @@ class FileOptions {
   /// Throws a FormatError if the media type is invalid.
   final String? contentType;
 
+  /// The metadata option is an object that allows you to store additional
+  /// information about the file. This information can be used to filter and
+  /// search for files.
+  final Map<String, dynamic>? metadata;
+
+  /// Optionally add extra headers.
+  final Map<String, String>? headers;
+
   const FileOptions({
     this.cacheControl = '3600',
     this.upsert = false,
     this.contentType,
+    this.metadata,
+    this.headers,
   });
 }
 

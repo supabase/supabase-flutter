@@ -1,13 +1,20 @@
-import 'dart:async';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:supabase/supabase.dart';
+import 'package:web/web.dart' as web;
 
-Future<void> main() async {
+void main() {
   const supabaseUrl = 'YOUR_SUPABASE_URL';
-  const supabaseKey = 'YOUR_ANON_KEY';
+  const supabaseKey = 'YOUR_SUPABASE_KEY';
   final supabase = SupabaseClient(supabaseUrl, supabaseKey);
 
+  final element = web.document.querySelector('#output') as web.HTMLDivElement;
+  element.textContent = 'Supabase Dart Web Example';
+
+  exampleUsage(supabase);
+}
+
+void exampleUsage(SupabaseClient supabase) async {
   // query data
   final data =
       await supabase.from('countries').select().order('name', ascending: true);
@@ -28,10 +35,11 @@ Future<void> main() async {
   final realtimeChannel = supabase.channel('my_channel');
   realtimeChannel
       .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'countries',
-          callback: (payload) {})
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'countries',
+        callback: (payload) {},
+      )
       .subscribe();
 
   // remember to remove channel when no longer needed
@@ -50,11 +58,19 @@ Future<void> main() async {
   // remember to remove subscription
   streamSubscription.cancel();
 
-  // Upload file to bucket "public"
-  final file = File('example.txt');
-  file.writeAsStringSync('File content');
-  final storageResponse =
-      await supabase.storage.from('public').upload('example.txt', file);
+  // Upload file to bucket "public" with dart:io
+
+  // final file = File('example.txt');
+  // file.writeAsStringSync('File content');
+  // final storageResponse = await supabase.storage
+  //     .from('public')
+  //     .upload('example.txt', file);
+
+  // Upload file to bucket "public" without dart:io
+  final content = "my file content";
+  final storageResponse = await supabase.storage
+      .from('public')
+      .uploadBinary('example.txt', Uint8List.fromList(content.codeUnits));
   print('upload response : $storageResponse');
 
   // Get download url
@@ -68,10 +84,11 @@ Future<void> main() async {
   print('downloaded file : ${String.fromCharCodes(fileResponse)}');
 
   // Delete file
-  final deleteFileResponse =
-      await supabase.storage.from('public').remove(['example.txt']);
+  final deleteFileResponse = await supabase.storage.from('public').remove([
+    'example.txt',
+  ]);
   print('deleted file id : ${deleteFileResponse.first.id}');
 
-  // Local file cleanup
-  if (file.existsSync()) file.deleteSync();
+  // Local file cleanup on dart:io
+  // if (file.existsSync()) file.deleteSync();
 }

@@ -10,9 +10,20 @@ class Presence {
   /// The payload shared by users.
   final Map<String, dynamic> payload;
 
-  Presence.fromJson(Map<String, dynamic> map)
-      : presenceRef = map['presence_ref'],
-        payload = map..remove('presence_ref');
+  const Presence({
+    required this.presenceRef,
+    required this.payload,
+  });
+
+  factory Presence.fromJson(Map<String, dynamic> map) {
+    final ref = map['presence_ref'];
+    // Create a new map without presence_ref to avoid mutating the input
+    final payload = Map<String, dynamic>.from(map)..remove('presence_ref');
+    return Presence(
+      presenceRef: ref as String? ?? '',
+      payload: payload,
+    );
+  }
 
   Presence deepClone() {
     return Presence.fromJson({

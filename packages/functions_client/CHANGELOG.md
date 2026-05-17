@@ -1,3 +1,28 @@
+## 2.6.0
+
+ - **FIX**(functions_client): use uppercase HTTP method in requests ([#1353](https://github.com/supabase/supabase-flutter/issues/1353)). ([61cc7c03](https://github.com/supabase/supabase-flutter/commit/61cc7c03108a660beafd8cb2ca66a3789f88bb3f))
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+
+## 2.5.0
+
+ - **FEAT**: add region as forceFunctionRegion query parameter ([#1243](https://github.com/supabase/supabase-flutter/issues/1243)). ([06c35baf](https://github.com/supabase/supabase-flutter/commit/06c35baf9974e87c06c65f7666165ef3c119d087))
+
+## 2.4.4
+
+ - **FIX**(functions_client): Handle binary data request properly and improve test coverage ([#1184](https://github.com/supabase/supabase-flutter/issues/1184)). ([e6c9420e](https://github.com/supabase/supabase-flutter/commit/e6c9420e5c3c310c2aac7f9626727e68e1b7ddf3))
+
+## 2.4.3
+
+ - **FIX**(functions_client): Handle binary data request properly and improve test coverage ([#1184](https://github.com/supabase/supabase-flutter/issues/1184)). ([e6c9420e](https://github.com/supabase/supabase-flutter/commit/e6c9420e5c3c310c2aac7f9626727e68e1b7ddf3))
+
+## 2.4.2
+
+ - **FIX**: FunctionException implements Exception ([#1134](https://github.com/supabase/supabase-flutter/issues/1134)). ([79edb81c](https://github.com/supabase/supabase-flutter/commit/79edb81c478ade80baab32c70740e988a692c85d))
+
+## 2.4.1
+
+ - **DOCS**: Fix typos ([#1108](https://github.com/supabase/supabase-flutter/issues/1108)). ([46b483f8](https://github.com/supabase/supabase-flutter/commit/46b483f83a70fb7785ef3bccca6849fa6b07852c))
+
 ## 2.4.0
 
  - **FEAT**: Add logging ([#1042](https://github.com/supabase/supabase-flutter/issues/1042)). ([d1ecabd7](https://github.com/supabase/supabase-flutter/commit/d1ecabd77881a0488d2d4b41ea5ee5abda6c5c35))

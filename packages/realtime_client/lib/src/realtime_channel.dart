@@ -104,6 +104,27 @@ class RealtimeChannel {
     }
   }
 
+  bool _shouldEnablePresence() {
+    return (_bindings['presence']?.isNotEmpty == true) ||
+        (params['config']['presence']['enabled'] == true);
+  }
+
+  void _handlePresenceUpdate() {
+    if (joinedOnce && isJoined) {
+      final currentPresenceEnabled = params['config']['presence']['enabled'];
+      final shouldEnablePresence = _shouldEnablePresence();
+
+      if (!currentPresenceEnabled && shouldEnablePresence) {
+        final config = Map<String, dynamic>.from(params['config']);
+        config['presence'] = Map<String, dynamic>.from(config['presence']);
+        config['presence']['enabled'] = true;
+        params['config'] = config;
+        updateJoinPayload({'config': config});
+        rejoin();
+      }
+    }
+  }
+
   /// Subscribes to receive real-time changes
   ///
   /// Pass a [callback] to react to different status changes.
@@ -130,10 +151,12 @@ class RealtimeChannel {
         if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
       });
 
+      final presenceEnabled = _shouldEnablePresence();
+
       final accessTokenPayload = <String, String>{};
       final config = <String, dynamic>{
         'broadcast': broadcast,
-        'presence': presence,
+        'presence': {...presence, 'enabled': presenceEnabled},
         'postgres_changes':
             _bindings['postgres_changes']?.map((r) => r.filter).toList() ?? [],
         'private': isPrivate == true,
@@ -150,9 +173,11 @@ class RealtimeChannel {
 
       joinPush.receive(
         'ok',
-        (response) {
+        (response) async {
           final serverPostgresFilters = response['postgres_changes'];
-          if (socket.accessToken != null) socket.setAuth(socket.accessToken);
+          if (socket.accessToken != null) {
+            await socket.setAuth(socket.accessToken);
+          }
 
           if (serverPostgresFilters == null) {
             if (callback != null) {
@@ -346,7 +371,7 @@ class RealtimeChannel {
   RealtimeChannel onPresenceSync(
     void Function(RealtimePresenceSyncPayload payload) callback,
   ) {
-    return onEvents(
+    final result = onEvents(
       'presence',
       ChannelFilter(
         event: PresenceEvent.sync.name,
@@ -356,6 +381,8 @@ class RealtimeChannel {
             Map<String, dynamic>.from(payload)));
       },
     );
+    _handlePresenceUpdate();
+    return result;
   }
 
   /// Sets up a listener for realtime presence join event.
@@ -372,7 +399,7 @@ class RealtimeChannel {
   RealtimeChannel onPresenceJoin(
     void Function(RealtimePresenceJoinPayload payload) callback,
   ) {
-    return onEvents(
+    final result = onEvents(
       'presence',
       ChannelFilter(
         event: PresenceEvent.join.name,
@@ -382,6 +409,8 @@ class RealtimeChannel {
             Map<String, dynamic>.from(payload)));
       },
     );
+    _handlePresenceUpdate();
+    return result;
   }
 
   /// Sets up a listener for realtime presence leave event.
@@ -398,7 +427,7 @@ class RealtimeChannel {
   RealtimeChannel onPresenceLeave(
     void Function(RealtimePresenceLeavePayload payload) callback,
   ) {
-    return onEvents(
+    final result = onEvents(
       'presence',
       ChannelFilter(
         event: PresenceEvent.leave.name,
@@ -408,6 +437,8 @@ class RealtimeChannel {
             Map<String, dynamic>.from(payload)));
       },
     );
+    _handlePresenceUpdate();
+    return result;
   }
 
   /// Sets up a listener for realtime system events for debugging purposes.
@@ -441,10 +472,13 @@ class RealtimeChannel {
   RealtimeChannel off(String type, Map<String, String> filter) {
     final typeLower = type.toLowerCase();
 
-    _bindings[typeLower] = _bindings[typeLower]!.where((bind) {
-      return !(bind.type.toLowerCase() == typeLower &&
-          RealtimeChannel._isEqual(bind.filter, filter));
-    }).toList();
+    _bindings[typeLower] = _bindings[typeLower]!
+        .where((bind) {
+          return !(bind.type.toLowerCase() == typeLower &&
+              RealtimeChannel._isEqual(bind.filter, filter));
+        })
+        .toList()
+        .cast<Binding>();
     return this;
   }
 
@@ -471,6 +505,78 @@ class RealtimeChannel {
     }
 
     return pushEvent;
+  }
+
+  /// Sends a broadcast message explicitly via REST API.
+  ///
+  /// This method always uses the REST API endpoint regardless of WebSocket connection state.
+  /// Useful when you want to guarantee REST delivery or when gradually migrating from implicit REST fallback.
+  ///
+  /// [event] is the name of the broadcast event.
+  /// [payload] is the payload to be sent (required).
+  /// [timeout] is an optional timeout duration.
+  ///
+  /// Returns a [Future] that resolves when the message is sent successfully,
+  /// or throws an error if the message fails to send.
+  ///
+  /// ```dart
+  /// try {
+  ///   await channel.httpSend(
+  ///     event: 'cursor-pos',
+  ///     payload: {'x': 123, 'y': 456},
+  ///   );
+  /// } catch (e) {
+  ///   print('Failed to send message: $e');
+  /// }
+  /// ```
+  Future<void> httpSend({
+    required String event,
+    required Map<String, dynamic> payload,
+    Duration? timeout,
+  }) async {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
+      ...socket.headers,
+      if (socket.accessToken != null)
+        'Authorization': 'Bearer ${socket.accessToken}',
+    };
+
+    final body = {
+      'messages': [
+        {
+          'topic': subTopic,
+          'event': event,
+          'payload': payload,
+          'private': _private,
+        }
+      ]
+    };
+
+    final res = await (socket.httpClient?.post ?? post)(
+      Uri.parse(broadcastEndpointURL),
+      headers: headers,
+      body: json.encode(body),
+    ).timeout(
+      timeout ?? _timeout,
+      onTimeout: () => throw TimeoutException('Request timeout'),
+    );
+
+    if (res.statusCode == 202) {
+      return;
+    }
+
+    String errorMessage = res.reasonPhrase ?? 'Unknown error';
+    try {
+      final errorBody = json.decode(res.body) as Map<String, dynamic>;
+      errorMessage = (errorBody['error'] ??
+          errorBody['message'] ??
+          errorMessage) as String;
+    } catch (_) {
+      // If JSON parsing fails, use the default error message
+    }
+
+    throw Exception(errorMessage);
   }
 
   /// Sends a realtime broadcast message.
@@ -500,6 +606,13 @@ class RealtimeChannel {
     }
 
     if (!canPush && type == RealtimeListenTypes.broadcast) {
+      socket.log(
+        'channel',
+        'send() is automatically falling back to REST API. '
+            'This behavior will be deprecated in the future. '
+            'Please use httpSend() explicitly for REST delivery.',
+      );
+
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,

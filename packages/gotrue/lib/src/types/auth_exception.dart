@@ -1,4 +1,5 @@
 import 'package:gotrue/src/types/error_code.dart';
+import 'package:http/http.dart' as http;
 
 class AuthException implements Exception {
   /// Human readable error message associated with the error.
@@ -13,14 +14,14 @@ class AuthException implements Exception {
   /// In that case [statusCode] will also be null.
   ///
   /// Find the full list of error codes in our documentation.
-  /// https://supabase.com/docs/reference/dart/auth-error-codes
+  /// https://supabase.com/docs/guides/auth/debugging/error-codes
   final String? code;
 
   const AuthException(this.message, {this.statusCode, this.code});
 
   @override
   String toString() =>
-      'AuthException(message: $message, statusCode: $statusCode, errorCode: $code)';
+      'AuthException(message: $message, statusCode: $statusCode, code: $code)';
 
   @override
   bool operator ==(Object other) {
@@ -46,6 +47,9 @@ class AuthSessionMissingException extends AuthException {
           message ?? 'Auth session missing!',
           statusCode: '400',
         );
+  @override
+  String toString() =>
+      'AuthSessionMissingException(message: $message, statusCode: $statusCode)';
 }
 
 class AuthRetryableFetchException extends AuthException {
@@ -53,17 +57,37 @@ class AuthRetryableFetchException extends AuthException {
     String message = 'AuthRetryableFetchException',
     super.statusCode,
   }) : super(message);
+
+  @override
+  String toString() =>
+      'AuthRetryableFetchException(message: $message, statusCode: $statusCode)';
 }
 
 class AuthApiException extends AuthException {
   AuthApiException(super.message, {super.statusCode, super.code});
+
+  @override
+  String toString() =>
+      'AuthApiException(message: $message, statusCode: $statusCode, code: $code)';
 }
 
 class AuthUnknownException extends AuthException {
+  /// May contain a non 2xx [http.Response] object or the original thrown error.
   final Object originalError;
 
-  AuthUnknownException({required String message, required this.originalError})
-      : super(message);
+  AuthUnknownException({
+    required String message,
+    required this.originalError,
+  }) : super(
+          message,
+          statusCode: originalError is http.Response
+              ? originalError.statusCode.toString()
+              : null,
+        );
+
+  @override
+  String toString() =>
+      'AuthUnknownException(message: $message, originalError: $originalError, statusCode: $statusCode)';
 }
 
 class AuthWeakPasswordException extends AuthException {
@@ -74,4 +98,20 @@ class AuthWeakPasswordException extends AuthException {
     required super.statusCode,
     required this.reasons,
   }) : super(message, code: ErrorCode.weakPassword.code);
+
+  @override
+  String toString() =>
+      'AuthWeakPasswordException(message: $message, statusCode: $statusCode, reasons: $reasons)';
+}
+
+class AuthInvalidJwtException extends AuthException {
+  AuthInvalidJwtException(super.message)
+      : super(
+          statusCode: '400',
+          code: 'invalid_jwt',
+        );
+
+  @override
+  String toString() =>
+      'AuthInvalidJwtException(message: $message, statusCode: $statusCode, code: $code)';
 }

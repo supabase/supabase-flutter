@@ -55,8 +55,25 @@ class AuthClientOptions {
 class StorageClientOptions {
   final int retryAttempts;
 
+  final bool useNewHostname;
+
   /// [retryAttempts] specifies how many retry attempts there should be
   /// to upload a file to Supabase storage when failed due to network
   /// interruption.
-  const StorageClientOptions({this.retryAttempts = 0});
+
+  /// Use [useNewHostname] to configure rewriting legacy storage URLs to use the
+  /// dedicated storage host (`<ref>.storage.supabase.co`).
+  /// Enables uploads larger than 50 GB by bypassing proxy buffering limits.
+  ///
+  /// Set to `true` only if your project has the dedicated storage host
+  /// enabled; otherwise every storage request will fail with an
+  /// `Invalid Storage request` error. Defaults to `false` (opt-in).
+  const StorageClientOptions(
+      {this.retryAttempts = 0, this.useNewHostname = false});
+}
+
+class FunctionsClientOptions {
+  final String? region;
+
+  const FunctionsClientOptions({this.region});
 }

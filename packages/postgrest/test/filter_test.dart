@@ -477,6 +477,39 @@ void main() {
     expect(res[0]['username'], 'supabot');
   });
 
+  test('matchRegex - regex match (case sensitive)', () async {
+    final res = await postgrest
+        .from('users')
+        .select('username')
+        .matchRegex('username', '^supa.*');
+    expect(res, isNotEmpty);
+    for (final item in res) {
+      expect((item['username'] as String).startsWith('supa'), true);
+    }
+  });
+
+  test('imatchRegex - regex match (case insensitive)', () async {
+    final res = await postgrest
+        .from('users')
+        .select('username')
+        .imatchRegex('username', '^SUPA.*');
+    expect(res, isNotEmpty);
+    for (final item in res) {
+      expect(
+          (item['username'] as String).toLowerCase().startsWith('supa'), true);
+    }
+  });
+
+  test('isDistinct', () async {
+    final res = await postgrest
+        .from('users')
+        .select('username,status')
+        .isDistinct('status', 'ONLINE');
+    expect(res, isNotEmpty);
+    for (final item in res) {
+      expect(item['status'] != 'ONLINE', true);
+    }
+  });
   test('filter on rpc', () async {
     final List res = await postgrest.rpc('get_username_and_status',
         params: {'name_param': 'supabot'}).neq('status', 'ONLINE');
