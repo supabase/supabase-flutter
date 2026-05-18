@@ -32,7 +32,7 @@ class AuthClientOptions {
   final bool autoRefreshToken;
 
   @Deprecated(
-      "The storage for the session is now handled by the auth client itself and is combined with the storage for pkce, so please use [asyncStorage] insetad")
+      "The storage for the session is now handled by the auth client itself and is combined with the storage for pkce, so please use [asyncStorage] instead")
   final GotrueAsyncStorage? pkceAsyncStorage;
   final GotrueAsyncStorage? asyncStorage;
 
