@@ -91,31 +91,31 @@ void main() {
       });
 
       test('setItem stores value for key', () async {
-        await asyncStorage.setItem(key: testKey, value: testValue);
+        await asyncStorage.setItem(testKey, testValue);
         final prefs = await SharedPreferences.getInstance();
         final storedValue = prefs.getString(testKey);
         expect(storedValue, testValue);
       });
 
       test('getItem returns null when no value exists', () async {
-        final result = await asyncStorage.getItem(key: 'non_existent_key');
+        final result = await asyncStorage.getItem('non_existent_key');
         expect(result, null);
       });
 
       test('getItem returns value when value exists', () async {
-        await asyncStorage.setItem(key: testKey, value: testValue);
-        final result = await asyncStorage.getItem(key: testKey);
+        await asyncStorage.setItem(testKey, testValue);
+        final result = await asyncStorage.getItem(testKey);
         expect(result, testValue);
       });
 
       test('removeItem removes value', () async {
         // First store a value
-        await asyncStorage.setItem(key: testKey, value: testValue);
-        expect(await asyncStorage.getItem(key: testKey), testValue);
+        await asyncStorage.setItem(testKey, testValue);
+        expect(await asyncStorage.getItem(testKey), testValue);
 
         // Then remove it
-        await asyncStorage.removeItem(key: testKey);
-        expect(await asyncStorage.getItem(key: testKey), null);
+        await asyncStorage.removeItem(testKey);
+        expect(await asyncStorage.getItem(testKey), null);
       });
     });
   });

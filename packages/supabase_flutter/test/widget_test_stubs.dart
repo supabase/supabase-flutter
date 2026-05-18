@@ -137,17 +137,17 @@ class MockAsyncStorage extends GotrueAsyncStorage {
   final Map<String, String> _map = {};
 
   @override
-  Future<String?> getItem({required String key}) async {
+  Future<String?> getItem(String key) async {
     return _map[key];
   }
 
   @override
-  Future<void> removeItem({required String key}) async {
+  Future<void> removeItem(String key) async {
     _map.remove(key);
   }
 
   @override
-  Future<void> setItem({required String key, required String value}) async {
+  Future<void> setItem(String key, String value) async {
     _map[key] = value;
   }
 }
