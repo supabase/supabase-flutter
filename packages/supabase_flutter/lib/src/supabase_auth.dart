@@ -82,6 +82,21 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     _widgetsBindingInstance?.addObserver(this);
 
+    // If `persistSession` is set to true, the GoTrueClient will attempt to
+    // restore the session from the provided storage.
+    if (options.persistSession) {
+      try {
+        // We wait for the first event from onAuthStateChange to ensure that the
+        // initial session is either restored or an exception is emitted.
+        //
+        // This ensures that the initial session is ready after the
+        // Supabase.initialize() future completes.
+        await Supabase.instance.client.auth.onAuthStateChange.first;
+      } catch (e) {
+        // No need to log the error here, since the auth client already logs it
+        // and the user receives it through the onAuthStateChange stream too.
+      }
+    }
     if (options.detectSessionInUri) {
       await _startDeeplinkObserver();
     }
