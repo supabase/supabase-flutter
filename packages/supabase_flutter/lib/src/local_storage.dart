@@ -117,35 +117,26 @@ class SharedPreferencesLocalStorage extends LocalStorage {
 
 /// local storage to store pkce flow code verifier.
 class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
-  SharedPreferencesGotrueAsyncStorage() {
-    _initialize();
-  }
-
-  final Completer<void> _initializationCompleter = Completer();
-
   late final SharedPreferences _prefs;
 
-  Future<void> _initialize() async {
+  @override
+  Future<void> initialize() async {
     WidgetsFlutterBinding.ensureInitialized();
     _prefs = await SharedPreferences.getInstance();
-    _initializationCompleter.complete();
   }
 
   @override
-  Future<String?> getItem({required String key}) async {
-    await _initializationCompleter.future;
+  Future<String?> getItem(String key) async {
     return _prefs.getString(key);
   }
 
   @override
-  Future<void> removeItem({required String key}) async {
-    await _initializationCompleter.future;
+  Future<void> removeItem(String key) async {
     await _prefs.remove(key);
   }
 
   @override
-  Future<void> setItem({required String key, required String value}) async {
-    await _initializationCompleter.future;
+  Future<void> setItem(String key, String value) async {
     await _prefs.setString(key, value);
   }
 }
@@ -171,27 +162,27 @@ class PkceAndSessionLocalStorage extends GotrueAsyncStorage {
   }
 
   @override
-  Future<String?> getItem({required String key}) {
+  Future<String?> getItem(String key) {
     if (key.endsWith("-code-verifier")) {
-      return pkceAsyncStorage.getItem(key: key);
+      return pkceAsyncStorage.getItem(key);
     } else {
       return sessionLocalStorage.accessToken();
     }
   }
 
   @override
-  Future<void> removeItem({required String key}) async {
+  Future<void> removeItem(String key) async {
     if (key.endsWith("-code-verifier")) {
-      await pkceAsyncStorage.removeItem(key: key);
+      await pkceAsyncStorage.removeItem(key);
     } else {
       await sessionLocalStorage.removePersistedSession();
     }
   }
 
   @override
-  Future<void> setItem({required String key, required String value}) async {
+  Future<void> setItem(String key, String value) async {
     if (key.endsWith("-code-verifier")) {
-      await pkceAsyncStorage.setItem(key: key, value: value);
+      await pkceAsyncStorage.setItem(key, value);
     } else {
       await sessionLocalStorage.persistSession(value);
     }

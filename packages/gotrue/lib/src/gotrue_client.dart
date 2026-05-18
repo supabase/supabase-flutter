@@ -83,8 +83,21 @@ class GoTrueClient {
 
   /// Local storage to store session and pkce code verifiers.
   ///
-  /// check [_initializedStorage] before usage.
+  /// Use [_readyAsyncStorage] to get the instance of the storage, as it ensures
+  /// that the storage is initialized before use.
   final GotrueAsyncStorage? _asyncStorage;
+
+  Future<GotrueAsyncStorage> get _readyAsyncStorage async {
+    if (_asyncStorage == null) {
+      throw AuthException(
+        'No async storage provided. You must provide an async storage to persist sessions or use PKCE flow.',
+      );
+    }
+    if (!_initializedStorage.isCompleted) {
+      await _initializedStorage.future;
+    }
+    return _asyncStorage;
+  }
 
   /// Receive a notification every time an auth event happens.
   ///
@@ -186,7 +199,7 @@ class GoTrueClient {
   /// Getter for the headers
   Map<String, String> get headers => _headers;
 
-  /// Returns the current logged in user, asociated to [currentSession] if any;
+  /// Returns the current logged in user, associated to [currentSession] if any;
   User? get currentUser => _currentSession?.user;
 
   /// Returns the current session, if any;
@@ -197,11 +210,10 @@ class GoTrueClient {
     try {
       if (_persistSession && _asyncStorage != null) {
         await _initializedStorage.future;
-        final jsonStr = await _asyncStorage.getItem(key: _storageKey);
-        var shouldEmitInitialSession = true;
+        final jsonStr = await (await _readyAsyncStorage).getItem(_storageKey);
         if (jsonStr != null) {
+          // Emits an initial session event or exception
           await setInitialSession(jsonStr);
-          shouldEmitInitialSession = false;
 
           // Only try to recover session if the session got set in [setInitialSession]
           // because if not the session is missing data and already notified an
@@ -211,8 +223,7 @@ class GoTrueClient {
             // catch any error.
             recoverSession(jsonStr).then((_) {}, onError: (_) {});
           }
-        }
-        if (shouldEmitInitialSession) {
+        } else {
           // Emit a null session if the user did not have persisted session
           notifyAllSubscribers(AuthChangeEvent.initialSession);
         }
@@ -296,8 +307,8 @@ class GoTrueClient {
           'You need to provide asyncStorage to perform pkce flow.',
         );
         final codeVerifier = generatePKCEVerifier();
-        await _asyncStorage!
-            .setItem(key: '$_storageKey-code-verifier', value: codeVerifier);
+        await (await _readyAsyncStorage)
+            .setItem('$_storageKey-code-verifier', codeVerifier);
         codeChallenge = generatePKCEChallenge(codeVerifier);
       }
 
@@ -424,7 +435,7 @@ class GoTrueClient {
     );
 
     final codeVerifierRawString =
-        await _asyncStorage!.getItem(key: '$_storageKey-code-verifier');
+        await (await _readyAsyncStorage).getItem('$_storageKey-code-verifier');
     if (codeVerifierRawString == null) {
       throw AuthException('Code verifier could not be found in local storage.');
     }
@@ -442,7 +453,7 @@ class GoTrueClient {
       ),
     );
 
-    await _asyncStorage.removeItem(key: '$_storageKey-code-verifier');
+    await (await _readyAsyncStorage).removeItem('$_storageKey-code-verifier');
 
     final authSessionUrlResponse = AuthSessionUrlResponse(
       session: Session.fromJson(response)!,
@@ -541,8 +552,8 @@ class GoTrueClient {
           'You need to provide asyncStorage to perform pkce flow.',
         );
         final codeVerifier = generatePKCEVerifier();
-        await _asyncStorage!
-            .setItem(key: '$_storageKey-code-verifier', value: codeVerifier);
+        await (await _readyAsyncStorage)
+            .setItem('$_storageKey-code-verifier', codeVerifier);
         codeChallenge = generatePKCEChallenge(codeVerifier);
       }
       await _fetch.request(
@@ -684,8 +695,8 @@ class GoTrueClient {
         'You need to provide asyncStorage to perform pkce flow.',
       );
       final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!
-          .setItem(key: '$_storageKey-code-verifier', value: codeVerifier);
+      await (await _readyAsyncStorage)
+          .setItem('$_storageKey-code-verifier', codeVerifier);
       codeChallenge = generatePKCEChallenge(codeVerifier);
       codeChallengeMethod = codeVerifier == codeChallenge ? 'plain' : 's256';
     }
@@ -996,7 +1007,10 @@ class GoTrueClient {
 
     if (scope != SignOutScope.others) {
       await _removeSession();
-      await _asyncStorage?.removeItem(key: '$_storageKey-code-verifier');
+      if (_asyncStorage != null) {
+        await (await _readyAsyncStorage)
+            .removeItem('$_storageKey-code-verifier');
+      }
       notifyAllSubscribers(AuthChangeEvent.signedOut);
     }
 
@@ -1029,9 +1043,9 @@ class GoTrueClient {
         'You need to provide asyncStorage to perform pkce flow.',
       );
       final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '$_storageKey-code-verifier',
-        value: '$codeVerifier/${AuthChangeEvent.passwordRecovery.name}',
+      await (await _readyAsyncStorage).setItem(
+        '$_storageKey-code-verifier',
+        '$codeVerifier/${AuthChangeEvent.passwordRecovery.name}',
       );
       codeChallenge = generatePKCEChallenge(codeVerifier);
     }
@@ -1321,9 +1335,9 @@ class GoTrueClient {
         'You need to provide asyncStorage to perform pkce flow.',
       );
       final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '$_storageKey-code-verifier',
-        value: codeVerifier,
+      await (await _readyAsyncStorage).setItem(
+        '$_storageKey-code-verifier',
+        codeVerifier,
       );
 
       final codeChallenge = generatePKCEChallenge(codeVerifier);
@@ -1347,12 +1361,9 @@ class GoTrueClient {
     _log.fine('Saving session');
     _currentSession = session;
     if (_persistSession && _asyncStorage != null) {
-      if (!_initializedStorage.isCompleted) {
-        await _initializedStorage.future;
-      }
-      _asyncStorage.setItem(
-        key: _storageKey,
-        value: jsonEncode(session.toJson()),
+      await (await _readyAsyncStorage).setItem(
+        _storageKey,
+        jsonEncode(session.toJson()),
       );
     }
   }
@@ -1362,10 +1373,7 @@ class GoTrueClient {
     _currentSession = null;
 
     if (_persistSession && _asyncStorage != null) {
-      if (!_initializedStorage.isCompleted) {
-        await _initializedStorage.future;
-      }
-      _asyncStorage.removeItem(key: _storageKey);
+      await (await _readyAsyncStorage).removeItem(_storageKey);
     }
   }
 
