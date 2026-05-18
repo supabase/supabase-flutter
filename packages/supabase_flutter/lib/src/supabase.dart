@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
@@ -182,9 +181,6 @@ class Supabase {
   SupabaseAuth? _supabaseAuth;
 
   bool _debugEnable = false;
-
-  /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
-  late CancelableOperation _restoreSessionCancellableOperation;
 
   // Listener for app lifecycle events to handle Realtime reconnection.
   AppLifecycleListener? _lifecycleListener;
