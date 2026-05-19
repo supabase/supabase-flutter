@@ -86,6 +86,7 @@ void main() {
         // Set up fake shared preferences
         SharedPreferences.setMockInitialValues({});
         asyncStorage = SharedPreferencesGotrueAsyncStorage();
+        await asyncStorage.initialize();
         // Allow for initialization to complete
         await Future.delayed(const Duration(milliseconds: 100));
       });
