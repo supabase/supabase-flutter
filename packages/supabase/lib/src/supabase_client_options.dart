@@ -44,6 +44,8 @@ class AuthClientOptions {
   /// {@macro supabase_auth_client_options}
   const AuthClientOptions({
     this.autoRefreshToken = true,
+    @Deprecated(
+        "The storage for session and pkce is now combined, so use [asyncStorage] instead")
     this.pkceAsyncStorage,
     this.asyncStorage,
     this.authFlowType = AuthFlowType.pkce,

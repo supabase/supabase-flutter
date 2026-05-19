@@ -35,10 +35,14 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   const FlutterAuthClientOptions({
     super.authFlowType,
     super.autoRefreshToken,
+    @Deprecated(
+        "The storage for session and pkce is now combined, so use [asyncStorage] instead")
     super.pkceAsyncStorage,
     super.asyncStorage,
     super.storageKey,
     super.persistSession = true,
+    @Deprecated(
+        "The storage for session and pkce is now combined, so use [asyncStorage] instead")
     this.localStorage,
     this.detectSessionInUri = true,
   });
