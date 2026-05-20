@@ -1170,7 +1170,7 @@ class GoTrueClient {
     if (session == null) {
       // sign out to delete the local storage from supabase_flutter
       await signOut();
-      throw notifyException(AuthException('Initial session is missing data.'));
+      throw AuthException('Initial session is missing data.');
     }
 
     _currentSession = session;
