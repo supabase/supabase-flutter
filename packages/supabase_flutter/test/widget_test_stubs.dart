@@ -64,6 +64,23 @@ class MockExpiredStorage extends LocalStorage {
   Future<void> removePersistedSession() async {}
 }
 
+/// Async storage that returns an expired session
+class MockExpiredAsyncStorage extends GotrueAsyncStorage {
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<String?> getItem(String key) async {
+    return getSessionData(DateTime.now().subtract(const Duration(hours: 1)))
+        .sessionString;
+  }
+
+  @override
+  Future<void> removeItem(String key) async {}
+
+  @override
+  Future<void> setItem(String key, String value) async {}
+}
+
 class MockLocalStorage extends LocalStorage {
   @override
   Future<void> initialize() async {}
@@ -92,6 +109,17 @@ class MockEmptyLocalStorage extends LocalStorage {
   Future<void> persistSession(String persistSessionString) async {}
   @override
   Future<void> removePersistedSession() async {}
+}
+
+class MockEmptyAsyncStorage extends GotrueAsyncStorage {
+  @override
+  Future<void> initialize() async {}
+  @override
+  Future<String?> getItem(String key) async => null;
+  @override
+  Future<void> removeItem(String key) async {}
+  @override
+  Future<void> setItem(String key, String value) async {}
 }
 
 /// Registers the mock handler for app_links
