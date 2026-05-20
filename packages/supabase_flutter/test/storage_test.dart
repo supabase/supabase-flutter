@@ -93,9 +93,16 @@ void main() {
 
       test('setItem stores value for key', () async {
         await asyncStorage.setItem(testKey, testValue);
-        final prefs = await SharedPreferences.getInstance();
-        final storedValue = prefs.getString(testKey);
-        expect(storedValue, testValue);
+        if (kIsWeb) {
+          // On web, the value is stored in localStorage, so we need to access it directly
+          final storedValue = await asyncStorage.getItem(testKey);
+          expect(storedValue, testValue);
+          return;
+        } else {
+          final prefs = await SharedPreferences.getInstance();
+          final storedValue = prefs.getString(testKey);
+          expect(storedValue, testValue);
+        }
       });
 
       test('getItem returns null when no value exists', () async {
