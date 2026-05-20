@@ -30,9 +30,17 @@ part 'gotrue_mfa_api.dart';
 ///
 /// [autoRefreshToken] whether to refresh the token automatically or not. Defaults to true.
 ///
+/// [persistSession] whether to persist the session via [asyncStorage] or not.
+/// Defaults to false. Session is only broadcasted via [BroadcastChannel] if
+/// set to true.
+///
 /// [httpClient] custom http client.
 ///
-/// [asyncStorage] local storage to store pkce code verifiers. Required when using the pkce flow.
+/// [asyncStorage] local storage to store sessions and pkce code verifiers.
+/// Required when using the pkce flow and persisting sessions.
+///
+/// [storageKey] key to store the session with in [asyncStorage].
+/// The pkce code verifiers are suffixed with `-code-verifier`.
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 /// {@endtemplate}
@@ -73,8 +81,23 @@ class GoTrueClient {
     sync: true,
   );
 
-  /// Local storage to store pkce code verifiers.
+  /// Local storage to store session and pkce code verifiers.
+  ///
+  /// Use [_readyAsyncStorage] to get the instance of the storage, as it ensures
+  /// that the storage is initialized before use.
   final GotrueAsyncStorage? _asyncStorage;
+
+  Future<GotrueAsyncStorage> get _readyAsyncStorage async {
+    if (_asyncStorage == null) {
+      throw AuthException(
+        'No async storage provided. You must provide an async storage to persist sessions or use PKCE flow.',
+      );
+    }
+    if (!_initializedStorage.isCompleted) {
+      await _initializedStorage.future;
+    }
+    return _asyncStorage;
+  }
 
   /// Receive a notification every time an auth event happens.
   ///
@@ -107,7 +130,19 @@ class GoTrueClient {
   Stream<AuthState> get onAuthStateChangeSync =>
       _onAuthStateChangeControllerSync.stream;
 
+  /// Completes when the [_asyncStorage] is initialized.
+  ///
+  /// Initialization is started in the constructor and should be awaited before
+  /// accessing the storage.
+  final Completer<void> _initializedStorage = Completer<void>();
+
   final AuthFlowType _flowType;
+
+  final bool _persistSession;
+
+  /// Key to store the session with in [_asyncStorage].
+  /// The pkce code verifiers are suffixed with `-code-verifier`.
+  final String _storageKey;
 
   final _log = Logger('supabase.auth');
 
@@ -121,20 +156,23 @@ class GoTrueClient {
     String? url,
     Map<String, String>? headers,
     bool? autoRefreshToken,
+    bool? persistSession,
     Client? httpClient,
     GotrueAsyncStorage? asyncStorage,
+    String? storageKey,
     AuthFlowType flowType = AuthFlowType.pkce,
   })  : _url = url ?? Constants.defaultGotrueUrl,
         _headers = {...Constants.defaultHeaders, ...?headers},
         _httpClient = httpClient,
         _asyncStorage = asyncStorage,
-        _flowType = flowType {
+        _flowType = flowType,
+        _persistSession = persistSession ?? false,
+        _storageKey = storageKey ?? Constants.defaultStorageKey {
     _autoRefreshToken = autoRefreshToken ?? true;
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
     _log.config(
-      'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}',
-    );
+        'Initialize GoTrueClient v$version with url: $_url, persistSession: $_persistSession, _storageKey: $storageKey, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}');
     _log.finest('Initialize with headers: $_headers');
     admin = GoTrueAdminApi(
       gotrueUrl,
@@ -142,21 +180,59 @@ class GoTrueClient {
       httpClient: httpClient,
     );
     mfa = GoTrueMFAApi(client: this, fetch: _fetch);
+
+    assert(asyncStorage != null || !_persistSession,
+        'You need to provide asyncStorage to persist session.');
+    if (asyncStorage != null) {
+      _initializedStorage.complete(
+          asyncStorage.initialize().catchError((e) => notifyException(e)));
+    }
+
     if (_autoRefreshToken) {
       startAutoRefresh();
     }
 
+    _initialize();
     _mayStartBroadcastChannel();
   }
 
   /// Getter for the headers
   Map<String, String> get headers => _headers;
 
-  /// Returns the current logged in user, asociated to [currentSession] if any;
+  /// Returns the current logged in user, associated to [currentSession] if any;
   User? get currentUser => _currentSession?.user;
 
   /// Returns the current session, if any;
   Session? get currentSession => _currentSession;
+
+  /// This method should not throw as it is called from the constructor.
+  Future<void> _initialize() async {
+    try {
+      if (_persistSession && _asyncStorage != null) {
+        await _initializedStorage.future;
+        final jsonStr = await (await _readyAsyncStorage).getItem(_storageKey);
+        if (jsonStr != null) {
+          // Emits an initial session event or exception
+          await setInitialSession(jsonStr);
+
+          // Only try to recover session if the session got set in [setInitialSession]
+          // because if not the session is missing data and already notified an
+          // exception.
+          if (currentSession != null) {
+            // [notifyException] gets already called here if needed, so we can
+            // catch any error.
+            recoverSession(jsonStr).then((_) {}, onError: (_) {});
+          }
+        } else {
+          // Emit a null session if the user did not have persisted session
+          notifyAllSubscribers(AuthChangeEvent.initialSession);
+        }
+      }
+    } catch (error, stackTrace) {
+      _log.warning('Error while loading initial session', error, stackTrace);
+      notifyException(error, stackTrace);
+    }
+  }
 
   /// Creates a new anonymous user.
   ///
@@ -182,7 +258,7 @@ class GoTrueClient {
 
     final session = authResponse.session;
     if (session != null) {
-      _saveSession(session);
+      await _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
 
@@ -231,10 +307,8 @@ class GoTrueClient {
           'You need to provide asyncStorage to perform pkce flow.',
         );
         final codeVerifier = generatePKCEVerifier();
-        await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier,
-        );
+        await (await _readyAsyncStorage)
+            .setItem('$_storageKey-code-verifier', codeVerifier);
         codeChallenge = generatePKCEChallenge(codeVerifier);
       }
 
@@ -278,7 +352,7 @@ class GoTrueClient {
 
     final session = authResponse.session;
     if (session != null) {
-      _saveSession(session);
+      await _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
 
@@ -331,7 +405,7 @@ class GoTrueClient {
     final authResponse = AuthResponse.fromJson(response);
 
     if (authResponse.session?.accessToken != null) {
-      _saveSession(authResponse.session!);
+      await _saveSession(authResponse.session!);
       notifyAllSubscribers(AuthChangeEvent.signedIn);
     }
     return authResponse;
@@ -360,9 +434,8 @@ class GoTrueClient {
       'You need to provide asyncStorage to perform pkce flow.',
     );
 
-    final codeVerifierRawString = await _asyncStorage!.getItem(
-      key: '${Constants.defaultStorageKey}-code-verifier',
-    );
+    final codeVerifierRawString =
+        await (await _readyAsyncStorage).getItem('$_storageKey-code-verifier');
     if (codeVerifierRawString == null) {
       throw AuthException('Code verifier could not be found in local storage.');
     }
@@ -380,9 +453,7 @@ class GoTrueClient {
       ),
     );
 
-    await _asyncStorage.removeItem(
-      key: '${Constants.defaultStorageKey}-code-verifier',
-    );
+    await (await _readyAsyncStorage).removeItem('$_storageKey-code-verifier');
 
     final authSessionUrlResponse = AuthSessionUrlResponse(
       session: Session.fromJson(response)!,
@@ -390,7 +461,7 @@ class GoTrueClient {
     );
 
     final session = authSessionUrlResponse.session;
-    _saveSession(session);
+    await _saveSession(session);
     if (redirectType == AuthChangeEvent.passwordRecovery) {
       notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
     } else {
@@ -441,7 +512,7 @@ class GoTrueClient {
       throw AuthException('An error occurred on token verification.');
     }
 
-    _saveSession(authResponse.session!);
+    await _saveSession(authResponse.session!);
     notifyAllSubscribers(AuthChangeEvent.signedIn);
 
     return authResponse;
@@ -481,10 +552,8 @@ class GoTrueClient {
           'You need to provide asyncStorage to perform pkce flow.',
         );
         final codeVerifier = generatePKCEVerifier();
-        await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier,
-        );
+        await (await _readyAsyncStorage)
+            .setItem('$_storageKey-code-verifier', codeVerifier);
         codeChallenge = generatePKCEChallenge(codeVerifier);
       }
       await _fetch.request(
@@ -589,12 +658,10 @@ class GoTrueClient {
       throw AuthException('An error occurred on token verification.');
     }
 
-    _saveSession(authResponse.session!);
-    notifyAllSubscribers(
-      type == OtpType.recovery
-          ? AuthChangeEvent.passwordRecovery
-          : AuthChangeEvent.signedIn,
-    );
+    await _saveSession(authResponse.session!);
+    notifyAllSubscribers(type == OtpType.recovery
+        ? AuthChangeEvent.passwordRecovery
+        : AuthChangeEvent.signedIn);
 
     return authResponse;
   }
@@ -628,10 +695,8 @@ class GoTrueClient {
         'You need to provide asyncStorage to perform pkce flow.',
       );
       final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: codeVerifier,
-      );
+      await (await _readyAsyncStorage)
+          .setItem('$_storageKey-code-verifier', codeVerifier);
       codeChallenge = generatePKCEChallenge(codeVerifier);
       codeChallengeMethod = codeVerifier == codeChallenge ? 'plain' : 's256';
     }
@@ -920,7 +985,7 @@ class GoTrueClient {
     final redirectType = url.queryParameters['type'];
 
     if (storeSession == true) {
-      _saveSession(session);
+      await _saveSession(session);
       if (redirectType == 'recovery') {
         notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
       } else {
@@ -941,10 +1006,11 @@ class GoTrueClient {
     final accessToken = currentSession?.accessToken;
 
     if (scope != SignOutScope.others) {
-      _removeSession();
-      await _asyncStorage?.removeItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-      );
+      await _removeSession();
+      if (_asyncStorage != null) {
+        await (await _readyAsyncStorage)
+            .removeItem('$_storageKey-code-verifier');
+      }
       notifyAllSubscribers(AuthChangeEvent.signedOut);
     }
 
@@ -977,9 +1043,9 @@ class GoTrueClient {
         'You need to provide asyncStorage to perform pkce flow.',
       );
       final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: '$codeVerifier/${AuthChangeEvent.passwordRecovery.name}',
+      await (await _readyAsyncStorage).setItem(
+        '$_storageKey-code-verifier',
+        '$codeVerifier/${AuthChangeEvent.passwordRecovery.name}',
       );
       codeChallenge = generatePKCEChallenge(codeVerifier);
     }
@@ -1104,7 +1170,7 @@ class GoTrueClient {
     if (session == null) {
       // sign out to delete the local storage from supabase_flutter
       await signOut();
-      throw notifyException(AuthException('Initial session is missing data.'));
+      throw AuthException('Initial session is missing data.');
     }
 
     _currentSession = session;
@@ -1118,9 +1184,7 @@ class GoTrueClient {
       if (session == null) {
         _log.warning("Can't recover session from string, session is null");
         await signOut();
-        throw notifyException(
-          AuthException('Current session is missing data.'),
-        );
+        throw AuthException('Session to restore is missing data.');
       }
 
       if (session.isExpired) {
@@ -1134,8 +1198,8 @@ class GoTrueClient {
         }
       } else {
         final shouldEmitEvent = _currentSession == null ||
-            _currentSession!.user.id != session.user.id;
-        _saveSession(session);
+            _currentSession?.user.id != session.user.id;
+        await _saveSession(session);
 
         if (shouldEmitEvent) {
           notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
@@ -1271,9 +1335,9 @@ class GoTrueClient {
         'You need to provide asyncStorage to perform pkce flow.',
       );
       final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: codeVerifier,
+      await (await _readyAsyncStorage).setItem(
+        '$_storageKey-code-verifier',
+        codeVerifier,
       );
 
       final codeChallenge = generatePKCEChallenge(codeVerifier);
@@ -1292,19 +1356,30 @@ class GoTrueClient {
   }
 
   /// set currentSession and currentUser
-  void _saveSession(Session session) {
+  Future<void> _saveSession(Session session) async {
     _log.finest('Saving session: $session');
     _log.fine('Saving session');
     _currentSession = session;
+    if (_persistSession && _asyncStorage != null) {
+      await (await _readyAsyncStorage).setItem(
+        _storageKey,
+        jsonEncode(session.toJson()),
+      );
+    }
   }
 
-  void _removeSession() {
+  Future<void> _removeSession() async {
     _log.fine('Removing session');
     _currentSession = null;
+
+    if (_persistSession && _asyncStorage != null) {
+      await (await _readyAsyncStorage).removeItem(_storageKey);
+    }
   }
 
   void _mayStartBroadcastChannel() {
-    if (const bool.fromEnvironment('dart.library.js_interop')) {
+    if (_persistSession &&
+        const bool.fromEnvironment('dart.library.js_interop')) {
       // Used by the js library as well
       final broadcastKey =
           "sb-${Uri.parse(_url).host.split(".").first}-auth-token";
@@ -1315,9 +1390,8 @@ class GoTrueClient {
       );
       try {
         _broadcastChannel = web.getBroadcastChannel(broadcastKey);
-        _broadcastChannelSubscription = _broadcastChannel?.onMessage.listen((
-          messageEvent,
-        ) {
+        _broadcastChannelSubscription =
+            _broadcastChannel?.onMessage.listen((messageEvent) async {
           final rawEvent = messageEvent['event'];
           _log.finest('Received broadcast message: $messageEvent');
           _log.info('Received broadcast event: $rawEvent');
@@ -1343,9 +1417,9 @@ class GoTrueClient {
               session = Session.fromJson(messageEvent['session']);
             }
             if (session != null) {
-              _saveSession(session);
+              await _saveSession(session);
             } else {
-              _removeSession();
+              await _removeSession();
             }
             notifyAllSubscribers(event, session: session, broadcast: false);
           }
@@ -1399,14 +1473,14 @@ class GoTrueClient {
         throw AuthSessionMissingException();
       }
 
-      _saveSession(session);
+      await _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
 
       _refreshTokenCompleter?.complete(data);
       return data;
     } on AuthException catch (error, stack) {
       if (error is! AuthRetryableFetchException) {
-        _removeSession();
+        await _removeSession();
         notifyAllSubscribers(AuthChangeEvent.signedOut);
       } else {
         notifyException(error, stack);

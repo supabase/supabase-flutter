@@ -28,9 +28,7 @@ void main() {
         authOptions: FlutterAuthClientOptions(
           localStorage: MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage()
-            ..setItem(
-                key: 'supabase.auth.token-code-verifier',
-                value: 'raw-code-verifier'),
+            ..setItem('supabase.auth.token-code-verifier', 'raw-code-verifier'),
         ),
       );
     });

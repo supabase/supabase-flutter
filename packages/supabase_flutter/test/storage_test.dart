@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -86,36 +87,44 @@ void main() {
         // Set up fake shared preferences
         SharedPreferences.setMockInitialValues({});
         asyncStorage = SharedPreferencesGotrueAsyncStorage();
+        await asyncStorage.initialize();
         // Allow for initialization to complete
         await Future.delayed(const Duration(milliseconds: 100));
       });
 
       test('setItem stores value for key', () async {
-        await asyncStorage.setItem(key: testKey, value: testValue);
-        final prefs = await SharedPreferences.getInstance();
-        final storedValue = prefs.getString(testKey);
-        expect(storedValue, testValue);
+        await asyncStorage.setItem(testKey, testValue);
+        if (kIsWeb) {
+          // On web, the value is stored in localStorage, so we need to access it directly
+          final storedValue = await asyncStorage.getItem(testKey);
+          expect(storedValue, testValue);
+          return;
+        } else {
+          final prefs = await SharedPreferences.getInstance();
+          final storedValue = prefs.getString(testKey);
+          expect(storedValue, testValue);
+        }
       });
 
       test('getItem returns null when no value exists', () async {
-        final result = await asyncStorage.getItem(key: 'non_existent_key');
+        final result = await asyncStorage.getItem('non_existent_key');
         expect(result, null);
       });
 
       test('getItem returns value when value exists', () async {
-        await asyncStorage.setItem(key: testKey, value: testValue);
-        final result = await asyncStorage.getItem(key: testKey);
+        await asyncStorage.setItem(testKey, testValue);
+        final result = await asyncStorage.getItem(testKey);
         expect(result, testValue);
       });
 
       test('removeItem removes value', () async {
         // First store a value
-        await asyncStorage.setItem(key: testKey, value: testValue);
-        expect(await asyncStorage.getItem(key: testKey), testValue);
+        await asyncStorage.setItem(testKey, testValue);
+        expect(await asyncStorage.getItem(testKey), testValue);
 
         // Then remove it
-        await asyncStorage.removeItem(key: testKey);
-        expect(await asyncStorage.getItem(key: testKey), null);
+        await asyncStorage.removeItem(testKey);
+        expect(await asyncStorage.getItem(testKey), null);
       });
     });
   });

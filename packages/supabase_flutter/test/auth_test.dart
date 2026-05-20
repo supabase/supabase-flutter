@@ -88,7 +88,7 @@ void main() {
       });
     });
 
-    group('Session recovery', () {
+    group('Session recovery with deprecated local storage', () {
       test('handles corrupted session data gracefully', () async {
         final corruptedStorage = MockExpiredStorage();
 
@@ -117,6 +117,37 @@ void main() {
           authOptions: FlutterAuthClientOptions(
             localStorage: emptyStorage,
             pkceAsyncStorage: MockAsyncStorage(),
+          ),
+        );
+
+        // Should handle empty storage gracefully
+        expect(Supabase.instance.client.auth.currentSession, isNull);
+      });
+    });
+
+    group('Session recovery with new async storage', () {
+      test('handles corrupted session data gracefully', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+          authOptions: FlutterAuthClientOptions(
+            asyncStorage: MockExpiredAsyncStorage(),
+          ),
+        );
+
+        // MockExpiredAsyncStorage returns an expired session, not null
+        expect(Supabase.instance.client.auth.currentSession, isNotNull);
+        expect(Supabase.instance.client.auth.currentSession?.isExpired, isTrue);
+      });
+
+      test('handles null session during initialization', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+          authOptions: FlutterAuthClientOptions(
+            asyncStorage: MockEmptyAsyncStorage(),
           ),
         );
 

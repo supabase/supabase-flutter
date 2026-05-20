@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/src/supabase_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import './local_storage_stub.dart'
@@ -17,9 +18,7 @@ const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 ///
 ///   * [SupabaseAuth], the instance used to manage authentication
 ///   * [EmptyLocalStorage], used to disable session persistence
-///   * [HiveLocalStorage], that implements Hive as storage method
 ///   * [SharedPreferencesLocalStorage], that implements SharedPreferences as storage method
-///   * [MigrationLocalStorage], to migrate from Hive to SharedPreferences
 abstract class LocalStorage {
   const LocalStorage();
 
@@ -69,6 +68,12 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   SharedPreferencesLocalStorage({required this.persistSessionKey});
 
   final String persistSessionKey;
+
+  /// Shared preferences already use the local storage on web, but the package
+  /// adds an additional prefix to the key.
+  /// To support integrating with a session stored by the supabase-js client,
+  /// we need to access the local storage directly on web, and use the shared
+  /// preferences on other platforms.
   static const _useWebLocalStorage =
       kIsWeb && bool.fromEnvironment("dart.library.js_interop");
 
@@ -114,37 +119,101 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   }
 }
 
-/// local storage to store pkce flow code verifier.
+/// A [GotrueAsyncStorage] implementation that implements SharedPreferences as
+/// the storage method.
 class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
-  SharedPreferencesGotrueAsyncStorage() {
-    _initialize();
-  }
-
-  final Completer<void> _initializationCompleter = Completer();
-
   late final SharedPreferences _prefs;
 
-  Future<void> _initialize() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    _prefs = await SharedPreferences.getInstance();
-    _initializationCompleter.complete();
+  /// Shared preferences already use the local storage on web, but the package
+  /// adds an additional prefix to the key.
+  /// To support integrating with a session/pkce token stored by the supabase-js
+  /// client, we need to access the local storage directly on web, and use the
+  /// shared preferences on other platforms.
+  static const _useWebLocalStorage =
+      kIsWeb && bool.fromEnvironment("dart.library.js_interop");
+
+  @override
+  Future<void> initialize() async {
+    if (!_useWebLocalStorage) {
+      WidgetsFlutterBinding.ensureInitialized();
+      _prefs = await SharedPreferences.getInstance();
+    }
   }
 
   @override
-  Future<String?> getItem({required String key}) async {
-    await _initializationCompleter.future;
+  Future<String?> getItem(String key) async {
+    if (_useWebLocalStorage) {
+      // Despite its name, it just accesses the local storage with the given key
+      return web.accessToken(key);
+    }
     return _prefs.getString(key);
   }
 
   @override
-  Future<void> removeItem({required String key}) async {
-    await _initializationCompleter.future;
+  Future<void> removeItem(String key) async {
+    if (_useWebLocalStorage) {
+      // Despite its name, it just removes the item from local storage with the
+      // given key
+      return web.removePersistedSession(key);
+    }
     await _prefs.remove(key);
   }
 
   @override
-  Future<void> setItem({required String key, required String value}) async {
-    await _initializationCompleter.future;
+  Future<void> setItem(String key, String value) async {
+    if (_useWebLocalStorage) {
+      // Despite its name, it just sets the item in local storage with the given
+      // key and value
+      return web.persistSession(key, value);
+    }
     await _prefs.setString(key, value);
+  }
+}
+
+/// Combines the storage for pkce and session into one.
+///
+/// Previously the session got stored by [SupabaseAuth] and the pkce flow by
+/// [GoTrueClient] in a separate storage and with different interface.
+/// This combines both into one.
+///
+/// This introduces another level of abstraction for the actual
+/// session storage, but is necessary to prevent breaking changes.
+class PkceAndSessionLocalStorage extends GotrueAsyncStorage {
+  final LocalStorage sessionLocalStorage;
+  final GotrueAsyncStorage pkceAsyncStorage;
+
+  PkceAndSessionLocalStorage(this.sessionLocalStorage, this.pkceAsyncStorage);
+  @override
+  Future<void> initialize() async {
+    await sessionLocalStorage.initialize();
+    await pkceAsyncStorage.initialize();
+    super.initialize();
+  }
+
+  @override
+  Future<String?> getItem(String key) {
+    if (key.endsWith("-code-verifier")) {
+      return pkceAsyncStorage.getItem(key);
+    } else {
+      return sessionLocalStorage.accessToken();
+    }
+  }
+
+  @override
+  Future<void> removeItem(String key) async {
+    if (key.endsWith("-code-verifier")) {
+      await pkceAsyncStorage.removeItem(key);
+    } else {
+      await sessionLocalStorage.removePersistedSession();
+    }
+  }
+
+  @override
+  Future<void> setItem(String key, String value) async {
+    if (key.endsWith("-code-verifier")) {
+      await pkceAsyncStorage.setItem(key, value);
+    } else {
+      await sessionLocalStorage.persistSession(value);
+    }
   }
 }

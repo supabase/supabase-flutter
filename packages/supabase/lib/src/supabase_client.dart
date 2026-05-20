@@ -11,22 +11,21 @@ import 'auth_http_client.dart';
 import 'counter.dart';
 
 /// {@template supabase_client}
+///
 /// Creates a Supabase client to interact with your Supabase instance.
 ///
 /// [supabaseUrl] and [supabaseKey] can be found on your Supabase dashboard.
 /// Pass the `publishable` (anon) key for client-side usage or the `secret`
 /// key for trusted server-side environments.
 ///
-/// You can access none public schema by passing different [schema].
-///
 /// Default headers can be overridden by specifying [headers].
 ///
 /// Custom http client can be used by passing [httpClient] parameter.
 ///
-/// [storageRetryAttempts] specifies how many retry attempts there should be to
-///  upload a file to Supabase storage when failed due to network interruption.
-///
-/// [realtimeClientOptions] specifies different options you can pass to `RealtimeClient`.
+/// [realtimeClientOptions], [authOptions], [storageOptions],
+/// [postgrestOptions] specify different options you can pass to
+/// [RealtimeClient], [GoTrueClient], [SupabaseStorageClient],
+/// [PostgrestClient].
 ///
 /// [accessToken] Optional function for using a third-party authentication system with Supabase.
 /// The function should return an access token or ID token (JWT) by obtaining
@@ -38,8 +37,6 @@ import 'counter.dart';
 /// Pass an instance of `YAJsonIsolate` to [isolate] to use your own persisted
 /// isolate instance. A new instance will be created if [isolate] is omitted.
 ///
-/// Pass an instance of [gotrueAsyncStorage] and set the [authFlowType] to
-/// `AuthFlowType.pkce`in order to perform auth actions with pkce flow.
 /// {@endtemplate}
 class SupabaseClient {
   final String _supabaseKey;
@@ -144,11 +141,7 @@ class SupabaseClient {
         _httpClient = httpClient,
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
         _hasCustomIsolate = isolate != null {
-    _authInstance = _initSupabaseAuthClient(
-      autoRefreshToken: authOptions.autoRefreshToken,
-      gotrueAsyncStorage: authOptions.pkceAsyncStorage,
-      authFlowType: authOptions.authFlowType,
-    );
+    _authInstance = _initSupabaseAuthClient(authOptions: authOptions);
     _authHttpClient =
         AuthHttpClient(_supabaseKey, httpClient ?? Client(), _getAccessToken);
     rest = _initRestClient();
@@ -284,11 +277,8 @@ class SupabaseClient {
     _authInstance?.dispose();
   }
 
-  GoTrueClient _initSupabaseAuthClient({
-    bool? autoRefreshToken,
-    required GotrueAsyncStorage? gotrueAsyncStorage,
-    required AuthFlowType authFlowType,
-  }) {
+  GoTrueClient _initSupabaseAuthClient(
+      {required AuthClientOptions authOptions}) {
     final authHeaders = {...headers};
     authHeaders['apikey'] = _supabaseKey;
     authHeaders['Authorization'] = 'Bearer $_supabaseKey';
@@ -296,10 +286,12 @@ class SupabaseClient {
     return GoTrueClient(
       url: _authUrl,
       headers: authHeaders,
-      autoRefreshToken: autoRefreshToken,
+      autoRefreshToken: authOptions.autoRefreshToken,
       httpClient: _httpClient,
-      asyncStorage: gotrueAsyncStorage,
-      flowType: authFlowType,
+      asyncStorage: authOptions.asyncStorage,
+      storageKey: authOptions.storageKey,
+      persistSession: authOptions.persistSession,
+      flowType: authOptions.authFlowType,
     );
   }
 
