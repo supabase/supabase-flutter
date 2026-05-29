@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
@@ -468,6 +470,28 @@ void main() {
       expect(res.data.first, isNotEmpty);
       expect(res.data.first, isA<List>());
       expect(res.count, greaterThan(3));
+    });
+
+    test('aborts long-running function call', () async {
+      final startTime = DateTime.now();
+
+      final completer = Completer<void>();
+      // Abort after 1 second (before the 10-second function completes)
+      Timer(Duration(seconds: 1), () => completer.complete());
+
+      try {
+        await postgrest
+            .rpc('long_running_task')
+            .select()
+            .abortCompleter(completer);
+      } on RequestAbortedException catch (e) {
+        print('Request aborted: $e');
+      }
+
+      final elapsedTime = DateTime.now().difference(startTime);
+
+      expect(elapsedTime.inSeconds, lessThan(5));
+      expect(elapsedTime.inSeconds, greaterThanOrEqualTo(1));
     });
   });
   group("Custom http client", () {
