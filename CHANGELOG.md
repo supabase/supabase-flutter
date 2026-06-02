@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-06-02
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`storage_client` - `v2.5.4`](#storage_client---v254)
+ - [`supabase` - `v2.12.0`](#supabase---v2120)
+ - [`supabase_flutter` - `v2.14.0`](#supabase_flutter---v2140)
+
+---
+
+#### `storage_client` - `v2.5.4`
+
+ - **FIX**: mark lastAccessedAt field as deprecated ([#1279](https://github.com/supabase/supabase-flutter/issues/1279)). ([cdf24dbc](https://github.com/supabase/supabase-flutter/commit/cdf24dbc075e263b69d508594b7e7150f18cd6d9))
+
+#### `supabase` - `v2.12.0`
+
+ - **FIX**: make `defaultHeaders` unmodifiable to prevent accidental mutation ([#1370](https://github.com/supabase/supabase-flutter/issues/1370)). ([957d7507](https://github.com/supabase/supabase-flutter/commit/957d7507a93f23ffab5f449a4da85804cb0c0010))
+ - **FEAT**: update X-Client-Info to use structured semicolon-delimited metadata ([#1362](https://github.com/supabase/supabase-flutter/issues/1362)). ([71653422](https://github.com/supabase/supabase-flutter/commit/71653422f1ce79ef83ae007eb52b411e09cdf86e))
+
+#### `supabase_flutter` - `v2.14.0`
+
+ - **FIX**: make `defaultHeaders` unmodifiable to prevent accidental mutation ([#1370](https://github.com/supabase/supabase-flutter/issues/1370)). ([957d7507](https://github.com/supabase/supabase-flutter/commit/957d7507a93f23ffab5f449a4da85804cb0c0010))
+ - **FEAT**: update X-Client-Info to use structured semicolon-delimited metadata ([#1362](https://github.com/supabase/supabase-flutter/issues/1362)). ([71653422](https://github.com/supabase/supabase-flutter/commit/71653422f1ce79ef83ae007eb52b411e09cdf86e))
+
+
 ## 2026-05-04
 
 ### Changes

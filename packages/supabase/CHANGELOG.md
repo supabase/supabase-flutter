@@ -1,3 +1,8 @@
+## 2.12.0
+
+ - **FIX**: make `defaultHeaders` unmodifiable to prevent accidental mutation ([#1370](https://github.com/supabase/supabase-flutter/issues/1370)). ([957d7507](https://github.com/supabase/supabase-flutter/commit/957d7507a93f23ffab5f449a4da85804cb0c0010))
+ - **FEAT**: update X-Client-Info to use structured semicolon-delimited metadata ([#1362](https://github.com/supabase/supabase-flutter/issues/1362)). ([71653422](https://github.com/supabase/supabase-flutter/commit/71653422f1ce79ef83ae007eb52b411e09cdf86e))
+
 ## 2.11.0
 
  - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))

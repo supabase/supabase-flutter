@@ -1,3 +1,7 @@
+## 2.5.4
+
+ - **FIX**: mark lastAccessedAt field as deprecated ([#1279](https://github.com/supabase/supabase-flutter/issues/1279)). ([cdf24dbc](https://github.com/supabase/supabase-flutter/commit/cdf24dbc075e263b69d508594b7e7150f18cd6d9))
+
 ## 2.5.3
 
  - **FIX**(storage): avoid duplicate Content-Type headers and header mutation ([#1359](https://github.com/supabase/supabase-flutter/issues/1359)). ([99d91367](https://github.com/supabase/supabase-flutter/commit/99d913673525cabdcf8c2466e58dcd406ab680e7))
