@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -641,6 +642,133 @@ void main() {
 
       await mockedSocket.sendHeartbeat();
       verifyNever(() => mockedSink.add(any()));
+    });
+  });
+
+  group('connect/disconnect race condition', () {
+    test(
+        'connect does not crash if disconnect nullifies conn during await ready',
+        () async {
+      final readyCompleter = Completer<void>();
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+
+      when(() => mockedSocketChannel.ready)
+          .thenAnswer((_) => readyCompleter.future);
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedSocketChannel,
+      );
+
+      // Start connect — it will suspend at await ready
+      final connectFuture = socket.connect();
+
+      // Start disconnect (also suspends on ready since state is connecting)
+      final disconnectFuture = socket.disconnect();
+
+      // Now complete the ready future — both connect and disconnect can proceed
+      readyCompleter.complete();
+      await disconnectFuture;
+      await connectFuture;
+
+      // Should NOT have transitioned to open because disconnect nullified conn
+      expect(socket.connState, isNot(SocketStates.open));
+      expect(socket.conn, isNull);
+    });
+
+    test('connect bails out when connState changes during await ready',
+        () async {
+      final readyCompleter = Completer<void>();
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+
+      when(() => mockedSocketChannel.ready)
+          .thenAnswer((_) => readyCompleter.future);
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedSocketChannel,
+      );
+
+      // Start connect
+      final connectFuture = socket.connect();
+
+      // Start disconnect — also awaits ready
+      final disconnectFuture = socket.disconnect();
+
+      // Complete ready — both proceed
+      readyCompleter.complete();
+      await disconnectFuture;
+      await connectFuture;
+
+      expect(socket.connState, isNot(SocketStates.open));
+    });
+
+    test('rapid connect-disconnect-connect cycle does not crash', () async {
+      final readyCompleter1 = Completer<void>();
+      final mockedSocketChannel1 = MockIOWebSocketChannel();
+      final mockedSink1 = MockWebSocketSink();
+
+      when(() => mockedSocketChannel1.ready)
+          .thenAnswer((_) => readyCompleter1.future);
+      when(() => mockedSocketChannel1.sink).thenReturn(mockedSink1);
+      when(() => mockedSink1.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => mockedSink1.close()).thenAnswer((_) => Future.value());
+
+      final readyCompleter2 = Completer<void>();
+      final mockedSocketChannel2 = MockIOWebSocketChannel();
+      final mockedSink2 = MockWebSocketSink();
+      final streamController2 = StreamController<dynamic>.broadcast();
+
+      when(() => mockedSocketChannel2.ready)
+          .thenAnswer((_) => readyCompleter2.future);
+      when(() => mockedSocketChannel2.sink).thenReturn(mockedSink2);
+      when(() => mockedSocketChannel2.stream)
+          .thenAnswer((_) => streamController2.stream);
+      when(() => mockedSink2.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => mockedSink2.close()).thenAnswer((_) => Future.value());
+
+      var callCount = 0;
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) {
+          callCount++;
+          if (callCount == 1) return mockedSocketChannel1;
+          return mockedSocketChannel2;
+        },
+      );
+
+      // First connect — suspends at await ready
+      final connectFuture1 = socket.connect();
+
+      // Start disconnect (also suspends on ready)
+      final disconnectFuture = socket.disconnect();
+
+      // Complete the first ready — both proceed, connect bails out
+      readyCompleter1.complete();
+      await disconnectFuture;
+      await connectFuture1;
+
+      // Second connect with a fresh mock
+      readyCompleter2.complete();
+      await socket.connect();
+
+      expect(socket.connState, SocketStates.open);
+      expect(socket.conn, mockedSocketChannel2);
+
+      await socket.disconnect();
+      await streamController2.close();
     });
   });
 }

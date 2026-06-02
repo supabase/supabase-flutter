@@ -7,18 +7,34 @@ import 'file_io.dart' if (dart.library.js) './file_stub.dart';
 
 class StorageFileApi {
   final String url;
-  final Map<String, String> headers;
+  Map<String, String> _headers;
   final String? bucketId;
   final int _retryAttempts;
   final Fetch _storageFetch;
 
-  const StorageFileApi(
+  StorageFileApi(
     this.url,
-    this.headers,
+    Map<String, String> headers,
     this.bucketId,
     this._retryAttempts,
     this._storageFetch,
-  );
+  ) : _headers = {...headers};
+
+  /// The headers used for requests.
+  Map<String, String> get headers => _headers;
+
+  /// Sets an HTTP header for subsequent requests.
+  ///
+  /// Creates a shallow copy of headers to avoid mutating shared state.
+  /// Returns this for method chaining.
+  ///
+  /// ```dart
+  /// storage.from('bucket').setHeader('x-custom-header', 'value').upload(...);
+  /// ```
+  StorageFileApi setHeader(String key, String value) {
+    _headers = {..._headers, key: value};
+    return this;
+  }
 
   String _getFinalPath(String path) {
     return '$bucketId/$path';
@@ -395,16 +411,22 @@ class StorageFileApi {
   /// name. For example `download('folder/image.png')`.
   ///
   /// [transform] download a transformed variant of the image with the provided options
-  Future<Uint8List> download(String path, {TransformOptions? transform}) async {
+  ///
+  /// [queryParams] additional query parameters to be added to the URL
+  Future<Uint8List> download(String path,
+      {TransformOptions? transform, Map<String, String>? queryParams}) async {
     final wantsTransformations = transform != null;
     final finalPath = _getFinalPath(path);
     final renderPath =
         wantsTransformations ? 'render/image/authenticated' : 'object';
-    final queryParams = transform?.toQueryParams;
+
+    Map<String, String> query = transform?.toQueryParams ?? {};
+    query.addAll(queryParams ?? {});
+
     final options = FetchOptions(headers: headers, noResolveJson: true);
 
     var fetchUrl = Uri.parse('$url/$renderPath/$finalPath');
-    fetchUrl = fetchUrl.replace(queryParameters: queryParams);
+    fetchUrl = fetchUrl.replace(queryParameters: query);
 
     final response =
         await _storageFetch.get(fetchUrl.toString(), options: options);

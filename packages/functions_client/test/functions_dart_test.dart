@@ -186,7 +186,7 @@ void main() {
         );
 
         final req = customHttpClient.receivedRequests.last;
-        expect(req.method, 'get');
+        expect(req.method, 'GET');
       });
 
       test('PUT method', () async {
@@ -196,7 +196,7 @@ void main() {
         );
 
         final req = customHttpClient.receivedRequests.last;
-        expect(req.method, 'put');
+        expect(req.method, 'PUT');
       });
 
       test('DELETE method', () async {
@@ -206,7 +206,7 @@ void main() {
         );
 
         final req = customHttpClient.receivedRequests.last;
-        expect(req.method, 'delete');
+        expect(req.method, 'DELETE');
       });
 
       test('PATCH method', () async {
@@ -216,7 +216,7 @@ void main() {
         );
 
         final req = customHttpClient.receivedRequests.last;
-        expect(req.method, 'patch');
+        expect(req.method, 'PATCH');
       });
     });
 

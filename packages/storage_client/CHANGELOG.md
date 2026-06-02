@@ -1,3 +1,21 @@
+## 2.5.3
+
+ - **FIX**(storage): avoid duplicate Content-Type headers and header mutation ([#1359](https://github.com/supabase/supabase-flutter/issues/1359)). ([99d91367](https://github.com/supabase/supabase-flutter/commit/99d913673525cabdcf8c2466e58dcd406ab680e7))
+
+## 2.5.2
+
+ - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))
+
+## 2.5.1
+
+ - **FIX**(storage): make dedicated storage host opt-in via useNewHostname flag ([#1329](https://github.com/supabase/supabase-flutter/issues/1329)). ([a6640823](https://github.com/supabase/supabase-flutter/commit/a66408231ac3451c7b761425d3609908fa9394bd))
+
+## 2.5.0
+
+ - **FEAT**(storage): add setHeader method for custom HTTP headers ([#1313](https://github.com/supabase/supabase-flutter/issues/1313)). ([99231538](https://github.com/supabase/supabase-flutter/commit/9923153836438c35e47482658f3156e997c8be1f))
+ - **FEAT**(storage): add queryParams support to download method ([#1291](https://github.com/supabase/supabase-flutter/issues/1291)). ([6f56c193](https://github.com/supabase/supabase-flutter/commit/6f56c193c51d165ec23b4a31de7f2fce632529e8))
+ - **FEAT**(storage_client): use dedicated storage host for storage lib (allows >50GB uploads) ([#1285](https://github.com/supabase/supabase-flutter/issues/1285)). ([8e0993c6](https://github.com/supabase/supabase-flutter/commit/8e0993c64cbb7f7aaaa6b989c85a26ac7249f884))
+
 ## 2.4.1
 
  - **REFACTOR**: Remove unnecessary parentheses in Bucket.fromJson ([#1201](https://github.com/supabase/supabase-flutter/issues/1201)). ([d729fa46](https://github.com/supabase/supabase-flutter/commit/d729fa46c7a914e2705048b1e490adcc0270143c))

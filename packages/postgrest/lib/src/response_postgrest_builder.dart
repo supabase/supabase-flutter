@@ -14,6 +14,8 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
           isolate: builder._isolate,
           maybeSingle: builder._maybeSingle,
           converter: builder._converter,
+          retryEnabled: builder._retryEnabled,
+          retryDelay: builder._retryDelay,
         );
 
   @override
@@ -49,6 +51,8 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       count: _count,
       maybeSingle: _maybeSingle,
       converter: converter,
+      retryEnabled: _retryEnabled,
+      retryDelay: _retryDelay,
     );
   }
 }

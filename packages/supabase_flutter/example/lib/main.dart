@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
-  await Supabase.initialize(url: 'SUPABASE_URL', anonKey: 'SUPABASE_ANON_KEY');
+  await Supabase.initialize(
+      url: 'SUPABASE_URL', publishableKey: 'SUPABASE_PUBLISHABLE_KEY');
   runApp(const MyApp());
 }
 
@@ -37,11 +38,18 @@ class _MyWidgetState extends State<MyWidget> {
     setState(() {
       _user = Supabase.instance.client.auth.currentUser;
     });
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      setState(() {
-        _user = data.session?.user;
-      });
-    });
+    Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        setState(() {
+          _user = data.session?.user;
+        });
+      },
+      onError: (error, stackTrace) {
+        // Network errors (e.g. offline) are emitted as stream errors.
+        // Handle or log them here; omitting this handler causes an unhandled
+        // exception when the device has no connectivity.
+      },
+    );
   }
 
   @override

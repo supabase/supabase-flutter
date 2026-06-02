@@ -28,8 +28,9 @@ void main() {
 
     setUp(() async {
       final res = await http.post(
-          Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-          headers: {'x-forwarded-for': '127.0.0.1'});
+        Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
+        headers: {'x-forwarded-for': '127.0.0.1'},
+      );
       if (res.body.isNotEmpty) throw res.body;
 
       newEmail = getNewEmail();
@@ -39,10 +40,7 @@ void main() {
 
       client = GoTrueClient(
         url: gotrueUrl,
-        headers: {
-          'Authorization': 'Bearer $anonToken',
-          'apikey': anonToken,
-        },
+        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,
       );
@@ -59,10 +57,7 @@ void main() {
       clientWithAuthConfirmOff = GoTrueClient(
         url: gotrueUrl,
         httpClient: NoEmailConfirmationHttpClient(),
-        headers: {
-          'Authorization': 'Bearer $anonToken',
-          'apikey': anonToken,
-        },
+        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
         asyncStorage: asyncStorage,
         flowType: AuthFlowType.implicit,
       );
@@ -82,9 +77,7 @@ void main() {
     });
 
     test('anonymous sign-in', () async {
-      final response = await client.signInAnonymously(
-        data: {'Hello': 'World'},
-      );
+      final response = await client.signInAnonymously(data: {'Hello': 'World'});
       expect(response.session?.accessToken, isA<String>());
       expect(response.user?.isAnonymous, isTrue);
       expect(response.user?.userMetadata, {'Hello': 'World'});
@@ -103,18 +96,20 @@ void main() {
       expect(data?.user.id, isA<String>());
       expect(data?.user.userMetadata!['Hello'], 'World');
     });
-    test('signUp() with weak password throws AuthWeakPasswordException',
-        () async {
-      try {
-        await client.signUp(email: newEmail, password: '123');
-        fail('signUp with weak password should throw exception');
-      } on AuthException catch (error) {
-        expect(error, isA<AuthWeakPasswordException>());
-        expect(error.code, ErrorCode.weakPassword.code);
-      } catch (error) {
-        fail('signUp threw ${error.runtimeType} instead of AuthException');
-      }
-    });
+    test(
+      'signUp() with weak password throws AuthWeakPasswordException',
+      () async {
+        try {
+          await client.signUp(email: newEmail, password: '123');
+          fail('signUp with weak password should throw exception');
+        } on AuthException catch (error) {
+          expect(error, isA<AuthWeakPasswordException>());
+          expect(error.code, ErrorCode.weakPassword.code);
+        } catch (error) {
+          fail('signUp threw ${error.runtimeType} instead of AuthException');
+        }
+      },
+    );
 
     test('Parsing invalid URL should throw', () async {
       const expiresIn = 12345;
@@ -123,7 +118,8 @@ void main() {
       const providerToken = 'my_provider_token_with_fragment';
 
       final urlWithoutAccessToken = Uri.parse(
-          'http://my-callback-url.com/welcome#expires_in=$expiresIn&refresh_token=$refreshToken&token_type=$tokenType&provider_token=$providerToken');
+        'http://my-callback-url.com/welcome#expires_in=$expiresIn&refresh_token=$refreshToken&token_type=$tokenType&provider_token=$providerToken',
+      );
       try {
         await client.getSessionFromUrl(urlWithoutAccessToken);
         fail('getSessionFromUrl did not throw exception');
@@ -135,7 +131,8 @@ void main() {
           'Unverified email with spotify. A confirmation email has been sent to your spotify email';
 
       final urlWithoutAccessToken = Uri.parse(
-          'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}');
+        'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}',
+      );
       try {
         await client.getSessionFromUrl(urlWithoutAccessToken);
         fail('getSessionFromUrl did not throw exception');
@@ -145,7 +142,8 @@ void main() {
         expect(error.code, 'unauthorized_client');
       } catch (error) {
         fail(
-            'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
+          'getSessionFromUrl threw ${error.runtimeType} instead of AuthException',
+        );
       }
     });
 
@@ -156,9 +154,11 @@ void main() {
         stream,
         emitsInOrder([
           predicate<AuthState>(
-              (event) => event.event == AuthChangeEvent.signedIn),
+            (event) => event.event == AuthChangeEvent.signedIn,
+          ),
           predicate<AuthState>(
-              (event) => event.event == AuthChangeEvent.signedOut),
+            (event) => event.event == AuthChangeEvent.signedOut,
+          ),
         ]),
       );
 
@@ -192,17 +192,18 @@ void main() {
     });
 
     test(
-        'signUp() with autoConfirm off with phone should fail because Twilio is not setup',
-        () async {
-      try {
-        await clientWithAuthConfirmOff.signUp(
-          phone: phone1,
-          password: password,
-        );
-      } catch (error) {
-        expect(error, isA<AuthException>());
-      }
-    });
+      'signUp() with autoConfirm off with phone should fail because Twilio is not setup',
+      () async {
+        try {
+          await clientWithAuthConfirmOff.signUp(
+            phone: phone1,
+            password: password,
+          );
+        } catch (error) {
+          expect(error, isA<AuthException>());
+        }
+      },
+    );
 
     test('signUp() with email should throw error if used twice', () async {
       final localEmail = email1;
@@ -227,8 +228,10 @@ void main() {
     });
 
     test('signInWithPassword() with email', () async {
-      final response =
-          await client.signInWithPassword(email: email1, password: password);
+      final response = await client.signInWithPassword(
+        email: email1,
+        password: password,
+      );
       final data = response.session;
 
       expect(data?.accessToken, isA<String>());
@@ -249,8 +252,10 @@ void main() {
     });
 
     test('signInWithPassword() with phone', () async {
-      final response =
-          await client.signInWithPassword(phone: phone1, password: password);
+      final response = await client.signInWithPassword(
+        phone: phone1,
+        password: password,
+      );
       final data = response.session;
 
       expect(data?.accessToken, isA<String>());
@@ -269,9 +274,7 @@ void main() {
 
       final newClient = GoTrueClient(
         url: gotrueUrl,
-        headers: {
-          'apikey': anonToken,
-        },
+        headers: {'apikey': anonToken},
       );
 
       expect(newClient.currentSession?.refreshToken ?? '', isEmpty);
@@ -281,50 +284,147 @@ void main() {
     });
 
     test(
-        'Set session with an empty refresh token throws AuthSessionMissingException',
-        () async {
-      try {
-        await client.setSession('');
-        fail('setSession did not throw');
-      } catch (error) {
-        expect(error, isA<AuthSessionMissingException>());
-      }
-    });
+      'Set session with an empty refresh token throws AuthSessionMissingException',
+      () async {
+        await expectLater(
+          () => client.setSession(''),
+          throwsA(isA<AuthSessionMissingException>()),
+        );
+      },
+    );
 
-    test('Refresh session with refreshToken when no current session exists',
-        () async {
-      await client.signInWithPassword(email: email1, password: password);
+    test(
+      'Set session with both access token and refresh token skips network refresh',
+      () async {
+        await client.signInWithPassword(email: email1, password: password);
 
-      final refreshToken = client.currentSession?.refreshToken ?? '';
-      expect(refreshToken, isNotEmpty);
+        final refreshToken = client.currentSession?.refreshToken ?? '';
+        final accessToken = client.currentSession?.accessToken ?? '';
+        expect(refreshToken, isNotEmpty);
+        expect(accessToken, isNotEmpty);
 
-      final newClient = GoTrueClient(
-        url: gotrueUrl,
-        headers: {
-          'apikey': anonToken,
-        },
-      );
+        final newClient = GoTrueClient(
+          url: gotrueUrl,
+          headers: {'apikey': anonToken},
+        );
 
-      expect(newClient.currentSession, isNull);
+        expect(newClient.currentSession, isNull);
 
-      // This should work even though there's no current session,
-      // because we're providing a refreshToken parameter
-      final response = await newClient.refreshSession(refreshToken);
-      expect(response.session, isNotNull);
-      expect(response.session?.accessToken, isNotEmpty);
-      expect(newClient.currentSession?.accessToken, isNotEmpty);
-    });
+        expect(
+          newClient.onAuthStateChange,
+          emits(
+            predicate<AuthState>((s) => s.event == AuthChangeEvent.signedIn),
+          ),
+        );
+
+        final response = await newClient.setSession(
+          refreshToken,
+          accessToken: accessToken,
+        );
+
+        expect(response.session, isNotNull);
+        expect(response.session?.accessToken, equals(accessToken));
+        expect(response.session?.refreshToken, equals(refreshToken));
+        expect(response.user, isNotNull);
+        expect(newClient.currentSession?.accessToken, equals(accessToken));
+      },
+    );
+
+    test(
+      'Set session with expired access token falls back to refresh token',
+      () async {
+        await client.signInWithPassword(email: email1, password: password);
+
+        final refreshToken = client.currentSession?.refreshToken ?? '';
+        expect(refreshToken, isNotEmpty);
+
+        // A JWT that is syntactically valid but expired (exp in the past).
+        // Header: {"alg":"HS256","typ":"JWT"}
+        // Payload: {"sub":"user","exp":1}  (epoch second 1 = Jan 1, 1970)
+        // Signature: 3 zero bytes as valid base64url ("AAAA")
+        const expiredAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+            '.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxfQ'
+            '.AAAA';
+
+        final newClient = GoTrueClient(
+          url: gotrueUrl,
+          headers: {'apikey': anonToken},
+        );
+
+        // Should fall back to _callRefreshToken and succeed.
+        final response = await newClient.setSession(
+          refreshToken,
+          accessToken: expiredAccessToken,
+        );
+
+        expect(response.session, isNotNull);
+        expect(
+          response.session?.accessToken,
+          isNot(equals(expiredAccessToken)),
+        );
+        expect(newClient.currentSession?.accessToken, isNotEmpty);
+      },
+    );
+
+    test(
+      'Set session with empty access token throws AuthSessionMissingException',
+      () async {
+        await expectLater(
+          () => client.setSession('some-refresh-token', accessToken: ''),
+          throwsA(isA<AuthSessionMissingException>()),
+        );
+      },
+    );
+
+    test(
+      'Set session with malformed access token throws AuthInvalidJwtException',
+      () async {
+        await expectLater(
+          () => client.setSession(
+            'some-refresh-token',
+            accessToken: 'not-a-valid-jwt',
+          ),
+          throwsA(isA<AuthInvalidJwtException>()),
+        );
+      },
+    );
+
+    test(
+      'Refresh session with refreshToken when no current session exists',
+      () async {
+        await client.signInWithPassword(email: email1, password: password);
+
+        final refreshToken = client.currentSession?.refreshToken ?? '';
+        expect(refreshToken, isNotEmpty);
+
+        final newClient = GoTrueClient(
+          url: gotrueUrl,
+          headers: {'apikey': anonToken},
+        );
+
+        expect(newClient.currentSession, isNull);
+
+        // This should work even though there's no current session,
+        // because we're providing a refreshToken parameter
+        final response = await newClient.refreshSession(refreshToken);
+        expect(response.session, isNotNull);
+        expect(response.session?.accessToken, isNotEmpty);
+        expect(newClient.currentSession?.accessToken, isNotEmpty);
+      },
+    );
 
     test('Update user', () async {
       await client.signInWithPassword(email: email1, password: password);
 
       final response = await client.updateUser(
-        UserAttributes(data: {
-          'hello': 'world',
-          'japanese': '日本語',
-          'korean': '한국어',
-          'arabic': 'عربى',
-        }),
+        UserAttributes(
+          data: {
+            'hello': 'world',
+            'japanese': '日本語',
+            'korean': '한국어',
+            'arabic': 'عربى',
+          },
+        ),
       );
       final user = response.user;
       expect(user, client.currentUser);
@@ -381,40 +481,49 @@ void main() {
 
     group('The auth client can signin with third-party oAuth providers', () {
       test('signIn() with Provider', () async {
-        final res =
-            await client.getOAuthSignInUrl(provider: OAuthProvider.google);
+        final res = await client.getOAuthSignInUrl(
+          provider: OAuthProvider.google,
+        );
         expect(res.url, isA<String>());
         expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider with redirectTo', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: OAuthProvider.google, redirectTo: 'https://supabase.com');
-        expect(res.url,
-            '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com');
+          provider: OAuthProvider.google,
+          redirectTo: 'https://supabase.com',
+        );
+        expect(
+          res.url,
+          '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com',
+        );
         expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append a redirectUrl', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: OAuthProvider.google,
-            redirectTo: 'https://localhost:9000/welcome');
+          provider: OAuthProvider.google,
+          redirectTo: 'https://localhost:9000/welcome',
+        );
         expect(res.url, isA<String>());
         expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append scopes', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: OAuthProvider.google, scopes: 'repo');
+          provider: OAuthProvider.google,
+          scopes: 'repo',
+        );
         expect(res.url, isA<String>());
         expect(res.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append options', () async {
         final res = await client.getOAuthSignInUrl(
-            provider: OAuthProvider.google,
-            redirectTo: 'https://localhost:9000/welcome',
-            scopes: 'repo');
+          provider: OAuthProvider.google,
+          redirectTo: 'https://localhost:9000/welcome',
+          scopes: 'repo',
+        );
         expect(res.url, isA<String>());
         expect(res.provider, OAuthProvider.google);
       });
@@ -432,10 +541,7 @@ void main() {
       final httpClient = RetryTestHttpClient();
       final client = GoTrueClient(
         url: gotrueUrl,
-        headers: {
-          'Authorization': 'Bearer $anonToken',
-          'apikey': anonToken,
-        },
+        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
         asyncStorage: TestAsyncStorage(),
         httpClient: httpClient,
       );
@@ -466,27 +572,29 @@ void main() {
         stream,
         emitsInOrder([
           predicate<AuthState>(
-              (event) => event.event == AuthChangeEvent.signedIn),
+            (event) => event.event == AuthChangeEvent.signedIn,
+          ),
           predicate<AuthState>(
-              (event) => event.event == AuthChangeEvent.signedOut),
+            (event) => event.event == AuthChangeEvent.signedOut,
+          ),
         ]),
       );
 
-      final expiredSession =
-          getSessionData(DateTime.now().subtract(Duration(hours: 1)));
+      final expiredSession = getSessionData(
+        DateTime.now().subtract(Duration(hours: 1)),
+      );
 
-      await expectLater(client.recoverSession(expiredSession.sessionString),
-          throwsA(isA<AuthException>()));
+      await expectLater(
+        client.recoverSession(expiredSession.sessionString),
+        throwsA(isA<AuthException>()),
+      );
       expect(stream, emitsError(isA<AuthException>()));
 
       expect(client.currentSession, isNull);
     });
 
     test('Call getLinkIdentityUrl', () async {
-      await client.signInWithPassword(
-        email: email1,
-        password: password,
-      );
+      await client.signInWithPassword(email: email1, password: password);
       final res = await client.getLinkIdentityUrl(OAuthProvider.google);
       expect(res.url, isA<String>());
       final uri = Uri.parse(res.url);
@@ -498,10 +606,7 @@ void main() {
     late GoTrueClient client;
 
     setUpAll(() {
-      client = GoTrueClient(
-        url: gotrueUrl,
-        httpClient: CustomHttpClient(),
-      );
+      client = GoTrueClient(url: gotrueUrl, httpClient: CustomHttpClient());
     });
 
     test('signIn()', () async {
@@ -523,16 +628,14 @@ void main() {
 
     setUpAll(() {
       httpClient = RetryTestHttpClient();
-      client = GoTrueClient(
-        url: gotrueUrl,
-        httpClient: httpClient,
-      );
+      client = GoTrueClient(url: gotrueUrl, httpClient: httpClient);
     });
 
     test('Session recovery succeeds after retries', () async {
       try {
         await client.recoverSession(
-            '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"},"expiresAt":1680341705}');
+          '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"},"expiresAt":1680341705}',
+        );
       } on ClientException {
         // the method should throw
       }
@@ -555,18 +658,20 @@ void main() {
       );
     });
 
-    test('getOAuthSignInUrl with PKCE flow has the correct query parameters',
-        () async {
-      final response = await client.getOAuthSignInUrl(
-        provider: OAuthProvider.google,
-      );
-      final url = Uri.parse(response.url);
-      final queryParameters = url.queryParameters;
-      expect(queryParameters['provider'], 'google');
-      expect(queryParameters['flow_type'], 'pkce');
-      expect(queryParameters['code_challenge_method'], 's256');
-      expect(queryParameters['code_challenge'], isA<String>());
-    });
+    test(
+      'getOAuthSignInUrl with PKCE flow has the correct query parameters',
+      () async {
+        final response = await client.getOAuthSignInUrl(
+          provider: OAuthProvider.google,
+        );
+        final url = Uri.parse(response.url);
+        final queryParameters = url.queryParameters;
+        expect(queryParameters['provider'], 'google');
+        expect(queryParameters['flow_type'], 'pkce');
+        expect(queryParameters['code_challenge_method'], 's256');
+        expect(queryParameters['code_challenge'], isA<String>());
+      },
+    );
 
     test('Parsing an error URL should throw', () async {
       const errorMessage =
@@ -574,7 +679,8 @@ void main() {
 
       // Supabase Auth returns a URL with `#` even when using pkce flow.
       final urlWithoutAccessToken = Uri.parse(
-          'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}');
+        'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}',
+      );
       try {
         await client.getSessionFromUrl(urlWithoutAccessToken);
         fail('getSessionFromUrl did not throw exception');
@@ -582,7 +688,8 @@ void main() {
         expect(error.message, errorMessage);
       } catch (error) {
         fail(
-            'getSessionFromUrl threw ${error.runtimeType} instead of AuthException');
+          'getSessionFromUrl threw ${error.runtimeType} instead of AuthException',
+        );
       }
     });
   });

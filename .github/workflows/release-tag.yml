@@ -21,27 +21,31 @@ jobs:
     steps:
       - name: Generate token
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           cache: true
 
       - name: Setup Melos
-        uses: bluefireteam/melos-action@v3
+        uses: bluefireteam/melos-action@705015c3d2bc4ab94201ac24accb2bbe070cf533 # v3.6.0
         with:
           tag: true
-      - run: |
+      - name: Trigger publish workflows
+        run: |
           melos exec -c 1 --no-published --no-private --order-dependents -- \
-          gh workflow run release-publish.yml \
-          --ref \$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION
+          bash -c "gh workflow run release-publish.yml \
+            --ref \$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION \
+            --field package-name=\$MELOS_PACKAGE_NAME \
+            --field package-version=\$MELOS_PACKAGE_VERSION && \
+          sleep 30"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}

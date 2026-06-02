@@ -8,6 +8,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
     required super.schema,
     required super.table,
     required super.primaryKey,
+    required super.private,
   });
 
   /// Filters the results where [column] equals [value].

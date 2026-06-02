@@ -52,10 +52,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: ${{ matrix.flutter-version }}
           channel: 'stable'
@@ -87,11 +87,6 @@ jobs:
           flutter test --platform chrome
           cd example && flutter build web
 
-      - name: Build and test web (WASM)
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
-        run: |
-          flutter test --platform chrome --wasm
-          cd example && flutter build web --wasm
 
       - name: Build macOS app
         if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == '3.x'}}

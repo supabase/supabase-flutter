@@ -2,50 +2,78 @@ name: Publish Packages
 
 on:
   workflow_dispatch:
+    inputs:
+      package-name:
+        description: 'Name of the package to publish'
+        required: true
+        type: string
+      package-version:
+        description: 'Version to publish (without v prefix, e.g. 2.18.0)'
+        required: true
+        type: string
+
+concurrency:
+  group: release-publish-${{ inputs.package-name }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
   id-token: write
 
 jobs:
-  publish-packages:
+  publish-package:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Generate token
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.package-name }}-v${{ inputs.package-version }}
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           cache: true
 
+      - name: Bootstrap with Melos
+        uses: bluefireteam/melos-action@705015c3d2bc4ab94201ac24accb2bbe070cf533 # v3.6.0
+
+      - name: Publish dry run
+        run: melos publish --scope ${{ inputs.package-name }} --dry-run
+
       - name: Publish to pub.dev
-        uses: bluefireteam/melos-action@v3
-        with:
-          publish: true
+        run: melos publish --scope ${{ inputs.package-name }}
+
+      - name: Extract CHANGELOG section
+        id: changelog
+        run: |
+          VERSION="${{ inputs.package-version }}"
+          PACKAGE="${{ inputs.package-name }}"
+          HEADER="## ${VERSION}"
+          CHANGELOG_CONTENT=$(awk -v header="$HEADER" 'index($0,header)==1{flag=1;next} /^## /{flag=0} flag' "packages/${PACKAGE}/CHANGELOG.md")
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "${CHANGELOG_CONTENT}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ inputs.package-name }}-v${{ inputs.package-version }}
+          name: ${{ inputs.package-name }} v${{ inputs.package-version }}
           body: |
-            ## Package Release
-
-            Released package: ${{ github.ref_name }}
-
-            See the package CHANGELOG for detailed changes.
+            ${{ steps.changelog.outputs.changelog }}
 
             ---
-            *This release was created automatically by the Publish Packages workflow.*
+            Published to pub.dev: https://pub.dev/packages/${{ inputs.package-name }}/versions/${{ inputs.package-version }}
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(inputs.package-version, '-') }}
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

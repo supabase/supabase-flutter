@@ -31,24 +31,64 @@ class SupabaseStorageClient extends StorageBucketApi {
   ///  8. 30000 ms +/- 25%
   ///
   /// Anything beyond the 8th try will have 30 second delay.
+  ///
+  /// [useNewHostname] controls whether legacy storage URLs are rewritten to use
+  /// the dedicated storage host (`<ref>.storage.supabase.co`). Set to `true`
+  /// only if your project has the dedicated storage host enabled; otherwise
+  /// every storage request will fail with an `Invalid Storage request` error.
+  /// Defaults to `false` (opt-in).
   SupabaseStorageClient(
     String url,
     Map<String, String> headers, {
     Client? httpClient,
     int retryAttempts = 0,
+    bool useNewHostname = false,
   })  : assert(
           retryAttempts >= 0,
           'retryAttempts has to be greater than or equal to 0',
         ),
         _defaultRetryAttempts = retryAttempts,
         super(
-          url,
+          useNewHostname ? _transformStorageUrl(url) : url,
           {...Constants.defaultHeaders, ...headers},
           httpClient: httpClient,
         ) {
     _log.config(
         'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts');
     _log.finest('Initialize with headers: $headers');
+  }
+
+  /// Transforms legacy storage URLs to use the dedicated storage host.
+  ///
+  /// If legacy URI is used, replace with new storage host (disables request buffering to allow > 50GB uploads).
+  /// "project-ref.supabase.co/storage/v1" becomes "project-ref.storage.supabase.co/v1"
+  static String _transformStorageUrl(String url) {
+    final uri = Uri.parse(url);
+    final hostname = uri.host;
+
+    // Check if it's a Supabase host (supabase.co, supabase.in, or supabase.red)
+    final isSupabaseHost = RegExp(r'supabase\.(co|in|red)$').hasMatch(hostname);
+
+    // If it's a legacy storage URL, transform it
+    const legacyStoragePrefix = '/storage';
+    if (isSupabaseHost &&
+        !hostname.contains('storage.supabase.') &&
+        uri.path.startsWith(legacyStoragePrefix)) {
+      // Remove /storage from pathname
+      final newPath = uri.path.substring(legacyStoragePrefix.length);
+      // Replace supabase. with storage.supabase. in hostname
+      final newHostname = hostname.replaceAll('supabase.', 'storage.supabase.');
+
+      // Reconstruct the URI
+      return uri
+          .replace(
+            host: newHostname,
+            path: newPath,
+          )
+          .toString();
+    }
+
+    return url;
   }
 
   /// Perform file operation in a bucket.
@@ -66,5 +106,18 @@ class SupabaseStorageClient extends StorageBucketApi {
 
   void setAuth(String jwt) {
     headers['Authorization'] = 'Bearer $jwt';
+  }
+
+  /// Sets an HTTP header for subsequent requests.
+  ///
+  /// Creates a shallow copy of headers to avoid mutating shared state.
+  /// Returns this for method chaining.
+  ///
+  /// ```dart
+  /// storage.setHeader('x-custom-header', 'value').from('bucket').upload(...);
+  /// ```
+  SupabaseStorageClient setHeader(String key, String value) {
+    headers[key] = value;
+    return this;
   }
 }

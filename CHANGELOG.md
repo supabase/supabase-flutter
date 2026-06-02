@@ -3,6 +3,265 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-05-04
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.6.0`](#functions_client---v260)
+ - [`gotrue` - `v2.21.0`](#gotrue---v2210)
+ - [`storage_client` - `v2.5.3`](#storage_client---v253)
+ - [`supabase` - `v2.11.0`](#supabase---v2110)
+ - [`supabase_flutter` - `v2.13.0`](#supabase_flutter---v2130)
+
+---
+
+#### `functions_client` - `v2.6.0`
+
+ - **FIX**(functions_client): use uppercase HTTP method in requests ([#1353](https://github.com/supabase/supabase-flutter/issues/1353)). ([61cc7c03](https://github.com/supabase/supabase-flutter/commit/61cc7c03108a660beafd8cb2ca66a3789f88bb3f))
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+
+#### `gotrue` - `v2.21.0`
+
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+ - **DOCS**(gotrue): require onError handler in onAuthStateChange ([#1355](https://github.com/supabase/supabase-flutter/issues/1355)). ([74bb1725](https://github.com/supabase/supabase-flutter/commit/74bb1725d3ba61c6d07a7f5fe81f9ebcf0088188))
+
+#### `storage_client` - `v2.5.3`
+
+ - **FIX**(storage): avoid duplicate Content-Type headers and header mutation ([#1359](https://github.com/supabase/supabase-flutter/issues/1359)). ([99d91367](https://github.com/supabase/supabase-flutter/commit/99d913673525cabdcf8c2466e58dcd406ab680e7))
+
+#### `supabase` - `v2.11.0`
+
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+ - **FEAT**: optionally configure stream method to use a private channel ([#1357](https://github.com/supabase/supabase-flutter/issues/1357)). ([9d0de9e8](https://github.com/supabase/supabase-flutter/commit/9d0de9e8b691b9e28f79341dbc50c989ab47c150))
+
+#### `supabase_flutter` - `v2.13.0`
+
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+ - **DOCS**(gotrue): require onError handler in onAuthStateChange ([#1355](https://github.com/supabase/supabase-flutter/issues/1355)). ([74bb1725](https://github.com/supabase/supabase-flutter/commit/74bb1725d3ba61c6d07a7f5fe81f9ebcf0088188))
+
+
+## 2026-04-15
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.20.0`](#gotrue---v2200)
+ - [`postgrest` - `v2.7.0`](#postgrest---v270)
+ - [`realtime_client` - `v2.7.3`](#realtime_client---v273)
+ - [`storage_client` - `v2.5.2`](#storage_client---v252)
+ - [`supabase` - `v2.10.6`](#supabase---v2106)
+ - [`supabase_flutter` - `v2.12.4`](#supabase_flutter---v2124)
+
+---
+
+#### `gotrue` - `v2.20.0`
+
+ - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))
+ - **FEAT**(postgrest): add automatic retry for transient failures ([#1338](https://github.com/supabase/supabase-flutter/issues/1338)). ([fb1da8b2](https://github.com/supabase/supabase-flutter/commit/fb1da8b2e82208166fbc597532efe96824d8c14f))
+ - **FEAT**(auth): add optional accessToken parameter to setSession() ([#1327](https://github.com/supabase/supabase-flutter/issues/1327)). ([a95d1c01](https://github.com/supabase/supabase-flutter/commit/a95d1c01b036bcc2dc5edc717ea2981cf3296f13))
+ - **FEAT**(gotrue): convert OAuthProvider from enum to class for custom provider support ([#1339](https://github.com/supabase/supabase-flutter/issues/1339)). ([8966c6e9](https://github.com/supabase/supabase-flutter/commit/8966c6e91d8f38b234ac4b9f1acc1f1710e55a34))
+ - **DOCS**(gotrue): document the _refreshTokenCompleter concurrent-request deduplication pattern ([#1342](https://github.com/supabase/supabase-flutter/issues/1342)). ([fad2bb75](https://github.com/supabase/supabase-flutter/commit/fad2bb75aeecb0b9e81620b4539d668200029800))
+
+#### `postgrest` - `v2.7.0`
+
+ - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))
+ - **FIX**(postgrest): replace SCREAMING_SNAKE_CASE HTTP method constants with enum ([#1347](https://github.com/supabase/supabase-flutter/issues/1347)). ([13e8b39e](https://github.com/supabase/supabase-flutter/commit/13e8b39e791c85d532b078bccaaf9027b774e9c0))
+ - **FEAT**(postgrest): add automatic retry for transient failures ([#1338](https://github.com/supabase/supabase-flutter/issues/1338)). ([fb1da8b2](https://github.com/supabase/supabase-flutter/commit/fb1da8b2e82208166fbc597532efe96824d8c14f))
+
+#### `realtime_client` - `v2.7.3`
+
+ - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+ - **DOCS**(realtime,supabase_flutter): add class-level dartdoc to RealtimeClient and SupabaseAuth ([#1344](https://github.com/supabase/supabase-flutter/issues/1344)). ([b662dfd5](https://github.com/supabase/supabase-flutter/commit/b662dfd538ecef275cb684545dc51df351c2a269))
+
+#### `storage_client` - `v2.5.2`
+
+ - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))
+
+#### `supabase` - `v2.10.6`
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+#### `supabase_flutter` - `v2.12.4`
+
+ - **FIX**(supabase_flutter): log instead of swallow auth state stream errors ([#1346](https://github.com/supabase/supabase-flutter/issues/1346)). ([77ca5dbe](https://github.com/supabase/supabase-flutter/commit/77ca5dbe96681c72b21be550ee48befcf24f8616))
+ - **FIX**(postgrest): replace SCREAMING_SNAKE_CASE HTTP method constants with enum ([#1347](https://github.com/supabase/supabase-flutter/issues/1347)). ([13e8b39e](https://github.com/supabase/supabase-flutter/commit/13e8b39e791c85d532b078bccaaf9027b774e9c0))
+ - **FIX**(supabase_flutter): simplify lifecycle reconnection with serial Future chain ([#1340](https://github.com/supabase/supabase-flutter/issues/1340)). ([7121ac2b](https://github.com/supabase/supabase-flutter/commit/7121ac2bcfb0eba5697b22a08eac6c016c933b66))
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+ - **DOCS**(realtime,supabase_flutter): add class-level dartdoc to RealtimeClient and SupabaseAuth ([#1344](https://github.com/supabase/supabase-flutter/issues/1344)). ([b662dfd5](https://github.com/supabase/supabase-flutter/commit/b662dfd538ecef275cb684545dc51df351c2a269))
+
+
+## 2026-03-26
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`realtime_client` - `v2.7.2`](#realtime_client---v272)
+ - [`supabase` - `v2.10.5`](#supabase---v2105)
+ - [`supabase_flutter` - `v2.12.3`](#supabase_flutter---v2123)
+
+---
+
+#### `realtime_client` - `v2.7.2`
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+#### `supabase` - `v2.10.5`
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+#### `supabase_flutter` - `v2.12.3`
+
+ - **FIX**(realtime): prevent null check crash in connect() during rapid lifecycle transitions ([#1321](https://github.com/supabase/supabase-flutter/issues/1321)). ([61f7cd1c](https://github.com/supabase/supabase-flutter/commit/61f7cd1c4e3aa56a06e089459efdded4ea7bb28d))
+
+
+## 2026-03-25
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`storage_client` - `v2.5.1`](#storage_client---v251)
+ - [`supabase` - `v2.10.4`](#supabase---v2104)
+ - [`supabase_flutter` - `v2.12.2`](#supabase_flutter---v2122)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_flutter` - `v2.12.2`
+
+---
+
+#### `storage_client` - `v2.5.1`
+
+ - **FIX**(storage): make dedicated storage host opt-in via useNewHostname flag ([#1329](https://github.com/supabase/supabase-flutter/issues/1329)). ([a6640823](https://github.com/supabase/supabase-flutter/commit/a66408231ac3451c7b761425d3609908fa9394bd))
+
+#### `supabase` - `v2.10.4`
+
+ - **FIX**(storage): make dedicated storage host opt-in via useNewHostname flag ([#1329](https://github.com/supabase/supabase-flutter/issues/1329)). ([a6640823](https://github.com/supabase/supabase-flutter/commit/a66408231ac3451c7b761425d3609908fa9394bd))
+
+
+## 2026-03-24
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.19.0`](#gotrue---v2190)
+ - [`realtime_client` - `v2.7.1`](#realtime_client---v271)
+ - [`storage_client` - `v2.5.0`](#storage_client---v250)
+ - [`supabase` - `v2.10.3`](#supabase---v2103)
+ - [`supabase_flutter` - `v2.12.1`](#supabase_flutter---v2121)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.10.3`
+ - `supabase_flutter` - `v2.12.1`
+
+---
+
+#### `gotrue` - `v2.19.0`
+
+ - **FIX**(auth): fix getClaims() crash with asymmetric JWTs on first call ([#1300](https://github.com/supabase/supabase-flutter/issues/1300)). ([207ed5f7](https://github.com/supabase/supabase-flutter/commit/207ed5f7b6307fa64121debba2012f9c8e6cd85a))
+ - **FIX**(auth): fix verifyOTP parameter validation for OtpType.recovery with tokenHash ([#1295](https://github.com/supabase/supabase-flutter/issues/1295)). ([0719e55b](https://github.com/supabase/supabase-flutter/commit/0719e55b6a98fc63ef6b94fa60e86c0ac1b8d9e3))
+ - **FEAT**(auth): add X (OAuth 2.0) provider ([#1290](https://github.com/supabase/supabase-flutter/issues/1290)). ([c2305388](https://github.com/supabase/supabase-flutter/commit/c23053888d0a3fefc17b5ca31b162a94b7827748))
+
+#### `realtime_client` - `v2.7.1`
+
+ - **FIX**(realtime): add explicit type cast to fix web hot restart TypeError ([#1308](https://github.com/supabase/supabase-flutter/issues/1308)). ([bfa480a1](https://github.com/supabase/supabase-flutter/commit/bfa480a1417ffa288ae3ae39bc62cd7e5a90da05))
+ - **FIX**: delete toJson parser print ([#1293](https://github.com/supabase/supabase-flutter/issues/1293)). ([0d68e505](https://github.com/supabase/supabase-flutter/commit/0d68e505236894bf2e3528378a0a39ba49efd329))
+ - **FIX**(realtime_client): make ref field optional in Message class ([#1284](https://github.com/supabase/supabase-flutter/issues/1284)). ([0b194e4c](https://github.com/supabase/supabase-flutter/commit/0b194e4cf9886e6c52e0bdc6ef2f378edcd35f68))
+
+#### `storage_client` - `v2.5.0`
+
+ - **FEAT**(storage): add setHeader method for custom HTTP headers ([#1313](https://github.com/supabase/supabase-flutter/issues/1313)). ([99231538](https://github.com/supabase/supabase-flutter/commit/9923153836438c35e47482658f3156e997c8be1f))
+ - **FEAT**(storage): add queryParams support to download method ([#1291](https://github.com/supabase/supabase-flutter/issues/1291)). ([6f56c193](https://github.com/supabase/supabase-flutter/commit/6f56c193c51d165ec23b4a31de7f2fce632529e8))
+ - **FEAT**(storage_client): use dedicated storage host for storage lib (allows >50GB uploads) ([#1285](https://github.com/supabase/supabase-flutter/issues/1285)). ([8e0993c6](https://github.com/supabase/supabase-flutter/commit/8e0993c64cbb7f7aaaa6b989c85a26ac7249f884))
+
+
+## 2025-12-10
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.18.0`](#gotrue---v2180)
+ - [`postgrest` - `v2.6.0`](#postgrest---v260)
+ - [`realtime_client` - `v2.7.0`](#realtime_client---v270)
+ - [`supabase_flutter` - `v2.12.0`](#supabase_flutter---v2120)
+ - [`supabase` - `v2.10.2`](#supabase---v2102)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.10.2`
+
+---
+
+#### `gotrue` - `v2.18.0`
+
+ - **FIX**(gotrue): allow refreshSession with refreshToken when no current session exists ([#1263](https://github.com/supabase/supabase-flutter/issues/1263)). ([1d142c12](https://github.com/supabase/supabase-flutter/commit/1d142c129c2574f3b1cd39d2d3c118031acaa631))
+ - **FEAT**(oauth): add updateClient method to admin OAuth API ([#1262](https://github.com/supabase/supabase-flutter/issues/1262)). ([36d73343](https://github.com/supabase/supabase-flutter/commit/36d73343e8adf68a0b141dc62ad369488ed4f9e6))
+ - **DOCS**: update signInWithIdToken provider documentation ([#1264](https://github.com/supabase/supabase-flutter/issues/1264)). ([b10d0c88](https://github.com/supabase/supabase-flutter/commit/b10d0c88171d9d257694743d1ad24b7b6a1c190f))
+
+#### `postgrest` - `v2.6.0`
+
+ - **FEAT**(postgrest): add missing PostgREST v12 operators ([#1273](https://github.com/supabase/supabase-flutter/issues/1273)). ([f6270260](https://github.com/supabase/supabase-flutter/commit/f627026038344d6f2fdaa8ff8f7e0c968a8dad1b))
+
+#### `realtime_client` - `v2.7.0`
+
+ - **FEAT**(realtime): add explicit REST API call method for broadcast messages ([#1253](https://github.com/supabase/supabase-flutter/issues/1253)). ([8237ca57](https://github.com/supabase/supabase-flutter/commit/8237ca578efbd69f154bb29176aecc7bd841bb91))
+
+#### `supabase_flutter` - `v2.12.0`
+
+ - **FEAT**(postgrest): add missing PostgREST v12 operators ([#1273](https://github.com/supabase/supabase-flutter/issues/1273)). ([f6270260](https://github.com/supabase/supabase-flutter/commit/f627026038344d6f2fdaa8ff8f7e0c968a8dad1b))
+ - **DOCS**: update signInWithIdToken provider documentation ([#1264](https://github.com/supabase/supabase-flutter/issues/1264)). ([b10d0c88](https://github.com/supabase/supabase-flutter/commit/b10d0c88171d9d257694743d1ad24b7b6a1c190f))
+
+
 ## 2025-10-16
 
 ### Changes

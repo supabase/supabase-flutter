@@ -1,3 +1,8 @@
+## 2.6.0
+
+ - **FIX**(functions_client): use uppercase HTTP method in requests ([#1353](https://github.com/supabase/supabase-flutter/issues/1353)). ([61cc7c03](https://github.com/supabase/supabase-flutter/commit/61cc7c03108a660beafd8cb2ca66a3789f88bb3f))
+ - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
+
 ## 2.5.0
 
  - **FEAT**: add region as forceFunctionRegion query parameter ([#1243](https://github.com/supabase/supabase-flutter/issues/1243)). ([06c35baf](https://github.com/supabase/supabase-flutter/commit/06c35baf9974e87c06c65f7666165ef3c119d087))

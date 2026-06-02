@@ -38,6 +38,7 @@ void main() {
   tearDown(() {
     final file = File('a.txt');
     if (file.existsSync()) file.deleteSync();
+    customHttpClient.receivedRequests.clear();
   });
 
   group('Client with custom http client', () {
@@ -151,6 +152,24 @@ void main() {
       final response = await client.from('public_bucket').download('b.txt');
       expect(response, isA<Uint8List>());
       expect(String.fromCharCodes(response), 'Updated content');
+    });
+
+    test('should download public file with query params', () async {
+      final file = File('a.txt');
+      file.writeAsStringSync('Updated content');
+
+      customHttpClient.response = file.readAsBytesSync();
+
+      final response = await client
+          .from('public_bucket')
+          .download('b.txt', queryParams: {'version': '1'});
+      expect(response, isA<Uint8List>());
+      expect(String.fromCharCodes(response), 'Updated content');
+
+      expect(customHttpClient.receivedRequests.length, 1);
+
+      final request = customHttpClient.receivedRequests.first;
+      expect(request.url.queryParameters, {'version': '1'});
     });
 
     test('should get public URL of a path', () {
@@ -285,6 +304,132 @@ void main() {
       });
 
       expect(client.headers['X-Client-Info'], 'supabase-dart/0.0.0');
+    });
+  });
+
+  group('URL Construction', () {
+    group('default behavior (useNewHostname: false)', () {
+      test('should NOT transform legacy prod host by default', () {
+        const inputUrl = 'https://blah.supabase.co/storage/v1';
+        client = SupabaseStorageClient(inputUrl, {
+          'Authorization': 'Bearer $supabaseKey',
+        });
+        expect(client.url, inputUrl);
+      });
+
+      test('should NOT transform legacy staging host by default', () {
+        const inputUrl = 'https://blah.supabase.red/storage/v1';
+        client = SupabaseStorageClient(inputUrl, {
+          'Authorization': 'Bearer $supabaseKey',
+        });
+        expect(client.url, inputUrl);
+      });
+
+      test('should NOT transform legacy supabase.in host by default', () {
+        const inputUrl = 'https://blah.supabase.in/storage/v1';
+        client = SupabaseStorageClient(inputUrl, {
+          'Authorization': 'Bearer $supabaseKey',
+        });
+        expect(client.url, inputUrl);
+      });
+
+      test('should accept new host without modification', () {
+        const inputUrl = 'https://blah.storage.supabase.co/v1';
+        client = SupabaseStorageClient(inputUrl, {
+          'Authorization': 'Bearer $supabaseKey',
+        });
+        expect(client.url, inputUrl);
+      });
+
+      test('should not modify non-platform hosts', () {
+        const inputUrl = 'https://blah.supabase.co.example.com/storage/v1';
+        client = SupabaseStorageClient(inputUrl, {
+          'Authorization': 'Bearer $supabaseKey',
+        });
+        expect(client.url, inputUrl);
+      });
+
+      test('should support local host with port without modification', () {
+        const inputUrl = 'http://localhost:1234/storage/v1';
+        client = SupabaseStorageClient(inputUrl, {
+          'Authorization': 'Bearer $supabaseKey',
+        });
+        expect(client.url, inputUrl);
+      });
+    });
+
+    group('opt-in behavior (useNewHostname: true)', () {
+      test('should update legacy prod host to new host', () {
+        const inputUrl = 'https://blah.supabase.co/storage/v1';
+        const expectedUrl = 'https://blah.storage.supabase.co/v1';
+        client = SupabaseStorageClient(
+            inputUrl,
+            {
+              'Authorization': 'Bearer $supabaseKey',
+            },
+            useNewHostname: true);
+        expect(client.url, expectedUrl);
+      });
+
+      test('should update legacy staging host to new host', () {
+        const inputUrl = 'https://blah.supabase.red/storage/v1';
+        const expectedUrl = 'https://blah.storage.supabase.red/v1';
+        client = SupabaseStorageClient(
+            inputUrl,
+            {
+              'Authorization': 'Bearer $supabaseKey',
+            },
+            useNewHostname: true);
+        expect(client.url, expectedUrl);
+      });
+
+      test('should accept new host without modification', () {
+        const inputUrl = 'https://blah.storage.supabase.co/v1';
+        const expectedUrl = 'https://blah.storage.supabase.co/v1';
+        client = SupabaseStorageClient(
+            inputUrl,
+            {
+              'Authorization': 'Bearer $supabaseKey',
+            },
+            useNewHostname: true);
+        expect(client.url, expectedUrl);
+      });
+
+      test('should not modify non-platform hosts', () {
+        const inputUrl = 'https://blah.supabase.co.example.com/storage/v1';
+        const expectedUrl = 'https://blah.supabase.co.example.com/storage/v1';
+        client = SupabaseStorageClient(
+            inputUrl,
+            {
+              'Authorization': 'Bearer $supabaseKey',
+            },
+            useNewHostname: true);
+        expect(client.url, expectedUrl);
+      });
+
+      test('should support local host with port without modification', () {
+        const inputUrl = 'http://localhost:1234/storage/v1';
+        const expectedUrl = 'http://localhost:1234/storage/v1';
+        client = SupabaseStorageClient(
+            inputUrl,
+            {
+              'Authorization': 'Bearer $supabaseKey',
+            },
+            useNewHostname: true);
+        expect(client.url, expectedUrl);
+      });
+
+      test('should update legacy supabase.in host to new host', () {
+        const inputUrl = 'https://blah.supabase.in/storage/v1';
+        const expectedUrl = 'https://blah.storage.supabase.in/v1';
+        client = SupabaseStorageClient(
+            inputUrl,
+            {
+              'Authorization': 'Bearer $supabaseKey',
+            },
+            useNewHostname: true);
+        expect(client.url, expectedUrl);
+      });
     });
   });
 }

@@ -130,6 +130,41 @@ void main() {
       expect(client.currentUser, isNotNull);
     });
 
+    test('verifyOTP() with recovery type and tokenHash', () async {
+      // Recovery type with tokenHash should only include tokenHash and type
+      final response = await client.verifyOTP(
+        tokenHash: 'mock-token-hash',
+        type: OtpType.recovery,
+      );
+
+      expect(response.session, isNotNull);
+      expect(response.user, isNotNull);
+
+      // Verify session was set
+      expect(client.currentSession, isNotNull);
+      expect(client.currentUser, isNotNull);
+    });
+
+    test(
+        'verifyOTP() with recovery type and tokenHash should reject email/phone',
+        () async {
+      // Recovery type with tokenHash should not accept email/phone
+      try {
+        await client.verifyOTP(
+          email: testEmail,
+          tokenHash: 'mock-token-hash',
+          type: OtpType.recovery,
+        );
+        fail('Should have thrown an assertion error');
+      } catch (e) {
+        expect(e, isA<AssertionError>());
+        expect(
+            e.toString(),
+            contains(
+                'For recovery type with tokenHash, only tokenHash and type should be provided'));
+      }
+    });
+
     test('verifyOTP() without token should throw', () async {
       try {
         await client.verifyOTP(
