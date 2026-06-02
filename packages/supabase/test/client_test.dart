@@ -36,61 +36,52 @@ void main() {
       await supabase.dispose();
     });
 
-    test('X-Supabase-Client-Platform header is set properly', () {
-      expect(supabase.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
-    });
-    test('X-Supabase-Client-Platform header is set properly on auth', () {
-      expect(supabase.auth.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.auth.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
+    test('X-Client-Info includes structured platform metadata', () {
+      final clientInfo = supabase.headers['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Supabase-Client-Platform header is set properly on storage', () {
-      expect(supabase.storage.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.storage.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
+    test('X-Client-Info includes structured platform metadata on auth', () {
+      final clientInfo = supabase.auth.headers['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Supabase-Client-Platform header is set properly on functions', () {
-      expect(supabase.functions.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.functions.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
+    test('X-Client-Info includes structured platform metadata on storage', () {
+      final clientInfo = supabase.storage.headers['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Supabase-Client-Platform header is set properly on rest', () {
-      expect(supabase.rest.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.rest.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
+    test('X-Client-Info includes structured platform metadata on functions',
+        () {
+      final clientInfo = supabase.functions.headers['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Supabase-Client-Platform header is set properly on realtime',
+    test('X-Client-Info includes structured platform metadata on rest', () {
+      final clientInfo = supabase.rest.headers['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
+    });
+
+    test('X-Client-Info includes structured platform metadata on realtime',
         () async {
       final request = await getRealtimeRequest(
         server: mockServer,
         supabaseClient: supabase,
       );
-      expect(request.headers['X-Supabase-Client-Platform']?.first,
-          Platform.operatingSystem);
-      expect(request.headers['X-Supabase-Client-Platform-Version']?.first,
-          Platform.operatingSystemVersion);
-    });
-    test('X-Client-Info header is set properly on realtime', () async {
-      final request = await getRealtimeRequest(
-        server: mockServer,
-        supabaseClient: supabase,
-      );
-
-      final xClientHeaderBeforeSlash =
-          request.headers['X-Client-Info']?.first.split('/').first;
-
-      expect(xClientHeaderBeforeSlash, 'supabase-dart');
+      final clientInfo = request.headers['X-Client-Info']?.first;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
     });
 
     test('X-Client-Info header is set properly on storage', () {
