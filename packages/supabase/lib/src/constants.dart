@@ -6,7 +6,7 @@ class Constants {
   static String? get platformVersion => condPlatformVersion;
   static String? get runtimeVersion => condRuntimeVersion;
 
-  static final Map<String, String> defaultHeaders = {
+  static final Map<String, String> defaultHeaders = Map.unmodifiable({
     'X-Client-Info': [
       'supabase-dart/$version',
       if (platform != null) 'platform=$platform',
@@ -15,5 +15,5 @@ class Constants {
       'runtime=dart',
       if (runtimeVersion != null) 'runtime-version=$runtimeVersion',
     ].join('; '),
-  };
+  });
 }
