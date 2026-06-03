@@ -53,9 +53,6 @@ jobs:
       - name: Set up Dart
         uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1.7.2
 
-      - name: Publish dry run
-        run: melos publish --yes --scope ${{ inputs.package-name }} --dry-run
-
       - name: Publish to pub.dev
         run: melos publish --yes --no-dry-run --scope ${{ inputs.package-name }}
 
