@@ -42,10 +42,11 @@ jobs:
           cache: true
 
       - name: Setup Melos
-        uses: bluefireteam/melos-action@705015c3d2bc4ab94201ac24accb2bbe070cf533 # v3.6.0
+        uses: bluefireteam/melos-action@ef13f68118735113cb48b82cd5ba876da9c3f17c # v3.7.0
         with:
           run-versioning: ${{ inputs.prerelease == false }}
           run-versioning-prerelease: ${{ inputs.prerelease == true }}
           run-versioning-graduate: ${{ inputs.graduate == true }}
           create-pr: true
+          pr-title: 'chore(release): publish packages'
           token: ${{ steps.app-token.outputs.token }}
