@@ -50,7 +50,16 @@ jobs:
         run: melos publish --yes --scope ${{ inputs.package-name }} --dry-run
 
       - name: Publish to pub.dev
-        run: melos publish --yes --no-dry-run --scope ${{ inputs.package-name }}
+        run: |
+          # subosito/flutter-action does not wire up pub.dev OIDC, so dart pub
+          # falls back to an interactive OAuth prompt and hangs in CI. Exchange
+          # the GitHub Actions OIDC token explicitly and hand it to pub.
+          PUB_TOKEN=$(curl -sSL \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://pub.dev" | jq -r '.value')
+          export PUB_TOKEN
+          dart pub token add https://pub.dev --env-var PUB_TOKEN
+          melos publish --yes --no-dry-run --scope ${{ inputs.package-name }}
 
       - name: Extract CHANGELOG section
         id: changelog
