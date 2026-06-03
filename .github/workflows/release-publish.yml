@@ -47,10 +47,10 @@ jobs:
         uses: bluefireteam/melos-action@705015c3d2bc4ab94201ac24accb2bbe070cf533 # v3.6.0
 
       - name: Publish dry run
-        run: melos publish --scope ${{ inputs.package-name }} --dry-run
+        run: melos publish --yes --scope ${{ inputs.package-name }} --dry-run
 
       - name: Publish to pub.dev
-        run: melos publish --scope ${{ inputs.package-name }}
+        run: melos publish --yes --scope ${{ inputs.package-name }}
 
       - name: Extract CHANGELOG section
         id: changelog
