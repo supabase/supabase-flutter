@@ -46,6 +46,13 @@ jobs:
       - name: Bootstrap with Melos
         uses: bluefireteam/melos-action@705015c3d2bc4ab94201ac24accb2bbe070cf533 # v3.6.0
 
+      # Sets up the pipeline for usage with pub.dev (this sets up OIDC).
+      # subosito/flutter-action does not wire up pub.dev OIDC on its own, so
+      # without this dart pub falls back to an interactive OAuth prompt and
+      # hangs in CI.
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1.7.2
+
       - name: Publish dry run
         run: melos publish --yes --scope ${{ inputs.package-name }} --dry-run
 
