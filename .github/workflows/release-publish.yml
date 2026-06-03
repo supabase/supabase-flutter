@@ -50,7 +50,7 @@ jobs:
         run: melos publish --yes --scope ${{ inputs.package-name }} --dry-run
 
       - name: Publish to pub.dev
-        run: melos publish --yes --scope ${{ inputs.package-name }}
+        run: melos publish --yes --no-dry-run --scope ${{ inputs.package-name }}
 
       - name: Extract CHANGELOG section
         id: changelog
