@@ -42,7 +42,7 @@ jobs:
           cache: true
 
       - name: Setup Melos
-        uses: bluefireteam/melos-action@ef13f68118735113cb48b82cd5ba876da9c3f17c # v3.7.0
+        uses: bluefireteam/melos-action@2982f8e4fc92440a219490009d6d05195cb1a6a5 # v3.8.0
         with:
           run-versioning: ${{ inputs.prerelease == false }}
           run-versioning-prerelease: ${{ inputs.prerelease == true }}

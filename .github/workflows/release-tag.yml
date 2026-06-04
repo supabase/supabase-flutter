@@ -39,7 +39,7 @@ jobs:
           cache: true
 
       - name: Setup Melos
-        uses: bluefireteam/melos-action@705015c3d2bc4ab94201ac24accb2bbe070cf533 # v3.6.0
+        uses: bluefireteam/melos-action@2982f8e4fc92440a219490009d6d05195cb1a6a5 # v3.8.0
         with:
           tag: true
           token: ${{ steps.app-token.outputs.token }}
