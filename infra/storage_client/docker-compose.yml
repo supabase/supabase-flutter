@@ -81,12 +81,12 @@ services:
       - /sql/dummy-data.sql
 
   imgproxy:
-    image: darthsim/imgproxy:v3.30.1
+    image: darthsim/imgproxy:v4.0.3
     volumes:
     -   assets-volume:/tmp/storage
     environment:
       - IMGPROXY_LOCAL_FILESYSTEM_ROOT=/
       - IMGPROXY_USE_ETAG=true
-      - IMGPROXY_ENABLE_WEBP_DETECTION=true
+      - IMGPROXY_AUTO_WEBP=true
 volumes:
   assets-volume:
