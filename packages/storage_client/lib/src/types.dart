@@ -309,7 +309,7 @@ class StorageException implements Exception {
       StorageException(
         json['message'] as String? ?? json.toString(),
         error: json['error'] as String?,
-        statusCode: (json['statusCode'] as String?) ?? statusCode,
+        statusCode: json['statusCode']?.toString() ?? statusCode,
       );
 
   @override
