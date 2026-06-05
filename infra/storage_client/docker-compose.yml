@@ -81,7 +81,7 @@ services:
       - /sql/dummy-data.sql
 
   imgproxy:
-    image: darthsim/imgproxy
+    image: darthsim/imgproxy:v4.0.3
     ports:
       - 50020:8080
     volumes:
