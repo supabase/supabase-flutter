@@ -1,3 +1,7 @@
+## 2.12.1
+
+ - Update a dependency to the latest release.
+
 ## 2.12.0
 
  - **FIX**: make `defaultHeaders` unmodifiable to prevent accidental mutation ([#1370](https://github.com/supabase/supabase-flutter/issues/1370)). ([957d7507](https://github.com/supabase/supabase-flutter/commit/957d7507a93f23ffab5f449a4da85804cb0c0010))

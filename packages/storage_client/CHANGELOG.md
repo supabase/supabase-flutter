@@ -1,3 +1,7 @@
+## 2.5.5
+
+ - **FIX**(storage): use toString() for statusCode to handle non-string types ([#1323](https://github.com/supabase/supabase-flutter/issues/1323)). ([b8583642](https://github.com/supabase/supabase-flutter/commit/b858364271144899f38e033c74437d0f1c52c6b4))
+
 ## 2.5.4
 
  - **FIX**: mark lastAccessedAt field as deprecated ([#1279](https://github.com/supabase/supabase-flutter/issues/1279)). ([cdf24dbc](https://github.com/supabase/supabase-flutter/commit/cdf24dbc075e263b69d508594b7e7150f18cd6d9))

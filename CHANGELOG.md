@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-06-05
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`storage_client` - `v2.5.5`](#storage_client---v255)
+ - [`supabase` - `v2.12.1`](#supabase---v2121)
+ - [`supabase_flutter` - `v2.14.1`](#supabase_flutter---v2141)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.12.1`
+ - `supabase_flutter` - `v2.14.1`
+
+---
+
+#### `storage_client` - `v2.5.5`
+
+ - **FIX**(storage): use toString() for statusCode to handle non-string types ([#1323](https://github.com/supabase/supabase-flutter/issues/1323)). ([b8583642](https://github.com/supabase/supabase-flutter/commit/b858364271144899f38e033c74437d0f1c52c6b4))
+
+
 ## 2026-06-02
 
 ### Changes
