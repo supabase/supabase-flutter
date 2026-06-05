@@ -90,5 +90,10 @@ services:
       - IMGPROXY_LOCAL_FILESYSTEM_ROOT=/
       - IMGPROXY_USE_ETAG=true
       - IMGPROXY_ENABLE_WEBP_DETECTION=true
+    healthcheck:
+      test: ["CMD", "imgproxy", "health"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
 volumes:
   assets-volume:
