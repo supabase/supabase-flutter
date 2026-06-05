@@ -82,8 +82,6 @@ services:
 
   imgproxy:
     image: darthsim/imgproxy:v3.30.1
-    ports:
-      - 50020:8080
     volumes:
     -   assets-volume:/tmp/storage
     environment:
