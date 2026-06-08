@@ -129,10 +129,82 @@ void main() {
     });
 
     test('should createSignedUrl file', () async {
-      customHttpClient.response = {'signedURL': 'url'};
+      customHttpClient.response = {'signedURL': '/signed/url'};
 
       final response = await client.from('public').createSignedUrl('b.txt', 60);
       expect(response, isA<String>());
+      expect(response, endsWith('/signed/url'));
+    });
+
+    test('createSignedUrl throws StorageException when signedURL is null',
+        () async {
+      customHttpClient.response = {'signedURL': null};
+
+      expect(
+        () => client.from('public').createSignedUrl('missing.txt', 60),
+        throwsA(isA<StorageException>()),
+      );
+    });
+
+    test('createSignedUrlsResult returns success and failure for mixed paths',
+        () async {
+      customHttpClient.response = [
+        {
+          'path': 'exists.txt',
+          'signedURL': '/storage/v1/object/sign/public/exists.txt?token=abc',
+        },
+        {
+          'path': 'missing.txt',
+          'signedURL': null,
+          'error': 'not_found',
+        },
+      ];
+
+      final results = await client
+          .from('public')
+          .createSignedUrlsResult(['exists.txt', 'missing.txt'], 60);
+
+      expect(results.length, 2);
+      expect(results[0], isA<SignedUrlSuccess>());
+      expect(results[1], isA<SignedUrlFailure>());
+
+      final success = results[0] as SignedUrlSuccess;
+      expect(success.path, 'exists.txt');
+      expect(
+        success.signedUrl,
+        endsWith('/storage/v1/object/sign/public/exists.txt?token=abc'),
+      );
+
+      final failure = results[1] as SignedUrlFailure;
+      expect(failure.path, 'missing.txt');
+      expect(failure.error, 'not_found');
+    });
+
+    // ignore: deprecated_member_use_from_same_package
+    test('createSignedUrls (deprecated) omits missing paths', () async {
+      customHttpClient.response = [
+        {
+          'path': 'exists.txt',
+          'signedURL': '/storage/v1/object/sign/public/exists.txt?token=abc',
+        },
+        {
+          'path': 'missing.txt',
+          'signedURL': null,
+          'error': 'not_found',
+        },
+      ];
+
+      // ignore: deprecated_member_use_from_same_package
+      final urls = await client
+          .from('public')
+          .createSignedUrls(['exists.txt', 'missing.txt'], 60);
+
+      expect(urls.length, 1);
+      expect(urls[0].path, 'exists.txt');
+      expect(
+        urls[0].signedUrl,
+        endsWith('/storage/v1/object/sign/public/exists.txt?token=abc'),
+      );
     });
 
     test('should list files', () async {

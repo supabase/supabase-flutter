@@ -284,6 +284,45 @@ class SignedUrl {
   }
 }
 
+/// Represents a per-item result from [StorageFileApi.createSignedUrlsResult].
+///
+/// Use exhaustive pattern matching to handle both outcomes:
+/// ```dart
+/// for (final result in results) {
+///   switch (result) {
+///     case SignedUrlSuccess(:final signedUrl):
+///       print('URL: $signedUrl');
+///     case SignedUrlFailure(:final error):
+///       print('Missing: $error');
+///   }
+/// }
+/// ```
+sealed class SignedUrlResult {
+  /// The requested file path.
+  final String path;
+  const SignedUrlResult({required this.path});
+}
+
+/// A successful [SignedUrlResult]: the file was found and a signed URL was generated.
+final class SignedUrlSuccess extends SignedUrlResult {
+  /// The signed URL ready for use.
+  final String signedUrl;
+  const SignedUrlSuccess({required super.path, required this.signedUrl});
+
+  @override
+  String toString() => 'SignedUrlSuccess(path: $path, signedUrl: $signedUrl)';
+}
+
+/// A failed [SignedUrlResult]: the path could not be signed (e.g. the file does not exist).
+final class SignedUrlFailure extends SignedUrlResult {
+  /// The reason the URL could not be created.
+  final String error;
+  const SignedUrlFailure({required super.path, required this.error});
+
+  @override
+  String toString() => 'SignedUrlFailure(path: $path, error: $error)';
+}
+
 class SignedUploadURLResponse extends SignedUrl {
   /// Token to be used when uploading files with the `uploadToSignedUrl` method.
   final String token;
