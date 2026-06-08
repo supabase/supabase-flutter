@@ -366,22 +366,53 @@ class StorageFileApi {
       },
       options: options,
     );
-    final signedUrlPath = (response as Map<String, dynamic>)['signedURL'];
+    final signedUrlPath =
+        (response as Map<String, dynamic>)['signedURL'] as String?;
+    if (signedUrlPath == null) {
+      throw StorageException('No signed URL returned by API');
+    }
     final signedUrl = '$url$signedUrlPath';
     return signedUrl;
+  }
+
+  // TODO(v3): Remove this deprecated overload and rename createSignedUrlsResult
+  // to createSignedUrls. Dart lacks overloading so the preferred API had to be
+  // given a temporary name. https://linear.app/supabase/issue/SDK-1002
+  /// Create signed URLs to download files without requiring permissions.
+  ///
+  /// Items for paths that do not exist are silently omitted. Use
+  /// [createSignedUrlsResult] to distinguish missing paths from successful ones.
+  ///
+  /// [paths] is the file paths to be downloaded, including the current file
+  /// names. For example: `createSignedUrls(['folder/image.png', 'folder2/image2.png'])`.
+  ///
+  /// [expiresIn] is the number of seconds until the signed URLs expire. For
+  /// example, `60` for URLs which are valid for one minute.
+  @Deprecated('Use createSignedUrlsResult to handle missing paths correctly.')
+  Future<List<SignedUrl>> createSignedUrls(
+    List<String> paths,
+    int expiresIn,
+  ) async {
+    final results = await createSignedUrlsResult(paths, expiresIn);
+    return results
+        .whereType<SignedUrlSuccess>()
+        .map((r) => SignedUrl(path: r.path, signedUrl: r.signedUrl))
+        .toList();
   }
 
   /// Create signed URLs to download files without requiring permissions. These
   /// URLs can be valid for a set number of seconds.
   ///
+  /// Returns one [SignedUrlResult] per requested path. Each result is either a
+  /// [SignedUrlSuccess] (with a ready-to-use signed URL) or a [SignedUrlFailure]
+  /// (when the server could not sign that path, e.g. the file does not exist).
+  ///
   /// [paths] is the file paths to be downloaded, including the current file
-  /// names. For example: `createdSignedUrl(['folder/image.png', 'folder2/image2.png'])`.
+  /// names. For example: `createSignedUrlsResult(['folder/image.png', 'folder2/image2.png'])`.
   ///
   /// [expiresIn] is the number of seconds until the signed URLs expire. For
   /// example, `60` for URLs which are valid for one minute.
-  ///
-  /// A list of [SignedUrl]s is returned.
-  Future<List<SignedUrl>> createSignedUrls(
+  Future<List<SignedUrlResult>> createSignedUrlsResult(
     List<String> paths,
     int expiresIn,
   ) async {
@@ -394,15 +425,18 @@ class StorageFileApi {
       },
       options: options,
     );
-    final List<SignedUrl> urls = (response as List).map((e) {
-      return SignedUrl(
-        // Prevents exceptions being thrown when null value is returned
-        // https://github.com/supabase/storage-api/issues/353
-        path: e['path'] ?? '',
-        signedUrl: '$url${e['signedURL']}',
-      );
+    return (response as List).map<SignedUrlResult>((e) {
+      final signedUrlPath = e['signedURL'] as String?;
+      final path = e['path'] as String? ?? '';
+      if (signedUrlPath != null) {
+        return SignedUrlSuccess(path: path, signedUrl: '$url$signedUrlPath');
+      } else {
+        return SignedUrlFailure(
+          path: path,
+          error: e['error'] as String? ?? 'Unknown error',
+        );
+      }
     }).toList();
-    return urls;
   }
 
   /// Downloads a file.
