@@ -442,49 +442,64 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   Future<U> then<U>(
     FutureOr<U> Function(T value) onValue, {
     Function? onError,
-  }) async {
+  }) {
     if (onError != null &&
         onError is! Function(Object, StackTrace) &&
         onError is! Function(Object)) {
-      throw ArgumentError.value(
+      return Future.error(ArgumentError.value(
         onError,
         "onError",
-        "Error handler must accept one Object or one Object and a StackTrace"
-            " as arguments, and return a value of the returned future's type",
-      );
+        "Error handler must accept one Object or one Object and a StackTrace "
+            "as arguments, and return a value of the returned future's type",
+      ));
     }
 
-    try {
-      final response = await _execute();
-      return onValue(response);
-    } catch (error, stack) {
-      final FutureOr<U> result;
-      if (onError != null) {
-        if (onError is Function(Object, StackTrace)) {
-          result = onError(error, stack);
-        } else if (onError is Function(Object)) {
-          result = onError(error);
-        } else {
-          throw ArgumentError.value(
-            onError,
-            "onError",
-            "Error handler must accept one Object or one Object and a StackTrace"
-                " as arguments, and return a value of the returned future's type",
-          );
-        }
-        // Give better error messages if the result is not a valid
-        // FutureOr<R>.
-        try {
-          return result;
-        } on TypeError {
-          throw ArgumentError(
-              "The error handler of Future.then"
-                  " must return a value of the returned future's type",
-              "onError");
-        }
-      }
-      rethrow;
+    // then() is called synchronously by Dart's async state machine, so user
+    // frames are still on the stack and appear in error traces.
+    final callerTrace = StackTrace.current;
+
+    StackTrace enrichStack(StackTrace stack) =>
+        StackTrace.fromString('$stack\n<async call site>\n$callerTrace');
+
+    if (onError == null) {
+      return _execute().then(onValue,
+          onError: (Object error, StackTrace stack) {
+        Error.throwWithStackTrace(error, enrichStack(stack));
+      });
     }
+
+    return _execute().then(onValue, onError: (Object error, StackTrace stack) {
+      final enrichedStack = enrichStack(stack);
+      final FutureOr<U> result;
+      if (onError is Function(Object, StackTrace)) {
+        result = onError(error, enrichedStack);
+      } else if (onError is Function(Object)) {
+        try {
+          result = onError(error);
+        } catch (rethrown) {
+          if (identical(rethrown, error)) {
+            Error.throwWithStackTrace(rethrown, enrichedStack);
+          }
+          rethrow;
+        }
+      } else {
+        throw ArgumentError.value(
+          onError,
+          "onError",
+          "Error handler must accept one Object or one Object and a StackTrace"
+              " as arguments, and return a value of the returned future's type",
+        );
+      }
+      try {
+        return result;
+      } on TypeError {
+        throw ArgumentError(
+          "The error handler of Future.then must return a value of the "
+              "returned future's type",
+          "onError",
+        );
+      }
+    });
   }
 
   @override
