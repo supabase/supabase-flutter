@@ -45,9 +45,6 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - name: Trigger publish workflows
         run: |
-          # --no-published silently excludes all established packages because it
-          # filters to packages that have NEVER been on pub.dev. Instead, check
-          # inside each package whether a new tag was created on HEAD for it.
           melos exec -c 1 --no-private --order-dependents -- \
           bash -c "
             if git tag --points-at HEAD | grep -qx \"\$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION\"; then
