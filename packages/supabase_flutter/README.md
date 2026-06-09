@@ -184,41 +184,53 @@ Future<AuthResponse> _googleSignIn() async {
 ...
 ```
 
-### Native Facebook Login
+#### <a id="native-facebook-sign-in"></a>Native Facebook sign in
 
-You can also use the `signInWithIdToken` method to perform a native Facebook login using the `flutter_facebook_auth` package. Facebook provides the required OIDC ID Token via its Limited Login feature or when the `openid` permission is requested.
+You can use [flutter_facebook_auth](https://pub.dev/packages/flutter_facebook_auth) `^7.1.7` with `signInWithIdToken` on both iOS and Android.
 
-Depending on the configuration, `flutter_facebook_auth` will return a `ClassicToken` or a `LimitedToken`. You must extract the `authenticationToken` or `tokenString` respectively to pass to the `idToken` parameter.
+- **iOS** uses Facebook's [Limited Login](https://developers.facebook.com/docs/facebook-login/limited-login/) (`LoginTracking.limited`), which returns a `LimitedToken` containing an OIDC ID token directly.
+- **Android** requires `LoginBehavior.webOnly` and the `openid` permission to receive an OIDC ID token in `ClassicToken.authenticationToken`.
 
 ```dart
+import 'dart:io';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<AuthResponse> _facebookSignIn() async {
-  // Perform the sign in with Facebook
-  final LoginResult result = await FacebookAuth.instance.login(
-    permissions: ['public_profile', 'email'],
-    // Note: Android requires LoginBehavior.webOnly to return an OIDC ID Token.
-    loginBehavior: LoginBehavior.webOnly,
-  );
+  late final LoginResult result;
+
+  if (Platform.isIOS) {
+    result = await FacebookAuth.instance.login(
+      permissions: ['public_profile', 'email'],
+      loginTracking: LoginTracking.limited,
+    );
+  } else {
+    // Android: webOnly behavior with openid scope returns an OIDC ID token.
+    result = await FacebookAuth.instance.login(
+      permissions: ['public_profile', 'email', 'openid'],
+      loginBehavior: LoginBehavior.webOnly,
+    );
+  }
 
   if (result.status != LoginStatus.success) {
     throw 'Facebook sign in failed: ${result.message}';
   }
 
-  // Extract the OIDC ID Token from the result
-  String? idToken;
-  if (result.accessToken is ClassicToken) {
-    idToken = (result.accessToken as ClassicToken).authenticationToken;
-  } else if (result.accessToken is LimitedToken) {
-    idToken = result.accessToken!.tokenString;
+  final accessToken = result.accessToken;
+  final String idToken;
+
+  if (accessToken is LimitedToken) {
+    idToken = accessToken.tokenString;
+  } else if (accessToken is ClassicToken) {
+    final authToken = accessToken.authenticationToken;
+    if (authToken == null) {
+      throw 'No ID token returned. Make sure to use LoginBehavior.webOnly and include the openid scope on Android.';
+    }
+    idToken = authToken;
+  } else {
+    throw 'Unexpected Facebook token type: ${accessToken?.runtimeType}';
   }
 
-  if (idToken == null) {
-    throw 'No ID Token found. Make sure you use LoginBehavior.webOnly on Android.';
-  }
-
-  // Sign in to Supabase
   return Supabase.instance.client.auth.signInWithIdToken(
     provider: OAuthProvider.facebook,
     idToken: idToken,
