@@ -478,9 +478,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           return result;
         } on TypeError {
           throw ArgumentError(
-              "The error handler of Future.then"
-                  " must return a value of the returned future's type",
-              "onError");
+            "The error handler of Future.then must return a value of the "
+                "returned future's type",
+            "onError",
+          );
         }
       }
       rethrow;
