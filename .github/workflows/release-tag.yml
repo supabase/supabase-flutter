@@ -45,15 +45,8 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - name: Trigger publish workflows
         run: |
-          melos exec -c 1 --no-private --order-dependents -- \
-          bash -c "
-            if git tag --points-at HEAD | grep -qx \"\$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION\"; then
-              gh workflow run release-publish.yml \
-                --ref \$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION \
-                --field package-name=\$MELOS_PACKAGE_NAME \
-                --field package-version=\$MELOS_PACKAGE_VERSION
-              sleep 30
-            fi
-          "
+          melos exec -c 1 --no-published --no-private --order-dependents -- \
+          gh workflow run release-publish.yml \
+          --ref \$MELOS_PACKAGE_NAME-v\$MELOS_PACKAGE_VERSION
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
