@@ -1,3 +1,8 @@
+## 2.14.2
+
+ - **DOCS**(supabase_flutter): fix Facebook native login for iOS and Android ([#1386](https://github.com/supabase/supabase-flutter/issues/1386)). ([8cbea828](https://github.com/supabase/supabase-flutter/commit/8cbea8283e38c2a765da715ffa79e045471b1257))
+ - **DOCS**: update facebook native login docs ([#1322](https://github.com/supabase/supabase-flutter/issues/1322)). ([213f6277](https://github.com/supabase/supabase-flutter/commit/213f6277869c47ac5667779f3499cc11ba0aea69))
+
 ## 2.14.1
 
  - Update a dependency to the latest release.

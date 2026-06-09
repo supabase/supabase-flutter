@@ -3,6 +3,50 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-06-09
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`postgrest` - `v2.7.1`](#postgrest---v271)
+ - [`realtime_client` - `v2.7.4`](#realtime_client---v274)
+ - [`storage_client` - `v2.5.6`](#storage_client---v256)
+ - [`supabase_flutter` - `v2.14.2`](#supabase_flutter---v2142)
+ - [`supabase` - `v2.12.2`](#supabase---v2122)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.12.2`
+
+---
+
+#### `postgrest` - `v2.7.1`
+
+ - **FIX**(postgrest): include caller frames in PostgrestException stack traces ([#1387](https://github.com/supabase/supabase-flutter/issues/1387)). ([716121a5](https://github.com/supabase/supabase-flutter/commit/716121a5c749bdf9fb9e07b6103a3f058fc4f79d))
+
+#### `realtime_client` - `v2.7.4`
+
+ - **FIX**(realtime_client): suppress InvalidJWTToken from setAuth in joinPush 'ok' handler ([#1365](https://github.com/supabase/supabase-flutter/issues/1365)). ([2fb3f1cc](https://github.com/supabase/supabase-flutter/commit/2fb3f1cc2ec531826a748524cd86d3096719d3e7))
+
+#### `storage_client` - `v2.5.6`
+
+ - **FIX**(storage): handle null signedURL in createSignedUrls response ([#1385](https://github.com/supabase/supabase-flutter/issues/1385)). ([dd566b3b](https://github.com/supabase/supabase-flutter/commit/dd566b3bc82dac24c50084289867e80e9117cdf3))
+
+#### `supabase_flutter` - `v2.14.2`
+
+ - **DOCS**(supabase_flutter): fix Facebook native login for iOS and Android ([#1386](https://github.com/supabase/supabase-flutter/issues/1386)). ([8cbea828](https://github.com/supabase/supabase-flutter/commit/8cbea8283e38c2a765da715ffa79e045471b1257))
+ - **DOCS**: update facebook native login docs ([#1322](https://github.com/supabase/supabase-flutter/issues/1322)). ([213f6277](https://github.com/supabase/supabase-flutter/commit/213f6277869c47ac5667779f3499cc11ba0aea69))
+
+
 ## 2026-06-05
 
 ### Changes
