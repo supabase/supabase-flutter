@@ -1,3 +1,7 @@
+## 2.7.1
+
+ - **FIX**(postgrest): include caller frames in PostgrestException stack traces ([#1387](https://github.com/supabase/supabase-flutter/issues/1387)). ([716121a5](https://github.com/supabase/supabase-flutter/commit/716121a5c749bdf9fb9e07b6103a3f058fc4f79d))
+
 ## 2.7.0
 
  - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))
