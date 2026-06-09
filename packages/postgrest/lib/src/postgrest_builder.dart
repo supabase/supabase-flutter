@@ -486,8 +486,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         throw ArgumentError.value(
           onError,
           "onError",
-          "Error handler must accept one Object or one Object and a StackTrace"
-              " as arguments, and return a value of the returned future's type",
+          "Error handler must accept one Object or one Object and a StackTrace "
+              "as arguments, and return a value of the returned future's type",
         );
       }
       try {
