@@ -1125,6 +1125,20 @@ class GoTrueClient {
 
       if (session.isExpired) {
         _log.fine('Session from recovery is expired');
+
+        // While the session was being read from local storage, another code
+        // path (such as the auto-refresh tick triggered when the app resumes)
+        // may have already refreshed it. In that case the refresh token from
+        // [jsonStr] is stale, and reusing it would make the server respond with
+        // `refresh_token_already_used` and sign the user out. Return the
+        // already valid session instead of refreshing the stale token again.
+        final currentSession = _currentSession;
+        if (currentSession != null && !currentSession.isExpired) {
+          _log.fine(
+              'Session was already refreshed elsewhere, skipping recovery');
+          return AuthResponse(session: currentSession);
+        }
+
         final refreshToken = session.refreshToken;
         if (_autoRefreshToken && refreshToken != null) {
           return await _callRefreshToken(refreshToken);
