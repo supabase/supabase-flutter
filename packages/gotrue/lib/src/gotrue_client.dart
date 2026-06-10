@@ -23,6 +23,17 @@ import 'version.dart';
 
 part 'gotrue_mfa_api.dart';
 
+class _SessionState {
+  Session? _session;
+  int version = 0;
+
+  Session? get session => _session;
+  set session(Session? value) {
+    version++;
+    _session = value;
+  }
+}
+
 /// {@template gotrue_client}
 /// API client to interact with gotrue server.
 ///
@@ -44,8 +55,11 @@ class GoTrueClient {
   /// Namespace for the GoTrue MFA API methods.
   late final GoTrueMFAApi mfa;
 
-  /// The session object for the currently logged in user or null.
-  Session? _currentSession;
+  final _sessionState = _SessionState();
+
+  Session? get _currentSession => _sessionState.session;
+  set _currentSession(Session? value) => _sessionState.session = value;
+  int get _sessionVersion => _sessionState.version;
 
   final String _url;
   final Map<String, String> _headers;
@@ -55,12 +69,6 @@ class GoTrueClient {
   late bool _autoRefreshToken;
 
   Timer? _autoRefreshTicker;
-
-  /// Monotonically increasing counter, incremented on every session write.
-  /// Used inside [_executeRefresh] to detect that the session changed while
-  /// a network request was in-flight, so the stale refresh result can be
-  /// discarded instead of overwriting a newer session.
-  int _sessionVersion = 0;
 
   /// Tracks all pending (in-flight) refreshes keyed by token.
   /// Concurrent calls with the same token return the existing
@@ -797,7 +805,6 @@ class GoTrueClient {
     );
     final userResponse = UserResponse.fromJson(response);
 
-    _sessionVersion++;
     _currentSession = currentSession?.copyWith(user: userResponse.user);
     notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
@@ -1114,7 +1121,6 @@ class GoTrueClient {
       throw notifyException(AuthException('Initial session is missing data.'));
     }
 
-    _sessionVersion++;
     _currentSession = session;
     notifyAllSubscribers(AuthChangeEvent.initialSession);
   }
@@ -1305,14 +1311,12 @@ class GoTrueClient {
 
   /// set currentSession and currentUser
   void _saveSession(Session session) {
-    _sessionVersion++;
     _log.finest('Saving session: $session');
     _log.fine('Saving session');
     _currentSession = session;
   }
 
   void _removeSession() {
-    _sessionVersion++;
     _log.fine('Removing session');
     _currentSession = null;
   }
