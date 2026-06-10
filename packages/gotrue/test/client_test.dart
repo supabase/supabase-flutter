@@ -693,4 +693,65 @@ void main() {
       }
     });
   });
+
+  group('Recovering an already refreshed session', () {
+    late SingleUseRefreshTokenHttpClient httpClient;
+    late GoTrueClient client;
+
+    setUp(() {
+      httpClient = SingleUseRefreshTokenHttpClient();
+      client = GoTrueClient(
+        url: gotrueUrl,
+        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
+        asyncStorage: TestAsyncStorage(),
+        httpClient: httpClient,
+      );
+    });
+
+    // Regression test for https://github.com/supabase/supabase-flutter/issues/1158
+    //
+    // On cold start both `recoverSession` and the auto-refresh tick (fired when
+    // the app resumes) can try to refresh the same persisted, expired session.
+    // If one of them refreshes first, the refresh token serialized in the
+    // session string handed to `recoverSession` becomes stale. Reusing it made
+    // the server respond with `refresh_token_already_used`, signing the user
+    // out. `recoverSession` must instead detect the already valid in-memory
+    // session and return it.
+    test('does not reuse a stale refresh token after another refresh',
+        () async {
+      final expiredSessionString = getSessionData(
+        DateTime.now().subtract(const Duration(hours: 1)),
+      ).sessionString;
+
+      // First recovery refreshes the expired session, advancing the in-memory
+      // session onto a brand new refresh token.
+      final first = await client.recoverSession(expiredSessionString);
+      expect(first.session, isNotNull);
+      expect(first.session!.isExpired, isFalse);
+      expect(httpClient.refreshCount, 1);
+
+      var signedOut = false;
+      final sub = client.onAuthStateChange.listen(
+        (state) {
+          if (state.event == AuthChangeEvent.signedOut) signedOut = true;
+        },
+        onError: (_) {},
+      );
+
+      // Second recovery uses the same (now stale) persisted session, as happens
+      // when a second code path recovers the session it read before the first
+      // refresh completed. It must not resend the already-used refresh token.
+      final second = await client.recoverSession(expiredSessionString);
+      expect(second.session, isNotNull);
+      expect(second.session!.isExpired, isFalse);
+
+      // No second refresh request was made and the user stays signed in.
+      expect(httpClient.refreshCount, 1);
+      await pumpEventQueue();
+      expect(signedOut, isFalse);
+      expect(client.currentSession, isNotNull);
+
+      await sub.cancel();
+    });
+  });
 }
