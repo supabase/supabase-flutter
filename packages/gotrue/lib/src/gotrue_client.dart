@@ -1415,6 +1415,18 @@ class GoTrueClient {
       _refreshTokenCompleter?.complete(data);
       return data;
     } on AuthException catch (error, stack) {
+      final currentSession = _currentSession;
+      if (error is AuthApiException &&
+          error.code == 'refresh_token_already_used' &&
+          currentSession != null &&
+          !currentSession.isExpired) {
+        _log.fine('Refresh token already used but current session is still '
+            'valid, returning it instead of signing out');
+        final response = AuthResponse(session: currentSession);
+        _refreshTokenCompleter?.complete(response);
+        return response;
+      }
+
       if (error is! AuthRetryableFetchException) {
         _removeSession();
         notifyAllSubscribers(AuthChangeEvent.signedOut);
