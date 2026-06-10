@@ -193,7 +193,7 @@ class SingleUseRefreshTokenHttpClient extends BaseClient {
         'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 3600,
         'refresh_count': refreshCount,
       },
-      subject: userId1,
+      subject: sessionDataUserId,
     ).sign(SecretKey('37c304f8-51aa-419a-a1af-06154e63707a'));
 
     return StreamedResponse(
@@ -206,7 +206,7 @@ class SingleUseRefreshTokenHttpClient extends BaseClient {
               'expires_in': 3600,
               'refresh_token': 'refresh_token_$refreshCount',
               'user': {
-                'id': userId1,
+                'id': sessionDataUserId,
                 'aud': '',
                 'role': '',
                 'email': email1,
