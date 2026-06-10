@@ -1475,8 +1475,8 @@ class GoTrueClient {
         _log.fine('Refresh token already used but current session is still '
             'valid, returning it instead of signing out');
         final response = AuthResponse(session: currentSession);
-        _refreshTokenCompleter?.complete(response);
-        return response;
+        if (!completer.isCompleted) completer.complete(response);
+        return;
       }
 
       if (error is! AuthRetryableFetchException) {
