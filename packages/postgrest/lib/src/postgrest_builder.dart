@@ -50,6 +50,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final CountOption? _count;
   final bool _retryEnabled;
   final Duration Function(int attempt) _retryDelay;
+  final Completer<void>? _abortCompleter;
   final _log = Logger('supabase.postgrest');
 
   static Duration _defaultRetryDelay(int attempt) =>
@@ -69,6 +70,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     PostgrestConverter<S, R>? converter,
     bool retryEnabled = true,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
+    Completer<void>? abortCompleter,
   })  : _maybeSingle = maybeSingle,
         _method = method,
         _converter = converter,
@@ -80,7 +82,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         _count = count,
         _body = body,
         _retryEnabled = retryEnabled,
-        _retryDelay = retryDelay ?? _defaultRetryDelay;
+        _retryDelay = retryDelay ?? _defaultRetryDelay,
+        _abortCompleter = abortCompleter;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
@@ -95,6 +98,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     PostgrestConverter<S, R>? converter,
     bool? retryEnabled,
     Duration Function(int attempt)? retryDelay,
+    Completer<void>? abortCompleter,
   }) {
     return PostgrestBuilder<T, S, R>(
       url: url ?? _url,
@@ -109,6 +113,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       converter: converter ?? _converter,
       retryEnabled: retryEnabled ?? _retryEnabled,
       retryDelay: retryDelay ?? _retryDelay,
+      abortCompleter: abortCompleter ?? _abortCompleter,
     );
   }
 
@@ -120,6 +125,31 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// [PostgrestClient] was configured with `retryEnabled: false`.
   PostgrestBuilder<T, S, R> retry({required bool enabled}) =>
       _copyWith(retryEnabled: enabled);
+
+  /// Allows manually triggering request abortion by completing the provided
+  /// [Completer].
+  ///
+  /// On abort, a [RequestAbortedException] will be thrown.
+  /// This is useful for setting a timeout for the request.
+  ///
+  /// Aborting a request will also stop any retries.
+  ///
+  /// Example:
+  /// ```dart
+  /// final abortCompleter = Completer<void>();
+  /// Timer(Duration(seconds: 5), () => abortCompleter.complete());
+  /// try {
+  ///   final response = await client
+  ///   .from('table')
+  ///   .select()
+  ///   .abortCompleter(abortCompleter);
+  /// } on RequestAbortedException catch (e) {
+  ///  print('Request was aborted: $e');
+  /// }
+  /// ```
+  PostgrestBuilder<T, S, R> abortCompleter(Completer<void> abortCompleter) {
+    return _copyWith(abortCompleter: abortCompleter);
+  }
 
   PostgrestBuilder<T, S, R> setHeader(String key, String value) {
     return _copyWith(
@@ -164,35 +194,33 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       _log.finest("Request: ${method.value} $_url");
 
       final Future<http.Response> Function() send;
-      if (method == _HttpMethod.get) {
-        send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
-      } else if (method == _HttpMethod.post) {
-        send = () => (_httpClient?.post ?? http.post)(
-              _url,
-              headers: execHeaders,
-              body: bodyStr,
-            );
-      } else if (method == _HttpMethod.put) {
-        send = () => (_httpClient?.put ?? http.put)(
-              _url,
-              headers: execHeaders,
-              body: bodyStr,
-            );
-      } else if (method == _HttpMethod.patch) {
-        send = () => (_httpClient?.patch ?? http.patch)(
-              _url,
-              headers: execHeaders,
-              body: bodyStr,
-            );
-      } else if (method == _HttpMethod.delete) {
-        send = () =>
-            (_httpClient?.delete ?? http.delete)(_url, headers: execHeaders);
-      } else if (method == _HttpMethod.head) {
-        send =
-            () => (_httpClient?.head ?? http.head)(_url, headers: execHeaders);
-      } else {
-        throw StateError('Unknown HTTP method: ${method.value}');
-      }
+      send = () async {
+        final AbortableRequest request = AbortableRequest(method.value, _url,
+            abortTrigger: _abortCompleter?.future);
+        request.headers.addAll(execHeaders);
+        if (method == _HttpMethod.get) {
+        } else if (method == _HttpMethod.post) {
+          request.body = bodyStr;
+        } else if (method == _HttpMethod.put) {
+          request.body = bodyStr;
+        } else if (method == _HttpMethod.patch) {
+          request.body = bodyStr;
+        } else if (method == _HttpMethod.delete) {
+        } else if (method == _HttpMethod.head) {
+        } else {
+          throw StateError('Unknown HTTP method: ${method.value}');
+        }
+        final client = _httpClient ?? http.Client();
+
+        try {
+          final streamResponse = await client.send(request);
+          return http.Response.fromStream(streamResponse);
+        } finally {
+          if (_httpClient == null) {
+            client.close();
+          }
+        }
+      };
 
       final response = await _executeWithRetry(send, method, execHeaders);
       return _parseResponse(response, method);
@@ -227,6 +255,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             attempt == maxRetries) {
           return response;
         }
+      } on RequestAbortedException catch (_) {
+        rethrow;
       } on Exception {
         if (attempt == maxRetries) rethrow;
       }

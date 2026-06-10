@@ -123,3 +123,15 @@ CREATE TABLE public.imported_data (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   UNIQUE(external_id, source_system)
 );
+
+-- Long-running task for testing abortion
+create or replace function public.long_running_task()
+returns void as $$
+declare
+  start_time timestamp := clock_timestamp();
+begin
+  while clock_timestamp() < start_time + interval '10 seconds' loop
+    PERFORM pg_sleep(0.1);
+  end loop;
+end;
+$$ language plpgsql;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -41,7 +42,21 @@ class _MockRetryClient extends BaseClient {
       throw StateError(
           'Unexpected call #${index + 1}, only ${_responses.length} configured');
     }
-    return _responses[index](request);
+
+    final completer = Completer<StreamedResponse>();
+    if (request is AbortableRequest) {
+      request.abortTrigger?.then((_) {
+        if (!completer.isCompleted) {
+          completer.completeError(RequestAbortedException());
+        }
+      });
+    }
+    Future.delayed(Duration(milliseconds: 200)).then((_) {
+      if (!completer.isCompleted) {
+        completer.complete(_responses[index](request));
+      }
+    });
+    return completer.future;
   }
 }
 
@@ -53,7 +68,7 @@ PostgrestClient _buildClient(
     'http://localhost:3000',
     httpClient: mock,
     retryEnabled: retryEnabled,
-    retryDelay: (_) => Duration.zero,
+    retryDelay: (_) => Duration(seconds: 1),
   );
 }
 
@@ -212,6 +227,30 @@ void main() {
         throwsA(isA<SocketException>()),
       );
       expect(mock.callCount, 4);
+    });
+
+    test('GET retries on 520 but aborts before exhausting all retries',
+        () async {
+      final mock = _MockRetryClient([_status(520), _status(520), _ok()]);
+      final client = _buildClient(mock);
+
+      final completer = Completer<void>();
+      completer.complete();
+      // Abort after the first retry (before the success response)
+      // Timer(Duration(milliseconds: 60), () => completer.complete());
+
+      await expectLater(
+        client
+            .from('users')
+            .select()
+            .retry(enabled: true)
+            .abortCompleter(completer),
+        throwsA(isA<RequestAbortedException>()),
+      );
+
+      // Verify that only 1 attempt was made before abort
+      // (not all 3 retries exhausted)
+      expect(mock.callCount, 1);
     });
   });
 }
