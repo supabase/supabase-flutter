@@ -2,18 +2,9 @@ name: Publish Packages
 
 on:
   workflow_dispatch:
-    inputs:
-      package-name:
-        description: 'Name of the package to publish'
-        required: true
-        type: string
-      package-version:
-        description: 'Version to publish (without v prefix, e.g. 2.18.0)'
-        required: true
-        type: string
 
 concurrency:
-  group: release-publish-${{ inputs.package-name }}
+  group: release-publish-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -36,7 +27,6 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-          ref: ${{ inputs.package-name }}-v${{ inputs.package-version }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
