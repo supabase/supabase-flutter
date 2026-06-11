@@ -1,3 +1,4 @@
+/// Dart client library for Supabase Storage.
 library;
 
 export 'src/storage_client.dart';

@@ -1,3 +1,4 @@
+/// A dart client library for the GoTrue API.
 library;
 
 export 'src/constants.dart'

@@ -1,3 +1,4 @@
+/// PostgREST client for Dart. Provides an ORM interface to PostgREST.
 library;
 
 export 'src/postgrest.dart';

@@ -1,3 +1,4 @@
+/// Flutter integration for Supabase.
 library;
 
 export 'package:supabase/supabase.dart';
