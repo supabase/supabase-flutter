@@ -52,7 +52,6 @@ class SupabaseAuth with WidgetsBindingObserver {
   static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
 
   late LocalStorage _localStorage;
-  late AuthFlowType _authFlowType;
 
   /// Whether to automatically refresh the token
   late bool _autoRefreshToken;
@@ -81,7 +80,6 @@ class SupabaseAuth with WidgetsBindingObserver {
     required FlutterAuthClientOptions options,
   }) async {
     _localStorage = options.localStorage!;
-    _authFlowType = options.authFlowType;
     _autoRefreshToken = options.autoRefreshToken;
 
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
@@ -181,11 +179,14 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// If _authCallbackUrlHost not init, we treat all deep links as auth callback
   bool _isAuthCallbackDeeplink(Uri uri) {
-    return (uri.fragment.contains('access_token') &&
-            _authFlowType == AuthFlowType.implicit) ||
-        (uri.queryParameters.containsKey('code') &&
-            _authFlowType == AuthFlowType.pkce) ||
-        (uri.fragment.contains('error_description'));
+    final fragmentParameters = Uri.splitQueryString(uri.fragment);
+    bool hasParameter(String key) =>
+        uri.queryParameters.containsKey(key) ||
+        fragmentParameters.containsKey(key);
+
+    return hasParameter('access_token') ||
+        hasParameter('code') ||
+        hasParameter('error_description');
   }
 
   /// Enable deep link observer to handle deep links

@@ -886,14 +886,16 @@ class GoTrueClient {
       throw AuthException(errorDescription, statusCode: errorCode, code: error);
     }
 
-    if (_flowType == AuthFlowType.pkce) {
-      final authCode = originUrl.queryParameters['code'];
-      if (authCode == null) {
-        throw AuthPKCEGrantCodeExchangeError(
-          'No code detected in query parameters.',
-        );
-      }
+    final authCode = url.queryParameters['code'];
+    if (authCode != null) {
       return await exchangeCodeForSession(authCode);
+    }
+
+    if (_flowType == AuthFlowType.pkce &&
+        !url.queryParameters.containsKey('access_token')) {
+      throw AuthPKCEGrantCodeExchangeError(
+        'No code detected in query parameters.',
+      );
     }
 
     final accessToken = url.queryParameters['access_token'];

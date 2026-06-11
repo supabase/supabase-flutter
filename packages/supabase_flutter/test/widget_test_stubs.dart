@@ -133,6 +133,44 @@ void mockAppLink({
   }
 }
 
+class GetUserHttpClient extends BaseClient {
+  GetUserHttpClient(this.email);
+
+  final String email;
+  int requestCount = 0;
+  Uri? lastRequestUrl;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    requestCount++;
+    lastRequestUrl = request.url;
+
+    return StreamedResponse(
+      Stream.value(
+        utf8.encode(
+          jsonEncode(
+            {
+              'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
+              'aud': '',
+              'role': '',
+              'email': email,
+              'app_metadata': {
+                'provider': 'email',
+                'providers': ['email']
+              },
+              'user_metadata': {},
+              'created_at': '2023-04-01T09:38:59.784028Z',
+              'updated_at': '2023-04-01T09:38:59.908816Z',
+            },
+          ),
+        ),
+      ),
+      200,
+      request: request,
+    );
+  }
+}
+
 class MockAsyncStorage extends GotrueAsyncStorage {
   final Map<String, String> _map = {};
 
