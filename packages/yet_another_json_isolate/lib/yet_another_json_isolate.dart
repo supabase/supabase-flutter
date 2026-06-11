@@ -1,4 +1,4 @@
-library yet_another_json_isolate;
+library;
 
 export 'src/_isolates_io.dart'
     if (dart.library.js_interop) 'src/_isolates_web.dart' // After Dart 3.3

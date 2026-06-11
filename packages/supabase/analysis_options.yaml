@@ -1,5 +1,4 @@
 include: package:lints/recommended.yaml
 
-linter:
-  rules:
-    avoid_print: false
+formatter:
+  trailing_commas: preserve

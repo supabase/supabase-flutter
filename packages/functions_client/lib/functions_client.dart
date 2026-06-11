@@ -1,4 +1,4 @@
-library functions_client;
+library;
 
 export 'package:http/http.dart' show ByteStream, MultipartFile;
 

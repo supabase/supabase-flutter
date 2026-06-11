@@ -1,4 +1,4 @@
-library storage_client;
+library;
 
 export 'src/storage_client.dart';
 export 'src/storage_file_api.dart';
