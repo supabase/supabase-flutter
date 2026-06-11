@@ -9,7 +9,7 @@ environment:
   sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
-  http: ^1.6.0
+  http: ^1.2.2
   yet_another_json_isolate: 2.1.0
   meta: ^1.9.1
   logging: ^1.2.0

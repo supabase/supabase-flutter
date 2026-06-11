@@ -14,7 +14,7 @@ dependencies:
   async: ^2.11.0
   flutter:
     sdk: flutter
-  http: ^1.6.0
+  http: ^1.2.2
   meta: ^1.7.0
   supabase: 2.12.2
   url_launcher: ^6.1.2
