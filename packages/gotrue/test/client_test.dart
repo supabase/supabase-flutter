@@ -726,7 +726,8 @@ void main() {
         );
 
         final emittedEvent = pkceClient.onAuthStateChange
-            .firstWhere((state) => state.event != AuthChangeEvent.initialSession)
+            .firstWhere(
+                (state) => state.event != AuthChangeEvent.initialSession)
             .then((state) => state.event);
 
         final res = await pkceClient.getSessionFromUrl(url);
