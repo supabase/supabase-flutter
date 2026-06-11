@@ -18,5 +18,5 @@ dependencies:
 
 dev_dependencies:
   test: ^1.21.4
-  lints: ^6.1.0
+  lints: ^4.0.0
   path: ^1.8.2
