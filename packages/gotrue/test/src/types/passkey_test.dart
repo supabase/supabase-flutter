@@ -29,8 +29,7 @@ void main() {
       expect(passkey.lastUsedAt, isNull);
     });
 
-    test('fromJson throws FormatException when created_at is not a string',
-        () {
+    test('fromJson throws FormatException when created_at is not a string', () {
       expect(
         () => Passkey.fromJson({
           'id': '4b52e9e2-7c1b-44e5-8b5b-d4769ce06f58',
@@ -80,8 +79,7 @@ void main() {
       );
     });
 
-    test('fromJson throws FormatException when expires_at is not a number',
-        () {
+    test('fromJson throws FormatException when expires_at is not a number', () {
       expect(
         () => PasskeyRegistrationOptionsResponse.fromJson({
           'challenge_id': 'f9e16464-9ce8-4eb4-b3b3-456a8e95dfa9',

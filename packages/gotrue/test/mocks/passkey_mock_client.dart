@@ -40,8 +40,7 @@ class PasskeyMockClient extends BaseClient {
       return _jsonResponse(_passkeyJson(friendlyName: 'iCloud Keychain'));
     }
 
-    if (path.endsWith('/passkeys/authentication/options') &&
-        method == 'POST') {
+    if (path.endsWith('/passkeys/authentication/options') && method == 'POST') {
       return _jsonResponse({
         'challenge_id': challengeId,
         'options': _requestOptions(),
