@@ -1,4 +1,5 @@
-library storage_client;
+/// Dart client library for Supabase Storage.
+library;
 
 export 'src/storage_client.dart';
 export 'src/storage_file_api.dart';

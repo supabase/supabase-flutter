@@ -14,7 +14,7 @@ dependencies:
   async: ^2.11.0
   flutter:
     sdk: flutter
-  http: '>=0.13.4 <2.0.0'
+  http: ^1.2.2
   meta: ^1.7.0
   supabase: 2.12.2
   url_launcher: ^6.1.2
@@ -26,7 +26,7 @@ dev_dependencies:
   dart_jsonwebtoken: ">=2.17.0 <4.0.0"
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.1
+  flutter_lints: ^4.0.0
   web_socket_channel: '>=2.3.0 <4.0.0'
 
 platforms:

@@ -9,7 +9,7 @@ environment:
   sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
-  http: '>=0.13.4 <2.0.0'
+  http: ^1.2.2
   http_parser: ^4.0.1
   mime: '>=1.0.2 <3.0.0'
   retry: ^3.1.0
@@ -18,5 +18,5 @@ dependencies:
 
 dev_dependencies:
   test: ^1.21.4
-  lints: ^3.0.0
+  lints: ^4.0.0
   path: ^1.8.2

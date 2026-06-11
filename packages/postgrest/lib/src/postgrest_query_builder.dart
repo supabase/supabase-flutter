@@ -14,8 +14,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// {@macro postgrest_query_builder}
   PostgrestQueryBuilder({
     required Uri url,
-    // ignore: library_private_types_in_public_api
-    _HttpMethod? method,
+    HttpMethod? method,
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
@@ -62,7 +61,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final url = overrideSearchParams('select', cleanedColumns);
     return PostgrestFilterBuilder(_copyWithType(
       url: url,
-      method: _HttpMethod.get,
+      method: HttpMethod.get,
     ));
   }
 
@@ -107,7 +106,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     }
 
     return PostgrestFilterBuilder(_copyWith(
-      method: _HttpMethod.post,
+      method: HttpMethod.post,
       headers: newHeaders,
       body: values,
       url: url,
@@ -175,7 +174,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     }
 
     return PostgrestFilterBuilder<T>(_copyWith(
-      method: _HttpMethod.post,
+      method: HttpMethod.post,
       headers: newHeaders,
       body: values,
       url: url,
@@ -207,7 +206,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     newHeaders['Prefer'] = '';
 
     return PostgrestFilterBuilder<T>(_copyWith(
-      method: _HttpMethod.patch,
+      method: HttpMethod.patch,
       headers: newHeaders,
       body: values,
     ));
@@ -237,7 +236,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
     newHeaders['Prefer'] = '';
     return PostgrestFilterBuilder<T>(_copyWith(
-      method: _HttpMethod.delete,
+      method: HttpMethod.delete,
       headers: newHeaders,
     ));
   }
@@ -259,7 +258,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```
   PostgrestFilterBuilder<int> count([CountOption option = CountOption.exact]) {
     return PostgrestFilterBuilder<int>(_copyWithType(
-      method: _HttpMethod.head,
+      method: HttpMethod.head,
       count: option,
     ));
   }

@@ -12,11 +12,9 @@ BroadcastChannel getBroadcastChannel(String broadcastKey) {
   final broadcast = web.BroadcastChannel(broadcastKey);
   final controller = StreamController<Map<String, dynamic>>();
 
-  void onMessage(web.Event event) {
-    if (event is web.MessageEvent) {
-      final dataMap = event.data.dartify();
-      controller.add(json.decode(json.encode(dataMap)));
-    }
+  void onMessage(web.MessageEvent event) {
+    final dataMap = event.data.dartify();
+    controller.add(json.decode(json.encode(dataMap)));
   }
 
   broadcast.onmessage = onMessage.toJS;

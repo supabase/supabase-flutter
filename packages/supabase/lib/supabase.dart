@@ -1,12 +1,11 @@
 /// A dart client for Supabase. It supports database query, authenticate users
 /// and listen for realtime changes. This client makes it simple for developers
 /// to build secure and scalable products.
-///
-library supabase;
+library;
 
 export 'package:functions_client/functions_client.dart';
 export 'package:gotrue/gotrue.dart';
-export 'package:postgrest/postgrest.dart';
+export 'package:postgrest/postgrest.dart' hide HttpMethod;
 export 'package:realtime_client/realtime_client.dart';
 export 'package:storage_client/storage_client.dart';
 

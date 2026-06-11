@@ -1,4 +1,8 @@
 @TestOn('browser')
+
+/// Tests for the web BroadcastChannel implementation.
+library;
+
 import 'dart:async';
 
 import 'package:gotrue/src/broadcast_web.dart';

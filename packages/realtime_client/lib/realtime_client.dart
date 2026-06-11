@@ -1,3 +1,6 @@
+/// Listens to changes in a PostgreSQL database via websockets using Supabase Realtime.
+library;
+
 export 'src/constants.dart'
     show RealtimeConstants, RealtimeLogLevel, SocketStates;
 export 'src/realtime_channel.dart';

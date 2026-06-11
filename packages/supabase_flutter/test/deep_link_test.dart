@@ -1,5 +1,8 @@
 @TestOn('!browser')
 
+/// Tests for deep link handling on non-browser platforms.
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

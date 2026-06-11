@@ -1,4 +1,5 @@
-library gotrue;
+/// A dart client library for the GoTrue API (Supabase Auth).
+library;
 
 export 'src/constants.dart'
     hide Constants, GenerateLinkTypeExtended, AuthChangeEventExtended;

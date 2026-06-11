@@ -17,7 +17,7 @@ part 'postgrest_transform_builder.dart';
 part 'raw_postgrest_builder.dart';
 part 'response_postgrest_builder.dart';
 
-enum _HttpMethod {
+enum HttpMethod {
   get,
   head,
   post,
@@ -41,7 +41,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final Object? _body;
   final Headers _headers;
   final bool _maybeSingle;
-  final _HttpMethod? _method;
+  final HttpMethod? _method;
   final String? _schema;
   final Uri _url;
   final PostgrestConverter<S, R>? _converter;
@@ -59,8 +59,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     required Uri url,
     required Headers headers,
     String? schema,
-    // ignore: library_private_types_in_public_api
-    _HttpMethod? method,
+    HttpMethod? method,
     Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
@@ -86,7 +85,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Uri? url,
     Headers? headers,
     String? schema,
-    _HttpMethod? method,
+    HttpMethod? method,
     Object? body,
     Client? httpClient,
     YAJsonIsolate? isolate,
@@ -128,7 +127,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   }
 
   Future<T> _execute() async {
-    final _HttpMethod? method = _method;
+    final HttpMethod? method = _method;
     // Work with a local copy so repeated awaits and shared-map siblings are
     // not affected by per-execution header mutations (Prefer, schema headers,
     // X-Retry-Count, etc.).
@@ -152,42 +151,42 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
       if (_schema == null) {
         // skip
-      } else if (method == _HttpMethod.get || method == _HttpMethod.head) {
+      } else if (method == HttpMethod.get || method == HttpMethod.head) {
         execHeaders['Accept-Profile'] = _schema;
       } else {
         execHeaders['Content-Profile'] = _schema;
       }
-      if (method != _HttpMethod.get && method != _HttpMethod.head) {
+      if (method != HttpMethod.get && method != HttpMethod.head) {
         execHeaders['Content-Type'] = 'application/json';
       }
       final bodyStr = jsonEncode(_body);
       _log.finest("Request: ${method.value} $_url");
 
       final Future<http.Response> Function() send;
-      if (method == _HttpMethod.get) {
+      if (method == HttpMethod.get) {
         send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
-      } else if (method == _HttpMethod.post) {
+      } else if (method == HttpMethod.post) {
         send = () => (_httpClient?.post ?? http.post)(
               _url,
               headers: execHeaders,
               body: bodyStr,
             );
-      } else if (method == _HttpMethod.put) {
+      } else if (method == HttpMethod.put) {
         send = () => (_httpClient?.put ?? http.put)(
               _url,
               headers: execHeaders,
               body: bodyStr,
             );
-      } else if (method == _HttpMethod.patch) {
+      } else if (method == HttpMethod.patch) {
         send = () => (_httpClient?.patch ?? http.patch)(
               _url,
               headers: execHeaders,
               body: bodyStr,
             );
-      } else if (method == _HttpMethod.delete) {
+      } else if (method == HttpMethod.delete) {
         send = () =>
             (_httpClient?.delete ?? http.delete)(_url, headers: execHeaders);
-      } else if (method == _HttpMethod.head) {
+      } else if (method == HttpMethod.head) {
         send =
             () => (_httpClient?.head ?? http.head)(_url, headers: execHeaders);
       } else {
@@ -203,14 +202,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
   Future<http.Response> _executeWithRetry(
     Future<http.Response> Function() send,
-    _HttpMethod method,
+    HttpMethod method,
     Map<String, String> execHeaders,
   ) async {
     const maxRetries = 3;
     const retryableStatusCodes = {503, 520};
 
     final isRetryableMethod =
-        method == _HttpMethod.get || method == _HttpMethod.head;
+        method == HttpMethod.get || method == HttpMethod.head;
 
     if (!_retryEnabled || !isRetryableMethod) {
       return send();
@@ -238,12 +237,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   }
 
   /// Parse request response to json object if possible
-  Future<T> _parseResponse(http.Response response, _HttpMethod method) async {
+  Future<T> _parseResponse(http.Response response, HttpMethod method) async {
     if (response.statusCode >= 200 && response.statusCode <= 299) {
       Object? body;
       int? count;
 
-      if (response.request!.method != _HttpMethod.head.value) {
+      if (response.request!.method != HttpMethod.head.value) {
         if (response.bodyBytes.isEmpty) {
           body = null;
         } else if (response.request!.headers['Accept'] == 'text/csv') {
@@ -265,7 +264,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
 
       // Workaround for https://github.com/supabase/supabase-flutter/issues/560
-      if (_maybeSingle && method == _HttpMethod.get && body is List) {
+      if (_maybeSingle && method == HttpMethod.get && body is List) {
         if (body.length > 1) {
           final exception = PostgrestException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
@@ -314,7 +313,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         converted = body as S;
       }
 
-      if (_count != null && method != _HttpMethod.head) {
+      if (_count != null && method != HttpMethod.head) {
         return PostgrestResponse<S>(
           data: converted,
           count: count!,
@@ -324,7 +323,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
     } else {
       late PostgrestException error;
-      if (response.request!.method != _HttpMethod.head.value) {
+      if (response.request!.method != HttpMethod.head.value) {
         try {
           final errorJson = jsonDecode(response.body) as Map<String, dynamic>;
           error = PostgrestException.fromJson(
@@ -369,8 +368,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ) {
     if (error.details is String &&
         error.details.toString().contains('Results contain 0 rows')) {
-      if (_count != null &&
-          response.request!.method != _HttpMethod.head.value) {
+      if (_count != null && response.request!.method != HttpMethod.head.value) {
         if (_converter != null) {
           return PostgrestResponse<S>(data: _converter(null as R), count: 0)
               as T;
