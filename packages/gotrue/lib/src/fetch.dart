@@ -8,7 +8,7 @@ import 'package:gotrue/src/types/error_code.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 
-enum RequestMethodType { get, post, put, delete }
+enum RequestMethodType { get, post, put, patch, delete }
 
 class GotrueFetch {
   final Client? httpClient;
@@ -172,6 +172,13 @@ class GotrueFetch {
           break;
         case RequestMethodType.put:
           response = await (httpClient?.put ?? put)(
+            uri,
+            headers: headers,
+            body: bodyStr,
+          );
+          break;
+        case RequestMethodType.patch:
+          response = await (httpClient?.patch ?? patch)(
             uri,
             headers: headers,
             body: bodyStr,
