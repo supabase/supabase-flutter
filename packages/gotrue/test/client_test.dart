@@ -726,11 +726,11 @@ void main() {
                 (state) => state.event != AuthChangeEvent.initialSession)
             .then((state) => state.event);
 
-        final res = await pkceClient.getSessionFromUrl(url);
-        expect(res.session.accessToken, 'my-access-token');
-        expect(res.session.refreshToken, 'my-refresh-token');
-        expect(res.session.user.email, 'new@email.com');
-        expect(res.redirectType, 'email_change');
+        final response = await pkceClient.getSessionFromUrl(url);
+        expect(response.session.accessToken, 'my-access-token');
+        expect(response.session.refreshToken, 'my-refresh-token');
+        expect(response.session.user.email, 'new@email.com');
+        expect(response.redirectType, 'email_change');
         expect(pkceClient.currentUser?.email, 'new@email.com');
         expect(await emittedEvent, AuthChangeEvent.userUpdated);
       },
