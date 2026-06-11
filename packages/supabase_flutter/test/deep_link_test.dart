@@ -52,6 +52,7 @@ void main() {
 
   group('Deep Link with implicit token while PKCE flow is configured', () {
     late final GetUserHttpClient getUserHttpClient;
+    late final Future<AuthState> userUpdatedState;
 
     setUp(() async {
       getUserHttpClient = GetUserHttpClient('new@email.com');
@@ -76,14 +77,19 @@ void main() {
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );
+
+      // Subscribe before the (asynchronously delivered) deep link is handled so
+      // the event is not missed, avoiding a flaky fixed delay.
+      userUpdatedState = Supabase.instance.client.auth.onAuthStateChange
+          .firstWhere((state) => state.event == AuthChangeEvent.userUpdated)
+          .timeout(const Duration(seconds: 5));
     });
 
     test(
         'Implicit token in the fragment triggers `getSessionFromUrl` and '
         'updates the current user', () async {
-      // Wait for the initial app link to be handled, as this is an async
-      // process when mocking the event channel.
-      await Future.delayed(const Duration(milliseconds: 500));
+      final state = await userUpdatedState;
+      expect(state.session?.user.email, 'new@email.com');
       expect(getUserHttpClient.requestCount, 1);
       expect(getUserHttpClient.lastRequestUrl?.path, endsWith('/user'));
       expect(

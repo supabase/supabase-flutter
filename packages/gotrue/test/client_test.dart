@@ -725,12 +725,17 @@ void main() {
           '&token_type=bearer&type=email_change',
         );
 
+        final emittedEvent = pkceClient.onAuthStateChange
+            .firstWhere((state) => state.event != AuthChangeEvent.initialSession)
+            .then((state) => state.event);
+
         final res = await pkceClient.getSessionFromUrl(url);
         expect(res.session.accessToken, 'my-access-token');
         expect(res.session.refreshToken, 'my-refresh-token');
         expect(res.session.user.email, 'new@email.com');
         expect(res.redirectType, 'email_change');
         expect(pkceClient.currentUser?.email, 'new@email.com');
+        expect(await emittedEvent, AuthChangeEvent.userUpdated);
       },
     );
   });

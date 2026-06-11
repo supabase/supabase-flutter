@@ -943,6 +943,10 @@ class GoTrueClient {
       _saveSession(session);
       if (redirectType == 'recovery') {
         notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
+      } else if (redirectType == 'email_change') {
+        // The user was already signed in and only changed their email, so emit
+        // a userUpdated event rather than treating this as a fresh sign in.
+        notifyAllSubscribers(AuthChangeEvent.userUpdated);
       } else {
         notifyAllSubscribers(AuthChangeEvent.signedIn);
       }
