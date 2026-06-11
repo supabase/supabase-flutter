@@ -692,6 +692,47 @@ void main() {
         );
       }
     });
+
+    test(
+      'getSessionFromUrl handles implicit tokens in the fragment',
+      () async {
+        // Email change confirmation links return implicit-style tokens in the
+        // fragment even when the client is configured for the PKCE flow, so
+        // they must still be handled. See
+        // https://github.com/supabase/supabase-flutter/issues/986
+        final pkceClient = GoTrueClient(
+          url: gotrueUrl,
+          flowType: AuthFlowType.pkce,
+          asyncStorage: TestAsyncStorage(),
+          httpClient: MockedHttpClient({
+            'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
+            'aud': '',
+            'role': '',
+            'email': 'new@email.com',
+            'app_metadata': {
+              'provider': 'email',
+              'providers': ['email']
+            },
+            'user_metadata': {},
+            'created_at': '2023-04-01T09:38:59.784028Z',
+            'updated_at': '2023-04-01T09:38:59.908816Z',
+          }),
+        );
+
+        final url = Uri.parse(
+          'http://my-callback-url.com/#access_token=my-access-token'
+          '&expires_in=3600&refresh_token=my-refresh-token'
+          '&token_type=bearer&type=email_change',
+        );
+
+        final res = await pkceClient.getSessionFromUrl(url);
+        expect(res.session.accessToken, 'my-access-token');
+        expect(res.session.refreshToken, 'my-refresh-token');
+        expect(res.session.user.email, 'new@email.com');
+        expect(res.redirectType, 'email_change');
+        expect(pkceClient.currentUser?.email, 'new@email.com');
+      },
+    );
   });
 
   group('Recovering an already refreshed session', () {
