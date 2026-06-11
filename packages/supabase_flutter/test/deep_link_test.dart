@@ -1,4 +1,5 @@
 @TestOn('!browser')
+
 /// Tests for deep link handling on non-browser platforms.
 library;
 
