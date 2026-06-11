@@ -696,10 +696,6 @@ void main() {
     test(
       'getSessionFromUrl handles implicit tokens in the fragment',
       () async {
-        // Email change confirmation links return implicit-style tokens in the
-        // fragment even when the client is configured for the PKCE flow, so
-        // they must still be handled. See
-        // https://github.com/supabase/supabase-flutter/issues/986
         final pkceClient = GoTrueClient(
           url: gotrueUrl,
           flowType: AuthFlowType.pkce,

@@ -886,10 +886,6 @@ class GoTrueClient {
       throw AuthException(errorDescription, statusCode: errorCode, code: error);
     }
 
-    // Detect the callback type from the URL contents rather than the
-    // configured flow type. Some redirects (e.g. email change confirmation)
-    // return implicit-style tokens in the URL fragment even when the client is
-    // configured for PKCE, so we must handle whichever form the URL contains.
     final authCode = url.queryParameters['code'];
     if (authCode != null) {
       return await exchangeCodeForSession(authCode);
@@ -944,8 +940,6 @@ class GoTrueClient {
       if (redirectType == 'recovery') {
         notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
       } else if (redirectType == 'email_change') {
-        // The user was already signed in and only changed their email, so emit
-        // a userUpdated event rather than treating this as a fresh sign in.
         notifyAllSubscribers(AuthChangeEvent.userUpdated);
       } else {
         notifyAllSubscribers(AuthChangeEvent.signedIn);

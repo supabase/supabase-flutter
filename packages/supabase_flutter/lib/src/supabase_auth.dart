@@ -179,16 +179,6 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// If _authCallbackUrlHost not init, we treat all deep links as auth callback
   bool _isAuthCallbackDeeplink(Uri uri) {
-    // Detect the callback from the URL contents rather than the configured
-    // flow type. Some redirects (e.g. email change confirmation) return
-    // implicit-style tokens in the fragment even when the client is configured
-    // for PKCE, so both forms must be recognized regardless of the flow type.
-    //
-    // Auth parameters can be delivered either in the query (PKCE) or in the
-    // fragment (implicit), so both are inspected, mirroring how
-    // [GoTrueClient.getSessionFromUrl] parses the URL. Parameter keys are
-    // matched exactly to avoid false positives from unrelated deep links that
-    // merely contain one of these words.
     final fragmentParameters = Uri.splitQueryString(uri.fragment);
     bool hasParameter(String key) =>
         uri.queryParameters.containsKey(key) ||

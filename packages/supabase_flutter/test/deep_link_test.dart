@@ -57,9 +57,6 @@ void main() {
     setUp(() async {
       getUserHttpClient = GetUserHttpClient('new@email.com');
 
-      // Email change confirmation links return implicit-style tokens in the
-      // fragment even when the client is configured for the (default) PKCE
-      // flow. See https://github.com/supabase/supabase-flutter/issues/986
       mockAppLink(
         mockMethodChannel: false,
         mockEventChannel: true,
@@ -78,8 +75,6 @@ void main() {
         ),
       );
 
-      // Subscribe before the (asynchronously delivered) deep link is handled so
-      // the event is not missed, avoiding a flaky fixed delay.
       userUpdatedState = Supabase.instance.client.auth.onAuthStateChange
           .firstWhere((state) => state.event == AuthChangeEvent.userUpdated)
           .timeout(const Duration(seconds: 5));

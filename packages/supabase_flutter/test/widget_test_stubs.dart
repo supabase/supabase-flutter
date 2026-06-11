@@ -133,10 +133,6 @@ void mockAppLink({
   }
 }
 
-/// HTTP client that mimics the `GET /user` endpoint returning the given email.
-///
-/// Used to verify that an implicit-style token callback (e.g. an email change
-/// confirmation link) is handled even when the client is configured for PKCE.
 class GetUserHttpClient extends BaseClient {
   GetUserHttpClient(this.email);
 
