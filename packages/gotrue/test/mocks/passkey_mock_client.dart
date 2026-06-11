@@ -87,6 +87,10 @@ class PasskeyMockClient extends BaseClient {
       return _emptyResponse(204);
     }
 
+    if (path.endsWith('/token') && method == 'POST') {
+      return _jsonResponse(_accessTokenResponse(withFactors: true));
+    }
+
     return StreamedResponse(
       Stream.value(
           utf8.encode(jsonEncode({'error': 'Unhandled mock request'}))),
@@ -139,7 +143,7 @@ class PasskeyMockClient extends BaseClient {
     };
   }
 
-  Map<String, dynamic> _accessTokenResponse() {
+  Map<String, dynamic> _accessTokenResponse({bool withFactors = false}) {
     final now = DateTime.now().toIso8601String();
     return {
       'access_token': 'mock-access-token',
@@ -161,6 +165,33 @@ class PasskeyMockClient extends BaseClient {
         },
         'user_metadata': {},
         'identities': [],
+        if (withFactors)
+          'factors': [
+            {
+              'id': '93c0d839-680e-4d2c-9c25-f0c00f105b8a',
+              'friendly_name': 'iCloud Keychain',
+              'factor_type': 'webauthn',
+              'status': 'verified',
+              'created_at': now,
+              'updated_at': now,
+            },
+            {
+              'id': 'cf5ea60c-d52b-46a6-a306-3a0c4b68dd0f',
+              'friendly_name': 'Unverified key',
+              'factor_type': 'webauthn',
+              'status': 'unverified',
+              'created_at': now,
+              'updated_at': now,
+            },
+            {
+              'id': '744c1f56-7e2f-46a2-b1cf-1c8e77e4b23d',
+              'friendly_name': 'Authenticator app',
+              'factor_type': 'totp',
+              'status': 'verified',
+              'created_at': now,
+              'updated_at': now,
+            },
+          ],
       },
     };
   }

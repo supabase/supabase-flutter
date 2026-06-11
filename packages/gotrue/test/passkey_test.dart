@@ -1,6 +1,7 @@
 import 'package:gotrue/gotrue.dart';
 import 'package:test/test.dart';
 
+import 'mocks/otp_mock_client.dart';
 import 'mocks/passkey_mock_client.dart';
 import 'utils.dart';
 
@@ -57,6 +58,16 @@ void main() {
       expect(
         response.expiresAt,
         DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000),
+      );
+    });
+
+    test('startAuthentication without captcha token sends null token',
+        () async {
+      await client.passkey.startAuthentication();
+
+      expect(
+        mockClient.lastRequestBody?['gotrue_meta_security'],
+        {'captcha_token': null},
       );
     });
 
@@ -166,6 +177,32 @@ void main() {
       expect(passkey.friendlyName, 'My MacBook');
     });
 
+    test('list throws FormatException when response is not a list', () async {
+      final malformedClient = GoTrueClient(
+        url: 'http://localhost:9999',
+        httpClient: EmptyResponseClient(),
+        autoRefreshToken: false,
+        asyncStorage: TestAsyncStorage(),
+      );
+      addTearDown(malformedClient.dispose);
+
+      expect(malformedClient.passkey.list(), throwsFormatException);
+    });
+
+    test('listFactors buckets verified webauthn factors', () async {
+      await signInWithPasskey();
+
+      final factors = await client.mfa.listFactors();
+
+      expect(factors.all, hasLength(3));
+      expect(factors.webauthn, hasLength(1));
+      expect(factors.webauthn.single.factorType, FactorType.webauthn);
+      expect(factors.webauthn.single.status, FactorStatus.verified);
+      expect(factors.webauthn.single.friendlyName, 'iCloud Keychain');
+      expect(factors.totp, hasLength(1));
+      expect(factors.phone, isEmpty);
+    });
+
     test('delete removes a passkey', () async {
       await signInWithPasskey();
 
@@ -209,6 +246,33 @@ void main() {
         expect(
           () => client.admin.passkey.listPasskeys(userId: 'not-a-uuid'),
           throwsArgumentError,
+        );
+      });
+
+      test('deletePasskey rejects an invalid passkey id', () async {
+        expect(
+          () => client.admin.passkey.deletePasskey(
+            userId: PasskeyMockClient.userId,
+            passkeyId: 'not-a-uuid',
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('listPasskeys throws FormatException when response is not a list',
+          () async {
+        final malformedClient = GoTrueClient(
+          url: 'http://localhost:9999',
+          httpClient: EmptyResponseClient(),
+          autoRefreshToken: false,
+          asyncStorage: TestAsyncStorage(),
+        );
+        addTearDown(malformedClient.dispose);
+
+        expect(
+          malformedClient.admin.passkey
+              .listPasskeys(userId: PasskeyMockClient.userId),
+          throwsFormatException,
         );
       });
     });
