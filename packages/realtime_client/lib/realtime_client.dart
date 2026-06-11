@@ -1,3 +1,5 @@
+library;
+
 export 'src/constants.dart'
     show RealtimeConstants, RealtimeLogLevel, SocketStates;
 export 'src/realtime_channel.dart';

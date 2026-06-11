@@ -1,3 +1,5 @@
+library;
+
 export 'src/constants.dart'
     hide Constants, GenerateLinkTypeExtended, AuthChangeEventExtended;
 export 'src/gotrue_admin_api.dart';

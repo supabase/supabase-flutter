@@ -220,7 +220,6 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .isFilter('data', null);
   /// ```
-  // ignore: non_constant_identifier_names
   PostgrestFilterBuilder<T> isFilter(String column, bool? value) {
     return copyWithUrl(appendSearchParams(column, 'is.$value'));
   }
@@ -233,7 +232,6 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .inFilter('status', ['ONLINE', 'OFFLINE']);
   /// ```
-  // ignore: non_constant_identifier_names
   PostgrestFilterBuilder<T> inFilter(String column, List values) {
     return copyWithUrl(
         appendSearchParams(column, 'in.(${_cleanFilterArray(values)})'));
@@ -510,7 +508,6 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .isDistinct('age', null);
   /// ```
-  // ignore: non_constant_identifier_names
   PostgrestFilterBuilder<T> isDistinct(String column, Object? value) {
     return copyWithUrl(appendSearchParams(column, 'isdistinct.$value'));
   }
