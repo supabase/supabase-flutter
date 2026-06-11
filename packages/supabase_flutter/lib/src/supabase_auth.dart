@@ -183,9 +183,20 @@ class SupabaseAuth with WidgetsBindingObserver {
     // flow type. Some redirects (e.g. email change confirmation) return
     // implicit-style tokens in the fragment even when the client is configured
     // for PKCE, so both forms must be recognized regardless of the flow type.
-    return uri.fragment.contains('access_token') ||
-        uri.queryParameters.containsKey('code') ||
-        uri.fragment.contains('error_description');
+    //
+    // Auth parameters can be delivered either in the query (PKCE) or in the
+    // fragment (implicit), so both are inspected, mirroring how
+    // [GoTrueClient.getSessionFromUrl] parses the URL. Parameter keys are
+    // matched exactly to avoid false positives from unrelated deep links that
+    // merely contain one of these words.
+    final fragmentParameters = Uri.splitQueryString(uri.fragment);
+    bool hasParameter(String key) =>
+        uri.queryParameters.containsKey(key) ||
+        fragmentParameters.containsKey(key);
+
+    return hasParameter('access_token') ||
+        hasParameter('code') ||
+        hasParameter('error_description');
   }
 
   /// Enable deep link observer to handle deep links
