@@ -732,7 +732,7 @@ void main() {
         expect(response.session.user.email, 'new@email.com');
         expect(response.redirectType, 'email_change');
         expect(pkceClient.currentUser?.email, 'new@email.com');
-        expect(await emittedEvent, AuthChangeEvent.userUpdated);
+        expect(await emittedEvent, AuthChangeEvent.signedIn);
       },
     );
   });

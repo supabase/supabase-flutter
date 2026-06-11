@@ -52,7 +52,7 @@ void main() {
 
   group('Deep Link with implicit token while PKCE flow is configured', () {
     late final GetUserHttpClient getUserHttpClient;
-    late final Future<AuthState> userUpdatedState;
+    late final Future<AuthState> signedInState;
 
     setUp(() async {
       getUserHttpClient = GetUserHttpClient('new@email.com');
@@ -75,15 +75,15 @@ void main() {
         ),
       );
 
-      userUpdatedState = Supabase.instance.client.auth.onAuthStateChange
-          .firstWhere((state) => state.event == AuthChangeEvent.userUpdated)
+      signedInState = Supabase.instance.client.auth.onAuthStateChange
+          .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
           .timeout(const Duration(seconds: 5));
     });
 
     test(
         'Implicit token in the fragment triggers `getSessionFromUrl` and '
         'updates the current user', () async {
-      final state = await userUpdatedState;
+      final state = await signedInState;
       expect(state.session?.user.email, 'new@email.com');
       expect(getUserHttpClient.requestCount, 1);
       expect(getUserHttpClient.lastRequestUrl?.path, endsWith('/user'));

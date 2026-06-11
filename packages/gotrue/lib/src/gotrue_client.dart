@@ -939,8 +939,6 @@ class GoTrueClient {
       _saveSession(session);
       if (redirectType == 'recovery') {
         notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
-      } else if (redirectType == 'email_change') {
-        notifyAllSubscribers(AuthChangeEvent.userUpdated);
       } else {
         notifyAllSubscribers(AuthChangeEvent.signedIn);
       }
