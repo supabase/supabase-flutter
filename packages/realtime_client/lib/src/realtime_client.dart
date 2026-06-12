@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:core';
 
 import 'package:collection/collection.dart';
@@ -86,6 +87,9 @@ class RealtimeClient {
 
   final Map<String, String> headers;
   final Map<String, dynamic> params;
+
+  /// The Realtime protocol version sent as the `vsn` connection parameter.
+  final RealtimeProtocolVersion version;
   final Duration timeout;
   final WebSocketTransport transport;
   final Client? httpClient;
@@ -138,6 +142,10 @@ class RealtimeClient {
   /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
+  ///
+  /// [version] The Realtime protocol version. Defaults to
+  /// [RealtimeProtocolVersion.v2]; pass [RealtimeProtocolVersion.v1] for the
+  /// legacy object-shaped JSON frames.
   RealtimeClient(
     String endPoint, {
     WebSocketTransport? transport,
@@ -151,6 +159,7 @@ class RealtimeClient {
     RealtimeLogLevel? logLevel,
     this.httpClient,
     this.customAccessToken,
+    this.version = RealtimeProtocolVersion.v2,
   })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
             .replace(
               queryParameters:
@@ -372,7 +381,7 @@ class RealtimeClient {
   /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
   String? push(Message message) {
     void callback() {
-      connection?.sink.add(_serializer.encode(message.toJson()));
+      connection?.sink.add(_encode(message.toJson()));
     }
 
     log('push', '${message.topic} ${message.event} (${message.ref})',
@@ -387,7 +396,7 @@ class RealtimeClient {
   }
 
   void onConnectionMessage(Object rawMessage) {
-    final message = _serializer.decode(rawMessage);
+    final message = _decode(rawMessage);
     final topic = message['topic'] as String;
     final event = message['event'] as String;
     final payload = message['payload'];
@@ -414,10 +423,28 @@ class RealtimeClient {
     }
   }
 
+  /// Encodes an outgoing message for the negotiated protocol [version].
+  Object _encode(Map<String, dynamic> message) {
+    if (version == RealtimeProtocolVersion.v1) {
+      return jsonEncode(message);
+    }
+    return _serializer.encode(message);
+  }
+
+  /// Decodes a raw incoming frame for the negotiated protocol [version].
+  Map<String, dynamic> _decode(Object rawMessage) {
+    if (version == RealtimeProtocolVersion.v1) {
+      return Map<String, dynamic>.from(
+        jsonDecode(rawMessage as String) as Map,
+      );
+    }
+    return _serializer.decode(rawMessage);
+  }
+
   /// Returns the URL of the websocket.
   String get endPointURL {
     final params = Map<String, String>.from(this.params);
-    params['vsn'] = Constants.vsn;
+    params['vsn'] = version.vsn;
     return _appendParams(endPoint, params);
   }
 

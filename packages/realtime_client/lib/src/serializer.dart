@@ -12,9 +12,6 @@ import 'dart:typed_data';
 /// WebSocket frames so that raw bytes can be forwarded without JSON encoding.
 /// Incoming binary broadcast frames are decoded back into the same map shape as
 /// their JSON counterparts.
-///
-/// Ported from the supabase-js serializer:
-/// https://github.com/supabase/supabase-js/blob/master/packages/core/realtime-js/src/lib/serializer.ts
 class Serializer {
   static const int headerLength = 1;
   static const int userBroadcastPushMetaLength = 6;

@@ -2,7 +2,11 @@
 library;
 
 export 'src/constants.dart'
-    show RealtimeConstants, RealtimeLogLevel, SocketStates;
+    show
+        RealtimeConstants,
+        RealtimeLogLevel,
+        RealtimeProtocolVersion,
+        SocketStates;
 export 'src/realtime_channel.dart';
 export 'src/realtime_client.dart';
 export 'src/realtime_presence.dart';

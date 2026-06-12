@@ -597,7 +597,7 @@ class RealtimeChannel {
   ///
   /// To send a raw binary payload over a WebSocket binary frame (avoiding JSON
   /// encoding on the server), set a `Uint8List` (or any `TypedData`) under the
-  /// `payload` key, mirroring how supabase-js carries binary broadcast data:
+  /// `payload` key:
   ///
   /// ```dart
   /// channel.sendBroadcastMessage(

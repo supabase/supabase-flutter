@@ -163,6 +163,17 @@ void main() {
         'ws://example.org/chat/websocket?apikey=123456789&vsn=2.0.0',
       );
     });
+
+    test('uses the legacy vsn when version is v1', () {
+      final socket = RealtimeClient(
+        'wss://example.org/chat',
+        version: RealtimeProtocolVersion.v1,
+      );
+      expect(
+        socket.endPointURL,
+        'wss://example.org/chat/websocket?vsn=1.0.0',
+      );
+    });
   });
 
   group('connect with Websocket', () {
@@ -482,6 +493,36 @@ void main() {
       mockedSocket.push(message);
 
       verify(() => mockedSink.add(captureAny(that: isA<Uint8List>())))
+          .called(1);
+    });
+
+    test('encodes with the legacy object format when version is v1', () {
+      final legacyChannel = MockIOWebSocketChannel();
+      final legacySink = MockWebSocketSink();
+      when(() => legacyChannel.sink).thenReturn(legacySink);
+      when(() => legacyChannel.ready).thenAnswer((_) => Future.value());
+      when(() => legacySink.close()).thenAnswer((_) => Future.value());
+
+      final legacySocket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => legacyChannel,
+        version: RealtimeProtocolVersion.v1,
+      );
+      legacySocket.connect();
+      legacySocket.connectionStatus = SocketStates.open;
+
+      final legacyData = json.encode({
+        'topic': topic,
+        'event': event.eventName(),
+        'payload': payload,
+        'ref': ref,
+      });
+
+      final message =
+          Message(topic: topic, payload: payload, event: event, ref: ref);
+      legacySocket.push(message);
+
+      verify(() => legacySink.add(captureAny(that: equals(legacyData))))
           .called(1);
     });
   });
