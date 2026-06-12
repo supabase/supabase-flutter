@@ -591,6 +591,38 @@ void main() {
         'payload': {'x': 1},
       });
     });
+
+    test('decodes a legacy object frame and dispatches it when version is v1',
+        () {
+      final socket = RealtimeClient(
+        socketEndpoint,
+        version: RealtimeProtocolVersion.v1,
+      );
+      final channel = socket.channel('room');
+
+      Map<String, dynamic>? received;
+      channel.onBroadcast(
+        event: 'cursor',
+        callback: (payload) => received = payload,
+      );
+
+      socket.onConnectionMessage(json.encode({
+        'topic': 'realtime:room',
+        'event': 'broadcast',
+        'payload': {
+          'type': 'broadcast',
+          'event': 'cursor',
+          'payload': {'x': 1},
+        },
+        'ref': null,
+      }));
+
+      expect(received, {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'payload': {'x': 1},
+      });
+    });
   });
 
   group('makeRef', () {
