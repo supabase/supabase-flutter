@@ -387,11 +387,11 @@ class RealtimeClient {
   }
 
   void onConnectionMessage(Object rawMessage) {
-    final msg = _serializer.decode(rawMessage);
-    final topic = msg['topic'] as String;
-    final event = msg['event'] as String;
-    final payload = msg['payload'];
-    final ref = msg['ref'] as String?;
+    final message = _serializer.decode(rawMessage);
+    final topic = message['topic'] as String;
+    final event = message['event'] as String;
+    final payload = message['payload'];
+    final ref = message['ref'] as String?;
     if (ref != null && ref == pendingHeartbeatRef) {
       pendingHeartbeatRef = null;
     }
@@ -410,7 +410,7 @@ class RealtimeClient {
           ),
         );
     for (final callback in stateChangeCallbacks['message']!) {
-      callback(msg);
+      callback(message);
     }
   }
 
