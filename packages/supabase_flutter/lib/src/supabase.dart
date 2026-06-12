@@ -299,7 +299,7 @@ class Supabase {
     } else {
       // paused or detached — disconnect the WebSocket if it is active.
       if (realtime.isConnected ||
-          realtime.connectionStatus == SocketStates.connecting) {
+          realtime.connState == SocketStates.connecting) {
         await realtime.disconnect();
       }
     }

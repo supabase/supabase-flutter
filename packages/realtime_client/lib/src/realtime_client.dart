@@ -116,7 +116,7 @@ class RealtimeClient {
   final RealtimeEncode encode;
   final RealtimeDecode decode;
   late TimerCalculation reconnectAfterMs;
-  WebSocketChannel? connection;
+  WebSocketChannel? conn;
   List sendBuffer = [];
   Map<String, List<Function>> stateChangeCallbacks = {
     'open': [],
@@ -127,7 +127,7 @@ class RealtimeClient {
 
   @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
-  SocketStates? connectionStatus;
+  SocketStates? connState;
   Future<String?> Function()? customAccessToken;
 
   /// Initializes the Socket
@@ -214,73 +214,72 @@ class RealtimeClient {
   /// Connects the socket.
   @internal
   Future<void> connect() async {
-    if (connection != null) {
+    if (conn != null) {
       return;
     }
 
     try {
       log('transport', 'connecting to $endPointURL', null);
       log('transport', 'connecting', null, Level.FINE);
-      connectionStatus = SocketStates.connecting;
-      final WebSocketChannel localConnection = transport(endPointURL, headers);
-      connection = localConnection;
+      connState = SocketStates.connecting;
+      final WebSocketChannel localConn = transport(endPointURL, headers);
+      conn = localConn;
 
       try {
-        await localConnection.ready;
+        await localConn.ready;
       } catch (error) {
         // Bail out if disconnect() ran or a new connect() started during await
-        if (connection != localConnection) {
+        if (conn != localConn) {
           return;
         }
         // Don't schedule a reconnect and emit error if connection has been
         // closed by the user or [disconnect] waits for the connection to be
         // ready before closing it.
-        if (connectionStatus != SocketStates.disconnected &&
-            connectionStatus != SocketStates.disconnecting) {
-          connectionStatus = SocketStates.closed;
-          _onConnectionError(error);
+        if (connState != SocketStates.disconnected &&
+            connState != SocketStates.disconnecting) {
+          connState = SocketStates.closed;
+          _onConnError(error);
           reconnectTimer.scheduleTimeout();
         }
         return;
       }
 
       // Guard: bail out if disconnect() ran during the await
-      if (connection != localConnection ||
-          connectionStatus != SocketStates.connecting) {
+      if (conn != localConn || connState != SocketStates.connecting) {
         return;
       }
 
-      connectionStatus = SocketStates.open;
+      connState = SocketStates.open;
 
-      _onConnectionOpen();
-      localConnection.stream.listen(
-        (message) => onConnectionMessage(message),
-        onError: _onConnectionError,
+      _onConnOpen();
+      localConn.stream.listen(
+        (message) => onConnMessage(message),
+        onError: _onConnError,
         onDone: () {
           // communication has been closed
-          if (connectionStatus != SocketStates.disconnected &&
-              connectionStatus != SocketStates.disconnecting) {
-            connectionStatus = SocketStates.closed;
+          if (connState != SocketStates.disconnected &&
+              connState != SocketStates.disconnecting) {
+            connState = SocketStates.closed;
           }
-          _onConnectionClose();
+          _onConnClose();
         },
       );
     } catch (e) {
       /// General error handling
-      _onConnectionError(e);
+      _onConnError(e);
     }
   }
 
   /// Disconnects the socket with status [code] and [reason] for the disconnect
   Future<void> disconnect({int? code, String? reason}) async {
-    final connection = this.connection;
-    if (connection != null) {
-      final oldState = connectionStatus;
+    final conn = this.conn;
+    if (conn != null) {
+      final oldState = connState;
       final shouldCloseSink =
           oldState == SocketStates.open || oldState == SocketStates.connecting;
       if (shouldCloseSink) {
         // Don't set the state to `disconnecting` if the connection is already closed.
-        connectionStatus = SocketStates.disconnecting;
+        connState = SocketStates.disconnecting;
         log('transport', 'disconnecting', {'code': code, 'reason': reason},
             Level.FINE);
       }
@@ -288,20 +287,20 @@ class RealtimeClient {
       // Connection cannot be closed while it's still connecting. Wait for connection to
       // be ready and then close it.
       if (oldState == SocketStates.connecting) {
-        await connection.ready.catchError((_) {});
+        await conn.ready.catchError((_) {});
       }
 
       if (shouldCloseSink) {
         if (code != null) {
-          await connection.sink.close(code, reason ?? '');
+          await conn.sink.close(code, reason ?? '');
         } else {
-          await connection.sink.close();
+          await conn.sink.close();
         }
-        connectionStatus = SocketStates.disconnected;
+        connState = SocketStates.disconnected;
         reconnectTimer.reset();
         log('transport', 'disconnected', null, Level.FINE);
       }
-      this.connection = null;
+      this.conn = null;
 
       // remove open handles
       if (heartbeatTimer != null) heartbeatTimer?.cancel();
@@ -365,7 +364,7 @@ class RealtimeClient {
 
   /// Returns the current state of the socket.
   String get connectionState {
-    switch (connectionStatus) {
+    switch (connState) {
       case SocketStates.connecting:
         return 'connecting';
       case SocketStates.open:
@@ -381,7 +380,7 @@ class RealtimeClient {
   }
 
   /// Returns `true` is the connection is open.
-  bool get isConnected => connectionStatus == SocketStates.open;
+  bool get isConnected => connState == SocketStates.open;
 
   /// Removes a subscription from the socket.
   @internal
@@ -406,7 +405,7 @@ class RealtimeClient {
   /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
   String? push(Message message) {
     void callback() {
-      connection?.sink.add(encode(message.toJson()));
+      conn?.sink.add(encode(message.toJson()));
     }
 
     log('push', '${message.topic} ${message.event} (${message.ref})',
@@ -420,7 +419,7 @@ class RealtimeClient {
     return null;
   }
 
-  void onConnectionMessage(Object rawMessage) {
+  void onConnMessage(Object rawMessage) {
     final Map<String, dynamic> message;
     try {
       message = decode(rawMessage);
@@ -518,7 +517,7 @@ class RealtimeClient {
     }
   }
 
-  void _onConnectionOpen() {
+  void _onConnOpen() {
     log('transport', 'connected to $endPointURL');
     log('transport', 'connected', null, Level.FINE);
     _flushSendBuffer();
@@ -534,18 +533,17 @@ class RealtimeClient {
   }
 
   /// communication has been closed
-  void _onConnectionClose() {
-    final statusCode = connection?.closeCode;
+  void _onConnClose() {
+    final statusCode = conn?.closeCode;
     RealtimeCloseEvent? event;
     if (statusCode != null) {
-      event =
-          RealtimeCloseEvent(code: statusCode, reason: connection?.closeReason);
+      event = RealtimeCloseEvent(code: statusCode, reason: conn?.closeReason);
     }
     log('transport', 'close', event, Level.FINE);
 
     /// SocketStates.disconnected: by user with socket.disconnect()
     /// SocketStates.closed: NOT by user, should try to reconnect
-    if (connectionStatus == SocketStates.closed) {
+    if (connState == SocketStates.closed) {
       _triggerChanError(event);
       reconnectTimer.scheduleTimeout();
     }
@@ -555,7 +553,7 @@ class RealtimeClient {
     }
   }
 
-  void _onConnectionError(dynamic error) {
+  void _onConnError(dynamic error) {
     log('transport', error.toString());
     _triggerChanError(error);
     for (final callback in stateChangeCallbacks['error']!) {
@@ -603,9 +601,9 @@ class RealtimeClient {
       pendingHeartbeatRef = null;
       log(
         'transport',
-        'heartbeat timeout. Attempting to re-establish connection',
+        'heartbeat timeout. Attempting to re-establish conn',
       );
-      connection?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout');
+      conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout');
       return;
     }
     pendingHeartbeatRef = makeRef();
