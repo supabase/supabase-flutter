@@ -6,6 +6,10 @@ on:
     - cron: "0 0 * * 0"
   workflow_dispatch:
 
+permissions:
+  issues: write
+  pull-requests: write
+
 jobs:
   stale:
     uses: supabase/actions/.github/workflows/stale.yml@2e898cb306c525525ad3f0b34c6f0ab1e3f8ba87

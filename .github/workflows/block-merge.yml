@@ -11,6 +11,8 @@ on:
       - labeled
       - unlabeled
 
+permissions: {}
+
 jobs:
   block-merge:
     uses: supabase/actions/.github/workflows/block-merge.yml@2e898cb306c525525ad3f0b34c6f0ab1e3f8ba87

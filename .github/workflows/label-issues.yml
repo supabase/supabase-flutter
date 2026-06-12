@@ -10,6 +10,10 @@ on:
       - opened
       - edited
 
+permissions:
+  issues: write
+  pull-requests: write
+
 jobs:
   label:
     uses: supabase/actions/.github/workflows/label-issues.yml@2e898cb306c525525ad3f0b34c6f0ab1e3f8ba87
