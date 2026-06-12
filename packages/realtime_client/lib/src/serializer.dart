@@ -222,10 +222,10 @@ class Serializer {
     return null;
   }
 
-  Map<String, dynamic> _pick(Map<dynamic, dynamic> obj, List<String> keys) {
+  Map<String, dynamic> _pick(Map<dynamic, dynamic> source, List<String> keys) {
     return <String, dynamic>{
       for (final key in keys)
-        if (obj.containsKey(key)) key: obj[key],
+        if (source.containsKey(key)) key: source[key],
     };
   }
 }

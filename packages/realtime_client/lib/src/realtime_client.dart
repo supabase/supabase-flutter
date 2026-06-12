@@ -111,7 +111,7 @@ class RealtimeClient {
   /// Unique reference ID for every heartbeat.
   int ref = 0;
   late RetryTimer reconnectTimer;
-  void Function(String? kind, String? msg, dynamic data)? logger;
+  void Function(String? kind, String? message, dynamic data)? logger;
   static final Serializer _serializer = Serializer();
   final RealtimeEncode encode;
   final RealtimeDecode decode;
@@ -144,7 +144,7 @@ class RealtimeClient {
   ///
   /// [heartbeatIntervalMs] The millisec interval to send a heartbeat message.
   ///
-  /// [logger] The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`$kind: $msg`, data) }
+  /// [logger] The optional function for specialized logging, ie: logger: (kind, message, data) => { console.log(`$kind: $message`, data) }
   ///
   /// [encode] Overrides how outgoing messages are serialized, for example to
   /// use a faster JSON implementation. Defaults to the codec for [version].
@@ -331,9 +331,12 @@ class RealtimeClient {
   ///
   /// [level] must be [Level.FINEST] for senitive data
   void log(
-      [String? kind, String? msg, dynamic data, Level level = Level.FINEST]) {
-    _log.log(level, '$kind: $msg', data);
-    logger?.call(kind, msg, data);
+      [String? kind,
+      String? message,
+      dynamic data,
+      Level level = Level.FINEST]) {
+    _log.log(level, '$kind: $message', data);
+    logger?.call(kind, message, data);
   }
 
   /// Registers callbacks for connection state change events

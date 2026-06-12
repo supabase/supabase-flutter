@@ -565,7 +565,7 @@ class RealtimeChannel {
       ]
     };
 
-    final res = await (socket.httpClient?.post ?? post)(
+    final response = await (socket.httpClient?.post ?? post)(
       Uri.parse(broadcastEndpointURL),
       headers: headers,
       body: json.encode(body),
@@ -574,13 +574,13 @@ class RealtimeChannel {
       onTimeout: () => throw TimeoutException('Request timeout'),
     );
 
-    if (res.statusCode == 202) {
+    if (response.statusCode == 202) {
       return;
     }
 
-    String errorMessage = res.reasonPhrase ?? 'Unknown error';
+    String errorMessage = response.reasonPhrase ?? 'Unknown error';
     try {
-      final errorBody = json.decode(res.body) as Map<String, dynamic>;
+      final errorBody = json.decode(response.body) as Map<String, dynamic>;
       errorMessage = (errorBody['error'] ??
           errorBody['message'] ??
           errorMessage) as String;
@@ -656,12 +656,12 @@ class RealtimeChannel {
         ]
       };
       try {
-        final res = await (socket.httpClient?.post ?? post)(
+        final response = await (socket.httpClient?.post ?? post)(
           Uri.parse(broadcastEndpointURL),
           headers: headers,
           body: json.encode(body),
         );
-        if (200 <= res.statusCode && res.statusCode < 300) {
+        if (200 <= response.statusCode && response.statusCode < 300) {
           completer.complete(ChannelResponse.ok);
         } else {
           completer.complete(ChannelResponse.error);
