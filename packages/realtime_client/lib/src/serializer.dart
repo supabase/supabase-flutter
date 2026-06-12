@@ -16,6 +16,10 @@ class Serializer {
   static const int headerLength = 1;
   static const int userBroadcastPushMetaLength = 6;
 
+  /// Size bytes after the kind byte of a `userBroadcast` frame:
+  /// topic size, user event size, metadata size and payload encoding.
+  static const int userBroadcastMetaLength = 4;
+
   /// Binary frame sent by the client for a broadcast push.
   static const int kindUserBroadcastPush = 3;
 
@@ -147,18 +151,20 @@ class Serializer {
     final metadataSize = view.getUint8(3);
     final payloadEncoding = view.getUint8(4);
 
-    var offset = headerLength + 4;
-    final topic = utf8.decode(buffer.sublist(offset, offset + topicSize));
+    var offset = headerLength + userBroadcastMetaLength;
+    final topic =
+        utf8.decode(Uint8List.sublistView(buffer, offset, offset + topicSize));
     offset += topicSize;
-    final userEvent =
-        utf8.decode(buffer.sublist(offset, offset + userEventSize));
+    final userEvent = utf8
+        .decode(Uint8List.sublistView(buffer, offset, offset + userEventSize));
     offset += userEventSize;
     final metadata = metadataSize > 0
-        ? utf8.decode(buffer.sublist(offset, offset + metadataSize))
+        ? utf8.decode(
+            Uint8List.sublistView(buffer, offset, offset + metadataSize))
         : '';
     offset += metadataSize;
 
-    final payloadBytes = buffer.sublist(offset);
+    final payloadBytes = Uint8List.sublistView(buffer, offset);
     final dynamic parsedPayload = payloadEncoding == jsonEncoding
         ? jsonDecode(utf8.decode(payloadBytes))
         : payloadBytes;

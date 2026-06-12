@@ -558,6 +558,39 @@ void main() {
         returnsNormally,
       );
     });
+
+    test('dispatches a received binary broadcast to onBroadcast', () {
+      final socket = RealtimeClient(socketEndpoint);
+      final channel = socket.channel('room');
+
+      Map<String, dynamic>? received;
+      channel.onBroadcast(
+        event: 'cursor',
+        callback: (payload) => received = payload,
+      );
+
+      final topic = utf8.encode('realtime:room');
+      final event = utf8.encode('cursor');
+      final payload = utf8.encode(json.encode({'x': 1}));
+      final frame = Uint8List.fromList([
+        4, // kind: userBroadcast
+        topic.length,
+        event.length,
+        0, // metadata size
+        1, // payload encoding: json
+        ...topic,
+        ...event,
+        ...payload,
+      ]);
+
+      socket.onConnectionMessage(frame);
+
+      expect(received, {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'payload': {'x': 1},
+      });
+    });
   });
 
   group('makeRef', () {
