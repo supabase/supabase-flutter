@@ -18,14 +18,6 @@ typedef WebSocketTransport = WebSocketChannel Function(
   Map<String, String> headers,
 );
 
-/// Encodes an outgoing message into the `String` or binary frame to write to
-/// the WebSocket.
-typedef RealtimeEncode = Object Function(Map<String, dynamic> payload);
-
-/// Decodes a raw incoming WebSocket frame (`String` or binary) into a message
-/// map.
-typedef RealtimeDecode = Map<String, dynamic> Function(Object payload);
-
 /// Event details for when the connection closed.
 class RealtimeCloseEvent {
   /// Web socket protocol status codes for when a connection is closed.
@@ -110,8 +102,7 @@ class RealtimeClient {
   int ref = 0;
   late RetryTimer reconnectTimer;
   void Function(String? kind, String? msg, dynamic data)? logger;
-  late RealtimeEncode encode;
-  late RealtimeDecode decode;
+  final Serializer _serializer = Serializer();
   late TimerCalculation reconnectAfterMs;
   WebSocketChannel? connection;
   List sendBuffer = [];
@@ -144,12 +135,6 @@ class RealtimeClient {
   ///
   /// [logger] The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`$kind: $msg`, data) }
   ///
-  /// [encode] The function to encode outgoing messages. Defaults to the
-  /// protocol `2.0.0` serializer.
-  ///
-  /// [decode] The function to decode incoming messages. Defaults to the
-  /// protocol `2.0.0` serializer.
-  ///
   /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
@@ -159,8 +144,6 @@ class RealtimeClient {
     this.timeout = Constants.defaultTimeout,
     this.heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs,
     this.logger,
-    RealtimeEncode? encode,
-    RealtimeDecode? decode,
     TimerCalculation? reconnectAfterMs,
     Map<String, String>? headers,
     this.params = const {},
@@ -187,9 +170,6 @@ class RealtimeClient {
 
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
-    final serializer = Serializer();
-    this.encode = encode ?? serializer.encode;
-    this.decode = decode ?? serializer.decode;
     reconnectTimer = RetryTimer(
       () async {
         await disconnect();
@@ -392,7 +372,7 @@ class RealtimeClient {
   /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
   String? push(Message message) {
     void callback() {
-      connection?.sink.add(encode(message.toJson()));
+      connection?.sink.add(_serializer.encode(message.toJson()));
     }
 
     log('push', '${message.topic} ${message.event} (${message.ref})',
@@ -407,7 +387,7 @@ class RealtimeClient {
   }
 
   void onConnectionMessage(Object rawMessage) {
-    final msg = decode(rawMessage);
+    final msg = _serializer.decode(rawMessage);
     final topic = msg['topic'] as String;
     final event = msg['event'] as String;
     final payload = msg['payload'];
