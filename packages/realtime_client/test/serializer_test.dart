@@ -111,6 +111,17 @@ void main() {
         'payload': {'status': 'ok'},
       });
     });
+
+    test('throws a FormatException on a malformed text frame', () {
+      expect(
+        () => serializer.decode('{"not": "an array"}'),
+        throwsFormatException,
+      );
+      expect(
+        () => serializer.decode(jsonEncode(['too', 'short'])),
+        throwsFormatException,
+      );
+    });
   });
 
   group('decode binary frames', () {

@@ -412,7 +412,14 @@ class RealtimeClient {
   }
 
   void onConnectionMessage(Object rawMessage) {
-    final message = decode(rawMessage);
+    final Map<String, dynamic> message;
+    try {
+      message = decode(rawMessage);
+    } catch (error) {
+      log('transport', 'failed to decode message', error);
+      return;
+    }
+
     final topic = message['topic'] as String;
     final event = message['event'] as String;
     final payload = message['payload'];
@@ -421,9 +428,10 @@ class RealtimeClient {
       pendingHeartbeatRef = null;
     }
 
+    final status = payload is Map ? (payload['status'] ?? '') : '';
     log(
       'receive',
-      "${payload['status'] ?? ''} $topic $event ${ref != null ? '($ref)' : ''}",
+      "$status $topic $event ${ref != null ? '($ref)' : ''}",
       payload,
     );
 

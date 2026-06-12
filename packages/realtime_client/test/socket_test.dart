@@ -550,6 +550,16 @@ void main() {
     });
   });
 
+  group('onConnectionMessage', () {
+    test('drops a malformed frame without throwing', () {
+      final socket = RealtimeClient(socketEndpoint);
+      expect(
+        () => socket.onConnectionMessage('{"not": "an array"}'),
+        returnsNormally,
+      );
+    });
+  });
+
   group('makeRef', () {
     late RealtimeClient socket;
     setUp(() {

@@ -60,7 +60,10 @@ class Serializer {
   /// `topic`, `event` and `payload` keys.
   Map<String, dynamic> decode(Object rawPayload) {
     if (rawPayload is String) {
-      final decoded = jsonDecode(rawPayload) as List;
+      final decoded = jsonDecode(rawPayload);
+      if (decoded is! List || decoded.length < 5) {
+        throw FormatException('Invalid 2.0.0 text frame', rawPayload);
+      }
       return <String, dynamic>{
         'join_ref': decoded[0],
         'ref': decoded[1],
@@ -184,6 +187,10 @@ class Serializer {
     }
   }
 
+  // Writes one byte per UTF-16 code unit, matching the size byte (which is the
+  // code-unit count). Frame string fields (joinRef, ref, topic, userEvent,
+  // metadata) are therefore assumed to be ASCII; non-ASCII characters would be
+  // truncated and not round-trip through the utf8 decode on the other side.
   int _writeString(Uint8List buffer, int offset, String value) {
     for (final unit in value.codeUnits) {
       buffer[offset++] = unit & 0xFF;
