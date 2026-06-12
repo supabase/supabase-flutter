@@ -80,7 +80,6 @@ class RealtimeCloseEvent {
 /// - Works on all Dart platforms (Flutter mobile/desktop, web, server).
 /// - On web, the underlying [WebSocketChannel] uses the browser WebSocket API.
 class RealtimeClient {
-  // This is named `accessTokenValue` in supabase-js
   String? accessToken;
   List<RealtimeChannel> channels = [];
   final String endPoint;
@@ -120,7 +119,6 @@ class RealtimeClient {
   @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
   SocketStates? connectionStatus;
-  // This is called `accessToken` in realtime-js
   Future<String?> Function()? customAccessToken;
 
   /// Initializes the Socket
