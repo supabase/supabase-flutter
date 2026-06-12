@@ -7,9 +7,12 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
+
+import './oauth_redirect_stub.dart'
+    if (dart.library.js_interop) './oauth_redirect_web.dart';
 
 /// Integrates Supabase Auth with the Flutter application lifecycle.
 ///
@@ -299,8 +302,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     OAuthProvider provider, {
     String? redirectTo,
     String? scopes,
-    LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
     Map<String, String>? queryParams,
+    bool preferEphemeral = false,
   }) async {
     final res = await getOAuthSignInUrl(
       provider: provider,
@@ -308,24 +311,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final uri = Uri.parse(res.url);
-
-    LaunchMode launchMode = authScreenLaunchMode;
-
-    // `Platform.isAndroid` throws on web, so adding a guard for web here.
-    final isAndroid = !kIsWeb && Platform.isAndroid;
-
-    // Google login has to be performed on external browser window on Android
-    if (provider == OAuthProvider.google && isAndroid) {
-      launchMode = LaunchMode.externalApplication;
-    }
-
-    final result = await launchUrl(
-      uri,
-      mode: launchMode,
-      webOnlyWindowName: '_self',
+    return _authenticateWithRedirect(
+      Uri.parse(res.url),
+      redirectTo: redirectTo,
+      preferEphemeral: preferEphemeral,
     );
-    return result;
   }
 
   /// Attempts a single-sign on using an enterprise Identity Provider. A
@@ -341,8 +331,9 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// If you have built an organization-specific login page, you can use the
   /// organization's SSO Identity Provider UUID directly instead.
   ///
-  /// Returns true if the URL was launched successfully, otherwise either returns
-  /// false or throws a [PlatformException] depending on the launchUrl failure.
+  /// On web the current tab is redirected to the identity provider. On every
+  /// other platform the flow runs inside a system web authentication session
+  /// and resolves once the session has been established.
   ///
   /// ```dart
   /// await supabase.auth.signInWithSSO(
@@ -354,7 +345,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     String? domain,
     String? redirectTo,
     String? captchaToken,
-    LaunchMode launchMode = LaunchMode.platformDefault,
+    bool preferEphemeral = false,
   }) async {
     final ssoUrl = await getSSOSignInUrl(
       providerId: providerId,
@@ -362,10 +353,10 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       redirectTo: redirectTo,
       captchaToken: captchaToken,
     );
-    return await launchUrl(
+    return _authenticateWithRedirect(
       Uri.parse(ssoUrl),
-      mode: launchMode,
-      webOnlyWindowName: '_self',
+      redirectTo: redirectTo,
+      preferEphemeral: preferEphemeral,
     );
   }
 
@@ -380,8 +371,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     OAuthProvider provider, {
     String? redirectTo,
     String? scopes,
-    LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
     Map<String, String>? queryParams,
+    bool preferEphemeral = false,
   }) async {
     final res = await getLinkIdentityUrl(
       provider,
@@ -389,23 +380,52 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final uri = Uri.parse(res.url);
+    return _authenticateWithRedirect(
+      Uri.parse(res.url),
+      redirectTo: redirectTo,
+      preferEphemeral: preferEphemeral,
+    );
+  }
 
-    LaunchMode launchMode = authScreenLaunchMode;
-
-    // `Platform.isAndroid` throws on web, so adding a guard for web here.
-    final isAndroid = !kIsWeb && Platform.isAndroid;
-
-    // Google login has to be performed on external browser window on Android
-    if (provider == OAuthProvider.google && isAndroid) {
-      launchMode = LaunchMode.externalApplication;
+  /// Runs an OAuth-style redirect flow for [url].
+  ///
+  /// On web the current tab is redirected to [url] and the session is picked up
+  /// when the browser returns to the app. On every other platform the flow runs
+  /// inside a system web authentication session (`ASWebAuthenticationSession` on
+  /// Apple platforms, Custom Tabs on Android) which captures the redirect to
+  /// [redirectTo] and hands it back, so the session is established before this
+  /// returns. [preferEphemeral] requests an ephemeral session that does not
+  /// share cookies with the system browser (Apple platforms and Android only).
+  Future<bool> _authenticateWithRedirect(
+    Uri url, {
+    required String? redirectTo,
+    required bool preferEphemeral,
+  }) async {
+    if (kIsWeb) {
+      redirectToUrl(url.toString());
+      return true;
     }
 
-    final result = await launchUrl(
-      uri,
-      mode: launchMode,
-      webOnlyWindowName: '_self',
+    if (redirectTo == null) {
+      throw const AuthException(
+        'redirectTo is required to capture the authentication callback on this '
+        'platform.',
+      );
+    }
+
+    final redirectUri = Uri.parse(redirectTo);
+    final isHttps = redirectUri.scheme == 'https';
+    final result = await FlutterWebAuth2.authenticate(
+      url: url.toString(),
+      callbackUrlScheme: redirectUri.scheme,
+      options: FlutterWebAuth2Options(
+        preferEphemeral: preferEphemeral,
+        httpsHost: isHttps ? redirectUri.host : null,
+        httpsPath: isHttps ? redirectUri.path : null,
+      ),
     );
-    return result;
+
+    await getSessionFromUrl(Uri.parse(result));
+    return true;
   }
 }
