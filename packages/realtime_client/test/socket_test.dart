@@ -525,6 +525,29 @@ void main() {
       verify(() => legacySink.add(captureAny(that: equals(legacyData))))
           .called(1);
     });
+
+    test('uses a custom encode override when provided', () {
+      final customChannel = MockIOWebSocketChannel();
+      final customSink = MockWebSocketSink();
+      when(() => customChannel.sink).thenReturn(customSink);
+      when(() => customChannel.ready).thenAnswer((_) => Future.value());
+      when(() => customSink.close()).thenAnswer((_) => Future.value());
+
+      final customSocket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => customChannel,
+        encode: (payload) => 'custom-frame',
+      );
+      customSocket.connect();
+      customSocket.connectionStatus = SocketStates.open;
+
+      customSocket.push(
+        Message(topic: topic, payload: payload, event: event, ref: ref),
+      );
+
+      verify(() => customSink.add(captureAny(that: equals('custom-frame'))))
+          .called(1);
+    });
   });
 
   group('makeRef', () {
