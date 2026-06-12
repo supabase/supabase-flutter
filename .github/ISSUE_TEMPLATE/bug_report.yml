@@ -73,6 +73,7 @@ body:
       description: Select the platform(s) on which you can reproduce the bug
       multiple: true
       options:
+        - All
         - Android
         - iOS
         - Web
