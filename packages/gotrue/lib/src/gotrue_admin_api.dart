@@ -5,6 +5,8 @@ import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 
+import 'package:meta/meta.dart';
+
 import 'gotrue_admin_mfa_api.dart';
 import 'gotrue_admin_oauth_api.dart';
 
@@ -20,6 +22,11 @@ class GoTrueAdminApi {
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   late final GoTrueAdminOAuthApi oauth;
 
+  /// Contains all passkey administration methods.
+  /// Only relevant when passkeys are enabled in Supabase Auth.
+  @experimental
+  late final GoTrueAdminPasskeyApi passkey;
+
   GoTrueAdminApi(
     this._url, {
     Map<String, String>? headers,
@@ -32,6 +39,11 @@ class GoTrueAdminApi {
       fetch: _fetch,
     );
     oauth = GoTrueAdminOAuthApi(
+      url: _url,
+      headers: _headers,
+      fetch: _fetch,
+    );
+    passkey = GoTrueAdminPasskeyApi(
       url: _url,
       headers: _headers,
       fetch: _fetch,

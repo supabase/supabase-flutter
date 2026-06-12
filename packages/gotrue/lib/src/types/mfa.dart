@@ -192,11 +192,13 @@ class AuthMFAListFactorsResponse {
   final List<Factor> all;
   final List<Factor> totp;
   final List<Factor> phone;
+  final List<Factor> webauthn;
 
   AuthMFAListFactorsResponse({
     required this.all,
     required this.totp,
     required this.phone,
+    this.webauthn = const [],
   });
 }
 
@@ -245,6 +247,7 @@ enum FactorStatus {
 enum FactorType {
   totp,
   phone,
+  webauthn,
 
   /// Returned when the backend sends an unknown factor type.
   /// This allows forward compatibility with new factor types.
@@ -258,7 +261,7 @@ class Factor {
   /// Friendly name of the factor, useful to disambiguate between multiple factors.
   final String? friendlyName;
 
-  /// Type of factor. Supports both `totp` and `phone`.
+  /// Type of factor. Supports `totp`, `phone` and `webauthn`.
   final FactorType factorType;
 
   /// Factor's status.
@@ -389,6 +392,8 @@ enum AMRMethod {
   tokenRefresh('token_refresh'),
   anonymous('anonymous'),
   mfaPhone('mfa/phone'),
+  mfaWebauthn('mfa/webauthn'),
+  passkey('passkey'),
   unknown('unknown');
 
   final String code;

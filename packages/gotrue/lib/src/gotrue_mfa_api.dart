@@ -173,8 +173,18 @@ class GoTrueMFAApi {
             factor.factorType == FactorType.phone &&
             factor.status == FactorStatus.verified)
         .toList();
+    final webauthn = factors
+        .where((factor) =>
+            factor.factorType == FactorType.webauthn &&
+            factor.status == FactorStatus.verified)
+        .toList();
 
-    return AuthMFAListFactorsResponse(all: factors, totp: totp, phone: phone);
+    return AuthMFAListFactorsResponse(
+      all: factors,
+      totp: totp,
+      phone: phone,
+      webauthn: webauthn,
+    );
   }
 
   /// Returns the Authenticator Assurance Level (AAL) for the active session.
