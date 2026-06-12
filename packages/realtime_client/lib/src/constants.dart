@@ -1,7 +1,7 @@
 import 'package:realtime_client/src/version.dart';
 
 class Constants {
-  static const String vsn = '1.0.0';
+  static const String vsn = '2.0.0';
   static const Duration defaultTimeout = Duration(milliseconds: 10000);
   static const int defaultHeartbeatIntervalMs = 25000;
   static const int wsCloseNormal = 1000;

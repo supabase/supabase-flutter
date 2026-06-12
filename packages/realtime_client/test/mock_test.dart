@@ -30,24 +30,28 @@ void main() {
           }
           hasSentData = true;
 
+          /// Protocol 2.0.0 text frames are positional arrays:
+          /// [join_ref, ref, topic, event, payload].
+          ///
           /// `filter` might be there or not depending on whether is a filter set
           /// to the realtime subscription, so include the filter if the request
           /// includes a filter.
-          final requestJson = jsonDecode(request);
-          final String? postgresFilter = requestJson['payload']['config']
-                  ['postgres_changes']
-              .first['filter'];
+          final requestJson = jsonDecode(request as String) as List;
+          final requestPayload = requestJson[4] as Map;
+          final String? postgresFilter =
+              requestPayload['config']['postgres_changes'].first['filter'];
 
-          final topic = (jsonDecode(request as String) as Map)['topic'];
+          final topic = requestJson[2];
 
           // Send an insert event
           if (postgresFilter == null) {
             await Future.delayed(Duration(milliseconds: 300));
-            final insertString = jsonEncode({
-              'topic': topic,
-              'event': 'postgres_changes',
-              'ref': null,
-              'payload': {
+            final insertString = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
                 'ids': [77086988],
                 'data': {
                   'commit_timestamp': '2021-08-01T08:00:20Z',
@@ -75,17 +79,18 @@ void main() {
                   ],
                 },
               },
-            });
+            ]);
             webSocket!.add(insertString);
           }
 
           // Send an update event for id = 2
           await Future.delayed(Duration(milliseconds: 10));
-          final updateString = jsonEncode({
-            'topic': topic,
-            'ref': null,
-            'event': 'postgres_changes',
-            'payload': {
+          final updateString = jsonEncode([
+            null,
+            null,
+            topic,
+            'postgres_changes',
+            {
               'ids': [25993878],
               'data': {
                 'columns': [
@@ -107,16 +112,17 @@ void main() {
                 if (postgresFilter != null) 'filter': postgresFilter,
               },
             },
-          });
+          ]);
           webSocket!.add(updateString);
 
           // Send delete event for id=2
           await Future.delayed(Duration(milliseconds: 10));
-          final deleteString = jsonEncode({
-            'ref': null,
-            'topic': topic,
-            'event': 'postgres_changes',
-            'payload': {
+          final deleteString = jsonEncode([
+            null,
+            null,
+            topic,
+            'postgres_changes',
+            {
               'data': {
                 'columns': [
                   {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
@@ -137,7 +143,7 @@ void main() {
               },
               'ids': [48673474]
             },
-          });
+          ]);
           webSocket!.add(deleteString);
         });
       } else {
@@ -309,31 +315,38 @@ void main() {
           }
           hasSentData = true;
 
+          /// Protocol 2.0.0 text frames are positional arrays:
+          /// [join_ref, ref, topic, event, payload].
+          ///
           /// `filter` might be there or not depending on whether is a filter set
           /// to the realtime subscription, so include the filter if the request
           /// includes a filter.
-          final requestJson = jsonDecode(request);
+          final requestJson = jsonDecode(request as String) as List;
+          final requestPayload = requestJson[4] as Map;
 
-          final String? postgresFilter = requestJson['payload']['config']
-                  ['postgres_changes']
-              .first['filter'];
+          final String? postgresFilter =
+              requestPayload['config']['postgres_changes'].first['filter'];
 
-          final topic = requestJson['topic'];
+          final topic = requestJson[2];
 
-          final replyString = jsonEncode({
-            "event": "phx_reply",
-            "payload": {"response": {}, "status": "ok"},
-            "ref": "1",
-            "topic": topic
-          });
+          final replyString = jsonEncode([
+            null,
+            "1",
+            topic,
+            "phx_reply",
+            {"response": {}, "status": "ok"},
+          ]);
           webSocket!.add(replyString);
 
           // Send an insert event
           if (postgresFilter == null) {
             await Future.delayed(Duration(milliseconds: 300));
-            final insertString = jsonEncode({
-              "event": "INSERT",
-              "payload": {
+            final insertString = jsonEncode([
+              null,
+              null,
+              topic,
+              "INSERT",
+              {
                 "columns": [
                   {"name": "id", "type": "int4"},
                   {"name": "task", "type": "text"},
@@ -346,17 +359,18 @@ void main() {
                 "table": "todos",
                 "type": "INSERT"
               },
-              "ref": null,
-              "topic": topic
-            });
+            ]);
             webSocket!.add(insertString);
           }
 
           // Send an update event for id = 2
           await Future.delayed(Duration(milliseconds: 10));
-          final updateString = jsonEncode({
-            "event": "UPDATE",
-            "payload": {
+          final updateString = jsonEncode([
+            null,
+            null,
+            topic,
+            "UPDATE",
+            {
               "columns": [
                 {"name": "id", "type": "int4"},
                 {"name": "task", "type": "text"},
@@ -370,16 +384,17 @@ void main() {
               "table": "todos",
               "type": "UPDATE"
             },
-            "ref": null,
-            "topic": topic
-          });
+          ]);
           webSocket!.add(updateString);
 
           // Send delete event for id=2
           await Future.delayed(Duration(milliseconds: 10));
-          final deleteString = jsonEncode({
-            "event": "DELETE",
-            "payload": {
+          final deleteString = jsonEncode([
+            null,
+            null,
+            topic,
+            "DELETE",
+            {
               "columns": [
                 {"name": "id", "type": "int4"},
                 {"name": "task", "type": "text"},
@@ -393,9 +408,7 @@ void main() {
               "table": "todos",
               "type": "DELETE"
             },
-            "ref": null,
-            "topic": topic
-          });
+          ]);
           webSocket!.add(deleteString);
         });
       } else {

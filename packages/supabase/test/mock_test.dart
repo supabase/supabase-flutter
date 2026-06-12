@@ -108,13 +108,17 @@ void main() {
         }
         hasListener = true;
         listener = webSocket!.listen((request) async {
+          /// Protocol 2.0.0 text frames are positional arrays:
+          /// [join_ref, ref, topic, event, payload].
+          ///
           /// `filter` might be there or not depending on whether is a filter set
           /// to the realtime subscription, so include the filter if the request
           /// includes a filter.
-          final requestJson = jsonDecode(request);
-          final topic = requestJson['topic'];
-          final ref = requestJson["ref"];
-          final event = requestJson['event'];
+          final requestJson = jsonDecode(request as String) as List;
+          final ref = requestJson[1];
+          final topic = requestJson[2];
+          final event = requestJson[3];
+          final requestPayload = requestJson[4] as Map;
 
           if (event == 'phx_leave') {
             listeners.remove(topic);
@@ -125,11 +129,9 @@ void main() {
           }
           listeners.add(topic);
 
-          final String? realtimeFilter = requestJson['payload']['config']
-                  ['postgres_changes']
-              .first['filter'];
-          final bool isPrivate =
-              requestJson['payload']['config']['private'] as bool;
+          final String? realtimeFilter =
+              requestPayload['config']['postgres_changes'].first['filter'];
+          final bool isPrivate = requestPayload['config']['private'] as bool;
 
           if (expectedFilter != null) {
             expect(realtimeFilter, expectedFilter);
@@ -138,9 +140,12 @@ void main() {
             expect(isPrivate, expectedPrivate);
           }
 
-          final replyString = jsonEncode({
-            'event': 'phx_reply',
-            'payload': {
+          final replyString = jsonEncode([
+            null,
+            ref,
+            topic,
+            'phx_reply',
+            {
               'response': {
                 'postgres_changes': [
                   {
@@ -154,18 +159,17 @@ void main() {
               },
               'status': 'ok'
             },
-            'ref': ref,
-            'topic': topic
-          });
+          ]);
           webSocket!.add(replyString);
 
           // Send an insert event
           await Future.delayed(Duration(milliseconds: 10));
-          final insertString = jsonEncode({
-            'topic': topic,
-            'event': 'postgres_changes',
-            'ref': null,
-            'payload': {
+          final insertString = jsonEncode([
+            null,
+            null,
+            topic,
+            'postgres_changes',
+            {
               'ids': [77086988],
               'data': {
                 'commit_timestamp': '2021-08-01T08:00:20Z',
@@ -193,16 +197,17 @@ void main() {
                 ],
               },
             },
-          });
+          ]);
           webSocket!.add(insertString);
 
           // Send an update event for id = 2
           await Future.delayed(Duration(milliseconds: 10));
-          final updateString = jsonEncode({
-            'topic': topic,
-            'ref': null,
-            'event': 'postgres_changes',
-            'payload': {
+          final updateString = jsonEncode([
+            null,
+            null,
+            topic,
+            'postgres_changes',
+            {
               'ids': [77086988],
               'data': {
                 'columns': [
@@ -224,16 +229,17 @@ void main() {
                 if (realtimeFilter != null) 'filter': realtimeFilter,
               },
             },
-          });
+          ]);
           webSocket!.add(updateString);
 
           // Send delete event for id=2
           await Future.delayed(Duration(milliseconds: 10));
-          final deleteString = jsonEncode({
-            'ref': null,
-            'topic': topic,
-            'event': 'postgres_changes',
-            'payload': {
+          final deleteString = jsonEncode([
+            null,
+            null,
+            topic,
+            'postgres_changes',
+            {
               'data': {
                 'columns': [
                   {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
@@ -254,18 +260,19 @@ void main() {
               },
               'ids': [77086988]
             },
-          });
+          ]);
           webSocket!.add(deleteString);
 
           /// Send an update event for id = 4
           /// Record with id = 4 did not exist in the initial data fetch,
           /// so the SDK should insert the record in the in memory cache
           await Future.delayed(Duration(milliseconds: 10));
-          final updateId4 = jsonEncode({
-            'topic': topic,
-            'ref': null,
-            'event': 'postgres_changes',
-            'payload': {
+          final updateId4 = jsonEncode([
+            null,
+            null,
+            topic,
+            'postgres_changes',
+            {
               'ids': [77086988],
               'data': {
                 'columns': [
@@ -287,17 +294,18 @@ void main() {
                 if (realtimeFilter != null) 'filter': realtimeFilter,
               },
             },
-          });
+          ]);
           webSocket!.add(updateId4);
 
           // Send delete event for id=5
           /// Should be ignored by the SDK
           await Future.delayed(Duration(milliseconds: 10));
-          final ignoredDeleteString = jsonEncode({
-            'ref': null,
-            'topic': topic,
-            'event': 'postgres_changes',
-            'payload': {
+          final ignoredDeleteString = jsonEncode([
+            null,
+            null,
+            topic,
+            'postgres_changes',
+            {
               'data': {
                 'columns': [
                   {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
@@ -318,7 +326,7 @@ void main() {
               },
               'ids': [77086988]
             },
-          });
+          ]);
           webSocket!.add(ignoredDeleteString);
         });
       } else {

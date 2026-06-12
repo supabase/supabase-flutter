@@ -138,7 +138,7 @@ void main() {
 
       // Connect with ready completed immediately
       await connectAndReady(realtime);
-      expect(realtime.connState, SocketStates.open);
+      expect(realtime.connectionStatus, SocketStates.open);
 
       // paused → triggers disconnect
       binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -152,8 +152,8 @@ void main() {
       // Complete any pending ready futures (reconnect)
       await settleLifecycle();
 
-      expect(realtime.connState, SocketStates.open);
-      expect(realtime.conn, isNotNull);
+      expect(realtime.connectionStatus, SocketStates.open);
+      expect(realtime.connection, isNotNull);
     });
 
     test(
@@ -165,7 +165,7 @@ void main() {
       realtime.channel('test');
 
       await connectAndReady(realtime);
-      expect(realtime.connState, SocketStates.open);
+      expect(realtime.connectionStatus, SocketStates.open);
 
       // paused → starts disconnect
       binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -186,8 +186,8 @@ void main() {
       await settleLifecycle();
 
       // Should have reconnected, not stuck disconnecting
-      expect(realtime.connState, SocketStates.open);
-      expect(realtime.conn, isNotNull);
+      expect(realtime.connectionStatus, SocketStates.open);
+      expect(realtime.connection, isNotNull);
     });
 
     test(
@@ -199,7 +199,7 @@ void main() {
       realtime.channel('test');
 
       await connectAndReady(realtime);
-      expect(realtime.connState, SocketStates.open);
+      expect(realtime.connectionStatus, SocketStates.open);
 
       // Rapid lifecycle flapping
       binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -219,8 +219,8 @@ void main() {
       // Complete all pending ready futures as they appear
       await settleLifecycle();
 
-      expect(realtime.connState, SocketStates.open);
-      expect(realtime.conn, isNotNull);
+      expect(realtime.connectionStatus, SocketStates.open);
+      expect(realtime.connection, isNotNull);
     });
 
     test(
@@ -232,7 +232,7 @@ void main() {
       realtime.channel('test');
 
       await connectAndReady(realtime);
-      expect(realtime.connState, SocketStates.open);
+      expect(realtime.connectionStatus, SocketStates.open);
 
       // paused → triggers disconnect
       binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -253,8 +253,8 @@ void main() {
       await settleLifecycle();
 
       // Should be disconnected since the last event was paused
-      expect(realtime.connState, SocketStates.disconnected);
-      expect(realtime.conn, isNull);
+      expect(realtime.connectionStatus, SocketStates.disconnected);
+      expect(realtime.connection, isNull);
     });
   });
 }
