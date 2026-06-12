@@ -4,10 +4,42 @@ import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_web_auth_2_platform_interface/flutter_web_auth_2_platform_interface.dart';
 import 'package:http/http.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'utils.dart';
+
+/// Fake [FlutterWebAuth2Platform] that records the authentication request and
+/// returns a preconfigured callback URL, standing in for the system web auth
+/// session in tests.
+class FakeFlutterWebAuth2 extends FlutterWebAuth2Platform
+    with MockPlatformInterfaceMixin {
+  FakeFlutterWebAuth2(this.callbackUrl);
+
+  /// The callback URL the fake session resolves with.
+  final String callbackUrl;
+
+  String? authenticatedUrl;
+  String? callbackUrlScheme;
+  Map<String, dynamic>? options;
+
+  @override
+  Future<String> authenticate({
+    required String url,
+    required String callbackUrlScheme,
+    required Map<String, dynamic> options,
+  }) async {
+    authenticatedUrl = url;
+    this.callbackUrlScheme = callbackUrlScheme;
+    this.options = options;
+    return callbackUrl;
+  }
+
+  @override
+  Future<void> clearAllDanglingCalls() async {}
+}
 
 class MockWidget extends StatefulWidget {
   const MockWidget({super.key});

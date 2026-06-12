@@ -18,7 +18,7 @@ dependencies:
   http: '>=0.13.4 <2.0.0'
   meta: ^1.7.0
   supabase: 2.11.0
-  url_launcher: ^6.1.2
+  flutter_web_auth_2: ^5.0.0
   path_provider: ^2.0.0
   shared_preferences: ^2.0.0
   logging: ^1.2.0
@@ -29,7 +29,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+  flutter_web_auth_2_platform_interface: ^5.0.0
   path: ^1.8.3
+  plugin_platform_interface: ^2.0.0
   web_socket_channel: '>=2.3.0 <4.0.0'
 
 platforms:
