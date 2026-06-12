@@ -11,7 +11,6 @@ class Constants {
 
 typedef RealtimeConstants = Constants;
 
-/// Realtime protocol version, sent as the `vsn` connection parameter.
 enum RealtimeProtocolVersion {
   /// Legacy protocol: object-shaped JSON text frames only.
   v1('1.0.0'),

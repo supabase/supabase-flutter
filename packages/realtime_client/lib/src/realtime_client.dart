@@ -87,7 +87,6 @@ class RealtimeClient {
   final Map<String, String> headers;
   final Map<String, dynamic> params;
 
-  /// The Realtime protocol version sent as the `vsn` connection parameter.
   final RealtimeProtocolVersion version;
   final Duration timeout;
   final WebSocketTransport transport;
@@ -229,7 +228,6 @@ class RealtimeClient {
 
       _onConnectionOpen();
       localConnection.stream.listen(
-        // incoming messages (text frames are `String`, binary frames are bytes)
         (message) => onConnectionMessage(message),
         onError: _onConnectionError,
         onDone: () {
@@ -421,7 +419,6 @@ class RealtimeClient {
     }
   }
 
-  /// Encodes an outgoing message for the negotiated protocol [version].
   Object _encode(Map<String, dynamic> message) {
     if (version == RealtimeProtocolVersion.v1) {
       return jsonEncode(message);
@@ -429,7 +426,6 @@ class RealtimeClient {
     return _serializer.encode(message);
   }
 
-  /// Decodes a raw incoming frame for the negotiated protocol [version].
   Map<String, dynamic> _decode(Object rawMessage) {
     if (version == RealtimeProtocolVersion.v1) {
       return Map<String, dynamic>.from(
