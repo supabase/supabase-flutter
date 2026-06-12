@@ -112,9 +112,9 @@ class RealtimeClient {
   int ref = 0;
   late RetryTimer reconnectTimer;
   void Function(String? kind, String? msg, dynamic data)? logger;
-  final Serializer _serializer = Serializer();
-  late final RealtimeEncode encode;
-  late final RealtimeDecode decode;
+  static final Serializer _serializer = Serializer();
+  final RealtimeEncode encode;
+  final RealtimeDecode decode;
   late TimerCalculation reconnectAfterMs;
   WebSocketChannel? connection;
   List sendBuffer = [];
@@ -185,7 +185,15 @@ class RealtimeClient {
           ...Constants.defaultHeaders,
           if (headers != null) ...headers,
         },
-        transport = transport ?? createWebSocketClient {
+        transport = transport ?? createWebSocketClient,
+        encode = encode ??
+            (version == RealtimeProtocolVersion.v1
+                ? _encodeLegacy
+                : _serializer.encode),
+        decode = decode ??
+            (version == RealtimeProtocolVersion.v1
+                ? _decodeLegacy
+                : _serializer.decode) {
     _log.config(
         'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: $logLevel');
     _log.finest('Initialize with headers: $headers, params: $params');
@@ -194,8 +202,6 @@ class RealtimeClient {
 
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
-    this.encode = encode ?? _encode;
-    this.decode = decode ?? _decode;
     reconnectTimer = RetryTimer(
       () async {
         await disconnect();
@@ -447,21 +453,11 @@ class RealtimeClient {
     }
   }
 
-  Object _encode(Map<String, dynamic> message) {
-    if (version == RealtimeProtocolVersion.v1) {
-      return jsonEncode(message);
-    }
-    return _serializer.encode(message);
-  }
+  static Object _encodeLegacy(Map<String, dynamic> message) =>
+      jsonEncode(message);
 
-  Map<String, dynamic> _decode(Object rawMessage) {
-    if (version == RealtimeProtocolVersion.v1) {
-      return Map<String, dynamic>.from(
-        jsonDecode(rawMessage as String) as Map,
-      );
-    }
-    return _serializer.decode(rawMessage);
-  }
+  static Map<String, dynamic> _decodeLegacy(Object rawMessage) =>
+      Map<String, dynamic>.from(jsonDecode(rawMessage as String) as Map);
 
   /// Returns the URL of the websocket.
   String get endPointURL {
