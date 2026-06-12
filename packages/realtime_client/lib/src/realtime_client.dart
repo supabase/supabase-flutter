@@ -10,6 +10,7 @@ import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
 import 'package:realtime_client/src/message.dart';
 import 'package:realtime_client/src/retry_timer.dart';
+import 'package:realtime_client/src/serializer.dart';
 import 'package:realtime_client/src/websocket/websocket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -18,15 +19,13 @@ typedef WebSocketTransport = WebSocketChannel Function(
   Map<String, String> headers,
 );
 
-typedef RealtimeEncode = void Function(
-  dynamic payload,
-  void Function(String result) callback,
-);
+/// Serializes an outgoing message into the `String` or binary frame written to
+/// the WebSocket.
+typedef RealtimeEncode = Object Function(Map<String, dynamic> payload);
 
-typedef RealtimeDecode = void Function(
-  String payload,
-  void Function(dynamic result) callback,
-);
+/// Deserializes a raw incoming WebSocket frame (`String` or binary) into a
+/// message map.
+typedef RealtimeDecode = Map<String, dynamic> Function(Object payload);
 
 /// Event details for when the connection closed.
 class RealtimeCloseEvent {
@@ -89,13 +88,14 @@ class RealtimeCloseEvent {
 /// - Works on all Dart platforms (Flutter mobile/desktop, web, server).
 /// - On web, the underlying [WebSocketChannel] uses the browser WebSocket API.
 class RealtimeClient {
-  // This is named `accessTokenValue` in supabase-js
   String? accessToken;
   List<RealtimeChannel> channels = [];
   final String endPoint;
 
   final Map<String, String> headers;
   final Map<String, dynamic> params;
+
+  final RealtimeProtocolVersion version;
   final Duration timeout;
   final WebSocketTransport transport;
   final Client? httpClient;
@@ -111,9 +111,10 @@ class RealtimeClient {
   /// Unique reference ID for every heartbeat.
   int ref = 0;
   late RetryTimer reconnectTimer;
-  void Function(String? kind, String? msg, dynamic data)? logger;
-  late RealtimeEncode encode;
-  late RealtimeDecode decode;
+  void Function(String? kind, String? message, dynamic data)? logger;
+  static final Serializer _serializer = Serializer();
+  final RealtimeEncode encode;
+  final RealtimeDecode decode;
   late TimerCalculation reconnectAfterMs;
   WebSocketChannel? conn;
   List sendBuffer = [];
@@ -127,7 +128,6 @@ class RealtimeClient {
   @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
   SocketStates? connState;
-  // This is called `accessToken` in realtime-js
   Future<String?> Function()? customAccessToken;
 
   /// Initializes the Socket
@@ -144,15 +144,21 @@ class RealtimeClient {
   ///
   /// [heartbeatIntervalMs] The millisec interval to send a heartbeat message.
   ///
-  /// [logger] The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`$kind: $msg`, data) }
+  /// [logger] The optional function for specialized logging, ie: logger: (kind, message, data) => { console.log(`$kind: $message`, data) }
   ///
-  /// [encode] The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
+  /// [encode] Overrides how outgoing messages are serialized, for example to
+  /// use a faster JSON implementation. Defaults to the codec for [version].
   ///
-  /// [decode] The function to decode incoming messages. Defaults to JSON: (payload, callback) => callback(JSON.parse(payload))
+  /// [decode] Overrides how incoming frames are deserialized. Defaults to the
+  /// codec for [version].
   ///
   /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
+  ///
+  /// [version] The Realtime protocol version. Defaults to
+  /// [RealtimeProtocolVersion.v2]; pass [RealtimeProtocolVersion.v1] for the
+  /// legacy object-shaped JSON frames.
   RealtimeClient(
     String endPoint, {
     WebSocketTransport? transport,
@@ -168,6 +174,7 @@ class RealtimeClient {
     RealtimeLogLevel? logLevel,
     this.httpClient,
     this.customAccessToken,
+    this.version = RealtimeProtocolVersion.v2,
   })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
             .replace(
               queryParameters:
@@ -178,7 +185,15 @@ class RealtimeClient {
           ...Constants.defaultHeaders,
           if (headers != null) ...headers,
         },
-        transport = transport ?? createWebSocketClient {
+        transport = transport ?? createWebSocketClient,
+        encode = encode ??
+            (version == RealtimeProtocolVersion.v1
+                ? _encodeLegacy
+                : _serializer.encode),
+        decode = decode ??
+            (version == RealtimeProtocolVersion.v1
+                ? _decodeLegacy
+                : _serializer.decode) {
     _log.config(
         'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: $logLevel');
     _log.finest('Initialize with headers: $headers, params: $params');
@@ -187,12 +202,6 @@ class RealtimeClient {
 
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
-    this.encode = encode ??
-        (dynamic payload, Function(String result) callback) =>
-            callback(json.encode(payload));
-    this.decode = decode ??
-        (String payload, Function(dynamic result) callback) =>
-            callback(json.decode(payload));
     reconnectTimer = RetryTimer(
       () async {
         await disconnect();
@@ -244,8 +253,7 @@ class RealtimeClient {
 
       _onConnOpen();
       localConn.stream.listen(
-        // incoming messages
-        (message) => onConnMessage(message as String),
+        (message) => onConnMessage(message),
         onError: _onConnError,
         onDone: () {
           // communication has been closed
@@ -322,9 +330,12 @@ class RealtimeClient {
   ///
   /// [level] must be [Level.FINEST] for senitive data
   void log(
-      [String? kind, String? msg, dynamic data, Level level = Level.FINEST]) {
-    _log.log(level, '$kind: $msg', data);
-    logger?.call(kind, msg, data);
+      [String? kind,
+      String? message,
+      dynamic data,
+      Level level = Level.FINEST]) {
+    _log.log(level, '$kind: $message', data);
+    logger?.call(kind, message, data);
   }
 
   /// Registers callbacks for connection state change events
@@ -394,7 +405,7 @@ class RealtimeClient {
   /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
   String? push(Message message) {
     void callback() {
-      encode(message.toJson(), (result) => conn?.sink.add(result));
+      conn?.sink.add(encode(message.toJson()));
     }
 
     log('push', '${message.topic} ${message.event} (${message.ref})',
@@ -408,39 +419,52 @@ class RealtimeClient {
     return null;
   }
 
-  void onConnMessage(String rawMessage) {
-    decode(rawMessage, (msg) {
-      final topic = msg['topic'] as String;
-      final event = msg['event'] as String;
-      final payload = msg['payload'];
-      final ref = msg['ref'] as String?;
-      if (ref != null && ref == pendingHeartbeatRef) {
-        pendingHeartbeatRef = null;
-      }
+  void onConnMessage(Object rawMessage) {
+    final Map<String, dynamic> message;
+    try {
+      message = decode(rawMessage);
+    } catch (error) {
+      log('transport', 'failed to decode message', error);
+      return;
+    }
 
-      log(
-        'receive',
-        "${payload['status'] ?? ''} $topic $event ${ref != null ? '($ref)' : ''}",
-        payload,
-      );
+    final topic = message['topic'] as String;
+    final event = message['event'] as String;
+    final payload = message['payload'];
+    final ref = message['ref'] as String?;
+    if (ref != null && ref == pendingHeartbeatRef) {
+      pendingHeartbeatRef = null;
+    }
 
-      channels
-          .where((channel) => channel.isMember(topic))
-          .forEach((channel) => channel.trigger(
-                event,
-                payload,
-                ref,
-              ));
-      for (final callback in stateChangeCallbacks['message']!) {
-        callback(msg);
-      }
-    });
+    final status = payload is Map ? (payload['status'] ?? '') : '';
+    log(
+      'receive',
+      "$status $topic $event ${ref != null ? '($ref)' : ''}",
+      payload,
+    );
+
+    channels.where((channel) => channel.isMember(topic)).forEach(
+          (channel) => channel.trigger(
+            event,
+            payload,
+            ref,
+          ),
+        );
+    for (final callback in stateChangeCallbacks['message']!) {
+      callback(message);
+    }
   }
+
+  static Object _encodeLegacy(Map<String, dynamic> message) =>
+      jsonEncode(message);
+
+  static Map<String, dynamic> _decodeLegacy(Object rawMessage) =>
+      Map<String, dynamic>.from(jsonDecode(rawMessage as String) as Map);
 
   /// Returns the URL of the websocket.
   String get endPointURL {
     final params = Map<String, String>.from(this.params);
-    params['vsn'] = Constants.vsn;
+    params['vsn'] = version.vsn;
     return _appendParams(endPoint, params);
   }
 
@@ -577,7 +601,7 @@ class RealtimeClient {
       pendingHeartbeatRef = null;
       log(
         'transport',
-        'heartbeat timeout. Attempting to re-establish connection',
+        'heartbeat timeout. Attempting to re-establish conn',
       );
       conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout');
       return;

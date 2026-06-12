@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mocktail/mocktail.dart';
@@ -137,7 +138,7 @@ void main() {
       final socket = RealtimeClient('wss://example.org/chat');
       expect(
         socket.endPointURL,
-        'wss://example.org/chat/websocket?vsn=1.0.0',
+        'wss://example.org/chat/websocket?vsn=2.0.0',
       );
     });
 
@@ -146,7 +147,7 @@ void main() {
           RealtimeClient('ws://example.org/chat', params: {'foo': 'bar'});
       expect(
         socket.endPointURL,
-        'ws://example.org/chat/websocket?foo=bar&vsn=1.0.0',
+        'ws://example.org/chat/websocket?foo=bar&vsn=2.0.0',
       );
     });
 
@@ -159,7 +160,18 @@ void main() {
       );
       expect(
         socket.endPointURL,
-        'ws://example.org/chat/websocket?apikey=123456789&vsn=1.0.0',
+        'ws://example.org/chat/websocket?apikey=123456789&vsn=2.0.0',
+      );
+    });
+
+    test('uses the legacy vsn when version is v1', () {
+      final socket = RealtimeClient(
+        'wss://example.org/chat',
+        version: RealtimeProtocolVersion.v1,
+      );
+      expect(
+        socket.endPointURL,
+        'wss://example.org/chat/websocket?vsn=1.0.0',
       );
     });
   });
@@ -409,12 +421,10 @@ void main() {
     const event = ChannelEvents.join;
     const payload = 'payload';
     const ref = 'ref';
-    final jsonData = json.encode({
-      'topic': topic,
-      'event': event.eventName(),
-      'payload': payload,
-      'ref': ref
-    });
+    // Protocol 2.0.0 text frames are positional arrays:
+    // [join_ref, ref, topic, event, payload].
+    final jsonData =
+        json.encode([null, ref, topic, event.eventName(), payload]);
 
     IOWebSocketChannel mockedSocketChannel;
     late RealtimeClient mockedSocket;
@@ -464,6 +474,154 @@ void main() {
       callback();
       verify(() => mockedSink.add(captureAny(that: equals(jsonData))))
           .called(1);
+    });
+
+    test('sends a broadcast with a binary payload as a binary frame', () {
+      mockedSocket.connect();
+      mockedSocket.connState = SocketStates.open;
+
+      final binaryPayload = Uint8List.fromList([1, 2, 3]);
+      final message = Message(
+        topic: 'realtime:room',
+        event: ChannelEvents.broadcast,
+        payload: {
+          'type': 'broadcast',
+          'event': 'file',
+          'payload': binaryPayload,
+        },
+      );
+      mockedSocket.push(message);
+
+      verify(() => mockedSink.add(captureAny(that: isA<Uint8List>())))
+          .called(1);
+    });
+
+    test('encodes with the legacy object format when version is v1', () {
+      final legacyChannel = MockIOWebSocketChannel();
+      final legacySink = MockWebSocketSink();
+      when(() => legacyChannel.sink).thenReturn(legacySink);
+      when(() => legacyChannel.ready).thenAnswer((_) => Future.value());
+      when(() => legacySink.close()).thenAnswer((_) => Future.value());
+
+      final legacySocket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => legacyChannel,
+        version: RealtimeProtocolVersion.v1,
+      );
+      legacySocket.connect();
+      legacySocket.connState = SocketStates.open;
+
+      final legacyData = json.encode({
+        'topic': topic,
+        'event': event.eventName(),
+        'payload': payload,
+        'ref': ref,
+      });
+
+      final message =
+          Message(topic: topic, payload: payload, event: event, ref: ref);
+      legacySocket.push(message);
+
+      verify(() => legacySink.add(captureAny(that: equals(legacyData))))
+          .called(1);
+    });
+
+    test('uses a custom encode override when provided', () {
+      final customChannel = MockIOWebSocketChannel();
+      final customSink = MockWebSocketSink();
+      when(() => customChannel.sink).thenReturn(customSink);
+      when(() => customChannel.ready).thenAnswer((_) => Future.value());
+      when(() => customSink.close()).thenAnswer((_) => Future.value());
+
+      final customSocket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => customChannel,
+        encode: (payload) => 'custom-frame',
+      );
+      customSocket.connect();
+      customSocket.connState = SocketStates.open;
+
+      customSocket.push(
+        Message(topic: topic, payload: payload, event: event, ref: ref),
+      );
+
+      verify(() => customSink.add(captureAny(that: equals('custom-frame'))))
+          .called(1);
+    });
+  });
+
+  group('onConnMessage', () {
+    test('drops a malformed frame without throwing', () {
+      final socket = RealtimeClient(socketEndpoint);
+      expect(
+        () => socket.onConnMessage('{"not": "an array"}'),
+        returnsNormally,
+      );
+    });
+
+    test('dispatches a received binary broadcast to onBroadcast', () {
+      final socket = RealtimeClient(socketEndpoint);
+      final channel = socket.channel('room');
+
+      Map<String, dynamic>? received;
+      channel.onBroadcast(
+        event: 'cursor',
+        callback: (payload) => received = payload,
+      );
+
+      final topic = utf8.encode('realtime:room');
+      final event = utf8.encode('cursor');
+      final payload = utf8.encode(json.encode({'x': 1}));
+      final frame = Uint8List.fromList([
+        4, // kind: userBroadcast
+        topic.length,
+        event.length,
+        0, // metadata size
+        1, // payload encoding: json
+        ...topic,
+        ...event,
+        ...payload,
+      ]);
+
+      socket.onConnMessage(frame);
+
+      expect(received, {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'payload': {'x': 1},
+      });
+    });
+
+    test('decodes a legacy object frame and dispatches it when version is v1',
+        () {
+      final socket = RealtimeClient(
+        socketEndpoint,
+        version: RealtimeProtocolVersion.v1,
+      );
+      final channel = socket.channel('room');
+
+      Map<String, dynamic>? received;
+      channel.onBroadcast(
+        event: 'cursor',
+        callback: (payload) => received = payload,
+      );
+
+      socket.onConnMessage(json.encode({
+        'topic': 'realtime:room',
+        'event': 'broadcast',
+        'payload': {
+          'type': 'broadcast',
+          'event': 'cursor',
+          'payload': {'x': 1},
+        },
+        'ref': null,
+      }));
+
+      expect(received, {
+        'type': 'broadcast',
+        'event': 'cursor',
+        'payload': {'x': 1},
+      });
     });
   });
 
@@ -603,12 +761,7 @@ void main() {
     IOWebSocketChannel mockedSocketChannel;
     late RealtimeClient mockedSocket;
     late WebSocketSink mockedSink;
-    final data = json.encode({
-      'topic': 'phoenix',
-      'event': 'heartbeat',
-      'payload': {},
-      'ref': '1',
-    });
+    final data = json.encode([null, '1', 'phoenix', 'heartbeat', {}]);
 
     setUp(() {
       mockedSocketChannel = MockIOWebSocketChannel();
@@ -647,7 +800,7 @@ void main() {
 
   group('connect/disconnect race condition', () {
     test(
-        'connect does not crash if disconnect nullifies conn during await ready',
+        'connect does not crash if disconnect nullifies connection during await ready',
         () async {
       final readyCompleter = Completer<void>();
       final mockedSocketChannel = MockIOWebSocketChannel();
@@ -676,7 +829,7 @@ void main() {
       await disconnectFuture;
       await connectFuture;
 
-      // Should NOT have transitioned to open because disconnect nullified conn
+      // Should NOT have transitioned to open because disconnect nullified connection
       expect(socket.connState, isNot(SocketStates.open));
       expect(socket.conn, isNull);
     });

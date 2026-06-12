@@ -1,7 +1,6 @@
 import 'package:realtime_client/src/version.dart';
 
 class Constants {
-  static const String vsn = '1.0.0';
   static const Duration defaultTimeout = Duration(milliseconds: 10000);
   static const int defaultHeartbeatIntervalMs = 25000;
   static const int wsCloseNormal = 1000;
@@ -11,6 +10,19 @@ class Constants {
 }
 
 typedef RealtimeConstants = Constants;
+
+enum RealtimeProtocolVersion {
+  /// Legacy protocol: object-shaped JSON text frames only.
+  v1('1.0.0'),
+
+  /// Positional JSON array text frames plus binary frames.
+  v2('2.0.0');
+
+  const RealtimeProtocolVersion(this.vsn);
+
+  /// The value sent as the `vsn` connection parameter.
+  final String vsn;
+}
 
 enum SocketStates {
   /// Client attempting to establish a connection
