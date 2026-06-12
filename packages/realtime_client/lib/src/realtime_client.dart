@@ -18,15 +18,13 @@ typedef WebSocketTransport = WebSocketChannel Function(
   Map<String, String> headers,
 );
 
-typedef RealtimeEncode = void Function(
-  dynamic payload,
-  void Function(dynamic result) callback,
-);
+/// Encodes an outgoing message into the `String` or binary frame to write to
+/// the WebSocket.
+typedef RealtimeEncode = Object Function(Map<String, dynamic> payload);
 
-typedef RealtimeDecode = void Function(
-  dynamic payload,
-  void Function(dynamic result) callback,
-);
+/// Decodes a raw incoming WebSocket frame (`String` or binary) into a message
+/// map.
+typedef RealtimeDecode = Map<String, dynamic> Function(Object payload);
 
 /// Event details for when the connection closed.
 class RealtimeCloseEvent {
@@ -146,9 +144,11 @@ class RealtimeClient {
   ///
   /// [logger] The optional function for specialized logging, ie: logger: (kind, msg, data) => { console.log(`$kind: $msg`, data) }
   ///
-  /// [encode] The function to encode outgoing messages. Defaults to JSON: (payload, callback) => callback(JSON.stringify(payload))
+  /// [encode] The function to encode outgoing messages. Defaults to the
+  /// protocol `2.0.0` serializer.
   ///
-  /// [decode] The function to decode incoming messages. Defaults to JSON: (payload, callback) => callback(JSON.parse(payload))
+  /// [decode] The function to decode incoming messages. Defaults to the
+  /// protocol `2.0.0` serializer.
   ///
   /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
   ///
@@ -188,12 +188,8 @@ class RealtimeClient {
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
     final serializer = Serializer();
-    this.encode = encode ??
-        (dynamic payload, Function(dynamic result) callback) =>
-            serializer.encode(payload as Map<String, dynamic>, callback);
-    this.decode = decode ??
-        (dynamic payload, Function(dynamic result) callback) =>
-            serializer.decode(payload, callback);
+    this.encode = encode ?? serializer.encode;
+    this.decode = decode ?? serializer.decode;
     reconnectTimer = RetryTimer(
       () async {
         await disconnect();
@@ -396,7 +392,7 @@ class RealtimeClient {
   /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
   String? push(Message message) {
     void callback() {
-      encode(message.toJson(), (result) => connection?.sink.add(result));
+      connection?.sink.add(encode(message.toJson()));
     }
 
     log('push', '${message.topic} ${message.event} (${message.ref})',
@@ -410,33 +406,32 @@ class RealtimeClient {
     return null;
   }
 
-  void onConnectionMessage(dynamic rawMessage) {
-    decode(rawMessage, (msg) {
-      final topic = msg['topic'] as String;
-      final event = msg['event'] as String;
-      final payload = msg['payload'];
-      final ref = msg['ref'] as String?;
-      if (ref != null && ref == pendingHeartbeatRef) {
-        pendingHeartbeatRef = null;
-      }
+  void onConnectionMessage(Object rawMessage) {
+    final msg = decode(rawMessage);
+    final topic = msg['topic'] as String;
+    final event = msg['event'] as String;
+    final payload = msg['payload'];
+    final ref = msg['ref'] as String?;
+    if (ref != null && ref == pendingHeartbeatRef) {
+      pendingHeartbeatRef = null;
+    }
 
-      log(
-        'receive',
-        "${payload['status'] ?? ''} $topic $event ${ref != null ? '($ref)' : ''}",
-        payload,
-      );
+    log(
+      'receive',
+      "${payload['status'] ?? ''} $topic $event ${ref != null ? '($ref)' : ''}",
+      payload,
+    );
 
-      channels
-          .where((channel) => channel.isMember(topic))
-          .forEach((channel) => channel.trigger(
-                event,
-                payload,
-                ref,
-              ));
-      for (final callback in stateChangeCallbacks['message']!) {
-        callback(msg);
-      }
-    });
+    channels.where((channel) => channel.isMember(topic)).forEach(
+          (channel) => channel.trigger(
+            event,
+            payload,
+            ref,
+          ),
+        );
+    for (final callback in stateChangeCallbacks['message']!) {
+      callback(msg);
+    }
   }
 
   /// Returns the URL of the websocket.

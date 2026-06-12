@@ -41,53 +41,44 @@ class Serializer {
   ///
   /// [message] is expected to hold `join_ref`, `ref`, `topic`, `event` and
   /// `payload` keys, matching the output of `Message.toJson()`.
-  void encode(
-    Map<String, dynamic> message,
-    void Function(dynamic result) callback,
-  ) {
+  Object encode(Map<String, dynamic> message) {
     final payload = message['payload'];
     if (message['event'] == broadcastEvent &&
         payload is Map &&
         payload['event'] is String &&
         _isBinary(payload['payload'])) {
-      callback(_encodeBinaryUserBroadcastPush(message, payload));
-      return;
+      return _encodeBinaryUserBroadcastPush(message, payload);
     }
 
-    callback(jsonEncode([
+    return jsonEncode([
       message['join_ref'],
       message['ref'],
       message['topic'],
       message['event'],
       payload,
-    ]));
+    ]);
   }
 
   /// Decodes a raw WebSocket frame into a message map with `join_ref`, `ref`,
   /// `topic`, `event` and `payload` keys.
-  void decode(
-    dynamic rawPayload,
-    void Function(dynamic result) callback,
-  ) {
+  Map<String, dynamic> decode(Object rawPayload) {
     if (rawPayload is String) {
       final decoded = jsonDecode(rawPayload) as List;
-      callback(<String, dynamic>{
+      return <String, dynamic>{
         'join_ref': decoded[0],
         'ref': decoded[1],
         'topic': decoded[2],
         'event': decoded[3],
         'payload': decoded[4],
-      });
-      return;
+      };
     }
 
     final bytes = _asBytes(rawPayload);
     if (bytes != null) {
-      callback(_binaryDecode(bytes));
-      return;
+      return _binaryDecode(bytes);
     }
 
-    callback(<String, dynamic>{});
+    return <String, dynamic>{};
   }
 
   Uint8List _encodeBinaryUserBroadcastPush(

@@ -34,18 +34,6 @@ Uint8List buildUserBroadcastFrame({
   ]);
 }
 
-dynamic encodeSync(Serializer serializer, Map<String, dynamic> message) {
-  dynamic result;
-  serializer.encode(message, (r) => result = r);
-  return result;
-}
-
-dynamic decodeSync(Serializer serializer, dynamic raw) {
-  dynamic result;
-  serializer.decode(raw, (r) => result = r);
-  return result;
-}
-
 void main() {
   late Serializer serializer;
 
@@ -55,7 +43,7 @@ void main() {
 
   group('encode text frames', () {
     test('encodes a message as a positional JSON array', () {
-      final result = encodeSync(serializer, {
+      final result = serializer.encode({
         'join_ref': '1',
         'ref': '2',
         'topic': 'realtime:room',
@@ -77,7 +65,7 @@ void main() {
     });
 
     test('preserves null join_ref and ref positionally', () {
-      final result = encodeSync(serializer, {
+      final result = serializer.encode({
         'topic': 'phoenix',
         'event': 'heartbeat',
         'payload': <String, dynamic>{},
@@ -90,7 +78,7 @@ void main() {
     });
 
     test('encodes a non-binary broadcast as a text frame', () {
-      final result = encodeSync(serializer, {
+      final result = serializer.encode({
         'join_ref': '1',
         'ref': '2',
         'topic': 'realtime:room',
@@ -105,8 +93,7 @@ void main() {
 
   group('decode text frames', () {
     test('decodes a positional JSON array into a message map', () {
-      final result = decodeSync(
-        serializer,
+      final result = serializer.decode(
         jsonEncode([
           '1',
           '2',
@@ -136,7 +123,7 @@ void main() {
         metadata: jsonEncode({'replayed': true}),
       );
 
-      final result = decodeSync(serializer, frame) as Map<String, dynamic>;
+      final result = serializer.decode(frame);
 
       expect(result['join_ref'], isNull);
       expect(result['ref'], isNull);
@@ -159,7 +146,7 @@ void main() {
         encoding: Serializer.binaryEncoding,
       );
 
-      final result = decodeSync(serializer, frame) as Map<String, dynamic>;
+      final result = serializer.decode(frame);
       final payload = result['payload'] as Map<String, dynamic>;
 
       expect(payload['event'], 'file');
@@ -168,7 +155,7 @@ void main() {
     });
 
     test('returns an empty map for unknown binary kinds', () {
-      final result = decodeSync(serializer, Uint8List.fromList([99, 0, 0]));
+      final result = serializer.decode(Uint8List.fromList([99, 0, 0]));
       expect(result, <String, dynamic>{});
     });
   });
@@ -176,7 +163,7 @@ void main() {
   group('encode binary broadcast push', () {
     test('encodes a broadcast with a binary payload as a binary frame', () {
       final payload = Uint8List.fromList([10, 20, 30]);
-      final result = encodeSync(serializer, {
+      final result = serializer.encode({
         'join_ref': '7',
         'ref': '8',
         'topic': 'realtime:room',
@@ -205,7 +192,7 @@ void main() {
 
     test('forwards allowed metadata keys', () {
       final serializerWithMeta = Serializer(allowedMetadataKeys: ['trace_id']);
-      final result = encodeSync(serializerWithMeta, {
+      final result = serializerWithMeta.encode({
         'topic': 'realtime:room',
         'event': 'broadcast',
         'payload': {
@@ -236,7 +223,7 @@ void main() {
     test('throws when a frame field exceeds 255 bytes', () {
       final longTopic = 'a' * 256;
       expect(
-        () => encodeSync(serializer, {
+        () => serializer.encode({
           'topic': longTopic,
           'event': 'broadcast',
           'payload': {
