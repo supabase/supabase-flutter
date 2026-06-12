@@ -113,25 +113,23 @@ class Serializer {
         userEvent.length +
         metadata.length;
 
-    final header = Uint8List(headerLength + metaLength);
+    final frame = Uint8List(headerLength + metaLength + encodedPayload.length);
     var offset = 0;
-    header[offset++] = kindUserBroadcastPush;
-    header[offset++] = joinRef.length;
-    header[offset++] = ref.length;
-    header[offset++] = topic.length;
-    header[offset++] = userEvent.length;
-    header[offset++] = metadata.length;
-    header[offset++] = binaryEncoding;
-    offset = _writeString(header, offset, joinRef);
-    offset = _writeString(header, offset, ref);
-    offset = _writeString(header, offset, topic);
-    offset = _writeString(header, offset, userEvent);
-    offset = _writeString(header, offset, metadata);
+    frame[offset++] = kindUserBroadcastPush;
+    frame[offset++] = joinRef.length;
+    frame[offset++] = ref.length;
+    frame[offset++] = topic.length;
+    frame[offset++] = userEvent.length;
+    frame[offset++] = metadata.length;
+    frame[offset++] = binaryEncoding;
+    offset = _writeString(frame, offset, joinRef);
+    offset = _writeString(frame, offset, ref);
+    offset = _writeString(frame, offset, topic);
+    offset = _writeString(frame, offset, userEvent);
+    offset = _writeString(frame, offset, metadata);
 
-    final combined = Uint8List(header.length + encodedPayload.length);
-    combined.setAll(0, header);
-    combined.setAll(header.length, encodedPayload);
-    return combined;
+    frame.setAll(offset, encodedPayload);
+    return frame;
   }
 
   Map<String, dynamic> _binaryDecode(Uint8List buffer) {
