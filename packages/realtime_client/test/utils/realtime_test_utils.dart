@@ -106,6 +106,64 @@ Future<bool> _isRealtimeHttpReachable() async {
   }
 }
 
+/// Primes the tenant's replication pipeline so that postgres_changes events are
+/// delivered reliably.
+///
+/// On first use the Realtime server creates a replication slot asynchronously,
+/// and any change made before the slot exists is missed. This repeatedly inserts
+/// a sentinel row until a change event is observed, which proves the pipeline is
+/// live, then cleans up the inserted rows.
+Future<void> primePostgresChanges({
+  Duration timeout = const Duration(seconds: 90),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  final client = createRealtimeClient(RealtimeProtocolVersion.v1);
+  final db = await openPostgresConnection();
+  final received = Completer<void>();
+
+  final channel = client.channel('postgres-changes-warmup');
+  channel.onPostgresChanges(
+    event: PostgresChangeEvent.insert,
+    schema: 'public',
+    table: 'todos',
+    callback: (_) {
+      if (!received.isCompleted) received.complete();
+    },
+  );
+
+  final subscribed = Completer<void>();
+  channel.subscribe((status, error) {
+    if (subscribed.isCompleted) return;
+    if (status == RealtimeSubscribeStatus.subscribed) {
+      subscribed.complete();
+    } else if (status == RealtimeSubscribeStatus.channelError ||
+        status == RealtimeSubscribeStatus.timedOut) {
+      subscribed.completeError(StateError('warmup subscribe failed: $status'));
+    }
+  });
+
+  try {
+    await subscribed.future.timeout(const Duration(seconds: 15));
+    while (!received.isCompleted && DateTime.now().isBefore(deadline)) {
+      await db.execute("INSERT INTO public.todos (task) VALUES ('warmup')");
+      await Future.any([
+        received.future,
+        Future<void>.delayed(const Duration(seconds: 2)),
+      ]);
+    }
+    if (!received.isCompleted) {
+      throw StateError(
+        'postgres_changes did not become ready within $timeout',
+      );
+    }
+  } finally {
+    await db.execute('TRUNCATE public.todos RESTART IDENTITY');
+    await db.close();
+    await client.removeAllChannels();
+    await client.disconnect();
+  }
+}
+
 /// Waits until the Realtime server is up and accepting subscriptions.
 ///
 /// The server boots, runs migrations and seeds the tenant before it is ready,

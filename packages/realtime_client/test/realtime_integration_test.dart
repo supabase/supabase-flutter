@@ -18,6 +18,7 @@ import 'utils/realtime_test_utils.dart';
 void main() {
   setUpAll(() async {
     await waitForRealtimeServer();
+    await primePostgresChanges();
   });
 
   for (final version in RealtimeProtocolVersion.values) {
@@ -218,7 +219,7 @@ void main() {
           await _subscribe(channel);
           // Give the server a moment to start streaming from the WAL before
           // mutating rows.
-          await Future<void>.delayed(const Duration(seconds: 1));
+          await Future<void>.delayed(const Duration(seconds: 2));
 
           await db.execute(
             "INSERT INTO public.todos (task) VALUES ('write tests')",
@@ -264,7 +265,7 @@ void main() {
           );
 
           await _subscribe(channel);
-          await Future<void>.delayed(const Duration(seconds: 1));
+          await Future<void>.delayed(const Duration(seconds: 2));
 
           // This row does not match the filter and must be ignored.
           await db.execute(
