@@ -6,7 +6,7 @@ repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/fun
 documentation: 'https://supabase.com/docs/reference/dart/functions-invoke'
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: '>=3.4.0 <4.0.0'
 
 dependencies:
   http: ^1.2.2
