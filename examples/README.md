@@ -3,8 +3,8 @@
 A collection of small apps that each show off a feature of `supabase_flutter`,
 all sharing a single local Supabase instance.
 
-| Example | What it shows |
-| --- | --- |
+| Example                | What it shows                             |
+| ---------------------- | ----------------------------------------- |
 | [`passkeys`](passkeys) | Passkey (WebAuthn) sign in and management |
 
 ## Quick start
