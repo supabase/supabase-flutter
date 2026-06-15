@@ -73,7 +73,9 @@ void main() {
         await _subscribe(channel);
         await channel.sendBroadcastMessage(
           event: 'ping',
-          payload: {'value': 42},
+          payload: {
+            'payload': {'value': 42},
+          },
         );
 
         final payload =
@@ -105,7 +107,9 @@ void main() {
         await _subscribe(senderChannel);
         await senderChannel.sendBroadcastMessage(
           event: 'cursor',
-          payload: {'x': 1, 'y': 2},
+          payload: {
+            'payload': {'x': 1, 'y': 2},
+          },
         );
 
         final payload =

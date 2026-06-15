@@ -50,6 +50,12 @@ grant usage on schema auth to anon, authenticated, service_role;
 -- search_path to _realtime).
 create schema if not exists _realtime authorization supabase_admin;
 
+-- Schema for the per-tenant Realtime objects (subscription table, list_changes
+-- function, etc.). The tenant migrations do not auto-create this schema, so it
+-- must exist before the tenant initializes or postgres_changes will not work.
+create schema if not exists realtime authorization supabase_admin;
+grant usage on schema realtime to anon, authenticated, service_role;
+
 -- Table used to exercise postgres_changes in the integration tests.
 create table if not exists public.todos (
   id bigint generated always as identity primary key,
