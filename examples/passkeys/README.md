@@ -1,0 +1,74 @@
+# Passkeys example
+
+A small Flutter web app that shows off the passkey (WebAuthn) API added to
+`supabase_flutter` via `supabase.auth.passkey`.
+
+It lets you:
+
+- Sign in with email and password, then **register** a passkey for that account
+- **Sign in** with an existing passkey (no password)
+- **List**, **rename** and **delete** the passkeys on the account
+
+## How passkeys work here
+
+`supabase_flutter` exposes the server side of the WebAuthn ceremony. The actual
+prompt (Face ID / Touch ID / Windows Hello / security key) is performed by the
+platform, so each flow has two steps:
+
+1. Ask Supabase to start the ceremony, which returns `options` and a
+   `challengeId`.
+2. Run the platform ceremony with those `options` to get a `credential`, then
+   send it back to Supabase together with the `challengeId` to verify.
+
+```dart
+// Register a passkey for the signed in user.
+final start = await supabase.auth.passkey.startRegistration();
+final credential = await authenticator.create(start.options);
+await supabase.auth.passkey.verifyRegistration(
+  challengeId: start.challengeId,
+  credential: credential,
+);
+
+// Sign in with a passkey.
+final start = await supabase.auth.passkey.startAuthentication();
+final credential = await authenticator.get(start.options);
+await supabase.auth.passkey.verifyAuthentication(
+  challengeId: start.challengeId,
+  credential: credential,
+);
+```
+
+This example performs the ceremony in the browser with the standard
+`navigator.credentials` WebAuthn JSON API (see
+[`lib/passkey_authenticator.dart`](lib/passkey_authenticator.dart)). On iOS,
+Android and macOS you would instead use a passkey plugin, which produces and
+consumes the same W3C WebAuthn JSON format.
+
+## Prerequisites
+
+1. **Enable passkeys** for your project in the Supabase Dashboard under
+   **Authentication > Configuration > Passkeys** (passkeys are a BETA feature).
+2. Make sure email/password sign in is enabled so you have an account to attach
+   a passkey to.
+3. A browser and device that support WebAuthn (all current browsers do).
+
+## Run it
+
+From this directory, provide your project URL and publishable key as
+`--dart-define`s and run on the web:
+
+```bash
+flutter run -d chrome \
+  --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+```
+
+Then:
+
+1. Sign in with email and password.
+2. Tap **Register a passkey** and follow the browser prompt.
+3. Sign out and tap **Sign in with a passkey** to log back in without a
+   password.
+
+> Passkeys are bound to the domain (relying party) they were created on, so a
+> passkey registered on `localhost` only works on `localhost`.
