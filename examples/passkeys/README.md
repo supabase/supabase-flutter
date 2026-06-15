@@ -54,8 +54,17 @@ consumes the same W3C WebAuthn JSON format.
 
 ## Run it
 
-From this directory, provide your project URL and publishable key as
-`--dart-define`s and run on the web:
+The easiest way is the [examples launcher](../README.md), which boots a local
+Supabase stack and runs this example with the right credentials:
+
+```bash
+cd examples/launcher
+dart pub get
+dart run
+```
+
+Alternatively, run it directly against any project by passing the URL and
+publishable key as `--dart-define`s:
 
 ```bash
 flutter run -d chrome \

@@ -1,0 +1,21 @@
+# Shared local Supabase setup for the supabase_flutter examples.
+#
+# `supabase start` (run from the `examples` directory, which the launcher does
+# for you) boots a local stack from this file that every example can talk to.
+# Only a few defaults are overridden here; the CLI fills in the rest.
+
+project_id = "supabase_flutter_examples"
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+
+[auth.email]
+enable_signup = true
+# Skip email confirmation so the examples can sign in right away.
+enable_confirmations = false
+
+# Passkeys (WebAuthn) are a BETA Auth feature. For hosted projects they are
+# enabled in the dashboard under Authentication > Configuration > Passkeys. For
+# a local stack, enable them here once your Supabase CLI ships the passkeys
+# config option. See https://supabase.com/docs/guides/auth for the latest.
