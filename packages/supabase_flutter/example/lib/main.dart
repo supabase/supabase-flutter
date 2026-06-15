@@ -8,7 +8,7 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyWidget extends StatefulWidget {
-  const MyWidget({Key? key}) : super(key: key);
+  const MyWidget({super.key});
 
   @override
   State<MyWidget> createState() => _MyWidgetState();
@@ -64,7 +64,7 @@ class _MyWidgetState extends State<MyWidget> {
 }
 
 class _LoginForm extends StatefulWidget {
-  const _LoginForm({Key? key}) : super(key: key);
+  const _LoginForm();
 
   @override
   State<_LoginForm> createState() => _LoginFormState();
@@ -160,7 +160,7 @@ class _LoginFormState extends State<_LoginForm> {
 }
 
 class _ProfileForm extends StatefulWidget {
-  const _ProfileForm({Key? key}) : super(key: key);
+  const _ProfileForm();
 
   @override
   State<_ProfileForm> createState() => _ProfileFormState();
