@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:postgres/postgres.dart';
@@ -7,6 +8,10 @@ import 'package:realtime_client/realtime_client.dart';
 
 /// The Realtime server listens on this port (see infra/realtime_client).
 const realtimeUrl = 'ws://localhost:4000/socket';
+
+/// The host and port the Realtime server is reachable at over HTTP.
+const realtimeHttpHost = 'localhost';
+const realtimePort = 4000;
 
 /// The seeded tenant is reached by overriding the Host header with this value.
 /// The server derives the tenant external id from the first segment of the
@@ -82,22 +87,52 @@ Future<Connection> openPostgresConnection() {
   );
 }
 
+/// Returns true if the Realtime server answers an HTTP request, regardless of
+/// the status code. Used to tell "server not up yet" apart from "server up but
+/// rejecting the subscription".
+Future<bool> _isRealtimeHttpReachable() async {
+  final client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
+  try {
+    final request = await client
+        .get(realtimeHttpHost, realtimePort, '/')
+        .timeout(const Duration(seconds: 3));
+    final response = await request.close().timeout(const Duration(seconds: 3));
+    await response.drain<void>();
+    return true;
+  } catch (_) {
+    return false;
+  } finally {
+    client.close(force: true);
+  }
+}
+
 /// Waits until the Realtime server is up and accepting subscriptions.
 ///
 /// The server boots, runs migrations and seeds the tenant before it is ready,
 /// which can take longer than the fixed wait in the CI workflow. This polls by
 /// repeatedly trying to subscribe to a throwaway channel until it succeeds.
 Future<void> waitForRealtimeServer({
-  Duration timeout = const Duration(seconds: 120),
+  Duration timeout = const Duration(seconds: 180),
 }) async {
   final deadline = DateTime.now().add(timeout);
+  var attempts = 0;
+  var httpReachable = false;
+  var lastStatus = 'no subscribe callback received';
   Object? lastError;
+
   while (DateTime.now().isBefore(deadline)) {
+    attempts++;
+    httpReachable = await _isRealtimeHttpReachable();
+
     final client = createRealtimeClient(RealtimeProtocolVersion.v1);
+    client.onError((error) => lastError = error);
+
     final completer = Completer<bool>();
     final channel = client.channel('readiness-check');
     channel.subscribe((status, error) {
       if (completer.isCompleted) return;
+      lastStatus = status.name;
+      if (error != null) lastError = error;
       if (status == RealtimeSubscribeStatus.subscribed) {
         completer.complete(true);
       } else if (status == RealtimeSubscribeStatus.channelError ||
@@ -106,9 +141,12 @@ Future<void> waitForRealtimeServer({
       }
     });
 
-    bool ready = false;
+    var ready = false;
     try {
-      ready = await completer.future.timeout(const Duration(seconds: 5));
+      ready = await completer.future.timeout(const Duration(seconds: 12));
+    } on TimeoutException catch (error) {
+      lastError ??= error;
+      lastStatus = 'subscribe timed out without a callback';
     } catch (error) {
       lastError = error;
     }
@@ -122,7 +160,8 @@ Future<void> waitForRealtimeServer({
     await Future<void>.delayed(const Duration(seconds: 2));
   }
   throw StateError(
-    'Realtime server did not become ready within $timeout. '
-    'Last error: $lastError',
+    'Realtime server did not become ready within $timeout after $attempts '
+    'attempts. HTTP reachable: $httpReachable. Last subscribe status: '
+    '$lastStatus. Last error: $lastError',
   );
 }

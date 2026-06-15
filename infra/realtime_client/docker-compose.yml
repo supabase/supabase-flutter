@@ -1,19 +1,6 @@
-# docker-compose.yml
-#
-# Spins up a Postgres database and a Supabase Realtime server for the
-# realtime_client integration tests.
-#
-# The Realtime server is multi tenant and resolves the tenant from the first
-# segment of the HTTP Host header. The seed step (SEED_SELF_HOST) creates a
-# tenant with the external id "realtime-dev", so the test client connects to
-# localhost:4000 while overriding the Host header to "realtime-dev.localhost".
-
 version: '3'
 services:
   db:
-    # supabase/postgres already ships wal_level=logical in its baked
-    # postgresql.conf, so no command override is needed (overriding the command
-    # would drop the config_file and lose the baked settings).
     image: supabase/postgres:15.1.0.37
     container_name: realtime-test-db
     ports:
@@ -43,7 +30,7 @@ services:
       PORT: 4000
       DB_HOST: db
       DB_PORT: 5432
-      DB_USER: supabase_admin
+      DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: postgres
       DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
@@ -56,7 +43,3 @@ services:
       APP_NAME: realtime
       SEED_SELF_HOST: 'true'
       RUN_JANITOR: 'true'
-    # The image entrypoint runs the migrations, seeds the "realtime-dev" tenant
-    # (because SEED_SELF_HOST is set) and then starts the server, so no command
-    # override is needed. Readiness is polled from the test suite itself
-    # (see waitForRealtimeServer), so no healthcheck is defined here.
