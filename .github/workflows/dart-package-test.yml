@@ -94,6 +94,13 @@ jobs:
             dart test
           fi
 
+      - name: Dump Docker logs on failure
+        if: ${{ inputs.needs-docker && failure() }}
+        run: |
+          cd ../../${{ inputs.docker-compose-dir }}
+          docker compose ps
+          docker compose logs --no-color
+
       - name: Stop Docker services
         if: ${{ inputs.needs-docker && always() }}
         run: |
