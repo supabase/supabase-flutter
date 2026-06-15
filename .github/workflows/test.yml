@@ -1,0 +1,326 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect affected packages
+    runs-on: ubuntu-latest
+    outputs:
+      dart-matrix: ${{ steps.detect.outputs.dart-matrix }}
+      flutter: ${{ steps.detect.outputs.flutter }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c # v1.7.1
+        with:
+          sdk: stable
+
+      - name: Detect affected packages
+        id: detect
+        run: |
+          set -euo pipefail
+
+          dart pub global activate melos
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          FORCE_ALL=false
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            FORCE_ALL=true
+          elif git diff --name-only "$BASE...HEAD" \
+              | grep -qE '^(\.github/workflows/test\.yml|melos\.yaml|pubspec\.lock|infra/)'; then
+            FORCE_ALL=true
+          fi
+
+          if [ "$FORCE_ALL" = "true" ]; then
+            echo "Running all packages."
+            CHANGED=$(melos list --json | jq -r '.[].name')
+          else
+            CHANGED=$(melos list --json --diff="$BASE...HEAD" --include-dependents | jq -r '.[].name')
+          fi
+
+          echo "Affected packages:"
+          echo "$CHANGED"
+
+          DART_PACKAGES="functions_client gotrue postgrest realtime_client storage_client supabase yet_another_json_isolate"
+
+          entries=()
+          for package in $DART_PACKAGES; do
+            if ! echo "$CHANGED" | grep -qx "$package"; then
+              continue
+            fi
+            case "$package" in
+              gotrue) docker="infra/gotrue" ;;
+              postgrest) docker="infra/postgrest" ;;
+              realtime_client) docker="infra/realtime_client" ;;
+              storage_client) docker="infra/storage_client" ;;
+              *) docker="" ;;
+            esac
+            case "$package" in
+              gotrue|postgrest|realtime_client|storage_client|supabase) concurrency="1" ;;
+              *) concurrency="0" ;;
+            esac
+            entries+=("{\"name\":\"$package\",\"docker\":\"$docker\",\"concurrency\":\"$concurrency\"}")
+          done
+
+          if [ "${#entries[@]}" -eq 0 ]; then
+            DART_MATRIX="[]"
+          else
+            DART_MATRIX="[$(IFS=,; echo "${entries[*]}")]"
+          fi
+          echo "dart-matrix=$DART_MATRIX" >> "$GITHUB_OUTPUT"
+
+          if echo "$CHANGED" | grep -qx "supabase_flutter"; then
+            echo "flutter=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flutter=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test-dart:
+    name: Dart ${{ matrix.package.name }} (${{ matrix.sdk }})
+    needs: changes
+    if: ${{ needs.changes.outputs.dart-matrix != '[]' }}
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.changes.outputs.dart-matrix) }}
+        sdk: [stable, beta, dev]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c # v1.7.1
+        with:
+          sdk: ${{ matrix.sdk }}
+
+      - name: Cache pub dependencies
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ matrix.sdk }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-${{ matrix.sdk }}-
+            ${{ runner.os }}-pub-
+
+      - name: Bootstrap workspace
+        run: |
+          dart pub global activate melos
+          melos bootstrap --no-flutter
+
+      - name: Format
+        if: ${{ matrix.sdk == 'stable' }}
+        working-directory: packages/${{ matrix.package.name }}
+        run: dart format lib test -l 80 --set-exit-if-changed
+
+      - name: Analyze
+        if: ${{ matrix.sdk == 'stable' }}
+        working-directory: packages/${{ matrix.package.name }}
+        run: dart analyze --fatal-warnings .
+
+      - name: Start Docker services
+        if: ${{ matrix.package.docker != '' }}
+        run: |
+          cd ${{ matrix.package.docker }}
+          docker compose up -d
+
+      - name: Wait for services to be ready
+        if: ${{ matrix.package.docker != '' }}
+        run: sleep 5
+
+      - name: Run tests
+        working-directory: packages/${{ matrix.package.name }}
+        run: |
+          CONCURRENCY=""
+          if [ "${{ matrix.package.concurrency }}" = "1" ]; then
+            CONCURRENCY="--concurrency=1"
+          fi
+          if [ "${{ matrix.sdk }}" = "stable" ]; then
+            dart pub global activate coverage
+            dart test $CONCURRENCY --coverage=coverage
+            dart pub global run coverage:format_coverage \
+              --packages=.dart_tool/package_config.json \
+              --report-on=lib --lcov -o coverage/lcov.info -i coverage
+          else
+            dart test $CONCURRENCY
+          fi
+
+      - name: Upload coverage to Coveralls
+        if: ${{ matrix.sdk == 'stable' }}
+        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel: true
+          flag-name: ${{ matrix.package.name }}
+          path-to-lcov: packages/${{ matrix.package.name }}/coverage/lcov.info
+          fail-on-error: false
+
+      - name: Dump Docker logs on failure
+        if: ${{ matrix.package.docker != '' && failure() }}
+        run: |
+          cd ${{ matrix.package.docker }}
+          docker compose ps
+          docker compose logs --no-color
+
+      - name: Stop Docker services
+        if: ${{ matrix.package.docker != '' && always() }}
+        run: |
+          cd ${{ matrix.package.docker }}
+          docker compose down
+
+  test-flutter:
+    name: Flutter v${{ matrix.flutter-version }} on ${{ matrix.os }}
+    needs: changes
+    if: ${{ needs.changes.outputs.flutter == 'true' }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        flutter-version: ['3.19.x', '3.x']
+
+    defaults:
+      run:
+        working-directory: packages/supabase_flutter
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ matrix.flutter-version }}
+          channel: 'stable'
+          # Caching 3.x (latest stable) is flaky: the cached SDK contains
+          # runner-image-specific binaries that break silently when the runner
+          # image is updated. Pinned versions like 3.19.x are stable to cache.
+          cache: ${{ matrix.flutter-version != '3.x' }}
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Bootstrap workspace
+        run: |
+          cd ../../
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: Run formatter
+        if: ${{ matrix.flutter-version == '3.x'}}
+        run: dart format lib test -l 80 --set-exit-if-changed
+
+      - name: Run analyzer
+        if: ${{ matrix.flutter-version == '3.x'}}
+        run: flutter analyze --fatal-warnings .
+
+      - name: Run unit tests
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ] && [ "${{ matrix.flutter-version }}" = "3.x" ]; then
+            flutter test --concurrency=1 --coverage
+          else
+            flutter test --concurrency=1
+          fi
+
+      - name: Upload coverage to Coveralls
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x' }}
+        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel: true
+          flag-name: supabase_flutter
+          path-to-lcov: packages/supabase_flutter/coverage/lcov.info
+          fail-on-error: false
+
+      - name: Build and test web (JS)
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
+        run: |
+          flutter test --platform chrome
+          cd example && flutter build web
+
+      - name: Build macOS app
+        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == '3.x'}}
+        run: |
+          cd example
+          flutter build macos
+
+      - name: Build Windows app
+        if: ${{ matrix.os == 'windows-latest' && matrix.flutter-version == '3.x'}}
+        run: |
+          cd example
+          flutter build windows
+
+      - name: Build Linux app
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev
+          cd example
+          flutter build linux
+
+      - name: Build iOS app
+        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == '3.x'}}
+        run: |
+          cd example
+          flutter build ios --no-codesign
+
+      - name: Build Android app
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
+        run: |
+          cd example
+          flutter build apk
+
+  coverage-finished:
+    name: Finish coverage
+    needs: [changes, test-dart, test-flutter]
+    if: ${{ always() && (needs.changes.outputs.dart-matrix != '[]' || needs.changes.outputs.flutter == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close parallel coverage build
+        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+          carryforward: 'functions_client,gotrue,postgrest,realtime_client,storage_client,supabase,yet_another_json_isolate,supabase_flutter'
+
+  test-result:
+    name: Test result
+    needs: [changes, test-dart, test-flutter]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all jobs succeeded
+        run: |
+          if ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}; then
+            echo "One or more jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All required jobs passed or were skipped."
