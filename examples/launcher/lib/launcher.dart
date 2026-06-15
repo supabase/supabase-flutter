@@ -48,67 +48,89 @@ Future<int> run(List<String> args) async {
     }
   }
 
-  if (!await _startSupabase(root)) {
-    return _failure;
+  // Only stop Supabase on exit if the launcher is the one that started it.
+  var env = await _supabaseStatus(root);
+  var startedByLauncher = false;
+  if (env.isEmpty) {
+    if (!await _startSupabase(root)) {
+      return _failure;
+    }
+    startedByLauncher = true;
+    env = await _supabaseStatus(root);
+  } else {
+    _logger.info('Using the Supabase stack that is already running.');
   }
 
-  final env = await _supabaseStatus(root);
-  final url = env['API_URL'];
-  final key = env['PUBLISHABLE_KEY'] ?? env['ANON_KEY'];
-  if (url == null || key == null) {
-    _logger.err('Could not read the local Supabase credentials.');
-    return _failure;
-  }
-
-  final examples = _discoverExamples(root);
-  if (examples.isEmpty) {
-    _logger.err('No runnable examples found in ${root.path}.');
-    return _failure;
-  }
-
-  final Example selected;
   try {
-    selected = _logger.chooseOne<Example>(
-      'Which example do you want to run?',
-      choices: examples,
-      display: (example) => example.name,
+    final url = env['API_URL'];
+    final key = env['PUBLISHABLE_KEY'] ?? env['ANON_KEY'];
+    if (url == null || key == null) {
+      _logger.err('Could not read the local Supabase credentials.');
+      return _failure;
+    }
+
+    final examples = _discoverExamples(root);
+    if (examples.isEmpty) {
+      _logger.err('No runnable examples found in ${root.path}.');
+      return _failure;
+    }
+
+    final Example selected;
+    try {
+      selected = _logger.chooseOne<Example>(
+        'Which example do you want to run?',
+        choices: examples,
+        display: (example) => example.name,
+      );
+    } on StdinException {
+      _logger.err(_noTerminalMessage);
+      return _failure;
+    }
+
+    _logger
+      ..info('')
+      ..info(
+        '${styleBold.wrap('Running')} ${cyan.wrap(selected.name)} '
+        'against ${cyan.wrap(url)}',
+      );
+
+    // Serve on a fixed origin so it matches the WebAuthn rp_origins configured
+    // in supabase/config.toml, which the passkeys example relies on.
+    final flutterArgs = args.isNotEmpty
+        ? args
+        : const [
+            '-d',
+            'chrome',
+            '--web-hostname',
+            'localhost',
+            '--web-port',
+            '3000',
+          ];
+    final process = await Process.start(
+      'flutter',
+      [
+        'run',
+        ...flutterArgs,
+        '--dart-define=SUPABASE_URL=$url',
+        '--dart-define=SUPABASE_PUBLISHABLE_KEY=$key',
+      ],
+      workingDirectory: selected.directory.path,
+      mode: ProcessStartMode.inheritStdio,
     );
-  } on StdinException {
-    _logger.err(_noTerminalMessage);
-    return _failure;
+
+    // Forward Ctrl-C to flutter so it shuts down and control returns here,
+    // letting the cleanup below stop Supabase, rather than killing the launcher.
+    final sigint = ProcessSignal.sigint
+        .watch()
+        .listen((_) => process.kill(ProcessSignal.sigint));
+    final code = await process.exitCode;
+    await sigint.cancel();
+    return code;
+  } finally {
+    if (startedByLauncher) {
+      await _stopSupabase(root);
+    }
   }
-
-  _logger
-    ..info('')
-    ..info(
-      '${styleBold.wrap('Running')} ${cyan.wrap(selected.name)} '
-      'against ${cyan.wrap(url)}',
-    );
-
-  // Serve on a fixed origin so it matches the WebAuthn rp_origins configured
-  // in supabase/config.toml, which the passkeys example relies on.
-  final flutterArgs = args.isNotEmpty
-      ? args
-      : const [
-          '-d',
-          'chrome',
-          '--web-hostname',
-          'localhost',
-          '--web-port',
-          '3000',
-        ];
-  final process = await Process.start(
-    'flutter',
-    [
-      'run',
-      ...flutterArgs,
-      '--dart-define=SUPABASE_URL=$url',
-      '--dart-define=SUPABASE_PUBLISHABLE_KEY=$key',
-    ],
-    workingDirectory: selected.directory.path,
-    mode: ProcessStartMode.inheritStdio,
-  );
-  return process.exitCode;
 }
 
 void _printBanner() {
@@ -165,6 +187,20 @@ Future<bool> _startSupabase(Directory root) async {
   progress.fail('Could not start Supabase');
   _logger.err(output.trim());
   return false;
+}
+
+Future<void> _stopSupabase(Directory root) async {
+  final progress = _logger.progress('Stopping the local Supabase stack');
+  final result = await Process.run(
+    'supabase',
+    ['stop', '--workdir', root.path],
+  );
+  if (result.exitCode == _ok) {
+    progress.complete('Stopped the local Supabase stack');
+  } else {
+    progress.fail('Could not stop Supabase');
+    _logger.err('${result.stdout}${result.stderr}'.trim());
+  }
 }
 
 Future<Map<String, String>> _supabaseStatus(Directory root) async {

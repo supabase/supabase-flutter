@@ -29,6 +29,9 @@ You will be asked which example to run, then it launches on Chrome at
 > passkeys example needs that fixed origin to match `supabase/config.toml`, so
 > only override the device for examples that do not use passkeys.
 
+If the launcher started the Supabase stack, it stops it again when you quit. If
+the stack was already running, it is left running.
+
 ### Prerequisites
 
 - [Flutter](https://docs.flutter.dev/get-started/install)
