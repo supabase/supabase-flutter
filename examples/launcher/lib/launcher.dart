@@ -6,6 +6,10 @@ import 'package:mason_logger/mason_logger.dart';
 const _ok = 0;
 const _failure = 1;
 
+const _noTerminalMessage =
+    'The launcher needs an interactive terminal to pick an example. '
+    'Run it directly in your terminal.';
+
 final _logger = Logger();
 
 /// A runnable example: a directory with a `pubspec.yaml` and a `lib/main.dart`.
@@ -29,6 +33,11 @@ Future<int> run(List<String> args) async {
       'Could not find the examples directory. Run this from inside the '
       'supabase-flutter "examples" folder.',
     );
+    return _failure;
+  }
+
+  if (!stdin.hasTerminal) {
+    _logger.err(_noTerminalMessage);
     return _failure;
   }
 
@@ -57,11 +66,17 @@ Future<int> run(List<String> args) async {
     return _failure;
   }
 
-  final selected = _logger.chooseOne<Example>(
-    'Which example do you want to run?',
-    choices: examples,
-    display: (example) => example.name,
-  );
+  final Example selected;
+  try {
+    selected = _logger.chooseOne<Example>(
+      'Which example do you want to run?',
+      choices: examples,
+      display: (example) => example.name,
+    );
+  } on StdinException {
+    _logger.err(_noTerminalMessage);
+    return _failure;
+  }
 
   _logger
     ..info('')

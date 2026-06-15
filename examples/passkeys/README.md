@@ -63,9 +63,8 @@ The easiest way is the [examples launcher](../README.md), which boots a local
 Supabase stack and runs this example with the right credentials:
 
 ```bash
-cd examples/launcher
-dart pub get
-dart run
+cd examples
+./run.sh
 ```
 
 Alternatively, run it directly against any project by passing the URL and

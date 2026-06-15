@@ -9,21 +9,25 @@ all sharing a single local Supabase instance.
 
 ## Quick start
 
-The launcher boots the shared local Supabase stack and runs the example you
-pick, wiring the local credentials into it automatically.
+From this directory, run the launcher. It boots the shared local Supabase stack
+and runs the example you pick, wiring the local credentials into it
+automatically.
 
 ```bash
-cd examples/launcher
-dart pub get
-dart run
+./run.sh
 ```
 
-You will be asked which example to run, then it launches on Chrome. To run on a
-different device, forward arguments to `flutter run`:
+You will be asked which example to run, then it launches on Chrome at
+`http://localhost:3000`. To run on a different device, forward arguments to
+`flutter run`:
 
 ```bash
-dart run -- -d macos
+./run.sh -d macos
 ```
+
+> Forwarded arguments replace the default `-d chrome --web-port 3000`. The
+> passkeys example needs that fixed origin to match `supabase/config.toml`, so
+> only override the device for examples that do not use passkeys.
 
 ### Prerequisites
 
@@ -36,10 +40,10 @@ dart run -- -d macos
 - [`supabase/`](supabase) holds the shared Supabase setup. `config.toml` is the
   one configuration every example runs against, so anything enabled there (for
   example email sign in) is available everywhere.
-- [`launcher/`](launcher) is a small Dart CLI that runs `supabase start` against
-  that config, reads back the local `API_URL` and `ANON_KEY`, lists the
-  examples, and runs the selected one with those values passed as
-  `--dart-define`s.
+- [`launcher/`](launcher) is a small Dart CLI, wrapped by `run.sh`, that runs
+  `supabase start` against that config, reads back the local `API_URL` and
+  publishable key, lists the examples, and runs the selected one with those
+  values passed as `--dart-define`s.
 
 Each example reads its configuration from `--dart-define`, so you can also run
 one directly against any project:

@@ -84,8 +84,8 @@ class _SignInViewState extends State<SignInView> {
         email: _email.text.trim(),
         password: _password.text,
       );
-    } on AuthException catch (error) {
-      _showError(error.message);
+    } catch (error) {
+      _showError(error);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -101,8 +101,8 @@ class _SignInViewState extends State<SignInView> {
         email: _email.text.trim(),
         password: _password.text,
       );
-    } on AuthException catch (error) {
-      _showError(error.message);
+    } catch (error) {
+      _showError(error);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -119,10 +119,8 @@ class _SignInViewState extends State<SignInView> {
         challengeId: start.challengeId,
         credential: credential,
       );
-    } on AuthException catch (error) {
-      _showError(error.message);
     } catch (error) {
-      _showError(error.toString());
+      _showError(error);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -188,7 +186,7 @@ class _SignedInViewState extends State<SignedInView> {
       final passkeys = await supabase.auth.passkey.list();
       setState(() => _passkeys = passkeys);
     } catch (error) {
-      _showError(error.toString());
+      _showError(error);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -206,7 +204,7 @@ class _SignedInViewState extends State<SignedInView> {
       );
       await _refresh();
     } catch (error) {
-      _showError(error.toString());
+      _showError(error);
     }
   }
 
@@ -241,7 +239,7 @@ class _SignedInViewState extends State<SignedInView> {
       );
       await _refresh();
     } catch (error) {
-      _showError(error.toString());
+      _showError(error);
     }
   }
 
@@ -250,7 +248,7 @@ class _SignedInViewState extends State<SignedInView> {
       await supabase.auth.passkey.delete(passkeyId: passkey.id);
       await _refresh();
     } catch (error) {
-      _showError(error.toString());
+      _showError(error);
     }
   }
 
@@ -320,7 +318,8 @@ class _SignedInViewState extends State<SignedInView> {
   }
 }
 
-void _showError(String message) {
+void _showError(Object error) {
+  final message = error is AuthException ? error.message : error.toString();
   messengerKey.currentState?.showSnackBar(
     SnackBar(content: Text(message), backgroundColor: Colors.red),
   );
