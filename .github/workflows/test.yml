@@ -202,7 +202,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        flutter-version: ['3.19.x', '3.x']
+        flutter-version: ['3.22.x', '3.x']
 
     defaults:
       run:
@@ -221,7 +221,7 @@ jobs:
           channel: 'stable'
           # Caching 3.x (latest stable) is flaky: the cached SDK contains
           # runner-image-specific binaries that break silently when the runner
-          # image is updated. Pinned versions like 3.19.x are stable to cache.
+          # image is updated. Pinned versions like 3.22.x are stable to cache.
           cache: ${{ matrix.flutter-version != '3.x' }}
 
       - name: Show Flutter version
