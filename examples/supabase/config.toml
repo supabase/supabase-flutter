@@ -15,7 +15,12 @@ enable_signup = true
 # Skip email confirmation so the examples can sign in right away.
 enable_confirmations = false
 
-# Passkeys (WebAuthn) are a BETA Auth feature. For hosted projects they are
-# enabled in the dashboard under Authentication > Configuration > Passkeys. For
-# a local stack, enable them here once your Supabase CLI ships the passkeys
-# config option. See https://supabase.com/docs/guides/auth for the latest.
+# Passkeys (WebAuthn) are a BETA Auth feature, used by the passkeys example.
+[auth.passkey]
+enabled = true
+
+# Relying party settings are required when passkeys are enabled. The launcher
+# serves the examples on http://localhost:3000, so the origin matches here.
+[auth.webauthn]
+rp_id = "localhost"
+rp_origins = ["http://localhost:3000"]

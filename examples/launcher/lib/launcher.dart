@@ -70,7 +70,18 @@ Future<int> run(List<String> args) async {
       'against ${cyan.wrap(url)}',
     );
 
-  final flutterArgs = args.isNotEmpty ? args : const ['-d', 'chrome'];
+  // Serve on a fixed origin so it matches the WebAuthn rp_origins configured
+  // in supabase/config.toml, which the passkeys example relies on.
+  final flutterArgs = args.isNotEmpty
+      ? args
+      : const [
+          '-d',
+          'chrome',
+          '--web-hostname',
+          'localhost',
+          '--web-port',
+          '3000',
+        ];
   final process = await Process.start(
     'flutter',
     [

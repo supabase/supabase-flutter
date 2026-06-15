@@ -46,11 +46,16 @@ consumes the same W3C WebAuthn JSON format.
 
 ## Prerequisites
 
-1. **Enable passkeys** for your project in the Supabase Dashboard under
-   **Authentication > Configuration > Passkeys** (passkeys are a BETA feature).
-2. Make sure email/password sign in is enabled so you have an account to attach
-   a passkey to.
-3. A browser and device that support WebAuthn (all current browsers do).
+Passkeys are a BETA feature and must be enabled on the project:
+
+- **Local stack:** already enabled in the shared
+  [`supabase/config.toml`](../supabase/config.toml), so the launcher works out of
+  the box.
+- **Hosted project:** enable it in the Supabase Dashboard under
+  **Authentication > Configuration > Passkeys**.
+
+You also need a browser and device that support WebAuthn (all current browsers
+do).
 
 ## Run it
 
