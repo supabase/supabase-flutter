@@ -16,6 +16,7 @@ dependencies:
     sdk: flutter
   http: ^1.2.2
   meta: ^1.7.0
+  passkeys: ^2.19.0
   supabase: 2.12.2
   url_launcher: ^6.1.2
   shared_preferences: ^2.0.0
