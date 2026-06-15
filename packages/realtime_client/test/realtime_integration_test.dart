@@ -217,8 +217,6 @@ void main() {
           );
 
           await _subscribe(channel);
-          // Give the server a moment to start streaming from the WAL before
-          // mutating rows.
           await Future<void>.delayed(const Duration(seconds: 2));
 
           await db.execute(
@@ -267,11 +265,17 @@ void main() {
           await _subscribe(channel);
           await Future<void>.delayed(const Duration(seconds: 2));
 
-          // This row does not match the filter and must be ignored.
           await db.execute(
             "INSERT INTO public.todos (task, is_complete) VALUES ('ignored', false)",
           );
-          // This row matches the filter and must be delivered.
+
+          await Future<void>.delayed(const Duration(seconds: 3));
+          expect(
+            matched.isCompleted,
+            isFalse,
+            reason: 'the non-matching row must not be delivered',
+          );
+
           await db.execute(
             "INSERT INTO public.todos (task, is_complete) VALUES ('matched', true)",
           );

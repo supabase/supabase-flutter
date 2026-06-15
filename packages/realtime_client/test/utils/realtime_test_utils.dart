@@ -6,12 +6,13 @@ import 'package:crypto/crypto.dart';
 import 'package:postgres/postgres.dart';
 import 'package:realtime_client/realtime_client.dart';
 
-/// The Realtime server listens on this port (see infra/realtime_client).
-const realtimeUrl = 'ws://localhost:4000/socket';
-
-/// The host and port the Realtime server is reachable at over HTTP.
+/// The host and port the Realtime server is reachable at (see
+/// infra/realtime_client).
 const realtimeHttpHost = 'localhost';
 const realtimePort = 4000;
+
+/// The WebSocket endpoint of the Realtime server.
+const realtimeUrl = 'ws://$realtimeHttpHost:$realtimePort/socket';
 
 /// The seeded tenant is reached by overriding the Host header with this value.
 /// The server derives the tenant external id from the first segment of the
@@ -66,8 +67,6 @@ RealtimeClient createRealtimeClient(
     version: version,
     params: {'apikey': apikey},
     headers: {'Host': realtimeHost},
-    // Keep the heartbeat short so stale connections are detected quickly during
-    // tests without slowing the suite down.
     heartbeatIntervalMs: 5000,
   );
 }
