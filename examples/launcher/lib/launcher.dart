@@ -45,7 +45,7 @@ Future<int> run(List<String> args) async {
 
   final env = await _supabaseStatus(root);
   final url = env['API_URL'];
-  final key = env['ANON_KEY'];
+  final key = env['PUBLISHABLE_KEY'] ?? env['ANON_KEY'];
   if (url == null || key == null) {
     _logger.err('Could not read the local Supabase credentials.');
     return _failure;
