@@ -22,6 +22,7 @@ import 'broadcast_stub.dart' if (dart.library.js_interop) './broadcast_web.dart'
 import 'version.dart';
 
 part 'gotrue_mfa_api.dart';
+part 'gotrue_passkey_api.dart';
 
 class _SessionState {
   Session? _session;
@@ -54,6 +55,12 @@ class GoTrueClient {
 
   /// Namespace for the GoTrue MFA API methods.
   late final GoTrueMFAApi mfa;
+
+  /// Namespace for the passkey (WebAuthn) API methods.
+  ///
+  /// {@macro gotrue_passkey_api}
+  @experimental
+  late final GoTruePasskeyApi passkey;
 
   final _sessionState = _SessionState();
 
@@ -156,6 +163,7 @@ class GoTrueClient {
       httpClient: httpClient,
     );
     mfa = GoTrueMFAApi(client: this, fetch: _fetch);
+    passkey = GoTruePasskeyApi(client: this, fetch: _fetch);
     if (_autoRefreshToken) {
       startAutoRefresh();
     }
