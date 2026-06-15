@@ -83,6 +83,17 @@ jobs:
                   docker compose down
                   sleep 5s
                   cd ../../packages/storage_client
+                elif [[ "$d" == "realtime_client/"* ]]; then
+                  cd ../../infra/realtime_client
+                  docker compose down
+                  docker compose up -d
+                  cd ../../packages/realtime_client
+                  dart test --coverage=coverage --concurrency=1
+                  dart pub global run coverage:format_coverage --packages=.dart_tool/package_config.json --report-on=lib --lcov -o coverage/lcov.info -i coverage
+                  cd ../../infra/realtime_client
+                  docker compose down
+                  sleep 5s
+                  cd ../../packages/realtime_client
                 else
                   cd ../../packages/$d
                   dart test --coverage=coverage --concurrency=1
