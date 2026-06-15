@@ -1,0 +1,59 @@
+# docker-compose.yml
+#
+# Spins up a Postgres database and a Supabase Realtime server for the
+# realtime_client integration tests.
+#
+# The Realtime server is multi tenant and resolves the tenant from the first
+# segment of the HTTP Host header. The seed step (SEED_SELF_HOST) creates a
+# tenant with the external id "realtime-dev", so the test client connects to
+# localhost:4000 while overriding the Host header to "realtime-dev.localhost".
+
+version: '3'
+services:
+  db:
+    image: supabase/postgres:15.8.1.085
+    container_name: realtime-test-db
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_PORT: 5432
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -h localhost']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  realtime:
+    image: supabase/realtime:v2.102.3
+    container_name: realtime-dev.supabase-realtime
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '4000:4000'
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: postgres
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      SECRET_KEY_BASE: UpNVntn3cDxHJpq99YMc1T1AQgQpc8kfYTuRgBiYa15BLrx8etQoXz3gZv1/u2oq
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: '10000'
+      APP_NAME: realtime
+      SEED_SELF_HOST: 'true'
+      RUN_JANITOR: 'true'
+    # The image entrypoint runs the migrations, seeds the "realtime-dev" tenant
+    # (because SEED_SELF_HOST is set) and then starts the server, so no command
+    # override is needed. Readiness is polled from the test suite itself
+    # (see waitForRealtimeServer), so no healthcheck is defined here.

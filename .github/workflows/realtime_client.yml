@@ -28,4 +28,6 @@ jobs:
     with:
       package-name: realtime_client
       working-directory: packages/realtime_client
+      needs-docker: true
+      docker-compose-dir: infra/realtime_client
       test-concurrency: 1
