@@ -72,6 +72,7 @@ jobs:
             case "$package" in
               gotrue) docker="infra/gotrue" ;;
               postgrest) docker="infra/postgrest" ;;
+              realtime_client) docker="infra/realtime_client" ;;
               storage_client) docker="infra/storage_client" ;;
               *) docker="" ;;
             esac
@@ -178,6 +179,13 @@ jobs:
           flag-name: ${{ matrix.package.name }}
           path-to-lcov: packages/${{ matrix.package.name }}/coverage/lcov.info
           fail-on-error: false
+
+      - name: Dump Docker logs on failure
+        if: ${{ matrix.package.docker != '' && failure() }}
+        run: |
+          cd ${{ matrix.package.docker }}
+          docker compose ps
+          docker compose logs --no-color
 
       - name: Stop Docker services
         if: ${{ matrix.package.docker != '' && always() }}

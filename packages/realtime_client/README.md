@@ -14,6 +14,24 @@ The docs can be found on the official Supabase website.
 - [Dart reference](https://supabase.com/docs/reference/dart/stream)
 - [Realtime guide](https://supabase.com/docs/guides/realtime)
 
+## Testing
+
+The unit tests run without any external services:
+
+```bash
+dart test -x integration
+```
+
+The integration tests in `test/realtime_integration_test.dart` run against a
+real Supabase Realtime server. Start it with Docker first, then run the full
+suite (it exercises both protocol versions, `1.0.0` and `2.0.0`):
+
+```bash
+docker compose -f ../../infra/realtime_client/docker-compose.yml up -d
+dart test
+docker compose -f ../../infra/realtime_client/docker-compose.yml down
+```
+
 ## Credits
 
 - https://github.com/supabase/realtime-js - ported from realtime-js library
