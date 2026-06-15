@@ -79,7 +79,8 @@ flutter run -d chrome \
 
 Then:
 
-1. Sign in with email and password.
+1. Enter an email and password and tap **Create an account** (or **Sign in
+   with password** if you already have one).
 2. Tap **Register a passkey** and follow the browser prompt.
 3. Sign out and tap **Sign in with a passkey** to log back in without a
    password.

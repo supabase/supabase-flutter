@@ -91,6 +91,23 @@ class _SignInViewState extends State<SignInView> {
     }
   }
 
+  /// Creates an account so a passkey can then be registered for it. Email
+  /// confirmations are disabled in the shared config, so this returns a session
+  /// right away.
+  Future<void> _signUp() async {
+    setState(() => _busy = true);
+    try {
+      await supabase.auth.signUp(
+        email: _email.text.trim(),
+        password: _password.text,
+      );
+    } on AuthException catch (error) {
+      _showError(error.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   /// The two-step passkey sign in: ask Supabase for a challenge, run the
   /// browser ceremony, then verify the resulting assertion.
   Future<void> _signInWithPasskey() async {
@@ -130,6 +147,11 @@ class _SignInViewState extends State<SignInView> {
         FilledButton(
           onPressed: _busy ? null : _signInWithPassword,
           child: const Text('Sign in with password'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton(
+          onPressed: _busy ? null : _signUp,
+          child: const Text('Create an account'),
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
