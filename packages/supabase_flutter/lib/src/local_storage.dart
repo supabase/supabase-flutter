@@ -106,11 +106,12 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   }
 
   @override
-  Future<void> persistSession(String persistSessionString) {
+  Future<void> persistSession(String persistSessionString) async {
     if (_useWebLocalStorage) {
-      return web.persistSession(persistSessionKey, persistSessionString);
+      web.persistSession(persistSessionKey, persistSessionString);
+      return;
     }
-    return _prefs.setString(persistSessionKey, persistSessionString);
+    await _prefs.setString(persistSessionKey, persistSessionString);
   }
 }
 

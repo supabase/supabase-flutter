@@ -1,5 +1,5 @@
 // coverage:ignore-file
-Future<bool> hasAccessToken(String _) => throw UnimplementedError();
+bool hasAccessToken(String _) => throw UnimplementedError();
 
 String? accessToken(String _) => throw UnimplementedError();
 
