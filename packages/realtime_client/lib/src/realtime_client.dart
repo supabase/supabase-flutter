@@ -183,7 +183,7 @@ class RealtimeClient {
             .toString(),
         headers = {
           ...Constants.defaultHeaders,
-          if (headers != null) ...headers,
+          ...?headers,
         },
         transport = transport ?? createWebSocketClient,
         encode = encode ??

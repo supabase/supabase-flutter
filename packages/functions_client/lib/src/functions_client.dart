@@ -100,7 +100,7 @@ class FunctionsClient {
 
     // Merge query parameters with forceFunctionRegion if region is specified
     final effectiveQueryParams = <String, dynamic>{
-      if (queryParameters != null) ...queryParameters,
+      ...?queryParameters,
       if (effectiveRegion != null && effectiveRegion != 'any')
         'forceFunctionRegion': effectiveRegion,
     };
@@ -111,7 +111,7 @@ class FunctionsClient {
 
     final finalHeaders = <String, String>{
       ..._headers,
-      if (headers != null) ...headers,
+      ...?headers,
       if (effectiveRegion != null && effectiveRegion != 'any')
         'x-region': effectiveRegion,
     };

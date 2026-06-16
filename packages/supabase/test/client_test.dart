@@ -290,8 +290,7 @@ void main() {
 
     group('Headers Management', () {
       test('should update headers and propagate to all clients', () {
-        final newHeaders = {'Custom-Header': 'custom-value'};
-        supabase.headers = newHeaders;
+        supabase.headers = {'Custom-Header': 'custom-value'};
 
         expect(supabase.headers['Custom-Header'], 'custom-value');
         expect(supabase.rest.headers['Custom-Header'], 'custom-value');
@@ -301,8 +300,7 @@ void main() {
       });
 
       test('should preserve default headers when setting custom headers', () {
-        final newHeaders = {'Custom-Header': 'custom-value'};
-        supabase.headers = newHeaders;
+        supabase.headers = {'Custom-Header': 'custom-value'};
 
         expect(supabase.headers['X-Client-Info'], startsWith('supabase-dart/'));
       });
@@ -314,8 +312,7 @@ void main() {
           accessToken: () async => 'custom-token',
         );
 
-        final newHeaders = {'Custom-Header': 'custom-value'};
-        customTokenClient.headers = newHeaders;
+        customTokenClient.headers = {'Custom-Header': 'custom-value'};
 
         expect(customTokenClient.headers['Custom-Header'], 'custom-value');
       });

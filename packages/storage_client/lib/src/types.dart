@@ -339,7 +339,7 @@ class StorageException implements Exception {
   final String? error;
   final String? statusCode;
 
-  const StorageException(this.message, {this.error, this.statusCode}) : super();
+  const StorageException(this.message, {this.error, this.statusCode});
 
   factory StorageException.fromJson(
     Map<String, dynamic> json, [

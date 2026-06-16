@@ -41,7 +41,7 @@ class PostgrestClient {
     this.retryEnabled = true,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
   })  : _schema = schema,
-        headers = {...defaultHeaders, if (headers != null) ...headers},
+        headers = {...defaultHeaders, ...?headers},
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
         _hasCustomIsolate = isolate != null,
         _retryDelay = retryDelay {

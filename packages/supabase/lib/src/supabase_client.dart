@@ -139,7 +139,7 @@ class SupabaseClient {
         _postgrestOptions = postgrestOptions,
         _headers = {
           ...Constants.defaultHeaders,
-          if (headers != null) ...headers
+          ...?headers,
         },
         _httpClient = httpClient,
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),

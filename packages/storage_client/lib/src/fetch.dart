@@ -37,7 +37,7 @@ class Fetch {
     if (error is http.Response) {
       if (options?.noResolveJson == true) {
         return StorageException(
-          error.body.isEmpty ? error.reasonPhrase ?? '' : error.body,
+          error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
           statusCode: '${error.statusCode}',
         );
       }

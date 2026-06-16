@@ -45,8 +45,6 @@ String generateJwt([int? exp]) {
 }
 
 void main() {
-  const int int64MaxValue = 9223372036854775807;
-
   const socketEndpoint = 'wss://localhost:0/';
 
   late HttpServer mockServer;
@@ -644,7 +642,7 @@ void main() {
     });
 
     test('restarts for overflow', () {
-      socket.ref = int64MaxValue;
+      socket.ref = 9223372036854775807;
       expect(socket.makeRef(), '0');
       expect(socket.ref, 0);
     });

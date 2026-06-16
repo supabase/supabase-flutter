@@ -142,62 +142,57 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
     }
 
-    try {
-      if (method == null) {
-        throw ArgumentError(
-          'Missing table operation: select, insert, update or delete',
-        );
-      }
-
-      if (_schema == null) {
-        // skip
-      } else if (method == HttpMethod.get || method == HttpMethod.head) {
-        execHeaders['Accept-Profile'] = _schema;
-      } else {
-        execHeaders['Content-Profile'] = _schema;
-      }
-      if (method != HttpMethod.get && method != HttpMethod.head) {
-        execHeaders['Content-Type'] = 'application/json';
-      }
-      final bodyStr = jsonEncode(_body);
-      _log.finest("Request: ${method.value} $_url");
-
-      final Future<http.Response> Function() send;
-      if (method == HttpMethod.get) {
-        send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
-      } else if (method == HttpMethod.post) {
-        send = () => (_httpClient?.post ?? http.post)(
-              _url,
-              headers: execHeaders,
-              body: bodyStr,
-            );
-      } else if (method == HttpMethod.put) {
-        send = () => (_httpClient?.put ?? http.put)(
-              _url,
-              headers: execHeaders,
-              body: bodyStr,
-            );
-      } else if (method == HttpMethod.patch) {
-        send = () => (_httpClient?.patch ?? http.patch)(
-              _url,
-              headers: execHeaders,
-              body: bodyStr,
-            );
-      } else if (method == HttpMethod.delete) {
-        send = () =>
-            (_httpClient?.delete ?? http.delete)(_url, headers: execHeaders);
-      } else if (method == HttpMethod.head) {
-        send =
-            () => (_httpClient?.head ?? http.head)(_url, headers: execHeaders);
-      } else {
-        throw StateError('Unknown HTTP method: ${method.value}');
-      }
-
-      final response = await _executeWithRetry(send, method, execHeaders);
-      return await _parseResponse(response, method);
-    } catch (error) {
-      rethrow;
+    if (method == null) {
+      throw ArgumentError(
+        'Missing table operation: select, insert, update or delete',
+      );
     }
+
+    if (_schema == null) {
+      // skip
+    } else if (method == HttpMethod.get || method == HttpMethod.head) {
+      execHeaders['Accept-Profile'] = _schema;
+    } else {
+      execHeaders['Content-Profile'] = _schema;
+    }
+    if (method != HttpMethod.get && method != HttpMethod.head) {
+      execHeaders['Content-Type'] = 'application/json';
+    }
+    final bodyStr = jsonEncode(_body);
+    _log.finest("Request: ${method.value} $_url");
+
+    final Future<http.Response> Function() send;
+    if (method == HttpMethod.get) {
+      send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
+    } else if (method == HttpMethod.post) {
+      send = () => (_httpClient?.post ?? http.post)(
+            _url,
+            headers: execHeaders,
+            body: bodyStr,
+          );
+    } else if (method == HttpMethod.put) {
+      send = () => (_httpClient?.put ?? http.put)(
+            _url,
+            headers: execHeaders,
+            body: bodyStr,
+          );
+    } else if (method == HttpMethod.patch) {
+      send = () => (_httpClient?.patch ?? http.patch)(
+            _url,
+            headers: execHeaders,
+            body: bodyStr,
+          );
+    } else if (method == HttpMethod.delete) {
+      send = () =>
+          (_httpClient?.delete ?? http.delete)(_url, headers: execHeaders);
+    } else if (method == HttpMethod.head) {
+      send = () => (_httpClient?.head ?? http.head)(_url, headers: execHeaders);
+    } else {
+      throw StateError('Unknown HTTP method: ${method.value}');
+    }
+
+    final response = await _executeWithRetry(send, method, execHeaders);
+    return await _parseResponse(response, method);
   }
 
   Future<http.Response> _executeWithRetry(
@@ -388,7 +383,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   Uri appendSearchParams(String key, String value, [Uri? url]) {
     final searchParams =
         Map<String, dynamic>.of((url ?? _url).queryParametersAll);
-    searchParams[key] = [...searchParams[key] ?? [], value];
+    searchParams[key] = [...?searchParams[key], value];
     return (url ?? _url).replace(queryParameters: searchParams);
   }
 
