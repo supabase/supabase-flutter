@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
@@ -267,8 +268,59 @@ class JWK {
     return json;
   }
 
-  RSAPublicKey get rsaPublicKey {
-    final bytes = utf8.encode(json.encode(toJson()));
-    return RSAPublicKey.bytes(bytes);
+  /// Builds the RSA public key for verifying RS256 JWTs from this JWK's
+  /// modulus (`n`) and exponent (`e`).
+  ///
+  /// The key is assembled as a PKCS#1 `RSAPublicKey` DER structure and handed to
+  /// [RSAPublicKey.bytes]. This avoids `JWTKey.fromJWK`, which is only available
+  /// in dart_jsonwebtoken 3.x and would force a dependency bump that is
+  /// incompatible with the minimum supported Flutter version.
+  // TODO: replace this manual DER assembly with `JWTKey.fromJWK` once the
+  // minimum Flutter is >= 3.29.0 (Dart 3.7.0), whose flutter_test bundles
+  // clock 1.1.2 and so allows dart_jsonwebtoken 3.x. fromJWK also adds EC
+  // (ES256) support.
+  RSAPublicKey get publicKey {
+    final modulus = _base64UrlToBytes(this['n'] as String);
+    final exponent = _base64UrlToBytes(this['e'] as String);
+    final der = _derSequence([
+      _derInteger(modulus),
+      _derInteger(exponent),
+    ]);
+    return RSAPublicKey.bytes(Uint8List.fromList(der));
   }
+}
+
+List<int> _base64UrlToBytes(String input) {
+  return base64Url.decode(base64Url.normalize(input));
+}
+
+/// DER-encodes an unsigned big-endian integer (prefixing a zero byte when the
+/// high bit is set so it is not interpreted as negative).
+List<int> _derInteger(List<int> bytes) {
+  var content = bytes;
+  var start = 0;
+  while (start < content.length - 1 && content[start] == 0) {
+    start++;
+  }
+  content = content.sublist(start);
+  if (content.isNotEmpty && (content[0] & 0x80) != 0) {
+    content = [0, ...content];
+  }
+  return [0x02, ..._derLength(content.length), ...content];
+}
+
+List<int> _derSequence(List<List<int>> elements) {
+  final content = elements.expand((element) => element).toList();
+  return [0x30, ..._derLength(content.length), ...content];
+}
+
+List<int> _derLength(int length) {
+  if (length < 0x80) return [length];
+  final lengthBytes = <int>[];
+  var remaining = length;
+  while (remaining > 0) {
+    lengthBytes.insert(0, remaining & 0xff);
+    remaining >>= 8;
+  }
+  return [0x80 | lengthBytes.length, ...lengthBytes];
 }

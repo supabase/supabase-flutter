@@ -1646,7 +1646,7 @@ class GoTrueClient {
     }
 
     try {
-      JWT.verify(token, signingKey.rsaPublicKey);
+      JWT.verify(token, signingKey.publicKey);
       return GetClaimsResponse(
         claims: decoded.payload,
         header: decoded.header,
