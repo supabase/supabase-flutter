@@ -43,6 +43,7 @@ final supabase = Supabase.instance.client;
   * [Native Apple Sign in](#native-apple-sign-in)
   * [Native Google sign in](#native-google-sign-in)
   * [OAuth login](#oauth-login)
+  * [Passkeys](#passkeys)
 * [Database](#database)
 * [Realtime](#realtime)
   * [Postgres Changes](#postgres-changes)
@@ -272,6 +273,35 @@ supabase.auth.onAuthStateChange.listen((data) {
   }
 });
 ```
+
+### <a id="passkeys"></a>Passkeys
+
+> Passkeys are a BETA feature. Enable them for your project in the Supabase Dashboard under Authentication > Configuration > Passkeys before using these methods.
+
+`supabase_flutter` performs the full WebAuthn ceremony for you, including the platform prompt (FaceID/TouchID/security key), so you do not need to write any authenticator code. Use `signInWithPasskey()` to sign a user in, and `registerPasskey()` to add a passkey to the signed in user.
+
+```dart
+// Sign in with a passkey. The user is prompted to pick and unlock a passkey.
+await supabase.auth.signInWithPasskey();
+
+// Register a new passkey for the signed in user.
+await supabase.auth.registerPasskey();
+
+// Manage the signed in user's passkeys with the server side API.
+final passkeys = await supabase.auth.passkey.list();
+await supabase.auth.passkey.update(passkeyId: passkeys.first.id, friendlyName: 'My phone');
+await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
+```
+
+The ceremony is handled by the [`passkeys`](https://pub.dev/packages/passkeys) plugin. Because the plugin is bundled with `supabase_flutter`, every app raises its minimum platform versions to **iOS 16.0** and **macOS 13.5** (the OS versions where the passkey APIs became available), regardless of whether passkeys are used. Set your deployment targets accordingly.
+
+It also requires per platform setup that the library cannot do for you:
+
+- **iOS / macOS**: add the Associated Domains capability with `webcredentials:<your-domain>` and host an `apple-app-site-association` file at `https://<your-domain>/.well-known/apple-app-site-association`.
+- **Android**: host an `assetlinks.json` (Digital Asset Links) at `https://<your-domain>/.well-known/assetlinks.json` containing your package name and signing certificate SHA-256 fingerprint.
+- **Web**: include the `passkeys` web SDK `bundle.js` in your `index.html` (download it from the [`flutter-passkeys` releases](https://github.com/corbado/flutter-passkeys/releases)).
+
+See the [`passkeys` package documentation](https://pub.dev/packages/passkeys) for the full setup guide. To handle ceremony failures (for example when the user cancels), catch the exceptions from `package:passkeys/exceptions.dart`, such as `PasskeyAuthCancelledException`.
 
 ### <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
 
