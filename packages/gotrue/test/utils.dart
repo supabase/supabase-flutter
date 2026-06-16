@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
 
@@ -39,16 +38,19 @@ String getNewPhone() {
   return '$timestamp';
 }
 
-String getServiceRoleToken(DotEnv env) {
-  return JWT(
-    {
-      'role': 'service_role',
-    },
-  ).sign(
-    SecretKey(
-        env['GOTRUE_JWT_SECRET'] ?? '37c304f8-51aa-419a-a1af-06154e63707a'),
-  );
-}
+/// API keys of the local Supabase CLI stack. These are RS256 JWTs signed by the
+/// committed supabase/signing_keys.json, so they stay valid as long as that key
+/// is in place. Both gotrue and the API gateway verify them against the JWKS.
+const _serviceRoleKey =
+    'eyJhbGciOiJSUzI1NiIsImtpZCI6IjNkZjU5YWIxLWI4ZWMtNDlkMy05YzkyLThiOWQ0MmNhYzFmZSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MjA5Njg5NTE5Mn0.jO5vwkRNFZTiVHNjFzaypvWV4aJkKm6TvFsdl0W5x9g7LttQMWMopC7HanUpeFLmg4E9gMb-v1e6f6oZ9e0PHYpsRwEdSOxKfYwKhzFI9DsDGLrX4ueArZuKgaV_bulWpwGKI3xwLugeuCp6N0hYFkXvMmUjaKx9nClWckJ33cchSpgjVQ5YxL8PGrUj2Sjhw-5IyGiwrdPfWjTQmpWnCjePoVrRf2jEMF_VGoxDAEqt72w_HGOrdXRFU5BW9-LkvpfzkrTENrj555JtYP4mkZgvUlrkXFRSh010o3n2UehN5WonfDRzwOeTC56QEbPVS6ubvWGR9luykdMNlXawZA';
+
+const _anonKey =
+    'eyJhbGciOiJSUzI1NiIsImtpZCI6IjNkZjU5YWIxLWI4ZWMtNDlkMy05YzkyLThiOWQ0MmNhYzFmZSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjIwOTY4OTUxOTF9.Boe4zFpmRmJRM9b6USbJkZZzg66cXTHWYHm9uGScxnVi-xCXi6jAjy_GGsyKGOgwD110lNzNcdAQtwWjBOz-iBcVfcLpOJjgtFNg80ZK7toO2V0BwhWhAMdic1XnFI3_gxe9iq--iMuNuAebP1uIxGqn-nJ2kdua1cv3g9BZ5UtG9U-I22b4lPTQhdMU7skUsFLxcIpDOb1tS7RafWL3XcobNpd5OnZV_z88fus73DDP9oFKzBsyXARNg3H89IBBd5G9JHpeO4eQdGTPPY4xkGp_zBUnyMJJWTdgXqFjbFHpGpTdD1lSb3TbyeRheAq7IqaAvdqXyaTZVhH7LrZmbw';
+
+String getServiceRoleToken(DotEnv env) =>
+    env['GOTRUE_SERVICE_ROLE_TOKEN'] ?? _serviceRoleKey;
+
+String getAnonToken(DotEnv env) => env['GOTRUE_TOKEN'] ?? _anonKey;
 
 /// User id embedded in the session produced by [getSessionData].
 const sessionDataUserId = '4d2583da-8de4-49d3-9cd1-37a9a74f55bd';

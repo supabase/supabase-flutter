@@ -48,7 +48,7 @@ jobs:
           if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
             FORCE_ALL=true
           elif git diff --name-only "$BASE...HEAD" \
-              | grep -qE '^(\.github/workflows/test\.yml|melos\.yaml|pubspec\.lock|infra/)'; then
+              | grep -qE '^(\.github/workflows/test\.yml|melos\.yaml|pubspec\.lock|supabase/)'; then
             FORCE_ALL=true
           fi
 
@@ -70,17 +70,14 @@ jobs:
               continue
             fi
             case "$package" in
-              gotrue) docker="infra/gotrue" ;;
-              postgrest) docker="infra/postgrest" ;;
-              realtime_client) docker="infra/realtime_client" ;;
-              storage_client) docker="infra/storage_client" ;;
-              *) docker="" ;;
+              gotrue|postgrest|realtime_client|storage_client) backend=true ;;
+              *) backend=false ;;
             esac
             case "$package" in
               gotrue|postgrest|realtime_client|storage_client|supabase) concurrency="1" ;;
               *) concurrency="0" ;;
             esac
-            entries+=("{\"name\":\"$package\",\"docker\":\"$docker\",\"concurrency\":\"$concurrency\"}")
+            entries+=("{\"name\":\"$package\",\"backend\":$backend,\"concurrency\":\"$concurrency\"}")
           done
 
           if [ "${#entries[@]}" -eq 0 ]; then
@@ -143,15 +140,49 @@ jobs:
         working-directory: packages/${{ matrix.package.name }}
         run: dart analyze --fatal-warnings .
 
-      - name: Start Docker services
-        if: ${{ matrix.package.docker != '' }}
-        run: |
-          cd ${{ matrix.package.docker }}
-          docker compose up -d
+      - name: Setup Supabase CLI
+        if: ${{ matrix.package.backend }}
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        with:
+          version: 2.106.0
 
-      - name: Wait for services to be ready
-        if: ${{ matrix.package.docker != '' }}
-        run: sleep 5
+      - name: Print Supabase CLI version
+        if: ${{ matrix.package.backend }}
+        id: supabase-cli
+        run: |
+          version="$(supabase --version)"
+          echo "Supabase CLI version: $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Supabase Docker images
+        if: ${{ matrix.package.backend }}
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        id: supabase-images
+        with:
+          path: /tmp/supabase-images
+          key: supabase-images-${{ steps.supabase-cli.outputs.version }}-${{ hashFiles('supabase/config.toml') }}
+
+      - name: Load cached Supabase Docker images
+        if: ${{ matrix.package.backend && steps.supabase-images.outputs.cache-hit == 'true' }}
+        run: |
+          for image in /tmp/supabase-images/*.tar; do
+            [ -f "$image" ] && docker load -i "$image"
+          done
+
+      - name: Start Supabase
+        if: ${{ matrix.package.backend }}
+        run: supabase start
+
+      - name: Save Supabase Docker images to cache
+        if: ${{ matrix.package.backend && steps.supabase-images.outputs.cache-hit != 'true' }}
+        run: |
+          mkdir -p /tmp/supabase-images
+          docker images --format '{{.Repository}}:{{.Tag}}' \
+            | grep -E 'supabase|postgrest|gotrue|storage-api|imgproxy|kong|realtime' \
+            | while read -r image; do
+                file=$(echo "$image" | tr '/:' '__')
+                docker save "$image" -o "/tmp/supabase-images/${file}.tar"
+              done
 
       - name: Run tests
         working-directory: packages/${{ matrix.package.name }}
@@ -180,21 +211,22 @@ jobs:
           path-to-lcov: packages/${{ matrix.package.name }}/coverage/lcov.info
           fail-on-error: false
 
-      - name: Dump Docker logs on failure
-        if: ${{ matrix.package.docker != '' && failure() }}
+      - name: Dump Supabase logs on failure
+        if: ${{ matrix.package.backend && failure() }}
         run: |
-          cd ${{ matrix.package.docker }}
-          docker compose ps
-          docker compose logs --no-color
+          supabase status || true
+          docker ps -a
+          docker logs supabase_db_supabase-flutter --tail 100 2>&1 || true
+          docker logs supabase_auth_supabase-flutter --tail 100 2>&1 || true
+          docker logs supabase_realtime_supabase-flutter --tail 100 2>&1 || true
+          docker logs supabase_storage_supabase-flutter --tail 100 2>&1 || true
 
-      - name: Stop Docker services
-        if: ${{ matrix.package.docker != '' && always() }}
-        run: |
-          cd ${{ matrix.package.docker }}
-          docker compose down
+      - name: Stop Supabase
+        if: ${{ matrix.package.backend && always() }}
+        run: supabase stop --no-backup
 
   test-flutter:
-    name: Flutter v${{ matrix.flutter-version }} on ${{ matrix.os }}
+    name: Flutter ${{ matrix.flutter-version == 'latest' && 'Latest' || format('v{0}', matrix.flutter-version) }} on ${{ matrix.os }}
     needs: changes
     if: ${{ needs.changes.outputs.flutter == 'true' }}
     timeout-minutes: 30
@@ -202,7 +234,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        flutter-version: ['3.22.x', '3.x']
+        flutter-version: ['3.22.x', 'latest']
 
     defaults:
       run:
@@ -217,12 +249,12 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          flutter-version: ${{ matrix.flutter-version }}
+          flutter-version: ${{ matrix.flutter-version != 'latest' && matrix.flutter-version || '' }}
           channel: 'stable'
-          # Caching 3.x (latest stable) is flaky: the cached SDK contains
+          # Caching the latest stable is flaky: the cached SDK contains
           # runner-image-specific binaries that break silently when the runner
           # image is updated. Pinned versions like 3.22.x are stable to cache.
-          cache: ${{ matrix.flutter-version != '3.x' }}
+          cache: ${{ matrix.flutter-version != 'latest' }}
 
       - name: Show Flutter version
         run: flutter --version
@@ -234,24 +266,24 @@ jobs:
           melos bootstrap
 
       - name: Run formatter
-        if: ${{ matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.flutter-version == 'latest'}}
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: Run analyzer
-        if: ${{ matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.flutter-version == 'latest'}}
         run: flutter analyze --fatal-warnings .
 
       - name: Run unit tests
         shell: bash
         run: |
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ] && [ "${{ matrix.flutter-version }}" = "3.x" ]; then
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ] && [ "${{ matrix.flutter-version }}" = "latest" ]; then
             flutter test --concurrency=1 --coverage
           else
             flutter test --concurrency=1
           fi
 
       - name: Upload coverage to Coveralls
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest' }}
         uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -261,25 +293,25 @@ jobs:
           fail-on-error: false
 
       - name: Build and test web (JS)
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
         run: |
           flutter test --platform chrome
           cd example && flutter build web
 
       - name: Build macOS app
-        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == 'latest'}}
         run: |
           cd example
           flutter build macos
 
       - name: Build Windows app
-        if: ${{ matrix.os == 'windows-latest' && matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.os == 'windows-latest' && matrix.flutter-version == 'latest'}}
         run: |
           cd example
           flutter build windows
 
       - name: Build Linux app
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev
@@ -287,13 +319,13 @@ jobs:
           flutter build linux
 
       - name: Build iOS app
-        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == 'latest'}}
         run: |
           cd example
           flutter build ios --no-codesign
 
       - name: Build Android app
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == '3.x'}}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
         run: |
           cd example
           flutter build apk

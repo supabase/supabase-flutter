@@ -5,15 +5,15 @@ import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
 import 'reset_helper.dart';
+import 'test_utils.dart';
 
 void main() {
-  const rootUrl = 'http://localhost:3000';
   late PostgrestClient postgrest;
   late PostgrestClient postgrestCustomHttpClient;
   final resetHelper = ResetHelper();
   group("Default http client", () {
     setUpAll(() async {
-      postgrest = PostgrestClient(rootUrl);
+      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
 
       await resetHelper.initialize(postgrest);
     });
@@ -23,7 +23,7 @@ void main() {
     });
 
     setUp(() {
-      postgrest = PostgrestClient(rootUrl);
+      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
     });
 
     tearDown(() async {
@@ -145,13 +145,14 @@ void main() {
     });
 
     test('switch schema', () async {
-      final postgrest = PostgrestClient(rootUrl, schema: 'personal');
+      final postgrest =
+          PostgrestClient(rootUrl, schema: 'personal', headers: apiHeaders);
       final res = await postgrest.from('users').select();
       expect(res.length, 5);
     });
 
     test('query non-public schema dynamically', () async {
-      final postgrest = PostgrestClient(rootUrl);
+      final postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
       final personalData =
           await postgrest.schema('personal').from('users').select();
       expect(personalData.length, 5);
@@ -318,7 +319,7 @@ void main() {
         await postgrest.from('missing_table').select();
         fail('found missing table');
       } on PostgrestException catch (error) {
-        expect(error.code, '42P01');
+        expect(error.code, 'PGRST205');
       }
     });
 
@@ -476,6 +477,7 @@ void main() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
         rootUrl,
+        headers: apiHeaders,
         httpClient: customHttpClient,
       );
     });
