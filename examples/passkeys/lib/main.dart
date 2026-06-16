@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'passkey_authenticator.dart';
-
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const supabasePublishableKey =
     String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
-
-const authenticator = PasskeyAuthenticator();
 
 final messengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -108,17 +104,12 @@ class _SignInViewState extends State<SignInView> {
     }
   }
 
-  /// The two-step passkey sign in: ask Supabase for a challenge, run the
-  /// browser ceremony, then verify the resulting assertion.
+  /// Signs in with a passkey. `signInWithPasskey` runs the whole ceremony,
+  /// including the platform prompt, and persists the session.
   Future<void> _signInWithPasskey() async {
     setState(() => _busy = true);
     try {
-      final start = await supabase.auth.passkey.startAuthentication();
-      final credential = await authenticator.get(start.options);
-      await supabase.auth.passkey.verifyAuthentication(
-        challengeId: start.challengeId,
-        credential: credential,
-      );
+      await supabase.auth.signInWithPasskey();
     } catch (error) {
       _showError(error);
     } finally {
@@ -192,16 +183,11 @@ class _SignedInViewState extends State<SignedInView> {
     }
   }
 
-  /// The two-step passkey registration: ask Supabase for a challenge, run the
-  /// browser ceremony, then verify the created credential.
+  /// Registers a passkey for the signed in user. `registerPasskey` runs the
+  /// whole ceremony, including the platform prompt.
   Future<void> _registerPasskey() async {
     try {
-      final start = await supabase.auth.passkey.startRegistration();
-      final credential = await authenticator.create(start.options);
-      await supabase.auth.passkey.verifyRegistration(
-        challengeId: start.challengeId,
-        credential: credential,
-      );
+      await supabase.auth.registerPasskey();
       await _refresh();
     } catch (error) {
       _showError(error);

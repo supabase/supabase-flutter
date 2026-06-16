@@ -6,6 +6,13 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Supabase Passkeys</title>
+
+  <!-- The passkeys plugin (used by supabase_flutter to run the WebAuthn
+       ceremony) needs its JavaScript library on web. -->
+  <script
+    src="https://github.com/corbado/flutter-passkeys/releases/download/2.4.0/bundle.js"
+    type="application/javascript"
+  ></script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
