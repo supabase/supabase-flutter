@@ -4,6 +4,12 @@ repository: https://github.com/supabase/supabase-flutter
 packages:
   - packages/*
   - packages/supabase_flutter/example
+  - examples/*
+
+# The launcher is a standalone dev tool that needs a newer Dart than the oldest
+# Flutter the library supports, so it stays out of the bootstrapped workspace.
+ignore:
+  - examples/launcher
 
 command:
   version:

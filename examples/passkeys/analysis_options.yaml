@@ -1,0 +1,6 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # The passkey API is intentionally marked @experimental upstream.
+    experimental_member_use: ignore
