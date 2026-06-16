@@ -296,6 +296,35 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
         run: flutter test --platform chrome
 
+  dcm:
+    name: DCM
+    needs: changes
+    if: ${{ needs.changes.outputs.dart-matrix != '[]' || needs.changes.outputs.flutter == 'true' }}
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Bootstrap workspace
+        run: |
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: Install DCM
+        uses: CQLabs/setup-dcm@8697ae0790c0852e964a6ef1d768d62a6675481a # v2.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run DCM
+        run: dcm analyze --ci-key="${{ secrets.DCM_CI_KEY }}" --email="${{ secrets.DCM_EMAIL }}" packages
+
   coverage-finished:
     name: Finish coverage
     needs: [changes, test-dart, test-flutter]
@@ -311,7 +340,7 @@ jobs:
 
   test-result:
     name: Test result
-    needs: [changes, test-dart, test-flutter]
+    needs: [changes, test-dart, test-flutter, dcm]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
