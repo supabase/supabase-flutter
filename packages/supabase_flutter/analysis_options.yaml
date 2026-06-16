@@ -1,4 +1,1 @@
-include: package:flutter_lints/flutter.yaml
-
-formatter:
-  trailing_commas: preserve
+include: package:supabase_lints/analysis_options_flutter.yaml
