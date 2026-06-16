@@ -107,6 +107,8 @@ void _compute(SendPort p) async {
 
       /// `true` for encoding and `false` for decoding
       final bool method = event.last;
+      // Assigned in both the try and catch branches below, so it must be late.
+      // ignore: avoid-unnecessary-local-late
       late final List<dynamic> computationResult;
 
       try {

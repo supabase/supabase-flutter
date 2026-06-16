@@ -23,7 +23,7 @@ void main() {
       );
     });
 
-    test('can access Supabase singleton', () async {
+    test('can access Supabase singleton', () {
       final supabase = Supabase.instance.client;
 
       expect(supabase, isNotNull);

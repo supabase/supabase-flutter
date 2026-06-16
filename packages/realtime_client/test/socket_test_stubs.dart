@@ -25,8 +25,7 @@ class SocketWithMockedChannel extends RealtimeClient {
     if (mockedChannelLooker.keys.contains(topic)) {
       channels.add(mockedChannelLooker[topic]!);
       return mockedChannelLooker[topic]!;
-    } else {
-      return super.channel(topic, chanParams);
     }
+    return super.channel(topic, chanParams);
   }
 }

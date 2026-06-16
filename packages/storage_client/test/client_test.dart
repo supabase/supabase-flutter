@@ -663,7 +663,7 @@ void main() {
       customHttpClient.statusCode = 200;
 
       final fileApi = client.from('test-bucket');
-      final headersBefore = Map<String, String>.from(fileApi.headers);
+      final headersBefore = Map<String, String>.of(fileApi.headers);
 
       await fileApi.list();
 

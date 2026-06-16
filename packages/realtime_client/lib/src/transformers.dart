@@ -199,26 +199,24 @@ bool? toBoolean(dynamic value) {
 double? toDouble(dynamic value) {
   if (value is double) {
     return value;
-  } else {
-    try {
-      final temp = value.toString();
-      return double.parse(temp);
-    } catch (_) {
-      return null;
-    }
+  }
+  try {
+    final temp = value.toString();
+    return double.parse(temp);
+  } catch (_) {
+    return null;
   }
 }
 
 int? toInt(dynamic value) {
   if (value is int) {
     return value;
-  } else {
-    try {
-      final temp = value.toString();
-      return int.parse(temp);
-    } catch (_) {
-      return null;
-    }
+  }
+  try {
+    final temp = value.toString();
+    return int.parse(temp);
+  } catch (_) {
+    return null;
   }
 }
 

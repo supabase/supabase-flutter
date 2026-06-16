@@ -18,7 +18,7 @@ class Presence {
   factory Presence.fromJson(Map<String, dynamic> map) {
     final ref = map['presence_ref'];
     // Create a new map without presence_ref to avoid mutating the input
-    final payload = Map<String, dynamic>.from(map)..remove('presence_ref');
+    final payload = Map<String, dynamic>.of(map)..remove('presence_ref');
     return Presence(
       presenceRef: ref as String? ?? '',
       payload: payload,

@@ -50,9 +50,8 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
   String toRealtimeEvent() {
     if (this == PostgresChangeEvent.all) {
       return '*';
-    } else {
-      return name.toUpperCase();
     }
+    return name.toUpperCase();
   }
 
   static PostgresChangeEvent fromString(String event) {
@@ -132,9 +131,8 @@ extension ToType on RealtimeListenTypes {
   String toType() {
     if (this == RealtimeListenTypes.postgresChanges) {
       return 'postgres_changes';
-    } else {
-      return name;
     }
+    return name;
   }
 }
 
@@ -339,11 +337,7 @@ class PostgresChangeFilter {
   @override
   String toString() {
     if (type == PostgresChangeFilterType.inFilter) {
-      if (value is List<String>) {
-        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
-      } else {
-        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
-      }
+      return '$column=in.(${value.map((s) => '"$s"').join(',')})';
     }
     return '$column=${type.name}.$value';
   }

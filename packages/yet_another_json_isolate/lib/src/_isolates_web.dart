@@ -5,9 +5,10 @@ class YAJsonIsolate {
     String? debugName,
   });
 
-  Future<void> initialize() async {}
+  // Kept returning a Future to match the IO implementation's signature.
+  Future<void> initialize() => Future.value();
 
-  Future<void> dispose() async {}
+  Future<void> dispose() => Future.value();
 
   Future<dynamic> decode(String json) async {
     await null;

@@ -8,7 +8,7 @@ void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
 
-  setUpAll(() async {
+  setUpAll(() {
     mockAppLink();
   });
 

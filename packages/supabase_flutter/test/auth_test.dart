@@ -9,7 +9,7 @@ class _MockLocalStorage extends MockLocalStorage {
   bool get initializeCalled => _initializeCalled;
 
   @override
-  Future<void> initialize() async {
+  Future<void> initialize() {
     _initializeCalled = true;
     return super.initialize();
   }

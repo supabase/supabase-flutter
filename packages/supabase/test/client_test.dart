@@ -11,7 +11,7 @@ void main() {
   Future<HttpRequest> getRealtimeRequest({
     required HttpServer server,
     required SupabaseClient supabaseClient,
-  }) async {
+  }) {
     supabaseClient.channel('name').subscribe();
 
     return server.first;

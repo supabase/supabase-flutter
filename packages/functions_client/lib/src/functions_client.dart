@@ -182,13 +182,12 @@ class FunctionsClient {
 
     if (200 <= response.statusCode && response.statusCode < 300) {
       return FunctionResponse(data: data, status: response.statusCode);
-    } else {
-      throw FunctionException(
-        status: response.statusCode,
-        details: data,
-        reasonPhrase: response.reasonPhrase,
-      );
     }
+    throw FunctionException(
+      status: response.statusCode,
+      details: data,
+      reasonPhrase: response.reasonPhrase,
+    );
   }
 
   /// Disposes the self created isolate for json encoding/decoding

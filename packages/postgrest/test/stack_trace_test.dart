@@ -5,7 +5,7 @@ import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
-_ResponseFactory _errorStatus(int code) => (req) async => StreamedResponse(
+_ResponseFactory _errorStatus(int code) => (req) => StreamedResponse(
       Stream.value(
           Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits)),
       code,

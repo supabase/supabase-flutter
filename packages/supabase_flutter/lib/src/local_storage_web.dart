@@ -2,15 +2,14 @@ import 'package:web/web.dart';
 
 final _localStorage = window.localStorage;
 
-Future<bool> hasAccessToken(String persistSessionKey) async =>
+bool hasAccessToken(String persistSessionKey) =>
     _localStorage.getItem(persistSessionKey) != null;
 
-Future<String?> accessToken(String persistSessionKey) async =>
+String? accessToken(String persistSessionKey) =>
     _localStorage.getItem(persistSessionKey);
 
-Future<void> removePersistedSession(String persistSessionKey) async =>
+void removePersistedSession(String persistSessionKey) =>
     _localStorage.removeItem(persistSessionKey);
 
-Future<void> persistSession(
-        String persistSessionKey, persistSessionString) async =>
+void persistSession(String persistSessionKey, persistSessionString) =>
     _localStorage.setItem(persistSessionKey, persistSessionString);

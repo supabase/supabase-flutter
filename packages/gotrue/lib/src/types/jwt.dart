@@ -83,12 +83,12 @@ class JwtPayload {
       nbf: json['nbf'] as int?,
       iat: json['iat'] as int?,
       jti: json['jti'] as String?,
-      claims: Map<String, dynamic>.from(json),
+      claims: Map<String, dynamic>.of(json),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return Map<String, dynamic>.from(claims);
+    return Map<String, dynamic>.of(claims);
   }
 }
 
@@ -221,7 +221,7 @@ class JWK {
     final alg = json['alg'] as String?;
     final kid = json['kid'] as String?;
 
-    final Map<String, dynamic> additionalProperties = Map.from(json);
+    final Map<String, dynamic> additionalProperties = Map.of(json);
     additionalProperties.remove('kty');
     additionalProperties.remove('key_ops');
     additionalProperties.remove('alg');

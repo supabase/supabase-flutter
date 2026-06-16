@@ -242,7 +242,7 @@ class GoTrueClient {
       'You must provide either an email or phone number',
     );
 
-    late final Map<String, dynamic> response;
+    final Map<String, dynamic> response;
 
     if (email != null) {
       String? codeChallenge;
@@ -314,7 +314,7 @@ class GoTrueClient {
     required String password,
     String? captchaToken,
   }) async {
-    late final Map<String, dynamic> response;
+    final Map<String, dynamic> response;
 
     if (email != null) {
       response = await _fetch.request(
@@ -365,7 +365,7 @@ class GoTrueClient {
     String? redirectTo,
     String? scopes,
     Map<String, String>? queryParams,
-  }) async {
+  }) {
     return _getUrlForProvider(
       provider,
       url: '$_url/authorize',
@@ -767,9 +767,8 @@ class GoTrueClient {
 
     if ((response as Map).containsKey(['message_id'])) {
       return ResendResponse(messageId: response['message_id']);
-    } else {
-      return ResendResponse();
     }
+    return ResendResponse();
   }
 
   /// Gets the current user details from current session or custom [jwt]
@@ -1162,21 +1161,19 @@ class GoTrueClient {
         final refreshToken = session.refreshToken;
         if (_autoRefreshToken && refreshToken != null) {
           return await _callRefreshToken(refreshToken);
-        } else {
-          await signOut();
-          throw notifyException(AuthException('Session expired.'));
         }
-      } else {
-        final shouldEmitEvent = _currentSession == null ||
-            _currentSession!.user.id != session.user.id;
-        _saveSession(session);
-
-        if (shouldEmitEvent) {
-          notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-        }
-
-        return AuthResponse(session: session);
+        await signOut();
+        throw notifyException(AuthException('Session expired.'));
       }
+      final shouldEmitEvent = _currentSession == null ||
+          _currentSession!.user.id != session.user.id;
+      _saveSession(session);
+
+      if (shouldEmitEvent) {
+        notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+      }
+
+      return AuthResponse(session: session);
     } catch (error, stackTrace) {
       notifyException(error, stackTrace);
       rethrow;

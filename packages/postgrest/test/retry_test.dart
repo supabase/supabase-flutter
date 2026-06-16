@@ -7,14 +7,14 @@ import 'package:test/test.dart';
 
 typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
 
-_ResponseFactory _ok() => (req) async => StreamedResponse(
+_ResponseFactory _ok() => (req) => StreamedResponse(
       Stream.value(Uint8List.fromList('[]'.codeUnits)),
       200,
       request: req,
       headers: {'content-type': 'application/json'},
     );
 
-_ResponseFactory _status(int code) => (req) async => StreamedResponse(
+_ResponseFactory _status(int code) => (req) => StreamedResponse(
       Stream.value(
           Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits)),
       code,
@@ -23,7 +23,7 @@ _ResponseFactory _status(int code) => (req) async => StreamedResponse(
     );
 
 _ResponseFactory _networkError() =>
-    (_) async => throw const SocketException('Connection refused');
+    (_) => throw const SocketException('Connection refused');
 
 class _MockRetryClient extends BaseClient {
   final List<_ResponseFactory> _responses;
@@ -79,7 +79,7 @@ void main() {
     test('HEAD retries on 520 then succeeds', () async {
       final mock = _MockRetryClient([
         _status(520),
-        (req) async => StreamedResponse(
+        (req) => StreamedResponse(
               Stream.empty(),
               200,
               request: req,

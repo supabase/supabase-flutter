@@ -88,10 +88,9 @@ class PhoneEnrollment {
     } else if (value is Map<String, dynamic>) {
       // Server returns phone data as an object
       return PhoneEnrollment.fromJson(value);
-    } else {
-      throw ArgumentError(
-          'Invalid phone enrollment data type: ${value.runtimeType}');
     }
+    throw ArgumentError(
+        'Invalid phone enrollment data type: ${value.runtimeType}');
   }
 }
 
