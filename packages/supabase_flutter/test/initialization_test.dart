@@ -38,11 +38,11 @@ void main() {
 
     group('Custom storage initialization', () {
       test('initialize successfully with custom localStorage', () async {
-        final localStorage = MockLocalStorage();
+        const localStorage = MockLocalStorage();
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          authOptions: FlutterAuthClientOptions(
+          authOptions: const FlutterAuthClientOptions(
             localStorage: localStorage,
           ),
         );
@@ -57,7 +57,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockExpiredStorage(),
+            localStorage: const MockExpiredStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
@@ -144,7 +144,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: false,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockLocalStorage(),
+            localStorage: const MockLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
@@ -160,7 +160,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockEmptyLocalStorage(),
+            localStorage: const MockEmptyLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );

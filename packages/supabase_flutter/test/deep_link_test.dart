@@ -33,7 +33,7 @@ void main() {
         debug: false,
         httpClient: pkceHttpClient,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockEmptyLocalStorage(),
+          localStorage: const MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage()
             ..setItem(
                 key: 'supabase.auth.token-code-verifier',
@@ -73,7 +73,7 @@ void main() {
         debug: false,
         httpClient: getUserHttpClient,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockEmptyLocalStorage(),
+          localStorage: const MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );
