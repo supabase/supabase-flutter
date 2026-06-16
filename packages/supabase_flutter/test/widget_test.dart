@@ -19,7 +19,7 @@ void main() {
       url: supabaseUrl,
       publishableKey: supabaseKey,
       authOptions: FlutterAuthClientOptions(
-        localStorage: MockLocalStorage(),
+        localStorage: const MockLocalStorage(),
         pkceAsyncStorage: MockAsyncStorage(),
       ),
     );
