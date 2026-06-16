@@ -249,7 +249,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          flutter-version: ${{ matrix.flutter-version == 'latest' && '' || matrix.flutter-version }}
+          flutter-version: ${{ matrix.flutter-version != 'latest' && matrix.flutter-version || '' }}
           channel: 'stable'
           # Caching the latest stable is flaky: the cached SDK contains
           # runner-image-specific binaries that break silently when the runner
