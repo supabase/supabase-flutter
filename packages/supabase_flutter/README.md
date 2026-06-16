@@ -293,7 +293,9 @@ await supabase.auth.passkey.update(passkeyId: passkeys.first.id, friendlyName: '
 await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
 ```
 
-The ceremony is handled by the [`passkeys`](https://pub.dev/packages/passkeys) plugin, which requires per platform setup that the library cannot do for you:
+The ceremony is handled by the [`passkeys`](https://pub.dev/packages/passkeys) plugin. Because the plugin is bundled with `supabase_flutter`, every app raises its minimum platform versions to **iOS 16.0** and **macOS 13.5** (the OS versions where the passkey APIs became available), regardless of whether passkeys are used. Set your deployment targets accordingly.
+
+It also requires per platform setup that the library cannot do for you:
 
 - **iOS / macOS**: add the Associated Domains capability with `webcredentials:<your-domain>` and host an `apple-app-site-association` file at `https://<your-domain>/.well-known/apple-app-site-association`.
 - **Android**: host an `assetlinks.json` (Digital Asset Links) at `https://<your-domain>/.well-known/assetlinks.json` containing your package name and signing certificate SHA-256 fingerprint.
