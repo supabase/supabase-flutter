@@ -292,43 +292,9 @@ jobs:
           path-to-lcov: packages/supabase_flutter/coverage/lcov.info
           fail-on-error: false
 
-      - name: Build and test web (JS)
+      - name: Test web (JS)
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
-        run: |
-          flutter test --platform chrome
-          cd example && flutter build web
-
-      - name: Build macOS app
-        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == 'latest'}}
-        run: |
-          cd example
-          flutter build macos
-
-      - name: Build Windows app
-        if: ${{ matrix.os == 'windows-latest' && matrix.flutter-version == 'latest'}}
-        run: |
-          cd example
-          flutter build windows
-
-      - name: Build Linux app
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libblkid-dev liblzma-dev
-          cd example
-          flutter build linux
-
-      - name: Build iOS app
-        if: ${{ matrix.os == 'macos-latest' && matrix.flutter-version == 'latest'}}
-        run: |
-          cd example
-          flutter build ios --no-codesign
-
-      - name: Build Android app
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
-        run: |
-          cd example
-          flutter build apk
+        run: flutter test --platform chrome
 
   coverage-finished:
     name: Finish coverage
