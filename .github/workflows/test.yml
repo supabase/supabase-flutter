@@ -226,7 +226,7 @@ jobs:
         run: supabase stop --no-backup
 
   test-flutter:
-    name: Flutter v${{ matrix.flutter-version }} on ${{ matrix.os }}
+    name: Flutter ${{ matrix.flutter-version == '3.x' && 'Latest' || format('v{0}', matrix.flutter-version) }} on ${{ matrix.os }}
     needs: changes
     if: ${{ needs.changes.outputs.flutter == 'true' }}
     timeout-minutes: 30
