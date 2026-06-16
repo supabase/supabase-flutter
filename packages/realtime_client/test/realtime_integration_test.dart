@@ -10,7 +10,7 @@ import 'package:test/test.dart';
 import 'utils/realtime_test_utils.dart';
 
 /// Integration tests that run against a real Supabase Realtime server started
-/// with infra/realtime_client/docker-compose.yml.
+/// with the Supabase CLI (`supabase start`).
 ///
 /// The whole suite runs once for each supported protocol version so that both
 /// the legacy v1 frames and the v2 positional/binary frames are exercised

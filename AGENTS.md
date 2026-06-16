@@ -55,27 +55,27 @@ melos run format
 
 ### Testing
 
-Most packages have unit tests. The `postgrest`, `gotrue`, and `storage_client` packages require Docker services.
+Most packages have unit tests. The `postgrest`, `gotrue`, `realtime_client`, and `storage_client` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
-**For packages requiring Docker (postgrest, gotrue, storage_client):**
+**For packages requiring a backend (postgrest, gotrue, realtime_client, storage_client):**
 
 ```bash
-# 1. Start Docker services
-cd infra/<package>
-docker compose up -d
+# 1. Start the local Supabase stack from the repository root
+supabase start
 
-# 2. Run tests (from package directory)
-cd ../../packages/<package>
+# 2. Run tests (from the package directory)
+cd packages/<package>
 dart test -j 1
 
-# 3. Stop Docker services when done
-cd ../../infra/<package>
-docker compose down
+# 3. Stop the stack when done (from the repository root)
+supabase stop
 ```
 
-The `-j 1` flag runs tests sequentially (not concurrently), which is required since tests share the same Docker services.
+The single `supabase/` config at the repository root serves every package: its migrations and `seed.sql` create the schemas, functions, and test data all four packages rely on. The ports are offset from the CLI defaults (gateway on `http://127.0.0.1:54421`, database on `127.0.0.1:54422`) so this test stack can run alongside another local Supabase project.
 
-**For packages without Docker requirements:**
+The `-j 1` flag runs tests sequentially (not concurrently), which is required since tests share the same backend.
+
+**For packages without a backend requirement:**
 
 ```bash
 # Run tests from package directory

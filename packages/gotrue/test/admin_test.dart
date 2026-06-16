@@ -11,13 +11,17 @@ void main() {
   final env = DotEnv();
   env.load(); // Load env variables from .env file
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
+  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
 
   late GoTrueClient client;
 
   setUp(() async {
     final res = await http.post(
-      Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
+      Uri.parse('http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
+      headers: {
+        'apikey': getServiceRoleToken(env),
+        'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+      },
     );
 
     if (res.body.isNotEmpty) throw res.body;

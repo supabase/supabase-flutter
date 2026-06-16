@@ -24,7 +24,7 @@ void main() {
     test(
       'getOAuthSignInUrl builds correct URL for a custom provider',
       () async {
-        const gotrueUrl = 'http://localhost:9998';
+        const gotrueUrl = 'http://127.0.0.1:54421/auth/v1';
         final client = GoTrueClient(
           url: gotrueUrl,
           headers: {},

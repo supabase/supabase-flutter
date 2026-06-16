@@ -23,13 +23,14 @@ dart test -x integration
 ```
 
 The integration tests in `test/realtime_integration_test.dart` run against a
-real Supabase Realtime server. Start it with Docker first, then run the full
-suite (it exercises both protocol versions, `1.0.0` and `2.0.0`):
+real Supabase Realtime server. Start the local Supabase stack with the CLI first
+(from the repository root), then run the full suite (it exercises both protocol
+versions, `1.0.0` and `2.0.0`):
 
 ```bash
-docker compose -f ../../infra/realtime_client/docker-compose.yml up -d
+supabase start
 dart test
-docker compose -f ../../infra/realtime_client/docker-compose.yml down
+supabase stop
 ```
 
 ## Credits

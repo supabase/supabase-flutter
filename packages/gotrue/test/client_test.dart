@@ -16,8 +16,8 @@ void main() {
 
   env.load(); // Load env variables from .env file
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
+  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
   late String newEmail;
   late String newPhone;
 
@@ -28,8 +28,13 @@ void main() {
 
     setUp(() async {
       final res = await http.post(
-        Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-        headers: {'x-forwarded-for': '127.0.0.1'},
+        Uri.parse(
+            'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
+        headers: {
+          'x-forwarded-for': '127.0.0.1',
+          'apikey': getServiceRoleToken(env),
+          'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+        },
       );
       if (res.body.isNotEmpty) throw res.body;
 

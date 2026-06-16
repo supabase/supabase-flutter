@@ -6,25 +6,19 @@ import 'package:crypto/crypto.dart';
 import 'package:postgres/postgres.dart';
 import 'package:realtime_client/realtime_client.dart';
 
-/// The host and port the Realtime server is reachable at (see
-/// infra/realtime_client).
-const realtimeHttpHost = 'localhost';
-const realtimePort = 4000;
+/// The host and port the local Supabase CLI gateway is reachable at.
+const realtimeHttpHost = '127.0.0.1';
+const realtimePort = 54421;
 
-/// The WebSocket endpoint of the Realtime server.
-const realtimeUrl = 'ws://$realtimeHttpHost:$realtimePort/socket';
+/// The Realtime WebSocket endpoint exposed by the gateway.
+const realtimeUrl = 'ws://$realtimeHttpHost:$realtimePort/realtime/v1';
 
-/// The seeded tenant is reached by overriding the Host header with this value.
-/// The server derives the tenant external id from the first segment of the
-/// host, so "realtime-dev.localhost" resolves to the "realtime-dev" tenant.
-const realtimeHost = 'realtime-dev.localhost';
-
-/// The JWT secret configured on the Realtime server (API_JWT_SECRET).
+/// The JWT secret the local Supabase CLI stack signs and verifies tokens with.
 const apiJwtSecret = 'super-secret-jwt-token-with-at-least-32-characters-long';
 
 const _postgresEndpoint = (
-  host: 'localhost',
-  port: 5432,
+  host: '127.0.0.1',
+  port: 54422,
   database: 'postgres',
   username: 'postgres',
   password: 'postgres',
@@ -55,8 +49,8 @@ String generateRealtimeToken({String role = 'anon'}) {
   return '$signingInput.$signature';
 }
 
-/// Creates a [RealtimeClient] connected to the Dockerized Realtime server using
-/// the given protocol [version].
+/// Creates a [RealtimeClient] connected to the local Supabase CLI Realtime
+/// service using the given protocol [version].
 RealtimeClient createRealtimeClient(
   RealtimeProtocolVersion version, {
   String? token,
@@ -66,7 +60,6 @@ RealtimeClient createRealtimeClient(
     realtimeUrl,
     version: version,
     params: {'apikey': apikey},
-    headers: {'Host': realtimeHost},
     heartbeatIntervalMs: 5000,
   );
 }

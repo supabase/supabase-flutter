@@ -23,28 +23,29 @@ To install on a locally developed app:
 
 ## Testing
 
-The tests for the packages `postgrest`, `gotrue` and `storage_client` need some Supabase services running.
-To run these tests locally, you need to have the `docker` cli with `docker-compose` installed.
+The tests for the packages `postgrest`, `gotrue`, `realtime_client` and `storage_client` run against a
+local Supabase stack. To run these tests locally you need `docker` and the
+[Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
-The needed configuration for starting the services are in the `infra` directory.
-
-To start the services change working directory to `infra/<package>` and run the following command:
+The single configuration for the stack lives in the `supabase` directory at the repository root.
+Start it with:
 
 ```bash
-docker compose up -d
+supabase start
 ```
 
-Run the Dart tests within the package directory in `packages/<package>` with the following command:
-The `-j 1` flag runs the tests not concurrently, which works better since the tests are running against the same services.
+Run the Dart tests within the package directory in `packages/<package>` with the following command.
+The `-j 1` flag runs the tests not concurrently, which works better since the tests run against the
+same services.
 
 ```bash
 dart test -j 1
 ```
 
-To stop the services run the following command in the `infra/<package>` directory:
+To stop the stack run the following command from the repository root:
 
 ```bash
-docker compose down
+supabase stop
 ```
 
 ## Contributing
