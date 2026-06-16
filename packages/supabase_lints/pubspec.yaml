@@ -1,0 +1,12 @@
+name: supabase_lints
+description: Shared analyzer and DCM lint configuration for the Supabase Flutter packages.
+version: 0.1.0
+homepage: "https://supabase.com"
+repository: "https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_lints"
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  lints: ^4.0.0
+  flutter_lints: ^4.0.0

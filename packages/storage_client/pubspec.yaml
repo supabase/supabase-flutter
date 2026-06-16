@@ -18,7 +18,7 @@ dependencies:
 
 dev_dependencies:
   test: ^1.21.4
-  lints: ^4.0.0
+  supabase_lints: ^0.1.0
   path: ^1.8.2
 
 false_secrets:

@@ -1,0 +1,7 @@
+# Shared lint configuration for the Supabase Flutter packages.
+#
+# This is the Dart configuration (including the DCM rules) plus the
+# Flutter-specific lints from flutter_lints.
+include:
+  - analysis_options.yaml
+  - package:flutter_lints/flutter.yaml
