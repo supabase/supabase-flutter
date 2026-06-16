@@ -1,3 +1,12 @@
+## 2.22.0
+
+ - **FIX**(gotrue): support asymmetric JWTs in getClaims ([#1410](https://github.com/supabase/supabase-flutter/issues/1410)). ([cc3137f9](https://github.com/supabase/supabase-flutter/commit/cc3137f98690e96a8b21f56b8db3c33def40e2b0))
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FIX**(auth): update session on email change links in PKCE flow ([#1395](https://github.com/supabase/supabase-flutter/issues/1395)). ([6b7871d9](https://github.com/supabase/supabase-flutter/commit/6b7871d920836a1751699fe0dfde90d460c4df16))
+ - **FIX**(gotrue): prevent stale token refresh from overwriting concurrent session changes ([#1351](https://github.com/supabase/supabase-flutter/issues/1351)). ([368609ab](https://github.com/supabase/supabase-flutter/commit/368609abfd59ca04f9d3df80ebcaeedae89a4bef))
+ - **FIX**(auth): avoid reusing a stale refresh token in recoverSession ([#1391](https://github.com/supabase/supabase-flutter/issues/1391)). ([de2adf99](https://github.com/supabase/supabase-flutter/commit/de2adf9980b6981c638f6527f4ddb6c9aff9376b))
+ - **FEAT**(gotrue): add passkey (WebAuthn) support ([#1392](https://github.com/supabase/supabase-flutter/issues/1392)). ([3e890b57](https://github.com/supabase/supabase-flutter/commit/3e890b57bdc7c2fd837e8b3c7144fd8b0b1e99f2))
+
 ## 2.21.0
 
  - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))
