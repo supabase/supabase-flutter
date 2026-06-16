@@ -83,7 +83,7 @@ class ChannelFilter {
   /// Only one filter can be applied
   final String? filter;
 
-  ChannelFilter({
+  const ChannelFilter({
     this.event,
     this.schema,
     this.table,
@@ -218,7 +218,7 @@ class PostgresChangePayload {
   final Map<String, dynamic> newRecord;
   final Map<String, dynamic> oldRecord;
   final dynamic errors;
-  PostgresChangePayload({
+  const PostgresChangePayload({
     required this.schema,
     required this.table,
     required this.commitTimestamp,
@@ -249,12 +249,8 @@ class PostgresChangePayload {
       commitTimestamp: commitTimestamp,
       eventType:
           PostgresChangeEventMethods.fromString(payload['eventType'] as String),
-      newRecord: newData is Map
-          ? Map<String, dynamic>.from(newData)
-          : <String, dynamic>{},
-      oldRecord: oldData is Map
-          ? Map<String, dynamic>.from(oldData)
-          : <String, dynamic>{},
+      newRecord: newData is Map ? Map.from(newData) : {},
+      oldRecord: oldData is Map ? Map.from(oldData) : {},
       errors: payload['errors'],
     );
   }
@@ -328,7 +324,7 @@ class PostgresChangeFilter {
   final dynamic value;
 
   /// {@macro postgres_change_filter}
-  PostgresChangeFilter({
+  const PostgresChangeFilter({
     required this.type,
     required this.column,
     required this.value,
@@ -348,7 +344,7 @@ abstract class RealtimePresencePayload {
   /// Name of the presence event.
   final PresenceEvent event;
 
-  RealtimePresencePayload({
+  const RealtimePresencePayload({
     required this.event,
   });
 
@@ -361,7 +357,7 @@ abstract class RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.sync] callback.
 class RealtimePresenceSyncPayload extends RealtimePresencePayload {
-  RealtimePresenceSyncPayload({
+  const RealtimePresenceSyncPayload({
     required super.event,
   });
 
@@ -388,7 +384,7 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
   /// List of currently present presences.
   final List<Presence> currentPresences;
 
-  RealtimePresenceJoinPayload({
+  const RealtimePresenceJoinPayload({
     required super.event,
     required this.key,
     required this.currentPresences,
@@ -422,7 +418,7 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
   /// List of currently present presences.
   final List<Presence> currentPresences;
 
-  RealtimePresenceLeavePayload({
+  const RealtimePresenceLeavePayload({
     required super.event,
     required this.key,
     required this.currentPresences,
@@ -451,7 +447,7 @@ class SinglePresenceState {
   /// List of shared payloads of the client.
   final List<Presence> presences;
 
-  SinglePresenceState({
+  const SinglePresenceState({
     required this.key,
     required this.presences,
   });

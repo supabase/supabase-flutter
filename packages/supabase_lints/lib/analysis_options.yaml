@@ -23,7 +23,6 @@ dcm:
     avoid-duplicate-test-assertions: false
     avoid-dynamic: false
     avoid-excessive-expressions: false
-    avoid-inferrable-type-arguments: false
     avoid-map-keys-contains: false
     avoid-missing-completer-stack-trace: false
     avoid-missing-enum-constant-in-map: false
@@ -59,7 +58,6 @@ dcm:
     no-equal-switch-case: false
     prefer-correct-callback-field-name: false
     prefer-correct-json-casts: false
-    prefer-declaring-const-constructor: false
     prefer-explicit-function-type: false
     prefer-match-file-name: false
     prefer-null-aware-elements: false

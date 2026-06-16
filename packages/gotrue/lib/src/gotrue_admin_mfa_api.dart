@@ -8,7 +8,7 @@ class GoTrueAdminMFAApi {
   final Map<String, String> _headers;
   final GotrueFetch _fetch;
 
-  GoTrueAdminMFAApi({
+  const GoTrueAdminMFAApi({
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,

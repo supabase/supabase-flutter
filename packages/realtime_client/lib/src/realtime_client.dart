@@ -456,7 +456,7 @@ class RealtimeClient {
       jsonEncode(message);
 
   static Map<String, dynamic> _decodeLegacy(Object rawMessage) =>
-      Map<String, dynamic>.from(jsonDecode(rawMessage as String) as Map);
+      Map.from(jsonDecode(rawMessage as String) as Map);
 
   /// Returns the URL of the websocket.
   String get endPointURL {

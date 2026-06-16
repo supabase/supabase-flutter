@@ -95,7 +95,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     bool? retryEnabled,
     Duration Function(int attempt)? retryDelay,
   }) {
-    return PostgrestBuilder<T, S, R>(
+    return PostgrestBuilder(
       url: url ?? _url,
       headers: headers ?? _headers,
       schema: schema ?? _schema,

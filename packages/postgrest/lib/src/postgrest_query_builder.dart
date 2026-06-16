@@ -173,7 +173,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       );
     }
 
-    return PostgrestFilterBuilder<T>(_copyWith(
+    return PostgrestFilterBuilder(_copyWith(
       method: HttpMethod.post,
       headers: newHeaders,
       body: values,
@@ -205,7 +205,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
     newHeaders['Prefer'] = '';
 
-    return PostgrestFilterBuilder<T>(_copyWith(
+    return PostgrestFilterBuilder(_copyWith(
       method: HttpMethod.patch,
       headers: newHeaders,
       body: values,
@@ -235,7 +235,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   PostgrestFilterBuilder<T> delete() {
     final newHeaders = {..._headers};
     newHeaders['Prefer'] = '';
-    return PostgrestFilterBuilder<T>(_copyWith(
+    return PostgrestFilterBuilder(_copyWith(
       method: HttpMethod.delete,
       headers: newHeaders,
     ));
@@ -257,7 +257,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// int count = await supabase.from('users').count();
   /// ```
   PostgrestFilterBuilder<int> count([CountOption option = CountOption.exact]) {
-    return PostgrestFilterBuilder<int>(_copyWithType(
+    return PostgrestFilterBuilder(_copyWithType(
       method: HttpMethod.head,
       count: option,
     ));

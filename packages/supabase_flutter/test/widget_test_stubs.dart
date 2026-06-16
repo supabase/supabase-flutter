@@ -48,6 +48,7 @@ class _MockWidgetState extends State<MockWidget> {
 
 /// Local storage that returns an expired session
 class MockExpiredStorage extends LocalStorage {
+  const MockExpiredStorage();
   @override
   Future<void> initialize() async {}
   @override
@@ -65,6 +66,7 @@ class MockExpiredStorage extends LocalStorage {
 }
 
 class MockLocalStorage extends LocalStorage {
+  const MockLocalStorage();
   @override
   Future<void> initialize() async {}
   @override
@@ -82,6 +84,7 @@ class MockLocalStorage extends LocalStorage {
 }
 
 class MockEmptyLocalStorage extends LocalStorage {
+  const MockEmptyLocalStorage();
   @override
   Future<void> initialize() async {}
   @override

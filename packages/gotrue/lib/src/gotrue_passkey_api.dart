@@ -42,7 +42,7 @@ class GoTruePasskeyApi {
   final GoTrueClient _client;
   final GotrueFetch _fetch;
 
-  GoTruePasskeyApi({
+  const GoTruePasskeyApi({
     required GoTrueClient client,
     required GotrueFetch fetch,
   })  : _client = client,
@@ -183,9 +183,7 @@ class GoTruePasskeyApi {
         data.toString(),
       );
     }
-    return data
-        .map((e) => Passkey.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    return data.map((e) => Passkey.fromJson(Map.from(e as Map))).toList();
   }
 
   /// Updates the friendly name of a passkey.

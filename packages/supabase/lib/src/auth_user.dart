@@ -2,7 +2,7 @@ import 'package:gotrue/gotrue.dart' show User;
 
 @Deprecated('No longer used. May be removed in the future.')
 class AuthUser extends User {
-  AuthUser({
+  const AuthUser({
     required super.id,
     required super.appMetadata,
     required super.userMetadata,

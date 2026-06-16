@@ -39,7 +39,7 @@ class Bucket {
       public: json['public'] as bool,
       fileSizeLimit: json['file_size_limit'] as int?,
       allowedMimeTypes:
-          allowedMimeTypes is List ? allowedMimeTypes.cast<String>() : null,
+          allowedMimeTypes is List ? allowedMimeTypes.cast() : null,
     );
   }
 }

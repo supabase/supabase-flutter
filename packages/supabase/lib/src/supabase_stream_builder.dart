@@ -7,7 +7,7 @@ import 'package:supabase/supabase.dart';
 part 'supabase_stream_filter_builder.dart';
 
 class _StreamPostgrestFilter {
-  _StreamPostgrestFilter({
+  const _StreamPostgrestFilter({
     required this.column,
     required this.value,
     required this.type,
@@ -24,7 +24,7 @@ class _StreamPostgrestFilter {
 }
 
 class _Order {
-  _Order({
+  const _Order({
     required this.column,
     required this.ascending,
   });
@@ -33,7 +33,7 @@ class _Order {
 }
 
 class RealtimeSubscribeException implements Exception {
-  RealtimeSubscribeException(this.status, [this.details]);
+  const RealtimeSubscribeException(this.status, [this.details]);
 
   final RealtimeSubscribeStatus status;
   final Object? details;

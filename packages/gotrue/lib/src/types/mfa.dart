@@ -193,7 +193,7 @@ class AuthMFAListFactorsResponse {
   final List<Factor> phone;
   final List<Factor> webauthn;
 
-  AuthMFAListFactorsResponse({
+  const AuthMFAListFactorsResponse({
     required this.all,
     required this.totp,
     required this.phone,

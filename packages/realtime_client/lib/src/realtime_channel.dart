@@ -154,7 +154,7 @@ class RealtimeChannel {
     final presenceEnabled = _shouldEnablePresence();
 
     final accessTokenPayload = <String, String>{};
-    final config = <String, dynamic>{
+    final config = {
       'broadcast': broadcast,
       'presence': {...presence, 'enabled': presenceEnabled},
       'postgres_changes':
@@ -541,6 +541,7 @@ class RealtimeChannel {
     required Map<String, dynamic> payload,
     Duration? timeout,
   }) async {
+    // ignore: avoid-inferrable-type-arguments
     final headers = <String, String>{
       'Content-Type': 'application/json',
       if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
@@ -633,6 +634,7 @@ class RealtimeChannel {
             'Please use httpSend() explicitly for REST delivery.',
       );
 
+      // ignore: avoid-inferrable-type-arguments
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,

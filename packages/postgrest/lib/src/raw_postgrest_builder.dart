@@ -30,7 +30,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     CountOption? count,
     bool? maybeSingle,
   }) {
-    return RawPostgrestBuilder<O, P, Q>(PostgrestBuilder(
+    return RawPostgrestBuilder(PostgrestBuilder(
       url: url ?? _url,
       headers: headers ?? _headers,
       schema: schema ?? _schema,

@@ -100,7 +100,7 @@ class PasskeyRegistrationOptionsResponse {
       Map<String, dynamic> json) {
     return PasskeyRegistrationOptionsResponse(
       challengeId: json['challenge_id'] as String,
-      options: Map<String, dynamic>.from(json['options'] as Map),
+      options: Map.from(json['options'] as Map),
       expiresAt: _parseExpiresAt(json),
     );
   }
@@ -134,7 +134,7 @@ class PasskeyAuthenticationOptionsResponse {
       Map<String, dynamic> json) {
     return PasskeyAuthenticationOptionsResponse(
       challengeId: json['challenge_id'] as String,
-      options: Map<String, dynamic>.from(json['options'] as Map),
+      options: Map.from(json['options'] as Map),
       expiresAt: _parseExpiresAt(json),
     );
   }

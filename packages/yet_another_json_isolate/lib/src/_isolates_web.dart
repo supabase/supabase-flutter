@@ -1,11 +1,10 @@
 import 'dart:convert';
 
 class YAJsonIsolate {
-  YAJsonIsolate({
+  const YAJsonIsolate({
     String? debugName,
   });
 
-  // Kept returning a Future to match the IO implementation's signature.
   Future<void> initialize() => Future.value();
 
   Future<void> dispose() => Future.value();

@@ -69,7 +69,7 @@ class PostgrestClient {
   /// Perform a table operation.
   PostgrestQueryBuilder<void> from(String table) {
     final url = '${this.url}/$table';
-    return PostgrestQueryBuilder<void>(
+    return PostgrestQueryBuilder(
       url: Uri.parse(url),
       headers: {...headers},
       schema: _schema,

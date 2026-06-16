@@ -107,7 +107,6 @@ void _compute(SendPort p) async {
 
       /// `true` for encoding and `false` for decoding
       final bool method = event.last;
-      // Assigned in both the try and catch branches below, so it must be late.
       // ignore: avoid-unnecessary-local-late
       late final List<dynamic> computationResult;
 
@@ -137,7 +136,7 @@ void _compute(SendPort p) async {
 /// [R] could also be a [List]. Meaning, a check `result is R` could return true
 /// for what was an error event.
 List<R> _buildSuccessResponse<R>(R result) {
-  return List<R>.filled(1, result);
+  return List.filled(1, result);
 }
 
 /// Wrap in [List] to ensure our expectations in the main isolate are met.

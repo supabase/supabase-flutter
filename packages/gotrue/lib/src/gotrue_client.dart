@@ -1242,7 +1242,7 @@ class GoTrueClient {
   Future<AuthResponse> _refreshAccessToken(String refreshToken) async {
     final startedAt = DateTime.now();
     var attempt = 0;
-    return await retry<AuthResponse>(
+    return await retry(
       // Make a GET request
       () async {
         attempt++;

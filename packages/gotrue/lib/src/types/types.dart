@@ -192,7 +192,7 @@ class OAuthClient {
   /// Timestamp when the client was last updated
   final String updatedAt;
 
-  OAuthClient({
+  const OAuthClient({
     required this.clientId,
     required this.clientName,
     this.clientSecret,
@@ -219,7 +219,7 @@ class OAuthClient {
         json['registration_type'] as String,
       ),
       clientUri: json['client_uri'] as String?,
-      redirectUris: (json['redirect_uris'] as List).cast<String>(),
+      redirectUris: (json['redirect_uris'] as List).cast(),
       grantTypes: (json['grant_types'] as List)
           .map(
             (e) => OAuthClientGrantType.values.firstWhere(
@@ -262,7 +262,7 @@ class CreateOAuthClientParams {
   /// Scope of the OAuth client
   final String? scope;
 
-  CreateOAuthClientParams({
+  const CreateOAuthClientParams({
     required this.clientName,
     this.clientUri,
     required this.redirectUris,
@@ -306,7 +306,7 @@ class UpdateOAuthClientParams {
   /// Scope of the OAuth client
   final String? scope;
 
-  UpdateOAuthClientParams({
+  const UpdateOAuthClientParams({
     this.clientName,
     this.clientUri,
     this.redirectUris,

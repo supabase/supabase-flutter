@@ -12,7 +12,7 @@ void main() {
     setUp(() {
       mockUser = const User(
         id: '123',
-        appMetadata: <String, dynamic>{},
+        appMetadata: {},
         userMetadata: <String, dynamic>{},
         aud: 'authenticated',
         createdAt: '2023-01-01T00:00:00Z',
@@ -292,7 +292,7 @@ void main() {
 
         final newUser = const User(
           id: '456',
-          appMetadata: <String, dynamic>{},
+          appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
           createdAt: '2023-01-02T00:00:00Z',
@@ -317,7 +317,7 @@ void main() {
 
         final newUser = const User(
           id: '456',
-          appMetadata: <String, dynamic>{},
+          appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
           createdAt: '2023-01-02T00:00:00Z',

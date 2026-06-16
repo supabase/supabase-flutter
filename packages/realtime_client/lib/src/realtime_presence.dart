@@ -329,9 +329,8 @@ class RealtimePresence {
 
   static Map<String, List<Presence>> _cloneDeep(
       Map<String, List<Presence>> obj) {
-    return Map<String, List<Presence>>.fromEntries(obj.entries.map((entry) =>
-        MapEntry(entry.key,
-            entry.value.map((presence) => presence.deepClone()).toList())));
+    return Map.fromEntries(obj.entries.map((entry) => MapEntry(entry.key,
+        entry.value.map((presence) => presence.deepClone()).toList())));
   }
 
   void onJoin(PresenceOnJoinCallback callback) {
@@ -347,7 +346,7 @@ class RealtimePresence {
   }
 
   List<T> list<T>([PresenceChooser<T>? by]) {
-    return RealtimePresence._list<T>(state, by);
+    return RealtimePresence._list(state, by);
   }
 
   bool inPendingSyncState() {

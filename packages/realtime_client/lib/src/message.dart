@@ -8,7 +8,7 @@ class Message {
   final String? ref;
   final String? joinRef;
 
-  Message({
+  const Message({
     required this.topic,
     required this.event,
     required this.payload,
