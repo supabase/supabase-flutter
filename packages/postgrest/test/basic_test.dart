@@ -493,6 +493,15 @@ void main() {
         expect(error.code, '420');
       }
     });
+    test('select() builds a valid Prefer header without a preceding Prefer',
+        () async {
+      await postgrestCustomHttpClient.rpc('empty-succ').select().head();
+
+      expect(
+        customHttpClient.lastRequest!.headers['Prefer'],
+        'return=representation',
+      );
+    });
     test('basic select table with converter', () async {
       try {
         await postgrestCustomHttpClient
