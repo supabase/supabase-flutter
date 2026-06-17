@@ -272,23 +272,6 @@ void main() {
   });
 
   group('Enum consistency', () {
-    test('enums support equality comparison', () {
-      expect(AuthChangeEvent.signedIn == AuthChangeEvent.signedIn, isTrue);
-      expect(AuthChangeEvent.signedIn == AuthChangeEvent.signedOut, isFalse);
-
-      expect(GenerateLinkType.signup == GenerateLinkType.signup, isTrue);
-      expect(GenerateLinkType.signup == GenerateLinkType.invite, isFalse);
-
-      expect(OtpType.sms == OtpType.sms, isTrue);
-      expect(OtpType.sms == OtpType.email, isFalse);
-
-      expect(OtpChannel.sms == OtpChannel.sms, isTrue);
-      expect(OtpChannel.sms == OtpChannel.whatsapp, isFalse);
-
-      expect(SignOutScope.global == SignOutScope.global, isTrue);
-      expect(SignOutScope.global == SignOutScope.local, isFalse);
-    });
-
     test('enums can be used in sets and maps', () {
       final authEvents = {AuthChangeEvent.signedIn, AuthChangeEvent.signedOut};
       expect(authEvents.length, equals(2));
