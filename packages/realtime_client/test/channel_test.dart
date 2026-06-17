@@ -404,8 +404,8 @@ void main() {
             },
           ).then(
             (value) => completer.complete(value),
-            onError: (Object e, StackTrace st) =>
-                completer.completeError(e, st),
+            onError: (Object error, StackTrace stackTrace) =>
+                completer.completeError(error, stackTrace),
           );
 
           await for (final HttpRequest req in mockServer) {
@@ -429,7 +429,8 @@ void main() {
         },
       ).then(
         (value) => completer.complete(value),
-        onError: (Object e, StackTrace st) => completer.completeError(e, st),
+        onError: (Object error, StackTrace stackTrace) =>
+            completer.completeError(error, stackTrace),
       );
 
       await for (final HttpRequest req in mockServer) {
