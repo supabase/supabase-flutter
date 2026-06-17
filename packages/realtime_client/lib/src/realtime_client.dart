@@ -395,9 +395,9 @@ class RealtimeClient {
     String topic, [
     RealtimeChannelConfig config = const RealtimeChannelConfig(),
   ]) {
-    final chan = RealtimeChannel('realtime:$topic', this, params: config);
-    channels.add(chan);
-    return chan;
+    final newChannel = RealtimeChannel('realtime:$topic', this, params: config);
+    channels.add(newChannel);
+    return newChannel;
   }
 
   /// Push out a message if the socket is connected.
@@ -464,9 +464,9 @@ class RealtimeClient {
 
   /// Returns the URL of the websocket.
   String get endPointURL {
-    final queryParams = Map<String, String>.from(this.params);
-    queryParams['vsn'] = version.vsn;
-    return _appendParams(endPoint, queryParams);
+    final queryParameters = Map<String, String>.from(this.params);
+    queryParameters['vsn'] = version.vsn;
+    return _appendParams(endPoint, queryParameters);
   }
 
   /// Return the next message ref, accounting for overflows
@@ -568,15 +568,15 @@ class RealtimeClient {
     }
   }
 
-  String _appendParams(String url, Map<String, String> queryParams) {
-    if (queryParams.keys.isEmpty) {
+  String _appendParams(String url, Map<String, String> queryParameters) {
+    if (queryParameters.keys.isEmpty) {
       return url;
     }
 
     var endpoint = Uri.parse(url);
     endpoint = endpoint.replace(queryParameters: {
       ...endpoint.queryParameters,
-      ...queryParams,
+      ...queryParameters,
     });
 
     return endpoint.toString();

@@ -15,10 +15,10 @@ void main() {
   const defaultRef = '1';
 
   test('channel should be initially closed', () {
-    final chan = RealtimeChannel('topic', RealtimeClient('endpoint'));
-    expect(chan.isClosed, isTrue);
-    chan.rejoin(const Duration(seconds: 5));
-    expect(chan.isJoining, isTrue);
+    final localChannel = RealtimeChannel('topic', RealtimeClient('endpoint'));
+    expect(localChannel.isClosed, isTrue);
+    localChannel.rejoin(const Duration(seconds: 5));
+    expect(localChannel.isJoining, isTrue);
   });
 
   group('constructor', () {
@@ -117,11 +117,11 @@ void main() {
       );
       throwingSocket.accessToken = 'expired-token';
 
-      final chan = throwingSocket.channel('topic');
+      final localChannel = throwingSocket.channel('topic');
 
       RealtimeSubscribeStatus? status;
-      chan.subscribe((s, _) => status = s);
-      chan.joinPush.trigger('ok', {});
+      localChannel.subscribe((s, _) => status = s);
+      localChannel.joinPush.trigger('ok', {});
 
       // Drain the microtask queue so the async 'ok' callback completes.
       await Future<void>.value();
@@ -145,14 +145,14 @@ void main() {
       );
       throwingSocket.accessToken = 'some-token';
 
-      final chan = throwingSocket.channel('topic');
+      final localChannel = throwingSocket.channel('topic');
 
       RealtimeSubscribeStatus? status;
       // Use runZonedGuarded so the rethrown async error does not pollute
       // the test runner zone.
       await runZonedGuarded(() async {
-        chan.subscribe((s, _) => status = s);
-        chan.joinPush.trigger('ok', {});
+        localChannel.subscribe((s, _) => status = s);
+        localChannel.joinPush.trigger('ok', {});
         await Future<void>.value();
         await Future<void>.value();
       }, (_, __) {/* expected: rethrown FormatException */});
@@ -402,8 +402,8 @@ void main() {
             },
           ).then(
             (value) => completer.complete(value),
-            onError: (Object error, StackTrace stackTrace) =>
-                completer.completeError(error, stackTrace),
+            onError: (Object sendError, StackTrace stackTrace) =>
+                completer.completeError(sendError, stackTrace),
           );
 
           await for (final HttpRequest req in mockServer) {
@@ -427,8 +427,8 @@ void main() {
         },
       ).then(
         (value) => completer.complete(value),
-        onError: (Object error, StackTrace stackTrace) =>
-            completer.completeError(error, stackTrace),
+        onError: (Object sendError, StackTrace stackTrace) =>
+            completer.completeError(sendError, stackTrace),
       );
 
       await for (final HttpRequest req in mockServer) {

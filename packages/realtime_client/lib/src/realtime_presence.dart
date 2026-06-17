@@ -274,9 +274,9 @@ class RealtimePresence {
     Map<String, dynamic> presences, [
     PresenceChooser<T>? chooser,
   ]) {
-    chooser ??= (key, pres) => pres;
+    chooser ??= (key, presence) => presence;
 
-    return _map(presences, (key, pres) => chooser!(key, pres));
+    return _map(presences, (key, presence) => chooser!(key, presence));
   }
 
   static List<T> _map<T>(Map<String, dynamic> obj, PresenceChooser<T> func) {
