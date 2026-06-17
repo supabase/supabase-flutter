@@ -23,7 +23,7 @@ class Fetch {
     return code >= 200 && code <= 299;
   }
 
-  MediaType? _parseMediaType(String path) {
+  MediaType _parseMediaType(String path) {
     final mime = lookupMimeType(path);
     return MediaType.parse(mime ?? 'application/octet-stream');
   }
