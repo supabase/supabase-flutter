@@ -22,6 +22,7 @@ class FakeWebSocketChannel extends Fake implements WebSocketChannel {
   Future<void> get ready => readyCompleter.future;
 
   @override
+  // ignore: match-getter-setter-field-names
   WebSocketSink get sink => fakeSink;
 
   @override

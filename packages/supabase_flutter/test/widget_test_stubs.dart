@@ -122,6 +122,7 @@ void mockAppLink({
     TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
         .setMockMethodCallHandler(
       eventChannel,
+      // ignore: function-always-returns-null
       (MethodCall methodCall) async {
         // ignore: invalid_null_aware_operator
         TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger

@@ -177,6 +177,7 @@ class RealtimeChannel {
         final serverPostgresFilters = response['postgres_changes'];
         if (socket.accessToken != null) {
           try {
+            // ignore: avoid-passing-self-as-argument
             await socket.setAuth(socket.accessToken);
           } on FormatException catch (e) {
             // The cached access token may have expired by the time the

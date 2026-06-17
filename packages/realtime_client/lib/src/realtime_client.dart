@@ -403,6 +403,7 @@ class RealtimeClient {
   /// Push out a message if the socket is connected.
   ///
   /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
+  // ignore: function-always-returns-null
   String? push(Message message) {
     void callback() {
       conn?.sink.add(encode(message.toJson()));

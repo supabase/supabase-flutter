@@ -75,6 +75,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   SupabaseStreamEvent _streamData = [];
 
   /// `eq` filter used for both postgrest and realtime
+  // ignore: avoid-unassigned-fields
   _StreamPostgrestFilter? _streamFilter;
 
   /// Which column to order by and whether it's ascending
