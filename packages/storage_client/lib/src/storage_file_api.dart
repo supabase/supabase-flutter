@@ -136,11 +136,11 @@ class StorageFileApi {
 
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
-    var url = Uri.parse('${this.url}/object/upload/sign/$finalPath');
-    url = url.replace(queryParameters: {'token': token});
+    var requestUrl = Uri.parse('${this.url}/object/upload/sign/$finalPath');
+    requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
     await _storageFetch.putFile(
-      url.toString(),
+      requestUrl.toString(),
       file,
       fileOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
@@ -170,11 +170,11 @@ class StorageFileApi {
 
     final cleanPath = _removeEmptyFolders(path);
     final path0 = _getFinalPath(cleanPath);
-    var url = Uri.parse('${this.url}/object/upload/sign/$path0');
-    url = url.replace(queryParameters: {'token': token});
+    var requestUrl = Uri.parse('${this.url}/object/upload/sign/$path0');
+    requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
     await _storageFetch.putBinaryFile(
-      url.toString(),
+      requestUrl.toString(),
       data,
       fileOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,

@@ -15,10 +15,10 @@ void main() {
   const defaultRef = '1';
 
   test('channel should be initially closed', () {
-    final channel = RealtimeChannel('topic', RealtimeClient('endpoint'));
-    expect(channel.isClosed, isTrue);
-    channel.rejoin(const Duration(seconds: 5));
-    expect(channel.isJoining, isTrue);
+    final chan = RealtimeChannel('topic', RealtimeClient('endpoint'));
+    expect(chan.isClosed, isTrue);
+    chan.rejoin(const Duration(seconds: 5));
+    expect(chan.isJoining, isTrue);
   });
 
   group('constructor', () {
@@ -109,25 +109,25 @@ void main() {
     test(
         "swallows FormatException with 'InvalidJWTToken' from setAuth and "
         "still emits 'subscribed' status", () async {
-      final socket = _SetAuthThrowingSocket(
+      final throwingSocket = _SetAuthThrowingSocket(
         '/socket',
         thrown: const FormatException(
           'InvalidJWTToken: Invalid value for JWT claim "exp" with value 0',
         ),
       );
-      socket.accessToken = 'expired-token';
+      throwingSocket.accessToken = 'expired-token';
 
-      final channel = socket.channel('topic');
+      final chan = throwingSocket.channel('topic');
 
       RealtimeSubscribeStatus? status;
-      channel.subscribe((s, _) => status = s);
-      channel.joinPush.trigger('ok', {});
+      chan.subscribe((s, _) => status = s);
+      chan.joinPush.trigger('ok', {});
 
       // Drain the microtask queue so the async 'ok' callback completes.
       await Future<void>.value();
       await Future<void>.value();
 
-      expect(socket.setAuthCalls, 1);
+      expect(throwingSocket.setAuthCalls, 1);
       expect(
         status,
         RealtimeSubscribeStatus.subscribed,
@@ -139,25 +139,25 @@ void main() {
     test(
         "non-InvalidJWTToken FormatExceptions from setAuth still abort the "
         "rejoin handler", () async {
-      final socket = _SetAuthThrowingSocket(
+      final throwingSocket = _SetAuthThrowingSocket(
         '/socket',
         thrown: const FormatException('some other parsing failure'),
       );
-      socket.accessToken = 'some-token';
+      throwingSocket.accessToken = 'some-token';
 
-      final channel = socket.channel('topic');
+      final chan = throwingSocket.channel('topic');
 
       RealtimeSubscribeStatus? status;
       // Use runZonedGuarded so the rethrown async error does not pollute
       // the test runner zone.
       await runZonedGuarded(() async {
-        channel.subscribe((s, _) => status = s);
-        channel.joinPush.trigger('ok', {});
+        chan.subscribe((s, _) => status = s);
+        chan.joinPush.trigger('ok', {});
         await Future<void>.value();
         await Future<void>.value();
       }, (_, __) {/* expected: rethrown FormatException */});
 
-      expect(socket.setAuthCalls, 1);
+      expect(throwingSocket.setAuthCalls, 1);
       expect(
         status,
         isNull,
@@ -214,8 +214,6 @@ void main() {
   });
 
   group('on', () {
-    late RealtimeChannel channel;
-
     setUp(() {
       channel = RealtimeChannel('topic', RealtimeClient('endpoint'));
     });

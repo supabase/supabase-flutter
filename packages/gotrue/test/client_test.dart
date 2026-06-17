@@ -544,7 +544,7 @@ void main() {
 
     test('token refresh calls are bundled', () async {
       final httpClient = RetryTestHttpClient();
-      final client = GoTrueClient(
+      final bundledClient = GoTrueClient(
         url: gotrueUrl,
         headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
         asyncStorage: TestAsyncStorage(),
@@ -555,8 +555,8 @@ void main() {
 
       ///These 3 are bundled and in sum 1 refresh token requests is made, because the first 3 fail in [RetryTestHttpClient]
       final responses = await Future.wait([
-        client.recoverSession(session),
-        client.recoverSession(session),
+        bundledClient.recoverSession(session),
+        bundledClient.recoverSession(session),
       ]);
 
       expect(responses[0].session?.accessToken, isNotNull);

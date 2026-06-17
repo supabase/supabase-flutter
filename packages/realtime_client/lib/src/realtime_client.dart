@@ -393,9 +393,9 @@ class RealtimeClient {
 
   RealtimeChannel channel(
     String topic, [
-    RealtimeChannelConfig params = const RealtimeChannelConfig(),
+    RealtimeChannelConfig config = const RealtimeChannelConfig(),
   ]) {
-    final chan = RealtimeChannel('realtime:$topic', this, params: params);
+    final chan = RealtimeChannel('realtime:$topic', this, params: config);
     channels.add(chan);
     return chan;
   }
@@ -432,15 +432,15 @@ class RealtimeClient {
     final topic = message['topic'] as String;
     final event = message['event'] as String;
     final payload = message['payload'];
-    final ref = message['ref'] as String?;
-    if (ref != null && ref == pendingHeartbeatRef) {
+    final messageRef = message['ref'] as String?;
+    if (messageRef != null && messageRef == pendingHeartbeatRef) {
       pendingHeartbeatRef = null;
     }
 
     final status = payload is Map ? (payload['status'] ?? '') : '';
     log(
       'receive',
-      "$status $topic $event ${ref != null ? '($ref)' : ''}",
+      "$status $topic $event ${messageRef != null ? '($messageRef)' : ''}",
       payload,
     );
 
@@ -448,7 +448,7 @@ class RealtimeClient {
           (channel) => channel.trigger(
             event,
             payload,
-            ref,
+            messageRef,
           ),
         );
     for (final callback in stateChangeCallbacks['message']!) {
@@ -464,9 +464,9 @@ class RealtimeClient {
 
   /// Returns the URL of the websocket.
   String get endPointURL {
-    final params = Map<String, String>.from(this.params);
-    params['vsn'] = version.vsn;
-    return _appendParams(endPoint, params);
+    final queryParams = Map<String, String>.from(this.params);
+    queryParams['vsn'] = version.vsn;
+    return _appendParams(endPoint, queryParams);
   }
 
   /// Return the next message ref, accounting for overflows
@@ -568,15 +568,15 @@ class RealtimeClient {
     }
   }
 
-  String _appendParams(String url, Map<String, String> params) {
-    if (params.keys.isEmpty) {
+  String _appendParams(String url, Map<String, String> queryParams) {
+    if (queryParams.keys.isEmpty) {
       return url;
     }
 
     var endpoint = Uri.parse(url);
     endpoint = endpoint.replace(queryParameters: {
       ...endpoint.queryParameters,
-      ...params,
+      ...queryParams,
     });
 
     return endpoint.toString();

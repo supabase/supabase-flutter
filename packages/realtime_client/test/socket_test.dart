@@ -534,7 +534,7 @@ void main() {
       final customSocket = RealtimeClient(
         socketEndpoint,
         transport: (url, headers) => customChannel,
-        encode: (payload) => 'custom-frame',
+        encode: (_) => 'custom-frame',
       );
       customSocket.connect();
       customSocket.connState = SocketStates.open;
@@ -732,25 +732,31 @@ void main() {
       final channel2 = mockedSocket.channel(tTopic2);
       final channel3 = mockedSocket.channel(tTopic3);
 
-      const token = 'sb-key';
-      final pushPayload = {'access_token': token};
-      final updateJoinPayload = {
-        'access_token': token,
+      const authToken = 'sb-key';
+      final expectedPushPayload = {'access_token': authToken};
+      final expectedUpdateJoinPayload = {
+        'access_token': authToken,
         'version': Constants.defaultHeaders['X-Client-Info'],
       };
 
-      await mockedSocket.setAuth(token);
+      await mockedSocket.setAuth(authToken);
 
-      expect(mockedSocket.accessToken, token);
+      expect(mockedSocket.accessToken, authToken);
 
-      verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
-      verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
-      verify(() => channel3.updateJoinPayload(updateJoinPayload)).called(1);
-
-      verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
+      verify(() => channel1.updateJoinPayload(expectedUpdateJoinPayload))
           .called(1);
-      verifyNever(() => channel2.push(ChannelEvents.accessToken, pushPayload));
-      verify(() => channel3.push(ChannelEvents.accessToken, pushPayload))
+      verify(() => channel2.updateJoinPayload(expectedUpdateJoinPayload))
+          .called(1);
+      verify(() => channel3.updateJoinPayload(expectedUpdateJoinPayload))
+          .called(1);
+
+      verify(() =>
+              channel1.push(ChannelEvents.accessToken, expectedPushPayload))
+          .called(1);
+      verifyNever(
+          () => channel2.push(ChannelEvents.accessToken, expectedPushPayload));
+      verify(() =>
+              channel3.push(ChannelEvents.accessToken, expectedPushPayload))
           .called(1);
     });
   });

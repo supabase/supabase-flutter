@@ -89,6 +89,7 @@ class FunctionsClient {
   /// ```
   Future<FunctionResponse> invoke(
     String functionName, {
+    // ignore: avoid-shadowing
     Map<String, String>? headers,
     Object? body,
     Iterable<http.MultipartFile>? files,

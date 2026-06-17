@@ -42,8 +42,8 @@ class Push {
 
   Duration get timeout => _timeout;
 
-  void resend(Duration timeout) {
-    _timeout = timeout;
+  void resend(Duration newTimeout) {
+    _timeout = newTimeout;
     _cancelRefEvent();
     _ref = '';
     _refEvent = null;
@@ -69,8 +69,8 @@ class Push {
     );
   }
 
-  void updatePayload(Map<String, dynamic> payload) {
-    this.payload = {...this.payload, ...payload};
+  void updatePayload(Map<String, dynamic> newPayload) {
+    payload = {...payload, ...newPayload};
   }
 
   Push receive(String status, Callback callback) {
@@ -89,11 +89,11 @@ class Push {
     _ref = _channel.socket.makeRef();
     _refEvent = _channel.replyEventName(ref);
 
-    _channel.onEvents(_refEvent!, ChannelFilter(), (dynamic payload, [ref]) {
+    _channel.onEvents(_refEvent!, ChannelFilter(), (dynamic response, [_]) {
       _cancelRefEvent();
       _cancelTimeout();
-      _receivedResp = payload;
-      _matchReceive(payload['status'] as String, payload['response']);
+      _receivedResp = response;
+      _matchReceive(response['status'] as String, response['response']);
     });
 
     _timeoutTimer = Timer(timeout, () {

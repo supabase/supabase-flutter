@@ -289,10 +289,10 @@ void main() {
     });
 
     test('will return the image as webp when the browser support it', () async {
-      final storage = SupabaseStorageClient(storageUrl,
+      final client = SupabaseStorageClient(storageUrl,
           {'Authorization': 'Bearer $storageKey', 'Accept': 'image/webp'});
 
-      final bytesArray = await storage.from(newBucketName).download(
+      final bytesArray = await client.from(newBucketName).download(
             uploadPath,
             transform: TransformOptions(
               width: 200,
@@ -318,10 +318,10 @@ void main() {
 
     test('will return the original image format when format is origin',
         () async {
-      final storage = SupabaseStorageClient(storageUrl,
+      final client = SupabaseStorageClient(storageUrl,
           {'Authorization': 'Bearer $storageKey', 'Accept': 'image/webp'});
 
-      final bytesArray = await storage.from(newBucketName).download(
+      final bytesArray = await client.from(newBucketName).download(
             uploadPath,
             transform: TransformOptions(
               width: 200,
@@ -409,52 +409,52 @@ void main() {
 
   group('file operations', () {
     test('copy', () async {
-      final storage = SupabaseStorageClient(
+      final client = SupabaseStorageClient(
           storageUrl, {'Authorization': 'Bearer $storageKey'});
 
-      await storage.from(newBucketName).copy(uploadPath, "$uploadPath 2");
+      await client.from(newBucketName).copy(uploadPath, "$uploadPath 2");
     });
 
     test('copy to different bucket', () async {
-      final storage = SupabaseStorageClient(
+      final client = SupabaseStorageClient(
           storageUrl, {'Authorization': 'Bearer $storageKey'});
 
       try {
-        await storage.from('bucket2').download(uploadPath);
+        await client.from('bucket2').download(uploadPath);
         fail('File that does not exist was found');
       } on StorageException catch (error) {
         expect(error.statusCode, '400');
       }
-      await storage
+      await client
           .from(newBucketName)
           .copy(uploadPath, uploadPath, destinationBucket: 'bucket2');
       try {
-        await storage.from('bucket2').download(uploadPath);
+        await client.from('bucket2').download(uploadPath);
       } catch (error) {
         fail('File that was copied was not found');
       }
     });
 
     test('move to different bucket', () async {
-      final storage = SupabaseStorageClient(
+      final client = SupabaseStorageClient(
           storageUrl, {'Authorization': 'Bearer $storageKey'});
 
       try {
-        await storage.from('bucket2').download('$uploadPath 3');
+        await client.from('bucket2').download('$uploadPath 3');
         fail('File that does not exist was found');
       } on StorageException catch (error) {
         expect(error.statusCode, '400');
       }
-      await storage
+      await client
           .from(newBucketName)
           .move(uploadPath, '$uploadPath 3', destinationBucket: 'bucket2');
       try {
-        await storage.from('bucket2').download('$uploadPath 3');
+        await client.from('bucket2').download('$uploadPath 3');
       } catch (error) {
         fail('File that was moved was not found');
       }
       try {
-        await storage.from(newBucketName).download(uploadPath);
+        await client.from(newBucketName).download(uploadPath);
         fail('File that was moved was found');
       } on StorageException catch (error) {
         expect(error.statusCode, '400');
