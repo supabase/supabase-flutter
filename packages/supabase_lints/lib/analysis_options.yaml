@@ -22,13 +22,10 @@ dcm:
     avoid-duplicate-initializers: false
     avoid-duplicate-test-assertions: false
     avoid-dynamic: false
-    avoid-map-keys-contains: false
-    avoid-missing-completer-stack-trace: false
     avoid-missing-enum-constant-in-map: false
     avoid-misused-test-matchers: false
     avoid-never-passed-parameters: false
     avoid-nullable-interpolation: false
-    avoid-nullable-tostring: false
     avoid-passing-async-when-sync-expected: false
     avoid-passing-self-as-argument: false
     avoid-self-compare: false
@@ -37,11 +34,9 @@ dcm:
     avoid-unassigned-fields: false
     avoid-unassigned-stream-subscriptions: false
     avoid-unconditional-break: false
-    avoid-unnecessary-late-fields: false
     avoid-unnecessary-nullable-parameters: false
     avoid-unnecessary-nullable-return-type: false
     avoid-unnecessary-reassignment: false
-    avoid-unnecessary-return: false
     avoid-unnecessary-type-assertions: false
     avoid-unsafe-collection-methods: false
     avoid-unused-parameters: false

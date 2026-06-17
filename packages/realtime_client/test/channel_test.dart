@@ -404,7 +404,8 @@ void main() {
             },
           ).then(
             (value) => completer.complete(value),
-            onError: (e) => completer.completeError(e),
+            onError: (Object e, StackTrace st) =>
+                completer.completeError(e, st),
           );
 
           await for (final HttpRequest req in mockServer) {
@@ -428,7 +429,7 @@ void main() {
         },
       ).then(
         (value) => completer.complete(value),
-        onError: (e) => completer.completeError(e),
+        onError: (Object e, StackTrace st) => completer.completeError(e, st),
       );
 
       await for (final HttpRequest req in mockServer) {
@@ -806,7 +807,7 @@ void main() {
 
       await expectLater(
         sendFuture,
-        throwsA(predicate((e) => e.toString().contains('Server error'))),
+        throwsA(predicate((Object e) => e.toString().contains('Server error'))),
       );
     });
 

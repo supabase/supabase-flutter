@@ -236,7 +236,6 @@ class RealtimeChannel {
         if (callback != null) {
           callback(RealtimeSubscribeStatus.subscribed, null);
         }
-        return;
       },
     ).receive('error', (error) {
       if (callback != null) {
@@ -249,10 +248,8 @@ class RealtimeChannel {
           ),
         );
       }
-      return;
     }).receive('timeout', (_) {
       if (callback != null) callback(RealtimeSubscribeStatus.timedOut, null);
-      return;
     });
     return this;
   }
@@ -848,7 +845,7 @@ class RealtimeChannel {
       });
       for (final bind in bindings) {
         if (handledPayload is Map<String, dynamic> &&
-            handledPayload.keys.contains('ids')) {
+            handledPayload.containsKey('ids')) {
           handledPayload = getEnrichedPayload(handledPayload);
         }
 

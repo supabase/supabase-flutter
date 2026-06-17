@@ -360,7 +360,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     PostgrestException error,
   ) {
     if (error.details is String &&
-        error.details.toString().contains('Results contain 0 rows')) {
+        (error.details as String).contains('Results contain 0 rows')) {
       if (_count != null && response.request!.method != HttpMethod.head.value) {
         if (_converter != null) {
           return PostgrestResponse<S>(data: _converter(null as R), count: 0)
