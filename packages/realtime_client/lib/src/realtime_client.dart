@@ -117,7 +117,7 @@ class RealtimeClient {
   final RealtimeDecode decode;
   late TimerCalculation reconnectAfterMs;
   WebSocketChannel? conn;
-  StreamSubscription? _connSubscription;
+  StreamSubscription? _connectionSubscription;
   List sendBuffer = [];
   Map<String, List<Function>> stateChangeCallbacks = {
     'open': [],
@@ -253,7 +253,7 @@ class RealtimeClient {
       connState = SocketStates.open;
 
       _onConnOpen();
-      _connSubscription = localConn.stream.listen(
+      _connectionSubscription = localConn.stream.listen(
         (message) => onConnMessage(message),
         onError: _onConnError,
         onDone: () {
@@ -302,8 +302,8 @@ class RealtimeClient {
         log('transport', 'disconnected', null, Level.FINE);
       }
       this.conn = null;
-      await _connSubscription?.cancel();
-      _connSubscription = null;
+      await _connectionSubscription?.cancel();
+      _connectionSubscription = null;
 
       // remove open handles
       if (heartbeatTimer != null) heartbeatTimer?.cancel();
