@@ -261,7 +261,6 @@ features:
   storage.analytics.iceberg_table: not_implemented
 
   # realtime — channel
-  realtime.channel.channel: implemented
   realtime.channel.subscribe: implemented
   realtime.channel.unsubscribe: implemented
   realtime.channel.send: implemented
@@ -270,16 +269,13 @@ features:
     note: "httpSend posts to the legacy /api/broadcast endpoint with a messages array and returns Future<void>, not the newer per-channel endpoint returning {success}."
 
   # realtime — client
+  realtime.client.channel: implemented
   realtime.client.connect: implemented
   realtime.client.disconnect: implemented
   realtime.client.connection_state: implemented
-  realtime.client.endpoint_url: implemented
   realtime.client.get_channels: implemented
   realtime.client.remove_channel: implemented
   realtime.client.remove_all_channels: implemented
-  realtime.client.is_connected: implemented
-  realtime.client.is_connecting: not_implemented
-  realtime.client.is_disconnecting: not_implemented
   realtime.client.listen_heartbeats: not_implemented
   realtime.client.set_auth_token: implemented
 
