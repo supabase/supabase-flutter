@@ -1368,7 +1368,7 @@ class GoTrueClient {
             'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
             // This case should never happen though
             _ => AuthChangeEvent.values.firstWhereOrNull(
-                (e) => e.name == rawEvent,
+                (changeEvent) => changeEvent.name == rawEvent,
               ),
           };
 
