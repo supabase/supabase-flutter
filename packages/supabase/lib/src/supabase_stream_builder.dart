@@ -40,7 +40,7 @@ class RealtimeSubscribeException implements Exception {
 
   @override
   String toString() {
-    return 'RealtimeSubscribeException(status: $status, details: $details)';
+    return 'RealtimeSubscribeException(status: ${status.name}, details: $details)';
   }
 }
 

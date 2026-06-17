@@ -17,7 +17,6 @@ dcm:
     avoid-casting-to-extension-type: false
     avoid-commented-out-code: false
     avoid-constant-conditions: false
-    avoid-default-tostring: false
     avoid-duplicate-initializers: false
     avoid-duplicate-test-assertions: false
     avoid-dynamic: false

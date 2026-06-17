@@ -154,7 +154,7 @@ class GoTrueClient {
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
     _log.config(
-      'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}',
+      'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}',
     );
     _log.finest('Initialize with headers: $_headers');
     admin = GoTrueAdminApi(
@@ -960,7 +960,7 @@ class GoTrueClient {
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
   Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
-    _log.info('Signing out user with scope: $scope');
+    _log.info('Signing out user with scope: ${scope.name}');
     final accessToken = currentSession?.accessToken;
 
     if (scope != SignOutScope.others) {

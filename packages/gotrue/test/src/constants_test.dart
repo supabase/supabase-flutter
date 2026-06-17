@@ -272,16 +272,6 @@ void main() {
   });
 
   group('Enum consistency', () {
-    test('all enums have toString that returns name', () {
-      expect(AuthChangeEvent.signedIn.toString(),
-          equals('AuthChangeEvent.signedIn'));
-      expect(GenerateLinkType.signup.toString(),
-          equals('GenerateLinkType.signup'));
-      expect(OtpType.sms.toString(), equals('OtpType.sms'));
-      expect(OtpChannel.whatsapp.toString(), equals('OtpChannel.whatsapp'));
-      expect(SignOutScope.global.toString(), equals('SignOutScope.global'));
-    });
-
     test('enums support equality comparison', () {
       expect(AuthChangeEvent.signedIn == AuthChangeEvent.signedIn, isTrue);
       expect(AuthChangeEvent.signedIn == AuthChangeEvent.signedOut, isFalse);
