@@ -170,9 +170,7 @@ dynamic convertCell(String type, dynamic value) {
     case PostgresTypes.timetz: // To allow users to cast it based on Timezone
     case PostgresTypes.tsrange:
     case PostgresTypes.tstzrange:
-      return noop(value);
-    default:
-      // Return the value for remaining types
+    case null:
       return noop(value);
   }
 }

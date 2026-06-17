@@ -237,8 +237,6 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           _streamController?.close();
           break;
         case RealtimeSubscribeStatus.timedOut:
-          _addException(RealtimeSubscribeException(status, error));
-          break;
         case RealtimeSubscribeStatus.channelError:
           _addException(RealtimeSubscribeException(status, error));
           break;

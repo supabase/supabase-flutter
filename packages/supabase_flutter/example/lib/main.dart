@@ -30,8 +30,8 @@ class _MyWidgetState extends State<MyWidget> {
   User? _user;
   @override
   void initState() {
-    _getAuth();
     super.initState();
+    _getAuth();
   }
 
   void _getAuth() {
@@ -173,8 +173,8 @@ class _ProfileFormState extends State<_ProfileForm> {
 
   @override
   void initState() {
-    _loadProfile();
     super.initState();
+    _loadProfile();
   }
 
   @override
