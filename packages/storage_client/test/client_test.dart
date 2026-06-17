@@ -161,7 +161,7 @@ void main() {
           await storage.from(newBucketName).createSignedUploadUrl(uploadPath);
 
       expect(response.path, uploadPath);
-      expect(response.token, isNotNull);
+      expect(response.token, isNotEmpty);
       expect(
           response.signedUrl,
           contains(

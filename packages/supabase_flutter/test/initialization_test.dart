@@ -30,9 +30,6 @@ void main() {
           url: supabaseUrl,
           publishableKey: supabaseKey,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
     });
 
@@ -46,9 +43,6 @@ void main() {
             localStorage: localStorage,
           ),
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
 
       test('handles initialization with expired session in storage', () async {
@@ -76,9 +70,6 @@ void main() {
             authFlowType: AuthFlowType.pkce,
           ),
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
     });
 
@@ -90,9 +81,6 @@ void main() {
           publishableKey: supabaseKey,
           httpClient: httpClient,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
 
       test('initialize successfully with custom access token', () async {
@@ -101,9 +89,6 @@ void main() {
           publishableKey: supabaseKey,
           accessToken: () async => 'custom-access-token',
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
 
         // Should throw AuthException when trying to access auth
         expect(
@@ -121,8 +106,6 @@ void main() {
           publishableKey: supabaseKey,
         );
 
-        expect(Supabase.instance, isNotNull);
-
         // Dispose
         await Supabase.instance.dispose();
 
@@ -134,8 +117,6 @@ void main() {
           url: supabaseUrl,
           publishableKey: supabaseKey,
         );
-
-        expect(Supabase.instance, isNotNull);
       });
 
       test('handles multiple initializations correctly', () async {
@@ -166,7 +147,6 @@ void main() {
         );
 
         final secondInstance = Supabase.instance.client;
-        expect(secondInstance, isNotNull);
         expect(identical(firstInstance, secondInstance), isFalse);
       });
     });

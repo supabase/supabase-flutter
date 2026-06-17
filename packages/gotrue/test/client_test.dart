@@ -480,7 +480,7 @@ void main() {
         );
         fail('signInWithPassword did not throw');
       } on AuthException catch (error) {
-        expect(error.message, isNotNull);
+        expect(error.message, isNotEmpty);
       }
     });
 

@@ -74,7 +74,7 @@ void main() {
         redirectTo: 'http://localhost:9999/welcome',
       );
 
-      expect(response.user, isNotNull);
+      expect(response.user.id, isNotEmpty);
 
       final actionLink = response.properties.actionLink;
 

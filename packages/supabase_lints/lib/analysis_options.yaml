@@ -23,7 +23,6 @@ dcm:
     avoid-duplicate-test-assertions: false
     avoid-dynamic: false
     avoid-missing-enum-constant-in-map: false
-    avoid-misused-test-matchers: false
     avoid-never-passed-parameters: false
     avoid-nullable-interpolation: false
     avoid-passing-async-when-sync-expected: false

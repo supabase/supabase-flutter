@@ -341,7 +341,6 @@ void main() {
 
   test('geojson', () async {
     final res = await postgrest.from('addresses').select().geojson();
-    expect(res, isNotNull);
     expect(res['type'], 'FeatureCollection');
   });
 

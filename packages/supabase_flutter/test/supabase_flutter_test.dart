@@ -26,7 +26,7 @@ void main() {
     test('can access Supabase singleton', () {
       final supabase = Supabase.instance.client;
 
-      expect(supabase, isNotNull);
+      expect(supabase, same(Supabase.instance.client));
     });
 
     test('can re-initialize client', () async {

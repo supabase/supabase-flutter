@@ -148,7 +148,6 @@ void main() {
         GetClaimsOptions(allowExpired: false),
       );
 
-      expect(claimsResponse.claims, isNotNull);
       expect(claimsResponse.claims.claims['email'], newEmail);
     });
 
@@ -166,7 +165,6 @@ void main() {
       final claimsResponse = await client.getClaims(accessToken);
 
       // If we get here without error, verification succeeded
-      expect(claimsResponse.claims, isNotNull);
       expect(claimsResponse.claims.claims['email'], newEmail);
     });
 
@@ -208,7 +206,7 @@ void main() {
 
       // The user metadata should be accessible via the user object
       // which is verified through getUser() call
-      expect(claims, isNotNull);
+      expect(claims.claims, isNotEmpty);
     });
   });
 
