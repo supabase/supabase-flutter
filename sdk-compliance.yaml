@@ -1,0 +1,335 @@
+# Compliance with the canonical Supabase SDK capability matrix.
+# Spec: https://github.com/supabase/sdk
+#
+# This file declares which canonical capability IDs supabase-flutter implements,
+# grouped by area (auth, database, storage, realtime, functions, client).
+#
+# Statuses:
+#   - implemented           present and functionally equivalent to the reference
+#                           supabase-js implementation (naming differences aside).
+#   - partially_implemented present but with a behavioral difference or gap vs
+#                           supabase-js; a note describes the difference.
+#   - not_implemented       not available.
+#
+# Verified against the source in this repository (packages/gotrue, postgrest,
+# storage_client, realtime_client, functions_client, supabase, supabase_flutter).
+# Unlisted features default to not_implemented.
+
+sdk: flutter
+
+features:
+  # auth — sign in / sign up
+  auth.sign_in.sign_up: implemented
+  auth.sign_in.sign_in_with_password:
+    status: partially_implemented
+    note: "Weak passwords surface as a thrown AuthWeakPasswordException rather than a weakPassword field on the response."
+  auth.sign_in.sign_in_with_otp: implemented
+  auth.sign_in.sign_in_with_oauth:
+    status: partially_implemented
+    note: "Exposed as getOAuthSignInUrl (gotrue) and signInWithOAuth (supabase_flutter); the skipBrowserRedirect option is not publicly exposed."
+  auth.sign_in.sign_in_with_id_token: implemented
+  auth.sign_in.sign_in_with_sso:
+    status: partially_implemented
+    note: "Exposed as getSSOSignInUrl, which returns Future<String> (the URL) rather than the structured {url} response used by JS."
+  auth.sign_in.sign_in_with_web3: not_implemented
+  auth.sign_in.sign_in_anonymously: implemented
+  auth.sign_in.verify_otp: implemented
+  auth.sign_in.exchange_code_for_session: implemented
+  auth.sign_in.resend_confirmation: implemented
+  auth.sign_in.reauthenticate:
+    status: partially_implemented
+    note: "Returns Future<void>; the refreshed session is not returned to the caller."
+  auth.sign_in.reset_password: implemented
+
+  # auth — session & user
+  auth.session.get_session:
+    status: partially_implemented
+    note: "Only the synchronous currentSession getter exists; there is no async getSession() with lock acquisition and on-demand refresh."
+  auth.session.set_session:
+    status: partially_implemented
+    note: "Signature differs: setSession(refreshToken, {accessToken}) instead of an {access_token, refresh_token} object."
+  auth.session.refresh_session: implemented
+  auth.session.get_user: implemented
+  auth.session.update_user:
+    status: partially_implemented
+    note: "Does not send a PKCE code_challenge when changing email under the PKCE flow."
+  auth.session.get_claims: implemented
+  auth.session.sign_out:
+    status: partially_implemented
+    note: "Default scope is local (current session); JS defaults to global (all sessions)."
+  auth.session.auto_refresh: implemented
+  auth.session.subscribe_auth_events: implemented
+
+  # auth — identities
+  auth.identities.link_identity:
+    status: partially_implemented
+    note: "Split into getLinkIdentityUrl (OAuth) and linkIdentityWithIdToken (ID token) rather than a single overloaded method."
+  auth.identities.list_identities:
+    status: partially_implemented
+    note: "getUserIdentities returns a List<UserIdentity> and throws on error instead of returning a {data, error} object."
+  auth.identities.unlink_identity: implemented
+
+  # auth — MFA
+  auth.mfa.enroll:
+    status: partially_implemented
+    note: "Supports totp and phone factor types only; webauthn enrollment is handled via the separate passkey API."
+  auth.mfa.challenge:
+    status: partially_implemented
+    note: "No channel parameter (sms/whatsapp) for phone factors; always uses SMS."
+  auth.mfa.verify: implemented
+  auth.mfa.challenge_and_verify: implemented
+  auth.mfa.unenroll: implemented
+  auth.mfa.list_factors: implemented
+  auth.mfa.get_authenticator_assurance_level: implemented
+
+  # auth — passkeys (experimental)
+  auth.passkey.register_passkey: implemented
+  auth.passkey.sign_in_with_passkey: implemented
+
+  # auth — OAuth server (Supabase acting as an OAuth provider)
+  auth.oauth_server.get_authorization_details: not_implemented
+  auth.oauth_server.approve_authorization: not_implemented
+  auth.oauth_server.deny_authorization: not_implemented
+  auth.oauth_server.list_grants: not_implemented
+  auth.oauth_server.revoke_grant: not_implemented
+
+  # auth — admin
+  auth.admin.create_user: implemented
+  auth.admin.get_user: implemented
+  auth.admin.update_user: implemented
+  auth.admin.delete_user:
+    status: partially_implemented
+    note: "No shouldSoftDelete parameter; always performs a hard delete."
+  auth.admin.list_users:
+    status: partially_implemented
+    note: "Returns the user list only; pagination metadata (total, nextPage, lastPage, aud) is not returned."
+  auth.admin.invite_user: implemented
+  auth.admin.generate_link: implemented
+  auth.admin.sign_out: implemented
+  auth.admin.list_mfa_factors: implemented
+  auth.admin.delete_mfa_factor: implemented
+  auth.admin.create_provider: not_implemented
+  auth.admin.get_provider: not_implemented
+  auth.admin.update_provider: not_implemented
+  auth.admin.delete_provider: not_implemented
+  auth.admin.list_providers: not_implemented
+
+  # auth — admin OAuth clients
+  auth.oauth_admin.create_client: implemented
+  auth.oauth_admin.get_client: implemented
+  auth.oauth_admin.update_client: implemented
+  auth.oauth_admin.delete_client: implemented
+  auth.oauth_admin.list_clients: implemented
+  auth.oauth_admin.regenerate_client_secret: implemented
+
+  # auth — admin passkeys (experimental)
+  auth.passkey_admin.list_passkeys: implemented
+  auth.passkey_admin.delete_passkey: implemented
+
+  # database — query
+  database.query.from_table: implemented
+  database.query.select: implemented
+  database.query.rpc:
+    status: partially_implemented
+    note: "rpc(fn, {params, get}) has no head or count option on the call itself; both are reachable by chaining .head()/.count() on the returned builder."
+  database.query.schema_selection: implemented
+
+  # database — mutate
+  database.mutate.insert: implemented
+  database.mutate.update: implemented
+  database.mutate.upsert: implemented
+  database.mutate.delete: implemented
+  database.mutate.select_after_mutation: implemented
+
+  # database — filters
+  database.using_filters.eq: implemented
+  database.using_filters.neq: implemented
+  database.using_filters.gt: implemented
+  database.using_filters.gte: implemented
+  database.using_filters.lt: implemented
+  database.using_filters.lte: implemented
+  database.using_filters.like: implemented
+  database.using_filters.like_all: implemented
+  database.using_filters.like_any: implemented
+  database.using_filters.ilike: implemented
+  database.using_filters.ilike_all: implemented
+  database.using_filters.ilike_any: implemented
+  database.using_filters.is: implemented
+  database.using_filters.is_distinct: implemented
+  database.using_filters.in: implemented
+  database.using_filters.not_in: implemented
+  database.using_filters.contains: implemented
+  database.using_filters.contained_by: implemented
+  database.using_filters.overlaps: implemented
+  database.using_filters.match: implemented
+  database.using_filters.not: implemented
+  database.using_filters.or: implemented
+  database.using_filters.range_gt: implemented
+  database.using_filters.range_gte: implemented
+  database.using_filters.range_lt: implemented
+  database.using_filters.range_lte: implemented
+  database.using_filters.range_adjacent: implemented
+  database.using_filters.text_search: implemented
+  database.using_filters.regex: implemented
+  database.using_filters.regex_icase: implemented
+  database.using_filters.raw: implemented
+
+  # database — modifiers
+  database.using_modifiers.order: implemented
+  database.using_modifiers.limit: implemented
+  database.using_modifiers.range: implemented
+  database.using_modifiers.single_row: implemented
+  database.using_modifiers.maybe_single_row: implemented
+  database.using_modifiers.max_affected_rows: implemented
+  database.using_modifiers.format_csv: implemented
+  database.using_modifiers.format_geojson: implemented
+  database.using_modifiers.relationship_embed: implemented
+  database.using_modifiers.explain:
+    status: partially_implemented
+    note: "Only the text plan is supported; there is no format: json option."
+  database.using_modifiers.dry_run: not_implemented
+  database.using_modifiers.strip_nulls: not_implemented
+  database.using_modifiers.request_cancellation: not_implemented
+
+  # database — configuration
+  database.configuration.auto_retry:
+    status: partially_implemented
+    note: "Retries GET/HEAD requests on transient failures with backoff, but the retry count and conditions are hard-coded, not configurable."
+  database.configuration.request_timeout: not_implemented
+
+  # storage — file buckets
+  storage.file_buckets.access_bucket: implemented
+  storage.file_buckets.upload: implemented
+  storage.file_buckets.upload_with_metadata: implemented
+  storage.file_buckets.upload_with_signed_url: implemented
+  storage.file_buckets.update_file: implemented
+  storage.file_buckets.download: implemented
+  storage.file_buckets.download_with_transform: implemented
+  storage.file_buckets.download_as_stream: not_implemented
+  storage.file_buckets.list_files: implemented
+  storage.file_buckets.list_files_paginated: not_implemented
+  storage.file_buckets.move: implemented
+  storage.file_buckets.move_cross_bucket: implemented
+  storage.file_buckets.copy: implemented
+  storage.file_buckets.copy_cross_bucket: implemented
+  storage.file_buckets.remove: implemented
+  storage.file_buckets.create_signed_url:
+    status: partially_implemented
+    note: "No download (content-disposition) option; image transform is supported."
+  storage.file_buckets.create_signed_urls:
+    status: partially_implemented
+    note: "No download (content-disposition) option."
+  storage.file_buckets.create_signed_upload_url:
+    status: partially_implemented
+    note: "No upsert option to allow overwriting an existing file."
+  storage.file_buckets.get_public_url:
+    status: partially_implemented
+    note: "No download (content-disposition) option; image transform is supported."
+  storage.file_buckets.url_cache_nonce: not_implemented
+  storage.file_buckets.file_exists: implemented
+  storage.file_buckets.file_info: implemented
+  storage.file_buckets.create_file_bucket: implemented
+  storage.file_buckets.get_bucket: implemented
+  storage.file_buckets.list_file_buckets:
+    status: partially_implemented
+    note: "listBuckets() takes no arguments; the JS filter/sort/pagination options are not supported."
+  storage.file_buckets.update_bucket: implemented
+  storage.file_buckets.delete_file_bucket: implemented
+  storage.file_buckets.empty_bucket: implemented
+
+  # storage — vector buckets
+  storage.vector_buckets.create_vector_bucket: not_implemented
+  storage.vector_buckets.list_vector_buckets: not_implemented
+  storage.vector_buckets.delete_vector_bucket: not_implemented
+  storage.vector_buckets.access_vector_index: not_implemented
+  storage.vector_buckets.create_index: not_implemented
+  storage.vector_buckets.get_index: not_implemented
+  storage.vector_buckets.list_indexes: not_implemented
+  storage.vector_buckets.delete_index: not_implemented
+  storage.vector_buckets.put_vectors: not_implemented
+  storage.vector_buckets.get_vectors: not_implemented
+  storage.vector_buckets.list_vectors: not_implemented
+  storage.vector_buckets.delete_vectors: not_implemented
+  storage.vector_buckets.query_vectors: not_implemented
+  storage.vector_buckets.parallel_scan: not_implemented
+
+  # storage — analytics (Iceberg) buckets
+  storage.analytics.create_analytics_bucket: not_implemented
+  storage.analytics.list_analytics_buckets: not_implemented
+  storage.analytics.delete_analytics_bucket: not_implemented
+  storage.analytics.iceberg_namespace: not_implemented
+  storage.analytics.iceberg_table: not_implemented
+
+  # realtime — channel
+  realtime.channel.channel: implemented
+  realtime.channel.subscribe: implemented
+  realtime.channel.unsubscribe: implemented
+  realtime.channel.send: implemented
+  realtime.channel.broadcast_http:
+    status: partially_implemented
+    note: "httpSend posts to the legacy /api/broadcast endpoint with a messages array and returns Future<void>, not the newer per-channel endpoint returning {success}."
+
+  # realtime — client
+  realtime.client.connect: implemented
+  realtime.client.disconnect: implemented
+  realtime.client.connection_state: implemented
+  realtime.client.endpoint_url: implemented
+  realtime.client.get_channels: implemented
+  realtime.client.remove_channel: implemented
+  realtime.client.remove_all_channels: implemented
+  realtime.client.is_connected: implemented
+  realtime.client.is_connecting: not_implemented
+  realtime.client.is_disconnecting: not_implemented
+  realtime.client.listen_heartbeats: not_implemented
+  realtime.client.set_auth_token: implemented
+
+  # realtime — subscriptions
+  realtime.subscriptions.broadcast: implemented
+  realtime.subscriptions.postgres_changes: implemented
+  realtime.subscriptions.postgres_changes_filter: implemented
+  realtime.subscriptions.subscribe_presence: implemented
+  realtime.subscriptions.private_channel: implemented
+  realtime.subscriptions.broadcast_self: implemented
+  realtime.subscriptions.broadcast_ack: implemented
+  realtime.subscriptions.broadcast_replay: implemented
+
+  # realtime — presence
+  realtime.presence.track: implemented
+  realtime.presence.untrack: implemented
+  realtime.presence.presence_state: implemented
+  realtime.presence.presence_key: implemented
+
+  # realtime — configuration
+  realtime.configuration.custom_websocket_transport: implemented
+  realtime.configuration.reconnect_backoff: implemented
+  realtime.configuration.heartbeat_interval: implemented
+  realtime.configuration.access_token_callback: implemented
+  realtime.configuration.custom_logger: implemented
+  realtime.configuration.binary_protocol: implemented
+  realtime.configuration.deferred_disconnect: not_implemented
+
+  # functions
+  functions.invocation.invoke:
+    status: partially_implemented
+    note: "Invocation works, but errors surface as a single FunctionException; the FunctionsFetchError/FunctionsRelayError/FunctionsHttpError distinction is not exposed."
+  functions.invocation.set_auth_token: implemented
+  functions.invocation.method_override: implemented
+  functions.invocation.streaming_response: implemented
+  functions.invocation.region_selection: implemented
+  functions.invocation.timeout: not_implemented
+  functions.invocation.request_cancellation: not_implemented
+
+  # client
+  client.authentication_integration.third_party_auth: implemented
+  client.authentication_integration.cross_client_token_sync: implemented
+  client.authentication_integration.oauth_flow_type: implemented
+  client.authentication_integration.session_url_detection:
+    status: partially_implemented
+    note: "supabase_flutter exposes detectSessionInUri as a boolean only; there is no custom predicate to disambiguate redirects."
+  client.session_management.custom_storage: implemented
+  client.session_management.persist_session:
+    status: partially_implemented
+    note: "No persistSession flag; in-memory-only sessions are achievable by supplying an EmptyLocalStorage backend."
+  client.request_configuration.custom_http_client: implemented
+  client.request_configuration.global_headers: implemented
+  client.observability.trace_propagation: not_implemented
