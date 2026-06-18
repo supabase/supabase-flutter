@@ -108,28 +108,29 @@ void main() {
     });
 
     test('parse provider callback url with missing param error', () async {
-      try {
-        final accessToken = session.accessToken;
-        final url =
-            'http://my-callback-url.com?page=welcome&foo=bar#access_token=$accessToken';
-        await client.getSessionFromUrl(Uri.parse(url));
-        fail('Passed provider with missing param');
-      } catch (error) {
-        expect(error, isA<AuthException>());
-        expect((error as AuthException).message, 'No expires_in detected.');
-      }
+      await expectLater(
+        () async {
+          final accessToken = session.accessToken;
+          final url =
+              'http://my-callback-url.com?page=welcome&foo=bar#access_token=$accessToken';
+          await client.getSessionFromUrl(Uri.parse(url));
+        },
+        throwsA(isA<AuthException>()
+            .having((e) => e.message, 'message', 'No expires_in detected.')),
+      );
     });
 
     test('parse provider callback url with error', () async {
       const errorDesc = 'my_error_description';
-      try {
-        const url =
-            'http://my-callback-url.com?page=welcome&foo=bar#error_description=$errorDesc';
-        await client.getSessionFromUrl(Uri.parse(url));
-        fail('Passed provider with error');
-      } on AuthException catch (error) {
-        expect(error.message, errorDesc);
-      }
+      await expectLater(
+        () async {
+          const url =
+              'http://my-callback-url.com?page=welcome&foo=bar#error_description=$errorDesc';
+          await client.getSessionFromUrl(Uri.parse(url));
+        },
+        throwsA(isA<AuthException>()
+            .having((e) => e.message, 'message', errorDesc)),
+      );
     });
   });
 }

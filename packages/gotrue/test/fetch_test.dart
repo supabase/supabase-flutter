@@ -72,12 +72,10 @@ void main() {
 
 Future<void> _testFetchRequest(Client client) async {
   final GotrueFetch fetch = GotrueFetch(client);
-  try {
-    await fetch.request(_mockUrl, RequestMethodType.get);
-  } on AuthException catch (error) {
-    expect(error.code, 'weak_password');
-    expect(error.message, 'error_message');
-  } catch (error) {
-    fail('Should have thrown AuthException');
-  }
+  await expectLater(
+    () => fetch.request(_mockUrl, RequestMethodType.get),
+    throwsA(isA<AuthException>()
+        .having((e) => e.code, 'code', 'weak_password')
+        .having((e) => e.message, 'message', 'error_message')),
+  );
 }

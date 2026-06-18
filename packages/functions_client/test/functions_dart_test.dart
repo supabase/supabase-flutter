@@ -20,12 +20,11 @@ void main() {
           FunctionsClient("", {}, httpClient: customHttpClient);
     });
     test('function throws', () async {
-      try {
-        await functionsCustomHttpClient.invoke('error-function');
-        fail('should throw');
-      } on FunctionException catch (e) {
-        expect(e.status, 420);
-      }
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('error-function'),
+        throwsA(
+            isA<FunctionException>().having((e) => e.status, 'status', 420)),
+      );
     });
 
     test('function call', () async {
@@ -411,15 +410,14 @@ void main() {
 
     group('Error handling', () {
       test('FunctionException contains all error details', () async {
-        try {
-          await functionsCustomHttpClient.invoke('error-function');
-          fail('should throw');
-        } on FunctionException catch (e) {
-          expect(e.status, 420);
-          expect(e.details, isNotNull);
-          expect(e.reasonPhrase, isNotNull);
-          expect(e.toString(), contains('420'));
-        }
+        await expectLater(
+          () => functionsCustomHttpClient.invoke('error-function'),
+          throwsA(isA<FunctionException>()
+              .having((e) => e.status, 'status', 420)
+              .having((e) => e.details, 'details', isNotNull)
+              .having((e) => e.reasonPhrase, 'reasonPhrase', isNotNull)
+              .having((e) => e.toString(), 'toString()', contains('420'))),
+        );
       });
     });
 

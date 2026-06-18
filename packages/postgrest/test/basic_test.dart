@@ -315,22 +315,20 @@ void main() {
     });
 
     test('missing table', () async {
-      try {
-        await postgrest.from('missing_table').select();
-        fail('found missing table');
-      } on PostgrestException catch (error) {
-        expect(error.code, 'PGRST205');
-      }
+      await expectLater(
+        () => postgrest.from('missing_table').select(),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', 'PGRST205'),
+        ),
+      );
     });
 
     test('connection error', () async {
       final postgrest = PostgrestClient('http://this.url.does.not.exist');
-      try {
-        await postgrest.from('user').select();
-        fail('Success on connection error');
-      } catch (error) {
-        expect(error, isA<SocketException>());
-      }
+      await expectLater(
+        () => postgrest.from('user').select(),
+        throwsA(isA<SocketException>()),
+      );
     });
 
     test('Prefer: return=minimal', () async {
@@ -416,12 +414,10 @@ void main() {
     });
 
     test('execute without table operation', () async {
-      try {
-        await postgrest.from('users');
-        fail('can not execute without table operation');
-      } catch (e) {
-        expect(e, isA<ArgumentError>());
-      }
+      await expectLater(
+        () => postgrest.from('users'),
+        throwsA(isA<ArgumentError>()),
+      );
     });
 
     test('select from uppercase table name', () async {
@@ -487,50 +483,40 @@ void main() {
     });
 
     test('basic select table', () async {
-      try {
-        await postgrestCustomHttpClient.from('users').select();
-        fail('Table was able to be selected, even tho it does not exist');
-      } on PostgrestException catch (error) {
-        expect(error.code, '420');
-      }
+      await expectLater(
+        () => postgrestCustomHttpClient.from('users').select(),
+        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+      );
     });
     test('basic select table with converter', () async {
-      try {
-        await postgrestCustomHttpClient
+      await expectLater(
+        () => postgrestCustomHttpClient
             .from('users')
             .select()
-            .withConverter((data) => data);
-        fail('Table was able to be selected, even tho it does not exist');
-      } on PostgrestException catch (error) {
-        expect(error.code, '420');
-      }
+            .withConverter((data) => data),
+        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+      );
     });
     test('basic stored procedure call', () async {
-      try {
-        await postgrestCustomHttpClient
-            .rpc<String>('get_status', params: {'name_param': 'supabot'});
-        fail(
-            'Stored procedure was able to be called, even tho it does not exist');
-      } on PostgrestException catch (error) {
-        expect(error.code, '420');
-        expect(customHttpClient.lastRequest?.method, "POST");
-      }
+      await expectLater(
+        () => postgrestCustomHttpClient
+            .rpc<String>('get_status', params: {'name_param': 'supabot'}),
+        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+      );
+      expect(customHttpClient.lastRequest?.method, "POST");
     });
 
     test('stored procedure call in read-only access mode', () async {
-      try {
-        await postgrestCustomHttpClient.rpc<String>(
+      await expectLater(
+        () => postgrestCustomHttpClient.rpc<String>(
           'get_status',
           params: {'name_param': 'supabot'},
           get: true,
-        );
-        fail(
-            'Stored procedure was able to be called, even tho it does not exist');
-      } on PostgrestException catch (error) {
-        expect(error.code, '420');
-        expect(customHttpClient.lastRequest?.method, "GET");
-        expect(customHttpClient.lastBody, isEmpty);
-      }
+        ),
+        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+      );
+      expect(customHttpClient.lastRequest?.method, "GET");
+      expect(customHttpClient.lastBody, isEmpty);
     });
   });
 }

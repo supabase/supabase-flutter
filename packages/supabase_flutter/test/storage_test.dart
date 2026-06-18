@@ -28,14 +28,14 @@ void main() {
       test('hasAccessToken returns false when no session exists', () async {
         final localStorage = await createFreshLocalStorage();
         final result = await localStorage.hasAccessToken();
-        expect(result, false);
+        expect(result, isFalse);
       });
 
       test('hasAccessToken returns true when session exists', () async {
         final localStorage = await createFreshLocalStorage();
         await localStorage.persistSession(testSessionValue);
         final result = await localStorage.hasAccessToken();
-        expect(result, true);
+        expect(result, isTrue);
       });
 
       test('accessToken returns null when no session exists', () async {
@@ -57,7 +57,7 @@ void main() {
 
         // Verify the session was stored by checking through localStorage's own methods
         final hasToken = await localStorage.hasAccessToken();
-        expect(hasToken, true);
+        expect(hasToken, isTrue);
 
         final storedValue = await localStorage.accessToken();
         expect(storedValue, testSessionValue);
@@ -67,11 +67,11 @@ void main() {
         final localStorage = await createFreshLocalStorage();
         // First store a session
         await localStorage.persistSession(testSessionValue);
-        expect(await localStorage.hasAccessToken(), true);
+        expect(await localStorage.hasAccessToken(), isTrue);
 
         // Then remove it
         await localStorage.removePersistedSession();
-        expect(await localStorage.hasAccessToken(), false);
+        expect(await localStorage.hasAccessToken(), isFalse);
         expect(await localStorage.accessToken(), null);
       });
     });

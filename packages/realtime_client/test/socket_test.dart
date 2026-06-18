@@ -73,8 +73,8 @@ void main() {
     test('sets defaults', () async {
       final socket =
           RealtimeClient('wss://example.com/socket', params: {'apikey': '123'});
-      expect(socket.channels.length, 0);
-      expect(socket.sendBuffer.length, 0);
+      expect(socket.channels, isEmpty);
+      expect(socket.sendBuffer, isEmpty);
       expect(socket.ref, 0);
       expect(socket.endPoint, 'wss://example.com/socket/websocket');
       expect(socket.stateChangeCallbacks, {
@@ -91,7 +91,7 @@ void main() {
           String? msg,
           dynamic data,
         ),
-        false,
+        isFalse,
       );
       expect(
         socket.headers['X-Client-Info']!.split('/').first,
@@ -109,8 +109,8 @@ void main() {
         logger: (kind, msg, data) => print('[$kind] $msg $data'),
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
       );
-      expect(socket.channels.length, 0);
-      expect(socket.sendBuffer.length, 0);
+      expect(socket.channels, isEmpty);
+      expect(socket.sendBuffer, isEmpty);
       expect(socket.ref, 0);
       expect(socket.endPoint, 'wss://example.com/socket/websocket');
       expect(socket.stateChangeCallbacks, {
@@ -127,7 +127,7 @@ void main() {
           String? msg,
           dynamic data,
         ),
-        true,
+        isTrue,
       );
       expect(socket.headers['X-Client-Info'], 'supabase-dart/0.0.0');
     });
@@ -374,7 +374,7 @@ void main() {
     });
 
     test('adds channel to sockets channels list', () {
-      expect(socket.channels.length, 0);
+      expect(socket.channels, isEmpty);
 
       final channel = socket.channel(
         tTopic,
@@ -461,7 +461,7 @@ void main() {
       mockedSocket.connect();
       mockedSocket.connState = SocketStates.connecting;
 
-      expect(mockedSocket.sendBuffer.length, 0);
+      expect(mockedSocket.sendBuffer, isEmpty);
 
       final message =
           Message(topic: topic, payload: payload, event: event, ref: ref);

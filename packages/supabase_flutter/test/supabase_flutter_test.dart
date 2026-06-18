@@ -139,7 +139,7 @@ void main() {
 
     test('hasAccessToken returns false', () async {
       final result = await localStorage.hasAccessToken();
-      expect(result, false);
+      expect(result, isFalse);
     });
 
     test('accessToken returns null', () async {
@@ -163,7 +163,7 @@ void main() {
 
       // Check if there's a token (should be false)
       final hasToken = await localStorage.hasAccessToken();
-      expect(hasToken, false);
+      expect(hasToken, isFalse);
 
       // Get the token (should be null)
       final token = await localStorage.accessToken();
@@ -174,7 +174,7 @@ void main() {
 
       // Check if there's a token after persisting (should still be false)
       final hasTokenAfterPersist = await localStorage.hasAccessToken();
-      expect(hasTokenAfterPersist, false);
+      expect(hasTokenAfterPersist, isFalse);
 
       // Get the token after persisting (should still be null)
       final tokenAfterPersist = await localStorage.accessToken();
@@ -185,7 +185,7 @@ void main() {
 
       // Check if there's a token after removing (should still be false)
       final hasTokenAfterRemove = await localStorage.hasAccessToken();
-      expect(hasTokenAfterRemove, false);
+      expect(hasTokenAfterRemove, isFalse);
     });
   });
 }

@@ -199,25 +199,23 @@ void main() {
       });
 
       test('provides helpful error message', () {
-        try {
-          validateUuid('invalid-id');
-          fail('Expected ArgumentError');
-        } catch (e) {
-          expect(e, isA<ArgumentError>());
-          expect(e.toString(), contains('Invalid id: invalid-id'));
-          expect(e.toString(), contains('must be a valid UUID'));
-        }
+        expect(
+          () => validateUuid('invalid-id'),
+          throwsA(isA<ArgumentError>()
+              .having((e) => e.toString(), 'toString()',
+                  contains('Invalid id: invalid-id'))
+              .having((e) => e.toString(), 'toString()',
+                  contains('must be a valid UUID'))),
+        );
       });
 
       test('error message includes the invalid ID', () {
         const invalidId = 'test-invalid-uuid-123';
-        try {
-          validateUuid(invalidId);
-          fail('Expected ArgumentError');
-        } catch (e) {
-          expect(e, isA<ArgumentError>());
-          expect(e.toString(), contains(invalidId));
-        }
+        expect(
+          () => validateUuid(invalidId),
+          throwsA(isA<ArgumentError>()
+              .having((e) => e.toString(), 'toString()', contains(invalidId))),
+        );
       });
     });
 

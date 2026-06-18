@@ -29,7 +29,7 @@ void main() {
     });
 
     test('sets defaults', () {
-      expect(channel.isClosed, true);
+      expect(channel.isClosed, isTrue);
       expect(channel.topic, 'topic');
       expect(channel.params, {
         'config': {
@@ -70,7 +70,7 @@ void main() {
     test('sets state to joining', () {
       channel.subscribe();
 
-      expect(channel.isJoining, true);
+      expect(channel.isJoining, isTrue);
     });
 
     test('sets joinedOnce to true', () {
@@ -349,12 +349,12 @@ void main() {
     });
 
     test("sets state to closed on 'ok' event", () {
-      expect(channel.isClosed, false);
+      expect(channel.isClosed, isFalse);
 
       channel.unsubscribe();
       channel.joinPush.trigger('ok', {});
 
-      expect(channel.isClosed, true);
+      expect(channel.isClosed, isTrue);
     });
 
     test("able to unsubscribe from * subscription", () {
@@ -364,7 +364,7 @@ void main() {
       channel.unsubscribe();
       channel.joinPush.trigger('ok', {});
 
-      expect(socket.channels.length, 0);
+      expect(socket.channels, isEmpty);
     });
   });
 
@@ -442,7 +442,7 @@ void main() {
 
         expect(payload, containsPair('myKey', 'myValue'));
         expect(message, containsPair('topic', 'myTopic'));
-        expect(private, true);
+        expect(private, isTrue);
 
         await req.response.close();
         break;
@@ -757,7 +757,7 @@ void main() {
       expect(message['topic'], 'myTopic');
       expect(message['event'], 'test');
       expect(message['payload'], {'myKey': 'myValue'});
-      expect(message['private'], true);
+      expect(message['private'], isTrue);
 
       req.response.statusCode = 202;
       await req.response.close();

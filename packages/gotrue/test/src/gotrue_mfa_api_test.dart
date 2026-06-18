@@ -81,7 +81,7 @@ void main() {
 
     final res = await client.mfa.challenge(factorId: factorId1);
 
-    expect(res.expiresAt.isAfter(DateTime.now()), true);
+    expect(res.expiresAt.isAfter(DateTime.now()), isTrue);
   });
 
   test('verify', () async {
@@ -127,7 +127,7 @@ void main() {
     final res = await client.mfa.listFactors();
 
     expect(res.totp.length, 1);
-    expect(res.phone.length, 0);
+    expect(res.phone, isEmpty);
     expect(res.all.length, 1);
     expect(res.all.first.id, factorId2);
     expect(res.all.first.status, FactorStatus.verified);
@@ -172,10 +172,10 @@ void main() {
     expect(phoneFactor.status, FactorStatus.unverified);
 
     // Verified phone factors should be empty since we haven't verified yet
-    expect(listRes.phone.length, 0);
+    expect(listRes.phone, isEmpty);
 
     // But the factor should appear in the all list
-    expect(listRes.all.any((f) => f.factorType == FactorType.phone), true);
+    expect(listRes.all.any((f) => f.factorType == FactorType.phone), isTrue);
   });
 
   test('aal1 for only password', () async {

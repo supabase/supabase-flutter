@@ -264,63 +264,52 @@ void main() {
     });
 
     test('maybeSingle with multiple rows throws', () async {
-      try {
-        await postgrest.from('users').select().maybeSingle();
-        fail('maybeSingle with multiple rows did not throw.');
-      } on PostgrestException catch (error) {
-        expect(error.code, '406');
-      } catch (error) {
-        fail(
-            'maybeSingle with multiple rows threw ${error.runtimeType} instead of PostgrestException.');
-      }
+      await expectLater(
+        () => postgrest.from('users').select().maybeSingle(),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+        ),
+      );
     });
     test('maybeSingle with multiple inserts throws', () async {
-      try {
-        await postgrest
+      await expectLater(
+        () => postgrest
             .from('channels')
             .insert([
               {'data': {}, 'slug': 'channel1'},
               {'data': {}, 'slug': 'channel2'},
             ])
             .select()
-            .maybeSingle();
-        fail('Query did not throw.');
-      } on PostgrestException catch (error) {
-        expect(error.code, '406');
-      } catch (error) {
-        fail('Query threw ${error.runtimeType} instead of PostgrestException.');
-      }
+            .maybeSingle(),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+        ),
+      );
     });
 
     test(
         'maybeSingle followed by another transformer preserves the maybeSingle status',
         () async {
-      try {
-        // maybeSingle followed by another transformer preserves the maybeSingle status
-        // and should throw when the returned data is more than 2 rows.
-        await postgrest.from('channels').select().maybeSingle().limit(2);
-        fail('Query did not throw.');
-      } on PostgrestException catch (error) {
-        expect(error.code, '406');
-      } catch (error) {
-        fail('Query threw ${error.runtimeType} instead of PostgrestException.');
-      }
+      await expectLater(
+        () => postgrest.from('channels').select().maybeSingle().limit(2),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+        ),
+      );
     });
 
     test('maybeSingle with converter throws if more than 1 rows were returned',
         () async {
-      try {
-        await postgrest
+      await expectLater(
+        () => postgrest
             .from('channels')
             .select()
             .maybeSingle()
-            .withConverter((data) => data?.entries.length);
-        fail('Query did not throw');
-      } on PostgrestException catch (error) {
-        expect(error.code, '406');
-      } catch (error) {
-        fail('Query threw ${error.runtimeType} instead of PostgrestException.');
-      }
+            .withConverter((data) => data?.entries.length),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+        ),
+      );
     });
   });
 

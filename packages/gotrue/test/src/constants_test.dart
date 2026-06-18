@@ -283,20 +283,20 @@ void main() {
     });
 
     test('enums support equality comparison', () {
-      expect(AuthChangeEvent.signedIn == AuthChangeEvent.signedIn, isTrue);
-      expect(AuthChangeEvent.signedIn == AuthChangeEvent.signedOut, isFalse);
+      expect(AuthChangeEvent.signedIn, AuthChangeEvent.signedIn);
+      expect(AuthChangeEvent.signedIn, isNot(AuthChangeEvent.signedOut));
 
-      expect(GenerateLinkType.signup == GenerateLinkType.signup, isTrue);
-      expect(GenerateLinkType.signup == GenerateLinkType.invite, isFalse);
+      expect(GenerateLinkType.signup, GenerateLinkType.signup);
+      expect(GenerateLinkType.signup, isNot(GenerateLinkType.invite));
 
-      expect(OtpType.sms == OtpType.sms, isTrue);
-      expect(OtpType.sms == OtpType.email, isFalse);
+      expect(OtpType.sms, OtpType.sms);
+      expect(OtpType.sms, isNot(OtpType.email));
 
-      expect(OtpChannel.sms == OtpChannel.sms, isTrue);
-      expect(OtpChannel.sms == OtpChannel.whatsapp, isFalse);
+      expect(OtpChannel.sms, OtpChannel.sms);
+      expect(OtpChannel.sms, isNot(OtpChannel.whatsapp));
 
-      expect(SignOutScope.global == SignOutScope.global, isTrue);
-      expect(SignOutScope.global == SignOutScope.local, isFalse);
+      expect(SignOutScope.global, SignOutScope.global);
+      expect(SignOutScope.global, isNot(SignOutScope.local));
     });
 
     test('enums can be used in sets and maps', () {
