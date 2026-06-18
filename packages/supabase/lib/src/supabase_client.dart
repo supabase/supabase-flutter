@@ -277,8 +277,13 @@ class SupabaseClient {
     _log.fine('Dispose SupabaseClient');
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
+    await functions.dispose();
+    await rest.dispose();
     if (!_hasCustomIsolate) {
       await _isolate.dispose();
+    }
+    if (_httpClient == null) {
+      _authHttpClient.close();
     }
     _authInstance?.dispose();
   }

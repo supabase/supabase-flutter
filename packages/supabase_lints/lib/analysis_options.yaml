@@ -46,7 +46,6 @@ dcm:
     avoid-unsafe-collection-methods: false
     avoid-unused-parameters: false
     avoid-wildcard-cases-with-enums: false
-    dispose-class-fields: false
     function-always-returns-null: false
     match-getter-setter-field-names: false
     move-variable-closer-to-its-usage: false
