@@ -135,8 +135,7 @@ dynamic convertCell(String type, dynamic value) {
     return toArray(value, dataType);
   }
 
-  final typeEnum = PostgresTypes.values
-      .firstWhereOrNull((e) => e.toString() == 'PostgresTypes.$type');
+  final typeEnum = PostgresTypes.values.firstWhereOrNull((e) => e.name == type);
   // If not null, convert to correct type.
   switch (typeEnum) {
     case PostgresTypes.bool:

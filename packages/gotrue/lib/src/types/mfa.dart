@@ -346,6 +346,11 @@ class Factor {
         createdAt.hashCode ^
         updatedAt.hashCode;
   }
+
+  @override
+  String toString() {
+    return 'Factor(id: $id, friendlyName: $friendlyName, factorType: ${factorType.name}, status: ${status.name}, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
 }
 
 enum AuthenticatorAssuranceLevels {

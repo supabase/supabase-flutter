@@ -257,7 +257,7 @@ class PostgresChangePayload {
 
   @override
   String toString() {
-    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: $eventType, newRow: $newRecord, oldRow: $oldRecord, errors: $errors)';
+    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: ${eventType.name}, newRow: $newRecord, oldRow: $oldRecord, errors: $errors)';
   }
 
   @override
@@ -352,7 +352,7 @@ abstract class RealtimePresencePayload {
       : event = PresenceEventExtended.fromString(json['event']);
 
   @override
-  String toString() => 'PresencePayload(event: $event)';
+  String toString() => 'PresencePayload(event: ${event.name})';
 }
 
 /// Payload for [PresenceEvent.sync] callback.
@@ -368,7 +368,7 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
   }
 
   @override
-  String toString() => 'PresenceSyncPayload(event: $event)';
+  String toString() => 'PresenceSyncPayload(event: ${event.name})';
 }
 
 /// Payload for [PresenceEvent.join] callback.

@@ -196,7 +196,7 @@ class RealtimeClient {
                 ? _decodeLegacy
                 : _serializer.decode) {
     _log.config(
-        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: $logLevel');
+        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: ${logLevel?.name}');
     _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
@@ -409,7 +409,7 @@ class RealtimeClient {
       conn?.sink.add(encode(message.toJson()));
     }
 
-    log('push', '${message.topic} ${message.event} (${message.ref})',
+    log('push', '${message.topic} ${message.event.name} (${message.ref})',
         message.payload);
 
     if (isConnected) {
