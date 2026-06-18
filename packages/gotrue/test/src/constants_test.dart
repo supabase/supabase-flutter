@@ -214,6 +214,13 @@ void main() {
       expect(OtpChannel.values, contains(OtpChannel.sms));
       expect(OtpChannel.values, contains(OtpChannel.whatsapp));
     });
+
+    // The name is sent to the server as the `channel` value, so it is part of
+    // the wire contract.
+    test('enum names match the wire values', () {
+      expect(OtpChannel.sms.name, equals('sms'));
+      expect(OtpChannel.whatsapp.name, equals('whatsapp'));
+    });
   });
 
   group('SignOutScope', () {
@@ -222,6 +229,14 @@ void main() {
       expect(SignOutScope.values, contains(SignOutScope.global));
       expect(SignOutScope.values, contains(SignOutScope.local));
       expect(SignOutScope.values, contains(SignOutScope.others));
+    });
+
+    // The name is sent to the server as the `scope` query value, so it is part
+    // of the wire contract.
+    test('enum names match the wire values', () {
+      expect(SignOutScope.global.name, equals('global'));
+      expect(SignOutScope.local.name, equals('local'));
+      expect(SignOutScope.others.name, equals('others'));
     });
   });
 
