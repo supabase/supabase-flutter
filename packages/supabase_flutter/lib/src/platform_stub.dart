@@ -1,5 +1,5 @@
-String? get condPlatform => null;
+String? get conditionalPlatform => null;
 
-String? get condPlatformVersion => null;
+String? get conditionalPlatformVersion => null;
 
-String? get condRuntimeVersion => null;
+String? get conditionalRuntimeVersion => null;
