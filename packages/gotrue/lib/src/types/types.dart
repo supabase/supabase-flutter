@@ -88,6 +88,7 @@ final class OAuthProvider {
   /// misleading for custom providers whose names may not be snake_case.
   /// Use [name] directly instead.
   @Deprecated('Use name instead.')
+  // ignore: match-getter-setter-field-names
   String get snakeCase => name;
 
   @override

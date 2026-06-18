@@ -18,7 +18,6 @@ dcm:
     avoid-commented-out-code: false
     avoid-constant-conditions: false
     avoid-default-tostring: false
-    avoid-duplicate-constant-values: false
     avoid-duplicate-initializers: false
     avoid-duplicate-test-assertions: false
     avoid-dynamic: false
@@ -26,22 +25,17 @@ dcm:
     avoid-never-passed-parameters: false
     avoid-nullable-interpolation: false
     avoid-passing-async-when-sync-expected: false
-    avoid-passing-self-as-argument: false
     avoid-self-compare: false
     avoid-shadowing: false
     avoid-throw-in-catch-block: false
-    avoid-unassigned-fields: false
     avoid-unassigned-stream-subscriptions: false
     avoid-unconditional-break: false
     avoid-unnecessary-nullable-parameters: false
     avoid-unnecessary-nullable-return-type: false
     avoid-unnecessary-reassignment: false
-    avoid-unnecessary-type-assertions: false
     avoid-unsafe-collection-methods: false
     avoid-unused-parameters: false
     avoid-wildcard-cases-with-enums: false
-    function-always-returns-null: false
-    match-getter-setter-field-names: false
     move-variable-closer-to-its-usage: false
     no-empty-block: false
     no-equal-switch-case: false

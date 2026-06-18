@@ -430,7 +430,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Function? onError,
   }) {
     if (onError != null &&
+        // ignore: avoid-unnecessary-type-assertions
         onError is! Function(Object, StackTrace) &&
+        // ignore: avoid-unnecessary-type-assertions
         onError is! Function(Object)) {
       return Future.error(ArgumentError.value(
         onError,

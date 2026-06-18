@@ -24,6 +24,7 @@ class Serializer {
   static const int kindUserBroadcastPush = 3;
 
   /// Binary frame received from the server for a broadcast.
+  // ignore: avoid-duplicate-constant-values
   static const int kindUserBroadcast = 4;
 
   static const int binaryEncoding = 0;
