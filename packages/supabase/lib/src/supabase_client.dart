@@ -65,8 +65,8 @@ class SupabaseClient {
   late final RealtimeClient realtime;
   late final PostgrestClient rest;
   StreamSubscription<AuthState>? _authStateSubscription;
-  late final YAJsonIsolate _isolate;
-  late final bool _hasCustomIsolate;
+  final YAJsonIsolate _isolate;
+  final bool _hasCustomIsolate;
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each stream

@@ -301,6 +301,7 @@ Future<RealtimeSubscribeStatus> _subscribe(RealtimeChannel channel) {
         status == RealtimeSubscribeStatus.timedOut) {
       completer.completeError(
         StateError('Failed to subscribe: $status ($error)'),
+        StackTrace.current,
       );
     }
   });

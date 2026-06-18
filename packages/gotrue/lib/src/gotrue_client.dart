@@ -1401,7 +1401,7 @@ class GoTrueClient {
     _broadcastChannelSubscription?.cancel();
     for (final completer in _pendingRefreshes.values) {
       if (!completer.isCompleted) {
-        completer.completeError(AuthException('Disposed'));
+        completer.completeError(AuthException('Disposed'), StackTrace.current);
       }
     }
     _pendingRefreshes.clear();
