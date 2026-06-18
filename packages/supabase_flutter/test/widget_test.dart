@@ -8,7 +8,7 @@ void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
 
-  setUpAll(() async {
+  setUpAll(() {
     mockAppLink();
   });
 
@@ -19,7 +19,7 @@ void main() {
       url: supabaseUrl,
       publishableKey: supabaseKey,
       authOptions: FlutterAuthClientOptions(
-        localStorage: MockLocalStorage(),
+        localStorage: const MockLocalStorage(),
         pkceAsyncStorage: MockAsyncStorage(),
       ),
     );

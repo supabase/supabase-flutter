@@ -8,7 +8,7 @@ class Message {
   final String? ref;
   final String? joinRef;
 
-  Message({
+  const Message({
     required this.topic,
     required this.event,
     required this.payload,
@@ -18,7 +18,7 @@ class Message {
 
   /// Converting to JSON while removing functions
   Map<String, dynamic> toJson() {
-    late final dynamic processedPayload;
+    final dynamic processedPayload;
     if (payload is Map) {
       processedPayload = <String, dynamic>{};
       for (final outerKey in payload.keys) {

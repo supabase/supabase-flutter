@@ -22,62 +22,48 @@ dcm:
     avoid-duplicate-initializers: false
     avoid-duplicate-test-assertions: false
     avoid-dynamic: false
-    avoid-excessive-expressions: false
-    avoid-inferrable-type-arguments: false
     avoid-map-keys-contains: false
     avoid-missing-completer-stack-trace: false
     avoid-missing-enum-constant-in-map: false
-    avoid-misused-set-literals: false
     avoid-misused-test-matchers: false
     avoid-never-passed-parameters: false
     avoid-nullable-interpolation: false
     avoid-nullable-tostring: false
-    avoid-only-rethrow: false
     avoid-passing-async-when-sync-expected: false
     avoid-passing-self-as-argument: false
-    avoid-redundant-async: false
-    avoid-redundant-else: false
     avoid-self-compare: false
     avoid-shadowing: false
     avoid-throw-in-catch-block: false
     avoid-unassigned-fields: false
     avoid-unassigned-stream-subscriptions: false
     avoid-unconditional-break: false
-    avoid-unnecessary-futures: false
     avoid-unnecessary-late-fields: false
-    avoid-unnecessary-local-late: false
-    avoid-unnecessary-local-variable: false
     avoid-unnecessary-nullable-parameters: false
     avoid-unnecessary-nullable-return-type: false
     avoid-unnecessary-reassignment: false
     avoid-unnecessary-return: false
-    avoid-unnecessary-super: false
     avoid-unnecessary-type-assertions: false
-    avoid-unnecessary-type-casts: false
     avoid-unsafe-collection-methods: false
     avoid-unused-parameters: false
     avoid-wildcard-cases-with-enums: false
-    dispose-class-fields: false
     function-always-returns-null: false
     match-getter-setter-field-names: false
     move-variable-closer-to-its-usage: false
     no-empty-block: false
     no-equal-switch-case: false
-    no-equal-then-else: false
     prefer-correct-callback-field-name: false
     prefer-correct-json-casts: false
-    prefer-declaring-const-constructor: false
     prefer-explicit-function-type: false
-    prefer-iterable-of: false
     prefer-match-file-name: false
-    prefer-null-aware-elements: false
-    prefer-null-aware-spread: false
     prefer-overriding-parent-equality: false
-    prefer-parentheses-with-if-null: false
     prefer-prefixed-global-constants: false
-    prefer-return-await: false
-    prefer-returning-shorthands: false
-    prefer-shorthands-with-enums: false
-    prefer-shorthands-with-static-fields: false
     prefer-switch-with-enums: false
     proper-super-calls: false
+
+    # Blocked until the minimum Dart SDK is raised. The fixes these rules
+    # suggest rely on language features newer than our current floor of 3.4.0,
+    # so they cannot be enabled yet.
+    prefer-null-aware-elements: false # needs null-aware elements (Dart 3.8)
+    prefer-returning-shorthands: false # needs dot shorthands (Dart 3.9)
+    prefer-shorthands-with-enums: false # needs dot shorthands (Dart 3.9)
+    prefer-shorthands-with-static-fields: false # needs dot shorthands (Dart 3.9)

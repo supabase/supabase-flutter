@@ -372,7 +372,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
 
   String generateRawNonce() {
     final random = Random.secure();
-    return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
+    return base64Url.encode(List.generate(16, (_) => random.nextInt(256)));
   }
 
   /// Links an oauth identity to an existing user.

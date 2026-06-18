@@ -183,7 +183,7 @@ class RealtimeClient {
             .toString(),
         headers = {
           ...Constants.defaultHeaders,
-          if (headers != null) ...headers,
+          ...?headers,
         },
         transport = transport ?? createWebSocketClient,
         encode = encode ??
@@ -385,10 +385,7 @@ class RealtimeClient {
   /// Removes a subscription from the socket.
   @internal
   void remove(RealtimeChannel channel) {
-    channels = channels
-        .where((c) => c.joinRef != channel.joinRef)
-        .toList()
-        .cast<RealtimeChannel>();
+    channels = channels.where((c) => c.joinRef != channel.joinRef).toList();
   }
 
   RealtimeChannel channel(
@@ -459,7 +456,7 @@ class RealtimeClient {
       jsonEncode(message);
 
   static Map<String, dynamic> _decodeLegacy(Object rawMessage) =>
-      Map<String, dynamic>.from(jsonDecode(rawMessage as String) as Map);
+      Map.from(jsonDecode(rawMessage as String) as Map);
 
   /// Returns the URL of the websocket.
   String get endPointURL {

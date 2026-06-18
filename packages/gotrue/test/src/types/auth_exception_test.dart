@@ -415,7 +415,7 @@ void main() {
 
   group('Exception hierarchy', () {
     test('can catch all auth exceptions as AuthException', () {
-      final exceptions = <AuthException>[
+      final exceptions = [
         const AuthException('base error'),
         AuthPKCEGrantCodeExchangeError('pkce error'),
         AuthSessionMissingException(),

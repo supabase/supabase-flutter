@@ -16,4 +16,7 @@ class AuthHttpClient extends BaseClient {
     request.headers.putIfAbsent("apikey", () => _supabaseKey);
     return _inner.send(request);
   }
+
+  @override
+  void close() => _inner.close();
 }

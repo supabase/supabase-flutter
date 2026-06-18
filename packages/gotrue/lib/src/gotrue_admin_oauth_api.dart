@@ -8,7 +8,7 @@ import 'types/types.dart';
 class OAuthClientResponse {
   final OAuthClient? client;
 
-  OAuthClientResponse({this.client});
+  const OAuthClientResponse({this.client});
 
   factory OAuthClientResponse.fromJson(Map<String, dynamic> json) {
     return OAuthClientResponse(
@@ -26,7 +26,7 @@ class OAuthClientListResponse {
   final int? lastPage;
   final int total;
 
-  OAuthClientListResponse({
+  const OAuthClientListResponse({
     required this.clients,
     this.aud,
     this.nextPage,
@@ -54,7 +54,7 @@ class GoTrueAdminOAuthApi {
   final Map<String, String> _headers;
   final GotrueFetch _fetch;
 
-  GoTrueAdminOAuthApi({
+  const GoTrueAdminOAuthApi({
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,

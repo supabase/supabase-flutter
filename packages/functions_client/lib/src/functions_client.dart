@@ -100,7 +100,7 @@ class FunctionsClient {
 
     // Merge query parameters with forceFunctionRegion if region is specified
     final effectiveQueryParams = <String, dynamic>{
-      if (queryParameters != null) ...queryParameters,
+      ...?queryParameters,
       if (effectiveRegion != null && effectiveRegion != 'any')
         'forceFunctionRegion': effectiveRegion,
     };
@@ -111,7 +111,7 @@ class FunctionsClient {
 
     final finalHeaders = <String, String>{
       ..._headers,
-      if (headers != null) ...headers,
+      ...?headers,
       if (effectiveRegion != null && effectiveRegion != 'any')
         'x-region': effectiveRegion,
     };
@@ -182,13 +182,12 @@ class FunctionsClient {
 
     if (200 <= response.statusCode && response.statusCode < 300) {
       return FunctionResponse(data: data, status: response.statusCode);
-    } else {
-      throw FunctionException(
-        status: response.statusCode,
-        details: data,
-        reasonPhrase: response.reasonPhrase,
-      );
     }
+    throw FunctionException(
+      status: response.statusCode,
+      details: data,
+      reasonPhrase: response.reasonPhrase,
+    );
   }
 
   /// Disposes the self created isolate for json encoding/decoding

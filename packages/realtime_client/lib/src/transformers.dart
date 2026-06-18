@@ -199,26 +199,24 @@ bool? toBoolean(dynamic value) {
 double? toDouble(dynamic value) {
   if (value is double) {
     return value;
-  } else {
-    try {
-      final temp = value.toString();
-      return double.parse(temp);
-    } catch (_) {
-      return null;
-    }
+  }
+  try {
+    final temp = value.toString();
+    return double.parse(temp);
+  } catch (_) {
+    return null;
   }
 }
 
 int? toInt(dynamic value) {
   if (value is int) {
     return value;
-  } else {
-    try {
-      final temp = value.toString();
-      return int.parse(temp);
-    } catch (_) {
-      return null;
-    }
+  }
+  try {
+    final temp = value.toString();
+    return int.parse(temp);
+  } catch (_) {
+    return null;
   }
 }
 
@@ -310,6 +308,7 @@ Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
 
 Map<String, Map<String, dynamic>> getPayloadRecords(
     Map<String, dynamic> payload) {
+  // ignore: avoid-inferrable-type-arguments
   final records = <String, Map<String, dynamic>>{
     'new': {},
     'old': {},

@@ -34,7 +34,7 @@ class _MyWidgetState extends State<MyWidget> {
     super.initState();
   }
 
-  Future<void> _getAuth() async {
+  void _getAuth() {
     setState(() {
       _user = Supabase.instance.client.auth.currentUser;
     });

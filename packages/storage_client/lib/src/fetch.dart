@@ -37,7 +37,7 @@ class Fetch {
     if (error is http.Response) {
       if (options?.noResolveJson == true) {
         return StorageException(
-          error.body.isEmpty ? error.reasonPhrase ?? '' : error.body,
+          error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
           statusCode: '${error.statusCode}',
         );
       }
@@ -103,7 +103,7 @@ class Fetch {
     FetchOptions? options,
     int retryAttempts,
     StorageRetryController? retryController,
-  ) async {
+  ) {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
         : _parseMediaType(file.path);
@@ -132,7 +132,7 @@ class Fetch {
     FetchOptions? options,
     int retryAttempts,
     StorageRetryController? retryController,
-  ) async {
+  ) {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
         : _parseMediaType(url);
@@ -194,9 +194,8 @@ class Fetch {
 
         if (httpClient != null) {
           return httpClient!.send(request);
-        } else {
-          return request.send();
         }
+        return request.send();
       },
       retryIf: (error) =>
           retryController?.cancelled != true &&
@@ -214,21 +213,19 @@ class Fetch {
     if (_isSuccessStatusCode(response.statusCode)) {
       if (options?.noResolveJson == true) {
         return response.bodyBytes;
-      } else {
-        final jsonBody = json.decode(response.body);
-        return jsonBody;
       }
-    } else {
-      throw _handleError(
-        response,
-        StackTrace.current,
-        response.request?.url,
-        options,
-      );
+      final jsonBody = json.decode(response.body);
+      return jsonBody;
     }
+    throw _handleError(
+      response,
+      StackTrace.current,
+      response.request?.url,
+      options,
+    );
   }
 
-  Future<dynamic> head(String url, {FetchOptions? options}) async {
+  Future<dynamic> head(String url, {FetchOptions? options}) {
     return _handleRequest(
       'HEAD',
       url,
@@ -237,7 +234,7 @@ class Fetch {
     );
   }
 
-  Future<dynamic> get(String url, {FetchOptions? options}) async {
+  Future<dynamic> get(String url, {FetchOptions? options}) {
     return _handleRequest('GET', url, null, options);
   }
 
@@ -245,7 +242,7 @@ class Fetch {
     String url,
     Map<String, dynamic>? body, {
     FetchOptions? options,
-  }) async {
+  }) {
     return _handleRequest('POST', url, body, options);
   }
 
@@ -253,7 +250,7 @@ class Fetch {
     String url,
     Map<String, dynamic>? body, {
     FetchOptions? options,
-  }) async {
+  }) {
     return _handleRequest('PUT', url, body, options);
   }
 
@@ -261,7 +258,7 @@ class Fetch {
     String url,
     Map<String, dynamic>? body, {
     FetchOptions? options,
-  }) async {
+  }) {
     return _handleRequest('DELETE', url, body, options);
   }
 
@@ -272,7 +269,7 @@ class Fetch {
     FetchOptions? options,
     required int retryAttempts,
     required StorageRetryController? retryController,
-  }) async {
+  }) {
     return _handleFileRequest(
       'POST',
       url,
@@ -291,7 +288,7 @@ class Fetch {
     FetchOptions? options,
     required int retryAttempts,
     required StorageRetryController? retryController,
-  }) async {
+  }) {
     return _handleFileRequest(
       'PUT',
       url,
@@ -310,7 +307,7 @@ class Fetch {
     FetchOptions? options,
     required int retryAttempts,
     required StorageRetryController? retryController,
-  }) async {
+  }) {
     return _handleBinaryFileRequest(
       'POST',
       url,
@@ -329,7 +326,7 @@ class Fetch {
     FetchOptions? options,
     required int retryAttempts,
     required StorageRetryController? retryController,
-  }) async {
+  }) {
     return _handleBinaryFileRequest(
       'PUT',
       url,

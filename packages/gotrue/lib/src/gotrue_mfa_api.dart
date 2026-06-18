@@ -4,7 +4,7 @@ class GoTrueMFAApi {
   final GoTrueClient _client;
   final GotrueFetch _fetch;
 
-  GoTrueMFAApi({required GoTrueClient client, required GotrueFetch fetch})
+  const GoTrueMFAApi({required GoTrueClient client, required GotrueFetch fetch})
       : _client = client,
         _fetch = fetch;
 

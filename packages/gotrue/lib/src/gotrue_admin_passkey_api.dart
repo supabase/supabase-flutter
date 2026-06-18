@@ -18,7 +18,7 @@ class GoTrueAdminPasskeyApi {
   final Map<String, String> _headers;
   final GotrueFetch _fetch;
 
-  GoTrueAdminPasskeyApi({
+  const GoTrueAdminPasskeyApi({
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,
@@ -44,9 +44,7 @@ class GoTrueAdminPasskeyApi {
         data.toString(),
       );
     }
-    return data
-        .map((e) => Passkey.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    return data.map((e) => Passkey.fromJson(Map.from(e as Map))).toList();
   }
 
   /// Deletes the passkey with [passkeyId] from the user with [userId].

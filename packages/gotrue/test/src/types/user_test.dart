@@ -259,7 +259,7 @@ void main() {
       test('serializes user correctly', () {
         const user = User(
           id: '123',
-          appMetadata: <String, dynamic>{'provider': 'email'},
+          appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
           confirmationSentAt: '2023-01-01T00:00:00Z',
@@ -318,7 +318,7 @@ void main() {
 
         const user = User(
           id: '123',
-          appMetadata: <String, dynamic>{},
+          appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
           createdAt: '2023-01-01T00:00:00Z',
@@ -335,7 +335,7 @@ void main() {
       test('handles null identities and factors', () {
         const user = User(
           id: '123',
-          appMetadata: <String, dynamic>{},
+          appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
           createdAt: '2023-01-01T00:00:00Z',
@@ -354,7 +354,7 @@ void main() {
       test('includes all user properties', () {
         const user = User(
           id: '123',
-          appMetadata: <String, dynamic>{'provider': 'email'},
+          appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
           email: 'test@example.com',
@@ -375,7 +375,7 @@ void main() {
       test('returns true for identical users', () {
         const user1 = User(
           id: '123',
-          appMetadata: <String, dynamic>{'provider': 'email'},
+          appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
           email: 'test@example.com',
@@ -385,7 +385,7 @@ void main() {
 
         const user2 = User(
           id: '123',
-          appMetadata: <String, dynamic>{'provider': 'email'},
+          appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
           email: 'test@example.com',
@@ -400,7 +400,7 @@ void main() {
       test('returns false for users with different ids', () {
         const user1 = User(
           id: '123',
-          appMetadata: <String, dynamic>{},
+          appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
           createdAt: '2023-01-01T00:00:00Z',
@@ -408,7 +408,7 @@ void main() {
 
         const user2 = User(
           id: '456',
-          appMetadata: <String, dynamic>{},
+          appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
           createdAt: '2023-01-01T00:00:00Z',
@@ -440,7 +440,7 @@ void main() {
       test('handles deep collection equality correctly', () {
         const user1 = User(
           id: '123',
-          appMetadata: <String, dynamic>{
+          appMetadata: {
             'nested': <String, dynamic>{'key': 'value'}
           },
           userMetadata: <String, dynamic>{
@@ -452,7 +452,7 @@ void main() {
 
         const user2 = User(
           id: '123',
-          appMetadata: <String, dynamic>{
+          appMetadata: {
             'nested': <String, dynamic>{'key': 'value'}
           },
           userMetadata: <String, dynamic>{
@@ -468,7 +468,7 @@ void main() {
       test('returns true for reference equality', () {
         const user = User(
           id: '123',
-          appMetadata: <String, dynamic>{},
+          appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
           createdAt: '2023-01-01T00:00:00Z',
@@ -482,7 +482,7 @@ void main() {
       test('preserves all data through JSON roundtrip', () {
         const original = User(
           id: '123',
-          appMetadata: <String, dynamic>{'provider': 'email'},
+          appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
           email: 'test@example.com',
@@ -500,7 +500,7 @@ void main() {
       test('preserves complex nested data', () {
         const original = User(
           id: '123',
-          appMetadata: <String, dynamic>{
+          appMetadata: {
             'provider': 'oauth',
             'providers': ['google', 'facebook'],
             'nested': <String, dynamic>{'deep': 'value'}
