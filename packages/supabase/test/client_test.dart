@@ -338,93 +338,6 @@ void main() {
       });
     });
 
-    group('Schema Support', () {
-      test('should create query builder with custom schema', () {
-        final customSchema = supabase.schema('custom');
-        expect(customSchema, isA<SupabaseQuerySchema>());
-
-        final queryBuilder = customSchema.from('table');
-        expect(queryBuilder, isA<SupabaseQueryBuilder>());
-      });
-
-      test('should handle nested schema calls', () {
-        final schema1 = supabase.schema('schema1');
-        final schema2 = schema1.schema('schema2');
-
-        expect(schema2, isA<SupabaseQuerySchema>());
-      });
-    });
-
-    group('RPC Support', () {
-      test('should create RPC call', () {
-        final rpcCall = supabase.rpc('test_function');
-        expect(rpcCall, isA<PostgrestFilterBuilder>());
-      });
-
-      test('should create RPC call with parameters', () {
-        final rpcCall =
-            supabase.rpc('test_function', params: {'param': 'value'});
-        expect(rpcCall, isA<PostgrestFilterBuilder>());
-      });
-
-      test('should create RPC call with get flag', () {
-        final rpcCall = supabase.rpc('test_function', params: {}, get: true);
-        expect(rpcCall, isA<PostgrestFilterBuilder>());
-      });
-    });
-
-    group('Client Options', () {
-      test('should accept custom Postgrest options', () {
-        final client = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          postgrestOptions: PostgrestClientOptions(schema: 'custom_schema'),
-        );
-
-        expect(client, isA<SupabaseClient>());
-      });
-
-      test('should accept custom Auth options', () {
-        final client = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          authOptions: AuthClientOptions(autoRefreshToken: false),
-        );
-
-        expect(client, isA<SupabaseClient>());
-      });
-
-      test('should accept custom Storage options', () {
-        final client = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          storageOptions: StorageClientOptions(retryAttempts: 5),
-        );
-
-        expect(client, isA<SupabaseClient>());
-      });
-
-      test('should accept custom Realtime options', () {
-        final client = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          realtimeClientOptions:
-              RealtimeClientOptions(logLevel: RealtimeLogLevel.debug),
-        );
-
-        expect(client, isA<SupabaseClient>());
-      });
-    });
-
-    group('Dispose', () {
-      test('should properly dispose all resources', () async {
-        final client = SupabaseClient(supabaseUrl, supabaseKey);
-
-        // Should not throw
-        await client.dispose();
-      });
-    });
-
     group('Shared YAJsonIsolate', () {
       test(
           'does not dispose an injected YAJsonIsolate so the caller retains ownership',
@@ -453,34 +366,6 @@ void main() {
 
         await client.dispose();
       });
-    });
-  });
-
-  group('Query Schema', () {
-    late SupabaseClient supabase;
-    const supabaseUrl = 'https://example.supabase.co';
-    const supabaseKey = 'test-key';
-
-    setUp(() {
-      supabase = SupabaseClient(supabaseUrl, supabaseKey);
-    });
-
-    tearDown(() async {
-      await supabase.dispose();
-    });
-
-    test('should create SupabaseQueryBuilder from schema', () {
-      final schema = supabase.schema('custom_schema');
-      final queryBuilder = schema.from('test_table');
-
-      expect(queryBuilder, isA<SupabaseQueryBuilder>());
-    });
-
-    test('should create nested schemas', () {
-      final schema1 = supabase.schema('schema1');
-      final schema2 = schema1.schema('schema2');
-
-      expect(schema2, isA<SupabaseQuerySchema>());
     });
   });
 

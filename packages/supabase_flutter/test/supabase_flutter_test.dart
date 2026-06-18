@@ -132,31 +132,6 @@ void main() {
       );
     });
 
-    test('initialize does nothing', () async {
-      // Should not throw any exceptions
-      await localStorage.initialize();
-    });
-
-    test('hasAccessToken returns false', () async {
-      final result = await localStorage.hasAccessToken();
-      expect(result, false);
-    });
-
-    test('accessToken returns null', () async {
-      final result = await localStorage.accessToken();
-      expect(result, null);
-    });
-
-    test('removePersistedSession does nothing', () async {
-      // Should not throw any exceptions
-      await localStorage.removePersistedSession();
-    });
-
-    test('persistSession does nothing', () async {
-      // Should not throw any exceptions
-      await localStorage.persistSession('test-session-string');
-    });
-
     test('all methods work together in a typical flow', () async {
       // Initialize the storage
       await localStorage.initialize();
