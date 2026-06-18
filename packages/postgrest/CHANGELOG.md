@@ -1,3 +1,7 @@
+## 2.7.2
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
 ## 2.7.1
 
  - **FIX**(postgrest): include caller frames in PostgrestException stack traces ([#1387](https://github.com/supabase/supabase-flutter/issues/1387)). ([716121a5](https://github.com/supabase/supabase-flutter/commit/716121a5c749bdf9fb9e07b6103a3f058fc4f79d))
