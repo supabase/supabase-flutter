@@ -358,7 +358,7 @@ void main() {
       final res =
           await postgrest.from('users').select('*').count(CountOption.planned);
       final int count = res.count;
-      expect(count, isNotNull);
+      expect(count, greaterThanOrEqualTo(0));
     });
 
     test('select with head:true, count: estimated', () async {
@@ -377,7 +377,7 @@ void main() {
         'get_status',
         params: {'name_param': 'supabot'},
       ).count(CountOption.exact);
-      expect(res, isNotNull);
+      expect(res.count, greaterThanOrEqualTo(0));
     });
 
     test('insert with count: exact', () async {
@@ -454,7 +454,6 @@ void main() {
           .from('users')
           .select()
           .withConverter((data) => [data]);
-      expect(res, isNotNull);
       expect(res, isNotEmpty);
       expect(res.first, isNotEmpty);
       expect(res.first, isA<List>());

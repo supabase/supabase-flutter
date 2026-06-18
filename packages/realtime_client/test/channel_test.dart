@@ -808,7 +808,8 @@ void main() {
 
       await expectLater(
         sendFuture,
-        throwsA(predicate((Object e) => e.toString().contains('Server error'))),
+        throwsA(predicate(
+            (Object error) => error.toString().contains('Server error'))),
       );
     });
 

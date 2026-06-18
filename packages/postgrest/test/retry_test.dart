@@ -100,7 +100,7 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').insert({'name': 'foo'}),
+        () => client.from('users').insert({'name': 'foo'}),
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 1);
@@ -123,7 +123,7 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 1);
@@ -145,7 +145,7 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').insert({'name': 'foo'}),
+        () => client.from('users').insert({'name': 'foo'}),
         throwsA(isA<SocketException>()),
       );
       expect(mock.callCount, 1);
@@ -157,7 +157,7 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 4);
@@ -168,7 +168,7 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').select().retry(enabled: false),
+        () => client.from('users').select().retry(enabled: false),
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 1);
@@ -180,7 +180,7 @@ void main() {
       final client = _buildClient(mock, retryEnabled: false);
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 1);
@@ -208,7 +208,7 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(isA<SocketException>()),
       );
       expect(mock.callCount, 4);
