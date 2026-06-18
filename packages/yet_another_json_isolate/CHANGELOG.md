@@ -1,3 +1,7 @@
+## 2.1.1
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
 ## 2.1.0
 
  - **FEAT**: Add debugName parameter to YAJsonIsolate. ([#1118](https://github.com/supabase/supabase-flutter/issues/1118)). ([23ffc0e9](https://github.com/supabase/supabase-flutter/commit/23ffc0e9e3145adf49f7bb3d85c0cf4191ba9b99))

@@ -59,13 +59,7 @@ void main() {
       accessToken: () async => 'my-access-token',
     );
 
-    // print(supabase.client.auth.runtimeType);
-
-    void accessAuth() {
-      supabase.client.auth;
-    }
-
-    expect(accessAuth, throwsA(isA<AuthException>()));
+    expect(() => supabase.client.auth, throwsA(isA<AuthException>()));
   });
 
   group("Expired session", () {
