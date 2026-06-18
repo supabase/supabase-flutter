@@ -48,7 +48,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       newHeaders['Prefer'] = '${newHeaders['Prefer']},';
     }
     newHeaders['Prefer'] = '${newHeaders['Prefer']}return=representation';
-    return PostgrestTransformBuilder<PostgrestList>(
+    return PostgrestTransformBuilder(
       _copyWithType(
         url: url,
         headers: newHeaders,

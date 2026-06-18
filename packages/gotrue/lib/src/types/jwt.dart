@@ -14,7 +14,7 @@ class JwtHeader {
   /// Token type - typically 'JWT'
   final String? typ;
 
-  JwtHeader({
+  const JwtHeader({
     required this.alg,
     this.kid,
     this.typ,
@@ -83,12 +83,12 @@ class JwtPayload {
       nbf: json['nbf'] as int?,
       iat: json['iat'] as int?,
       jti: json['jti'] as String?,
-      claims: Map<String, dynamic>.from(json),
+      claims: Map<String, dynamic>.of(json),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return Map<String, dynamic>.from(claims);
+    return Map.of(claims);
   }
 }
 
@@ -106,7 +106,7 @@ class DecodedJwt {
   /// Raw encoded parts of the JWT
   final JwtRawParts raw;
 
-  DecodedJwt({
+  const DecodedJwt({
     required this.header,
     required this.payload,
     required this.signature,
@@ -125,7 +125,7 @@ class JwtRawParts {
   /// Raw base64url encoded signature
   final String signature;
 
-  JwtRawParts({
+  const JwtRawParts({
     required this.header,
     required this.payload,
     required this.signature,
@@ -143,7 +143,7 @@ class GetClaimsResponse {
   /// JWT signature
   final List<int> signature;
 
-  GetClaimsResponse({
+  const GetClaimsResponse({
     required this.claims,
     required this.header,
     required this.signature,
@@ -164,7 +164,7 @@ class GetClaimsOptions {
 class JWKSet {
   final List<JWK> keys;
 
-  JWKSet({required this.keys});
+  const JWKSet({required this.keys});
 
   factory JWKSet.fromJson(Map<String, dynamic> json) {
     final keys = (json['keys'] as List<dynamic>?)
@@ -221,7 +221,7 @@ class JWK {
     final alg = json['alg'] as String?;
     final kid = json['kid'] as String?;
 
-    final Map<String, dynamic> additionalProperties = Map.from(json);
+    final Map<String, dynamic> additionalProperties = Map.of(json);
     additionalProperties.remove('kty');
     additionalProperties.remove('key_ops');
     additionalProperties.remove('alg');

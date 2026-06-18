@@ -139,123 +139,121 @@ class RealtimeChannel {
     }
     if (joinedOnce == true) {
       throw "tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance";
-    } else {
-      final broadcast = params['config']['broadcast'];
-      final presence = params['config']['presence'];
-      final isPrivate = params['config']['private'];
+    }
+    final broadcast = params['config']['broadcast'];
+    final presence = params['config']['presence'];
+    final isPrivate = params['config']['private'];
 
-      _onError((e) {
-        if (callback != null) callback(RealtimeSubscribeStatus.channelError, e);
-      });
-      _onClose(() {
-        if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
-      });
+    _onError((e) {
+      if (callback != null) callback(RealtimeSubscribeStatus.channelError, e);
+    });
+    _onClose(() {
+      if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
+    });
 
-      final presenceEnabled = _shouldEnablePresence();
+    final presenceEnabled = _shouldEnablePresence();
 
-      final accessTokenPayload = <String, String>{};
-      final config = <String, dynamic>{
-        'broadcast': broadcast,
-        'presence': {...presence, 'enabled': presenceEnabled},
-        'postgres_changes':
-            _bindings['postgres_changes']?.map((r) => r.filter).toList() ?? [],
-        'private': isPrivate == true,
-      };
+    final accessTokenPayload = <String, String>{};
+    final config = {
+      'broadcast': broadcast,
+      'presence': {...presence, 'enabled': presenceEnabled},
+      'postgres_changes':
+          _bindings['postgres_changes']?.map((r) => r.filter).toList() ?? [],
+      'private': isPrivate == true,
+    };
 
-      if (socket.accessToken != null) {
-        accessTokenPayload['access_token'] = socket.accessToken!;
-      }
+    if (socket.accessToken != null) {
+      accessTokenPayload['access_token'] = socket.accessToken!;
+    }
 
-      updateJoinPayload({'config': config, ...accessTokenPayload});
+    updateJoinPayload({'config': config, ...accessTokenPayload});
 
-      joinedOnce = true;
-      rejoin(timeout ?? _timeout);
+    joinedOnce = true;
+    rejoin(timeout ?? _timeout);
 
-      joinPush.receive(
-        'ok',
-        (response) async {
-          final serverPostgresFilters = response['postgres_changes'];
-          if (socket.accessToken != null) {
-            try {
-              await socket.setAuth(socket.accessToken);
-            } on FormatException catch (e) {
-              // The cached access token may have expired by the time the
-              // channel rejoins (e.g. after the device wakes from a long
-              // sleep). Auth state listeners will re-call setAuth with a
-              // fresh token shortly after, so swallow this specific error
-              // to avoid surfacing it as an uncaught exception. The same
-              // filter is applied in `SupabaseClient._handleTokenChanged`.
-              if (!e.message.contains('InvalidJWTToken')) {
-                rethrow;
-              }
+    joinPush.receive(
+      'ok',
+      (response) async {
+        final serverPostgresFilters = response['postgres_changes'];
+        if (socket.accessToken != null) {
+          try {
+            await socket.setAuth(socket.accessToken);
+          } on FormatException catch (e) {
+            // The cached access token may have expired by the time the
+            // channel rejoins (e.g. after the device wakes from a long
+            // sleep). Auth state listeners will re-call setAuth with a
+            // fresh token shortly after, so swallow this specific error
+            // to avoid surfacing it as an uncaught exception. The same
+            // filter is applied in `SupabaseClient._handleTokenChanged`.
+            if (!e.message.contains('InvalidJWTToken')) {
+              rethrow;
             }
           }
+        }
 
-          if (serverPostgresFilters == null) {
-            if (callback != null) {
-              callback(RealtimeSubscribeStatus.subscribed, null);
-            }
-            return;
+        if (serverPostgresFilters == null) {
+          if (callback != null) {
+            callback(RealtimeSubscribeStatus.subscribed, null);
+          }
+          return;
+        }
+        final clientPostgresBindings = _bindings['postgres_changes'];
+        final bindingsLen = clientPostgresBindings?.length ?? 0;
+        final newPostgresBindings = <Binding>[];
+
+        for (var i = 0; i < bindingsLen; i++) {
+          final clientPostgresBinding = clientPostgresBindings![i];
+
+          final event = clientPostgresBinding.filter['event'];
+          final schema = clientPostgresBinding.filter['schema'];
+          final table = clientPostgresBinding.filter['table'];
+          final filter = clientPostgresBinding.filter['filter'];
+          final serverPostgresFilter = serverPostgresFilters[i];
+
+          if (serverPostgresFilter != null &&
+              serverPostgresFilter['event'] == event &&
+              serverPostgresFilter['schema'] == schema &&
+              serverPostgresFilter['table'] == table &&
+              serverPostgresFilter['filter'] == filter) {
+            newPostgresBindings.add(clientPostgresBinding.copyWith(
+              id: serverPostgresFilter['id']?.toString(),
+            ));
           } else {
-            final clientPostgresBindings = _bindings['postgres_changes'];
-            final bindingsLen = clientPostgresBindings?.length ?? 0;
-            final newPostgresBindings = <Binding>[];
-
-            for (var i = 0; i < bindingsLen; i++) {
-              final clientPostgresBinding = clientPostgresBindings![i];
-
-              final event = clientPostgresBinding.filter['event'];
-              final schema = clientPostgresBinding.filter['schema'];
-              final table = clientPostgresBinding.filter['table'];
-              final filter = clientPostgresBinding.filter['filter'];
-              final serverPostgresFilter = serverPostgresFilters[i];
-
-              if (serverPostgresFilter != null &&
-                  serverPostgresFilter['event'] == event &&
-                  serverPostgresFilter['schema'] == schema &&
-                  serverPostgresFilter['table'] == table &&
-                  serverPostgresFilter['filter'] == filter) {
-                newPostgresBindings.add(clientPostgresBinding.copyWith(
-                  id: serverPostgresFilter['id']?.toString(),
-                ));
-              } else {
-                unsubscribe();
-                if (callback != null) {
-                  callback(
-                    RealtimeSubscribeStatus.channelError,
-                    Exception(
-                        'mismatch between server and client bindings for postgres changes'),
-                  );
-                }
-                return;
-              }
-            }
-
-            _bindings['postgres_changes'] = newPostgresBindings;
-
+            unsubscribe();
             if (callback != null) {
-              callback(RealtimeSubscribeStatus.subscribed, null);
+              callback(
+                RealtimeSubscribeStatus.channelError,
+                Exception(
+                    'mismatch between server and client bindings for postgres changes'),
+              );
             }
             return;
           }
-        },
-      ).receive('error', (error) {
+        }
+
+        _bindings['postgres_changes'] = newPostgresBindings;
+
         if (callback != null) {
-          callback(
-            RealtimeSubscribeStatus.channelError,
-            Exception(
-              jsonEncode((error as Map<String, dynamic>).isNotEmpty
-                  ? (error).values.join(', ')
-                  : 'error'),
-            ),
-          );
+          callback(RealtimeSubscribeStatus.subscribed, null);
         }
         return;
-      }).receive('timeout', (_) {
-        if (callback != null) callback(RealtimeSubscribeStatus.timedOut, null);
-        return;
-      });
-    }
+      },
+    ).receive('error', (error) {
+      if (callback != null) {
+        callback(
+          RealtimeSubscribeStatus.channelError,
+          Exception(
+            jsonEncode((error as Map<String, dynamic>).isNotEmpty
+                ? (error).values.join(', ')
+                : 'error'),
+          ),
+        );
+      }
+      return;
+    }).receive('timeout', (_) {
+      if (callback != null) callback(RealtimeSubscribeStatus.timedOut, null);
+      return;
+    });
     return this;
   }
 
@@ -484,13 +482,10 @@ class RealtimeChannel {
   RealtimeChannel off(String type, Map<String, String> filter) {
     final typeLower = type.toLowerCase();
 
-    _bindings[typeLower] = _bindings[typeLower]!
-        .where((bind) {
-          return !(bind.type.toLowerCase() == typeLower &&
-              RealtimeChannel._isEqual(bind.filter, filter));
-        })
-        .toList()
-        .cast<Binding>();
+    _bindings[typeLower] = _bindings[typeLower]!.where((bind) {
+      return !(bind.type.toLowerCase() == typeLower &&
+          RealtimeChannel._isEqual(bind.filter, filter));
+    }).toList();
     return this;
   }
 
@@ -546,6 +541,7 @@ class RealtimeChannel {
     required Map<String, dynamic> payload,
     Duration? timeout,
   }) async {
+    // ignore: avoid-inferrable-type-arguments
     final headers = <String, String>{
       'Content-Type': 'application/json',
       if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
@@ -638,6 +634,7 @@ class RealtimeChannel {
             'Please use httpSend() explicitly for REST delivery.',
       );
 
+      // ignore: avoid-inferrable-type-arguments
       final headers = <String, String>{
         'Content-Type': 'application/json',
         if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
@@ -842,14 +839,12 @@ class RealtimeChannel {
                 (bindEvent == '*' ||
                     bindEvent?.toLowerCase() ==
                         (payload['data']?['type'] as String?)?.toLowerCase()));
-          } else {
-            final bindEvent = bind.filter['event']?.toLowerCase();
-            return (bindEvent == '*' ||
-                bindEvent == (payload?['event'] as String?)?.toLowerCase());
           }
-        } else {
-          return bind.type.toLowerCase() == typeLower;
+          final bindEvent = bind.filter['event']?.toLowerCase();
+          return (bindEvent == '*' ||
+              bindEvent == (payload?['event'] as String?)?.toLowerCase());
         }
+        return bind.type.toLowerCase() == typeLower;
       });
       for (final bind in bindings) {
         if (handledPayload is Map<String, dynamic> &&

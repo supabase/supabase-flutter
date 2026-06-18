@@ -34,7 +34,7 @@ class ResetHelper {
 
       // Somehow the order of the users is sometimes not correct. Adding the delay should solve this.
       if (!DeepCollectionEquality().equals(insertedUsers, _users)) {
-        return reset(delay + 500);
+        return await reset(delay + 500);
       }
     } on PostgrestException catch (exception) {
       throw 'users table was not properly reset. $exception';

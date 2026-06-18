@@ -17,7 +17,7 @@ Uint8List buildUserBroadcastFrame({
   final eventBytes = utf8.encode(event);
   final metadataBytes = utf8.encode(metadata);
 
-  final header = <int>[
+  final header = [
     Serializer.kindUserBroadcast,
     topicBytes.length,
     eventBytes.length,

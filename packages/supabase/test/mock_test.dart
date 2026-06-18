@@ -630,7 +630,7 @@ void main() {
                 event: PostgresChangeEvent.all,
                 schema: 'public',
                 table: 'todos',
-                callback: (payload) async {
+                callback: (payload) {
                   supabase.from('todos');
                 })
             .subscribe();

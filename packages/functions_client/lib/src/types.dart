@@ -20,7 +20,7 @@ class FunctionResponse {
   final dynamic data;
   final int status;
 
-  FunctionResponse({
+  const FunctionResponse({
     this.data,
     required this.status,
   });

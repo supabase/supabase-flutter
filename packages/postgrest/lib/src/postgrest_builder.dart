@@ -95,7 +95,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     bool? retryEnabled,
     Duration Function(int attempt)? retryDelay,
   }) {
-    return PostgrestBuilder<T, S, R>(
+    return PostgrestBuilder(
       url: url ?? _url,
       headers: headers ?? _headers,
       schema: schema ?? _schema,
@@ -142,62 +142,57 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
     }
 
-    try {
-      if (method == null) {
-        throw ArgumentError(
-          'Missing table operation: select, insert, update or delete',
-        );
-      }
-
-      if (_schema == null) {
-        // skip
-      } else if (method == HttpMethod.get || method == HttpMethod.head) {
-        execHeaders['Accept-Profile'] = _schema;
-      } else {
-        execHeaders['Content-Profile'] = _schema;
-      }
-      if (method != HttpMethod.get && method != HttpMethod.head) {
-        execHeaders['Content-Type'] = 'application/json';
-      }
-      final bodyStr = jsonEncode(_body);
-      _log.finest("Request: ${method.value} $_url");
-
-      final Future<http.Response> Function() send;
-      if (method == HttpMethod.get) {
-        send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
-      } else if (method == HttpMethod.post) {
-        send = () => (_httpClient?.post ?? http.post)(
-              _url,
-              headers: execHeaders,
-              body: bodyStr,
-            );
-      } else if (method == HttpMethod.put) {
-        send = () => (_httpClient?.put ?? http.put)(
-              _url,
-              headers: execHeaders,
-              body: bodyStr,
-            );
-      } else if (method == HttpMethod.patch) {
-        send = () => (_httpClient?.patch ?? http.patch)(
-              _url,
-              headers: execHeaders,
-              body: bodyStr,
-            );
-      } else if (method == HttpMethod.delete) {
-        send = () =>
-            (_httpClient?.delete ?? http.delete)(_url, headers: execHeaders);
-      } else if (method == HttpMethod.head) {
-        send =
-            () => (_httpClient?.head ?? http.head)(_url, headers: execHeaders);
-      } else {
-        throw StateError('Unknown HTTP method: ${method.value}');
-      }
-
-      final response = await _executeWithRetry(send, method, execHeaders);
-      return _parseResponse(response, method);
-    } catch (error) {
-      rethrow;
+    if (method == null) {
+      throw ArgumentError(
+        'Missing table operation: select, insert, update or delete',
+      );
     }
+
+    if (_schema == null) {
+      // skip
+    } else if (method == HttpMethod.get || method == HttpMethod.head) {
+      execHeaders['Accept-Profile'] = _schema;
+    } else {
+      execHeaders['Content-Profile'] = _schema;
+    }
+    if (method != HttpMethod.get && method != HttpMethod.head) {
+      execHeaders['Content-Type'] = 'application/json';
+    }
+    final bodyStr = jsonEncode(_body);
+    _log.finest("Request: ${method.value} $_url");
+
+    final Future<http.Response> Function() send;
+    if (method == HttpMethod.get) {
+      send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
+    } else if (method == HttpMethod.post) {
+      send = () => (_httpClient?.post ?? http.post)(
+            _url,
+            headers: execHeaders,
+            body: bodyStr,
+          );
+    } else if (method == HttpMethod.put) {
+      send = () => (_httpClient?.put ?? http.put)(
+            _url,
+            headers: execHeaders,
+            body: bodyStr,
+          );
+    } else if (method == HttpMethod.patch) {
+      send = () => (_httpClient?.patch ?? http.patch)(
+            _url,
+            headers: execHeaders,
+            body: bodyStr,
+          );
+    } else if (method == HttpMethod.delete) {
+      send = () =>
+          (_httpClient?.delete ?? http.delete)(_url, headers: execHeaders);
+    } else if (method == HttpMethod.head) {
+      send = () => (_httpClient?.head ?? http.head)(_url, headers: execHeaders);
+    } else {
+      throw StateError('Unknown HTTP method: ${method.value}');
+    }
+
+    final response = await _executeWithRetry(send, method, execHeaders);
+    return await _parseResponse(response, method);
   }
 
   Future<http.Response> _executeWithRetry(
@@ -318,45 +313,43 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           data: converted,
           count: count!,
         ) as T;
-      } else {
-        return converted as T;
       }
-    } else {
-      late PostgrestException error;
-      if (response.request!.method != HttpMethod.head.value) {
-        try {
-          final errorJson = jsonDecode(response.body) as Map<String, dynamic>;
-          error = PostgrestException.fromJson(
-            errorJson,
-            message: response.body,
-            code: response.statusCode,
-            details: response.reasonPhrase,
-          );
-
-          if (_maybeSingle) {
-            return _handleMaybeSingleError(response, error);
-          }
-        } catch (_) {
-          error = PostgrestException(
-            message: response.body,
-            code: '${response.statusCode}',
-            details: response.reasonPhrase,
-          );
-        }
-      } else {
-        error = PostgrestException(
-          code: '${response.statusCode}',
+      return converted as T;
+    }
+    PostgrestException error;
+    if (response.request!.method != HttpMethod.head.value) {
+      try {
+        final errorJson = jsonDecode(response.body) as Map<String, dynamic>;
+        error = PostgrestException.fromJson(
+          errorJson,
           message: response.body,
-          details: 'Error in Postgrest response for method HEAD',
-          hint: response.reasonPhrase,
+          code: response.statusCode,
+          details: response.reasonPhrase,
+        );
+
+        if (_maybeSingle) {
+          return _handleMaybeSingleError(response, error);
+        }
+      } catch (_) {
+        error = PostgrestException(
+          message: response.body,
+          code: '${response.statusCode}',
+          details: response.reasonPhrase,
         );
       }
-
-      _log.finest('$error from request: $_url');
-      _log.fine('$error from request');
-
-      throw error;
+    } else {
+      error = PostgrestException(
+        code: '${response.statusCode}',
+        message: response.body,
+        details: 'Error in Postgrest response for method HEAD',
+        hint: response.reasonPhrase,
+      );
     }
+
+    _log.finest('$error from request: $_url');
+    _log.fine('$error from request');
+
+    throw error;
   }
 
   /// When [_maybeSingle] is true, check whether error details contain
@@ -372,19 +365,15 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         if (_converter != null) {
           return PostgrestResponse<S>(data: _converter(null as R), count: 0)
               as T;
-        } else {
-          return null as T;
         }
-      } else {
-        if (_converter != null) {
-          return _converter(null as R) as T;
-        } else {
-          return null as T;
-        }
+        return null as T;
       }
-    } else {
-      throw error;
+      if (_converter != null) {
+        return _converter(null as R) as T;
+      }
+      return null as T;
     }
+    throw error;
   }
 
   /// Get new Uri with updated queryParams
@@ -393,8 +382,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// [url] may be used to update based on a different url than the current one
   Uri appendSearchParams(String key, String value, [Uri? url]) {
     final searchParams =
-        Map<String, dynamic>.from((url ?? _url).queryParametersAll);
-    searchParams[key] = [...searchParams[key] ?? [], value];
+        Map<String, dynamic>.of((url ?? _url).queryParametersAll);
+    searchParams[key] = [...?searchParams[key], value];
     return (url ?? _url).replace(queryParameters: searchParams);
   }
 
@@ -402,7 +391,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///
   /// [url] may be used to update based on a different url than the current one
   Uri overrideSearchParams(String key, String value) {
-    final searchParams = Map<String, dynamic>.from(_url.queryParametersAll);
+    final searchParams = Map<String, dynamic>.of(_url.queryParametersAll);
     searchParams[key] = value;
     return _url.replace(queryParameters: searchParams);
   }
@@ -411,9 +400,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   String _cleanFilterArray(List filter) {
     if (filter.every((element) => element is num)) {
       return filter.map((s) => '$s').join(',');
-    } else {
-      return filter.map((s) => '"$s"').join(',');
     }
+    return filter.map((s) => '"$s"').join(',');
   }
 
   @override
@@ -466,7 +454,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       });
     }
 
-    return _execute().then(onValue, onError: (Object error, StackTrace stack) {
+    return _execute().then(onValue,
+        onError: (Object error, StackTrace stack) async {
       final enrichedStack = enrichStack(stack);
       final FutureOr<U> result;
       if (onError is Function(Object, StackTrace)) {
@@ -489,7 +478,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         );
       }
       try {
-        return result;
+        return await result;
       } on TypeError {
         throw ArgumentError(
           "The error handler of Future.then must return a value of the "

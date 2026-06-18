@@ -45,8 +45,6 @@ String generateJwt([int? exp]) {
 }
 
 void main() {
-  const int int64MaxValue = 9223372036854775807;
-
   const socketEndpoint = 'wss://localhost:0/';
 
   late HttpServer mockServer;
@@ -400,7 +398,7 @@ void main() {
       const tTopic2 = 'topic-2';
 
       final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+      mockedSocket.mockedChannelLooker.addAll({
         tTopic1: mockedChannel1,
         tTopic2: mockedChannel2,
       });
@@ -644,7 +642,7 @@ void main() {
     });
 
     test('restarts for overflow', () {
-      socket.ref = int64MaxValue;
+      socket.ref = 9223372036854775807;
       expect(socket.makeRef(), '0');
       expect(socket.ref, 0);
     });
@@ -677,7 +675,7 @@ void main() {
       const tTopic2 = 'topic-2';
 
       final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+      mockedSocket.mockedChannelLooker.addAll({
         tTopic1: mockedChannel1,
         tTopic2: mockedChannel2,
       });
@@ -724,7 +722,7 @@ void main() {
       const tTopic3 = 'test-topic3';
 
       final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+      mockedSocket.mockedChannelLooker.addAll({
         tTopic1: mockedChannel1,
         tTopic2: mockedChannel2,
         tTopic3: mockedChannel3,

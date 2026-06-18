@@ -17,13 +17,13 @@ void main() {
         publishableKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockLocalStorage(),
+          localStorage: const MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );
     });
 
-    test('can access Supabase singleton', () async {
+    test('can access Supabase singleton', () {
       final supabase = Supabase.instance.client;
 
       expect(supabase, isNotNull);
@@ -37,7 +37,7 @@ void main() {
         publishableKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockLocalStorage(),
+          localStorage: const MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );
@@ -53,7 +53,7 @@ void main() {
       publishableKey: supabaseUrl,
       debug: false,
       authOptions: FlutterAuthClientOptions(
-        localStorage: MockLocalStorage(),
+        localStorage: const MockLocalStorage(),
         pkceAsyncStorage: MockAsyncStorage(),
       ),
       accessToken: () async => 'my-access-token',
@@ -76,7 +76,7 @@ void main() {
         publishableKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockExpiredStorage(),
+          localStorage: const MockExpiredStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
           autoRefreshToken: false,
         ),
@@ -100,7 +100,7 @@ void main() {
         publishableKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockEmptyLocalStorage(),
+          localStorage: const MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );

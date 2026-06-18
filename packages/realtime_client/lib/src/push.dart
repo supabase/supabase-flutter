@@ -135,9 +135,7 @@ class Push {
   }
 
   bool _hasReceived(String status) {
-    return _receivedResp != null &&
-        _receivedResp is Map &&
-        _receivedResp?['status'] == status;
+    return _receivedResp is Map && _receivedResp?['status'] == status;
   }
 }
 

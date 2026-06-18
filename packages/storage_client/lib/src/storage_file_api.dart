@@ -430,12 +430,11 @@ class StorageFileApi {
       final path = e['path'] as String? ?? '';
       if (signedUrlPath != null) {
         return SignedUrlSuccess(path: path, signedUrl: '$url$signedUrlPath');
-      } else {
-        return SignedUrlFailure(
-          path: path,
-          error: e['error'] as String? ?? 'Unknown error',
-        );
       }
+      return SignedUrlFailure(
+        path: path,
+        error: e['error'] as String? ?? 'Unknown error',
+      );
     }).toList();
   }
 

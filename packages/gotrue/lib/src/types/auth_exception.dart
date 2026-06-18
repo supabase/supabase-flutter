@@ -38,7 +38,7 @@ class AuthException implements Exception {
 }
 
 class AuthPKCEGrantCodeExchangeError extends AuthException {
-  AuthPKCEGrantCodeExchangeError(super.message);
+  const AuthPKCEGrantCodeExchangeError(super.message);
 }
 
 class AuthSessionMissingException extends AuthException {
@@ -64,7 +64,7 @@ class AuthRetryableFetchException extends AuthException {
 }
 
 class AuthApiException extends AuthException {
-  AuthApiException(super.message, {super.statusCode, super.code});
+  const AuthApiException(super.message, {super.statusCode, super.code});
 
   @override
   String toString() =>

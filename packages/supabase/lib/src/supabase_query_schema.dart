@@ -15,7 +15,7 @@ class SupabaseQuerySchema {
   final RealtimeClient _realtime;
   final PostgrestClient _rest;
 
-  SupabaseQuerySchema({
+  const SupabaseQuerySchema({
     required Counter counter,
     required String restUrl,
     required Map<String, String> headers,

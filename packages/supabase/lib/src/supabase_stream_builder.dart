@@ -7,7 +7,7 @@ import 'package:supabase/supabase.dart';
 part 'supabase_stream_filter_builder.dart';
 
 class _StreamPostgrestFilter {
-  _StreamPostgrestFilter({
+  const _StreamPostgrestFilter({
     required this.column,
     required this.value,
     required this.type,
@@ -24,7 +24,7 @@ class _StreamPostgrestFilter {
 }
 
 class _Order {
-  _Order({
+  const _Order({
     required this.column,
     required this.ascending,
   });
@@ -33,7 +33,7 @@ class _Order {
 }
 
 class RealtimeSubscribeException implements Exception {
-  RealtimeSubscribeException(this.status, [this.details]);
+  const RealtimeSubscribeException(this.status, [this.details]);
 
   final RealtimeSubscribeStatus status;
   final Object? details;
@@ -161,7 +161,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     );
   }
 
-  Future<void> _getStreamData() async {
+  void _getStreamData() {
     final currentStreamFilter = _streamFilter;
     _streamData = [];
     PostgresChangeFilter? realtimeFilter;
@@ -284,7 +284,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     try {
       final data = await (transformQuery ?? query);
-      final rows = SupabaseStreamEvent.from(data);
+      final rows = SupabaseStreamEvent.of(data);
       _streamData = rows;
       _addStream();
     } catch (error, stackTrace) {
@@ -320,9 +320,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         return orderModifier * columnA.compareTo(columnB);
       } else if (columnA is String && columnB is String) {
         return orderModifier * columnA.compareTo(columnB);
-      } else {
-        return 0;
       }
+      return 0;
     });
   }
 
@@ -377,7 +376,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           subscription.pause();
           newValue.then(add, onError: addError).whenComplete(resume);
         } else {
-          controller.add(newValue as dynamic);
+          controller.add(newValue);
         }
       });
       controller.onCancel = subscription.cancel;

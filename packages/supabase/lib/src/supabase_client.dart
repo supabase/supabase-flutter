@@ -139,7 +139,7 @@ class SupabaseClient {
         _postgrestOptions = postgrestOptions,
         _headers = {
           ...Constants.defaultHeaders,
-          if (headers != null) ...headers
+          ...?headers,
         },
         _httpClient = httpClient,
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
@@ -169,11 +169,10 @@ class SupabaseClient {
   GoTrueClient get auth {
     if (accessToken == null) {
       return _authInstance!;
-    } else {
-      throw AuthException(
-        'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
-      );
     }
+    throw AuthException(
+      'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
+    );
   }
 
   /// Perform a table operation.

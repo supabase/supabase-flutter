@@ -216,7 +216,7 @@ class Supabase {
   }) {
     final headers = {
       ...Constants.defaultHeaders,
-      if (customHeaders != null) ...customHeaders,
+      ...?customHeaders,
     };
     client = SupabaseClient(
       supabaseUrl,

@@ -34,7 +34,7 @@ class Serializer {
   /// sending a binary broadcast push.
   final List<String> allowedMetadataKeys;
 
-  Serializer({List<String>? allowedMetadataKeys})
+  const Serializer({List<String>? allowedMetadataKeys})
       : allowedMetadataKeys = allowedMetadataKeys ?? const [];
 
   /// Encodes a message map into the string or binary representation that is
@@ -68,7 +68,7 @@ class Serializer {
       if (decoded is! List || decoded.length < 5) {
         throw FormatException('Invalid 2.0.0 text frame', rawPayload);
       }
-      return <String, dynamic>{
+      return {
         'join_ref': decoded[0],
         'ref': decoded[1],
         'topic': decoded[2],
@@ -82,7 +82,7 @@ class Serializer {
       return _binaryDecode(bytes);
     }
 
-    return <String, dynamic>{};
+    return {};
   }
 
   Uint8List _encodeBinaryUserBroadcastPush(
@@ -139,7 +139,7 @@ class Serializer {
       case kindUserBroadcast:
         return _decodeUserBroadcast(buffer, view);
       default:
-        return <String, dynamic>{};
+        return {};
     }
   }
 
@@ -167,7 +167,7 @@ class Serializer {
         ? jsonDecode(utf8.decode(payloadBytes))
         : payloadBytes;
 
-    final data = <String, dynamic>{
+    final data = {
       'type': broadcastEvent,
       'event': userEvent,
       'payload': parsedPayload,
@@ -176,7 +176,7 @@ class Serializer {
       data['meta'] = jsonDecode(metadata);
     }
 
-    return <String, dynamic>{
+    return {
       'join_ref': null,
       'ref': null,
       'topic': topic,
@@ -223,7 +223,7 @@ class Serializer {
   }
 
   Map<String, dynamic> _pick(Map<dynamic, dynamic> source, List<String> keys) {
-    return <String, dynamic>{
+    return {
       for (final key in keys)
         if (source.containsKey(key)) key: source[key],
     };

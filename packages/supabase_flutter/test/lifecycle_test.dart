@@ -84,7 +84,7 @@ void main() {
         publishableKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockEmptyLocalStorage(),
+          localStorage: const MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
         realtimeClientOptions: RealtimeClientOptions(

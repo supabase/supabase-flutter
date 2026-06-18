@@ -304,7 +304,7 @@ void main() {
       expect(authEvents.length, equals(2));
       expect(authEvents.contains(AuthChangeEvent.signedIn), isTrue);
 
-      final linkTypeMap = <GenerateLinkType, String>{
+      final linkTypeMap = {
         GenerateLinkType.signup: 'signup_link',
         GenerateLinkType.recovery: 'recovery_link',
       };
