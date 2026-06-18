@@ -10,7 +10,8 @@ class Constants {
       if (conditionalPlatformVersion != null)
         'platform-version=${Uri.encodeFull(conditionalPlatformVersion!).replaceAll("%20", " ")}',
       'runtime=dart',
-      if (conditionalRuntimeVersion != null) 'runtime-version=$conditionalRuntimeVersion',
+      if (conditionalRuntimeVersion != null)
+        'runtime-version=$conditionalRuntimeVersion',
     ].join('; '),
   });
 }
