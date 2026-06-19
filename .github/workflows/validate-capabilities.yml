@@ -1,4 +1,4 @@
-name: Validate SDK Compliance
+name: SDK Compliance
 
 on:
   workflow_dispatch:
