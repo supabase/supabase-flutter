@@ -14,7 +14,6 @@ dcm:
     - recommended
   rules:
     avoid-accessing-collections-by-constant-index: false
-    avoid-casting-to-extension-type: false
     avoid-commented-out-code: false
     avoid-constant-conditions: false
     avoid-duplicate-initializers: false
@@ -34,14 +33,12 @@ dcm:
     avoid-wildcard-cases-with-enums: false
     move-variable-closer-to-its-usage: false
     no-empty-block: false
-    no-equal-switch-case: false
     prefer-correct-callback-field-name: false
     prefer-explicit-function-type: false
     prefer-match-file-name: false
     prefer-overriding-parent-equality: false
     prefer-prefixed-global-constants: false
     prefer-switch-with-enums: false
-    proper-super-calls: false
 
     # Blocked until the minimum Dart SDK is raised. The fixes these rules
     # suggest rely on language features newer than our current floor of 3.4.0,
