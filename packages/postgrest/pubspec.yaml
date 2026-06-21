@@ -1,6 +1,6 @@
 name: postgrest
 description: PostgREST client for Dart. This library provides an ORM interface to PostgREST.
-version: 2.7.1
+version: 2.7.2
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/postgrest'
 documentation: 'https://supabase.com/docs/reference/dart/select'
@@ -10,7 +10,7 @@ environment:
 
 dependencies:
   http: ^1.2.2
-  yet_another_json_isolate: 2.1.0
+  yet_another_json_isolate: 2.1.1
   meta: ^1.9.1
   logging: ^1.2.0
 

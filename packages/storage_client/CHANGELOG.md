@@ -1,3 +1,7 @@
+## 2.5.7
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
 ## 2.5.6
 
  - **FIX**(storage): handle null signedURL in createSignedUrls response ([#1385](https://github.com/supabase/supabase-flutter/issues/1385)). ([dd566b3b](https://github.com/supabase/supabase-flutter/commit/dd566b3bc82dac24c50084289867e80e9117cdf3))

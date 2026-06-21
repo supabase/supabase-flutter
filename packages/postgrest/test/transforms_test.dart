@@ -344,53 +344,6 @@ void main() {
     expect(res['type'], 'FeatureCollection');
   });
 
-  group('maxAffected', () {
-    test('maxAffected method can be called on update operations', () {
-      expect(
-        () => postgrest
-            .from('users')
-            .update({'status': 'INACTIVE'})
-            .eq('id', 1)
-            .maxAffected(1),
-        returnsNormally,
-      );
-    });
-
-    test('maxAffected method can be called on delete operations', () {
-      expect(
-        () => postgrest.from('channels').delete().eq('id', 999).maxAffected(5),
-        returnsNormally,
-      );
-    });
-
-    test('maxAffected method can be called on select operations', () {
-      expect(
-        () => postgrest.from('users').select().maxAffected(1),
-        returnsNormally,
-      );
-    });
-
-    test('maxAffected method can be called on insert operations', () {
-      expect(
-        () =>
-            postgrest.from('users').insert({'username': 'test'}).maxAffected(1),
-        returnsNormally,
-      );
-    });
-
-    test('maxAffected method can be chained with select', () {
-      expect(
-        () => postgrest
-            .from('users')
-            .update({'status': 'INACTIVE'})
-            .eq('id', 1)
-            .maxAffected(1)
-            .select(),
-        returnsNormally,
-      );
-    });
-  });
-
   group('maxAffected integration', () {
     late CustomHttpClient customHttpClient;
     late PostgrestClient postgrestCustomHttpClient;
