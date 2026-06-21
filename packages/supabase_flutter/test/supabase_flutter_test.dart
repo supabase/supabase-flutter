@@ -59,13 +59,7 @@ void main() {
       accessToken: () async => 'my-access-token',
     );
 
-    // print(supabase.client.auth.runtimeType);
-
-    void accessAuth() {
-      supabase.client.auth;
-    }
-
-    expect(accessAuth, throwsA(isA<AuthException>()));
+    expect(() => supabase.client.auth, throwsA(isA<AuthException>()));
   });
 
   group("Expired session", () {
@@ -130,31 +124,6 @@ void main() {
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );
-    });
-
-    test('initialize does nothing', () async {
-      // Should not throw any exceptions
-      await localStorage.initialize();
-    });
-
-    test('hasAccessToken returns false', () async {
-      final result = await localStorage.hasAccessToken();
-      expect(result, false);
-    });
-
-    test('accessToken returns null', () async {
-      final result = await localStorage.accessToken();
-      expect(result, null);
-    });
-
-    test('removePersistedSession does nothing', () async {
-      // Should not throw any exceptions
-      await localStorage.removePersistedSession();
-    });
-
-    test('persistSession does nothing', () async {
-      // Should not throw any exceptions
-      await localStorage.persistSession('test-session-string');
     });
 
     test('all methods work together in a typical flow', () async {

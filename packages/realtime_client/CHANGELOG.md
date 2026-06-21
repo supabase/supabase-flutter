@@ -1,3 +1,8 @@
+## 2.8.0
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FEAT**(realtime): add support for protocol format 2.0.0 ([#1397](https://github.com/supabase/supabase-flutter/issues/1397)). ([c04d5d1a](https://github.com/supabase/supabase-flutter/commit/c04d5d1a5a0a6feedf8bfa082fc708a4472e85eb))
+
 ## 2.7.4
 
  - **FIX**(realtime_client): suppress InvalidJWTToken from setAuth in joinPush 'ok' handler ([#1365](https://github.com/supabase/supabase-flutter/issues/1365)). ([2fb3f1cc](https://github.com/supabase/supabase-flutter/commit/2fb3f1cc2ec531826a748524cd86d3096719d3e7))
