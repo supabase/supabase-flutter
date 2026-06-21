@@ -136,7 +136,7 @@ class StorageFileApi {
 
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
-    var requestUrl = Uri.parse('${this.url}/object/upload/sign/$finalPath');
+    var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
     requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
     await _storageFetch.putFile(
@@ -170,7 +170,7 @@ class StorageFileApi {
 
     final cleanPath = _removeEmptyFolders(path);
     final path0 = _getFinalPath(cleanPath);
-    var requestUrl = Uri.parse('${this.url}/object/upload/sign/$path0');
+    var requestUrl = Uri.parse('$url/object/upload/sign/$path0');
     requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
     await _storageFetch.putBinaryFile(

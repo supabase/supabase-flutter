@@ -436,7 +436,7 @@ void main() {
         expect(req.headers.value('apikey'), 'supabaseKey');
 
         final body = json.decode(await utf8.decodeStream(req));
-        final message = body['messages'][0];
+        final message = body['messages'].first;
         final payload = message['payload'];
         final private = message['private'];
 
