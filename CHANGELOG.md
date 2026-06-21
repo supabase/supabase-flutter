@@ -3,6 +3,71 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-06-16
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.6.1`](#functions_client---v261)
+ - [`gotrue` - `v2.22.0`](#gotrue---v2220)
+ - [`postgrest` - `v2.7.2`](#postgrest---v272)
+ - [`realtime_client` - `v2.8.0`](#realtime_client---v280)
+ - [`storage_client` - `v2.5.7`](#storage_client---v257)
+ - [`supabase` - `v2.13.0`](#supabase---v2130)
+ - [`supabase_flutter` - `v2.15.0`](#supabase_flutter---v2150)
+ - [`yet_another_json_isolate` - `v2.1.1`](#yet_another_json_isolate---v211)
+
+---
+
+#### `functions_client` - `v2.6.1`
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
+#### `gotrue` - `v2.22.0`
+
+ - **FIX**(gotrue): support asymmetric JWTs in getClaims ([#1410](https://github.com/supabase/supabase-flutter/issues/1410)). ([cc3137f9](https://github.com/supabase/supabase-flutter/commit/cc3137f98690e96a8b21f56b8db3c33def40e2b0))
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FIX**(auth): update session on email change links in PKCE flow ([#1395](https://github.com/supabase/supabase-flutter/issues/1395)). ([6b7871d9](https://github.com/supabase/supabase-flutter/commit/6b7871d920836a1751699fe0dfde90d460c4df16))
+ - **FIX**(gotrue): prevent stale token refresh from overwriting concurrent session changes ([#1351](https://github.com/supabase/supabase-flutter/issues/1351)). ([368609ab](https://github.com/supabase/supabase-flutter/commit/368609abfd59ca04f9d3df80ebcaeedae89a4bef))
+ - **FIX**(auth): avoid reusing a stale refresh token in recoverSession ([#1391](https://github.com/supabase/supabase-flutter/issues/1391)). ([de2adf99](https://github.com/supabase/supabase-flutter/commit/de2adf9980b6981c638f6527f4ddb6c9aff9376b))
+ - **FEAT**(gotrue): add passkey (WebAuthn) support ([#1392](https://github.com/supabase/supabase-flutter/issues/1392)). ([3e890b57](https://github.com/supabase/supabase-flutter/commit/3e890b57bdc7c2fd837e8b3c7144fd8b0b1e99f2))
+
+#### `postgrest` - `v2.7.2`
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
+#### `realtime_client` - `v2.8.0`
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FEAT**(realtime): add support for protocol format 2.0.0 ([#1397](https://github.com/supabase/supabase-flutter/issues/1397)). ([c04d5d1a](https://github.com/supabase/supabase-flutter/commit/c04d5d1a5a0a6feedf8bfa082fc708a4472e85eb))
+
+#### `storage_client` - `v2.5.7`
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
+#### `supabase` - `v2.13.0`
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FEAT**(realtime): add support for protocol format 2.0.0 ([#1397](https://github.com/supabase/supabase-flutter/issues/1397)). ([c04d5d1a](https://github.com/supabase/supabase-flutter/commit/c04d5d1a5a0a6feedf8bfa082fc708a4472e85eb))
+
+#### `supabase_flutter` - `v2.15.0`
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FIX**(auth): update session on email change links in PKCE flow ([#1395](https://github.com/supabase/supabase-flutter/issues/1395)). ([6b7871d9](https://github.com/supabase/supabase-flutter/commit/6b7871d920836a1751699fe0dfde90d460c4df16))
+ - **FEAT**(supabase_flutter): add passkey ceremony helpers ([#1408](https://github.com/supabase/supabase-flutter/issues/1408)). ([8c8ec84e](https://github.com/supabase/supabase-flutter/commit/8c8ec84ef61915566a1af6e3227a6e9f9a98a831))
+
+#### `yet_another_json_isolate` - `v2.1.1`
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
+
 ## 2026-06-09
 
 ### Changes
