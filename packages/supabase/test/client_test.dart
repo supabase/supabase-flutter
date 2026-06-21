@@ -253,7 +253,7 @@ void main() {
     test('X-Client-Info header is set properly on realtime', () async {
       final mockServer = await HttpServer.bind('localhost', 0);
 
-      final supabase = SupabaseClient(
+      final client = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         supabaseKey,
         headers: {
@@ -263,7 +263,7 @@ void main() {
 
       final request = await getRealtimeRequest(
         server: mockServer,
-        supabaseClient: supabase,
+        supabaseClient: client,
       );
 
       expect(request.headers['X-Client-Info']?.first, 'supabase-flutter/0.0.0');

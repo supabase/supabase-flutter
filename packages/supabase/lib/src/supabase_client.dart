@@ -80,11 +80,11 @@ class SupabaseClient {
   }
 
   /// To apply the new headers in existing realtime channels, manually unsubscribe and resubscribe these channels.
-  set headers(Map<String, String> headers) {
+  set headers(Map<String, String> newHeaders) {
     _headers.clear();
     _headers.addAll({
       ...Constants.defaultHeaders,
-      ...headers,
+      ...newHeaders,
     });
 
     rest.headers
@@ -362,8 +362,8 @@ class SupabaseClient {
       'apikey': _supabaseKey,
       'Authorization': 'Bearer $authBearer',
     };
-    final headers = {...defaultHeaders, ..._headers};
-    return headers;
+    final mergedHeaders = {...defaultHeaders, ..._headers};
+    return mergedHeaders;
   }
 
   void _listenForAuthEvents() {

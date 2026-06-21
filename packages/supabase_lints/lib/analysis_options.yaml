@@ -25,7 +25,6 @@ dcm:
     avoid-nullable-interpolation: false
     avoid-passing-async-when-sync-expected: false
     avoid-self-compare: false
-    avoid-shadowing: false
     avoid-throw-in-catch-block: false
     avoid-unassigned-stream-subscriptions: false
     avoid-unconditional-break: false

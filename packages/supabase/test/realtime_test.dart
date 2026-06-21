@@ -17,9 +17,9 @@ void main() {
 
       subscription =
           mockServer.transform(WebSocketTransformer()).listen((webSocket) {
-        final channel = IOWebSocketChannel(webSocket);
-        channel.stream.listen((request) {
-          channel.sink.add(request);
+        final ioChannel = IOWebSocketChannel(webSocket);
+        ioChannel.stream.listen((request) {
+          ioChannel.sink.add(request);
         });
       });
 

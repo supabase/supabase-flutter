@@ -1149,13 +1149,13 @@ class GoTrueClient {
       if (session.isExpired) {
         _log.fine('Session from recovery is expired');
 
-        final currentSession = _currentSession;
-        if (currentSession != null &&
-            !currentSession.isExpired &&
-            currentSession.user.id == session.user.id) {
+        final existingSession = _currentSession;
+        if (existingSession != null &&
+            !existingSession.isExpired &&
+            existingSession.user.id == session.user.id) {
           _log.fine(
               'Session was already refreshed elsewhere, skipping recovery');
-          return AuthResponse(session: currentSession);
+          return AuthResponse(session: existingSession);
         }
 
         final refreshToken = session.refreshToken;
@@ -1368,7 +1368,7 @@ class GoTrueClient {
             'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
             // This case should never happen though
             _ => AuthChangeEvent.values.firstWhereOrNull(
-                (event) => event.name == rawEvent,
+                (changeEvent) => changeEvent.name == rawEvent,
               ),
           };
 
@@ -1474,14 +1474,14 @@ class GoTrueClient {
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
       if (!completer.isCompleted) completer.complete(data);
     } on AuthException catch (error, stack) {
-      final currentSession = _currentSession;
+      final existingSession = _currentSession;
       if (error is AuthApiException &&
           error.code == 'refresh_token_already_used' &&
-          currentSession != null &&
-          !currentSession.isExpired) {
+          existingSession != null &&
+          !existingSession.isExpired) {
         _log.fine('Refresh token already used but current session is still '
             'valid, returning it instead of signing out');
-        final response = AuthResponse(session: currentSession);
+        final response = AuthResponse(session: existingSession);
         if (!completer.isCompleted) completer.complete(response);
         return;
       }
@@ -1549,7 +1549,7 @@ class GoTrueClient {
 
   Future<JWK?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
     // try fetching from the supplied jwks
-    final jwk = suppliedJwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    final jwk = suppliedJwks.keys.firstWhereOrNull((key) => key.kid == kid);
     if (jwk != null) {
       return jwk;
     }
@@ -1557,7 +1557,7 @@ class GoTrueClient {
     final now = DateTime.now();
 
     // try fetching from cache
-    final cachedJwk = _jwks?.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    final cachedJwk = _jwks?.keys.firstWhereOrNull((key) => key.kid == kid);
 
     // jwks exists and it isn't stale
     if (cachedJwk != null &&
@@ -1583,7 +1583,7 @@ class GoTrueClient {
     _jwksCachedAt = now;
 
     // find the signing key
-    return jwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    return jwks.keys.firstWhereOrNull((key) => key.kid == kid);
   }
 
   /// Extracts the JWT claims present in the access token by first verifying the

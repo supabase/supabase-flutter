@@ -68,9 +68,9 @@ class PostgrestClient {
 
   /// Perform a table operation.
   PostgrestQueryBuilder<void> from(String table) {
-    final url = '${this.url}/$table';
+    final requestUrl = '${this.url}/$table';
     return PostgrestQueryBuilder(
-      url: Uri.parse(url),
+      url: Uri.parse(requestUrl),
       headers: {...headers},
       schema: _schema,
       httpClient: httpClient,
@@ -115,9 +115,9 @@ class PostgrestClient {
     Map? params,
     bool get = false,
   }) {
-    final url = '${this.url}/rpc/$fn';
+    final requestUrl = '${this.url}/rpc/$fn';
     return PostgrestRpcBuilder(
-      url,
+      requestUrl,
       headers: {...headers},
       schema: _schema,
       httpClient: httpClient,

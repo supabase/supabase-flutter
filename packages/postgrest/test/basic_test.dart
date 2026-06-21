@@ -87,17 +87,17 @@ void main() {
     });
 
     test('custom headers', () async {
-      final postgrest = PostgrestClient(rootUrl, headers: {'apikey': 'foo'});
-      expect(postgrest.headers['apikey'], 'foo');
+      final client = PostgrestClient(rootUrl, headers: {'apikey': 'foo'});
+      expect(client.headers['apikey'], 'foo');
     });
 
     test('override X-Client-Info', () async {
-      final postgrest = PostgrestClient(
+      final client = PostgrestClient(
         rootUrl,
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
       );
       expect(
-        postgrest.headers['X-Client-Info'],
+        client.headers['X-Client-Info'],
         'supabase-dart/0.0.0',
       );
     });
@@ -112,9 +112,9 @@ void main() {
 
     test('set header on rpc', () async {
       final httpClient = CustomHttpClient();
-      final postgrest = PostgrestClient(rootUrl, httpClient: httpClient);
+      final client = PostgrestClient(rootUrl, httpClient: httpClient);
 
-      await postgrest
+      await client
           .rpc('empty-succ')
           .setHeader("myKey", "myValue")
           .select()
@@ -122,16 +122,16 @@ void main() {
       expect(httpClient.lastRequest!.headers, containsPair("myKey", "myValue"));
 
       // Other following requests should not have the header
-      await postgrest.rpc('empty-succ').select().head();
+      await client.rpc('empty-succ').select().head();
       expect(httpClient.lastRequest!.headers,
           isNot(containsPair("myKey", "myValue")));
     });
 
     test('set header on query builder', () async {
       final httpClient = CustomHttpClient();
-      final postgrest = PostgrestClient(rootUrl, httpClient: httpClient);
+      final client = PostgrestClient(rootUrl, httpClient: httpClient);
 
-      await postgrest
+      await client
           .from('empty-succ')
           .setHeader("myKey", "myValue")
           .select()
@@ -139,26 +139,26 @@ void main() {
       expect(httpClient.lastRequest!.headers, containsPair("myKey", "myValue"));
 
       // Other following requests should not have the header
-      await postgrest.from('empty-succ').select().head();
+      await client.from('empty-succ').select().head();
       expect(httpClient.lastRequest!.headers,
           isNot(containsPair("myKey", "myValue")));
     });
 
     test('switch schema', () async {
-      final postgrest =
+      final client =
           PostgrestClient(rootUrl, schema: 'personal', headers: apiHeaders);
-      final res = await postgrest.from('users').select();
+      final res = await client.from('users').select();
       expect(res.length, 5);
     });
 
     test('query non-public schema dynamically', () async {
-      final postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+      final client = PostgrestClient(rootUrl, headers: apiHeaders);
       final personalData =
-          await postgrest.schema('personal').from('users').select();
+          await client.schema('personal').from('users').select();
       expect(personalData.length, 5);
 
       // confirm that the client defaults to its initialized schema by default.
-      final publicData = await postgrest.from('users').select();
+      final publicData = await client.from('users').select();
       expect(publicData.length, 4);
     });
 
@@ -324,9 +324,9 @@ void main() {
     });
 
     test('connection error', () async {
-      final postgrest = PostgrestClient('http://this.url.does.not.exist');
+      final client = PostgrestClient('http://this.url.does.not.exist');
       try {
-        await postgrest.from('user').select();
+        await client.from('user').select();
         fail('Success on connection error');
       } catch (error) {
         expect(error, isA<SocketException>());

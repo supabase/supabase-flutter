@@ -107,14 +107,14 @@ void main() {
           return;
         }
         hasListener = true;
-        listener = webSocket!.listen((request) async {
+        listener = webSocket!.listen((message) async {
           /// Protocol 2.0.0 text frames are positional arrays:
           /// [join_ref, ref, topic, event, payload].
           ///
           /// `filter` might be there or not depending on whether is a filter set
           /// to the realtime subscription, so include the filter if the request
           /// includes a filter.
-          final requestJson = jsonDecode(request as String) as List;
+          final requestJson = jsonDecode(message as String) as List;
           final ref = requestJson[1];
           final topic = requestJson[2];
           final event = requestJson[3];

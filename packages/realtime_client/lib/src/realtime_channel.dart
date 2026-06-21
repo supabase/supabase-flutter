@@ -141,7 +141,7 @@ class RealtimeChannel {
       throw "tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance";
     }
     final broadcast = params['config']['broadcast'];
-    final presence = params['config']['presence'];
+    final presenceConfig = params['config']['presence'];
     final isPrivate = params['config']['private'];
 
     _onError((e) {
@@ -156,7 +156,7 @@ class RealtimeChannel {
     final accessTokenPayload = <String, String>{};
     final config = {
       'broadcast': broadcast,
-      'presence': {...presence, 'enabled': presenceEnabled},
+      'presence': {...presenceConfig, 'enabled': presenceEnabled},
       'postgres_changes':
           _bindings['postgres_changes']?.map((r) => r.filter).toList() ?? [],
       'private': isPrivate == true,
@@ -762,8 +762,8 @@ class RealtimeChannel {
   }
 
   @internal
-  bool isMember(String? topic) {
-    return this.topic == topic;
+  bool isMember(String? otherTopic) {
+    return topic == otherTopic;
   }
 
   @internal

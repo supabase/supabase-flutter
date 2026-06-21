@@ -24,7 +24,7 @@ void main() {
           return;
         }
         hasListener = true;
-        listener = webSocket!.listen((request) async {
+        listener = webSocket!.listen((message) async {
           if (hasSentData) {
             return;
           }
@@ -36,7 +36,7 @@ void main() {
           /// `filter` might be there or not depending on whether is a filter set
           /// to the realtime subscription, so include the filter if the request
           /// includes a filter.
-          final requestJson = jsonDecode(request as String) as List;
+          final requestJson = jsonDecode(message as String) as List;
           final requestPayload = requestJson[4] as Map;
           final String? postgresFilter =
               requestPayload['config']['postgres_changes'].first['filter'];
@@ -309,7 +309,7 @@ void main() {
           return;
         }
         hasListener = true;
-        listener = webSocket!.listen((request) async {
+        listener = webSocket!.listen((message) async {
           if (hasSentData) {
             return;
           }
@@ -321,7 +321,7 @@ void main() {
           /// `filter` might be there or not depending on whether is a filter set
           /// to the realtime subscription, so include the filter if the request
           /// includes a filter.
-          final requestJson = jsonDecode(request as String) as List;
+          final requestJson = jsonDecode(message as String) as List;
           final requestPayload = requestJson[4] as Map;
 
           final String? postgresFilter =
