@@ -5,13 +5,14 @@ import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
-_ResponseFactory _errorStatus(int code) => (req) async => StreamedResponse(
-      Stream.value(
-          Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits)),
-      code,
-      request: req,
-      headers: {'content-type': 'application/json'},
-    );
+_ResponseFactory _errorStatus(int code) =>
+    (req) => Future.value(StreamedResponse(
+          Stream.value(
+              Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits)),
+          code,
+          request: req,
+          headers: {'content-type': 'application/json'},
+        ));
 
 typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
 
@@ -48,7 +49,7 @@ void main() {
       );
 
       expect(
-        capturedTrace.toString(),
+        capturedTrace?.toString(),
         contains('theCallerFunction'),
         reason: 'Stack trace should include the caller frame',
       );
@@ -75,7 +76,7 @@ void main() {
       );
 
       expect(
-        capturedTrace.toString(),
+        capturedTrace?.toString(),
         contains('anotherCallerFunction'),
         reason: 'Stack trace passed to onError should include the caller frame',
       );
@@ -105,7 +106,7 @@ void main() {
       );
 
       expect(
-        capturedTrace.toString(),
+        capturedTrace?.toString(),
         contains('singleArgCallerFunction'),
         reason:
             'Outer catch should include the caller frame even with a single-arg onError',
@@ -137,7 +138,7 @@ void main() {
       );
 
       expect(
-        capturedTrace.toString(),
+        capturedTrace?.toString(),
         contains('networkErrorFunction'),
         reason:
             'Stack trace should include the caller frame for network errors',
@@ -170,7 +171,7 @@ void main() {
 
       expect(actionCalled, isTrue);
       expect(
-        capturedTrace.toString(),
+        capturedTrace?.toString(),
         contains('whenCompleteFunction'),
         reason:
             'Stack trace should include the caller frame after whenComplete',

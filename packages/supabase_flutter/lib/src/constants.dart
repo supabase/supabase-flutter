@@ -6,11 +6,12 @@ class Constants {
   static final Map<String, String> defaultHeaders = Map.unmodifiable({
     'X-Client-Info': [
       'supabase-flutter/$version',
-      if (condPlatform != null) 'platform=$condPlatform',
-      if (condPlatformVersion != null)
-        'platform-version=${Uri.encodeFull(condPlatformVersion!).replaceAll("%20", " ")}',
+      if (conditionalPlatform != null) 'platform=$conditionalPlatform',
+      if (conditionalPlatformVersion != null)
+        'platform-version=${Uri.encodeFull(conditionalPlatformVersion!).replaceAll("%20", " ")}',
       'runtime=dart',
-      if (condRuntimeVersion != null) 'runtime-version=$condRuntimeVersion',
+      if (conditionalRuntimeVersion != null)
+        'runtime-version=$conditionalRuntimeVersion',
     ].join('; '),
   });
 }

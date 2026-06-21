@@ -60,42 +60,40 @@ class CustomHttpClient extends BaseClient {
           "Content-Type": "application/json",
         },
       );
-    } else {
-      final Stream<List<int>> stream;
-      final Map<String, String> headers;
-
-      if (request is MultipartRequest) {
-        stream = Stream.value(
-          utf8.encode(jsonEncode([
-            for (final file in request.files)
-              {
-                "name": file.field,
-                "content": await file.finalize().bytesToString()
-              }
-          ])),
-        );
-        headers = {"Content-Type": "application/json"};
-      } else {
-        // Check if the request contains binary data (Uint8List)
-        final isOctetStream =
-            request.headers['Content-Type'] == 'application/octet-stream';
-        if (isOctetStream) {
-          // Return the original binary data
-          final bodyBytes = (request as Request).bodyBytes;
-          stream = Stream.value(bodyBytes);
-          headers = {"Content-Type": "application/octet-stream"};
-        } else {
-          stream =
-              Stream.value(utf8.encode(jsonEncode({"key": "Hello World"})));
-          headers = {"Content-Type": "application/json"};
-        }
-      }
-      return StreamedResponse(
-        stream,
-        200,
-        request: request,
-        headers: headers,
-      );
     }
+    final Stream<List<int>> stream;
+    final Map<String, String> headers;
+
+    if (request is MultipartRequest) {
+      stream = Stream.value(
+        utf8.encode(jsonEncode([
+          for (final file in request.files)
+            {
+              "name": file.field,
+              "content": await file.finalize().bytesToString()
+            }
+        ])),
+      );
+      headers = {"Content-Type": "application/json"};
+    } else {
+      // Check if the request contains binary data (Uint8List)
+      final isOctetStream =
+          request.headers['Content-Type'] == 'application/octet-stream';
+      if (isOctetStream) {
+        // Return the original binary data
+        final bodyBytes = (request as Request).bodyBytes;
+        stream = Stream.value(bodyBytes);
+        headers = {"Content-Type": "application/octet-stream"};
+      } else {
+        stream = Stream.value(utf8.encode(jsonEncode({"key": "Hello World"})));
+        headers = {"Content-Type": "application/json"};
+      }
+    }
+    return StreamedResponse(
+      stream,
+      200,
+      request: request,
+      headers: headers,
+    );
   }
 }

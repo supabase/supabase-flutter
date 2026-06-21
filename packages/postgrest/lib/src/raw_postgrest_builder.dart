@@ -21,6 +21,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
   RawPostgrestBuilder<O, P, Q> _copyWithType<O, P, Q>({
     Uri? url,
+    // ignore: avoid-unnecessary-nullable-parameters
     Headers? headers,
     String? schema,
     HttpMethod? method,
@@ -30,7 +31,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     CountOption? count,
     bool? maybeSingle,
   }) {
-    return RawPostgrestBuilder<O, P, Q>(PostgrestBuilder(
+    return RawPostgrestBuilder(PostgrestBuilder(
       url: url ?? _url,
       headers: headers ?? _headers,
       schema: schema ?? _schema,

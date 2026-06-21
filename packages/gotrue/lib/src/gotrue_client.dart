@@ -154,7 +154,7 @@ class GoTrueClient {
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
     _log.config(
-      'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: $_flowType, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}',
+      'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}',
     );
     _log.finest('Initialize with headers: $_headers');
     admin = GoTrueAdminApi(
@@ -242,7 +242,7 @@ class GoTrueClient {
       'You must provide either an email or phone number',
     );
 
-    late final Map<String, dynamic> response;
+    final Map<String, dynamic> response;
 
     if (email != null) {
       String? codeChallenge;
@@ -314,7 +314,7 @@ class GoTrueClient {
     required String password,
     String? captchaToken,
   }) async {
-    late final Map<String, dynamic> response;
+    final Map<String, dynamic> response;
 
     if (email != null) {
       response = await _fetch.request(
@@ -365,7 +365,7 @@ class GoTrueClient {
     String? redirectTo,
     String? scopes,
     Map<String, String>? queryParams,
-  }) async {
+  }) {
     return _getUrlForProvider(
       provider,
       url: '$_url/authorize',
@@ -767,9 +767,8 @@ class GoTrueClient {
 
     if ((response as Map).containsKey(['message_id'])) {
       return ResendResponse(messageId: response['message_id']);
-    } else {
-      return ResendResponse();
     }
+    return ResendResponse();
   }
 
   /// Gets the current user details from current session or custom [jwt]
@@ -961,7 +960,7 @@ class GoTrueClient {
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
   Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
-    _log.info('Signing out user with scope: $scope');
+    _log.info('Signing out user with scope: ${scope.name}');
     final accessToken = currentSession?.accessToken;
 
     if (scope != SignOutScope.others) {
@@ -1150,33 +1149,31 @@ class GoTrueClient {
       if (session.isExpired) {
         _log.fine('Session from recovery is expired');
 
-        final currentSession = _currentSession;
-        if (currentSession != null &&
-            !currentSession.isExpired &&
-            currentSession.user.id == session.user.id) {
+        final existingSession = _currentSession;
+        if (existingSession != null &&
+            !existingSession.isExpired &&
+            existingSession.user.id == session.user.id) {
           _log.fine(
               'Session was already refreshed elsewhere, skipping recovery');
-          return AuthResponse(session: currentSession);
+          return AuthResponse(session: existingSession);
         }
 
         final refreshToken = session.refreshToken;
         if (_autoRefreshToken && refreshToken != null) {
           return await _callRefreshToken(refreshToken);
-        } else {
-          await signOut();
-          throw notifyException(AuthException('Session expired.'));
         }
-      } else {
-        final shouldEmitEvent = _currentSession == null ||
-            _currentSession!.user.id != session.user.id;
-        _saveSession(session);
-
-        if (shouldEmitEvent) {
-          notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-        }
-
-        return AuthResponse(session: session);
+        await signOut();
+        throw notifyException(AuthException('Session expired.'));
       }
+      final shouldEmitEvent = _currentSession == null ||
+          _currentSession!.user.id != session.user.id;
+      _saveSession(session);
+
+      if (shouldEmitEvent) {
+        notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+      }
+
+      return AuthResponse(session: session);
     } catch (error, stackTrace) {
       notifyException(error, stackTrace);
       rethrow;
@@ -1245,7 +1242,7 @@ class GoTrueClient {
   Future<AuthResponse> _refreshAccessToken(String refreshToken) async {
     final startedAt = DateTime.now();
     var attempt = 0;
-    return await retry<AuthResponse>(
+    return await retry(
       // Make a GET request
       () async {
         attempt++;
@@ -1371,7 +1368,7 @@ class GoTrueClient {
             'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
             // This case should never happen though
             _ => AuthChangeEvent.values.firstWhereOrNull(
-                (event) => event.name == rawEvent,
+                (changeEvent) => changeEvent.name == rawEvent,
               ),
           };
 
@@ -1404,7 +1401,7 @@ class GoTrueClient {
     _broadcastChannelSubscription?.cancel();
     for (final completer in _pendingRefreshes.values) {
       if (!completer.isCompleted) {
-        completer.completeError(AuthException('Disposed'));
+        completer.completeError(AuthException('Disposed'), StackTrace.current);
       }
     }
     _pendingRefreshes.clear();
@@ -1477,14 +1474,14 @@ class GoTrueClient {
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
       if (!completer.isCompleted) completer.complete(data);
     } on AuthException catch (error, stack) {
-      final currentSession = _currentSession;
+      final existingSession = _currentSession;
       if (error is AuthApiException &&
           error.code == 'refresh_token_already_used' &&
-          currentSession != null &&
-          !currentSession.isExpired) {
+          existingSession != null &&
+          !existingSession.isExpired) {
         _log.fine('Refresh token already used but current session is still '
             'valid, returning it instead of signing out');
-        final response = AuthResponse(session: currentSession);
+        final response = AuthResponse(session: existingSession);
         if (!completer.isCompleted) completer.complete(response);
         return;
       }
@@ -1552,7 +1549,7 @@ class GoTrueClient {
 
   Future<JWK?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
     // try fetching from the supplied jwks
-    final jwk = suppliedJwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    final jwk = suppliedJwks.keys.firstWhereOrNull((key) => key.kid == kid);
     if (jwk != null) {
       return jwk;
     }
@@ -1560,7 +1557,7 @@ class GoTrueClient {
     final now = DateTime.now();
 
     // try fetching from cache
-    final cachedJwk = _jwks?.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    final cachedJwk = _jwks?.keys.firstWhereOrNull((key) => key.kid == kid);
 
     // jwks exists and it isn't stale
     if (cachedJwk != null &&
@@ -1586,7 +1583,7 @@ class GoTrueClient {
     _jwksCachedAt = now;
 
     // find the signing key
-    return jwks.keys.firstWhereOrNull((jwk) => jwk.kid == kid);
+    return jwks.keys.firstWhereOrNull((key) => key.kid == kid);
   }
 
   /// Extracts the JWT claims present in the access token by first verifying the

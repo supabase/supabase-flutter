@@ -65,8 +65,8 @@ class SupabaseClient {
   late final RealtimeClient realtime;
   late final PostgrestClient rest;
   StreamSubscription<AuthState>? _authStateSubscription;
-  late final YAJsonIsolate _isolate;
-  late final bool _hasCustomIsolate;
+  final YAJsonIsolate _isolate;
+  final bool _hasCustomIsolate;
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each stream
@@ -80,11 +80,11 @@ class SupabaseClient {
   }
 
   /// To apply the new headers in existing realtime channels, manually unsubscribe and resubscribe these channels.
-  set headers(Map<String, String> headers) {
+  set headers(Map<String, String> newHeaders) {
     _headers.clear();
     _headers.addAll({
       ...Constants.defaultHeaders,
-      ...headers,
+      ...newHeaders,
     });
 
     rest.headers
@@ -139,7 +139,7 @@ class SupabaseClient {
         _postgrestOptions = postgrestOptions,
         _headers = {
           ...Constants.defaultHeaders,
-          if (headers != null) ...headers
+          ...?headers,
         },
         _httpClient = httpClient,
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
@@ -169,11 +169,10 @@ class SupabaseClient {
   GoTrueClient get auth {
     if (accessToken == null) {
       return _authInstance!;
-    } else {
-      throw AuthException(
-        'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
-      );
     }
+    throw AuthException(
+      'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
+    );
   }
 
   /// Perform a table operation.
@@ -278,14 +277,19 @@ class SupabaseClient {
     _log.fine('Dispose SupabaseClient');
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
+    await functions.dispose();
+    await rest.dispose();
     if (!_hasCustomIsolate) {
       await _isolate.dispose();
+    }
+    if (_httpClient == null) {
+      _authHttpClient.close();
     }
     _authInstance?.dispose();
   }
 
   GoTrueClient _initSupabaseAuthClient({
-    bool? autoRefreshToken,
+    required bool autoRefreshToken,
     required GotrueAsyncStorage? gotrueAsyncStorage,
     required AuthFlowType authFlowType,
   }) {
@@ -358,8 +362,8 @@ class SupabaseClient {
       'apikey': _supabaseKey,
       'Authorization': 'Bearer $authBearer',
     };
-    final headers = {...defaultHeaders, ..._headers};
-    return headers;
+    final mergedHeaders = {...defaultHeaders, ..._headers};
+    return mergedHeaders;
   }
 
   void _listenForAuthEvents() {

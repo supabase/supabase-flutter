@@ -41,7 +41,7 @@ class PostgrestClient {
     this.retryEnabled = true,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
   })  : _schema = schema,
-        headers = {...defaultHeaders, if (headers != null) ...headers},
+        headers = {...defaultHeaders, ...?headers},
         _isolate = isolate ?? (YAJsonIsolate()..initialize()),
         _hasCustomIsolate = isolate != null,
         _retryDelay = retryDelay {
@@ -68,9 +68,9 @@ class PostgrestClient {
 
   /// Perform a table operation.
   PostgrestQueryBuilder<void> from(String table) {
-    final url = '${this.url}/$table';
-    return PostgrestQueryBuilder<void>(
-      url: Uri.parse(url),
+    final requestUrl = '$url/$table';
+    return PostgrestQueryBuilder(
+      url: Uri.parse(requestUrl),
       headers: {...headers},
       schema: _schema,
       httpClient: httpClient,
@@ -115,9 +115,9 @@ class PostgrestClient {
     Map? params,
     bool get = false,
   }) {
-    final url = '${this.url}/rpc/$fn';
+    final requestUrl = '$url/rpc/$fn';
     return PostgrestRpcBuilder(
-      url,
+      requestUrl,
       headers: {...headers},
       schema: _schema,
       httpClient: httpClient,

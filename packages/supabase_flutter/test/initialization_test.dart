@@ -30,25 +30,19 @@ void main() {
           url: supabaseUrl,
           publishableKey: supabaseKey,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
     });
 
     group('Custom storage initialization', () {
       test('initialize successfully with custom localStorage', () async {
-        final localStorage = MockLocalStorage();
+        const localStorage = MockLocalStorage();
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          authOptions: FlutterAuthClientOptions(
+          authOptions: const FlutterAuthClientOptions(
             localStorage: localStorage,
           ),
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
 
       test('handles initialization with expired session in storage', () async {
@@ -57,7 +51,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockExpiredStorage(),
+            localStorage: const MockExpiredStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
@@ -76,9 +70,6 @@ void main() {
             authFlowType: AuthFlowType.pkce,
           ),
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
     });
 
@@ -90,9 +81,6 @@ void main() {
           publishableKey: supabaseKey,
           httpClient: httpClient,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
 
       test('initialize successfully with custom access token', () async {
@@ -101,9 +89,6 @@ void main() {
           publishableKey: supabaseKey,
           accessToken: () async => 'custom-access-token',
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
 
         // Should throw AuthException when trying to access auth
         expect(
@@ -121,8 +106,6 @@ void main() {
           publishableKey: supabaseKey,
         );
 
-        expect(Supabase.instance, isNotNull);
-
         // Dispose
         await Supabase.instance.dispose();
 
@@ -134,8 +117,6 @@ void main() {
           url: supabaseUrl,
           publishableKey: supabaseKey,
         );
-
-        expect(Supabase.instance, isNotNull);
       });
 
       test('handles multiple initializations correctly', () async {
@@ -144,7 +125,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: false,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockLocalStorage(),
+            localStorage: const MockLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
@@ -160,13 +141,12 @@ void main() {
           publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockEmptyLocalStorage(),
+            localStorage: const MockEmptyLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
 
         final secondInstance = Supabase.instance.client;
-        expect(secondInstance, isNotNull);
         expect(identical(firstInstance, secondInstance), isFalse);
       });
     });

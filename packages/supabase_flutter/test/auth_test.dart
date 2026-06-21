@@ -9,7 +9,7 @@ class _MockLocalStorage extends MockLocalStorage {
   bool get initializeCalled => _initializeCalled;
 
   @override
-  Future<void> initialize() async {
+  Future<void> initialize() {
     _initializeCalled = true;
     return super.initialize();
   }
@@ -70,7 +70,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: false,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockEmptyLocalStorage(),
+            localStorage: const MockEmptyLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
@@ -90,7 +90,7 @@ void main() {
 
     group('Session recovery', () {
       test('handles corrupted session data gracefully', () async {
-        final corruptedStorage = MockExpiredStorage();
+        const corruptedStorage = MockExpiredStorage();
 
         await Supabase.initialize(
           url: supabaseUrl,
@@ -108,7 +108,7 @@ void main() {
       });
 
       test('handles null session during initialization', () async {
-        final emptyStorage = MockEmptyLocalStorage();
+        const emptyStorage = MockEmptyLocalStorage();
 
         await Supabase.initialize(
           url: supabaseUrl,

@@ -117,6 +117,7 @@ class RealtimeClient {
   final RealtimeDecode decode;
   late TimerCalculation reconnectAfterMs;
   WebSocketChannel? conn;
+  StreamSubscription? _connectionSubscription;
   List sendBuffer = [];
   Map<String, List<Function>> stateChangeCallbacks = {
     'open': [],
@@ -183,7 +184,7 @@ class RealtimeClient {
             .toString(),
         headers = {
           ...Constants.defaultHeaders,
-          if (headers != null) ...headers,
+          ...?headers,
         },
         transport = transport ?? createWebSocketClient,
         encode = encode ??
@@ -195,7 +196,7 @@ class RealtimeClient {
                 ? _decodeLegacy
                 : _serializer.decode) {
     _log.config(
-        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: $logLevel');
+        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: ${logLevel?.name}');
     _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
@@ -252,7 +253,7 @@ class RealtimeClient {
       connState = SocketStates.open;
 
       _onConnOpen();
-      localConn.stream.listen(
+      _connectionSubscription = localConn.stream.listen(
         (message) => onConnMessage(message),
         onError: _onConnError,
         onDone: () {
@@ -301,6 +302,8 @@ class RealtimeClient {
         log('transport', 'disconnected', null, Level.FINE);
       }
       this.conn = null;
+      await _connectionSubscription?.cancel();
+      _connectionSubscription = null;
 
       // remove open handles
       if (heartbeatTimer != null) heartbeatTimer?.cancel();
@@ -385,30 +388,28 @@ class RealtimeClient {
   /// Removes a subscription from the socket.
   @internal
   void remove(RealtimeChannel channel) {
-    channels = channels
-        .where((c) => c.joinRef != channel.joinRef)
-        .toList()
-        .cast<RealtimeChannel>();
+    channels = channels.where((c) => c.joinRef != channel.joinRef).toList();
   }
 
   RealtimeChannel channel(
     String topic, [
-    RealtimeChannelConfig params = const RealtimeChannelConfig(),
+    RealtimeChannelConfig config = const RealtimeChannelConfig(),
   ]) {
-    final chan = RealtimeChannel('realtime:$topic', this, params: params);
-    channels.add(chan);
-    return chan;
+    final newChannel = RealtimeChannel('realtime:$topic', this, params: config);
+    channels.add(newChannel);
+    return newChannel;
   }
 
   /// Push out a message if the socket is connected.
   ///
   /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
+  // ignore: function-always-returns-null
   String? push(Message message) {
     void callback() {
       conn?.sink.add(encode(message.toJson()));
     }
 
-    log('push', '${message.topic} ${message.event} (${message.ref})',
+    log('push', '${message.topic} ${message.event.name} (${message.ref})',
         message.payload);
 
     if (isConnected) {
@@ -431,15 +432,15 @@ class RealtimeClient {
     final topic = message['topic'] as String;
     final event = message['event'] as String;
     final payload = message['payload'];
-    final ref = message['ref'] as String?;
-    if (ref != null && ref == pendingHeartbeatRef) {
+    final messageRef = message['ref'] as String?;
+    if (messageRef != null && messageRef == pendingHeartbeatRef) {
       pendingHeartbeatRef = null;
     }
 
     final status = payload is Map ? (payload['status'] ?? '') : '';
     log(
       'receive',
-      "$status $topic $event ${ref != null ? '($ref)' : ''}",
+      "$status $topic $event ${messageRef != null ? '($messageRef)' : ''}",
       payload,
     );
 
@@ -447,7 +448,7 @@ class RealtimeClient {
           (channel) => channel.trigger(
             event,
             payload,
-            ref,
+            messageRef,
           ),
         );
     for (final callback in stateChangeCallbacks['message']!) {
@@ -459,13 +460,13 @@ class RealtimeClient {
       jsonEncode(message);
 
   static Map<String, dynamic> _decodeLegacy(Object rawMessage) =>
-      Map<String, dynamic>.from(jsonDecode(rawMessage as String) as Map);
+      Map.from(jsonDecode(rawMessage as String) as Map);
 
   /// Returns the URL of the websocket.
   String get endPointURL {
-    final params = Map<String, String>.from(this.params);
-    params['vsn'] = version.vsn;
-    return _appendParams(endPoint, params);
+    final queryParameters = Map<String, String>.from(params);
+    queryParameters['vsn'] = version.vsn;
+    return _appendParams(endPoint, queryParameters);
   }
 
   /// Return the next message ref, accounting for overflows
@@ -567,15 +568,15 @@ class RealtimeClient {
     }
   }
 
-  String _appendParams(String url, Map<String, String> params) {
-    if (params.keys.isEmpty) {
+  String _appendParams(String url, Map<String, String> queryParameters) {
+    if (queryParameters.keys.isEmpty) {
       return url;
     }
 
     var endpoint = Uri.parse(url);
     endpoint = endpoint.replace(queryParameters: {
       ...endpoint.queryParameters,
-      ...params,
+      ...queryParameters,
     });
 
     return endpoint.toString();

@@ -12,7 +12,7 @@ import 'package:passkeys/types.dart';
 RegisterRequestType passkeyRegisterRequestFromOptions(
   Map<String, dynamic> options,
 ) {
-  final json = Map<String, dynamic>.from(options);
+  final json = Map<String, dynamic>.of(options);
 
   final challenge = json['challenge'];
   if (challenge is String) {
@@ -38,7 +38,7 @@ RegisterRequestType passkeyRegisterRequestFromOptions(
 AuthenticateRequestType passkeyAuthenticateRequestFromOptions(
   Map<String, dynamic> options,
 ) {
-  final json = Map<String, dynamic>.from(options);
+  final json = Map<String, dynamic>.of(options);
 
   final challenge = json['challenge'];
   if (challenge is String) {

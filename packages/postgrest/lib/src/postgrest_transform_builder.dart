@@ -44,11 +44,12 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
 
     final url = overrideSearchParams('select', cleanedColumns);
-    if (newHeaders['Prefer'] != null) {
-      newHeaders['Prefer'] = '${newHeaders['Prefer']},';
-    }
-    newHeaders['Prefer'] = '${newHeaders['Prefer']}return=representation';
-    return PostgrestTransformBuilder<PostgrestList>(
+    final prefer = newHeaders['Prefer'];
+    newHeaders['Prefer'] = [
+      if (prefer != null) prefer,
+      'return=representation',
+    ].join(',');
+    return PostgrestTransformBuilder(
       _copyWithType(
         url: url,
         headers: newHeaders,

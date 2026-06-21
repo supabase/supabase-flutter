@@ -130,7 +130,9 @@ Future<void> primePostgresChanges({
       subscribed.complete();
     } else if (status == RealtimeSubscribeStatus.channelError ||
         status == RealtimeSubscribeStatus.timedOut) {
-      subscribed.completeError(StateError('warmup subscribe failed: $status'));
+      subscribed.completeError(
+          StateError('warmup subscribe failed: ${status.name}'),
+          StackTrace.current);
     }
   });
 

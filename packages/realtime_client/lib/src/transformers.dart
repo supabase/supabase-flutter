@@ -135,8 +135,7 @@ dynamic convertCell(String type, dynamic value) {
     return toArray(value, dataType);
   }
 
-  final typeEnum = PostgresTypes.values
-      .firstWhereOrNull((e) => e.toString() == 'PostgresTypes.$type');
+  final typeEnum = PostgresTypes.values.firstWhereOrNull((e) => e.name == type);
   // If not null, convert to correct type.
   switch (typeEnum) {
     case PostgresTypes.bool:
@@ -171,9 +170,7 @@ dynamic convertCell(String type, dynamic value) {
     case PostgresTypes.timetz: // To allow users to cast it based on Timezone
     case PostgresTypes.tsrange:
     case PostgresTypes.tstzrange:
-      return noop(value);
-    default:
-      // Return the value for remaining types
+    case null:
       return noop(value);
   }
 }
@@ -199,26 +196,24 @@ bool? toBoolean(dynamic value) {
 double? toDouble(dynamic value) {
   if (value is double) {
     return value;
-  } else {
-    try {
-      final temp = value.toString();
-      return double.parse(temp);
-    } catch (_) {
-      return null;
-    }
+  }
+  try {
+    final temp = value.toString();
+    return double.parse(temp);
+  } catch (_) {
+    return null;
   }
 }
 
 int? toInt(dynamic value) {
   if (value is int) {
     return value;
-  } else {
-    try {
-      final temp = value.toString();
-      return int.parse(temp);
-    } catch (_) {
-      return null;
-    }
+  }
+  try {
+    final temp = value.toString();
+    return int.parse(temp);
+  } catch (_) {
+    return null;
   }
 }
 
@@ -310,6 +305,7 @@ Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
 
 Map<String, Map<String, dynamic>> getPayloadRecords(
     Map<String, dynamic> payload) {
+  // ignore: avoid-inferrable-type-arguments
   final records = <String, Map<String, dynamic>>{
     'new': {},
     'old': {},

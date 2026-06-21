@@ -30,11 +30,11 @@ class _MyWidgetState extends State<MyWidget> {
   User? _user;
   @override
   void initState() {
-    _getAuth();
     super.initState();
+    _getAuth();
   }
 
-  Future<void> _getAuth() async {
+  void _getAuth() {
     setState(() {
       _user = Supabase.instance.client.auth.currentUser;
     });
@@ -173,8 +173,8 @@ class _ProfileFormState extends State<_ProfileForm> {
 
   @override
   void initState() {
-    _loadProfile();
     super.initState();
+    _loadProfile();
   }
 
   @override

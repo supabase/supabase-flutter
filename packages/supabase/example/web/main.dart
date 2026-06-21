@@ -8,8 +8,8 @@ void main() {
   const supabaseKey = 'YOUR_SUPABASE_KEY';
   final supabase = SupabaseClient(supabaseUrl, supabaseKey);
 
-  final element = web.document.querySelector('#output') as web.HTMLDivElement;
-  element.textContent = 'Supabase Dart Web Example';
+  final element = web.document.querySelector('#output');
+  element?.textContent = 'Supabase Dart Web Example';
 
   exampleUsage(supabase);
 }

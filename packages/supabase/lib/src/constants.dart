@@ -2,9 +2,9 @@ import 'package:supabase/src/version.dart';
 import 'platform_stub.dart' if (dart.library.io) 'platform_io.dart';
 
 class Constants {
-  static String? get platform => condPlatform;
-  static String? get platformVersion => condPlatformVersion;
-  static String? get runtimeVersion => condRuntimeVersion;
+  static String? get platform => conditionalPlatform;
+  static String? get platformVersion => conditionalPlatformVersion;
+  static String? get runtimeVersion => conditionalRuntimeVersion;
 
   static final Map<String, String> defaultHeaders = Map.unmodifiable({
     'X-Client-Info': [

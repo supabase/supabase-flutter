@@ -414,56 +414,8 @@ void main() {
   });
 
   group('Exception hierarchy', () {
-    test('all exception types implement Exception', () {
-      final authException = const AuthException('error');
-      final pkceException = AuthPKCEGrantCodeExchangeError('error');
-      final sessionException = AuthSessionMissingException();
-      final retryException = AuthRetryableFetchException();
-      final apiException = AuthApiException('error');
-      final unknownException = AuthUnknownException(
-        message: 'error',
-        originalError: 'original',
-      );
-      final weakPasswordException = AuthWeakPasswordException(
-        message: 'error',
-        statusCode: '422',
-        reasons: [],
-      );
-
-      expect(authException, isA<Exception>());
-      expect(pkceException, isA<Exception>());
-      expect(sessionException, isA<Exception>());
-      expect(retryException, isA<Exception>());
-      expect(apiException, isA<Exception>());
-      expect(unknownException, isA<Exception>());
-      expect(weakPasswordException, isA<Exception>());
-    });
-
-    test('all exception types extend AuthException', () {
-      final pkceException = AuthPKCEGrantCodeExchangeError('error');
-      final sessionException = AuthSessionMissingException();
-      final retryException = AuthRetryableFetchException();
-      final apiException = AuthApiException('error');
-      final unknownException = AuthUnknownException(
-        message: 'error',
-        originalError: 'original',
-      );
-      final weakPasswordException = AuthWeakPasswordException(
-        message: 'error',
-        statusCode: '422',
-        reasons: [],
-      );
-
-      expect(pkceException, isA<AuthException>());
-      expect(sessionException, isA<AuthException>());
-      expect(retryException, isA<AuthException>());
-      expect(apiException, isA<AuthException>());
-      expect(unknownException, isA<AuthException>());
-      expect(weakPasswordException, isA<AuthException>());
-    });
-
     test('can catch all auth exceptions as AuthException', () {
-      final exceptions = <AuthException>[
+      final exceptions = [
         const AuthException('base error'),
         AuthPKCEGrantCodeExchangeError('pkce error'),
         AuthSessionMissingException(),

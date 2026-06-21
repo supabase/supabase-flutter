@@ -18,7 +18,7 @@ class Presence {
   factory Presence.fromJson(Map<String, dynamic> map) {
     final ref = map['presence_ref'];
     // Create a new map without presence_ref to avoid mutating the input
-    final payload = Map<String, dynamic>.from(map)..remove('presence_ref');
+    final payload = Map<String, dynamic>.of(map)..remove('presence_ref');
     return Presence(
       presenceRef: ref as String? ?? '',
       payload: payload,
@@ -274,9 +274,9 @@ class RealtimePresence {
     Map<String, dynamic> presences, [
     PresenceChooser<T>? chooser,
   ]) {
-    chooser ??= (key, pres) => pres;
+    chooser ??= (key, presence) => presence;
 
-    return _map(presences, (key, presences) => chooser!(key, presences));
+    return _map(presences, (key, presence) => chooser!(key, presence));
   }
 
   static List<T> _map<T>(Map<String, dynamic> obj, PresenceChooser<T> func) {
@@ -329,9 +329,8 @@ class RealtimePresence {
 
   static Map<String, List<Presence>> _cloneDeep(
       Map<String, List<Presence>> obj) {
-    return Map<String, List<Presence>>.fromEntries(obj.entries.map((entry) =>
-        MapEntry(entry.key,
-            entry.value.map((presence) => presence.deepClone()).toList())));
+    return Map.fromEntries(obj.entries.map((entry) => MapEntry(entry.key,
+        entry.value.map((presence) => presence.deepClone()).toList())));
   }
 
   void onJoin(PresenceOnJoinCallback callback) {
@@ -347,7 +346,7 @@ class RealtimePresence {
   }
 
   List<T> list<T>([PresenceChooser<T>? by]) {
-    return RealtimePresence._list<T>(state, by);
+    return RealtimePresence._list(state, by);
   }
 
   bool inPendingSyncState() {

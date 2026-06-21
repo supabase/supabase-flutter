@@ -39,7 +39,7 @@ class Bucket {
       public: json['public'] as bool,
       fileSizeLimit: json['file_size_limit'] as int?,
       allowedMimeTypes:
-          allowedMimeTypes is List ? allowedMimeTypes.cast<String>() : null,
+          allowedMimeTypes is List ? allowedMimeTypes.cast() : null,
     );
   }
 }
@@ -339,7 +339,7 @@ class StorageException implements Exception {
   final String? error;
   final String? statusCode;
 
-  const StorageException(this.message, {this.error, this.statusCode}) : super();
+  const StorageException(this.message, {this.error, this.statusCode});
 
   factory StorageException.fromJson(
     Map<String, dynamic> json, [

@@ -89,6 +89,7 @@ class FunctionsClient {
   /// ```
   Future<FunctionResponse> invoke(
     String functionName, {
+    // ignore: avoid-shadowing
     Map<String, String>? headers,
     Object? body,
     Iterable<http.MultipartFile>? files,
@@ -100,7 +101,7 @@ class FunctionsClient {
 
     // Merge query parameters with forceFunctionRegion if region is specified
     final effectiveQueryParams = <String, dynamic>{
-      if (queryParameters != null) ...queryParameters,
+      ...?queryParameters,
       if (effectiveRegion != null && effectiveRegion != 'any')
         'forceFunctionRegion': effectiveRegion,
     };
@@ -111,7 +112,7 @@ class FunctionsClient {
 
     final finalHeaders = <String, String>{
       ..._headers,
-      if (headers != null) ...headers,
+      ...?headers,
       if (effectiveRegion != null && effectiveRegion != 'any')
         'x-region': effectiveRegion,
     };
@@ -130,7 +131,7 @@ class FunctionsClient {
         body == null || body is Map<String, String>,
         'body must be of type Map',
       );
-      final fields = body as Map<String, String>?;
+      final fields = (body as Map?)?.cast<String, String>();
 
       request = http.MultipartRequest(method.name.toUpperCase(), uri)
         ..fields.addAll(fields ?? {})
@@ -182,13 +183,12 @@ class FunctionsClient {
 
     if (200 <= response.statusCode && response.statusCode < 300) {
       return FunctionResponse(data: data, status: response.statusCode);
-    } else {
-      throw FunctionException(
-        status: response.statusCode,
-        details: data,
-        reasonPhrase: response.reasonPhrase,
-      );
     }
+    throw FunctionException(
+      status: response.statusCode,
+      details: data,
+      reasonPhrase: response.reasonPhrase,
+    );
   }
 
   /// Disposes the self created isolate for json encoding/decoding

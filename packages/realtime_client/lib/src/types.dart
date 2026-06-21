@@ -50,9 +50,8 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
   String toRealtimeEvent() {
     if (this == PostgresChangeEvent.all) {
       return '*';
-    } else {
-      return name.toUpperCase();
     }
+    return name.toUpperCase();
   }
 
   static PostgresChangeEvent fromString(String event) {
@@ -84,7 +83,7 @@ class ChannelFilter {
   /// Only one filter can be applied
   final String? filter;
 
-  ChannelFilter({
+  const ChannelFilter({
     this.event,
     this.schema,
     this.table,
@@ -132,9 +131,8 @@ extension ToType on RealtimeListenTypes {
   String toType() {
     if (this == RealtimeListenTypes.postgresChanges) {
       return 'postgres_changes';
-    } else {
-      return name;
     }
+    return name;
   }
 }
 
@@ -220,7 +218,7 @@ class PostgresChangePayload {
   final Map<String, dynamic> newRecord;
   final Map<String, dynamic> oldRecord;
   final dynamic errors;
-  PostgresChangePayload({
+  const PostgresChangePayload({
     required this.schema,
     required this.table,
     required this.commitTimestamp,
@@ -251,19 +249,15 @@ class PostgresChangePayload {
       commitTimestamp: commitTimestamp,
       eventType:
           PostgresChangeEventMethods.fromString(payload['eventType'] as String),
-      newRecord: newData is Map
-          ? Map<String, dynamic>.from(newData)
-          : <String, dynamic>{},
-      oldRecord: oldData is Map
-          ? Map<String, dynamic>.from(oldData)
-          : <String, dynamic>{},
+      newRecord: newData is Map ? Map.from(newData) : {},
+      oldRecord: oldData is Map ? Map.from(oldData) : {},
       errors: payload['errors'],
     );
   }
 
   @override
   String toString() {
-    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: $eventType, newRow: $newRecord, oldRow: $oldRecord, errors: $errors)';
+    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: ${eventType.name}, newRow: $newRecord, oldRow: $oldRecord, errors: $errors)';
   }
 
   @override
@@ -330,7 +324,7 @@ class PostgresChangeFilter {
   final dynamic value;
 
   /// {@macro postgres_change_filter}
-  PostgresChangeFilter({
+  const PostgresChangeFilter({
     required this.type,
     required this.column,
     required this.value,
@@ -339,11 +333,7 @@ class PostgresChangeFilter {
   @override
   String toString() {
     if (type == PostgresChangeFilterType.inFilter) {
-      if (value is List<String>) {
-        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
-      } else {
-        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
-      }
+      return '$column=in.(${value.map((s) => '"$s"').join(',')})';
     }
     return '$column=${type.name}.$value';
   }
@@ -354,7 +344,7 @@ abstract class RealtimePresencePayload {
   /// Name of the presence event.
   final PresenceEvent event;
 
-  RealtimePresencePayload({
+  const RealtimePresencePayload({
     required this.event,
   });
 
@@ -362,12 +352,12 @@ abstract class RealtimePresencePayload {
       : event = PresenceEventExtended.fromString(json['event']);
 
   @override
-  String toString() => 'PresencePayload(event: $event)';
+  String toString() => 'PresencePayload(event: ${event.name})';
 }
 
 /// Payload for [PresenceEvent.sync] callback.
 class RealtimePresenceSyncPayload extends RealtimePresencePayload {
-  RealtimePresenceSyncPayload({
+  const RealtimePresenceSyncPayload({
     required super.event,
   });
 
@@ -378,7 +368,7 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
   }
 
   @override
-  String toString() => 'PresenceSyncPayload(event: $event)';
+  String toString() => 'PresenceSyncPayload(event: ${event.name})';
 }
 
 /// Payload for [PresenceEvent.join] callback.
@@ -394,7 +384,7 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
   /// List of currently present presences.
   final List<Presence> currentPresences;
 
-  RealtimePresenceJoinPayload({
+  const RealtimePresenceJoinPayload({
     required super.event,
     required this.key,
     required this.currentPresences,
@@ -405,8 +395,8 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
     return RealtimePresenceJoinPayload(
       event: PresenceEventExtended.fromString(json['event']),
       key: json['key'] as String,
-      newPresences: json['newPresences'] as List<Presence>,
-      currentPresences: json['currentPresences'] as List<Presence>,
+      newPresences: (json['newPresences'] as List).cast(),
+      currentPresences: (json['currentPresences'] as List).cast(),
     );
   }
 
@@ -428,7 +418,7 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
   /// List of currently present presences.
   final List<Presence> currentPresences;
 
-  RealtimePresenceLeavePayload({
+  const RealtimePresenceLeavePayload({
     required super.event,
     required this.key,
     required this.currentPresences,
@@ -439,8 +429,8 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
     return RealtimePresenceLeavePayload(
       event: PresenceEventExtended.fromString(json['event']),
       key: json['key'] as String,
-      leftPresences: json['leftPresences'] as List<Presence>,
-      currentPresences: json['currentPresences'] as List<Presence>,
+      leftPresences: (json['leftPresences'] as List).cast(),
+      currentPresences: (json['currentPresences'] as List).cast(),
     );
   }
 
@@ -457,7 +447,7 @@ class SinglePresenceState {
   /// List of shared payloads of the client.
   final List<Presence> presences;
 
-  SinglePresenceState({
+  const SinglePresenceState({
     required this.key,
     required this.presences,
   });

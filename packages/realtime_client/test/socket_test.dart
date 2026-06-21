@@ -45,8 +45,6 @@ String generateJwt([int? exp]) {
 }
 
 void main() {
-  const int int64MaxValue = 9223372036854775807;
-
   const socketEndpoint = 'wss://localhost:0/';
 
   late HttpServer mockServer;
@@ -400,7 +398,7 @@ void main() {
       const tTopic2 = 'topic-2';
 
       final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+      mockedSocket.mockedChannelLooker.addAll({
         tTopic1: mockedChannel1,
         tTopic2: mockedChannel2,
       });
@@ -536,7 +534,7 @@ void main() {
       final customSocket = RealtimeClient(
         socketEndpoint,
         transport: (url, headers) => customChannel,
-        encode: (payload) => 'custom-frame',
+        encode: (_) => 'custom-frame',
       );
       customSocket.connect();
       customSocket.connState = SocketStates.open;
@@ -644,7 +642,7 @@ void main() {
     });
 
     test('restarts for overflow', () {
-      socket.ref = int64MaxValue;
+      socket.ref = 9223372036854775807;
       expect(socket.makeRef(), '0');
       expect(socket.ref, 0);
     });
@@ -677,7 +675,7 @@ void main() {
       const tTopic2 = 'topic-2';
 
       final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+      mockedSocket.mockedChannelLooker.addAll({
         tTopic1: mockedChannel1,
         tTopic2: mockedChannel2,
       });
@@ -724,7 +722,7 @@ void main() {
       const tTopic3 = 'test-topic3';
 
       final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-      mockedSocket.mockedChannelLooker.addAll(<String, RealtimeChannel>{
+      mockedSocket.mockedChannelLooker.addAll({
         tTopic1: mockedChannel1,
         tTopic2: mockedChannel2,
         tTopic3: mockedChannel3,
@@ -734,25 +732,31 @@ void main() {
       final channel2 = mockedSocket.channel(tTopic2);
       final channel3 = mockedSocket.channel(tTopic3);
 
-      const token = 'sb-key';
-      final pushPayload = {'access_token': token};
-      final updateJoinPayload = {
-        'access_token': token,
+      const authToken = 'sb-key';
+      final expectedPushPayload = {'access_token': authToken};
+      final expectedUpdateJoinPayload = {
+        'access_token': authToken,
         'version': Constants.defaultHeaders['X-Client-Info'],
       };
 
-      await mockedSocket.setAuth(token);
+      await mockedSocket.setAuth(authToken);
 
-      expect(mockedSocket.accessToken, token);
+      expect(mockedSocket.accessToken, authToken);
 
-      verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
-      verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
-      verify(() => channel3.updateJoinPayload(updateJoinPayload)).called(1);
-
-      verify(() => channel1.push(ChannelEvents.accessToken, pushPayload))
+      verify(() => channel1.updateJoinPayload(expectedUpdateJoinPayload))
           .called(1);
-      verifyNever(() => channel2.push(ChannelEvents.accessToken, pushPayload));
-      verify(() => channel3.push(ChannelEvents.accessToken, pushPayload))
+      verify(() => channel2.updateJoinPayload(expectedUpdateJoinPayload))
+          .called(1);
+      verify(() => channel3.updateJoinPayload(expectedUpdateJoinPayload))
+          .called(1);
+
+      verify(() =>
+              channel1.push(ChannelEvents.accessToken, expectedPushPayload))
+          .called(1);
+      verifyNever(
+          () => channel2.push(ChannelEvents.accessToken, expectedPushPayload));
+      verify(() =>
+              channel3.push(ChannelEvents.accessToken, expectedPushPayload))
           .called(1);
     });
   });
