@@ -131,7 +131,7 @@ class FunctionsClient {
         body == null || body is Map<String, String>,
         'body must be of type Map',
       );
-      final fields = body as Map<String, String>?;
+      final fields = (body as Map?)?.cast<String, String>();
 
       request = http.MultipartRequest(method.name.toUpperCase(), uri)
         ..fields.addAll(fields ?? {})

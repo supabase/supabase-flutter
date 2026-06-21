@@ -36,7 +36,6 @@ dcm:
     no-empty-block: false
     no-equal-switch-case: false
     prefer-correct-callback-field-name: false
-    prefer-correct-json-casts: false
     prefer-explicit-function-type: false
     prefer-match-file-name: false
     prefer-overriding-parent-equality: false

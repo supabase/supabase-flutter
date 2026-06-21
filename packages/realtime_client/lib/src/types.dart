@@ -395,8 +395,8 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
     return RealtimePresenceJoinPayload(
       event: PresenceEventExtended.fromString(json['event']),
       key: json['key'] as String,
-      newPresences: json['newPresences'] as List<Presence>,
-      currentPresences: json['currentPresences'] as List<Presence>,
+      newPresences: (json['newPresences'] as List).cast(),
+      currentPresences: (json['currentPresences'] as List).cast(),
     );
   }
 
@@ -429,8 +429,8 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
     return RealtimePresenceLeavePayload(
       event: PresenceEventExtended.fromString(json['event']),
       key: json['key'] as String,
-      leftPresences: json['leftPresences'] as List<Presence>,
-      currentPresences: json['currentPresences'] as List<Presence>,
+      leftPresences: (json['leftPresences'] as List).cast(),
+      currentPresences: (json['currentPresences'] as List).cast(),
     );
   }
 
