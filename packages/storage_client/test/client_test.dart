@@ -63,12 +63,10 @@ void main() {
   });
 
   test('Get bucket with wrong id', () async {
-    try {
-      await storage.getBucket('not-exist-id');
-      fail('Bucket that does not exist was found');
-    } catch (error) {
-      expect(error, isNotNull);
-    }
+    await expectLater(
+      () => storage.getBucket('not-exist-id'),
+      throwsA(isNotNull),
+    );
   });
 
   test('Create new bucket', () async {
@@ -87,7 +85,7 @@ void main() {
       const BucketOptions(public: true),
     );
     final response = await storage.getBucket(newPublicBucketName);
-    expect(response.public, true);
+    expect(response.public, isTrue);
     expect(response.name, newPublicBucketName);
   });
 
@@ -201,15 +199,15 @@ void main() {
           .uploadToSignedUrl(response.path, response.token, file);
 
       expect(uploadedPath, uploadPath);
-      try {
-        await storage
+      await expectLater(
+        () => storage
             .from(newBucketName)
-            .uploadToSignedUrl(response.path, response.token, file);
-      } on StorageException catch (error) {
-        expect(error.error, 'Duplicate');
-        expect(error.message, 'The resource already exists');
-        expect(error.statusCode, '409');
-      }
+            .uploadToSignedUrl(response.path, response.token, file),
+        throwsA(isA<StorageException>()
+            .having((e) => e.error, 'error', 'Duplicate')
+            .having((e) => e.message, 'message', 'The resource already exists')
+            .having((e) => e.statusCode, 'statusCode', '409')),
+      );
     });
   });
 
@@ -419,12 +417,11 @@ void main() {
       final client = SupabaseStorageClient(
           storageUrl, {'Authorization': 'Bearer $storageKey'});
 
-      try {
-        await client.from('bucket2').download(uploadPath);
-        fail('File that does not exist was found');
-      } on StorageException catch (error) {
-        expect(error.statusCode, '400');
-      }
+      await expectLater(
+        () => client.from('bucket2').download(uploadPath),
+        throwsA(isA<StorageException>()
+            .having((e) => e.statusCode, 'statusCode', '400')),
+      );
       await client
           .from(newBucketName)
           .copy(uploadPath, uploadPath, destinationBucket: 'bucket2');
@@ -439,12 +436,11 @@ void main() {
       final client = SupabaseStorageClient(
           storageUrl, {'Authorization': 'Bearer $storageKey'});
 
-      try {
-        await client.from('bucket2').download('$uploadPath 3');
-        fail('File that does not exist was found');
-      } on StorageException catch (error) {
-        expect(error.statusCode, '400');
-      }
+      await expectLater(
+        () => client.from('bucket2').download('$uploadPath 3'),
+        throwsA(isA<StorageException>()
+            .having((e) => e.statusCode, 'statusCode', '400')),
+      );
       await client
           .from(newBucketName)
           .move(uploadPath, '$uploadPath 3', destinationBucket: 'bucket2');
@@ -453,12 +449,11 @@ void main() {
       } catch (error) {
         fail('File that was moved was not found');
       }
-      try {
-        await client.from(newBucketName).download(uploadPath);
-        fail('File that was moved was found');
-      } on StorageException catch (error) {
-        expect(error.statusCode, '400');
-      }
+      await expectLater(
+        () => client.from(newBucketName).download(uploadPath),
+        throwsA(isA<StorageException>()
+            .having((e) => e.statusCode, 'statusCode', '400')),
+      );
     });
   });
 
@@ -484,10 +479,10 @@ void main() {
   test('check if object exists', () async {
     await storage.from(newBucketName).upload('$uploadPath-exists', file);
     final res = await storage.from(newBucketName).exists('$uploadPath-exists');
-    expect(res, true);
+    expect(res, isTrue);
 
     final res2 = await storage.from(newBucketName).exists('not-exist');
-    expect(res2, false);
+    expect(res2, isFalse);
   });
 
   group('setHeader', () {

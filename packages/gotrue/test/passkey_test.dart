@@ -286,13 +286,12 @@ void main() {
       );
       addTearDown(disabledClient.dispose);
 
-      try {
-        await disabledClient.passkey.startAuthentication();
-        fail('Expected AuthApiException');
-      } on AuthApiException catch (error) {
-        expect(error.code, 'passkey_disabled');
-        expect(error.statusCode, '404');
-      }
+      await expectLater(
+        () => disabledClient.passkey.startAuthentication(),
+        throwsA(isA<AuthApiException>()
+            .having((e) => e.code, 'code', 'passkey_disabled')
+            .having((e) => e.statusCode, 'statusCode', '404')),
+      );
     });
   });
 }

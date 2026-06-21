@@ -171,8 +171,8 @@ void main() {
       );
 
       expect(
-        supabase.getChannels().length,
-        isZero,
+        supabase.getChannels(),
+        isEmpty,
       );
     });
   });

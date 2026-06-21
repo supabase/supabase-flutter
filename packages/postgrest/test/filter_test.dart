@@ -28,7 +28,7 @@ void main() {
         .not('status', 'eq', 'OFFLINE');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['status'] != ('OFFLINE'), true);
+      expect(item['status'], isNot('OFFLINE'));
     }
   });
 
@@ -40,8 +40,8 @@ void main() {
     expect(res, isNotEmpty);
 
     for (final item in res) {
-      expect(item['username'] != ('supabot'), true);
-      expect(item['username'] != ('kiwicopple'), true);
+      expect(item['username'], isNot('supabot'));
+      expect(item['username'], isNot('kiwicopple'));
     }
   });
 
@@ -63,7 +63,7 @@ void main() {
       expect(
         ((item['interests'] ?? []) as List)
             .contains(['baseball', 'basketball']),
-        false,
+        isFalse,
       );
     }
   });
@@ -78,7 +78,7 @@ void main() {
     for (final item in res) {
       expect(
         item['username'] == ('supabot') || item['status'] == ('OFFLINE'),
-        true,
+        isTrue,
       );
     }
   });
@@ -92,7 +92,7 @@ void main() {
       expect(res, isNotEmpty);
 
       for (final item in res) {
-        expect(item['username'] == ('supabot'), true);
+        expect(item['username'], 'supabot');
       }
     });
 
@@ -104,7 +104,7 @@ void main() {
       expect(res, isNotEmpty);
 
       for (final item in res) {
-        expect(item['username'] == ('supabot'), true);
+        expect(item['username'], 'supabot');
       }
     });
   });
@@ -118,7 +118,7 @@ void main() {
       expect(res, isNotEmpty);
 
       for (final item in res) {
-        expect(item['username'] == ('supabot'), false);
+        expect(item['username'], isNot('supabot'));
       }
     });
 
@@ -139,7 +139,7 @@ void main() {
     expect(res, isNotEmpty);
 
     for (final item in res) {
-      expect((item['id'] as int) > 1, true);
+      expect((item['id'] as int) > 1, isTrue);
     }
   });
 
@@ -148,7 +148,7 @@ void main() {
     expect(res, isNotEmpty);
 
     for (final item in res) {
-      expect((item['id'] as int) < 1, false);
+      expect((item['id'] as int) < 1, isFalse);
     }
   });
 
@@ -156,7 +156,7 @@ void main() {
     final res = await postgrest.from('messages').select('id').lt('id', 2);
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect((item['id'] as int) < 2, true);
+      expect((item['id'] as int) < 2, isTrue);
     }
   });
 
@@ -164,7 +164,7 @@ void main() {
     final res = await postgrest.from('messages').select('id').lte('id', 2);
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect((item['id'] as int) > 2, false);
+      expect((item['id'] as int) > 2, isFalse);
     }
   });
 
@@ -175,7 +175,7 @@ void main() {
         .like('username', '%supa%');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect((item['username'] as String).contains('supa'), true);
+      expect((item['username'] as String).contains('supa'), isTrue);
     }
   });
 
@@ -200,7 +200,7 @@ void main() {
     for (final item in res) {
       expect(
           item['username'].contains('supa') || item['username'].contains('wai'),
-          true);
+          isTrue);
     }
   });
 
@@ -212,7 +212,7 @@ void main() {
     expect(res, isNotEmpty);
     for (final item in res) {
       final user = (item['username'] as String).toLowerCase();
-      expect(user.contains('supa'), true);
+      expect(user.contains('supa'), isTrue);
     }
   });
 
@@ -238,7 +238,7 @@ void main() {
       expect(
           item['username'].toLowerCase().contains('supa') ||
               item['username'].toLowerCase().contains('wai'),
-          true);
+          isTrue);
     }
   });
 
@@ -260,7 +260,7 @@ void main() {
     for (final item in res) {
       expect(
         item['status'] == 'ONLINE' || item['status'] == 'OFFLINE',
-        true,
+        isTrue,
       );
     }
   });
@@ -337,7 +337,7 @@ void main() {
         .rangeGt('age_range', '[2,25)');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['username'] != 'supabot', true);
+      expect(item['username'], isNot('supabot'));
     }
   });
 
@@ -348,7 +348,7 @@ void main() {
         .rangeGte('age_range', '[2,25)');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['username'] != 'supabot', true);
+      expect(item['username'], isNot('supabot'));
     }
   });
 
@@ -359,7 +359,7 @@ void main() {
         .rangeLte('age_range', '[2,25)');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['username'] == 'supabot', true);
+      expect(item['username'], 'supabot');
     }
   });
 
@@ -463,7 +463,7 @@ void main() {
       for (final item in res) {
         expect(
           item['username'] == 'supabot' || item['username'] == 'kiwicopple',
-          true,
+          isTrue,
         );
       }
     });
@@ -484,7 +484,7 @@ void main() {
         .matchRegex('username', '^supa.*');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect((item['username'] as String).startsWith('supa'), true);
+      expect((item['username'] as String).startsWith('supa'), isTrue);
     }
   });
 
@@ -495,8 +495,8 @@ void main() {
         .imatchRegex('username', '^SUPA.*');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(
-          (item['username'] as String).toLowerCase().startsWith('supa'), true);
+      expect((item['username'] as String).toLowerCase().startsWith('supa'),
+          isTrue);
     }
   });
 
@@ -507,7 +507,7 @@ void main() {
         .isDistinct('status', 'ONLINE');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['status'] != 'ONLINE', true);
+      expect(item['status'], isNot('ONLINE'));
     }
   });
   test('filter on rpc', () async {

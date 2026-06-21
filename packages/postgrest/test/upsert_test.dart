@@ -67,14 +67,12 @@ void main() {
         }
       ];
 
-      try {
-        await postgrest.from('imported_data').upsert(duplicateData).select();
-        fail(
-            'Expected upsert without onConflict to fail due to unique constraint violation');
-      } on PostgrestException catch (error) {
-        // Should fail with unique constraint violation
-        expect(error.code, '23505'); // PostgreSQL unique violation error code
-      }
+      await expectLater(
+        () => postgrest.from('imported_data').upsert(duplicateData).select(),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '23505'),
+        ),
+      );
 
       // Step 3: UPSERT with first row from test data (with onConflict) - should succeed
       final updatedData = [
@@ -169,8 +167,8 @@ void main() {
       expect(batchUpsertResult.length, 2);
       expect(batchUpsertResult[0]['status'], 'batch_updated');
       expect(batchUpsertResult[1]['status'], 'batch_updated');
-      expect(batchUpsertResult[0]['data']['updated'], true);
-      expect(batchUpsertResult[1]['data']['updated'], true);
+      expect(batchUpsertResult[0]['data']['updated'], isTrue);
+      expect(batchUpsertResult[1]['data']['updated'], isTrue);
     });
   });
 }

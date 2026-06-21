@@ -349,11 +349,13 @@ void main() {
       );
     });
     test('should list buckets', () async {
-      try {
-        await client.listBuckets();
-      } catch (e) {
-        expect((e as dynamic).statusCode, "420");
-      }
+      await expectLater(
+        () => client.listBuckets(),
+        throwsA(
+          isA<StorageException>()
+              .having((e) => e.statusCode, 'statusCode', '420'),
+        ),
+      );
     });
   });
 

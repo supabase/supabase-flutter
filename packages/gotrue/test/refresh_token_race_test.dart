@@ -263,7 +263,7 @@ void main() {
 
       // 1. setInitialSession loads the expired session (but doesn't refresh)
       await client.setInitialSession(expiredSession);
-      expect(client.currentSession?.isExpired, true);
+      expect(client.currentSession?.isExpired, isTrue);
 
       // 2. Start auto-refresh (simulates didChangeAppLifecycleState(resumed))
       client.startAutoRefresh();
@@ -301,7 +301,7 @@ void main() {
 
       // 1. Set initial session (doesn't refresh)
       await client.setInitialSession(expiredSession);
-      expect(client.currentSession?.isExpired, true);
+      expect(client.currentSession?.isExpired, isTrue);
       expect(httpClient.requestCount, 0);
 
       // 2. First refresh succeeds
@@ -311,7 +311,7 @@ void main() {
       // 3. Verify the session now has a NEW refresh token
       final newToken = client.currentSession?.refreshToken;
       expect(newToken, isNot('-yeS4omysFs9tpUYBws9Rg'));
-      expect(client.currentSession?.isExpired, false);
+      expect(client.currentSession?.isExpired, isFalse);
 
       // 4. Manually mark the current token as "already used" on the server
       // This simulates a race condition where another request (e.g., auto-refresh)
@@ -325,7 +325,7 @@ void main() {
 
       // Session should still be valid (the error handler returned current session)
       expect(client.currentSession, isNotNull);
-      expect(client.currentSession?.isExpired, false);
+      expect(client.currentSession?.isExpired, isFalse);
     });
 
     test('FIXED: signedOut event is NOT emitted when session is still valid',
@@ -344,7 +344,7 @@ void main() {
       // Capture the valid session after refresh
       final validSession = client.currentSession;
       expect(validSession, isNotNull);
-      expect(validSession!.isExpired, false);
+      expect(validSession!.isExpired, isFalse);
 
       // Listen for auth state changes AFTER first successful refresh
       final authEvents = <AuthChangeEvent>[];
@@ -412,7 +412,7 @@ void main() {
           reason: 'Refresh attempts should be handled without errors');
 
       // Session should be valid
-      expect(client.currentSession?.isExpired, false);
+      expect(client.currentSession?.isExpired, isFalse);
     });
 
     test(

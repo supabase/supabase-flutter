@@ -104,15 +104,11 @@ void main() {
     test(
       'signUp() with weak password throws AuthWeakPasswordException',
       () async {
-        try {
-          await client.signUp(email: newEmail, password: '123');
-          fail('signUp with weak password should throw exception');
-        } on AuthException catch (error) {
-          expect(error, isA<AuthWeakPasswordException>());
-          expect(error.code, ErrorCode.weakPassword.code);
-        } catch (error) {
-          fail('signUp threw ${error.runtimeType} instead of AuthException');
-        }
+        await expectLater(
+          () => client.signUp(email: newEmail, password: '123'),
+          throwsA(isA<AuthWeakPasswordException>()
+              .having((e) => e.code, 'code', ErrorCode.weakPassword.code)),
+        );
       },
     );
 
@@ -125,10 +121,10 @@ void main() {
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/welcome#expires_in=$expiresIn&refresh_token=$refreshToken&token_type=$tokenType&provider_token=$providerToken',
       );
-      try {
-        await client.getSessionFromUrl(urlWithoutAccessToken);
-        fail('getSessionFromUrl did not throw exception');
-      } catch (_) {}
+      await expectLater(
+        () => client.getSessionFromUrl(urlWithoutAccessToken),
+        throwsA(anything),
+      );
     });
 
     test('Parsing an error URL should throw', () async {
@@ -138,18 +134,13 @@ void main() {
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}',
       );
-      try {
-        await client.getSessionFromUrl(urlWithoutAccessToken);
-        fail('getSessionFromUrl did not throw exception');
-      } on AuthException catch (error) {
-        expect(error.message, errorMessage);
-        expect(error.statusCode, '401');
-        expect(error.code, 'unauthorized_client');
-      } catch (error) {
-        fail(
-          'getSessionFromUrl threw ${error.runtimeType} instead of AuthException',
-        );
-      }
+      await expectLater(
+        () => client.getSessionFromUrl(urlWithoutAccessToken),
+        throwsA(isA<AuthException>()
+            .having((e) => e.message, 'message', errorMessage)
+            .having((e) => e.statusCode, 'statusCode', '401')
+            .having((e) => e.code, 'code', 'unauthorized_client')),
+      );
     });
 
     test('Subscribe a listener', () async {
@@ -442,12 +433,11 @@ void main() {
 
     test('Update user with the same password throws AuthException', () async {
       await client.signInWithPassword(email: email1, password: password);
-      try {
-        await client.updateUser(UserAttributes(password: password));
-        fail('updateUser did not throw');
-      } on AuthException catch (error) {
-        expect(error.code, ErrorCode.samePassword.code);
-      }
+      await expectLater(
+        () => client.updateUser(UserAttributes(password: password)),
+        throwsA(isA<AuthException>()
+            .having((e) => e.code, 'code', ErrorCode.samePassword.code)),
+      );
     });
 
     test('signOut', () async {
@@ -473,15 +463,14 @@ void main() {
     });
 
     test('signIn() with the wrong password', () async {
-      try {
-        await client.signInWithPassword(
+      await expectLater(
+        () => client.signInWithPassword(
           email: email1,
           password: 'wrong_$password',
-        );
-        fail('signInWithPassword did not throw');
-      } on AuthException catch (error) {
-        expect(error.message, isNotEmpty);
-      }
+        ),
+        throwsA(isA<AuthException>()
+            .having((e) => e.message, 'message', isNotNull)),
+      );
     });
 
     group('The auth client can signin with third-party oAuth providers', () {
@@ -686,16 +675,11 @@ void main() {
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}',
       );
-      try {
-        await client.getSessionFromUrl(urlWithoutAccessToken);
-        fail('getSessionFromUrl did not throw exception');
-      } on AuthException catch (error) {
-        expect(error.message, errorMessage);
-      } catch (error) {
-        fail(
-          'getSessionFromUrl threw ${error.runtimeType} instead of AuthException',
-        );
-      }
+      await expectLater(
+        () => client.getSessionFromUrl(urlWithoutAccessToken),
+        throwsA(isA<AuthException>()
+            .having((e) => e.message, 'message', errorMessage)),
+      );
     });
 
     test(

@@ -233,8 +233,8 @@ void main() {
           final update =
               await updates.future.timeout(const Duration(seconds: 20));
           expect(update.eventType, PostgresChangeEvent.update);
-          expect(update.newRecord['is_complete'], true);
-          expect(update.oldRecord['is_complete'], false);
+          expect(update.newRecord['is_complete'], isTrue);
+          expect(update.oldRecord['is_complete'], isFalse);
 
           await db
               .execute("DELETE FROM public.todos WHERE task = 'write tests'");
@@ -283,7 +283,7 @@ void main() {
           final payload =
               await matched.future.timeout(const Duration(seconds: 20));
           expect(payload.newRecord['task'], 'matched');
-          expect(payload.newRecord['is_complete'], true);
+          expect(payload.newRecord['is_complete'], isTrue);
         });
       });
     });
