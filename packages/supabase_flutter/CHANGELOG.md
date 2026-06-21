@@ -1,3 +1,9 @@
+## 2.15.0
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FIX**(auth): update session on email change links in PKCE flow ([#1395](https://github.com/supabase/supabase-flutter/issues/1395)). ([6b7871d9](https://github.com/supabase/supabase-flutter/commit/6b7871d920836a1751699fe0dfde90d460c4df16))
+ - **FEAT**(supabase_flutter): add passkey ceremony helpers ([#1408](https://github.com/supabase/supabase-flutter/issues/1408)). ([8c8ec84e](https://github.com/supabase/supabase-flutter/commit/8c8ec84ef61915566a1af6e3227a6e9f9a98a831))
+
 ## 2.14.2
 
  - **DOCS**(supabase_flutter): fix Facebook native login for iOS and Android ([#1386](https://github.com/supabase/supabase-flutter/issues/1386)). ([8cbea828](https://github.com/supabase/supabase-flutter/commit/8cbea8283e38c2a765da715ffa79e045471b1257))
