@@ -289,7 +289,7 @@ class SupabaseClient {
   }
 
   GoTrueClient _initSupabaseAuthClient({
-    bool? autoRefreshToken,
+    required bool autoRefreshToken,
     required GotrueAsyncStorage? gotrueAsyncStorage,
     required AuthFlowType authFlowType,
   }) {

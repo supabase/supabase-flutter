@@ -49,7 +49,7 @@ import 'package:url_launcher/url_launcher.dart';
 /// - Deep link handling is skipped on web (`kIsWeb`) because the browser
 ///   handles URL-based redirects directly.
 class SupabaseAuth with WidgetsBindingObserver {
-  static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
+  static WidgetsBinding get _widgetsBindingInstance => WidgetsBinding.instance;
 
   late LocalStorage _localStorage;
 
@@ -115,7 +115,7 @@ class SupabaseAuth with WidgetsBindingObserver {
           // ignore: invalid_use_of_internal_member
           .notifyAllSubscribers(AuthChangeEvent.initialSession);
     }
-    _widgetsBindingInstance?.addObserver(this);
+    _widgetsBindingInstance.addObserver(this);
 
     if (options.detectSessionInUri) {
       await _startDeeplinkObserver();
@@ -150,7 +150,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
     _authSubscription?.cancel();
     _stopDeeplinkObserver();
-    _widgetsBindingInstance?.removeObserver(this);
+    _widgetsBindingInstance.removeObserver(this);
   }
 
   @override
