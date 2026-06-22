@@ -67,8 +67,12 @@ class Session {
     };
   }
 
-  /// A timestamp of when the token will expire. Returned when a login is
-  /// confirmed.
+  /// The Unix timestamp, in **seconds**, of when the token will expire.
+  /// Returned when a login is confirmed.
+  ///
+  /// To convert this to a [DateTime], multiply by 1000 since
+  /// [DateTime.fromMillisecondsSinceEpoch] expects milliseconds:
+  /// `DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)`.
   late int? expiresAt = _expiresAt;
 
   int? get _expiresAt {

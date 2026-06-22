@@ -107,16 +107,16 @@ class Fetch {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
         : _parseMediaType(file.path);
-    final multipartFile = http.MultipartFile.fromBytes(
-      '',
-      file.readAsBytesSync(),
-      filename: file.path,
-      contentType: contentType,
-    );
+    final bytes = file.readAsBytesSync();
     return _handleMultipartRequest(
       method,
       url,
-      multipartFile,
+      () => http.MultipartFile.fromBytes(
+        '',
+        bytes,
+        filename: file.path,
+        contentType: contentType,
+      ),
       fileOptions,
       options,
       retryAttempts,
@@ -135,18 +135,17 @@ class Fetch {
   ) {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
-        : _parseMediaType(url);
-    final multipartFile = http.MultipartFile.fromBytes(
-      '',
-      data,
-      // request fails with null filename so set it empty instead.
-      filename: '',
-      contentType: contentType,
-    );
+        : _parseMediaType(Uri.parse(url).path);
     return _handleMultipartRequest(
       method,
       url,
-      multipartFile,
+      () => http.MultipartFile.fromBytes(
+        '',
+        data,
+        // request fails with null filename so set it empty instead.
+        filename: '',
+        contentType: contentType,
+      ),
       fileOptions,
       options,
       retryAttempts,
@@ -157,7 +156,7 @@ class Fetch {
   Future<dynamic> _handleMultipartRequest(
     String method,
     String url,
-    MultipartFile multipartFile,
+    MultipartFile Function() createMultipartFile,
     FileOptions fileOptions,
     FetchOptions? options,
     int retryAttempts,
@@ -169,7 +168,7 @@ class Fetch {
     http.MultipartRequest createRequest() {
       final request = http.MultipartRequest(method, Uri.parse(url))
         ..headers.addAll(headers)
-        ..files.add(multipartFile)
+        ..files.add(createMultipartFile())
         ..fields['cacheControl'] = fileOptions.cacheControl
         ..headers['x-upsert'] = fileOptions.upsert.toString();
       if (fileOptions.metadata != null) {

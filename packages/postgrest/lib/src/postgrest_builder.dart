@@ -366,7 +366,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           return PostgrestResponse<S>(data: _converter(null as R), count: 0)
               as T;
         }
-        return null as T;
+        return PostgrestResponse<S>(data: null as S, count: 0) as T;
       }
       if (_converter != null) {
         return _converter(null as R) as T;
