@@ -1136,6 +1136,7 @@ class GoTrueClient {
 
   /// Recover session from stringified [Session].
   Future<AuthResponse> recoverSession(String jsonStr) async {
+    final String refreshToken;
     try {
       final session = Session.fromJson(json.decode(jsonStr));
       if (session == null) {
@@ -1146,45 +1147,46 @@ class GoTrueClient {
         );
       }
 
-      if (session.isExpired) {
-        _log.fine('Session from recovery is expired');
+      if (!session.isExpired) {
+        final shouldEmitEvent = _currentSession == null ||
+            _currentSession!.user.id != session.user.id;
+        _saveSession(session);
 
-        final existingSession = _currentSession;
-        if (existingSession != null &&
-            !existingSession.isExpired &&
-            existingSession.user.id == session.user.id) {
-          _log.fine(
-              'Session was already refreshed elsewhere, skipping recovery');
-          return AuthResponse(session: existingSession);
+        if (shouldEmitEvent) {
+          notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
         }
 
-        final refreshToken = session.refreshToken;
-        if (_autoRefreshToken && refreshToken != null) {
-          // Return the future without awaiting it so that its error is not
-          // caught by the `catch` below. `_callRefreshToken` already notifies
-          // subscribers about the outcome (a `signedOut` event when the refresh
-          // token is invalid, or an exception for a retryable failure), so
-          // re-notifying here would push a duplicate error onto
-          // `onAuthStateChange` for an expected condition, surfacing as an
-          // uncaught stream error for listeners without an `onError` handler.
-          return _callRefreshToken(refreshToken);
-        }
+        return AuthResponse(session: session);
+      }
+
+      _log.fine('Session from recovery is expired');
+
+      final existingSession = _currentSession;
+      if (existingSession != null &&
+          !existingSession.isExpired &&
+          existingSession.user.id == session.user.id) {
+        _log.fine('Session was already refreshed elsewhere, skipping recovery');
+        return AuthResponse(session: existingSession);
+      }
+
+      final token = session.refreshToken;
+      if (!_autoRefreshToken || token == null) {
         await signOut();
         throw notifyException(AuthException('Session expired.'));
       }
-      final shouldEmitEvent = _currentSession == null ||
-          _currentSession!.user.id != session.user.id;
-      _saveSession(session);
-
-      if (shouldEmitEvent) {
-        notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-      }
-
-      return AuthResponse(session: session);
+      refreshToken = token;
     } catch (error, stackTrace) {
       notifyException(error, stackTrace);
       rethrow;
     }
+
+    // Called outside the try/catch above on purpose: `_callRefreshToken`
+    // already notifies subscribers about the outcome (a `signedOut` event when
+    // the refresh token is invalid, or an exception for a retryable failure),
+    // so re-notifying the error here would push a duplicate onto
+    // `onAuthStateChange`, surfacing as an uncaught stream error for listeners
+    // without an `onError` handler.
+    return _callRefreshToken(refreshToken);
   }
 
   /// Starts an auto-refresh process in the background. Close to the time of expiration a process is started to
