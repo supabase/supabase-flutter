@@ -1180,13 +1180,17 @@ class GoTrueClient {
       rethrow;
     }
 
-    // Awaited outside the try/catch above on purpose: `_callRefreshToken`
-    // already reports the outcome (a `signedOut` event for an invalid token, or
-    // a stream exception for a retryable failure), so catching here would only
-    // duplicate it. It is still awaited so `recoverSession` stays in the
-    // asynchronous stack trace.
-    final response = await _callRefreshToken(refreshToken);
-    return response;
+    // Run the refresh outside the try/catch above so its error is not
+    // re-notified: `_callRefreshToken` already reports the outcome (a
+    // `signedOut` event for an invalid token, or a stream exception for a
+    // retryable failure). The refresh runs fire-and-forget internally, so its
+    // error would otherwise be rooted at `_executeRefresh`; rethrowing with the
+    // current stack keeps `recoverSession` and the caller in the stack trace.
+    try {
+      return await _callRefreshToken(refreshToken);
+    } catch (error) {
+      Error.throwWithStackTrace(error, StackTrace.current);
+    }
   }
 
   /// Starts an auto-refresh process in the background. Close to the time of expiration a process is started to
