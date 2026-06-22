@@ -339,7 +339,7 @@ void main() {
       final anotherChannel = socket.channel('another');
       expect(socket.channels.length, 2);
 
-      channel.unsubscribe();
+      unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
 
       expect(socket.channels.length, 1);
@@ -349,7 +349,7 @@ void main() {
     test("sets state to closed on 'ok' event", () {
       expect(channel.isClosed, isFalse);
 
-      channel.unsubscribe();
+      unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
 
       expect(channel.isClosed, isTrue);
@@ -359,7 +359,7 @@ void main() {
       channel.onEvents('*', ChannelFilter(), (payload, [ref]) {});
       expect(socket.channels.length, 1);
 
-      channel.unsubscribe();
+      unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
 
       expect(socket.channels, isEmpty);
@@ -381,7 +381,7 @@ void main() {
     });
 
     tearDown(() async {
-      socket.disconnect();
+      unawaited(socket.disconnect());
       await channel.unsubscribe();
     });
 
@@ -395,15 +395,17 @@ void main() {
       channel.subscribe((status, [error]) async {
         if (status == RealtimeSubscribeStatus.subscribed) {
           final completer = Completer<ChannelResponse>();
-          channel.send(
-            type: RealtimeListenTypes.broadcast,
-            payload: {
-              'myKey': 'myValue',
-            },
-          ).then(
-            (value) => completer.complete(value),
-            onError: (Object e, StackTrace stackTrace) =>
-                completer.completeError(e, stackTrace),
+          unawaited(
+            channel.send(
+              type: RealtimeListenTypes.broadcast,
+              payload: {
+                'myKey': 'myValue',
+              },
+            ).then(
+              (value) => completer.complete(value),
+              onError: (Object e, StackTrace stackTrace) =>
+                  completer.completeError(e, stackTrace),
+            ),
           );
 
           await for (final HttpRequest req in mockServer) {
@@ -420,15 +422,17 @@ void main() {
         'send message via http request to Broadcast endpoint when not subscribed to channel',
         () async {
       final completer = Completer<ChannelResponse>();
-      channel.send(
-        type: RealtimeListenTypes.broadcast,
-        payload: {
-          'myKey': 'myValue',
-        },
-      ).then(
-        (value) => completer.complete(value),
-        onError: (Object e, StackTrace stackTrace) =>
-            completer.completeError(e, stackTrace),
+      unawaited(
+        channel.send(
+          type: RealtimeListenTypes.broadcast,
+          payload: {
+            'myKey': 'myValue',
+          },
+        ).then(
+          (value) => completer.complete(value),
+          onError: (Object e, StackTrace stackTrace) =>
+              completer.completeError(e, stackTrace),
+        ),
       );
 
       await for (final HttpRequest req in mockServer) {
@@ -819,11 +823,11 @@ void main() {
       channel = socket.channel('topic');
 
       // Don't await the server - let it hang to trigger timeout
-      mockServer.first.then((req) async {
+      unawaited(mockServer.first.then((req) async {
         await Future.delayed(const Duration(seconds: 1));
         req.response.statusCode = 202;
         await req.response.close();
-      });
+      }));
 
       await expectLater(
         channel.httpSend(

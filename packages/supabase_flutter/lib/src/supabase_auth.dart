@@ -87,7 +87,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
-        _onAuthStateChange(data.event, data.session);
+        unawaited(_onAuthStateChange(data.event, data.session));
       },
       onError: (error, stackTrace) {
         // Errors are already logged by GoTrueClient.notifyException before
@@ -151,7 +151,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
       _initialDeeplinkIsHandled = false;
     }
-    _authSubscription?.cancel();
+    unawaited(_authSubscription?.cancel());
     _stopDeeplinkObserver();
     _widgetsBindingInstance.removeObserver(this);
   }
@@ -172,11 +172,17 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
   }
 
-  void _onAuthStateChange(AuthChangeEvent event, Session? session) {
-    if (session != null) {
-      _localStorage.persistSession(jsonEncode(session.toJson()));
-    } else if (event == AuthChangeEvent.signedOut) {
-      _localStorage.removePersistedSession();
+  Future<void> _onAuthStateChange(
+      AuthChangeEvent event, Session? session) async {
+    try {
+      if (session != null) {
+        await _localStorage.persistSession(jsonEncode(session.toJson()));
+      } else if (event == AuthChangeEvent.signedOut) {
+        await _localStorage.removePersistedSession();
+      }
+    } catch (error, stackTrace) {
+      _log.warning(
+          'Error while persisting auth state change', error, stackTrace);
     }
   }
 
@@ -205,7 +211,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   void _stopDeeplinkObserver() {
     if (_deeplinkSubscription != null) {
       _log.fine('Stopping deeplink observer');
-      _deeplinkSubscription?.cancel();
+      unawaited(_deeplinkSubscription?.cancel());
     }
   }
 
@@ -218,7 +224,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       _deeplinkSubscription = _appLinks.uriLinkStream.listen(
         (Uri? uri) {
           if (uri != null) {
-            _handleDeeplink(uri);
+            unawaited(_handleDeeplink(uri));
           }
         },
         onError: (Object err, StackTrace stackTrace) {

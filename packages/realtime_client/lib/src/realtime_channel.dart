@@ -135,7 +135,7 @@ class RealtimeChannel {
     Duration? timeout,
   ]) {
     if (!socket.isConnected) {
-      socket.connect();
+      unawaited(socket.connect());
     }
     if (joinedOnce == true) {
       throw "tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance";
@@ -220,7 +220,7 @@ class RealtimeChannel {
               id: serverPostgresFilter['id']?.toString(),
             ));
           } else {
-            unsubscribe();
+            unawaited(unsubscribe());
             if (callback != null) {
               callback(
                 RealtimeSubscribeStatus.channelError,

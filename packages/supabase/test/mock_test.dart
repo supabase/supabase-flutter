@@ -51,8 +51,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url == '/rest/v1/todos?select=%2A' ||
           url == '/rest/v1/rpc/todos?select=%2A') {
         final jsonString = jsonEncode([
@@ -62,8 +62,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url == '/rest/v1/todos?select=%2A&status=eq.true') {
         final jsonString = jsonEncode([
           {'id': 1, 'task': 'task 1', 'status': true},
@@ -71,8 +71,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url == '/rest/v1/todos?select=%2A&order=id.desc.nullslast') {
         final jsonString = jsonEncode([
           {'id': 2, 'task': 'task 2', 'status': false},
@@ -81,8 +81,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url ==
           '/rest/v1/todos?select=%2A&order=id.desc.nullslast&limit=2') {
         final jsonString = jsonEncode([
@@ -92,15 +92,15 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url.contains('rest')) {
         // Just return an empty string as dummy data if any other rest request
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write('[]')
-          ..close();
+          ..write('[]');
+        await request.response.close();
       } else if (url.contains('realtime')) {
         webSocket = await WebSocketTransformer.upgrade(request);
         if (hasListener) {
@@ -330,9 +330,8 @@ void main() {
           webSocket!.add(ignoredDeleteString);
         });
       } else {
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..close();
+        request.response.statusCode = HttpStatus.ok;
+        await request.response.close();
       }
     }
   }
@@ -377,7 +376,7 @@ void main() {
 
   group('basic test', () {
     setUp(() async {
-      handleRequests(mockServer);
+      unawaited(handleRequests(mockServer));
     });
 
     test('test mock server', () async {
@@ -631,7 +630,7 @@ void main() {
                 schema: 'public',
                 table: 'todos',
                 callback: (payload) {
-                  supabase.from('todos');
+                  unawaited(supabase.from('todos'));
                 })
             .subscribe();
 
@@ -644,7 +643,7 @@ void main() {
 
   group('realtime filter', () {
     test('can filter stream results with eq', () {
-      handleRequests(mockServer, expectedFilter: 'status=eq.true');
+      unawaited(handleRequests(mockServer, expectedFilter: 'status=eq.true'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).eq('status', true);
       expect(
@@ -662,35 +661,35 @@ void main() {
     });
 
     test('can filter stream results with neq', () {
-      handleRequests(mockServer, expectedFilter: 'id=neq.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=neq.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).neq('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with gt', () {
-      handleRequests(mockServer, expectedFilter: 'id=gt.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=gt.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).gt('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with gte', () {
-      handleRequests(mockServer, expectedFilter: 'id=gte.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=gte.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).gte('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with lt', () {
-      handleRequests(mockServer, expectedFilter: 'id=lt.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=lt.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).lt('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with lte', () {
-      handleRequests(mockServer, expectedFilter: 'id=lte.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=lte.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).lte('id', 2);
       expect(stream, emits(isList));
@@ -699,7 +698,7 @@ void main() {
 
   group('stream() channel config', () {
     test('forwards channelConfig.private=true to realtime join payload', () {
-      handleRequests(mockServer, expectedPrivate: true);
+      unawaited(handleRequests(mockServer, expectedPrivate: true));
 
       final stream =
           supabase.from('todos').stream(primaryKey: ['id'], private: true);
@@ -708,7 +707,7 @@ void main() {
     });
 
     test('uses default private=false when channelConfig is omitted', () {
-      handleRequests(mockServer, expectedPrivate: false);
+      unawaited(handleRequests(mockServer, expectedPrivate: false));
 
       final stream = supabase.from('todos').stream(primaryKey: ['id']);
 
@@ -718,7 +717,7 @@ void main() {
 
   group('Deprecated execute method', () {
     test('should work with deprecated execute method', () {
-      handleRequests(mockServer);
+      unawaited(handleRequests(mockServer));
       final streamBuilder = supabase.from('todos').stream(primaryKey: ['id']);
       final stream = streamBuilder.execute();
       expect(stream, emits(isList));
@@ -752,17 +751,16 @@ void main() {
         final errorServer = await HttpServer.bind('localhost', 0);
 
         // Setup server to return error for rest requests
-        errorServer.listen((request) {
+        errorServer.listen((request) async {
           if (request.uri.path.contains('/rest/')) {
             request.response
               ..statusCode = HttpStatus.unauthorized
               ..headers.contentType = ContentType.json
-              ..write('{"error": "Unauthorized"}')
-              ..close();
+              ..write('{"error": "Unauthorized"}');
+            await request.response.close();
           } else {
-            request.response
-              ..statusCode = HttpStatus.ok
-              ..close();
+            request.response.statusCode = HttpStatus.ok;
+            await request.response.close();
           }
         });
 

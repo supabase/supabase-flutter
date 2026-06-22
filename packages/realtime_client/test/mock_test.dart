@@ -147,9 +147,8 @@ void main() {
           webSocket!.add(deleteString);
         });
       } else {
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..close();
+        request.response.statusCode = HttpStatus.ok;
+        await request.response.close();
       }
     }
   }
@@ -157,7 +156,7 @@ void main() {
   tearDown(() async {
     await client.removeAllChannels();
 
-    listener?.cancel();
+    await listener?.cancel();
 
     // Wait for the realtime updates to come through
     await Future.delayed(Duration(milliseconds: 100));
@@ -175,7 +174,7 @@ void main() {
       );
       hasListener = false;
       hasSentData = false;
-      handleMultitenantRealtimeRequests(mockServer);
+      unawaited(handleMultitenantRealtimeRequests(mockServer));
     });
 
     test('.on()', () {
@@ -412,9 +411,8 @@ void main() {
           webSocket!.add(deleteString);
         });
       } else {
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..close();
+        request.response.statusCode = HttpStatus.ok;
+        await request.response.close();
       }
     }
   }
@@ -428,7 +426,7 @@ void main() {
       );
       hasListener = false;
       hasSentData = false;
-      handleSingleTenantRealtimeRequests(mockServer);
+      unawaited(handleSingleTenantRealtimeRequests(mockServer));
     });
 
     test('.on()', () {

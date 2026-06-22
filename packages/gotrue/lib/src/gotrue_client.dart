@@ -1398,10 +1398,10 @@ class GoTrueClient {
   @mustCallSuper
   void dispose() {
     _isDisposed = true;
-    _onAuthStateChangeController.close();
-    _onAuthStateChangeControllerSync.close();
+    unawaited(_onAuthStateChangeController.close());
+    unawaited(_onAuthStateChangeControllerSync.close());
     _broadcastChannel?.close();
-    _broadcastChannelSubscription?.cancel();
+    unawaited(_broadcastChannelSubscription?.cancel());
     for (final completer in _pendingRefreshes.values) {
       if (!completer.isCompleted) {
         completer.completeError(AuthException('Disposed'), StackTrace.current);
@@ -1434,7 +1434,7 @@ class GoTrueClient {
     completer.future.ignore();
     _pendingRefreshes[refreshToken] = completer;
 
-    _executeRefresh(refreshToken, completer);
+    unawaited(_executeRefresh(refreshToken, completer));
 
     return completer.future;
   }

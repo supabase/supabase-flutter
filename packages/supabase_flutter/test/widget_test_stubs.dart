@@ -125,7 +125,7 @@ void mockAppLink({
       // ignore: function-always-returns-null
       (MethodCall methodCall) async {
         // ignore: invalid_null_aware_operator
-        TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
+        await TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
             .handlePlatformMessage(
           eventChannel.name,
           const StandardMethodCodec().encodeSuccessEnvelope(initialLink),
