@@ -574,6 +574,16 @@ void main() {
         ]),
       );
 
+      // An invalid refresh token is an expected condition, so it must surface
+      // as a `signedOut` event only and never as an error on the stream,
+      // otherwise listeners without an `onError` handler get an uncaught
+      // exception (see issue #930).
+      Object? streamError;
+      final errorSubscription = stream.listen(
+        (_) {},
+        onError: (Object error) => streamError = error,
+      );
+
       final expiredSession = getSessionData(
         DateTime.now().subtract(Duration(hours: 1)),
       );
@@ -582,8 +592,10 @@ void main() {
         client.recoverSession(expiredSession.sessionString),
         throwsA(isA<AuthException>()),
       );
-      expect(stream, emitsError(isA<AuthException>()));
 
+      await pumpEventQueue();
+      await errorSubscription.cancel();
+      expect(streamError, isNull);
       expect(client.currentSession, isNull);
     });
 
