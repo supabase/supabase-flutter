@@ -3,6 +3,14 @@ import 'package:realtime_client/src/version.dart';
 class Constants {
   static const Duration defaultTimeout = Duration(milliseconds: 10000);
   static const int defaultHeartbeatIntervalMs = 25000;
+
+  /// Interval for transport level WebSocket ping frames on platforms that
+  /// support them.
+  ///
+  /// If a ping is not answered by a pong within this interval the connection is
+  /// considered dead and closed, so that dropped connections are detected
+  /// consistently across platforms instead of lingering as half open sockets.
+  static const Duration defaultWebSocketPingInterval = Duration(seconds: 30);
   static const int wsCloseNormal = 1000;
   static const Map<String, String> defaultHeaders = {
     'X-Client-Info': 'realtime-dart/$version',
