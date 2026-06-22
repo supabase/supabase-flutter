@@ -27,7 +27,6 @@ dcm:
     avoid-missing-enum-constant-in-map: false
     avoid-never-passed-parameters: false
     avoid-nullable-interpolation: false
-    avoid-passing-async-when-sync-expected: false
     avoid-throw-in-catch-block: false
     avoid-unassigned-stream-subscriptions: false
     avoid-unconditional-break: false

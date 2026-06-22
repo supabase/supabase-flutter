@@ -392,8 +392,11 @@ void main() {
     });
 
     test('send message via ws conn when subscribed to channel', () async {
-      channel.subscribe((status, [error]) async {
-        if (status == RealtimeSubscribeStatus.subscribed) {
+      channel.subscribe((status, [error]) {
+        if (status != RealtimeSubscribeStatus.subscribed) {
+          return;
+        }
+        unawaited(() async {
           final completer = Completer<ChannelResponse>();
           unawaited(
             channel.send(
@@ -414,7 +417,7 @@ void main() {
             break;
           }
           expect(await completer.future, ChannelResponse.ok);
-        }
+        }());
       });
     });
 

@@ -204,10 +204,7 @@ class RealtimeClient {
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
     reconnectTimer = RetryTimer(
-      () async {
-        await disconnect();
-        await connect();
-      },
+      () => unawaited(_reconnect()),
       this.reconnectAfterMs,
     );
   }
@@ -269,6 +266,11 @@ class RealtimeClient {
       /// General error handling
       _onConnError(e);
     }
+  }
+
+  Future<void> _reconnect() async {
+    await disconnect();
+    await connect();
   }
 
   /// Disconnects the socket with status [code] and [reason] for the disconnect
@@ -526,7 +528,7 @@ class RealtimeClient {
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
     heartbeatTimer = Timer.periodic(
       Duration(milliseconds: heartbeatIntervalMs),
-      (Timer t) async => await sendHeartbeat(),
+      (Timer t) => unawaited(sendHeartbeat()),
     );
     for (final callback in stateChangeCallbacks['open']!) {
       callback();
