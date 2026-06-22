@@ -244,6 +244,15 @@ void main() {
       expect(response, isA<ResendResponse>());
     });
 
+    test('resend() parses the message id from the response', () async {
+      final response = await client.resend(
+        phone: testPhone,
+        type: OtpType.sms,
+      );
+
+      expect(response.messageId, 'mock-message-id-resend');
+    });
+
     test('resend() with email type', () async {
       final response = await client.resend(
         email: testEmail,
@@ -609,6 +618,20 @@ void main() {
         type: OtpType.emailChange,
       );
       expect(mockClient.lastRequestBody?['type'], 'email_change');
+    });
+
+    test('verifyOTP() sends the captcha token under the captcha_token key',
+        () async {
+      await client.verifyOTP(
+        phone: testPhone,
+        token: '123456',
+        type: OtpType.sms,
+        captchaToken: 'captcha-token-123',
+      );
+
+      final security = mockClient.lastRequestBody?['gotrue_meta_security']
+          as Map<String, dynamic>?;
+      expect(security?['captcha_token'], 'captcha-token-123');
     });
   });
 }
