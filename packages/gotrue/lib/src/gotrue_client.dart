@@ -1181,11 +1181,9 @@ class GoTrueClient {
     }
 
     // Called outside the try/catch above on purpose: `_callRefreshToken`
-    // already notifies subscribers about the outcome (a `signedOut` event when
-    // the refresh token is invalid, or an exception for a retryable failure),
-    // so re-notifying the error here would push a duplicate onto
-    // `onAuthStateChange`, surfacing as an uncaught stream error for listeners
-    // without an `onError` handler.
+    // already reports the outcome (a `signedOut` event for an invalid token, or
+    // a stream exception for a retryable failure), so catching here would only
+    // duplicate it.
     return _callRefreshToken(refreshToken);
   }
 
