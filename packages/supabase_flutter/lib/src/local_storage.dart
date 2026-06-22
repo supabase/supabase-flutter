@@ -64,7 +64,7 @@ class EmptyLocalStorage extends LocalStorage {
 /// A [LocalStorage] implementation that implements SharedPreferences as the
 /// storage method.
 class SharedPreferencesLocalStorage extends LocalStorage {
-  late final SharedPreferences _prefs;
+  late final SharedPreferences _preferences;
 
   SharedPreferencesLocalStorage({required this.persistSessionKey});
 
@@ -76,7 +76,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   Future<void> initialize() async {
     if (!_useWebLocalStorage) {
       WidgetsFlutterBinding.ensureInitialized();
-      _prefs = await SharedPreferences.getInstance();
+      _preferences = await SharedPreferences.getInstance();
     }
   }
 
@@ -85,7 +85,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       return web.hasAccessToken(persistSessionKey);
     }
-    return _prefs.containsKey(persistSessionKey);
+    return _preferences.containsKey(persistSessionKey);
   }
 
   @override
@@ -93,7 +93,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       return web.accessToken(persistSessionKey);
     }
-    return _prefs.getString(persistSessionKey);
+    return _preferences.getString(persistSessionKey);
   }
 
   @override
@@ -101,7 +101,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       web.removePersistedSession(persistSessionKey);
     } else {
-      await _prefs.remove(persistSessionKey);
+      await _preferences.remove(persistSessionKey);
     }
   }
 
@@ -111,7 +111,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
       web.persistSession(persistSessionKey, persistSessionString);
       return;
     }
-    await _prefs.setString(persistSessionKey, persistSessionString);
+    await _preferences.setString(persistSessionKey, persistSessionString);
   }
 }
 
@@ -123,12 +123,12 @@ class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
 
   final Completer<void> _initializationCompleter = Completer();
 
-  late final SharedPreferences _prefs;
+  late final SharedPreferences _preferences;
 
   Future<void> _initialize() async {
     try {
       WidgetsFlutterBinding.ensureInitialized();
-      _prefs = await SharedPreferences.getInstance();
+      _preferences = await SharedPreferences.getInstance();
       _initializationCompleter.complete();
     } catch (error, stackTrace) {
       _initializationCompleter.completeError(error, stackTrace);
@@ -138,18 +138,18 @@ class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
   @override
   Future<String?> getItem({required String key}) async {
     await _initializationCompleter.future;
-    return _prefs.getString(key);
+    return _preferences.getString(key);
   }
 
   @override
   Future<void> removeItem({required String key}) async {
     await _initializationCompleter.future;
-    await _prefs.remove(key);
+    await _preferences.remove(key);
   }
 
   @override
   Future<void> setItem({required String key, required String value}) async {
     await _initializationCompleter.future;
-    await _prefs.setString(key, value);
+    await _preferences.setString(key, value);
   }
 }
