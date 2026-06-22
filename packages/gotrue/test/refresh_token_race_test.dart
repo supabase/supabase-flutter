@@ -470,5 +470,33 @@ void main() {
       // current stack.
       expect(trace!.toString(), contains('recoverSession'));
     });
+
+    test('recoverSession emits a single error for an expired session',
+        () async {
+      final client = GoTrueClient(
+        url: gotrueUrl,
+        asyncStorage: TestAsyncStorage(),
+        autoRefreshToken: false,
+        httpClient: RefreshTokenTrackingHttpClient(),
+      );
+
+      var errorCount = 0;
+      final subscription = client.onAuthStateChange.listen(
+        (_) {},
+        onError: (_) => errorCount++,
+      );
+
+      await expectLater(
+        client.recoverSession(createExpiredSessionForUser1()),
+        throwsA(isA<AuthException>()),
+      );
+      await pumpEventQueue();
+
+      // The error must reach the stream exactly once, not be re-notified by the
+      // surrounding catch on top of the explicit notification.
+      expect(errorCount, 1);
+
+      await subscription.cancel();
+    });
   });
 }

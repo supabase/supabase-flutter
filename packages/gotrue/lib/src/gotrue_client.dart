@@ -1142,9 +1142,9 @@ class GoTrueClient {
       if (session == null) {
         _log.warning("Can't recover session from string, session is null");
         await signOut();
-        throw notifyException(
-          AuthException('Current session is missing data.'),
-        );
+        // The `catch` below notifies subscribers, so throw without notifying
+        // here to avoid emitting the error onto the stream twice.
+        throw AuthException('Current session is missing data.');
       }
 
       if (!session.isExpired) {
@@ -1172,7 +1172,7 @@ class GoTrueClient {
       final token = session.refreshToken;
       if (!_autoRefreshToken || token == null) {
         await signOut();
-        throw notifyException(AuthException('Session expired.'));
+        throw AuthException('Session expired.');
       }
       refreshToken = token;
     } catch (error, stackTrace) {
