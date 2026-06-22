@@ -113,7 +113,10 @@ class SupabaseClient {
     // manually unsubscribe and resubscribe to all channels.
     realtime.headers
       ..clear()
-      ..addAll(_headers);
+      ..addAll({
+        'apikey': _supabaseKey,
+        ..._headers,
+      });
   }
 
   /// {@macro supabase_client}
@@ -213,7 +216,7 @@ class SupabaseClient {
     Map<String, dynamic>? params,
     get = false,
   }) {
-    rest.headers.addAll({...rest.headers, ...headers});
+    rest.headers.addAll(headers);
     return rest.rpc(fn, params: params, get: get);
   }
 

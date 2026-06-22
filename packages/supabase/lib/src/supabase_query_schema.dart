@@ -54,7 +54,7 @@ class SupabaseQuerySchema {
     Map<String, dynamic>? params,
     bool get = false,
   }) {
-    _rest.headers.addAll({..._rest.headers, ..._headers});
+    _rest.headers.addAll(_headers);
     return _rest.rpc(
       fn,
       params: params,

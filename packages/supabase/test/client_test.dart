@@ -305,6 +305,13 @@ void main() {
         expect(supabase.headers['X-Client-Info'], startsWith('supabase-dart/'));
       });
 
+      test('should preserve apikey on realtime headers when setting headers',
+          () {
+        supabase.headers = {'Custom-Header': 'custom-value'};
+
+        expect(supabase.realtime.headers['apikey'], supabaseKey);
+      });
+
       test('should not update auth headers when using custom access token', () {
         final customTokenClient = SupabaseClient(
           supabaseUrl,

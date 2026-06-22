@@ -595,7 +595,7 @@ class GoTrueClient {
       if (token != null) 'token': token,
       'type': type.snakeCase,
       'redirect_to': redirectTo,
-      'gotrue_meta_security': {'captchaToken': captchaToken},
+      'gotrue_meta_security': {'captcha_token': captchaToken},
       if (tokenHash != null) 'token_hash': tokenHash,
     };
     final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
@@ -765,7 +765,7 @@ class GoTrueClient {
       options: options,
     );
 
-    if ((response as Map).containsKey(['message_id'])) {
+    if ((response as Map).containsKey('message_id')) {
       return ResendResponse(messageId: response['message_id']);
     }
     return ResendResponse();
