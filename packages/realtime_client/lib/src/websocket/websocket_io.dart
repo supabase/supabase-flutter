@@ -4,11 +4,12 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 WebSocketChannel createWebSocketClient(
   String url,
-  Map<String, String> headers,
-) {
+  Map<String, String> headers, {
+  Duration? pingInterval = Constants.defaultWebSocketPingInterval,
+}) {
   return IOWebSocketChannel.connect(
     url,
     headers: headers,
-    pingInterval: Constants.defaultWebSocketPingInterval,
+    pingInterval: pingInterval,
   );
 }
