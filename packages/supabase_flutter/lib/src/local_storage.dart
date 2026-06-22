@@ -126,9 +126,13 @@ class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
   late final SharedPreferences _prefs;
 
   Future<void> _initialize() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    _prefs = await SharedPreferences.getInstance();
-    _initializationCompleter.complete();
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+      _prefs = await SharedPreferences.getInstance();
+      _initializationCompleter.complete();
+    } catch (error, stackTrace) {
+      _initializationCompleter.completeError(error, stackTrace);
+    }
   }
 
   @override
