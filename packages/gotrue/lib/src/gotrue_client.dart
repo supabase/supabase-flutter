@@ -104,6 +104,12 @@ class GoTrueClient {
   /// otherwise Dart will rethrow the error as an unhandled zone exception and
   /// crash the app.
   ///
+  /// When the user is signed out because the session could not be recovered
+  /// (e.g. an invalid or expired refresh token), an
+  /// [AuthChangeEvent.signedOut] event is emitted with [AuthState.exception]
+  /// set to the underlying error, so you can tell it apart from an explicit
+  /// [signOut] without relying on the `onError` handler.
+  ///
   /// ```dart
   /// supabase.auth.onAuthStateChange.listen(
   ///   (data) {
@@ -1501,7 +1507,7 @@ class GoTrueClient {
         // user who just signed in.
         if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
           _removeSession();
-          notifyAllSubscribers(AuthChangeEvent.signedOut);
+          notifyAllSubscribers(AuthChangeEvent.signedOut, exception: error);
         }
       } else if (!_isDisposed) {
         notifyException(error, stack);
@@ -1531,6 +1537,7 @@ class GoTrueClient {
     AuthChangeEvent event, {
     Session? session,
     bool broadcast = true,
+    AuthException? exception,
   }) {
     session ??= currentSession;
     if (broadcast && event != AuthChangeEvent.initialSession) {
@@ -1539,7 +1546,12 @@ class GoTrueClient {
         'session': session?.toJson(),
       });
     }
-    final state = AuthState(event, session, fromBroadcast: !broadcast);
+    final state = AuthState(
+      event,
+      session,
+      fromBroadcast: !broadcast,
+      exception: exception,
+    );
     _log.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
