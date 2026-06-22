@@ -176,7 +176,10 @@ class Supabase {
   bool _debugEnable = false;
 
   /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
-  late CancelableOperation _restoreSessionCancellableOperation;
+  ///
+  /// Only set when [Supabase.initialize] is called without a custom
+  /// `accessToken`, since session recovery is skipped for third-party auth.
+  CancelableOperation? _restoreSessionCancellableOperation;
 
   // Listener for app lifecycle events to handle Realtime reconnection.
   AppLifecycleListener? _lifecycleListener;
@@ -195,7 +198,7 @@ class Supabase {
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {
     _targetLifecycleState = null;
-    await _restoreSessionCancellableOperation.cancel();
+    await _restoreSessionCancellableOperation?.cancel();
     _logSubscription?.cancel();
     client.dispose();
     _instance._supabaseAuth?.dispose();
