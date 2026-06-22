@@ -531,5 +531,33 @@ void main() {
 
       await subscription.cancel();
     });
+
+    test('recoverSession stays in the stack trace when the refresh fails',
+        () async {
+      final httpClient = RefreshTokenTrackingHttpClient();
+      // Force the refresh to fail by pre-consuming the persisted refresh token.
+      httpClient.markTokenAsUsed('-yeS4omysFs9tpUYBws9Rg');
+      final client = GoTrueClient(
+        url: gotrueUrl,
+        asyncStorage: TestAsyncStorage(),
+        httpClient: httpClient,
+      );
+
+      Object? caught;
+      StackTrace? trace;
+      try {
+        await client.recoverSession(createExpiredSessionForUser1());
+      } catch (error, stackTrace) {
+        caught = error;
+        trace = stackTrace;
+      }
+
+      expect(caught, isA<AuthException>());
+      expect(trace, isNotNull);
+      // The refresh runs fire-and-forget internally, so `recoverSession` only
+      // appears in the asynchronous stack trace because it rethrows with the
+      // current stack.
+      expect(trace!.toString(), contains('recoverSession'));
+    });
   });
 }
