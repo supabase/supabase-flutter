@@ -11,6 +11,9 @@ import 'package:logging/logging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'clear_auth_url_parameters_stub.dart'
+    if (dart.library.js_interop) 'clear_auth_url_parameters_web.dart';
+
 /// Integrates Supabase Auth with the Flutter application lifecycle.
 ///
 /// [SupabaseAuth] acts as the bridge between the Flutter widget tree and the
@@ -264,6 +267,9 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
+      if (kIsWeb) {
+        clearAuthUrlParameters();
+      }
     } on AuthException catch (error, stackTrace) {
       // ignore: invalid_use_of_internal_member
       Supabase.instance.client.auth.notifyException(error, stackTrace);
