@@ -41,9 +41,7 @@ class StorageFileApi {
   }
 
   String _removeEmptyFolders(String path) {
-    return path
-        .replaceAll(RegExp(r'/^\/|\/$/g'), '')
-        .replaceAll(RegExp(r'/\/+/g'), '/');
+    return path.replaceAll(RegExp(r'^/|/$'), '').replaceAll(RegExp(r'/+'), '/');
   }
 
   /// Uploads a file to an existing bucket.
