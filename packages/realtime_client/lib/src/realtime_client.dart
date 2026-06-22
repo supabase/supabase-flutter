@@ -317,7 +317,7 @@ class RealtimeClient {
   Future<String> removeChannel(RealtimeChannel channel) async {
     final status = await channel.unsubscribe();
     if (channels.isEmpty) {
-      await disconnect();
+      unawaited(disconnect());
     }
     return status;
   }
@@ -325,7 +325,7 @@ class RealtimeClient {
   Future<List<String>> removeAllChannels() async {
     final values =
         await Future.wait(channels.map((channel) => channel.unsubscribe()));
-    await disconnect();
+    unawaited(disconnect());
     return values;
   }
 

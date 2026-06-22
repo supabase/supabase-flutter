@@ -381,7 +381,7 @@ void main() {
     });
 
     tearDown(() async {
-      await socket.disconnect();
+      unawaited(socket.disconnect());
       await channel.unsubscribe();
     });
 
