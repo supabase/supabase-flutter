@@ -556,19 +556,19 @@ void main() {
       expect(mockClient.lastRequestBody?['type'], 'phone_change');
     });
 
-    test('OtpChannel enum converts to correct string values', () {
+    test('OtpChannel enum converts to correct string values', () async {
       // Test enum conversion to string
       expect(OtpChannel.sms.name, 'sms');
       expect(OtpChannel.whatsapp.name, 'whatsapp');
 
       // Test that the enum is used correctly in the request
-      client.signInWithOtp(
+      await client.signInWithOtp(
         phone: testPhone,
         channel: OtpChannel.whatsapp,
       );
       expect(mockClient.lastChannelUsed, 'whatsapp');
 
-      client.signInWithOtp(
+      await client.signInWithOtp(
         phone: testPhone,
         channel: OtpChannel.sms,
       );

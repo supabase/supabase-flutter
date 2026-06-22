@@ -91,12 +91,12 @@ void main() {
 
     setUp(() async {
       mockServer = await HttpServer.bind('localhost', 0);
-      mockServer.listen((request) {
+      mockServer.listen((request) async {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write('{"success": true}')
-          ..close();
+          ..write('{"success": true}');
+        await request.response.close();
       });
 
       authClient = AuthHttpClient(

@@ -118,7 +118,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
 /// local storage to store pkce flow code verifier.
 class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
   SharedPreferencesGotrueAsyncStorage() {
-    _initialize();
+    unawaited(_initialize());
   }
 
   final Completer<void> _initializationCompleter = Completer();

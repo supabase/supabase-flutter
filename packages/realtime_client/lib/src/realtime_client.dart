@@ -317,7 +317,7 @@ class RealtimeClient {
   Future<String> removeChannel(RealtimeChannel channel) async {
     final status = await channel.unsubscribe();
     if (channels.isEmpty) {
-      disconnect();
+      await disconnect();
     }
     return status;
   }
@@ -325,7 +325,7 @@ class RealtimeClient {
   Future<List<String>> removeAllChannels() async {
     final values =
         await Future.wait(channels.map((channel) => channel.unsubscribe()));
-    disconnect();
+    await disconnect();
     return values;
   }
 
@@ -514,7 +514,7 @@ class RealtimeClient {
     );
     if (dupChannel != null) {
       log('transport', 'leaving duplicate topic "$topic"');
-      dupChannel.unsubscribe();
+      unawaited(dupChannel.unsubscribe());
     }
   }
 
@@ -604,7 +604,7 @@ class RealtimeClient {
         'transport',
         'heartbeat timeout. Attempting to re-establish conn',
       );
-      conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout');
+      unawaited(conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout'));
       return;
     }
     pendingHeartbeatRef = makeRef();

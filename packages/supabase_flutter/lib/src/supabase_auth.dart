@@ -148,7 +148,7 @@ class SupabaseAuth with WidgetsBindingObserver {
     if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
       _initialDeeplinkIsHandled = false;
     }
-    _authSubscription?.cancel();
+    unawaited(_authSubscription?.cancel());
     _stopDeeplinkObserver();
     _widgetsBindingInstance.removeObserver(this);
   }
@@ -171,9 +171,9 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   void _onAuthStateChange(AuthChangeEvent event, Session? session) {
     if (session != null) {
-      _localStorage.persistSession(jsonEncode(session.toJson()));
+      unawaited(_localStorage.persistSession(jsonEncode(session.toJson())));
     } else if (event == AuthChangeEvent.signedOut) {
-      _localStorage.removePersistedSession();
+      unawaited(_localStorage.removePersistedSession());
     }
   }
 
@@ -202,7 +202,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   void _stopDeeplinkObserver() {
     if (_deeplinkSubscription != null) {
       _log.fine('Stopping deeplink observer');
-      _deeplinkSubscription?.cancel();
+      unawaited(_deeplinkSubscription?.cancel());
     }
   }
 
@@ -215,7 +215,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       _deeplinkSubscription = _appLinks.uriLinkStream.listen(
         (Uri? uri) {
           if (uri != null) {
-            _handleDeeplink(uri);
+            unawaited(_handleDeeplink(uri));
           }
         },
         onError: (Object err, StackTrace stackTrace) {

@@ -6,6 +6,11 @@
 # so new code is not held to a rule the rest of the codebase does not yet pass.
 include: package:lints/recommended.yaml
 
+linter:
+  rules:
+    unawaited_futures: true
+    discarded_futures: true
+
 formatter:
   trailing_commas: preserve
 

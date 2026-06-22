@@ -51,7 +51,7 @@ class YAJsonIsolate {
 
   Future<dynamic> decode(String json) async {
     if (!_createdIsolate.isCompleted) {
-      if (!_hasStartedInitialize) initialize();
+      if (!_hasStartedInitialize) await initialize();
       await _createdIsolate.future;
     }
     _sendPort.send([json, false]);
@@ -60,7 +60,7 @@ class YAJsonIsolate {
 
   Future<String> encode(Object? json) async {
     if (!_createdIsolate.isCompleted) {
-      if (!_hasStartedInitialize) initialize();
+      if (!_hasStartedInitialize) await initialize();
       await _createdIsolate.future;
     }
     _sendPort.send([json, true]);
