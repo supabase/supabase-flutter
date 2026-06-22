@@ -1502,7 +1502,7 @@ class GoTrueClient {
 
       if (error is! AuthRetryableFetchException) {
         // Only remove the session if it hasn't been replaced while we were
-        // refreshing — otherwise we'd sign out a user who just signed in.
+        // refreshing, otherwise we'd sign out a user who just signed in.
         if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
           _removeSession();
           notifyAllSubscribers(AuthChangeEvent.signedOut);
