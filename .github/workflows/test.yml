@@ -138,7 +138,7 @@ jobs:
       - name: Analyze
         if: ${{ matrix.sdk == 'stable' }}
         working-directory: packages/${{ matrix.package.name }}
-        run: dart analyze --fatal-warnings .
+        run: dart analyze --fatal-infos .
 
       - name: Setup Supabase CLI
         if: ${{ matrix.package.backend }}
@@ -271,7 +271,7 @@ jobs:
 
       - name: Run analyzer
         if: ${{ matrix.flutter-version == 'latest'}}
-        run: flutter analyze --fatal-warnings .
+        run: flutter analyze .
 
       - name: Run unit tests
         shell: bash
