@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -91,12 +92,12 @@ void main() {
 
     setUp(() async {
       mockServer = await HttpServer.bind('localhost', 0);
-      mockServer.listen((request) async {
+      mockServer.listen((request) {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
           ..write('{"success": true}');
-        await request.response.close();
+        unawaited(request.response.close());
       });
 
       authClient = AuthHttpClient(

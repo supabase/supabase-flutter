@@ -356,7 +356,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     controller.onListen = () {
       StreamSubscription<SupabaseStreamEvent> subscription = listen(null,
           onError: controller.addError, // Avoid Zone error replacement.
-          onDone: controller.close);
+          onDone: () => unawaited(controller.close()));
       FutureOr<void> add(E value) {
         controller.add(value);
       }
@@ -396,7 +396,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     controller.onListen = () {
       StreamSubscription<SupabaseStreamEvent> subscription = listen(null,
           onError: controller.addError, // Avoid Zone error replacement.
-          onDone: controller.close);
+          onDone: () => unawaited(controller.close()));
       subscription.onData((SupabaseStreamEvent event) {
         Stream<E>? newStream;
         try {

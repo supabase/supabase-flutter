@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
@@ -23,10 +24,10 @@ class _MockWidgetState extends State<MockWidget> {
   Widget build(BuildContext context) {
     return isSignedIn
         ? TextButton(
-            onPressed: () async {
-              try {
-                await Supabase.instance.client.auth.signOut();
-              } catch (_) {}
+            onPressed: () {
+              unawaited(
+                Supabase.instance.client.auth.signOut().catchError((_) {}),
+              );
             },
             child: const Text('Sign out'),
           )

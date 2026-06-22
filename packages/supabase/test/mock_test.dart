@@ -107,227 +107,245 @@ void main() {
           return;
         }
         hasListener = true;
-        listener = webSocket!.listen((message) async {
-          /// Protocol 2.0.0 text frames are positional arrays:
-          /// [join_ref, ref, topic, event, payload].
-          ///
-          /// `filter` might be there or not depending on whether is a filter set
-          /// to the realtime subscription, so include the filter if the request
-          /// includes a filter.
-          final requestJson = jsonDecode(message as String) as List;
-          final ref = requestJson[1];
-          final topic = requestJson[2];
-          final event = requestJson[3];
-          final requestPayload = requestJson[4] as Map;
+        listener = webSocket!.listen((message) {
+          unawaited(() async {
+            /// Protocol 2.0.0 text frames are positional arrays:
+            /// [join_ref, ref, topic, event, payload].
+            ///
+            /// `filter` might be there or not depending on whether is a filter set
+            /// to the realtime subscription, so include the filter if the request
+            /// includes a filter.
+            final requestJson = jsonDecode(message as String) as List;
+            final ref = requestJson[1];
+            final topic = requestJson[2];
+            final event = requestJson[3];
+            final requestPayload = requestJson[4] as Map;
 
-          if (event == 'phx_leave') {
-            listeners.remove(topic);
-            return;
-          }
-          if (listeners.contains(topic)) {
-            return;
-          }
-          listeners.add(topic);
+            if (event == 'phx_leave') {
+              listeners.remove(topic);
+              return;
+            }
+            if (listeners.contains(topic)) {
+              return;
+            }
+            listeners.add(topic);
 
-          final String? realtimeFilter =
-              requestPayload['config']['postgres_changes'].first['filter'];
-          final bool isPrivate = requestPayload['config']['private'] as bool;
+            final String? realtimeFilter =
+                requestPayload['config']['postgres_changes'].first['filter'];
+            final bool isPrivate = requestPayload['config']['private'] as bool;
 
-          if (expectedFilter != null) {
-            expect(realtimeFilter, expectedFilter);
-          }
-          if (expectedPrivate != null) {
-            expect(isPrivate, expectedPrivate);
-          }
+            if (expectedFilter != null) {
+              expect(realtimeFilter, expectedFilter);
+            }
+            if (expectedPrivate != null) {
+              expect(isPrivate, expectedPrivate);
+            }
 
-          final replyString = jsonEncode([
-            null,
-            ref,
-            topic,
-            'phx_reply',
-            {
-              'response': {
-                'postgres_changes': [
-                  {
-                    'id': 77086988,
-                    'event': '*',
-                    'schema': 'public',
-                    'table': 'todos',
-                    if (realtimeFilter != null) 'filter': realtimeFilter,
-                  },
-                ]
+            final replyString = jsonEncode([
+              null,
+              ref,
+              topic,
+              'phx_reply',
+              {
+                'response': {
+                  'postgres_changes': [
+                    {
+                      'id': 77086988,
+                      'event': '*',
+                      'schema': 'public',
+                      'table': 'todos',
+                      if (realtimeFilter != null) 'filter': realtimeFilter,
+                    },
+                  ]
+                },
+                'status': 'ok'
               },
-              'status': 'ok'
-            },
-          ]);
-          webSocket!.add(replyString);
+            ]);
+            webSocket!.add(replyString);
 
-          // Send an insert event
-          await Future.delayed(Duration(milliseconds: 10));
-          final insertString = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'ids': [77086988],
-              'data': {
-                'commit_timestamp': '2021-08-01T08:00:20Z',
-                'record': {'id': 3, 'task': 'task 3', 'status': 't'},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'INSERT',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
-                'columns': [
-                  {
-                    'name': 'id',
-                    'type': 'int4',
-                    'type_modifier': 4294967295,
-                  },
-                  {
-                    'name': 'task',
-                    'type': 'text',
-                    'type_modifier': 4294967295,
-                  },
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295,
-                  },
-                ],
+            // Send an insert event
+            await Future.delayed(Duration(milliseconds: 10));
+            final insertString = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'ids': [77086988],
+                'data': {
+                  'commit_timestamp': '2021-08-01T08:00:20Z',
+                  'record': {'id': 3, 'task': 'task 3', 'status': 't'},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'INSERT',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                  'columns': [
+                    {
+                      'name': 'id',
+                      'type': 'int4',
+                      'type_modifier': 4294967295,
+                    },
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295,
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295,
+                    },
+                  ],
+                },
               },
-            },
-          ]);
-          webSocket!.add(insertString);
+            ]);
+            webSocket!.add(insertString);
 
-          // Send an update event for id = 2
-          await Future.delayed(Duration(milliseconds: 10));
-          final updateString = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'ids': [77086988],
-              'data': {
-                'columns': [
-                  {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                  {'name': 'task', 'type': 'text', 'type_modifier': 4294967295},
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295
-                  },
-                ],
-                'commit_timestamp': '2021-08-01T08:00:30Z',
-                'errors': null,
-                'old_record': {'id': 2},
-                'record': {'id': 2, 'task': 'task 2 updated', 'status': 'f'},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'UPDATE',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
+            // Send an update event for id = 2
+            await Future.delayed(Duration(milliseconds: 10));
+            final updateString = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'ids': [77086988],
+                'data': {
+                  'columns': [
+                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295
+                    },
+                  ],
+                  'commit_timestamp': '2021-08-01T08:00:30Z',
+                  'errors': null,
+                  'old_record': {'id': 2},
+                  'record': {'id': 2, 'task': 'task 2 updated', 'status': 'f'},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'UPDATE',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                },
               },
-            },
-          ]);
-          webSocket!.add(updateString);
+            ]);
+            webSocket!.add(updateString);
 
-          // Send delete event for id=2
-          await Future.delayed(Duration(milliseconds: 10));
-          final deleteString = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'data': {
-                'columns': [
-                  {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                  {'name': 'task', 'type': 'text', 'type_modifier': 4294967295},
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295
-                  },
-                ],
-                'commit_timestamp': '2022-09-14T02:12:52Z',
-                'errors': null,
-                'old_record': {'id': 2},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'DELETE',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
+            // Send delete event for id=2
+            await Future.delayed(Duration(milliseconds: 10));
+            final deleteString = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'data': {
+                  'columns': [
+                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295
+                    },
+                  ],
+                  'commit_timestamp': '2022-09-14T02:12:52Z',
+                  'errors': null,
+                  'old_record': {'id': 2},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'DELETE',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                },
+                'ids': [77086988]
               },
-              'ids': [77086988]
-            },
-          ]);
-          webSocket!.add(deleteString);
+            ]);
+            webSocket!.add(deleteString);
 
-          /// Send an update event for id = 4
-          /// Record with id = 4 did not exist in the initial data fetch,
-          /// so the SDK should insert the record in the in memory cache
-          await Future.delayed(Duration(milliseconds: 10));
-          final updateId4 = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'ids': [77086988],
-              'data': {
-                'columns': [
-                  {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                  {'name': 'task', 'type': 'text', 'type_modifier': 4294967295},
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295
-                  },
-                ],
-                'commit_timestamp': '2021-08-01T08:00:30Z',
-                'errors': null,
-                'old_record': {'id': 4},
-                'record': {'id': 4, 'task': 'task 4', 'status': 't'},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'UPDATE',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
+            /// Send an update event for id = 4
+            /// Record with id = 4 did not exist in the initial data fetch,
+            /// so the SDK should insert the record in the in memory cache
+            await Future.delayed(Duration(milliseconds: 10));
+            final updateId4 = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'ids': [77086988],
+                'data': {
+                  'columns': [
+                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295
+                    },
+                  ],
+                  'commit_timestamp': '2021-08-01T08:00:30Z',
+                  'errors': null,
+                  'old_record': {'id': 4},
+                  'record': {'id': 4, 'task': 'task 4', 'status': 't'},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'UPDATE',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                },
               },
-            },
-          ]);
-          webSocket!.add(updateId4);
+            ]);
+            webSocket!.add(updateId4);
 
-          // Send delete event for id=5
-          /// Should be ignored by the SDK
-          await Future.delayed(Duration(milliseconds: 10));
-          final ignoredDeleteString = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'data': {
-                'columns': [
-                  {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                  {'name': 'task', 'type': 'text', 'type_modifier': 4294967295},
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295
-                  },
-                ],
-                'commit_timestamp': '2022-09-14T02:12:52Z',
-                'errors': null,
-                'old_record': {'id': 5},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'DELETE',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
+            // Send delete event for id=5
+            /// Should be ignored by the SDK
+            await Future.delayed(Duration(milliseconds: 10));
+            final ignoredDeleteString = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'data': {
+                  'columns': [
+                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295
+                    },
+                  ],
+                  'commit_timestamp': '2022-09-14T02:12:52Z',
+                  'errors': null,
+                  'old_record': {'id': 5},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'DELETE',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                },
+                'ids': [77086988]
               },
-              'ids': [77086988]
-            },
-          ]);
-          webSocket!.add(ignoredDeleteString);
+            ]);
+            webSocket!.add(ignoredDeleteString);
+          }());
         });
       } else {
         request.response.statusCode = HttpStatus.ok;
@@ -751,16 +769,16 @@ void main() {
         final errorServer = await HttpServer.bind('localhost', 0);
 
         // Setup server to return error for rest requests
-        errorServer.listen((request) async {
+        errorServer.listen((request) {
           if (request.uri.path.contains('/rest/')) {
             request.response
               ..statusCode = HttpStatus.unauthorized
               ..headers.contentType = ContentType.json
               ..write('{"error": "Unauthorized"}');
-            await request.response.close();
+            unawaited(request.response.close());
           } else {
             request.response.statusCode = HttpStatus.ok;
-            await request.response.close();
+            unawaited(request.response.close());
           }
         });
 

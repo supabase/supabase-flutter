@@ -171,74 +171,13 @@ class RealtimeChannel {
     joinedOnce = true;
     rejoin(timeout ?? _timeout);
 
-    joinPush.receive(
+    joinPush
+        .receive(
       'ok',
-      (response) async {
-        final serverPostgresFilters = response['postgres_changes'];
-        if (socket.accessToken != null) {
-          try {
-            // ignore: avoid-passing-self-as-argument
-            await socket.setAuth(socket.accessToken);
-          } on FormatException catch (e) {
-            // The cached access token may have expired by the time the
-            // channel rejoins (e.g. after the device wakes from a long
-            // sleep). Auth state listeners will re-call setAuth with a
-            // fresh token shortly after, so swallow this specific error
-            // to avoid surfacing it as an uncaught exception. The same
-            // filter is applied in `SupabaseClient._handleTokenChanged`.
-            if (!e.message.contains('InvalidJWTToken')) {
-              rethrow;
-            }
-          }
-        }
-
-        if (serverPostgresFilters == null) {
-          if (callback != null) {
-            callback(RealtimeSubscribeStatus.subscribed, null);
-          }
-          return;
-        }
-        final clientPostgresBindings = _bindings['postgres_changes'];
-        final bindingsLen = clientPostgresBindings?.length ?? 0;
-        final newPostgresBindings = <Binding>[];
-
-        for (var i = 0; i < bindingsLen; i++) {
-          final clientPostgresBinding = clientPostgresBindings![i];
-
-          final event = clientPostgresBinding.filter['event'];
-          final schema = clientPostgresBinding.filter['schema'];
-          final table = clientPostgresBinding.filter['table'];
-          final filter = clientPostgresBinding.filter['filter'];
-          final serverPostgresFilter = serverPostgresFilters[i];
-
-          if (serverPostgresFilter != null &&
-              serverPostgresFilter['event'] == event &&
-              serverPostgresFilter['schema'] == schema &&
-              serverPostgresFilter['table'] == table &&
-              serverPostgresFilter['filter'] == filter) {
-            newPostgresBindings.add(clientPostgresBinding.copyWith(
-              id: serverPostgresFilter['id']?.toString(),
-            ));
-          } else {
-            unawaited(unsubscribe());
-            if (callback != null) {
-              callback(
-                RealtimeSubscribeStatus.channelError,
-                Exception(
-                    'mismatch between server and client bindings for postgres changes'),
-              );
-            }
-            return;
-          }
-        }
-
-        _bindings['postgres_changes'] = newPostgresBindings;
-
-        if (callback != null) {
-          callback(RealtimeSubscribeStatus.subscribed, null);
-        }
-      },
-    ).receive('error', (error) {
+      (response) =>
+          unawaited(_handleJoinOk(response as Map<String, dynamic>, callback)),
+    )
+        .receive('error', (error) {
       if (callback != null) {
         callback(
           RealtimeSubscribeStatus.channelError,
@@ -253,6 +192,75 @@ class RealtimeChannel {
       if (callback != null) callback(RealtimeSubscribeStatus.timedOut, null);
     });
     return this;
+  }
+
+  Future<void> _handleJoinOk(
+    Map<String, dynamic> response,
+    void Function(RealtimeSubscribeStatus status, Object? error)? callback,
+  ) async {
+    final serverPostgresFilters = response['postgres_changes'];
+    if (socket.accessToken != null) {
+      try {
+        // ignore: avoid-passing-self-as-argument
+        await socket.setAuth(socket.accessToken);
+      } on FormatException catch (e) {
+        // The cached access token may have expired by the time the
+        // channel rejoins (e.g. after the device wakes from a long
+        // sleep). Auth state listeners will re-call setAuth with a
+        // fresh token shortly after, so swallow this specific error
+        // to avoid surfacing it as an uncaught exception. The same
+        // filter is applied in `SupabaseClient._handleTokenChanged`.
+        if (!e.message.contains('InvalidJWTToken')) {
+          rethrow;
+        }
+      }
+    }
+
+    if (serverPostgresFilters == null) {
+      if (callback != null) {
+        callback(RealtimeSubscribeStatus.subscribed, null);
+      }
+      return;
+    }
+    final clientPostgresBindings = _bindings['postgres_changes'];
+    final bindingsLen = clientPostgresBindings?.length ?? 0;
+    final newPostgresBindings = <Binding>[];
+
+    for (var i = 0; i < bindingsLen; i++) {
+      final clientPostgresBinding = clientPostgresBindings![i];
+
+      final event = clientPostgresBinding.filter['event'];
+      final schema = clientPostgresBinding.filter['schema'];
+      final table = clientPostgresBinding.filter['table'];
+      final filter = clientPostgresBinding.filter['filter'];
+      final serverPostgresFilter = serverPostgresFilters[i];
+
+      if (serverPostgresFilter != null &&
+          serverPostgresFilter['event'] == event &&
+          serverPostgresFilter['schema'] == schema &&
+          serverPostgresFilter['table'] == table &&
+          serverPostgresFilter['filter'] == filter) {
+        newPostgresBindings.add(clientPostgresBinding.copyWith(
+          id: serverPostgresFilter['id']?.toString(),
+        ));
+      } else {
+        unawaited(unsubscribe());
+        if (callback != null) {
+          callback(
+            RealtimeSubscribeStatus.channelError,
+            Exception(
+                'mismatch between server and client bindings for postgres changes'),
+          );
+        }
+        return;
+      }
+    }
+
+    _bindings['postgres_changes'] = newPostgresBindings;
+
+    if (callback != null) {
+      callback(RealtimeSubscribeStatus.subscribed, null);
+    }
   }
 
   List<SinglePresenceState> presenceState() {
