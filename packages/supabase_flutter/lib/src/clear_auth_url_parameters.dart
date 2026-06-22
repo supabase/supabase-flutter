@@ -22,11 +22,11 @@ const _authParameters = {
 String removeAuthParametersFromUrl(String url) {
   final currentUri = Uri.parse(url);
 
-  final query = Map<String, String>.from(currentUri.queryParameters)
+  final query = Map<String, String>.of(currentUri.queryParameters)
     ..removeWhere((key, value) => _authParameters.contains(key));
 
   final fragmentParameters =
-      Map<String, String>.from(Uri.splitQueryString(currentUri.fragment))
+      Map<String, String>.of(Uri.splitQueryString(currentUri.fragment))
         ..removeWhere((key, value) => _authParameters.contains(key));
 
   final fragment = fragmentParameters.isEmpty
