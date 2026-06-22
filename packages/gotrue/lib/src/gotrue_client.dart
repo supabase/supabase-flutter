@@ -607,16 +607,19 @@ class GoTrueClient {
 
     final authResponse = AuthResponse.fromJson(response);
 
-    if (authResponse.session == null) {
-      throw AuthException('An error occurred on token verification.');
+    // A secure email or phone change verifies in two steps: the server accepts
+    // the first OTP without returning a session and only issues one once the
+    // second OTP is verified. In that case there is nothing to persist yet, so
+    // return the intermediate response instead of treating it as an error.
+    final session = authResponse.session;
+    if (session != null) {
+      _saveSession(session);
+      notifyAllSubscribers(
+        type == OtpType.recovery
+            ? AuthChangeEvent.passwordRecovery
+            : AuthChangeEvent.signedIn,
+      );
     }
-
-    _saveSession(authResponse.session!);
-    notifyAllSubscribers(
-      type == OtpType.recovery
-          ? AuthChangeEvent.passwordRecovery
-          : AuthChangeEvent.signedIn,
-    );
 
     return authResponse;
   }
