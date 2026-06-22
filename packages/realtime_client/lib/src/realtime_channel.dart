@@ -174,7 +174,7 @@ class RealtimeChannel {
     joinPush
         .receive(
       'ok',
-      (response) => unawaited(_handleJoinOk(response, callback)),
+      (response) => unawaited(_handleJoinOk(response as Map, callback)),
     )
         .receive('error', (error) {
       if (callback != null) {
@@ -194,7 +194,7 @@ class RealtimeChannel {
   }
 
   Future<void> _handleJoinOk(
-    dynamic response,
+    Map response,
     void Function(RealtimeSubscribeStatus status, Object? error)? callback,
   ) async {
     final serverPostgresFilters = response['postgres_changes'];
