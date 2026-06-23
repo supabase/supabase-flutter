@@ -27,6 +27,11 @@ void main() {
         mockEventChannel: true,
         initialLink: 'com.supabase://callback/?code=my-code-verifier',
       );
+      final pkceAsyncStorage = MockAsyncStorage();
+      await pkceAsyncStorage.setItem(
+        key: 'supabase.auth.token-code-verifier',
+        value: 'raw-code-verifier',
+      );
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
@@ -34,10 +39,7 @@ void main() {
         httpClient: pkceHttpClient,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockEmptyLocalStorage(),
-          pkceAsyncStorage: MockAsyncStorage()
-            ..setItem(
-                key: 'supabase.auth.token-code-verifier',
-                value: 'raw-code-verifier'),
+          pkceAsyncStorage: pkceAsyncStorage,
         ),
       );
     });

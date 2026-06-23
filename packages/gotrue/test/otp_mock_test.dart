@@ -475,22 +475,24 @@ void main() {
       );
     });
 
-    test('response with null session', () async {
+    test('response with null session returns the intermediate response',
+        () async {
       final client = GoTrueClient(
         url: 'https://example.com',
         httpClient: NullSessionClient(testEmail),
         asyncStorage: TestAsyncStorage(),
       );
 
-      await expectLater(
-        () => client.verifyOTP(
-          email: testEmail,
-          token: '123456',
-          type: OtpType.email,
-        ),
-        throwsA(isA<AuthException>().having((e) => e.message, 'message',
-            'An error occurred on token verification.')),
+      // Verifying the first OTP of a secure email change does not return a
+      // session. This should not throw, the intermediate response is returned
+      // so the second OTP can subsequently be verified.
+      final response = await client.verifyOTP(
+        email: testEmail,
+        token: '123456',
+        type: OtpType.emailChange,
       );
+
+      expect(response.session, isNull);
     });
   });
 
@@ -556,19 +558,19 @@ void main() {
       expect(mockClient.lastRequestBody?['type'], 'phone_change');
     });
 
-    test('OtpChannel enum converts to correct string values', () {
+    test('OtpChannel enum converts to correct string values', () async {
       // Test enum conversion to string
       expect(OtpChannel.sms.name, 'sms');
       expect(OtpChannel.whatsapp.name, 'whatsapp');
 
       // Test that the enum is used correctly in the request
-      client.signInWithOtp(
+      await client.signInWithOtp(
         phone: testPhone,
         channel: OtpChannel.whatsapp,
       );
       expect(mockClient.lastChannelUsed, 'whatsapp');
 
-      client.signInWithOtp(
+      await client.signInWithOtp(
         phone: testPhone,
         channel: OtpChannel.sms,
       );

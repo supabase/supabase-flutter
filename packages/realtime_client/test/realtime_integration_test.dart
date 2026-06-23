@@ -39,7 +39,7 @@ void main() {
         client.onOpen(() {
           if (!opened.isCompleted) opened.complete();
         });
-        client.connect();
+        await client.connect();
         await opened.future.timeout(const Duration(seconds: 10));
         expect(client.isConnected, isTrue);
       });
