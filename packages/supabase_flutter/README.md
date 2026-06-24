@@ -1,13 +1,28 @@
-# `supabase_flutter`
+<br />
+<p align="center">
+  <a href="https://supabase.com">
+    <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+  </a>
+
+  <h1 align="center">supabase_flutter</h1>
+
+  <p align="center">
+    Flutter client library for <a href="https://supabase.com">Supabase</a>.
+  </p>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/with-flutter">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/dart/introduction">Reference Docs</a>
+  </p>
+</p>
+
+<div align="center">
 
 [![pub package](https://img.shields.io/pub/v/supabase_flutter.svg)](https://pub.dev/packages/supabase_flutter)
 [![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
 
----
-
-Flutter Client library for [Supabase](https://supabase.com/).
-
-- Documentation: https://supabase.com/docs/reference/dart/introduction
+</div>
 
 ## Getting Started
 

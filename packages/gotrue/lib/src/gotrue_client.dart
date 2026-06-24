@@ -245,20 +245,7 @@ class GoTrueClient {
     final Map<String, dynamic> response;
 
     if (email != null) {
-      String? codeChallenge;
-
-      if (_flowType == AuthFlowType.pkce) {
-        assert(
-          _asyncStorage != null,
-          'You need to provide asyncStorage to perform pkce flow.',
-        );
-        final codeVerifier = generatePKCEVerifier();
-        await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier,
-        );
-        codeChallenge = generatePKCEChallenge(codeVerifier);
-      }
+      final codeChallenge = await _generatePKCECodeChallenge();
 
       response = await _fetch.request(
         '$_url/signup',
@@ -422,6 +409,30 @@ class GoTrueClient {
     return authSessionUrlResponse;
   }
 
+  /// Generates a PKCE code verifier, persists it, and returns the derived code
+  /// challenge.
+  ///
+  /// Returns `null` when the client is not using the PKCE flow. When
+  /// [storageEventName] is provided it is appended to the stored verifier so it
+  /// can be recovered in [exchangeCodeForSession].
+  Future<String?> _generatePKCECodeChallenge({String? storageEventName}) async {
+    if (_flowType != AuthFlowType.pkce) {
+      return null;
+    }
+    assert(
+      _asyncStorage != null,
+      'You need to provide asyncStorage to perform pkce flow.',
+    );
+    final codeVerifier = generatePKCEVerifier();
+    await _asyncStorage!.setItem(
+      key: '${Constants.defaultStorageKey}-code-verifier',
+      value: storageEventName == null
+          ? codeVerifier
+          : '$codeVerifier/$storageEventName',
+    );
+    return generatePKCEChallenge(codeVerifier);
+  }
+
   /// Allows signing in with an ID token issued by supported providers.
   /// Common supported providers include Apple, Google, Facebook, Kakao, and Keycloak.
   /// The [idToken] is verified for validity and a new session is established.
@@ -496,19 +507,7 @@ class GoTrueClient {
     OtpChannel channel = OtpChannel.sms,
   }) async {
     if (email != null) {
-      String? codeChallenge;
-      if (_flowType == AuthFlowType.pkce) {
-        assert(
-          _asyncStorage != null,
-          'You need to provide asyncStorage to perform pkce flow.',
-        );
-        final codeVerifier = generatePKCEVerifier();
-        await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier,
-        );
-        codeChallenge = generatePKCEChallenge(codeVerifier);
-      }
+      final codeChallenge = await _generatePKCECodeChallenge();
       await _fetch.request(
         '$_url/otp',
         RequestMethodType.post,
@@ -645,21 +644,7 @@ class GoTrueClient {
       'providerId or domain has to be provided.',
     );
 
-    String? codeChallenge;
-    String? codeChallengeMethod;
-    if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
-      final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: codeVerifier,
-      );
-      codeChallenge = generatePKCEChallenge(codeVerifier);
-      codeChallengeMethod = codeVerifier == codeChallenge ? 'plain' : 's256';
-    }
+    final codeChallenge = await _generatePKCECodeChallenge();
 
     final res = await _fetch.request(
       '$_url/sso',
@@ -673,7 +658,7 @@ class GoTrueClient {
             'gotrue_meta_security': {'captcha_token': captchaToken},
           'skip_http_redirect': true,
           'code_challenge': codeChallenge,
-          'code_challenge_method': codeChallengeMethod,
+          'code_challenge_method': codeChallenge != null ? 's256' : null,
         },
         headers: _headers,
       ),
@@ -996,19 +981,9 @@ class GoTrueClient {
     String? redirectTo,
     String? captchaToken,
   }) async {
-    String? codeChallenge;
-    if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
-      final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: '$codeVerifier/${AuthChangeEvent.passwordRecovery.name}',
-      );
-      codeChallenge = generatePKCEChallenge(codeVerifier);
-    }
+    final codeChallenge = await _generatePKCECodeChallenge(
+      storageEventName: AuthChangeEvent.passwordRecovery.name,
+    );
 
     final body = {
       'email': email,
@@ -1316,24 +1291,13 @@ class GoTrueClient {
     if (queryParams != null) {
       urlParams.addAll(queryParams);
     }
-    if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
-      final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: codeVerifier,
-      );
-
-      final codeChallenge = generatePKCEChallenge(codeVerifier);
-      final flowParams = {
+    final codeChallenge = await _generatePKCECodeChallenge();
+    if (codeChallenge != null) {
+      urlParams.addAll({
         'flow_type': _flowType.name,
         'code_challenge': codeChallenge,
         'code_challenge_method': 's256',
-      };
-      urlParams.addAll(flowParams);
+      });
     }
     if (skipBrowserRedirect) {
       urlParams['skip_http_redirect'] = 'true';
@@ -1344,8 +1308,8 @@ class GoTrueClient {
 
   /// set currentSession and currentUser
   void _saveSession(Session session) {
-    _log.finest('Saving session: $session');
     _log.fine('Saving session');
+    _log.finest('Saving session: $session');
     _currentSession = session;
   }
 
