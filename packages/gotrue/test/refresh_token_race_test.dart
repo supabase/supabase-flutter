@@ -465,8 +465,9 @@ void main() {
               'Should not attempt refresh when current session is valid for same user');
     });
 
-    test('signedOut event carries the exception on an invalid refresh token',
-        () async {
+    test(
+        'signedOut event carries the sign-out reason on an invalid refresh '
+        'token', () async {
       final client = GoTrueClient(
         url: gotrueUrl,
         asyncStorage: TestAsyncStorage(),
@@ -493,15 +494,17 @@ void main() {
 
       expect(signedOutState, isNotNull,
           reason: 'An invalid refresh token should sign the user out');
-      expect(signedOutState!.exception, isA<AuthException>(),
-          reason: 'The signedOut event should carry the causing exception');
+      expect(signedOutState!.signOutReason, SignOutReason.sessionExpired,
+          reason: 'The signedOut event should report why the session ended');
       expect(signedOutState!.session, isNull);
       expect(client.currentSession, isNull);
 
       await subscription.cancel();
     });
 
-    test('signedOut event has no exception on an explicit signOut', () async {
+    test(
+        'signedOut event reports a userInitiated reason on an explicit '
+        'signOut', () async {
       final httpClient = RefreshTokenTrackingHttpClient();
       final client = GoTrueClient(
         url: gotrueUrl,
@@ -526,8 +529,8 @@ void main() {
       await pumpEventQueue();
 
       expect(signedOutState, isNotNull);
-      expect(signedOutState!.exception, isNull,
-          reason: 'An explicit signOut should not carry an exception');
+      expect(signedOutState!.signOutReason, SignOutReason.userInitiated,
+          reason: 'An explicit signOut should report a userInitiated reason');
 
       await subscription.cancel();
     });

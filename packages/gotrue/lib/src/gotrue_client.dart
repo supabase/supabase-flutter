@@ -106,9 +106,9 @@ class GoTrueClient {
   ///
   /// When the user is signed out because the session could not be recovered
   /// (e.g. an invalid or expired refresh token), an
-  /// [AuthChangeEvent.signedOut] event is emitted with [AuthState.exception]
-  /// set to the underlying error, so you can tell it apart from an explicit
-  /// [signOut] without relying on the `onError` handler.
+  /// [AuthChangeEvent.signedOut] event is emitted with [AuthState.signOutReason]
+  /// set to the matching [SignOutReason], so you can tell it apart from an
+  /// explicit [signOut] without relying on the `onError` handler.
   ///
   /// ```dart
   /// supabase.auth.onAuthStateChange.listen(
@@ -965,7 +965,13 @@ class GoTrueClient {
   /// [scope] determines which sessions should be logged out.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
-  Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
+  Future<void> signOut({SignOutScope scope = SignOutScope.local}) =>
+      _signOut(scope: scope, reason: SignOutReason.userInitiated);
+
+  Future<void> _signOut({
+    required SignOutScope scope,
+    required SignOutReason reason,
+  }) async {
     _log.info('Signing out user with scope: ${scope.name}');
     final accessToken = currentSession?.accessToken;
 
@@ -974,7 +980,10 @@ class GoTrueClient {
       await _asyncStorage?.removeItem(
         key: '${Constants.defaultStorageKey}-code-verifier',
       );
-      notifyAllSubscribers(AuthChangeEvent.signedOut);
+      notifyAllSubscribers(
+        AuthChangeEvent.signedOut,
+        signOutReason: reason,
+      );
     }
 
     if (accessToken != null) {
@@ -1132,8 +1141,16 @@ class GoTrueClient {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
       // sign out to delete the local storage from supabase_flutter
-      await signOut();
-      throw notifyException(AuthException('Initial session is missing data.'));
+      await _signOut(
+        scope: SignOutScope.local,
+        reason: SignOutReason.sessionMissing,
+      );
+      throw notifyException(
+        AuthException(
+          'Initial session is missing data.',
+          code: ErrorCode.sessionMissing.code,
+        ),
+      );
     }
 
     _currentSession = session;
@@ -1147,10 +1164,16 @@ class GoTrueClient {
       final session = Session.fromJson(json.decode(jsonStr));
       if (session == null) {
         _log.warning("Can't recover session from string, session is null");
-        await signOut();
+        await _signOut(
+          scope: SignOutScope.local,
+          reason: SignOutReason.sessionMissing,
+        );
         // The `catch` below notifies subscribers, so throw without notifying
         // here to avoid emitting the error onto the stream twice.
-        throw AuthException('Current session is missing data.');
+        throw AuthException(
+          'Current session is missing data.',
+          code: ErrorCode.sessionMissing.code,
+        );
       }
 
       if (!session.isExpired) {
@@ -1177,8 +1200,14 @@ class GoTrueClient {
 
       final token = session.refreshToken;
       if (!_autoRefreshToken || token == null) {
-        await signOut();
-        throw AuthException('Session expired.');
+        await _signOut(
+          scope: SignOutScope.local,
+          reason: SignOutReason.sessionExpired,
+        );
+        throw AuthException(
+          'Session expired.',
+          code: ErrorCode.sessionExpired.code,
+        );
       }
       refreshToken = token;
     } catch (error, stackTrace) {
@@ -1511,7 +1540,10 @@ class GoTrueClient {
         // user who just signed in.
         if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
           _removeSession();
-          notifyAllSubscribers(AuthChangeEvent.signedOut, exception: error);
+          notifyAllSubscribers(
+            AuthChangeEvent.signedOut,
+            signOutReason: SignOutReason.sessionExpired,
+          );
         }
       } else if (!_isDisposed) {
         notifyException(error, stack);
@@ -1541,7 +1573,7 @@ class GoTrueClient {
     AuthChangeEvent event, {
     Session? session,
     bool broadcast = true,
-    AuthException? exception,
+    SignOutReason? signOutReason,
   }) {
     session ??= currentSession;
     if (broadcast && event != AuthChangeEvent.initialSession) {
@@ -1554,7 +1586,7 @@ class GoTrueClient {
       event,
       session,
       fromBroadcast: !broadcast,
-      exception: exception,
+      signOutReason: signOutReason,
     );
     _log.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
