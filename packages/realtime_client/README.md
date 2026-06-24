@@ -1,4 +1,4 @@
-# `realtime-dart`
+# realtime_client
 
 Listens to changes in a PostgreSQL Database and via websockets.
 
