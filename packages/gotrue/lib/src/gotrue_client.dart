@@ -1331,8 +1331,8 @@ class GoTrueClient {
 
   /// set currentSession and currentUser
   void _saveSession(Session session) {
-    _log.finest('Saving session: $session');
     _log.fine('Saving session');
+    _log.finest('Saving session: $session');
     _currentSession = session;
   }
 
