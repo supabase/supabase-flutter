@@ -28,7 +28,7 @@ BroadcastChannel getBroadcastChannel(String broadcastKey) {
     },
     close: () {
       broadcast.close();
-      controller.close();
+      unawaited(controller.close());
     },
   );
 }

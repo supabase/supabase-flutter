@@ -607,16 +607,19 @@ class GoTrueClient {
 
     final authResponse = AuthResponse.fromJson(response);
 
-    if (authResponse.session == null) {
-      throw AuthException('An error occurred on token verification.');
+    // A secure email or phone change verifies in two steps: the server accepts
+    // the first OTP without returning a session and only issues one once the
+    // second OTP is verified. In that case there is nothing to persist yet, so
+    // return the intermediate response instead of treating it as an error.
+    final session = authResponse.session;
+    if (session != null) {
+      _saveSession(session);
+      notifyAllSubscribers(
+        type == OtpType.recovery
+            ? AuthChangeEvent.passwordRecovery
+            : AuthChangeEvent.signedIn,
+      );
     }
-
-    _saveSession(authResponse.session!);
-    notifyAllSubscribers(
-      type == OtpType.recovery
-          ? AuthChangeEvent.passwordRecovery
-          : AuthChangeEvent.signedIn,
-    );
 
     return authResponse;
   }
@@ -1408,10 +1411,10 @@ class GoTrueClient {
   @mustCallSuper
   void dispose() {
     _isDisposed = true;
-    _onAuthStateChangeController.close();
-    _onAuthStateChangeControllerSync.close();
+    unawaited(_onAuthStateChangeController.close());
+    unawaited(_onAuthStateChangeControllerSync.close());
     _broadcastChannel?.close();
-    _broadcastChannelSubscription?.cancel();
+    unawaited(_broadcastChannelSubscription?.cancel());
     for (final completer in _pendingRefreshes.values) {
       if (!completer.isCompleted) {
         completer.completeError(AuthException('Disposed'), StackTrace.current);
@@ -1447,14 +1450,16 @@ class GoTrueClient {
     completer.future.ignore();
     _pendingRefreshes[refreshToken] = completer;
 
-    _doRefresh(refreshToken).then(
-      (response) {
-        if (!completer.isCompleted) completer.complete(response);
-      },
-      onError: (Object error, StackTrace stack) {
-        if (!completer.isCompleted) completer.completeError(error, stack);
-      },
-    ).whenComplete(() => _pendingRefreshes.remove(refreshToken));
+    unawaited(
+      _doRefresh(refreshToken).then(
+        (response) {
+          if (!completer.isCompleted) completer.complete(response);
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!completer.isCompleted) completer.completeError(error, stack);
+        },
+      ).whenComplete(() => _pendingRefreshes.remove(refreshToken)),
+    );
 
     return completer.future;
   }

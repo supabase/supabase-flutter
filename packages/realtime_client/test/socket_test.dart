@@ -59,7 +59,7 @@ void main() {
         channel!.sink.add(request);
       });
     }, onDone: () {
-      channel?.sink.close();
+      unawaited(channel?.sink.close());
     });
   });
 
@@ -181,8 +181,8 @@ void main() {
       socket = RealtimeClient('ws://localhost:${mockServer.port}');
     });
 
-    tearDown(() {
-      socket.disconnect();
+    tearDown(() async {
+      await socket.disconnect();
     });
 
     test('establishes websocket connection with endpoint', () async {
@@ -212,7 +212,7 @@ void main() {
         lastMsg = m;
       });
 
-      socket.connect();
+      await socket.connect();
       await Future.delayed(const Duration(milliseconds: 200));
       expect(opens, 1);
 
@@ -221,7 +221,7 @@ void main() {
       await Future.delayed(const Duration(seconds: 1));
       expect(lastMsg['event'], 'heartbeat');
 
-      socket.disconnect();
+      await socket.disconnect();
       await Future.delayed(const Duration(seconds: 1));
       expect(closes, 1);
     });
@@ -233,15 +233,15 @@ void main() {
           lastErr = e;
         });
 
-      erroneousSocket.connect();
+      unawaited(erroneousSocket.connect());
 
       expect(lastErr, isA<WebSocketException>());
     });
 
     test('is idempotent', () {
-      socket.connect();
+      unawaited(socket.connect());
       final conn = socket.conn;
-      socket.connect();
+      unawaited(socket.connect());
       expect(socket.conn, conn);
     });
   });
@@ -252,8 +252,8 @@ void main() {
       socket = RealtimeClient('ws://localhost:${mockServer.port}');
     });
 
-    tearDown(() {
-      socket.disconnect();
+    tearDown(() async {
+      await socket.disconnect();
     });
 
     test('removes existing connection', () async {
@@ -267,8 +267,8 @@ void main() {
 
     test('calls callback', () async {
       int closes = 0;
-      socket.connect();
-      socket.disconnect();
+      unawaited(socket.connect());
+      unawaited(socket.disconnect());
       closes += 1;
 
       expect(closes, 1);
@@ -291,10 +291,10 @@ void main() {
       const tCode = 12;
       const tReason = 'reason';
 
-      mockedSocket.connect();
+      await mockedSocket.connect();
       mockedSocket.connState = SocketStates.open;
       await Future.delayed(const Duration(milliseconds: 200));
-      mockedSocket.disconnect(code: tCode, reason: tReason);
+      await mockedSocket.disconnect(code: tCode, reason: tReason);
       await Future.delayed(const Duration(milliseconds: 200));
 
       verify(
@@ -350,8 +350,8 @@ void main() {
       socket = RealtimeClient(socketEndpoint);
     });
 
-    tearDown(() {
-      socket.disconnect();
+    tearDown(() async {
+      await socket.disconnect();
     });
 
     test('returns channel with given topic and params', () {
@@ -444,7 +444,7 @@ void main() {
     });
 
     test('sends data to connection when connected', () {
-      mockedSocket.connect();
+      unawaited(mockedSocket.connect());
       mockedSocket.connState = SocketStates.open;
 
       final message =
@@ -456,7 +456,7 @@ void main() {
     });
 
     test('buffers data when not connected', () async {
-      mockedSocket.connect();
+      unawaited(mockedSocket.connect());
       mockedSocket.connState = SocketStates.connecting;
 
       expect(mockedSocket.sendBuffer, isEmpty);
@@ -475,7 +475,7 @@ void main() {
     });
 
     test('sends a broadcast with a binary payload as a binary frame', () {
-      mockedSocket.connect();
+      unawaited(mockedSocket.connect());
       mockedSocket.connState = SocketStates.open;
 
       final binaryPayload = Uint8List.fromList([1, 2, 3]);
@@ -506,7 +506,7 @@ void main() {
         transport: (url, headers) => legacyChannel,
         version: RealtimeProtocolVersion.v1,
       );
-      legacySocket.connect();
+      unawaited(legacySocket.connect());
       legacySocket.connState = SocketStates.open;
 
       final legacyData = json.encode({
@@ -536,7 +536,7 @@ void main() {
         transport: (url, headers) => customChannel,
         encode: (_) => 'custom-frame',
       );
-      customSocket.connect();
+      unawaited(customSocket.connect());
       customSocket.connState = SocketStates.open;
 
       customSocket.push(
@@ -629,8 +629,8 @@ void main() {
       socket = RealtimeClient(socketEndpoint);
     });
 
-    tearDown(() {
-      socket.disconnect();
+    tearDown(() async {
+      await socket.disconnect();
     });
 
     test('returns next message ref', () {
@@ -781,7 +781,7 @@ void main() {
       when(() => mockedSink.close()).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
 
-      mockedSocket.connect();
+      unawaited(mockedSocket.connect());
     });
 
     //! Unimplemented Test: closes socket when heartbeat is not ack'd within heartbeat window

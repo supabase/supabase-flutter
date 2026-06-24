@@ -339,7 +339,7 @@ void main() {
       final anotherChannel = socket.channel('another');
       expect(socket.channels.length, 2);
 
-      channel.unsubscribe();
+      unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
 
       expect(socket.channels.length, 1);
@@ -349,7 +349,7 @@ void main() {
     test("sets state to closed on 'ok' event", () {
       expect(channel.isClosed, isFalse);
 
-      channel.unsubscribe();
+      unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
 
       expect(channel.isClosed, isTrue);
@@ -359,7 +359,7 @@ void main() {
       channel.onEvents('*', ChannelFilter(), (payload, [ref]) {});
       expect(socket.channels.length, 1);
 
-      channel.unsubscribe();
+      unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
 
       expect(socket.channels, isEmpty);
@@ -381,7 +381,7 @@ void main() {
     });
 
     tearDown(() async {
-      socket.disconnect();
+      unawaited(socket.disconnect());
       await channel.unsubscribe();
     });
 
@@ -392,62 +392,71 @@ void main() {
     });
 
     test('send message via ws conn when subscribed to channel', () async {
-      channel.subscribe((status, [error]) async {
+      final subscribed = Completer<void>();
+      channel.subscribe((status, [error]) {
         if (status == RealtimeSubscribeStatus.subscribed) {
-          final completer = Completer<ChannelResponse>();
-          channel.send(
-            type: RealtimeListenTypes.broadcast,
-            payload: {
-              'myKey': 'myValue',
-            },
-          ).then(
-            (value) => completer.complete(value),
-            onError: (Object e, StackTrace stackTrace) =>
-                completer.completeError(e, stackTrace),
-          );
-
-          await for (final HttpRequest req in mockServer) {
-            expect(req.uri.toString(), startsWith('/realtime/v1/websocket'));
-            await req.response.close();
-            break;
-          }
-          expect(await completer.future, ChannelResponse.ok);
+          subscribed.complete();
         }
       });
+
+      // Accept the websocket the client opens on subscribe, then reply to the
+      // channel join so it transitions to subscribed.
+      final serverSocket =
+          await mockServer.first.then(WebSocketTransformer.upgrade);
+      final broadcast = Completer<List<dynamic>>();
+      serverSocket.listen((frame) {
+        final message = jsonDecode(frame as String) as List;
+        switch (message[3]) {
+          case 'phx_join':
+            serverSocket.add(jsonEncode([
+              message[0],
+              message[1],
+              message[2],
+              'phx_reply',
+              {'status': 'ok', 'response': <String, dynamic>{}},
+            ]));
+          case 'broadcast':
+            broadcast.complete(message);
+        }
+      });
+      await subscribed.future;
+
+      // Once subscribed, broadcasts are pushed over the websocket instead of
+      // falling back to the REST endpoint.
+      final sendResult = await channel.send(
+        type: RealtimeListenTypes.broadcast,
+        payload: {'myKey': 'myValue'},
+      );
+      expect(sendResult, ChannelResponse.ok);
+
+      final message = await broadcast.future;
+      expect(message[2], 'realtime:myTopic');
+      expect(message[3], 'broadcast');
+      expect(message[4], containsPair('myKey', 'myValue'));
     });
 
     test(
         'send message via http request to Broadcast endpoint when not subscribed to channel',
         () async {
-      final completer = Completer<ChannelResponse>();
-      channel.send(
+      final requestFuture = mockServer.first;
+      final sendFuture = channel.send(
         type: RealtimeListenTypes.broadcast,
-        payload: {
-          'myKey': 'myValue',
-        },
-      ).then(
-        (value) => completer.complete(value),
-        onError: (Object e, StackTrace stackTrace) =>
-            completer.completeError(e, stackTrace),
+        payload: {'myKey': 'myValue'},
       );
 
-      await for (final HttpRequest req in mockServer) {
-        expect(req.uri.toString(), '/realtime/v1/api/broadcast');
-        expect(req.headers.value('apikey'), 'supabaseKey');
+      final request = await requestFuture;
+      expect(request.uri.toString(), '/realtime/v1/api/broadcast');
+      expect(request.headers.value('apikey'), 'supabaseKey');
 
-        final body = json.decode(await utf8.decodeStream(req));
-        final message = body['messages'].first;
-        final payload = message['payload'];
-        final private = message['private'];
+      final body = json.decode(await utf8.decodeStream(request));
+      final message = body['messages'].first;
+      expect(message['payload'], containsPair('myKey', 'myValue'));
+      expect(message, containsPair('topic', 'myTopic'));
+      expect(message['private'], isTrue);
 
-        expect(payload, containsPair('myKey', 'myValue'));
-        expect(message, containsPair('topic', 'myTopic'));
-        expect(private, isTrue);
+      await request.response.close();
 
-        await req.response.close();
-        break;
-      }
-      expect(await completer.future, ChannelResponse.ok);
+      expect(await sendFuture, ChannelResponse.ok);
     });
   });
 
@@ -819,11 +828,11 @@ void main() {
       channel = socket.channel('topic');
 
       // Don't await the server - let it hang to trigger timeout
-      mockServer.first.then((req) async {
+      unawaited(mockServer.first.then((req) async {
         await Future.delayed(const Duration(seconds: 1));
         req.response.statusCode = 202;
         await req.response.close();
-      });
+      }));
 
       await expectLater(
         channel.httpSend(
