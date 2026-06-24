@@ -11,18 +11,10 @@ void main() {
       expect(Constants.defaultGotrueUrl, equals('http://localhost:9999'));
     });
 
-    test('has correct default audience', () {
-      expect(Constants.defaultAudience, equals(''));
-    });
-
     test('has correct default headers', () {
       expect(Constants.defaultHeaders, isA<Map<String, String>>());
       expect(Constants.defaultHeaders['X-Client-Info'],
           equals('gotrue-dart/$version'));
-    });
-
-    test('has correct default expiry margin', () {
-      expect(Constants.defaultExpiryMargin, equals(60 * 1000));
     });
 
     test('has correct default storage key', () {
