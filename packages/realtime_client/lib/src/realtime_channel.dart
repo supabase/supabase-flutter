@@ -547,30 +547,10 @@ class RealtimeChannel {
     required Map<String, dynamic> payload,
     Duration? timeout,
   }) async {
-    // ignore: avoid-inferrable-type-arguments
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
-      ...socket.headers,
-      if (socket.accessToken != null)
-        'Authorization': 'Bearer ${socket.accessToken}',
-    };
-
-    final body = {
-      'messages': [
-        {
-          'topic': subTopic,
-          'event': event,
-          'payload': payload,
-          'private': _private,
-        }
-      ]
-    };
-
     final response = await (socket.httpClient?.post ?? post)(
       Uri.parse(broadcastEndpointURL),
-      headers: headers,
-      body: json.encode(body),
+      headers: _broadcastHeaders,
+      body: json.encode(_broadcastBody(event, payload)),
     ).timeout(
       timeout ?? _timeout,
       onTimeout: () => throw TimeoutException('Request timeout'),
@@ -640,29 +620,11 @@ class RealtimeChannel {
             'Please use httpSend() explicitly for REST delivery.',
       );
 
-      // ignore: avoid-inferrable-type-arguments
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-        if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
-        ...socket.headers,
-        if (socket.accessToken != null)
-          'Authorization': 'Bearer ${socket.accessToken}',
-      };
-      final body = {
-        'messages': [
-          {
-            'topic': subTopic,
-            'payload': payload,
-            'event': event,
-            'private': _private,
-          }
-        ]
-      };
       try {
         final response = await (socket.httpClient?.post ?? post)(
           Uri.parse(broadcastEndpointURL),
-          headers: headers,
-          body: json.encode(body),
+          headers: _broadcastHeaders,
+          body: json.encode(_broadcastBody(event, payload)),
         );
         if (200 <= response.statusCode && response.statusCode < 300) {
           completer.complete(ChannelResponse.ok);
@@ -704,6 +666,30 @@ class RealtimeChannel {
       });
     }
     return completer.future;
+  }
+
+  Map<String, String> get _broadcastHeaders => {
+        'Content-Type': 'application/json',
+        if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
+        ...socket.headers,
+        if (socket.accessToken != null)
+          'Authorization': 'Bearer ${socket.accessToken}',
+      };
+
+  Map<String, dynamic> _broadcastBody(
+    String? event,
+    Map<String, dynamic> payload,
+  ) {
+    return {
+      'messages': [
+        {
+          'topic': subTopic,
+          'event': event,
+          'payload': payload,
+          'private': _private,
+        }
+      ]
+    };
   }
 
   @internal
