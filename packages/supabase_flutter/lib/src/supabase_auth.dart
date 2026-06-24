@@ -321,7 +321,17 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final uri = Uri.parse(res.url);
+    return _launchAuthUrl(res.url, provider, authScreenLaunchMode);
+  }
+
+  /// Launches the [url] for an OAuth or identity-linking flow, forcing an
+  /// external browser for Google on Android.
+  Future<bool> _launchAuthUrl(
+    String url,
+    OAuthProvider provider,
+    LaunchMode authScreenLaunchMode,
+  ) {
+    final uri = Uri.parse(url);
 
     LaunchMode launchMode = authScreenLaunchMode;
 
@@ -333,12 +343,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       launchMode = LaunchMode.externalApplication;
     }
 
-    final result = await launchUrl(
+    return launchUrl(
       uri,
       mode: launchMode,
       webOnlyWindowName: '_self',
     );
-    return result;
   }
 
   /// Attempts a single-sign on using an enterprise Identity Provider. A
@@ -402,23 +411,6 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       scopes: scopes,
       queryParams: queryParams,
     );
-    final uri = Uri.parse(res.url);
-
-    LaunchMode launchMode = authScreenLaunchMode;
-
-    // `Platform.isAndroid` throws on web, so adding a guard for web here.
-    final isAndroid = !kIsWeb && Platform.isAndroid;
-
-    // Google login has to be performed on external browser window on Android
-    if (provider == OAuthProvider.google && isAndroid) {
-      launchMode = LaunchMode.externalApplication;
-    }
-
-    final result = await launchUrl(
-      uri,
-      mode: launchMode,
-      webOnlyWindowName: '_self',
-    );
-    return result;
+    return _launchAuthUrl(res.url, provider, authScreenLaunchMode);
   }
 }

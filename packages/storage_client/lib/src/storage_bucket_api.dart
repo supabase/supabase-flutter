@@ -13,6 +13,18 @@ class StorageBucketApi {
     storageFetch = Fetch(httpClient);
   }
 
+  Map<String, dynamic> _bucketPayload(String id, BucketOptions bucketOptions) {
+    return {
+      'id': id,
+      'name': id,
+      'public': bucketOptions.public,
+      if (bucketOptions.fileSizeLimit != null)
+        'file_size_limit': bucketOptions.fileSizeLimit,
+      if (bucketOptions.allowedMimeTypes != null)
+        'allowed_mime_types': bucketOptions.allowedMimeTypes,
+    };
+  }
+
   /// Retrieves the details of all Storage buckets within an existing project.
   Future<List<Bucket>> listBuckets() async {
     final FetchOptions options = FetchOptions(headers: headers);
@@ -58,15 +70,7 @@ class StorageBucketApi {
     final FetchOptions options = FetchOptions(headers: headers);
     final response = await storageFetch.post(
       '$url/bucket',
-      {
-        'id': id,
-        'name': id,
-        'public': bucketOptions.public,
-        if (bucketOptions.fileSizeLimit != null)
-          'file_size_limit': bucketOptions.fileSizeLimit,
-        if (bucketOptions.allowedMimeTypes != null)
-          'allowed_mime_types': bucketOptions.allowedMimeTypes,
-      },
+      _bucketPayload(id, bucketOptions),
       options: options,
     );
     final bucketId = (response as Map<String, dynamic>)['name'] as String;
@@ -85,15 +89,7 @@ class StorageBucketApi {
     final FetchOptions options = FetchOptions(headers: headers);
     final response = await storageFetch.put(
       '$url/bucket/$id',
-      {
-        'id': id,
-        'name': id,
-        'public': bucketOptions.public,
-        if (bucketOptions.fileSizeLimit != null)
-          'file_size_limit': bucketOptions.fileSizeLimit,
-        if (bucketOptions.allowedMimeTypes != null)
-          'allowed_mime_types': bucketOptions.allowedMimeTypes,
-      },
+      _bucketPayload(id, bucketOptions),
       options: options,
     );
     final message = (response as Map<String, dynamic>)['message'] as String;
