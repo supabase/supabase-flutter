@@ -82,7 +82,7 @@ class GoTrueClient {
   /// [Completer.future] instead of starting a duplicate request.
   final Map<String, Completer<AuthResponse>> _pendingRefreshes = {};
 
-  /// Set by [dispose] to prevent [_executeRefresh] from mutating state
+  /// Set by [dispose] to prevent [_doRefresh] from mutating state
   /// or emitting events on closed stream controllers.
   bool _isDisposed = false;
 
@@ -1161,8 +1161,8 @@ class GoTrueClient {
     // Run the refresh outside the try/catch above so its error is not
     // re-notified: `_callRefreshToken` already reports the outcome (a
     // `signedOut` event for an invalid token, or a stream exception for a
-    // retryable failure). The refresh runs fire-and-forget internally, so its
-    // error would otherwise be rooted at `_executeRefresh`; rethrowing with the
+    // retryable failure). The refresh resolves through a completer, so its
+    // error would otherwise be rooted at `_doRefresh`; rethrowing with the
     // current stack keeps `recoverSession` and the caller in the stack trace.
     try {
       return await _callRefreshToken(refreshToken);
@@ -1407,52 +1407,57 @@ class GoTrueClient {
       return existing.future;
     }
 
+    // The completer is kept as an external handle so [dispose] can cancel an
+    // in-flight refresh: the network request itself cannot be interrupted, so
+    // a hung refresh can only be resolved by completing this completer.
     final completer = Completer<AuthResponse>();
     completer.future.ignore();
     _pendingRefreshes[refreshToken] = completer;
 
-    unawaited(_executeRefresh(refreshToken, completer));
+    unawaited(
+      _doRefresh(refreshToken).then(
+        (response) {
+          if (!completer.isCompleted) completer.complete(response);
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!completer.isCompleted) completer.completeError(error, stack);
+        },
+      ).whenComplete(() => _pendingRefreshes.remove(refreshToken)),
+    );
 
     return completer.future;
   }
 
-  /// Executes a single token refresh.
-  Future<void> _executeRefresh(
-    String refreshToken,
-    Completer<AuthResponse> completer,
-  ) async {
-    if (_isDisposed) return;
-
+  /// Performs a single token refresh, applies the outcome to the local session
+  /// and notifies subscribers.
+  ///
+  /// Returns the refreshed [AuthResponse] or throws the underlying error. This
+  /// is the single place that emits refresh outcomes: [AuthChangeEvent.tokenRefreshed]
+  /// on success, [AuthChangeEvent.signedOut] when the refresh token is invalid,
+  /// or a stream error ([notifyException]) for a retryable/unexpected failure.
+  Future<AuthResponse> _doRefresh(String refreshToken) async {
     final versionBeforeRefresh = _sessionVersion;
+    _log.fine('Refresh access token');
 
     try {
-      _log.fine('Refresh access token');
-
       final data = await _refreshAccessToken(refreshToken);
-
-      if (_isDisposed) return;
 
       final session = data.session;
       if (session == null) {
         throw AuthSessionMissingException();
       }
 
-      // Guard: if the session was mutated while we were awaiting
-      // the network request (e.g. a concurrent signIn or signOut),
-      // discard this result to avoid overwriting the newer session.
-      if (_sessionVersion != versionBeforeRefresh) {
-        _log.fine(
-          'Session changed during refresh '
-          '(version $versionBeforeRefresh → $_sessionVersion). '
-          'Discarding stale refresh result.',
-        );
-        if (!completer.isCompleted) completer.complete(data);
-        return;
+      // Discard the result if the client was disposed or the session was
+      // mutated (e.g. a concurrent signIn or signOut) while we were awaiting
+      // the network request, so we don't overwrite the newer session.
+      if (_isDisposed || _sessionVersion != versionBeforeRefresh) {
+        _log.fine('Session changed during refresh, discarding stale result.');
+        return data;
       }
 
       _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-      if (!completer.isCompleted) completer.complete(data);
+      return data;
     } on AuthException catch (error, stack) {
       final existingSession = _currentSession;
       if (error is AuthApiException &&
@@ -1461,15 +1466,12 @@ class GoTrueClient {
           !existingSession.isExpired) {
         _log.fine('Refresh token already used but current session is still '
             'valid, returning it instead of signing out');
-        final response = AuthResponse(session: existingSession);
-        if (!completer.isCompleted) completer.complete(response);
-        return;
+        return AuthResponse(session: existingSession);
       }
 
       if (error is! AuthRetryableFetchException) {
-        // Only remove the session if it hasn't been replaced
-        // while we were refreshing — otherwise we'd sign out a
-        // user who just signed in.
+        // Only remove the session if it hasn't been replaced while we were
+        // refreshing, otherwise we'd sign out a user who just signed in.
         if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
           _removeSession();
           notifyAllSubscribers(AuthChangeEvent.signedOut);
@@ -1477,19 +1479,12 @@ class GoTrueClient {
       } else if (!_isDisposed) {
         notifyException(error, stack);
       }
-
-      if (!completer.isCompleted) {
-        completer.completeError(error, stack);
-      }
+      rethrow;
     } catch (error, stack) {
-      if (!completer.isCompleted) {
-        completer.completeError(error, stack);
-      }
       if (!_isDisposed) {
         notifyException(error, stack);
       }
-    } finally {
-      _pendingRefreshes.remove(refreshToken);
+      rethrow;
     }
   }
 
