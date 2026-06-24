@@ -962,7 +962,13 @@ class GoTrueClient {
   /// [scope] determines which sessions should be logged out.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
-  Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
+  Future<void> signOut({SignOutScope scope = SignOutScope.local}) =>
+      _signOut(scope: scope, reason: SignOutReason.userInitiated);
+
+  Future<void> _signOut({
+    required SignOutScope scope,
+    required SignOutReason reason,
+  }) async {
     _log.info('Signing out user with scope: ${scope.name}');
     final accessToken = currentSession?.accessToken;
 
@@ -971,7 +977,10 @@ class GoTrueClient {
       await _asyncStorage?.removeItem(
         key: '${Constants.defaultStorageKey}-code-verifier',
       );
-      notifyAllSubscribers(AuthChangeEvent.signedOut);
+      notifyAllSubscribers(
+        AuthChangeEvent.signedOut,
+        signOutReason: reason,
+      );
     }
 
     if (accessToken != null) {
@@ -1129,8 +1138,16 @@ class GoTrueClient {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
       // sign out to delete the local storage from supabase_flutter
-      await signOut();
-      throw notifyException(AuthException('Initial session is missing data.'));
+      await _signOut(
+        scope: SignOutScope.local,
+        reason: SignOutReason.sessionMissing,
+      );
+      throw notifyException(
+        AuthException(
+          'Initial session is missing data.',
+          code: ErrorCode.sessionMissing.code,
+        ),
+      );
     }
 
     _currentSession = session;
@@ -1143,9 +1160,15 @@ class GoTrueClient {
       final session = Session.fromJson(json.decode(jsonStr));
       if (session == null) {
         _log.warning("Can't recover session from string, session is null");
-        await signOut();
+        await _signOut(
+          scope: SignOutScope.local,
+          reason: SignOutReason.sessionMissing,
+        );
         throw notifyException(
-          AuthException('Current session is missing data.'),
+          AuthException(
+            'Current session is missing data.',
+            code: ErrorCode.sessionMissing.code,
+          ),
         );
       }
 
@@ -1165,8 +1188,16 @@ class GoTrueClient {
         if (_autoRefreshToken && refreshToken != null) {
           return await _callRefreshToken(refreshToken);
         }
-        await signOut();
-        throw notifyException(AuthException('Session expired.'));
+        await _signOut(
+          scope: SignOutScope.local,
+          reason: SignOutReason.sessionExpired,
+        );
+        throw notifyException(
+          AuthException(
+            'Session expired.',
+            code: ErrorCode.sessionExpired.code,
+          ),
+        );
       }
       final shouldEmitEvent = _currentSession == null ||
           _currentSession!.user.id != session.user.id;
@@ -1495,7 +1526,10 @@ class GoTrueClient {
         // user who just signed in.
         if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
           _removeSession();
-          notifyAllSubscribers(AuthChangeEvent.signedOut);
+          notifyAllSubscribers(
+            AuthChangeEvent.signedOut,
+            signOutReason: SignOutReason.sessionExpired,
+          );
         }
       } else if (!_isDisposed) {
         notifyException(error, stack);
@@ -1525,6 +1559,7 @@ class GoTrueClient {
     AuthChangeEvent event, {
     Session? session,
     bool broadcast = true,
+    SignOutReason? signOutReason,
   }) {
     session ??= currentSession;
     if (broadcast && event != AuthChangeEvent.initialSession) {
@@ -1533,7 +1568,12 @@ class GoTrueClient {
         'session': session?.toJson(),
       });
     }
-    final state = AuthState(event, session, fromBroadcast: !broadcast);
+    final state = AuthState(
+      event,
+      session,
+      fromBroadcast: !broadcast,
+      signOutReason: signOutReason,
+    );
     _log.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);

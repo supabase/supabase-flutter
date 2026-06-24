@@ -302,15 +302,13 @@ void main() {
 
     test('signOut event is emitted when refresh fails and session is unchanged',
         () async {
-      final events = <AuthChangeEvent>[];
-      client.onAuthStateChange.listen((state) {
-        events.add(state.event);
-      });
+      final states = <AuthState>[];
+      client.onAuthStateChange.listen(states.add);
 
       // Set an initial session.
       final freshAt = _freshAccessToken();
       await client.setSession('initial-token', accessToken: freshAt);
-      events.clear();
+      states.clear();
 
       // Now make a refresh that will fail with a non-retryable error.
       mockClient.tokenStatusOverride = 400;
@@ -321,7 +319,68 @@ void main() {
 
       // Without any concurrent session changes, the failure should sign out.
       expect(client.currentSession, isNull);
-      expect(events, contains(AuthChangeEvent.signedOut));
+      final signedOut = states.firstWhere(
+        (state) => state.event == AuthChangeEvent.signedOut,
+      );
+      expect(signedOut.signOutReason, SignOutReason.sessionExpired);
+    });
+
+    test('explicit signOut reports a userInitiated reason', () async {
+      final states = <AuthState>[];
+      client.onAuthStateChange.listen(states.add);
+
+      final freshAt = _freshAccessToken();
+      await client.setSession('initial-token', accessToken: freshAt);
+      states.clear();
+
+      await client.signOut();
+
+      final signedOut = states.firstWhere(
+        (state) => state.event == AuthChangeEvent.signedOut,
+      );
+      expect(signedOut.signOutReason, SignOutReason.userInitiated);
+    });
+
+    test('recoverSession with an expired session reports sessionExpired',
+        () async {
+      final states = <AuthState>[];
+      // recoverSession also surfaces the failure as a stream error, which we
+      // ignore here since we only assert on the emitted signedOut state.
+      client.onAuthStateChange.listen(states.add, onError: (_) {});
+
+      // Build an expired session string. With autoRefreshToken disabled it
+      // cannot be refreshed, so recovery signs the user out.
+      final expiredAt = _makeRawJwt({
+        'exp': DateTime.now().millisecondsSinceEpoch ~/ 1000 - 3600,
+        'iat': DateTime.now().millisecondsSinceEpoch ~/ 1000 - 7200,
+        'sub': 'mock-user-id',
+      });
+      final expiredSession = jsonEncode({
+        'access_token': expiredAt,
+        'token_type': 'bearer',
+        'expires_in': -3600,
+        'refresh_token': 'expired-refresh-token',
+        'user': _mockUserJson,
+      });
+
+      await expectLater(
+        client.recoverSession(expiredSession),
+        throwsA(
+          isA<AuthException>().having(
+            (error) => error.code,
+            'code',
+            ErrorCode.sessionExpired.code,
+          ),
+        ),
+      );
+
+      // Let the asynchronous state event flush before asserting.
+      await Future<void>.delayed(Duration.zero);
+
+      final signedOut = states.firstWhere(
+        (state) => state.event == AuthChangeEvent.signedOut,
+      );
+      expect(signedOut.signOutReason, SignOutReason.sessionExpired);
     });
   });
 }
