@@ -479,13 +479,14 @@ void main() {
         () async {
       final client = GoTrueClient(
         url: 'https://example.com',
-        httpClient: NullSessionClient(testEmail),
+        httpClient: NullSessionClient(),
         asyncStorage: TestAsyncStorage(),
       );
 
-      // Verifying the first OTP of a secure email change does not return a
-      // session. This should not throw, the intermediate response is returned
-      // so the second OTP can subsequently be verified.
+      // Verifying the first OTP of a secure email change returns a `{msg, code}`
+      // payload with neither a user nor a session. This should not throw, the
+      // intermediate response is returned so the second OTP can subsequently be
+      // verified.
       final response = await client.verifyOTP(
         email: testEmail,
         token: '123456',
@@ -493,6 +494,7 @@ void main() {
       );
 
       expect(response.session, isNull);
+      expect(response.user, isNull);
     });
   });
 
