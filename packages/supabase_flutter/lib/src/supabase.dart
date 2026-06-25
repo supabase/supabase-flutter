@@ -282,6 +282,14 @@ class Supabase {
       // where no disconnect happened).
       if (realtime.isConnected) return;
 
+      // The connection should not be [SocketStates.connecting] on mobile as it
+      // should be successful disconnected when the app went to background.
+      // Aborting a connect attempt and then opening a new connection is faster
+      // than waiting for it to succeed.
+      if (realtime.connState == SocketStates.connecting) {
+        await realtime.disconnect();
+      }
+
       // ignore: invalid_use_of_internal_member
       await realtime.connect();
 
@@ -301,6 +309,7 @@ class Supabase {
       }
     } else {
       // paused or detached — disconnect the WebSocket if it is active.
+      // These states are not triggered on web
       if (realtime.isConnected ||
           realtime.connState == SocketStates.connecting) {
         await realtime.disconnect();

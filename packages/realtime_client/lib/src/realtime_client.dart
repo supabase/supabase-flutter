@@ -287,17 +287,21 @@ class RealtimeClient {
             Level.FINE);
       }
 
-      // Connection cannot be closed while it's still connecting. Wait for connection to
-      // be ready and then close it.
-      if (oldState == SocketStates.connecting) {
-        await conn.ready.catchError((_) {});
-      }
-
       if (shouldCloseSink) {
+        late final onTimeout = () => log('transport',
+            'timeout while closing connection', null, Level.WARNING);
         if (code != null) {
-          await conn.sink.close(code, reason ?? '');
+          // Add a timeout to close the sink to avoid hanging in case something
+          // is wrong with the connection.
+          // This safeguard was suggested here: https://github.com/dart-lang/http/issues/1693#issuecomment-2651080004
+          // The Dart SDK has a timeout of 5 seconds for closing the WebSocket connection, so we set a timeout of 6 seconds here to avoid hanging indefinitely.
+          await conn.sink
+              .close(code, reason ?? '')
+              .timeout(const Duration(seconds: 6), onTimeout: onTimeout);
         } else {
-          await conn.sink.close();
+          await conn.sink
+              .close()
+              .timeout(const Duration(seconds: 6), onTimeout: onTimeout);
         }
         connState = SocketStates.disconnected;
         reconnectTimer.reset();
