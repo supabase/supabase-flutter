@@ -1,4 +1,4 @@
-# `supabase-dart`
+# supabase
 
 A Dart client for [Supabase](https://supabase.io/).
 
