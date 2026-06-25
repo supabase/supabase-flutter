@@ -54,6 +54,12 @@ class RealtimeChannel {
     );
     _rejoinTimer =
         RetryTimer(() => rejoinUntilConnected(), socket.reconnectAfterMs);
+    socket.onOpen(() {
+      if (isErrored) {
+        // Instead of waiting for the next scheduled rejoin, attempt to rejoin immediately
+        rejoin();
+      }
+    });
     joinPush.receive('ok', (_) {
       _state = ChannelStates.joined;
       _rejoinTimer.reset();
