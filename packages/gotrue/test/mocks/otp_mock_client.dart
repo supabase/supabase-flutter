@@ -10,6 +10,8 @@ class OtpMockClient extends BaseClient {
   final String accessToken;
   final String refreshToken;
 
+  Map<String, dynamic>? lastResendBody;
+
   OtpMockClient({
     this.phoneNumber = '+11234567890',
     this.email = 'test@example.com',
@@ -264,6 +266,7 @@ class OtpMockClient extends BaseClient {
   }
 
   StreamedResponse _handleResend(Map<String, dynamic>? requestBody) {
+    lastResendBody = requestBody;
     return StreamedResponse(
       Stream.value(utf8.encode(jsonEncode({
         'message': 'OTP resent',
