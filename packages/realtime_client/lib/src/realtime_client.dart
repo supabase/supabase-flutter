@@ -288,8 +288,8 @@ class RealtimeClient {
       }
 
       if (shouldCloseSink) {
-        late final onTimeout = () => log('transport',
-            'timeout while closing connection', null, Level.WARNING);
+        onTimeout() => log('transport', 'timeout while closing connection',
+            null, Level.WARNING);
         if (code != null) {
           // Add a timeout to close the sink to avoid hanging in case something
           // is wrong with the connection.
