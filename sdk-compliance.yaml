@@ -58,7 +58,8 @@ features:
     status: partially_implemented
     note: "Default scope is local (current session); JS defaults to global (all sessions)."
   auth.session.auto_refresh: implemented
-  auth.session.subscribe_auth_events:
+  auth.session.subscribe_auth_events: implemented
+  auth.session.sign_out_reason:
     status: implemented
     symbols:
       - AuthState.signOutReason
