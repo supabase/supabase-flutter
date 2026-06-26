@@ -884,8 +884,12 @@ class GoTrueClient {
     final errorDescription = url.queryParameters['error_description'];
     final errorCode = url.queryParameters['error_code'];
     final error = url.queryParameters['error'];
-    if (errorDescription != null) {
-      throw AuthException(errorDescription, statusCode: errorCode, code: error);
+    if (error != null || errorDescription != null || errorCode != null) {
+      throw AuthException(
+        errorDescription ?? 'Error in URL with unspecified error_description',
+        statusCode: errorCode,
+        code: error,
+      );
     }
 
     final authCode = url.queryParameters['code'];
