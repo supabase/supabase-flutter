@@ -120,7 +120,10 @@ class GotrueFetch {
     RequestMethodType method, {
     GotrueRequestOptions? options,
   }) async {
-    final headers = options?.headers ?? {};
+    // Copy the maps before mutating them. Callers pass the client's shared
+    // header/query maps by reference, so writing `Authorization`, the API
+    // version or `redirect_to` directly would leak into every later request.
+    final headers = {...?options?.headers};
 
     // Set the API version header if not already set
     if (!headers.containsKey(Constants.apiVersionHeaderName)) {
@@ -131,7 +134,7 @@ class GotrueFetch {
       headers['Authorization'] = 'Bearer ${options!.jwt}';
     }
 
-    final qs = options?.query ?? {};
+    final qs = {...?options?.query};
     if (options?.redirectTo != null) {
       qs['redirect_to'] = options!.redirectTo!;
     }
