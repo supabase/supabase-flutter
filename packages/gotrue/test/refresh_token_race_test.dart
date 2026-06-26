@@ -442,5 +442,61 @@ void main() {
           reason:
               'Should not attempt refresh when current session is valid for same user');
     });
+
+    test('recoverSession stays in the stack trace when the refresh fails',
+        () async {
+      final httpClient = RefreshTokenTrackingHttpClient();
+      // Force the refresh to fail by pre-consuming the persisted refresh token.
+      httpClient.markTokenAsUsed('-yeS4omysFs9tpUYBws9Rg');
+      final client = GoTrueClient(
+        url: gotrueUrl,
+        asyncStorage: TestAsyncStorage(),
+        httpClient: httpClient,
+      );
+
+      Object? caught;
+      StackTrace? trace;
+      try {
+        await client.recoverSession(createExpiredSessionForUser1());
+      } catch (error, stackTrace) {
+        caught = error;
+        trace = stackTrace;
+      }
+
+      expect(caught, isA<AuthException>());
+      expect(trace, isNotNull);
+      // The refresh runs fire-and-forget internally, so `recoverSession` only
+      // appears in the asynchronous stack trace because it rethrows with the
+      // current stack.
+      expect(trace!.toString(), contains('recoverSession'));
+    });
+
+    test('recoverSession emits a single error for an expired session',
+        () async {
+      final client = GoTrueClient(
+        url: gotrueUrl,
+        asyncStorage: TestAsyncStorage(),
+        autoRefreshToken: false,
+        httpClient: RefreshTokenTrackingHttpClient(),
+      );
+
+      var errorCount = 0;
+      final subscription = client.onAuthStateChange.listen(
+        (_) {},
+        onError: (_) => errorCount++,
+      );
+
+      await expectLater(
+        client.recoverSession(createExpiredSessionForUser1()),
+        throwsA(isA<AuthException>()),
+      );
+      await pumpEventQueue();
+
+      // The error must reach the stream exactly once, not be re-notified by the
+      // surrounding catch on top of the explicit notification.
+      expect(errorCount, 1);
+
+      await subscription.cancel();
+    });
   });
 }

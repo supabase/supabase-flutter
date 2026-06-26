@@ -574,6 +574,12 @@ void main() {
         ]),
       );
 
+      Object? streamError;
+      final errorSubscription = stream.listen(
+        (_) {},
+        onError: (Object error) => streamError = error,
+      );
+
       final expiredSession = getSessionData(
         DateTime.now().subtract(Duration(hours: 1)),
       );
@@ -582,8 +588,10 @@ void main() {
         client.recoverSession(expiredSession.sessionString),
         throwsA(isA<AuthException>()),
       );
-      expect(stream, emitsError(isA<AuthException>()));
 
+      await pumpEventQueue();
+      await errorSubscription.cancel();
+      expect(streamError, isNull);
       expect(client.currentSession, isNull);
     });
 
