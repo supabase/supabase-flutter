@@ -9,9 +9,13 @@ enum SignOutReason {
 
   /// The session could no longer be refreshed because its refresh token was
   /// rejected (invalid or expired), so the session was removed.
+  ///
+  /// Matches the [ErrorCode.sessionExpired] thrown on the stream.
   sessionExpired,
 
   /// A stored session could not be recovered because it was missing required
   /// data, so the session was removed.
+  ///
+  /// Matches the [ErrorCode.sessionMissing] thrown on the stream.
   sessionMissing,
 }
