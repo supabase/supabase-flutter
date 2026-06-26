@@ -80,9 +80,9 @@ Map<String, dynamic> convertChangeData(
     }
   }
 
-  record.forEach((key, value) {
+  for (final key in record.keys) {
     result[key] = convertColumn(key, parsedColumns, record, skipTypes ?? []);
-  });
+  }
   return result;
 }
 

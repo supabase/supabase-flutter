@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:supabase/supabase.dart';
@@ -43,7 +44,7 @@ void exampleUsage(SupabaseClient supabase) async {
       .subscribe();
 
   // remember to remove channel when no longer needed
-  supabase.removeChannel(realtimeChannel);
+  unawaited(supabase.removeChannel(realtimeChannel));
 
   // stream
   final streamSubscription = supabase
@@ -56,7 +57,7 @@ void exampleUsage(SupabaseClient supabase) async {
       });
 
   // remember to remove subscription
-  streamSubscription.cancel();
+  unawaited(streamSubscription.cancel());
 
   // Upload file to bucket "public" with dart:io
 

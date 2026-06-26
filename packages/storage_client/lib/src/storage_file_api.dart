@@ -44,6 +44,13 @@ class StorageFileApi {
     return path.replaceAll(RegExp(r'^/|/$'), '').replaceAll(RegExp(r'/+'), '/');
   }
 
+  FetchOptions get _fetchOptions => FetchOptions(headers: headers);
+
+  void _assertValidRetryAttempts(int? retryAttempts) {
+    assert(retryAttempts == null || retryAttempts >= 0,
+        'retryAttempts has to be greater or equal to 0');
+  }
+
   /// Uploads a file to an existing bucket.
   ///
   /// [path] is the relative file path without the bucket ID. Should be of the
@@ -64,14 +71,13 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.postFile(
       '$url/object/$finalPath',
       file,
       fileOptions,
-      options: FetchOptions(headers: headers),
+      options: _fetchOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
       retryController: retryController,
     );
@@ -99,14 +105,13 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.postBinaryFile(
       '$url/object/$finalPath',
       data,
       fileOptions,
-      options: FetchOptions(headers: headers),
+      options: _fetchOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
       retryController: retryController,
     );
@@ -129,8 +134,7 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   ]) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
 
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
@@ -163,8 +167,7 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   ]) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
 
     final cleanPath = _removeEmptyFolders(path);
     final path0 = _getFinalPath(cleanPath);
@@ -194,7 +197,7 @@ class StorageFileApi {
     final data = await _storageFetch.post(
       '$url/object/upload/sign/$finalPath',
       {},
-      options: FetchOptions(headers: headers),
+      options: _fetchOptions,
     );
 
     final signedUrl = Uri.parse('$url${data['url']}');
@@ -233,14 +236,13 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.putFile(
       '$url/object/$finalPath',
       file,
       fileOptions,
-      options: FetchOptions(headers: headers),
+      options: _fetchOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
       retryController: retryController,
     );
@@ -269,14 +271,13 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.putBinaryFile(
       '$url/object/$finalPath',
       data,
       fileOptions,
-      options: FetchOptions(headers: headers),
+      options: _fetchOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
       retryController: retryController,
     );
@@ -297,7 +298,7 @@ class StorageFileApi {
     String toPath, {
     String? destinationBucket,
   }) async {
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/move',
       {
@@ -325,7 +326,7 @@ class StorageFileApi {
     String toPath, {
     String? destinationBucket,
   }) async {
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/copy',
       {
@@ -355,7 +356,7 @@ class StorageFileApi {
     TransformOptions? transform,
   }) async {
     final finalPath = _getFinalPath(path);
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/sign/$finalPath',
       {
@@ -414,7 +415,7 @@ class StorageFileApi {
     List<String> paths,
     int expiresIn,
   ) async {
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/sign/$bucketId',
       {
@@ -467,7 +468,7 @@ class StorageFileApi {
   /// Retrieves the details of an existing file
   Future<FileObjectV2> info(String path) async {
     final finalPath = _getFinalPath(path);
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.get(
       '$url/object/info/$finalPath',
       options: options,
@@ -479,7 +480,7 @@ class StorageFileApi {
   /// Checks the existence of a file
   Future<bool> exists(String path) async {
     final finalPath = _getFinalPath(path);
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     try {
       await _storageFetch.head(
         '$url/object/$finalPath',
@@ -522,7 +523,7 @@ class StorageFileApi {
   /// [paths] is an array of files to be deleted, including the path and file
   /// name. For example: `remove(['folder/image.png'])`.
   Future<List<FileObject>> remove(List<String> paths) async {
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.delete(
       '$url/object/$bucketId',
       {'prefixes': paths},
@@ -549,7 +550,7 @@ class StorageFileApi {
       'prefix': path ?? '',
       ...searchOptions.toMap(),
     };
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/list/$bucketId',
       body,

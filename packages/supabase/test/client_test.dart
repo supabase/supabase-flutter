@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:supabase/supabase.dart';
@@ -151,10 +152,10 @@ void main() {
       await supabase.auth.recoverSession(sessionString);
 
       // Make some requests
-      supabase.from("test").select().then((value) => null);
-      supabase.rpc("test").select().then((value) => null);
-      supabase.functions.invoke("test").then((value) => null);
-      supabase.storage.from("test").list().then((value) => null);
+      unawaited(supabase.from("test").select().then((value) => null));
+      unawaited(supabase.rpc("test").select().then((value) => null));
+      unawaited(supabase.functions.invoke("test").then((value) => null));
+      unawaited(supabase.storage.from("test").list().then((value) => null));
 
       var count = 0;
 
@@ -168,7 +169,7 @@ void main() {
         }
       }
 
-      mockServer.close();
+      await mockServer.close();
     });
 
     test('call recoverSession', () async {
@@ -186,10 +187,10 @@ void main() {
       await Future.delayed(Duration(seconds: 11));
 
       // Make some requests
-      supabase.from("test").select().then((value) => null);
-      supabase.rpc("test").select().then((value) => null);
-      supabase.functions.invoke("test").then((value) => null);
-      supabase.storage.from("test").list().then((value) => null);
+      unawaited(supabase.from("test").select().then((value) => null));
+      unawaited(supabase.rpc("test").select().then((value) => null));
+      unawaited(supabase.functions.invoke("test").then((value) => null));
+      unawaited(supabase.storage.from("test").list().then((value) => null));
 
       var count = 0;
       var gotTokenRefresh = false;
@@ -209,8 +210,8 @@ void main() {
           req.response
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.json
-            ..write(sessionString)
-            ..close();
+            ..write(sessionString);
+          await req.response.close();
         } else {
           expect(req.headers.value('Authorization')?.split(" ").last,
               secondAccessToken);
@@ -221,7 +222,7 @@ void main() {
         }
       }
 
-      mockServer.close();
+      await mockServer.close();
     });
 
     test('create a client with third-party auth accessToken', () async {

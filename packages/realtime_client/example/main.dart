@@ -35,13 +35,13 @@ Future<void> main() async {
   socket.onMessage((message) => print('MESSAGE $message'));
 
   // on connect and subscribe
-  socket.connect();
+  await socket.connect();
   channel.subscribe((a, [_]) => print('SUBSCRIBED'));
 
   // delay 20s to receive events from server
   await Future.delayed(const Duration(seconds: 20));
 
   // on unsubscribe and disconnect
-  channel.unsubscribe();
-  socket.disconnect();
+  await channel.unsubscribe();
+  await socket.disconnect();
 }

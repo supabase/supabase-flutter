@@ -101,7 +101,7 @@ class Push {
     });
   }
 
-  void trigger(String status, dynamic response) {
+  void trigger(String status, Map<String, dynamic> response) {
     if (_refEvent != null) {
       _channel.trigger(_refEvent!, {'status': status, 'response': response});
     }

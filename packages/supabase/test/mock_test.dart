@@ -51,8 +51,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url == '/rest/v1/todos?select=%2A' ||
           url == '/rest/v1/rpc/todos?select=%2A') {
         final jsonString = jsonEncode([
@@ -62,8 +62,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url == '/rest/v1/todos?select=%2A&status=eq.true') {
         final jsonString = jsonEncode([
           {'id': 1, 'task': 'task 1', 'status': true},
@@ -71,8 +71,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url == '/rest/v1/todos?select=%2A&order=id.desc.nullslast') {
         final jsonString = jsonEncode([
           {'id': 2, 'task': 'task 2', 'status': false},
@@ -81,8 +81,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url ==
           '/rest/v1/todos?select=%2A&order=id.desc.nullslast&limit=2') {
         final jsonString = jsonEncode([
@@ -92,247 +92,264 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write(jsonString)
-          ..close();
+          ..write(jsonString);
+        await request.response.close();
       } else if (url.contains('rest')) {
         // Just return an empty string as dummy data if any other rest request
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write('[]')
-          ..close();
+          ..write('[]');
+        await request.response.close();
       } else if (url.contains('realtime')) {
         webSocket = await WebSocketTransformer.upgrade(request);
         if (hasListener) {
           return;
         }
         hasListener = true;
-        listener = webSocket!.listen((message) async {
-          /// Protocol 2.0.0 text frames are positional arrays:
-          /// [join_ref, ref, topic, event, payload].
-          ///
-          /// `filter` might be there or not depending on whether is a filter set
-          /// to the realtime subscription, so include the filter if the request
-          /// includes a filter.
-          final requestJson = jsonDecode(message as String) as List;
-          final ref = requestJson[1];
-          final topic = requestJson[2];
-          final event = requestJson[3];
-          final requestPayload = requestJson[4] as Map;
+        listener = webSocket!.listen((message) {
+          unawaited(() async {
+            /// Protocol 2.0.0 text frames are positional arrays:
+            /// [join_ref, ref, topic, event, payload].
+            ///
+            /// `filter` might be there or not depending on whether is a filter set
+            /// to the realtime subscription, so include the filter if the request
+            /// includes a filter.
+            final requestJson = jsonDecode(message as String) as List;
+            final ref = requestJson[1];
+            final topic = requestJson[2];
+            final event = requestJson[3];
+            final requestPayload = requestJson[4] as Map;
 
-          if (event == 'phx_leave') {
-            listeners.remove(topic);
-            return;
-          }
-          if (listeners.contains(topic)) {
-            return;
-          }
-          listeners.add(topic);
+            if (event == 'phx_leave') {
+              listeners.remove(topic);
+              return;
+            }
+            if (listeners.contains(topic)) {
+              return;
+            }
+            listeners.add(topic);
 
-          final String? realtimeFilter =
-              requestPayload['config']['postgres_changes'].first['filter'];
-          final bool isPrivate = requestPayload['config']['private'] as bool;
+            final String? realtimeFilter =
+                requestPayload['config']['postgres_changes'].first['filter'];
+            final bool isPrivate = requestPayload['config']['private'] as bool;
 
-          if (expectedFilter != null) {
-            expect(realtimeFilter, expectedFilter);
-          }
-          if (expectedPrivate != null) {
-            expect(isPrivate, expectedPrivate);
-          }
+            if (expectedFilter != null) {
+              expect(realtimeFilter, expectedFilter);
+            }
+            if (expectedPrivate != null) {
+              expect(isPrivate, expectedPrivate);
+            }
 
-          final replyString = jsonEncode([
-            null,
-            ref,
-            topic,
-            'phx_reply',
-            {
-              'response': {
-                'postgres_changes': [
-                  {
-                    'id': 77086988,
-                    'event': '*',
-                    'schema': 'public',
-                    'table': 'todos',
-                    if (realtimeFilter != null) 'filter': realtimeFilter,
-                  },
-                ]
+            final replyString = jsonEncode([
+              null,
+              ref,
+              topic,
+              'phx_reply',
+              {
+                'response': {
+                  'postgres_changes': [
+                    {
+                      'id': 77086988,
+                      'event': '*',
+                      'schema': 'public',
+                      'table': 'todos',
+                      if (realtimeFilter != null) 'filter': realtimeFilter,
+                    },
+                  ]
+                },
+                'status': 'ok'
               },
-              'status': 'ok'
-            },
-          ]);
-          webSocket!.add(replyString);
+            ]);
+            webSocket!.add(replyString);
 
-          // Send an insert event
-          await Future.delayed(Duration(milliseconds: 10));
-          final insertString = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'ids': [77086988],
-              'data': {
-                'commit_timestamp': '2021-08-01T08:00:20Z',
-                'record': {'id': 3, 'task': 'task 3', 'status': 't'},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'INSERT',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
-                'columns': [
-                  {
-                    'name': 'id',
-                    'type': 'int4',
-                    'type_modifier': 4294967295,
-                  },
-                  {
-                    'name': 'task',
-                    'type': 'text',
-                    'type_modifier': 4294967295,
-                  },
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295,
-                  },
-                ],
+            // Send an insert event
+            await Future.delayed(Duration(milliseconds: 10));
+            final insertString = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'ids': [77086988],
+                'data': {
+                  'commit_timestamp': '2021-08-01T08:00:20Z',
+                  'record': {'id': 3, 'task': 'task 3', 'status': 't'},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'INSERT',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                  'columns': [
+                    {
+                      'name': 'id',
+                      'type': 'int4',
+                      'type_modifier': 4294967295,
+                    },
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295,
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295,
+                    },
+                  ],
+                },
               },
-            },
-          ]);
-          webSocket!.add(insertString);
+            ]);
+            webSocket!.add(insertString);
 
-          // Send an update event for id = 2
-          await Future.delayed(Duration(milliseconds: 10));
-          final updateString = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'ids': [77086988],
-              'data': {
-                'columns': [
-                  {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                  {'name': 'task', 'type': 'text', 'type_modifier': 4294967295},
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295
-                  },
-                ],
-                'commit_timestamp': '2021-08-01T08:00:30Z',
-                'errors': null,
-                'old_record': {'id': 2},
-                'record': {'id': 2, 'task': 'task 2 updated', 'status': 'f'},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'UPDATE',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
+            // Send an update event for id = 2
+            await Future.delayed(Duration(milliseconds: 10));
+            final updateString = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'ids': [77086988],
+                'data': {
+                  'columns': [
+                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295
+                    },
+                  ],
+                  'commit_timestamp': '2021-08-01T08:00:30Z',
+                  'errors': null,
+                  'old_record': {'id': 2},
+                  'record': {'id': 2, 'task': 'task 2 updated', 'status': 'f'},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'UPDATE',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                },
               },
-            },
-          ]);
-          webSocket!.add(updateString);
+            ]);
+            webSocket!.add(updateString);
 
-          // Send delete event for id=2
-          await Future.delayed(Duration(milliseconds: 10));
-          final deleteString = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'data': {
-                'columns': [
-                  {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                  {'name': 'task', 'type': 'text', 'type_modifier': 4294967295},
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295
-                  },
-                ],
-                'commit_timestamp': '2022-09-14T02:12:52Z',
-                'errors': null,
-                'old_record': {'id': 2},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'DELETE',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
+            // Send delete event for id=2
+            await Future.delayed(Duration(milliseconds: 10));
+            final deleteString = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'data': {
+                  'columns': [
+                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295
+                    },
+                  ],
+                  'commit_timestamp': '2022-09-14T02:12:52Z',
+                  'errors': null,
+                  'old_record': {'id': 2},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'DELETE',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                },
+                'ids': [77086988]
               },
-              'ids': [77086988]
-            },
-          ]);
-          webSocket!.add(deleteString);
+            ]);
+            webSocket!.add(deleteString);
 
-          /// Send an update event for id = 4
-          /// Record with id = 4 did not exist in the initial data fetch,
-          /// so the SDK should insert the record in the in memory cache
-          await Future.delayed(Duration(milliseconds: 10));
-          final updateId4 = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'ids': [77086988],
-              'data': {
-                'columns': [
-                  {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                  {'name': 'task', 'type': 'text', 'type_modifier': 4294967295},
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295
-                  },
-                ],
-                'commit_timestamp': '2021-08-01T08:00:30Z',
-                'errors': null,
-                'old_record': {'id': 4},
-                'record': {'id': 4, 'task': 'task 4', 'status': 't'},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'UPDATE',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
+            /// Send an update event for id = 4
+            /// Record with id = 4 did not exist in the initial data fetch,
+            /// so the SDK should insert the record in the in memory cache
+            await Future.delayed(Duration(milliseconds: 10));
+            final updateId4 = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'ids': [77086988],
+                'data': {
+                  'columns': [
+                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295
+                    },
+                  ],
+                  'commit_timestamp': '2021-08-01T08:00:30Z',
+                  'errors': null,
+                  'old_record': {'id': 4},
+                  'record': {'id': 4, 'task': 'task 4', 'status': 't'},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'UPDATE',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                },
               },
-            },
-          ]);
-          webSocket!.add(updateId4);
+            ]);
+            webSocket!.add(updateId4);
 
-          // Send delete event for id=5
-          /// Should be ignored by the SDK
-          await Future.delayed(Duration(milliseconds: 10));
-          final ignoredDeleteString = jsonEncode([
-            null,
-            null,
-            topic,
-            'postgres_changes',
-            {
-              'data': {
-                'columns': [
-                  {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                  {'name': 'task', 'type': 'text', 'type_modifier': 4294967295},
-                  {
-                    'name': 'status',
-                    'type': 'bool',
-                    'type_modifier': 4294967295
-                  },
-                ],
-                'commit_timestamp': '2022-09-14T02:12:52Z',
-                'errors': null,
-                'old_record': {'id': 5},
-                'schema': 'public',
-                'table': 'todos',
-                'type': 'DELETE',
-                if (realtimeFilter != null) 'filter': realtimeFilter,
+            // Send delete event for id=5
+            /// Should be ignored by the SDK
+            await Future.delayed(Duration(milliseconds: 10));
+            final ignoredDeleteString = jsonEncode([
+              null,
+              null,
+              topic,
+              'postgres_changes',
+              {
+                'data': {
+                  'columns': [
+                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
+                    {
+                      'name': 'task',
+                      'type': 'text',
+                      'type_modifier': 4294967295
+                    },
+                    {
+                      'name': 'status',
+                      'type': 'bool',
+                      'type_modifier': 4294967295
+                    },
+                  ],
+                  'commit_timestamp': '2022-09-14T02:12:52Z',
+                  'errors': null,
+                  'old_record': {'id': 5},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'DELETE',
+                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                },
+                'ids': [77086988]
               },
-              'ids': [77086988]
-            },
-          ]);
-          webSocket!.add(ignoredDeleteString);
+            ]);
+            webSocket!.add(ignoredDeleteString);
+          }());
         });
       } else {
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..close();
+        request.response.statusCode = HttpStatus.ok;
+        await request.response.close();
       }
     }
   }
@@ -377,7 +394,7 @@ void main() {
 
   group('basic test', () {
     setUp(() async {
-      handleRequests(mockServer);
+      unawaited(handleRequests(mockServer));
     });
 
     test('test mock server', () async {
@@ -631,7 +648,7 @@ void main() {
                 schema: 'public',
                 table: 'todos',
                 callback: (payload) {
-                  supabase.from('todos');
+                  unawaited(supabase.from('todos'));
                 })
             .subscribe();
 
@@ -644,7 +661,7 @@ void main() {
 
   group('realtime filter', () {
     test('can filter stream results with eq', () {
-      handleRequests(mockServer, expectedFilter: 'status=eq.true');
+      unawaited(handleRequests(mockServer, expectedFilter: 'status=eq.true'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).eq('status', true);
       expect(
@@ -662,35 +679,35 @@ void main() {
     });
 
     test('can filter stream results with neq', () {
-      handleRequests(mockServer, expectedFilter: 'id=neq.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=neq.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).neq('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with gt', () {
-      handleRequests(mockServer, expectedFilter: 'id=gt.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=gt.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).gt('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with gte', () {
-      handleRequests(mockServer, expectedFilter: 'id=gte.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=gte.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).gte('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with lt', () {
-      handleRequests(mockServer, expectedFilter: 'id=lt.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=lt.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).lt('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with lte', () {
-      handleRequests(mockServer, expectedFilter: 'id=lte.2');
+      unawaited(handleRequests(mockServer, expectedFilter: 'id=lte.2'));
       final stream =
           supabase.from('todos').stream(primaryKey: ['id']).lte('id', 2);
       expect(stream, emits(isList));
@@ -699,7 +716,7 @@ void main() {
 
   group('stream() channel config', () {
     test('forwards channelConfig.private=true to realtime join payload', () {
-      handleRequests(mockServer, expectedPrivate: true);
+      unawaited(handleRequests(mockServer, expectedPrivate: true));
 
       final stream =
           supabase.from('todos').stream(primaryKey: ['id'], private: true);
@@ -708,7 +725,7 @@ void main() {
     });
 
     test('uses default private=false when channelConfig is omitted', () {
-      handleRequests(mockServer, expectedPrivate: false);
+      unawaited(handleRequests(mockServer, expectedPrivate: false));
 
       final stream = supabase.from('todos').stream(primaryKey: ['id']);
 
@@ -718,7 +735,7 @@ void main() {
 
   group('Deprecated execute method', () {
     test('should work with deprecated execute method', () {
-      handleRequests(mockServer);
+      unawaited(handleRequests(mockServer));
       final streamBuilder = supabase.from('todos').stream(primaryKey: ['id']);
       final stream = streamBuilder.execute();
       expect(stream, emits(isList));
@@ -757,12 +774,11 @@ void main() {
             request.response
               ..statusCode = HttpStatus.unauthorized
               ..headers.contentType = ContentType.json
-              ..write('{"error": "Unauthorized"}')
-              ..close();
+              ..write('{"error": "Unauthorized"}');
+            unawaited(request.response.close());
           } else {
-            request.response
-              ..statusCode = HttpStatus.ok
-              ..close();
+            request.response.statusCode = HttpStatus.ok;
+            unawaited(request.response.close());
           }
         });
 

@@ -82,7 +82,7 @@ class GoTrueClient {
   /// [Completer.future] instead of starting a duplicate request.
   final Map<String, Completer<AuthResponse>> _pendingRefreshes = {};
 
-  /// Set by [dispose] to prevent [_executeRefresh] from mutating state
+  /// Set by [dispose] to prevent [_doRefresh] from mutating state
   /// or emitting events on closed stream controllers.
   bool _isDisposed = false;
 
@@ -251,20 +251,7 @@ class GoTrueClient {
     final Map<String, dynamic> response;
 
     if (email != null) {
-      String? codeChallenge;
-
-      if (_flowType == AuthFlowType.pkce) {
-        assert(
-          _asyncStorage != null,
-          'You need to provide asyncStorage to perform pkce flow.',
-        );
-        final codeVerifier = generatePKCEVerifier();
-        await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier,
-        );
-        codeChallenge = generatePKCEChallenge(codeVerifier);
-      }
+      final codeChallenge = await _generatePKCECodeChallenge();
 
       response = await _fetch.request(
         '$_url/signup',
@@ -428,6 +415,30 @@ class GoTrueClient {
     return authSessionUrlResponse;
   }
 
+  /// Generates a PKCE code verifier, persists it, and returns the derived code
+  /// challenge.
+  ///
+  /// Returns `null` when the client is not using the PKCE flow. When
+  /// [storageEventName] is provided it is appended to the stored verifier so it
+  /// can be recovered in [exchangeCodeForSession].
+  Future<String?> _generatePKCECodeChallenge({String? storageEventName}) async {
+    if (_flowType != AuthFlowType.pkce) {
+      return null;
+    }
+    assert(
+      _asyncStorage != null,
+      'You need to provide asyncStorage to perform pkce flow.',
+    );
+    final codeVerifier = generatePKCEVerifier();
+    await _asyncStorage!.setItem(
+      key: '${Constants.defaultStorageKey}-code-verifier',
+      value: storageEventName == null
+          ? codeVerifier
+          : '$codeVerifier/$storageEventName',
+    );
+    return generatePKCEChallenge(codeVerifier);
+  }
+
   /// Allows signing in with an ID token issued by supported providers.
   /// Common supported providers include Apple, Google, Facebook, Kakao, and Keycloak.
   /// The [idToken] is verified for validity and a new session is established.
@@ -502,19 +513,7 @@ class GoTrueClient {
     OtpChannel channel = OtpChannel.sms,
   }) async {
     if (email != null) {
-      String? codeChallenge;
-      if (_flowType == AuthFlowType.pkce) {
-        assert(
-          _asyncStorage != null,
-          'You need to provide asyncStorage to perform pkce flow.',
-        );
-        final codeVerifier = generatePKCEVerifier();
-        await _asyncStorage!.setItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
-          value: codeVerifier,
-        );
-        codeChallenge = generatePKCEChallenge(codeVerifier);
-      }
+      final codeChallenge = await _generatePKCECodeChallenge();
       await _fetch.request(
         '$_url/otp',
         RequestMethodType.post,
@@ -613,16 +612,19 @@ class GoTrueClient {
 
     final authResponse = AuthResponse.fromJson(response);
 
-    if (authResponse.session == null) {
-      throw AuthException('An error occurred on token verification.');
+    // A secure email or phone change verifies in two steps: the server accepts
+    // the first OTP without returning a session and only issues one once the
+    // second OTP is verified. In that case there is nothing to persist yet, so
+    // return the intermediate response instead of treating it as an error.
+    final session = authResponse.session;
+    if (session != null) {
+      _saveSession(session);
+      notifyAllSubscribers(
+        type == OtpType.recovery
+            ? AuthChangeEvent.passwordRecovery
+            : AuthChangeEvent.signedIn,
+      );
     }
-
-    _saveSession(authResponse.session!);
-    notifyAllSubscribers(
-      type == OtpType.recovery
-          ? AuthChangeEvent.passwordRecovery
-          : AuthChangeEvent.signedIn,
-    );
 
     return authResponse;
   }
@@ -648,21 +650,7 @@ class GoTrueClient {
       'providerId or domain has to be provided.',
     );
 
-    String? codeChallenge;
-    String? codeChallengeMethod;
-    if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
-      final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: codeVerifier,
-      );
-      codeChallenge = generatePKCEChallenge(codeVerifier);
-      codeChallengeMethod = codeVerifier == codeChallenge ? 'plain' : 's256';
-    }
+    final codeChallenge = await _generatePKCECodeChallenge();
 
     final res = await _fetch.request(
       '$_url/sso',
@@ -676,7 +664,7 @@ class GoTrueClient {
             'gotrue_meta_security': {'captcha_token': captchaToken},
           'skip_http_redirect': true,
           'code_challenge': codeChallenge,
-          'code_challenge_method': codeChallengeMethod,
+          'code_challenge_method': codeChallenge != null ? 's256' : null,
         },
         headers: _headers,
       ),
@@ -752,11 +740,18 @@ class GoTrueClient {
       );
     }
 
+    final codeChallenge =
+        email != null ? await _generatePKCECodeChallenge() : null;
+
     final body = {
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
       'type': type.snakeCase,
       'gotrue_meta_security': {'captcha_token': captchaToken},
+      if (email != null) ...{
+        'code_challenge': codeChallenge,
+        'code_challenge_method': codeChallenge != null ? 's256' : null,
+      },
     };
 
     final options = GotrueRequestOptions(
@@ -1008,19 +1003,9 @@ class GoTrueClient {
     String? redirectTo,
     String? captchaToken,
   }) async {
-    String? codeChallenge;
-    if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
-      final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: '$codeVerifier/${AuthChangeEvent.passwordRecovery.name}',
-      );
-      codeChallenge = generatePKCEChallenge(codeVerifier);
-    }
+    final codeChallenge = await _generatePKCECodeChallenge(
+      storageEventName: AuthChangeEvent.passwordRecovery.name,
+    );
 
     final body = {
       'email': email,
@@ -1218,8 +1203,8 @@ class GoTrueClient {
     // Run the refresh outside the try/catch above so its error is not
     // re-notified: `_callRefreshToken` already reports the outcome (a
     // `signedOut` event for an invalid token, or a stream exception for a
-    // retryable failure). The refresh runs fire-and-forget internally, so its
-    // error would otherwise be rooted at `_executeRefresh`; rethrowing with the
+    // retryable failure). The refresh resolves through a completer, so its
+    // error would otherwise be rooted at `_doRefresh`; rethrowing with the
     // current stack keeps `recoverSession` and the caller in the stack trace.
     try {
       return await _callRefreshToken(refreshToken);
@@ -1348,24 +1333,13 @@ class GoTrueClient {
     if (queryParams != null) {
       urlParams.addAll(queryParams);
     }
-    if (_flowType == AuthFlowType.pkce) {
-      assert(
-        _asyncStorage != null,
-        'You need to provide asyncStorage to perform pkce flow.',
-      );
-      final codeVerifier = generatePKCEVerifier();
-      await _asyncStorage!.setItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
-        value: codeVerifier,
-      );
-
-      final codeChallenge = generatePKCEChallenge(codeVerifier);
-      final flowParams = {
+    final codeChallenge = await _generatePKCECodeChallenge();
+    if (codeChallenge != null) {
+      urlParams.addAll({
         'flow_type': _flowType.name,
         'code_challenge': codeChallenge,
         'code_challenge_method': 's256',
-      };
-      urlParams.addAll(flowParams);
+      });
     }
     if (skipBrowserRedirect) {
       urlParams['skip_http_redirect'] = 'true';
@@ -1376,8 +1350,8 @@ class GoTrueClient {
 
   /// set currentSession and currentUser
   void _saveSession(Session session) {
-    _log.finest('Saving session: $session');
     _log.fine('Saving session');
+    _log.finest('Saving session: $session');
     _currentSession = session;
   }
 
@@ -1443,10 +1417,10 @@ class GoTrueClient {
   @mustCallSuper
   void dispose() {
     _isDisposed = true;
-    _onAuthStateChangeController.close();
-    _onAuthStateChangeControllerSync.close();
+    unawaited(_onAuthStateChangeController.close());
+    unawaited(_onAuthStateChangeControllerSync.close());
     _broadcastChannel?.close();
-    _broadcastChannelSubscription?.cancel();
+    unawaited(_broadcastChannelSubscription?.cancel());
     for (final completer in _pendingRefreshes.values) {
       if (!completer.isCompleted) {
         completer.completeError(AuthException('Disposed'), StackTrace.current);
@@ -1475,52 +1449,57 @@ class GoTrueClient {
       return existing.future;
     }
 
+    // The completer is kept as an external handle so [dispose] can cancel an
+    // in-flight refresh: the network request itself cannot be interrupted, so
+    // a hung refresh can only be resolved by completing this completer.
     final completer = Completer<AuthResponse>();
     completer.future.ignore();
     _pendingRefreshes[refreshToken] = completer;
 
-    _executeRefresh(refreshToken, completer);
+    unawaited(
+      _doRefresh(refreshToken).then(
+        (response) {
+          if (!completer.isCompleted) completer.complete(response);
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!completer.isCompleted) completer.completeError(error, stack);
+        },
+      ).whenComplete(() => _pendingRefreshes.remove(refreshToken)),
+    );
 
     return completer.future;
   }
 
-  /// Executes a single token refresh.
-  Future<void> _executeRefresh(
-    String refreshToken,
-    Completer<AuthResponse> completer,
-  ) async {
-    if (_isDisposed) return;
-
+  /// Performs a single token refresh, applies the outcome to the local session
+  /// and notifies subscribers.
+  ///
+  /// Returns the refreshed [AuthResponse] or throws the underlying error. This
+  /// is the single place that emits refresh outcomes: [AuthChangeEvent.tokenRefreshed]
+  /// on success, [AuthChangeEvent.signedOut] when the refresh token is invalid,
+  /// or a stream error ([notifyException]) for a retryable/unexpected failure.
+  Future<AuthResponse> _doRefresh(String refreshToken) async {
     final versionBeforeRefresh = _sessionVersion;
+    _log.fine('Refresh access token');
 
     try {
-      _log.fine('Refresh access token');
-
       final data = await _refreshAccessToken(refreshToken);
-
-      if (_isDisposed) return;
 
       final session = data.session;
       if (session == null) {
         throw AuthSessionMissingException();
       }
 
-      // Guard: if the session was mutated while we were awaiting
-      // the network request (e.g. a concurrent signIn or signOut),
-      // discard this result to avoid overwriting the newer session.
-      if (_sessionVersion != versionBeforeRefresh) {
-        _log.fine(
-          'Session changed during refresh '
-          '(version $versionBeforeRefresh → $_sessionVersion). '
-          'Discarding stale refresh result.',
-        );
-        if (!completer.isCompleted) completer.complete(data);
-        return;
+      // Discard the result if the client was disposed or the session was
+      // mutated (e.g. a concurrent signIn or signOut) while we were awaiting
+      // the network request, so we don't overwrite the newer session.
+      if (_isDisposed || _sessionVersion != versionBeforeRefresh) {
+        _log.fine('Session changed during refresh, discarding stale result.');
+        return data;
       }
 
       _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-      if (!completer.isCompleted) completer.complete(data);
+      return data;
     } on AuthException catch (error, stack) {
       final existingSession = _currentSession;
       if (error is AuthApiException &&
@@ -1529,15 +1508,12 @@ class GoTrueClient {
           !existingSession.isExpired) {
         _log.fine('Refresh token already used but current session is still '
             'valid, returning it instead of signing out');
-        final response = AuthResponse(session: existingSession);
-        if (!completer.isCompleted) completer.complete(response);
-        return;
+        return AuthResponse(session: existingSession);
       }
 
       if (error is! AuthRetryableFetchException) {
-        // Only remove the session if it hasn't been replaced
-        // while we were refreshing — otherwise we'd sign out a
-        // user who just signed in.
+        // Only remove the session if it hasn't been replaced while we were
+        // refreshing, otherwise we'd sign out a user who just signed in.
         if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
           _removeSession();
           notifyAllSubscribers(
@@ -1548,19 +1524,12 @@ class GoTrueClient {
       } else if (!_isDisposed) {
         notifyException(error, stack);
       }
-
-      if (!completer.isCompleted) {
-        completer.completeError(error, stack);
-      }
+      rethrow;
     } catch (error, stack) {
-      if (!completer.isCompleted) {
-        completer.completeError(error, stack);
-      }
       if (!_isDisposed) {
         notifyException(error, stack);
       }
-    } finally {
-      _pendingRefreshes.remove(refreshToken);
+      rethrow;
     }
   }
 

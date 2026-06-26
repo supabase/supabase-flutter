@@ -408,13 +408,15 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   Stream<T> asStream() {
     final controller = StreamController<T>.broadcast();
 
-    then((value) {
-      controller.add(value);
-    }).catchError((Object error, StackTrace stack) {
-      controller.addError(error, stack);
-    }).whenComplete(() {
-      controller.close();
-    });
+    unawaited(
+      then((value) {
+        controller.add(value);
+      }).catchError((Object error, StackTrace stack) {
+        controller.addError(error, stack);
+      }).whenComplete(() {
+        unawaited(controller.close());
+      }),
+    );
 
     return controller.stream;
   }
@@ -430,9 +432,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Function? onError,
   }) {
     if (onError != null &&
-        // ignore: avoid-unnecessary-type-assertions
         onError is! Function(Object, StackTrace) &&
-        // ignore: avoid-unnecessary-type-assertions
         onError is! Function(Object)) {
       return Future.error(ArgumentError.value(
         onError,

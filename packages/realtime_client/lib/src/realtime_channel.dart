@@ -135,7 +135,7 @@ class RealtimeChannel {
     Duration? timeout,
   ]) {
     if (!socket.isConnected) {
-      socket.connect();
+      unawaited(socket.connect());
     }
     if (joinedOnce == true) {
       throw "tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance";
@@ -149,6 +149,29 @@ class RealtimeChannel {
     });
     _onClose(() {
       if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
+    });
+
+    // A `postgres_changes` subscription's replication setup happens
+    // asynchronously on the server, AFTER the phoenix join succeeds. The join
+    // reply optimistically echoes the requested config (with server-assigned
+    // binding ids), so the join is reported as `subscribed` before the
+    // replication is actually live. If that setup then fails (e.g. RLS denies
+    // under a stale/expired token, or the server declines), the verdict
+    // arrives on a later `system` event with status `error` -- which is
+    // otherwise only exposed via `onSystemEvents` (for debugging) and never
+    // reaches this status callback. The result is a channel that reports
+    // `subscribed` yet delivers nothing. Forward it as `channelError` so
+    // consumers can detect and recover from the failed subscription.
+    onSystemEvents((payload) {
+      if (payload is Map && payload['status'] == 'error') {
+        if (callback != null) {
+          callback(
+            RealtimeSubscribeStatus.channelError,
+            Exception(payload['message']?.toString() ??
+                'postgres_changes subscription failed'),
+          );
+        }
+      }
     });
 
     final presenceEnabled = _shouldEnablePresence();
@@ -171,74 +194,13 @@ class RealtimeChannel {
     joinedOnce = true;
     rejoin(timeout ?? _timeout);
 
-    joinPush.receive(
+    joinPush
+        .receive(
       'ok',
-      (response) async {
-        final serverPostgresFilters = response['postgres_changes'];
-        if (socket.accessToken != null) {
-          try {
-            // ignore: avoid-passing-self-as-argument
-            await socket.setAuth(socket.accessToken);
-          } on FormatException catch (e) {
-            // The cached access token may have expired by the time the
-            // channel rejoins (e.g. after the device wakes from a long
-            // sleep). Auth state listeners will re-call setAuth with a
-            // fresh token shortly after, so swallow this specific error
-            // to avoid surfacing it as an uncaught exception. The same
-            // filter is applied in `SupabaseClient._handleTokenChanged`.
-            if (!e.message.contains('InvalidJWTToken')) {
-              rethrow;
-            }
-          }
-        }
-
-        if (serverPostgresFilters == null) {
-          if (callback != null) {
-            callback(RealtimeSubscribeStatus.subscribed, null);
-          }
-          return;
-        }
-        final clientPostgresBindings = _bindings['postgres_changes'];
-        final bindingsLen = clientPostgresBindings?.length ?? 0;
-        final newPostgresBindings = <Binding>[];
-
-        for (var i = 0; i < bindingsLen; i++) {
-          final clientPostgresBinding = clientPostgresBindings![i];
-
-          final event = clientPostgresBinding.filter['event'];
-          final schema = clientPostgresBinding.filter['schema'];
-          final table = clientPostgresBinding.filter['table'];
-          final filter = clientPostgresBinding.filter['filter'];
-          final serverPostgresFilter = serverPostgresFilters[i];
-
-          if (serverPostgresFilter != null &&
-              serverPostgresFilter['event'] == event &&
-              serverPostgresFilter['schema'] == schema &&
-              serverPostgresFilter['table'] == table &&
-              serverPostgresFilter['filter'] == filter) {
-            newPostgresBindings.add(clientPostgresBinding.copyWith(
-              id: serverPostgresFilter['id']?.toString(),
-            ));
-          } else {
-            unsubscribe();
-            if (callback != null) {
-              callback(
-                RealtimeSubscribeStatus.channelError,
-                Exception(
-                    'mismatch between server and client bindings for postgres changes'),
-              );
-            }
-            return;
-          }
-        }
-
-        _bindings['postgres_changes'] = newPostgresBindings;
-
-        if (callback != null) {
-          callback(RealtimeSubscribeStatus.subscribed, null);
-        }
-      },
-    ).receive('error', (error) {
+      (response) =>
+          unawaited(_handleJoinOk(response as Map<String, dynamic>, callback)),
+    )
+        .receive('error', (error) {
       if (callback != null) {
         callback(
           RealtimeSubscribeStatus.channelError,
@@ -253,6 +215,75 @@ class RealtimeChannel {
       if (callback != null) callback(RealtimeSubscribeStatus.timedOut, null);
     });
     return this;
+  }
+
+  Future<void> _handleJoinOk(
+    Map<String, dynamic> response,
+    void Function(RealtimeSubscribeStatus status, Object? error)? callback,
+  ) async {
+    final serverPostgresFilters = response['postgres_changes'];
+    if (socket.accessToken != null) {
+      try {
+        // ignore: avoid-passing-self-as-argument
+        await socket.setAuth(socket.accessToken);
+      } on FormatException catch (e) {
+        // The cached access token may have expired by the time the
+        // channel rejoins (e.g. after the device wakes from a long
+        // sleep). Auth state listeners will re-call setAuth with a
+        // fresh token shortly after, so swallow this specific error
+        // to avoid surfacing it as an uncaught exception. The same
+        // filter is applied in `SupabaseClient._handleTokenChanged`.
+        if (!e.message.contains('InvalidJWTToken')) {
+          rethrow;
+        }
+      }
+    }
+
+    if (serverPostgresFilters == null) {
+      if (callback != null) {
+        callback(RealtimeSubscribeStatus.subscribed, null);
+      }
+      return;
+    }
+    final clientPostgresBindings = _bindings['postgres_changes'];
+    final bindingsLen = clientPostgresBindings?.length ?? 0;
+    final newPostgresBindings = <Binding>[];
+
+    for (var i = 0; i < bindingsLen; i++) {
+      final clientPostgresBinding = clientPostgresBindings![i];
+
+      final event = clientPostgresBinding.filter['event'];
+      final schema = clientPostgresBinding.filter['schema'];
+      final table = clientPostgresBinding.filter['table'];
+      final filter = clientPostgresBinding.filter['filter'];
+      final serverPostgresFilter = serverPostgresFilters[i];
+
+      if (serverPostgresFilter != null &&
+          serverPostgresFilter['event'] == event &&
+          serverPostgresFilter['schema'] == schema &&
+          serverPostgresFilter['table'] == table &&
+          serverPostgresFilter['filter'] == filter) {
+        newPostgresBindings.add(clientPostgresBinding.copyWith(
+          id: serverPostgresFilter['id']?.toString(),
+        ));
+      } else {
+        unawaited(unsubscribe());
+        if (callback != null) {
+          callback(
+            RealtimeSubscribeStatus.channelError,
+            Exception(
+                'mismatch between server and client bindings for postgres changes'),
+          );
+        }
+        return;
+      }
+    }
+
+    _bindings['postgres_changes'] = newPostgresBindings;
+
+    if (callback != null) {
+      callback(RealtimeSubscribeStatus.subscribed, null);
+    }
   }
 
   List<SinglePresenceState> presenceState() {
@@ -539,30 +570,10 @@ class RealtimeChannel {
     required Map<String, dynamic> payload,
     Duration? timeout,
   }) async {
-    // ignore: avoid-inferrable-type-arguments
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-      if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
-      ...socket.headers,
-      if (socket.accessToken != null)
-        'Authorization': 'Bearer ${socket.accessToken}',
-    };
-
-    final body = {
-      'messages': [
-        {
-          'topic': subTopic,
-          'event': event,
-          'payload': payload,
-          'private': _private,
-        }
-      ]
-    };
-
     final response = await (socket.httpClient?.post ?? post)(
       Uri.parse(broadcastEndpointURL),
-      headers: headers,
-      body: json.encode(body),
+      headers: _broadcastHeaders,
+      body: json.encode(_broadcastBody(event, payload)),
     ).timeout(
       timeout ?? _timeout,
       onTimeout: () => throw TimeoutException('Request timeout'),
@@ -632,29 +643,11 @@ class RealtimeChannel {
             'Please use httpSend() explicitly for REST delivery.',
       );
 
-      // ignore: avoid-inferrable-type-arguments
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-        if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
-        ...socket.headers,
-        if (socket.accessToken != null)
-          'Authorization': 'Bearer ${socket.accessToken}',
-      };
-      final body = {
-        'messages': [
-          {
-            'topic': subTopic,
-            'payload': payload,
-            'event': event,
-            'private': _private,
-          }
-        ]
-      };
       try {
         final response = await (socket.httpClient?.post ?? post)(
           Uri.parse(broadcastEndpointURL),
-          headers: headers,
-          body: json.encode(body),
+          headers: _broadcastHeaders,
+          body: json.encode(_broadcastBody(event, payload)),
         );
         if (200 <= response.statusCode && response.statusCode < 300) {
           completer.complete(ChannelResponse.ok);
@@ -696,6 +689,30 @@ class RealtimeChannel {
       });
     }
     return completer.future;
+  }
+
+  Map<String, String> get _broadcastHeaders => {
+        'Content-Type': 'application/json',
+        if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
+        ...socket.headers,
+        if (socket.accessToken != null)
+          'Authorization': 'Bearer ${socket.accessToken}',
+      };
+
+  Map<String, dynamic> _broadcastBody(
+    String? event,
+    Map<String, dynamic> payload,
+  ) {
+    return {
+      'messages': [
+        {
+          'topic': subTopic,
+          'event': event,
+          'payload': payload,
+          'private': _private,
+        }
+      ]
+    };
   }
 
   @internal

@@ -369,7 +369,7 @@ void main() {
           ));
 
       final uploadFuture = storage.from(bucketName).upload(uploadPath, file);
-      expectLater(uploadFuture, throwsException);
+      await expectLater(uploadFuture, throwsException);
     });
 
     test('can upload a file with a valid mime type', () async {
@@ -401,7 +401,7 @@ void main() {
           fileOptions: FileOptions(
             contentType: 'image/jpeg',
           ));
-      expectLater(uploadFuture, throwsException);
+      await expectLater(uploadFuture, throwsException);
     });
   });
 
