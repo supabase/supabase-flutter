@@ -174,7 +174,13 @@ class FunctionsClient {
           : await _isolate.decode(utf8.decode(bodyBytes));
     } else if (responseType == 'application/octet-stream') {
       data = await response.stream.toBytes();
-    } else if (responseType == 'text/event-stream') {
+    } else if (responseType == 'text/event-stream' &&
+        200 <= response.statusCode &&
+        response.statusCode < 300) {
+      // Only a successful streaming response hands the live stream to the
+      // caller. On an error status there is nothing to stream — fall through
+      // and drain the body so it becomes the exception `details` and the
+      // connection isn't left open.
       data = response.stream;
     } else {
       final bodyBytes = await response.stream.toBytes();
