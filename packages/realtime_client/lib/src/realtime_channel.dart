@@ -152,6 +152,29 @@ class RealtimeChannel {
       if (callback != null) callback(RealtimeSubscribeStatus.closed, null);
     });
 
+    // A `postgres_changes` subscription's replication setup happens
+    // asynchronously on the server, AFTER the phoenix join succeeds. The join
+    // reply optimistically echoes the requested config (with server-assigned
+    // binding ids), so the join is reported as `subscribed` before the
+    // replication is actually live. If that setup then fails (e.g. RLS denies
+    // under a stale/expired token, or the server declines), the verdict
+    // arrives on a later `system` event with status `error` -- which is
+    // otherwise only exposed via `onSystemEvents` (for debugging) and never
+    // reaches this status callback. The result is a channel that reports
+    // `subscribed` yet delivers nothing. Forward it as `channelError` so
+    // consumers can detect and recover from the failed subscription.
+    onSystemEvents((payload) {
+      if (payload is Map && payload['status'] == 'error') {
+        if (callback != null) {
+          callback(
+            RealtimeSubscribeStatus.channelError,
+            Exception(payload['message']?.toString() ??
+                'postgres_changes subscription failed'),
+          );
+        }
+      }
+    });
+
     final presenceEnabled = _shouldEnablePresence();
 
     final accessTokenPayload = <String, String>{};
