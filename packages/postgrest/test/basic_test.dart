@@ -526,5 +526,30 @@ void main() {
       expect(customHttpClient.lastRequest?.method, "GET");
       expect(customHttpClient.lastBody, isEmpty);
     });
+
+    test('non-JSON body on 2xx response throws a structured error', () async {
+      await expectLater(
+        () => postgrestCustomHttpClient.from('non-json-succ').select(),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '200').having(
+                (e) => e.message,
+                'message',
+                '<html><body>502 Bad Gateway</body></html>',
+              ),
+        ),
+      );
+    });
+
+    test('non-JSON body on 2xx response with maybeSingle throws', () async {
+      await expectLater(
+        () => postgrestCustomHttpClient
+            .from('non-json-succ')
+            .select()
+            .maybeSingle(),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '200'),
+        ),
+      );
+    });
   });
 }
