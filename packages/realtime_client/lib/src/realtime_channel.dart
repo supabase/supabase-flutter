@@ -526,11 +526,13 @@ class RealtimeChannel {
   /// This method always uses the REST API endpoint regardless of WebSocket connection state.
   /// Useful when you want to guarantee REST delivery or when gradually migrating from implicit REST fallback.
   ///
-  /// Payloads that are [TypedData] (e.g. [Uint8List]) or [ByteBuffer] are sent
-  /// as `application/octet-stream`; all other payloads are JSON-encoded.
+  /// [payload] must be either a `Map<String, dynamic>`, which is JSON-encoded,
+  /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
+  /// is sent as `application/octet-stream`. Map payloads keep `httpSend`
+  /// consistent with [onBroadcast], which delivers received payloads as
+  /// `Map<String, dynamic>`.
   ///
   /// [event] is the name of the broadcast event.
-  /// [payload] is the payload to be sent (required).
   /// [timeout] is an optional timeout duration.
   ///
   /// Requires a Realtime server running v2.97.0 or newer.
@@ -554,6 +556,12 @@ class RealtimeChannel {
     Duration? timeout,
   }) async {
     final isBinary = payload is TypedData || payload is ByteBuffer;
+
+    assert(
+      isBinary || payload is Map<String, dynamic>,
+      'httpSend payload must be a Map<String, dynamic> or binary '
+      '(TypedData/ByteBuffer)',
+    );
 
     final headers = {
       ..._broadcastHeaders,
