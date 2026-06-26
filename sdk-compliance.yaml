@@ -92,9 +92,9 @@ features:
   auth.passkey.sign_in_with_passkey: implemented
 
   # auth — OAuth server (Supabase acting as an OAuth provider)
-  auth.oauth_server.get_authorization_details: not_implemented
-  auth.oauth_server.approve_authorization: not_implemented
-  auth.oauth_server.deny_authorization: not_implemented
+  auth.oauth_server.get_authorization_details: implemented
+  auth.oauth_server.approve_authorization: implemented
+  auth.oauth_server.deny_authorization: implemented
   auth.oauth_server.list_grants: not_implemented
   auth.oauth_server.revoke_grant: not_implemented
 
