@@ -361,7 +361,8 @@ void main() {
 
       // Wait past the reconnect delay; the scheduled reconnect must be canceled.
       await Future.delayed(const Duration(milliseconds: 60));
-      expect(connectCount, 1, reason: 'must not reopen after a user disconnect');
+      expect(connectCount, 1,
+          reason: 'must not reopen after a user disconnect');
     });
 
     test('disconnecting an open connection', () async {
