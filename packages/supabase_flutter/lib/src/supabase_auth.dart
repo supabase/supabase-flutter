@@ -195,6 +195,8 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     return hasParameter('access_token') ||
         hasParameter('code') ||
+        hasParameter('error') ||
+        hasParameter('error_code') ||
         hasParameter('error_description');
   }
 
