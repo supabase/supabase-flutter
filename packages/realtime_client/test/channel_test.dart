@@ -199,6 +199,58 @@ void main() {
     });
   });
 
+  group('onSystemEvents', () {
+    setUp(() {
+      socket = RealtimeClient('/socket');
+      channel = socket.channel('topic');
+    });
+
+    test('forwards a system error to the subscribe callback as channelError',
+        () {
+      RealtimeSubscribeStatus? status;
+      Object? error;
+      channel.subscribe((newStatus, newError) {
+        status = newStatus;
+        error = newError;
+      });
+
+      channel.trigger('system', {
+        'status': 'error',
+        'message': 'Unable to subscribe to changes with given parameters',
+      });
+
+      expect(status, RealtimeSubscribeStatus.channelError);
+      expect(error, isA<Exception>());
+      expect(
+        error?.toString(),
+        contains('Unable to subscribe to changes with given parameters'),
+      );
+    });
+
+    test('falls back to a default message when the system error has none', () {
+      Object? error;
+      channel.subscribe((_, newError) => error = newError);
+
+      channel.trigger('system', {'status': 'error'});
+
+      expect(error, isA<Exception>());
+      expect(
+          error?.toString(), contains('postgres_changes subscription failed'));
+    });
+
+    test('does not surface a system ok event as an error', () {
+      RealtimeSubscribeStatus? status;
+      channel.subscribe((newStatus, _) => status = newStatus);
+
+      channel.trigger('system', {
+        'status': 'ok',
+        'message': 'Subscribed to PostgreSQL',
+      });
+
+      expect(status, isNot(RealtimeSubscribeStatus.channelError));
+    });
+  });
+
   group('onMessage', () {
     setUp(() {
       socket = RealtimeClient('/socket');

@@ -1,4 +1,4 @@
-# `gotrue-dart`
+# gotrue
 
 Dart client for the [GoTrue](https://github.com/supabase/gotrue) API.
 

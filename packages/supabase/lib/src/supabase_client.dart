@@ -75,9 +75,7 @@ class SupabaseClient {
   final _log = Logger('supabase.supabase');
 
   /// Getter for the HTTP headers
-  Map<String, String> get headers {
-    return _headers;
-  }
+  Map<String, String> get headers => Map.unmodifiable(_headers);
 
   /// To apply the new headers in existing realtime channels, manually unsubscribe and resubscribe these channels.
   set headers(Map<String, String> newHeaders) {

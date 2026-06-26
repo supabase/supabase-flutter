@@ -734,11 +734,18 @@ class GoTrueClient {
       );
     }
 
+    final codeChallenge =
+        email != null ? await _generatePKCECodeChallenge() : null;
+
     final body = {
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
       'type': type.snakeCase,
       'gotrue_meta_security': {'captcha_token': captchaToken},
+      if (email != null) ...{
+        'code_challenge': codeChallenge,
+        'code_challenge_method': codeChallenge != null ? 's256' : null,
+      },
     };
 
     final options = GotrueRequestOptions(

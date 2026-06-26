@@ -470,7 +470,9 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// ```
   PostgrestFilterBuilder<T> match(Map<String, Object> query) {
     var url = _url;
-    query.forEach((k, v) => url = appendSearchParams(k, 'eq.$v', url));
+    for (final entry in query.entries) {
+      url = appendSearchParams(entry.key, 'eq.${entry.value}', url);
+    }
     return copyWithUrl(url);
   }
 
