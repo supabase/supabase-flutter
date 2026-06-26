@@ -253,7 +253,16 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
               body = jsonDecode(response.body);
             }
           } on FormatException catch (_) {
-            body = null;
+            // A 2xx status does not guarantee a JSON body. A proxy or gateway
+            // can return an HTML error page or a truncated response with a
+            // success status. Surface the raw body as a structured error
+            // instead of crashing with an opaque type error or silently
+            // returning null.
+            throw PostgrestException(
+              message: response.body,
+              code: '${response.statusCode}',
+              details: response.reasonPhrase,
+            );
           }
         }
       }
