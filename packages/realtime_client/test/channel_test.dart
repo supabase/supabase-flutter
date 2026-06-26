@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
@@ -810,15 +811,110 @@ void main() {
           channel.httpSend(event: 'test', payload: {'myKey': 'myValue'});
 
       final req = await requestFuture;
-      expect(req.uri.toString(), '/realtime/v1/api/broadcast');
+      expect(req.uri.path, '/realtime/v1/api/broadcast/myTopic/events/test');
+      expect(req.uri.queryParameters['private'], 'true');
       expect(req.headers.value('apikey'), 'supabaseKey');
+      expect(req.headers.contentType?.mimeType, 'application/json');
 
       final body = json.decode(await utf8.decodeStream(req));
-      final message = body['messages'][0];
-      expect(message['topic'], 'myTopic');
-      expect(message['event'], 'test');
-      expect(message['payload'], {'myKey': 'myValue'});
-      expect(message['private'], isTrue);
+      expect(body, {'myKey': 'myValue'});
+
+      req.response.statusCode = 202;
+      await req.response.close();
+
+      await sendFuture;
+    });
+
+    test('omits private query parameter for public channels', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        headers: {'apikey': 'supabaseKey'},
+        params: {'apikey': 'supabaseKey'},
+      );
+      channel = socket.channel('myTopic');
+
+      final requestFuture = mockServer.first;
+      final sendFuture =
+          channel.httpSend(event: 'test', payload: {'myKey': 'myValue'});
+
+      final req = await requestFuture;
+      expect(req.uri.path, '/realtime/v1/api/broadcast/myTopic/events/test');
+      expect(req.uri.queryParameters.containsKey('private'), isFalse);
+
+      req.response.statusCode = 202;
+      await req.response.close();
+
+      await sendFuture;
+    });
+
+    test('URL-encodes topic and event names with special characters', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        headers: {'apikey': 'supabaseKey'},
+        params: {'apikey': 'supabaseKey'},
+      );
+      channel = socket.channel('room:42');
+
+      final requestFuture = mockServer.first;
+      final sendFuture =
+          channel.httpSend(event: 'user/joined', payload: {'id': 1});
+
+      final req = await requestFuture;
+      expect(
+        req.uri.toString(),
+        contains('/api/broadcast/room%3A42/events/user%2Fjoined'),
+      );
+
+      req.response.statusCode = 202;
+      await req.response.close();
+
+      await sendFuture;
+    });
+
+    test('sends Uint8List payload as application/octet-stream', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        headers: {'apikey': 'supabaseKey'},
+        params: {'apikey': 'supabaseKey'},
+      );
+      channel = socket.channel('myTopic');
+
+      final bytes = Uint8List.fromList([1, 2, 3, 4]);
+      final requestFuture = mockServer.first;
+      final sendFuture = channel.httpSend(event: 'bin', payload: bytes);
+
+      final req = await requestFuture;
+      expect(req.uri.path, '/realtime/v1/api/broadcast/myTopic/events/bin');
+      expect(req.headers.contentType?.mimeType, 'application/octet-stream');
+
+      final received = await req
+          .fold<List<int>>(<int>[], (acc, chunk) => acc..addAll(chunk));
+      expect(received, equals(bytes));
+
+      req.response.statusCode = 202;
+      await req.response.close();
+
+      await sendFuture;
+    });
+
+    test('sends ByteBuffer payload as application/octet-stream', () async {
+      socket = RealtimeClient(
+        'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
+        headers: {'apikey': 'supabaseKey'},
+        params: {'apikey': 'supabaseKey'},
+      );
+      channel = socket.channel('myTopic');
+
+      final bytes = Uint8List.fromList([10, 20, 30]);
+      final requestFuture = mockServer.first;
+      final sendFuture = channel.httpSend(event: 'bin', payload: bytes.buffer);
+
+      final req = await requestFuture;
+      expect(req.headers.contentType?.mimeType, 'application/octet-stream');
+
+      final received = await req
+          .fold<List<int>>(<int>[], (acc, chunk) => acc..addAll(chunk));
+      expect(received, equals(bytes));
 
       req.response.statusCode = 202;
       await req.response.close();
