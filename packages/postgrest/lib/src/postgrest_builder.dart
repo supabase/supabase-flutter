@@ -410,7 +410,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (filter.every((element) => element is num)) {
       return filter.map((s) => '$s').join(',');
     }
-    return filter.map((s) => '"$s"').join(',');
+    // Escape `\` and `"` inside each element before quoting, otherwise a value
+    // containing a double quote (e.g. `a"b`) produces a malformed PostgREST
+    // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
+    return filter.map((s) {
+      final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+      return '"$escaped"';
+    }).join(',');
   }
 
   @override
