@@ -22,6 +22,7 @@ import 'broadcast_stub.dart' if (dart.library.js_interop) './broadcast_web.dart'
 import 'version.dart';
 
 part 'gotrue_mfa_api.dart';
+part 'gotrue_oauth_server_api.dart';
 part 'gotrue_passkey_api.dart';
 
 class _SessionState {
@@ -55,6 +56,15 @@ class GoTrueClient {
 
   /// Namespace for the GoTrue MFA API methods.
   late final GoTrueMFAApi mfa;
+
+  /// Namespace for the OAuth 2.1 authorization server consent flow.
+  ///
+  /// Use these methods when your Supabase project acts as an OAuth 2.1 server
+  /// and you are building a custom consent screen. Requires the OAuth 2.1
+  /// server feature to be enabled in your Supabase Auth configuration.
+  ///
+  /// {@macro gotrue_oauth_server_api}
+  late final GoTrueOAuthServerApi oauthServer;
 
   /// Namespace for the passkey (WebAuthn) API methods.
   ///
@@ -169,6 +179,7 @@ class GoTrueClient {
       httpClient: httpClient,
     );
     mfa = GoTrueMFAApi(client: this, fetch: _fetch);
+    oauthServer = GoTrueOAuthServerApi(client: this, fetch: _fetch);
     passkey = GoTruePasskeyApi(client: this, fetch: _fetch);
     if (_autoRefreshToken) {
       startAutoRefresh();
