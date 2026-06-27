@@ -129,6 +129,28 @@ class RefreshTokenTrackingHttpClient extends BaseClient {
   }
 }
 
+/// HTTP client that always rejects a refresh with a non-retryable
+/// "invalid refresh token" error, simulating a revoked or expired token.
+class InvalidRefreshTokenHttpClient extends BaseClient {
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    return StreamedResponse(
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'code': 'refresh_token_not_found',
+            'error_code': 'refresh_token_not_found',
+            'msg': 'Invalid Refresh Token: Refresh Token Not Found',
+          }),
+        ),
+      ),
+      400,
+      request: request,
+      headers: {'x-sb-api-version': '2024-01-01'},
+    );
+  }
+}
+
 /// Creates an expired session string for the test user (userId1)
 String createExpiredSessionForUser1() {
   final expireDateTime = DateTime.now().subtract(Duration(hours: 1));
@@ -441,6 +463,76 @@ void main() {
       expect(httpClient.requestCount, 1,
           reason:
               'Should not attempt refresh when current session is valid for same user');
+    });
+
+    test(
+        'signedOut event carries the sign-out reason on an invalid refresh '
+        'token', () async {
+      final client = GoTrueClient(
+        url: gotrueUrl,
+        asyncStorage: TestAsyncStorage(),
+        httpClient: InvalidRefreshTokenHttpClient(),
+      );
+
+      AuthState? signedOutState;
+      final subscription = client.onAuthStateChange.listen(
+        (state) {
+          if (state.event == AuthChangeEvent.signedOut) {
+            signedOutState = state;
+          }
+        },
+        onError: (_) {},
+      );
+
+      final expiredSession = createExpiredSessionForUser1();
+      await expectLater(
+        client.recoverSession(expiredSession),
+        throwsA(isA<AuthException>()),
+      );
+
+      await pumpEventQueue();
+
+      expect(signedOutState, isNotNull,
+          reason: 'An invalid refresh token should sign the user out');
+      expect(signedOutState!.signOutReason, SignOutReason.sessionExpired,
+          reason: 'The signedOut event should report why the session ended');
+      expect(signedOutState!.session, isNull);
+      expect(client.currentSession, isNull);
+
+      await subscription.cancel();
+    });
+
+    test(
+        'signedOut event reports a userInitiated reason on an explicit '
+        'signOut', () async {
+      final httpClient = RefreshTokenTrackingHttpClient();
+      final client = GoTrueClient(
+        url: gotrueUrl,
+        asyncStorage: TestAsyncStorage(),
+        httpClient: httpClient,
+      );
+
+      await client.recoverSession(createExpiredSessionForUser1());
+      expect(client.currentSession, isNotNull);
+
+      AuthState? signedOutState;
+      final subscription = client.onAuthStateChange.listen(
+        (state) {
+          if (state.event == AuthChangeEvent.signedOut) {
+            signedOutState = state;
+          }
+        },
+        onError: (_) {},
+      );
+
+      await client.signOut();
+      await pumpEventQueue();
+
+      expect(signedOutState, isNotNull);
+      expect(signedOutState!.signOutReason, SignOutReason.userInitiated,
+          reason: 'An explicit signOut should report a userInitiated reason');
+
+      await subscription.cancel();
     });
 
     test('recoverSession stays in the stack trace when the refresh fails',
