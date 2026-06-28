@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:supabase/supabase.dart';
+import 'package:supabase/src/supabase_client.dart' as real;
+import 'package:supabase/supabase.dart' hide SupabaseClient;
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -468,4 +469,30 @@ void main() {
       });
     });
   });
+}
+
+class SupabaseClient extends real.SupabaseClient {
+  SupabaseClient(
+    super.supabaseUrl,
+    super.supabaseKey, {
+    super.postgrestOptions,
+    AuthClientOptions authOptions = const AuthClientOptions(),
+    super.storageOptions,
+    super.functionsOptions,
+    super.realtimeClientOptions,
+    super.accessToken,
+    super.headers,
+    super.httpClient,
+    super.isolate,
+  }) : super(
+         authOptions: AuthClientOptions(
+           autoRefreshToken: authOptions.autoRefreshToken,
+           pkceAsyncStorage: authOptions.pkceAsyncStorage,
+           authFlowType:
+               authOptions.authFlowType == AuthFlowType.pkce &&
+                   authOptions.pkceAsyncStorage == null
+               ? AuthFlowType.implicit
+               : authOptions.authFlowType,
+         ),
+       );
 }

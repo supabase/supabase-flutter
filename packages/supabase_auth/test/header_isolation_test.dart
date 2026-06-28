@@ -4,6 +4,8 @@ import 'package:supabase_auth/supabase_auth.dart';
 import 'package:http/http.dart';
 import 'package:test/test.dart';
 
+import 'utils.dart';
+
 /// Records the headers of every request it receives and always answers with a
 /// minimal user payload, so we can inspect what the client actually sent.
 class _RecordingHttpClient extends BaseClient {
@@ -46,6 +48,7 @@ void main() {
         url: 'http://localhost',
         headers: {'apikey': 'anon-key'},
         httpClient: http,
+        asyncStorage: TestAsyncStorage(),
       );
     });
 

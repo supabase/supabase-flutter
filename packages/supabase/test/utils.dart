@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:supabase/supabase.dart';
+
 /// Construct session data for a given expiration date
 ({String accessToken, String sessionString}) getSessionData(DateTime dateTime) {
   final expiresAt = dateTime.millisecondsSinceEpoch ~/ 1000;
@@ -25,4 +27,22 @@ import 'dart:convert';
       'l,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_'
       'at":"2023-04-01T08:35:05.226938Z"}}';
   return (accessToken: accessToken, sessionString: sessionString);
+}
+
+class TestAsyncStorage extends AuthAsyncStorage {
+  final Map<String, String> _map = {};
+  @override
+  Future<String?> getItem({required String key}) async {
+    return _map[key];
+  }
+
+  @override
+  Future<void> removeItem({required String key}) async {
+    _map.remove(key);
+  }
+
+  @override
+  Future<void> setItem({required String key, required String value}) async {
+    _map[key] = value;
+  }
 }
