@@ -117,8 +117,9 @@ class FunctionsClient {
         'x-region': effectiveRegion,
     };
 
-    if (body != null &&
-        (headers == null || !headers.containsKey("Content-Type"))) {
+    final hasContentType =
+        finalHeaders.keys.any((k) => k.toLowerCase() == 'content-type');
+    if (body != null && !hasContentType) {
       finalHeaders['Content-Type'] = switch (body) {
         Uint8List() => 'application/octet-stream',
         String() => 'text/plain',
