@@ -102,7 +102,7 @@ void main() {
   });
 
   group('Deep Link with error query parameter', () {
-    late final Completer<AuthException> errorCompleter;
+    late Completer<AuthException> errorCompleter;
 
     setUp(() async {
       errorCompleter = Completer<AuthException>();
@@ -124,6 +124,12 @@ void main() {
         ),
       );
 
+      // The deep link event may fire synchronously on the platform channel
+      // mock during initialization (before the test can register its listener).
+      // Allow one event-loop turn so any queued platform messages are processed
+      // before we attach the listener.
+      await Future<void>.delayed(Duration.zero);
+
       Supabase.instance.client.auth.onAuthStateChange.listen(
         (_) {},
         onError: (error) {
@@ -132,6 +138,10 @@ void main() {
           }
         },
       );
+
+      // Give time for the event-channel message to propagate through the
+      // _handleIncomingLinks pipeline if it was deferred.
+      await Future<void>.delayed(const Duration(milliseconds: 100));
     });
 
     test(
