@@ -793,4 +793,29 @@ void main() {
       await sub.cancel();
     });
   });
+
+  group('PKCE with missing asyncStorage', () {
+    late GoTrueClient client;
+
+    setUp(() {
+      client = GoTrueClient(
+        url: gotrueUrl,
+        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
+        // asyncStorage is deliberately left null/omitted
+      );
+    });
+
+    test(
+        'getOAuthSignInUrl throws AuthException instead of null operator crash',
+        () async {
+      expect(
+        () => client.getOAuthSignInUrl(provider: OAuthProvider.github),
+        throwsA(isA<AuthException>().having(
+          (e) => e.message,
+          'message',
+          contains('You need to provide asyncStorage to perform pkce flow.'),
+        )),
+      );
+    });
+  });
 }

@@ -370,12 +370,13 @@ class GoTrueClient {
 
   /// Verifies the PKCE code verifyer and retrieves a session.
   Future<AuthSessionUrlResponse> exchangeCodeForSession(String authCode) async {
-    assert(
-      _asyncStorage != null,
-      'You need to provide asyncStorage to perform pkce flow.',
-    );
+    if (_asyncStorage == null) {
+      throw AuthException(
+        'You need to provide asyncStorage to perform pkce flow.',
+      );
+    }
 
-    final codeVerifierRawString = await _asyncStorage!.getItem(
+    final codeVerifierRawString = await _asyncStorage.getItem(
       key: '${Constants.defaultStorageKey}-code-verifier',
     );
     if (codeVerifierRawString == null) {
@@ -425,12 +426,13 @@ class GoTrueClient {
     if (_flowType != AuthFlowType.pkce) {
       return null;
     }
-    assert(
-      _asyncStorage != null,
-      'You need to provide asyncStorage to perform pkce flow.',
-    );
+    if (_asyncStorage == null) {
+      throw AuthException(
+        'You need to provide asyncStorage to perform pkce flow.',
+      );
+    }
     final codeVerifier = generatePKCEVerifier();
-    await _asyncStorage!.setItem(
+    await _asyncStorage.setItem(
       key: '${Constants.defaultStorageKey}-code-verifier',
       value: storageEventName == null
           ? codeVerifier
