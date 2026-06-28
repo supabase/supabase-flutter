@@ -363,11 +363,13 @@ void main() {
       headers: {
         'X-Client-Info': 'supabase-flutter/0.0.0',
       },
+      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
     );
     customHeadersClient = SupabaseClient(
       'http://${mockServer.address.host}:${mockServer.port}',
       apiKey,
       headers: {'X-Client-Info': 'supabase-flutter/0.0.0', ...customHeaders},
+      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
     );
     hasListener = false;
   });
@@ -786,6 +788,8 @@ void main() {
           'http://${errorServer.address.host}:${errorServer.port}',
           'test-key',
           headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+          authOptions:
+              const AuthClientOptions(authFlowType: AuthFlowType.implicit),
         );
 
         final stream = errorClient.from('todos').stream(primaryKey: ['id']);
@@ -817,6 +821,8 @@ void main() {
             throw Exception('Token retrieval failed');
           },
           headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+          authOptions:
+              const AuthClientOptions(authFlowType: AuthFlowType.implicit),
         );
 
         // Should handle token errors gracefully
@@ -835,6 +841,8 @@ void main() {
           'http://${mockServer.address.host}:${mockServer.port}',
           'test-key',
           headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+          authOptions:
+              const AuthClientOptions(authFlowType: AuthFlowType.implicit),
         );
 
         // First dispose should succeed

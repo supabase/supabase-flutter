@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'utils.dart';
+
 import 'package:gotrue/gotrue.dart';
 import 'package:http/http.dart';
 import 'package:test/test.dart';
@@ -42,6 +44,7 @@ void main() {
         url: 'http://localhost',
         headers: {'apikey': 'anon-key'},
         httpClient: http,
+        asyncStorage: TestAsyncStorage(),
       );
     });
 

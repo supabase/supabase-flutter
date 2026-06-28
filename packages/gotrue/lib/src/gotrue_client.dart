@@ -151,7 +151,11 @@ class GoTrueClient {
     Client? httpClient,
     GotrueAsyncStorage? asyncStorage,
     AuthFlowType flowType = AuthFlowType.pkce,
-  })  : _url = url ?? Constants.defaultGotrueUrl,
+  })  : assert(
+          flowType != AuthFlowType.pkce || asyncStorage != null,
+          'You need to provide asyncStorage to perform pkce flow.',
+        ),
+        _url = url ?? Constants.defaultGotrueUrl,
         _headers = {...Constants.defaultHeaders, ...?headers},
         _httpClient = httpClient,
         _asyncStorage = asyncStorage,

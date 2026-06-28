@@ -26,6 +26,8 @@ void main() {
       supabase = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         'supabaseKey',
+        authOptions:
+            const AuthClientOptions(authFlowType: AuthFlowType.implicit),
       );
 
       channel = supabase.channel('realtime');

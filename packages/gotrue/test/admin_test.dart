@@ -32,6 +32,7 @@ void main() {
         'Authorization': 'Bearer ${getServiceRoleToken(env)}',
         'apikey': getServiceRoleToken(env),
       },
+      asyncStorage: TestAsyncStorage(),
     );
   });
 
