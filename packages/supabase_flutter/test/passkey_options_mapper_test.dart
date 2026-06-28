@@ -66,6 +66,62 @@ void main() {
         ['internal', 'hybrid'],
       );
     });
+
+    // Regression test for https://github.com/supabase/supabase-flutter/issues/1484
+    //
+    // When Supabase Auth returns authenticatorSelection with null fields the
+    // passkeys plugin's generated fromJson crashes with:
+    //   TypeError: null: type 'Null' is not a subtype of type 'bool'
+    // because requireResidentKey, residentKey and userVerification are
+    // non-nullable in AuthenticatorSelectionType.
+    test(
+        'does not crash when authenticatorSelection fields are null — '
+        'regression #1484', () {
+      final options = baseOptions()
+        ..['authenticatorSelection'] = {
+          'requireResidentKey': null,
+          'residentKey': null,
+          'userVerification': null,
+        };
+
+      final request = passkeyRegisterRequestFromOptions(options);
+
+      // Spec defaults: requireResidentKey=false, residentKey/userVerification='preferred'
+      expect(request.authSelectionType, isNotNull);
+      expect(request.authSelectionType!.requireResidentKey, isFalse);
+      expect(request.authSelectionType!.residentKey, 'preferred');
+      expect(request.authSelectionType!.userVerification, 'preferred');
+    });
+
+    test(
+        'does not crash when authenticatorSelection is present but fields are '
+        'absent — regression #1484', () {
+      final options = baseOptions()..['authenticatorSelection'] = <String, dynamic>{};
+
+      final request = passkeyRegisterRequestFromOptions(options);
+
+      expect(request.authSelectionType, isNotNull);
+      expect(request.authSelectionType!.requireResidentKey, isFalse);
+      expect(request.authSelectionType!.residentKey, 'preferred');
+      expect(request.authSelectionType!.userVerification, 'preferred');
+    });
+
+    test('preserves provided authenticatorSelection values', () {
+      final options = baseOptions()
+        ..['authenticatorSelection'] = {
+          'requireResidentKey': true,
+          'residentKey': 'required',
+          'userVerification': 'required',
+          'authenticatorAttachment': 'platform',
+        };
+
+      final request = passkeyRegisterRequestFromOptions(options);
+
+      expect(request.authSelectionType!.requireResidentKey, isTrue);
+      expect(request.authSelectionType!.residentKey, 'required');
+      expect(request.authSelectionType!.userVerification, 'required');
+      expect(request.authSelectionType!.authenticatorAttachment, 'platform');
+    });
   });
 
   group('passkeyAuthenticateRequestFromOptions', () {

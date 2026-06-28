@@ -24,6 +24,12 @@ RegisterRequestType passkeyRegisterRequestFromOptions(
     json['excludeCredentials'] = _normalizeCredentials(excludeCredentials);
   }
 
+  final authenticatorSelection = json['authenticatorSelection'];
+  if (authenticatorSelection is Map) {
+    json['authenticatorSelection'] =
+        _normalizeAuthenticatorSelection(authenticatorSelection);
+  }
+
   return RegisterRequestType.fromJson(json);
 }
 
@@ -77,4 +83,27 @@ String _stripBase64UrlPadding(String value) {
     end--;
   }
   return value.substring(0, end);
+}
+
+/// Fills in WebAuthn-spec defaults for [authenticatorSelection] fields that
+/// the server may omit or return as `null`.
+///
+/// The `passkeys` plugin's generated [AuthenticatorSelectionType.fromJson]
+/// performs a hard `as bool` / `as String` cast on [requireResidentKey],
+/// [residentKey], and [userVerification]. When Supabase omits these fields
+/// (or returns them as `null`), the cast throws a [TypeError] on web.
+///
+/// Default values follow the W3C WebAuthn Level 3 spec:
+/// - `requireResidentKey` → `false`
+/// - `residentKey` → `"preferred"`
+/// - `userVerification` → `"preferred"`
+Map<String, dynamic> _normalizeAuthenticatorSelection(Map<dynamic, dynamic> raw) {
+  final normalized = Map<String, dynamic>.from(raw);
+  normalized['requireResidentKey'] =
+      normalized['requireResidentKey'] as bool? ?? false;
+  normalized['residentKey'] =
+      normalized['residentKey'] as String? ?? 'preferred';
+  normalized['userVerification'] =
+      normalized['userVerification'] as String? ?? 'preferred';
+  return normalized;
 }
