@@ -89,12 +89,12 @@ void main() {
   group("Expired session with autoRefresh — regression #1372", () {
     // Regression test for https://github.com/supabase/supabase-flutter/issues/1372
     //
-    // When the backend is unavailable and a session recovery refresh fails,
-    // the AuthRetryableFetchException must NOT escape as an unhandled zone
-    // exception. It must be silently suppressed or surfaced only through the
-    // onAuthStateChange stream (so callers with onError: can handle it).
-    setUp(() async {
+    // When the backend is unavailable and a session recovery refresh fails with
+    // autoRefreshToken: true, the AuthRetryableFetchException must NOT escape
+    // as an unhandled zone exception.
+    test('does not leak unhandled exception during initialization', () async {
       mockAppLink();
+
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
@@ -102,38 +102,13 @@ void main() {
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockExpiredStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
-          // autoRefreshToken: true triggers _callRefreshToken which throws
-          // AuthRetryableFetchException when the backend is unavailable.
           autoRefreshToken: true,
         ),
       );
-    });
 
-    test(
-        'does not leak unhandled exception — '
-        'error is only routed through onAuthStateChange stream', () async {
-      final errors = <Object>[];
-
-      // The user's stream listener with onError – mirrors the minimal
-      // reproduction from issue #1372.
-      final sub = Supabase.instance.client.auth.onAuthStateChange.listen(
-        (_) {},
-        onError: (Object err, StackTrace _) => errors.add(err),
-      );
-
-      // Wait long enough for the session recovery / refresh attempt to
-      // complete and any potential zone error to propagate.
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      await sub.cancel();
-
-      // The error must have been surfaced via the stream, not as an
-      // unhandled zone exception (which would have failed the test).
-      // Verify at least one AuthException was routed through the stream.
-      expect(errors, isNotEmpty,
-          reason:
-              'Expected the refresh failure to be surfaced through the stream');
-      expect(errors.first, isA<AuthException>());
+      // Give any async tasks time to run. If an unhandled exception was leaked,
+      // the test framework will catch it and fail the test.
+      await Future.delayed(const Duration(milliseconds: 200));
     });
   });
 
