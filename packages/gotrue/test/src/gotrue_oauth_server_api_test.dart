@@ -37,7 +37,8 @@ void main() {
         httpClient: httpClient,
       );
 
-      final details = await client.oauthServer.getAuthorizationDetails('auth-id-123');
+      final details =
+          await client.oauthServer.getAuthorizationDetails('auth-id-123');
 
       expect(details.authorizationId, 'auth-id-123');
       expect(details.client.clientId, 'client-id-abc');
@@ -47,21 +48,23 @@ void main() {
       expect(details.redirectUri, 'https://myapp.com/callback');
     });
 
-    test('approveAuthorization sends correct request and parses response', () async {
+    test('approveAuthorization sends correct request and parses response',
+        () async {
       final mockResponse = {
-        'redirect_url': 'https://myapp.com/callback?code=code-123&state=state-xyz',
+        'redirect_url':
+            'https://myapp.com/callback?code=code-123&state=state-xyz',
       };
 
       var requestSent = false;
-      final httpClient = http.StreamedRequest('POST', Uri.parse(gotrueUrl)); // Placeholder check
 
       final client = GoTrueClient(
         url: gotrueUrl,
         httpClient: _MockRequestVerifierClient((request) async {
           requestSent = true;
           expect(request.method, 'POST');
-          expect(request.url.path, endsWith('/oauth/authorizations/auth-id-123/consent'));
-          
+          expect(request.url.path,
+              endsWith('/oauth/authorizations/auth-id-123/consent'));
+
           if (request is http.Request) {
             final body = jsonDecode(request.body) as Map<String, dynamic>;
             expect(body['action'], 'approve');
@@ -81,12 +84,15 @@ void main() {
       );
 
       expect(requestSent, isTrue);
-      expect(consent.redirectUrl, 'https://myapp.com/callback?code=code-123&state=state-xyz');
+      expect(consent.redirectUrl,
+          'https://myapp.com/callback?code=code-123&state=state-xyz');
     });
 
-    test('denyAuthorization sends correct request and parses response', () async {
+    test('denyAuthorization sends correct request and parses response',
+        () async {
       final mockResponse = {
-        'redirect_url': 'https://myapp.com/callback?error=access_denied&state=state-xyz',
+        'redirect_url':
+            'https://myapp.com/callback?error=access_denied&state=state-xyz',
       };
 
       var requestSent = false;
@@ -96,8 +102,9 @@ void main() {
         httpClient: _MockRequestVerifierClient((request) async {
           requestSent = true;
           expect(request.method, 'POST');
-          expect(request.url.path, endsWith('/oauth/authorizations/auth-id-123/consent'));
-          
+          expect(request.url.path,
+              endsWith('/oauth/authorizations/auth-id-123/consent'));
+
           if (request is http.Request) {
             final body = jsonDecode(request.body) as Map<String, dynamic>;
             expect(body['action'], 'deny');
@@ -116,13 +123,15 @@ void main() {
       );
 
       expect(requestSent, isTrue);
-      expect(consent.redirectUrl, 'https://myapp.com/callback?error=access_denied&state=state-xyz');
+      expect(consent.redirectUrl,
+          'https://myapp.com/callback?error=access_denied&state=state-xyz');
     });
   });
 }
 
 class _MockRequestVerifierClient extends http.BaseClient {
-  final Future<http.StreamedResponse> Function(http.BaseRequest request) _onSend;
+  final Future<http.StreamedResponse> Function(http.BaseRequest request)
+      _onSend;
 
   _MockRequestVerifierClient(this._onSend);
 
