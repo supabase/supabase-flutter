@@ -280,7 +280,7 @@ supabase.auth.onAuthStateChange.listen((data) {
 
 `supabase_flutter` performs the server side of the WebAuthn ceremony for you and delegates the platform prompt (FaceID/TouchID/security key) to an authenticator you supply. This keeps `supabase_flutter` free of a passkey plugin dependency, so apps that do not use passkeys are not forced to raise their minimum platform versions.
 
-Add a passkey plugin to your own app and pass its authenticator in. The [`passkeys`](https://pub.dev/packages/passkeys) plugin's `PasskeyAuthenticator` implements the `PasskeyAuthenticatorInterface` these methods expect, but you can pass any implementation of that interface.
+Add a passkey plugin to your own app and pass its authenticator in. The [`passkeys`](https://pub.dev/packages/passkeys) plugin's `PasskeyAuthenticator` implements the `PasskeyAuthenticatorInterface` these methods expect (since `passkeys` `2.21.0`), but you can pass any implementation of that interface.
 
 ```dart
 import 'package:passkeys/authenticator.dart';
