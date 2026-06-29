@@ -118,7 +118,7 @@ class FunctionsClient {
     };
 
     if (body != null &&
-        (headers == null || !headers.containsKey("Content-Type"))) {
+        !finalHeaders.keys.any((k) => k.toLowerCase() == 'content-type')) {
       finalHeaders['Content-Type'] = switch (body) {
         Uint8List() => 'application/octet-stream',
         String() => 'text/plain',
