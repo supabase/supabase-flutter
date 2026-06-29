@@ -93,16 +93,18 @@ String _stripBase64UrlPadding(String value) {
 /// [residentKey], and [userVerification]. When Supabase omits these fields
 /// (or returns them as `null`), the cast throws a [TypeError] on web.
 ///
-/// Default values follow the W3C WebAuthn Level 3 spec:
-/// - `requireResidentKey` → `false`
-/// - `residentKey` → `"preferred"`
-/// - `userVerification` → `"preferred"`
-Map<String, dynamic> _normalizeAuthenticatorSelection(Map<dynamic, dynamic> raw) {
+/// Values follow the W3C WebAuthn Level 3 spec:
+/// - `requireResidentKey` → `false` (spec IDL default)
+/// - `userVerification` → `"preferred"` (spec IDL default)
+/// - `residentKey` has no static default; its effective value is derived from
+///   `requireResidentKey` (`"required"` when true, otherwise `"discouraged"`).
+Map<String, dynamic> _normalizeAuthenticatorSelection(
+    Map<dynamic, dynamic> raw) {
   final normalized = Map<String, dynamic>.from(raw);
-  normalized['requireResidentKey'] =
-      normalized['requireResidentKey'] as bool? ?? false;
-  normalized['residentKey'] =
-      normalized['residentKey'] as String? ?? 'preferred';
+  final requireResidentKey = normalized['requireResidentKey'] as bool? ?? false;
+  normalized['requireResidentKey'] = requireResidentKey;
+  normalized['residentKey'] = normalized['residentKey'] as String? ??
+      (requireResidentKey ? 'required' : 'discouraged');
   normalized['userVerification'] =
       normalized['userVerification'] as String? ?? 'preferred';
   return normalized;

@@ -86,24 +86,37 @@ void main() {
 
       final request = passkeyRegisterRequestFromOptions(options);
 
-      // Spec defaults: requireResidentKey=false, residentKey/userVerification='preferred'
+      // requireResidentKey=false and userVerification='preferred' are spec
+      // defaults; residentKey is derived to 'discouraged' since
+      // requireResidentKey is false.
       expect(request.authSelectionType, isNotNull);
       expect(request.authSelectionType!.requireResidentKey, isFalse);
-      expect(request.authSelectionType!.residentKey, 'preferred');
+      expect(request.authSelectionType!.residentKey, 'discouraged');
       expect(request.authSelectionType!.userVerification, 'preferred');
     });
 
     test(
         'does not crash when authenticatorSelection is present but fields are '
         'absent — regression #1484', () {
-      final options = baseOptions()..['authenticatorSelection'] = <String, dynamic>{};
+      final options = baseOptions()
+        ..['authenticatorSelection'] = <String, dynamic>{};
 
       final request = passkeyRegisterRequestFromOptions(options);
 
       expect(request.authSelectionType, isNotNull);
       expect(request.authSelectionType!.requireResidentKey, isFalse);
-      expect(request.authSelectionType!.residentKey, 'preferred');
+      expect(request.authSelectionType!.residentKey, 'discouraged');
       expect(request.authSelectionType!.userVerification, 'preferred');
+    });
+
+    test('derives residentKey to required when requireResidentKey is true', () {
+      final options = baseOptions()
+        ..['authenticatorSelection'] = {'requireResidentKey': true};
+
+      final request = passkeyRegisterRequestFromOptions(options);
+
+      expect(request.authSelectionType!.requireResidentKey, isTrue);
+      expect(request.authSelectionType!.residentKey, 'required');
     });
 
     test('preserves provided authenticatorSelection values', () {
