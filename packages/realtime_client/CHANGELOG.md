@@ -1,3 +1,11 @@
+## 2.9.0
+
+ - **REFACTOR**(realtime_client): extract broadcast headers and body builders ([#1461](https://github.com/supabase/supabase-flutter/issues/1461)). ([7da70605](https://github.com/supabase/supabase-flutter/commit/7da706059de3af651e5e605acea081125d4b261c))
+ - **FIX**(realtime): surface async postgres_changes system error as channelError ([#1470](https://github.com/supabase/supabase-flutter/issues/1470)). ([d1271701](https://github.com/supabase/supabase-flutter/commit/d1271701775c84ee1e197790fb3f735129844fc6))
+ - **FIX**(realtime_client): detect dropped connections on iOS via WebSocket ping ([#1451](https://github.com/supabase/supabase-flutter/issues/1451)). ([db754cf0](https://github.com/supabase/supabase-flutter/commit/db754cf06b371f714a6a7f63912b4b8a4185868a))
+ - **FIX**(realtime_client): cancel connection stream subscription on disconnect ([#1423](https://github.com/supabase/supabase-flutter/issues/1423)). ([fc9bba60](https://github.com/supabase/supabase-flutter/commit/fc9bba60e680d175fab24ed2f719fb3e525dc194))
+ - **FEAT**(realtime): update httpSend to per-event broadcast URL with binary support ([#1467](https://github.com/supabase/supabase-flutter/issues/1467)). ([6f84df00](https://github.com/supabase/supabase-flutter/commit/6f84df0053d523523643cbd7042e7031d0d90925))
+
 ## 2.8.0
 
  - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))

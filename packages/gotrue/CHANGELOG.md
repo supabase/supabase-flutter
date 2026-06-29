@@ -1,3 +1,15 @@
+## 2.23.0
+
+ - **REFACTOR**(gotrue): extract PKCE code challenge generation into a helper ([#1460](https://github.com/supabase/supabase-flutter/issues/1460)). ([3252ca71](https://github.com/supabase/supabase-flutter/commit/3252ca7151241aa80c291ea7968b6c1fd70c055f))
+ - **FIX**(gotrue): copy request header/query maps before mutating them ([#1476](https://github.com/supabase/supabase-flutter/issues/1476)). ([fe8a84d0](https://github.com/supabase/supabase-flutter/commit/fe8a84d08822b8eeef7f3a712061b076aeef1377))
+ - **FIX**(auth): recognize error query parameter in auth callback redirects ([#1472](https://github.com/supabase/supabase-flutter/issues/1472)). ([cb7e7e62](https://github.com/supabase/supabase-flutter/commit/cb7e7e62d04d887d888fd3e73ef83a584ae45d77))
+ - **FIX**(gotrue): avoid duplicate auth error on recoverSession with invalid refresh token ([#1450](https://github.com/supabase/supabase-flutter/issues/1450)). ([a154852f](https://github.com/supabase/supabase-flutter/commit/a154852f6be369f03298656f4515fad68e0038f8))
+ - **FIX**(gotrue): include code challenge in resend with PKCE flow ([#1469](https://github.com/supabase/supabase-flutter/issues/1469)). ([33402e80](https://github.com/supabase/supabase-flutter/commit/33402e80f24cb0d18ad6702bb27db33bbe6e0563))
+ - **FIX**(gotrue): don't throw in verifyOTP when secure email/phone change returns no session ([#1448](https://github.com/supabase/supabase-flutter/issues/1448)). ([44300aca](https://github.com/supabase/supabase-flutter/commit/44300acaec47f93d75a04370768222af578456fd))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+ - **FEAT**(gotrue): surface the sign-out reason on the signedOut event ([#1453](https://github.com/supabase/supabase-flutter/issues/1453)). ([a182b204](https://github.com/supabase/supabase-flutter/commit/a182b204f1dc86be5d9f7656649c84d398e16cbd))
+ - **DOCS**(gotrue): clarify Session.expiresAt is in seconds ([#1447](https://github.com/supabase/supabase-flutter/issues/1447)). ([9dffae17](https://github.com/supabase/supabase-flutter/commit/9dffae1779e7853ec62aad2cddc23c825ffc36ca))
+
 ## 2.22.0
 
  - **FIX**(gotrue): support asymmetric JWTs in getClaims ([#1410](https://github.com/supabase/supabase-flutter/issues/1410)). ([cc3137f9](https://github.com/supabase/supabase-flutter/commit/cc3137f98690e96a8b21f56b8db3c33def40e2b0))
