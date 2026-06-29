@@ -215,10 +215,7 @@ class SearchOptions {
   const SearchOptions({
     this.limit = 100,
     this.offset = 0,
-    this.sortBy = const SortBy(
-      column: 'name',
-      order: 'asc',
-    ),
+    this.sortBy = const SortBy(),
     this.search,
   });
 
@@ -240,8 +237,8 @@ class SortBy {
 
   Map<String, dynamic> toMap() {
     return {
-      'column': column,
-      'order': order,
+      'column': column ?? 'name',
+      'order': order ?? 'asc',
     };
   }
 }

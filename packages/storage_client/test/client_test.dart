@@ -722,6 +722,19 @@ void main() {
       expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
     });
 
+    test('fills in fields passed explicitly as null', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client.from('test-bucket').list(
+            searchOptions: const SearchOptions(
+              sortBy: SortBy(column: null, order: null),
+            ),
+          );
+
+      expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
+    });
+
     test('preserves a complete sortBy', () async {
       customHttpClient.response = [];
       customHttpClient.statusCode = 200;
