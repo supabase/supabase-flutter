@@ -314,9 +314,7 @@ await supabase.auth.passkey.update(passkeyId: passkeys.first.id, friendlyName: '
 await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
 ```
 
-The platform ceremony is handled by whichever plugin you add, and that plugin defines the minimum platform versions and per platform setup (Associated Domains, Digital Asset Links, the web SDK bundle, and so on) your app needs. See your plugin's documentation, for example the [`passkeys` package documentation](https://pub.dev/packages/passkeys), for its requirements and full setup guide.
-
-To handle ceremony failures (for example when the user cancels), catch the exceptions thrown by your authenticator. With the `passkeys` plugin these come from `package:passkeys/exceptions.dart`, such as `PasskeyAuthCancelledException`.
+The platform ceremony is handled by whichever plugin you add. Refer to your plugin's documentation, for example the [`passkeys` package documentation](https://pub.dev/packages/passkeys), for its platform requirements, setup, and how to handle ceremony failures such as the user cancelling.
 
 ### <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
 
