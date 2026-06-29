@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
-import 'package:gotrue/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
@@ -271,6 +270,7 @@ void main() {
       final newClient = GoTrueClient(
         url: gotrueUrl,
         headers: {'apikey': anonToken},
+        flowType: AuthFlowType.implicit,
       );
 
       expect(newClient.currentSession?.refreshToken ?? '', isEmpty);
@@ -302,6 +302,7 @@ void main() {
         final newClient = GoTrueClient(
           url: gotrueUrl,
           headers: {'apikey': anonToken},
+          flowType: AuthFlowType.implicit,
         );
 
         expect(newClient.currentSession, isNull);
@@ -345,6 +346,7 @@ void main() {
         final newClient = GoTrueClient(
           url: gotrueUrl,
           headers: {'apikey': anonToken},
+          flowType: AuthFlowType.implicit,
         );
 
         // Should fall back to _callRefreshToken and succeed.
@@ -396,6 +398,7 @@ void main() {
         final newClient = GoTrueClient(
           url: gotrueUrl,
           headers: {'apikey': anonToken},
+          flowType: AuthFlowType.implicit,
         );
 
         expect(newClient.currentSession, isNull);
@@ -574,6 +577,12 @@ void main() {
         ]),
       );
 
+      Object? streamError;
+      final errorSubscription = stream.listen(
+        (_) {},
+        onError: (Object error) => streamError = error,
+      );
+
       final expiredSession = getSessionData(
         DateTime.now().subtract(Duration(hours: 1)),
       );
@@ -582,8 +591,10 @@ void main() {
         client.recoverSession(expiredSession.sessionString),
         throwsA(isA<AuthException>()),
       );
-      expect(stream, emitsError(isA<AuthException>()));
 
+      await pumpEventQueue();
+      await errorSubscription.cancel();
+      expect(streamError, isNull);
       expect(client.currentSession, isNull);
     });
 
@@ -600,7 +611,11 @@ void main() {
     late GoTrueClient client;
 
     setUpAll(() {
-      client = GoTrueClient(url: gotrueUrl, httpClient: CustomHttpClient());
+      client = GoTrueClient(
+        url: gotrueUrl,
+        httpClient: CustomHttpClient(),
+        flowType: AuthFlowType.implicit,
+      );
     });
 
     test('signIn()', () async {
@@ -622,7 +637,11 @@ void main() {
 
     setUpAll(() {
       httpClient = RetryTestHttpClient();
-      client = GoTrueClient(url: gotrueUrl, httpClient: httpClient);
+      client = GoTrueClient(
+        url: gotrueUrl,
+        httpClient: httpClient,
+        flowType: AuthFlowType.implicit,
+      );
     });
 
     test('Session recovery succeeds after retries', () async {
@@ -784,6 +803,25 @@ void main() {
       expect(client.currentSession, isNotNull);
 
       await sub.cancel();
+    });
+  });
+
+  group('PKCE constructor assertion', () {
+    test(
+        'throws AssertionError if asyncStorage is missing when using PKCE flow',
+        () {
+      expect(
+        () => GoTrueClient(
+          url: gotrueUrl,
+          headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
+          // asyncStorage is missing/null, and flowType defaults to PKCE
+        ),
+        throwsA(isA<AssertionError>().having(
+          (e) => e.message,
+          'message',
+          contains('You need to provide asyncStorage to perform pkce flow.'),
+        )),
+      );
     });
   });
 }

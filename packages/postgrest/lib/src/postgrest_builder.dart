@@ -253,7 +253,16 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
               body = jsonDecode(response.body);
             }
           } on FormatException catch (_) {
-            body = null;
+            // A 2xx status does not guarantee a JSON body. A proxy or gateway
+            // can return an HTML error page or a truncated response with a
+            // success status. Surface the raw body as a structured error
+            // instead of crashing with an opaque type error or silently
+            // returning null.
+            throw PostgrestException(
+              message: response.body,
+              code: '${response.statusCode}',
+              details: response.reasonPhrase,
+            );
           }
         }
       }
@@ -401,7 +410,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (filter.every((element) => element is num)) {
       return filter.map((s) => '$s').join(',');
     }
-    return filter.map((s) => '"$s"').join(',');
+    // Escape `\` and `"` inside each element before quoting, otherwise a value
+    // containing a double quote (e.g. `a"b`) produces a malformed PostgREST
+    // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
+    return filter.map((s) {
+      final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+      return '"$escaped"';
+    }).join(',');
   }
 
   @override

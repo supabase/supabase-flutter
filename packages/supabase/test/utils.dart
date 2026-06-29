@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:supabase/supabase.dart';
+
 /// Construct session data for a given expiration date
 ({String accessToken, String sessionString}) getSessionData(DateTime dateTime) {
   final expiresAt = dateTime.millisecondsSinceEpoch ~/ 1000;
@@ -9,4 +11,22 @@ import 'dart:convert';
   final sessionString =
       '{"access_token":"$accessToken","expires_in":${dateTime.difference(DateTime.now()).inSeconds},"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}}';
   return (accessToken: accessToken, sessionString: sessionString);
+}
+
+class TestAsyncStorage extends GotrueAsyncStorage {
+  final Map<String, String> _map = {};
+  @override
+  Future<String?> getItem({required String key}) async {
+    return _map[key];
+  }
+
+  @override
+  Future<void> removeItem({required String key}) async {
+    _map.remove(key);
+  }
+
+  @override
+  Future<void> setItem({required String key, required String value}) async {
+    _map[key] = value;
+  }
 }

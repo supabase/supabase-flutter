@@ -132,5 +132,20 @@ void main() {
             .having((e) => e.message, 'message', errorDesc)),
       );
     });
+
+    test('parse provider callback url with error query parameter', () async {
+      await expectLater(
+        () async {
+          const url =
+              'http://my-callback-url.com?error=access_denied&error_code=403';
+          await client.getSessionFromUrl(Uri.parse(url));
+        },
+        throwsA(isA<AuthException>()
+            .having((e) => e.code, 'code', 'access_denied')
+            .having((e) => e.statusCode, 'statusCode', '403')
+            .having((e) => e.message, 'message',
+                'Error in URL with unspecified error_description')),
+      );
+    });
   });
 }
