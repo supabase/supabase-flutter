@@ -168,7 +168,8 @@ class SupabaseAuth with WidgetsBindingObserver {
         if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
           Supabase.instance.client.auth.stopAutoRefresh();
         }
-      default:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
     }
   }
 

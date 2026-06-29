@@ -19,21 +19,15 @@ dcm:
     - recommended
   rules:
     avoid-accessing-collections-by-constant-index: false
-    avoid-commented-out-code: false
-    avoid-constant-conditions: false
     avoid-duplicate-initializers: false
     avoid-duplicate-test-assertions: false
     avoid-dynamic: false
-    avoid-missing-enum-constant-in-map: false
     avoid-never-passed-parameters: false
     avoid-nullable-interpolation: false
     avoid-throw-in-catch-block: false
     avoid-unassigned-stream-subscriptions: false
-    avoid-unconditional-break: false
-    avoid-unnecessary-reassignment: false
     avoid-unsafe-collection-methods: false
     avoid-unused-parameters: false
-    avoid-wildcard-cases-with-enums: false
     move-variable-closer-to-its-usage: false
     no-empty-block: false
     prefer-correct-callback-field-name: false
