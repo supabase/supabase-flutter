@@ -640,11 +640,9 @@ void main() {
       } on ClientException {
         // the method should throw
       }
-      await for (final AuthState event in client.onAuthStateChange) {
-        expect(httpClient.retryCount, 4);
-        expect(event.event, AuthChangeEvent.tokenRefreshed);
-        break;
-      }
+      final event = await client.onAuthStateChange.first;
+      expect(httpClient.retryCount, 4);
+      expect(event.event, AuthChangeEvent.tokenRefreshed);
     });
   });
 
