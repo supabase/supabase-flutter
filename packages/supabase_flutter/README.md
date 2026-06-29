@@ -314,15 +314,9 @@ await supabase.auth.passkey.update(passkeyId: passkeys.first.id, friendlyName: '
 await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
 ```
 
-The platform ceremony is handled by whichever plugin you add. The [`passkeys`](https://pub.dev/packages/passkeys) plugin raises an app's minimum platform versions to **iOS 16.0** and **macOS 13.5** (the OS versions where the passkey APIs became available), so set your deployment targets accordingly when you depend on it.
+The platform ceremony is handled by whichever plugin you add, and that plugin defines the minimum platform versions and per platform setup (Associated Domains, Digital Asset Links, the web SDK bundle, and so on) your app needs. See your plugin's documentation, for example the [`passkeys` package documentation](https://pub.dev/packages/passkeys), for its requirements and full setup guide.
 
-It also requires per platform setup that the library cannot do for you:
-
-- **iOS / macOS**: add the Associated Domains capability with `webcredentials:<your-domain>` and host an `apple-app-site-association` file at `https://<your-domain>/.well-known/apple-app-site-association`.
-- **Android**: host an `assetlinks.json` (Digital Asset Links) at `https://<your-domain>/.well-known/assetlinks.json` containing your package name and signing certificate SHA-256 fingerprint.
-- **Web**: include the `passkeys` web SDK `bundle.js` in your `index.html` (download it from the [`flutter-passkeys` releases](https://github.com/corbado/flutter-passkeys/releases)).
-
-See the [`passkeys` package documentation](https://pub.dev/packages/passkeys) for the full setup guide. To handle ceremony failures (for example when the user cancels), catch the exceptions thrown by your authenticator. With the `passkeys` plugin these come from `package:passkeys/exceptions.dart`, such as `PasskeyAuthCancelledException`.
+To handle ceremony failures (for example when the user cancels), catch the exceptions thrown by your authenticator. With the `passkeys` plugin these come from `package:passkeys/exceptions.dart`, such as `PasskeyAuthCancelledException`.
 
 ### <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
 
