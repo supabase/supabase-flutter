@@ -199,8 +199,8 @@ class Supabase {
   Future<void> dispose() async {
     _targetLifecycleState = null;
     await _restoreSessionCancellableOperation?.cancel();
-    _logSubscription?.cancel();
-    client.dispose();
+    await _logSubscription?.cancel();
+    await client.dispose();
     _instance._supabaseAuth?.dispose();
     _lifecycleListener?.dispose();
     _isInitialized = false;
@@ -256,7 +256,8 @@ class Supabase {
             _pendingLifecycleOperation = _pendingLifecycleOperation
                 .then((_) => _processLifecycle(state))
                 .catchError((_) {});
-          default:
+          case AppLifecycleState.inactive:
+          case AppLifecycleState.hidden:
             break;
         }
       },

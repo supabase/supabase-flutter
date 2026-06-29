@@ -1,4 +1,4 @@
-# `storage-dart`
+# storage_client
 
 Dart client library to interact with Supabase Storage.
 

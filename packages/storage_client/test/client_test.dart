@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import "package:path/path.dart" show join;
 import 'package:storage_client/storage_client.dart';
@@ -369,7 +371,7 @@ void main() {
           ));
 
       final uploadFuture = storage.from(bucketName).upload(uploadPath, file);
-      expectLater(uploadFuture, throwsException);
+      await expectLater(uploadFuture, throwsException);
     });
 
     test('can upload a file with a valid mime type', () async {
@@ -401,7 +403,7 @@ void main() {
           fileOptions: FileOptions(
             contentType: 'image/jpeg',
           ));
-      expectLater(uploadFuture, throwsException);
+      await expectLater(uploadFuture, throwsException);
     });
   });
 
@@ -663,6 +665,87 @@ void main() {
       await fileApi.list();
 
       expect(fileApi.headers, equals(headersBefore));
+    });
+  });
+
+  group('list sortBy defaults', () {
+    late CustomHttpClient customHttpClient;
+    late SupabaseStorageClient client;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      client = SupabaseStorageClient(
+        storageUrl,
+        {'Authorization': 'Bearer $storageKey'},
+        httpClient: customHttpClient,
+      );
+    });
+
+    Map<String, dynamic> sentSortBy() {
+      final request = customHttpClient.receivedRequests.first as http.Request;
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      return body['sortBy'] as Map<String, dynamic>;
+    }
+
+    test('fills in order when only column is provided', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client.from('test-bucket').list(
+            searchOptions: const SearchOptions(
+              sortBy: SortBy(column: 'updated_at'),
+            ),
+          );
+
+      expect(sentSortBy(), {'column': 'updated_at', 'order': 'asc'});
+    });
+
+    test('fills in column when only order is provided', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client.from('test-bucket').list(
+            searchOptions: const SearchOptions(
+              sortBy: SortBy(order: 'desc'),
+            ),
+          );
+
+      expect(sentSortBy(), {'column': 'name', 'order': 'desc'});
+    });
+
+    test('uses defaults when no options are provided', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client.from('test-bucket').list();
+
+      expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
+    });
+
+    test('fills in fields passed explicitly as null', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client.from('test-bucket').list(
+            searchOptions: const SearchOptions(
+              sortBy: SortBy(column: null, order: null),
+            ),
+          );
+
+      expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
+    });
+
+    test('preserves a complete sortBy', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client.from('test-bucket').list(
+            searchOptions: const SearchOptions(
+              sortBy: SortBy(column: 'created_at', order: 'desc'),
+            ),
+          );
+
+      expect(sentSortBy(), {'column': 'created_at', 'order': 'desc'});
     });
   });
 }

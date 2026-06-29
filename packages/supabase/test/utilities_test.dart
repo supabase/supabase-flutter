@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -95,8 +96,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write('{"success": true}')
-          ..close();
+          ..write('{"success": true}');
+        unawaited(request.response.close());
       });
 
       authClient = AuthHttpClient(

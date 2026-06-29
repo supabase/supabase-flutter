@@ -134,12 +134,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     final execHeaders = {..._headers};
 
     if (_count != null) {
-      if (execHeaders['Prefer'] != null) {
-        final oldPreferHeader = execHeaders['Prefer'];
-        execHeaders['Prefer'] = '$oldPreferHeader,count=${_count.name}';
-      } else {
-        execHeaders['Prefer'] = 'count=${_count.name}';
-      }
+      final oldPreferHeader = execHeaders['Prefer'];
+      execHeaders['Prefer'] = oldPreferHeader != null
+          ? '$oldPreferHeader,count=${_count.name}'
+          : 'count=${_count.name}';
     }
 
     if (method == null) {
@@ -253,7 +251,16 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
               body = jsonDecode(response.body);
             }
           } on FormatException catch (_) {
-            body = null;
+            // A 2xx status does not guarantee a JSON body. A proxy or gateway
+            // can return an HTML error page or a truncated response with a
+            // success status. Surface the raw body as a structured error
+            // instead of crashing with an opaque type error or silently
+            // returning null.
+            throw PostgrestException(
+              message: response.body,
+              code: '${response.statusCode}',
+              details: response.reasonPhrase,
+            );
           }
         }
       }
@@ -401,20 +408,28 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (filter.every((element) => element is num)) {
       return filter.map((s) => '$s').join(',');
     }
-    return filter.map((s) => '"$s"').join(',');
+    // Escape `\` and `"` inside each element before quoting, otherwise a value
+    // containing a double quote (e.g. `a"b`) produces a malformed PostgREST
+    // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
+    return filter.map((s) {
+      final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+      return '"$escaped"';
+    }).join(',');
   }
 
   @override
   Stream<T> asStream() {
     final controller = StreamController<T>.broadcast();
 
-    then((value) {
-      controller.add(value);
-    }).catchError((Object error, StackTrace stack) {
-      controller.addError(error, stack);
-    }).whenComplete(() {
-      controller.close();
-    });
+    unawaited(
+      then((value) {
+        controller.add(value);
+      }).catchError((Object error, StackTrace stack) {
+        controller.addError(error, stack);
+      }).whenComplete(() {
+        unawaited(controller.close());
+      }),
+    );
 
     return controller.stream;
   }
@@ -430,9 +445,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Function? onError,
   }) {
     if (onError != null &&
-        // ignore: avoid-unnecessary-type-assertions
         onError is! Function(Object, StackTrace) &&
-        // ignore: avoid-unnecessary-type-assertions
         onError is! Function(Object)) {
       return Future.error(ArgumentError.value(
         onError,

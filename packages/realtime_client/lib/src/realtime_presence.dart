@@ -308,7 +308,6 @@ class RealtimePresence {
     for (final key in state.keys) {
       final presences = state[key]!;
 
-      // if (presences.keys.contains('metas')) {
       if (presences is Map) {
         newStateMap[key] =
             (presences['metas'] as List).map<Presence>((presence) {

@@ -3,6 +3,8 @@
 /// Tests for deep link handling on non-browser platforms.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -27,6 +29,11 @@ void main() {
         mockEventChannel: true,
         initialLink: 'com.supabase://callback/?code=my-code-verifier',
       );
+      final pkceAsyncStorage = MockAsyncStorage();
+      await pkceAsyncStorage.setItem(
+        key: 'supabase.auth.token-code-verifier',
+        value: 'raw-code-verifier',
+      );
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
@@ -34,10 +41,7 @@ void main() {
         httpClient: pkceHttpClient,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockEmptyLocalStorage(),
-          pkceAsyncStorage: MockAsyncStorage()
-            ..setItem(
-                key: 'supabase.auth.token-code-verifier',
-                value: 'raw-code-verifier'),
+          pkceAsyncStorage: pkceAsyncStorage,
         ),
       );
     });
@@ -94,6 +98,49 @@ void main() {
         Supabase.instance.client.auth.currentUser?.email,
         'new@email.com',
       );
+    });
+  });
+
+  group('Deep Link with error query parameter', () {
+    late final Completer<AuthException> errorCompleter;
+
+    setUp(() async {
+      errorCompleter = Completer<AuthException>();
+
+      mockAppLink(
+        mockMethodChannel: false,
+        mockEventChannel: true,
+        initialLink: 'com.supabase://callback/?error=access_denied'
+            '&error_code=403',
+      );
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        debug: false,
+        httpClient: GetUserHttpClient('new@email.com'),
+        authOptions: FlutterAuthClientOptions(
+          localStorage: const MockEmptyLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
+      );
+
+      Supabase.instance.client.auth.onAuthStateChange.listen(
+        (_) {},
+        onError: (error) {
+          if (error is AuthException && !errorCompleter.isCompleted) {
+            errorCompleter.complete(error);
+          }
+        },
+      );
+    });
+
+    test(
+        'Error query parameter triggers `getSessionFromUrl` and surfaces an '
+        'AuthException', () async {
+      final exception =
+          await errorCompleter.future.timeout(const Duration(seconds: 5));
+      expect(exception.code, 'access_denied');
+      expect(exception.statusCode, '403');
     });
   });
 }

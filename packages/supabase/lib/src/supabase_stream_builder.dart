@@ -155,8 +155,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       },
       onCancel: () {
         _log.fine('stream controller for table: $_table got closed');
-        _channel?.unsubscribe();
-        _streamController?.close();
+        unawaited(_channel?.unsubscribe());
+        unawaited(_streamController?.close());
         _streamController = null;
       },
     );
@@ -219,7 +219,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
                     _addStream();
                   }
                   break;
-                default:
+                case PostgresChangeEvent.all:
                   break;
               }
             })
@@ -229,12 +229,12 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           // Reload all data after a reconnect from postgrest
           // First data from postgrest gets loaded before the realtime connect
           if (_wasSubscribed) {
-            _getPostgrestData();
+            unawaited(_getPostgrestData());
           }
           _wasSubscribed = true;
           break;
         case RealtimeSubscribeStatus.closed:
-          _streamController?.close();
+          unawaited(_streamController?.close());
           break;
         case RealtimeSubscribeStatus.timedOut:
         case RealtimeSubscribeStatus.channelError:
@@ -242,7 +242,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           break;
       }
     });
-    _getPostgrestData();
+    unawaited(_getPostgrestData());
   }
 
   Future<void> _getPostgrestData() async {
@@ -290,8 +290,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       _addException(error, stackTrace);
       // In case the postgrest call fails, there is no need to keep the
       // realtime connection open
-      _channel?.unsubscribe();
-      _streamController?.close();
+      unawaited(_channel?.unsubscribe());
+      unawaited(_streamController?.close());
     }
   }
 
@@ -356,7 +356,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     controller.onListen = () {
       StreamSubscription<SupabaseStreamEvent> subscription = listen(null,
           onError: controller.addError, // Avoid Zone error replacement.
-          onDone: controller.close);
+          onDone: () => unawaited(controller.close()));
       FutureOr<void> add(E value) {
         controller.add(value);
       }
@@ -373,7 +373,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         }
         if (newValue is Future<E>) {
           subscription.pause();
-          newValue.then(add, onError: addError).whenComplete(resume);
+          unawaited(newValue.then(add, onError: addError).whenComplete(resume));
         } else {
           controller.add(newValue);
         }
@@ -396,7 +396,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     controller.onListen = () {
       StreamSubscription<SupabaseStreamEvent> subscription = listen(null,
           onError: controller.addError, // Avoid Zone error replacement.
-          onDone: controller.close);
+          onDone: () => unawaited(controller.close()));
       subscription.onData((SupabaseStreamEvent event) {
         Stream<E>? newStream;
         try {
@@ -407,7 +407,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         }
         if (newStream != null) {
           subscription.pause();
-          controller.addStream(newStream).whenComplete(subscription.resume);
+          unawaited(controller
+              .addStream(newStream)
+              .whenComplete(subscription.resume));
         }
       });
       controller.onCancel = subscription.cancel;

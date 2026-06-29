@@ -204,10 +204,7 @@ class RealtimeClient {
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
     reconnectTimer = RetryTimer(
-      () async {
-        await disconnect();
-        await connect();
-      },
+      () => unawaited(_reconnect()),
       this.reconnectAfterMs,
     );
   }
@@ -271,6 +268,11 @@ class RealtimeClient {
     }
   }
 
+  Future<void> _reconnect() async {
+    await disconnect();
+    await connect();
+  }
+
   /// Disconnects the socket with status [code] and [reason] for the disconnect
   Future<void> disconnect({int? code, String? reason}) async {
     final conn = this.conn;
@@ -317,7 +319,7 @@ class RealtimeClient {
   Future<String> removeChannel(RealtimeChannel channel) async {
     final status = await channel.unsubscribe();
     if (channels.isEmpty) {
-      disconnect();
+      unawaited(disconnect());
     }
     return status;
   }
@@ -325,7 +327,7 @@ class RealtimeClient {
   Future<List<String>> removeAllChannels() async {
     final values =
         await Future.wait(channels.map((channel) => channel.unsubscribe()));
-    disconnect();
+    unawaited(disconnect());
     return values;
   }
 
@@ -377,7 +379,7 @@ class RealtimeClient {
       case SocketStates.disconnected:
         return 'disconnected';
       case SocketStates.closed:
-      default:
+      case null:
         return 'closed';
     }
   }
@@ -514,7 +516,7 @@ class RealtimeClient {
     );
     if (dupChannel != null) {
       log('transport', 'leaving duplicate topic "$topic"');
-      dupChannel.unsubscribe();
+      unawaited(dupChannel.unsubscribe());
     }
   }
 
@@ -526,7 +528,7 @@ class RealtimeClient {
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
     heartbeatTimer = Timer.periodic(
       Duration(milliseconds: heartbeatIntervalMs),
-      (Timer t) async => await sendHeartbeat(),
+      (Timer t) => unawaited(sendHeartbeat()),
     );
     for (final callback in stateChangeCallbacks['open']!) {
       callback();
@@ -604,7 +606,7 @@ class RealtimeClient {
         'transport',
         'heartbeat timeout. Attempting to re-establish conn',
       );
-      conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout');
+      unawaited(conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout'));
       return;
     }
     pendingHeartbeatRef = makeRef();

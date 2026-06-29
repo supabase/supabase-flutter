@@ -215,10 +215,7 @@ class SearchOptions {
   const SearchOptions({
     this.limit = 100,
     this.offset = 0,
-    this.sortBy = const SortBy(
-      column: 'name',
-      order: 'asc',
-    ),
+    this.sortBy = const SortBy(),
     this.search,
   });
 
@@ -236,12 +233,12 @@ class SortBy {
   final String? column;
   final String? order;
 
-  const SortBy({this.column, this.order});
+  const SortBy({this.column = 'name', this.order = 'asc'});
 
   Map<String, dynamic> toMap() {
     return {
-      'column': column,
-      'order': order,
+      'column': column ?? 'name',
+      'order': order ?? 'asc',
     };
   }
 }

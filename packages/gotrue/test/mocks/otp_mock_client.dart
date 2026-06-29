@@ -10,6 +10,8 @@ class OtpMockClient extends BaseClient {
   final String accessToken;
   final String refreshToken;
 
+  Map<String, dynamic>? lastResendBody;
+
   OtpMockClient({
     this.phoneNumber = '+11234567890',
     this.email = 'test@example.com',
@@ -264,6 +266,7 @@ class OtpMockClient extends BaseClient {
   }
 
   StreamedResponse _handleResend(Map<String, dynamic>? requestBody) {
+    lastResendBody = requestBody;
     return StreamedResponse(
       Stream.value(utf8.encode(jsonEncode({
         'message': 'OTP resent',
@@ -451,19 +454,16 @@ class CustomServerErrorClient extends BaseClient {
 }
 
 /// Custom HTTP client for testing null session
+/// Models the first confirmation of a secure email change, where GoTrue
+/// returns a `200` with `{msg, code}` and neither a user nor a session.
 class NullSessionClient extends BaseClient {
-  final String email;
-
-  NullSessionClient(this.email);
-
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     return StreamedResponse(
       Stream.value(utf8.encode(jsonEncode({
-        'user': {
-          'id': 'user-id',
-          'email': email,
-        },
+        'msg': 'Confirmation link accepted. Please proceed to confirm link '
+            'sent to the other email',
+        'code': 200,
       }))),
       200,
       request: request,
