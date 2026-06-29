@@ -236,7 +236,7 @@ class SortBy {
   final String? column;
   final String? order;
 
-  const SortBy({this.column, this.order});
+  const SortBy({this.column = 'name', this.order = 'asc'});
 
   Map<String, dynamic> toMap() {
     return {
