@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:app_links/app_links.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'clear_auth_url_parameters_stub.dart'
     if (dart.library.js_interop) 'clear_auth_url_parameters_web.dart';
+import 'platform_stub.dart' if (dart.library.io) 'platform_io.dart';
 
 /// Integrates Supabase Auth with the Flutter application lifecycle.
 ///
@@ -148,7 +149,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Dispose the instance to free up resources
   void dispose() {
-    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (isRunningInFlutterTest) {
       _initialDeeplinkIsHandled = false;
     }
     unawaited(_authSubscription?.cancel());
@@ -165,7 +166,9 @@ class SupabaseAuth with WidgetsBindingObserver {
         }
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
-        if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
+        if (kIsWeb ||
+            defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS) {
           Supabase.instance.client.auth.stopAutoRefresh();
         }
       case AppLifecycleState.inactive:
@@ -338,8 +341,10 @@ extension GoTrueClientSignInProvider on GoTrueClient {
 
     LaunchMode launchMode = authScreenLaunchMode;
 
-    // `Platform.isAndroid` throws on web, so adding a guard for web here.
-    final isAndroid = !kIsWeb && Platform.isAndroid;
+    // `defaultTargetPlatform` reports the host OS even on web, so guard with
+    // `kIsWeb` to keep the external-browser workaround native-only.
+    final isAndroid =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
     // Google login has to be performed on external browser window on Android
     if (provider == OAuthProvider.google && isAndroid) {
