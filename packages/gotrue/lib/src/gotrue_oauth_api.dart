@@ -2,6 +2,7 @@ part of 'gotrue_client.dart';
 
 /// OAuth client object returned from the OAuth 2.1 server when the client is
 /// authorized.
+///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizedClient {
   /// Unique identifier for the OAuth client
@@ -79,13 +80,6 @@ class OAuthAuthorizationDetailsResponse {
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthConsentResponse {
   /// The URL to redirect the user to after the authorization decision.
-  ///
-  /// On approval this will contain the authorization code; on denial it will
-  /// carry an `access_denied` error — both in the form the OAuth client
-  /// registered to receive.
-  ///
-  /// This field is `null` if [skipBrowserRedirect] was `false` (the default)
-  /// and the SDK performed the redirect automatically.
   final String? redirectUrl;
 
   const OAuthConsentResponse({this.redirectUrl});
@@ -122,7 +116,7 @@ class OAuthConsentResponse {
 ///
 /// // 3. Act on the user's decision.
 /// final consent = await supabase.auth.oauth.approveAuthorization(authorizationId);
-/// // Redirect the user to consent.redirectUrl (when skipBrowserRedirect is true).
+/// // Redirect the user to consent.redirectUrl.
 /// ```
 ///
 /// These methods require a signed-in user and only work when the OAuth 2.1
