@@ -534,6 +534,17 @@ class RealtimeClient {
       Duration(milliseconds: heartbeatIntervalMs),
       (Timer t) => unawaited(sendHeartbeat()),
     );
+
+    try {
+      for (final channel in channels) {
+        if (channel.isErrored) {
+          channel.rejoin();
+        }
+      }
+    } catch (e) {
+      log('transport', 'error while rejoining channels', e, Level.WARNING);
+    }
+
     for (final callback in stateChangeCallbacks['open']!) {
       callback();
     }
