@@ -1,3 +1,7 @@
+## 2.15.2
+
+ - **FIX**(supabase_flutter): full web and WASM support ([#1497](https://github.com/supabase/supabase-flutter/issues/1497)). ([2f860f2c](https://github.com/supabase/supabase-flutter/commit/2f860f2cd2c4d45b5b2b695641702b0d543ec4ea))
+
 ## 2.15.1
 
  - **REFACTOR**: dedupe bucket payload and OAuth launch logic ([#1463](https://github.com/supabase/supabase-flutter/issues/1463)). ([c5f9b247](https://github.com/supabase/supabase-flutter/commit/c5f9b2471c64d65b604802cbda36221cca0a6506))

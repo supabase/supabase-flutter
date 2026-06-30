@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-06-30
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.6.3`](#functions_client---v263)
+ - [`storage_client` - `v2.5.9`](#storage_client---v259)
+ - [`supabase_flutter` - `v2.15.2`](#supabase_flutter---v2152)
+ - [`supabase` - `v2.13.2`](#supabase---v2132)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.13.2`
+
+---
+
+#### `functions_client` - `v2.6.3`
+
+ - **FIX**(functions): drain error responses with a streaming content type ([#1480](https://github.com/supabase/supabase-flutter/issues/1480)). ([0eeb4130](https://github.com/supabase/supabase-flutter/commit/0eeb4130a260216415dc81de0e9e1386ca8219d2))
+
+#### `storage_client` - `v2.5.9`
+
+ - **FIX**(storage): percent-encode object paths in request URLs ([#1479](https://github.com/supabase/supabase-flutter/issues/1479)). ([ffe4c256](https://github.com/supabase/supabase-flutter/commit/ffe4c2562cd12aa11969ba4298a7f266caf771c0))
+
+#### `supabase_flutter` - `v2.15.2`
+
+ - **FIX**(supabase_flutter): full web and WASM support ([#1497](https://github.com/supabase/supabase-flutter/issues/1497)). ([2f860f2c](https://github.com/supabase/supabase-flutter/commit/2f860f2cd2c4d45b5b2b695641702b0d543ec4ea))
+
+
 ## 2026-06-29
 
 ### Changes

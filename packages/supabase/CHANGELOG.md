@@ -1,3 +1,7 @@
+## 2.13.2
+
+ - Update a dependency to the latest release.
+
 ## 2.13.1
 
  - **REFACTOR**: de-abbreviate cond* platform getters to conditional* ([#1438](https://github.com/supabase/supabase-flutter/issues/1438)). ([9e71a240](https://github.com/supabase/supabase-flutter/commit/9e71a240bc7ed30126b5d90a81697303cb515ef7))
