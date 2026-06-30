@@ -11,6 +11,4 @@ jobs:
   validate:
     permissions:
       contents: read
-    uses: supabase/sdk/.github/workflows/validate-sdk-compliance.yml@main
-    with:
-      language: dart
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-dart.yml@main

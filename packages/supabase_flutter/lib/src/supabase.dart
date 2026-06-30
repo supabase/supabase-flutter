@@ -256,7 +256,8 @@ class Supabase {
             _pendingLifecycleOperation = _pendingLifecycleOperation
                 .then((_) => _processLifecycle(state))
                 .catchError((_) {});
-          default:
+          case AppLifecycleState.inactive:
+          case AppLifecycleState.hidden:
             break;
         }
       },

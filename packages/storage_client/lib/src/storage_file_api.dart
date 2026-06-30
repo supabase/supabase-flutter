@@ -37,7 +37,14 @@ class StorageFileApi {
   }
 
   String _getFinalPath(String path) {
-    return '$bucketId/$path';
+    // Percent-encode each segment (RFC 3986) so object keys containing
+    // characters like `?`, `#`, `%` or spaces don't corrupt the request URL
+    // (for example a `?` being parsed as the start of the query string). `/`
+    // separators, the bucket id, and characters that are already valid in a
+    // path segment (such as `:` in ISO-8601 timestamps) are preserved, so URLs
+    // for existing valid keys are unchanged.
+    final encodedPath = Uri(pathSegments: path.split('/')).path;
+    return '$bucketId/$encodedPath';
   }
 
   String _removeEmptyFolders(String path) {

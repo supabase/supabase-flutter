@@ -82,7 +82,7 @@ class GoTrueClient {
   /// [Completer.future] instead of starting a duplicate request.
   final Map<String, Completer<AuthResponse>> _pendingRefreshes = {};
 
-  /// Set by [dispose] to prevent [_executeRefresh] from mutating state
+  /// Set by [dispose] to prevent [_doRefresh] from mutating state
   /// or emitting events on closed stream controllers.
   bool _isDisposed = false;
 
@@ -103,6 +103,12 @@ class GoTrueClient {
   /// errors. You **must** supply an `onError` handler when calling `.listen()`,
   /// otherwise Dart will rethrow the error as an unhandled zone exception and
   /// crash the app.
+  ///
+  /// When the user is signed out because the session could not be recovered
+  /// (e.g. an invalid or expired refresh token), an
+  /// [AuthChangeEvent.signedOut] event is emitted with [AuthState.signOutReason]
+  /// set to the matching [SignOutReason], so you can tell it apart from an
+  /// explicit [signOut] without relying on the `onError` handler.
   ///
   /// ```dart
   /// supabase.auth.onAuthStateChange.listen(
@@ -734,11 +740,18 @@ class GoTrueClient {
       );
     }
 
+    final codeChallenge =
+        email != null ? await _generatePKCECodeChallenge() : null;
+
     final body = {
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
       'type': type.snakeCase,
       'gotrue_meta_security': {'captcha_token': captchaToken},
+      if (email != null) ...{
+        'code_challenge': codeChallenge,
+        'code_challenge_method': codeChallenge != null ? 's256' : null,
+      },
     };
 
     final options = GotrueRequestOptions(
@@ -877,8 +890,12 @@ class GoTrueClient {
     final errorDescription = url.queryParameters['error_description'];
     final errorCode = url.queryParameters['error_code'];
     final error = url.queryParameters['error'];
-    if (errorDescription != null) {
-      throw AuthException(errorDescription, statusCode: errorCode, code: error);
+    if (error != null || errorDescription != null || errorCode != null) {
+      throw AuthException(
+        errorDescription ?? 'Error in URL with unspecified error_description',
+        statusCode: errorCode,
+        code: error,
+      );
     }
 
     final authCode = url.queryParameters['code'];
@@ -947,7 +964,13 @@ class GoTrueClient {
   /// [scope] determines which sessions should be logged out.
   ///
   /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
-  Future<void> signOut({SignOutScope scope = SignOutScope.local}) async {
+  Future<void> signOut({SignOutScope scope = SignOutScope.local}) =>
+      _signOut(scope: scope, reason: SignOutReason.userInitiated);
+
+  Future<void> _signOut({
+    required SignOutScope scope,
+    required SignOutReason reason,
+  }) async {
     _log.info('Signing out user with scope: ${scope.name}');
     final accessToken = currentSession?.accessToken;
 
@@ -956,7 +979,10 @@ class GoTrueClient {
       await _asyncStorage?.removeItem(
         key: '${Constants.defaultStorageKey}-code-verifier',
       );
-      notifyAllSubscribers(AuthChangeEvent.signedOut);
+      notifyAllSubscribers(
+        AuthChangeEvent.signedOut,
+        signOutReason: reason,
+      );
     }
 
     if (accessToken != null) {
@@ -1104,8 +1130,16 @@ class GoTrueClient {
     final session = Session.fromJson(json.decode(jsonStr));
     if (session == null) {
       // sign out to delete the local storage from supabase_flutter
-      await signOut();
-      throw notifyException(AuthException('Initial session is missing data.'));
+      await _signOut(
+        scope: SignOutScope.local,
+        reason: SignOutReason.sessionMissing,
+      );
+      throw notifyException(
+        AuthException(
+          'Initial session is missing data.',
+          code: ErrorCode.sessionMissing.code,
+        ),
+      );
     }
 
     _currentSession = session;
@@ -1114,47 +1148,72 @@ class GoTrueClient {
 
   /// Recover session from stringified [Session].
   Future<AuthResponse> recoverSession(String jsonStr) async {
+    final String refreshToken;
     try {
       final session = Session.fromJson(json.decode(jsonStr));
       if (session == null) {
         _log.warning("Can't recover session from string, session is null");
-        await signOut();
-        throw notifyException(
-          AuthException('Current session is missing data.'),
+        await _signOut(
+          scope: SignOutScope.local,
+          reason: SignOutReason.sessionMissing,
+        );
+        // The `catch` below notifies subscribers, so throw without notifying
+        // here to avoid emitting the error onto the stream twice.
+        throw AuthException(
+          'Current session is missing data.',
+          code: ErrorCode.sessionMissing.code,
         );
       }
 
-      if (session.isExpired) {
-        _log.fine('Session from recovery is expired');
+      if (!session.isExpired) {
+        final shouldEmitEvent = _currentSession == null ||
+            _currentSession!.user.id != session.user.id;
+        _saveSession(session);
 
-        final existingSession = _currentSession;
-        if (existingSession != null &&
-            !existingSession.isExpired &&
-            existingSession.user.id == session.user.id) {
-          _log.fine(
-              'Session was already refreshed elsewhere, skipping recovery');
-          return AuthResponse(session: existingSession);
+        if (shouldEmitEvent) {
+          notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
         }
 
-        final refreshToken = session.refreshToken;
-        if (_autoRefreshToken && refreshToken != null) {
-          return await _callRefreshToken(refreshToken);
-        }
-        await signOut();
-        throw notifyException(AuthException('Session expired.'));
-      }
-      final shouldEmitEvent = _currentSession == null ||
-          _currentSession!.user.id != session.user.id;
-      _saveSession(session);
-
-      if (shouldEmitEvent) {
-        notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
+        return AuthResponse(session: session);
       }
 
-      return AuthResponse(session: session);
+      _log.fine('Session from recovery is expired');
+
+      final existingSession = _currentSession;
+      if (existingSession != null &&
+          !existingSession.isExpired &&
+          existingSession.user.id == session.user.id) {
+        _log.fine('Session was already refreshed elsewhere, skipping recovery');
+        return AuthResponse(session: existingSession);
+      }
+
+      final token = session.refreshToken;
+      if (!_autoRefreshToken || token == null) {
+        await _signOut(
+          scope: SignOutScope.local,
+          reason: SignOutReason.sessionExpired,
+        );
+        throw AuthException(
+          'Session expired.',
+          code: ErrorCode.sessionExpired.code,
+        );
+      }
+      refreshToken = token;
     } catch (error, stackTrace) {
       notifyException(error, stackTrace);
       rethrow;
+    }
+
+    // Run the refresh outside the try/catch above so its error is not
+    // re-notified: `_callRefreshToken` already reports the outcome (a
+    // `signedOut` event for an invalid token, or a stream exception for a
+    // retryable failure). The refresh resolves through a completer, so its
+    // error would otherwise be rooted at `_doRefresh`; rethrowing with the
+    // current stack keeps `recoverSession` and the caller in the stack trace.
+    try {
+      return await _callRefreshToken(refreshToken);
+    } catch (error) {
+      Error.throwWithStackTrace(error, StackTrace.current);
     }
   }
 
@@ -1394,52 +1453,57 @@ class GoTrueClient {
       return existing.future;
     }
 
+    // The completer is kept as an external handle so [dispose] can cancel an
+    // in-flight refresh: the network request itself cannot be interrupted, so
+    // a hung refresh can only be resolved by completing this completer.
     final completer = Completer<AuthResponse>();
     completer.future.ignore();
     _pendingRefreshes[refreshToken] = completer;
 
-    unawaited(_executeRefresh(refreshToken, completer));
+    unawaited(
+      _doRefresh(refreshToken).then(
+        (response) {
+          if (!completer.isCompleted) completer.complete(response);
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!completer.isCompleted) completer.completeError(error, stack);
+        },
+      ).whenComplete(() => _pendingRefreshes.remove(refreshToken)),
+    );
 
     return completer.future;
   }
 
-  /// Executes a single token refresh.
-  Future<void> _executeRefresh(
-    String refreshToken,
-    Completer<AuthResponse> completer,
-  ) async {
-    if (_isDisposed) return;
-
+  /// Performs a single token refresh, applies the outcome to the local session
+  /// and notifies subscribers.
+  ///
+  /// Returns the refreshed [AuthResponse] or throws the underlying error. This
+  /// is the single place that emits refresh outcomes: [AuthChangeEvent.tokenRefreshed]
+  /// on success, [AuthChangeEvent.signedOut] when the refresh token is invalid,
+  /// or a stream error ([notifyException]) for a retryable/unexpected failure.
+  Future<AuthResponse> _doRefresh(String refreshToken) async {
     final versionBeforeRefresh = _sessionVersion;
+    _log.fine('Refresh access token');
 
     try {
-      _log.fine('Refresh access token');
-
       final data = await _refreshAccessToken(refreshToken);
-
-      if (_isDisposed) return;
 
       final session = data.session;
       if (session == null) {
         throw AuthSessionMissingException();
       }
 
-      // Guard: if the session was mutated while we were awaiting
-      // the network request (e.g. a concurrent signIn or signOut),
-      // discard this result to avoid overwriting the newer session.
-      if (_sessionVersion != versionBeforeRefresh) {
-        _log.fine(
-          'Session changed during refresh '
-          '(version $versionBeforeRefresh → $_sessionVersion). '
-          'Discarding stale refresh result.',
-        );
-        if (!completer.isCompleted) completer.complete(data);
-        return;
+      // Discard the result if the client was disposed or the session was
+      // mutated (e.g. a concurrent signIn or signOut) while we were awaiting
+      // the network request, so we don't overwrite the newer session.
+      if (_isDisposed || _sessionVersion != versionBeforeRefresh) {
+        _log.fine('Session changed during refresh, discarding stale result.');
+        return data;
       }
 
       _saveSession(session);
       notifyAllSubscribers(AuthChangeEvent.tokenRefreshed);
-      if (!completer.isCompleted) completer.complete(data);
+      return data;
     } on AuthException catch (error, stack) {
       final existingSession = _currentSession;
       if (error is AuthApiException &&
@@ -1448,35 +1512,28 @@ class GoTrueClient {
           !existingSession.isExpired) {
         _log.fine('Refresh token already used but current session is still '
             'valid, returning it instead of signing out');
-        final response = AuthResponse(session: existingSession);
-        if (!completer.isCompleted) completer.complete(response);
-        return;
+        return AuthResponse(session: existingSession);
       }
 
       if (error is! AuthRetryableFetchException) {
-        // Only remove the session if it hasn't been replaced
-        // while we were refreshing — otherwise we'd sign out a
-        // user who just signed in.
+        // Only remove the session if it hasn't been replaced while we were
+        // refreshing, otherwise we'd sign out a user who just signed in.
         if (!_isDisposed && _sessionVersion == versionBeforeRefresh) {
           _removeSession();
-          notifyAllSubscribers(AuthChangeEvent.signedOut);
+          notifyAllSubscribers(
+            AuthChangeEvent.signedOut,
+            signOutReason: SignOutReason.sessionExpired,
+          );
         }
       } else if (!_isDisposed) {
         notifyException(error, stack);
       }
-
-      if (!completer.isCompleted) {
-        completer.completeError(error, stack);
-      }
+      rethrow;
     } catch (error, stack) {
-      if (!completer.isCompleted) {
-        completer.completeError(error, stack);
-      }
       if (!_isDisposed) {
         notifyException(error, stack);
       }
-    } finally {
-      _pendingRefreshes.remove(refreshToken);
+      rethrow;
     }
   }
 
@@ -1489,6 +1546,7 @@ class GoTrueClient {
     AuthChangeEvent event, {
     Session? session,
     bool broadcast = true,
+    SignOutReason? signOutReason,
   }) {
     session ??= currentSession;
     if (broadcast && event != AuthChangeEvent.initialSession) {
@@ -1497,7 +1555,12 @@ class GoTrueClient {
         'session': session?.toJson(),
       });
     }
-    final state = AuthState(event, session, fromBroadcast: !broadcast);
+    final state = AuthState(
+      event,
+      session,
+      fromBroadcast: !broadcast,
+      signOutReason: signOutReason,
+    );
     _log.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);

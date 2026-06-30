@@ -219,7 +219,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
                     _addStream();
                   }
                   break;
-                default:
+                case PostgresChangeEvent.all:
                   break;
               }
             })

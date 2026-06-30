@@ -280,6 +280,46 @@ void main() {
       expect(response, isA<ResendResponse>());
     });
 
+    test('resend() with email in PKCE flow includes code challenge', () async {
+      await client.resend(
+        email: testEmail,
+        type: OtpType.signup,
+      );
+
+      expect(mockClient.lastResendBody?['code_challenge'], isNotNull);
+      expect(mockClient.lastResendBody?['code_challenge_method'], 's256');
+    });
+
+    test('resend() with phone does not include code challenge', () async {
+      await client.resend(
+        phone: testPhone,
+        type: OtpType.sms,
+      );
+
+      expect(mockClient.lastResendBody?.containsKey('code_challenge'), isFalse);
+      expect(
+        mockClient.lastResendBody?.containsKey('code_challenge_method'),
+        isFalse,
+      );
+    });
+
+    test('resend() with email in implicit flow omits code challenge', () async {
+      final implicitClient = GoTrueClient(
+        url: 'https://example.com',
+        httpClient: mockClient,
+        asyncStorage: asyncStorage,
+        flowType: AuthFlowType.implicit,
+      );
+
+      await implicitClient.resend(
+        email: testEmail,
+        type: OtpType.signup,
+      );
+
+      expect(mockClient.lastResendBody?['code_challenge'], isNull);
+      expect(mockClient.lastResendBody?['code_challenge_method'], isNull);
+    });
+
     test('resend() with wrong type for phone throws', () async {
       await expectLater(
         () => client.resend(
@@ -479,13 +519,14 @@ void main() {
         () async {
       final client = GoTrueClient(
         url: 'https://example.com',
-        httpClient: NullSessionClient(testEmail),
+        httpClient: NullSessionClient(),
         asyncStorage: TestAsyncStorage(),
       );
 
-      // Verifying the first OTP of a secure email change does not return a
-      // session. This should not throw, the intermediate response is returned
-      // so the second OTP can subsequently be verified.
+      // Verifying the first OTP of a secure email change returns a `{msg, code}`
+      // payload with neither a user nor a session. This should not throw, the
+      // intermediate response is returned so the second OTP can subsequently be
+      // verified.
       final response = await client.verifyOTP(
         email: testEmail,
         token: '123456',
@@ -493,6 +534,7 @@ void main() {
       );
 
       expect(response.session, isNull);
+      expect(response.user, isNull);
     });
   });
 

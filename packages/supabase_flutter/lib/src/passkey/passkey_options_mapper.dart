@@ -1,4 +1,4 @@
-import 'package:passkeys/types.dart';
+import 'package:passkeys_platform_interface/types/types.dart';
 
 /// Converts the WebAuthn registration options returned by the Supabase passkey
 /// API into a [RegisterRequestType] understood by the `passkeys` plugin.
