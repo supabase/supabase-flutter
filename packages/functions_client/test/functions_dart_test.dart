@@ -247,6 +247,17 @@ void main() {
         expect(req.headers['Content-Type'], 'custom/type');
       });
 
+      test('custom lowercase content-type header overrides defaults', () async {
+        await functionsCustomHttpClient.invoke(
+          'function',
+          body: {'key': 'value'},
+          headers: {'content-type': 'application/custom+json'},
+        );
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req.headers['content-type'], 'application/custom+json');
+      });
+
       test('custom headers merge with defaults', () async {
         await functionsCustomHttpClient.invoke(
           'function',

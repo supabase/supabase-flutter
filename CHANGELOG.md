@@ -3,6 +3,82 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-06-29
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`functions_client` - `v2.6.2`](#functions_client---v262)
+ - [`gotrue` - `v2.23.0`](#gotrue---v2230)
+ - [`postgrest` - `v2.7.3`](#postgrest---v273)
+ - [`realtime_client` - `v2.9.0`](#realtime_client---v290)
+ - [`storage_client` - `v2.5.8`](#storage_client---v258)
+ - [`supabase` - `v2.13.1`](#supabase---v2131)
+ - [`supabase_flutter` - `v2.15.1`](#supabase_flutter---v2151)
+
+---
+
+#### `functions_client` - `v2.6.2`
+
+ - **FIX**(functions_client): use case-insensitive check for Content-Type header in invoke() ([#1486](https://github.com/supabase/supabase-flutter/issues/1486)). ([b98536a3](https://github.com/supabase/supabase-flutter/commit/b98536a3183631cd207357c63ef75bd2d3c1ea83))
+
+#### `gotrue` - `v2.23.0`
+
+ - **REFACTOR**(gotrue): extract PKCE code challenge generation into a helper ([#1460](https://github.com/supabase/supabase-flutter/issues/1460)). ([3252ca71](https://github.com/supabase/supabase-flutter/commit/3252ca7151241aa80c291ea7968b6c1fd70c055f))
+ - **FIX**(gotrue): copy request header/query maps before mutating them ([#1476](https://github.com/supabase/supabase-flutter/issues/1476)). ([fe8a84d0](https://github.com/supabase/supabase-flutter/commit/fe8a84d08822b8eeef7f3a712061b076aeef1377))
+ - **FIX**(auth): recognize error query parameter in auth callback redirects ([#1472](https://github.com/supabase/supabase-flutter/issues/1472)). ([cb7e7e62](https://github.com/supabase/supabase-flutter/commit/cb7e7e62d04d887d888fd3e73ef83a584ae45d77))
+ - **FIX**(gotrue): avoid duplicate auth error on recoverSession with invalid refresh token ([#1450](https://github.com/supabase/supabase-flutter/issues/1450)). ([a154852f](https://github.com/supabase/supabase-flutter/commit/a154852f6be369f03298656f4515fad68e0038f8))
+ - **FIX**(gotrue): include code challenge in resend with PKCE flow ([#1469](https://github.com/supabase/supabase-flutter/issues/1469)). ([33402e80](https://github.com/supabase/supabase-flutter/commit/33402e80f24cb0d18ad6702bb27db33bbe6e0563))
+ - **FIX**(gotrue): don't throw in verifyOTP when secure email/phone change returns no session ([#1448](https://github.com/supabase/supabase-flutter/issues/1448)). ([44300aca](https://github.com/supabase/supabase-flutter/commit/44300acaec47f93d75a04370768222af578456fd))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+ - **FEAT**(gotrue): surface the sign-out reason on the signedOut event ([#1453](https://github.com/supabase/supabase-flutter/issues/1453)). ([a182b204](https://github.com/supabase/supabase-flutter/commit/a182b204f1dc86be5d9f7656649c84d398e16cbd))
+ - **DOCS**(gotrue): clarify Session.expiresAt is in seconds ([#1447](https://github.com/supabase/supabase-flutter/issues/1447)). ([9dffae17](https://github.com/supabase/supabase-flutter/commit/9dffae1779e7853ec62aad2cddc23c825ffc36ca))
+
+#### `postgrest` - `v2.7.3`
+
+ - **FIX**(postgrest): escape quotes and backslashes in list filter values ([#1481](https://github.com/supabase/supabase-flutter/issues/1481)). ([66e4d139](https://github.com/supabase/supabase-flutter/commit/66e4d1399ea615abb1d58b468a4943e7c408ef2f))
+ - **FIX**(postgrest): return structured error for non-JSON body on 2xx responses ([#1474](https://github.com/supabase/supabase-flutter/issues/1474)). ([2d7c9cf5](https://github.com/supabase/supabase-flutter/commit/2d7c9cf5537f997baf733f0ee32d38303a6f752a))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+ - **FIX**(postgrest): build a valid Prefer header in select() when none is set ([#1433](https://github.com/supabase/supabase-flutter/issues/1433)). ([871d39d5](https://github.com/supabase/supabase-flutter/commit/871d39d5213f776b6360ef65f69cec76a9fbf9a0))
+
+#### `realtime_client` - `v2.9.0`
+
+ - **REFACTOR**(realtime_client): extract broadcast headers and body builders ([#1461](https://github.com/supabase/supabase-flutter/issues/1461)). ([7da70605](https://github.com/supabase/supabase-flutter/commit/7da706059de3af651e5e605acea081125d4b261c))
+ - **FIX**(realtime): surface async postgres_changes system error as channelError ([#1470](https://github.com/supabase/supabase-flutter/issues/1470)). ([d1271701](https://github.com/supabase/supabase-flutter/commit/d1271701775c84ee1e197790fb3f735129844fc6))
+ - **FIX**(realtime_client): detect dropped connections on iOS via WebSocket ping ([#1451](https://github.com/supabase/supabase-flutter/issues/1451)). ([db754cf0](https://github.com/supabase/supabase-flutter/commit/db754cf06b371f714a6a7f63912b4b8a4185868a))
+ - **FIX**(realtime_client): cancel connection stream subscription on disconnect ([#1423](https://github.com/supabase/supabase-flutter/issues/1423)). ([fc9bba60](https://github.com/supabase/supabase-flutter/commit/fc9bba60e680d175fab24ed2f719fb3e525dc194))
+ - **FEAT**(realtime): update httpSend to per-event broadcast URL with binary support ([#1467](https://github.com/supabase/supabase-flutter/issues/1467)). ([6f84df00](https://github.com/supabase/supabase-flutter/commit/6f84df0053d523523643cbd7042e7031d0d90925))
+
+#### `storage_client` - `v2.5.8`
+
+ - **REFACTOR**(storage_client): dedupe retry assertion and fetch options ([#1462](https://github.com/supabase/supabase-flutter/issues/1462)). ([ba4363ed](https://github.com/supabase/supabase-flutter/commit/ba4363ed7f55bb91ef7d4eac16118d139a83d4ae))
+ - **REFACTOR**: dedupe bucket payload and OAuth launch logic ([#1463](https://github.com/supabase/supabase-flutter/issues/1463)). ([c5f9b247](https://github.com/supabase/supabase-flutter/commit/c5f9b2471c64d65b604802cbda36221cca0a6506))
+ - **FIX**(storage): preserve sortBy defaults when list receives a partial sortBy ([#1490](https://github.com/supabase/supabase-flutter/issues/1490)). ([c68a9645](https://github.com/supabase/supabase-flutter/commit/c68a9645e22c9b7f3b148e7156a3c78394ceca96))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+
+#### `supabase` - `v2.13.1`
+
+ - **REFACTOR**: de-abbreviate cond* platform getters to conditional* ([#1438](https://github.com/supabase/supabase-flutter/issues/1438)). ([9e71a240](https://github.com/supabase/supabase-flutter/commit/9e71a240bc7ed30126b5d90a81697303cb515ef7))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+
+#### `supabase_flutter` - `v2.15.1`
+
+ - **REFACTOR**: dedupe bucket payload and OAuth launch logic ([#1463](https://github.com/supabase/supabase-flutter/issues/1463)). ([c5f9b247](https://github.com/supabase/supabase-flutter/commit/c5f9b2471c64d65b604802cbda36221cca0a6506))
+ - **REFACTOR**: de-abbreviate cond* platform getters to conditional* ([#1438](https://github.com/supabase/supabase-flutter/issues/1438)). ([9e71a240](https://github.com/supabase/supabase-flutter/commit/9e71a240bc7ed30126b5d90a81697303cb515ef7))
+ - **FIX**(supabase_flutter): accept PasskeyAuthenticatorInterface instead of depending on passkeys ([#1444](https://github.com/supabase/supabase-flutter/issues/1444)). ([f05d4c6c](https://github.com/supabase/supabase-flutter/commit/f05d4c6c544591905c2dbacf815526733ffabd5a))
+ - **FIX**(auth): recognize error query parameter in auth callback redirects ([#1472](https://github.com/supabase/supabase-flutter/issues/1472)). ([cb7e7e62](https://github.com/supabase/supabase-flutter/commit/cb7e7e62d04d887d888fd3e73ef83a584ae45d77))
+ - **FIX**(supabase_flutter): clear auth params from web URL after exchange ([#1456](https://github.com/supabase/supabase-flutter/issues/1456)). ([8b1e1b22](https://github.com/supabase/supabase-flutter/commit/8b1e1b22aae6da4366dd8c404de8f3351dcc57a1))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+ - **DOCS**: add Supabase logo to supabase_flutter README so it renders on pub.dev ([#1458](https://github.com/supabase/supabase-flutter/issues/1458)). ([7354d1c8](https://github.com/supabase/supabase-flutter/commit/7354d1c8f06ec376b9a526f1f62f3a6fc21ac8bc))
+
+
 ## 2026-06-16
 
 ### Changes
