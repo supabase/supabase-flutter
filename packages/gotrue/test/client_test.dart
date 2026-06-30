@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
-import 'package:gotrue/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:jwt_decode/jwt_decode.dart';
@@ -641,11 +640,9 @@ void main() {
       } on ClientException {
         // the method should throw
       }
-      await for (final AuthState event in client.onAuthStateChange) {
-        expect(httpClient.retryCount, 4);
-        expect(event.event, AuthChangeEvent.tokenRefreshed);
-        break;
-      }
+      final event = await client.onAuthStateChange.first;
+      expect(httpClient.retryCount, 4);
+      expect(event.event, AuthChangeEvent.tokenRefreshed);
     });
   });
 

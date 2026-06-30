@@ -59,6 +59,11 @@ features:
     note: "Default scope is local (current session); JS defaults to global (all sessions)."
   auth.session.auto_refresh: implemented
   auth.session.subscribe_auth_events: implemented
+  auth.session.sign_out_reason:
+    status: implemented
+    symbols:
+      - AuthState.signOutReason
+      - SignOutReason
 
   # auth — identities
   auth.identities.link_identity:

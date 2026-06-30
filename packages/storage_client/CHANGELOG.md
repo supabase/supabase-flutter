@@ -1,3 +1,10 @@
+## 2.5.8
+
+ - **REFACTOR**(storage_client): dedupe retry assertion and fetch options ([#1462](https://github.com/supabase/supabase-flutter/issues/1462)). ([ba4363ed](https://github.com/supabase/supabase-flutter/commit/ba4363ed7f55bb91ef7d4eac16118d139a83d4ae))
+ - **REFACTOR**: dedupe bucket payload and OAuth launch logic ([#1463](https://github.com/supabase/supabase-flutter/issues/1463)). ([c5f9b247](https://github.com/supabase/supabase-flutter/commit/c5f9b2471c64d65b604802cbda36221cca0a6506))
+ - **FIX**(storage): preserve sortBy defaults when list receives a partial sortBy ([#1490](https://github.com/supabase/supabase-flutter/issues/1490)). ([c68a9645](https://github.com/supabase/supabase-flutter/commit/c68a9645e22c9b7f3b148e7156a3c78394ceca96))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+
 ## 2.5.7
 
  - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))

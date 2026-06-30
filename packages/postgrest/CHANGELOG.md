@@ -1,3 +1,10 @@
+## 2.7.3
+
+ - **FIX**(postgrest): escape quotes and backslashes in list filter values ([#1481](https://github.com/supabase/supabase-flutter/issues/1481)). ([66e4d139](https://github.com/supabase/supabase-flutter/commit/66e4d1399ea615abb1d58b468a4943e7c408ef2f))
+ - **FIX**(postgrest): return structured error for non-JSON body on 2xx responses ([#1474](https://github.com/supabase/supabase-flutter/issues/1474)). ([2d7c9cf5](https://github.com/supabase/supabase-flutter/commit/2d7c9cf5537f997baf733f0ee32d38303a6f752a))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+ - **FIX**(postgrest): build a valid Prefer header in select() when none is set ([#1433](https://github.com/supabase/supabase-flutter/issues/1433)). ([871d39d5](https://github.com/supabase/supabase-flutter/commit/871d39d5213f776b6360ef65f69cec76a9fbf9a0))
+
 ## 2.7.2
 
  - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
