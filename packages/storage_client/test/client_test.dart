@@ -668,6 +668,68 @@ void main() {
     });
   });
 
+  group('object keys with reserved URL characters', () {
+    // The SDK percent-encodes each object key segment (see _getFinalPath). These
+    // tests confirm the round-trip against a real server: the storage server
+    // percent-decodes the path back to the literal key, so upload and download
+    // address the same object. Without encoding a `?` or `#` in the key would be
+    // parsed as the start of the query string or fragment and the SDK would
+    // silently address the wrong object.
+    late String bucket;
+
+    setUp(() async {
+      bucket = await findOrCreateBucket(
+          'reserved-${DateTime.now().millisecondsSinceEpoch}');
+    });
+
+    // Valid storage keys that contain characters which are reserved in a URL
+    // and therefore must be percent-encoded to address the correct object.
+    final keys = <String>[
+      'folder/report?v=2 final.pdf',
+      'folder/a+b,c@d=e.txt',
+      'folder/amp&and;semi.txt',
+      'folder/2026-06-30T11:23:31.jpg',
+    ];
+
+    for (final key in keys) {
+      test('uploads and downloads "$key" as the same object', () async {
+        await storage.from(bucket).upload(
+              key,
+              file,
+              fileOptions: const FileOptions(upsert: true),
+            );
+
+        final downloaded = await storage.from(bucket).download(key);
+        expect(downloaded, isNotEmpty);
+
+        final folder = key.substring(0, key.indexOf('/'));
+        final name = key.substring(key.indexOf('/') + 1);
+        final listed = await storage.from(bucket).list(path: folder);
+        expect(
+          listed.map((object) => object.name),
+          contains(name),
+          reason: 'server must store the decoded key, not the encoded form',
+        );
+      });
+    }
+
+    // `#` and `%` are rejected by the storage server's key validation
+    // regardless of encoding, so the SDK surfaces a StorageException rather
+    // than silently addressing the wrong object.
+    for (final invalidKey in ['folder/a#b.txt', 'folder/100%done.txt']) {
+      test('rejects "$invalidKey" with an InvalidKey error', () async {
+        await expectLater(
+          () => storage.from(bucket).upload(
+                invalidKey,
+                file,
+                fileOptions: const FileOptions(upsert: true),
+              ),
+          throwsA(isA<StorageException>()),
+        );
+      });
+    }
+  });
+
   group('list sortBy defaults', () {
     late CustomHttpClient customHttpClient;
     late SupabaseStorageClient client;
