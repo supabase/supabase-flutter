@@ -18,6 +18,25 @@ dcm:
   extends:
     - recommended
   rules:
+    # Keep web and WASM support: dart:html / dart:js / dart:js_util work on the
+    # JS web target but break WASM, and dart:io / dart:ffi break both. The web
+    # interop libraries below are replaced by dart:js_interop + package:web, and
+    # dart:io is only allowed in conditional `_io.dart` files.
+    avoid-banned-imports:
+      entries:
+        - paths: ['.*/lib/.*\.dart$']
+          deny: ['^dart:html$', '^dart:js$', '^dart:js_util$']
+          message: Use dart:js_interop with package:web for WASM compatibility.
+          severity: error
+        - paths: ['.*/lib/.*\.dart$']
+          deny: ['^dart:ffi$']
+          message: dart:ffi is not available on web or WASM.
+          severity: error
+        - paths: ['.*/lib/.*\.dart$']
+          exclude-paths: ['.*_io\.dart$']
+          deny: ['^dart:io$']
+          message: Import dart:io only in conditional `_io.dart` files; use defaultTargetPlatform or conditional imports elsewhere.
+          severity: error
     avoid-accessing-collections-by-constant-index: false
     avoid-duplicate-initializers: false
     avoid-duplicate-test-assertions: false
