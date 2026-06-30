@@ -37,11 +37,13 @@ class StorageFileApi {
   }
 
   String _getFinalPath(String path) {
-    // Percent-encode each segment so object keys containing characters like
-    // `?`, `#`, `%` or spaces don't corrupt the request URL (for example a `?`
-    // being parsed as the start of the query string). `/` separators and the
-    // bucket id are preserved.
-    final encodedPath = path.split('/').map(Uri.encodeComponent).join('/');
+    // Percent-encode each segment (RFC 3986) so object keys containing
+    // characters like `?`, `#`, `%` or spaces don't corrupt the request URL
+    // (for example a `?` being parsed as the start of the query string). `/`
+    // separators, the bucket id, and characters that are already valid in a
+    // path segment (such as `:` in ISO-8601 timestamps) are preserved, so URLs
+    // for existing valid keys are unchanged.
+    final encodedPath = Uri(pathSegments: path.split('/')).path;
     return '$bucketId/$encodedPath';
   }
 
