@@ -288,8 +288,17 @@ class RealtimeClient {
       }
 
       if (shouldCloseSink) {
-        onTimeout() => log('transport', 'timeout while closing connection',
-            null, Level.WARNING);
+        onTimeout() {
+          log('transport', 'timeout while closing connection', null,
+              Level.WARNING);
+          // Handle as the connection would have been closed successfully, to
+          // avoid hanging the client. This is done by mimicking the onDone
+          // callback of the connection stream. By canceling the subscription,
+          // we avoid calling the onDone too.
+          connState = SocketStates.disconnected;
+          _onConnClose();
+        }
+
         if (code != null) {
           // Add a timeout to close the sink to avoid hanging in case something
           // is wrong with the connection.
