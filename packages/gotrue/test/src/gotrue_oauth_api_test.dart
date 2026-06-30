@@ -12,6 +12,60 @@ void main() {
     fixture = GotrueOauthApiFixture();
   });
 
+  group('OAuthAuthorizationDetailsResponse', () {
+    test('can parse a valid JSON', () {
+      final json = {
+        'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
+        'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'user': {
+          'id': '1bee2038-51fe-4f93-8fbb-442df18657ff',
+          'email': 'translator.user@mail.com'
+        },
+        'scope': 'email'
+      };
+
+      final actual = OAuthAuthorizationDetailsResponse.fromJson(json);
+
+      expect(
+        actual.authorizationId,
+        equals('6abuj667j4nmdotzu3w2ro5r33xezvae'),
+      );
+      expect(actual.scope, equals('email'));
+      expect(
+        actual.redirectUri,
+        equals('http://localhost:50200/onboarding/auth/consent'),
+      );
+      expect(
+        actual.client.clientId,
+        equals('7263e727-435b-4d38-a5ff-a14c954b8680'),
+      );
+      expect(actual.client.clientName, equals('OAuth test client'));
+      expect(actual.user.id, equals('1bee2038-51fe-4f93-8fbb-442df18657ff'));
+      expect(actual.user.email, equals('translator.user@mail.com'));
+    });
+
+    test('throws ArgumentError when user information is missing', () {
+      final json = {
+        'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
+        'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'scope': 'email'
+      };
+
+      expect(
+        () => OAuthAuthorizationDetailsResponse.fromJson(json),
+        throwsArgumentError,
+      );
+    });
+  });
+
   group('OAuth server', () {
     test('get authorization details', () async {
       final sut = await fixture.build();
@@ -32,8 +86,8 @@ void main() {
       expect(res.redirectUri, equals(clientParams.redirectUris.first));
       expect(res.client.clientId, equals(client.clientId));
       expect(res.client.clientName, equals(client.clientName));
-      expect(res.user?.id, equals(auth.user?.id));
-      expect(res.user?.email, equals(email1));
+      expect(res.user.id, equals(auth.user?.id));
+      expect(res.user.email, equals(email1));
     });
 
     test('approve authorization request', () async {

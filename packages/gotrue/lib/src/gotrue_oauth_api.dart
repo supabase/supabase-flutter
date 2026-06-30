@@ -35,7 +35,7 @@ class OAuthAuthorizationDetailsResponse {
   final OAuthAuthorizedClient client;
 
   /// The OAuth User requesting authorization.
-  final User? user;
+  final User user;
 
   /// The scopes requested by the OAuth client, if any.
   final String? scope;
@@ -47,17 +47,27 @@ class OAuthAuthorizationDetailsResponse {
     required this.authorizationId,
     required this.client,
     required this.redirectUri,
-    this.user,
+    required this.user,
     this.scope,
   });
 
   factory OAuthAuthorizationDetailsResponse.fromJson(
     Map<String, dynamic> json,
   ) {
+    final user = json['user'] == null ? null : User.fromJson(json['user']);
+
+    if (user == null) {
+      throw ArgumentError.value(
+        json,
+        'json',
+        'The provided JSON should contain a parseable user object',
+      );
+    }
+
     return OAuthAuthorizationDetailsResponse(
       authorizationId: json['authorization_id'] as String,
       client: OAuthAuthorizedClient.fromJson(json['client']),
-      user: User.fromJson(json['user']),
+      user: user,
       scope: json['scope'] as String?,
       redirectUri: json['redirect_uri'] as String,
     );
