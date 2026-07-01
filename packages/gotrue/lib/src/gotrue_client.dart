@@ -21,6 +21,7 @@ import 'broadcast_stub.dart' if (dart.library.js_interop) './broadcast_web.dart'
     as web;
 import 'version.dart';
 
+part 'gotrue_oauth_api.dart';
 part 'gotrue_mfa_api.dart';
 part 'gotrue_passkey_api.dart';
 
@@ -55,6 +56,9 @@ class GoTrueClient {
 
   /// Namespace for the GoTrue MFA API methods.
   late final GoTrueMFAApi mfa;
+
+  /// Namespace for the GoTrue OAuth methods.
+  late final GoTrueOAuthApi oauth;
 
   /// Namespace for the passkey (WebAuthn) API methods.
   ///
@@ -168,6 +172,7 @@ class GoTrueClient {
       headers: _headers,
       httpClient: httpClient,
     );
+    oauth = GoTrueOAuthApi(client: this, fetch: _fetch);
     mfa = GoTrueMFAApi(client: this, fetch: _fetch);
     passkey = GoTruePasskeyApi(client: this, fetch: _fetch);
     if (_autoRefreshToken) {
