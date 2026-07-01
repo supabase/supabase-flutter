@@ -307,7 +307,11 @@ class RealtimeClient {
       // already dropped (`connState == closed`) the block above is skipped, so
       // without this an armed backoff timer would fire after the user
       // explicitly disconnected and silently reopen the connection.
-      reconnectTimer.reset();
+      //
+      // Use `cancel()` rather than `reset()`: the reconnect path
+      // (`_reconnect` -> `disconnect` -> `connect`) runs this on every attempt,
+      // and zeroing the retry counter here would defeat exponential backoff.
+      reconnectTimer.cancel();
 
       this.conn = null;
       await _connectionSubscription?.cancel();

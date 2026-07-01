@@ -365,6 +365,58 @@ void main() {
           reason: 'must not reopen after a user disconnect');
     });
 
+    test('grows the reconnect backoff across failed attempts', () async {
+      final triesSeen = <int>[];
+      var attempt = 0;
+
+      final failingChannel = MockIOWebSocketChannel();
+      final failingSink = MockWebSocketSink();
+      when(() => failingChannel.ready)
+          .thenAnswer((_) => Future.error(Exception('unavailable')));
+      when(() => failingChannel.sink).thenReturn(failingSink);
+      when(() => failingSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => failingSink.close()).thenAnswer((_) => Future.value());
+
+      final successController = StreamController<dynamic>();
+      addTearDown(successController.close);
+      final successChannel = MockIOWebSocketChannel();
+      final successSink = MockWebSocketSink();
+      when(() => successChannel.ready).thenAnswer((_) => Future.value());
+      when(() => successChannel.sink).thenReturn(successSink);
+      when(() => successChannel.stream)
+          .thenAnswer((_) => successController.stream);
+      when(() => successSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => successSink.close()).thenAnswer((_) => Future.value());
+
+      final mockedSocket = RealtimeClient(
+        socketEndpoint,
+        reconnectAfterMs: (tries) {
+          triesSeen.add(tries);
+          return 10;
+        },
+        transport: (url, headers) {
+          attempt++;
+          // Fail the first attempts so the client keeps retrying, then let it
+          // connect so the reconnect loop stops.
+          return attempt <= 3 ? failingChannel : successChannel;
+        },
+      );
+
+      await mockedSocket.connect();
+
+      // Wait for the failing attempts to cycle and the fourth to connect.
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // The retry counter must grow (1, 2, 3, ...) across reconnect attempts
+      // instead of being reset to 1 on every `disconnect()` in `_reconnect`.
+      expect(triesSeen.take(3), [1, 2, 3]);
+      expect(mockedSocket.connState, SocketStates.open);
+
+      await mockedSocket.disconnect();
+    });
+
     test('disconnecting an open connection', () async {
       await socket.connect();
       expect(socket.connState, SocketStates.open);

@@ -34,7 +34,13 @@ class RetryTimer {
   /// Cancels any previous timer and reset tries
   void reset() {
     _tries = 0;
-    if (_timer != null) _timer!.cancel();
+    cancel();
+  }
+
+  /// Cancels any scheduled timer without resetting tries, so exponential
+  /// backoff is preserved across reconnect attempts.
+  void cancel() {
+    _timer?.cancel();
   }
 
   /// Cancels any previous scheduleTimeout and schedules callback
