@@ -39,6 +39,24 @@ void main() {
       );
     });
 
+    test('error response labeled JSON with a non-JSON body reports the status',
+        () async {
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('invalid-json-error'),
+        throwsA(isA<FunctionException>()
+            .having((e) => e.status, 'status', 500)
+            .having((e) => e.details, 'details',
+                '<html><body>502 Bad Gateway</body></html>')),
+      );
+    });
+
+    test('an upper-cased application/JSON content type is parsed as JSON',
+        () async {
+      final res = await functionsCustomHttpClient.invoke('uppercase-json');
+      expect(res.data, {'key': 'Hello World'});
+      expect(res.status, 200);
+    });
+
     test('function call', () async {
       final res = await functionsCustomHttpClient.invoke('function');
       expect(

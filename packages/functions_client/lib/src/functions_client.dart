@@ -163,7 +163,8 @@ class FunctionsClient {
             response.headers['content-type'] ??
             'text/plain')
         .split(';')[0]
-        .trim();
+        .trim()
+        .toLowerCase();
 
     final isSuccessStatus =
         200 <= response.statusCode && response.statusCode < 300;
@@ -172,9 +173,18 @@ class FunctionsClient {
 
     if (responseType == 'application/json') {
       final bodyBytes = await response.stream.toBytes();
-      data = bodyBytes.isEmpty
-          ? ""
-          : await _isolate.decode(utf8.decode(bodyBytes));
+      if (bodyBytes.isEmpty) {
+        data = "";
+      } else {
+        final bodyText = utf8.decode(bodyBytes);
+        dynamic decoded;
+        try {
+          decoded = await _isolate.decode(bodyText);
+        } on FormatException catch (_) {
+          decoded = bodyText;
+        }
+        data = decoded;
+      }
     } else if (responseType == 'application/octet-stream') {
       data = await response.stream.toBytes();
     } else if (responseType == 'text/event-stream' && isSuccessStatus) {
