@@ -57,8 +57,6 @@ class GoTrueMFAApi {
     };
 
     if (factorType == FactorType.totp) {
-      // `issuer` is optional for TOTP factors, matching the server and
-      // supabase-js. Only forward it when the caller provided one.
       if (issuer != null) {
         body['issuer'] = issuer;
       }
