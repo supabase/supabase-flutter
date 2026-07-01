@@ -1,3 +1,9 @@
+## 2.24.0
+
+ - **FIX**(gotrue): handle access token without amr claim in getAuthenticatorAssuranceLevel ([#1478](https://github.com/supabase/supabase-flutter/issues/1478)). ([63a91f2e](https://github.com/supabase/supabase-flutter/commit/63a91f2e20e7000898b91ada76678e11687e0fbb))
+ - **FIX**(gotrue): allow TOTP MFA enrollment without an issuer ([#1501](https://github.com/supabase/supabase-flutter/issues/1501)). ([3a84e4e5](https://github.com/supabase/supabase-flutter/commit/3a84e4e5f122958e1706bf80ecc6083ad7055ab8))
+ - **FEAT**(gotrue): add user-facing OAuth 2.1 server authorization API ([#1499](https://github.com/supabase/supabase-flutter/issues/1499)). ([4f98f493](https://github.com/supabase/supabase-flutter/commit/4f98f493e4848ce03822cb8699db18234a3ec7c7))
+
 ## 2.23.0
 
  - **REFACTOR**(gotrue): extract PKCE code challenge generation into a helper ([#1460](https://github.com/supabase/supabase-flutter/issues/1460)). ([3252ca71](https://github.com/supabase/supabase-flutter/commit/3252ca7151241aa80c291ea7968b6c1fd70c055f))

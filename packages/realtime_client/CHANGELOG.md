@@ -1,3 +1,7 @@
+## 2.9.1
+
+ - **FIX**(realtime): cancel pending reconnect on disconnect after a dropped socket ([#1477](https://github.com/supabase/supabase-flutter/issues/1477)). ([b704932a](https://github.com/supabase/supabase-flutter/commit/b704932ac13a56a01c73cac603aed43e8a8aad3a))
+
 ## 2.9.0
 
  - **REFACTOR**(realtime_client): extract broadcast headers and body builders ([#1461](https://github.com/supabase/supabase-flutter/issues/1461)). ([7da70605](https://github.com/supabase/supabase-flutter/commit/7da706059de3af651e5e605acea081125d4b261c))
