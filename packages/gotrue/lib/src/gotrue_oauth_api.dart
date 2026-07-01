@@ -107,11 +107,11 @@ class OAuthConsentResponse {
 /// final authorizationId = Uri.parse(currentUrl).queryParameters['authorization_id']!;
 ///
 /// // 2. Show the consent screen.
-/// final details = await supabase.auth.oauthServer.getAuthorizationDetails(authorizationId);
+/// final details = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
 /// print('App "${details.client.clientName}" requests: ${details.scope}');
 ///
 /// // 3. Act on the user's decision.
-/// final consent = await supabase.auth.oauthServer.approveAuthorization(authorizationId);
+/// final consent = await supabase.auth.oauth.approveAuthorization(authorizationId);
 /// // Redirect the user to consent.redirectUrl (when skipBrowserRedirect is true).
 /// ```
 ///
