@@ -32,6 +32,17 @@ void main() {
   );
 }
 
+/// The HTTP methods an operation can use. The [Enum.name] of each value is the
+/// lowercase key used in an OpenAPI path item (`get`, `post`, …).
+enum HttpMethod { get, post, put, patch, delete, head }
+
+HttpMethod? _httpMethodFrom(String name) {
+  for (final method in HttpMethod.values) {
+    if (method.name == name) return method;
+  }
+  return null;
+}
+
 void _generate({
   required String specPath,
   required String className,
@@ -50,7 +61,7 @@ void _generate({
   ];
 
   final library = Library(
-    (b) => b
+    (builder) => builder
       ..directives.addAll([
         if (_needsConvert(paths)) Directive.import('dart:convert'),
         Directive.import('package:http/http.dart', as: 'http'),
@@ -76,18 +87,16 @@ void _generate({
   stdout.writeln('Generated $outputPath');
 }
 
-const _httpMethods = {'get', 'post', 'put', 'patch', 'delete', 'head'};
-
 /// True when any operation carries or returns `application/json` (and therefore
 /// the generated file needs `dart:convert`). Error responses are ignored: those
 /// are decoded by the runtime, not the generated code.
 bool _needsConvert(Map<String, dynamic> paths) {
   for (final operations in paths.values) {
-    for (final op in (operations as Map).values) {
-      if (op is! Map) continue;
-      final requestBody = (op['requestBody']?['content'] as Map?);
+    for (final operation in (operations as Map).values) {
+      if (operation is! Map) continue;
+      final requestBody = operation['requestBody']?['content'] as Map?;
       if (requestBody?.containsKey('application/json') ?? false) return true;
-      final responses = (op['responses'] as Map?) ?? {};
+      final responses = (operation['responses'] as Map?) ?? {};
       final successKey = ['200', '201', '204', '202']
           .firstWhere(responses.containsKey, orElse: () => '');
       final content = (responses[successKey] as Map?)?['content'] as Map?;
@@ -116,57 +125,58 @@ Class _buildModel(String name, Map<String, dynamic> schema) {
       ),
   ];
 
-  final fromJsonArgs = fields
-      .map((f) =>
-          "${f.dartName}: ${_fromJson(f.schema, "json['${f.jsonKey}']", f.isRequired)},")
+  final fromJsonArguments = fields
+      .map((field) =>
+          "${field.dartName}: ${_fromJson(field.schema, "json['${field.jsonKey}']", field.isRequired)},")
       .join('\n');
 
-  final toJsonEntries = fields.map((f) {
-    final value = _toJson(f.schema, f.dartName, f.isRequired);
-    return f.isRequired
-        ? "'${f.jsonKey}': $value,"
-        : "if (${f.dartName} != null) '${f.jsonKey}': $value,";
+  final toJsonEntries = fields.map((field) {
+    final value = _toJson(field.schema, field.dartName, field.isRequired);
+    return field.isRequired
+        ? "'${field.jsonKey}': $value,"
+        : "if (${field.dartName} != null) '${field.jsonKey}': $value,";
   }).join('\n');
 
   return Class(
-    (b) => b
+    (classBuilder) => classBuilder
       ..name = name
       ..constructors.add(
         Constructor(
-          (c) => c
+          (constructorBuilder) => constructorBuilder
             ..optionalParameters.addAll([
-              for (final f in fields)
-                Parameter((p) => p
+              for (final field in fields)
+                Parameter((parameterBuilder) => parameterBuilder
                   ..named = true
                   ..toThis = true
-                  ..required = f.isRequired
-                  ..name = f.dartName),
+                  ..required = field.isRequired
+                  ..name = field.dartName),
             ]),
         ),
       )
       ..constructors.add(
         Constructor(
-          (c) => c
+          (constructorBuilder) => constructorBuilder
             ..factory = true
             ..name = 'fromJson'
             ..requiredParameters.add(
-              Parameter((p) => p
+              Parameter((parameterBuilder) => parameterBuilder
                 ..type = refer('Map<String, dynamic>')
                 ..name = 'json'),
             )
-            ..body = Code('return $name($fromJsonArgs);'),
+            ..body = Code('return $name($fromJsonArguments);'),
         ),
       )
       ..fields.addAll([
-        for (final f in fields)
-          Field((fb) => fb
+        for (final field in fields)
+          Field((fieldBuilder) => fieldBuilder
             ..modifier = FieldModifier.final$
-            ..type = refer(f.isRequired ? f.dartType : '${f.dartType}?')
-            ..name = f.dartName),
+            ..type =
+                refer(field.isRequired ? field.dartType : '${field.dartType}?')
+            ..name = field.dartName),
       ])
       ..methods.add(
         Method(
-          (m) => m
+          (methodBuilder) => methodBuilder
             ..name = 'toJson'
             ..returns = refer('Map<String, dynamic>')
             ..body = Code('return {$toJsonEntries};'),
@@ -181,20 +191,21 @@ Class _buildClient(String className, Map<String, dynamic> paths) {
   final methods = <Method>[];
   for (final pathEntry in paths.entries) {
     final operations = (pathEntry.value as Map).cast<String, dynamic>();
-    for (final opEntry in operations.entries) {
-      if (!_httpMethods.contains(opEntry.key)) continue;
+    for (final operationEntry in operations.entries) {
+      final method = _httpMethodFrom(operationEntry.key);
+      if (method == null) continue;
       methods.add(
         _buildOperation(
           pathEntry.key,
-          opEntry.key,
-          (opEntry.value as Map).cast<String, dynamic>(),
+          method,
+          (operationEntry.value as Map).cast<String, dynamic>(),
         ),
       );
     }
   }
 
   return Class(
-    (b) => b
+    (classBuilder) => classBuilder
       ..name = className
       ..docs.addAll([
         '/// Generated HTTP client. Every operation goes through the',
@@ -202,16 +213,16 @@ Class _buildClient(String className, Map<String, dynamic> paths) {
       ])
       ..constructors.add(
         Constructor(
-          (c) => c
+          (constructorBuilder) => constructorBuilder
             ..requiredParameters.add(
-              Parameter((p) => p
+              Parameter((parameterBuilder) => parameterBuilder
                 ..toThis = true
                 ..name = '_client'),
             ),
         ),
       )
       ..fields.add(
-        Field((f) => f
+        Field((fieldBuilder) => fieldBuilder
           ..modifier = FieldModifier.final$
           ..type = refer('ApiClient')
           ..name = '_client'),
@@ -220,31 +231,36 @@ Class _buildClient(String className, Map<String, dynamic> paths) {
   );
 }
 
-Method _buildOperation(String path, String method, Map<String, dynamic> op) {
-  final operationId = op['operationId'] as String;
-  final parameters = ((op['parameters'] as List?) ?? [])
+Method _buildOperation(
+  String path,
+  HttpMethod method,
+  Map<String, dynamic> operation,
+) {
+  final operationId = operation['operationId'] as String;
+  final parameters = ((operation['parameters'] as List?) ?? [])
       .cast<Map>()
-      .map((p) => p.cast<String, dynamic>())
+      .map((parameter) => parameter.cast<String, dynamic>())
       .toList();
 
-  final pathParams = parameters.where((p) => p['in'] == 'path').toList();
-  final headerParams = parameters.where((p) => p['in'] == 'header').toList();
-  final queryParams = parameters.where((p) => p['in'] == 'query').toList();
+  final pathParameters = parameters.where((p) => p['in'] == 'path').toList();
+  final headerParameters = parameters.where((p) => p['in'] == 'header').toList();
+  final queryParameters = parameters.where((p) => p['in'] == 'query').toList();
 
-  final body = _resolveBody(op);
-  final response = _resolveResponse(op);
+  final body = _resolveBody(operation);
+  final response = _resolveResponse(operation);
 
-  final params = <Parameter>[
-    for (final param in pathParams)
-      _namedParam('String', _camelCase(_stripWildcard(param['name'] as String)),
+  final namedParameters = <Parameter>[
+    for (final parameter in pathParameters)
+      _namedParameter(
+          'String', _camelCase(_stripWildcard(parameter['name'] as String)),
           required: true),
-    for (final param in headerParams)
-      _namedParam(_headerDartType(param['schema'] as Map?),
-          _camelCase(param['name'] as String),
-          required: param['required'] == true),
-    for (final param in queryParams)
-      _namedParam(_headerDartType(param['schema'] as Map?),
-          _camelCase(param['name'] as String),
+    for (final parameter in headerParameters)
+      _namedParameter(_headerDartType(parameter['schema'] as Map?),
+          _camelCase(parameter['name'] as String),
+          required: parameter['required'] == true),
+    for (final parameter in queryParameters)
+      _namedParameter(_headerDartType(parameter['schema'] as Map?),
+          _camelCase(parameter['name'] as String),
           required: false),
     ...body.parameters,
   ];
@@ -254,60 +270,60 @@ Method _buildOperation(String path, String method, Map<String, dynamic> op) {
   // URI. Path values are percent-encoded so keys with reserved characters
   // (spaces, `?`, `#`, …) don't corrupt the URL. Wildcard segments keep `/`.
   var dartPath = path;
-  for (final param in pathParams) {
-    final wire = param['name'] as String;
+  for (final parameter in pathParameters) {
+    final wire = parameter['name'] as String;
     final name = _camelCase(_stripWildcard(wire));
     final encoded =
         wire.endsWith('+') ? 'encodePath($name)' : 'Uri.encodeComponent($name)';
     dartPath = dartPath.replaceAll('{$wire}', '\${$encoded}');
   }
-  if (queryParams.isEmpty) {
+  if (queryParameters.isEmpty) {
     buffer.writeln("final uri = _client.uri('$dartPath');");
   } else {
     buffer.writeln("final uri = _client.uri('$dartPath', {");
-    for (final param in queryParams) {
-      final name = _camelCase(param['name'] as String);
-      final type = _headerDartType(param['schema'] as Map?);
-      final valueExpr = type == 'String' ? name : '$name?.toString()';
-      buffer.writeln("'${param['name']}': $valueExpr,");
+    for (final parameter in queryParameters) {
+      final name = _camelCase(parameter['name'] as String);
+      final type = _headerDartType(parameter['schema'] as Map?);
+      final valueExpression = type == 'String' ? name : '$name?.toString()';
+      buffer.writeln("'${parameter['name']}': $valueExpression,");
     }
     buffer.writeln('});');
   }
 
   buffer.writeln('final headers = await _client.headers({');
-  for (final param in headerParams) {
-    final wire = param['name'] as String;
+  for (final parameter in headerParameters) {
+    final wire = parameter['name'] as String;
     final name = _camelCase(wire);
-    final type = _headerDartType(param['schema'] as Map?);
-    final valueExpr = type == 'String' ? name : '\'\$$name\'';
-    if (param['required'] == true) {
-      buffer.writeln("'$wire': $valueExpr,");
+    final type = _headerDartType(parameter['schema'] as Map?);
+    final valueExpression = type == 'String' ? name : '\'\$$name\'';
+    if (parameter['required'] == true) {
+      buffer.writeln("'$wire': $valueExpression,");
     } else {
-      buffer.writeln("if ($name != null) '$wire': $valueExpr,");
+      buffer.writeln("if ($name != null) '$wire': $valueExpression,");
     }
   }
   buffer.writeln('});');
 
   // Operation-owned headers (e.g. the JSON content-type) are applied after
   // addAll so caller/default headers can't clobber them.
-  buffer.write(body.buildRequest(method.toUpperCase()));
+  buffer.write(body.buildRequest(method.name.toUpperCase()));
   buffer.writeln('request.headers.addAll(headers);');
   buffer.write(body.afterHeaders);
   buffer.writeln('final streamed = await _client.send(request);');
   buffer.write(response.handle);
 
   return Method(
-    (m) => m
+    (methodBuilder) => methodBuilder
       ..name = _lowerFirst(operationId)
       ..modifier = MethodModifier.async
       ..returns = refer('Future<${response.returnType}>')
-      ..optionalParameters.addAll(params)
+      ..optionalParameters.addAll(namedParameters)
       ..body = Code(buffer.toString()),
   );
 }
 
-Parameter _namedParam(String type, String name, {required bool required}) =>
-    Parameter((p) => p
+Parameter _namedParameter(String type, String name, {required bool required}) =>
+    Parameter((parameterBuilder) => parameterBuilder
       ..named = true
       ..required = required
       ..type = refer(required ? type : '$type?')
@@ -330,14 +346,13 @@ class _Body {
   final String afterHeaders;
 }
 
-_Body _resolveBody(Map<String, dynamic> op) {
+_Body _resolveBody(Map<String, dynamic> operation) {
   final content =
-      (op['requestBody']?['content'] as Map?)?.cast<String, dynamic>();
+      (operation['requestBody']?['content'] as Map?)?.cast<String, dynamic>();
   if (content == null) {
     return _Body(
       parameters: const [],
-      buildRequest: (method) =>
-          "final request = http.Request('$method', uri);\n",
+      buildRequest: (method) => "final request = http.Request('$method', uri);\n",
     );
   }
 
@@ -348,9 +363,9 @@ _Body _resolveBody(Map<String, dynamic> op) {
   final jsonContent = content['application/json'];
   if (jsonContent != null) {
     final schema = (jsonContent['schema'] as Map).cast<String, dynamic>();
-    final type = _refName(schema[r'$ref'] as String);
+    final type = _referenceName(schema[r'$ref'] as String);
     return _Body(
-      parameters: [_namedParam(type, 'body', required: true)],
+      parameters: [_namedParameter(type, 'body', required: true)],
       buildRequest: (method) => "final request = http.Request('$method', uri)\n"
           '..body = jsonEncode(body.toJson());\n',
       afterHeaders: "request.headers['content-type'] = 'application/json';\n",
@@ -360,11 +375,10 @@ _Body _resolveBody(Map<String, dynamic> op) {
   // Binary / streaming payload (e.g. TUS UploadChunk).
   return _Body(
     parameters: [
-      _namedParam('Stream<List<int>>', 'body', required: true),
-      _namedParam('int', 'contentLength', required: false),
+      _namedParameter('Stream<List<int>>', 'body', required: true),
+      _namedParameter('int', 'contentLength', required: false),
     ],
-    buildRequest: (method) =>
-        "final request = streamingRequest('$method', uri, "
+    buildRequest: (method) => "final request = streamingRequest('$method', uri, "
         'body: body, contentLength: contentLength);\n',
   );
 }
@@ -373,34 +387,34 @@ _Body _multipartBody(Map content) {
   final schema = (content['schema'] as Map).cast<String, dynamic>();
   final properties = (schema['properties'] as Map).cast<String, dynamic>();
 
-  final fieldParams = <Parameter>[];
+  final fieldParameters = <Parameter>[];
   final fieldWrites = <String>[];
   String? fileField;
   properties.forEach((key, raw) {
-    final propSchema = (raw as Map).cast<String, dynamic>();
+    final propertySchema = (raw as Map).cast<String, dynamic>();
     final name = _camelCase(key);
-    if (propSchema['format'] == 'binary') {
+    if (propertySchema['format'] == 'binary') {
       fileField = key;
-    } else if (propSchema['type'] == 'object') {
-      fieldParams
-          .add(_namedParam('Map<String, dynamic>', name, required: false));
-      fieldWrites.add(
-          "if ($name != null) request.fields['$key'] = jsonEncode($name);");
+    } else if (propertySchema['type'] == 'object') {
+      fieldParameters
+          .add(_namedParameter('Map<String, dynamic>', name, required: false));
+      fieldWrites
+          .add("if ($name != null) request.fields['$key'] = jsonEncode($name);");
     } else {
-      fieldParams.add(_namedParam('String', name, required: false));
+      fieldParameters.add(_namedParameter('String', name, required: false));
       fieldWrites.add("if ($name != null) request.fields['$key'] = $name;");
     }
   });
 
-  final params = <Parameter>[
-    _namedParam('Stream<List<int>>', 'file', required: true),
-    _namedParam('int', 'fileLength', required: true),
-    ...fieldParams,
-    _namedParam('String', 'fileName', required: false),
+  final parameters = <Parameter>[
+    _namedParameter('Stream<List<int>>', 'file', required: true),
+    _namedParameter('int', 'fileLength', required: true),
+    ...fieldParameters,
+    _namedParameter('String', 'fileName', required: false),
   ];
 
   return _Body(
-    parameters: params,
+    parameters: parameters,
     buildRequest: (method) {
       final buffer = StringBuffer()
         ..writeln("final request = http.MultipartRequest('$method', uri);")
@@ -427,8 +441,8 @@ class _Response {
   final String handle;
 }
 
-_Response _resolveResponse(Map<String, dynamic> op) {
-  final responses = (op['responses'] as Map).cast<String, dynamic>();
+_Response _resolveResponse(Map<String, dynamic> operation) {
+  final responses = (operation['responses'] as Map).cast<String, dynamic>();
   final successKey = ['200', '201', '204', '202']
       .firstWhere(responses.containsKey, orElse: () => '');
   final success =
@@ -439,7 +453,7 @@ _Response _resolveResponse(Map<String, dynamic> op) {
     final jsonContent = content['application/json'];
     if (jsonContent != null) {
       final schema = (jsonContent['schema'] as Map).cast<String, dynamic>();
-      final type = _refName(schema[r'$ref'] as String);
+      final type = _referenceName(schema[r'$ref'] as String);
       return _Response(
         returnType: type,
         handle: 'final response = await readOrThrow(streamed);\n'
@@ -478,8 +492,7 @@ _Response _resolveResponse(Map<String, dynamic> op) {
       buffer.writeln("'${_camelCase(wire)}': $read,");
     }
     buffer.writeln('};');
-    return _Response(
-        returnType: 'Map<String, dynamic>', handle: buffer.toString());
+    return _Response(returnType: 'Map<String, dynamic>', handle: buffer.toString());
   }
 
   // No content.
@@ -508,7 +521,9 @@ class _Field {
 }
 
 String _dartType(Map schema) {
-  if (schema.containsKey(r'$ref')) return _refName(schema[r'$ref'] as String);
+  if (schema.containsKey(r'$ref')) {
+    return _referenceName(schema[r'$ref'] as String);
+  }
   switch (schema['type']) {
     case 'string':
       final format = schema['format'];
@@ -529,31 +544,31 @@ String _dartType(Map schema) {
   }
 }
 
-String _fromJson(Map schema, String expr, bool isRequired) {
+String _fromJson(Map schema, String expression, bool isRequired) {
   final suffix = isRequired ? '' : '?';
   if (schema.containsKey(r'$ref')) {
-    final type = _refName(schema[r'$ref'] as String);
+    final type = _referenceName(schema[r'$ref'] as String);
     if (isRequired) {
-      return '$type.fromJson($expr as Map<String, dynamic>)';
+      return '$type.fromJson($expression as Map<String, dynamic>)';
     }
-    return '$expr == null ? null : $type.fromJson($expr as Map<String, dynamic>)';
+    return '$expression == null ? null : $type.fromJson($expression as Map<String, dynamic>)';
   }
   switch (schema['type']) {
     case 'array':
-      final items = (schema['items'] as Map);
+      final items = schema['items'] as Map;
       if (items.containsKey(r'$ref')) {
-        final type = _refName(items[r'$ref'] as String);
-        final map =
-            '($expr as List).map((e) => $type.fromJson(e as Map<String, dynamic>)).toList()';
-        return isRequired ? map : '$expr == null ? null : $map';
+        final type = _referenceName(items[r'$ref'] as String);
+        final mapped =
+            '($expression as List).map((element) => $type.fromJson(element as Map<String, dynamic>)).toList()';
+        return isRequired ? mapped : '$expression == null ? null : $mapped';
       }
       final inner = _dartType(items);
-      final cast = '($expr as List).cast<$inner>()';
-      return isRequired ? cast : '$expr == null ? null : $cast';
+      final cast = '($expression as List).cast<$inner>()';
+      return isRequired ? cast : '$expression == null ? null : $cast';
     case 'object':
-      return '$expr as Map<String, dynamic>$suffix';
+      return '$expression as Map<String, dynamic>$suffix';
     default:
-      return '$expr as ${_dartType(schema)}$suffix';
+      return '$expression as ${_dartType(schema)}$suffix';
   }
 }
 
@@ -563,9 +578,9 @@ String _toJson(Map schema, String name, bool isRequired) {
     return '$access.toJson()';
   }
   if (schema['type'] == 'array') {
-    final items = (schema['items'] as Map);
+    final items = schema['items'] as Map;
     if (items.containsKey(r'$ref')) {
-      return '$access.map((e) => e.toJson()).toList()';
+      return '$access.map((element) => element.toJson()).toList()';
     }
   }
   return name;
@@ -578,7 +593,7 @@ String _headerDartType(Map? schema) {
   return 'String';
 }
 
-String _refName(String ref) => ref.split('/').last;
+String _referenceName(String reference) => reference.split('/').last;
 
 String _stripWildcard(String name) =>
     name.endsWith('+') ? name.substring(0, name.length - 1) : name;

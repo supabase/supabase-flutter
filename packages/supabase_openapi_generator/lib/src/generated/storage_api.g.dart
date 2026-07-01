@@ -225,7 +225,10 @@ class CreateSignedUrlsResponseContent {
   factory CreateSignedUrlsResponseContent.fromJson(Map<String, dynamic> json) {
     return CreateSignedUrlsResponseContent(
       items: (json['items'] as List)
-          .map((e) => SignedUrlResult.fromJson(e as Map<String, dynamic>))
+          .map(
+            (element) =>
+                SignedUrlResult.fromJson(element as Map<String, dynamic>),
+          )
           .toList(),
     );
   }
@@ -233,7 +236,7 @@ class CreateSignedUrlsResponseContent {
   final List<SignedUrlResult> items;
 
   Map<String, dynamic> toJson() {
-    return {'items': items.map((e) => e.toJson()).toList()};
+    return {'items': items.map((element) => element.toJson()).toList()};
   }
 }
 
@@ -259,7 +262,9 @@ class DeleteObjectsResponseContent {
   factory DeleteObjectsResponseContent.fromJson(Map<String, dynamic> json) {
     return DeleteObjectsResponseContent(
       items: (json['items'] as List)
-          .map((e) => FileObject.fromJson(e as Map<String, dynamic>))
+          .map(
+            (element) => FileObject.fromJson(element as Map<String, dynamic>),
+          )
           .toList(),
     );
   }
@@ -267,7 +272,7 @@ class DeleteObjectsResponseContent {
   final List<FileObject> items;
 
   Map<String, dynamic> toJson() {
-    return {'items': items.map((e) => e.toJson()).toList()};
+    return {'items': items.map((element) => element.toJson()).toList()};
   }
 }
 
@@ -476,7 +481,7 @@ class ListBucketsResponseContent {
   factory ListBucketsResponseContent.fromJson(Map<String, dynamic> json) {
     return ListBucketsResponseContent(
       items: (json['items'] as List)
-          .map((e) => Bucket.fromJson(e as Map<String, dynamic>))
+          .map((element) => Bucket.fromJson(element as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -484,7 +489,7 @@ class ListBucketsResponseContent {
   final List<Bucket> items;
 
   Map<String, dynamic> toJson() {
-    return {'items': items.map((e) => e.toJson()).toList()};
+    return {'items': items.map((element) => element.toJson()).toList()};
   }
 }
 
@@ -531,7 +536,9 @@ class ListObjectsResponseContent {
   factory ListObjectsResponseContent.fromJson(Map<String, dynamic> json) {
     return ListObjectsResponseContent(
       items: (json['items'] as List)
-          .map((e) => FileObject.fromJson(e as Map<String, dynamic>))
+          .map(
+            (element) => FileObject.fromJson(element as Map<String, dynamic>),
+          )
           .toList(),
     );
   }
@@ -539,7 +546,7 @@ class ListObjectsResponseContent {
   final List<FileObject> items;
 
   Map<String, dynamic> toJson() {
-    return {'items': items.map((e) => e.toJson()).toList()};
+    return {'items': items.map((element) => element.toJson()).toList()};
   }
 }
 
