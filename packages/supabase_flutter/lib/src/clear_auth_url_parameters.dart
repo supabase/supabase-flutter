@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 const _authParameters = {
   'code',
   'access_token',
@@ -19,6 +21,7 @@ const _authParameters = {
 /// After a successful code exchange the auth code is single use, so leaving it
 /// in the URL means a page refresh would attempt to exchange a spent code and
 /// fail with "Code verifier could not be found in local storage.".
+@internal
 String removeAuthParametersFromUrl(String url) {
   final currentUri = Uri.parse(url);
 
