@@ -311,7 +311,7 @@ void main() {
       await mockServer.close();
       await Future.delayed(const Duration(milliseconds: 200));
       expect(socket.connState, SocketStates.closed);
-      expect(socket.conn, isNotNull);
+      expect(socket.conn, isNull);
 
       final disconnectFuture = socket.disconnect();
 
@@ -338,8 +338,6 @@ void main() {
 
       final mockedSocket = RealtimeClient(
         socketEndpoint,
-        // Reconnect almost immediately so the test doesn't wait for the
-        // default backoff.
         reconnectAfterMs: (tries) => 20,
         transport: (url, headers) {
           connectCount++;
@@ -350,16 +348,12 @@ void main() {
       await mockedSocket.connect();
       expect(connectCount, 1);
 
-      // Simulate the server dropping the connection: `onDone` fires, the socket
-      // is marked closed and a reconnect is scheduled.
       await streamController.close();
       await Future.delayed(const Duration(milliseconds: 5));
       expect(mockedSocket.connState, SocketStates.closed);
 
-      // The user disconnects explicitly while the socket is already closed.
       await mockedSocket.disconnect();
 
-      // Wait past the reconnect delay; the scheduled reconnect must be canceled.
       await Future.delayed(const Duration(milliseconds: 60));
       expect(connectCount, 1,
           reason: 'must not reopen after a user disconnect');

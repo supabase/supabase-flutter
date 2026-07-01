@@ -303,19 +303,13 @@ class RealtimeClient {
         log('transport', 'disconnected', null, Level.FINE);
       }
 
-      // Cancel any reconnect scheduled by `_onConnClose`. When the socket has
-      // already dropped (`connState == closed`) the block above is skipped, so
-      // without this an armed backoff timer would fire after the user
-      // explicitly disconnected and silently reopen the connection.
-      reconnectTimer.reset();
-
       this.conn = null;
-      await _connectionSubscription?.cancel();
-      _connectionSubscription = null;
-
-      // remove open handles
-      if (heartbeatTimer != null) heartbeatTimer?.cancel();
     }
+
+    reconnectTimer.reset();
+    await _connectionSubscription?.cancel();
+    _connectionSubscription = null;
+    if (heartbeatTimer != null) heartbeatTimer?.cancel();
   }
 
   List<RealtimeChannel> getChannels() {
@@ -560,6 +554,8 @@ class RealtimeClient {
     for (final callback in stateChangeCallbacks['close']!) {
       callback(event);
     }
+
+    conn = null;
   }
 
   void _onConnError(dynamic error) {
