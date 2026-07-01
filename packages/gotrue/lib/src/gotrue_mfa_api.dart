@@ -56,13 +56,19 @@ class GoTrueMFAApi {
       'factor_type': factorType.name,
     };
 
-    if (factorType == FactorType.totp && issuer != null) {
-      body['issuer'] = issuer;
-    } else if (factorType == FactorType.phone && phone != null) {
+    if (factorType == FactorType.totp) {
+      if (issuer != null) {
+        body['issuer'] = issuer;
+      }
+    } else if (factorType == FactorType.phone) {
+      if (phone == null) {
+        throw ArgumentError(
+            'Invalid arguments, expected a phone for the phone factor type.');
+      }
       body['phone'] = phone;
     } else {
       throw ArgumentError(
-          'Invalid arguments, expected an issuer for totp factor type or phone for phone factor. type');
+          'Invalid arguments, unsupported factor type for enroll: ${factorType.name}.');
     }
 
     final data = await _fetch.request(

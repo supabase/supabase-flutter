@@ -1,3 +1,11 @@
+## 2.6.3
+
+ - **FIX**(functions): drain error responses with a streaming content type ([#1480](https://github.com/supabase/supabase-flutter/issues/1480)). ([0eeb4130](https://github.com/supabase/supabase-flutter/commit/0eeb4130a260216415dc81de0e9e1386ca8219d2))
+
+## 2.6.2
+
+ - **FIX**(functions_client): use case-insensitive check for Content-Type header in invoke() ([#1486](https://github.com/supabase/supabase-flutter/issues/1486)). ([b98536a3](https://github.com/supabase/supabase-flutter/commit/b98536a3183631cd207357c63ef75bd2d3c1ea83))
+
 ## 2.6.1
 
  - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))

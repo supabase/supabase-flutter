@@ -94,9 +94,9 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     bool defaultToNull = true,
   }) {
     final newHeaders = {..._headers};
-    newHeaders['Prefer'] = '';
-
-    if (!defaultToNull) {
+    if (defaultToNull) {
+      newHeaders.remove('Prefer');
+    } else {
       newHeaders['Prefer'] = 'missing=default';
     }
 
@@ -202,8 +202,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .select();
   /// ```
   PostgrestFilterBuilder<T> update(Map values) {
-    final newHeaders = {..._headers};
-    newHeaders['Prefer'] = '';
+    final newHeaders = {..._headers}..remove('Prefer');
 
     return PostgrestFilterBuilder(_copyWith(
       method: HttpMethod.patch,
@@ -233,8 +232,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .select();
   /// ```
   PostgrestFilterBuilder<T> delete() {
-    final newHeaders = {..._headers};
-    newHeaders['Prefer'] = '';
+    final newHeaders = {..._headers}..remove('Prefer');
     return PostgrestFilterBuilder(_copyWith(
       method: HttpMethod.delete,
       headers: newHeaders,
