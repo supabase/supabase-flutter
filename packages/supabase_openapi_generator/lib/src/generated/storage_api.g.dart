@@ -658,16 +658,15 @@ class StorageApi {
   Future<void> createBucket({required CreateBucketRequestContent body}) async {
     final uri = _client.uri('/bucket');
     final headers = await _client.headers({});
-    final request = http.Request('POST', uri)
-      ..headers['content-type'] = 'application/json'
-      ..body = jsonEncode(body.toJson());
+    final request = http.Request('POST', uri)..body = jsonEncode(body.toJson());
     request.headers.addAll(headers);
+    request.headers['content-type'] = 'application/json';
     final streamed = await _client.send(request);
     await readOrThrow(streamed);
   }
 
   Future<void> deleteBucket({required String id}) async {
-    final uri = _client.uri('/bucket/${id}');
+    final uri = _client.uri('/bucket/${Uri.encodeComponent(id)}');
     final headers = await _client.headers({});
     final request = http.Request('DELETE', uri);
     request.headers.addAll(headers);
@@ -676,7 +675,7 @@ class StorageApi {
   }
 
   Future<GetBucketResponseContent> getBucket({required String id}) async {
-    final uri = _client.uri('/bucket/${id}');
+    final uri = _client.uri('/bucket/${Uri.encodeComponent(id)}');
     final headers = await _client.headers({});
     final request = http.Request('GET', uri);
     request.headers.addAll(headers);
@@ -688,18 +687,17 @@ class StorageApi {
 
   Future<void> updateBucket(
       {required String id, required UpdateBucketRequestContent body}) async {
-    final uri = _client.uri('/bucket/${id}');
+    final uri = _client.uri('/bucket/${Uri.encodeComponent(id)}');
     final headers = await _client.headers({});
-    final request = http.Request('PUT', uri)
-      ..headers['content-type'] = 'application/json'
-      ..body = jsonEncode(body.toJson());
+    final request = http.Request('PUT', uri)..body = jsonEncode(body.toJson());
     request.headers.addAll(headers);
+    request.headers['content-type'] = 'application/json';
     final streamed = await _client.send(request);
     await readOrThrow(streamed);
   }
 
   Future<void> emptyBucket({required String id}) async {
-    final uri = _client.uri('/bucket/${id}/empty');
+    final uri = _client.uri('/bucket/${Uri.encodeComponent(id)}/empty');
     final headers = await _client.headers({});
     final request = http.Request('POST', uri);
     request.headers.addAll(headers);
@@ -711,10 +709,9 @@ class StorageApi {
       {required CopyObjectRequestContent body}) async {
     final uri = _client.uri('/object/copy');
     final headers = await _client.headers({});
-    final request = http.Request('POST', uri)
-      ..headers['content-type'] = 'application/json'
-      ..body = jsonEncode(body.toJson());
+    final request = http.Request('POST', uri)..body = jsonEncode(body.toJson());
     request.headers.addAll(headers);
+    request.headers['content-type'] = 'application/json';
     final streamed = await _client.send(request);
     final response = await readOrThrow(streamed);
     return CopyObjectResponseContent.fromJson(
@@ -723,7 +720,8 @@ class StorageApi {
 
   Future<GetObjectInfoResponseContent> getObjectInfo(
       {required String bucketId, required String wildcardPath}) async {
-    final uri = _client.uri('/object/info/${bucketId}/${wildcardPath}');
+    final uri = _client.uri(
+        '/object/info/${Uri.encodeComponent(bucketId)}/${encodePath(wildcardPath)}');
     final headers = await _client.headers({});
     final request = http.Request('GET', uri);
     request.headers.addAll(headers);
@@ -736,12 +734,11 @@ class StorageApi {
   Future<ListObjectsResponseContent> listObjects(
       {required String bucketId,
       required ListObjectsRequestContent body}) async {
-    final uri = _client.uri('/object/list/${bucketId}');
+    final uri = _client.uri('/object/list/${Uri.encodeComponent(bucketId)}');
     final headers = await _client.headers({});
-    final request = http.Request('POST', uri)
-      ..headers['content-type'] = 'application/json'
-      ..body = jsonEncode(body.toJson());
+    final request = http.Request('POST', uri)..body = jsonEncode(body.toJson());
     request.headers.addAll(headers);
+    request.headers['content-type'] = 'application/json';
     final streamed = await _client.send(request);
     final response = await readOrThrow(streamed);
     return ListObjectsResponseContent.fromJson(
@@ -751,10 +748,9 @@ class StorageApi {
   Future<void> moveObject({required MoveObjectRequestContent body}) async {
     final uri = _client.uri('/object/move');
     final headers = await _client.headers({});
-    final request = http.Request('POST', uri)
-      ..headers['content-type'] = 'application/json'
-      ..body = jsonEncode(body.toJson());
+    final request = http.Request('POST', uri)..body = jsonEncode(body.toJson());
     request.headers.addAll(headers);
+    request.headers['content-type'] = 'application/json';
     final streamed = await _client.send(request);
     await readOrThrow(streamed);
   }
@@ -762,12 +758,11 @@ class StorageApi {
   Future<CreateSignedUrlsResponseContent> createSignedUrls(
       {required String bucketId,
       required CreateSignedUrlsRequestContent body}) async {
-    final uri = _client.uri('/object/sign/${bucketId}');
+    final uri = _client.uri('/object/sign/${Uri.encodeComponent(bucketId)}');
     final headers = await _client.headers({});
-    final request = http.Request('POST', uri)
-      ..headers['content-type'] = 'application/json'
-      ..body = jsonEncode(body.toJson());
+    final request = http.Request('POST', uri)..body = jsonEncode(body.toJson());
     request.headers.addAll(headers);
+    request.headers['content-type'] = 'application/json';
     final streamed = await _client.send(request);
     final response = await readOrThrow(streamed);
     return CreateSignedUrlsResponseContent.fromJson(
@@ -778,12 +773,12 @@ class StorageApi {
       {required String bucketId,
       required String wildcardPath,
       required CreateSignedUrlRequestContent body}) async {
-    final uri = _client.uri('/object/sign/${bucketId}/${wildcardPath}');
+    final uri = _client.uri(
+        '/object/sign/${Uri.encodeComponent(bucketId)}/${encodePath(wildcardPath)}');
     final headers = await _client.headers({});
-    final request = http.Request('POST', uri)
-      ..headers['content-type'] = 'application/json'
-      ..body = jsonEncode(body.toJson());
+    final request = http.Request('POST', uri)..body = jsonEncode(body.toJson());
     request.headers.addAll(headers);
+    request.headers['content-type'] = 'application/json';
     final streamed = await _client.send(request);
     final response = await readOrThrow(streamed);
     return CreateSignedUrlResponseContent.fromJson(
@@ -794,7 +789,8 @@ class StorageApi {
       {required String bucketId,
       required String wildcardPath,
       String? xUpsert}) async {
-    final uri = _client.uri('/object/upload/sign/${bucketId}/${wildcardPath}');
+    final uri = _client.uri(
+        '/object/upload/sign/${Uri.encodeComponent(bucketId)}/${encodePath(wildcardPath)}');
     final headers = await _client.headers({
       if (xUpsert != null) 'x-upsert': xUpsert,
     });
@@ -809,12 +805,12 @@ class StorageApi {
   Future<DeleteObjectsResponseContent> deleteObjects(
       {required String bucketId,
       required DeleteObjectsRequestContent body}) async {
-    final uri = _client.uri('/object/${bucketId}');
+    final uri = _client.uri('/object/${Uri.encodeComponent(bucketId)}');
     final headers = await _client.headers({});
     final request = http.Request('DELETE', uri)
-      ..headers['content-type'] = 'application/json'
       ..body = jsonEncode(body.toJson());
     request.headers.addAll(headers);
+    request.headers['content-type'] = 'application/json';
     final streamed = await _client.send(request);
     final response = await readOrThrow(streamed);
     return DeleteObjectsResponseContent.fromJson(
@@ -823,7 +819,8 @@ class StorageApi {
 
   Future<void> headObject(
       {required String bucketId, required String wildcardPath}) async {
-    final uri = _client.uri('/object/${bucketId}/${wildcardPath}');
+    final uri = _client.uri(
+        '/object/${Uri.encodeComponent(bucketId)}/${encodePath(wildcardPath)}');
     final headers = await _client.headers({});
     final request = http.Request('HEAD', uri);
     request.headers.addAll(headers);
@@ -840,7 +837,8 @@ class StorageApi {
       String? cacheControl,
       Map<String, dynamic>? metadata,
       String? fileName}) async {
-    final uri = _client.uri('/object/${bucketId}/${wildcardPath}');
+    final uri = _client.uri(
+        '/object/${Uri.encodeComponent(bucketId)}/${encodePath(wildcardPath)}');
     final headers = await _client.headers({
       if (xUpsert != null) 'x-upsert': xUpsert,
     });
@@ -868,7 +866,8 @@ class StorageApi {
       String? cacheControl,
       Map<String, dynamic>? metadata,
       String? fileName}) async {
-    final uri = _client.uri('/object/${bucketId}/${wildcardPath}');
+    final uri = _client.uri(
+        '/object/${Uri.encodeComponent(bucketId)}/${encodePath(wildcardPath)}');
     final headers = await _client.headers({});
     final request = http.MultipartRequest('PUT', uri);
     request.files.add(http.MultipartFile(
@@ -909,7 +908,8 @@ class StorageApi {
 
   Future<Map<String, dynamic>> getUploadOffset(
       {required String uploadId, required String tusResumable}) async {
-    final uri = _client.uri('/upload/resumable/${uploadId}');
+    final uri =
+        _client.uri('/upload/resumable/${Uri.encodeComponent(uploadId)}');
     final headers = await _client.headers({
       'Tus-Resumable': tusResumable,
     });
@@ -918,7 +918,7 @@ class StorageApi {
     final streamed = await _client.send(request);
     final response = await readOrThrow(streamed);
     return {
-      'uploadOffset': int.parse(response.headers['upload-offset']!),
+      'uploadOffset': parseIntHeader(response.headers['upload-offset']),
     };
   }
 
@@ -928,7 +928,8 @@ class StorageApi {
       required int uploadOffset,
       required Stream<List<int>> body,
       int? contentLength}) async {
-    final uri = _client.uri('/upload/resumable/${uploadId}');
+    final uri =
+        _client.uri('/upload/resumable/${Uri.encodeComponent(uploadId)}');
     final headers = await _client.headers({
       'Tus-Resumable': tusResumable,
       'Upload-Offset': '$uploadOffset',
@@ -939,7 +940,7 @@ class StorageApi {
     final streamed = await _client.send(request);
     final response = await readOrThrow(streamed);
     return {
-      'uploadOffset': int.parse(response.headers['upload-offset']!),
+      'uploadOffset': parseIntHeader(response.headers['upload-offset']),
     };
   }
 }

@@ -6,9 +6,9 @@ import 'package:http/http.dart' as http;
 /// A callback invoked before every request to supply headers whose values can
 /// change at runtime, most importantly the `Authorization` bearer token.
 ///
-/// This is the interceptor/middleware hook (spike question 4). Because it runs
-/// per request, a token refreshed by the auth loop is always picked up without
-/// rebuilding the client.
+/// This is the interceptor/middleware hook. Because it runs per request, a
+/// token refreshed by the auth loop is always picked up without rebuilding the
+/// client.
 typedef HeaderProvider = FutureOr<Map<String, String>> Function();
 
 /// Thrown for any non-2xx response. [body] is the decoded error payload when
@@ -29,7 +29,7 @@ class ApiException implements Exception {
 }
 
 /// A response whose body is handed to the caller as a live byte stream instead
-/// of being buffered (spike question 2). Used for operations that return
+/// of being buffered. Used for operations that return
 /// `application/octet-stream`, e.g. Functions streaming/SSE responses.
 class StreamedApiResponse {
   StreamedApiResponse({
@@ -115,9 +115,20 @@ ApiException _errorFrom(http.Response response) {
   );
 }
 
+/// Percent-encodes a path value per RFC 3986 path-segment rules, preserving
+/// `/` separators (so wildcard object keys with sub-paths stay intact). Mirrors
+/// the encoding the hand-written storage client applies to object keys.
+String encodePath(String value) => Uri(pathSegments: value.split('/')).path;
+
+/// Reads an integer-valued response header without crashing when it is absent
+/// or non-integer. Returns null instead of throwing.
+int? parseIntHeader(String? value) =>
+    value == null ? null : num.tryParse(value)?.toInt();
+
 /// Feeds [body] into a [http.StreamedRequest] without collecting it into memory
-/// first (spike question 1). The bytes flow straight from the source stream to
-/// the socket.
+/// first. The bytes flow straight from the source stream to
+/// the socket. Uses [StreamSink.addStream] so a source error propagates to the
+/// send future instead of becoming an unhandled error after the sink closes.
 http.StreamedRequest streamingRequest(
   String method,
   Uri uri, {
@@ -128,11 +139,6 @@ http.StreamedRequest streamingRequest(
   if (contentLength != null) {
     request.contentLength = contentLength;
   }
-  body.listen(
-    request.sink.add,
-    onError: request.sink.addError,
-    onDone: request.sink.close,
-    cancelOnError: true,
-  );
+  request.sink.addStream(body).whenComplete(request.sink.close);
   return request;
 }

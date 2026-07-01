@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-/// A minimal, dependency-free OpenAPI 3.0 -> idiomatic Dart emitter for the
-/// Supabase HTTP layer. It consumes the committed artifacts in `openapi/`
-/// (produced from the shared Smithy models in supabase/sdk#51) and writes
-/// `http`-based clients into `lib/src/generated/`.
+/// A minimal, dependency-free OpenAPI 3.0 -> idiomatic Dart emitter. It
+/// consumes the OpenAPI documents in `openapi/` and writes `http`-based clients
+/// into `lib/src/generated/`.
 ///
 /// Run with: `dart run bin/generate.dart`
 void main() {
@@ -210,14 +209,15 @@ String _generateOperation(
     ..writeln(
         '  Future<${response.returnType}> $methodName($signature) async {');
 
-  // URI.
+  // URI. Path values are percent-encoded so keys with reserved characters
+  // (spaces, `?`, `#`, …) don't corrupt the URL. Wildcard segments keep `/`.
   var dartPath = path;
   for (final param in pathParams) {
     final wire = param['name'] as String;
-    dartPath = dartPath.replaceAll(
-      '{$wire}',
-      '\${${_camelCase(_stripWildcard(wire))}}',
-    );
+    final name = _camelCase(_stripWildcard(wire));
+    final encoded =
+        wire.endsWith('+') ? 'encodePath($name)' : 'Uri.encodeComponent($name)';
+    dartPath = dartPath.replaceAll('{$wire}', '\${$encoded}');
   }
   if (queryParams.isEmpty) {
     buffer.writeln("    final uri = _client.uri('$dartPath');");
@@ -245,9 +245,12 @@ String _generateOperation(
   }
   buffer.writeln('    });');
 
-  // Request construction + send.
+  // Request construction + send. Operation-owned headers (e.g. the JSON
+  // content-type) are applied after addAll so caller/default headers can't
+  // clobber them.
   buffer.write(body.buildRequest(method.toUpperCase()));
   buffer.writeln('    request.headers.addAll(headers);');
+  buffer.write(body.afterHeaders);
   buffer.writeln('    final streamed = await _client.send(request);');
 
   // Response handling.
@@ -263,10 +266,15 @@ class _Body {
   _Body({
     required this.parameters,
     required this.buildRequest,
+    this.afterHeaders = '',
   });
 
   final List<String> parameters;
   final String Function(String method) buildRequest;
+
+  /// Emitted after `request.headers.addAll(headers)` so operation-owned headers
+  /// win over caller/default headers.
+  final String afterHeaders;
 }
 
 _Body _resolveBody(Map<String, dynamic> op) {
@@ -292,8 +300,9 @@ _Body _resolveBody(Map<String, dynamic> op) {
       parameters: ['required $type body'],
       buildRequest: (method) =>
           "    final request = http.Request('$method', uri)\n"
-          "      ..headers['content-type'] = 'application/json'\n"
           '      ..body = jsonEncode(body.toJson());\n',
+      afterHeaders:
+          "    request.headers['content-type'] = 'application/json';\n",
     );
   }
 
@@ -384,7 +393,7 @@ _Response _resolveResponse(Map<String, dynamic> op) {
             '    return $type.fromJson(jsonDecode(response.body) as Map<String, dynamic>);\n',
       );
     }
-    // Binary response streamed straight to the caller (spike question 2).
+    // Binary response streamed straight to the caller.
     return _Response(
       returnType: 'StreamedApiResponse',
       handle:
@@ -412,7 +421,7 @@ _Response _resolveResponse(Map<String, dynamic> op) {
       final isNumber =
           schema?['type'] == 'number' || schema?['type'] == 'integer';
       final read = isNumber
-          ? "int.parse(response.headers['${wire.toLowerCase()}']!)"
+          ? "parseIntHeader(response.headers['${wire.toLowerCase()}'])"
           : "response.headers['${wire.toLowerCase()}']";
       buffer.writeln("      '${_camelCase(wire)}': $read,");
     }

@@ -191,6 +191,88 @@ void main() {
     });
   });
 
+  group('Correctness fixes', () {
+    test('path parameters are percent-encoded, wildcard keeps slashes',
+        () async {
+      final client = _RecordingClient((_) async => _json({}));
+      final api =
+          StorageApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      await api.getObjectInfo(
+        bucketId: 'my bucket',
+        wildcardPath: 'sub dir/a?b.png',
+      );
+
+      final url = client.lastRequest!.url;
+      // Decoded segments round-trip to the original values, and the `?` did not
+      // leak into the query string.
+      expect(url.pathSegments, [
+        'object',
+        'info',
+        'my bucket',
+        'sub dir',
+        'a?b.png',
+      ]);
+      expect(url.query, isEmpty);
+    });
+
+    test('operation content-type wins over provider headers', () async {
+      final client = _RecordingClient((_) async => _json({'name': 'photos'}));
+      final api = StorageApi(
+        ApiClient(
+          baseUrl: 'https://x',
+          httpClient: client,
+          headerProvider: () => {'content-type': 'text/plain'},
+        ),
+      );
+
+      await api.createBucket(
+        body: CreateBucketRequestContent(
+          id: 'photos',
+          name: 'photos',
+          public: false,
+        ),
+      );
+
+      expect(client.lastRequest!.headers['content-type'], 'application/json');
+    });
+
+    test('missing numeric response header yields null instead of crashing',
+        () async {
+      final client = _RecordingClient(
+        (_) async => http.StreamedResponse(const Stream.empty(), 200),
+      );
+      final api =
+          StorageApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      final result =
+          await api.getUploadOffset(uploadId: 'abc', tusResumable: '1.0.0');
+
+      expect(result['uploadOffset'], isNull);
+    });
+
+    test('a body-stream error surfaces as a catchable exception', () async {
+      final client = _RecordingClient((request) async {
+        await request.finalize().drain<void>();
+        return http.StreamedResponse(const Stream.empty(), 204);
+      });
+      final api =
+          StorageApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      final failing = Stream<List<int>>.error(StateError('read failed'));
+
+      await expectLater(
+        api.uploadChunk(
+          uploadId: 'abc',
+          tusResumable: '1.0.0',
+          uploadOffset: 0,
+          body: failing,
+        ),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
+
   group('Middleware / header injection (question 4)', () {
     test('headerProvider is invoked per request for fresh auth tokens',
         () async {

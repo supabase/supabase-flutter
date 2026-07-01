@@ -35,7 +35,8 @@ class FunctionsApi {
       String? xRegion,
       required Stream<List<int>> body,
       int? contentLength}) async {
-    final uri = _client.uri('/functions/v1/${functionName}');
+    final uri =
+        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
@@ -55,7 +56,8 @@ class FunctionsApi {
 
   Future<StreamedApiResponse> invokeFunctionGet(
       {required String functionName, String? xRegion}) async {
-    final uri = _client.uri('/functions/v1/${functionName}');
+    final uri =
+        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
@@ -77,7 +79,8 @@ class FunctionsApi {
       String? xRegion,
       required Stream<List<int>> body,
       int? contentLength}) async {
-    final uri = _client.uri('/functions/v1/${functionName}');
+    final uri =
+        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
@@ -100,7 +103,8 @@ class FunctionsApi {
       String? xRegion,
       required Stream<List<int>> body,
       int? contentLength}) async {
-    final uri = _client.uri('/functions/v1/${functionName}');
+    final uri =
+        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
@@ -123,7 +127,8 @@ class FunctionsApi {
       String? xRegion,
       required Stream<List<int>> body,
       int? contentLength}) async {
-    final uri = _client.uri('/functions/v1/${functionName}');
+    final uri =
+        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
