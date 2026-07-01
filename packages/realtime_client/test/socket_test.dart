@@ -391,8 +391,8 @@ void main() {
       var connectCount = 0;
       final mockedSocket = RealtimeClient(
         socketEndpoint,
-        // Large delay so the automatic reconnect doesn't fire during the test;
-        // the manual connect() below must do the reconnecting.
+        // Large delay so the automatic reconnect stays dormant during the
+        // test and the manual reconnect below is what reopens the socket.
         reconnectAfterMs: (tries) => 100000,
         transport: (url, headers) {
           connectCount++;
