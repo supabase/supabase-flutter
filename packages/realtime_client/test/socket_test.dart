@@ -322,6 +322,49 @@ void main() {
       expect(socket.conn, isNull);
     });
 
+    test('cancels a pending reconnect after an unexpected drop', () async {
+      final streamController = StreamController<dynamic>();
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+      var connectCount = 0;
+
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSocketChannel.stream)
+          .thenAnswer((_) => streamController.stream);
+      when(() => mockedSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+
+      final mockedSocket = RealtimeClient(
+        socketEndpoint,
+        // Reconnect almost immediately so the test doesn't wait for the
+        // default backoff.
+        reconnectAfterMs: (tries) => 20,
+        transport: (url, headers) {
+          connectCount++;
+          return mockedSocketChannel;
+        },
+      );
+
+      await mockedSocket.connect();
+      expect(connectCount, 1);
+
+      // Simulate the server dropping the connection: `onDone` fires, the socket
+      // is marked closed and a reconnect is scheduled.
+      await streamController.close();
+      await Future.delayed(const Duration(milliseconds: 5));
+      expect(mockedSocket.connState, SocketStates.closed);
+
+      // The user disconnects explicitly while the socket is already closed.
+      await mockedSocket.disconnect();
+
+      // Wait past the reconnect delay; the scheduled reconnect must be canceled.
+      await Future.delayed(const Duration(milliseconds: 60));
+      expect(connectCount, 1,
+          reason: 'must not reopen after a user disconnect');
+    });
+
     test('disconnecting an open connection', () async {
       await socket.connect();
       expect(socket.connState, SocketStates.open);
