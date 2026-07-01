@@ -26,6 +26,17 @@ class CustomHttpClient extends BaseClient {
         },
         reasonPhrase: "Enhance Your Calm",
       );
+    } else if (request.url.path.endsWith('error-sse')) {
+      // An error status that still carries a streaming content type.
+      return StreamedResponse(
+        Stream.value(utf8.encode('error: boom')),
+        500,
+        request: request,
+        headers: {
+          "Content-Type": "text/event-stream",
+        },
+        reasonPhrase: "Internal Server Error",
+      );
     } else if (request.url.path.endsWith('sse')) {
       return StreamedResponse(
           Stream.fromIterable(['a', 'b', 'c'].map((e) => utf8.encode(e))), 200,

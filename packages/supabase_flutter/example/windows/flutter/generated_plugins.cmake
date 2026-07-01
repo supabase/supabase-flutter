@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
-  passkeys_windows
   url_launcher_windows
 )
 

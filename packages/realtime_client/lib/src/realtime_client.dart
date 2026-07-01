@@ -388,7 +388,7 @@ class RealtimeClient {
       case SocketStates.disconnected:
         return 'disconnected';
       case SocketStates.closed:
-      default:
+      case null:
         return 'closed';
     }
   }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
@@ -548,9 +549,16 @@ class RealtimeChannel {
   /// This method always uses the REST API endpoint regardless of WebSocket connection state.
   /// Useful when you want to guarantee REST delivery or when gradually migrating from implicit REST fallback.
   ///
+  /// [payload] must be either a `Map<String, dynamic>`, which is JSON-encoded,
+  /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
+  /// is sent as `application/octet-stream`. Map payloads keep `httpSend`
+  /// consistent with [onBroadcast], which delivers received payloads as
+  /// `Map<String, dynamic>`.
+  ///
   /// [event] is the name of the broadcast event.
-  /// [payload] is the payload to be sent (required).
   /// [timeout] is an optional timeout duration.
+  ///
+  /// Requires a Realtime server running v2.97.0 or newer.
   ///
   /// Returns a [Future] that resolves when the message is sent successfully,
   /// or throws an error if the message fails to send.
@@ -567,20 +575,49 @@ class RealtimeChannel {
   /// ```
   Future<void> httpSend({
     required String event,
-    required Map<String, dynamic> payload,
+    required Object payload,
     Duration? timeout,
   }) async {
-    final response = await (socket.httpClient?.post ?? post)(
-      Uri.parse(broadcastEndpointURL),
-      headers: _broadcastHeaders,
-      body: json.encode(_broadcastBody(event, payload)),
-    ).timeout(
+    final isBinary = payload is TypedData || payload is ByteBuffer;
+
+    assert(
+      isBinary || payload is Map<String, dynamic>,
+      'httpSend payload must be a Map<String, dynamic> or binary '
+      '(TypedData/ByteBuffer)',
+    );
+
+    final headers = {
+      ..._broadcastHeaders,
+      'Content-Type':
+          isBinary ? 'application/octet-stream' : 'application/json',
+    };
+
+    final url = Uri.parse(
+      '$broadcastEndpointURL'
+      '/${Uri.encodeComponent(subTopic)}'
+      '/events/${Uri.encodeComponent(event)}'
+      '${_private ? '?private=true' : ''}',
+    );
+
+    final body = isBinary ? _asBytes(payload) : json.encode(payload);
+
+    final response = await (socket.httpClient?.post ?? post)(url,
+            headers: headers, body: body)
+        .timeout(
       timeout ?? _timeout,
       onTimeout: () => throw TimeoutException('Request timeout'),
     );
 
     if (response.statusCode == 202) {
       return;
+    }
+
+    if (response.statusCode == 404) {
+      throw Exception(
+        'httpSend() requires Realtime server v2.97.0 or newer; the endpoint '
+        'returned 404. Update your Supabase CLI to a recent version, or upgrade '
+        'the Realtime server in your self-hosted setup.',
+      );
     }
 
     String errorMessage = response.reasonPhrase ?? 'Unknown error';
@@ -594,6 +631,14 @@ class RealtimeChannel {
     }
 
     throw Exception(errorMessage);
+  }
+
+  Uint8List _asBytes(Object payload) {
+    if (payload is ByteBuffer) {
+      return payload.asUint8List();
+    }
+    final typed = payload as TypedData;
+    return typed.buffer.asUint8List(typed.offsetInBytes, typed.lengthInBytes);
   }
 
   /// Sends a realtime broadcast message.

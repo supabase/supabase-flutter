@@ -1,3 +1,17 @@
+## 2.15.2
+
+ - **FIX**(supabase_flutter): full web and WASM support ([#1497](https://github.com/supabase/supabase-flutter/issues/1497)). ([2f860f2c](https://github.com/supabase/supabase-flutter/commit/2f860f2cd2c4d45b5b2b695641702b0d543ec4ea))
+
+## 2.15.1
+
+ - **REFACTOR**: dedupe bucket payload and OAuth launch logic ([#1463](https://github.com/supabase/supabase-flutter/issues/1463)). ([c5f9b247](https://github.com/supabase/supabase-flutter/commit/c5f9b2471c64d65b604802cbda36221cca0a6506))
+ - **REFACTOR**: de-abbreviate cond* platform getters to conditional* ([#1438](https://github.com/supabase/supabase-flutter/issues/1438)). ([9e71a240](https://github.com/supabase/supabase-flutter/commit/9e71a240bc7ed30126b5d90a81697303cb515ef7))
+ - **FIX**(supabase_flutter): accept PasskeyAuthenticatorInterface instead of depending on passkeys ([#1444](https://github.com/supabase/supabase-flutter/issues/1444)). ([f05d4c6c](https://github.com/supabase/supabase-flutter/commit/f05d4c6c544591905c2dbacf815526733ffabd5a))
+ - **FIX**(auth): recognize error query parameter in auth callback redirects ([#1472](https://github.com/supabase/supabase-flutter/issues/1472)). ([cb7e7e62](https://github.com/supabase/supabase-flutter/commit/cb7e7e62d04d887d888fd3e73ef83a584ae45d77))
+ - **FIX**(supabase_flutter): clear auth params from web URL after exchange ([#1456](https://github.com/supabase/supabase-flutter/issues/1456)). ([8b1e1b22](https://github.com/supabase/supabase-flutter/commit/8b1e1b22aae6da4366dd8c404de8f3351dcc57a1))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+ - **DOCS**: add Supabase logo to supabase_flutter README so it renders on pub.dev ([#1458](https://github.com/supabase/supabase-flutter/issues/1458)). ([7354d1c8](https://github.com/supabase/supabase-flutter/commit/7354d1c8f06ec376b9a526f1f62f3a6fc21ac8bc))
+
 ## 2.15.0
 
  - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))

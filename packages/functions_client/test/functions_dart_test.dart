@@ -27,6 +27,18 @@ void main() {
       );
     });
 
+    test('error response with a streaming content type exposes the body',
+        () async {
+      // The error body must be drained and decoded into `details` rather than
+      // handed back as an unconsumed stream (which also leaks the connection).
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('error-sse'),
+        throwsA(isA<FunctionException>()
+            .having((e) => e.status, 'status', 500)
+            .having((e) => e.details, 'details', 'error: boom')),
+      );
+    });
+
     test('function call', () async {
       final res = await functionsCustomHttpClient.invoke('function');
       expect(
@@ -245,6 +257,17 @@ void main() {
 
         final req = customHttpClient.receivedRequests.last;
         expect(req.headers['Content-Type'], 'custom/type');
+      });
+
+      test('custom lowercase content-type header overrides defaults', () async {
+        await functionsCustomHttpClient.invoke(
+          'function',
+          body: {'key': 'value'},
+          headers: {'content-type': 'application/custom+json'},
+        );
+
+        final req = customHttpClient.receivedRequests.last;
+        expect(req.headers['content-type'], 'application/custom+json');
       });
 
       test('custom headers merge with defaults', () async {

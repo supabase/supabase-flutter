@@ -11,21 +11,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^2.15.0
+  supabase_flutter: ^2.15.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^4.0.0
-
-# device_info_plus is pulled in transitively by the passkeys plugin
-# (passkeys -> passkeys_doctor). From 12.4.0 it calls the iOS 26.1
-# `isiOSAppOnVision` API without a compile time guard, which fails to build on
-# Xcode versions older than the iOS 26.1 SDK. Cap it below that until the CI
-# runners ship a new enough Xcode.
-dependency_overrides:
-  device_info_plus: '>=11.2.0 <12.4.0'
 
 flutter:
   uses-material-design: true

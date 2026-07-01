@@ -13,6 +13,8 @@ enum ErrorCode {
   noAuthorization('no_authorization'),
   userNotFound('user_not_found'),
   sessionNotFound('session_not_found'),
+  sessionExpired('session_expired'),
+  sessionMissing('session_missing'),
   flowStateNotFound('flow_state_not_found'),
   flowStateExpired('flow_state_expired'),
   signupDisabled('signup_disabled'),

@@ -44,7 +44,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
 
     final url = overrideSearchParams('select', cleanedColumns);
-    final prefer = newHeaders['Prefer'];
+    final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
     newHeaders['Prefer'] = [
       if (prefer != null) prefer,
       'return=representation',
@@ -169,12 +169,9 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     // Temporary fix for https://github.com/supabase/supabase-flutter/issues/560
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
     final newHeaders = {..._headers};
-
-    if (_method == HttpMethod.get) {
-      newHeaders['Accept'] = 'application/json';
-    } else {
-      newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
-    }
+    newHeaders['Accept'] = _method == HttpMethod.get
+        ? 'application/json'
+        : 'application/vnd.pgrst.object+json';
 
     return PostgrestTransformBuilder(
       _copyWithType(
@@ -268,18 +265,21 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
 
     // Add handling=strict and max-affected headers
-    if (newHeaders['Prefer'] != null) {
-      var preferHeader = newHeaders['Prefer']!;
-      if (!preferHeader.contains('handling=strict')) {
-        preferHeader += ',handling=strict';
+    final existingPrefer = _emptyPreferAsNull(newHeaders['Prefer']);
+    final String preferHeader;
+    if (existingPrefer != null) {
+      var header = existingPrefer;
+      if (!header.contains('handling=strict')) {
+        header += ',handling=strict';
       }
-      if (!preferHeader.contains('max-affected=')) {
-        preferHeader += ',max-affected=$value';
+      if (!header.contains('max-affected=')) {
+        header += ',max-affected=$value';
       }
-      newHeaders['Prefer'] = preferHeader;
+      preferHeader = header;
     } else {
-      newHeaders['Prefer'] = 'handling=strict,max-affected=$value';
+      preferHeader = 'handling=strict,max-affected=$value';
     }
+    newHeaders['Prefer'] = preferHeader;
 
     return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
   }
