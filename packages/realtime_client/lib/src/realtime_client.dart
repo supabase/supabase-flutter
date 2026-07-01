@@ -213,14 +213,9 @@ class RealtimeClient {
   @internal
   Future<void> connect() async {
     if (conn != null) {
-      // A live or in-progress connection already exists; nothing to do.
       if (connState != SocketStates.closed) {
         return;
       }
-      // The previous socket dropped unexpectedly (`connState == closed`) but
-      // `conn` still references it so `conn.closeCode` stays readable. Tear it
-      // down before reconnecting so its stream subscription isn't leaked and a
-      // manual `connect()` isn't blocked by the guard above.
       await disconnect();
     }
 
@@ -315,10 +310,6 @@ class RealtimeClient {
       // already dropped (`connState == closed`) the block above is skipped, so
       // without this an armed backoff timer would fire after the user
       // explicitly disconnected and silently reopen the connection.
-      //
-      // Use `cancel()` rather than `reset()`: the reconnect path
-      // (`_reconnect` -> `disconnect` -> `connect`) runs this on every attempt,
-      // and zeroing the retry counter here would defeat exponential backoff.
       reconnectTimer.cancel();
 
       this.conn = null;
