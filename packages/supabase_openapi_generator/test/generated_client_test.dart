@@ -308,14 +308,16 @@ void main() {
   group('Middleware / header injection (question 4)', () {
     test('headerProvider is invoked per request for fresh auth tokens',
         () async {
-      var token = 'first';
+      // The token lives in a mutable holder so the provider closure reads the
+      // latest value on every request.
+      final token = ['first'];
       final client = _RecordingClient((_) async => _json({'items': []}));
       final api = StorageApi(
         ApiClient(
           baseUrl: 'https://x',
           httpClient: client,
           defaultHeaders: {'apikey': 'anon'},
-          headerProvider: () => {'Authorization': 'Bearer $token'},
+          headerProvider: () => {'Authorization': 'Bearer ${token.first}'},
         ),
       );
 
@@ -323,7 +325,7 @@ void main() {
       expect(client.lastRequest!.headers['Authorization'], 'Bearer first');
       expect(client.lastRequest!.headers['apikey'], 'anon');
 
-      token = 'refreshed';
+      token[0] = 'refreshed';
       await api.listBuckets();
       expect(client.lastRequest!.headers['Authorization'], 'Bearer refreshed');
     });
