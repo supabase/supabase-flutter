@@ -1,3 +1,7 @@
+## 2.7.4
+
+ - **FIX**(postgrest): stop seeding Prefer header with an empty string ([#1505](https://github.com/supabase/supabase-flutter/issues/1505)). ([0a37f0d7](https://github.com/supabase/supabase-flutter/commit/0a37f0d746abf690151825a1de9f2c9c50322de7))
+
 ## 2.7.3
 
  - **FIX**(postgrest): escape quotes and backslashes in list filter values ([#1481](https://github.com/supabase/supabase-flutter/issues/1481)). ([66e4d139](https://github.com/supabase/supabase-flutter/commit/66e4d1399ea615abb1d58b468a4943e7c408ef2f))
