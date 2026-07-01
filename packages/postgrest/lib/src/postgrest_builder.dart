@@ -30,6 +30,11 @@ enum HttpMethod {
 
 typedef _Nullable<T> = T?;
 
+/// Treats an empty `Prefer` value as absent, so every append site can rely on
+/// a plain null check instead of separately re-checking for emptiness.
+String? _emptyPreferAsNull(String? prefer) =>
+    (prefer == null || prefer.isEmpty) ? null : prefer;
+
 /// The base builder class.
 ///
 /// [T] for the overall return type, so `PostgrestResponse<S>` or [S]
@@ -134,11 +139,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     final execHeaders = {..._headers};
 
     if (_count != null) {
-      final oldPreferHeader = execHeaders['Prefer'];
-      execHeaders['Prefer'] =
-          oldPreferHeader != null && oldPreferHeader.isNotEmpty
-              ? '$oldPreferHeader,count=${_count.name}'
-              : 'count=${_count.name}';
+      final oldPreferHeader = _emptyPreferAsNull(execHeaders['Prefer']);
+      execHeaders['Prefer'] = oldPreferHeader != null
+          ? '$oldPreferHeader,count=${_count.name}'
+          : 'count=${_count.name}';
     }
 
     if (method == null) {

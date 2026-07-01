@@ -44,9 +44,9 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
 
     final url = overrideSearchParams('select', cleanedColumns);
-    final prefer = newHeaders['Prefer'];
+    final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
     newHeaders['Prefer'] = [
-      if (prefer != null && prefer.isNotEmpty) prefer,
+      if (prefer != null) prefer,
       'return=representation',
     ].join(',');
     return PostgrestTransformBuilder(
@@ -265,9 +265,9 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
 
     // Add handling=strict and max-affected headers
-    final existingPrefer = newHeaders['Prefer'];
+    final existingPrefer = _emptyPreferAsNull(newHeaders['Prefer']);
     final String preferHeader;
-    if (existingPrefer != null && existingPrefer.isNotEmpty) {
+    if (existingPrefer != null) {
       var header = existingPrefer;
       if (!header.contains('handling=strict')) {
         header += ',handling=strict';
