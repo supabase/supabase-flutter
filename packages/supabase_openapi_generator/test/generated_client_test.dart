@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:supabase_codegen_spike/supabase_codegen_spike.dart';
+import 'package:supabase_openapi_generator/supabase_openapi_generator.dart';
 import 'package:test/test.dart';
 
 /// A test double that records the outgoing request and returns a canned

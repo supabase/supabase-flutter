@@ -73,7 +73,10 @@ void _generate({
   final header = StringBuffer()
     ..writeln('// GENERATED CODE - DO NOT MODIFY BY HAND.')
     ..writeln('// Generated from $specPath by bin/generate.dart.')
-    ..writeln('// ignore_for_file: prefer_final_locals')
+    ..writeln(
+      '// ignore_for_file: prefer_final_locals, '
+      'unnecessary_brace_in_string_interps',
+    )
     ..writeln();
   if (needsConvert) {
     header.writeln("import 'dart:convert';");

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND.
 // Generated from openapi/StorageService.openapi.json by bin/generate.dart.
-// ignore_for_file: prefer_final_locals
+// ignore_for_file: prefer_final_locals, unnecessary_brace_in_string_interps
 
 import 'dart:convert';
 

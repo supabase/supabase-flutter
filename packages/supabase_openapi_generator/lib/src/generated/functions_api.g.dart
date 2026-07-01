@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND.
 // Generated from openapi/FunctionsService.openapi.json by bin/generate.dart.
-// ignore_for_file: prefer_final_locals
+// ignore_for_file: prefer_final_locals, unnecessary_brace_in_string_interps
 
 import 'package:http/http.dart' as http;
 
