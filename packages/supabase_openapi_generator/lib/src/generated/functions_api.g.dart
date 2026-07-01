@@ -7,20 +7,17 @@ import 'package:http/http.dart' as http;
 import '../runtime.dart';
 
 class FunctionsErrorResponseContent {
-  FunctionsErrorResponseContent({
-    this.message,
-  });
+  FunctionsErrorResponseContent({this.message});
+
+  factory FunctionsErrorResponseContent.fromJson(Map<String, dynamic> json) {
+    return FunctionsErrorResponseContent(message: json['message'] as String?);
+  }
 
   final String? message;
 
-  factory FunctionsErrorResponseContent.fromJson(Map<String, dynamic> json) =>
-      FunctionsErrorResponseContent(
-        message: json['message'] as String?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        if (message != null) 'message': message,
-      };
+  Map<String, dynamic> toJson() {
+    return {if (message != null) 'message': message};
+  }
 }
 
 /// Generated HTTP client. Every operation goes through the
@@ -30,18 +27,24 @@ class FunctionsApi {
 
   final ApiClient _client;
 
-  Future<StreamedApiResponse> invokeFunctionDelete(
-      {required String functionName,
-      String? xRegion,
-      required Stream<List<int>> body,
-      int? contentLength}) async {
-    final uri =
-        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
+  Future<StreamedApiResponse> invokeFunctionDelete({
+    required String functionName,
+    String? xRegion,
+    required Stream<List<int>> body,
+    int? contentLength,
+  }) async {
+    final uri = _client.uri(
+      '/functions/v1/${Uri.encodeComponent(functionName)}',
+    );
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
-    final request = streamingRequest('DELETE', uri,
-        body: body, contentLength: contentLength);
+    final request = streamingRequest(
+      'DELETE',
+      uri,
+      body: body,
+      contentLength: contentLength,
+    );
     request.headers.addAll(headers);
     final streamed = await _client.send(request);
     if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
@@ -54,10 +57,13 @@ class FunctionsApi {
     );
   }
 
-  Future<StreamedApiResponse> invokeFunctionGet(
-      {required String functionName, String? xRegion}) async {
-    final uri =
-        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
+  Future<StreamedApiResponse> invokeFunctionGet({
+    required String functionName,
+    String? xRegion,
+  }) async {
+    final uri = _client.uri(
+      '/functions/v1/${Uri.encodeComponent(functionName)}',
+    );
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
@@ -74,18 +80,24 @@ class FunctionsApi {
     );
   }
 
-  Future<StreamedApiResponse> invokeFunctionPatch(
-      {required String functionName,
-      String? xRegion,
-      required Stream<List<int>> body,
-      int? contentLength}) async {
-    final uri =
-        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
+  Future<StreamedApiResponse> invokeFunctionPatch({
+    required String functionName,
+    String? xRegion,
+    required Stream<List<int>> body,
+    int? contentLength,
+  }) async {
+    final uri = _client.uri(
+      '/functions/v1/${Uri.encodeComponent(functionName)}',
+    );
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
-    final request = streamingRequest('PATCH', uri,
-        body: body, contentLength: contentLength);
+    final request = streamingRequest(
+      'PATCH',
+      uri,
+      body: body,
+      contentLength: contentLength,
+    );
     request.headers.addAll(headers);
     final streamed = await _client.send(request);
     if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
@@ -98,18 +110,24 @@ class FunctionsApi {
     );
   }
 
-  Future<StreamedApiResponse> invokeFunctionPost(
-      {required String functionName,
-      String? xRegion,
-      required Stream<List<int>> body,
-      int? contentLength}) async {
-    final uri =
-        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
+  Future<StreamedApiResponse> invokeFunctionPost({
+    required String functionName,
+    String? xRegion,
+    required Stream<List<int>> body,
+    int? contentLength,
+  }) async {
+    final uri = _client.uri(
+      '/functions/v1/${Uri.encodeComponent(functionName)}',
+    );
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
-    final request =
-        streamingRequest('POST', uri, body: body, contentLength: contentLength);
+    final request = streamingRequest(
+      'POST',
+      uri,
+      body: body,
+      contentLength: contentLength,
+    );
     request.headers.addAll(headers);
     final streamed = await _client.send(request);
     if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
@@ -122,18 +140,24 @@ class FunctionsApi {
     );
   }
 
-  Future<StreamedApiResponse> invokeFunctionPut(
-      {required String functionName,
-      String? xRegion,
-      required Stream<List<int>> body,
-      int? contentLength}) async {
-    final uri =
-        _client.uri('/functions/v1/${Uri.encodeComponent(functionName)}');
+  Future<StreamedApiResponse> invokeFunctionPut({
+    required String functionName,
+    String? xRegion,
+    required Stream<List<int>> body,
+    int? contentLength,
+  }) async {
+    final uri = _client.uri(
+      '/functions/v1/${Uri.encodeComponent(functionName)}',
+    );
     final headers = await _client.headers({
       if (xRegion != null) 'x-region': xRegion,
     });
-    final request =
-        streamingRequest('PUT', uri, body: body, contentLength: contentLength);
+    final request = streamingRequest(
+      'PUT',
+      uri,
+      body: body,
+      contentLength: contentLength,
+    );
     request.headers.addAll(headers);
     final streamed = await _client.send(request);
     if (streamed.statusCode < 200 || streamed.statusCode >= 300) {

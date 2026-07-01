@@ -10,6 +10,10 @@ environment:
   sdk: ^3.5.0
 
 dependencies:
+  # code_builder + dart_style are used by the code generator in bin/. The
+  # generated library code (lib/) depends only on http.
+  code_builder: ^4.11.1
+  dart_style: ^3.1.9
   http: ^1.2.2
 
 dev_dependencies:
