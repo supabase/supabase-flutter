@@ -333,7 +333,14 @@ class PostgresChangeFilter {
   @override
   String toString() {
     if (type == PostgresChangeFilterType.inFilter) {
-      return '$column=in.(${value.map((s) => '"$s"').join(',')})';
+      return '$column=in.(${value.map((s) {
+        // Escape `\` and `"` before quoting so a value containing a double
+        // quote (e.g. `a"b`) can't produce a malformed filter like
+        // `in.("a"b")`. Mirrors the PostgREST array quoting used by
+        // PostgrestFilterBuilder.
+        final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+        return '"$escaped"';
+      }).join(',')})';
     }
     return '$column=${type.name}.$value';
   }
