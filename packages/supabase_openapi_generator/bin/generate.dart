@@ -17,6 +17,11 @@ void main() {
     className: 'FunctionsApi',
     outputPath: 'lib/src/generated/functions_api.g.dart',
   );
+  _generate(
+    specPath: 'openapi/DatabaseService.openapi.json',
+    className: 'DatabaseApi',
+    outputPath: 'lib/src/generated/database_api.g.dart',
+  );
   stdout.writeln('Done. Formatting output...');
   Process.runSync('dart', ['format', 'lib/src/generated']);
 }
@@ -199,7 +204,8 @@ String _generateOperation(
   }
   for (final param in queryParams) {
     final name = _camelCase(param['name'] as String);
-    params.add('String? $name');
+    final type = _headerDartType(param['schema'] as Map?);
+    params.add('$type? $name');
   }
   params.addAll(body.parameters);
 
@@ -224,8 +230,10 @@ String _generateOperation(
   } else {
     buffer.writeln("    final uri = _client.uri('$dartPath', {");
     for (final param in queryParams) {
-      buffer.writeln(
-          "      '${param['name']}': ${_camelCase(param['name'] as String)},");
+      final name = _camelCase(param['name'] as String);
+      final type = _headerDartType(param['schema'] as Map?);
+      final valueExpr = type == 'String' ? name : '$name?.toString()';
+      buffer.writeln("      '${param['name']}': $valueExpr,");
     }
     buffer.writeln('    });');
   }

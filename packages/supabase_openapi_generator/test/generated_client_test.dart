@@ -273,6 +273,38 @@ void main() {
     });
   });
 
+  group('PostgREST (DatabaseService) transport', () {
+    test('selectRows serializes typed query params and streams the response',
+        () async {
+      final client = _RecordingClient(
+        (_) async => http.StreamedResponse(
+          Stream.value(utf8.encode('[{"id":1}]')),
+          200,
+        ),
+      );
+      final api =
+          DatabaseApi(ApiClient(baseUrl: 'https://x', httpClient: client));
+
+      final response = await api.selectRows(
+        table: 'my table',
+        select: 'id,name',
+        limit: 10,
+        offset: 20,
+      );
+
+      final url = client.lastRequest!.url;
+      expect(url.pathSegments, ['my table']);
+      expect(url.queryParameters['select'], 'id,name');
+      expect(url.queryParameters['limit'], '10');
+      expect(url.queryParameters['offset'], '20');
+      expect(response, isA<StreamedApiResponse>());
+      expect(
+        await response.stream.transform(utf8.decoder).join(),
+        '[{"id":1}]',
+      );
+    });
+  });
+
   group('Middleware / header injection (question 4)', () {
     test('headerProvider is invoked per request for fresh auth tokens',
         () async {
