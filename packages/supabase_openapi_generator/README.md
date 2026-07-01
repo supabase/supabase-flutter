@@ -74,9 +74,3 @@ await storage.uploadChunk(
 
 Non-2xx responses throw `ApiException` with the decoded error body.
 Octet-stream responses return a `StreamedApiResponse` exposing the live stream.
-
-## Testing
-
-```bash
-dart test
-```
