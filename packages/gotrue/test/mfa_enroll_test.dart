@@ -67,5 +67,14 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('a webauthn factor is rejected instead of reaching the network',
+        () async {
+      expect(
+        () => client.mfa.enroll(factorType: FactorType.webauthn),
+        throwsArgumentError,
+      );
+      expect(http.requestBodies, isEmpty);
+    });
   });
 }

@@ -66,6 +66,9 @@ class GoTrueMFAApi {
             'Invalid arguments, expected a phone for the phone factor type.');
       }
       body['phone'] = phone;
+    } else {
+      throw ArgumentError(
+          'Invalid arguments, unsupported factor type for enroll: ${factorType.name}.');
     }
 
     final data = await _fetch.request(
