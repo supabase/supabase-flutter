@@ -365,6 +365,60 @@ void main() {
           reason: 'must not reopen after a user disconnect');
     });
 
+    test('reconnects on a manual connect() after an unexpected drop', () async {
+      final firstController = StreamController<dynamic>();
+      final firstChannel = MockIOWebSocketChannel();
+      final firstSink = MockWebSocketSink();
+      when(() => firstChannel.ready).thenAnswer((_) => Future.value());
+      when(() => firstChannel.sink).thenReturn(firstSink);
+      when(() => firstChannel.stream).thenAnswer((_) => firstController.stream);
+      when(() => firstSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => firstSink.close()).thenAnswer((_) => Future.value());
+
+      final secondController = StreamController<dynamic>();
+      addTearDown(secondController.close);
+      final secondChannel = MockIOWebSocketChannel();
+      final secondSink = MockWebSocketSink();
+      when(() => secondChannel.ready).thenAnswer((_) => Future.value());
+      when(() => secondChannel.sink).thenReturn(secondSink);
+      when(() => secondChannel.stream)
+          .thenAnswer((_) => secondController.stream);
+      when(() => secondSink.close(any(), any()))
+          .thenAnswer((_) => Future.value());
+      when(() => secondSink.close()).thenAnswer((_) => Future.value());
+
+      var connectCount = 0;
+      final mockedSocket = RealtimeClient(
+        socketEndpoint,
+        // Large delay so the automatic reconnect doesn't fire during the test;
+        // the manual connect() below must do the reconnecting.
+        reconnectAfterMs: (tries) => 100000,
+        transport: (url, headers) {
+          connectCount++;
+          return connectCount == 1 ? firstChannel : secondChannel;
+        },
+      );
+
+      await mockedSocket.connect();
+      expect(connectCount, 1);
+      expect(mockedSocket.connState, SocketStates.open);
+
+      // Simulate the server dropping the connection.
+      await firstController.close();
+      await Future.delayed(const Duration(milliseconds: 5));
+      expect(mockedSocket.connState, SocketStates.closed);
+
+      // A manual reconnect must open a fresh connection instead of being a
+      // no-op because `conn` still references the dropped socket.
+      await mockedSocket.connect();
+      expect(connectCount, 2,
+          reason: 'manual connect() must reconnect after a drop');
+      expect(mockedSocket.connState, SocketStates.open);
+
+      await mockedSocket.disconnect();
+    });
+
     test('grows the reconnect backoff across failed attempts', () async {
       final triesSeen = <int>[];
       var attempt = 0;
