@@ -487,6 +487,36 @@ void main() {
     test('does not throw when no connection', () {
       expect(() => socket.disconnect(), returnsNormally);
     });
+
+    test('times out and finalizes disconnect when sink.close hangs', () async {
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+      final streamController = StreamController<dynamic>.broadcast();
+      final closeCompleter = Completer<void>();
+      final mockedSocket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedSocketChannel,
+      );
+      var closeCallbacks = 0;
+      mockedSocket.onClose((_) => closeCallbacks += 1);
+
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSocketChannel.stream)
+          .thenAnswer((_) => streamController.stream);
+      when(() => mockedSink.close()).thenAnswer((_) => closeCompleter.future);
+
+      await mockedSocket.connect();
+      expect(mockedSocket.connState, SocketStates.open);
+
+      await mockedSocket.disconnect();
+      expect(mockedSocket.connState, SocketStates.disconnected);
+      expect(mockedSocket.conn, isNull);
+      expect(closeCallbacks, 1);
+      verify(() => mockedSink.close()).called(1);
+
+      await streamController.close();
+    });
   });
 
   //! Note: not checking connection states since it is based on an enum.
@@ -907,6 +937,42 @@ void main() {
       verify(() =>
               channel3.push(ChannelEvents.accessToken, expectedPushPayload))
           .called(1);
+    });
+  });
+
+  group('on connection open', () {
+    test('rejoins only errored channels', () async {
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+      final streamController = StreamController<dynamic>.broadcast();
+      final erroredChannel = MockChannel();
+      final healthyChannel = MockChannel();
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedSocketChannel,
+      );
+      var opens = 0;
+      socket.onOpen(() => opens += 1);
+
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSocketChannel.stream)
+          .thenAnswer((_) => streamController.stream);
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+      when(() => erroredChannel.isErrored).thenReturn(true);
+      when(() => healthyChannel.isErrored).thenReturn(false);
+      when(() => erroredChannel.rejoin()).thenReturn(null);
+
+      socket.channels.addAll([erroredChannel, healthyChannel]);
+      await socket.connect();
+
+      verify(() => erroredChannel.rejoin()).called(1);
+      verifyNever(() => healthyChannel.rejoin());
+      expect(opens, 1);
+      expect(socket.connState, SocketStates.open);
+
+      await socket.disconnect();
+      await streamController.close();
     });
   });
 
