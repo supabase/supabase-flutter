@@ -114,6 +114,26 @@ void main() {
       final userLengthAfter = (await client.admin.listUsers()).length;
       expect(userLengthBefore - 1, userLengthAfter);
     });
+
+    test('deleteUser() soft deletes a user, keeping its record', () async {
+      final suffix = Random.secure().nextInt(4096);
+      final softDeleted = await client.admin.createUser(
+        AdminUserAttributes(email: 'soft-$suffix@fake.org', password: 'pw'),
+      );
+      final hardDeleted = await client.admin.createUser(
+        AdminUserAttributes(email: 'hard-$suffix@fake.org', password: 'pw'),
+      );
+
+      await client.admin
+          .deleteUser(softDeleted.user!.id, shouldSoftDelete: true);
+      await client.admin.deleteUser(hardDeleted.user!.id);
+
+      final ids = (await client.admin.listUsers()).map((user) => user.id);
+      expect(ids, contains(softDeleted.user!.id),
+          reason: 'a soft deleted user keeps its record');
+      expect(ids, isNot(contains(hardDeleted.user!.id)),
+          reason: 'a hard deleted user is removed');
+    });
   });
 
   group('validates ids', () {
