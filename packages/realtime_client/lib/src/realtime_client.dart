@@ -54,20 +54,10 @@ class RealtimeCloseEvent {
 
 /// The lifecycle status of a heartbeat reported to [RealtimeClient.onHeartbeat].
 enum RealtimeHeartbeatStatus {
-  /// A heartbeat message was pushed to the server.
   sent,
-
-  /// The server acknowledged the heartbeat.
   ok,
-
-  /// The server replied to the heartbeat with an error.
   error,
-
-  /// The previous heartbeat was never acknowledged, so the connection is
-  /// being torn down and re-established.
   timeout,
-
-  /// The heartbeat was skipped because the socket is not connected.
   disconnected,
 }
 
