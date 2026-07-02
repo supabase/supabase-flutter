@@ -248,18 +248,12 @@ features:
   storage.file_buckets.copy: implemented
   storage.file_buckets.copy_cross_bucket: implemented
   storage.file_buckets.remove: implemented
-  storage.file_buckets.create_signed_url:
-    status: partially_implemented
-    note: "No download (content-disposition) option; image transform is supported."
-  storage.file_buckets.create_signed_urls:
-    status: partially_implemented
-    note: "No download (content-disposition) option."
+  storage.file_buckets.create_signed_url: implemented
+  storage.file_buckets.create_signed_urls: implemented
   storage.file_buckets.create_signed_upload_url:
     status: partially_implemented
     note: "No upsert option to allow overwriting an existing file."
-  storage.file_buckets.get_public_url:
-    status: partially_implemented
-    note: "No download (content-disposition) option; image transform is supported."
+  storage.file_buckets.get_public_url: implemented
   storage.file_buckets.url_cache_nonce: not_implemented
   storage.file_buckets.file_exists: implemented
   storage.file_buckets.file_info: implemented
