@@ -6,10 +6,13 @@ packages:
   - packages/supabase_flutter/example
   - examples/*
 
-# The launcher is a standalone dev tool that needs a newer Dart than the oldest
-# Flutter the library supports, so it stays out of the bootstrapped workspace.
+# Standalone dev tools that need a newer Dart than the oldest Flutter the
+# library supports, so they stay out of the bootstrapped workspace.
+# TODO: bring these back into the workspace once the minimum supported SDK is
+# high enough to satisfy their constraints.
 ignore:
   - examples/launcher
+  - packages/supabase_openapi_generator
 
 command:
   version:
