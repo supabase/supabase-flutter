@@ -52,5 +52,37 @@ void main() {
         'https://example.com/login?foo=bar',
       );
     });
+
+    test('preserves a hash-based route in the fragment', () {
+      expect(
+        removeAuthParametersFromUrl('https://example.com/#/dashboard'),
+        'https://example.com/#/dashboard',
+      );
+    });
+
+    test('preserves a hash-based route with its own query', () {
+      expect(
+        removeAuthParametersFromUrl('https://example.com/#/dashboard?foo=bar'),
+        'https://example.com/#/dashboard?foo=bar',
+      );
+    });
+
+    test('still clears auth tokens from the fragment (implicit flow)', () {
+      expect(
+        removeAuthParametersFromUrl(
+          'https://example.com/#access_token=abc&expires_in=3600',
+        ),
+        'https://example.com/',
+      );
+    });
+
+    test('preserves repeated query keys', () {
+      expect(
+        removeAuthParametersFromUrl(
+          'https://example.com/?tag=a&tag=b&code=abc123',
+        ),
+        'https://example.com/?tag=a&tag=b',
+      );
+    });
   });
 }

@@ -22,16 +22,8 @@ const _authParameters = {
 String removeAuthParametersFromUrl(String url) {
   final currentUri = Uri.parse(url);
 
-  final query = Map<String, String>.of(currentUri.queryParameters)
+  final query = Map<String, List<String>>.of(currentUri.queryParametersAll)
     ..removeWhere((key, value) => _authParameters.contains(key));
-
-  final fragmentParameters =
-      Map<String, String>.of(Uri.splitQueryString(currentUri.fragment))
-        ..removeWhere((key, value) => _authParameters.contains(key));
-
-  final fragment = fragmentParameters.isEmpty
-      ? null
-      : Uri(queryParameters: fragmentParameters).query;
 
   final cleanedUri = Uri(
     scheme: currentUri.scheme,
@@ -40,8 +32,25 @@ String removeAuthParametersFromUrl(String url) {
     port: currentUri.hasPort ? currentUri.port : null,
     path: currentUri.path,
     queryParameters: query.isEmpty ? null : query,
-    fragment: fragment,
+    fragment: _removeAuthParametersFromFragment(currentUri.fragment),
   );
 
   return cleanedUri.toString();
+}
+
+/// Strips auth parameters from a URL [fragment].
+String? _removeAuthParametersFromFragment(String fragment) {
+  if (fragment.isEmpty) return null;
+
+  final fragmentParameters = Uri.splitQueryString(fragment);
+  final hasAuthParameter =
+      fragmentParameters.keys.any(_authParameters.contains);
+  if (!hasAuthParameter) {
+    return fragment;
+  }
+
+  final cleaned = Map<String, String>.of(fragmentParameters)
+    ..removeWhere((key, value) => _authParameters.contains(key));
+
+  return cleaned.isEmpty ? null : Uri(queryParameters: cleaned).query;
 }
