@@ -98,10 +98,7 @@ enum CountOption {
 
 /// The format of the plan returned by `PostgrestTransformBuilder.explain`.
 enum ExplainFormat {
-  /// Returns the plan as human readable text.
   text,
-
-  /// Returns the plan as JSON.
   json,
 }
 
