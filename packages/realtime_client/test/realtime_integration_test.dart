@@ -53,7 +53,7 @@ void main() {
         );
         final statuses = <RealtimeHeartbeatStatus>[];
         final acknowledged = Completer<void>();
-        heartbeatClient.onHeartbeat((status) {
+        final subscription = heartbeatClient.onHeartbeat.listen((status) {
           statuses.add(status);
           if (status == RealtimeHeartbeatStatus.ok &&
               !acknowledged.isCompleted) {
@@ -67,6 +67,7 @@ void main() {
           expect(statuses, contains(RealtimeHeartbeatStatus.sent));
           expect(statuses, contains(RealtimeHeartbeatStatus.ok));
         } finally {
+          await subscription.cancel();
           await heartbeatClient.disconnect();
         }
       });

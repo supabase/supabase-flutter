@@ -80,7 +80,6 @@ void main() {
         'close': [],
         'error': [],
         'message': [],
-        'heartbeat': [],
       });
       expect(socket.timeout, const Duration(milliseconds: 10000));
       expect(socket.heartbeatIntervalMs, Constants.defaultHeartbeatIntervalMs);
@@ -117,7 +116,6 @@ void main() {
         'close': [],
         'error': [],
         'message': [],
-        'heartbeat': [],
       });
       expect(socket.timeout, const Duration(milliseconds: 40000));
       expect(socket.heartbeatIntervalMs, 60000);

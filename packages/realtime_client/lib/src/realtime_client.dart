@@ -133,8 +133,10 @@ class RealtimeClient {
     'close': [],
     'error': [],
     'message': [],
-    'heartbeat': [],
   };
+
+  final _heartbeatController =
+      StreamController<RealtimeHeartbeatStatus>.broadcast();
 
   @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
@@ -386,17 +388,10 @@ class RealtimeClient {
     stateChangeCallbacks['message']!.add(callback);
   }
 
-  /// Calls a function any time a heartbeat is sent, acknowledged, times out, or
+  /// Emits a status whenever a heartbeat is sent, acknowledged, times out, or
   /// is skipped because the socket is disconnected.
-  void onHeartbeat(void Function(RealtimeHeartbeatStatus status) callback) {
-    stateChangeCallbacks['heartbeat']!.add(callback);
-  }
-
-  void _triggerHeartbeat(RealtimeHeartbeatStatus status) {
-    for (final callback in stateChangeCallbacks['heartbeat']!) {
-      callback(status);
-    }
-  }
+  Stream<RealtimeHeartbeatStatus> get onHeartbeat =>
+      _heartbeatController.stream;
 
   /// Returns the current state of the socket.
   String get connectionState {
@@ -469,7 +464,7 @@ class RealtimeClient {
     if (messageRef != null && messageRef == pendingHeartbeatRef) {
       pendingHeartbeatRef = null;
       final heartbeatStatus = payload is Map ? payload['status'] : null;
-      _triggerHeartbeat(
+      _heartbeatController.add(
         heartbeatStatus == 'ok'
             ? RealtimeHeartbeatStatus.ok
             : RealtimeHeartbeatStatus.error,
@@ -633,7 +628,7 @@ class RealtimeClient {
   @internal
   Future<void> sendHeartbeat() async {
     if (!isConnected) {
-      _triggerHeartbeat(RealtimeHeartbeatStatus.disconnected);
+      _heartbeatController.add(RealtimeHeartbeatStatus.disconnected);
       return;
     }
 
@@ -644,7 +639,7 @@ class RealtimeClient {
         'transport',
         'heartbeat timeout. Attempting to re-establish conn',
       );
-      _triggerHeartbeat(RealtimeHeartbeatStatus.timeout);
+      _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       unawaited(conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout'));
       return;
     }
@@ -655,7 +650,7 @@ class RealtimeClient {
       payload: {},
       ref: pendingHeartbeatRef!,
     ));
-    _triggerHeartbeat(RealtimeHeartbeatStatus.sent);
+    _heartbeatController.add(RealtimeHeartbeatStatus.sent);
     await setAuth(accessToken);
   }
 }
