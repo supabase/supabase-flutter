@@ -91,10 +91,17 @@ class GoTrueAdminApi {
   ///
   ///  [id] is the user id of the user you want to remove.
   ///
+  /// When [shouldSoftDelete] is `true` the user is soft deleted, keeping their
+  /// record and any associated data while marking the user as deleted. It
+  /// defaults to `false`, which permanently removes the user.
+  ///
   /// This function should only be called on a server. Never expose your `secret` key on the client.
-  Future<void> deleteUser(String id) async {
+  Future<void> deleteUser(String id, {bool shouldSoftDelete = false}) async {
     validateUuid(id);
-    final options = GotrueRequestOptions(headers: _headers);
+    final options = GotrueRequestOptions(
+      headers: _headers,
+      body: {'should_soft_delete': shouldSoftDelete},
+    );
     await _fetch.request(
       '$_url/admin/users/$id',
       RequestMethodType.delete,
