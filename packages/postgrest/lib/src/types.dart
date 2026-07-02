@@ -96,6 +96,15 @@ enum CountOption {
   estimated,
 }
 
+/// The format of the plan returned by `PostgrestTransformBuilder.explain`.
+enum ExplainFormat {
+  /// Returns the plan as human readable text.
+  text,
+
+  /// Returns the plan as JSON.
+  json,
+}
+
 // coverage:ignore-[start]
 /// Returns count as part of the response when specified.
 @Deprecated('Not used anywhere. Will be removed in the next major version.')
