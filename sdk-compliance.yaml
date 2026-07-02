@@ -219,8 +219,9 @@ features:
   database.using_modifiers.format_geojson: implemented
   database.using_modifiers.relationship_embed: implemented
   database.using_modifiers.explain:
-    status: partially_implemented
-    note: "Only the text plan is supported; there is no format: json option."
+    status: implemented
+    symbols:
+      - ExplainFormat
   database.using_modifiers.dry_run: not_implemented
   database.using_modifiers.strip_nulls: not_implemented
   database.using_modifiers.request_cancellation: not_implemented
