@@ -87,6 +87,26 @@ class RealtimeCloseEvent {
 /// **Platform notes:**
 /// - Works on all Dart platforms (Flutter mobile/desktop, web, server).
 /// - On web, the underlying [WebSocketChannel] uses the browser WebSocket API.
+
+/// The lifecycle status of a heartbeat reported to [RealtimeClient.onHeartbeat].
+enum RealtimeHeartbeatStatus {
+  /// A heartbeat message was pushed to the server.
+  sent,
+
+  /// The server acknowledged the heartbeat.
+  ok,
+
+  /// The server replied to the heartbeat with an error.
+  error,
+
+  /// The previous heartbeat was never acknowledged, so the connection is
+  /// being torn down and re-established.
+  timeout,
+
+  /// The heartbeat was skipped because the socket is not connected.
+  disconnected,
+}
+
 class RealtimeClient {
   String? accessToken;
   List<RealtimeChannel> channels = [];
@@ -123,7 +143,8 @@ class RealtimeClient {
     'open': [],
     'close': [],
     'error': [],
-    'message': []
+    'message': [],
+    'heartbeat': [],
   };
 
   @Deprecated("No longer used. Will be removed in the next major version.")
@@ -376,6 +397,18 @@ class RealtimeClient {
     stateChangeCallbacks['message']!.add(callback);
   }
 
+  /// Calls a function any time a heartbeat is sent, acknowledged, times out, or
+  /// is skipped because the socket is disconnected.
+  void onHeartbeat(void Function(RealtimeHeartbeatStatus status) callback) {
+    stateChangeCallbacks['heartbeat']!.add(callback);
+  }
+
+  void _triggerHeartbeat(RealtimeHeartbeatStatus status) {
+    for (final callback in stateChangeCallbacks['heartbeat']!) {
+      callback(status);
+    }
+  }
+
   /// Returns the current state of the socket.
   String get connectionState {
     switch (connState) {
@@ -446,6 +479,12 @@ class RealtimeClient {
     final messageRef = message['ref'] as String?;
     if (messageRef != null && messageRef == pendingHeartbeatRef) {
       pendingHeartbeatRef = null;
+      final heartbeatStatus = payload is Map ? payload['status'] : null;
+      _triggerHeartbeat(
+        heartbeatStatus == 'ok'
+            ? RealtimeHeartbeatStatus.ok
+            : RealtimeHeartbeatStatus.error,
+      );
     }
 
     final status = payload is Map ? (payload['status'] ?? '') : '';
@@ -605,6 +644,7 @@ class RealtimeClient {
   @internal
   Future<void> sendHeartbeat() async {
     if (!isConnected) {
+      _triggerHeartbeat(RealtimeHeartbeatStatus.disconnected);
       return;
     }
 
@@ -615,6 +655,7 @@ class RealtimeClient {
         'transport',
         'heartbeat timeout. Attempting to re-establish conn',
       );
+      _triggerHeartbeat(RealtimeHeartbeatStatus.timeout);
       unawaited(conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout'));
       return;
     }
@@ -625,6 +666,7 @@ class RealtimeClient {
       payload: {},
       ref: pendingHeartbeatRef!,
     ));
+    _triggerHeartbeat(RealtimeHeartbeatStatus.sent);
     await setAuth(accessToken);
   }
 }
