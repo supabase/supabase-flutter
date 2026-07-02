@@ -58,7 +58,6 @@ enum RealtimeHeartbeatStatus {
   ok,
   error,
   timeout,
-  disconnected,
 }
 
 /// Manages a persistent WebSocket connection to the Supabase Realtime server.
@@ -388,8 +387,7 @@ class RealtimeClient {
     stateChangeCallbacks['message']!.add(callback);
   }
 
-  /// Emits a status whenever a heartbeat is sent, acknowledged, times out, or
-  /// is skipped because the socket is disconnected.
+  /// Emits a status whenever a heartbeat is sent, acknowledged, or times out.
   Stream<RealtimeHeartbeatStatus> get onHeartbeat =>
       _heartbeatController.stream;
 
@@ -628,7 +626,6 @@ class RealtimeClient {
   @internal
   Future<void> sendHeartbeat() async {
     if (!isConnected) {
-      _heartbeatController.add(RealtimeHeartbeatStatus.disconnected);
       return;
     }
 

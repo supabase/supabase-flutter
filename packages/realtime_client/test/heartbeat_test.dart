@@ -32,11 +32,11 @@ void main() {
     });
   }
 
-  test('emits disconnected when the socket is not connected', () async {
+  test('emits nothing when the socket is not connected', () async {
     await client.sendHeartbeat();
     await pumpEventQueue();
 
-    expect(statuses, [RealtimeHeartbeatStatus.disconnected]);
+    expect(statuses, isEmpty);
   });
 
   test('emits sent when a heartbeat is pushed', () async {
