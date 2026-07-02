@@ -39,6 +39,35 @@ void main() {
       );
     });
 
+    test('error response labeled JSON with a non-JSON body reports the status',
+        () async {
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('invalid-json-error'),
+        throwsA(isA<FunctionException>()
+            .having((e) => e.status, 'status', 500)
+            .having((e) => e.details, 'details',
+                '<html><body>502 Bad Gateway</body></html>')),
+      );
+    });
+
+    test('a success response labeled JSON with a non-JSON body still throws',
+        () async {
+      // On a 2xx the JSON label is a promise of structured data. A body that
+      // doesn't parse is a real anomaly, so the FormatException must surface
+      // rather than silently degrading to a raw String.
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('success-invalid-json'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('an upper-cased application/JSON content type is parsed as JSON',
+        () async {
+      final res = await functionsCustomHttpClient.invoke('uppercase-json');
+      expect(res.data, {'key': 'Hello World'});
+      expect(res.status, 200);
+    });
+
     test('function call', () async {
       final res = await functionsCustomHttpClient.invoke('function');
       expect(

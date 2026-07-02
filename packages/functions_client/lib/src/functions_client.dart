@@ -163,7 +163,8 @@ class FunctionsClient {
             response.headers['content-type'] ??
             'text/plain')
         .split(';')[0]
-        .trim();
+        .trim()
+        .toLowerCase();
 
     final isSuccessStatus =
         200 <= response.statusCode && response.statusCode < 300;
@@ -172,9 +173,23 @@ class FunctionsClient {
 
     if (responseType == 'application/json') {
       final bodyBytes = await response.stream.toBytes();
-      data = bodyBytes.isEmpty
-          ? ""
-          : await _isolate.decode(utf8.decode(bodyBytes));
+      if (bodyBytes.isEmpty) {
+        data = "";
+      } else {
+        final bodyText = utf8.decode(bodyBytes);
+        dynamic decoded;
+        try {
+          decoded = await _isolate.decode(bodyText);
+        } on FormatException {
+          // A body labeled JSON that doesn't parse is only tolerated on an
+          // error status, where the raw text still needs to reach the caller
+          // as the exception `details`. On a success status it's a real
+          // anomaly, so keep surfacing it instead of handing back a String.
+          if (isSuccessStatus) rethrow;
+          decoded = bodyText;
+        }
+        data = decoded;
+      }
     } else if (responseType == 'application/octet-stream') {
       data = await response.stream.toBytes();
     } else if (responseType == 'text/event-stream' && isSuccessStatus) {
