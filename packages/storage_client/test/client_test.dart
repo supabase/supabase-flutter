@@ -684,7 +684,7 @@ void main() {
 
     // Valid storage keys that contain characters which are reserved in a URL
     // and therefore must be percent-encoded to address the correct object.
-    final keys = <String>[
+    final keys = [
       'folder/report?v=2 final.pdf',
       'folder/a+b,c@d=e.txt',
       'folder/amp&and;semi.txt',

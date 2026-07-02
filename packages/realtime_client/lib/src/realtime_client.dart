@@ -213,7 +213,10 @@ class RealtimeClient {
   @internal
   Future<void> connect() async {
     if (conn != null) {
-      return;
+      if (connState != SocketStates.closed) {
+        return;
+      }
+      await disconnect();
     }
 
     try {
@@ -300,9 +303,15 @@ class RealtimeClient {
           await conn.sink.close();
         }
         connState = SocketStates.disconnected;
-        reconnectTimer.reset();
         log('transport', 'disconnected', null, Level.FINE);
       }
+
+      // Cancel any reconnect scheduled by `_onConnClose`. When the socket has
+      // already dropped (`connState == closed`) the block above is skipped, so
+      // without this an armed backoff timer would fire after the user
+      // explicitly disconnected and silently reopen the connection.
+      reconnectTimer.cancel();
+
       this.conn = null;
       await _connectionSubscription?.cancel();
       _connectionSubscription = null;
