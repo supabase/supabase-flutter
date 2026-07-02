@@ -44,6 +44,34 @@ void main() {
         expect(client.isConnected, isTrue);
       });
 
+      test('reports heartbeat sent and ok statuses', () async {
+        final heartbeatClient = RealtimeClient(
+          realtimeUrl,
+          version: version,
+          params: {'apikey': generateRealtimeToken()},
+          heartbeatIntervalMs: 500,
+        );
+        final statuses = <RealtimeHeartbeatStatus>[];
+        final acknowledged = Completer<void>();
+        final subscription = heartbeatClient.onHeartbeat.listen((status) {
+          statuses.add(status);
+          if (status == RealtimeHeartbeatStatus.ok &&
+              !acknowledged.isCompleted) {
+            acknowledged.complete();
+          }
+        });
+
+        try {
+          await heartbeatClient.connect();
+          await acknowledged.future.timeout(const Duration(seconds: 10));
+          expect(statuses, contains(RealtimeHeartbeatStatus.sent));
+          expect(statuses, contains(RealtimeHeartbeatStatus.ok));
+        } finally {
+          await subscription.cancel();
+          await heartbeatClient.disconnect();
+        }
+      });
+
       test('subscribes to a channel', () async {
         final channel = client.channel('subscribe-${version.vsn}');
         final status = await _subscribe(channel);
