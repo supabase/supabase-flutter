@@ -2,11 +2,8 @@
 #
 # The extractor over-approximates: it treats every non-underscore top-level
 # declaration under lib/** as public API. Files under lib/src are private to
-# the package by Dart convention and are not exported from the public library,
-# so internal platform shims listed here are false positives.
-
-# Internal helpers backing the conditional import that clears auth parameters
-# from the browser URL on web after a successful session exchange.
-packages/supabase_flutter/lib/src/clear_auth_url_parameters.dart
-packages/supabase_flutter/lib/src/clear_auth_url_parameters_web.dart
-packages/supabase_flutter/lib/src/clear_auth_url_parameters_stub.dart
+# the package by Dart convention and are not exported from the public library.
+#
+# Prefer annotating such declarations with `@internal` (from package:meta): the
+# extractor honours it and excludes them from the scan. Use this file only for
+# paths that cannot carry that annotation, e.g. generated sources.

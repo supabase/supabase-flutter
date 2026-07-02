@@ -246,7 +246,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         } else if (response.request!.headers['Accept'] == 'text/csv') {
           body = response.body;
         } else if (_headers['Accept'] != null &&
-            _headers['Accept']!.contains('application/vnd.pgrst.plan+text')) {
+            _headers['Accept']!.contains('application/vnd.pgrst.plan')) {
           body = response.body;
         } else {
           try {

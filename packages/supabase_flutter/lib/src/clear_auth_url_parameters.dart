@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 const _authParameters = {
   'code',
   'access_token',
@@ -19,19 +21,12 @@ const _authParameters = {
 /// After a successful code exchange the auth code is single use, so leaving it
 /// in the URL means a page refresh would attempt to exchange a spent code and
 /// fail with "Code verifier could not be found in local storage.".
+@internal
 String removeAuthParametersFromUrl(String url) {
   final currentUri = Uri.parse(url);
 
-  final query = Map<String, String>.of(currentUri.queryParameters)
+  final query = Map<String, List<String>>.of(currentUri.queryParametersAll)
     ..removeWhere((key, value) => _authParameters.contains(key));
-
-  final fragmentParameters =
-      Map<String, String>.of(Uri.splitQueryString(currentUri.fragment))
-        ..removeWhere((key, value) => _authParameters.contains(key));
-
-  final fragment = fragmentParameters.isEmpty
-      ? null
-      : Uri(queryParameters: fragmentParameters).query;
 
   final cleanedUri = Uri(
     scheme: currentUri.scheme,
@@ -40,8 +35,24 @@ String removeAuthParametersFromUrl(String url) {
     port: currentUri.hasPort ? currentUri.port : null,
     path: currentUri.path,
     queryParameters: query.isEmpty ? null : query,
-    fragment: fragment,
+    fragment: _removeAuthParametersFromFragment(currentUri.fragment),
   );
 
   return cleanedUri.toString();
+}
+
+/// Strips auth parameters from a URL [fragment].
+String? _removeAuthParametersFromFragment(String fragment) {
+  if (fragment.isEmpty) return null;
+
+  final fragmentParameters = Uri(query: fragment).queryParametersAll;
+  final cleaned = {
+    for (final entry in fragmentParameters.entries)
+      if (!_authParameters.contains(entry.key)) entry.key: entry.value,
+  };
+  if (cleaned.length == fragmentParameters.length) {
+    return fragment;
+  }
+
+  return cleaned.isEmpty ? null : Uri(queryParameters: cleaned).query;
 }

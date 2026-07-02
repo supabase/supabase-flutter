@@ -301,12 +301,17 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// [buffers] If `true`, include information on buffer usage.
   ///
   /// [wal] If `true`, include information on WAL record generation
+  ///
+  /// [format] The format of the returned plan. Defaults to
+  /// [ExplainFormat.text]. When [ExplainFormat.json] is used the plan is
+  /// returned as a JSON string.
   PostgrestBuilder<String, String, String> explain({
     bool analyze = false,
     bool verbose = false,
     bool settings = false,
     bool buffers = false,
     bool wal = false,
+    ExplainFormat format = ExplainFormat.text,
   }) {
     final options = [
       if (analyze) 'analyze',
@@ -320,7 +325,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final forMediatype = _headers['Accept'] ?? 'application/json';
     final newHeaders = {..._headers};
     newHeaders['Accept'] =
-        'application/vnd.pgrst.plan+text; for="$forMediatype"; options=$options;';
+        'application/vnd.pgrst.plan+${format.name}; for="$forMediatype"; options=$options;';
     return _copyWithType(headers: newHeaders);
   }
 }

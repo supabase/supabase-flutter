@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
@@ -326,6 +328,17 @@ void main() {
         );
     final regex = RegExp(r'Aggregate  \(cost=.*');
     expect(regex.hasMatch(res), isTrue);
+  });
+
+  test('explain with json format returns a parseable JSON plan', () async {
+    final res = await postgrest
+        .from('users')
+        .select()
+        .explain(format: ExplainFormat.json);
+
+    final decoded = jsonDecode(res);
+    expect(decoded, isA<List>());
+    expect((decoded as List).first, contains('Plan'));
   });
 
   test('geojson', () async {
