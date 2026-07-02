@@ -333,7 +333,10 @@ class PostgresChangeFilter {
   @override
   String toString() {
     if (type == PostgresChangeFilterType.inFilter) {
-      return '$column=in.(${value.map((s) => '"$s"').join(',')})';
+      return '$column=in.(${value.map((s) {
+        final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+        return '"$escaped"';
+      }).join(',')})';
     }
     return '$column=${type.name}.$value';
   }
