@@ -150,9 +150,7 @@ features:
       - GoTrueAdminCustomProvidersApi.GoTrueAdminCustomProvidersApi
       - GoTrueAdminCustomProvidersApi.createProvider
       - CustomProviderType
-      - CustomProviderType.CustomProviderType
       - CustomProviderType.fromString
-      - CustomProviderType.value
       - CreateCustomProviderParams
       - CreateCustomProviderParams.CreateCustomProviderParams
       - CreateCustomProviderParams.acceptableClientIds

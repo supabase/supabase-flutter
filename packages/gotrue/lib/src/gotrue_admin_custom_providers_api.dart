@@ -1,6 +1,6 @@
 import 'fetch.dart';
+import 'types/custom_oauth_provider.dart';
 import 'types/fetch_options.dart';
-import 'types/types.dart';
 
 /// Contains all custom OIDC/OAuth provider administration methods.
 ///
@@ -33,7 +33,7 @@ class GoTrueAdminCustomProvidersApi {
       options: GotrueRequestOptions(
         headers: _headers,
         query: {
-          if (type != null) 'type': type.value,
+          if (type != null) 'type': type.name,
         },
       ),
     );
