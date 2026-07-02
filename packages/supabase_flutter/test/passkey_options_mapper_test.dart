@@ -4,17 +4,17 @@ import 'package:supabase_flutter/src/passkey/passkey_options_mapper.dart';
 void main() {
   group('passkeyRegisterRequestFromOptions', () {
     Map<String, dynamic> baseOptions() => {
-          'challenge': 'Y2hhbGxlbmdl',
-          'rp': {'id': 'example.com', 'name': 'Example'},
-          'user': {
-            'id': 'dXNlcg==',
-            'name': 'jane@example.com',
-            'displayName': 'Jane',
-          },
-          'pubKeyCredParams': [
-            {'type': 'public-key', 'alg': -7},
-          ],
-        };
+      'challenge': 'Y2hhbGxlbmdl',
+      'rp': {'id': 'example.com', 'name': 'Example'},
+      'user': {
+        'id': 'dXNlcg==',
+        'name': 'jane@example.com',
+        'displayName': 'Jane',
+      },
+      'pubKeyCredParams': [
+        {'type': 'public-key', 'alg': -7},
+      ],
+    };
 
     test('maps the W3C fields through to the request type', () {
       final request = passkeyRegisterRequestFromOptions(baseOptions());
@@ -113,10 +113,10 @@ void main() {
 
   group('passkeyAuthenticateRequestFromOptions', () {
     Map<String, dynamic> baseOptions() => {
-          'challenge': 'Y2hhbGxlbmdl',
-          'rpId': 'example.com',
-          'userVerification': 'preferred',
-        };
+      'challenge': 'Y2hhbGxlbmdl',
+      'rpId': 'example.com',
+      'userVerification': 'preferred',
+    };
 
     test('maps the W3C fields through to the request type', () {
       final request = passkeyAuthenticateRequestFromOptions(baseOptions());

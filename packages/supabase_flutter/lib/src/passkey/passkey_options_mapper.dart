@@ -29,8 +29,9 @@ RegisterRequestType passkeyRegisterRequestFromOptions(
 
   final authenticatorSelection = json['authenticatorSelection'];
   if (authenticatorSelection is Map) {
-    json['authenticatorSelection'] =
-        _normalizeAuthenticatorSelection(authenticatorSelection);
+    json['authenticatorSelection'] = _normalizeAuthenticatorSelection(
+      authenticatorSelection,
+    );
   }
 
   return RegisterRequestType.fromJson(json);
