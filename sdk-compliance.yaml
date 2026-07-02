@@ -310,7 +310,11 @@ features:
   realtime.client.get_channels: implemented
   realtime.client.remove_channel: implemented
   realtime.client.remove_all_channels: implemented
-  realtime.client.listen_heartbeats: not_implemented
+  realtime.client.listen_heartbeats:
+    status: implemented
+    symbols:
+      - RealtimeClient.onHeartbeat
+      - RealtimeHeartbeatStatus
   realtime.client.set_auth_token: implemented
 
   # realtime — subscriptions
