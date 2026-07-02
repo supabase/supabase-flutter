@@ -290,7 +290,7 @@ class RealtimeClient {
       if (shouldCloseSink) {
         onTimeout() {
           log('transport', 'timeout while closing connection', null,
-              Level.WARNING);
+              Level.FINE);
           // Handle as the connection would have been closed successfully, to
           // avoid hanging the client. This is done by mimicking the onDone
           // callback of the connection stream. By canceling the subscription,
