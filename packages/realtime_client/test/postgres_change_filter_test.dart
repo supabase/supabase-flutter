@@ -10,8 +10,6 @@ void main() {
         value: [r'a"b\c'],
       );
 
-      // The `"` and `\` are backslash-escaped so the element stays a single,
-      // well-formed quoted value rather than the malformed `in.("a"b\c")`.
       expect(filter.toString(), r'name=in.("a\"b\\c")');
     });
 
