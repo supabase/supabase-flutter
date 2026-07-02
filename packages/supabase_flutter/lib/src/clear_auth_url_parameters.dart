@@ -42,15 +42,14 @@ String removeAuthParametersFromUrl(String url) {
 String? _removeAuthParametersFromFragment(String fragment) {
   if (fragment.isEmpty) return null;
 
-  final fragmentParameters = Uri.splitQueryString(fragment);
-  final hasAuthParameter =
-      fragmentParameters.keys.any(_authParameters.contains);
-  if (!hasAuthParameter) {
+  final fragmentParameters = Uri(query: fragment).queryParametersAll;
+  final cleaned = {
+    for (final entry in fragmentParameters.entries)
+      if (!_authParameters.contains(entry.key)) entry.key: entry.value,
+  };
+  if (cleaned.length == fragmentParameters.length) {
     return fragment;
   }
-
-  final cleaned = Map<String, String>.of(fragmentParameters)
-    ..removeWhere((key, value) => _authParameters.contains(key));
 
   return cleaned.isEmpty ? null : Uri(queryParameters: cleaned).query;
 }

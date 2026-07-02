@@ -84,5 +84,14 @@ void main() {
         'https://example.com/?tag=a&tag=b',
       );
     });
+
+    test('preserves repeated fragment keys alongside auth tokens', () {
+      expect(
+        removeAuthParametersFromUrl(
+          'https://example.com/#access_token=abc&ref=a&ref=b',
+        ),
+        'https://example.com/#ref=a&ref=b',
+      );
+    });
   });
 }
