@@ -546,10 +546,6 @@ class StorageFileApi {
 
   /// Appends a `download` query parameter to [urlString] when [download] is
   /// set, so the response is served with a `Content-Disposition` header.
-  ///
-  /// [download] must be a [bool] or a [String]. `true` keeps the original file
-  /// name, a [String] overrides it, and `null` or `false` leaves the URL
-  /// unchanged.
   String _withDownload(String urlString, Object? download) {
     assert(
       download == null || download is bool || download is String,
