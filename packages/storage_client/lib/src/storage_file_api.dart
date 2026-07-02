@@ -198,13 +198,24 @@ class StorageFileApi {
   /// They are valid for one minute.
   ///
   /// [path] The file path, including the current file name. For example `folder/image.png`.
-  Future<SignedUploadURLResponse> createSignedUploadUrl(String path) async {
+  ///
+  /// When [upsert] is `true` the signed URL allows overwriting an existing
+  /// file at [path]. It defaults to `false`.
+  Future<SignedUploadURLResponse> createSignedUploadUrl(
+    String path, {
+    bool upsert = false,
+  }) async {
     final finalPath = _getFinalPath(path);
 
     final data = await _storageFetch.post(
       '$url/object/upload/sign/$finalPath',
       {},
-      options: _fetchOptions,
+      options: FetchOptions(
+        headers: {
+          ...headers,
+          if (upsert) 'x-upsert': 'true',
+        },
+      ),
     );
 
     final signedUrl = Uri.parse('$url${data['url']}');
@@ -220,8 +231,6 @@ class StorageFileApi {
       path: path,
       token: token,
     );
-
-    //   return { data: { signedUrl: url.toString(), path, token }, error: null }
   }
 
   /// Replaces an existing file at the specified path with a new one.
