@@ -402,10 +402,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// Get new Uri with overridden queryParams
   ///
   /// [url] may be used to update based on a different url than the current one
-  Uri overrideSearchParams(String key, String value) {
-    final searchParams = Map<String, dynamic>.of(_url.queryParametersAll);
+  Uri overrideSearchParams(String key, String value, [Uri? url]) {
+    final searchParams =
+        Map<String, dynamic>.of((url ?? _url).queryParametersAll);
     searchParams[key] = value;
-    return _url.replace(queryParameters: searchParams);
+    return (url ?? _url).replace(queryParameters: searchParams);
   }
 
   /// Convert list filter to query params string

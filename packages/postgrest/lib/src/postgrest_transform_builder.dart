@@ -106,7 +106,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   PostgrestTransformBuilder<T> limit(int count, {String? referencedTable}) {
     final key = referencedTable == null ? 'limit' : '$referencedTable.limit';
 
-    final url = appendSearchParams(key, '$count');
+    final url = overrideSearchParams(key, '$count');
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
@@ -134,8 +134,8 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final keyLimit =
         referencedTable == null ? 'limit' : '$referencedTable.limit';
 
-    var url = appendSearchParams(keyOffset, '$from');
-    url = appendSearchParams(keyLimit, '${to - from + 1}', url);
+    var url = overrideSearchParams(keyOffset, '$from');
+    url = overrideSearchParams(keyLimit, '${to - from + 1}', url);
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
