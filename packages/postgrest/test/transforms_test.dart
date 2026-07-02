@@ -213,6 +213,111 @@ void main() {
     expect(reactions.length, to - (from - 1));
   });
 
+  group('limit and range query params', () {
+    late CustomHttpClient customHttpClient;
+    late PostgrestClient postgrestCustomHttpClient;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      postgrestCustomHttpClient = PostgrestClient(
+        rootUrl,
+        headers: apiHeaders,
+        httpClient: customHttpClient,
+      );
+    });
+
+    test('a later limit() replaces the earlier one', () async {
+      try {
+        await postgrestCustomHttpClient.from('t').select().limit(1).limit(2);
+      } catch (_) {
+        // Expected to fail with custom client, we just want to check the url
+      }
+
+      expect(
+        customHttpClient.lastRequest!.url.queryParametersAll['limit'],
+        ['2'],
+      );
+    });
+
+    test('range() overrides a preceding limit() instead of duplicating it',
+        () async {
+      try {
+        await postgrestCustomHttpClient.from('t').select().limit(5).range(0, 9);
+      } catch (_) {
+        // Expected to fail with custom client, we just want to check the url
+      }
+
+      expect(
+        customHttpClient.lastRequest!.url.queryParametersAll['limit'],
+        ['10'],
+      );
+      expect(
+        customHttpClient.lastRequest!.url.queryParametersAll['offset'],
+        ['0'],
+      );
+    });
+
+    test('a later range() replaces the earlier one', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('t')
+            .select()
+            .range(0, 9)
+            .range(10, 19);
+      } catch (_) {
+        // Expected to fail with custom client, we just want to check the url
+      }
+
+      expect(
+        customHttpClient.lastRequest!.url.queryParametersAll['offset'],
+        ['10'],
+      );
+      expect(
+        customHttpClient.lastRequest!.url.queryParametersAll['limit'],
+        ['10'],
+      );
+    });
+
+    test('referencedTable limit is scoped and single-valued', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('t')
+            .select('messages(*)')
+            .limit(1, referencedTable: 'messages')
+            .limit(2, referencedTable: 'messages');
+      } catch (_) {
+        // Expected to fail with custom client, we just want to check the url
+      }
+
+      expect(
+        customHttpClient.lastRequest!.url.queryParametersAll['messages.limit'],
+        ['2'],
+      );
+    });
+
+    test('referencedTable range overrides a preceding limit and range',
+        () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('t')
+            .select('messages(*)')
+            .limit(5, referencedTable: 'messages')
+            .range(0, 9, referencedTable: 'messages');
+      } catch (_) {
+        // Expected to fail with custom client, we just want to check the url
+      }
+
+      expect(
+        customHttpClient.lastRequest!.url.queryParametersAll['messages.limit'],
+        ['10'],
+      );
+      expect(
+        customHttpClient.lastRequest!.url.queryParametersAll['messages.offset'],
+        ['0'],
+      );
+    });
+  });
+
   test('single', () async {
     final res = await postgrest
         .from('users')
