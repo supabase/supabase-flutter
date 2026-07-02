@@ -81,6 +81,15 @@ class CustomHttpClient extends BaseClient {
         },
         reasonPhrase: "Internal Server Error",
       );
+    } else if (request.url.path.endsWith('success-invalid-json')) {
+      return StreamedResponse(
+        Stream.value(utf8.encode('<html><body>not json</body></html>')),
+        200,
+        request: request,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      );
     } else if (request.url.path.endsWith('uppercase-json')) {
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),

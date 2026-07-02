@@ -180,7 +180,12 @@ class FunctionsClient {
         dynamic decoded;
         try {
           decoded = await _isolate.decode(bodyText);
-        } on FormatException catch (_) {
+        } on FormatException {
+          // A body labeled JSON that doesn't parse is only tolerated on an
+          // error status, where the raw text still needs to reach the caller
+          // as the exception `details`. On a success status it's a real
+          // anomaly, so keep surfacing it instead of handing back a String.
+          if (isSuccessStatus) rethrow;
           decoded = bodyText;
         }
         data = decoded;

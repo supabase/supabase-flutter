@@ -50,6 +50,17 @@ void main() {
       );
     });
 
+    test('a success response labeled JSON with a non-JSON body still throws',
+        () async {
+      // On a 2xx the JSON label is a promise of structured data. A body that
+      // doesn't parse is a real anomaly, so the FormatException must surface
+      // rather than silently degrading to a raw String.
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('success-invalid-json'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
     test('an upper-cased application/JSON content type is parsed as JSON',
         () async {
       final res = await functionsCustomHttpClient.invoke('uppercase-json');
