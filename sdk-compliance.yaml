@@ -131,9 +131,7 @@ features:
   auth.admin.create_user: implemented
   auth.admin.get_user: implemented
   auth.admin.update_user: implemented
-  auth.admin.delete_user:
-    status: partially_implemented
-    note: "No shouldSoftDelete parameter; always performs a hard delete."
+  auth.admin.delete_user: implemented
   auth.admin.list_users:
     status: partially_implemented
     note: "Returns the user list only; pagination metadata (total, nextPage, lastPage, aud) is not returned."
