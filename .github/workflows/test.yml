@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       dart-matrix: ${{ steps.detect.outputs.dart-matrix }}
+      sdk-matrix: ${{ steps.detect.outputs.sdk-matrix }}
       flutter: ${{ steps.detect.outputs.flutter }}
     steps:
       - name: Checkout repository
@@ -87,6 +88,15 @@ jobs:
           fi
           echo "dart-matrix=$DART_MATRIX" >> "$GITHUB_OUTPUT"
 
+          # Only exercise beta/dev SDKs on pushes to main. On pull requests we
+          # test stable only to keep the matrix small; upcoming-SDK breakage is
+          # caught on merge.
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo 'sdk-matrix=["stable","beta","dev"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'sdk-matrix=["stable"]' >> "$GITHUB_OUTPUT"
+          fi
+
           if echo "$CHANGED" | grep -qx "supabase_flutter"; then
             echo "flutter=true" >> "$GITHUB_OUTPUT"
           else
@@ -103,7 +113,7 @@ jobs:
       fail-fast: false
       matrix:
         package: ${{ fromJSON(needs.changes.outputs.dart-matrix) }}
-        sdk: [stable, beta, dev]
+        sdk: ${{ fromJSON(needs.changes.outputs.sdk-matrix) }}
 
     steps:
       - name: Checkout repository
