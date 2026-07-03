@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          dart pub global activate melos 8.0.0
+          dart pub global activate melos
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE="${{ github.event.pull_request.base.sha }}"
@@ -137,7 +137,7 @@ jobs:
 
       - name: Bootstrap workspace
         run: |
-          dart pub global activate melos 8.0.0
+          dart pub global activate melos
           melos bootstrap --no-flutter
 
       - name: Format
@@ -272,7 +272,7 @@ jobs:
       - name: Bootstrap workspace
         run: |
           cd ../../
-          dart pub global activate melos 8.0.0
+          dart pub global activate melos
           melos bootstrap
 
       - name: Run formatter
@@ -329,7 +329,7 @@ jobs:
 
       - name: Bootstrap workspace
         run: |
-          dart pub global activate melos 8.0.0
+          dart pub global activate melos
           melos bootstrap
 
       - name: Install DCM
