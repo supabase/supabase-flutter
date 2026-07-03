@@ -1,3 +1,7 @@
+## 2.6.4
+
+ - **FIX**(functions): don't lose error status on a non-JSON body labeled JSON ([#1507](https://github.com/supabase/supabase-flutter/issues/1507)). ([925b46e1](https://github.com/supabase/supabase-flutter/commit/925b46e118e62884dd65505e7a753e0f51958b4c))
+
 ## 2.6.3
 
  - **FIX**(functions): drain error responses with a streaming content type ([#1480](https://github.com/supabase/supabase-flutter/issues/1480)). ([0eeb4130](https://github.com/supabase/supabase-flutter/commit/0eeb4130a260216415dc81de0e9e1386ca8219d2))
