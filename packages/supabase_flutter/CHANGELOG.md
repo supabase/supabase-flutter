@@ -1,3 +1,7 @@
+## 2.15.4
+
+ - **FIX**(supabase_flutter): preserve hash routes and repeated query keys when clearing auth params ([#1511](https://github.com/supabase/supabase-flutter/issues/1511)). ([4fca4126](https://github.com/supabase/supabase-flutter/commit/4fca4126fe3649f218b296b0e40bb4bc2de87890))
+
 ## 2.15.3
 
  - **FIX**(supabase_flutter): backfill requireResidentKey when omitted by the server ([#1502](https://github.com/supabase/supabase-flutter/issues/1502)). ([cf382968](https://github.com/supabase/supabase-flutter/commit/cf3829686fdbceb559fe41ad558089b44fcc9af1))
