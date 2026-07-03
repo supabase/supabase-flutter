@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       dart-matrix: ${{ steps.detect.outputs.dart-matrix }}
-      sdk-matrix: ${{ steps.detect.outputs.sdk-matrix }}
+      channel-matrix: ${{ steps.detect.outputs.channel-matrix }}
       flutter: ${{ steps.detect.outputs.flutter }}
     steps:
       - name: Checkout repository
@@ -49,7 +49,7 @@ jobs:
           if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
             FORCE_ALL=true
           elif git diff --name-only "$BASE...HEAD" \
-              | grep -qE '^(\.github/workflows/test\.yml|melos\.yaml|pubspec\.lock|supabase/)'; then
+              | grep -qE '^(\.github/workflows/test\.yml|pubspec\.yaml|pubspec\.lock|supabase/)'; then
             FORCE_ALL=true
           fi
 
@@ -88,13 +88,10 @@ jobs:
           fi
           echo "dart-matrix=$DART_MATRIX" >> "$GITHUB_OUTPUT"
 
-          # Only exercise beta/dev SDKs on pushes to main. On pull requests we
-          # test stable only to keep the matrix small; upcoming-SDK breakage is
-          # caught on merge.
           if [ "${{ github.event_name }}" = "push" ]; then
-            echo 'sdk-matrix=["stable","beta","dev"]' >> "$GITHUB_OUTPUT"
+            echo 'channel-matrix=["stable","beta","master"]' >> "$GITHUB_OUTPUT"
           else
-            echo 'sdk-matrix=["stable"]' >> "$GITHUB_OUTPUT"
+            echo 'channel-matrix=["stable"]' >> "$GITHUB_OUTPUT"
           fi
 
           if echo "$CHANGED" | grep -qx "supabase_flutter"; then
@@ -104,7 +101,7 @@ jobs:
           fi
 
   test-dart:
-    name: Dart ${{ matrix.package.name }} (${{ matrix.sdk }})
+    name: Dart ${{ matrix.package.name }} (${{ matrix.channel }})
     needs: changes
     if: ${{ needs.changes.outputs.dart-matrix != '[]' }}
     timeout-minutes: 20
@@ -113,40 +110,33 @@ jobs:
       fail-fast: false
       matrix:
         package: ${{ fromJSON(needs.changes.outputs.dart-matrix) }}
-        sdk: ${{ fromJSON(needs.changes.outputs.sdk-matrix) }}
+        channel: ${{ fromJSON(needs.changes.outputs.channel-matrix) }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup Dart
-        uses: dart-lang/setup-dart@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c # v1.7.1
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: ${{ matrix.sdk }}
+          channel: ${{ matrix.channel }}
+          cache: false
 
-      - name: Cache pub dependencies
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: |
-            ${{ env.PUB_CACHE }}
-            ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ matrix.sdk }}-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-${{ matrix.sdk }}-
-            ${{ runner.os }}-pub-
+      - name: Show Flutter version
+        run: flutter --version
 
       - name: Bootstrap workspace
         run: |
           dart pub global activate melos
-          melos bootstrap --no-flutter
+          melos bootstrap
 
       - name: Format
-        if: ${{ matrix.sdk == 'stable' }}
+        if: ${{ matrix.channel == 'stable' }}
         working-directory: packages/${{ matrix.package.name }}
         run: dart format lib test -l 80 --set-exit-if-changed
 
       - name: Analyze
-        if: ${{ matrix.sdk == 'stable' }}
+        if: ${{ matrix.channel == 'stable' }}
         working-directory: packages/${{ matrix.package.name }}
         run: dart analyze --fatal-infos .
 
@@ -201,18 +191,18 @@ jobs:
           if [ "${{ matrix.package.concurrency }}" = "1" ]; then
             CONCURRENCY="--concurrency=1"
           fi
-          if [ "${{ matrix.sdk }}" = "stable" ]; then
+          if [ "${{ matrix.channel }}" = "stable" ]; then
             dart pub global activate coverage
             dart test $CONCURRENCY --coverage=coverage
             dart pub global run coverage:format_coverage \
-              --packages=.dart_tool/package_config.json \
+              --packages=../../.dart_tool/package_config.json \
               --report-on=lib --lcov -o coverage/lcov.info -i coverage
           else
             dart test $CONCURRENCY
           fi
 
       - name: Upload coverage to Coveralls
-        if: ${{ matrix.sdk == 'stable' }}
+        if: ${{ matrix.channel == 'stable' }}
         uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

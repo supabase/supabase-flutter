@@ -7,6 +7,8 @@ repository: "https://github.com/supabase/supabase-flutter/tree/main/packages/sup
 environment:
   sdk: ">=3.9.0 <4.0.0"
 
+resolution: workspace
+
 dependencies:
   lints: ^4.0.0
   flutter_lints: ^4.0.0

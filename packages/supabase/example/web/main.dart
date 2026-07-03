@@ -61,15 +61,7 @@ void exampleUsage(SupabaseClient supabase) async {
   // remember to remove subscription
   unawaited(streamSubscription.cancel());
 
-  // Upload file to bucket "public" with dart:io
-
-  // final file = File('example.txt');
-  // file.writeAsStringSync('File content');
-  // final storageResponse = await supabase.storage
-  //     .from('public')
-  //     .upload('example.txt', file);
-
-  // Upload file to bucket "public" without dart:io
+  // Upload file to bucket "public"
   final content = "my file content";
   final storageResponse = await supabase.storage
       .from('public')
@@ -93,7 +85,4 @@ void exampleUsage(SupabaseClient supabase) async {
     'example.txt',
   ]);
   print('deleted file id : ${deleteFileResponse.first.id}');
-
-  // Local file cleanup on dart:io
-  // if (file.existsSync()) file.deleteSync();
 }

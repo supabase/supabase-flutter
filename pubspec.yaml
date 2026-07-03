@@ -1,6 +1,47 @@
 name: supabase_flutter_packages
+repository: https://github.com/supabase/supabase-flutter
+publish_to: none
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
+
+workspace:
+  - packages/functions_client
+  - packages/gotrue
+  - packages/postgrest
+  - packages/realtime_client
+  - packages/storage_client
+  - packages/supabase
+  - packages/supabase/example
+  - packages/supabase_flutter
+  - packages/supabase_flutter/example
+  - packages/supabase_lints
+  - packages/yet_another_json_isolate
+  - examples/launcher
+  - examples/passkeys
+
 dev_dependencies:
-  melos: ^3.0.1
+  melos: ^8.1.0
+
+melos:
+  command:
+    version:
+      linkToCommits: true
+      workspaceChangelog: true
+      hooks:
+        preCommit: melos run update-version
+    format:
+      lineLength: 80
+
+  scripts:
+    update-version:
+      description: Updates the version.dart file for each package except yet_another_json_isolate
+      run: |
+        for d in packages/*/ ; do
+          version=$(awk '/version:/ {
+            pos=match($2, /[0-9]+\.[0-9]+\.[0-9]+/);
+            print substr($2, pos); }' $d/pubspec.yaml)
+          echo "const version = '$version';" > $d/lib/src/version.dart
+        done
+        rm packages/yet_another_json_isolate/lib/src/version.dart
+        git add packages/*/lib/src/version.dart

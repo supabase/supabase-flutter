@@ -43,14 +43,11 @@ melos bs
 ### Linting and Formatting
 
 ```bash
-# Run all static analysis checks (analyze + format)
-melos run lint:all
+# Run the analyzer across the whole workspace
+melos analyze
 
-# Run analyzer on all packages
-melos run analyze
-
-# Format code (80 char line length)
-melos run format
+# Format code (80 char line length, configured in the root pubspec.yaml)
+melos format
 ```
 
 ### Testing
@@ -83,11 +80,19 @@ cd packages/<package>
 dart test
 ```
 
-**Run tests with coverage:**
+**Run every package's tests at once:**
 
 ```bash
-# From root or package directory
-melos run test:coverage
+# Runs `dart test`/`flutter test` in each package that has a test/ directory.
+# Start the local Supabase stack first (see above) so the backend packages pass.
+melos test
+```
+
+**Run tests with coverage (from a package directory):**
+
+```bash
+cd packages/<package>
+dart test --coverage=coverage
 ```
 
 ### Running a Single Test File
@@ -103,11 +108,11 @@ dart test test/specific_test.dart -n "test name pattern"
 ### Package Management
 
 ```bash
-# Upgrade dependencies across all packages
-melos run upgrade
+# Upgrade dependencies across the whole workspace (run at the repository root)
+dart pub upgrade
 
 # Check for outdated dependencies
-melos run outdated
+dart pub outdated
 ```
 
 ### Version Management
@@ -203,7 +208,7 @@ await Supabase.initialize(
 ## Contributing Guidelines
 
 - Fork the repo and create feature branches
-- Run `melos run lint:all` before committing
+- Run `melos analyze` and `melos format` before committing
 - Ensure tests pass for modified packages
 - Update package changelogs if making notable changes
 - Line length limit is 80 characters
