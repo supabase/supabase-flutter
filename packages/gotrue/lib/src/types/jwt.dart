@@ -31,8 +31,8 @@ class JwtHeader {
   Map<String, dynamic> toJson() {
     return {
       'alg': alg,
-      if (kid != null) 'kid': kid,
-      if (typ != null) 'typ': typ,
+      'kid': ?kid,
+      'typ': ?typ,
     };
   }
 }

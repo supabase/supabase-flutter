@@ -56,10 +56,9 @@ dcm:
     prefer-prefixed-global-constants: false
     prefer-switch-with-enums: false
 
-    # Blocked until the minimum Dart SDK is raised. The fixes these rules
-    # suggest rely on language features newer than our current floor of 3.4.0,
-    # so they cannot be enabled yet.
-    prefer-null-aware-elements: false # needs null-aware elements (Dart 3.8)
-    prefer-returning-shorthands: false # needs dot shorthands (Dart 3.9)
-    prefer-shorthands-with-enums: false # needs dot shorthands (Dart 3.9)
-    prefer-shorthands-with-static-fields: false # needs dot shorthands (Dart 3.9)
+    # Blocked until the minimum Dart SDK is raised to 3.10.0. The dot shorthands
+    # language feature these rules rely on is only available from 3.10.0, above
+    # our current floor of 3.9.0.
+    prefer-returning-shorthands: false # needs dot shorthands (Dart 3.10)
+    prefer-shorthands-with-enums: false # needs dot shorthands (Dart 3.10)
+    prefer-shorthands-with-static-fields: false # needs dot shorthands (Dart 3.10)

@@ -76,8 +76,8 @@ class GoTrueAdminOAuthApi {
       options: GotrueRequestOptions(
         headers: _headers,
         query: {
-          if (page != null) 'page': page.toString(),
-          if (perPage != null) 'per_page': perPage.toString(),
+          'page': ?page?.toString(),
+          'per_page': ?perPage?.toString(),
         },
       ),
     );

@@ -275,13 +275,11 @@ class CreateOAuthClientParams {
   Map<String, dynamic> toJson() {
     return {
       'client_name': clientName,
-      if (clientUri != null) 'client_uri': clientUri,
+      'client_uri': ?clientUri,
       'redirect_uris': redirectUris,
-      if (grantTypes != null)
-        'grant_types': grantTypes!.map((e) => e.value).toList(),
-      if (responseTypes != null)
-        'response_types': responseTypes!.map((e) => e.value).toList(),
-      if (scope != null) 'scope': scope,
+      'grant_types': ?grantTypes?.map((e) => e.value).toList(),
+      'response_types': ?responseTypes?.map((e) => e.value).toList(),
+      'scope': ?scope,
     };
   }
 }
@@ -318,14 +316,12 @@ class UpdateOAuthClientParams {
 
   Map<String, dynamic> toJson() {
     return {
-      if (clientName != null) 'client_name': clientName,
-      if (clientUri != null) 'client_uri': clientUri,
-      if (redirectUris != null) 'redirect_uris': redirectUris,
-      if (grantTypes != null)
-        'grant_types': grantTypes!.map((e) => e.value).toList(),
-      if (responseTypes != null)
-        'response_types': responseTypes!.map((e) => e.value).toList(),
-      if (scope != null) 'scope': scope,
+      'client_name': ?clientName,
+      'client_uri': ?clientUri,
+      'redirect_uris': ?redirectUris,
+      'grant_types': ?grantTypes?.map((e) => e.value).toList(),
+      'response_types': ?responseTypes?.map((e) => e.value).toList(),
+      'scope': ?scope,
     };
   }
 }

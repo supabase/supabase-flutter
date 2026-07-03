@@ -18,10 +18,8 @@ class StorageBucketApi {
       'id': id,
       'name': id,
       'public': bucketOptions.public,
-      if (bucketOptions.fileSizeLimit != null)
-        'file_size_limit': bucketOptions.fileSizeLimit,
-      if (bucketOptions.allowedMimeTypes != null)
-        'allowed_mime_types': bucketOptions.allowedMimeTypes,
+      'file_size_limit': ?bucketOptions.fileSizeLimit,
+      'allowed_mime_types': ?bucketOptions.allowedMimeTypes,
     };
   }
 

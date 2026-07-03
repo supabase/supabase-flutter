@@ -30,11 +30,11 @@ class UserAttributes {
 
   Map<String, dynamic> toJson() {
     return {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
-      if (nonce != null) 'nonce': nonce,
-      if (password != null) 'password': password,
-      if (data != null) 'data': data,
+      'email': ?email,
+      'phone': ?phone,
+      'nonce': ?nonce,
+      'password': ?password,
+      'data': ?data,
     };
   }
 
@@ -116,15 +116,15 @@ class AdminUserAttributes extends UserAttributes {
   @override
   Map<String, dynamic> toJson() {
     return {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
-      if (password != null) 'password': password,
-      if (data != null) 'data': data,
-      if (userMetadata != null) 'user_metadata': userMetadata,
-      if (appMetadata != null) 'app_metadata': appMetadata,
-      if (emailConfirm != null) 'email_confirm': emailConfirm,
-      if (phoneConfirm != null) 'phone_confirm': phoneConfirm,
-      if (banDuration != null) 'ban_duration': banDuration,
+      'email': ?email,
+      'phone': ?phone,
+      'password': ?password,
+      'data': ?data,
+      'user_metadata': ?userMetadata,
+      'app_metadata': ?appMetadata,
+      'email_confirm': ?emailConfirm,
+      'phone_confirm': ?phoneConfirm,
+      'ban_duration': ?banDuration,
     };
   }
 
