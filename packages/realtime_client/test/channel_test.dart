@@ -80,7 +80,7 @@ void main() {
           },
           'presence': {'key': '', 'enabled': false},
           'private': false,
-        }
+        },
       });
     });
   });
@@ -274,8 +274,9 @@ void main() {
 
       channel.subscribe();
 
-      final sentFilter = (channel.joinPush.payload['config']['postgres_changes']
-          as List)[0] as Map;
+      final sentFilter =
+          (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
+              as Map;
       expect(sentFilter['select'], ['id', 'first_name']);
     });
 
@@ -301,8 +302,9 @@ void main() {
 
       channel.subscribe();
 
-      final sentFilter = (channel.joinPush.payload['config']['postgres_changes']
-          as List)[0] as Map;
+      final sentFilter =
+          (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
+              as Map;
       expect(sentFilter['filter'], 'amount=gt.100,status=in.(open,pending)');
     });
   });
@@ -394,27 +396,30 @@ void main() {
       expect(status, isNot(RealtimeSubscribeStatus.channelError));
     });
 
-    test('forwards the raw payload, parseable into a RealtimeSystemPayload',
-        () {
-      dynamic received;
-      channel.onSystemEvents((payload) => received = payload);
+    test(
+      'forwards the raw payload, parseable into a RealtimeSystemPayload',
+      () {
+        dynamic received;
+        channel.onSystemEvents((payload) => received = payload);
 
-      channel.trigger('system', {
-        'extension': 'system',
-        'status': 'ok',
-        'message': 'Replication connection established',
-        'channel': 'topic',
-      });
+        channel.trigger('system', {
+          'extension': 'system',
+          'status': 'ok',
+          'message': 'Replication connection established',
+          'channel': 'topic',
+        });
 
-      expect(received, isA<Map>());
+        expect(received, isA<Map>());
 
-      final system =
-          RealtimeSystemPayload.fromJson(Map<String, dynamic>.from(received));
-      expect(system.extension, 'system');
-      expect(system.status, 'ok');
-      expect(system.message, 'Replication connection established');
-      expect(system.channel, 'topic');
-    });
+        final system = RealtimeSystemPayload.fromJson(
+          Map<String, dynamic>.from(received),
+        );
+        expect(system.extension, 'system');
+        expect(system.status, 'ok');
+        expect(system.message, 'Replication connection established');
+        expect(system.channel, 'topic');
+      },
+    );
   });
 
   group('onMessage', () {
