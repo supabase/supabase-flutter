@@ -410,7 +410,7 @@ class RealtimeChannel {
     );
 
     final allFilters = [
-      if (filter != null) filter,
+      ?filter,
       ...?filters,
     ];
     final filterString = allFilters.isEmpty ? null : allFilters.join(',');
