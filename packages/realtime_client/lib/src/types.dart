@@ -93,10 +93,10 @@ class ChannelFilter {
 
   Map<String, String> toMap() {
     return {
-      if (event != null) 'event': event!,
-      if (schema != null) 'schema': schema!,
-      if (table != null) 'table': table!,
-      if (filter != null) 'filter': filter!,
+      'event': ?event,
+      'schema': ?schema,
+      'table': ?table,
+      'filter': ?filter,
     };
   }
 }

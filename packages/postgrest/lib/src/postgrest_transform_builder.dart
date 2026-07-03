@@ -46,7 +46,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final url = overrideSearchParams('select', cleanedColumns);
     final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
     newHeaders['Prefer'] = [
-      if (prefer != null) prefer,
+      ?prefer,
       'return=representation',
     ].join(',');
     return PostgrestTransformBuilder(

@@ -323,7 +323,7 @@ class StorageFileApi {
         'bucketId': bucketId,
         'sourceKey': fromPath,
         'destinationKey': toPath,
-        if (destinationBucket != null) 'destinationBucket': destinationBucket,
+        'destinationBucket': ?destinationBucket,
       },
       options: options,
     );
@@ -351,7 +351,7 @@ class StorageFileApi {
         'bucketId': bucketId,
         'sourceKey': fromPath,
         'destinationKey': toPath,
-        if (destinationBucket != null) 'destinationBucket': destinationBucket,
+        'destinationBucket': ?destinationBucket,
       },
       options: options,
     );
@@ -385,7 +385,7 @@ class StorageFileApi {
       '$url/object/sign/$finalPath',
       {
         'expiresIn': expiresIn,
-        if (transform != null) 'transform': transform.toQueryParams,
+        'transform': ?transform?.toQueryParams,
       },
       options: options,
     );

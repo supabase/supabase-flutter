@@ -118,8 +118,8 @@ class GoTrueAdminApi {
     final options = GotrueRequestOptions(
       headers: _headers,
       query: {
-        if (page != null) 'page': page.toString(),
-        if (perPage != null) 'per_page': perPage.toString(),
+        'page': ?page?.toString(),
+        'per_page': ?perPage?.toString(),
       },
     );
     final response = await _fetch.request(
@@ -138,7 +138,7 @@ class GoTrueAdminApi {
   }) async {
     final body = {
       'email': email,
-      if (data != null) 'data': data,
+      'data': ?data,
     };
     final fetchOptions = GotrueRequestOptions(
       headers: _headers,
@@ -186,10 +186,10 @@ class GoTrueAdminApi {
     final body = {
       'email': email,
       'type': type.snakeCase,
-      if (data != null) 'data': data,
-      if (redirectTo != null) 'redirect_to': redirectTo,
-      if (password != null) 'password': password,
-      if (newEmail != null) 'new_email': newEmail,
+      'data': ?data,
+      'redirect_to': ?redirectTo,
+      'password': ?password,
+      'new_email': ?newEmail,
     };
 
     final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
