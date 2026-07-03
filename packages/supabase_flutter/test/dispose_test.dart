@@ -20,6 +20,7 @@ void main() {
       await Supabase.initialize(
         url: '',
         publishableKey: '',
+        debug: false,
         accessToken: () async => 'custom-access-token',
       );
 
