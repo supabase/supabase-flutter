@@ -207,6 +207,32 @@ void main() {
       );
     });
 
+    test('createSignedUploadUrl omits x-upsert by default', () async {
+      customHttpClient.response = {
+        'url': '/object/upload/sign/public/a.txt?token=xyz',
+      };
+
+      await client.from('public').createSignedUploadUrl('a.txt');
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(request.headers.containsKey('x-upsert'), isFalse);
+    });
+
+    test('createSignedUploadUrl sends x-upsert when upserting', () async {
+      customHttpClient.response = {
+        'url': '/object/upload/sign/public/a.txt?token=xyz',
+      };
+
+      final response = await client
+          .from('public')
+          .createSignedUploadUrl('a.txt', upsert: true);
+
+      expect(response.token, 'xyz');
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(request.headers['x-upsert'], 'true');
+    });
+
     test('should list files', () async {
       customHttpClient.response = [testFileObjectJson, testFileObjectJson];
 
@@ -247,6 +273,56 @@ void main() {
     test('should get public URL of a path', () {
       final response = client.from('files').getPublicUrl('b.txt');
       expect(response, '$objectUrl/public/files/b.txt');
+    });
+
+    test('getPublicUrl appends download with the original file name', () {
+      final response = client.from('files').getPublicUrl(
+            'b.txt',
+            download: DownloadBehavior.withOriginalName,
+          );
+      expect(response, '$objectUrl/public/files/b.txt?download=');
+    });
+
+    test('getPublicUrl appends download with a custom file name', () {
+      final response = client.from('files').getPublicUrl('b.txt',
+          download: DownloadBehavior.named('my file.txt'));
+      expect(
+        response,
+        '$objectUrl/public/files/b.txt?download=my+file.txt',
+      );
+    });
+
+    test('getPublicUrl leaves the URL unchanged when download is null', () {
+      final response = client.from('files').getPublicUrl('b.txt');
+      expect(response, '$objectUrl/public/files/b.txt');
+    });
+
+    test('createSignedUrl appends download to the token query', () async {
+      customHttpClient.response = {
+        'signedURL': '/object/sign/public/b.txt?token=abc',
+      };
+
+      final response = await client.from('public').createSignedUrl('b.txt', 60,
+          download: DownloadBehavior.named('report.pdf'));
+      expect(response, endsWith('?token=abc&download=report.pdf'));
+    });
+
+    test('createSignedUrlsResult appends download to each URL', () async {
+      customHttpClient.response = [
+        {
+          'path': 'exists.txt',
+          'signedURL': '/object/sign/public/exists.txt?token=abc',
+        },
+      ];
+
+      final results = await client.from('public').createSignedUrlsResult(
+        ['exists.txt'],
+        60,
+        download: DownloadBehavior.withOriginalName,
+      );
+
+      final success = results.single as SignedUrlSuccess;
+      expect(success.signedUrl, endsWith('?token=abc&download='));
     });
 
     test('should remove file', () async {

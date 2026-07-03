@@ -211,6 +211,20 @@ void main() {
             .having((e) => e.statusCode, 'statusCode', '409')),
       );
     });
+
+    test('an upsert signed url can overwrite an existing file', () async {
+      await storage.from(newBucketName).upload(uploadPath, file);
+
+      final response = await storage
+          .from(newBucketName)
+          .createSignedUploadUrl(uploadPath, upsert: true);
+
+      final uploadedPath = await storage
+          .from(newBucketName)
+          .uploadToSignedUrl(response.path, response.token, file);
+
+      expect(uploadedPath, uploadPath);
+    });
   });
 
   group('Transformations', () {
@@ -344,6 +358,44 @@ void main() {
       } finally {
         await downloadedFile.delete();
       }
+    });
+  });
+
+  group('download option', () {
+    const downloadBucket = 'my-download-bucket';
+
+    setUp(() async {
+      await findOrCreateBucket(downloadBucket, true);
+      await storage.from(downloadBucket).upload(
+            uploadPath,
+            file,
+            fileOptions: const FileOptions(upsert: true),
+          );
+    });
+
+    test('public url download serves a Content-Disposition attachment',
+        () async {
+      final url = storage.from(downloadBucket).getPublicUrl(uploadPath,
+          download: DownloadBehavior.named('renamed.jpg'));
+
+      final response = await http.get(Uri.parse(url));
+      expect(response.statusCode, 200);
+      final disposition = response.headers['content-disposition'];
+      expect(disposition, contains('attachment'));
+      expect(disposition, contains('renamed.jpg'));
+    });
+
+    test('signed url download serves a Content-Disposition attachment',
+        () async {
+      final url = await storage.from(downloadBucket).createSignedUrl(
+            uploadPath,
+            2000,
+            download: DownloadBehavior.withOriginalName,
+          );
+
+      final response = await http.get(Uri.parse(url));
+      expect(response.statusCode, 200);
+      expect(response.headers['content-disposition'], contains('attachment'));
     });
   });
 

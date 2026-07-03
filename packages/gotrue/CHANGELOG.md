@@ -1,3 +1,7 @@
+## 2.25.0
+
+ - **FEAT**(gotrue): add shouldSoftDelete option to admin deleteUser ([#1513](https://github.com/supabase/supabase-flutter/issues/1513)). ([30e9f22f](https://github.com/supabase/supabase-flutter/commit/30e9f22f8572bb8a0d734978b011dc1f8950211c))
+
 ## 2.24.0
 
  - **FIX**(gotrue): handle access token without amr claim in getAuthenticatorAssuranceLevel ([#1478](https://github.com/supabase/supabase-flutter/issues/1478)). ([63a91f2e](https://github.com/supabase/supabase-flutter/commit/63a91f2e20e7000898b91ada76678e11687e0fbb))
