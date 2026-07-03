@@ -31,20 +31,29 @@ String _base64Url(List<int> bytes) =>
 /// accepts as the connection apikey.
 String generateRealtimeToken({String role = 'anon'}) {
   final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  final header = _base64Url(utf8.encode(json.encode({
-    'alg': 'HS256',
-    'typ': 'JWT',
-  })));
-  final payload = _base64Url(utf8.encode(json.encode({
-    'role': role,
-    'iat': now,
-    'exp': now + 60 * 60,
-  })));
+  final header = _base64Url(
+    utf8.encode(
+      json.encode({
+        'alg': 'HS256',
+        'typ': 'JWT',
+      }),
+    ),
+  );
+  final payload = _base64Url(
+    utf8.encode(
+      json.encode({
+        'role': role,
+        'iat': now,
+        'exp': now + 60 * 60,
+      }),
+    ),
+  );
   final signingInput = '$header.$payload';
   final signature = _base64Url(
-    Hmac(sha256, utf8.encode(apiJwtSecret))
-        .convert(utf8.encode(signingInput))
-        .bytes,
+    Hmac(
+      sha256,
+      utf8.encode(apiJwtSecret),
+    ).convert(utf8.encode(signingInput)).bytes,
   );
   return '$signingInput.$signature';
 }
@@ -131,8 +140,9 @@ Future<void> primePostgresChanges({
     } else if (status == RealtimeSubscribeStatus.channelError ||
         status == RealtimeSubscribeStatus.timedOut) {
       subscribed.completeError(
-          StateError('warmup subscribe failed: ${status.name}'),
-          StackTrace.current);
+        StateError('warmup subscribe failed: ${status.name}'),
+        StackTrace.current,
+      );
     }
   });
 

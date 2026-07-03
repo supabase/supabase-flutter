@@ -5,8 +5,8 @@ class FetchOptions {
   const FetchOptions(
     Map<String, String>? headers, {
     bool? noResolveJson,
-  })  : headers = headers ?? const {},
-        noResolveJson = noResolveJson ?? false;
+  }) : headers = headers ?? const {},
+       noResolveJson = noResolveJson ?? false;
 }
 
 class GotrueRequestOptions extends FetchOptions {

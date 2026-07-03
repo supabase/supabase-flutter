@@ -17,13 +17,13 @@ void main() {
 
   setUp(() async {
     final res = await http.post(
-        Uri.parse(
-            'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
-        headers: {
-          'x-forwarded-for': '127.0.0.1',
-          'apikey': serviceRoleToken,
-          'Authorization': 'Bearer $serviceRoleToken',
-        });
+      Uri.parse('http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
+      headers: {
+        'x-forwarded-for': '127.0.0.1',
+        'apikey': serviceRoleToken,
+        'Authorization': 'Bearer $serviceRoleToken',
+      },
+    );
     if (res.body.isNotEmpty) throw res.body;
 
     client = GoTrueClient(
@@ -31,7 +31,7 @@ void main() {
       headers: {
         'Authorization': 'Bearer $serviceRoleToken',
         'apikey': serviceRoleToken,
-        'x-forwarded-for': '127.0.0.1'
+        'x-forwarded-for': '127.0.0.1',
       },
     );
   });
@@ -40,10 +40,14 @@ void main() {
     final res = await client.admin.mfa.listFactors(userId: userId2);
     expect(res.factors.length, 1);
     final factor = res.factors.first;
-    expect(factor.createdAt.difference(DateTime.now()) < Duration(seconds: 2),
-        true);
-    expect(factor.updatedAt.difference(DateTime.now()) < Duration(seconds: 2),
-        true);
+    expect(
+      factor.createdAt.difference(DateTime.now()) < Duration(seconds: 2),
+      true,
+    );
+    expect(
+      factor.updatedAt.difference(DateTime.now()) < Duration(seconds: 2),
+      true,
+    );
     expect(factor.id, factorId2);
   });
 

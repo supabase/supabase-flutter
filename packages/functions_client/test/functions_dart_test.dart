@@ -16,69 +16,92 @@ void main() {
   group("Custom http client", () {
     setUp(() {
       customHttpClient = CustomHttpClient();
-      functionsCustomHttpClient =
-          FunctionsClient("", {}, httpClient: customHttpClient);
+      functionsCustomHttpClient = FunctionsClient(
+        "",
+        {},
+        httpClient: customHttpClient,
+      );
     });
     test('function throws', () async {
       await expectLater(
         () => functionsCustomHttpClient.invoke('error-function'),
         throwsA(
-            isA<FunctionException>().having((e) => e.status, 'status', 420)),
+          isA<FunctionException>().having((e) => e.status, 'status', 420),
+        ),
       );
     });
 
-    test('error response with a streaming content type exposes the body',
-        () async {
-      // The error body must be drained and decoded into `details` rather than
-      // handed back as an unconsumed stream (which also leaks the connection).
-      await expectLater(
-        () => functionsCustomHttpClient.invoke('error-sse'),
-        throwsA(isA<FunctionException>()
-            .having((e) => e.status, 'status', 500)
-            .having((e) => e.details, 'details', 'error: boom')),
-      );
-    });
+    test(
+      'error response with a streaming content type exposes the body',
+      () async {
+        // The error body must be drained and decoded into `details` rather than
+        // handed back as an unconsumed stream (which also leaks the connection).
+        await expectLater(
+          () => functionsCustomHttpClient.invoke('error-sse'),
+          throwsA(
+            isA<FunctionException>()
+                .having((e) => e.status, 'status', 500)
+                .having((e) => e.details, 'details', 'error: boom'),
+          ),
+        );
+      },
+    );
 
-    test('error response labeled JSON with a non-JSON body reports the status',
-        () async {
-      await expectLater(
-        () => functionsCustomHttpClient.invoke('invalid-json-error'),
-        throwsA(isA<FunctionException>()
-            .having((e) => e.status, 'status', 500)
-            .having((e) => e.details, 'details',
-                '<html><body>502 Bad Gateway</body></html>')),
-      );
-    });
+    test(
+      'error response labeled JSON with a non-JSON body reports the status',
+      () async {
+        await expectLater(
+          () => functionsCustomHttpClient.invoke('invalid-json-error'),
+          throwsA(
+            isA<FunctionException>()
+                .having((e) => e.status, 'status', 500)
+                .having(
+                  (e) => e.details,
+                  'details',
+                  '<html><body>502 Bad Gateway</body></html>',
+                ),
+          ),
+        );
+      },
+    );
 
-    test('a success response labeled JSON with a non-JSON body still throws',
-        () async {
-      // On a 2xx the JSON label is a promise of structured data. A body that
-      // doesn't parse is a real anomaly, so the FormatException must surface
-      // rather than silently degrading to a raw String.
-      await expectLater(
-        () => functionsCustomHttpClient.invoke('success-invalid-json'),
-        throwsA(isA<FormatException>()),
-      );
-    });
+    test(
+      'a success response labeled JSON with a non-JSON body still throws',
+      () async {
+        // On a 2xx the JSON label is a promise of structured data. A body that
+        // doesn't parse is a real anomaly, so the FormatException must surface
+        // rather than silently degrading to a raw String.
+        await expectLater(
+          () => functionsCustomHttpClient.invoke('success-invalid-json'),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
 
-    test('an upper-cased application/JSON content type is parsed as JSON',
-        () async {
-      final res = await functionsCustomHttpClient.invoke('uppercase-json');
-      expect(res.data, {'key': 'Hello World'});
-      expect(res.status, 200);
-    });
+    test(
+      'an upper-cased application/JSON content type is parsed as JSON',
+      () async {
+        final res = await functionsCustomHttpClient.invoke('uppercase-json');
+        expect(res.data, {'key': 'Hello World'});
+        expect(res.status, 200);
+      },
+    );
 
     test('function call', () async {
       final res = await functionsCustomHttpClient.invoke('function');
       expect(
-          customHttpClient.receivedRequests.last.headers["Content-Type"], null);
+        customHttpClient.receivedRequests.last.headers["Content-Type"],
+        null,
+      );
       expect(res.data, {'key': 'Hello World'});
       expect(res.status, 200);
     });
 
     test('function call with query parameters', () async {
-      final res = await functionsCustomHttpClient
-          .invoke('function', queryParameters: {'key': 'value'});
+      final res = await functionsCustomHttpClient.invoke(
+        'function',
+        queryParameters: {'key': 'value'},
+      );
 
       final request = customHttpClient.receivedRequests.last;
 
@@ -103,7 +126,7 @@ void main() {
       expect(request.url.queryParameters, {'key': 'value'});
       expect(request.headers['Content-Type'], contains('multipart/form-data'));
       expect(res.data, [
-        {'name': fileName, 'content': fileContent}
+        {'name': fileName, 'content': fileContent},
       ]);
       expect(res.status, 200);
     });
@@ -129,10 +152,11 @@ void main() {
     test('Listen to SSE event', () async {
       final res = await functionsCustomHttpClient.invoke('sse');
       expect(
-          res.data.transform(const Utf8Decoder()),
-          emitsInOrder(
-            ['a', 'b', 'c'],
-          ));
+        res.data.transform(const Utf8Decoder()),
+        emitsInOrder(
+          ['a', 'b', 'c'],
+        ),
+      );
     });
 
     group('body encoding', () {
@@ -313,17 +337,18 @@ void main() {
 
     group('Region support', () {
       test(
-          'region parameter adds x-region header and forceFunctionRegion query param',
-          () async {
-        await functionsCustomHttpClient.invoke(
-          'function',
-          region: 'us-west-1',
-        );
+        'region parameter adds x-region header and forceFunctionRegion query param',
+        () async {
+          await functionsCustomHttpClient.invoke(
+            'function',
+            region: 'us-west-1',
+          );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['x-region'], 'us-west-1');
-        expect(req.url.queryParameters['forceFunctionRegion'], 'us-west-1');
-      });
+          final req = customHttpClient.receivedRequests.last;
+          expect(req.headers['x-region'], 'us-west-1');
+          expect(req.url.queryParameters['forceFunctionRegion'], 'us-west-1');
+        },
+      );
 
       test('region "any" does not add header or query param', () async {
         await functionsCustomHttpClient.invoke(
@@ -333,25 +358,29 @@ void main() {
 
         final req = customHttpClient.receivedRequests.last;
         expect(req.headers.containsKey('x-region'), isFalse);
-        expect(req.url.queryParameters.containsKey('forceFunctionRegion'),
-            isFalse);
-      });
-
-      test('client region is used when invoke region is not specified',
-          () async {
-        final client = FunctionsClient(
-          "",
-          {},
-          httpClient: customHttpClient,
-          region: 'eu-west-1',
+        expect(
+          req.url.queryParameters.containsKey('forceFunctionRegion'),
+          isFalse,
         );
-
-        await client.invoke('function');
-
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['x-region'], 'eu-west-1');
-        expect(req.url.queryParameters['forceFunctionRegion'], 'eu-west-1');
       });
+
+      test(
+        'client region is used when invoke region is not specified',
+        () async {
+          final client = FunctionsClient(
+            "",
+            {},
+            httpClient: customHttpClient,
+            region: 'eu-west-1',
+          );
+
+          await client.invoke('function');
+
+          final req = customHttpClient.receivedRequests.last;
+          expect(req.headers['x-region'], 'eu-west-1');
+          expect(req.url.queryParameters['forceFunctionRegion'], 'eu-west-1');
+        },
+      );
 
       test('invoke region overrides client region', () async {
         final client = FunctionsClient(
@@ -464,27 +493,31 @@ void main() {
       test('FunctionException contains all error details', () async {
         await expectLater(
           () => functionsCustomHttpClient.invoke('error-function'),
-          throwsA(isA<FunctionException>()
-              .having((e) => e.status, 'status', 420)
-              .having((e) => e.details, 'details', isNotNull)
-              .having((e) => e.reasonPhrase, 'reasonPhrase', isNotNull)
-              .having((e) => e.toString(), 'toString()', contains('420'))),
+          throwsA(
+            isA<FunctionException>()
+                .having((e) => e.status, 'status', 420)
+                .having((e) => e.details, 'details', isNotNull)
+                .having((e) => e.reasonPhrase, 'reasonPhrase', isNotNull)
+                .having((e) => e.toString(), 'toString()', contains('420')),
+          ),
         );
       });
     });
 
     group('Edge cases', () {
-      test('multipart request with invalid body type throws assertion',
-          () async {
-        expect(
-          () => functionsCustomHttpClient.invoke(
-            'function',
-            body: 42, // Invalid: should be Map<String, String> for multipart
-            files: [MultipartFile.fromString('file', 'content')],
-          ),
-          throwsA(isA<AssertionError>()),
-        );
-      });
+      test(
+        'multipart request with invalid body type throws assertion',
+        () async {
+          expect(
+            () => functionsCustomHttpClient.invoke(
+              'function',
+              body: 42, // Invalid: should be Map<String, String> for multipart
+              files: [MultipartFile.fromString('file', 'content')],
+            ),
+            throwsA(isA<AssertionError>()),
+          );
+        },
+      );
     });
   });
 }

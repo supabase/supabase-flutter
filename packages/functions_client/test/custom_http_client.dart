@@ -39,11 +39,13 @@ class CustomHttpClient extends BaseClient {
       );
     } else if (request.url.path.endsWith('sse')) {
       return StreamedResponse(
-          Stream.fromIterable(['a', 'b', 'c'].map((e) => utf8.encode(e))), 200,
-          request: request,
-          headers: {
-            "Content-Type": "text/event-stream",
-          });
+        Stream.fromIterable(['a', 'b', 'c'].map((e) => utf8.encode(e))),
+        200,
+        request: request,
+        headers: {
+          "Content-Type": "text/event-stream",
+        },
+      );
     } else if (request.url.path.endsWith('binary')) {
       return StreamedResponse(
         Stream.value([1, 2, 3, 4, 5]),
@@ -105,13 +107,15 @@ class CustomHttpClient extends BaseClient {
 
     if (request is MultipartRequest) {
       stream = Stream.value(
-        utf8.encode(jsonEncode([
-          for (final file in request.files)
-            {
-              "name": file.field,
-              "content": await file.finalize().bytesToString()
-            }
-        ])),
+        utf8.encode(
+          jsonEncode([
+            for (final file in request.files)
+              {
+                "name": file.field,
+                "content": await file.finalize().bytesToString(),
+              },
+          ]),
+        ),
       );
       headers = {"Content-Type": "application/json"};
     } else {

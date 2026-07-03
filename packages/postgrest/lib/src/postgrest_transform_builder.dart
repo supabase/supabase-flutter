@@ -83,7 +83,8 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   }) {
     final key = referencedTable == null ? 'order' : '$referencedTable.order';
     final existingOrder = _url.queryParameters[key];
-    final value = '${existingOrder == null ? '' : '$existingOrder,'}'
+    final value =
+        '${existingOrder == null ? '' : '$existingOrder,'}'
         '$column.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}';
     final url = overrideSearchParams(key, value);
     return PostgrestTransformBuilder(copyWithUrl(url));
@@ -127,12 +128,17 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .select('messages(*)')
   ///     .range(1, 1, referencedTable: 'messages');
   /// ```
-  PostgrestTransformBuilder<T> range(int from, int to,
-      {String? referencedTable}) {
-    final keyOffset =
-        referencedTable == null ? 'offset' : '$referencedTable.offset';
-    final keyLimit =
-        referencedTable == null ? 'limit' : '$referencedTable.limit';
+  PostgrestTransformBuilder<T> range(
+    int from,
+    int to, {
+    String? referencedTable,
+  }) {
+    final keyOffset = referencedTable == null
+        ? 'offset'
+        : '$referencedTable.offset';
+    final keyLimit = referencedTable == null
+        ? 'limit'
+        : '$referencedTable.limit';
 
     var url = overrideSearchParams(keyOffset, '$from');
     url = overrideSearchParams(keyLimit, '${to - from + 1}', url);
@@ -215,8 +221,9 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// final users = res.data;
   /// int count = res.count;
   /// ```
-  ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count(
-      [CountOption count = CountOption.exact]) {
+  ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count([
+    CountOption count = CountOption.exact,
+  ]) {
     return ResponsePostgrestBuilder(
       _copyWithType(count: count),
     );
@@ -242,8 +249,12 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///
   /// https://supabase.com/docs/guides/database/extensions/postgis
   ///
-  ResponsePostgrestBuilder<Map<String, dynamic>, Map<String, dynamic>,
-      Map<String, dynamic>> geojson() {
+  ResponsePostgrestBuilder<
+    Map<String, dynamic>,
+    Map<String, dynamic>,
+    Map<String, dynamic>
+  >
+  geojson() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'application/geo+json;';
     return ResponsePostgrestBuilder(_copyWithType(headers: newHeaders));

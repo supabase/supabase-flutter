@@ -43,18 +43,19 @@ class SupabaseStorageClient extends StorageBucketApi {
     Client? httpClient,
     int retryAttempts = 0,
     bool useNewHostname = false,
-  })  : assert(
-          retryAttempts >= 0,
-          'retryAttempts has to be greater than or equal to 0',
-        ),
-        _defaultRetryAttempts = retryAttempts,
-        super(
-          useNewHostname ? _transformStorageUrl(url) : url,
-          {...Constants.defaultHeaders, ...headers},
-          httpClient: httpClient,
-        ) {
+  }) : assert(
+         retryAttempts >= 0,
+         'retryAttempts has to be greater than or equal to 0',
+       ),
+       _defaultRetryAttempts = retryAttempts,
+       super(
+         useNewHostname ? _transformStorageUrl(url) : url,
+         {...Constants.defaultHeaders, ...headers},
+         httpClient: httpClient,
+       ) {
     _log.config(
-        'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts');
+      'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts',
+    );
     _log.finest('Initialize with headers: $headers');
   }
 

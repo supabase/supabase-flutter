@@ -31,8 +31,8 @@ class GoTrueAdminApi {
     this._url, {
     Map<String, String>? headers,
     Client? httpClient,
-  })  : _headers = headers ?? {},
-        _httpClient = httpClient {
+  }) : _headers = headers ?? {},
+       _httpClient = httpClient {
     mfa = GoTrueAdminMFAApi(
       url: _url,
       headers: _headers,

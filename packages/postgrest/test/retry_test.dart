@@ -7,20 +7,27 @@ import 'package:test/test.dart';
 
 typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
 
-_ResponseFactory _ok() => (req) => Future.value(StreamedResponse(
-      Stream.value(Uint8List.fromList('[]'.codeUnits)),
-      200,
-      request: req,
-      headers: {'content-type': 'application/json'},
-    ));
+_ResponseFactory _ok() =>
+    (req) => Future.value(
+      StreamedResponse(
+        Stream.value(Uint8List.fromList('[]'.codeUnits)),
+        200,
+        request: req,
+        headers: {'content-type': 'application/json'},
+      ),
+    );
 
-_ResponseFactory _status(int code) => (req) => Future.value(StreamedResponse(
-      Stream.value(
-          Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits)),
-      code,
-      request: req,
-      headers: {'content-type': 'application/json'},
-    ));
+_ResponseFactory _status(int code) =>
+    (req) => Future.value(
+      StreamedResponse(
+        Stream.value(
+          Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits),
+        ),
+        code,
+        request: req,
+        headers: {'content-type': 'application/json'},
+      ),
+    );
 
 _ResponseFactory _networkError() =>
     (_) => throw const SocketException('Connection refused');
@@ -39,7 +46,8 @@ class _MockRetryClient extends BaseClient {
     requests.add(request);
     if (index >= _responses.length) {
       throw StateError(
-          'Unexpected call #${index + 1}, only ${_responses.length} configured');
+        'Unexpected call #${index + 1}, only ${_responses.length} configured',
+      );
     }
     return _responses[index](request);
   }
@@ -59,32 +67,36 @@ PostgrestClient _buildClient(
 
 void main() {
   group('retry logic', () {
-    test('GET retries on 520 then succeeds, X-Retry-Count increments',
-        () async {
-      final mock = _MockRetryClient([_status(520), _status(520), _ok()]);
-      final client = _buildClient(mock);
+    test(
+      'GET retries on 520 then succeeds, X-Retry-Count increments',
+      () async {
+        final mock = _MockRetryClient([_status(520), _status(520), _ok()]);
+        final client = _buildClient(mock);
 
-      final result = await client.from('users').select();
+        final result = await client.from('users').select();
 
-      expect(result, isEmpty);
-      expect(mock.callCount, 3);
-      // Initial attempt: no header
-      expect(mock.requests[0].headers['x-retry-count'], isNull);
-      // First retry: X-Retry-Count: 1
-      expect(mock.requests[1].headers['x-retry-count'], '1');
-      // Second retry: X-Retry-Count: 2
-      expect(mock.requests[2].headers['x-retry-count'], '2');
-    });
+        expect(result, isEmpty);
+        expect(mock.callCount, 3);
+        // Initial attempt: no header
+        expect(mock.requests[0].headers['x-retry-count'], isNull);
+        // First retry: X-Retry-Count: 1
+        expect(mock.requests[1].headers['x-retry-count'], '1');
+        // Second retry: X-Retry-Count: 2
+        expect(mock.requests[2].headers['x-retry-count'], '2');
+      },
+    );
 
     test('HEAD retries on 520 then succeeds', () async {
       final mock = _MockRetryClient([
         _status(520),
-        (req) => Future.value(StreamedResponse(
-              Stream.empty(),
-              200,
-              request: req,
-              headers: {'content-range': '*/4'},
-            )),
+        (req) => Future.value(
+          StreamedResponse(
+            Stream.empty(),
+            200,
+            request: req,
+            headers: {'content-range': '*/4'},
+          ),
+        ),
       ]);
       final client = _buildClient(mock);
 
@@ -152,8 +164,12 @@ void main() {
     });
 
     test('exhausts all 3 retries (4 total calls) then throws on 520', () async {
-      final mock = _MockRetryClient(
-          [_status(520), _status(520), _status(520), _status(520)]);
+      final mock = _MockRetryClient([
+        _status(520),
+        _status(520),
+        _status(520),
+        _status(520),
+      ]);
       final client = _buildClient(mock);
 
       await expectLater(
@@ -174,44 +190,50 @@ void main() {
       expect(mock.callCount, 1);
     });
 
-    test('PostgrestClient(retryEnabled: false) disables retry globally',
-        () async {
-      final mock = _MockRetryClient([_status(520)]);
-      final client = _buildClient(mock, retryEnabled: false);
+    test(
+      'PostgrestClient(retryEnabled: false) disables retry globally',
+      () async {
+        final mock = _MockRetryClient([_status(520)]);
+        final client = _buildClient(mock, retryEnabled: false);
 
-      await expectLater(
-        () => client.from('users').select(),
-        throwsA(isA<PostgrestException>()),
-      );
-      expect(mock.callCount, 1);
-    });
+        await expectLater(
+          () => client.from('users').select(),
+          throwsA(isA<PostgrestException>()),
+        );
+        expect(mock.callCount, 1);
+      },
+    );
 
-    test('.retry(enabled: true) re-enables retry when client-level is false',
-        () async {
-      final mock = _MockRetryClient([_status(520), _ok()]);
-      final client = _buildClient(mock, retryEnabled: false);
+    test(
+      '.retry(enabled: true) re-enables retry when client-level is false',
+      () async {
+        final mock = _MockRetryClient([_status(520), _ok()]);
+        final client = _buildClient(mock, retryEnabled: false);
 
-      final result = await client.from('users').select().retry(enabled: true);
+        final result = await client.from('users').select().retry(enabled: true);
 
-      expect(result, isEmpty);
-      expect(mock.callCount, 2);
-    });
+        expect(result, isEmpty);
+        expect(mock.callCount, 2);
+      },
+    );
 
-    test('GET exhausts retries on repeated network errors then rethrows',
-        () async {
-      final mock = _MockRetryClient([
-        _networkError(),
-        _networkError(),
-        _networkError(),
-        _networkError(),
-      ]);
-      final client = _buildClient(mock);
+    test(
+      'GET exhausts retries on repeated network errors then rethrows',
+      () async {
+        final mock = _MockRetryClient([
+          _networkError(),
+          _networkError(),
+          _networkError(),
+          _networkError(),
+        ]);
+        final client = _buildClient(mock);
 
-      await expectLater(
-        () => client.from('users').select(),
-        throwsA(isA<SocketException>()),
-      );
-      expect(mock.callCount, 4);
-    });
+        await expectLater(
+          () => client.from('users').select(),
+          throwsA(isA<SocketException>()),
+        );
+        expect(mock.callCount, 4);
+      },
+    );
   });
 }

@@ -15,8 +15,9 @@ void main() {
     setUp(() async {
       mockServer = await HttpServer.bind('localhost', 0);
 
-      subscription =
-          mockServer.transform(WebSocketTransformer()).listen((webSocket) {
+      subscription = mockServer.transform(WebSocketTransformer()).listen((
+        webSocket,
+      ) {
         final ioChannel = IOWebSocketChannel(webSocket);
         ioChannel.stream.listen((request) {
           ioChannel.sink.add(request);
@@ -51,10 +52,11 @@ void main() {
     test('subscribe on existing subscription fail', () {
       channel
           .onPostgresChanges(
-              event: PostgresChangeEvent.insert,
-              schema: 'public',
-              table: 'countries',
-              callback: (payload) {})
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'countries',
+            callback: (payload) {},
+          )
           .subscribe(
             (event, [errorMsg]) {},
           );

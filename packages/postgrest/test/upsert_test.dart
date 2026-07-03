@@ -32,25 +32,27 @@ void main() {
           'external_id': 'ext_001',
           'source_system': 'system_a',
           'data': {'name': 'Test Item 1', 'value': 100},
-          'status': 'active'
+          'status': 'active',
         },
         {
           'external_id': 'ext_002',
           'source_system': 'system_a',
           'data': {'name': 'Test Item 2', 'value': 200},
-          'status': 'active'
+          'status': 'active',
         },
         {
           'external_id': 'ext_003',
           'source_system': 'system_b',
           'data': {'name': 'Test Item 3', 'value': 300},
-          'status': 'active'
-        }
+          'status': 'active',
+        },
       ];
 
       // Step 1: INSERT 3 rows (without onConflict)
-      final insertResult =
-          await postgrest.from('imported_data').insert(testData).select();
+      final insertResult = await postgrest
+          .from('imported_data')
+          .insert(testData)
+          .select();
 
       expect(insertResult.length, 3);
       expect(insertResult[0]['external_id'], 'ext_001');
@@ -63,8 +65,8 @@ void main() {
           'external_id': 'ext_001',
           'source_system': 'system_a',
           'data': {'name': 'Updated Item 1', 'value': 150},
-          'status': 'updated'
-        }
+          'status': 'updated',
+        },
       ];
 
       await expectLater(
@@ -80,8 +82,8 @@ void main() {
           'external_id': 'ext_001',
           'source_system': 'system_a',
           'data': {'name': 'Successfully Updated Item 1', 'value': 175},
-          'status': 'updated_via_upsert'
-        }
+          'status': 'updated_via_upsert',
+        },
       ];
 
       final upsertResult = await postgrest
@@ -116,59 +118,61 @@ void main() {
       expect(allRows.length, 3);
     });
 
-    test('upsert with List values and onConflict - multiple rows update',
-        () async {
-      // Clean up the imported_data table before starting the test
-      await postgrest.from('imported_data').delete().neq('id', 0);
+    test(
+      'upsert with List values and onConflict - multiple rows update',
+      () async {
+        // Clean up the imported_data table before starting the test
+        await postgrest.from('imported_data').delete().neq('id', 0);
 
-      // Test the fix with multiple rows in a single upsert operation
-      final initialData = [
-        {
-          'external_id': 'batch_001',
-          'source_system': 'batch_system',
-          'data': {'batch': 1, 'initial': true},
-          'status': 'initial'
-        },
-        {
-          'external_id': 'batch_002',
-          'source_system': 'batch_system',
-          'data': {'batch': 1, 'initial': true},
-          'status': 'initial'
-        }
-      ];
+        // Test the fix with multiple rows in a single upsert operation
+        final initialData = [
+          {
+            'external_id': 'batch_001',
+            'source_system': 'batch_system',
+            'data': {'batch': 1, 'initial': true},
+            'status': 'initial',
+          },
+          {
+            'external_id': 'batch_002',
+            'source_system': 'batch_system',
+            'data': {'batch': 1, 'initial': true},
+            'status': 'initial',
+          },
+        ];
 
-      // Insert initial data
-      await postgrest.from('imported_data').insert(initialData).select();
+        // Insert initial data
+        await postgrest.from('imported_data').insert(initialData).select();
 
-      // Update both rows in a single upsert operation
-      final updateData = [
-        {
-          'external_id': 'batch_001',
-          'source_system': 'batch_system',
-          'data': {'batch': 1, 'updated': true},
-          'status': 'batch_updated'
-        },
-        {
-          'external_id': 'batch_002',
-          'source_system': 'batch_system',
-          'data': {'batch': 1, 'updated': true},
-          'status': 'batch_updated'
-        }
-      ];
+        // Update both rows in a single upsert operation
+        final updateData = [
+          {
+            'external_id': 'batch_001',
+            'source_system': 'batch_system',
+            'data': {'batch': 1, 'updated': true},
+            'status': 'batch_updated',
+          },
+          {
+            'external_id': 'batch_002',
+            'source_system': 'batch_system',
+            'data': {'batch': 1, 'updated': true},
+            'status': 'batch_updated',
+          },
+        ];
 
-      final batchUpsertResult = await postgrest
-          .from('imported_data')
-          .upsert(
-            updateData,
-            onConflict: 'external_id,source_system',
-          )
-          .select();
+        final batchUpsertResult = await postgrest
+            .from('imported_data')
+            .upsert(
+              updateData,
+              onConflict: 'external_id,source_system',
+            )
+            .select();
 
-      expect(batchUpsertResult.length, 2);
-      expect(batchUpsertResult[0]['status'], 'batch_updated');
-      expect(batchUpsertResult[1]['status'], 'batch_updated');
-      expect(batchUpsertResult[0]['data']['updated'], isTrue);
-      expect(batchUpsertResult[1]['data']['updated'], isTrue);
-    });
+        expect(batchUpsertResult.length, 2);
+        expect(batchUpsertResult[0]['status'], 'batch_updated');
+        expect(batchUpsertResult[1]['status'], 'batch_updated');
+        expect(batchUpsertResult[0]['data']['updated'], isTrue);
+        expect(batchUpsertResult[1]['data']['updated'], isTrue);
+      },
+    );
   });
 }

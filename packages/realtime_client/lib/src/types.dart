@@ -64,7 +64,8 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
         return PostgresChangeEvent.delete;
     }
     throw ArgumentError(
-        'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.');
+      'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.',
+    );
   }
 }
 
@@ -104,9 +105,10 @@ enum ChannelResponse {
   ok,
   timedOut,
   @Deprecated(
-      'Client side rate limiting has been removed, and this enum value will never be returned.')
+    'Client side rate limiting has been removed, and this enum value will never be returned.',
+  )
   rateLimited,
-  error
+  error,
 }
 
 enum RealtimeListenTypes { postgresChanges, broadcast, presence, system }
@@ -121,7 +123,8 @@ extension PresenceEventExtended on PresenceEvent {
       }
     }
     throw ArgumentError(
-        'Only "sync", "join", or "leave" can be can be passed to `fromString()` method.');
+      'Only "sync", "join", or "leave" can be can be passed to `fromString()` method.',
+    );
   }
 }
 
@@ -204,7 +207,7 @@ class RealtimeChannelConfig {
           'enabled': enabled,
         },
         'private': private,
-      }
+      },
     };
   }
 }
@@ -247,8 +250,9 @@ class PostgresChangePayload {
       schema: payload['schema'] as String,
       table: payload['table'] as String,
       commitTimestamp: commitTimestamp,
-      eventType:
-          PostgresChangeEventMethods.fromString(payload['eventType'] as String),
+      eventType: PostgresChangeEventMethods.fromString(
+        payload['eventType'] as String,
+      ),
       newRecord: newData is Map ? Map.from(newData) : {},
       oldRecord: oldData is Map ? Map.from(oldData) : {},
       errors: payload['errors'],
@@ -307,7 +311,7 @@ enum PostgresChangeFilterType {
   gte,
 
   /// Listen to changes when a column's value in a table equals any of the values specified.
-  inFilter;
+  inFilter,
 }
 
 /// {@template postgres_change_filter}
@@ -352,7 +356,7 @@ abstract class RealtimePresencePayload {
   });
 
   RealtimePresencePayload.fromJson(Map<String, dynamic> json)
-      : event = PresenceEventExtended.fromString(json['event']);
+    : event = PresenceEventExtended.fromString(json['event']);
 
   @override
   String toString() => 'PresencePayload(event: ${event.name})';

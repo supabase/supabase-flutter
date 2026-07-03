@@ -49,17 +49,19 @@ void main() {
     expect(client.pendingHeartbeatRef, isNotNull);
   });
 
-  test('emits timeout when the previous heartbeat was not acknowledged',
-      () async {
-    client.connState = SocketStates.open;
-    client.pendingHeartbeatRef = 'stale-ref';
+  test(
+    'emits timeout when the previous heartbeat was not acknowledged',
+    () async {
+      client.connState = SocketStates.open;
+      client.pendingHeartbeatRef = 'stale-ref';
 
-    await client.sendHeartbeat();
-    await pumpEventQueue();
+      await client.sendHeartbeat();
+      await pumpEventQueue();
 
-    expect(statuses, [RealtimeHeartbeatStatus.timeout]);
-    expect(client.pendingHeartbeatRef, isNull);
-  });
+      expect(statuses, [RealtimeHeartbeatStatus.timeout]);
+      expect(client.pendingHeartbeatRef, isNull);
+    },
+  );
 
   test('emits ok when the heartbeat reply succeeds', () async {
     client.pendingHeartbeatRef = 'ref-1';
@@ -80,13 +82,15 @@ void main() {
     expect(statuses, [RealtimeHeartbeatStatus.error]);
   });
 
-  test('does not emit for messages that are not the pending heartbeat',
-      () async {
-    client.pendingHeartbeatRef = 'ref-3';
+  test(
+    'does not emit for messages that are not the pending heartbeat',
+    () async {
+      client.pendingHeartbeatRef = 'ref-3';
 
-    client.onConnMessage(heartbeatReply('other-ref', 'ok'));
-    await pumpEventQueue();
+      client.onConnMessage(heartbeatReply('other-ref', 'ok'));
+      await pumpEventQueue();
 
-    expect(statuses, isEmpty);
-  });
+      expect(statuses, isEmpty);
+    },
+  );
 }

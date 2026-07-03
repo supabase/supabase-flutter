@@ -46,7 +46,7 @@ void main() {
       if (url == '/rest/v1/todos?select=task%2Cstatus') {
         final jsonString = jsonEncode([
           {'task': 'task 1', 'status': true},
-          {'task': 'task 2', 'status': false}
+          {'task': 'task 2', 'status': false},
         ]);
         request.response
           ..statusCode = HttpStatus.ok
@@ -57,7 +57,7 @@ void main() {
           url == '/rest/v1/rpc/todos?select=%2A') {
         final jsonString = jsonEncode([
           {'id': 1, 'task': 'task 1', 'status': true},
-          {'id': 2, 'task': 'task 2', 'status': false}
+          {'id': 2, 'task': 'task 2', 'status': false},
         ]);
         request.response
           ..statusCode = HttpStatus.ok
@@ -156,9 +156,9 @@ void main() {
                       'table': 'todos',
                       if (realtimeFilter != null) 'filter': realtimeFilter,
                     },
-                  ]
+                  ],
                 },
-                'status': 'ok'
+                'status': 'ok',
               },
             ]);
             webSocket!.add(replyString);
@@ -216,12 +216,12 @@ void main() {
                     {
                       'name': 'task',
                       'type': 'text',
-                      'type_modifier': 4294967295
+                      'type_modifier': 4294967295,
                     },
                     {
                       'name': 'status',
                       'type': 'bool',
-                      'type_modifier': 4294967295
+                      'type_modifier': 4294967295,
                     },
                   ],
                   'commit_timestamp': '2021-08-01T08:00:30Z',
@@ -251,12 +251,12 @@ void main() {
                     {
                       'name': 'task',
                       'type': 'text',
-                      'type_modifier': 4294967295
+                      'type_modifier': 4294967295,
                     },
                     {
                       'name': 'status',
                       'type': 'bool',
-                      'type_modifier': 4294967295
+                      'type_modifier': 4294967295,
                     },
                   ],
                   'commit_timestamp': '2022-09-14T02:12:52Z',
@@ -267,7 +267,7 @@ void main() {
                   'type': 'DELETE',
                   if (realtimeFilter != null) 'filter': realtimeFilter,
                 },
-                'ids': [77086988]
+                'ids': [77086988],
               },
             ]);
             webSocket!.add(deleteString);
@@ -289,12 +289,12 @@ void main() {
                     {
                       'name': 'task',
                       'type': 'text',
-                      'type_modifier': 4294967295
+                      'type_modifier': 4294967295,
                     },
                     {
                       'name': 'status',
                       'type': 'bool',
-                      'type_modifier': 4294967295
+                      'type_modifier': 4294967295,
                     },
                   ],
                   'commit_timestamp': '2021-08-01T08:00:30Z',
@@ -325,12 +325,12 @@ void main() {
                     {
                       'name': 'task',
                       'type': 'text',
-                      'type_modifier': 4294967295
+                      'type_modifier': 4294967295,
                     },
                     {
                       'name': 'status',
                       'type': 'bool',
-                      'type_modifier': 4294967295
+                      'type_modifier': 4294967295,
                     },
                   ],
                   'commit_timestamp': '2022-09-14T02:12:52Z',
@@ -341,7 +341,7 @@ void main() {
                   'type': 'DELETE',
                   if (realtimeFilter != null) 'filter': realtimeFilter,
                 },
-                'ids': [77086988]
+                'ids': [77086988],
               },
             ]);
             webSocket!.add(ignoredDeleteString);
@@ -407,19 +407,21 @@ void main() {
         final data = await supabase.from('todos').select();
         expect(data, [
           {'id': 1, 'task': 'task 1', 'status': true},
-          {'id': 2, 'task': 'task 2', 'status': false}
+          {'id': 2, 'task': 'task 2', 'status': false},
         ]);
       });
 
-      test('Postgrest calls the correct endpoint with custom headers',
-          () async {
-        apiKey = customApiKey;
-        final data = await customHeadersClient.from('todos').select();
-        expect(data, [
-          {'id': 1, 'task': 'task 1', 'status': true},
-          {'id': 2, 'task': 'task 2', 'status': false}
-        ]);
-      });
+      test(
+        'Postgrest calls the correct endpoint with custom headers',
+        () async {
+          apiKey = customApiKey;
+          final data = await customHeadersClient.from('todos').select();
+          expect(data, [
+            {'id': 1, 'task': 'task 1', 'status': true},
+            {'id': 2, 'task': 'task 2', 'status': false},
+          ]);
+        },
+      );
     });
 
     group('stream()', () {
@@ -450,8 +452,7 @@ void main() {
         stream2.listen(expectAsync1((event) {}, count: 5));
       });
 
-      test("stream should emit the last emitted data when listened to",
-          () async {
+      test("stream should emit the last emitted data when listened to", () async {
         final stream = supabase.from('todos').stream(primaryKey: ['id']);
         stream.listen(expectAsync1((event) {}, count: 5));
 
@@ -467,7 +468,7 @@ void main() {
           emitsInOrder([
             containsAllInOrder([
               {'id': 1, 'task': 'task 1', 'status': true},
-              {'id': 2, 'task': 'task 2', 'status': false}
+              {'id': 2, 'task': 'task 2', 'status': false},
             ]),
             containsAllInOrder([
               {'id': 1, 'task': 'task 1', 'status': true},
@@ -493,36 +494,38 @@ void main() {
       });
 
       test('emits data with asyncMap', () {
-        final stream = supabase.from('todos').stream(
-            primaryKey: ['id']).asyncMap((event) => Future.value([event]));
+        final stream = supabase
+            .from('todos')
+            .stream(primaryKey: ['id'])
+            .asyncMap((event) => Future.value([event]));
         expect(
           stream,
           emitsInOrder([
             containsAllInOrder([
               [
                 {'id': 1, 'task': 'task 1', 'status': true},
-                {'id': 2, 'task': 'task 2', 'status': false}
-              ]
+                {'id': 2, 'task': 'task 2', 'status': false},
+              ],
             ]),
             containsAllInOrder([
               [
                 {'id': 1, 'task': 'task 1', 'status': true},
                 {'id': 2, 'task': 'task 2', 'status': false},
                 {'id': 3, 'task': 'task 3', 'status': true},
-              ]
+              ],
             ]),
             containsAllInOrder([
               [
                 {'id': 1, 'task': 'task 1', 'status': true},
                 {'id': 2, 'task': 'task 2 updated', 'status': false},
                 {'id': 3, 'task': 'task 3', 'status': true},
-              ]
+              ],
             ]),
             containsAllInOrder([
               [
                 {'id': 1, 'task': 'task 1', 'status': true},
                 {'id': 3, 'task': 'task 3', 'status': true},
-              ]
+              ],
             ]),
           ]),
         );
@@ -531,7 +534,8 @@ void main() {
       test("can listen twice at the same time with asyncMap", () async {
         final stream = supabase
             .from('todos')
-            .stream(primaryKey: ['id']).asyncMap((event) => event);
+            .stream(primaryKey: ['id'])
+            .asyncMap((event) => event);
         stream.listen(expectAsync1((event) {}, count: 5));
 
         await Future.delayed(Duration(seconds: 3));
@@ -542,14 +546,15 @@ void main() {
 
       test('emits data with custom headers', () {
         apiKey = customApiKey;
-        final stream =
-            customHeadersClient.from('todos').stream(primaryKey: ['id']);
+        final stream = customHeadersClient
+            .from('todos')
+            .stream(primaryKey: ['id']);
         expect(
           stream,
           emitsInOrder([
             containsAllInOrder([
               {'id': 1, 'task': 'task 1', 'status': true},
-              {'id': 2, 'task': 'task 2', 'status': false}
+              {'id': 2, 'task': 'task 2', 'status': false},
             ]),
             containsAllInOrder([
               {'id': 1, 'task': 'task 1', 'status': true},
@@ -561,8 +566,10 @@ void main() {
       });
 
       test('with order', () {
-        final stream =
-            supabase.from('todos').stream(primaryKey: ['id']).order('id');
+        final stream = supabase
+            .from('todos')
+            .stream(primaryKey: ['id'])
+            .order('id');
         expect(
           stream,
           emitsInOrder([
@@ -623,7 +630,7 @@ void main() {
         final data = await supabase.rpc("todos").select();
         expect(data, [
           {'id': 1, 'task': 'task 1', 'status': true},
-          {'id': 2, 'task': 'task 2', 'status': false}
+          {'id': 2, 'task': 'task 2', 'status': false},
         ]);
       });
 
@@ -632,7 +639,7 @@ void main() {
         final data = await customHeadersClient.rpc("todos").select();
         expect(data, [
           {'id': 1, 'task': 'task 1', 'status': true},
-          {'id': 2, 'task': 'task 2', 'status': false}
+          {'id': 2, 'task': 'task 2', 'status': false},
         ]);
       });
     });
@@ -644,12 +651,13 @@ void main() {
         supabase
             .channel('todos')
             .onPostgresChanges(
-                event: PostgresChangeEvent.all,
-                schema: 'public',
-                table: 'todos',
-                callback: (payload) {
-                  unawaited(supabase.from('todos'));
-                })
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'todos',
+              callback: (payload) {
+                unawaited(supabase.from('todos'));
+              },
+            )
             .subscribe();
 
         await Future.delayed(const Duration(milliseconds: 700));
@@ -662,8 +670,10 @@ void main() {
   group('realtime filter', () {
     test('can filter stream results with eq', () {
       unawaited(handleRequests(mockServer, expectedFilter: 'status=eq.true'));
-      final stream =
-          supabase.from('todos').stream(primaryKey: ['id']).eq('status', true);
+      final stream = supabase
+          .from('todos')
+          .stream(primaryKey: ['id'])
+          .eq('status', true);
       expect(
         stream,
         emitsInOrder([
@@ -680,36 +690,46 @@ void main() {
 
     test('can filter stream results with neq', () {
       unawaited(handleRequests(mockServer, expectedFilter: 'id=neq.2'));
-      final stream =
-          supabase.from('todos').stream(primaryKey: ['id']).neq('id', 2);
+      final stream = supabase
+          .from('todos')
+          .stream(primaryKey: ['id'])
+          .neq('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with gt', () {
       unawaited(handleRequests(mockServer, expectedFilter: 'id=gt.2'));
-      final stream =
-          supabase.from('todos').stream(primaryKey: ['id']).gt('id', 2);
+      final stream = supabase
+          .from('todos')
+          .stream(primaryKey: ['id'])
+          .gt('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with gte', () {
       unawaited(handleRequests(mockServer, expectedFilter: 'id=gte.2'));
-      final stream =
-          supabase.from('todos').stream(primaryKey: ['id']).gte('id', 2);
+      final stream = supabase
+          .from('todos')
+          .stream(primaryKey: ['id'])
+          .gte('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with lt', () {
       unawaited(handleRequests(mockServer, expectedFilter: 'id=lt.2'));
-      final stream =
-          supabase.from('todos').stream(primaryKey: ['id']).lt('id', 2);
+      final stream = supabase
+          .from('todos')
+          .stream(primaryKey: ['id'])
+          .lt('id', 2);
       expect(stream, emits(isList));
     });
 
     test('can filter stream results with lte', () {
       unawaited(handleRequests(mockServer, expectedFilter: 'id=lte.2'));
-      final stream =
-          supabase.from('todos').stream(primaryKey: ['id']).lte('id', 2);
+      final stream = supabase
+          .from('todos')
+          .stream(primaryKey: ['id'])
+          .lte('id', 2);
       expect(stream, emits(isList));
     });
   });
@@ -718,8 +738,9 @@ void main() {
     test('forwards channelConfig.private=true to realtime join payload', () {
       unawaited(handleRequests(mockServer, expectedPrivate: true));
 
-      final stream =
-          supabase.from('todos').stream(primaryKey: ['id'], private: true);
+      final stream = supabase
+          .from('todos')
+          .stream(primaryKey: ['id'], private: true);
 
       expect(stream, emits(isList));
     });
@@ -745,8 +766,9 @@ void main() {
   group('Error Handling', () {
     group('RealtimeSubscribeException', () {
       test('should create exception with status only', () {
-        final exception =
-            RealtimeSubscribeException(RealtimeSubscribeStatus.timedOut);
+        final exception = RealtimeSubscribeException(
+          RealtimeSubscribeStatus.timedOut,
+        );
 
         expect(exception.status, RealtimeSubscribeStatus.timedOut);
         expect(exception.details, isNull);
@@ -755,7 +777,9 @@ void main() {
 
       test('should create exception with status and details', () {
         final exception = RealtimeSubscribeException(
-            RealtimeSubscribeStatus.channelError, 'Connection failed');
+          RealtimeSubscribeStatus.channelError,
+          'Connection failed',
+        );
 
         expect(exception.status, RealtimeSubscribeStatus.channelError);
         expect(exception.details, 'Connection failed');

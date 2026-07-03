@@ -95,13 +95,13 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     required String table,
     required List<String> primaryKey,
     required bool private,
-  })  : _queryBuilder = queryBuilder,
-        _realtimeTopic = realtimeTopic,
-        _realtimeClient = realtimeClient,
-        _schema = schema,
-        _table = table,
-        _uniqueColumns = primaryKey,
-        _private = private;
+  }) : _queryBuilder = queryBuilder,
+       _realtimeTopic = realtimeTopic,
+       _realtimeClient = realtimeClient,
+       _schema = schema,
+       _table = table,
+       _uniqueColumns = primaryKey,
+       _private = private;
 
   /// Orders the result with the specified [column].
   ///
@@ -183,65 +183,66 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     _channel!
         .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: _schema,
-            table: _table,
-            filter: realtimeFilter,
-            callback: (payload) {
-              switch (payload.eventType) {
-                case PostgresChangeEvent.insert:
-                  final newRecord = payload.newRecord;
-                  _streamData.add(newRecord);
-                  _addStream();
-                  break;
-                case PostgresChangeEvent.update:
-                  final updatedIndex = _streamData.indexWhere(
-                    (element) =>
-                        _isTargetRecord(record: element, payload: payload),
-                  );
+          event: PostgresChangeEvent.all,
+          schema: _schema,
+          table: _table,
+          filter: realtimeFilter,
+          callback: (payload) {
+            switch (payload.eventType) {
+              case PostgresChangeEvent.insert:
+                final newRecord = payload.newRecord;
+                _streamData.add(newRecord);
+                _addStream();
+                break;
+              case PostgresChangeEvent.update:
+                final updatedIndex = _streamData.indexWhere(
+                  (element) =>
+                      _isTargetRecord(record: element, payload: payload),
+                );
 
-                  final updatedRecord = payload.newRecord;
-                  if (updatedIndex >= 0) {
-                    _streamData[updatedIndex] = updatedRecord;
-                  } else {
-                    _streamData.add(updatedRecord);
-                  }
+                final updatedRecord = payload.newRecord;
+                if (updatedIndex >= 0) {
+                  _streamData[updatedIndex] = updatedRecord;
+                } else {
+                  _streamData.add(updatedRecord);
+                }
+                _addStream();
+                break;
+              case PostgresChangeEvent.delete:
+                final deletedIndex = _streamData.indexWhere(
+                  (element) =>
+                      _isTargetRecord(record: element, payload: payload),
+                );
+                if (deletedIndex >= 0) {
+                  /// Delete the data from in memory cache if it was found
+                  _streamData.removeAt(deletedIndex);
                   _addStream();
-                  break;
-                case PostgresChangeEvent.delete:
-                  final deletedIndex = _streamData.indexWhere(
-                    (element) =>
-                        _isTargetRecord(record: element, payload: payload),
-                  );
-                  if (deletedIndex >= 0) {
-                    /// Delete the data from in memory cache if it was found
-                    _streamData.removeAt(deletedIndex);
-                    _addStream();
-                  }
-                  break;
-                case PostgresChangeEvent.all:
-                  break;
-              }
-            })
+                }
+                break;
+              case PostgresChangeEvent.all:
+                break;
+            }
+          },
+        )
         .subscribe((status, [error]) {
-      switch (status) {
-        case RealtimeSubscribeStatus.subscribed:
-          // Reload all data after a reconnect from postgrest
-          // First data from postgrest gets loaded before the realtime connect
-          if (_wasSubscribed) {
-            unawaited(_getPostgrestData());
+          switch (status) {
+            case RealtimeSubscribeStatus.subscribed:
+              // Reload all data after a reconnect from postgrest
+              // First data from postgrest gets loaded before the realtime connect
+              if (_wasSubscribed) {
+                unawaited(_getPostgrestData());
+              }
+              _wasSubscribed = true;
+              break;
+            case RealtimeSubscribeStatus.closed:
+              unawaited(_streamController?.close());
+              break;
+            case RealtimeSubscribeStatus.timedOut:
+            case RealtimeSubscribeStatus.channelError:
+              _addException(RealtimeSubscribeException(status, error));
+              break;
           }
-          _wasSubscribed = true;
-          break;
-        case RealtimeSubscribeStatus.closed:
-          unawaited(_streamController?.close());
-          break;
-        case RealtimeSubscribeStatus.timedOut:
-        case RealtimeSubscribeStatus.channelError:
-          _addException(RealtimeSubscribeException(status, error));
-          break;
-      }
-    });
+        });
     unawaited(_getPostgrestData());
   }
 
@@ -274,8 +275,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     }
     PostgrestTransformBuilder<PostgrestList>? transformQuery;
     if (_orderBy != null) {
-      transformQuery =
-          query.order(_orderBy!.column, ascending: _orderBy!.ascending);
+      transformQuery = query.order(
+        _orderBy!.column,
+        ascending: _orderBy!.ascending,
+      );
     }
     if (_limit != null) {
       transformQuery = (transformQuery ?? query).limit(_limit!);
@@ -305,8 +308,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     } else if (payload.eventType == PostgresChangeEvent.delete) {
       targetRecord = payload.oldRecord;
     }
-    return _uniqueColumns
-        .every((column) => record[column] == targetRecord[column]);
+    return _uniqueColumns.every(
+      (column) => record[column] == targetRecord[column],
+    );
   }
 
   void _sortData() {
@@ -348,15 +352,18 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   @override
   Stream<E> asyncMap<E>(
-      FutureOr<E> Function(SupabaseStreamEvent event) convert) {
+    FutureOr<E> Function(SupabaseStreamEvent event) convert,
+  ) {
     // Copied from [Stream.asyncMap]
 
     final controller = BehaviorSubject<E>();
 
     controller.onListen = () {
-      StreamSubscription<SupabaseStreamEvent> subscription = listen(null,
-          onError: controller.addError, // Avoid Zone error replacement.
-          onDone: () => unawaited(controller.close()));
+      StreamSubscription<SupabaseStreamEvent> subscription = listen(
+        null,
+        onError: controller.addError, // Avoid Zone error replacement.
+        onDone: () => unawaited(controller.close()),
+      );
       FutureOr<void> add(E value) {
         controller.add(value);
       }
@@ -390,13 +397,16 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   @override
   Stream<E> asyncExpand<E>(
-      Stream<E>? Function(SupabaseStreamEvent event) convert) {
+    Stream<E>? Function(SupabaseStreamEvent event) convert,
+  ) {
     //Copied from [Stream.asyncExpand]
     final controller = BehaviorSubject<E>();
     controller.onListen = () {
-      StreamSubscription<SupabaseStreamEvent> subscription = listen(null,
-          onError: controller.addError, // Avoid Zone error replacement.
-          onDone: () => unawaited(controller.close()));
+      StreamSubscription<SupabaseStreamEvent> subscription = listen(
+        null,
+        onError: controller.addError, // Avoid Zone error replacement.
+        onDone: () => unawaited(controller.close()),
+      );
       subscription.onData((SupabaseStreamEvent event) {
         Stream<E>? newStream;
         try {
@@ -407,9 +417,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         }
         if (newStream != null) {
           subscription.pause();
-          unawaited(controller
-              .addStream(newStream)
-              .whenComplete(subscription.resume));
+          unawaited(
+            controller.addStream(newStream).whenComplete(subscription.resume),
+          );
         }
       });
       controller.onCancel = subscription.cancel;

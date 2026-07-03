@@ -241,23 +241,29 @@ void main() {
       );
     });
 
-    test('range() overrides a preceding limit() instead of duplicating it',
-        () async {
-      try {
-        await postgrestCustomHttpClient.from('t').select().limit(5).range(0, 9);
-      } catch (_) {
-        // Expected to fail with custom client, we just want to check the url
-      }
+    test(
+      'range() overrides a preceding limit() instead of duplicating it',
+      () async {
+        try {
+          await postgrestCustomHttpClient
+              .from('t')
+              .select()
+              .limit(5)
+              .range(0, 9);
+        } catch (_) {
+          // Expected to fail with custom client, we just want to check the url
+        }
 
-      expect(
-        customHttpClient.lastRequest!.url.queryParametersAll['limit'],
-        ['10'],
-      );
-      expect(
-        customHttpClient.lastRequest!.url.queryParametersAll['offset'],
-        ['0'],
-      );
-    });
+        expect(
+          customHttpClient.lastRequest!.url.queryParametersAll['limit'],
+          ['10'],
+        );
+        expect(
+          customHttpClient.lastRequest!.url.queryParametersAll['offset'],
+          ['0'],
+        );
+      },
+    );
 
     test('a later range() replaces the earlier one', () async {
       try {
@@ -297,27 +303,35 @@ void main() {
       );
     });
 
-    test('referencedTable range overrides a preceding limit and range',
-        () async {
-      try {
-        await postgrestCustomHttpClient
-            .from('t')
-            .select('messages(*)')
-            .limit(5, referencedTable: 'messages')
-            .range(0, 9, referencedTable: 'messages');
-      } catch (_) {
-        // Expected to fail with custom client, we just want to check the url
-      }
+    test(
+      'referencedTable range overrides a preceding limit and range',
+      () async {
+        try {
+          await postgrestCustomHttpClient
+              .from('t')
+              .select('messages(*)')
+              .limit(5, referencedTable: 'messages')
+              .range(0, 9, referencedTable: 'messages');
+        } catch (_) {
+          // Expected to fail with custom client, we just want to check the url
+        }
 
-      expect(
-        customHttpClient.lastRequest!.url.queryParametersAll['messages.limit'],
-        ['10'],
-      );
-      expect(
-        customHttpClient.lastRequest!.url.queryParametersAll['messages.offset'],
-        ['0'],
-      );
-    });
+        expect(
+          customHttpClient
+              .lastRequest!
+              .url
+              .queryParametersAll['messages.limit'],
+          ['10'],
+        );
+        expect(
+          customHttpClient
+              .lastRequest!
+              .url
+              .queryParametersAll['messages.offset'],
+          ['0'],
+        );
+      },
+    );
   });
 
   test('single', () async {
@@ -395,29 +409,32 @@ void main() {
     });
 
     test(
-        'maybeSingle followed by another transformer preserves the maybeSingle status',
-        () async {
-      await expectLater(
-        () => postgrest.from('channels').select().maybeSingle().limit(2),
-        throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
-        ),
-      );
-    });
+      'maybeSingle followed by another transformer preserves the maybeSingle status',
+      () async {
+        await expectLater(
+          () => postgrest.from('channels').select().maybeSingle().limit(2),
+          throwsA(
+            isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+          ),
+        );
+      },
+    );
 
-    test('maybeSingle with converter throws if more than 1 rows were returned',
-        () async {
-      await expectLater(
-        () => postgrest
-            .from('channels')
-            .select()
-            .maybeSingle()
-            .withConverter((data) => data?.entries.length),
-        throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
-        ),
-      );
-    });
+    test(
+      'maybeSingle with converter throws if more than 1 rows were returned',
+      () async {
+        await expectLater(
+          () => postgrest
+              .from('channels')
+              .select()
+              .maybeSingle()
+              .withConverter((data) => data?.entries.length),
+          throwsA(
+            isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+          ),
+        );
+      },
+    );
   });
 
   test('explain', () async {
@@ -427,7 +444,10 @@ void main() {
   });
 
   test('explain with options', () async {
-    final res = await postgrest.from('users').select().explain(
+    final res = await postgrest
+        .from('users')
+        .select()
+        .explain(
           analyze: true,
           verbose: true,
         );
@@ -477,10 +497,14 @@ void main() {
 
       expect(customHttpClient.lastRequest, isNotNull);
       expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
-      expect(customHttpClient.lastRequest!.headers['Prefer'],
-          contains('handling=strict'));
-      expect(customHttpClient.lastRequest!.headers['Prefer'],
-          contains('max-affected=5'));
+      expect(
+        customHttpClient.lastRequest!.headers['Prefer'],
+        contains('handling=strict'),
+      );
+      expect(
+        customHttpClient.lastRequest!.headers['Prefer'],
+        contains('max-affected=5'),
+      );
     });
 
     test('maxAffected sets correct headers for delete', () async {
@@ -496,10 +520,14 @@ void main() {
 
       expect(customHttpClient.lastRequest, isNotNull);
       expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
-      expect(customHttpClient.lastRequest!.headers['Prefer'],
-          contains('handling=strict'));
-      expect(customHttpClient.lastRequest!.headers['Prefer'],
-          contains('max-affected=10'));
+      expect(
+        customHttpClient.lastRequest!.headers['Prefer'],
+        contains('handling=strict'),
+      );
+      expect(
+        customHttpClient.lastRequest!.headers['Prefer'],
+        contains('max-affected=10'),
+      );
     });
 
     test('maxAffected preserves existing Prefer headers', () async {
@@ -522,20 +550,25 @@ void main() {
     });
 
     test(
-        'maxAffected works with select operations (sets headers but likely ineffective)',
-        () async {
-      try {
-        await postgrestCustomHttpClient.from('users').select().maxAffected(2);
-      } catch (_) {
-        // Expected to fail with custom client, we just want to check headers
-      }
+      'maxAffected works with select operations (sets headers but likely ineffective)',
+      () async {
+        try {
+          await postgrestCustomHttpClient.from('users').select().maxAffected(2);
+        } catch (_) {
+          // Expected to fail with custom client, we just want to check headers
+        }
 
-      expect(customHttpClient.lastRequest, isNotNull);
-      expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
-      expect(customHttpClient.lastRequest!.headers['Prefer'],
-          contains('handling=strict'));
-      expect(customHttpClient.lastRequest!.headers['Prefer'],
-          contains('max-affected=2'));
-    });
+        expect(customHttpClient.lastRequest, isNotNull);
+        expect(customHttpClient.lastRequest!.headers['Prefer'], isNotNull);
+        expect(
+          customHttpClient.lastRequest!.headers['Prefer'],
+          contains('handling=strict'),
+        );
+        expect(
+          customHttpClient.lastRequest!.headers['Prefer'],
+          contains('max-affected=2'),
+        );
+      },
+    );
   });
 }

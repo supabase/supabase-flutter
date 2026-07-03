@@ -78,7 +78,8 @@ void main() {
       expect(
         OAuthProvider.values,
         hasLength(declaredCount),
-        reason: 'A static const OAuthProvider field is missing from '
+        reason:
+            'A static const OAuthProvider field is missing from '
             'OAuthProvider.values. Add it to the values list in types.dart.',
       );
     });
