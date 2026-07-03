@@ -63,6 +63,26 @@ void main() {
         },
       });
     });
+
+    test('forwards broadcast.replication_ready when opted in', () {
+      channel = RealtimeChannel(
+        'topic',
+        socket,
+        params: RealtimeChannelConfig(replicationReady: true),
+      );
+
+      expect(channel.params, {
+        'config': {
+          'broadcast': {
+            'ack': false,
+            'self': false,
+            'replication_ready': true,
+          },
+          'presence': {'key': '', 'enabled': false},
+          'private': false,
+        },
+      });
+    });
   });
 
   group('join', () {
@@ -242,6 +262,51 @@ void main() {
 
       expect(status, RealtimeSubscribeStatus.channelError);
     });
+
+    test('forwards `select` columns in the join payload', () {
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'users',
+        select: ['id', 'first_name'],
+        callback: (_) {},
+      );
+
+      channel.subscribe();
+
+      final sentFilter =
+          (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
+              as Map;
+      expect(sentFilter['select'], ['id', 'first_name']);
+    });
+
+    test('joins multiple filters with commas as an AND condition', () {
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.update,
+        schema: 'public',
+        table: 'orders',
+        filters: [
+          PostgresChangeFilter(
+            type: PostgresChangeFilterType.gt,
+            column: 'amount',
+            value: 100,
+          ),
+          PostgresChangeFilter(
+            type: PostgresChangeFilterType.inFilter,
+            column: 'status',
+            value: ['open', 'pending'],
+          ),
+        ],
+        callback: (_) {},
+      );
+
+      channel.subscribe();
+
+      final sentFilter =
+          (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
+              as Map;
+      expect(sentFilter['filter'], 'amount=gt.100,status=in.(open,pending)');
+    });
   });
 
   group('onError', () {
@@ -330,6 +395,31 @@ void main() {
 
       expect(status, isNot(RealtimeSubscribeStatus.channelError));
     });
+
+    test(
+      'forwards the raw payload, parseable into a RealtimeSystemPayload',
+      () {
+        dynamic received;
+        channel.onSystemEvents((payload) => received = payload);
+
+        channel.trigger('system', {
+          'extension': 'system',
+          'status': 'ok',
+          'message': 'Replication connection established',
+          'channel': 'topic',
+        });
+
+        expect(received, isA<Map>());
+
+        final system = RealtimeSystemPayload.fromJson(
+          Map<String, dynamic>.from(received),
+        );
+        expect(system.extension, 'system');
+        expect(system.status, 'ok');
+        expect(system.message, 'Replication connection established');
+        expect(system.channel, 'topic');
+      },
+    );
   });
 
   group('onMessage', () {

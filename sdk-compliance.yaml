@@ -315,8 +315,24 @@ features:
 
   # realtime — subscriptions
   realtime.subscriptions.broadcast: implemented
-  realtime.subscriptions.postgres_changes: implemented
-  realtime.subscriptions.postgres_changes_filter: implemented
+  realtime.subscriptions.postgres_changes:
+    status: implemented
+    symbols:
+      - ChannelFilter.select
+      - RealtimeChannelConfig.replicationReady
+      - RealtimeSystemPayload
+      - RealtimeSystemPayload.RealtimeSystemPayload
+      - RealtimeSystemPayload.channel
+      - RealtimeSystemPayload.extension
+      - RealtimeSystemPayload.fromJson
+      - RealtimeSystemPayload.message
+      - RealtimeSystemPayload.status
+      - RealtimeSystemPayload.toString
+  realtime.subscriptions.postgres_changes_filter:
+    status: implemented
+    symbols:
+      - PostgresChangeFilter.negate
+      - PostgresChangeFilterType.token
   realtime.subscriptions.subscribe_presence: implemented
   realtime.subscriptions.private_channel: implemented
   realtime.subscriptions.broadcast_self: implemented
