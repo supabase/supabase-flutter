@@ -246,7 +246,12 @@ features:
   storage.file_buckets.copy: implemented
   storage.file_buckets.copy_cross_bucket: implemented
   storage.file_buckets.remove: implemented
-  storage.file_buckets.create_signed_url: implemented
+  storage.file_buckets.create_signed_url:
+    status: implemented
+    symbols:
+      - DownloadBehavior
+      - DownloadBehavior.named
+      - DownloadBehavior.withOriginalName
   storage.file_buckets.create_signed_urls: implemented
   storage.file_buckets.create_signed_upload_url: implemented
   storage.file_buckets.get_public_url: implemented

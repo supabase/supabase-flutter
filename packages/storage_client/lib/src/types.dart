@@ -451,19 +451,19 @@ extension ToQueryParams on TransformOptions {
 /// );
 /// ```
 class DownloadBehavior {
-  const DownloadBehavior._(String fileName) : _fileName = fileName;
+  const DownloadBehavior._(String fileName) : _queryValue = fileName;
 
   /// Triggers a download using the file's original name.
   static const DownloadBehavior withOriginalName = DownloadBehavior._('');
 
   /// Triggers a download with a custom [fileName].
-  const DownloadBehavior.named(String fileName) : _fileName = fileName;
+  const DownloadBehavior.named(String fileName) : _queryValue = fileName;
 
-  final String _fileName;
+  final String _queryValue;
 
   /// The value appended to the `download` query parameter.
   @internal
-  String get queryValue => _fileName;
+  String get queryValue => _queryValue;
 }
 
 extension ToSnakeCase on Enum {
