@@ -211,6 +211,20 @@ void main() {
             .having((e) => e.statusCode, 'statusCode', '409')),
       );
     });
+
+    test('an upsert signed url can overwrite an existing file', () async {
+      await storage.from(newBucketName).upload(uploadPath, file);
+
+      final response = await storage
+          .from(newBucketName)
+          .createSignedUploadUrl(uploadPath, upsert: true);
+
+      final uploadedPath = await storage
+          .from(newBucketName)
+          .uploadToSignedUrl(response.path, response.token, file);
+
+      expect(uploadedPath, uploadPath);
+    });
   });
 
   group('Transformations', () {
