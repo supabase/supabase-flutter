@@ -13,6 +13,7 @@ import 'package:supabase_flutter/src/supabase_auth.dart';
 
 import 'hot_restart_cleanup_stub.dart'
     if (dart.library.js_interop) 'hot_restart_cleanup_web.dart';
+import 'platform_stub.dart' if (dart.library.io) 'platform_io.dart';
 import 'version.dart';
 
 final _log = Logger('supabase.supabase_flutter');
@@ -103,7 +104,7 @@ class Supabase {
       return _instance;
     }
 
-    _instance._debugEnable = debug ?? kDebugMode;
+    _instance._debugEnable = debug ?? (kDebugMode && !isRunningInFlutterTest);
 
     if (_instance._debugEnable) {
       _instance._logSubscription = Logger('supabase').onRecord.listen((record) {
