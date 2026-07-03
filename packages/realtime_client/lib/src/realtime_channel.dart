@@ -1040,7 +1040,7 @@ class RealtimeChannel {
   @internal
   bool get isLeaving => _state == ChannelStates.leaving;
 
-  static bool _isEqual(Map<String, dynamic> obj1, Map<String, dynamic> obj2) {
+  static bool _isEqual(Map<String, Object?> obj1, Map<String, Object?> obj2) {
     if (obj1.keys.length != obj2.keys.length) {
       return false;
     }

@@ -458,9 +458,10 @@ class PostgresChangeFilter {
   /// character (`,`, `(`, `)`, `"`, `\`) or surrounding whitespace, so the
   /// server's filter parser doesn't misread it as a condition/list boundary.
   /// Values without reserved characters are sent verbatim.
-  static String _serializeScalar(dynamic value) {
+  static String _serializeScalar(Object? value) {
     final serialized = value == null ? 'null' : '$value';
-    final needsQuoting = RegExp(r'[,()"\\]').hasMatch(serialized) ||
+    final needsQuoting =
+        RegExp(r'[,()"\\]').hasMatch(serialized) ||
         serialized != serialized.trim();
     if (!needsQuoting) return serialized;
     final escaped = serialized.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
@@ -471,8 +472,9 @@ class PostgresChangeFilter {
   String toString() {
     final prefix = negate ? 'not.' : '';
     if (type == PostgresChangeFilterType.inFilter) {
-      final items =
-          (value as Iterable).map((s) => _serializeScalar(s)).join(',');
+      final items = (value as Iterable)
+          .map((s) => _serializeScalar(s))
+          .join(',');
       return '$column=${prefix}in.($items)';
     }
     return '$column=$prefix${type.token}.${_serializeScalar(value)}';
