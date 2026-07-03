@@ -40,7 +40,7 @@ jobs:
           if [ -z "$BASE" ]; then
             FORCE_ALL=true
           elif git diff --name-only "$BASE...HEAD" \
-              | grep -qE '^(\.github/workflows/build\.yml|melos\.yaml|pubspec\.lock|supabase/)'; then
+              | grep -qE '^(\.github/workflows/build\.yml|pubspec\.yaml|pubspec\.lock|supabase/)'; then
             FORCE_ALL=true
           fi
 

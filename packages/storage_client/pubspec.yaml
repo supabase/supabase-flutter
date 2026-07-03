@@ -8,6 +8,8 @@ documentation: 'https://supabase.com/docs/reference/dart/storage-createbucket'
 environment:
   sdk: '>=3.9.0 <4.0.0'
 
+resolution: workspace
+
 dependencies:
   http: ^1.2.2
   http_parser: ^4.0.1

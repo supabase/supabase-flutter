@@ -8,6 +8,8 @@ documentation: 'https://supabase.com/docs/reference/dart/select'
 environment:
   sdk: '>=3.9.0 <4.0.0'
 
+resolution: workspace
+
 dependencies:
   http: ^1.2.2
   yet_another_json_isolate: 2.1.1

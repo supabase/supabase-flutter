@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:passkeys/authenticator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-const supabasePublishableKey =
-    String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
+const supabasePublishableKey = String.fromEnvironment(
+  'SUPABASE_PUBLISHABLE_KEY',
+);
 
 final messengerKey = GlobalKey<ScaffoldMessengerState>();
+
+final _passkeyAuthenticator = PasskeyAuthenticator();
 
 Future<void> main() async {
   await Supabase.initialize(
@@ -109,7 +113,7 @@ class _SignInViewState extends State<SignInView> {
   Future<void> _signInWithPasskey() async {
     setState(() => _busy = true);
     try {
-      await supabase.auth.signInWithPasskey();
+      await supabase.auth.signInWithPasskey(_passkeyAuthenticator);
     } catch (error) {
       _showError(error);
     } finally {
@@ -187,7 +191,7 @@ class _SignedInViewState extends State<SignedInView> {
   /// whole ceremony, including the platform prompt.
   Future<void> _registerPasskey() async {
     try {
-      await supabase.auth.registerPasskey();
+      await supabase.auth.registerPasskey(_passkeyAuthenticator);
       await _refresh();
     } catch (error) {
       _showError(error);
@@ -268,36 +272,36 @@ class _SignedInViewState extends State<SignedInView> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _passkeys.isEmpty
-                  ? const Center(child: Text('No passkeys yet.'))
-                  : RefreshIndicator(
-                      onRefresh: _refresh,
-                      child: ListView.builder(
-                        itemCount: _passkeys.length,
-                        itemBuilder: (context, index) {
-                          final passkey = _passkeys[index];
-                          return ListTile(
-                            leading: const Icon(Icons.vpn_key),
-                            title: Text(passkey.friendlyName ?? passkey.id),
-                            subtitle: Text(
-                              'Created ${passkey.createdAt.toLocal()}',
+              ? const Center(child: Text('No passkeys yet.'))
+              : RefreshIndicator(
+                  onRefresh: _refresh,
+                  child: ListView.builder(
+                    itemCount: _passkeys.length,
+                    itemBuilder: (context, index) {
+                      final passkey = _passkeys[index];
+                      return ListTile(
+                        leading: const Icon(Icons.vpn_key),
+                        title: Text(passkey.friendlyName ?? passkey.id),
+                        subtitle: Text(
+                          'Created ${passkey.createdAt.toLocal()}',
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => _rename(passkey),
                             ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit),
-                                  onPressed: () => _rename(passkey),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  onPressed: () => _delete(passkey),
-                                ),
-                              ],
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => _delete(passkey),
                             ),
-                          );
-                        },
-                      ),
-                    ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
         ),
       ],
     );
