@@ -31,8 +31,11 @@ class FunctionException implements Exception {
   final dynamic details;
   final String? reasonPhrase;
 
-  const FunctionException(
-      {required this.status, this.details, this.reasonPhrase});
+  const FunctionException({
+    required this.status,
+    this.details,
+    this.reasonPhrase,
+  });
 
   @override
   String toString() =>

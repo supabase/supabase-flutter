@@ -54,8 +54,10 @@ class StorageFileApi {
   FetchOptions get _fetchOptions => FetchOptions(headers: headers);
 
   void _assertValidRetryAttempts(int? retryAttempts) {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    assert(
+      retryAttempts == null || retryAttempts >= 0,
+      'retryAttempts has to be greater or equal to 0',
+    );
   }
 
   /// Uploads a file to an existing bucket.
@@ -414,8 +416,11 @@ class StorageFileApi {
     int expiresIn, {
     DownloadBehavior? download,
   }) async {
-    final results =
-        await createSignedUrlsResult(paths, expiresIn, download: download);
+    final results = await createSignedUrlsResult(
+      paths,
+      expiresIn,
+      download: download,
+    );
     return results
         .whereType<SignedUrlSuccess>()
         .map((r) => SignedUrl(path: r.path, signedUrl: r.signedUrl))
@@ -477,12 +482,16 @@ class StorageFileApi {
   /// [transform] download a transformed variant of the image with the provided options
   ///
   /// [queryParams] additional query parameters to be added to the URL
-  Future<Uint8List> download(String path,
-      {TransformOptions? transform, Map<String, String>? queryParams}) async {
+  Future<Uint8List> download(
+    String path, {
+    TransformOptions? transform,
+    Map<String, String>? queryParams,
+  }) async {
     final wantsTransformations = transform != null;
     final finalPath = _getFinalPath(path);
-    final renderPath =
-        wantsTransformations ? 'render/image/authenticated' : 'object';
+    final renderPath = wantsTransformations
+        ? 'render/image/authenticated'
+        : 'object';
 
     Map<String, String> query = transform?.toQueryParams ?? {};
     query.addAll(queryParams ?? {});
@@ -492,8 +501,10 @@ class StorageFileApi {
     var fetchUrl = Uri.parse('$url/$renderPath/$finalPath');
     fetchUrl = fetchUrl.replace(queryParameters: query);
 
-    final response =
-        await _storageFetch.get(fetchUrl.toString(), options: options);
+    final response = await _storageFetch.get(
+      fetchUrl.toString(),
+      options: options,
+    );
     return response as Uint8List;
   }
 

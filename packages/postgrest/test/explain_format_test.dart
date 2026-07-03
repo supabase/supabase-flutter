@@ -42,7 +42,10 @@ void main() {
 
   test('explain forwards options alongside the format', () async {
     try {
-      await postgrest.from('users').select().explain(
+      await postgrest
+          .from('users')
+          .select()
+          .explain(
             analyze: true,
             verbose: true,
             format: ExplainFormat.json,
@@ -50,8 +53,11 @@ void main() {
     } catch (_) {}
 
     final accept = customHttpClient.lastRequest!.headers['Accept']!;
-    expect(accept, startsWith('application/vnd.pgrst.plan+json;'),
-        reason: 'format should drive the media type suffix');
+    expect(
+      accept,
+      startsWith('application/vnd.pgrst.plan+json;'),
+      reason: 'format should drive the media type suffix',
+    );
     expect(accept, contains('options=analyze|verbose'));
   });
 }

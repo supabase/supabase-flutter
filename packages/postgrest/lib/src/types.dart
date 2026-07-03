@@ -74,9 +74,9 @@ class PostgrestResponse<T> {
   }
 
   Map<String, dynamic> toJson() => {
-        'data': data,
-        'count': count,
-      };
+    'data': data,
+    'count': count,
+  };
 
   @override
   String toString() {

@@ -44,8 +44,10 @@ class Fetch {
       try {
         final data = json.decode(error.body) as Map<String, dynamic>;
 
-        final exception =
-            StorageException.fromJson(data, '${error.statusCode}');
+        final exception = StorageException.fromJson(
+          data,
+          '${error.statusCode}',
+        );
         _log.fine('StorageException for $url', exception, stack);
         return exception;
       } on FormatException catch (_) {
@@ -72,8 +74,9 @@ class Fetch {
   ) async {
     final headers = {...?options?.headers};
     if (method != 'GET') {
-      final hasContentType =
-          headers.keys.any((key) => key.toLowerCase() == 'content-type');
+      final hasContentType = headers.keys.any(
+        (key) => key.toLowerCase() == 'content-type',
+      );
       if (!hasContentType) {
         headers['Content-Type'] = 'application/json';
       }

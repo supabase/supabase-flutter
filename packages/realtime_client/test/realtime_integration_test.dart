@@ -107,8 +107,9 @@ void main() {
           },
         );
 
-        final payload =
-            await received.future.timeout(const Duration(seconds: 15));
+        final payload = await received.future.timeout(
+          const Duration(seconds: 15),
+        );
         expect(payload['event'], 'ping');
         expect(payload['payload'], {'value': 42});
       });
@@ -141,8 +142,9 @@ void main() {
           },
         );
 
-        final payload =
-            await received.future.timeout(const Duration(seconds: 15));
+        final payload = await received.future.timeout(
+          const Duration(seconds: 15),
+        );
         expect(payload['payload'], {'x': 1, 'y': 2});
       });
 
@@ -176,8 +178,9 @@ void main() {
           '2026-06-15T00:00:00Z',
         );
 
-        final joinPayload =
-            await joined.future.timeout(const Duration(seconds: 15));
+        final joinPayload = await joined.future.timeout(
+          const Duration(seconds: 15),
+        );
         expect(joinPayload.key, 'user-1');
         expect(joinPayload.newPresences, isNotEmpty);
       });
@@ -198,8 +201,9 @@ void main() {
         await _waitFor(() => channel.presenceState().isNotEmpty);
         await channel.untrack();
 
-        final leavePayload =
-            await left.future.timeout(const Duration(seconds: 15));
+        final leavePayload = await left.future.timeout(
+          const Duration(seconds: 15),
+        );
         expect(leavePayload.key, 'user-2');
         expect(channel.presenceState(), isEmpty);
       });
@@ -250,24 +254,28 @@ void main() {
           await db.execute(
             "INSERT INTO public.todos (task) VALUES ('write tests')",
           );
-          final insert =
-              await inserts.future.timeout(const Duration(seconds: 20));
+          final insert = await inserts.future.timeout(
+            const Duration(seconds: 20),
+          );
           expect(insert.eventType, PostgresChangeEvent.insert);
           expect(insert.newRecord['task'], 'write tests');
 
           await db.execute(
             "UPDATE public.todos SET is_complete = true WHERE task = 'write tests'",
           );
-          final update =
-              await updates.future.timeout(const Duration(seconds: 20));
+          final update = await updates.future.timeout(
+            const Duration(seconds: 20),
+          );
           expect(update.eventType, PostgresChangeEvent.update);
           expect(update.newRecord['is_complete'], isTrue);
           expect(update.oldRecord['is_complete'], isFalse);
 
-          await db
-              .execute("DELETE FROM public.todos WHERE task = 'write tests'");
-          final delete =
-              await deletes.future.timeout(const Duration(seconds: 20));
+          await db.execute(
+            "DELETE FROM public.todos WHERE task = 'write tests'",
+          );
+          final delete = await deletes.future.timeout(
+            const Duration(seconds: 20),
+          );
           expect(delete.eventType, PostgresChangeEvent.delete);
           expect(delete.oldRecord['task'], 'write tests');
         });
@@ -308,8 +316,9 @@ void main() {
             "INSERT INTO public.todos (task, is_complete) VALUES ('matched', true)",
           );
 
-          final payload =
-              await matched.future.timeout(const Duration(seconds: 20));
+          final payload = await matched.future.timeout(
+            const Duration(seconds: 20),
+          );
           expect(payload.newRecord['task'], 'matched');
           expect(payload.newRecord['is_complete'], isTrue);
         });

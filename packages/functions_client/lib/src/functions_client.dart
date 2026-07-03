@@ -25,14 +25,15 @@ class FunctionsClient {
     http.Client? httpClient,
     YAJsonIsolate? isolate,
     String? region,
-  })  : _url = url,
-        _headers = {...Constants.defaultHeaders, ...headers},
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null,
-        _httpClient = httpClient,
-        _region = region {
+  }) : _url = url,
+       _headers = {...Constants.defaultHeaders, ...headers},
+       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+       _hasCustomIsolate = isolate != null,
+       _httpClient = httpClient,
+       _region = region {
     _log.config(
-        "Initialize FunctionsClient v$version with url '$url' and region '$region'");
+      "Initialize FunctionsClient v$version with url '$url' and region '$region'",
+    );
     _log.finest("Initialize with headers: $headers");
   }
 
@@ -107,8 +108,10 @@ class FunctionsClient {
     };
 
     final uri = Uri.parse('$_url/$functionName').replace(
-        queryParameters:
-            effectiveQueryParams.isNotEmpty ? effectiveQueryParams : null);
+      queryParameters: effectiveQueryParams.isNotEmpty
+          ? effectiveQueryParams
+          : null,
+    );
 
     final finalHeaders = <String, String>{
       ..._headers,
@@ -159,12 +162,13 @@ class FunctionsClient {
     _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
 
     final response = await (_httpClient?.send(request) ?? request.send());
-    final responseType = (response.headers['Content-Type'] ??
-            response.headers['content-type'] ??
-            'text/plain')
-        .split(';')[0]
-        .trim()
-        .toLowerCase();
+    final responseType =
+        (response.headers['Content-Type'] ??
+                response.headers['content-type'] ??
+                'text/plain')
+            .split(';')[0]
+            .trim()
+            .toLowerCase();
 
     final isSuccessStatus =
         200 <= response.statusCode && response.statusCode < 300;

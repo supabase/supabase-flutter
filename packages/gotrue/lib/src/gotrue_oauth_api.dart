@@ -129,8 +129,8 @@ class GoTrueOAuthApi {
   const GoTrueOAuthApi({
     required GoTrueClient client,
     required GotrueFetch fetch,
-  })  : _client = client,
-        _fetch = fetch;
+  }) : _client = client,
+       _fetch = fetch;
 
   /// Retrieves details about an OAuth authorization request.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
@@ -170,11 +170,12 @@ class GoTrueOAuthApi {
       '${_client._url}/oauth/authorizations/$authorizationId/consent',
       RequestMethodType.post,
       options: GotrueRequestOptions(
-          headers: _client._headers,
-          jwt: session?.accessToken,
-          body: {
-            'action': 'approve',
-          }),
+        headers: _client._headers,
+        jwt: session?.accessToken,
+        body: {
+          'action': 'approve',
+        },
+      ),
     );
 
     return OAuthConsentResponse.fromJson(data);
@@ -195,11 +196,12 @@ class GoTrueOAuthApi {
       '${_client._url}/oauth/authorizations/$authorizationId/consent',
       RequestMethodType.post,
       options: GotrueRequestOptions(
-          headers: _client._headers,
-          jwt: session?.accessToken,
-          body: {
-            'action': 'deny',
-          }),
+        headers: _client._headers,
+        jwt: session?.accessToken,
+        body: {
+          'action': 'deny',
+        },
+      ),
     );
 
     return OAuthConsentResponse.fromJson(data);

@@ -58,13 +58,15 @@ void main() {
       expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Client-Info includes structured platform metadata on functions',
-        () {
-      final clientInfo = supabase.functions.headers['X-Client-Info']!;
-      expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
-      expect(clientInfo, contains('; runtime=dart'));
-    });
+    test(
+      'X-Client-Info includes structured platform metadata on functions',
+      () {
+        final clientInfo = supabase.functions.headers['X-Client-Info']!;
+        expect(clientInfo, startsWith('supabase-dart/'));
+        expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+        expect(clientInfo, contains('; runtime=dart'));
+      },
+    );
 
     test('X-Client-Info includes structured platform metadata on rest', () {
       final clientInfo = supabase.rest.headers['X-Client-Info']!;
@@ -73,21 +75,26 @@ void main() {
       expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Client-Info includes structured platform metadata on realtime',
-        () async {
-      final request = await getRealtimeRequest(
-        server: mockServer,
-        supabaseClient: supabase,
-      );
-      final clientInfo = request.headers['X-Client-Info']?.first;
-      expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
-      expect(clientInfo, contains('; runtime=dart'));
-    });
+    test(
+      'X-Client-Info includes structured platform metadata on realtime',
+      () async {
+        final request = await getRealtimeRequest(
+          server: mockServer,
+          supabaseClient: supabase,
+        );
+        final clientInfo = request.headers['X-Client-Info']?.first;
+        expect(clientInfo, startsWith('supabase-dart/'));
+        expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+        expect(clientInfo, contains('; runtime=dart'));
+      },
+    );
 
     test('X-Client-Info header is set properly on storage', () {
-      final xClientHeaderBeforeSlash =
-          supabase.storage.headers['X-Client-Info']!.split('/').first;
+      final xClientHeaderBeforeSlash = supabase
+          .storage
+          .headers['X-Client-Info']!
+          .split('/')
+          .first;
       expect(xClientHeaderBeforeSlash, 'supabase-dart');
     });
 
@@ -107,9 +114,13 @@ void main() {
     });
 
     test('log_level query parameter is properly set', () async {
-      supabase = SupabaseClient(supabaseUrl, supabaseKey,
-          realtimeClientOptions:
-              RealtimeClientOptions(logLevel: RealtimeLogLevel.info));
+      supabase = SupabaseClient(
+        supabaseUrl,
+        supabaseKey,
+        realtimeClientOptions: RealtimeClientOptions(
+          logLevel: RealtimeLogLevel.info,
+        ),
+      );
 
       final request = await getRealtimeRequest(
         server: mockServer,
@@ -140,8 +151,9 @@ void main() {
 
   group('auth', () {
     test('properly set Authorization header', () async {
-      final (:sessionString, :accessToken) =
-          getSessionData(DateTime.now().add(Duration(hours: 1)));
+      final (:sessionString, :accessToken) = getSessionData(
+        DateTime.now().add(Duration(hours: 1)),
+      );
 
       final mockServer = await HttpServer.bind('localhost', 0);
       final supabase = SupabaseClient(
@@ -162,7 +174,9 @@ void main() {
       // Check for every request if the Authorization header is set properly
       await for (final req in mockServer) {
         expect(
-            req.headers.value('Authorization')?.split(" ").last, accessToken);
+          req.headers.value('Authorization')?.split(" ").last,
+          accessToken,
+        );
         count++;
         if (count == 4) {
           break;
@@ -204,8 +218,9 @@ void main() {
           }
           gotTokenRefresh = true;
           String sessionString;
-          (accessToken: secondAccessToken, :sessionString) =
-              getSessionData(DateTime.now().add(Duration(hours: 1)));
+          (accessToken: secondAccessToken, :sessionString) = getSessionData(
+            DateTime.now().add(Duration(hours: 1)),
+          );
 
           req.response
             ..statusCode = HttpStatus.ok
@@ -213,8 +228,10 @@ void main() {
             ..write(sessionString);
           await req.response.close();
         } else {
-          expect(req.headers.value('Authorization')?.split(" ").last,
-              secondAccessToken);
+          expect(
+            req.headers.value('Authorization')?.split(" ").last,
+            secondAccessToken,
+          );
           count++;
           if (count == 4) {
             break;
@@ -226,13 +243,21 @@ void main() {
     });
 
     test('create a client with third-party auth accessToken', () async {
-      final supabase = SupabaseClient('URL', 'KEY', accessToken: () async {
-        return 'jwt';
-      });
+      final supabase = SupabaseClient(
+        'URL',
+        'KEY',
+        accessToken: () async {
+          return 'jwt';
+        },
+      );
       expect(
-          () => supabase.auth.currentUser,
-          throwsA(AuthException(
-              'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.')));
+        () => supabase.auth.currentUser,
+        throwsA(
+          AuthException(
+            'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
+          ),
+        ),
+      );
     });
   });
 
@@ -306,12 +331,14 @@ void main() {
         expect(supabase.headers['X-Client-Info'], startsWith('supabase-dart/'));
       });
 
-      test('should preserve apikey on realtime headers when setting headers',
-          () {
-        supabase.headers = {'Custom-Header': 'custom-value'};
+      test(
+        'should preserve apikey on realtime headers when setting headers',
+        () {
+          supabase.headers = {'Custom-Header': 'custom-value'};
 
-        expect(supabase.realtime.headers['apikey'], supabaseKey);
-      });
+          expect(supabase.realtime.headers['apikey'], supabaseKey);
+        },
+      );
 
       test('should not update auth headers when using custom access token', () {
         final customTokenClient = SupabaseClient(
@@ -328,49 +355,56 @@ void main() {
 
     group('Error Handling', () {
       test(
-          'should throw AuthException when accessing auth with custom access token',
-          () {
-        final customTokenClient = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          accessToken: () async => 'custom-token',
-        );
+        'should throw AuthException when accessing auth with custom access token',
+        () {
+          final customTokenClient = SupabaseClient(
+            supabaseUrl,
+            supabaseKey,
+            accessToken: () async => 'custom-token',
+          );
 
-        expect(
-          () => customTokenClient.auth,
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => customTokenClient.auth,
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
     });
 
     group('Shared YAJsonIsolate', () {
       test(
-          'does not dispose an injected YAJsonIsolate so the caller retains ownership',
-          () async {
-        final isolate = YAJsonIsolate();
-        await isolate.initialize();
+        'does not dispose an injected YAJsonIsolate so the caller retains ownership',
+        () async {
+          final isolate = YAJsonIsolate();
+          await isolate.initialize();
 
-        final client =
-            SupabaseClient(supabaseUrl, supabaseKey, isolate: isolate);
+          final client = SupabaseClient(
+            supabaseUrl,
+            supabaseKey,
+            isolate: isolate,
+          );
 
-        await client.dispose();
+          await client.dispose();
 
-        // Isolate is still alive — caller owns the lifecycle
-        expect(await isolate.encode({'key': 'value'}), isA<String>());
+          // Isolate is still alive — caller owns the lifecycle
+          expect(await isolate.encode({'key': 'value'}), isA<String>());
 
-        await isolate.dispose();
-      });
+          await isolate.dispose();
+        },
+      );
 
-      test('creates a single isolate shared across rest and functions clients',
-          () async {
-        // Creating a SupabaseClient without providing an isolate should
-        // still result in a single shared isolate (not one per sub-client).
-        // Verified indirectly: dispose() should complete without error,
-        // meaning there is no double-dispose from sub-clients.
-        final client = SupabaseClient(supabaseUrl, supabaseKey);
+      test(
+        'creates a single isolate shared across rest and functions clients',
+        () async {
+          // Creating a SupabaseClient without providing an isolate should
+          // still result in a single shared isolate (not one per sub-client).
+          // Verified indirectly: dispose() should complete without error,
+          // meaning there is no double-dispose from sub-clients.
+          final client = SupabaseClient(supabaseUrl, supabaseKey);
 
-        await client.dispose();
-      });
+          await client.dispose();
+        },
+      );
     });
   });
 

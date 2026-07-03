@@ -23,18 +23,23 @@ Future<ServerSocket> _startUnresponsiveServer() async {
       if (!request.contains('\r\n\r\n')) {
         return;
       }
-      final keyLine = request.split('\r\n').firstWhere(
-          (line) => line.toLowerCase().startsWith('sec-websocket-key:'));
+      final keyLine = request
+          .split('\r\n')
+          .firstWhere(
+            (line) => line.toLowerCase().startsWith('sec-websocket-key:'),
+          );
       final key = keyLine.split(':').last.trim();
       final accept = base64.encode(
         sha1
             .convert(utf8.encode('${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11'))
             .bytes,
       );
-      socket.write('HTTP/1.1 101 Switching Protocols\r\n'
-          'Upgrade: websocket\r\n'
-          'Connection: Upgrade\r\n'
-          'Sec-WebSocket-Accept: $accept\r\n\r\n');
+      socket.write(
+        'HTTP/1.1 101 Switching Protocols\r\n'
+        'Upgrade: websocket\r\n'
+        'Connection: Upgrade\r\n'
+        'Sec-WebSocket-Accept: $accept\r\n\r\n',
+      );
       // From here on, deliberately ignore everything (including ping frames).
       subscription.onData((_) {});
     });
@@ -43,20 +48,22 @@ Future<ServerSocket> _startUnresponsiveServer() async {
 }
 
 void main() {
-  test('default transport closes the connection when the peer stops responding',
-      () async {
-    final server = await _startUnresponsiveServer();
-    addTearDown(() => server.close());
+  test(
+    'default transport closes the connection when the peer stops responding',
+    () async {
+      final server = await _startUnresponsiveServer();
+      addTearDown(() => server.close());
 
-    final channel = createWebSocketClient(
-      'ws://localhost:${server.port}',
-      const {},
-      pingInterval: const Duration(milliseconds: 200),
-    );
-    await channel.ready;
+      final channel = createWebSocketClient(
+        'ws://localhost:${server.port}',
+        const {},
+        pingInterval: const Duration(milliseconds: 200),
+      );
+      await channel.ready;
 
-    // Without a transport level ping interval this would never complete, since
-    // the dead peer sends neither data nor a close frame.
-    await channel.stream.drain().timeout(const Duration(seconds: 5));
-  });
+      // Without a transport level ping interval this would never complete, since
+      // the dead peer sends neither data nor a close frame.
+      await channel.stream.drain().timeout(const Duration(seconds: 5));
+    },
+  );
 }

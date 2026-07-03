@@ -40,8 +40,9 @@ class Bucket {
       updatedAt: json['updated_at'] as String,
       public: json['public'] as bool,
       fileSizeLimit: json['file_size_limit'] as int?,
-      allowedMimeTypes:
-          allowedMimeTypes is List ? allowedMimeTypes.cast() : null,
+      allowedMimeTypes: allowedMimeTypes is List
+          ? allowedMimeTypes.cast()
+          : null,
     );
   }
 }
@@ -343,12 +344,11 @@ class StorageException implements Exception {
   factory StorageException.fromJson(
     Map<String, dynamic> json, [
     String? statusCode,
-  ]) =>
-      StorageException(
-        json['message'] as String? ?? json.toString(),
-        error: json['error'] as String?,
-        statusCode: json['statusCode']?.toString() ?? statusCode,
-      );
+  ]) => StorageException(
+    json['message'] as String? ?? json.toString(),
+    error: json['error'] as String?,
+    statusCode: json['statusCode']?.toString() ?? statusCode,
+  );
 
   @override
   String toString() {

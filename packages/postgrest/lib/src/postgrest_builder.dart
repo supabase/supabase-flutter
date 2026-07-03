@@ -73,18 +73,18 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     PostgrestConverter<S, R>? converter,
     bool retryEnabled = true,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-  })  : _maybeSingle = maybeSingle,
-        _method = method,
-        _converter = converter,
-        _schema = schema,
-        _url = url,
-        _headers = headers,
-        _httpClient = httpClient,
-        _isolate = isolate,
-        _count = count,
-        _body = body,
-        _retryEnabled = retryEnabled,
-        _retryDelay = retryDelay ?? _defaultRetryDelay;
+  }) : _maybeSingle = maybeSingle,
+       _method = method,
+       _converter = converter,
+       _schema = schema,
+       _url = url,
+       _headers = headers,
+       _httpClient = httpClient,
+       _isolate = isolate,
+       _count = count,
+       _body = body,
+       _retryEnabled = retryEnabled,
+       _retryDelay = retryDelay ?? _defaultRetryDelay;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
@@ -169,22 +169,22 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
     } else if (method == HttpMethod.post) {
       send = () => (_httpClient?.post ?? http.post)(
-            _url,
-            headers: execHeaders,
-            body: bodyStr,
-          );
+        _url,
+        headers: execHeaders,
+        body: bodyStr,
+      );
     } else if (method == HttpMethod.put) {
       send = () => (_httpClient?.put ?? http.put)(
-            _url,
-            headers: execHeaders,
-            body: bodyStr,
-          );
+        _url,
+        headers: execHeaders,
+        body: bodyStr,
+      );
     } else if (method == HttpMethod.patch) {
       send = () => (_httpClient?.patch ?? http.patch)(
-            _url,
-            headers: execHeaders,
-            body: bodyStr,
-          );
+        _url,
+        headers: execHeaders,
+        body: bodyStr,
+      );
     } else if (method == HttpMethod.delete) {
       send = () =>
           (_httpClient?.delete ?? http.delete)(_url, headers: execHeaders);
@@ -298,16 +298,15 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             : int.parse(contentRange.split('/').last);
       }
 
-      body as dynamic;
       final S converted;
 
       if (R == PostgrestList) {
-        body = PostgrestList.from(body);
+        body = PostgrestList.from(body as Iterable);
       } else if (R == PostgrestMap) {
-        body = PostgrestMap.from(body);
+        body = PostgrestMap.from(body as Map);
       } else if (R == _Nullable<PostgrestMap>) {
         if (body != null) {
-          body = PostgrestMap.from(body);
+          body = PostgrestMap.from(body as Map);
         }
       } else if (R == int) {
         if (count != null) body = count;
@@ -322,9 +321,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
       if (_count != null && method != HttpMethod.head) {
         return PostgrestResponse<S>(
-          data: converted,
-          count: count!,
-        ) as T;
+              data: converted,
+              count: count!,
+            )
+            as T;
       }
       return converted as T;
     }
@@ -393,8 +393,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///
   /// [url] may be used to update based on a different url than the current one
   Uri appendSearchParams(String key, String value, [Uri? url]) {
-    final searchParams =
-        Map<String, dynamic>.of((url ?? _url).queryParametersAll);
+    final searchParams = Map<String, dynamic>.of(
+      (url ?? _url).queryParametersAll,
+    );
     searchParams[key] = [...?searchParams[key], value];
     return (url ?? _url).replace(queryParameters: searchParams);
   }
@@ -403,8 +404,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///
   /// [url] may be used to update based on a different url than the current one
   Uri overrideSearchParams(String key, String value, [Uri? url]) {
-    final searchParams =
-        Map<String, dynamic>.of((url ?? _url).queryParametersAll);
+    final searchParams = Map<String, dynamic>.of(
+      (url ?? _url).queryParametersAll,
+    );
     searchParams[key] = value;
     return (url ?? _url).replace(queryParameters: searchParams);
   }
@@ -417,10 +419,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     // Escape `\` and `"` inside each element before quoting, otherwise a value
     // containing a double quote (e.g. `a"b`) produces a malformed PostgREST
     // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
-    return filter.map((s) {
-      final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
-      return '"$escaped"';
-    }).join(',');
+    return filter
+        .map((s) {
+          final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+          return '"$escaped"';
+        })
+        .join(',');
   }
 
   @override
@@ -429,12 +433,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
     unawaited(
       then((value) {
-        controller.add(value);
-      }).catchError((Object error, StackTrace stack) {
-        controller.addError(error, stack);
-      }).whenComplete(() {
-        unawaited(controller.close());
-      }),
+            controller.add(value);
+          })
+          .catchError((Object error, StackTrace stack) {
+            controller.addError(error, stack);
+          })
+          .whenComplete(() {
+            unawaited(controller.close());
+          }),
     );
 
     return controller.stream;
@@ -453,12 +459,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (onError != null &&
         onError is! Function(Object, StackTrace) &&
         onError is! Function(Object)) {
-      return Future.error(ArgumentError.value(
-        onError,
-        "onError",
-        "Error handler must accept one Object or one Object and a StackTrace "
-            "as arguments, and return a value of the returned future's type",
-      ));
+      return Future.error(
+        ArgumentError.value(
+          onError,
+          "onError",
+          "Error handler must accept one Object or one Object and a StackTrace "
+              "as arguments, and return a value of the returned future's type",
+        ),
+      );
     }
 
     // then() is called synchronously by Dart's async state machine, so user
@@ -469,45 +477,49 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         StackTrace.fromString('$stack\n<async call site>\n$callerTrace');
 
     if (onError == null) {
-      return _execute().then(onValue,
-          onError: (Object error, StackTrace stack) {
-        Error.throwWithStackTrace(error, enrichStack(stack));
-      });
+      return _execute().then(
+        onValue,
+        onError: (Object error, StackTrace stack) {
+          Error.throwWithStackTrace(error, enrichStack(stack));
+        },
+      );
     }
 
-    return _execute().then(onValue,
-        onError: (Object error, StackTrace stack) async {
-      final enrichedStack = enrichStack(stack);
-      final FutureOr<U> result;
-      if (onError is Function(Object, StackTrace)) {
-        result = onError(error, enrichedStack);
-      } else if (onError is Function(Object)) {
-        try {
-          result = onError(error);
-        } catch (rethrown) {
-          if (identical(rethrown, error)) {
-            Error.throwWithStackTrace(rethrown, enrichedStack);
+    return _execute().then(
+      onValue,
+      onError: (Object error, StackTrace stack) async {
+        final enrichedStack = enrichStack(stack);
+        final FutureOr<U> result;
+        if (onError is Function(Object, StackTrace)) {
+          result = onError(error, enrichedStack);
+        } else if (onError is Function(Object)) {
+          try {
+            result = onError(error);
+          } catch (rethrown) {
+            if (identical(rethrown, error)) {
+              Error.throwWithStackTrace(rethrown, enrichedStack);
+            }
+            rethrow;
           }
-          rethrow;
+        } else {
+          throw ArgumentError.value(
+            onError,
+            "onError",
+            "Error handler must accept one Object or one Object and a StackTrace "
+                "as arguments, and return a value of the returned future's type",
+          );
         }
-      } else {
-        throw ArgumentError.value(
-          onError,
-          "onError",
-          "Error handler must accept one Object or one Object and a StackTrace "
-              "as arguments, and return a value of the returned future's type",
-        );
-      }
-      try {
-        return await result;
-      } on TypeError {
-        throw ArgumentError(
-          "The error handler of Future.then must return a value of the "
-              "returned future's type",
-          "onError",
-        );
-      }
-    });
+        try {
+          return await result;
+        } on TypeError {
+          throw ArgumentError(
+            "The error handler of Future.then must return a value of the "
+                "returned future's type",
+            "onError",
+          );
+        }
+      },
+    );
   }
 
   @override

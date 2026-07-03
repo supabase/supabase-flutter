@@ -13,8 +13,8 @@ class AuthResponse {
 
   /// Instanciates an `AuthResponse` object from json response.
   AuthResponse.fromJson(Map<String, dynamic> json)
-      : session = Session.fromJson(json),
-        user = User.fromJson(json) ?? Session.fromJson(json)?.user;
+    : session = Session.fromJson(json),
+      user = User.fromJson(json) ?? Session.fromJson(json)?.user;
 }
 
 /// Response of OAuth signin
@@ -60,8 +60,8 @@ class GenerateLinkResponse {
   final User user;
 
   GenerateLinkResponse.fromJson(Map<String, dynamic> json)
-      : properties = GenerateLinkProperties.fromJson(json),
-        user = _parseUser(json);
+    : properties = GenerateLinkProperties.fromJson(json),
+      user = _parseUser(json);
 
   static User _parseUser(Map<String, dynamic> json) {
     final user = User.fromJson(json);
@@ -94,12 +94,13 @@ class GenerateLinkProperties {
   final GenerateLinkType verificationType;
 
   GenerateLinkProperties.fromJson(Map<String, dynamic> json)
-      : actionLink = json['action_link'] ?? '',
-        emailOtp = json['email_otp'] ?? '',
-        hashedToken = json['hashed_token'] ?? '',
-        redirectTo = json['redirect_to'] ?? '',
-        verificationType =
-            GenerateLinkTypeExtended.fromString(json['verification_type']);
+    : actionLink = json['action_link'] ?? '',
+      emailOtp = json['email_otp'] ?? '',
+      hashedToken = json['hashed_token'] ?? '',
+      redirectTo = json['redirect_to'] ?? '',
+      verificationType = GenerateLinkTypeExtended.fromString(
+        json['verification_type'],
+      );
 }
 
 extension ToSnakeCase on Enum {

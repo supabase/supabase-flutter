@@ -40,10 +40,12 @@ class RealtimeChannel {
     this.topic,
     this.socket, {
     RealtimeChannelConfig params = const RealtimeChannelConfig(),
-  })  : _timeout = socket.timeout,
-        params = params.toMap(),
-        subTopic = topic.replaceFirst(
-            RegExp(r"^realtime:", caseSensitive: false), "") {
+  }) : _timeout = socket.timeout,
+       params = params.toMap(),
+       subTopic = topic.replaceFirst(
+         RegExp(r"^realtime:", caseSensitive: false),
+         "",
+       ) {
     broadcastEndpointURL = '${httpEndpointURL(socket.endPoint)}/api/broadcast';
     _private = params.private;
 
@@ -53,8 +55,10 @@ class RealtimeChannel {
       this.params,
       _timeout,
     );
-    _rejoinTimer =
-        RetryTimer(() => rejoinUntilConnected(), socket.reconnectAfterMs);
+    _rejoinTimer = RetryTimer(
+      () => rejoinUntilConnected(),
+      socket.reconnectAfterMs,
+    );
     joinPush.receive('ok', (_) {
       _state = ChannelStates.joined;
       _rejoinTimer.reset();
@@ -89,8 +93,10 @@ class RealtimeChannel {
       _rejoinTimer.scheduleTimeout();
     });
 
-    onEvents(ChannelEvents.reply.eventName(), ChannelFilter(), (payload,
-        [ref]) {
+    onEvents(ChannelEvents.reply.eventName(), ChannelFilter(), (
+      payload, [
+      ref,
+    ]) {
       trigger(replyEventName(ref), payload);
     });
 
@@ -168,8 +174,10 @@ class RealtimeChannel {
         if (callback != null) {
           callback(
             RealtimeSubscribeStatus.channelError,
-            Exception(payload['message']?.toString() ??
-                'postgres_changes subscription failed'),
+            Exception(
+              payload['message']?.toString() ??
+                  'postgres_changes subscription failed',
+            ),
           );
         }
       }
@@ -197,24 +205,30 @@ class RealtimeChannel {
 
     joinPush
         .receive(
-      'ok',
-      (response) =>
-          unawaited(_handleJoinOk(response as Map<String, dynamic>, callback)),
-    )
-        .receive('error', (error) {
-      if (callback != null) {
-        callback(
-          RealtimeSubscribeStatus.channelError,
-          Exception(
-            jsonEncode((error as Map<String, dynamic>).isNotEmpty
-                ? (error).values.join(', ')
-                : 'error'),
+          'ok',
+          (response) => unawaited(
+            _handleJoinOk(response as Map<String, dynamic>, callback),
           ),
-        );
-      }
-    }).receive('timeout', (_) {
-      if (callback != null) callback(RealtimeSubscribeStatus.timedOut, null);
-    });
+        )
+        .receive('error', (error) {
+          if (callback != null) {
+            callback(
+              RealtimeSubscribeStatus.channelError,
+              Exception(
+                jsonEncode(
+                  (error as Map<String, dynamic>).isNotEmpty
+                      ? (error).values.join(', ')
+                      : 'error',
+                ),
+              ),
+            );
+          }
+        })
+        .receive('timeout', (_) {
+          if (callback != null) {
+            callback(RealtimeSubscribeStatus.timedOut, null);
+          }
+        });
     return this;
   }
 
@@ -264,16 +278,19 @@ class RealtimeChannel {
           serverPostgresFilter['schema'] == schema &&
           serverPostgresFilter['table'] == table &&
           serverPostgresFilter['filter'] == filter) {
-        newPostgresBindings.add(clientPostgresBinding.copyWith(
-          id: serverPostgresFilter['id']?.toString(),
-        ));
+        newPostgresBindings.add(
+          clientPostgresBinding.copyWith(
+            id: serverPostgresFilter['id']?.toString(),
+          ),
+        );
       } else {
         unawaited(unsubscribe());
         if (callback != null) {
           callback(
             RealtimeSubscribeStatus.channelError,
             Exception(
-                'mismatch between server and client bindings for postgres changes'),
+              'mismatch between server and client bindings for postgres changes',
+            ),
           );
         }
         return;
@@ -289,13 +306,17 @@ class RealtimeChannel {
 
   List<SinglePresenceState> presenceState() {
     return presence.state.entries
-        .map((entry) =>
-            SinglePresenceState(key: entry.key, presences: entry.value))
+        .map(
+          (entry) =>
+              SinglePresenceState(key: entry.key, presences: entry.value),
+        )
         .toList();
   }
 
-  Future<ChannelResponse> track(Map<String, dynamic> payload,
-      [Map<String, dynamic> opts = const {}]) {
+  Future<ChannelResponse> track(
+    Map<String, dynamic> payload, [
+    Map<String, dynamic> opts = const {},
+  ]) {
     return send(
       type: RealtimeListenTypes.presence,
       payload: {
@@ -320,14 +341,20 @@ class RealtimeChannel {
 
   /// Registers a callback that will be executed when the channel closes.
   void _onClose(Function callback) {
-    onEvents(ChannelEvents.close.eventName(), ChannelFilter(),
-        (reason, [ref]) => callback());
+    onEvents(
+      ChannelEvents.close.eventName(),
+      ChannelFilter(),
+      (reason, [ref]) => callback(),
+    );
   }
 
   /// Registers a callback that will be executed when the channel encounteres an error.
   void _onError(Function callback) {
-    onEvents(ChannelEvents.error.eventName(), ChannelFilter(),
-        (reason, [ref]) => callback(reason));
+    onEvents(
+      ChannelEvents.error.eventName(),
+      ChannelFilter(),
+      (reason, [ref]) => callback(reason),
+    );
   }
 
   /// Sets up a listener on your Supabase database.
@@ -417,8 +444,11 @@ class RealtimeChannel {
         event: PresenceEvent.sync.name,
       ),
       (payload, [ref]) {
-        callback(RealtimePresenceSyncPayload.fromJson(
-            Map<String, dynamic>.from(payload)));
+        callback(
+          RealtimePresenceSyncPayload.fromJson(
+            Map<String, dynamic>.from(payload),
+          ),
+        );
       },
     );
     _handlePresenceUpdate();
@@ -445,8 +475,11 @@ class RealtimeChannel {
         event: PresenceEvent.join.name,
       ),
       (payload, [ref]) {
-        callback(RealtimePresenceJoinPayload.fromJson(
-            Map<String, dynamic>.from(payload)));
+        callback(
+          RealtimePresenceJoinPayload.fromJson(
+            Map<String, dynamic>.from(payload),
+          ),
+        );
       },
     );
     _handlePresenceUpdate();
@@ -473,8 +506,11 @@ class RealtimeChannel {
         event: PresenceEvent.leave.name,
       ),
       (payload, [ref]) {
-        callback(RealtimePresenceLeavePayload.fromJson(
-            Map<String, dynamic>.from(payload)));
+        callback(
+          RealtimePresenceLeavePayload.fromJson(
+            Map<String, dynamic>.from(payload),
+          ),
+        );
       },
     );
     _handlePresenceUpdate();
@@ -494,7 +530,10 @@ class RealtimeChannel {
 
   @internal
   RealtimeChannel onEvents(
-      String type, ChannelFilter filter, BindingCallback callback) {
+    String type,
+    ChannelFilter filter,
+    BindingCallback callback,
+  ) {
     final typeLower = type.toLowerCase();
 
     final binding = Binding(typeLower, filter.toMap(), callback);
@@ -588,8 +627,9 @@ class RealtimeChannel {
 
     final headers = {
       ..._broadcastHeaders,
-      'Content-Type':
-          isBinary ? 'application/octet-stream' : 'application/json',
+      'Content-Type': isBinary
+          ? 'application/octet-stream'
+          : 'application/json',
     };
 
     final url = Uri.parse(
@@ -601,12 +641,15 @@ class RealtimeChannel {
 
     final body = isBinary ? _asBytes(payload) : json.encode(payload);
 
-    final response = await (socket.httpClient?.post ?? post)(url,
-            headers: headers, body: body)
-        .timeout(
-      timeout ?? _timeout,
-      onTimeout: () => throw TimeoutException('Request timeout'),
-    );
+    final response =
+        await (socket.httpClient?.post ?? post)(
+          url,
+          headers: headers,
+          body: body,
+        ).timeout(
+          timeout ?? _timeout,
+          onTimeout: () => throw TimeoutException('Request timeout'),
+        );
 
     if (response.statusCode == 202) {
       return;
@@ -623,9 +666,9 @@ class RealtimeChannel {
     String errorMessage = response.reasonPhrase ?? 'Unknown error';
     try {
       final errorBody = json.decode(response.body) as Map<String, dynamic>;
-      errorMessage = (errorBody['error'] ??
-          errorBody['message'] ??
-          errorMessage) as String;
+      errorMessage =
+          (errorBody['error'] ?? errorBody['message'] ?? errorMessage)
+              as String;
     } catch (_) {
       // If JSON parsing fails, use the default error message
     }
@@ -737,12 +780,12 @@ class RealtimeChannel {
   }
 
   Map<String, String> get _broadcastHeaders => {
-        'Content-Type': 'application/json',
-        if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
-        ...socket.headers,
-        if (socket.accessToken != null)
-          'Authorization': 'Bearer ${socket.accessToken}',
-      };
+    'Content-Type': 'application/json',
+    if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
+    ...socket.headers,
+    if (socket.accessToken != null)
+      'Authorization': 'Bearer ${socket.accessToken}',
+  };
 
   Map<String, dynamic> _broadcastBody(
     String? event,
@@ -755,8 +798,8 @@ class RealtimeChannel {
           'event': event,
           'payload': payload,
           'private': _private,
-        }
-      ]
+        },
+      ],
     };
   }
 
@@ -788,22 +831,25 @@ class RealtimeChannel {
 
     final leavePush = Push(this, ChannelEvents.leave, {}, timeout ?? _timeout);
 
-    leavePush.receive('ok', (_) {
-      onClose();
-      if (!completer.isCompleted) {
-        completer.complete('ok');
-      }
-    }).receive('timeout', (_) {
-      if (!completer.isCompleted) {
-        onClose();
-      }
-      completer.complete('timed out');
-    }).receive('error', (_) {
-      onClose();
-      if (!completer.isCompleted) {
-        completer.complete('error');
-      }
-    });
+    leavePush
+        .receive('ok', (_) {
+          onClose();
+          if (!completer.isCompleted) {
+            completer.complete('ok');
+          }
+        })
+        .receive('timeout', (_) {
+          if (!completer.isCompleted) {
+            onClose();
+          }
+          completer.complete('timed out');
+        })
+        .receive('error', (_) {
+          onClose();
+          if (!completer.isCompleted) {
+            completer.complete('error');
+          }
+        });
 
     leavePush.send();
 
