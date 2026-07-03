@@ -271,6 +271,20 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         case PostgresChangeFilterType.inFilter:
           query = query.inFilter(_streamFilter!.column, _streamFilter!.value);
           break;
+        case PostgresChangeFilterType.like:
+        case PostgresChangeFilterType.ilike:
+        case PostgresChangeFilterType.isFilter:
+        case PostgresChangeFilterType.match:
+        case PostgresChangeFilterType.imatch:
+        case PostgresChangeFilterType.isDistinct:
+          // These operators are only reachable through the realtime
+          // `onPostgresChanges` API, not through `.stream()`'s filter builder,
+          // so they can never be set on `_streamFilter`. Guard the exhaustive
+          // switch defensively in case that ever changes.
+          throw UnsupportedError(
+            'The "${_streamFilter!.type.name}" filter is not supported by '
+            '`.stream()`. Use one of eq, neq, lt, lte, gt, gte or inFilter.',
+          );
       }
     }
     PostgrestTransformBuilder<PostgrestList>? transformQuery;

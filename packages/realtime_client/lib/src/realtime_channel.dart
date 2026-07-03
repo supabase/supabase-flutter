@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:collection/collection.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:realtime_client/realtime_client.dart';
@@ -273,6 +274,10 @@ class RealtimeChannel {
       final filter = clientPostgresBinding.filter['filter'];
       final serverPostgresFilter = serverPostgresFilters[i];
 
+      // NOTE: `select` is intentionally not part of this equality check (mirroring
+      // supabase-js), so a server that echoes `select` back in a slightly
+      // different shape does not force a spurious unsubscribe. The client
+      // binding keeps its own `select` regardless.
       if (serverPostgresFilter != null &&
           serverPostgresFilter['event'] == event &&
           serverPostgresFilter['schema'] == schema &&
@@ -369,6 +374,13 @@ class RealtimeChannel {
   ///
   /// [filter] can be used to further control which rows to listen to within the given [schema] and [table].
   ///
+  /// [filters] combines multiple [PostgresChangeFilter]s with an `AND`. Provide
+  /// either [filter] or [filters], not both.
+  ///
+  /// [select] restricts the change payload to a subset of columns instead of the
+  /// full row (reducing payload size). The listed columns must be selectable by
+  /// the subscribing role.
+  ///
   /// ```dart
   /// supabase.channel('my_channel').onPostgresChanges(
   ///     event: PostgresChangeEvent.all,
@@ -388,15 +400,29 @@ class RealtimeChannel {
     String? schema,
     String? table,
     PostgresChangeFilter? filter,
+    List<PostgresChangeFilter>? filters,
+    List<String>? select,
     required void Function(PostgresChangePayload payload) callback,
   }) {
+    assert(
+      filter == null || filters == null,
+      'Provide either `filter` or `filters`, not both.',
+    );
+
+    final allFilters = [
+      if (filter != null) filter,
+      ...?filters,
+    ];
+    final filterString = allFilters.isEmpty ? null : allFilters.join(',');
+
     return onEvents(
       'postgres_changes',
       ChannelFilter(
         event: event.toRealtimeEvent(),
         schema: schema,
         table: table,
-        filter: filter?.toString(),
+        filter: filterString,
+        select: select,
       ),
       (payload, [ref]) => callback(PostgresChangePayload.fromPayload(payload)),
     );
@@ -517,7 +543,38 @@ class RealtimeChannel {
     return result;
   }
 
-  /// Sets up a listener for realtime system events for debugging purposes.
+  /// Sets up a listener for realtime `system` events.
+  ///
+  /// The [callback] receives the raw payload (typically a `Map`). To work with
+  /// it as a typed value, parse it with [RealtimeSystemPayload.fromJson].
+  ///
+  /// Opt in to the replication-ready notification with
+  /// [RealtimeChannelConfig.replicationReady] when creating the channel, then
+  /// watch for `status == 'ok'` to know the Postgres replication connection is
+  /// ready.
+  ///
+  /// ```dart
+  /// final channel = supabase.channel(
+  ///   'room1',
+  ///   opts: const RealtimeChannelConfig(replicationReady: true),
+  /// );
+  /// channel
+  ///     .onPostgresChanges(
+  ///       event: PostgresChangeEvent.all,
+  ///       schema: 'public',
+  ///       table: 'messages',
+  ///       callback: (payload) => print('Change received! $payload'),
+  ///     )
+  ///     .onSystemEvents((payload) {
+  ///       final system = RealtimeSystemPayload.fromJson(
+  ///         Map<String, dynamic>.from(payload as Map),
+  ///       );
+  ///       if (system.extension == 'system' && system.status == 'ok') {
+  ///         print('Replication connection is ready: ${system.message}');
+  ///       }
+  ///     })
+  ///     .subscribe();
+  /// ```
   RealtimeChannel onSystemEvents(
     void Function(dynamic payload) callback,
   ) {
@@ -548,7 +605,7 @@ class RealtimeChannel {
   }
 
   @internal
-  RealtimeChannel off(String type, Map<String, String> filter) {
+  RealtimeChannel off(String type, Map<String, dynamic> filter) {
     final typeLower = type.toLowerCase();
 
     _bindings[typeLower] = _bindings[typeLower]!.where((bind) {
@@ -983,13 +1040,14 @@ class RealtimeChannel {
   @internal
   bool get isLeaving => _state == ChannelStates.leaving;
 
-  static bool _isEqual(Map<String, String> obj1, Map<String, String> obj2) {
+  static bool _isEqual(Map<String, dynamic> obj1, Map<String, dynamic> obj2) {
     if (obj1.keys.length != obj2.keys.length) {
       return false;
     }
 
+    const equality = DeepCollectionEquality();
     for (final k in obj1.keys) {
-      if (obj1[k] != obj2[k]) {
+      if (!equality.equals(obj1[k], obj2[k])) {
         return false;
       }
     }
