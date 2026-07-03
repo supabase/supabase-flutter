@@ -207,6 +207,32 @@ void main() {
       );
     });
 
+    test('createSignedUploadUrl omits x-upsert by default', () async {
+      customHttpClient.response = {
+        'url': '/object/upload/sign/public/a.txt?token=xyz',
+      };
+
+      await client.from('public').createSignedUploadUrl('a.txt');
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(request.headers.containsKey('x-upsert'), isFalse);
+    });
+
+    test('createSignedUploadUrl sends x-upsert when upserting', () async {
+      customHttpClient.response = {
+        'url': '/object/upload/sign/public/a.txt?token=xyz',
+      };
+
+      final response = await client
+          .from('public')
+          .createSignedUploadUrl('a.txt', upsert: true);
+
+      expect(response.token, 'xyz');
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(request.headers['x-upsert'], 'true');
+    });
+
     test('should list files', () async {
       customHttpClient.response = [testFileObjectJson, testFileObjectJson];
 

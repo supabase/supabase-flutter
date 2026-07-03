@@ -52,6 +52,14 @@ class RealtimeCloseEvent {
   }
 }
 
+/// The lifecycle status of a heartbeat reported to [RealtimeClient.onHeartbeat].
+enum RealtimeHeartbeatStatus {
+  sent,
+  ok,
+  error,
+  timeout,
+}
+
 /// Manages a persistent WebSocket connection to the Supabase Realtime server.
 ///
 /// [RealtimeClient] is the central hub for all real-time communication. It owns
@@ -123,8 +131,11 @@ class RealtimeClient {
     'open': [],
     'close': [],
     'error': [],
-    'message': []
+    'message': [],
   };
+
+  final _heartbeatController =
+      StreamController<RealtimeHeartbeatStatus>.broadcast();
 
   @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
@@ -376,6 +387,10 @@ class RealtimeClient {
     stateChangeCallbacks['message']!.add(callback);
   }
 
+  /// Emits a status whenever a heartbeat is sent, acknowledged, or times out.
+  Stream<RealtimeHeartbeatStatus> get onHeartbeat =>
+      _heartbeatController.stream;
+
   /// Returns the current state of the socket.
   String get connectionState {
     switch (connState) {
@@ -446,6 +461,12 @@ class RealtimeClient {
     final messageRef = message['ref'] as String?;
     if (messageRef != null && messageRef == pendingHeartbeatRef) {
       pendingHeartbeatRef = null;
+      final heartbeatStatus = payload is Map ? payload['status'] : null;
+      _heartbeatController.add(
+        heartbeatStatus == 'ok'
+            ? RealtimeHeartbeatStatus.ok
+            : RealtimeHeartbeatStatus.error,
+      );
     }
 
     final status = payload is Map ? (payload['status'] ?? '') : '';
@@ -615,6 +636,7 @@ class RealtimeClient {
         'transport',
         'heartbeat timeout. Attempting to re-establish conn',
       );
+      _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       unawaited(conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout'));
       return;
     }
@@ -625,6 +647,7 @@ class RealtimeClient {
       payload: {},
       ref: pendingHeartbeatRef!,
     ));
+    _heartbeatController.add(RealtimeHeartbeatStatus.sent);
     await setAuth(accessToken);
   }
 }

@@ -168,6 +168,74 @@ void main() {
     });
   });
 
+  group('join with postgres_changes filter matching', () {
+    setUp(() {
+      socket = RealtimeClient('wss://example.com/socket');
+      channel = socket.channel('topic');
+    });
+
+    test(
+        'subscribes when the server echoes back an `in` filter with escaped '
+        'quotes and backslashes', () {
+      RealtimeSubscribeStatus? status;
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.inFilter,
+          column: 'name',
+          value: [r'a"b\c'],
+        ),
+        callback: (_) {},
+      );
+
+      channel.subscribe((newStatus, _) => status = newStatus);
+
+      final sentFilter = (channel.joinPush.payload['config']['postgres_changes']
+          as List)[0] as Map;
+      expect(sentFilter['filter'], r'name=in.("a\"b\\c")');
+
+      channel.joinPush.trigger('ok', {
+        'postgres_changes': [
+          {'id': 1, ...sentFilter},
+        ],
+      });
+
+      expect(status, RealtimeSubscribeStatus.subscribed);
+    });
+
+    test(
+        'reports a channelError when the server echoes back a different '
+        'filter', () {
+      RealtimeSubscribeStatus? status;
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.inFilter,
+          column: 'name',
+          value: [r'a"b\c'],
+        ),
+        callback: (_) {},
+      );
+
+      channel.subscribe((newStatus, _) => status = newStatus);
+
+      final sentFilter = (channel.joinPush.payload['config']['postgres_changes']
+          as List)[0] as Map;
+
+      channel.joinPush.trigger('ok', {
+        'postgres_changes': [
+          {...sentFilter, 'id': 1, 'filter': 'name=in.("a"b\\c")'},
+        ],
+      });
+
+      expect(status, RealtimeSubscribeStatus.channelError);
+    });
+  });
+
   group('onError', () {
     setUp(() {
       socket = RealtimeClient('/socket');
