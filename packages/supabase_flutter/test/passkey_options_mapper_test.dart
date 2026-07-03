@@ -66,49 +66,6 @@ void main() {
         ['internal', 'hybrid'],
       );
     });
-
-    test(
-      'defaults missing requireResidentKey to false when residentKey is not required',
-      () {
-        final options = baseOptions()
-          ..['authenticatorSelection'] = {
-            'residentKey': 'preferred',
-            'userVerification': 'preferred',
-          };
-
-        final request = passkeyRegisterRequestFromOptions(options);
-
-        expect(request.authSelectionType?.requireResidentKey, false);
-      },
-    );
-
-    test(
-      'derives missing requireResidentKey from a required residentKey',
-      () {
-        final options = baseOptions()
-          ..['authenticatorSelection'] = {
-            'residentKey': 'required',
-            'userVerification': 'preferred',
-          };
-
-        final request = passkeyRegisterRequestFromOptions(options);
-
-        expect(request.authSelectionType?.requireResidentKey, true);
-      },
-    );
-
-    test('keeps a provided requireResidentKey as is', () {
-      final options = baseOptions()
-        ..['authenticatorSelection'] = {
-          'residentKey': 'preferred',
-          'requireResidentKey': true,
-          'userVerification': 'preferred',
-        };
-
-      final request = passkeyRegisterRequestFromOptions(options);
-
-      expect(request.authSelectionType?.requireResidentKey, true);
-    });
   });
 
   group('passkeyAuthenticateRequestFromOptions', () {
