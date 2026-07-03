@@ -366,10 +366,16 @@ class StorageFileApi {
   /// example, `60` for a URL which are valid for one minute.
   ///
   /// [transform] adds image transformations parameters to the generated url.
+  ///
+  /// [download] triggers the file to be downloaded rather than opened in the
+  /// browser by setting the response's `Content-Disposition` header. Use
+  /// [DownloadBehavior.withOriginalName] to keep the original file name or
+  /// [DownloadBehavior.named] to override it.
   Future<String> createSignedUrl(
     String path,
     int expiresIn, {
     TransformOptions? transform,
+    DownloadBehavior? download,
   }) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
@@ -386,8 +392,7 @@ class StorageFileApi {
     if (signedUrlPath == null) {
       throw StorageException('No signed URL returned by API');
     }
-    final signedUrl = '$url$signedUrlPath';
-    return signedUrl;
+    return _withDownload('$url$signedUrlPath', download);
   }
 
   // TODO(v3): Remove this deprecated overload and rename createSignedUrlsResult
@@ -406,9 +411,11 @@ class StorageFileApi {
   @Deprecated('Use createSignedUrlsResult to handle missing paths correctly.')
   Future<List<SignedUrl>> createSignedUrls(
     List<String> paths,
-    int expiresIn,
-  ) async {
-    final results = await createSignedUrlsResult(paths, expiresIn);
+    int expiresIn, {
+    DownloadBehavior? download,
+  }) async {
+    final results =
+        await createSignedUrlsResult(paths, expiresIn, download: download);
     return results
         .whereType<SignedUrlSuccess>()
         .map((r) => SignedUrl(path: r.path, signedUrl: r.signedUrl))
@@ -427,10 +434,16 @@ class StorageFileApi {
   ///
   /// [expiresIn] is the number of seconds until the signed URLs expire. For
   /// example, `60` for URLs which are valid for one minute.
+  ///
+  /// [download] triggers the files to be downloaded rather than opened in the
+  /// browser by setting the response's `Content-Disposition` header. Use
+  /// [DownloadBehavior.withOriginalName] to keep the original file name or
+  /// [DownloadBehavior.named] to override it.
   Future<List<SignedUrlResult>> createSignedUrlsResult(
     List<String> paths,
-    int expiresIn,
-  ) async {
+    int expiresIn, {
+    DownloadBehavior? download,
+  }) async {
     final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/sign/$bucketId',
@@ -444,7 +457,10 @@ class StorageFileApi {
       final signedUrlPath = e['signedURL'] as String?;
       final path = e['path'] as String? ?? '';
       if (signedUrlPath != null) {
-        return SignedUrlSuccess(path: path, signedUrl: '$url$signedUrlPath');
+        return SignedUrlSuccess(
+          path: path,
+          signedUrl: _withDownload('$url$signedUrlPath', download),
+        );
       }
       return SignedUrlFailure(
         path: path,
@@ -517,9 +533,15 @@ class StorageFileApi {
   /// For example `getPublicUrl('folder/image.png')`.
   ///
   /// [transform] adds image transformations parameters to the generated url.
+  ///
+  /// [download] triggers the file to be downloaded rather than opened in the
+  /// browser by setting the response's `Content-Disposition` header. Use
+  /// [DownloadBehavior.withOriginalName] to keep the original file name or
+  /// [DownloadBehavior.named] to override it.
   String getPublicUrl(
     String path, {
     TransformOptions? transform,
+    DownloadBehavior? download,
   }) {
     final finalPath = _getFinalPath(path);
 
@@ -531,7 +553,18 @@ class StorageFileApi {
 
     publicUrl = publicUrl.replace(queryParameters: transformationQuery);
 
-    return publicUrl.toString();
+    return _withDownload(publicUrl.toString(), download);
+  }
+
+  /// Appends a `download` query parameter to [urlString] when [download] is
+  /// set, so the response is served with a `Content-Disposition` header.
+  String _withDownload(String urlString, DownloadBehavior? download) {
+    if (download == null) {
+      return urlString;
+    }
+    final separator = urlString.contains('?') ? '&' : '?';
+    return '$urlString${separator}download='
+        '${Uri.encodeQueryComponent(download.queryValue)}';
   }
 
   /// Deletes files within the same bucket

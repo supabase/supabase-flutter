@@ -361,6 +361,44 @@ void main() {
     });
   });
 
+  group('download option', () {
+    const downloadBucket = 'my-download-bucket';
+
+    setUp(() async {
+      await findOrCreateBucket(downloadBucket, true);
+      await storage.from(downloadBucket).upload(
+            uploadPath,
+            file,
+            fileOptions: const FileOptions(upsert: true),
+          );
+    });
+
+    test('public url download serves a Content-Disposition attachment',
+        () async {
+      final url = storage.from(downloadBucket).getPublicUrl(uploadPath,
+          download: DownloadBehavior.named('renamed.jpg'));
+
+      final response = await http.get(Uri.parse(url));
+      expect(response.statusCode, 200);
+      final disposition = response.headers['content-disposition'];
+      expect(disposition, contains('attachment'));
+      expect(disposition, contains('renamed.jpg'));
+    });
+
+    test('signed url download serves a Content-Disposition attachment',
+        () async {
+      final url = await storage.from(downloadBucket).createSignedUrl(
+            uploadPath,
+            2000,
+            download: DownloadBehavior.withOriginalName,
+          );
+
+      final response = await http.get(Uri.parse(url));
+      expect(response.statusCode, 200);
+      expect(response.headers['content-disposition'], contains('attachment'));
+    });
+  });
+
   group('bucket limits', () {
     test('can upload a file within the file size limit', () async {
       final bucketName = 'with-limit-${DateTime.now()}';

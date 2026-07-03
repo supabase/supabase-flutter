@@ -1,5 +1,4 @@
 @TestOn('!browser')
-
 /// Tests for deep link handling on non-browser platforms.
 library;
 
@@ -47,14 +46,15 @@ void main() {
     });
 
     test(
-        'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
-        () async {
-      // Wait for the initial app link to be handled, as this is an async
-      // process when mocking the event channel.
-      await Future.delayed(const Duration(milliseconds: 500));
-      expect(pkceHttpClient.requestCount, 1);
-      expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
-    });
+      'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
+      () async {
+        // Wait for the initial app link to be handled, as this is an async
+        // process when mocking the event channel.
+        await Future.delayed(const Duration(milliseconds: 500));
+        expect(pkceHttpClient.requestCount, 1);
+        expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
+      },
+    );
   });
 
   group('Deep Link with implicit token while PKCE flow is configured', () {
@@ -67,7 +67,8 @@ void main() {
       mockAppLink(
         mockMethodChannel: false,
         mockEventChannel: true,
-        initialLink: 'com.supabase://callback/#access_token=my-access-token'
+        initialLink:
+            'com.supabase://callback/#access_token=my-access-token'
             '&expires_in=3600&refresh_token=my-refresh-token'
             '&token_type=bearer&type=email_change',
       );
@@ -87,8 +88,7 @@ void main() {
           .timeout(const Duration(seconds: 5));
     });
 
-    test(
-        'Implicit token in the fragment triggers `getSessionFromUrl` and '
+    test('Implicit token in the fragment triggers `getSessionFromUrl` and '
         'updates the current user', () async {
       final state = await signedInState;
       expect(state.session?.user.email, 'new@email.com');
@@ -110,7 +110,8 @@ void main() {
       mockAppLink(
         mockMethodChannel: false,
         mockEventChannel: true,
-        initialLink: 'com.supabase://callback/?error=access_denied'
+        initialLink:
+            'com.supabase://callback/?error=access_denied'
             '&error_code=403',
       );
       await Supabase.initialize(
@@ -134,11 +135,11 @@ void main() {
       );
     });
 
-    test(
-        'Error query parameter triggers `getSessionFromUrl` and surfaces an '
+    test('Error query parameter triggers `getSessionFromUrl` and surfaces an '
         'AuthException', () async {
-      final exception =
-          await errorCompleter.future.timeout(const Duration(seconds: 5));
+      final exception = await errorCompleter.future.timeout(
+        const Duration(seconds: 5),
+      );
       expect(exception.code, 'access_denied');
       expect(exception.statusCode, '403');
     });
