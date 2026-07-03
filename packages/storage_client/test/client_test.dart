@@ -361,9 +361,8 @@ void main() {
 
     test('public url download serves a Content-Disposition attachment',
         () async {
-      final url = storage
-          .from(downloadBucket)
-          .getPublicUrl(uploadPath, download: 'renamed.jpg');
+      final url = storage.from(downloadBucket).getPublicUrl(uploadPath,
+          download: DownloadBehavior.named('renamed.jpg'));
 
       final response = await http.get(Uri.parse(url));
       expect(response.statusCode, 200);
@@ -374,9 +373,11 @@ void main() {
 
     test('signed url download serves a Content-Disposition attachment',
         () async {
-      final url = await storage
-          .from(downloadBucket)
-          .createSignedUrl(uploadPath, 2000, download: true);
+      final url = await storage.from(downloadBucket).createSignedUrl(
+            uploadPath,
+            2000,
+            download: DownloadBehavior.withOriginalName,
+          );
 
       final response = await http.get(Uri.parse(url));
       expect(response.statusCode, 200);

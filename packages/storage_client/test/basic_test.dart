@@ -250,23 +250,24 @@ void main() {
     });
 
     test('getPublicUrl appends download with the original file name', () {
-      final response =
-          client.from('files').getPublicUrl('b.txt', download: true);
+      final response = client.from('files').getPublicUrl(
+            'b.txt',
+            download: DownloadBehavior.withOriginalName,
+          );
       expect(response, '$objectUrl/public/files/b.txt?download=');
     });
 
     test('getPublicUrl appends download with a custom file name', () {
-      final response =
-          client.from('files').getPublicUrl('b.txt', download: 'my file.txt');
+      final response = client.from('files').getPublicUrl('b.txt',
+          download: DownloadBehavior.named('my file.txt'));
       expect(
         response,
         '$objectUrl/public/files/b.txt?download=my+file.txt',
       );
     });
 
-    test('getPublicUrl leaves the URL unchanged when download is false', () {
-      final response =
-          client.from('files').getPublicUrl('b.txt', download: false);
+    test('getPublicUrl leaves the URL unchanged when download is null', () {
+      final response = client.from('files').getPublicUrl('b.txt');
       expect(response, '$objectUrl/public/files/b.txt');
     });
 
@@ -275,9 +276,8 @@ void main() {
         'signedURL': '/object/sign/public/b.txt?token=abc',
       };
 
-      final response = await client
-          .from('public')
-          .createSignedUrl('b.txt', 60, download: 'report.pdf');
+      final response = await client.from('public').createSignedUrl('b.txt', 60,
+          download: DownloadBehavior.named('report.pdf'));
       expect(response, endsWith('?token=abc&download=report.pdf'));
     });
 
@@ -289,9 +289,11 @@ void main() {
         },
       ];
 
-      final results = await client
-          .from('public')
-          .createSignedUrlsResult(['exists.txt'], 60, download: true);
+      final results = await client.from('public').createSignedUrlsResult(
+        ['exists.txt'],
+        60,
+        download: DownloadBehavior.withOriginalName,
+      );
 
       final success = results.single as SignedUrlSuccess;
       expect(success.signedUrl, endsWith('?token=abc&download='));
