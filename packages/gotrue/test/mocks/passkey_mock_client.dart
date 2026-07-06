@@ -106,9 +106,9 @@ class PasskeyMockClient extends BaseClient {
   }) {
     return {
       'id': id,
-      if (friendlyName != null) 'friendly_name': friendlyName,
+      'friendly_name': ?friendlyName,
       'created_at': '2025-01-01T00:00:00Z',
-      if (lastUsedAt != null) 'last_used_at': lastUsedAt,
+      'last_used_at': ?lastUsedAt,
     };
   }
 

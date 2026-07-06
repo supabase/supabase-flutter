@@ -605,11 +605,11 @@ class GoTrueClient {
       // For recovery type with tokenHash, exclude email/phone
       if (!isRecoveryWithTokenHash && email != null) 'email': email,
       if (!isRecoveryWithTokenHash && phone != null) 'phone': phone,
-      if (token != null) 'token': token,
+      'token': ?token,
       'type': type.snakeCase,
       'redirect_to': redirectTo,
       'gotrue_meta_security': {'captcha_token': captchaToken},
-      if (tokenHash != null) 'token_hash': tokenHash,
+      'token_hash': ?tokenHash,
     };
     final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
     final response = await _fetch.request(
@@ -665,9 +665,9 @@ class GoTrueClient {
       RequestMethodType.post,
       options: GotrueRequestOptions(
         body: {
-          if (providerId != null) 'provider_id': providerId,
-          if (domain != null) 'domain': domain,
-          if (redirectTo != null) 'redirect_to': redirectTo,
+          'provider_id': ?providerId,
+          'domain': ?domain,
+          'redirect_to': ?redirectTo,
           if (captchaToken != null)
             'gotrue_meta_security': {'captcha_token': captchaToken},
           'skip_http_redirect': true,
@@ -753,8 +753,8 @@ class GoTrueClient {
         : null;
 
     final body = {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
+      'email': ?email,
+      'phone': ?phone,
       'type': type.snakeCase,
       'gotrue_meta_security': {'captcha_token': captchaToken},
       if (email != null) ...{

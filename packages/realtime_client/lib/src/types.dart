@@ -99,11 +99,11 @@ class ChannelFilter {
 
   Map<String, dynamic> toMap() {
     return {
-      if (event != null) 'event': event!,
-      if (schema != null) 'schema': schema!,
-      if (table != null) 'table': table!,
-      if (filter != null) 'filter': filter!,
-      if (select != null) 'select': select!,
+      'event': ?event,
+      'schema': ?schema,
+      'table': ?table,
+      'filter': ?filter,
+      'select': ?select,
     };
   }
 }

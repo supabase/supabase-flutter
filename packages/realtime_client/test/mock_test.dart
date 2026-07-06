@@ -60,7 +60,7 @@ void main() {
                     'schema': 'public',
                     'table': 'todos',
                     'type': 'INSERT',
-                    if (postgresFilter != null) 'filter': postgresFilter,
+                    'filter': ?postgresFilter,
                     'columns': [
                       {
                         'name': 'id',
@@ -114,7 +114,7 @@ void main() {
                   'schema': 'public',
                   'table': 'todos',
                   'type': 'UPDATE',
-                  if (postgresFilter != null) 'filter': postgresFilter,
+                  'filter': ?postgresFilter,
                 },
               },
             ]);
@@ -148,7 +148,7 @@ void main() {
                   'schema': 'public',
                   'table': 'todos',
                   'type': 'DELETE',
-                  if (postgresFilter != null) 'filter': postgresFilter,
+                  'filter': ?postgresFilter,
                 },
                 'ids': [48673474],
               },

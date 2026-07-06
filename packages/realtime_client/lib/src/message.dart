@@ -49,8 +49,8 @@ class Message {
           ? event.eventName()
           : 'heartbeat',
       'payload': processedPayload,
-      if (ref != null) 'ref': ref,
-      if (joinRef != null) 'join_ref': joinRef,
+      'ref': ?ref,
+      'join_ref': ?joinRef,
     };
   }
 }

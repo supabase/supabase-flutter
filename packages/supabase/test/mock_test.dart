@@ -154,7 +154,7 @@ void main() {
                       'event': '*',
                       'schema': 'public',
                       'table': 'todos',
-                      if (realtimeFilter != null) 'filter': realtimeFilter,
+                      'filter': ?realtimeFilter,
                     },
                   ],
                 },
@@ -178,7 +178,7 @@ void main() {
                   'schema': 'public',
                   'table': 'todos',
                   'type': 'INSERT',
-                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                  'filter': ?realtimeFilter,
                   'columns': [
                     {
                       'name': 'id',
@@ -231,7 +231,7 @@ void main() {
                   'schema': 'public',
                   'table': 'todos',
                   'type': 'UPDATE',
-                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                  'filter': ?realtimeFilter,
                 },
               },
             ]);
@@ -265,7 +265,7 @@ void main() {
                   'schema': 'public',
                   'table': 'todos',
                   'type': 'DELETE',
-                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                  'filter': ?realtimeFilter,
                 },
                 'ids': [77086988],
               },
@@ -304,7 +304,7 @@ void main() {
                   'schema': 'public',
                   'table': 'todos',
                   'type': 'UPDATE',
-                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                  'filter': ?realtimeFilter,
                 },
               },
             ]);
@@ -339,7 +339,7 @@ void main() {
                   'schema': 'public',
                   'table': 'todos',
                   'type': 'DELETE',
-                  if (realtimeFilter != null) 'filter': realtimeFilter,
+                  'filter': ?realtimeFilter,
                 },
                 'ids': [77086988],
               },
