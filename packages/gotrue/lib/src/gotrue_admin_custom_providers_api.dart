@@ -16,9 +16,9 @@ class GoTrueAdminCustomProvidersApi {
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,
-  })  : _url = url,
-        _headers = headers,
-        _fetch = fetch;
+  }) : _url = url,
+       _headers = headers,
+       _fetch = fetch;
 
   /// Lists all custom providers, optionally filtered by [type].
   ///
@@ -48,10 +48,10 @@ class GoTrueAdminCustomProvidersApi {
   ///
   /// For OIDC providers, the server fetches and validates the OpenID Connect
   /// discovery document from the issuer's well-known endpoint (or the provided
-  /// `discoveryUrl`) at creation time. This may throw a validation error
-  /// (`error_code: "validation_failed"`) if the discovery document is
-  /// unreachable, not valid JSON, missing required fields, or if the issuer in
-  /// the document does not match the expected issuer.
+  /// `discoveryUrl`) at creation time. This may throw an [AuthException] with a
+  /// `code` of `validation_failed` if the discovery document is unreachable,
+  /// not valid JSON, missing required fields, or if the issuer in the document
+  /// does not match the expected issuer.
   ///
   /// This function should only be called on a server. Never expose your
   /// `service_role` key in the browser.
@@ -90,7 +90,7 @@ class GoTrueAdminCustomProvidersApi {
   ///
   /// When `issuer` or `discoveryUrl` is changed on an OIDC provider, the server
   /// re-fetches and validates the discovery document before persisting. This
-  /// may throw a validation error (`error_code: "validation_failed"`) if the
+  /// may throw an [AuthException] with a `code` of `validation_failed` if the
   /// discovery document is unreachable, invalid, or the issuer does not match.
   ///
   /// This function should only be called on a server. Never expose your

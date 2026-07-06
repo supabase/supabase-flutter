@@ -69,8 +69,8 @@ class OIDCDiscoveryDocument {
       userinfoEndpoint: json['userinfo_endpoint'] as String?,
       revocationEndpoint: json['revocation_endpoint'] as String?,
       supportedScopes: (json['supported_scopes'] as List?)?.cast(),
-      supportedResponseTypes:
-          (json['supported_response_types'] as List?)?.cast(),
+      supportedResponseTypes: (json['supported_response_types'] as List?)
+          ?.cast(),
       supportedSubjectTypes: (json['supported_subject_types'] as List?)?.cast(),
       supportedIdTokenSigningAlgs:
           (json['supported_id_token_signing_algs'] as List?)?.cast(),
@@ -147,10 +147,10 @@ class CustomOAuthProvider {
   final OIDCDiscoveryDocument? discoveryDocument;
 
   /// Timestamp when the provider was created
-  final String createdAt;
+  final DateTime createdAt;
 
   /// Timestamp when the provider was last updated
-  final String updatedAt;
+  final DateTime updatedAt;
 
   const CustomOAuthProvider({
     required this.id,
@@ -182,8 +182,9 @@ class CustomOAuthProvider {
     final discoveryDocument = json['discovery_document'];
     return CustomOAuthProvider(
       id: json['id'] as String,
-      providerType:
-          CustomProviderType.fromString(json['provider_type'] as String),
+      providerType: CustomProviderType.fromString(
+        json['provider_type'] as String,
+      ),
       identifier: json['identifier'] as String,
       name: json['name'] as String,
       clientId: json['client_id'] as String,
@@ -192,8 +193,8 @@ class CustomOAuthProvider {
       customClaimsAllowlist: (json['custom_claims_allowlist'] as List?)?.cast(),
       pkceEnabled: json['pkce_enabled'] as bool?,
       attributeMapping: json['attribute_mapping'] as Map<String, dynamic>?,
-      authorizationParams:
-          (json['authorization_params'] as Map?)?.cast<String, String>(),
+      authorizationParams: (json['authorization_params'] as Map?)
+          ?.cast<String, String>(),
       enabled: json['enabled'] as bool?,
       emailOptional: json['email_optional'] as bool?,
       issuer: json['issuer'] as String?,
@@ -208,8 +209,8 @@ class CustomOAuthProvider {
           : OIDCDiscoveryDocument.fromJson(
               discoveryDocument as Map<String, dynamic>,
             ),
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
 }
@@ -309,24 +310,21 @@ class CreateCustomProviderParams {
       'name': name,
       'client_id': clientId,
       'client_secret': clientSecret,
-      if (acceptableClientIds != null)
-        'acceptable_client_ids': acceptableClientIds,
-      if (scopes != null) 'scopes': scopes,
-      if (customClaimsAllowlist != null)
-        'custom_claims_allowlist': customClaimsAllowlist,
-      if (pkceEnabled != null) 'pkce_enabled': pkceEnabled,
-      if (attributeMapping != null) 'attribute_mapping': attributeMapping,
-      if (authorizationParams != null)
-        'authorization_params': authorizationParams,
-      if (enabled != null) 'enabled': enabled,
-      if (emailOptional != null) 'email_optional': emailOptional,
-      if (issuer != null) 'issuer': issuer,
-      if (discoveryUrl != null) 'discovery_url': discoveryUrl,
-      if (skipNonceCheck != null) 'skip_nonce_check': skipNonceCheck,
-      if (authorizationUrl != null) 'authorization_url': authorizationUrl,
-      if (tokenUrl != null) 'token_url': tokenUrl,
-      if (userinfoUrl != null) 'userinfo_url': userinfoUrl,
-      if (jwksUri != null) 'jwks_uri': jwksUri,
+      'acceptable_client_ids': ?acceptableClientIds,
+      'scopes': ?scopes,
+      'custom_claims_allowlist': ?customClaimsAllowlist,
+      'pkce_enabled': ?pkceEnabled,
+      'attribute_mapping': ?attributeMapping,
+      'authorization_params': ?authorizationParams,
+      'enabled': ?enabled,
+      'email_optional': ?emailOptional,
+      'issuer': ?issuer,
+      'discovery_url': ?discoveryUrl,
+      'skip_nonce_check': ?skipNonceCheck,
+      'authorization_url': ?authorizationUrl,
+      'token_url': ?tokenUrl,
+      'userinfo_url': ?userinfoUrl,
+      'jwks_uri': ?jwksUri,
     };
   }
 }
@@ -416,27 +414,24 @@ class UpdateCustomProviderParams {
 
   Map<String, dynamic> toJson() {
     return {
-      if (name != null) 'name': name,
-      if (clientId != null) 'client_id': clientId,
-      if (clientSecret != null) 'client_secret': clientSecret,
-      if (acceptableClientIds != null)
-        'acceptable_client_ids': acceptableClientIds,
-      if (scopes != null) 'scopes': scopes,
-      if (customClaimsAllowlist != null)
-        'custom_claims_allowlist': customClaimsAllowlist,
-      if (pkceEnabled != null) 'pkce_enabled': pkceEnabled,
-      if (attributeMapping != null) 'attribute_mapping': attributeMapping,
-      if (authorizationParams != null)
-        'authorization_params': authorizationParams,
-      if (enabled != null) 'enabled': enabled,
-      if (emailOptional != null) 'email_optional': emailOptional,
-      if (issuer != null) 'issuer': issuer,
-      if (discoveryUrl != null) 'discovery_url': discoveryUrl,
-      if (skipNonceCheck != null) 'skip_nonce_check': skipNonceCheck,
-      if (authorizationUrl != null) 'authorization_url': authorizationUrl,
-      if (tokenUrl != null) 'token_url': tokenUrl,
-      if (userinfoUrl != null) 'userinfo_url': userinfoUrl,
-      if (jwksUri != null) 'jwks_uri': jwksUri,
+      'name': ?name,
+      'client_id': ?clientId,
+      'client_secret': ?clientSecret,
+      'acceptable_client_ids': ?acceptableClientIds,
+      'scopes': ?scopes,
+      'custom_claims_allowlist': ?customClaimsAllowlist,
+      'pkce_enabled': ?pkceEnabled,
+      'attribute_mapping': ?attributeMapping,
+      'authorization_params': ?authorizationParams,
+      'enabled': ?enabled,
+      'email_optional': ?emailOptional,
+      'issuer': ?issuer,
+      'discovery_url': ?discoveryUrl,
+      'skip_nonce_check': ?skipNonceCheck,
+      'authorization_url': ?authorizationUrl,
+      'token_url': ?tokenUrl,
+      'userinfo_url': ?userinfoUrl,
+      'jwks_uri': ?jwksUri,
     };
   }
 }

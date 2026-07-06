@@ -41,13 +41,13 @@ void main() {
 
   setUp(() async {
     final res = await http.post(
-        Uri.parse(
-            'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
-        headers: {
-          'x-forwarded-for': '127.0.0.1',
-          'apikey': serviceRoleToken,
-          'Authorization': 'Bearer $serviceRoleToken',
-        });
+      Uri.parse('http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
+      headers: {
+        'x-forwarded-for': '127.0.0.1',
+        'apikey': serviceRoleToken,
+        'Authorization': 'Bearer $serviceRoleToken',
+      },
+    );
     if (res.body.isNotEmpty) throw res.body;
 
     client = GoTrueClient(
@@ -55,7 +55,7 @@ void main() {
       headers: {
         'Authorization': 'Bearer $serviceRoleToken',
         'apikey': serviceRoleToken,
-        'x-forwarded-for': '127.0.0.1'
+        'x-forwarded-for': '127.0.0.1',
       },
     );
   });
@@ -144,8 +144,9 @@ void main() {
           oauth2Params(identifier),
         );
 
-        final provider =
-            await client.admin.customProviders.getProvider(identifier);
+        final provider = await client.admin.customProviders.getProvider(
+          identifier,
+        );
         expect(provider.identifier, identifier);
         expect(provider.name, 'Flutter Test Provider');
       } finally {
@@ -170,8 +171,9 @@ void main() {
         expect(updated.identifier, identifier);
         expect(updated.name, 'Updated Provider Name');
 
-        final fetched =
-            await client.admin.customProviders.getProvider(identifier);
+        final fetched = await client.admin.customProviders.getProvider(
+          identifier,
+        );
         expect(fetched.name, 'Updated Provider Name');
       } finally {
         await client.admin.customProviders.deleteProvider(identifier);

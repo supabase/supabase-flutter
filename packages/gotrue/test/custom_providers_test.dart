@@ -83,14 +83,14 @@ void main() {
 
   group('CustomOAuthProvider deserialization', () {
     Map<String, dynamic> baseJson() => {
-          'id': '00000000-0000-0000-0000-000000000000',
-          'provider_type': 'oidc',
-          'identifier': 'custom:mycompany',
-          'name': 'My Company',
-          'client_id': 'client-id',
-          'created_at': '2026-01-01T00:00:00Z',
-          'updated_at': '2026-01-02T00:00:00Z',
-        };
+      'id': '00000000-0000-0000-0000-000000000000',
+      'provider_type': 'oidc',
+      'identifier': 'custom:mycompany',
+      'name': 'My Company',
+      'client_id': 'client-id',
+      'created_at': '2026-01-01T00:00:00Z',
+      'updated_at': '2026-01-02T00:00:00Z',
+    };
 
     test('parses custom_claims_allowlist when present', () {
       final json = baseJson()
@@ -107,6 +107,13 @@ void main() {
       final provider = CustomOAuthProvider.fromJson(baseJson());
 
       expect(provider.customClaimsAllowlist, isNull);
+    });
+
+    test('parses timestamps into DateTime', () {
+      final provider = CustomOAuthProvider.fromJson(baseJson());
+
+      expect(provider.createdAt, DateTime.utc(2026, 1, 1));
+      expect(provider.updatedAt, DateTime.utc(2026, 1, 2));
     });
 
     test('parses the discovery document when present', () {
