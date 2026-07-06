@@ -35,8 +35,8 @@ class GoTrueAdminApi {
     this._url, {
     Map<String, String>? headers,
     Client? httpClient,
-  })  : _headers = headers ?? {},
-        _httpClient = httpClient {
+  }) : _headers = headers ?? {},
+       _httpClient = httpClient {
     mfa = GoTrueAdminMFAApi(
       url: _url,
       headers: _headers,
@@ -100,10 +100,17 @@ class GoTrueAdminApi {
   ///
   ///  [id] is the user id of the user you want to remove.
   ///
+  /// When [shouldSoftDelete] is `true` the user is soft deleted, keeping their
+  /// record and any associated data while marking the user as deleted. It
+  /// defaults to `false`, which permanently removes the user.
+  ///
   /// This function should only be called on a server. Never expose your `secret` key on the client.
-  Future<void> deleteUser(String id) async {
+  Future<void> deleteUser(String id, {bool shouldSoftDelete = false}) async {
     validateUuid(id);
-    final options = GotrueRequestOptions(headers: _headers);
+    final options = GotrueRequestOptions(
+      headers: _headers,
+      body: {'should_soft_delete': shouldSoftDelete},
+    );
     await _fetch.request(
       '$_url/admin/users/$id',
       RequestMethodType.delete,
@@ -120,8 +127,8 @@ class GoTrueAdminApi {
     final options = GotrueRequestOptions(
       headers: _headers,
       query: {
-        if (page != null) 'page': page.toString(),
-        if (perPage != null) 'per_page': perPage.toString(),
+        'page': ?page?.toString(),
+        'per_page': ?perPage?.toString(),
       },
     );
     final response = await _fetch.request(
@@ -140,7 +147,7 @@ class GoTrueAdminApi {
   }) async {
     final body = {
       'email': email,
-      if (data != null) 'data': data,
+      'data': ?data,
     };
     final fetchOptions = GotrueRequestOptions(
       headers: _headers,
@@ -188,10 +195,10 @@ class GoTrueAdminApi {
     final body = {
       'email': email,
       'type': type.snakeCase,
-      if (data != null) 'data': data,
-      if (redirectTo != null) 'redirect_to': redirectTo,
-      if (password != null) 'password': password,
-      if (newEmail != null) 'new_email': newEmail,
+      'data': ?data,
+      'redirect_to': ?redirectTo,
+      'password': ?password,
+      'new_email': ?newEmail,
     };
 
     final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);

@@ -36,69 +36,79 @@ class FinalizingRetryHttpClient extends BaseClient {
 
 void main() {
   group('multipart uploads', () {
-    test('retries a binary upload after a failure that finalized the request',
-        () async {
-      final retryClient = FinalizingRetryHttpClient(failuresBeforeSuccess: 1);
-      final client = SupabaseStorageClient(
-        storageUrl,
-        headers,
-        httpClient: retryClient,
-        retryAttempts: 3,
-      );
+    test(
+      'retries a binary upload after a failure that finalized the request',
+      () async {
+        final retryClient = FinalizingRetryHttpClient(failuresBeforeSuccess: 1);
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: retryClient,
+          retryAttempts: 3,
+        );
 
-      final result = await client
-          .from('bucket')
-          .uploadBinary('folder/file.png', Uint8List.fromList([1, 2, 3]));
+        final result = await client
+            .from('bucket')
+            .uploadBinary('folder/file.png', Uint8List.fromList([1, 2, 3]));
 
-      expect(result, 'public/a.txt');
-      expect(retryClient.attempts, 2);
-    });
+        expect(result, 'public/a.txt');
+        expect(retryClient.attempts, 2);
+      },
+    );
 
-    test('detects content type from the path of a binary signed url upload',
-        () async {
-      final mockClient = CustomHttpClient();
-      mockClient.response = <String, dynamic>{};
-      mockClient.statusCode = 200;
-      final client = SupabaseStorageClient(
-        storageUrl,
-        headers,
-        httpClient: mockClient,
-      );
+    test(
+      'detects content type from the path of a binary signed url upload',
+      () async {
+        final mockClient = CustomHttpClient();
+        mockClient.response = <String, dynamic>{};
+        mockClient.statusCode = 200;
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: mockClient,
+        );
 
-      await client.from('bucket').uploadBinaryToSignedUrl(
-            'folder/image.png',
-            'signed-token',
-            Uint8List.fromList([1, 2, 3]),
-          );
+        await client
+            .from('bucket')
+            .uploadBinaryToSignedUrl(
+              'folder/image.png',
+              'signed-token',
+              Uint8List.fromList([1, 2, 3]),
+            );
 
-      final request = mockClient.receivedRequests.single as MultipartRequest;
-      expect(request.files.single.contentType.mimeType, 'image/png');
-    });
+        final request = mockClient.receivedRequests.single as MultipartRequest;
+        expect(request.files.single.contentType.mimeType, 'image/png');
+      },
+    );
   });
 
   group('path normalization', () {
-    test('removes leading, trailing and duplicate slashes from the path',
-        () async {
-      final mockClient = CustomHttpClient();
-      mockClient.response = <String, dynamic>{};
-      mockClient.statusCode = 200;
-      final client = SupabaseStorageClient(
-        storageUrl,
-        headers,
-        httpClient: mockClient,
-      );
+    test(
+      'removes leading, trailing and duplicate slashes from the path',
+      () async {
+        final mockClient = CustomHttpClient();
+        mockClient.response = <String, dynamic>{};
+        mockClient.statusCode = 200;
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: mockClient,
+        );
 
-      final cleanPath = await client.from('bucket').uploadBinaryToSignedUrl(
-            '/folder//image.png/',
-            'signed-token',
-            Uint8List.fromList([1]),
-          );
+        final cleanPath = await client
+            .from('bucket')
+            .uploadBinaryToSignedUrl(
+              '/folder//image.png/',
+              'signed-token',
+              Uint8List.fromList([1]),
+            );
 
-      expect(cleanPath, 'folder/image.png');
+        expect(cleanPath, 'folder/image.png');
 
-      final requestPath = mockClient.receivedRequests.single.url.path;
-      expect(requestPath, endsWith('/bucket/folder/image.png'));
-      expect(requestPath.contains('//'), isFalse);
-    });
+        final requestPath = mockClient.receivedRequests.single.url.path;
+        expect(requestPath, endsWith('/bucket/folder/image.png'));
+        expect(requestPath.contains('//'), isFalse);
+      },
+    );
   });
 }

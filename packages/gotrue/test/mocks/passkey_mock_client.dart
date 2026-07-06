@@ -92,7 +92,8 @@ class PasskeyMockClient extends BaseClient {
 
     return StreamedResponse(
       Stream.value(
-          utf8.encode(jsonEncode({'error': 'Unhandled mock request'}))),
+        utf8.encode(jsonEncode({'error': 'Unhandled mock request'})),
+      ),
       501,
       request: request,
     );
@@ -105,9 +106,9 @@ class PasskeyMockClient extends BaseClient {
   }) {
     return {
       'id': id,
-      if (friendlyName != null) 'friendly_name': friendlyName,
+      'friendly_name': ?friendlyName,
       'created_at': '2025-01-01T00:00:00Z',
-      if (lastUsedAt != null) 'last_used_at': lastUsedAt,
+      'last_used_at': ?lastUsedAt,
     };
   }
 
@@ -219,10 +220,14 @@ class PasskeyDisabledMockClient extends BaseClient {
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'code': 'passkey_disabled',
-        'msg': 'Passkey authentication is disabled',
-      }))),
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'code': 'passkey_disabled',
+            'msg': 'Passkey authentication is disabled',
+          }),
+        ),
+      ),
       404,
       headers: {'x-supabase-api-version': '2024-01-01'},
       request: request,

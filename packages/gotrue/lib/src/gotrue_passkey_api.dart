@@ -45,8 +45,8 @@ class GoTruePasskeyApi {
   const GoTruePasskeyApi({
     required GoTrueClient client,
     required GotrueFetch fetch,
-  })  : _client = client,
-        _fetch = fetch;
+  }) : _client = client,
+       _fetch = fetch;
 
   /// Starts the registration of a new passkey for the signed in user.
   ///

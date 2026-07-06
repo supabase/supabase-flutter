@@ -6,12 +6,14 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
+
+resolution: workspace
 
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^2.15.3
+  supabase_flutter: ^2.15.4
 
 dev_dependencies:
   flutter_test:

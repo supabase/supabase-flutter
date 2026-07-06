@@ -17,8 +17,12 @@ external JSFunction? supabaseFlutterClientToDispose;
 /// logged.
 void markClientToDispose(SupabaseClient client) {
   void dispose() {
-    unawaited(client.realtime.disconnect(
-        code: 1000, reason: 'Closed due to Flutter Web hot-restart'));
+    unawaited(
+      client.realtime.disconnect(
+        code: 1000,
+        reason: 'Closed due to Flutter Web hot-restart',
+      ),
+    );
     unawaited(client.dispose());
   }
 

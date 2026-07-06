@@ -120,9 +120,9 @@ Future<int> run(List<String> args) async {
 
     // Forward Ctrl-C to flutter so it shuts down and control returns here,
     // letting the cleanup below stop Supabase, rather than killing the launcher.
-    final sigint = ProcessSignal.sigint
-        .watch()
-        .listen((_) => process.kill(ProcessSignal.sigint));
+    final sigint = ProcessSignal.sigint.watch().listen(
+      (_) => process.kill(ProcessSignal.sigint),
+    );
     final code = await process.exitCode;
     await sigint.cancel();
     return code;
@@ -157,10 +157,9 @@ Directory? _findExamplesRoot() {
 
 Future<bool> _hasCommand(String command) async {
   try {
-    final result = await Process.run(
-      Platform.isWindows ? 'where' : 'which',
-      [command],
-    );
+    final result = await Process.run(Platform.isWindows ? 'where' : 'which', [
+      command,
+    ]);
     return result.exitCode == 0;
   } on ProcessException {
     return false;
@@ -169,10 +168,11 @@ Future<bool> _hasCommand(String command) async {
 
 Future<bool> _startSupabase(Directory root) async {
   final progress = _logger.progress('Starting the local Supabase stack');
-  final result = await Process.run(
-    'supabase',
-    ['start', '--workdir', root.path],
-  );
+  final result = await Process.run('supabase', [
+    'start',
+    '--workdir',
+    root.path,
+  ]);
   if (result.exitCode == _ok) {
     progress.complete('Local Supabase is running');
     return true;
@@ -191,10 +191,11 @@ Future<bool> _startSupabase(Directory root) async {
 
 Future<void> _stopSupabase(Directory root) async {
   final progress = _logger.progress('Stopping the local Supabase stack');
-  final result = await Process.run(
-    'supabase',
-    ['stop', '--workdir', root.path],
-  );
+  final result = await Process.run('supabase', [
+    'stop',
+    '--workdir',
+    root.path,
+  ]);
   if (result.exitCode == _ok) {
     progress.complete('Stopped the local Supabase stack');
   } else {
@@ -204,10 +205,13 @@ Future<void> _stopSupabase(Directory root) async {
 }
 
 Future<Map<String, String>> _supabaseStatus(Directory root) async {
-  final result = await Process.run(
-    'supabase',
-    ['status', '-o', 'env', '--workdir', root.path],
-  );
+  final result = await Process.run('supabase', [
+    'status',
+    '-o',
+    'env',
+    '--workdir',
+    root.path,
+  ]);
   if (result.exitCode != _ok) return {};
   return _parseEnv('${result.stdout}');
 }

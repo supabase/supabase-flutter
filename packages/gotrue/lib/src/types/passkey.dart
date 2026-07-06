@@ -97,7 +97,8 @@ class PasskeyRegistrationOptionsResponse {
   });
 
   factory PasskeyRegistrationOptionsResponse.fromJson(
-      Map<String, dynamic> json) {
+    Map<String, dynamic> json,
+  ) {
     return PasskeyRegistrationOptionsResponse(
       challengeId: json['challenge_id'] as String,
       options: Map.from(json['options'] as Map),
@@ -131,7 +132,8 @@ class PasskeyAuthenticationOptionsResponse {
   });
 
   factory PasskeyAuthenticationOptionsResponse.fromJson(
-      Map<String, dynamic> json) {
+    Map<String, dynamic> json,
+  ) {
     return PasskeyAuthenticationOptionsResponse(
       challengeId: json['challenge_id'] as String,
       options: Map.from(json['options'] as Map),

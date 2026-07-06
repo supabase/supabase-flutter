@@ -23,9 +23,9 @@ void main() {
         },
         'user': {
           'id': '1bee2038-51fe-4f93-8fbb-442df18657ff',
-          'email': 'translator.user@mail.com'
+          'email': 'translator.user@mail.com',
         },
-        'scope': 'email'
+        'scope': 'email',
       };
 
       final actual = OAuthAuthorizationDetailsResponse.fromJson(json);
@@ -56,7 +56,7 @@ void main() {
           'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
           'name': 'OAuth test client',
         },
-        'scope': 'email'
+        'scope': 'email',
       };
 
       expect(
@@ -205,20 +205,22 @@ class GotrueOauthApiFixture {
     return Uri.parse(location).queryParameters['authorization_id']!;
   }
 
-  Future<AuthResponse> sutLogsIn(
-      {required String email, required String password}) {
+  Future<AuthResponse> sutLogsIn({
+    required String email,
+    required String password,
+  }) {
     return _client.signInWithPassword(password: password, email: email);
   }
 
   Future<void> _reset() async {
     final res = await http.post(
-        Uri.parse(
-            'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
-        headers: {
-          'x-forwarded-for': '127.0.0.1',
-          'apikey': _serviceRoleToken,
-          'Authorization': 'Bearer $_serviceRoleToken',
-        });
+      Uri.parse('http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
+      headers: {
+        'x-forwarded-for': '127.0.0.1',
+        'apikey': _serviceRoleToken,
+        'Authorization': 'Bearer $_serviceRoleToken',
+      },
+    );
     if (res.body.isNotEmpty) throw res.body;
   }
 

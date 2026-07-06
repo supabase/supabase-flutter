@@ -17,15 +17,19 @@ class _RecordingHttpClient extends BaseClient {
         : <String, dynamic>{};
     requestBodies.add(body);
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'id': '3f1e2d4c-1111-2222-3333-444455556666',
-        'type': 'totp',
-        'totp': {
-          'qr_code': 'svg',
-          'secret': 'ABC123',
-          'uri': 'otpauth://totp/Example?secret=ABC123',
-        },
-      }))),
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'id': '3f1e2d4c-1111-2222-3333-444455556666',
+            'type': 'totp',
+            'totp': {
+              'qr_code': 'svg',
+              'secret': 'ABC123',
+              'uri': 'otpauth://totp/Example?secret=ABC123',
+            },
+          }),
+        ),
+      ),
       200,
       request: request,
     );
@@ -68,13 +72,15 @@ void main() {
       );
     });
 
-    test('a webauthn factor is rejected instead of reaching the network',
-        () async {
-      expect(
-        () => client.mfa.enroll(factorType: FactorType.webauthn),
-        throwsArgumentError,
-      );
-      expect(http.requestBodies, isEmpty);
-    });
+    test(
+      'a webauthn factor is rejected instead of reaching the network',
+      () async {
+        expect(
+          () => client.mfa.enroll(factorType: FactorType.webauthn),
+          throwsArgumentError,
+        );
+        expect(http.requestBodies, isEmpty);
+      },
+    );
   });
 }

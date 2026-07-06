@@ -13,18 +13,22 @@ class _RecordingHttpClient extends BaseClient {
   Future<StreamedResponse> send(BaseRequest request) async {
     requestHeaders.add(Map.of(request.headers));
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
-        'aud': 'authenticated',
-        'role': 'authenticated',
-        'email': 'fake1@email.com',
-        'app_metadata': {
-          'provider': 'email',
-          'providers': ['email'],
-        },
-        'user_metadata': <String, dynamic>{},
-        'created_at': '2023-04-01T09:38:59.784028Z',
-      }))),
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
+            'aud': 'authenticated',
+            'role': 'authenticated',
+            'email': 'fake1@email.com',
+            'app_metadata': {
+              'provider': 'email',
+              'providers': ['email'],
+            },
+            'user_metadata': <String, dynamic>{},
+            'created_at': '2023-04-01T09:38:59.784028Z',
+          }),
+        ),
+      ),
       200,
       request: request,
     );

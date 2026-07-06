@@ -5,8 +5,8 @@ class GoTrueMFAApi {
   final GotrueFetch _fetch;
 
   const GoTrueMFAApi({required GoTrueClient client, required GotrueFetch fetch})
-      : _client = client,
-        _fetch = fetch;
+    : _client = client,
+      _fetch = fetch;
 
   /// Unenroll removes a MFA factor.
   ///
@@ -63,12 +63,14 @@ class GoTrueMFAApi {
     } else if (factorType == FactorType.phone) {
       if (phone == null) {
         throw ArgumentError(
-            'Invalid arguments, expected a phone for the phone factor type.');
+          'Invalid arguments, expected a phone for the phone factor type.',
+        );
       }
       body['phone'] = phone;
     } else {
       throw ArgumentError(
-          'Invalid arguments, unsupported factor type for enroll: ${factorType.name}.');
+        'Invalid arguments, unsupported factor type for enroll: ${factorType.name}.',
+      );
     }
 
     final data = await _fetch.request(
@@ -170,19 +172,25 @@ class GoTrueMFAApi {
     final user = _client.currentUser;
     final factors = user?.factors ?? [];
     final totp = factors
-        .where((factor) =>
-            factor.factorType == FactorType.totp &&
-            factor.status == FactorStatus.verified)
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.totp &&
+              factor.status == FactorStatus.verified,
+        )
         .toList();
     final phone = factors
-        .where((factor) =>
-            factor.factorType == FactorType.phone &&
-            factor.status == FactorStatus.verified)
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.phone &&
+              factor.status == FactorStatus.verified,
+        )
         .toList();
     final webauthn = factors
-        .where((factor) =>
-            factor.factorType == FactorType.webauthn &&
-            factor.status == FactorStatus.verified)
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.webauthn &&
+              factor.status == FactorStatus.verified,
+        )
         .toList();
 
     return AuthMFAListFactorsResponse(
@@ -197,7 +205,7 @@ class GoTrueMFAApi {
   ///
   /// You can use this to check whether the current user needs to be shown a screen to verify their MFA factors.
   AuthMFAGetAuthenticatorAssuranceLevelResponse
-      getAuthenticatorAssuranceLevel() {
+  getAuthenticatorAssuranceLevel() {
     final session = _client.currentSession;
     if (session == null) {
       return AuthMFAGetAuthenticatorAssuranceLevelResponse(
@@ -208,13 +216,15 @@ class GoTrueMFAApi {
     }
     final payload = Jwt.parseJwt(session.accessToken);
 
-    final currentLevel = AuthenticatorAssuranceLevels.values
-        .firstWhereOrNull((level) => level.name == payload['aal']);
+    final currentLevel = AuthenticatorAssuranceLevels.values.firstWhereOrNull(
+      (level) => level.name == payload['aal'],
+    );
 
     var nextLevel = currentLevel;
 
-    if (session.user.factors
-            ?.any((factor) => factor.status == FactorStatus.verified) ??
+    if (session.user.factors?.any(
+          (factor) => factor.status == FactorStatus.verified,
+        ) ??
         false) {
       nextLevel = AuthenticatorAssuranceLevels.aal2;
     }

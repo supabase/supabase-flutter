@@ -90,7 +90,8 @@ class PhoneEnrollment {
       return PhoneEnrollment.fromJson(value);
     }
     throw ArgumentError(
-        'Invalid phone enrollment data type: ${value.runtimeType}');
+      'Invalid phone enrollment data type: ${value.runtimeType}',
+    );
   }
 }
 

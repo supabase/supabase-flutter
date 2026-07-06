@@ -28,7 +28,8 @@ void main() {
     setUp(() async {
       final res = await http.post(
         Uri.parse(
-            'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
+          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+        ),
         headers: {
           'x-forwarded-for': '127.0.0.1',
           'apikey': getServiceRoleToken(env),
@@ -105,8 +106,13 @@ void main() {
       () async {
         await expectLater(
           () => client.signUp(email: newEmail, password: '123'),
-          throwsA(isA<AuthWeakPasswordException>()
-              .having((e) => e.code, 'code', ErrorCode.weakPassword.code)),
+          throwsA(
+            isA<AuthWeakPasswordException>().having(
+              (e) => e.code,
+              'code',
+              ErrorCode.weakPassword.code,
+            ),
+          ),
         );
       },
     );
@@ -135,10 +141,12 @@ void main() {
       );
       await expectLater(
         () => client.getSessionFromUrl(urlWithoutAccessToken),
-        throwsA(isA<AuthException>()
-            .having((e) => e.message, 'message', errorMessage)
-            .having((e) => e.statusCode, 'statusCode', '401')
-            .having((e) => e.code, 'code', 'unauthorized_client')),
+        throwsA(
+          isA<AuthException>()
+              .having((e) => e.message, 'message', errorMessage)
+              .having((e) => e.statusCode, 'statusCode', '401')
+              .having((e) => e.code, 'code', 'unauthorized_client'),
+        ),
       );
     });
 
@@ -337,7 +345,8 @@ void main() {
         // Header: {"alg":"HS256","typ":"JWT"}
         // Payload: {"sub":"user","exp":1}  (epoch second 1 = Jan 1, 1970)
         // Signature: 3 zero bytes as valid base64url ("AAAA")
-        const expiredAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+        const expiredAccessToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
             '.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxfQ'
             '.AAAA';
 
@@ -434,8 +443,13 @@ void main() {
       await client.signInWithPassword(email: email1, password: password);
       await expectLater(
         () => client.updateUser(UserAttributes(password: password)),
-        throwsA(isA<AuthException>()
-            .having((e) => e.code, 'code', ErrorCode.samePassword.code)),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.code,
+            'code',
+            ErrorCode.samePassword.code,
+          ),
+        ),
       );
     });
 
@@ -467,8 +481,9 @@ void main() {
           email: email1,
           password: 'wrong_$password',
         ),
-        throwsA(isA<AuthException>()
-            .having((e) => e.message, 'message', isNotNull)),
+        throwsA(
+          isA<AuthException>().having((e) => e.message, 'message', isNotNull),
+        ),
       );
     });
 
@@ -682,8 +697,13 @@ void main() {
       );
       await expectLater(
         () => client.getSessionFromUrl(urlWithoutAccessToken),
-        throwsA(isA<AuthException>()
-            .having((e) => e.message, 'message', errorMessage)),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            errorMessage,
+          ),
+        ),
       );
     });
 
@@ -701,7 +721,7 @@ void main() {
             'email': 'new@email.com',
             'app_metadata': {
               'provider': 'email',
-              'providers': ['email']
+              'providers': ['email'],
             },
             'user_metadata': {},
             'created_at': '2023-04-01T09:38:59.784028Z',
@@ -717,7 +737,8 @@ void main() {
 
         final emittedEvent = pkceClient.onAuthStateChange
             .firstWhere(
-                (state) => state.event != AuthChangeEvent.initialSession)
+              (state) => state.event != AuthChangeEvent.initialSession,
+            )
             .then((state) => state.event);
 
         final response = await pkceClient.getSessionFromUrl(url);
@@ -754,8 +775,7 @@ void main() {
     // the server respond with `refresh_token_already_used`, signing the user
     // out. `recoverSession` must instead detect the already valid in-memory
     // session and return it.
-    test('does not reuse a stale refresh token after another refresh',
-        () async {
+    test('does not reuse a stale refresh token after another refresh', () async {
       final expiredSessionString = getSessionData(
         DateTime.now().subtract(const Duration(hours: 1)),
       ).sessionString;

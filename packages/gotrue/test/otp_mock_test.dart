@@ -34,15 +34,19 @@ void main() {
     test('signInWithOtp() with phone number', () async {
       await client.signInWithOtp(phone: testPhone);
       // This test passes if no exceptions are thrown
-      expect(client.currentSession,
-          isNull); // No session should be set yet as OTP is not verified
+      expect(
+        client.currentSession,
+        isNull,
+      ); // No session should be set yet as OTP is not verified
     });
 
     test('signInWithOtp() with email', () async {
       await client.signInWithOtp(email: testEmail);
       // This test passes if no exceptions are thrown
-      expect(client.currentSession,
-          isNull); // No session should be set yet as OTP is not verified
+      expect(
+        client.currentSession,
+        isNull,
+      ); // No session should be set yet as OTP is not verified
     });
 
     test('signInWithOtp() with phone number and custom data', () async {
@@ -52,15 +56,22 @@ void main() {
         data: {'name': 'Test User'},
       );
       // This test passes if no exceptions are thrown
-      expect(client.currentSession,
-          isNull); // No session should be set yet as OTP is not verified
+      expect(
+        client.currentSession,
+        isNull,
+      ); // No session should be set yet as OTP is not verified
     });
 
     test('signInWithOtp() without email or phone should throw', () async {
       await expectLater(
         () => client.signInWithOtp(),
-        throwsA(isA<AuthException>().having((e) => e.message, 'message',
-            contains('You must provide either an email, phone number'))),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            contains('You must provide either an email, phone number'),
+          ),
+        ),
       );
     });
 
@@ -144,22 +155,27 @@ void main() {
     });
 
     test(
-        'verifyOTP() with recovery type and tokenHash should reject email/phone',
-        () async {
-      // Recovery type with tokenHash should not accept email/phone
-      await expectLater(
-        () => client.verifyOTP(
-          email: testEmail,
-          tokenHash: 'mock-token-hash',
-          type: OtpType.recovery,
-        ),
-        throwsA(isA<AssertionError>().having(
-            (e) => e.toString(),
-            'toString()',
-            contains(
-                'For recovery type with tokenHash, only tokenHash and type should be provided'))),
-      );
-    });
+      'verifyOTP() with recovery type and tokenHash should reject email/phone',
+      () async {
+        // Recovery type with tokenHash should not accept email/phone
+        await expectLater(
+          () => client.verifyOTP(
+            email: testEmail,
+            tokenHash: 'mock-token-hash',
+            type: OtpType.recovery,
+          ),
+          throwsA(
+            isA<AssertionError>().having(
+              (e) => e.toString(),
+              'toString()',
+              contains(
+                'For recovery type with tokenHash, only tokenHash and type should be provided',
+              ),
+            ),
+          ),
+        );
+      },
+    );
 
     test('verifyOTP() without token should throw', () async {
       await expectLater(
@@ -369,29 +385,40 @@ void main() {
           token: '123456',
           type: OtpType.sms,
         ),
-        throwsA(isA<AuthException>().having((e) => e.message, 'message',
-            'The OTP provided is invalid or has expired')),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'The OTP provided is invalid or has expired',
+          ),
+        ),
       );
     });
 
     test(
-        'signInWithPassword() with phone and wrong password throws AuthException',
-        () async {
-      final client = GoTrueClient(
-        url: 'https://example.com',
-        httpClient: ConditionalErrorClient(),
-        asyncStorage: TestAsyncStorage(),
-      );
+      'signInWithPassword() with phone and wrong password throws AuthException',
+      () async {
+        final client = GoTrueClient(
+          url: 'https://example.com',
+          httpClient: ConditionalErrorClient(),
+          asyncStorage: TestAsyncStorage(),
+        );
 
-      await expectLater(
-        () => client.signInWithPassword(
-          phone: testPhone,
-          password: 'wrong-password',
-        ),
-        throwsA(isA<AuthException>()
-            .having((e) => e.message, 'message', 'Invalid login credentials')),
-      );
-    });
+        await expectLater(
+          () => client.signInWithPassword(
+            phone: testPhone,
+            password: 'wrong-password',
+          ),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.message,
+              'message',
+              'Invalid login credentials',
+            ),
+          ),
+        );
+      },
+    );
 
     test('signUp() with existing phone number throws AuthException', () async {
       final client = GoTrueClient(
@@ -405,8 +432,13 @@ void main() {
           phone: testPhone,
           password: testPassword,
         ),
-        throwsA(isA<AuthException>().having(
-            (e) => e.message, 'message', 'Phone number is already registered')),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'Phone number is already registered',
+          ),
+        ),
       );
     });
 
@@ -421,22 +453,24 @@ void main() {
       await client.signInWithOtp(phone: testPhone);
     });
 
-    test('verifyOTP() with neither email nor phone throws assertion error',
-        () async {
-      final client = GoTrueClient(
-        url: 'https://example.com',
-        httpClient: EmptyResponseClient(),
-        asyncStorage: TestAsyncStorage(),
-      );
+    test(
+      'verifyOTP() with neither email nor phone throws assertion error',
+      () async {
+        final client = GoTrueClient(
+          url: 'https://example.com',
+          httpClient: EmptyResponseClient(),
+          asyncStorage: TestAsyncStorage(),
+        );
 
-      await expectLater(
-        () => client.verifyOTP(
-          token: '123456',
-          type: OtpType.sms,
-        ),
-        throwsA(isA<AssertionError>()),
-      );
-    });
+        await expectLater(
+          () => client.verifyOTP(
+            token: '123456',
+            type: OtpType.sms,
+          ),
+          throwsA(isA<AssertionError>()),
+        );
+      },
+    );
 
     test('verifyOTP() with expired token throws AuthException', () async {
       final client = GoTrueClient(
@@ -451,8 +485,13 @@ void main() {
           token: '123456',
           type: OtpType.sms,
         ),
-        throwsA(isA<AuthException>()
-            .having((e) => e.message, 'message', 'The OTP has expired')),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'The OTP has expired',
+          ),
+        ),
       );
     });
 
@@ -486,20 +525,27 @@ void main() {
       );
     });
 
-    test('signInWithPassword() without email or phone throws exception',
-        () async {
-      final client = GoTrueClient(
-        url: 'https://example.com',
-        httpClient: EmptyResponseClient(),
-        asyncStorage: TestAsyncStorage(),
-      );
+    test(
+      'signInWithPassword() without email or phone throws exception',
+      () async {
+        final client = GoTrueClient(
+          url: 'https://example.com',
+          httpClient: EmptyResponseClient(),
+          asyncStorage: TestAsyncStorage(),
+        );
 
-      await expectLater(
-        () => client.signInWithPassword(password: testPassword),
-        throwsA(isA<AuthException>().having((e) => e.message, 'message',
-            contains('You must provide either an'))),
-      );
-    });
+        await expectLater(
+          () => client.signInWithPassword(password: testPassword),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.message,
+              'message',
+              contains('You must provide either an'),
+            ),
+          ),
+        );
+      },
+    );
 
     test('empty response on server error', () async {
       final client = GoTrueClient(
@@ -510,13 +556,13 @@ void main() {
 
       await expectLater(
         () => client.signInWithOtp(phone: testPhone),
-        throwsA(isA<AuthException>()
-            .having((e) => e.statusCode, 'statusCode', '500')),
+        throwsA(
+          isA<AuthException>().having((e) => e.statusCode, 'statusCode', '500'),
+        ),
       );
     });
 
-    test('response with null session returns the intermediate response',
-        () async {
+    test('response with null session returns the intermediate response', () async {
       final client = GoTrueClient(
         url: 'https://example.com',
         httpClient: NullSessionClient(),
@@ -664,18 +710,21 @@ void main() {
       expect(mockClient.lastRequestBody?['type'], 'email_change');
     });
 
-    test('verifyOTP() sends the captcha token under the captcha_token key',
-        () async {
-      await client.verifyOTP(
-        phone: testPhone,
-        token: '123456',
-        type: OtpType.sms,
-        captchaToken: 'captcha-token-123',
-      );
+    test(
+      'verifyOTP() sends the captcha token under the captcha_token key',
+      () async {
+        await client.verifyOTP(
+          phone: testPhone,
+          token: '123456',
+          type: OtpType.sms,
+          captchaToken: 'captcha-token-123',
+        );
 
-      final security = mockClient.lastRequestBody?['gotrue_meta_security']
-          as Map<String, dynamic>?;
-      expect(security?['captcha_token'], 'captcha-token-123');
-    });
+        final security =
+            mockClient.lastRequestBody?['gotrue_meta_security']
+                as Map<String, dynamic>?;
+        expect(security?['captcha_token'], 'captcha-token-123');
+      },
+    );
   });
 }

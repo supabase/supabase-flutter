@@ -22,9 +22,9 @@ class GoTrueAdminPasskeyApi {
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,
-  })  : _url = url,
-        _headers = headers,
-        _fetch = fetch;
+  }) : _url = url,
+       _headers = headers,
+       _fetch = fetch;
 
   /// Returns the list of passkeys registered to the user with [userId].
   Future<List<Passkey>> listPasskeys({required String userId}) async {

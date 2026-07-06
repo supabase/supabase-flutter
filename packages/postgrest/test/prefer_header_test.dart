@@ -36,9 +36,9 @@ void main() {
 
   test('insert(defaultToNull: false) sends missing=default', () async {
     try {
-      await postgrest
-          .from('users')
-          .insert({'username': 'foo'}, defaultToNull: false);
+      await postgrest.from('users').insert({
+        'username': 'foo',
+      }, defaultToNull: false);
     } catch (_) {}
 
     expect(sentPrefer(), 'missing=default');
@@ -90,9 +90,10 @@ void main() {
 
   test('upsert().select() keeps its existing Prefer preferences', () async {
     try {
-      await postgrest
-          .from('users')
-          .upsert({'id': 1, 'username': 'foo'}).select();
+      await postgrest.from('users').upsert({
+        'id': 1,
+        'username': 'foo',
+      }).select();
     } catch (_) {}
 
     final prefer = sentPrefer()!;
@@ -117,7 +118,11 @@ void main() {
 
   test('delete().count() sends a clean Prefer header', () async {
     try {
-      await postgrest.from('users').delete().eq('id', 1).count(
+      await postgrest
+          .from('users')
+          .delete()
+          .eq('id', 1)
+          .count(
             CountOption.exact,
           );
     } catch (_) {}

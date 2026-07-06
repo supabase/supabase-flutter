@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +10,10 @@ void main() {
 
   const supabaseUrl = '';
   const supabaseKey = '';
+
+  setUpAll(() {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  });
 
   group('Supabase initialization', () {
     setUp(() {
@@ -29,6 +34,7 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
         );
       });
     });
@@ -39,6 +45,7 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
           authOptions: const FlutterAuthClientOptions(
             localStorage: localStorage,
           ),
@@ -66,6 +73,7 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
           authOptions: const FlutterAuthClientOptions(
             authFlowType: AuthFlowType.pkce,
           ),
@@ -79,6 +87,7 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
           httpClient: httpClient,
         );
       });
@@ -87,6 +96,7 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
           accessToken: () async => 'custom-access-token',
         );
 
@@ -104,6 +114,7 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
         );
 
         // Dispose
@@ -116,6 +127,7 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
         );
       });
 

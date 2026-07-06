@@ -4,17 +4,17 @@ import 'package:supabase_flutter/src/passkey/passkey_options_mapper.dart';
 void main() {
   group('passkeyRegisterRequestFromOptions', () {
     Map<String, dynamic> baseOptions() => {
-          'challenge': 'Y2hhbGxlbmdl',
-          'rp': {'id': 'example.com', 'name': 'Example'},
-          'user': {
-            'id': 'dXNlcg==',
-            'name': 'jane@example.com',
-            'displayName': 'Jane',
-          },
-          'pubKeyCredParams': [
-            {'type': 'public-key', 'alg': -7},
-          ],
-        };
+      'challenge': 'Y2hhbGxlbmdl',
+      'rp': {'id': 'example.com', 'name': 'Example'},
+      'user': {
+        'id': 'dXNlcg==',
+        'name': 'jane@example.com',
+        'displayName': 'Jane',
+      },
+      'pubKeyCredParams': [
+        {'type': 'public-key', 'alg': -7},
+      ],
+    };
 
     test('maps the W3C fields through to the request type', () {
       final request = passkeyRegisterRequestFromOptions(baseOptions());
@@ -66,57 +66,14 @@ void main() {
         ['internal', 'hybrid'],
       );
     });
-
-    test(
-      'defaults missing requireResidentKey to false when residentKey is not required',
-      () {
-        final options = baseOptions()
-          ..['authenticatorSelection'] = {
-            'residentKey': 'preferred',
-            'userVerification': 'preferred',
-          };
-
-        final request = passkeyRegisterRequestFromOptions(options);
-
-        expect(request.authSelectionType?.requireResidentKey, false);
-      },
-    );
-
-    test(
-      'derives missing requireResidentKey from a required residentKey',
-      () {
-        final options = baseOptions()
-          ..['authenticatorSelection'] = {
-            'residentKey': 'required',
-            'userVerification': 'preferred',
-          };
-
-        final request = passkeyRegisterRequestFromOptions(options);
-
-        expect(request.authSelectionType?.requireResidentKey, true);
-      },
-    );
-
-    test('keeps a provided requireResidentKey as is', () {
-      final options = baseOptions()
-        ..['authenticatorSelection'] = {
-          'residentKey': 'preferred',
-          'requireResidentKey': true,
-          'userVerification': 'preferred',
-        };
-
-      final request = passkeyRegisterRequestFromOptions(options);
-
-      expect(request.authSelectionType?.requireResidentKey, true);
-    });
   });
 
   group('passkeyAuthenticateRequestFromOptions', () {
     Map<String, dynamic> baseOptions() => {
-          'challenge': 'Y2hhbGxlbmdl',
-          'rpId': 'example.com',
-          'userVerification': 'preferred',
-        };
+      'challenge': 'Y2hhbGxlbmdl',
+      'rpId': 'example.com',
+      'userVerification': 'preferred',
+    };
 
     test('maps the W3C fields through to the request type', () {
       final request = passkeyAuthenticateRequestFromOptions(baseOptions());

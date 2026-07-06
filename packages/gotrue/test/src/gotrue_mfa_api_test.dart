@@ -17,18 +17,18 @@ String _accessToken(Map<String, dynamic> claims) {
 }
 
 Map<String, dynamic> _session(String accessToken) => {
-      'access_token': accessToken,
-      'token_type': 'bearer',
-      'refresh_token': 'refresh-token',
-      'expires_in': 3600,
-      'user': {
-        'id': 'user-id',
-        'aud': 'authenticated',
-        'app_metadata': <String, dynamic>{},
-        'user_metadata': <String, dynamic>{},
-        'created_at': '2023-04-01T09:38:59.784028Z',
-      },
-    };
+  'access_token': accessToken,
+  'token_type': 'bearer',
+  'refresh_token': 'refresh-token',
+  'expires_in': 3600,
+  'user': {
+    'id': 'user-id',
+    'aud': 'authenticated',
+    'app_metadata': <String, dynamic>{},
+    'user_metadata': <String, dynamic>{},
+    'created_at': '2023-04-01T09:38:59.784028Z',
+  },
+};
 
 void main() {
   group('against a running GoTrue instance', () {
@@ -43,13 +43,15 @@ void main() {
     late GoTrueClient client;
     setUp(() async {
       final res = await http.post(
-          Uri.parse(
-              'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
-          headers: {
-            'x-forwarded-for': '127.0.0.1',
-            'apikey': getServiceRoleToken(env),
-            'Authorization': 'Bearer ${getServiceRoleToken(env)}',
-          });
+        Uri.parse(
+          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+        ),
+        headers: {
+          'x-forwarded-for': '127.0.0.1',
+          'apikey': getServiceRoleToken(env),
+          'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+        },
+      );
       if (res.body.isNotEmpty) throw res.body;
 
       client = GoTrueClient(
@@ -57,7 +59,7 @@ void main() {
         headers: {
           'Authorization': 'Bearer $anonToken',
           'apikey': anonToken,
-          'x-forwarded-for': '127.0.0.1'
+          'x-forwarded-for': '127.0.0.1',
         },
       );
     });
@@ -65,8 +67,10 @@ void main() {
     test('enroll totp', () async {
       await client.signInWithPassword(password: password, email: email1);
 
-      final res = await client.mfa
-          .enroll(issuer: 'MyFriend', friendlyName: 'MyFriendName');
+      final res = await client.mfa.enroll(
+        issuer: 'MyFriend',
+        friendlyName: 'MyFriendName',
+      );
       final uri = Uri.parse(res.totp!.uri);
 
       expect(res.type, FactorType.totp);
@@ -115,7 +119,10 @@ void main() {
       final challengeRes = await client.mfa.challenge(factorId: factorId1);
 
       final res = await client.mfa.verify(
-          factorId: factorId1, challengeId: challengeRes.id, code: getTOTP());
+        factorId: factorId1,
+        challengeId: challengeRes.id,
+        code: getTOTP(),
+      );
 
       expect(client.currentSession?.accessToken, res.accessToken);
       expect(client.currentUser, res.user);
@@ -128,9 +135,13 @@ void main() {
 
       expect(client.currentUser!.factors!.length, 1);
       expect(
-          client.currentUser!.factors!.first.status, FactorStatus.unverified);
-      final res = await client.mfa
-          .challengeAndVerify(factorId: factorId1, code: getTOTP());
+        client.currentUser!.factors!.first.status,
+        FactorStatus.unverified,
+      );
+      final res = await client.mfa.challengeAndVerify(
+        factorId: factorId1,
+        code: getTOTP(),
+      );
       expect(client.currentUser, res.user);
       expect(client.currentUser!.factors!.length, 1);
       expect(client.currentUser!.factors!.first.id, factorId1);
@@ -157,13 +168,15 @@ void main() {
       expect(res.all.first.id, factorId2);
       expect(res.all.first.status, FactorStatus.verified);
       expect(
-          res.all.first.createdAt.difference(DateTime.now()) <
-              Duration(seconds: 2),
-          true);
+        res.all.first.createdAt.difference(DateTime.now()) <
+            Duration(seconds: 2),
+        true,
+      );
       expect(
-          res.all.first.updatedAt.difference(DateTime.now()) <
-              Duration(seconds: 2),
-          true);
+        res.all.first.updatedAt.difference(DateTime.now()) <
+            Duration(seconds: 2),
+        true,
+      );
     });
 
     test('list factors with phone enrollment', () async {
@@ -216,16 +229,18 @@ void main() {
       final res = client.mfa.getAuthenticatorAssuranceLevel();
       expect(res.currentLevel, AuthenticatorAssuranceLevels.aal2);
       expect(res.nextLevel, AuthenticatorAssuranceLevels.aal2);
-      final passwordEntry = res.currentAuthenticationMethods
-          .firstWhereOrNull((element) => element.method == AMRMethod.password);
-      final totpEntry = res.currentAuthenticationMethods
-          .firstWhereOrNull((element) => element.method == AMRMethod.totp);
+      final passwordEntry = res.currentAuthenticationMethods.firstWhereOrNull(
+        (element) => element.method == AMRMethod.password,
+      );
+      final totpEntry = res.currentAuthenticationMethods.firstWhereOrNull(
+        (element) => element.method == AMRMethod.totp,
+      );
       expect(passwordEntry, isNotNull);
       expect(totpEntry, isNotNull);
       expect(
-          totpEntry!.timestamp.difference(DateTime.now()) <
-              Duration(seconds: 2),
-          true);
+        totpEntry!.timestamp.difference(DateTime.now()) < Duration(seconds: 2),
+        true,
+      );
     });
 
     test('Session object can be properly json serielized', () async {
@@ -238,29 +253,33 @@ void main() {
     });
   });
 
-  test('getAuthenticatorAssuranceLevel does not throw when amr is absent',
-      () async {
-    final expirationTimestamp =
-        DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
-            1000;
-    // An access token that carries `aal` but no `amr` claim.
-    final accessToken =
-        _accessToken({'exp': expirationTimestamp, 'aal': 'aal1'});
+  test(
+    'getAuthenticatorAssuranceLevel does not throw when amr is absent',
+    () async {
+      final expirationTimestamp =
+          DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+          1000;
+      // An access token that carries `aal` but no `amr` claim.
+      final accessToken = _accessToken({
+        'exp': expirationTimestamp,
+        'aal': 'aal1',
+      });
 
-    final localClient = GoTrueClient(
-      url: 'http://localhost',
-      autoRefreshToken: false,
-      flowType: AuthFlowType.implicit,
-    );
-    addTearDown(localClient.dispose);
+      final localClient = GoTrueClient(
+        url: 'http://localhost',
+        autoRefreshToken: false,
+        flowType: AuthFlowType.implicit,
+      );
+      addTearDown(localClient.dispose);
 
-    await localClient.recoverSession(jsonEncode(_session(accessToken)));
+      await localClient.recoverSession(jsonEncode(_session(accessToken)));
 
-    final result = localClient.mfa.getAuthenticatorAssuranceLevel();
+      final result = localClient.mfa.getAuthenticatorAssuranceLevel();
 
-    expect(result.currentLevel, AuthenticatorAssuranceLevels.aal1);
-    expect(result.currentAuthenticationMethods, isEmpty);
-  });
+      expect(result.currentLevel, AuthenticatorAssuranceLevels.aal1);
+      expect(result.currentAuthenticationMethods, isEmpty);
+    },
+  );
 }
 
 String getTOTP() {
