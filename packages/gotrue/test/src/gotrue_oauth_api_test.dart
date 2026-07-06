@@ -61,7 +61,7 @@ void main() {
 
       expect(
         () => OAuthAuthorizationDetailsResponse.fromJson(json),
-        throwsArgumentError,
+        throwsFormatException,
       );
     });
   });
