@@ -64,6 +64,21 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('parses a redirect-only body into a redirect response', () {
+      final json = {
+        'redirect_url':
+            'http://127.0.0.1:3000/oauth/callback?code=367ba316-8f55-43cd',
+      };
+
+      final actual = OAuthAuthorizationResponse.fromJson(json);
+
+      expect(actual, isA<OAuthAuthorizationRedirectResponse>());
+      expect(
+        (actual as OAuthAuthorizationRedirectResponse).redirectUrl,
+        equals('http://127.0.0.1:3000/oauth/callback?code=367ba316-8f55-43cd'),
+      );
+    });
   });
 
   group('OAuth server', () {
@@ -81,13 +96,15 @@ void main() {
 
       final res = await sut.oauth.getAuthorizationDetails(authorizationId);
 
-      expect(res.authorizationId, equals(authorizationId));
-      expect(res.scope, equals(clientParams.scope));
-      expect(res.redirectUri, equals(clientParams.redirectUris.first));
-      expect(res.client.clientId, equals(client.clientId));
-      expect(res.client.clientName, equals(client.clientName));
-      expect(res.user.id, equals(auth.user?.id));
-      expect(res.user.email, equals(email1));
+      expect(res, isA<OAuthAuthorizationDetailsResponse>());
+      final details = res as OAuthAuthorizationDetailsResponse;
+      expect(details.authorizationId, equals(authorizationId));
+      expect(details.scope, equals(clientParams.scope));
+      expect(details.redirectUri, equals(clientParams.redirectUris.first));
+      expect(details.client.clientId, equals(client.clientId));
+      expect(details.client.clientName, equals(client.clientName));
+      expect(details.user.id, equals(auth.user?.id));
+      expect(details.user.email, equals(email1));
     });
 
     test('approve authorization request', () async {
@@ -148,6 +165,42 @@ void main() {
         ),
       );
     });
+
+    test(
+      'getting details for a new authorization after the client was already '
+      'approved does not throw',
+      () async {
+        final sut = await fixture.build();
+        final clientParams = CreateOAuthClientParams(
+          clientName: 'Test OAuth Client',
+          redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
+          responseTypes: [OAuthClientResponseType.code],
+          scope: 'email',
+        );
+        final client = await fixture.sutCreatesOAuthClient(clientParams);
+        await fixture.sutLogsIn(password: password, email: email1);
+
+        // First authorization: fetch details and approve to record consent.
+        final firstAuthorizationId = await fixture.sutAuthorizesClient(client);
+        await sut.oauth.getAuthorizationDetails(firstAuthorizationId);
+        await sut.oauth.approveAuthorization(firstAuthorizationId);
+
+        // Second authorization for the same client, by the same user.
+        final secondAuthorizationId = await fixture.sutAuthorizesClient(client);
+
+        final res = await sut.oauth.getAuthorizationDetails(
+          secondAuthorizationId,
+        );
+
+        expect(res, isA<OAuthAuthorizationRedirectResponse>());
+        final redirect = res as OAuthAuthorizationRedirectResponse;
+        expect(
+          redirect.redirectUrl,
+          startsWith(clientParams.redirectUris.first),
+        );
+        expect(redirect.redirectUrl, contains('code='));
+      },
+    );
   });
 }
 
