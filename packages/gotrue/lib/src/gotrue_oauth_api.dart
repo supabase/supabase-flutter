@@ -58,10 +58,9 @@ class OAuthAuthorizationDetailsResponse {
     final user = json['user'] == null ? null : User.fromJson(json['user']);
 
     if (user == null) {
-      throw ArgumentError.value(
-        json,
-        'json',
+      throw FormatException(
         'The provided JSON should contain a parseable user object',
+        json.toString(),
       );
     }
 
