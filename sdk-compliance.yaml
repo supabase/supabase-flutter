@@ -140,11 +140,114 @@ features:
   auth.admin.sign_out: implemented
   auth.admin.list_mfa_factors: implemented
   auth.admin.delete_mfa_factor: implemented
-  auth.admin.create_provider: not_implemented
-  auth.admin.get_provider: not_implemented
-  auth.admin.update_provider: not_implemented
-  auth.admin.delete_provider: not_implemented
-  auth.admin.list_providers: not_implemented
+  auth.admin.create_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.customProviders
+      - GoTrueAdminCustomProvidersApi
+      - GoTrueAdminCustomProvidersApi.GoTrueAdminCustomProvidersApi
+      - GoTrueAdminCustomProvidersApi.createProvider
+      - CustomProviderType
+      - CustomProviderType.fromString
+      - CreateCustomProviderParams
+      - CreateCustomProviderParams.CreateCustomProviderParams
+      - CreateCustomProviderParams.acceptableClientIds
+      - CreateCustomProviderParams.attributeMapping
+      - CreateCustomProviderParams.authorizationParams
+      - CreateCustomProviderParams.authorizationUrl
+      - CreateCustomProviderParams.clientId
+      - CreateCustomProviderParams.clientSecret
+      - CreateCustomProviderParams.customClaimsAllowlist
+      - CreateCustomProviderParams.discoveryUrl
+      - CreateCustomProviderParams.emailOptional
+      - CreateCustomProviderParams.enabled
+      - CreateCustomProviderParams.identifier
+      - CreateCustomProviderParams.issuer
+      - CreateCustomProviderParams.jwksUri
+      - CreateCustomProviderParams.name
+      - CreateCustomProviderParams.pkceEnabled
+      - CreateCustomProviderParams.providerType
+      - CreateCustomProviderParams.scopes
+      - CreateCustomProviderParams.skipNonceCheck
+      - CreateCustomProviderParams.toJson
+      - CreateCustomProviderParams.tokenUrl
+      - CreateCustomProviderParams.userinfoUrl
+      - CustomOAuthProvider
+      - CustomOAuthProvider.CustomOAuthProvider
+      - CustomOAuthProvider.acceptableClientIds
+      - CustomOAuthProvider.attributeMapping
+      - CustomOAuthProvider.authorizationParams
+      - CustomOAuthProvider.authorizationUrl
+      - CustomOAuthProvider.clientId
+      - CustomOAuthProvider.createdAt
+      - CustomOAuthProvider.customClaimsAllowlist
+      - CustomOAuthProvider.discoveryDocument
+      - CustomOAuthProvider.discoveryUrl
+      - CustomOAuthProvider.emailOptional
+      - CustomOAuthProvider.enabled
+      - CustomOAuthProvider.fromJson
+      - CustomOAuthProvider.id
+      - CustomOAuthProvider.identifier
+      - CustomOAuthProvider.issuer
+      - CustomOAuthProvider.jwksUri
+      - CustomOAuthProvider.name
+      - CustomOAuthProvider.pkceEnabled
+      - CustomOAuthProvider.providerType
+      - CustomOAuthProvider.scopes
+      - CustomOAuthProvider.skipNonceCheck
+      - CustomOAuthProvider.tokenUrl
+      - CustomOAuthProvider.updatedAt
+      - CustomOAuthProvider.userinfoUrl
+      - OIDCDiscoveryDocument
+      - OIDCDiscoveryDocument.OIDCDiscoveryDocument
+      - OIDCDiscoveryDocument.authorizationEndpoint
+      - OIDCDiscoveryDocument.fromJson
+      - OIDCDiscoveryDocument.issuer
+      - OIDCDiscoveryDocument.jwksUri
+      - OIDCDiscoveryDocument.revocationEndpoint
+      - OIDCDiscoveryDocument.supportedIdTokenSigningAlgs
+      - OIDCDiscoveryDocument.supportedResponseTypes
+      - OIDCDiscoveryDocument.supportedScopes
+      - OIDCDiscoveryDocument.supportedSubjectTypes
+      - OIDCDiscoveryDocument.tokenEndpoint
+      - OIDCDiscoveryDocument.userinfoEndpoint
+  auth.admin.get_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.getProvider
+  auth.admin.update_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.updateProvider
+      - UpdateCustomProviderParams
+      - UpdateCustomProviderParams.UpdateCustomProviderParams
+      - UpdateCustomProviderParams.acceptableClientIds
+      - UpdateCustomProviderParams.attributeMapping
+      - UpdateCustomProviderParams.authorizationParams
+      - UpdateCustomProviderParams.authorizationUrl
+      - UpdateCustomProviderParams.clientId
+      - UpdateCustomProviderParams.clientSecret
+      - UpdateCustomProviderParams.customClaimsAllowlist
+      - UpdateCustomProviderParams.discoveryUrl
+      - UpdateCustomProviderParams.emailOptional
+      - UpdateCustomProviderParams.enabled
+      - UpdateCustomProviderParams.issuer
+      - UpdateCustomProviderParams.jwksUri
+      - UpdateCustomProviderParams.name
+      - UpdateCustomProviderParams.pkceEnabled
+      - UpdateCustomProviderParams.scopes
+      - UpdateCustomProviderParams.skipNonceCheck
+      - UpdateCustomProviderParams.toJson
+      - UpdateCustomProviderParams.tokenUrl
+      - UpdateCustomProviderParams.userinfoUrl
+  auth.admin.delete_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.deleteProvider
+  auth.admin.list_providers:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.listProviders
 
   # auth — admin OAuth clients
   auth.oauth_admin.create_client: implemented

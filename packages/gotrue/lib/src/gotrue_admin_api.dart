@@ -7,6 +7,7 @@ import 'package:http/http.dart';
 
 import 'package:meta/meta.dart';
 
+import 'gotrue_admin_custom_providers_api.dart';
 import 'gotrue_admin_mfa_api.dart';
 import 'gotrue_admin_oauth_api.dart';
 
@@ -21,6 +22,9 @@ class GoTrueAdminApi {
   /// Contains all OAuth client administration methods.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   late final GoTrueAdminOAuthApi oauth;
+
+  /// Contains all custom OIDC/OAuth provider administration methods.
+  late final GoTrueAdminCustomProvidersApi customProviders;
 
   /// Contains all passkey administration methods.
   /// Only relevant when passkeys are enabled in Supabase Auth.
@@ -39,6 +43,11 @@ class GoTrueAdminApi {
       fetch: _fetch,
     );
     oauth = GoTrueAdminOAuthApi(
+      url: _url,
+      headers: _headers,
+      fetch: _fetch,
+    );
+    customProviders = GoTrueAdminCustomProvidersApi(
       url: _url,
       headers: _headers,
       fetch: _fetch,
