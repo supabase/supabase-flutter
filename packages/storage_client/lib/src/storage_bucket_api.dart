@@ -18,10 +18,8 @@ class StorageBucketApi {
       'id': id,
       'name': id,
       'public': bucketOptions.public,
-      if (bucketOptions.fileSizeLimit != null)
-        'file_size_limit': bucketOptions.fileSizeLimit,
-      if (bucketOptions.allowedMimeTypes != null)
-        'allowed_mime_types': bucketOptions.allowedMimeTypes,
+      'file_size_limit': ?bucketOptions.fileSizeLimit,
+      'allowed_mime_types': ?bucketOptions.allowedMimeTypes,
     };
   }
 
@@ -42,8 +40,10 @@ class StorageBucketApi {
   /// [id] is the unique identifier of the bucket you would like to retrieve.
   Future<Bucket> getBucket(String id) async {
     final FetchOptions options = FetchOptions(headers: headers);
-    final response =
-        await storageFetch.get('$url/bucket/$id', options: options);
+    final response = await storageFetch.get(
+      '$url/bucket/$id',
+      options: options,
+    );
     return Bucket.fromJson(response);
   }
 
@@ -101,8 +101,11 @@ class StorageBucketApi {
   /// [id] is the unique identifier of the bucket you would like to empty.
   Future<String> emptyBucket(String id) async {
     final FetchOptions options = FetchOptions(headers: headers);
-    final response =
-        await storageFetch.post('$url/bucket/$id/empty', {}, options: options);
+    final response = await storageFetch.post(
+      '$url/bucket/$id/empty',
+      {},
+      options: options,
+    );
     return (response as Map<String, dynamic>)['message'] as String;
   }
 

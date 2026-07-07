@@ -13,8 +13,10 @@ void main() {
 
     test('has correct default headers', () {
       expect(Constants.defaultHeaders, isA<Map<String, String>>());
-      expect(Constants.defaultHeaders['X-Client-Info'],
-          equals('gotrue-dart/$version'));
+      expect(
+        Constants.defaultHeaders['X-Client-Info'],
+        equals('gotrue-dart/$version'),
+      );
     });
 
     test('has correct default storage key', () {
@@ -26,8 +28,10 @@ void main() {
     });
 
     test('has correct auto refresh tick duration', () {
-      expect(Constants.autoRefreshTickDuration,
-          equals(const Duration(seconds: 10)));
+      expect(
+        Constants.autoRefreshTickDuration,
+        equals(const Duration(seconds: 10)),
+      );
     });
 
     test('has correct auto refresh tick threshold', () {
@@ -59,29 +63,37 @@ void main() {
       expect(AuthChangeEvent.values.length, equals(8));
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.initialSession));
       expect(
-          AuthChangeEvent.values, contains(AuthChangeEvent.passwordRecovery));
+        AuthChangeEvent.values,
+        contains(AuthChangeEvent.passwordRecovery),
+      );
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.signedIn));
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.signedOut));
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.tokenRefreshed));
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.userUpdated));
       // ignore: deprecated_member_use
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.userDeleted));
-      expect(AuthChangeEvent.values,
-          contains(AuthChangeEvent.mfaChallengeVerified));
+      expect(
+        AuthChangeEvent.values,
+        contains(AuthChangeEvent.mfaChallengeVerified),
+      );
     });
 
     test('has correct JS names', () {
       expect(AuthChangeEvent.initialSession.jsName, equals('INITIAL_SESSION'));
       expect(
-          AuthChangeEvent.passwordRecovery.jsName, equals('PASSWORD_RECOVERY'));
+        AuthChangeEvent.passwordRecovery.jsName,
+        equals('PASSWORD_RECOVERY'),
+      );
       expect(AuthChangeEvent.signedIn.jsName, equals('SIGNED_IN'));
       expect(AuthChangeEvent.signedOut.jsName, equals('SIGNED_OUT'));
       expect(AuthChangeEvent.tokenRefreshed.jsName, equals('TOKEN_REFRESHED'));
       expect(AuthChangeEvent.userUpdated.jsName, equals('USER_UPDATED'));
       // ignore: deprecated_member_use
       expect(AuthChangeEvent.userDeleted.jsName, equals(''));
-      expect(AuthChangeEvent.mfaChallengeVerified.jsName,
-          equals('MFA_CHALLENGE_VERIFIED'));
+      expect(
+        AuthChangeEvent.mfaChallengeVerified.jsName,
+        equals('MFA_CHALLENGE_VERIFIED'),
+      );
     });
 
     test('userDeleted is deprecated', () {
@@ -91,23 +103,39 @@ void main() {
 
     group('AuthChangeEventExtended', () {
       test('fromString returns correct event for valid names', () {
-        expect(AuthChangeEventExtended.fromString('initialSession'),
-            equals(AuthChangeEvent.initialSession));
-        expect(AuthChangeEventExtended.fromString('passwordRecovery'),
-            equals(AuthChangeEvent.passwordRecovery));
-        expect(AuthChangeEventExtended.fromString('signedIn'),
-            equals(AuthChangeEvent.signedIn));
-        expect(AuthChangeEventExtended.fromString('signedOut'),
-            equals(AuthChangeEvent.signedOut));
-        expect(AuthChangeEventExtended.fromString('tokenRefreshed'),
-            equals(AuthChangeEvent.tokenRefreshed));
-        expect(AuthChangeEventExtended.fromString('userUpdated'),
-            equals(AuthChangeEvent.userUpdated));
+        expect(
+          AuthChangeEventExtended.fromString('initialSession'),
+          equals(AuthChangeEvent.initialSession),
+        );
+        expect(
+          AuthChangeEventExtended.fromString('passwordRecovery'),
+          equals(AuthChangeEvent.passwordRecovery),
+        );
+        expect(
+          AuthChangeEventExtended.fromString('signedIn'),
+          equals(AuthChangeEvent.signedIn),
+        );
+        expect(
+          AuthChangeEventExtended.fromString('signedOut'),
+          equals(AuthChangeEvent.signedOut),
+        );
+        expect(
+          AuthChangeEventExtended.fromString('tokenRefreshed'),
+          equals(AuthChangeEvent.tokenRefreshed),
+        );
+        expect(
+          AuthChangeEventExtended.fromString('userUpdated'),
+          equals(AuthChangeEvent.userUpdated),
+        );
         // ignore: deprecated_member_use
-        expect(AuthChangeEventExtended.fromString('userDeleted'),
-            equals(AuthChangeEvent.userDeleted));
-        expect(AuthChangeEventExtended.fromString('mfaChallengeVerified'),
-            equals(AuthChangeEvent.mfaChallengeVerified));
+        expect(
+          AuthChangeEventExtended.fromString('userDeleted'),
+          equals(AuthChangeEvent.userDeleted),
+        );
+        expect(
+          AuthChangeEventExtended.fromString('mfaChallengeVerified'),
+          equals(AuthChangeEvent.mfaChallengeVerified),
+        );
       });
 
       test('fromString returns null for invalid names', () {
@@ -123,8 +151,10 @@ void main() {
 
       test('fromString uses enum name, not jsName', () {
         expect(AuthChangeEventExtended.fromString('SIGNED_IN'), isNull);
-        expect(AuthChangeEventExtended.fromString('signedIn'),
-            equals(AuthChangeEvent.signedIn));
+        expect(
+          AuthChangeEventExtended.fromString('signedIn'),
+          equals(AuthChangeEvent.signedIn),
+        );
       });
     });
   });
@@ -136,43 +166,69 @@ void main() {
       expect(GenerateLinkType.values, contains(GenerateLinkType.invite));
       expect(GenerateLinkType.values, contains(GenerateLinkType.magiclink));
       expect(GenerateLinkType.values, contains(GenerateLinkType.recovery));
-      expect(GenerateLinkType.values,
-          contains(GenerateLinkType.emailChangeCurrent));
       expect(
-          GenerateLinkType.values, contains(GenerateLinkType.emailChangeNew));
+        GenerateLinkType.values,
+        contains(GenerateLinkType.emailChangeCurrent),
+      );
+      expect(
+        GenerateLinkType.values,
+        contains(GenerateLinkType.emailChangeNew),
+      );
       expect(GenerateLinkType.values, contains(GenerateLinkType.unknown));
     });
 
     group('GenerateLinkTypeExtended', () {
       test('fromString returns correct type for valid snake_case names', () {
-        expect(GenerateLinkTypeExtended.fromString('signup'),
-            equals(GenerateLinkType.signup));
-        expect(GenerateLinkTypeExtended.fromString('invite'),
-            equals(GenerateLinkType.invite));
-        expect(GenerateLinkTypeExtended.fromString('magiclink'),
-            equals(GenerateLinkType.magiclink));
-        expect(GenerateLinkTypeExtended.fromString('recovery'),
-            equals(GenerateLinkType.recovery));
-        expect(GenerateLinkTypeExtended.fromString('email_change_current'),
-            equals(GenerateLinkType.emailChangeCurrent));
-        expect(GenerateLinkTypeExtended.fromString('email_change_new'),
-            equals(GenerateLinkType.emailChangeNew));
+        expect(
+          GenerateLinkTypeExtended.fromString('signup'),
+          equals(GenerateLinkType.signup),
+        );
+        expect(
+          GenerateLinkTypeExtended.fromString('invite'),
+          equals(GenerateLinkType.invite),
+        );
+        expect(
+          GenerateLinkTypeExtended.fromString('magiclink'),
+          equals(GenerateLinkType.magiclink),
+        );
+        expect(
+          GenerateLinkTypeExtended.fromString('recovery'),
+          equals(GenerateLinkType.recovery),
+        );
+        expect(
+          GenerateLinkTypeExtended.fromString('email_change_current'),
+          equals(GenerateLinkType.emailChangeCurrent),
+        );
+        expect(
+          GenerateLinkTypeExtended.fromString('email_change_new'),
+          equals(GenerateLinkType.emailChangeNew),
+        );
       });
 
       test('fromString returns unknown for invalid names', () {
-        expect(GenerateLinkTypeExtended.fromString('invalid'),
-            equals(GenerateLinkType.unknown));
-        expect(GenerateLinkTypeExtended.fromString('emailChangeCurrent'),
-            equals(GenerateLinkType.unknown));
-        expect(GenerateLinkTypeExtended.fromString('SIGNUP'),
-            equals(GenerateLinkType.unknown));
-        expect(GenerateLinkTypeExtended.fromString(''),
-            equals(GenerateLinkType.unknown));
+        expect(
+          GenerateLinkTypeExtended.fromString('invalid'),
+          equals(GenerateLinkType.unknown),
+        );
+        expect(
+          GenerateLinkTypeExtended.fromString('emailChangeCurrent'),
+          equals(GenerateLinkType.unknown),
+        );
+        expect(
+          GenerateLinkTypeExtended.fromString('SIGNUP'),
+          equals(GenerateLinkType.unknown),
+        );
+        expect(
+          GenerateLinkTypeExtended.fromString(''),
+          equals(GenerateLinkType.unknown),
+        );
       });
 
       test('fromString returns unknown for null input', () {
-        expect(GenerateLinkTypeExtended.fromString(null),
-            equals(GenerateLinkType.unknown));
+        expect(
+          GenerateLinkTypeExtended.fromString(null),
+          equals(GenerateLinkType.unknown),
+        );
       });
 
       test('all enum values have corresponding snake_case representation', () {
@@ -238,10 +294,14 @@ void main() {
       expect(GenerateLinkType.invite.snakeCase, equals('invite'));
       expect(GenerateLinkType.magiclink.snakeCase, equals('magiclink'));
       expect(GenerateLinkType.recovery.snakeCase, equals('recovery'));
-      expect(GenerateLinkType.emailChangeCurrent.snakeCase,
-          equals('email_change_current'));
-      expect(GenerateLinkType.emailChangeNew.snakeCase,
-          equals('email_change_new'));
+      expect(
+        GenerateLinkType.emailChangeCurrent.snakeCase,
+        equals('email_change_current'),
+      );
+      expect(
+        GenerateLinkType.emailChangeNew.snakeCase,
+        equals('email_change_new'),
+      );
       expect(GenerateLinkType.unknown.snakeCase, equals('unknown'));
     });
   });

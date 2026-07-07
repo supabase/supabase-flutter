@@ -24,9 +24,9 @@ class Message {
       for (final outerKey in payload.keys) {
         final outerValue = payload[outerKey];
         if (outerValue is Map) {
+          processedPayload[outerKey] = {};
           for (final innerKey in outerValue.keys) {
             final innerValue = outerValue[innerKey];
-            processedPayload[outerKey] ??= {};
             if (innerValue is Binding) {
               processedPayload[outerKey][innerKey] = <String, dynamic>{
                 'type': innerValue.type,
@@ -45,11 +45,12 @@ class Message {
     }
     return {
       'topic': topic,
-      'event':
-          event != ChannelEvents.heartbeat ? event.eventName() : 'heartbeat',
+      'event': event != ChannelEvents.heartbeat
+          ? event.eventName()
+          : 'heartbeat',
       'payload': processedPayload,
-      if (ref != null) 'ref': ref,
-      if (joinRef != null) 'join_ref': joinRef,
+      'ref': ?ref,
+      'join_ref': ?joinRef,
     };
   }
 }

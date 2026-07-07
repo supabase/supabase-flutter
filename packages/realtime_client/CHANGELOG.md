@@ -1,3 +1,13 @@
+## 2.10.0
+
+ - **FIX**(realtime): preserve nested empty maps in Message.toJson() ([#1518](https://github.com/supabase/supabase-flutter/issues/1518)). ([1777a225](https://github.com/supabase/supabase-flutter/commit/1777a225b0bf150a089abc06fbeb9b14cd6ace8d))
+ - **FIX**(realtime): escape quotes and backslashes in `in` filter values ([#1506](https://github.com/supabase/supabase-flutter/issues/1506)). ([30349e22](https://github.com/supabase/supabase-flutter/commit/30349e228f1d6e75610db51d9e081fc47450660c))
+ - **FEAT**(realtime): add onHeartbeat stream to RealtimeClient ([#1517](https://github.com/supabase/supabase-flutter/issues/1517)). ([d8c66cb0](https://github.com/supabase/supabase-flutter/commit/d8c66cb035600fed088544be9ed1869fb4a0a0eb))
+
+## 2.9.1
+
+ - **FIX**(realtime): cancel pending reconnect on disconnect after a dropped socket ([#1477](https://github.com/supabase/supabase-flutter/issues/1477)). ([b704932a](https://github.com/supabase/supabase-flutter/commit/b704932ac13a56a01c73cac603aed43e8a8aad3a))
+
 ## 2.9.0
 
  - **REFACTOR**(realtime_client): extract broadcast headers and body builders ([#1461](https://github.com/supabase/supabase-flutter/issues/1461)). ([7da70605](https://github.com/supabase/supabase-flutter/commit/7da706059de3af651e5e605acea081125d4b261c))

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 typedef TimerCallback = void Function();
 typedef TimerCalculation = int Function(int tries);
 
@@ -34,7 +36,14 @@ class RetryTimer {
   /// Cancels any previous timer and reset tries
   void reset() {
     _tries = 0;
-    if (_timer != null) _timer!.cancel();
+    cancel();
+  }
+
+  /// Cancels any scheduled timer without resetting tries, so exponential
+  /// backoff is preserved across reconnect attempts.
+  @internal
+  void cancel() {
+    _timer?.cancel();
   }
 
   /// Cancels any previous scheduleTimeout and schedules callback

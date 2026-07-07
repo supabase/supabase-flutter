@@ -3,20 +3,20 @@ part of 'postgrest_builder.dart';
 /// Needed as a wrapper around [PostgrestBuilder] to allow for the different return type of [withConverter] than in [ResponsePostgrestBuilder.withConverter].
 class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   RawPostgrestBuilder(PostgrestBuilder<T, S, R> builder)
-      : super(
-          url: builder._url,
-          method: builder._method,
-          headers: builder._headers,
-          schema: builder._schema,
-          body: builder._body,
-          httpClient: builder._httpClient,
-          count: builder._count,
-          isolate: builder._isolate,
-          maybeSingle: builder._maybeSingle,
-          converter: builder._converter,
-          retryEnabled: builder._retryEnabled,
-          retryDelay: builder._retryDelay,
-        );
+    : super(
+        url: builder._url,
+        method: builder._method,
+        headers: builder._headers,
+        schema: builder._schema,
+        body: builder._body,
+        httpClient: builder._httpClient,
+        count: builder._count,
+        isolate: builder._isolate,
+        maybeSingle: builder._maybeSingle,
+        converter: builder._converter,
+        retryEnabled: builder._retryEnabled,
+        retryDelay: builder._retryDelay,
+      );
 
   /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
   RawPostgrestBuilder<O, P, Q> _copyWithType<O, P, Q>({
@@ -31,19 +31,21 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     CountOption? count,
     bool? maybeSingle,
   }) {
-    return RawPostgrestBuilder(PostgrestBuilder(
-      url: url ?? _url,
-      headers: headers ?? _headers,
-      schema: schema ?? _schema,
-      method: method ?? _method,
-      body: body ?? _body,
-      httpClient: httpClient ?? _httpClient,
-      isolate: isolate ?? _isolate,
-      count: count ?? _count,
-      maybeSingle: maybeSingle ?? _maybeSingle,
-      retryEnabled: _retryEnabled,
-      retryDelay: _retryDelay,
-    ));
+    return RawPostgrestBuilder(
+      PostgrestBuilder(
+        url: url ?? _url,
+        headers: headers ?? _headers,
+        schema: schema ?? _schema,
+        method: method ?? _method,
+        body: body ?? _body,
+        httpClient: httpClient ?? _httpClient,
+        isolate: isolate ?? _isolate,
+        count: count ?? _count,
+        maybeSingle: maybeSingle ?? _maybeSingle,
+        retryEnabled: _retryEnabled,
+        retryDelay: _retryDelay,
+      ),
+    );
   }
 
   @override
@@ -64,7 +66,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   ///     );
   /// ```
   PostgrestBuilder<U, U, R> withConverter<U>(
-      PostgrestConverter<U, R> converter) {
+    PostgrestConverter<U, R> converter,
+  ) {
     return PostgrestBuilder(
       url: _url,
       headers: _headers,

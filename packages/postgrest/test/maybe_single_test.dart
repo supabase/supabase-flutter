@@ -10,12 +10,16 @@ class ZeroRowsHttpClient extends BaseClient {
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     return StreamedResponse(
-      Stream.value(utf8.encode(jsonEncode({
-        'code': 'PGRST116',
-        'details': 'Results contain 0 rows',
-        'hint': null,
-        'message': 'JSON object requested, multiple (or no) rows returned',
-      }))),
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'code': 'PGRST116',
+            'details': 'Results contain 0 rows',
+            'hint': null,
+            'message': 'JSON object requested, multiple (or no) rows returned',
+          }),
+        ),
+      ),
       406,
       request: request,
     );
@@ -23,21 +27,23 @@ class ZeroRowsHttpClient extends BaseClient {
 }
 
 void main() {
-  test('maybeSingle().count() returns null data and count 0 when no rows match',
-      () async {
-    final postgrest = PostgrestClient(
-      'https://example.com',
-      httpClient: ZeroRowsHttpClient(),
-    );
+  test(
+    'maybeSingle().count() returns null data and count 0 when no rows match',
+    () async {
+      final postgrest = PostgrestClient(
+        'https://example.com',
+        httpClient: ZeroRowsHttpClient(),
+      );
 
-    final response = await postgrest
-        .from('users')
-        .update({'name': 'x'})
-        .select()
-        .maybeSingle()
-        .count();
+      final response = await postgrest
+          .from('users')
+          .update({'name': 'x'})
+          .select()
+          .maybeSingle()
+          .count();
 
-    expect(response.data, isNull);
-    expect(response.count, 0);
-  });
+      expect(response.data, isNull);
+      expect(response.count, 0);
+    },
+  );
 }

@@ -30,8 +30,10 @@ class StorageClientOptions {
   /// `Invalid Storage request` error. Defaults to `false` (opt-in).
   final bool useNewHostname;
 
-  const StorageClientOptions(
-      {this.retryAttempts = 0, this.useNewHostname = false});
+  const StorageClientOptions({
+    this.retryAttempts = 0,
+    this.useNewHostname = false,
+  });
 }
 
 class FunctionsClientOptions {

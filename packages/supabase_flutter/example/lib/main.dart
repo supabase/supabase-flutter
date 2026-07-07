@@ -3,7 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   await Supabase.initialize(
-      url: 'SUPABASE_URL', publishableKey: 'SUPABASE_PUBLISHABLE_KEY');
+    url: 'SUPABASE_URL',
+    publishableKey: 'SUPABASE_PUBLISHABLE_KEY',
+  );
   runApp(const MyApp());
 }
 
@@ -116,10 +118,12 @@ class _LoginFormState extends State<_LoginForm> {
                       password: password,
                     );
                   } catch (e) {
-                    scaffoldMessenger.showSnackBar(const SnackBar(
-                      content: Text('Login failed'),
-                      backgroundColor: Colors.red,
-                    ));
+                    scaffoldMessenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Login failed'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                     setState(() {
                       _loading = false;
                     });
@@ -143,10 +147,12 @@ class _LoginFormState extends State<_LoginForm> {
                       password: password,
                     );
                   } catch (e) {
-                    scaffoldMessenger.showSnackBar(const SnackBar(
-                      content: Text('Signup failed'),
-                      backgroundColor: Colors.red,
-                    ));
+                    scaffoldMessenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Signup failed'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
                     setState(() {
                       _loading = false;
                     });
@@ -185,14 +191,16 @@ class _ProfileFormState extends State<_ProfileForm> {
   }
 
   Future<void> _loadProfile() async {
-    final ScaffoldMessengerState scaffoldMessenger =
-        ScaffoldMessenger.of(context);
+    final ScaffoldMessengerState scaffoldMessenger = ScaffoldMessenger.of(
+      context,
+    );
     try {
       final userId = Supabase.instance.client.auth.currentUser!.id;
       final data = (await Supabase.instance.client
           .from('profiles')
           .select()
-          .match({'id': userId}).maybeSingle());
+          .match({'id': userId})
+          .maybeSingle());
       if (data != null) {
         setState(() {
           _usernameController.text = data['username'];
@@ -200,10 +208,12 @@ class _ProfileFormState extends State<_ProfileForm> {
         });
       }
     } catch (e) {
-      scaffoldMessenger.showSnackBar(const SnackBar(
-        content: Text('Error occurred while getting profile'),
-        backgroundColor: Colors.red,
-      ));
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Error occurred while getting profile'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
     setState(() {
       _loading = false;
@@ -232,42 +242,48 @@ class _ProfileFormState extends State<_ProfileForm> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                  onPressed: () async {
-                    final ScaffoldMessengerState scaffoldMessenger =
-                        ScaffoldMessenger.of(context);
-                    try {
-                      setState(() {
-                        _loading = true;
-                      });
-                      final userId =
-                          Supabase.instance.client.auth.currentUser!.id;
-                      final username = _usernameController.text;
-                      final website = _websiteController.text;
-                      await Supabase.instance.client.from('profiles').upsert({
-                        'id': userId,
-                        'username': username,
-                        'website': website,
-                      });
-                      if (mounted) {
-                        scaffoldMessenger.showSnackBar(const SnackBar(
+                onPressed: () async {
+                  final ScaffoldMessengerState scaffoldMessenger =
+                      ScaffoldMessenger.of(context);
+                  try {
+                    setState(() {
+                      _loading = true;
+                    });
+                    final userId =
+                        Supabase.instance.client.auth.currentUser!.id;
+                    final username = _usernameController.text;
+                    final website = _websiteController.text;
+                    await Supabase.instance.client.from('profiles').upsert({
+                      'id': userId,
+                      'username': username,
+                      'website': website,
+                    });
+                    if (mounted) {
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
                           content: Text('Saved profile'),
-                        ));
-                      }
-                    } catch (e) {
-                      scaffoldMessenger.showSnackBar(const SnackBar(
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    scaffoldMessenger.showSnackBar(
+                      const SnackBar(
                         content: Text('Error saving profile'),
                         backgroundColor: Colors.red,
-                      ));
-                    }
-                    setState(() {
-                      _loading = false;
-                    });
-                  },
-                  child: const Text('Save')),
+                      ),
+                    );
+                  }
+                  setState(() {
+                    _loading = false;
+                  });
+                },
+                child: const Text('Save'),
+              ),
               const SizedBox(height: 16),
               TextButton(
-                  onPressed: () => Supabase.instance.client.auth.signOut(),
-                  child: const Text('Sign Out')),
+                onPressed: () => Supabase.instance.client.auth.signOut(),
+                child: const Text('Sign Out'),
+              ),
             ],
           );
   }

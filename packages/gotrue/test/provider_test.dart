@@ -28,8 +28,9 @@ void main() {
   });
   group('Provider sign in', () {
     test('signIn() with Provider', () async {
-      final res =
-          await client.getOAuthSignInUrl(provider: OAuthProvider.google);
+      final res = await client.getOAuthSignInUrl(
+        provider: OAuthProvider.google,
+      );
       final url = res.url;
       final provider = res.provider;
       expect(url, startsWith('$gotrueUrl/authorize?provider=google'));
@@ -47,7 +48,8 @@ void main() {
       expect(
         url,
         startsWith(
-            '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL'),
+          '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL',
+        ),
       );
       expect(provider, OAuthProvider.github);
     });
@@ -56,13 +58,15 @@ void main() {
   group('getSessionFromUrl()', () {
     setUp(() async {
       final res = await http.post(
-          Uri.parse(
-              'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
-          headers: {
-            'x-forwarded-for': '127.0.0.1',
-            'apikey': getServiceRoleToken(env),
-            'Authorization': 'Bearer ${getServiceRoleToken(env)}',
-          });
+        Uri.parse(
+          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+        ),
+        headers: {
+          'x-forwarded-for': '127.0.0.1',
+          'apikey': getServiceRoleToken(env),
+          'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+        },
+      );
       if (res.body.isNotEmpty) throw res.body;
 
       await client.signInWithPassword(email: email1, password: password);
@@ -115,8 +119,13 @@ void main() {
               'http://my-callback-url.com?page=welcome&foo=bar#access_token=$accessToken';
           await client.getSessionFromUrl(Uri.parse(url));
         },
-        throwsA(isA<AuthException>()
-            .having((e) => e.message, 'message', 'No expires_in detected.')),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'No expires_in detected.',
+          ),
+        ),
       );
     });
 
@@ -128,8 +137,9 @@ void main() {
               'http://my-callback-url.com?page=welcome&foo=bar#error_description=$errorDesc';
           await client.getSessionFromUrl(Uri.parse(url));
         },
-        throwsA(isA<AuthException>()
-            .having((e) => e.message, 'message', errorDesc)),
+        throwsA(
+          isA<AuthException>().having((e) => e.message, 'message', errorDesc),
+        ),
       );
     });
 
@@ -140,11 +150,16 @@ void main() {
               'http://my-callback-url.com?error=access_denied&error_code=403';
           await client.getSessionFromUrl(Uri.parse(url));
         },
-        throwsA(isA<AuthException>()
-            .having((e) => e.code, 'code', 'access_denied')
-            .having((e) => e.statusCode, 'statusCode', '403')
-            .having((e) => e.message, 'message',
-                'Error in URL with unspecified error_description')),
+        throwsA(
+          isA<AuthException>()
+              .having((e) => e.code, 'code', 'access_denied')
+              .having((e) => e.statusCode, 'statusCode', '403')
+              .having(
+                (e) => e.message,
+                'message',
+                'Error in URL with unspecified error_description',
+              ),
+        ),
       );
     });
   });

@@ -39,21 +39,24 @@ void main() {
 
   group('Constants', () {
     test('should have default headers with X-Client-Info', () {
-      expect(Constants.defaultHeaders,
-          containsPair('X-Client-Info', startsWith('supabase-dart/')));
+      expect(
+        Constants.defaultHeaders,
+        containsPair('X-Client-Info', startsWith('supabase-dart/')),
+      );
     });
 
     test(
-        'should include structured platform metadata in X-Client-Info when not on web',
-        () {
-      if (!kIsWeb) {
-        final clientInfo = Constants.defaultHeaders['X-Client-Info']!;
-        expect(clientInfo, contains('; platform='));
-        expect(clientInfo, contains('; platform-version='));
-        expect(clientInfo, contains('; runtime=dart'));
-        expect(clientInfo, contains('; runtime-version='));
-      }
-    });
+      'should include structured platform metadata in X-Client-Info when not on web',
+      () {
+        if (!kIsWeb) {
+          final clientInfo = Constants.defaultHeaders['X-Client-Info']!;
+          expect(clientInfo, contains('; platform='));
+          expect(clientInfo, contains('; platform-version='));
+          expect(clientInfo, contains('; runtime=dart'));
+          expect(clientInfo, contains('; runtime-version='));
+        }
+      },
+    );
 
     test('should have platform getter', () {
       if (kIsWeb) {
@@ -113,7 +116,8 @@ void main() {
 
     test('should add Authorization header with access token', () async {
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
 
       await authClient.send(request);
@@ -123,7 +127,8 @@ void main() {
 
     test('should add apikey header', () async {
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
 
       await authClient.send(request);
@@ -139,7 +144,8 @@ void main() {
       );
 
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
 
       await authClientNoToken.send(request);
@@ -149,7 +155,8 @@ void main() {
 
     test('should not override existing Authorization header', () async {
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
       request.headers['Authorization'] = 'Bearer existing-token';
 
@@ -160,7 +167,8 @@ void main() {
 
     test('should not override existing apikey header', () async {
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
       request.headers['apikey'] = 'existing-key';
 

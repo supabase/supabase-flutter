@@ -33,20 +33,20 @@ void main() {
           'flags': ['key'],
           'name': 'id',
           'type': 'int8',
-          'type_modifier': 4294967295
+          'type_modifier': 4294967295,
         },
         {
           'flags': [],
           'name': 'name',
           'type': 'text',
-          'type_modifier': 4294967295
+          'type_modifier': 4294967295,
         },
         {
           'flags': [],
           'name': 'continent',
           'type': 'continents',
-          'type_modifier': 4294967295
-        }
+          'type_modifier': 4294967295,
+        },
       ];
       final records = {'id': '253', 'name': 'Singapore', 'continent': null};
       expect(
@@ -64,7 +64,7 @@ void main() {
         {
           'name': 'age',
           'type': 'int4',
-        }
+        },
       ];
       final records = {'first_name': 'Mark', 'age': 23};
       expect(
@@ -82,7 +82,7 @@ void main() {
         {
           'name': 'age',
           'type': 'int4',
-        }
+        },
       ];
       final records = {'first_name': 'Paul', 'age': null};
       expect(
@@ -166,18 +166,18 @@ void main() {
         "columns": [
           {"name": "id", "type": "int8"},
           {"name": "created_at", "type": "timestamptz"},
-          {"name": "content", "type": "text"}
+          {"name": "content", "type": "text"},
         ],
         "commit_timestamp": "2022-09-21T04:15:16.267254+00:00",
         "errors": null,
         "record": {
           "content": "some content",
           "created_at": "2022-09-21T04:15:13+00:00",
-          "id": 4
+          "id": 4,
         },
         "schema": "public",
         "table": "random",
-        "type": "INSERT"
+        "type": "INSERT",
       });
 
       final expectedMap = {
@@ -188,7 +188,7 @@ void main() {
         'new': {
           "content": "some content",
           "created_at": "2022-09-21T04:15:13+00:00",
-          "id": 4
+          "id": 4,
         },
         'old': {},
         'errors': null,
@@ -202,20 +202,20 @@ void main() {
           "columns": [
             {"name": "id", "type": "int8"},
             {"name": "created_at", "type": "timestamptz"},
-            {"name": "content", "type": "text"}
+            {"name": "content", "type": "text"},
           ],
           "commit_timestamp": "2022-09-21T04:59:30Z",
           "errors": null,
           "record": {
             "content": "some content",
             "created_at": "2022-09-21T04:15:13+00:00",
-            "id": 4
+            "id": 4,
           },
           "schema": "public",
           "table": "random",
-          "type": "INSERT"
+          "type": "INSERT",
         },
-        "ids": [48673474, 25993878, 77086988]
+        "ids": [48673474, 25993878, 77086988],
       });
 
       final expectedMap = {
@@ -226,7 +226,7 @@ void main() {
         'new': {
           "content": "some content",
           "created_at": "2022-09-21T04:15:13+00:00",
-          "id": 4
+          "id": 4,
         },
         'old': {},
         'errors': null,

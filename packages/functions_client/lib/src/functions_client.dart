@@ -25,14 +25,15 @@ class FunctionsClient {
     http.Client? httpClient,
     YAJsonIsolate? isolate,
     String? region,
-  })  : _url = url,
-        _headers = {...Constants.defaultHeaders, ...headers},
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null,
-        _httpClient = httpClient,
-        _region = region {
+  }) : _url = url,
+       _headers = {...Constants.defaultHeaders, ...headers},
+       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+       _hasCustomIsolate = isolate != null,
+       _httpClient = httpClient,
+       _region = region {
     _log.config(
-        "Initialize FunctionsClient v$version with url '$url' and region '$region'");
+      "Initialize FunctionsClient v$version with url '$url' and region '$region'",
+    );
     _log.finest("Initialize with headers: $headers");
   }
 
@@ -107,8 +108,10 @@ class FunctionsClient {
     };
 
     final uri = Uri.parse('$_url/$functionName').replace(
-        queryParameters:
-            effectiveQueryParams.isNotEmpty ? effectiveQueryParams : null);
+      queryParameters: effectiveQueryParams.isNotEmpty
+          ? effectiveQueryParams
+          : null,
+    );
 
     final finalHeaders = <String, String>{
       ..._headers,
@@ -159,11 +162,13 @@ class FunctionsClient {
     _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
 
     final response = await (_httpClient?.send(request) ?? request.send());
-    final responseType = (response.headers['Content-Type'] ??
-            response.headers['content-type'] ??
-            'text/plain')
-        .split(';')[0]
-        .trim();
+    final responseType =
+        (response.headers['Content-Type'] ??
+                response.headers['content-type'] ??
+                'text/plain')
+            .split(';')[0]
+            .trim()
+            .toLowerCase();
 
     final isSuccessStatus =
         200 <= response.statusCode && response.statusCode < 300;
@@ -172,9 +177,23 @@ class FunctionsClient {
 
     if (responseType == 'application/json') {
       final bodyBytes = await response.stream.toBytes();
-      data = bodyBytes.isEmpty
-          ? ""
-          : await _isolate.decode(utf8.decode(bodyBytes));
+      if (bodyBytes.isEmpty) {
+        data = "";
+      } else {
+        final bodyText = utf8.decode(bodyBytes);
+        dynamic decoded;
+        try {
+          decoded = await _isolate.decode(bodyText);
+        } on FormatException {
+          // A body labeled JSON that doesn't parse is only tolerated on an
+          // error status, where the raw text still needs to reach the caller
+          // as the exception `details`. On a success status it's a real
+          // anomaly, so keep surfacing it instead of handing back a String.
+          if (isSuccessStatus) rethrow;
+          decoded = bodyText;
+        }
+        data = decoded;
+      }
     } else if (responseType == 'application/octet-stream') {
       data = await response.stream.toBytes();
     } else if (responseType == 'text/event-stream' && isSuccessStatus) {

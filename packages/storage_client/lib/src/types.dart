@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
+import 'package:meta/meta.dart';
+
 class FetchOptions {
   final Map<String, String>? headers;
   final bool? noResolveJson;
@@ -38,8 +40,9 @@ class Bucket {
       updatedAt: json['updated_at'] as String,
       public: json['public'] as bool,
       fileSizeLimit: json['file_size_limit'] as int?,
-      allowedMimeTypes:
-          allowedMimeTypes is List ? allowedMimeTypes.cast() : null,
+      allowedMimeTypes: allowedMimeTypes is List
+          ? allowedMimeTypes.cast()
+          : null,
     );
   }
 }
@@ -341,12 +344,11 @@ class StorageException implements Exception {
   factory StorageException.fromJson(
     Map<String, dynamic> json, [
     String? statusCode,
-  ]) =>
-      StorageException(
-        json['message'] as String? ?? json.toString(),
-        error: json['error'] as String?,
-        statusCode: json['statusCode']?.toString() ?? statusCode,
-      );
+  ]) => StorageException(
+    json['message'] as String? ?? json.toString(),
+    error: json['error'] as String?,
+    statusCode: json['statusCode']?.toString() ?? statusCode,
+  );
 
   @override
   String toString() {
@@ -407,7 +409,7 @@ class TransformOptions {
   ///  Specify the format of the image requested.
   ///
   ///  When using 'origin' we force the format to be the same as the original image,
-  ///  bypassing automatic browser optimisation such as webp conversion
+  ///  bypassing automatic browser optimization such as webp conversion
   final RequestImageFormat? format;
 
   /// {@macro transform_options}
@@ -430,6 +432,38 @@ extension ToQueryParams on TransformOptions {
       if (format != null) 'format': format!.snakeCase,
     };
   }
+}
+
+/// Controls download behavior for signed and public URLs.
+///
+/// Passing a [DownloadBehavior] triggers the file to be downloaded rather than
+/// opened in the browser by setting the response's `Content-Disposition`
+/// header.
+///
+/// ```dart
+/// storage.from('docs').getPublicUrl(
+///   'report.pdf',
+///   download: DownloadBehavior.withOriginalName,
+/// );
+/// storage.from('docs').getPublicUrl(
+///   'report.pdf',
+///   download: DownloadBehavior.named('annual-2024.pdf'),
+/// );
+/// ```
+class DownloadBehavior {
+  const DownloadBehavior._(String fileName) : _queryValue = fileName;
+
+  /// Triggers a download using the file's original name.
+  static const DownloadBehavior withOriginalName = DownloadBehavior._('');
+
+  /// Triggers a download with a custom [fileName].
+  const DownloadBehavior.named(String fileName) : _queryValue = fileName;
+
+  final String _queryValue;
+
+  /// The value appended to the `download` query parameter.
+  @internal
+  String get queryValue => _queryValue;
 }
 
 extension ToSnakeCase on Enum {
