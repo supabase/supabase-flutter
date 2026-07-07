@@ -1,0 +1,77 @@
+name: Release Pana
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pana:
+    name: Pana (${{ matrix.package }})
+    if: startsWith(github.event.pull_request.title, 'chore(release):')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - functions_client
+          - gotrue
+          - postgrest
+          - realtime_client
+          - storage_client
+          - supabase
+          - supabase_flutter
+          - yet_another_json_isolate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          cache: true
+
+      - name: Setup Melos
+        uses: bluefireteam/melos-action@2982f8e4fc92440a219490009d6d05195cb1a6a5 # v3.8.0
+
+      - name: Activate pana
+        run: dart pub global activate pana
+
+      - name: Run pana
+        working-directory: packages/${{ matrix.package }}
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          set -euo pipefail
+
+          pana --no-dartdoc --json . > pana.json
+
+          echo "### Pana — $PACKAGE" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Section | Points | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.report.sections[] | "| \(.id) | \(.grantedPoints)/\(.maxPoints) | \(.status) |"' pana.json >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tags: $(jq -r '[.tags[]] | join(", ")' pana.json)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          web=$(jq -r 'any(.tags[]?; . == "platform:web")' pana.json)
+          wasm=$(jq -r 'any(.tags[]?; . == "is:wasm-ready")' pana.json)
+
+          if [ "$web" = "true" ] && [ "$wasm" != "true" ]; then
+            echo "::error::$PACKAGE supports web (platform:web) but is not WASM-ready. A published package that supports web must compile to WASM. See https://dart.dev/web/wasm"
+            exit 1
+          fi
+
+          echo "$PACKAGE passed the pana web/WASM check (web=$web, wasm-ready=$wasm)."
