@@ -409,7 +409,7 @@ class TransformOptions {
   ///  Specify the format of the image requested.
   ///
   ///  When using 'origin' we force the format to be the same as the original image,
-  ///  bypassing automatic browser optimisation such as webp conversion
+  ///  bypassing automatic browser optimization such as webp conversion
   final RequestImageFormat? format;
 
   /// {@macro transform_options}
