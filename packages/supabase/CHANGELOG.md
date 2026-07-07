@@ -1,3 +1,7 @@
+## 2.14.0
+
+ - **FEAT**(realtime_client): support new postgres changes filter operators, multi-filter, column selection, and replication-ready events ([#1526](https://github.com/supabase/supabase-flutter/issues/1526)). ([1f9d2951](https://github.com/supabase/supabase-flutter/commit/1f9d29516032c1f4bd8416fd7fa36737a335afaf))
+
 ## 2.13.4
 
  - Update a dependency to the latest release.

@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-07-07
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`gotrue` - `v2.26.0`](#gotrue---v2260)
+
+Packages with other changes:
+
+ - [`realtime_client` - `v2.11.0`](#realtime_client---v2110)
+ - [`supabase` - `v2.14.0`](#supabase---v2140)
+ - [`supabase_flutter` - `v2.16.0`](#supabase_flutter---v2160)
+
+---
+
+#### `gotrue` - `v2.26.0`
+
+ - **FIX**(gotrue): OAuth server throws FormatException instead of ArgumentE… ([#1535](https://github.com/supabase/supabase-flutter/issues/1535)). ([da0f6e02](https://github.com/supabase/supabase-flutter/commit/da0f6e0236f52cd8dfb087257dbedd4a9de97533))
+ - **FEAT**(gotrue): add custom OAuth providers admin API with custom_claims_allowlist ([#1519](https://github.com/supabase/supabase-flutter/issues/1519)). ([122e5cf2](https://github.com/supabase/supabase-flutter/commit/122e5cf2036877c32ce92f807d5a9077d991a7e7))
+ - **BREAKING** **FIX**(gotrue): handle already-consented OAuth authorization responses ([#1536](https://github.com/supabase/supabase-flutter/issues/1536)). ([22d41234](https://github.com/supabase/supabase-flutter/commit/22d412346a748d282b39004771f175e37c504a5a))
+
+#### `realtime_client` - `v2.11.0`
+
+ - **FEAT**(realtime_client): support new postgres changes filter operators, multi-filter, column selection, and replication-ready events ([#1526](https://github.com/supabase/supabase-flutter/issues/1526)). ([1f9d2951](https://github.com/supabase/supabase-flutter/commit/1f9d29516032c1f4bd8416fd7fa36737a335afaf))
+
+#### `supabase` - `v2.14.0`
+
+ - **FEAT**(realtime_client): support new postgres changes filter operators, multi-filter, column selection, and replication-ready events ([#1526](https://github.com/supabase/supabase-flutter/issues/1526)). ([1f9d2951](https://github.com/supabase/supabase-flutter/commit/1f9d29516032c1f4bd8416fd7fa36737a335afaf))
+
+#### `supabase_flutter` - `v2.16.0`
+
+ - **FIX**(supabase_flutter): drop passkeys requireResidentKey workaround, bump dependency ([#1521](https://github.com/supabase/supabase-flutter/issues/1521)). ([7907c6cb](https://github.com/supabase/supabase-flutter/commit/7907c6cbc3dc31500a5cf85a81b97efc04f3006c))
+ - **FEAT**(supabase_flutter): default debug logging off under flutter test ([#1530](https://github.com/supabase/supabase-flutter/issues/1530)). ([941ee804](https://github.com/supabase/supabase-flutter/commit/941ee80498f7f6d1351351aca449b8a5bc2655da))
+
+
 ## 2026-07-03
 
 ### Changes

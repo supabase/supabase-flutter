@@ -1,3 +1,8 @@
+## 2.16.0
+
+ - **FIX**(supabase_flutter): drop passkeys requireResidentKey workaround, bump dependency ([#1521](https://github.com/supabase/supabase-flutter/issues/1521)). ([7907c6cb](https://github.com/supabase/supabase-flutter/commit/7907c6cbc3dc31500a5cf85a81b97efc04f3006c))
+ - **FEAT**(supabase_flutter): default debug logging off under flutter test ([#1530](https://github.com/supabase/supabase-flutter/issues/1530)). ([941ee804](https://github.com/supabase/supabase-flutter/commit/941ee80498f7f6d1351351aca449b8a5bc2655da))
+
 ## 2.15.4
 
  - **FIX**(supabase_flutter): preserve hash routes and repeated query keys when clearing auth params ([#1511](https://github.com/supabase/supabase-flutter/issues/1511)). ([4fca4126](https://github.com/supabase/supabase-flutter/commit/4fca4126fe3649f218b296b0e40bb4bc2de87890))
