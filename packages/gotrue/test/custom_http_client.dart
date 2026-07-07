@@ -65,7 +65,7 @@ class NoEmailConfirmationHttpClient extends BaseClient {
 
 /// Client to test out the token refresh retry logic.
 ///
-/// This client will fail the first 3 requests and succede on the 4th one.
+/// This client will fail the first 3 requests and succeed on the 4th one.
 class RetryTestHttpClient extends BaseClient {
   var retryCount = 0;
 

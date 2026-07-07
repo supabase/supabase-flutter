@@ -170,7 +170,7 @@ class ReplayOption {
 }
 
 class RealtimeChannelConfig {
-  /// [ack] option instructs server to acknowlege that broadcast message was received
+  /// [ack] option instructs server to acknowledge that broadcast message was received
   final bool ack;
 
   /// [self] option enables client to receive message it broadcasted

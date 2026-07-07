@@ -142,7 +142,7 @@ void _printBanner() {
 }
 
 /// Walks up from the current directory until it finds the examples directory,
-/// recognised by its shared `supabase/config.toml`.
+/// recognized by its shared `supabase/config.toml`.
 Directory? _findExamplesRoot() {
   var directory = Directory.current.absolute;
   while (true) {

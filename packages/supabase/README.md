@@ -32,7 +32,7 @@ The docs can be found on the official Supabase website.
 
 ## License
 
-This repo is licenced under MIT.
+This repo is licensed under MIT.
 
 ## Credits
 

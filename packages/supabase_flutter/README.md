@@ -280,7 +280,7 @@ await supabase.auth.signInWithOAuth(
   redirectTo: kIsWeb ? null : 'io.supabase.flutter://callback',
 );
 
-// Listen to auth state changes in order to detect when ther OAuth login is complete.
+// Listen to auth state changes in order to detect when the OAuth login is complete.
 supabase.auth.onAuthStateChange.listen((data) {
   final AuthChangeEvent event = data.event;
   if(event == AuthChangeEvent.signedIn) {
@@ -496,7 +496,7 @@ https://github.com/llfbandit/app_links/tree/master?tab=readme-ov-file#getting-st
 
 ### Platform specific config
 
-Follow the guide to find additional platform specidic condigs for your OAuth provider.
+Follow the guide to find additional platform specific configs for your OAuth provider.
 
 https://supabase.io/docs/guides/auth#third-party-logins
 
@@ -757,7 +757,7 @@ https://supabase.com/docs/reference/dart/upgrade-guide
 
 ## License
 
-This repo is licenced under MIT.
+This repo is licensed under MIT.
 
 ## Resources
 

@@ -243,7 +243,7 @@ void main() {
       );
     });
 
-    test('Session object can be properly json serielized', () async {
+    test('Session object can be properly json serialized', () async {
       await client.signInWithPassword(password: password, email: email2);
       await client.mfa.challengeAndVerify(factorId: factorId2, code: getTOTP());
       final response = await client.refreshSession();

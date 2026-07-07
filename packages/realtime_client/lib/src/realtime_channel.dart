@@ -353,7 +353,7 @@ class RealtimeChannel {
     );
   }
 
-  /// Registers a callback that will be executed when the channel encounteres an error.
+  /// Registers a callback that will be executed when the channel encounters an error.
   void _onError(Function callback) {
     onEvents(
       ChannelEvents.error.eventName(),
@@ -881,7 +881,7 @@ class RealtimeChannel {
       trigger(ChannelEvents.close.eventName(), 'leave', joinRef);
     }
 
-    // Destroy joinPush to avoid connection timeouts during unscription phase
+    // Destroy joinPush to avoid connection timeouts during unsubscription phase
     joinPush.destroy();
 
     final completer = Completer<String>();

@@ -186,7 +186,7 @@ class GoTrueClient {
   /// Getter for the headers
   Map<String, String> get headers => _headers;
 
-  /// Returns the current logged in user, asociated to [currentSession] if any;
+  /// Returns the current logged in user, associated to [currentSession] if any;
   User? get currentUser => _currentSession?.user;
 
   /// Returns the current session, if any;
@@ -376,7 +376,7 @@ class GoTrueClient {
     );
   }
 
-  /// Verifies the PKCE code verifyer and retrieves a session.
+  /// Verifies the PKCE code verifier and retrieves a session.
   Future<AuthSessionUrlResponse> exchangeCodeForSession(String authCode) async {
     assert(
       _asyncStorage != null,
@@ -1394,7 +1394,7 @@ class GoTrueClient {
           _log.finest('Received broadcast message: $messageEvent');
           _log.info('Received broadcast event: $rawEvent');
           final event = switch (rawEvent) {
-            // This library sends the js name of the event to be comptabile with
+            // This library sends the js name of the event to be compatible with
             // the js library, so we need to convert it back to the dart name
             'INITIAL_SESSION' => AuthChangeEvent.initialSession,
             'PASSWORD_RECOVERY' => AuthChangeEvent.passwordRecovery,
