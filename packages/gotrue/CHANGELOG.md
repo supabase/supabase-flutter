@@ -1,3 +1,11 @@
+## 2.26.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(gotrue): OAuth server throws FormatException instead of ArgumentE… ([#1535](https://github.com/supabase/supabase-flutter/issues/1535)). ([da0f6e02](https://github.com/supabase/supabase-flutter/commit/da0f6e0236f52cd8dfb087257dbedd4a9de97533))
+ - **FEAT**(gotrue): add custom OAuth providers admin API with custom_claims_allowlist ([#1519](https://github.com/supabase/supabase-flutter/issues/1519)). ([122e5cf2](https://github.com/supabase/supabase-flutter/commit/122e5cf2036877c32ce92f807d5a9077d991a7e7))
+ - **BREAKING** **FIX**(gotrue): handle already-consented OAuth authorization responses ([#1536](https://github.com/supabase/supabase-flutter/issues/1536)). ([22d41234](https://github.com/supabase/supabase-flutter/commit/22d412346a748d282b39004771f175e37c504a5a))
+
 ## 2.25.0
 
  - **FEAT**(gotrue): add shouldSoftDelete option to admin deleteUser ([#1513](https://github.com/supabase/supabase-flutter/issues/1513)). ([30e9f22f](https://github.com/supabase/supabase-flutter/commit/30e9f22f8572bb8a0d734978b011dc1f8950211c))
