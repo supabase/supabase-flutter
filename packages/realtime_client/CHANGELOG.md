@@ -1,3 +1,7 @@
+## 2.11.0
+
+ - **FEAT**(realtime_client): support new postgres changes filter operators, multi-filter, column selection, and replication-ready events ([#1526](https://github.com/supabase/supabase-flutter/issues/1526)). ([1f9d2951](https://github.com/supabase/supabase-flutter/commit/1f9d29516032c1f4bd8416fd7fa36737a335afaf))
+
 ## 2.10.0
 
  - **FIX**(realtime): preserve nested empty maps in Message.toJson() ([#1518](https://github.com/supabase/supabase-flutter/issues/1518)). ([1777a225](https://github.com/supabase/supabase-flutter/commit/1777a225b0bf150a089abc06fbeb9b14cd6ace8d))
