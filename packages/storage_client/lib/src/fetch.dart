@@ -11,7 +11,7 @@ import 'package:mime/mime.dart';
 import 'package:retry/retry.dart';
 import 'package:storage_client/src/types.dart';
 
-import 'file_io.dart' if (dart.library.js) './file_stub.dart';
+import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 class Fetch {
   final Client? httpClient;
