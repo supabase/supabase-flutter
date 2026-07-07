@@ -5,7 +5,7 @@ import 'package:http/http.dart';
 class CustomHttpClient extends BaseClient {
   /// List of received requests by the client.
   ///
-  /// Usefull for testing purposes, to check the request was constructed
+  /// Useful for testing purposes, to check the request was constructed
   /// correctly.
   List<BaseRequest> receivedRequests = <BaseRequest>[];
 

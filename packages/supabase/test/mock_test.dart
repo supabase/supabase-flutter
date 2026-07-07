@@ -441,7 +441,7 @@ void main() {
         stream.listen(expectAsync1((event) {}, count: 5));
         stream.listen(expectAsync1((event) {}, count: 5));
 
-        // All realtime events are done emitting, so should receive the currnet data
+        // All realtime events are done emitting, so should receive the current data
       });
 
       test("Create two stream to same table", () async {
@@ -458,7 +458,7 @@ void main() {
 
         await Future.delayed(Duration(seconds: 3));
 
-        // All realtime events are done emitting, so should receive the currnet data
+        // All realtime events are done emitting, so should receive the current data
         stream.listen(expectAsync1((event) {}, count: 1));
       });
       test('emits data', () {
@@ -540,7 +540,7 @@ void main() {
 
         await Future.delayed(Duration(seconds: 3));
 
-        // All realtime events are done emitting, so should receive the currnet data
+        // All realtime events are done emitting, so should receive the current data
         stream.listen(expectAsync1((event) {}, count: 1));
       });
 

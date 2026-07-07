@@ -4,7 +4,7 @@ import 'package:realtime_client/realtime_client.dart';
 Future<void> main() async {
   final socket = RealtimeClient(
     'ws://SUPABASE_API_ENDPOINT/realtime/v1',
-    params: {'apikey': 'SUPABSE_API_KEY'},
+    params: {'apikey': 'SUPABASE_API_KEY'},
     // ignore: avoid_print
     logger: (kind, msg, data) {
       print('$kind $msg $data');

@@ -317,7 +317,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// ```
   ///
   /// The return value of this method is not the auth result, and whether the
-  /// OAuth sign-in has succeded or not should be observed by setting a listener
+  /// OAuth sign-in has succeeded or not should be observed by setting a listener
   /// on [auth.onAuthStateChanged].
   ///
   /// See also:
