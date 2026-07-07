@@ -3,7 +3,14 @@ description: Listens to changes in a PostgreSQL Database and via websockets. Thi
 version: 2.11.0
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/realtime_client'
+issue_tracker: 'https://github.com/supabase/supabase-flutter/issues'
 documentation: 'https://supabase.com/docs/reference/dart/subscribe'
+topics:
+  - supabase
+  - realtime
+  - websocket
+  - database
+  - backend
 
 environment:
   sdk: '>=3.9.0 <4.0.0'
