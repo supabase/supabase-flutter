@@ -165,7 +165,7 @@ class RealtimeClient {
   /// [decode] Overrides how incoming frames are deserialized. Defaults to the
   /// codec for [version].
   ///
-  /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
+  /// [reconnectAfterMs] The optional function that returns the millisec reconnect interval. Defaults to stepped backoff off.
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
   ///
@@ -361,7 +361,7 @@ class RealtimeClient {
 
   /// Logs the message. Override `this.logger` for specialized logging.
   ///
-  /// [level] must be [Level.FINEST] for senitive data
+  /// [level] must be [Level.FINEST] for sensitive data
   void log([
     String? kind,
     String? message,
