@@ -99,6 +99,9 @@ features:
       - GoTrueOAuthApi
       - GoTrueOAuthApi.GoTrueOAuthApi
       - GoTrueOAuthApi.getAuthorizationDetails
+      - OAuthAuthorizationResponse
+      - OAuthAuthorizationResponse.OAuthAuthorizationResponse
+      - OAuthAuthorizationResponse.fromJson
       - OAuthAuthorizationDetailsResponse
       - OAuthAuthorizationDetailsResponse.OAuthAuthorizationDetailsResponse
       - OAuthAuthorizationDetailsResponse.authorizationId
@@ -107,6 +110,10 @@ features:
       - OAuthAuthorizationDetailsResponse.redirectUri
       - OAuthAuthorizationDetailsResponse.scope
       - OAuthAuthorizationDetailsResponse.user
+      - OAuthAuthorizationRedirectResponse
+      - OAuthAuthorizationRedirectResponse.OAuthAuthorizationRedirectResponse
+      - OAuthAuthorizationRedirectResponse.fromJson
+      - OAuthAuthorizationRedirectResponse.redirectUrl
       - OAuthAuthorizedClient
       - OAuthAuthorizedClient.OAuthAuthorizedClient
       - OAuthAuthorizedClient.clientId
