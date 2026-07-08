@@ -9,6 +9,7 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'auth_http_client.dart';
 import 'counter.dart';
+import 'trace_http_client.dart';
 
 /// {@template supabase_client}
 /// Creates a Supabase client to interact with your Supabase instance.
@@ -54,6 +55,7 @@ class SupabaseClient {
   final Map<String, String> _headers;
   final Client? _httpClient;
   late final Client _authHttpClient;
+  late final Client? _gotrueHttpClient;
 
   GoTrueClient? _authInstance;
 
@@ -126,6 +128,8 @@ class SupabaseClient {
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    TracePropagationOptions tracePropagationOptions =
+        const TracePropagationOptions(),
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
@@ -145,6 +149,17 @@ class SupabaseClient {
        _httpClient = httpClient,
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null {
+    final baseHttpClient = httpClient ?? Client();
+    final tracedHttpClient = tracePropagationOptions.enabled
+        ? TracePropagationClient(
+            baseHttpClient,
+            tracePropagationOptions,
+            supabaseUrl,
+          )
+        : baseHttpClient;
+    _gotrueHttpClient = tracePropagationOptions.enabled
+        ? tracedHttpClient
+        : httpClient;
     _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
       gotrueAsyncStorage: authOptions.pkceAsyncStorage,
@@ -152,7 +167,7 @@ class SupabaseClient {
     );
     _authHttpClient = AuthHttpClient(
       _supabaseKey,
-      httpClient ?? Client(),
+      tracedHttpClient,
       _getAccessToken,
     );
     rest = _initRestClient();
@@ -312,7 +327,7 @@ class SupabaseClient {
       url: _authUrl,
       headers: authHeaders,
       autoRefreshToken: autoRefreshToken,
-      httpClient: _httpClient,
+      httpClient: _gotrueHttpClient,
       asyncStorage: gotrueAsyncStorage,
       flowType: authFlowType,
     );
