@@ -166,17 +166,7 @@ class BucketOptions {
 }
 
 /// The column that [StorageBucketApi.listBuckets] can sort its results by.
-enum BucketSortColumn {
-  id('id'),
-  name('name'),
-  createdAt('created_at'),
-  updatedAt('updated_at');
-
-  const BucketSortColumn(this.value);
-
-  /// The value sent to the storage API.
-  final String value;
-}
+enum BucketSortColumn { id, name, createdAt, updatedAt }
 
 /// The direction that [StorageBucketApi.listBuckets] sorts its results in.
 enum BucketSortOrder {
@@ -219,7 +209,7 @@ class ListBucketsOptions {
       if (limit != null) 'limit': '$limit',
       if (offset != null) 'offset': '$offset',
       if (search != null && search!.isNotEmpty) 'search': search!,
-      if (sortColumn != null) 'sortColumn': sortColumn!.value,
+      if (sortColumn != null) 'sortColumn': sortColumn!.snakeCase,
       if (sortOrder != null) 'sortOrder': sortOrder!.value,
     };
   }
