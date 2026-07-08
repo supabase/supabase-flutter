@@ -1,3 +1,5 @@
+import 'package:gotrue/src/types/auth_response.dart';
+
 typedef BroadcastChannel = ({
   Stream<Map<String, dynamic>> onMessage,
   void Function(Map) postMessage,
@@ -104,49 +106,34 @@ final class OAuthProvider {
 
 /// OAuth client grant types supported by the OAuth 2.1 server.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
-enum OAuthClientGrantType {
-  authorizationCode('authorization_code'),
-  refreshToken('refresh_token');
-
-  final String value;
-  const OAuthClientGrantType(this.value);
-}
+enum OAuthClientGrantType { authorizationCode, refreshToken }
 
 /// OAuth client response types supported by the OAuth 2.1 server.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
-enum OAuthClientResponseType {
-  code('code');
-
-  final String value;
-  const OAuthClientResponseType(this.value);
-}
+enum OAuthClientResponseType { code }
 
 /// OAuth client type indicating whether the client can keep credentials confidential.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 enum OAuthClientType {
-  public('public'),
-  confidential('confidential');
-
-  final String value;
-  const OAuthClientType(this.value);
+  public,
+  confidential;
 
   static OAuthClientType fromString(String value) {
-    return OAuthClientType.values.firstWhere((e) => e.value == value);
+    return OAuthClientType.values.firstWhere(
+      (e) => e.name.toSnakeCase() == value,
+    );
   }
 }
 
 /// OAuth client registration type.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 enum OAuthClientRegistrationType {
-  dynamic('dynamic'),
-  manual('manual');
-
-  final String value;
-  const OAuthClientRegistrationType(this.value);
+  dynamic,
+  manual;
 
   static OAuthClientRegistrationType fromString(String value) {
     return OAuthClientRegistrationType.values.firstWhere(
-      (e) => e.value == value,
+      (e) => e.name.toSnakeCase() == value,
     );
   }
 }
@@ -224,14 +211,14 @@ class OAuthClient {
       grantTypes: (json['grant_types'] as List)
           .map(
             (e) => OAuthClientGrantType.values.firstWhere(
-              (gt) => gt.value == e as String,
+              (gt) => gt.name.toSnakeCase() == e as String,
             ),
           )
           .toList(),
       responseTypes: (json['response_types'] as List)
           .map(
             (e) => OAuthClientResponseType.values.firstWhere(
-              (rt) => rt.value == e as String,
+              (rt) => rt.name.toSnakeCase() == e as String,
             ),
           )
           .toList(),
@@ -277,8 +264,10 @@ class CreateOAuthClientParams {
       'client_name': clientName,
       'client_uri': ?clientUri,
       'redirect_uris': redirectUris,
-      'grant_types': ?grantTypes?.map((e) => e.value).toList(),
-      'response_types': ?responseTypes?.map((e) => e.value).toList(),
+      'grant_types': ?grantTypes?.map((e) => e.name.toSnakeCase()).toList(),
+      'response_types': ?responseTypes
+          ?.map((e) => e.name.toSnakeCase())
+          .toList(),
       'scope': ?scope,
     };
   }
@@ -319,8 +308,10 @@ class UpdateOAuthClientParams {
       'client_name': ?clientName,
       'client_uri': ?clientUri,
       'redirect_uris': ?redirectUris,
-      'grant_types': ?grantTypes?.map((e) => e.value).toList(),
-      'response_types': ?responseTypes?.map((e) => e.value).toList(),
+      'grant_types': ?grantTypes?.map((e) => e.name.toSnakeCase()).toList(),
+      'response_types': ?responseTypes
+          ?.map((e) => e.name.toSnakeCase())
+          .toList(),
       'scope': ?scope,
     };
   }
