@@ -9,6 +9,7 @@ export 'src/helper.dart' show decodeJwt, validateExp;
 export 'src/types/auth_exception.dart';
 export 'src/types/auth_response.dart' hide ToSnakeCase;
 export 'src/types/auth_state.dart';
+export 'src/types/custom_oauth_provider.dart';
 export 'src/types/error_code.dart';
 export 'src/types/gotrue_async_storage.dart';
 export 'src/types/jwt.dart';

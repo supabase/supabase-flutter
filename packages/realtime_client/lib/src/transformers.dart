@@ -166,7 +166,7 @@ dynamic convertCell(String type, dynamic value) {
     case PostgresTypes.text:
     case PostgresTypes.time: // To allow users to cast it based on Timezone
     case PostgresTypes
-          .timestamptz: // To allow users to cast it based on Timezone
+        .timestamptz: // To allow users to cast it based on Timezone
     case PostgresTypes.timetz: // To allow users to cast it based on Timezone
     case PostgresTypes.tsrange:
     case PostgresTypes.tstzrange:
@@ -304,7 +304,8 @@ Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
 }
 
 Map<String, Map<String, dynamic>> getPayloadRecords(
-    Map<String, dynamic> payload) {
+  Map<String, dynamic> payload,
+) {
   // ignore: avoid-inferrable-type-arguments
   final records = <String, Map<String, dynamic>>{
     'new': {},

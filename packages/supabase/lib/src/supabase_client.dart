@@ -130,40 +130,47 @@ class SupabaseClient {
     Map<String, String>? headers,
     Client? httpClient,
     YAJsonIsolate? isolate,
-  })  : _supabaseKey = supabaseKey,
-        _functionsOptions = functionsOptions,
-        _restUrl = '$supabaseUrl/rest/v1',
-        _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
-        _authUrl = '$supabaseUrl/auth/v1',
-        _storageUrl = '$supabaseUrl/storage/v1',
-        _functionsUrl = '$supabaseUrl/functions/v1',
-        _postgrestOptions = postgrestOptions,
-        _headers = {
-          ...Constants.defaultHeaders,
-          ...?headers,
-        },
-        _httpClient = httpClient,
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null {
+  }) : _supabaseKey = supabaseKey,
+       _functionsOptions = functionsOptions,
+       _restUrl = '$supabaseUrl/rest/v1',
+       _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
+       _authUrl = '$supabaseUrl/auth/v1',
+       _storageUrl = '$supabaseUrl/storage/v1',
+       _functionsUrl = '$supabaseUrl/functions/v1',
+       _postgrestOptions = postgrestOptions,
+       _headers = {
+         ...Constants.defaultHeaders,
+         ...?headers,
+       },
+       _httpClient = httpClient,
+       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+       _hasCustomIsolate = isolate != null {
     _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
       gotrueAsyncStorage: authOptions.pkceAsyncStorage,
       authFlowType: authOptions.authFlowType,
     );
-    _authHttpClient =
-        AuthHttpClient(_supabaseKey, httpClient ?? Client(), _getAccessToken);
+    _authHttpClient = AuthHttpClient(
+      _supabaseKey,
+      httpClient ?? Client(),
+      _getAccessToken,
+    );
     rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(
-        storageOptions.retryAttempts, storageOptions.useNewHostname);
+      storageOptions.retryAttempts,
+      storageOptions.useNewHostname,
+    );
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
       _log.config(
-          'Initialize SupabaseClient v$version with no custom access token');
+        'Initialize SupabaseClient v$version with no custom access token',
+      );
       _listenForAuthEvents();
     } else {
       _log.config(
-          'Initialize SupabaseClient v$version with custom access token');
+        'Initialize SupabaseClient v$version with custom access token',
+      );
     }
   }
 
@@ -219,8 +226,10 @@ class SupabaseClient {
   }
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
-  RealtimeChannel channel(String name,
-      {RealtimeChannelConfig opts = const RealtimeChannelConfig()}) {
+  RealtimeChannel channel(
+    String name, {
+    RealtimeChannelConfig opts = const RealtimeChannelConfig(),
+  }) {
     return realtime.channel(name, opts);
   }
 
@@ -257,8 +266,9 @@ class SupabaseClient {
         final expiresAt = authInstance.currentSession?.expiresAt;
         if (expiresAt != null) {
           // Failed to refresh the token.
-          final isExpiredWithoutMargin = DateTime.now()
-              .isAfter(DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000));
+          final isExpiredWithoutMargin = DateTime.now().isAfter(
+            DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000),
+          );
           if (isExpiredWithoutMargin) {
             // Throw the error instead of making an API request with an expired token.
             _log.warning(
@@ -329,7 +339,9 @@ class SupabaseClient {
   }
 
   SupabaseStorageClient _initStorageClient(
-      int storageRetryAttempts, bool useNewHostname) {
+    int storageRetryAttempts,
+    bool useNewHostname,
+  ) {
     return SupabaseStorageClient(
       _storageUrl,
       {...headers},

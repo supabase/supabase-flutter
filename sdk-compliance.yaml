@@ -92,9 +92,45 @@ features:
   auth.passkey.sign_in_with_passkey: implemented
 
   # auth — OAuth server (Supabase acting as an OAuth provider)
-  auth.oauth_server.get_authorization_details: not_implemented
-  auth.oauth_server.approve_authorization: not_implemented
-  auth.oauth_server.deny_authorization: not_implemented
+  auth.oauth_server.get_authorization_details:
+    status: implemented
+    symbols:
+      - GoTrueClient.oauth
+      - GoTrueOAuthApi
+      - GoTrueOAuthApi.GoTrueOAuthApi
+      - GoTrueOAuthApi.getAuthorizationDetails
+      - OAuthAuthorizationResponse
+      - OAuthAuthorizationResponse.OAuthAuthorizationResponse
+      - OAuthAuthorizationResponse.fromJson
+      - OAuthAuthorizationDetailsResponse
+      - OAuthAuthorizationDetailsResponse.OAuthAuthorizationDetailsResponse
+      - OAuthAuthorizationDetailsResponse.authorizationId
+      - OAuthAuthorizationDetailsResponse.client
+      - OAuthAuthorizationDetailsResponse.fromJson
+      - OAuthAuthorizationDetailsResponse.redirectUri
+      - OAuthAuthorizationDetailsResponse.scope
+      - OAuthAuthorizationDetailsResponse.user
+      - OAuthAuthorizationRedirectResponse
+      - OAuthAuthorizationRedirectResponse.OAuthAuthorizationRedirectResponse
+      - OAuthAuthorizationRedirectResponse.fromJson
+      - OAuthAuthorizationRedirectResponse.redirectUrl
+      - OAuthAuthorizedClient
+      - OAuthAuthorizedClient.OAuthAuthorizedClient
+      - OAuthAuthorizedClient.clientId
+      - OAuthAuthorizedClient.clientName
+      - OAuthAuthorizedClient.fromJson
+  auth.oauth_server.approve_authorization:
+    status: implemented
+    symbols:
+      - GoTrueOAuthApi.approveAuthorization
+      - OAuthConsentResponse
+      - OAuthConsentResponse.OAuthConsentResponse
+      - OAuthConsentResponse.fromJson
+      - OAuthConsentResponse.redirectUrl
+  auth.oauth_server.deny_authorization:
+    status: implemented
+    symbols:
+      - GoTrueOAuthApi.denyAuthorization
   auth.oauth_server.list_grants: not_implemented
   auth.oauth_server.revoke_grant: not_implemented
 
@@ -102,9 +138,7 @@ features:
   auth.admin.create_user: implemented
   auth.admin.get_user: implemented
   auth.admin.update_user: implemented
-  auth.admin.delete_user:
-    status: partially_implemented
-    note: "No shouldSoftDelete parameter; always performs a hard delete."
+  auth.admin.delete_user: implemented
   auth.admin.list_users:
     status: partially_implemented
     note: "Returns the user list only; pagination metadata (total, nextPage, lastPage, aud) is not returned."
@@ -113,11 +147,114 @@ features:
   auth.admin.sign_out: implemented
   auth.admin.list_mfa_factors: implemented
   auth.admin.delete_mfa_factor: implemented
-  auth.admin.create_provider: not_implemented
-  auth.admin.get_provider: not_implemented
-  auth.admin.update_provider: not_implemented
-  auth.admin.delete_provider: not_implemented
-  auth.admin.list_providers: not_implemented
+  auth.admin.create_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.customProviders
+      - GoTrueAdminCustomProvidersApi
+      - GoTrueAdminCustomProvidersApi.GoTrueAdminCustomProvidersApi
+      - GoTrueAdminCustomProvidersApi.createProvider
+      - CustomProviderType
+      - CustomProviderType.fromString
+      - CreateCustomProviderParams
+      - CreateCustomProviderParams.CreateCustomProviderParams
+      - CreateCustomProviderParams.acceptableClientIds
+      - CreateCustomProviderParams.attributeMapping
+      - CreateCustomProviderParams.authorizationParams
+      - CreateCustomProviderParams.authorizationUrl
+      - CreateCustomProviderParams.clientId
+      - CreateCustomProviderParams.clientSecret
+      - CreateCustomProviderParams.customClaimsAllowlist
+      - CreateCustomProviderParams.discoveryUrl
+      - CreateCustomProviderParams.emailOptional
+      - CreateCustomProviderParams.enabled
+      - CreateCustomProviderParams.identifier
+      - CreateCustomProviderParams.issuer
+      - CreateCustomProviderParams.jwksUri
+      - CreateCustomProviderParams.name
+      - CreateCustomProviderParams.pkceEnabled
+      - CreateCustomProviderParams.providerType
+      - CreateCustomProviderParams.scopes
+      - CreateCustomProviderParams.skipNonceCheck
+      - CreateCustomProviderParams.toJson
+      - CreateCustomProviderParams.tokenUrl
+      - CreateCustomProviderParams.userinfoUrl
+      - CustomOAuthProvider
+      - CustomOAuthProvider.CustomOAuthProvider
+      - CustomOAuthProvider.acceptableClientIds
+      - CustomOAuthProvider.attributeMapping
+      - CustomOAuthProvider.authorizationParams
+      - CustomOAuthProvider.authorizationUrl
+      - CustomOAuthProvider.clientId
+      - CustomOAuthProvider.createdAt
+      - CustomOAuthProvider.customClaimsAllowlist
+      - CustomOAuthProvider.discoveryDocument
+      - CustomOAuthProvider.discoveryUrl
+      - CustomOAuthProvider.emailOptional
+      - CustomOAuthProvider.enabled
+      - CustomOAuthProvider.fromJson
+      - CustomOAuthProvider.id
+      - CustomOAuthProvider.identifier
+      - CustomOAuthProvider.issuer
+      - CustomOAuthProvider.jwksUri
+      - CustomOAuthProvider.name
+      - CustomOAuthProvider.pkceEnabled
+      - CustomOAuthProvider.providerType
+      - CustomOAuthProvider.scopes
+      - CustomOAuthProvider.skipNonceCheck
+      - CustomOAuthProvider.tokenUrl
+      - CustomOAuthProvider.updatedAt
+      - CustomOAuthProvider.userinfoUrl
+      - OIDCDiscoveryDocument
+      - OIDCDiscoveryDocument.OIDCDiscoveryDocument
+      - OIDCDiscoveryDocument.authorizationEndpoint
+      - OIDCDiscoveryDocument.fromJson
+      - OIDCDiscoveryDocument.issuer
+      - OIDCDiscoveryDocument.jwksUri
+      - OIDCDiscoveryDocument.revocationEndpoint
+      - OIDCDiscoveryDocument.supportedIdTokenSigningAlgs
+      - OIDCDiscoveryDocument.supportedResponseTypes
+      - OIDCDiscoveryDocument.supportedScopes
+      - OIDCDiscoveryDocument.supportedSubjectTypes
+      - OIDCDiscoveryDocument.tokenEndpoint
+      - OIDCDiscoveryDocument.userinfoEndpoint
+  auth.admin.get_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.getProvider
+  auth.admin.update_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.updateProvider
+      - UpdateCustomProviderParams
+      - UpdateCustomProviderParams.UpdateCustomProviderParams
+      - UpdateCustomProviderParams.acceptableClientIds
+      - UpdateCustomProviderParams.attributeMapping
+      - UpdateCustomProviderParams.authorizationParams
+      - UpdateCustomProviderParams.authorizationUrl
+      - UpdateCustomProviderParams.clientId
+      - UpdateCustomProviderParams.clientSecret
+      - UpdateCustomProviderParams.customClaimsAllowlist
+      - UpdateCustomProviderParams.discoveryUrl
+      - UpdateCustomProviderParams.emailOptional
+      - UpdateCustomProviderParams.enabled
+      - UpdateCustomProviderParams.issuer
+      - UpdateCustomProviderParams.jwksUri
+      - UpdateCustomProviderParams.name
+      - UpdateCustomProviderParams.pkceEnabled
+      - UpdateCustomProviderParams.scopes
+      - UpdateCustomProviderParams.skipNonceCheck
+      - UpdateCustomProviderParams.toJson
+      - UpdateCustomProviderParams.tokenUrl
+      - UpdateCustomProviderParams.userinfoUrl
+  auth.admin.delete_provider:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.deleteProvider
+  auth.admin.list_providers:
+    status: implemented
+    symbols:
+      - GoTrueAdminCustomProvidersApi.listProviders
 
   # auth — admin OAuth clients
   auth.oauth_admin.create_client: implemented
@@ -190,8 +327,9 @@ features:
   database.using_modifiers.format_geojson: implemented
   database.using_modifiers.relationship_embed: implemented
   database.using_modifiers.explain:
-    status: partially_implemented
-    note: "Only the text plan is supported; there is no format: json option."
+    status: implemented
+    symbols:
+      - ExplainFormat
   database.using_modifiers.dry_run: not_implemented
   database.using_modifiers.strip_nulls: not_implemented
   database.using_modifiers.request_cancellation: not_implemented
@@ -219,17 +357,14 @@ features:
   storage.file_buckets.copy_cross_bucket: implemented
   storage.file_buckets.remove: implemented
   storage.file_buckets.create_signed_url:
-    status: partially_implemented
-    note: "No download (content-disposition) option; image transform is supported."
-  storage.file_buckets.create_signed_urls:
-    status: partially_implemented
-    note: "No download (content-disposition) option."
-  storage.file_buckets.create_signed_upload_url:
-    status: partially_implemented
-    note: "No upsert option to allow overwriting an existing file."
-  storage.file_buckets.get_public_url:
-    status: partially_implemented
-    note: "No download (content-disposition) option; image transform is supported."
+    status: implemented
+    symbols:
+      - DownloadBehavior
+      - DownloadBehavior.named
+      - DownloadBehavior.withOriginalName
+  storage.file_buckets.create_signed_urls: implemented
+  storage.file_buckets.create_signed_upload_url: implemented
+  storage.file_buckets.get_public_url: implemented
   storage.file_buckets.url_cache_nonce: not_implemented
   storage.file_buckets.file_exists: implemented
   storage.file_buckets.file_info: implemented
@@ -281,13 +416,33 @@ features:
   realtime.client.get_channels: implemented
   realtime.client.remove_channel: implemented
   realtime.client.remove_all_channels: implemented
-  realtime.client.listen_heartbeats: not_implemented
+  realtime.client.listen_heartbeats:
+    status: implemented
+    symbols:
+      - RealtimeClient.onHeartbeat
+      - RealtimeHeartbeatStatus
   realtime.client.set_auth_token: implemented
 
   # realtime — subscriptions
   realtime.subscriptions.broadcast: implemented
-  realtime.subscriptions.postgres_changes: implemented
-  realtime.subscriptions.postgres_changes_filter: implemented
+  realtime.subscriptions.postgres_changes:
+    status: implemented
+    symbols:
+      - ChannelFilter.select
+      - RealtimeChannelConfig.replicationReady
+      - RealtimeSystemPayload
+      - RealtimeSystemPayload.RealtimeSystemPayload
+      - RealtimeSystemPayload.channel
+      - RealtimeSystemPayload.extension
+      - RealtimeSystemPayload.fromJson
+      - RealtimeSystemPayload.message
+      - RealtimeSystemPayload.status
+      - RealtimeSystemPayload.toString
+  realtime.subscriptions.postgres_changes_filter:
+    status: implemented
+    symbols:
+      - PostgresChangeFilter.negate
+      - PostgresChangeFilterType.token
   realtime.subscriptions.subscribe_presence: implemented
   realtime.subscriptions.private_channel: implemented
   realtime.subscriptions.broadcast_self: implemented
@@ -311,8 +466,14 @@ features:
 
   # functions
   functions.invocation.invoke:
-    status: partially_implemented
-    note: "Invocation works, but errors surface as a single FunctionException; the FunctionsFetchError/FunctionsRelayError/FunctionsHttpError distinction is not exposed."
+    status: implemented
+    symbols:
+      - FunctionsFetchException
+      - FunctionsFetchException.FunctionsFetchException
+      - FunctionsRelayException
+      - FunctionsRelayException.FunctionsRelayException
+      - FunctionsHttpException
+      - FunctionsHttpException.FunctionsHttpException
   functions.invocation.set_auth_token: implemented
   functions.invocation.method_override: implemented
   functions.invocation.streaming_response: implemented

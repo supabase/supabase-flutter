@@ -40,11 +40,11 @@ class PostgrestClient {
     YAJsonIsolate? isolate,
     this.retryEnabled = true,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-  })  : _schema = schema,
-        headers = {...defaultHeaders, ...?headers},
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null,
-        _retryDelay = retryDelay {
+  }) : _schema = schema,
+       headers = {...defaultHeaders, ...?headers},
+       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+       _hasCustomIsolate = isolate != null,
+       _retryDelay = retryDelay {
     _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
     _log.finest('Initialize with headers: $headers');
   }

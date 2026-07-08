@@ -1,18 +1,35 @@
-# storage_client
+<br />
+<p align="center">
+  <a href="https://supabase.com">
+    <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+  </a>
 
-Dart client library to interact with Supabase Storage.
+  <h1 align="center">storage_client</h1>
 
-- Documentation: https://supabase.io/docs/reference/dart/storage-createbucket
+  <p align="center">
+    Dart client library to interact with <a href="https://supabase.com/docs/guides/storage">Supabase Storage</a>.
+  </p>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/storage">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/dart/file-buckets-createbucket">Reference Docs</a>
+  </p>
+</p>
+
+<div align="center">
 
 [![pub package](https://img.shields.io/pub/v/storage_client.svg)](https://pub.dev/packages/storage_client)
-[![pub test](https://github.com/supabase/storage-dart/workflows/Test/badge.svg)](https://github.com/supabase/storage-dart/actions?query=workflow%3ATest)
+[![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
+
+</div>
 
 ## Docs
 
 The docs can be found on the official Supabase website.
 
-- [Dart reference](https://supabase.com/docs/reference/dart/storage-createbucket)
-- [Realtime guide](https://supabase.com/docs/guides/storage)
+- [Dart reference](https://supabase.com/docs/reference/dart/file-buckets-createbucket)
+- [Storage guide](https://supabase.com/docs/guides/storage)
 
 ## License
 

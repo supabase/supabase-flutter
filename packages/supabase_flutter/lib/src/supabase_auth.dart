@@ -105,19 +105,23 @@ class SupabaseAuth with WidgetsBindingObserver {
       final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
         try {
-          await Supabase.instance.client.auth
-              .setInitialSession(persistedSession);
+          await Supabase.instance.client.auth.setInitialSession(
+            persistedSession,
+          );
           shouldEmitInitialSession = false;
         } catch (error, stackTrace) {
           _log.warning(
-              'Error while setting initial session', error, stackTrace);
+            'Error while setting initial session',
+            error,
+            stackTrace,
+          );
         }
       }
     }
     if (shouldEmitInitialSession) {
       Supabase.instance.client.auth
-          // ignore: invalid_use_of_internal_member
-          .notifyAllSubscribers(AuthChangeEvent.initialSession);
+      // ignore: invalid_use_of_internal_member
+      .notifyAllSubscribers(AuthChangeEvent.initialSession);
     }
     _widgetsBindingInstance.addObserver(this);
 
@@ -177,7 +181,9 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 
   Future<void> _onAuthStateChange(
-      AuthChangeEvent event, Session? session) async {
+    AuthChangeEvent event,
+    Session? session,
+  ) async {
     try {
       if (session != null) {
         await _localStorage.persistSession(jsonEncode(session.toJson()));
@@ -186,7 +192,10 @@ class SupabaseAuth with WidgetsBindingObserver {
       }
     } catch (error, stackTrace) {
       _log.warning(
-          'Error while persisting auth state change', error, stackTrace);
+        'Error while persisting auth state change',
+        error,
+        stackTrace,
+      );
     }
   }
 
@@ -308,7 +317,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// ```
   ///
   /// The return value of this method is not the auth result, and whether the
-  /// OAuth sign-in has succeded or not should be observed by setting a listener
+  /// OAuth sign-in has succeeded or not should be observed by setting a listener
   /// on [auth.onAuthStateChanged].
   ///
   /// See also:

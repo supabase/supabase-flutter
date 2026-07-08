@@ -99,7 +99,7 @@ void main() {
           '2',
           'realtime:room',
           'phx_reply',
-          {'status': 'ok'}
+          {'status': 'ok'},
         ]),
       );
 
@@ -220,14 +220,16 @@ void main() {
       expect(metadataLength, greaterThan(0));
 
       // metadata sits after the header and the joinRef/ref/topic/event strings.
-      final metadataStart = Serializer.headerLength +
+      final metadataStart =
+          Serializer.headerLength +
           Serializer.userBroadcastPushMetaLength +
           0 + // joinRef
           0 + // ref
           'realtime:room'.length +
           'file'.length;
-      final metadata = utf8
-          .decode(bytes.sublist(metadataStart, metadataStart + metadataLength));
+      final metadata = utf8.decode(
+        bytes.sublist(metadataStart, metadataStart + metadataLength),
+      );
       expect(jsonDecode(metadata), {'trace_id': 'abc'});
     });
 

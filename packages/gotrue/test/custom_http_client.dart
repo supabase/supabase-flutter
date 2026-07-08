@@ -34,7 +34,7 @@ class NoEmailConfirmationHttpClient extends BaseClient {
               'confirmation_sent_at': now,
               'app_metadata': {
                 'provider': 'email',
-                'providers': ['email']
+                'providers': ['email'],
               },
               'user_metadata': {},
               'identities': [
@@ -43,13 +43,13 @@ class NoEmailConfirmationHttpClient extends BaseClient {
                   'user_id': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136',
                   'identity_data': {
                     'email': 'fake1@email.com',
-                    'sub': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136'
+                    'sub': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136',
                   },
                   'provider': 'email',
                   'last_sign_in_at': now,
                   'created_at': now,
-                  'updated_at': now
-                }
+                  'updated_at': now,
+                },
               ],
               'created_at': now,
               'updated_at': now,
@@ -65,7 +65,7 @@ class NoEmailConfirmationHttpClient extends BaseClient {
 
 /// Client to test out the token refresh retry logic.
 ///
-/// This client will fail the first 3 requests and succede on the 4th one.
+/// This client will fail the first 3 requests and succeed on the 4th one.
 class RetryTestHttpClient extends BaseClient {
   var retryCount = 0;
 
@@ -107,7 +107,7 @@ class RetryTestHttpClient extends BaseClient {
                 'last_sign_in_at': '2023-04-01T09:38:59.904492805Z',
                 'app_metadata': {
                   'provider': 'email',
-                  'providers': ['email']
+                  'providers': ['email'],
                 },
                 'user_metadata': {},
                 'factors': [
@@ -117,8 +117,8 @@ class RetryTestHttpClient extends BaseClient {
                     'updated_at': '2023-04-01T09:38:59.784028Z',
                     'status': 'unverified',
                     'friendly_name': 'UnverifiedFactor',
-                    'factor_type': 'totp'
-                  }
+                    'factor_type': 'totp',
+                  },
                 ],
                 'identities': [
                   {
@@ -126,17 +126,17 @@ class RetryTestHttpClient extends BaseClient {
                     'user_id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
                     'identity_data': {
                       'email': 'fake1@email.com',
-                      'sub': '18bc7a4e-c095-4573-93dc-e0be29bada97'
+                      'sub': '18bc7a4e-c095-4573-93dc-e0be29bada97',
                     },
                     'provider': 'email',
                     'last_sign_in_at': '2023-04-01T09:38:59.784028Z',
                     'created_at': '2023-04-01T09:38:59.784028Z',
-                    'updated_at': '2023-04-01T09:38:59.784028Z'
-                  }
+                    'updated_at': '2023-04-01T09:38:59.784028Z',
+                  },
                 ],
                 'created_at': '2023-04-01T09:38:59.784028Z',
-                'updated_at': '2023-04-01T09:38:59.908816Z'
-              }
+                'updated_at': '2023-04-01T09:38:59.908816Z',
+              },
             },
           ),
         ),
@@ -216,13 +216,13 @@ class SingleUseRefreshTokenHttpClient extends BaseClient {
                 'last_sign_in_at': '2023-04-01T09:38:59.904492805Z',
                 'app_metadata': {
                   'provider': 'email',
-                  'providers': ['email']
+                  'providers': ['email'],
                 },
                 'user_metadata': {},
                 'identities': <dynamic>[],
                 'created_at': '2023-04-01T09:38:59.784028Z',
-                'updated_at': '2023-04-01T09:38:59.908816Z'
-              }
+                'updated_at': '2023-04-01T09:38:59.908816Z',
+              },
             },
           ),
         ),

@@ -58,9 +58,9 @@ class GoTrueAdminOAuthApi {
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,
-  })  : _url = url,
-        _headers = headers,
-        _fetch = fetch;
+  }) : _url = url,
+       _headers = headers,
+       _fetch = fetch;
 
   /// Lists all OAuth clients with optional pagination.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
@@ -76,8 +76,8 @@ class GoTrueAdminOAuthApi {
       options: GotrueRequestOptions(
         headers: _headers,
         query: {
-          if (page != null) 'page': page.toString(),
-          if (perPage != null) 'per_page': perPage.toString(),
+          'page': ?page?.toString(),
+          'per_page': ?perPage?.toString(),
         },
       ),
     );

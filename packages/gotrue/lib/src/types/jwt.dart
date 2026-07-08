@@ -31,8 +31,8 @@ class JwtHeader {
   Map<String, dynamic> toJson() {
     return {
       'alg': alg,
-      if (kid != null) 'kid': kid,
-      if (typ != null) 'typ': typ,
+      'kid': ?kid,
+      'typ': ?typ,
     };
   }
 }
@@ -167,7 +167,8 @@ class JWKSet {
   const JWKSet({required this.keys});
 
   factory JWKSet.fromJson(Map<String, dynamic> json) {
-    final keys = (json['keys'] as List<dynamic>?)
+    final keys =
+        (json['keys'] as List<dynamic>?)
             ?.map((e) => JWK.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
@@ -217,7 +218,7 @@ class JWK {
     final kty = json['kty'] as String;
     final keyOps =
         (json['key_ops'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-            [];
+        [];
     final alg = json['alg'] as String?;
     final kid = json['kid'] as String?;
 

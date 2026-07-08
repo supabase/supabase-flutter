@@ -11,7 +11,7 @@ import 'package:mime/mime.dart';
 import 'package:retry/retry.dart';
 import 'package:storage_client/src/types.dart';
 
-import 'file_io.dart' if (dart.library.js) './file_stub.dart';
+import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 class Fetch {
   final Client? httpClient;
@@ -44,8 +44,10 @@ class Fetch {
       try {
         final data = json.decode(error.body) as Map<String, dynamic>;
 
-        final exception =
-            StorageException.fromJson(data, '${error.statusCode}');
+        final exception = StorageException.fromJson(
+          data,
+          '${error.statusCode}',
+        );
         _log.fine('StorageException for $url', exception, stack);
         return exception;
       } on FormatException catch (_) {
@@ -72,8 +74,9 @@ class Fetch {
   ) async {
     final headers = {...?options?.headers};
     if (method != 'GET') {
-      final hasContentType =
-          headers.keys.any((key) => key.toLowerCase() == 'content-type');
+      final hasContentType = headers.keys.any(
+        (key) => key.toLowerCase() == 'content-type',
+      );
       if (!hasContentType) {
         headers['Content-Type'] = 'application/json';
       }

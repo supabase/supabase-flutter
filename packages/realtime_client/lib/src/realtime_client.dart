@@ -14,10 +14,11 @@ import 'package:realtime_client/src/serializer.dart';
 import 'package:realtime_client/src/websocket/websocket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-typedef WebSocketTransport = WebSocketChannel Function(
-  String url,
-  Map<String, String> headers,
-);
+typedef WebSocketTransport =
+    WebSocketChannel Function(
+      String url,
+      Map<String, String> headers,
+    );
 
 /// Serializes an outgoing message into the `String` or binary frame written to
 /// the WebSocket.
@@ -50,6 +51,14 @@ class RealtimeCloseEvent {
   String toString() {
     return 'RealtimeCloseEvent(code: $code, reason: $reason)';
   }
+}
+
+/// The lifecycle status of a heartbeat reported to [RealtimeClient.onHeartbeat].
+enum RealtimeHeartbeatStatus {
+  sent,
+  ok,
+  error,
+  timeout,
 }
 
 /// Manages a persistent WebSocket connection to the Supabase Realtime server.
@@ -123,8 +132,11 @@ class RealtimeClient {
     'open': [],
     'close': [],
     'error': [],
-    'message': []
+    'message': [],
   };
+
+  final _heartbeatController =
+      StreamController<RealtimeHeartbeatStatus>.broadcast();
 
   @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
@@ -153,7 +165,7 @@ class RealtimeClient {
   /// [decode] Overrides how incoming frames are deserialized. Defaults to the
   /// codec for [version].
   ///
-  /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
+  /// [reconnectAfterMs] The optional function that returns the millisec reconnect interval. Defaults to stepped backoff off.
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
   ///
@@ -176,27 +188,31 @@ class RealtimeClient {
     this.httpClient,
     this.customAccessToken,
     this.version = RealtimeProtocolVersion.v2,
-  })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
-            .replace(
-              queryParameters:
-                  logLevel == null ? null : {'log_level': logLevel.name},
-            )
-            .toString(),
-        headers = {
-          ...Constants.defaultHeaders,
-          ...?headers,
-        },
-        transport = transport ?? createWebSocketClient,
-        encode = encode ??
-            (version == RealtimeProtocolVersion.v1
-                ? _encodeLegacy
-                : _serializer.encode),
-        decode = decode ??
-            (version == RealtimeProtocolVersion.v1
-                ? _decodeLegacy
-                : _serializer.decode) {
+  }) : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
+           .replace(
+             queryParameters: logLevel == null
+                 ? null
+                 : {'log_level': logLevel.name},
+           )
+           .toString(),
+       headers = {
+         ...Constants.defaultHeaders,
+         ...?headers,
+       },
+       transport = transport ?? createWebSocketClient,
+       encode =
+           encode ??
+           (version == RealtimeProtocolVersion.v1
+               ? _encodeLegacy
+               : _serializer.encode),
+       decode =
+           decode ??
+           (version == RealtimeProtocolVersion.v1
+               ? _decodeLegacy
+               : _serializer.decode) {
     _log.config(
-        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: ${logLevel?.name}');
+      'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: ${logLevel?.name}',
+    );
     _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
@@ -213,7 +229,10 @@ class RealtimeClient {
   @internal
   Future<void> connect() async {
     if (conn != null) {
-      return;
+      if (connState != SocketStates.closed) {
+        return;
+      }
+      await disconnect();
     }
 
     try {
@@ -283,8 +302,10 @@ class RealtimeClient {
       if (shouldCloseSink) {
         // Don't set the state to `disconnecting` if the connection is already closed.
         connState = SocketStates.disconnecting;
-        log('transport', 'disconnecting', {'code': code, 'reason': reason},
-            Level.FINE);
+        log('transport', 'disconnecting', {
+          'code': code,
+          'reason': reason,
+        }, Level.FINE);
       }
 
       if (shouldCloseSink) {
@@ -312,9 +333,15 @@ class RealtimeClient {
               .timeout(const Duration(seconds: 6), onTimeout: onTimeout);
         }
         connState = SocketStates.disconnected;
-        reconnectTimer.reset();
         log('transport', 'disconnected', null, Level.FINE);
       }
+
+      // Cancel any reconnect scheduled by `_onConnClose`. When the socket has
+      // already dropped (`connState == closed`) the block above is skipped, so
+      // without this an armed backoff timer would fire after the user
+      // explicitly disconnected and silently reopen the connection.
+      reconnectTimer.cancel();
+
       this.conn = null;
       await _connectionSubscription?.cancel();
       _connectionSubscription = null;
@@ -337,20 +364,22 @@ class RealtimeClient {
   }
 
   Future<List<String>> removeAllChannels() async {
-    final values =
-        await Future.wait(channels.map((channel) => channel.unsubscribe()));
+    final values = await Future.wait(
+      channels.map((channel) => channel.unsubscribe()),
+    );
     unawaited(disconnect());
     return values;
   }
 
   /// Logs the message. Override `this.logger` for specialized logging.
   ///
-  /// [level] must be [Level.FINEST] for senitive data
-  void log(
-      [String? kind,
-      String? message,
-      dynamic data,
-      Level level = Level.FINEST]) {
+  /// [level] must be [Level.FINEST] for sensitive data
+  void log([
+    String? kind,
+    String? message,
+    dynamic data,
+    Level level = Level.FINEST,
+  ]) {
     _log.log(level, '$kind: $message', data);
     logger?.call(kind, message, data);
   }
@@ -378,6 +407,10 @@ class RealtimeClient {
   void onMessage(void Function(dynamic) callback) {
     stateChangeCallbacks['message']!.add(callback);
   }
+
+  /// Emits a status whenever a heartbeat is sent, acknowledged, or times out.
+  Stream<RealtimeHeartbeatStatus> get onHeartbeat =>
+      _heartbeatController.stream;
 
   /// Returns the current state of the socket.
   String get connectionState {
@@ -423,8 +456,11 @@ class RealtimeClient {
       conn?.sink.add(encode(message.toJson()));
     }
 
-    log('push', '${message.topic} ${message.event.name} (${message.ref})',
-        message.payload);
+    log(
+      'push',
+      '${message.topic} ${message.event.name} (${message.ref})',
+      message.payload,
+    );
 
     if (isConnected) {
       callback();
@@ -449,6 +485,12 @@ class RealtimeClient {
     final messageRef = message['ref'] as String?;
     if (messageRef != null && messageRef == pendingHeartbeatRef) {
       pendingHeartbeatRef = null;
+      final heartbeatStatus = payload is Map ? payload['status'] : null;
+      _heartbeatController.add(
+        heartbeatStatus == 'ok'
+            ? RealtimeHeartbeatStatus.ok
+            : RealtimeHeartbeatStatus.error,
+      );
     }
 
     final status = payload is Map ? (payload['status'] ?? '') : '';
@@ -458,7 +500,9 @@ class RealtimeClient {
       payload,
     );
 
-    channels.where((channel) => channel.isMember(topic)).forEach(
+    channels
+        .where((channel) => channel.isMember(topic))
+        .forEach(
           (channel) => channel.trigger(
             event,
             payload,
@@ -599,10 +643,12 @@ class RealtimeClient {
     }
 
     var endpoint = Uri.parse(url);
-    endpoint = endpoint.replace(queryParameters: {
-      ...endpoint.queryParameters,
-      ...queryParameters,
-    });
+    endpoint = endpoint.replace(
+      queryParameters: {
+        ...endpoint.queryParameters,
+        ...queryParameters,
+      },
+    );
 
     return endpoint.toString();
   }
@@ -629,16 +675,20 @@ class RealtimeClient {
         'transport',
         'heartbeat timeout. Attempting to re-establish conn',
       );
+      _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       unawaited(conn?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout'));
       return;
     }
     pendingHeartbeatRef = makeRef();
-    push(Message(
-      topic: 'phoenix',
-      event: ChannelEvents.heartbeat,
-      payload: {},
-      ref: pendingHeartbeatRef!,
-    ));
+    push(
+      Message(
+        topic: 'phoenix',
+        event: ChannelEvents.heartbeat,
+        payload: {},
+        ref: pendingHeartbeatRef!,
+      ),
+    );
+    _heartbeatController.add(RealtimeHeartbeatStatus.sent);
     await setAuth(accessToken);
   }
 }

@@ -5,7 +5,7 @@ import 'package:http/http.dart';
 class CustomHttpClient extends BaseClient {
   /// List of received requests by the client.
   ///
-  /// Usefull for testing purposes, to check the request was constructed
+  /// Useful for testing purposes, to check the request was constructed
   /// correctly.
   List<BaseRequest> receivedRequests = <BaseRequest>[];
 
@@ -15,7 +15,21 @@ class CustomHttpClient extends BaseClient {
     receivedRequests = receivedRequests..add(request);
     request.finalize();
 
-    if (request.url.path.endsWith("error-function")) {
+    if (request.url.path.endsWith('network-error')) {
+      // Simulate a transport failure before any response is received.
+      throw ClientException('Connection failed', request.url);
+    } else if (request.url.path.endsWith('relay-error')) {
+      return StreamedResponse(
+        Stream.value(utf8.encode(jsonEncode({"error": "relay down"}))),
+        500,
+        request: request,
+        headers: {
+          "Content-Type": "application/json",
+          "x-relay-error": "true",
+        },
+        reasonPhrase: "Internal Server Error",
+      );
+    } else if (request.url.path.endsWith("error-function")) {
       //Return custom status code to check for usage of this client.
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
@@ -39,11 +53,13 @@ class CustomHttpClient extends BaseClient {
       );
     } else if (request.url.path.endsWith('sse')) {
       return StreamedResponse(
-          Stream.fromIterable(['a', 'b', 'c'].map((e) => utf8.encode(e))), 200,
-          request: request,
-          headers: {
-            "Content-Type": "text/event-stream",
-          });
+        Stream.fromIterable(['a', 'b', 'c'].map((e) => utf8.encode(e))),
+        200,
+        request: request,
+        headers: {
+          "Content-Type": "text/event-stream",
+        },
+      );
     } else if (request.url.path.endsWith('binary')) {
       return StreamedResponse(
         Stream.value([1, 2, 3, 4, 5]),
@@ -71,19 +87,49 @@ class CustomHttpClient extends BaseClient {
           "Content-Type": "application/json",
         },
       );
+    } else if (request.url.path.endsWith('invalid-json-error')) {
+      return StreamedResponse(
+        Stream.value(utf8.encode('<html><body>502 Bad Gateway</body></html>')),
+        500,
+        request: request,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        reasonPhrase: "Internal Server Error",
+      );
+    } else if (request.url.path.endsWith('success-invalid-json')) {
+      return StreamedResponse(
+        Stream.value(utf8.encode('<html><body>not json</body></html>')),
+        200,
+        request: request,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      );
+    } else if (request.url.path.endsWith('uppercase-json')) {
+      return StreamedResponse(
+        Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
+        200,
+        request: request,
+        headers: {
+          "Content-Type": "application/JSON",
+        },
+      );
     }
     final Stream<List<int>> stream;
     final Map<String, String> headers;
 
     if (request is MultipartRequest) {
       stream = Stream.value(
-        utf8.encode(jsonEncode([
-          for (final file in request.files)
-            {
-              "name": file.field,
-              "content": await file.finalize().bytesToString()
-            }
-        ])),
+        utf8.encode(
+          jsonEncode([
+            for (final file in request.files)
+              {
+                "name": file.field,
+                "content": await file.finalize().bytesToString(),
+              },
+          ]),
+        ),
       );
       headers = {"Content-Type": "application/json"};
     } else {

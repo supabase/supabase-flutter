@@ -36,7 +36,7 @@ class Serializer {
   final List<String> allowedMetadataKeys;
 
   const Serializer({List<String>? allowedMetadataKeys})
-      : allowedMetadataKeys = allowedMetadataKeys ?? const [];
+    : allowedMetadataKeys = allowedMetadataKeys ?? const [];
 
   /// Encodes a message map into the string or binary representation that is
   /// written to the WebSocket.
@@ -107,7 +107,8 @@ class Serializer {
     _checkLength('userEvent', userEvent.length);
     _checkLength('metadata', metadata.length);
 
-    final metaLength = userBroadcastPushMetaLength +
+    final metaLength =
+        userBroadcastPushMetaLength +
         joinRef.length +
         ref.length +
         topic.length +
@@ -151,15 +152,18 @@ class Serializer {
     final payloadEncoding = view.getUint8(4);
 
     var offset = headerLength + userBroadcastMetaLength;
-    final topic =
-        utf8.decode(Uint8List.sublistView(buffer, offset, offset + topicSize));
+    final topic = utf8.decode(
+      Uint8List.sublistView(buffer, offset, offset + topicSize),
+    );
     offset += topicSize;
-    final userEvent = utf8
-        .decode(Uint8List.sublistView(buffer, offset, offset + userEventSize));
+    final userEvent = utf8.decode(
+      Uint8List.sublistView(buffer, offset, offset + userEventSize),
+    );
     offset += userEventSize;
     final metadata = metadataSize > 0
         ? utf8.decode(
-            Uint8List.sublistView(buffer, offset, offset + metadataSize))
+            Uint8List.sublistView(buffer, offset, offset + metadataSize),
+          )
         : '';
     offset += metadataSize;
 

@@ -6,14 +6,16 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
-  flutter: '>=3.22.0'
+  sdk: '>=3.9.0 <4.0.0'
+  flutter: '>=3.35.0'
+
+resolution: workspace
 
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter:
-    path: ../../packages/supabase_flutter
+  passkeys: ^2.21.1
+  supabase_flutter: ^2.16.0
 
 dev_dependencies:
   flutter_lints: ^4.0.0

@@ -61,15 +61,17 @@ void main() {
       );
     });
 
-    test('startAuthentication without captcha token sends null token',
-        () async {
-      await client.passkey.startAuthentication();
+    test(
+      'startAuthentication without captcha token sends null token',
+      () async {
+        await client.passkey.startAuthentication();
 
-      expect(
-        mockClient.lastRequestBody?['gotrue_meta_security'],
-        {'captcha_token': null},
-      );
-    });
+        expect(
+          mockClient.lastRequestBody?['gotrue_meta_security'],
+          {'captcha_token': null},
+        );
+      },
+    );
 
     test('verifyAuthentication signs the user in', () async {
       final events = <AuthChangeEvent>[];
@@ -259,22 +261,25 @@ void main() {
         );
       });
 
-      test('listPasskeys throws FormatException when response is not a list',
-          () async {
-        final malformedClient = GoTrueClient(
-          url: 'http://localhost:9999',
-          httpClient: EmptyResponseClient(),
-          autoRefreshToken: false,
-          asyncStorage: TestAsyncStorage(),
-        );
-        addTearDown(malformedClient.dispose);
+      test(
+        'listPasskeys throws FormatException when response is not a list',
+        () async {
+          final malformedClient = GoTrueClient(
+            url: 'http://localhost:9999',
+            httpClient: EmptyResponseClient(),
+            autoRefreshToken: false,
+            asyncStorage: TestAsyncStorage(),
+          );
+          addTearDown(malformedClient.dispose);
 
-        expect(
-          malformedClient.admin.passkey
-              .listPasskeys(userId: PasskeyMockClient.userId),
-          throwsFormatException,
-        );
-      });
+          expect(
+            malformedClient.admin.passkey.listPasskeys(
+              userId: PasskeyMockClient.userId,
+            ),
+            throwsFormatException,
+          );
+        },
+      );
     });
 
     test('throws AuthApiException when passkeys are disabled', () async {
@@ -288,9 +293,11 @@ void main() {
 
       await expectLater(
         () => disabledClient.passkey.startAuthentication(),
-        throwsA(isA<AuthApiException>()
-            .having((e) => e.code, 'code', 'passkey_disabled')
-            .having((e) => e.statusCode, 'statusCode', '404')),
+        throwsA(
+          isA<AuthApiException>()
+              .having((e) => e.code, 'code', 'passkey_disabled')
+              .having((e) => e.statusCode, 'statusCode', '404'),
+        ),
       );
     });
   });

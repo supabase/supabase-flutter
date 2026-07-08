@@ -1,3 +1,8 @@
+## 2.6.0
+
+ - **FEAT**(storage): add download option to signed and public URLs ([#1514](https://github.com/supabase/supabase-flutter/issues/1514)). ([2c0370c1](https://github.com/supabase/supabase-flutter/commit/2c0370c19ac08f6d9e5b09fd2025cbee0f6f3ec2))
+ - **FEAT**(storage): add upsert option to createSignedUploadUrl ([#1515](https://github.com/supabase/supabase-flutter/issues/1515)). ([6f6ea5cd](https://github.com/supabase/supabase-flutter/commit/6f6ea5cd947a8b86fc5b7f8356f8e3db2ea08d36))
+
 ## 2.5.9
 
  - **FIX**(storage): percent-encode object paths in request URLs ([#1479](https://github.com/supabase/supabase-flutter/issues/1479)). ([ffe4c256](https://github.com/supabase/supabase-flutter/commit/ffe4c2562cd12aa11969ba4298a7f266caf771c0))

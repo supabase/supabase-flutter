@@ -1,3 +1,12 @@
+## 2.8.0
+
+ - **FIX**(postgrest): override limit and offset instead of appending duplicates ([#1512](https://github.com/supabase/supabase-flutter/issues/1512)). ([f1c80d60](https://github.com/supabase/supabase-flutter/commit/f1c80d60113dc9a6cd37fd1fdb89b9eda25cf8a2))
+ - **FEAT**(postgrest): add format option to explain() ([#1516](https://github.com/supabase/supabase-flutter/issues/1516)). ([e549d390](https://github.com/supabase/supabase-flutter/commit/e549d39021edc624ca422a18321f312cb95f5826))
+
+## 2.7.4
+
+ - **FIX**(postgrest): stop seeding Prefer header with an empty string ([#1505](https://github.com/supabase/supabase-flutter/issues/1505)). ([0a37f0d7](https://github.com/supabase/supabase-flutter/commit/0a37f0d746abf690151825a1de9f2c9c50322de7))
+
 ## 2.7.3
 
  - **FIX**(postgrest): escape quotes and backslashes in list filter values ([#1481](https://github.com/supabase/supabase-flutter/issues/1481)). ([66e4d139](https://github.com/supabase/supabase-flutter/commit/66e4d1399ea615abb1d58b468a4943e7c408ef2f))

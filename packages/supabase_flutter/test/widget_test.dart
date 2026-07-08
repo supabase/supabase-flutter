@@ -12,12 +12,14 @@ void main() {
     mockAppLink();
   });
 
-  testWidgets('Signing out triggers AuthChangeEvent.signedOut event',
-      (tester) async {
+  testWidgets('Signing out triggers AuthChangeEvent.signedOut event', (
+    tester,
+  ) async {
     // Initialize the Supabase singleton
     await Supabase.initialize(
       url: supabaseUrl,
       publishableKey: supabaseKey,
+      debug: false,
       authOptions: FlutterAuthClientOptions(
         localStorage: const MockLocalStorage(),
         pkceAsyncStorage: MockAsyncStorage(),

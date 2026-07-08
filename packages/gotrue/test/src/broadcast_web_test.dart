@@ -1,5 +1,4 @@
 @TestOn('browser')
-
 /// Tests for the web BroadcastChannel implementation.
 library;
 
@@ -35,7 +34,7 @@ void main() {
       // Send message from channel1
       final testMessage = {
         'event': 'test-event',
-        'data': {'foo': 'bar'}
+        'data': {'foo': 'bar'},
       };
       channel1.postMessage(testMessage);
 

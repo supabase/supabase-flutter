@@ -74,9 +74,9 @@ class PostgrestResponse<T> {
   }
 
   Map<String, dynamic> toJson() => {
-        'data': data,
-        'count': count,
-      };
+    'data': data,
+    'count': count,
+  };
 
   @override
   String toString() {
@@ -94,6 +94,12 @@ enum CountOption {
 
   /// Uses exact count for low numbers and planned count for high numbers.
   estimated,
+}
+
+/// The format of the plan returned by `PostgrestTransformBuilder.explain`.
+enum ExplainFormat {
+  text,
+  json,
 }
 
 // coverage:ignore-[start]

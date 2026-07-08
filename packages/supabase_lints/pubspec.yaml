@@ -3,9 +3,16 @@ description: Shared analyzer and DCM lint configuration for the Supabase Flutter
 version: 0.1.0
 homepage: "https://supabase.com"
 repository: "https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_lints"
+issue_tracker: "https://github.com/supabase/supabase-flutter/issues"
+topics:
+  - lints
+  - analysis
+  - supabase
 
 environment:
-  sdk: ">=3.4.0 <4.0.0"
+  sdk: ">=3.9.0 <4.0.0"
+
+resolution: workspace
 
 dependencies:
   lints: ^4.0.0

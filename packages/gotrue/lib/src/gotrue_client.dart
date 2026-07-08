@@ -17,10 +17,12 @@ import 'package:meta/meta.dart';
 import 'package:retry/retry.dart';
 import 'package:rxdart/subjects.dart';
 
-import 'broadcast_stub.dart' if (dart.library.js_interop) './broadcast_web.dart'
+import 'broadcast_stub.dart'
+    if (dart.library.js_interop) './broadcast_web.dart'
     as web;
 import 'version.dart';
 
+part 'gotrue_oauth_api.dart';
 part 'gotrue_mfa_api.dart';
 part 'gotrue_passkey_api.dart';
 
@@ -55,6 +57,9 @@ class GoTrueClient {
 
   /// Namespace for the GoTrue MFA API methods.
   late final GoTrueMFAApi mfa;
+
+  /// Namespace for the GoTrue OAuth methods.
+  late final GoTrueOAuthApi oauth;
 
   /// Namespace for the passkey (WebAuthn) API methods.
   ///
@@ -151,11 +156,11 @@ class GoTrueClient {
     Client? httpClient,
     GotrueAsyncStorage? asyncStorage,
     AuthFlowType flowType = AuthFlowType.pkce,
-  })  : _url = url ?? Constants.defaultGotrueUrl,
-        _headers = {...Constants.defaultHeaders, ...?headers},
-        _httpClient = httpClient,
-        _asyncStorage = asyncStorage,
-        _flowType = flowType {
+  }) : _url = url ?? Constants.defaultGotrueUrl,
+       _headers = {...Constants.defaultHeaders, ...?headers},
+       _httpClient = httpClient,
+       _asyncStorage = asyncStorage,
+       _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
@@ -168,6 +173,7 @@ class GoTrueClient {
       headers: _headers,
       httpClient: httpClient,
     );
+    oauth = GoTrueOAuthApi(client: this, fetch: _fetch);
     mfa = GoTrueMFAApi(client: this, fetch: _fetch);
     passkey = GoTruePasskeyApi(client: this, fetch: _fetch);
     if (_autoRefreshToken) {
@@ -180,7 +186,7 @@ class GoTrueClient {
   /// Getter for the headers
   Map<String, String> get headers => _headers;
 
-  /// Returns the current logged in user, asociated to [currentSession] if any;
+  /// Returns the current logged in user, associated to [currentSession] if any;
   User? get currentUser => _currentSession?.user;
 
   /// Returns the current session, if any;
@@ -278,11 +284,13 @@ class GoTrueClient {
         'channel': channel.name,
       };
       final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
-      response = await _fetch.request(
-        '$_url/signup',
-        RequestMethodType.post,
-        options: fetchOptions,
-      ) as Map<String, dynamic>;
+      response =
+          await _fetch.request(
+                '$_url/signup',
+                RequestMethodType.post,
+                options: fetchOptions,
+              )
+              as Map<String, dynamic>;
     } else {
       throw AuthException(
         'You must provide either an email or phone number and a password',
@@ -368,7 +376,7 @@ class GoTrueClient {
     );
   }
 
-  /// Verifies the PKCE code verifyer and retrieves a session.
+  /// Verifies the PKCE code verifier and retrieves a session.
   Future<AuthSessionUrlResponse> exchangeCodeForSession(String authCode) async {
     assert(
       _asyncStorage != null,
@@ -597,11 +605,11 @@ class GoTrueClient {
       // For recovery type with tokenHash, exclude email/phone
       if (!isRecoveryWithTokenHash && email != null) 'email': email,
       if (!isRecoveryWithTokenHash && phone != null) 'phone': phone,
-      if (token != null) 'token': token,
+      'token': ?token,
       'type': type.snakeCase,
       'redirect_to': redirectTo,
       'gotrue_meta_security': {'captcha_token': captchaToken},
-      if (tokenHash != null) 'token_hash': tokenHash,
+      'token_hash': ?tokenHash,
     };
     final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
     final response = await _fetch.request(
@@ -657,9 +665,9 @@ class GoTrueClient {
       RequestMethodType.post,
       options: GotrueRequestOptions(
         body: {
-          if (providerId != null) 'provider_id': providerId,
-          if (domain != null) 'domain': domain,
-          if (redirectTo != null) 'redirect_to': redirectTo,
+          'provider_id': ?providerId,
+          'domain': ?domain,
+          'redirect_to': ?redirectTo,
           if (captchaToken != null)
             'gotrue_meta_security': {'captcha_token': captchaToken},
           'skip_http_redirect': true,
@@ -740,12 +748,13 @@ class GoTrueClient {
       );
     }
 
-    final codeChallenge =
-        email != null ? await _generatePKCECodeChallenge() : null;
+    final codeChallenge = email != null
+        ? await _generatePKCECodeChallenge()
+        : null;
 
     final body = {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
+      'email': ?email,
+      'phone': ?phone,
       'type': type.snakeCase,
       'gotrue_meta_security': {'captcha_token': captchaToken},
       if (email != null) ...{
@@ -1166,7 +1175,8 @@ class GoTrueClient {
       }
 
       if (!session.isExpired) {
-        final shouldEmitEvent = _currentSession == null ||
+        final shouldEmitEvent =
+            _currentSession == null ||
             _currentSession!.user.id != session.user.id;
         _saveSession(session);
 
@@ -1256,11 +1266,12 @@ class GoTrueClient {
         return;
       }
 
-      final expiresInTicks = (DateTime.fromMillisecondsSinceEpoch(
-                expiresAt * 1000,
-              ).difference(now).inMilliseconds /
-              Constants.autoRefreshTickDuration.inMilliseconds)
-          .floor();
+      final expiresInTicks =
+          (DateTime.fromMillisecondsSinceEpoch(
+                    expiresAt * 1000,
+                  ).difference(now).inMilliseconds /
+                  Constants.autoRefreshTickDuration.inMilliseconds)
+              .floor();
 
       _log.finer('Access token expires in $expiresInTicks ticks');
 
@@ -1383,7 +1394,7 @@ class GoTrueClient {
           _log.finest('Received broadcast message: $messageEvent');
           _log.info('Received broadcast event: $rawEvent');
           final event = switch (rawEvent) {
-            // This library sends the js name of the event to be comptabile with
+            // This library sends the js name of the event to be compatible with
             // the js library, so we need to convert it back to the dart name
             'INITIAL_SESSION' => AuthChangeEvent.initialSession,
             'PASSWORD_RECOVERY' => AuthChangeEvent.passwordRecovery,
@@ -1394,8 +1405,8 @@ class GoTrueClient {
             'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
             // This case should never happen though
             _ => AuthChangeEvent.values.firstWhereOrNull(
-                (changeEvent) => changeEvent.name == rawEvent,
-              ),
+              (changeEvent) => changeEvent.name == rawEvent,
+            ),
           };
 
           if (event != null) {
@@ -1461,14 +1472,16 @@ class GoTrueClient {
     _pendingRefreshes[refreshToken] = completer;
 
     unawaited(
-      _doRefresh(refreshToken).then(
-        (response) {
-          if (!completer.isCompleted) completer.complete(response);
-        },
-        onError: (Object error, StackTrace stack) {
-          if (!completer.isCompleted) completer.completeError(error, stack);
-        },
-      ).whenComplete(() => _pendingRefreshes.remove(refreshToken)),
+      _doRefresh(refreshToken)
+          .then(
+            (response) {
+              if (!completer.isCompleted) completer.complete(response);
+            },
+            onError: (Object error, StackTrace stack) {
+              if (!completer.isCompleted) completer.completeError(error, stack);
+            },
+          )
+          .whenComplete(() => _pendingRefreshes.remove(refreshToken)),
     );
 
     return completer.future;
@@ -1510,8 +1523,10 @@ class GoTrueClient {
           error.code == 'refresh_token_already_used' &&
           existingSession != null &&
           !existingSession.isExpired) {
-        _log.fine('Refresh token already used but current session is still '
-            'valid, returning it instead of signing out');
+        _log.fine(
+          'Refresh token already used but current session is still '
+          'valid, returning it instead of signing out',
+        );
         return AuthResponse(session: existingSession);
       }
 
@@ -1659,8 +1674,8 @@ class GoTrueClient {
 
     final signingKey =
         (decoded.header.alg.startsWith('HS') || decoded.header.kid == null)
-            ? null
-            : await _fetchJwk(decoded.header.kid!, _jwks ?? JWKSet(keys: []));
+        ? null
+        : await _fetchJwk(decoded.header.kid!, _jwks ?? JWKSet(keys: []));
 
     // If symmetric algorithm, fallback to getUser()
     if (signingKey == null) {
