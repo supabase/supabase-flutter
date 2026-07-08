@@ -58,6 +58,50 @@ void main() {
 
       final response = await client.listBuckets();
       expect(response, isA<List<Bucket>>());
+      expect(customHttpClient.receivedRequests.last.url.query, isEmpty);
+    });
+
+    test('should list buckets without query params when no options', () async {
+      customHttpClient.response = [testBucketJson];
+
+      await client.listBuckets(const ListBucketsOptions());
+      expect(customHttpClient.receivedRequests.last.url.query, isEmpty);
+    });
+
+    test('should list buckets with filter, sort and pagination options',
+        () async {
+      customHttpClient.response = [testBucketJson];
+
+      await client.listBuckets(
+        const ListBucketsOptions(
+          limit: 10,
+          offset: 5,
+          search: 'prod',
+          sortColumn: BucketSortColumn.createdAt,
+          sortOrder: BucketSortOrder.descending,
+        ),
+      );
+
+      final queryParameters =
+          customHttpClient.receivedRequests.last.url.queryParameters;
+      expect(queryParameters['limit'], '10');
+      expect(queryParameters['offset'], '5');
+      expect(queryParameters['search'], 'prod');
+      expect(queryParameters['sortColumn'], 'created_at');
+      expect(queryParameters['sortOrder'], 'desc');
+    });
+
+    test('should include limit and offset of zero', () async {
+      customHttpClient.response = [testBucketJson];
+
+      await client.listBuckets(
+        const ListBucketsOptions(limit: 0, offset: 0),
+      );
+
+      final queryParameters =
+          customHttpClient.receivedRequests.last.url.queryParameters;
+      expect(queryParameters['limit'], '0');
+      expect(queryParameters['offset'], '0');
     });
 
     test('should create bucket', () async {

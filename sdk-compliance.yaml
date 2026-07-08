@@ -371,8 +371,12 @@ features:
   storage.file_buckets.create_file_bucket: implemented
   storage.file_buckets.get_bucket: implemented
   storage.file_buckets.list_file_buckets:
-    status: partially_implemented
-    note: "listBuckets() takes no arguments; the JS filter/sort/pagination options are not supported."
+    status: implemented
+    symbols:
+      - StorageBucketApi.listBuckets
+      - ListBucketsOptions
+      - BucketSortColumn
+      - BucketSortOrder
   storage.file_buckets.update_bucket: implemented
   storage.file_buckets.delete_file_bucket: implemented
   storage.file_buckets.empty_bucket: implemented

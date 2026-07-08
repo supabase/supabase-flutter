@@ -165,6 +165,66 @@ class BucketOptions {
   });
 }
 
+/// The column that [StorageBucketApi.listBuckets] can sort its results by.
+enum BucketSortColumn {
+  id('id'),
+  name('name'),
+  createdAt('created_at'),
+  updatedAt('updated_at');
+
+  const BucketSortColumn(this.value);
+
+  /// The value sent to the storage API.
+  final String value;
+}
+
+/// The direction that [StorageBucketApi.listBuckets] sorts its results in.
+enum BucketSortOrder {
+  ascending('asc'),
+  descending('desc');
+
+  const BucketSortOrder(this.value);
+
+  /// The value sent to the storage API.
+  final String value;
+}
+
+/// Filter, sort and pagination options for [StorageBucketApi.listBuckets].
+class ListBucketsOptions {
+  /// The maximum number of buckets to return.
+  final int? limit;
+
+  /// The number of buckets to skip.
+  final int? offset;
+
+  /// The column to sort the buckets by.
+  final BucketSortColumn? sortColumn;
+
+  /// The direction to sort the buckets in.
+  final BucketSortOrder? sortOrder;
+
+  /// A search term used to filter buckets by name.
+  final String? search;
+
+  const ListBucketsOptions({
+    this.limit,
+    this.offset,
+    this.sortColumn,
+    this.sortOrder,
+    this.search,
+  });
+
+  Map<String, String> toQueryParameters() {
+    return {
+      if (limit != null) 'limit': '$limit',
+      if (offset != null) 'offset': '$offset',
+      if (search != null && search!.isNotEmpty) 'search': search!,
+      if (sortColumn != null) 'sortColumn': sortColumn!.value,
+      if (sortOrder != null) 'sortOrder': sortOrder!.value,
+    };
+  }
+}
+
 class FileOptions {
   /// The number of seconds the asset is cached in the browser and
   /// in the Supabase CDN. This is set in the `Cache-Control: max-age=<seconds>`
