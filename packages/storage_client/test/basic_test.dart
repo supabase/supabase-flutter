@@ -327,19 +327,22 @@ void main() {
       );
     });
 
-    test('download with empty transform does not use render endpoint', () async {
-      final file = File('a.txt');
-      file.writeAsStringSync('Updated content');
-      customHttpClient.response = file.readAsBytesSync();
+    test(
+      'download with empty transform does not use render endpoint',
+      () async {
+        final file = File('a.txt');
+        file.writeAsStringSync('Updated content');
+        customHttpClient.response = file.readAsBytesSync();
 
-      await client
-          .from('public_bucket')
-          .download('b.txt', transform: const TransformOptions());
+        await client
+            .from('public_bucket')
+            .download('b.txt', transform: const TransformOptions());
 
-      final request = customHttpClient.receivedRequests.first;
-      expect(request.url.toString(), contains('/object/public_bucket/b.txt'));
-      expect(request.url.toString(), isNot(contains('/render/image/')));
-    });
+        final request = customHttpClient.receivedRequests.first;
+        expect(request.url.toString(), contains('/object/public_bucket/b.txt'));
+        expect(request.url.toString(), isNot(contains('/render/image/')));
+      },
+    );
 
     test('download with actual transform uses render endpoint', () async {
       final file = File('a.txt');
