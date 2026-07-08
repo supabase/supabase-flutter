@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:gotrue/src/base64url.dart';
 import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/jwt.dart';
+import 'package:meta/meta.dart';
 
 /// Generates a random code verifier
 String generatePKCEVerifier() {
@@ -80,6 +81,7 @@ DecodedJwt decodeJwt(String token) {
 /// Useful where just the claims are needed and the token may not carry a
 /// well-formed header or signature. Throws [AuthInvalidJwtException] if the
 /// structure or payload is invalid.
+@internal
 JwtPayload decodeJwtPayload(String token) {
   final parts = token.split('.');
   if (parts.length != 3) {
