@@ -587,10 +587,9 @@ void main() {
 
     test('sets tx=rollback in the Prefer header', () async {
       try {
-        await postgrestCustomHttpClient
-            .from('users')
-            .insert({'username': 'dry'})
-            .dryRun();
+        await postgrestCustomHttpClient.from('users').insert({
+          'username': 'dry',
+        }).dryRun();
       } catch (_) {}
 
       expect(
