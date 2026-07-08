@@ -26,14 +26,11 @@ features:
   auth.sign_in.sign_in_with_otp: implemented
   auth.sign_in.sign_in_with_oauth:
     status: partially_implemented
-    note: "Exposed as getOAuthSignInUrl (gotrue) and signInWithOAuth (supabase_flutter); the skipBrowserRedirect option is not publicly exposed."
-  auth.sign_in.sign_in_with_id_token: implemented
-  auth.sign_in.custom_oauth_provider:
-    status: implemented
-    note: "Custom OIDC providers are passed as OAuthProvider('custom:name'); the identifier is sent to the API unchanged, matching supabase-js's custom: prefix support."
+    note: "Exposed as getOAuthSignInUrl (gotrue) and signInWithOAuth (supabase_flutter); the skipBrowserRedirect option is not publicly exposed. Custom OIDC providers are supported via OAuthProvider('custom:name'); the identifier is sent to the API unchanged, matching supabase-js's custom: prefix support."
     symbols:
       - OAuthProvider
       - OAuthProvider.OAuthProvider
+  auth.sign_in.sign_in_with_id_token: implemented
   auth.sign_in.sign_in_with_sso:
     status: partially_implemented
     note: "Exposed as getSSOSignInUrl, which returns Future<String> (the URL) rather than the structured {url} response used by JS."
