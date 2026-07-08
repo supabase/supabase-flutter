@@ -75,6 +75,28 @@ DecodedJwt decodeJwt(String token) {
   }
 }
 
+/// Decodes only the payload of a JWT without validating the header or signature.
+///
+/// Useful where just the claims are needed and the token may not carry a
+/// well-formed header or signature. Throws [AuthInvalidJwtException] if the
+/// structure or payload is invalid.
+JwtPayload decodeJwtPayload(String token) {
+  final parts = token.split('.');
+  if (parts.length != 3) {
+    throw AuthInvalidJwtException('Invalid JWT structure');
+  }
+
+  try {
+    final payloadJson = Base64Url.decodeToString(parts[1]);
+    return JwtPayload.fromJson(json.decode(payloadJson));
+  } catch (e) {
+    if (e is AuthInvalidJwtException) {
+      rethrow;
+    }
+    throw AuthInvalidJwtException('Failed to decode JWT: $e');
+  }
+}
+
 /// Validates the expiration time of a JWT
 ///
 /// Throws [AuthException] if the exp claim is missing or the JWT has expired.

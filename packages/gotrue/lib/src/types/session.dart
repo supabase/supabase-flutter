@@ -77,7 +77,7 @@ class Session {
 
   int? get _expiresAt {
     try {
-      return decodeJwt(accessToken).payload.exp;
+      return decodeJwtPayload(accessToken).exp;
     } catch (_) {
       return null;
     }
