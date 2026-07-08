@@ -1,6 +1,6 @@
 import 'package:gotrue/src/constants.dart';
+import 'package:gotrue/src/helper.dart';
 import 'package:gotrue/src/types/user.dart';
-import 'package:jwt_decode/jwt_decode.dart';
 
 class Session {
   final String? providerToken;
@@ -77,8 +77,7 @@ class Session {
 
   int? get _expiresAt {
     try {
-      final payload = Jwt.parseJwt(accessToken);
-      return payload['exp'] as int;
+      return decodeJwt(accessToken).payload.exp;
     } catch (_) {
       return null;
     }
