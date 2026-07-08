@@ -161,7 +161,12 @@ class FunctionsClient {
 
     _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
 
-    final response = await (_httpClient?.send(request) ?? request.send());
+    final http.StreamedResponse response;
+    try {
+      response = await (_httpClient?.send(request) ?? request.send());
+    } catch (error) {
+      throw FunctionsFetchError(details: error);
+    }
     final responseType =
         (response.headers['Content-Type'] ??
                 response.headers['content-type'] ??
@@ -170,8 +175,11 @@ class FunctionsClient {
             .trim()
             .toLowerCase();
 
+    final isRelayError = response.headers['x-relay-error'] == 'true';
     final isSuccessStatus =
-        200 <= response.statusCode && response.statusCode < 300;
+        200 <= response.statusCode &&
+        response.statusCode < 300 &&
+        !isRelayError;
 
     final dynamic data;
 
@@ -210,7 +218,14 @@ class FunctionsClient {
     if (isSuccessStatus) {
       return FunctionResponse(data: data, status: response.statusCode);
     }
-    throw FunctionException(
+    if (isRelayError) {
+      throw FunctionsRelayError(
+        status: response.statusCode,
+        details: data,
+        reasonPhrase: response.reasonPhrase,
+      );
+    }
+    throw FunctionsHttpError(
       status: response.statusCode,
       details: data,
       reasonPhrase: response.reasonPhrase,
