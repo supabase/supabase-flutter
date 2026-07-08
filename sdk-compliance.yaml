@@ -472,7 +472,7 @@ features:
   functions.invocation.method_override: implemented
   functions.invocation.streaming_response: implemented
   functions.invocation.region_selection: implemented
-  functions.invocation.timeout: not_implemented
+  functions.invocation.timeout: implemented
   functions.invocation.request_cancellation: not_implemented
 
   # client
