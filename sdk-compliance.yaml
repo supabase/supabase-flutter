@@ -480,12 +480,15 @@ features:
   client.authentication_integration.cross_client_token_sync: implemented
   client.authentication_integration.oauth_flow_type: implemented
   client.authentication_integration.session_url_detection:
-    status: partially_implemented
-    note: "supabase_flutter exposes detectSessionInUri as a boolean only; there is no custom predicate to disambiguate redirects."
+    status: implemented
+    symbols:
+      - FlutterAuthClientOptions.detectSessionInUri
+      - FlutterAuthClientOptions.detectSessionInUriPredicate
   client.session_management.custom_storage: implemented
   client.session_management.persist_session:
-    status: partially_implemented
-    note: "No persistSession flag; in-memory-only sessions are achievable by supplying an EmptyLocalStorage backend."
+    status: implemented
+    symbols:
+      - FlutterAuthClientOptions.persistSession
   client.request_configuration.custom_http_client: implemented
   client.request_configuration.global_headers: implemented
   client.observability.trace_propagation: not_implemented
