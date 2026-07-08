@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -501,6 +502,35 @@ void main() {
                 .having((e) => e.toString(), 'toString()', contains('420')),
           ),
         );
+      });
+    });
+
+    group('Timeout', () {
+      test('throws TimeoutException when the response is too slow', () async {
+        await expectLater(
+          () => functionsCustomHttpClient.invoke(
+            'slow',
+            timeout: const Duration(milliseconds: 10),
+          ),
+          throwsA(isA<TimeoutException>()),
+        );
+      });
+
+      test('returns the response when it arrives within the timeout', () async {
+        final res = await functionsCustomHttpClient.invoke(
+          'slow',
+          timeout: const Duration(seconds: 5),
+        );
+
+        expect(res.data, {'key': 'Hello World'});
+        expect(res.status, 200);
+      });
+
+      test('waits indefinitely when no timeout is given', () async {
+        final res = await functionsCustomHttpClient.invoke('slow');
+
+        expect(res.data, {'key': 'Hello World'});
+        expect(res.status, 200);
       });
     });
 
