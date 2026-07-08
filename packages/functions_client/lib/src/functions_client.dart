@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -66,11 +65,6 @@ class FunctionsClient {
   /// [region] optionally specify the region to invoke the function in.
   /// When specified, adds both `x-region` header and `forceFunctionRegion` query parameter.
   ///
-  /// [timeout] optionally bounds how long to wait for the function to respond.
-  /// A [TimeoutException] is thrown if the response is not received in time.
-  /// When omitted, the request waits indefinitely, preserving the previous
-  /// behavior.
-  ///
   /// ```dart
   /// // Call a standard function
   /// final response = await supabase.functions.invoke('hello-world');
@@ -103,7 +97,6 @@ class FunctionsClient {
     Map<String, dynamic>? queryParameters,
     HttpMethod method = HttpMethod.post,
     String? region,
-    Duration? timeout,
   }) async {
     final effectiveRegion = region ?? _region;
 
@@ -168,10 +161,7 @@ class FunctionsClient {
 
     _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
 
-    final responseFuture = _httpClient?.send(request) ?? request.send();
-    final response = await (timeout != null
-        ? responseFuture.timeout(timeout)
-        : responseFuture);
+    final response = await (_httpClient?.send(request) ?? request.send());
     final responseType =
         (response.headers['Content-Type'] ??
                 response.headers['content-type'] ??

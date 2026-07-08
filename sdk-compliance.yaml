@@ -10,6 +10,7 @@
 #   - partially_implemented present but with a behavioral difference or gap vs
 #                           supabase-js; a note describes the difference.
 #   - not_implemented       not available.
+#   - not_applicable        does not map to this SDK; a note explains why.
 #
 # Verified against the source in this repository (packages/gotrue, postgrest,
 # storage_client, realtime_client, functions_client, supabase, supabase_flutter).
@@ -472,7 +473,9 @@ features:
   functions.invocation.method_override: implemented
   functions.invocation.streaming_response: implemented
   functions.invocation.region_selection: implemented
-  functions.invocation.timeout: implemented
+  functions.invocation.timeout:
+    status: not_applicable
+    note: "A per-invocation timeout would only wrap the returned Future and cannot abort the in-flight request, so a caller could still see the function succeed after a timeout fires. That is identical to the caller applying Future.timeout themselves, so exposing it as an option adds no capability and would be misleading."
   functions.invocation.request_cancellation: not_implemented
 
   # client

@@ -15,17 +15,7 @@ class CustomHttpClient extends BaseClient {
     receivedRequests = receivedRequests..add(request);
     request.finalize();
 
-    if (request.url.path.endsWith('slow')) {
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      return StreamedResponse(
-        Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
-        200,
-        request: request,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      );
-    } else if (request.url.path.endsWith("error-function")) {
+    if (request.url.path.endsWith("error-function")) {
       //Return custom status code to check for usage of this client.
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
