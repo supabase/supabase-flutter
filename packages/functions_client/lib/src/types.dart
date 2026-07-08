@@ -47,8 +47,8 @@ class FunctionException implements Exception {
 ///
 /// The originating error is available in [details] and [status] is `0` since no
 /// response reached the client.
-class FunctionsFetchError extends FunctionException {
-  const FunctionsFetchError({
+class FunctionsFetchException extends FunctionException {
+  const FunctionsFetchException({
     super.details,
     super.reasonPhrase,
   }) : super(status: 0);
@@ -56,8 +56,8 @@ class FunctionsFetchError extends FunctionException {
 
 /// Thrown when the Supabase relay returns an error while invoking the Edge
 /// Function, indicated by the `x-relay-error` response header.
-class FunctionsRelayError extends FunctionException {
-  const FunctionsRelayError({
+class FunctionsRelayException extends FunctionException {
+  const FunctionsRelayException({
     required super.status,
     super.details,
     super.reasonPhrase,
@@ -65,8 +65,8 @@ class FunctionsRelayError extends FunctionException {
 }
 
 /// Thrown when the Edge Function itself responds with a non-2xx status code.
-class FunctionsHttpError extends FunctionException {
-  const FunctionsHttpError({
+class FunctionsHttpException extends FunctionException {
+  const FunctionsHttpException({
     required super.status,
     super.details,
     super.reasonPhrase,

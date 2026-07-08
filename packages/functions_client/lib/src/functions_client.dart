@@ -165,7 +165,7 @@ class FunctionsClient {
     try {
       response = await (_httpClient?.send(request) ?? request.send());
     } catch (error) {
-      throw FunctionsFetchError(details: error);
+      throw FunctionsFetchException(details: error);
     }
     final responseType =
         (response.headers['Content-Type'] ??
@@ -219,13 +219,13 @@ class FunctionsClient {
       return FunctionResponse(data: data, status: response.statusCode);
     }
     if (isRelayError) {
-      throw FunctionsRelayError(
+      throw FunctionsRelayException(
         status: response.statusCode,
         details: data,
         reasonPhrase: response.reasonPhrase,
       );
     }
-    throw FunctionsHttpError(
+    throw FunctionsHttpException(
       status: response.statusCode,
       details: data,
       reasonPhrase: response.reasonPhrase,
