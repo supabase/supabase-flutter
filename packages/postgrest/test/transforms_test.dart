@@ -571,4 +571,83 @@ void main() {
       },
     );
   });
+
+  group('dryRun', () {
+    late CustomHttpClient customHttpClient;
+    late PostgrestClient postgrestCustomHttpClient;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      postgrestCustomHttpClient = PostgrestClient(
+        rootUrl,
+        headers: apiHeaders,
+        httpClient: customHttpClient,
+      );
+    });
+
+    test('sets tx=rollback in the Prefer header', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .insert({'username': 'dry'})
+            .dryRun();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Prefer'],
+        contains('tx=rollback'),
+      );
+    });
+
+    test('preserves existing Prefer preferences', () async {
+      try {
+        await postgrestCustomHttpClient
+            .from('users')
+            .insert({'username': 'dry'})
+            .select()
+            .dryRun();
+      } catch (_) {}
+
+      final prefer = customHttpClient.lastRequest!.headers['Prefer']!;
+      expect(prefer, contains('return=representation'));
+      expect(prefer, contains('tx=rollback'));
+      expect(prefer, isNot(startsWith(',')));
+    });
+  });
+
+  group('stripNulls', () {
+    late CustomHttpClient customHttpClient;
+    late PostgrestClient postgrestCustomHttpClient;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      postgrestCustomHttpClient = PostgrestClient(
+        rootUrl,
+        headers: apiHeaders,
+        httpClient: customHttpClient,
+      );
+    });
+
+    test('appends nulls=stripped to the Accept header', () async {
+      try {
+        await postgrestCustomHttpClient.from('users').select().stripNulls();
+      } catch (_) {}
+
+      expect(
+        customHttpClient.lastRequest!.headers['Accept'],
+        'application/json;nulls=stripped',
+      );
+    });
+
+    test('omits null-valued properties from the response', () async {
+      final res = await postgrest
+          .from('users')
+          .select()
+          .eq('username', 'supabot')
+          .single()
+          .stripNulls();
+      expect(res.containsKey('username'), isTrue);
+      expect(res.containsKey('data'), isFalse);
+    });
+  });
 }
