@@ -3,7 +3,14 @@ description: Dart client library to interact with Supabase Storage. Supabase Sto
 version: 2.6.0
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/storage_client'
-documentation: 'https://supabase.com/docs/reference/dart/storage-createbucket'
+issue_tracker: 'https://github.com/supabase/supabase-flutter/issues'
+documentation: 'https://supabase.com/docs/reference/dart/file-buckets-createbucket'
+topics:
+  - supabase
+  - storage
+  - s3
+  - files
+  - backend
 
 environment:
   sdk: '>=3.9.0 <4.0.0'

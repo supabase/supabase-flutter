@@ -1,7 +1,14 @@
 name: yet_another_json_isolate
 description: Package to simplify and improve JSON parsing in isolates by keeping one isolate running per instance.
 version: 2.1.1
-homepage: https://github.com/supabase-community/json-isolate-dart
+homepage: 'https://supabase.com'
+repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/yet_another_json_isolate'
+issue_tracker: 'https://github.com/supabase/supabase-flutter/issues'
+topics:
+  - json
+  - isolate
+  - parsing
+  - async
 
 environment:
   sdk: '>=3.9.0 <4.0.0'
