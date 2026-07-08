@@ -342,6 +342,7 @@ features:
       - PostgrestClient.retryCount
       - PostgrestClient.retryableStatusCodes
       - PostgrestBuilder.retry
+      - PostgrestBuilder.defaultRetryableStatusCodes
   database.configuration.request_timeout:
     status: implemented
     symbols:
