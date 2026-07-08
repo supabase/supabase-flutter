@@ -119,9 +119,7 @@ enum OAuthClientType {
   confidential;
 
   static OAuthClientType fromString(String value) {
-    return OAuthClientType.values.firstWhere(
-      (e) => e.name.toSnakeCase() == value,
-    );
+    return OAuthClientType.values.firstWhere((e) => e.snakeCase == value);
   }
 }
 
@@ -133,7 +131,7 @@ enum OAuthClientRegistrationType {
 
   static OAuthClientRegistrationType fromString(String value) {
     return OAuthClientRegistrationType.values.firstWhere(
-      (e) => e.name.toSnakeCase() == value,
+      (e) => e.snakeCase == value,
     );
   }
 }
@@ -211,14 +209,14 @@ class OAuthClient {
       grantTypes: (json['grant_types'] as List)
           .map(
             (e) => OAuthClientGrantType.values.firstWhere(
-              (gt) => gt.name.toSnakeCase() == e as String,
+              (gt) => gt.snakeCase == e as String,
             ),
           )
           .toList(),
       responseTypes: (json['response_types'] as List)
           .map(
             (e) => OAuthClientResponseType.values.firstWhere(
-              (rt) => rt.name.toSnakeCase() == e as String,
+              (rt) => rt.snakeCase == e as String,
             ),
           )
           .toList(),
@@ -264,10 +262,8 @@ class CreateOAuthClientParams {
       'client_name': clientName,
       'client_uri': ?clientUri,
       'redirect_uris': redirectUris,
-      'grant_types': ?grantTypes?.map((e) => e.name.toSnakeCase()).toList(),
-      'response_types': ?responseTypes
-          ?.map((e) => e.name.toSnakeCase())
-          .toList(),
+      'grant_types': ?grantTypes?.map((e) => e.snakeCase).toList(),
+      'response_types': ?responseTypes?.map((e) => e.snakeCase).toList(),
       'scope': ?scope,
     };
   }
@@ -308,10 +304,8 @@ class UpdateOAuthClientParams {
       'client_name': ?clientName,
       'client_uri': ?clientUri,
       'redirect_uris': ?redirectUris,
-      'grant_types': ?grantTypes?.map((e) => e.name.toSnakeCase()).toList(),
-      'response_types': ?responseTypes
-          ?.map((e) => e.name.toSnakeCase())
-          .toList(),
+      'grant_types': ?grantTypes?.map((e) => e.snakeCase).toList(),
+      'response_types': ?responseTypes?.map((e) => e.snakeCase).toList(),
       'scope': ?scope,
     };
   }
