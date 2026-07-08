@@ -341,12 +341,16 @@ features:
       - PostgrestClient.retryEnabled
       - PostgrestClient.retryCount
       - PostgrestClient.retryableStatusCodes
+      - PostgrestClientOptions.retryEnabled
+      - PostgrestClientOptions.retryCount
+      - PostgrestClientOptions.retryableStatusCodes
       - PostgrestBuilder.retry
       - PostgrestBuilder.defaultRetryableStatusCodes
   database.configuration.request_timeout:
     status: implemented
     symbols:
       - PostgrestClient.requestTimeout
+      - PostgrestClientOptions.requestTimeout
 
   # storage — file buckets
   storage.file_buckets.access_bucket: implemented
