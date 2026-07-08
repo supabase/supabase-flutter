@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -180,7 +182,7 @@ class _ProfileFormState extends State<_ProfileForm> {
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    unawaited(_loadProfile());
   }
 
   @override
