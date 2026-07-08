@@ -309,6 +309,55 @@ void main() {
       expect(response, '$objectUrl/public/files/b.txt');
     });
 
+    test('getPublicUrl with empty transform does not use render endpoint', () {
+      final response = client
+          .from('files')
+          .getPublicUrl('b.txt', transform: const TransformOptions());
+      expect(response, '$objectUrl/public/files/b.txt');
+      expect(response, isNot(contains('/render/image/')));
+    });
+
+    test('getPublicUrl with actual transform uses render endpoint', () {
+      final response = client
+          .from('files')
+          .getPublicUrl('b.txt', transform: const TransformOptions(width: 200));
+      expect(
+        response,
+        '$supabaseUrl/storage/v1/render/image/public/files/b.txt?width=200',
+      );
+    });
+
+    test('download with empty transform does not use render endpoint', () async {
+      final file = File('a.txt');
+      file.writeAsStringSync('Updated content');
+      customHttpClient.response = file.readAsBytesSync();
+
+      await client
+          .from('public_bucket')
+          .download('b.txt', transform: const TransformOptions());
+
+      final request = customHttpClient.receivedRequests.first;
+      expect(request.url.toString(), contains('/object/public_bucket/b.txt'));
+      expect(request.url.toString(), isNot(contains('/render/image/')));
+    });
+
+    test('download with actual transform uses render endpoint', () async {
+      final file = File('a.txt');
+      file.writeAsStringSync('Updated content');
+      customHttpClient.response = file.readAsBytesSync();
+
+      await client
+          .from('public_bucket')
+          .download('b.txt', transform: const TransformOptions(width: 200));
+
+      final request = customHttpClient.receivedRequests.first;
+      expect(
+        request.url.toString(),
+        contains('/render/image/authenticated/public_bucket/b.txt'),
+      );
+      expect(request.url.queryParameters, {'width': '200'});
+    });
+
     test('createSignedUrl appends download to the token query', () async {
       customHttpClient.response = {
         'signedURL': '/object/sign/public/b.txt?token=abc',

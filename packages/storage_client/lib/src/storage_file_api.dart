@@ -487,13 +487,14 @@ class StorageFileApi {
     TransformOptions? transform,
     Map<String, String>? queryParams,
   }) async {
-    final wantsTransformations = transform != null;
+    final transformationQuery = transform?.toQueryParams ?? {};
+    final wantsTransformations = transformationQuery.isNotEmpty;
     final finalPath = _getFinalPath(path);
     final renderPath = wantsTransformations
         ? 'render/image/authenticated'
         : 'object';
 
-    Map<String, String> query = transform?.toQueryParams ?? {};
+    Map<String, String> query = transformationQuery;
     query.addAll(queryParams ?? {});
 
     final options = FetchOptions(headers: headers, noResolveJson: true);
@@ -556,13 +557,16 @@ class StorageFileApi {
   }) {
     final finalPath = _getFinalPath(path);
 
-    final wantsTransformation = transform != null;
-    final renderPath = wantsTransformation ? 'render/image' : 'object';
     final transformationQuery = transform?.toQueryParams;
+    final wantsTransformation =
+        transformationQuery != null && transformationQuery.isNotEmpty;
+    final renderPath = wantsTransformation ? 'render/image' : 'object';
 
     var publicUrl = Uri.parse('$url/$renderPath/public/$finalPath');
 
-    publicUrl = publicUrl.replace(queryParameters: transformationQuery);
+    if (wantsTransformation) {
+      publicUrl = publicUrl.replace(queryParameters: transformationQuery);
+    }
 
     return _withDownload(publicUrl.toString(), download);
   }
