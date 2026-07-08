@@ -15,7 +15,6 @@ import 'package:jwt_decode/jwt_decode.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:retry/retry.dart';
-import 'package:rxdart/subjects.dart';
 
 import 'broadcast_stub.dart'
     if (dart.library.js_interop) './broadcast_web.dart'
@@ -94,8 +93,8 @@ class GoTrueClient {
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
 
-  final _onAuthStateChangeController = BehaviorSubject<AuthState>();
-  final _onAuthStateChangeControllerSync = BehaviorSubject<AuthState>(
+  final _onAuthStateChangeController = _ReplaySubject<AuthState>();
+  final _onAuthStateChangeControllerSync = _ReplaySubject<AuthState>(
     sync: true,
   );
 
@@ -1698,4 +1697,72 @@ class GoTrueClient {
       throw AuthInvalidJwtException('Invalid JWT signature: $e');
     }
   }
+}
+
+/// A minimal broadcast stream controller that replays the most recent event
+/// (value or error) to every new subscriber.
+///
+/// This mirrors the only behavior of rxdart's `BehaviorSubject` that gotrue
+/// relies on: a listener that subscribes after an event has already been
+/// emitted immediately receives the latest event. It also preserves
+/// synchronous event delivery when constructed with [sync] set to true.
+class _ReplaySubject<T> {
+  _ReplaySubject({bool sync = false})
+    : _sync = sync,
+      _controller = StreamController<T>.broadcast(sync: sync);
+
+  final bool _sync;
+  final StreamController<T> _controller;
+
+  bool _hasEvent = false;
+  T? _latestValue;
+  Object? _latestError;
+  StackTrace? _latestStackTrace;
+  bool _latestIsError = false;
+
+  Stream<T> get stream => Stream<T>.multi((controller) {
+    // Replay the latest event to the new subscriber, matching the
+    // controller's sync-ness so that a sync subject stays synchronous.
+    if (_hasEvent) {
+      if (_latestIsError) {
+        _sync
+            ? controller.addErrorSync(_latestError!, _latestStackTrace)
+            : controller.addError(_latestError!, _latestStackTrace);
+      } else {
+        _sync
+            ? controller.addSync(_latestValue as T)
+            : controller.add(_latestValue as T);
+      }
+    }
+
+    // Forward live events synchronously so the underlying broadcast
+    // controller's scheduling is the only hop. Without this, the extra
+    // controller would add a second microtask of latency versus a plain
+    // broadcast controller.
+    final subscription = _controller.stream.listen(
+      controller.addSync,
+      onError: controller.addErrorSync,
+      onDone: controller.closeSync,
+    );
+    controller.onCancel = subscription.cancel;
+  }, isBroadcast: true);
+
+  void add(T event) {
+    _hasEvent = true;
+    _latestIsError = false;
+    _latestValue = event;
+    _latestError = null;
+    _latestStackTrace = null;
+    _controller.add(event);
+  }
+
+  void addError(Object error, [StackTrace? stackTrace]) {
+    _hasEvent = true;
+    _latestIsError = true;
+    _latestError = error;
+    _latestStackTrace = stackTrace;
+    _controller.addError(error, stackTrace ?? StackTrace.current);
+  }
+
+  Future<void> close() => _controller.close();
 }
