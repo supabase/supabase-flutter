@@ -361,11 +361,16 @@ class GoTrueClient {
   }
 
   /// Generates a link to log in an user via a third-party provider.
+  ///
+  /// Set [skipBrowserRedirect] to `true` to instruct the server to respond
+  /// with the authorization URL instead of an HTTP redirect, which is useful
+  /// when you want to handle the redirect yourself.
   Future<OAuthResponse> getOAuthSignInUrl({
     required OAuthProvider provider,
     String? redirectTo,
     String? scopes,
     Map<String, String>? queryParams,
+    bool skipBrowserRedirect = false,
   }) {
     return _getUrlForProvider(
       provider,
@@ -373,6 +378,7 @@ class GoTrueClient {
       redirectTo: redirectTo,
       scopes: scopes,
       queryParams: queryParams,
+      skipBrowserRedirect: skipBrowserRedirect,
     );
   }
 
