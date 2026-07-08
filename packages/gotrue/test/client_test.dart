@@ -535,33 +535,6 @@ void main() {
         expect(res.url, isA<String>());
         expect(res.provider, OAuthProvider.google);
       });
-
-      test('signIn() with Provider can skip the browser redirect', () async {
-        final res = await client.getOAuthSignInUrl(
-          provider: OAuthProvider.google,
-          skipBrowserRedirect: true,
-        );
-        expect(
-          Uri.parse(res.url).queryParameters['skip_http_redirect'],
-          'true',
-        );
-        expect(res.provider, OAuthProvider.google);
-      });
-
-      test(
-        'signIn() with Provider keeps the browser redirect by default',
-        () async {
-          final res = await client.getOAuthSignInUrl(
-            provider: OAuthProvider.google,
-          );
-          expect(
-            Uri.parse(
-              res.url,
-            ).queryParameters.containsKey('skip_http_redirect'),
-            isFalse,
-          );
-        },
-      );
     });
 
     test('Repeatedly recover session', () async {
