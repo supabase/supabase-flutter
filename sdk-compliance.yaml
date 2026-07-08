@@ -79,10 +79,7 @@ features:
   # auth — MFA
   auth.mfa.enroll:
     status: partially_implemented
-    note: "Supports totp and phone factor types only; webauthn enrollment is handled via the separate passkey API."
-  auth.mfa.webauthn_enroll:
-    status: not_applicable
-    note: "supabase-js runs the WebAuthn ceremony inline in the browser and patches the credential creation options' user.name before calling navigator.credentials.create. Dart delegates the device ceremony to a platform passkey plugin and never patches credential options client-side, and exposes WebAuthn through the passkey API (which has no friendlyName parameter, as the server generates the name), so the client-side fallback naming logic has no Dart equivalent."
+    note: "Supports totp and phone factor types only. WebAuthn enrollment has no Dart equivalent: supabase-js runs the WebAuthn ceremony inline in the browser and patches the credential creation options' user.name client-side, whereas Dart delegates the device ceremony to a platform passkey plugin and exposes WebAuthn through the separate passkey API (which has no friendlyName parameter, as the server generates the name)."
   auth.mfa.challenge:
     status: partially_implemented
     note: "No channel parameter (sms/whatsapp) for phone factors; always uses SMS."
