@@ -988,6 +988,7 @@ void main() {
         final streamController = StreamController<dynamic>.broadcast();
         final readyCompleter = Completer<void>();
         final capturedMessages = <String>[];
+        final joinSent = Completer<Map>();
 
         final mockedChannel = MockIOWebSocketChannel();
         final mockedSink = MockWebSocketSink();
@@ -1003,7 +1004,13 @@ void main() {
         ).thenAnswer((_) => Future.value());
         when(() => mockedSink.close()).thenAnswer((_) => Future.value());
         when(() => mockedSink.add(any())).thenAnswer((invocation) {
-          capturedMessages.add(invocation.positionalArguments.first as String);
+          final raw = invocation.positionalArguments.first as String;
+          capturedMessages.add(raw);
+          final frame = json.decode(raw) as List;
+          if (frame[3] == ChannelEvents.join.eventName() &&
+              !joinSent.isCompleted) {
+            joinSent.complete(frame[4] as Map);
+          }
         });
 
         final socket = RealtimeClient(
@@ -1026,18 +1033,13 @@ void main() {
         // Once the connection is ready the token is resolved and the buffered
         // join is re-sent with the token patched into its payload.
         readyCompleter.complete();
-        await Future.delayed(const Duration(milliseconds: 50));
+        final joinPayload = await joinSent.future.timeout(
+          const Duration(seconds: 5),
+        );
 
         expect(tokenCallbackCalls, greaterThan(0));
         expect(socket.accessToken, token);
-
-        final joinPayloads = capturedMessages
-            .map((raw) => json.decode(raw) as List)
-            .where((frame) => frame[3] == ChannelEvents.join.eventName())
-            .map((frame) => frame[4] as Map)
-            .toList();
-        expect(joinPayloads, isNotEmpty);
-        expect(joinPayloads.last['access_token'], token);
+        expect(joinPayload['access_token'], token);
 
         await socket.disconnect();
         await streamController.close();
