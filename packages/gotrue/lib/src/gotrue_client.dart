@@ -1720,7 +1720,7 @@ class _ReplaySubject<T> {
   StackTrace? _latestStackTrace;
   bool _latestIsError = false;
 
-  Stream<T> get stream => Stream<T>.multi((controller) {
+  Stream<T> get stream => Stream.multi((controller) {
     // Replay the latest event to the new subscriber, matching the
     // controller's sync-ness so that a sync subject stays synchronous.
     if (_hasEvent) {
@@ -1756,12 +1756,12 @@ class _ReplaySubject<T> {
     _controller.add(event);
   }
 
-  void addError(Object error, [StackTrace? stackTrace]) {
+  void addError(Object error, StackTrace stackTrace) {
     _hasEvent = true;
     _latestIsError = true;
     _latestError = error;
     _latestStackTrace = stackTrace;
-    _controller.addError(error, stackTrace ?? StackTrace.current);
+    _controller.addError(error, stackTrace);
   }
 
   Future<void> close() => _controller.close();
