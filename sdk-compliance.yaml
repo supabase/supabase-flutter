@@ -43,8 +43,9 @@ features:
 
   # auth — session & user
   auth.session.get_session:
-    status: partially_implemented
-    note: "Only the synchronous currentSession getter exists; there is no async getSession() with lock acquisition and on-demand refresh."
+    status: implemented
+    symbols:
+      - GoTrueClient.getSession
   auth.session.set_session:
     status: partially_implemented
     note: "Signature differs: setSession(refreshToken, {accessToken}) instead of an {access_token, refresh_token} object."
