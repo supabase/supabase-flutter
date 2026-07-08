@@ -472,7 +472,7 @@ class GoTrueClient {
       options: GotrueRequestOptions(
         headers: _headers,
         body: {
-          'provider': provider.snakeCase,
+          'provider': provider.name,
           'id_token': idToken,
           'nonce': nonce,
           'gotrue_meta_security': {'captcha_token': captchaToken},
@@ -1071,7 +1071,7 @@ class GoTrueClient {
         headers: _headers,
         jwt: _currentSession?.accessToken,
         body: {
-          'provider': provider.snakeCase,
+          'provider': provider.name,
           'id_token': idToken,
           'nonce': nonce,
           'gotrue_meta_security': {'captcha_token': captchaToken},
@@ -1338,7 +1338,7 @@ class GoTrueClient {
     required Map<String, String>? queryParams,
     bool skipBrowserRedirect = false,
   }) async {
-    final urlParams = {'provider': provider.snakeCase};
+    final urlParams = {'provider': provider.name};
     if (scopes != null) {
       urlParams['scopes'] = scopes;
     }
