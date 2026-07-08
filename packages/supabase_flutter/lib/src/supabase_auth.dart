@@ -320,10 +320,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// OAuth sign-in has succeeded or not should be observed by setting a listener
   /// on [auth.onAuthStateChanged].
   ///
-  /// Set [skipBrowserRedirect] to `true` to skip the automatic browser launch
-  /// and handle the redirect yourself. In that case no browser is opened and
-  /// this method returns `false`. Use [getOAuthSignInUrl] to obtain the URL to
-  /// launch.
+  /// To obtain the OAuth URL without launching a browser, use
+  /// [getOAuthSignInUrl] instead.
   ///
   /// See also:
   ///
@@ -334,18 +332,13 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
     Map<String, String>? queryParams,
-    bool skipBrowserRedirect = false,
   }) async {
     final res = await getOAuthSignInUrl(
       provider: provider,
       redirectTo: redirectTo,
       scopes: scopes,
       queryParams: queryParams,
-      skipBrowserRedirect: skipBrowserRedirect,
     );
-    if (skipBrowserRedirect) {
-      return false;
-    }
     return _launchAuthUrl(res.url, provider, authScreenLaunchMode);
   }
 
