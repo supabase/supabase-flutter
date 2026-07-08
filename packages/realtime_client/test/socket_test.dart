@@ -531,8 +531,9 @@ void main() {
 
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
-      when(() => mockedSocketChannel.stream)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockedSocketChannel.stream,
+      ).thenAnswer((_) => streamController.stream);
       when(() => mockedSink.close()).thenAnswer((_) => closeCompleter.future);
 
       await mockedSocket.connect();
@@ -1024,8 +1025,9 @@ void main() {
 
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
-      when(() => mockedSocketChannel.stream)
-          .thenAnswer((_) => streamController.stream);
+      when(
+        () => mockedSocketChannel.stream,
+      ).thenAnswer((_) => streamController.stream);
       when(() => mockedSink.close()).thenAnswer((_) => Future.value());
       when(() => erroredChannel.isErrored).thenReturn(true);
       when(() => healthyChannel.isErrored).thenReturn(false);

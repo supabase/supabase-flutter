@@ -315,8 +315,12 @@ class RealtimeClient {
 
       if (shouldCloseSink) {
         onTimeout() {
-          log('transport', 'timeout while closing connection', null,
-              Level.FINE);
+          log(
+            'transport',
+            'timeout while closing connection',
+            null,
+            Level.FINE,
+          );
           // Handle as the connection would have been closed successfully, to
           // avoid hanging the client. This is done by mimicking the onDone
           // callback of the connection stream. By canceling the subscription,
@@ -333,9 +337,10 @@ class RealtimeClient {
               .close(code, reason ?? '')
               .timeout(const Duration(seconds: 6), onTimeout: onTimeout);
         } else {
-          await conn.sink
-              .close()
-              .timeout(const Duration(seconds: 6), onTimeout: onTimeout);
+          await conn.sink.close().timeout(
+            const Duration(seconds: 6),
+            onTimeout: onTimeout,
+          );
         }
         connState = SocketStates.disconnected;
         log('transport', 'disconnected', null, Level.FINE);
