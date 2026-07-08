@@ -10,6 +10,9 @@
 #   - partially_implemented present but with a behavioral difference or gap vs
 #                           supabase-js; a note describes the difference.
 #   - not_implemented       not available.
+#   - not_applicable        does not map onto Dart/Flutter; the only faithful
+#                           implementation would add no real capability. A note
+#                           explains why.
 #
 # Verified against the source in this repository (packages/gotrue, postgrest,
 # storage_client, realtime_client, functions_client, supabase, supabase_flutter).
@@ -338,7 +341,9 @@ features:
   database.configuration.auto_retry:
     status: partially_implemented
     note: "Retries GET/HEAD requests on transient failures with backoff, but the retry count and conditions are hard-coded, not configurable."
-  database.configuration.request_timeout: not_implemented
+  database.configuration.request_timeout:
+    status: not_applicable
+    note: "Requires cancelling in-flight requests at the deadline, but the http.Client transport has no cancellation primitive. The only Dart-native option is Future.timeout, which lets the request keep running and is functionally identical to a caller applying .timeout() themselves, so it adds no real capability. Same reasoning as functions.invocation.timeout; a genuine version would require database.using_modifiers.request_cancellation."
 
   # storage — file buckets
   storage.file_buckets.access_bucket: implemented
