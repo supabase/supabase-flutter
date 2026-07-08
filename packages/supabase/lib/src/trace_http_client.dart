@@ -1,7 +1,9 @@
 import 'package:http/http.dart';
+import 'package:meta/meta.dart';
 
 import 'trace_propagation.dart';
 
+@internal
 class TracePropagationClient extends BaseClient {
   final Client _inner;
   final TracePropagationOptions _options;

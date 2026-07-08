@@ -21,6 +21,7 @@ dependencies:
   functions_client: 2.6.4
   gotrue: 2.26.0
   http: ^1.2.2
+  meta: ^1.7.0
   postgrest: 2.8.0
   realtime_client: 2.11.0
   storage_client: 2.6.0

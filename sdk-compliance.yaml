@@ -503,7 +503,3 @@ features:
       - TracePropagationOptions.enabled
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
-      - TracePropagationClient
-      - TracePropagationClient.TracePropagationClient
-      - TracePropagationClient.send
-      - TracePropagationClient.close
