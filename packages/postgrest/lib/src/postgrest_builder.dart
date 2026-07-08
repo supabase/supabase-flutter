@@ -54,8 +54,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final YAJsonIsolate? _isolate;
   final CountOption? _count;
   final bool _retryEnabled;
+  final int _retryCount;
+  final Set<int> _retryableStatusCodes;
+  final Duration? _requestTimeout;
   final Duration Function(int attempt) _retryDelay;
   final _log = Logger('supabase.postgrest');
+
+  /// HTTP status codes that trigger an automatic retry by default.
+  static const Set<int> defaultRetryableStatusCodes = {503, 520};
 
   static Duration _defaultRetryDelay(int attempt) =>
       Duration(seconds: math.min(math.pow(2, attempt).toInt(), 30));
@@ -72,8 +78,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
     bool retryEnabled = true,
+    int retryCount = 3,
+    Set<int> retryableStatusCodes = defaultRetryableStatusCodes,
+    Duration? requestTimeout,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-  }) : _maybeSingle = maybeSingle,
+  }) : assert(retryCount >= 0, 'retryCount must not be negative'),
+       _maybeSingle = maybeSingle,
        _method = method,
        _converter = converter,
        _schema = schema,
@@ -84,6 +94,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _count = count,
        _body = body,
        _retryEnabled = retryEnabled,
+       _retryCount = retryCount,
+       _retryableStatusCodes = retryableStatusCodes,
+       _requestTimeout = requestTimeout,
        _retryDelay = retryDelay ?? _defaultRetryDelay;
 
   PostgrestBuilder<T, S, R> _copyWith({
@@ -98,6 +111,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
     bool? retryEnabled,
+    int? retryCount,
+    Set<int>? retryableStatusCodes,
+    Duration? requestTimeout,
     Duration Function(int attempt)? retryDelay,
   }) {
     return PostgrestBuilder(
@@ -112,6 +128,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
       retryEnabled: retryEnabled ?? _retryEnabled,
+      retryCount: retryCount ?? _retryCount,
+      retryableStatusCodes: retryableStatusCodes ?? _retryableStatusCodes,
+      requestTimeout: requestTimeout ?? _requestTimeout,
       retryDelay: retryDelay ?? _retryDelay,
     );
   }
@@ -122,8 +141,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// [PostgrestClient] was configured with `retryEnabled: true`.
   /// When [enabled] is `true`, retries are enabled for this request even if
   /// [PostgrestClient] was configured with `retryEnabled: false`.
-  PostgrestBuilder<T, S, R> retry({required bool enabled}) =>
-      _copyWith(retryEnabled: enabled);
+  ///
+  /// [count] overrides the number of retry attempts for this request.
+  PostgrestBuilder<T, S, R> retry({bool enabled = true, int? count}) =>
+      _copyWith(retryEnabled: enabled, retryCount: count);
 
   PostgrestBuilder<T, S, R> setHeader(String key, String value) {
     return _copyWith(
@@ -194,7 +215,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       throw StateError('Unknown HTTP method: ${method.value}');
     }
 
-    final response = await _executeWithRetry(send, method, execHeaders);
+    final requestTimeout = _requestTimeout;
+    final timedSend = requestTimeout == null
+        ? send
+        : () => send().timeout(requestTimeout);
+
+    final response = await _executeWithRetry(timedSend, method, execHeaders);
     return await _parseResponse(response, method);
   }
 
@@ -203,8 +229,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     HttpMethod method,
     Map<String, String> execHeaders,
   ) async {
-    const maxRetries = 3;
-    const retryableStatusCodes = {503, 520};
+    final maxRetries = _retryCount;
+    final retryableStatusCodes = _retryableStatusCodes;
 
     final isRetryableMethod =
         method == HttpMethod.get || method == HttpMethod.head;

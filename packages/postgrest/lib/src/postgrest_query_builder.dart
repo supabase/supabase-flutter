@@ -20,6 +20,10 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     Client? httpClient,
     YAJsonIsolate? isolate,
     bool retryEnabled = true,
+    int retryCount = 3,
+    Set<int> retryableStatusCodes =
+        PostgrestBuilder.defaultRetryableStatusCodes,
+    Duration? requestTimeout,
     Duration Function(int attempt)? retryDelay,
   }) : super(
          PostgrestBuilder(
@@ -30,6 +34,9 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
            httpClient: httpClient,
            isolate: isolate,
            retryEnabled: retryEnabled,
+           retryCount: retryCount,
+           retryableStatusCodes: retryableStatusCodes,
+           requestTimeout: requestTimeout,
            retryDelay: retryDelay,
          ),
        );
@@ -276,7 +283,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   }
 
   @override
-  PostgrestQueryBuilder<T> retry({required bool enabled}) {
+  PostgrestQueryBuilder<T> retry({bool enabled = true, int? count}) {
     return PostgrestQueryBuilder(
       url: _url,
       headers: _headers,
@@ -285,6 +292,9 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       schema: _schema,
       isolate: _isolate,
       retryEnabled: enabled,
+      retryCount: count ?? _retryCount,
+      retryableStatusCodes: _retryableStatusCodes,
+      requestTimeout: _requestTimeout,
       retryDelay: _retryDelay,
     );
   }
@@ -299,6 +309,9 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       schema: _schema,
       isolate: _isolate,
       retryEnabled: _retryEnabled,
+      retryCount: _retryCount,
+      retryableStatusCodes: _retryableStatusCodes,
+      requestTimeout: _requestTimeout,
       retryDelay: _retryDelay,
     );
   }

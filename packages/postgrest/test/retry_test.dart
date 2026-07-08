@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -32,6 +33,9 @@ _ResponseFactory _status(int code) =>
 _ResponseFactory _networkError() =>
     (_) => throw const SocketException('Connection refused');
 
+_ResponseFactory _delayed(Duration delay, _ResponseFactory inner) =>
+    (req) => Future.delayed(delay).then((_) => inner(req));
+
 class _MockRetryClient extends BaseClient {
   final List<_ResponseFactory> _responses;
   final List<BaseRequest> requests = [];
@@ -56,11 +60,17 @@ class _MockRetryClient extends BaseClient {
 PostgrestClient _buildClient(
   _MockRetryClient mock, {
   bool retryEnabled = true,
+  int retryCount = 3,
+  Set<int> retryableStatusCodes = const {503, 520},
+  Duration? requestTimeout,
 }) {
   return PostgrestClient(
     'http://localhost:3000',
     httpClient: mock,
     retryEnabled: retryEnabled,
+    retryCount: retryCount,
+    retryableStatusCodes: retryableStatusCodes,
+    requestTimeout: requestTimeout,
     retryDelay: (_) => Duration.zero,
   );
 }
@@ -235,5 +245,121 @@ void main() {
         expect(mock.callCount, 4);
       },
     );
+  });
+
+  group('configurable retry count', () {
+    test('client retryCount limits the number of retries', () async {
+      final mock = _MockRetryClient([
+        _status(520),
+        _status(520),
+        _status(520),
+      ]);
+      final client = _buildClient(mock, retryCount: 1);
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(isA<PostgrestException>()),
+      );
+      // Initial attempt + 1 retry.
+      expect(mock.callCount, 2);
+    });
+
+    test('retryCount: 0 disables retries', () async {
+      final mock = _MockRetryClient([_status(520)]);
+      final client = _buildClient(mock, retryCount: 0);
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(isA<PostgrestException>()),
+      );
+      expect(mock.callCount, 1);
+    });
+
+    test('.retry(count:) overrides the retry count per request', () async {
+      final mock = _MockRetryClient([_status(520), _status(520), _ok()]);
+      final client = _buildClient(mock, retryCount: 1);
+
+      final result = await client.from('users').select().retry(count: 5);
+
+      expect(result, isEmpty);
+      expect(mock.callCount, 3);
+    });
+
+    test('negative retryCount throws AssertionError', () {
+      expect(
+        () => PostgrestClient('http://localhost:3000', retryCount: -1),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+  });
+
+  group('configurable retryable status codes', () {
+    test('retries on a custom status code', () async {
+      final mock = _MockRetryClient([_status(500), _ok()]);
+      final client = _buildClient(mock, retryableStatusCodes: {500});
+
+      final result = await client.from('users').select();
+
+      expect(result, isEmpty);
+      expect(mock.callCount, 2);
+    });
+
+    test('does not retry on a status code outside the custom set', () async {
+      final mock = _MockRetryClient([_status(520)]);
+      final client = _buildClient(mock, retryableStatusCodes: {500});
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(isA<PostgrestException>()),
+      );
+      expect(mock.callCount, 1);
+    });
+  });
+
+  group('request timeout', () {
+    test('times out a slow GET and retries', () async {
+      final mock = _MockRetryClient([
+        _delayed(const Duration(milliseconds: 200), _ok()),
+        _ok(),
+      ]);
+      final client = _buildClient(
+        mock,
+        requestTimeout: const Duration(milliseconds: 20),
+      );
+
+      final result = await client.from('users').select();
+
+      expect(result, isEmpty);
+      expect(mock.callCount, 2);
+    });
+
+    test('a slow POST throws TimeoutException and does not retry', () async {
+      final mock = _MockRetryClient([
+        _delayed(const Duration(milliseconds: 200), _ok()),
+      ]);
+      final client = _buildClient(
+        mock,
+        requestTimeout: const Duration(milliseconds: 20),
+      );
+
+      await expectLater(
+        () => client.from('users').insert({'name': 'foo'}),
+        throwsA(isA<TimeoutException>()),
+      );
+      expect(mock.callCount, 1);
+    });
+
+    test('a fast request within the timeout succeeds', () async {
+      final mock = _MockRetryClient([_ok()]);
+      final client = _buildClient(
+        mock,
+        requestTimeout: const Duration(seconds: 5),
+      );
+
+      final result = await client.from('users').select();
+
+      expect(result, isEmpty);
+      expect(mock.callCount, 1);
+    });
   });
 }

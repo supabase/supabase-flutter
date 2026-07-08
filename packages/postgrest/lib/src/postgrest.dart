@@ -14,6 +14,9 @@ class PostgrestClient {
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
   final bool retryEnabled;
+  final int retryCount;
+  final Set<int> retryableStatusCodes;
+  final Duration? requestTimeout;
   final Duration Function(int attempt)? _retryDelay;
   final _log = Logger('supabase.postgrest');
 
@@ -30,8 +33,18 @@ class PostgrestClient {
   /// [isolate] is optional and can be used to provide a custom isolate, which is used for heavy json computation
   ///
   /// [retryEnabled] controls whether automatic retries are performed for GET and
-  /// HEAD requests that fail with HTTP 503, HTTP 520, or a network error. Defaults to `true`.
-  /// Use [PostgrestBuilder.retry] to override this per request.
+  /// HEAD requests that fail with a retryable status code or a network error.
+  /// Defaults to `true`. Use [PostgrestBuilder.retry] to override this per request.
+  ///
+  /// [retryCount] is the number of retry attempts made for a retryable request
+  /// before giving up. Defaults to `3`.
+  ///
+  /// [retryableStatusCodes] are the HTTP status codes that trigger a retry.
+  /// Defaults to `{503, 520}`.
+  ///
+  /// [requestTimeout] is an optional timeout applied to each HTTP request. When
+  /// a request exceeds it, a [TimeoutException] is thrown, which is treated as a
+  /// transient failure for retryable requests. Defaults to no timeout.
   PostgrestClient(
     this.url, {
     Map<String, String>? headers,
@@ -39,8 +52,12 @@ class PostgrestClient {
     this.httpClient,
     YAJsonIsolate? isolate,
     this.retryEnabled = true,
+    this.retryCount = 3,
+    this.retryableStatusCodes = PostgrestBuilder.defaultRetryableStatusCodes,
+    this.requestTimeout,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-  }) : _schema = schema,
+  }) : assert(retryCount >= 0, 'retryCount must not be negative'),
+       _schema = schema,
        headers = {...defaultHeaders, ...?headers},
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null,
@@ -76,6 +93,9 @@ class PostgrestClient {
       httpClient: httpClient,
       isolate: _isolate,
       retryEnabled: retryEnabled,
+      retryCount: retryCount,
+      retryableStatusCodes: retryableStatusCodes,
+      requestTimeout: requestTimeout,
       retryDelay: _retryDelay,
     );
   }
@@ -91,6 +111,9 @@ class PostgrestClient {
       httpClient: httpClient,
       isolate: _isolate,
       retryEnabled: retryEnabled,
+      retryCount: retryCount,
+      retryableStatusCodes: retryableStatusCodes,
+      requestTimeout: requestTimeout,
       retryDelay: _retryDelay,
     );
   }
@@ -123,6 +146,9 @@ class PostgrestClient {
       httpClient: httpClient,
       isolate: _isolate,
       retryEnabled: retryEnabled,
+      retryCount: retryCount,
+      retryableStatusCodes: retryableStatusCodes,
+      requestTimeout: requestTimeout,
       retryDelay: _retryDelay,
     ).rpc(params, get);
   }

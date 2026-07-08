@@ -8,6 +8,10 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
     Client? httpClient,
     required YAJsonIsolate isolate,
     bool retryEnabled = true,
+    int retryCount = 3,
+    Set<int> retryableStatusCodes =
+        PostgrestBuilder.defaultRetryableStatusCodes,
+    Duration? requestTimeout,
     Duration Function(int attempt)? retryDelay,
   }) : super(
          PostgrestBuilder(
@@ -17,6 +21,9 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
            httpClient: httpClient,
            isolate: isolate,
            retryEnabled: retryEnabled,
+           retryCount: retryCount,
+           retryableStatusCodes: retryableStatusCodes,
+           requestTimeout: requestTimeout,
            retryDelay: retryDelay,
          ),
        );

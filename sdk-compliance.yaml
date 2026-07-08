@@ -336,9 +336,16 @@ features:
 
   # database — configuration
   database.configuration.auto_retry:
-    status: partially_implemented
-    note: "Retries GET/HEAD requests on transient failures with backoff, but the retry count and conditions are hard-coded, not configurable."
-  database.configuration.request_timeout: not_implemented
+    status: implemented
+    symbols:
+      - PostgrestClient.retryEnabled
+      - PostgrestClient.retryCount
+      - PostgrestClient.retryableStatusCodes
+      - PostgrestBuilder.retry
+  database.configuration.request_timeout:
+    status: implemented
+    symbols:
+      - PostgrestClient.requestTimeout
 
   # storage — file buckets
   storage.file_buckets.access_bucket: implemented
