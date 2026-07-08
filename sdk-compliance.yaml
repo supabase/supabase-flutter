@@ -422,6 +422,9 @@ features:
       - RealtimeClient.onHeartbeat
       - RealtimeHeartbeatStatus
   realtime.client.set_auth_token: implemented
+  realtime.client.join_payload_access_token:
+    status: implemented
+    note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
 
   # realtime — subscriptions
   realtime.subscriptions.broadcast: implemented
