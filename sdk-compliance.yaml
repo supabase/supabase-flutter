@@ -47,8 +47,9 @@ features:
     symbols:
       - GoTrueClient.getSession
   auth.session.set_session:
-    status: partially_implemented
-    note: "Signature differs: setSession(refreshToken, {accessToken}) instead of an {access_token, refresh_token} object."
+    status: implemented
+    symbols:
+      - GoTrueClient.setSession
   auth.session.refresh_session: implemented
   auth.session.get_user: implemented
   auth.session.update_user:
