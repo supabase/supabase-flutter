@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:storage_client/src/fetch.dart';
 import 'package:storage_client/src/types.dart';
 
-import 'file_io.dart' if (dart.library.js) './file_stub.dart';
+import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 class StorageFileApi {
   final String url;
