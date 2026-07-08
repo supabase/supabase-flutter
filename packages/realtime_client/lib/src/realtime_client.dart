@@ -302,7 +302,6 @@ class RealtimeClient {
         if (code != null) {
           // Add a timeout to close the sink to avoid hanging in case something
           // is wrong with the connection.
-          // This safeguard was suggested here: https://github.com/dart-lang/http/issues/1693#issuecomment-2651080004
           // The Dart SDK has a timeout of 5 seconds for closing the WebSocket connection, so we set a timeout of 6 seconds here to avoid hanging indefinitely.
           await conn.sink
               .close(code, reason ?? '')
