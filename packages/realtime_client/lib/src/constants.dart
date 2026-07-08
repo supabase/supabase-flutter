@@ -2,6 +2,7 @@ import 'package:realtime_client/src/version.dart';
 
 class Constants {
   static const Duration defaultTimeout = Duration(milliseconds: 10000);
+  static const Duration defaultConnectionCloseTimeout = Duration(seconds: 6);
   static const int defaultHeartbeatIntervalMs = 25000;
   static const int wsCloseNormal = 1000;
   static const Map<String, String> defaultHeaders = {

@@ -105,6 +105,7 @@ class RealtimeClient {
   final Map<String, dynamic> params;
 
   final RealtimeProtocolVersion version;
+  final Duration connectionCloseTimeout;
   final Duration timeout;
   final WebSocketTransport transport;
   final Client? httpClient;
@@ -149,7 +150,10 @@ class RealtimeClient {
   ///
   /// [transport] The Websocket Transport, for example WebSocket.
   ///
-  /// [timeout] The default timeout in milliseconds to trigger push timeouts.
+  /// [timeout] The default timeout to trigger push timeouts.
+  ///
+  /// [connectionCloseTimeout] The timeout to wait for the connection to close
+  /// before dismissing the result. Defaults to 6 seconds.
   ///
   /// [params] The optional params to pass when connecting.
   ///
@@ -176,6 +180,7 @@ class RealtimeClient {
     String endPoint, {
     WebSocketTransport? transport,
     this.timeout = Constants.defaultTimeout,
+    this.connectionCloseTimeout = Constants.defaultConnectionCloseTimeout,
     this.heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs,
     this.logger,
     RealtimeEncode? encode,

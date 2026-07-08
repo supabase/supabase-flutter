@@ -363,6 +363,8 @@ class SupabaseClient {
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
+      connectionCloseTimeout: options.connectionCloseTimeout ??
+          RealtimeConstants.defaultConnectionCloseTimeout,
       customAccessToken: accessToken,
       transport: options.transport,
     );
