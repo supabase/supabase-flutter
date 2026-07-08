@@ -376,6 +376,7 @@ features:
       - StorageBucketApi.listBuckets
       - ListBucketsOptions
       - BucketSortColumn
+      - BucketSortColumn.BucketSortColumn
       - BucketSortOrder
   storage.file_buckets.update_bucket: implemented
   storage.file_buckets.delete_file_bucket: implemented

@@ -68,28 +68,30 @@ void main() {
       expect(customHttpClient.receivedRequests.last.url.query, isEmpty);
     });
 
-    test('should list buckets with filter, sort and pagination options',
-        () async {
-      customHttpClient.response = [testBucketJson];
+    test(
+      'should list buckets with filter, sort and pagination options',
+      () async {
+        customHttpClient.response = [testBucketJson];
 
-      await client.listBuckets(
-        const ListBucketsOptions(
-          limit: 10,
-          offset: 5,
-          search: 'prod',
-          sortColumn: BucketSortColumn.createdAt,
-          sortOrder: BucketSortOrder.descending,
-        ),
-      );
+        await client.listBuckets(
+          const ListBucketsOptions(
+            limit: 10,
+            offset: 5,
+            search: 'prod',
+            sortColumn: BucketSortColumn.createdAt,
+            sortOrder: BucketSortOrder.descending,
+          ),
+        );
 
-      final queryParameters =
-          customHttpClient.receivedRequests.last.url.queryParameters;
-      expect(queryParameters['limit'], '10');
-      expect(queryParameters['offset'], '5');
-      expect(queryParameters['search'], 'prod');
-      expect(queryParameters['sortColumn'], 'created_at');
-      expect(queryParameters['sortOrder'], 'desc');
-    });
+        final queryParameters =
+            customHttpClient.receivedRequests.last.url.queryParameters;
+        expect(queryParameters['limit'], '10');
+        expect(queryParameters['offset'], '5');
+        expect(queryParameters['search'], 'prod');
+        expect(queryParameters['sortColumn'], 'created_at');
+        expect(queryParameters['sortOrder'], 'desc');
+      },
+    );
 
     test('should include limit and offset of zero', () async {
       customHttpClient.response = [testBucketJson];
