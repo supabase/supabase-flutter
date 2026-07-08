@@ -375,9 +375,19 @@ features:
     symbols:
       - StorageBucketApi.listBuckets
       - ListBucketsOptions
+      - ListBucketsOptions.ListBucketsOptions
+      - ListBucketsOptions.limit
+      - ListBucketsOptions.offset
+      - ListBucketsOptions.search
+      - ListBucketsOptions.sortColumn
+      - ListBucketsOptions.sortOrder
+      - ListBucketsOptions.toQueryParameters
       - BucketSortColumn
       - BucketSortColumn.BucketSortColumn
+      - BucketSortColumn.value
       - BucketSortOrder
+      - BucketSortOrder.BucketSortOrder
+      - BucketSortOrder.value
   storage.file_buckets.update_bucket: implemented
   storage.file_buckets.delete_file_bucket: implemented
   storage.file_buckets.empty_bucket: implemented
