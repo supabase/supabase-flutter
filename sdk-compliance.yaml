@@ -131,8 +131,22 @@ features:
     status: implemented
     symbols:
       - GoTrueOAuthApi.denyAuthorization
-  auth.oauth_server.list_grants: not_implemented
-  auth.oauth_server.revoke_grant: not_implemented
+  auth.oauth_server.list_grants:
+    status: implemented
+    symbols:
+      - GoTrueOAuthApi.listGrants
+      - OAuthGrant
+      - OAuthGrant.OAuthGrant
+      - OAuthGrant.client
+      - OAuthGrant.fromJson
+      - OAuthGrant.grantedAt
+      - OAuthGrant.scopes
+      - OAuthAuthorizedClient.clientUri
+      - OAuthAuthorizedClient.logoUri
+  auth.oauth_server.revoke_grant:
+    status: implemented
+    symbols:
+      - GoTrueOAuthApi.revokeGrant
 
   # auth — admin
   auth.admin.create_user: implemented
