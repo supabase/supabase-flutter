@@ -32,7 +32,7 @@ dependencies:
 dev_dependencies:
   dotenv: ^4.2.0
   supabase_lints: ^0.1.0
-  test: ^1.31.0
+  test: ^1.25.0
   otp: ^3.2.0
 
 false_secrets:

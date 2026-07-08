@@ -24,4 +24,4 @@ dependencies:
 
 dev_dependencies:
   supabase_lints: ^0.1.0
-  test: ^1.31.0
+  test: ^1.25.0

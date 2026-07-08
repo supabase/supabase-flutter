@@ -3,3 +3,9 @@ include: package:supabase_lints/analysis_options_flutter.yaml
 analyzer:
   exclude:
     - lib/generated_plugin_registrant.dart
+
+dcm:
+  rules:
+    # This is a single-file demo app, so keeping every widget in one file is
+    # intentional.
+    - prefer-single-widget-per-file: false
