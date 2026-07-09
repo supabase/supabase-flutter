@@ -515,8 +515,8 @@ features:
   client.request_configuration.custom_http_client: implemented
   client.request_configuration.global_headers: implemented
   client.observability.trace_propagation:
-    status: partially_implemented
-    note: "Opt-in W3C trace context propagation (traceparent/tracestate/baggage) to Supabase hosts only, with sampling-decision respect. Unlike supabase-js, which auto-extracts the active context from the OpenTelemetry global API, the Dart client takes a traceContextProvider callback since there is no ubiquitous ambient trace context in Dart."
+    status: implemented
+    note: "Opt-in W3C trace context propagation (traceparent/tracestate/baggage) to Supabase hosts only, with sampling-decision respect. The active context is supplied through a traceContextProvider callback, the idiomatic Dart equivalent of supabase-js's automatic extraction from the OpenTelemetry global API, since Dart has no ubiquitous ambient trace context."
     symbols:
       - TraceContext
       - TraceContext.TraceContext
