@@ -226,12 +226,7 @@ class GoTrueClient {
       return response.session;
     } on AuthException {
       final current = _currentSession;
-      final expiresAt = current?.expiresAt;
-      if (current != null &&
-          expiresAt != null &&
-          DateTime.fromMillisecondsSinceEpoch(
-            expiresAt * 1000,
-          ).isAfter(DateTime.now())) {
+      if (current != null && !current.isExpiredWithoutMargin) {
         return current;
       }
       rethrow;
