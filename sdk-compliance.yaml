@@ -464,7 +464,9 @@ features:
   realtime.configuration.custom_websocket_transport: implemented
   realtime.configuration.reconnect_backoff: implemented
   realtime.configuration.heartbeat_interval: implemented
-  realtime.configuration.access_token_callback: implemented
+  realtime.configuration.access_token_callback:
+    status: implemented
+    note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
   realtime.configuration.custom_logger: implemented
   realtime.configuration.binary_protocol: implemented
   realtime.configuration.deferred_disconnect: not_implemented
