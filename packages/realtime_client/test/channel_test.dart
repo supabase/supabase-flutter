@@ -117,7 +117,7 @@ void main() {
 
       expect(joinPush.timeout, Constants.defaultTimeout);
 
-      channel.subscribe((_, [__]) {}, newTimeout);
+      channel.subscribe((_, [_]) {}, newTimeout);
 
       expect(joinPush.timeout, newTimeout);
     });
@@ -180,7 +180,7 @@ void main() {
           await Future<void>.value();
           await Future<void>.value();
         },
-        (_, __) {
+        (_, _) {
           /* expected: rethrown FormatException */
         },
       );

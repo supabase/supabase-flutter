@@ -4,7 +4,6 @@ import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:jwt_decode/jwt_decode.dart';
 import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
@@ -241,8 +240,8 @@ void main() {
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
 
-      final payload = Jwt.parseJwt(data!.accessToken);
-      expect(payload['exp'], data.expiresAt);
+      final payload = decodeJwt(data!.accessToken).payload;
+      expect(payload.exp, data.expiresAt);
     });
 
     test('Get user', () async {
@@ -265,8 +264,8 @@ void main() {
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
 
-      final payload = Jwt.parseJwt(data!.accessToken);
-      expect(payload['exp'], data.expiresAt);
+      final payload = decodeJwt(data!.accessToken).payload;
+      expect(payload.exp, data.expiresAt);
     });
 
     test('Set session', () async {
