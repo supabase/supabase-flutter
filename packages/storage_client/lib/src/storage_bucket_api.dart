@@ -25,12 +25,11 @@ class StorageBucketApi {
   }
 
   /// Retrieves the details of all Storage buckets within an existing project.
-<<<<<<< HEAD
   ///
   /// [options] optionally filters, sorts and paginates the returned buckets.
   /// Calling [listBuckets] without any options returns all buckets.
   Future<List<Bucket>> listBuckets([ListBucketsOptions? options]) async {
-    final FetchOptions fetchOptions = FetchOptions(headers: headers);
+    final FetchOptions fetchOptions = FetchOptions(headers);
     final queryParameters = options?.toQueryParameters() ?? const {};
     final uri = Uri.parse('$url/bucket').replace(
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
@@ -39,11 +38,6 @@ class StorageBucketApi {
       uri.toString(),
       options: fetchOptions,
     );
-=======
-  Future<List<Bucket>> listBuckets() async {
-    final FetchOptions options = FetchOptions(headers);
-    final response = await storageFetch.get('$url/bucket', options: options);
->>>>>>> origin/main
     final buckets = List<Bucket>.from(
       (response as List).map(
         (value) => Bucket.fromJson(value),
