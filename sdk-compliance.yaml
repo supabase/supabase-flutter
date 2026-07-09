@@ -26,8 +26,7 @@ features:
     note: "Weak passwords surface as a thrown AuthWeakPasswordException rather than a weakPassword field on the response."
   auth.sign_in.sign_in_with_otp: implemented
   auth.sign_in.sign_in_with_oauth:
-    status: partially_implemented
-    note: "Exposed as getOAuthSignInUrl (gotrue) and signInWithOAuth (supabase_flutter); the skipBrowserRedirect option is not publicly exposed. Custom OIDC providers are supported via OAuthProvider('custom:name'); the identifier is sent to the API unchanged, matching supabase-js's custom: prefix support."
+    status: implemented
     symbols:
       - OAuthProvider
       - OAuthProvider.OAuthProvider
