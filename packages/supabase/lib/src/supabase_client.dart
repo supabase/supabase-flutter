@@ -55,7 +55,7 @@ class SupabaseClient {
   final Map<String, String> _headers;
   final Client? _httpClient;
   late final Client _authHttpClient;
-  late final Client? _gotrueHttpClient;
+  late final Client _gotrueHttpClient;
 
   GoTrueClient? _authInstance;
 
@@ -157,9 +157,7 @@ class SupabaseClient {
             supabaseUrl,
           )
         : baseHttpClient;
-    _gotrueHttpClient = tracePropagationOptions.enabled
-        ? tracedHttpClient
-        : baseHttpClient;
+    _gotrueHttpClient = tracedHttpClient;
     _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
       gotrueAsyncStorage: authOptions.pkceAsyncStorage,
