@@ -320,6 +320,9 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// OAuth sign-in has succeeded or not should be observed by setting a listener
   /// on [auth.onAuthStateChanged].
   ///
+  /// To obtain the OAuth URL without launching a browser, use
+  /// [getOAuthSignInUrl] instead.
+  ///
   /// See also:
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>

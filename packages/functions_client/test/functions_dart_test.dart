@@ -26,8 +26,57 @@ void main() {
       await expectLater(
         () => functionsCustomHttpClient.invoke('error-function'),
         throwsA(
-          isA<FunctionException>().having((e) => e.status, 'status', 420),
+          isA<FunctionsHttpException>().having((e) => e.status, 'status', 420),
         ),
+      );
+    });
+
+    test('a non-2xx response throws a FunctionsHttpException', () async {
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('error-function'),
+        throwsA(
+          isA<FunctionsHttpException>()
+              .having((e) => e.status, 'status', 420)
+              .having(
+                (e) => e.reasonPhrase,
+                'reasonPhrase',
+                'Enhance Your Calm',
+              )
+              .having((e) => e.details, 'details', {'key': 'Hello World'}),
+        ),
+      );
+    });
+
+    test('a relay error throws a FunctionsRelayException', () async {
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('relay-error'),
+        throwsA(
+          isA<FunctionsRelayException>()
+              .having((e) => e.status, 'status', 500)
+              .having((e) => e.details, 'details', {'error': 'relay down'}),
+        ),
+      );
+    });
+
+    test('a transport failure throws a FunctionsFetchException', () async {
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('network-error'),
+        throwsA(
+          isA<FunctionsFetchException>()
+              .having((e) => e.status, 'status', 0)
+              .having((e) => e.details, 'details', isA<ClientException>()),
+        ),
+      );
+    });
+
+    test('the subtypes remain catchable as FunctionException', () async {
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('relay-error'),
+        throwsA(isA<FunctionException>()),
+      );
+      await expectLater(
+        () => functionsCustomHttpClient.invoke('network-error'),
+        throwsA(isA<FunctionException>()),
       );
     });
 

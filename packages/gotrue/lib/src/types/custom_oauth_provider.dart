@@ -193,8 +193,7 @@ class CustomOAuthProvider {
       customClaimsAllowlist: (json['custom_claims_allowlist'] as List?)?.cast(),
       pkceEnabled: json['pkce_enabled'] as bool?,
       attributeMapping: json['attribute_mapping'] as Map<String, dynamic>?,
-      authorizationParams: (json['authorization_params'] as Map?)
-          ?.cast<String, String>(),
+      authorizationParams: (json['authorization_params'] as Map?)?.cast(),
       enabled: json['enabled'] as bool?,
       emailOptional: json['email_optional'] as bool?,
       issuer: json['issuer'] as String?,
