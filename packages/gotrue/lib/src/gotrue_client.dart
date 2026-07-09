@@ -8,12 +8,11 @@ import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
 import 'package:gotrue/src/helper.dart';
-import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
-import 'package:retry/retry.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 import 'broadcast_stub.dart'
     if (dart.library.js_interop) './broadcast_web.dart'
@@ -92,8 +91,8 @@ class GoTrueClient {
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
 
-  final _onAuthStateChangeController = _ReplaySubject<AuthState>();
-  final _onAuthStateChangeControllerSync = _ReplaySubject<AuthState>(
+  final _onAuthStateChangeController = ReplaySubject<AuthState>();
+  final _onAuthStateChangeControllerSync = ReplaySubject<AuthState>(
     sync: true,
   );
 
@@ -189,6 +188,50 @@ class GoTrueClient {
 
   /// Returns the current session, if any;
   Session? get currentSession => _currentSession;
+
+  /// Returns the current session, refreshing it on demand when the access
+  /// token has expired.
+  ///
+  /// Where the synchronous [currentSession] getter returns whatever session is
+  /// stored, even one whose access token has already expired, this returns a
+  /// session whose access token is guaranteed to be valid when it resolves: a
+  /// still-valid session is returned as-is, while an expired one is refreshed
+  /// first. If a refresh is already in flight, the expired session waits for it
+  /// to settle instead of starting another one.
+  ///
+  /// Returns `null` when there is no session. Throws an [AuthException] when an
+  /// expired session cannot be refreshed, unless its access token is still
+  /// within its real validity window, in which case the still-valid session is
+  /// returned.
+  Future<Session?> getSession() async {
+    final session = _currentSession;
+    if (session == null) {
+      return null;
+    }
+
+    if (!session.isExpired) {
+      return session;
+    }
+
+    final refreshToken = session.refreshToken;
+    if (refreshToken == null) {
+      return session;
+    }
+
+    try {
+      // Concurrent callers share a single refresh through the same
+      // de-duplication used by [refreshSession], so an expired session's
+      // refresh token is only spent once.
+      final response = await _callRefreshToken(refreshToken);
+      return response.session;
+    } on AuthException {
+      final current = _currentSession;
+      if (current != null && !current.isExpiredWithoutMargin) {
+        return current;
+      }
+      rethrow;
+    }
+  }
 
   /// Creates a new anonymous user.
   ///
@@ -1696,72 +1739,4 @@ class GoTrueClient {
       throw AuthInvalidJwtException('Invalid JWT signature: $e');
     }
   }
-}
-
-/// A minimal broadcast stream controller that replays the most recent event
-/// (value or error) to every new subscriber.
-///
-/// This mirrors the only behavior of rxdart's `BehaviorSubject` that gotrue
-/// relies on: a listener that subscribes after an event has already been
-/// emitted immediately receives the latest event. It also preserves
-/// synchronous event delivery when constructed with [sync] set to true.
-class _ReplaySubject<T> {
-  _ReplaySubject({bool sync = false})
-    : _sync = sync,
-      _controller = StreamController<T>.broadcast(sync: sync);
-
-  final bool _sync;
-  final StreamController<T> _controller;
-
-  bool _hasEvent = false;
-  T? _latestValue;
-  Object? _latestError;
-  StackTrace? _latestStackTrace;
-  bool _latestIsError = false;
-
-  Stream<T> get stream => Stream.multi((controller) {
-    // Replay the latest event to the new subscriber, matching the
-    // controller's sync-ness so that a sync subject stays synchronous.
-    if (_hasEvent) {
-      if (_latestIsError) {
-        _sync
-            ? controller.addErrorSync(_latestError!, _latestStackTrace)
-            : controller.addError(_latestError!, _latestStackTrace);
-      } else {
-        _sync
-            ? controller.addSync(_latestValue as T)
-            : controller.add(_latestValue as T);
-      }
-    }
-
-    // Forward live events synchronously so the underlying broadcast
-    // controller's scheduling is the only hop. Without this, the extra
-    // controller would add a second microtask of latency versus a plain
-    // broadcast controller.
-    final subscription = _controller.stream.listen(
-      controller.addSync,
-      onError: controller.addErrorSync,
-      onDone: controller.closeSync,
-    );
-    controller.onCancel = subscription.cancel;
-  }, isBroadcast: true);
-
-  void add(T event) {
-    _hasEvent = true;
-    _latestIsError = false;
-    _latestValue = event;
-    _latestError = null;
-    _latestStackTrace = null;
-    _controller.add(event);
-  }
-
-  void addError(Object error, StackTrace stackTrace) {
-    _hasEvent = true;
-    _latestIsError = true;
-    _latestError = error;
-    _latestStackTrace = stackTrace;
-    _controller.addError(error, stackTrace);
-  }
-
-  Future<void> close() => _controller.close();
 }

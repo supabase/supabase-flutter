@@ -7,6 +7,7 @@ import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/error_code.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 enum RequestMethodType { get, post, put, patch, delete }
 
@@ -14,10 +15,6 @@ class GotrueFetch {
   final Client? httpClient;
 
   const GotrueFetch([this.httpClient]);
-
-  bool isSuccessStatusCode(int code) {
-    return code >= 200 && code <= 299;
-  }
 
   String _getErrorMessage(dynamic error) {
     if (error is Map) {

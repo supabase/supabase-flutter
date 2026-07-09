@@ -1,4 +1,4 @@
-import 'package:gotrue/src/types/auth_response.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 typedef BroadcastChannel = ({
   Stream<Map<String, dynamic>> onMessage,

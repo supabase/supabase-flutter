@@ -1,36 +1,12 @@
 import 'dart:convert';
-import 'dart:math';
 
-import 'package:crypto/crypto.dart';
-import 'package:gotrue/src/base64url.dart';
 import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/jwt.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
-/// Generates a random code verifier
-String generatePKCEVerifier() {
-  const verifierLength = 56;
-  final random = Random.secure();
-  return base64UrlEncode(
-    List.generate(verifierLength, (_) => random.nextInt(256)),
-  ).split('=')[0];
-}
-
-String generatePKCEChallenge(String verifier) {
-  return base64UrlEncode(
-    sha256.convert(ascii.encode(verifier)).bytes,
-  ).split('=')[0];
-}
-
-final uuidRegex = RegExp(
-  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-);
-
-void validateUuid(String id) {
-  if (!uuidRegex.hasMatch(id)) {
-    throw ArgumentError('Invalid id: $id, must be a valid UUID');
-  }
-}
+export 'package:supabase_common/supabase_common.dart'
+    show generatePKCEVerifier, generatePKCEChallenge, uuidRegex, validateUuid;
 
 /// Decodes a JWT token without performing validation
 ///

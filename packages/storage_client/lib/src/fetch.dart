@@ -4,12 +4,10 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-// ignore: unnecessary_import — needed for http < 1.6.0 which doesn't re-export MediaType
-import 'package:http_parser/http_parser.dart';
 import 'package:logging/logging.dart';
 import 'package:mime/mime.dart';
-import 'package:retry/retry.dart';
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
@@ -18,10 +16,6 @@ class Fetch {
   final _log = Logger('supabase.storage');
 
   Fetch([this.httpClient]);
-
-  bool _isSuccessStatusCode(int code) {
-    return code >= 200 && code <= 299;
-  }
 
   MediaType _parseMediaType(String path) {
     final mime = lookupMimeType(path);
@@ -212,7 +206,7 @@ class Fetch {
     FetchOptions? options,
   ) async {
     final response = await http.Response.fromStream(streamedResponse);
-    if (_isSuccessStatusCode(response.statusCode)) {
+    if (isSuccessStatusCode(response.statusCode)) {
       if (options?.noResolveJson == true) {
         return response.bodyBytes;
       }
@@ -232,7 +226,7 @@ class Fetch {
       'HEAD',
       url,
       null,
-      FetchOptions(headers: options?.headers, noResolveJson: true),
+      FetchOptions(options?.headers, noResolveJson: true),
     );
   }
 
