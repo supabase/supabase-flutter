@@ -7,6 +7,7 @@ import 'package:functions_client/src/version.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show MultipartRequest;
 import 'package:logging/logging.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 class FunctionsClient {
@@ -177,9 +178,7 @@ class FunctionsClient {
 
     final isRelayError = response.headers['x-relay-error'] == 'true';
     final isSuccessStatus =
-        200 <= response.statusCode &&
-        response.statusCode < 300 &&
-        !isRelayError;
+        isSuccessStatusCode(response.statusCode) && !isRelayError;
 
     final dynamic data;
 

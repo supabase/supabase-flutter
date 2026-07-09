@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:storage_client/src/fetch.dart';
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
@@ -51,7 +52,7 @@ class StorageFileApi {
     return path.replaceAll(RegExp(r'^/|/$'), '').replaceAll(RegExp(r'/+'), '/');
   }
 
-  FetchOptions get _fetchOptions => FetchOptions(headers: headers);
+  FetchOptions get _fetchOptions => FetchOptions(headers);
 
   void _assertValidRetryAttempts(int? retryAttempts) {
     assert(
@@ -212,12 +213,10 @@ class StorageFileApi {
     final data = await _storageFetch.post(
       '$url/object/upload/sign/$finalPath',
       {},
-      options: FetchOptions(
-        headers: {
-          ...headers,
-          if (upsert) 'x-upsert': 'true',
-        },
-      ),
+      options: FetchOptions({
+        ...headers,
+        if (upsert) 'x-upsert': 'true',
+      }),
     );
 
     final signedUrl = Uri.parse('$url${data['url']}');
@@ -497,7 +496,7 @@ class StorageFileApi {
     Map<String, String> query = transformationQuery;
     query.addAll(queryParams ?? {});
 
-    final options = FetchOptions(headers: headers, noResolveJson: true);
+    final options = FetchOptions(headers, noResolveJson: true);
 
     var fetchUrl = Uri.parse('$url/$renderPath/$finalPath');
     fetchUrl = fetchUrl.replace(queryParameters: query);
