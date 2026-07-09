@@ -53,6 +53,32 @@ void main() {
       );
       expect(provider, OAuthProvider.github);
     });
+
+    test('signIn() with custom OIDC provider', () async {
+      final res = await client.getOAuthSignInUrl(
+        provider: OAuthProvider('custom:my-oidc-provider'),
+      );
+      expect(
+        res.url,
+        startsWith(
+          '$gotrueUrl/authorize?provider=custom%3Amy-oidc-provider',
+        ),
+      );
+      expect(res.provider, OAuthProvider('custom:my-oidc-provider'));
+      expect(res.provider.name, 'custom:my-oidc-provider');
+    });
+
+    test('signIn() with custom OIDC provider and options', () async {
+      final res = await client.getOAuthSignInUrl(
+        provider: OAuthProvider('custom:my-oidc-provider'),
+        redirectTo: 'https://localhost:9000/callback',
+        scopes: 'openid profile email',
+      );
+      expect(res.url, contains('provider=custom%3Amy-oidc-provider'));
+      expect(res.url, contains('redirect_to='));
+      expect(res.url, contains('scopes='));
+      expect(res.provider.name, 'custom:my-oidc-provider');
+    });
   });
 
   group('getSessionFromUrl()', () {
