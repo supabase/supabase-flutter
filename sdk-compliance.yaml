@@ -10,6 +10,9 @@
 #   - partially_implemented present but with a behavioral difference or gap vs
 #                           supabase-js; a note describes the difference.
 #   - not_implemented       not available.
+#   - not_applicable        does not map onto Dart/Flutter; the only faithful
+#                           implementation would add no real capability. A note
+#                           explains why.
 #
 # Verified against the source in this repository (packages/gotrue, postgrest,
 # storage_client, realtime_client, functions_client, supabase, supabase_flutter).
@@ -25,8 +28,10 @@ features:
     note: "Weak passwords surface as a thrown AuthWeakPasswordException rather than a weakPassword field on the response."
   auth.sign_in.sign_in_with_otp: implemented
   auth.sign_in.sign_in_with_oauth:
-    status: partially_implemented
-    note: "Exposed as getOAuthSignInUrl (gotrue) and signInWithOAuth (supabase_flutter); the skipBrowserRedirect option is not publicly exposed."
+    status: implemented
+    symbols:
+      - OAuthProvider
+      - OAuthProvider.OAuthProvider
   auth.sign_in.sign_in_with_id_token: implemented
   auth.sign_in.sign_in_with_sso:
     status: partially_implemented
@@ -53,6 +58,8 @@ features:
   auth.session.update_user:
     status: partially_implemented
     note: "Does not send a PKCE code_challenge when changing email under the PKCE flow."
+    symbols:
+      - UserAttributes.currentPassword
   auth.session.get_claims: implemented
   auth.session.sign_out:
     status: partially_implemented
@@ -77,10 +84,8 @@ features:
   # auth — MFA
   auth.mfa.enroll:
     status: partially_implemented
-    note: "Supports totp and phone factor types only; webauthn enrollment is handled via the separate passkey API."
-  auth.mfa.challenge:
-    status: partially_implemented
-    note: "No channel parameter (sms/whatsapp) for phone factors; always uses SMS."
+    note: "Supports totp and phone factor types only. WebAuthn enrollment has no Dart equivalent: supabase-js runs the WebAuthn ceremony inline in the browser and patches the credential creation options' user.name client-side, whereas Dart delegates the device ceremony to a platform passkey plugin and exposes WebAuthn through the separate passkey API (which has no friendlyName parameter, as the server generates the name)."
+  auth.mfa.challenge: implemented
   auth.mfa.verify: implemented
   auth.mfa.challenge_and_verify: implemented
   auth.mfa.unenroll: implemented
@@ -338,7 +343,9 @@ features:
   database.configuration.auto_retry:
     status: partially_implemented
     note: "Retries GET/HEAD requests on transient failures with backoff, but the retry count and conditions are hard-coded, not configurable."
-  database.configuration.request_timeout: not_implemented
+  database.configuration.request_timeout:
+    status: not_applicable
+    note: "Requires cancelling in-flight requests at the deadline, but the http.Client transport has no cancellation primitive. The only Dart-native option is Future.timeout, which lets the request keep running and is functionally identical to a caller applying .timeout() themselves, so it adds no real capability. Same reasoning as functions.invocation.timeout; a genuine version would require database.using_modifiers.request_cancellation."
 
   # storage — file buckets
   storage.file_buckets.access_bucket: implemented
@@ -459,7 +466,9 @@ features:
   realtime.configuration.custom_websocket_transport: implemented
   realtime.configuration.reconnect_backoff: implemented
   realtime.configuration.heartbeat_interval: implemented
-  realtime.configuration.access_token_callback: implemented
+  realtime.configuration.access_token_callback:
+    status: implemented
+    note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
   realtime.configuration.custom_logger: implemented
   realtime.configuration.binary_protocol: implemented
   realtime.configuration.deferred_disconnect: not_implemented
@@ -478,7 +487,9 @@ features:
   functions.invocation.method_override: implemented
   functions.invocation.streaming_response: implemented
   functions.invocation.region_selection: implemented
-  functions.invocation.timeout: not_implemented
+  functions.invocation.timeout:
+    status: not_applicable
+    note: "A per-invocation timeout would only wrap the returned Future and cannot abort the in-flight request, so a caller could still see the function succeed after a timeout fires. That is identical to the caller applying Future.timeout themselves, so exposing it as an option adds no capability and would be misleading."
   functions.invocation.request_cancellation: not_implemented
 
   # client
