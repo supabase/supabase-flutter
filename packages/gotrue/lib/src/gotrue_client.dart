@@ -189,6 +189,50 @@ class GoTrueClient {
   /// Returns the current session, if any;
   Session? get currentSession => _currentSession;
 
+  /// Returns the current session, refreshing it on demand when the access
+  /// token has expired.
+  ///
+  /// Where the synchronous [currentSession] getter returns whatever session is
+  /// stored, even one whose access token has already expired, this returns a
+  /// session whose access token is guaranteed to be valid when it resolves: a
+  /// still-valid session is returned as-is, while an expired one is refreshed
+  /// first. If a refresh is already in flight, the expired session waits for it
+  /// to settle instead of starting another one.
+  ///
+  /// Returns `null` when there is no session. Throws an [AuthException] when an
+  /// expired session cannot be refreshed, unless its access token is still
+  /// within its real validity window, in which case the still-valid session is
+  /// returned.
+  Future<Session?> getSession() async {
+    final session = _currentSession;
+    if (session == null) {
+      return null;
+    }
+
+    if (!session.isExpired) {
+      return session;
+    }
+
+    final refreshToken = session.refreshToken;
+    if (refreshToken == null) {
+      return session;
+    }
+
+    try {
+      // Concurrent callers share a single refresh through the same
+      // de-duplication used by [refreshSession], so an expired session's
+      // refresh token is only spent once.
+      final response = await _callRefreshToken(refreshToken);
+      return response.session;
+    } on AuthException {
+      final current = _currentSession;
+      if (current != null && !current.isExpiredWithoutMargin) {
+        return current;
+      }
+      rethrow;
+    }
+  }
+
   /// Creates a new anonymous user.
   ///
   /// Returns An `AuthResponse` with a session where the `is_anonymous` claim
