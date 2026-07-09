@@ -125,10 +125,12 @@ class Supabase {
     }
     if (authOptions.localStorage == null) {
       authOptions = authOptions.copyWith(
-        localStorage: SharedPreferencesLocalStorage(
-          persistSessionKey:
-              "sb-${Uri.parse(url).host.split(".").first}-auth-token",
-        ),
+        localStorage: authOptions.persistSession
+            ? SharedPreferencesLocalStorage(
+                persistSessionKey:
+                    "sb-${Uri.parse(url).host.split(".").first}-auth-token",
+              )
+            : const EmptyLocalStorage(),
       );
     }
     _instance._init(
