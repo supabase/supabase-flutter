@@ -159,7 +159,7 @@ class SupabaseClient {
         : baseHttpClient;
     _gotrueHttpClient = tracePropagationOptions.enabled
         ? tracedHttpClient
-        : httpClient;
+        : baseHttpClient;
     _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
       gotrueAsyncStorage: authOptions.pkceAsyncStorage,
