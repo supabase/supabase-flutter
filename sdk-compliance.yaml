@@ -277,8 +277,8 @@ features:
   database.query.from_table: implemented
   database.query.select: implemented
   database.query.rpc:
-    status: partially_implemented
-    note: "rpc(fn, {params, get}) has no head or count option on the call itself; both are reachable by chaining .head()/.count() on the returned builder."
+    status: implemented
+    note: "head and count are applied via type-safe chaining (.head()/.count()) rather than inline call options, which is the idiomatic Dart builder pattern; inline options cannot preserve the distinct return types."
   database.query.schema_selection: implemented
 
   # database — mutate
@@ -335,8 +335,14 @@ features:
     status: implemented
     symbols:
       - ExplainFormat
-  database.using_modifiers.dry_run: not_implemented
-  database.using_modifiers.strip_nulls: not_implemented
+  database.using_modifiers.dry_run:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.dryRun
+  database.using_modifiers.strip_nulls:
+    status: implemented
+    symbols:
+      - PostgrestTransformBuilder.stripNulls
   database.using_modifiers.request_cancellation: not_implemented
 
   # database — configuration
