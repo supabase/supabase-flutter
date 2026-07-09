@@ -53,15 +53,23 @@ class PostgrestClient {
     YAJsonIsolate? isolate,
     this.retryEnabled = true,
     this.retryCount = 3,
-    this.retryableStatusCodes = PostgrestBuilder.defaultRetryableStatusCodes,
+    Set<int> retryableStatusCodes =
+        PostgrestBuilder.defaultRetryableStatusCodes,
     this.requestTimeout,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-  }) : assert(retryCount >= 0, 'retryCount must not be negative'),
+  }) : retryableStatusCodes = Set.unmodifiable(retryableStatusCodes),
        _schema = schema,
        headers = {...defaultHeaders, ...?headers},
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null,
        _retryDelay = retryDelay {
+    if (retryCount < 0) {
+      throw ArgumentError.value(
+        retryCount,
+        'retryCount',
+        'must not be negative',
+      );
+    }
     _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
     _log.finest('Initialize with headers: $headers');
   }

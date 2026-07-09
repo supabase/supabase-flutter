@@ -285,10 +285,10 @@ void main() {
       expect(mock.callCount, 3);
     });
 
-    test('negative retryCount throws AssertionError', () {
+    test('negative retryCount throws ArgumentError', () {
       expect(
         () => PostgrestClient('http://localhost:3000', retryCount: -1),
-        throwsA(isA<AssertionError>()),
+        throwsA(isA<ArgumentError>()),
       );
     });
   });
@@ -313,6 +313,19 @@ void main() {
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 1);
+    });
+
+    test('mutating the provided set does not affect retry behavior', () async {
+      final mock = _MockRetryClient([_status(500), _ok()]);
+      final statusCodes = {500};
+      final client = _buildClient(mock, retryableStatusCodes: statusCodes);
+
+      statusCodes.clear();
+
+      final result = await client.from('users').select();
+
+      expect(result, isEmpty);
+      expect(mock.callCount, 2);
     });
   });
 

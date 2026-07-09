@@ -82,8 +82,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Set<int> retryableStatusCodes = defaultRetryableStatusCodes,
     Duration? requestTimeout,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-  }) : assert(retryCount >= 0, 'retryCount must not be negative'),
-       _maybeSingle = maybeSingle,
+  }) : _maybeSingle = maybeSingle,
        _method = method,
        _converter = converter,
        _schema = schema,
@@ -95,9 +94,17 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _body = body,
        _retryEnabled = retryEnabled,
        _retryCount = retryCount,
-       _retryableStatusCodes = retryableStatusCodes,
+       _retryableStatusCodes = Set.unmodifiable(retryableStatusCodes),
        _requestTimeout = requestTimeout,
-       _retryDelay = retryDelay ?? _defaultRetryDelay;
+       _retryDelay = retryDelay ?? _defaultRetryDelay {
+    if (retryCount < 0) {
+      throw ArgumentError.value(
+        retryCount,
+        'retryCount',
+        'must not be negative',
+      );
+    }
+  }
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
