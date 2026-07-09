@@ -257,31 +257,18 @@ class SupabaseClient {
       return await accessToken!();
     }
 
-    final authInstance = _authInstance!;
-
-    if (authInstance.currentSession?.isExpired ?? false) {
-      try {
-        await authInstance.refreshSession();
-      } catch (error, stackTrace) {
-        final expiresAt = authInstance.currentSession?.expiresAt;
-        if (expiresAt != null) {
-          // Failed to refresh the token.
-          final isExpiredWithoutMargin = DateTime.now().isAfter(
-            DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000),
-          );
-          if (isExpiredWithoutMargin) {
-            // Throw the error instead of making an API request with an expired token.
-            _log.warning(
-              'Access token is expired and refreshing failed, aborting api request',
-              error,
-              stackTrace,
-            );
-            rethrow;
-          }
-        }
-      }
+    try {
+      final session = await _authInstance!.getSession();
+      return session?.accessToken;
+    } on AuthException catch (error, stackTrace) {
+      // Throw the error instead of making an API request with an expired token.
+      _log.warning(
+        'Access token is expired and refreshing failed, aborting api request',
+        error,
+        stackTrace,
+      );
+      rethrow;
     }
-    return authInstance.currentSession?.accessToken;
   }
 
   Future<void> dispose() async {

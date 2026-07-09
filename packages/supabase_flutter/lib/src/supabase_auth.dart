@@ -8,12 +8,12 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'clear_auth_url_parameters_stub.dart'
     if (dart.library.js_interop) 'clear_auth_url_parameters_web.dart';
-import 'platform_stub.dart' if (dart.library.io) 'platform_io.dart';
 
 /// Integrates Supabase Auth with the Flutter application lifecycle.
 ///
@@ -60,6 +60,10 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Whether to automatically refresh the token
   late bool _autoRefreshToken;
 
+  /// Optional custom predicate to decide whether a deep link is an auth
+  /// callback. When null, [_defaultIsAuthCallbackDeeplink] is used.
+  bool Function(Uri uri)? _detectSessionInUriPredicate;
+
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
   /// throughout your app's life.
@@ -85,6 +89,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }) async {
     _localStorage = options.localStorage!;
     _autoRefreshToken = options.autoRefreshToken;
+    _detectSessionInUriPredicate = options.detectSessionInUriPredicate;
 
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
@@ -199,8 +204,22 @@ class SupabaseAuth with WidgetsBindingObserver {
     }
   }
 
-  /// If _authCallbackUrlHost not init, we treat all deep links as auth callback
+  /// Decides whether an incoming deep link should be exchanged for a session.
+  ///
+  /// Uses the custom predicate supplied via
+  /// [FlutterAuthClientOptions.detectSessionInUriPredicate] when available,
+  /// otherwise falls back to [_defaultIsAuthCallbackDeeplink].
   bool _isAuthCallbackDeeplink(Uri uri) {
+    final predicate = _detectSessionInUriPredicate;
+    if (predicate != null) {
+      return predicate(uri);
+    }
+    return _defaultIsAuthCallbackDeeplink(uri);
+  }
+
+  /// Default heuristic: treat a deep link as an auth callback when it carries
+  /// any of the auth-related parameters, in the query or the fragment.
+  bool _defaultIsAuthCallbackDeeplink(Uri uri) {
     final fragmentParameters = Uri.splitQueryString(uri.fragment);
     bool hasParameter(String key) =>
         uri.queryParameters.containsKey(key) ||
@@ -319,6 +338,9 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// The return value of this method is not the auth result, and whether the
   /// OAuth sign-in has succeeded or not should be observed by setting a listener
   /// on [auth.onAuthStateChanged].
+  ///
+  /// To obtain the OAuth URL without launching a browser, use
+  /// [getOAuthSignInUrl] instead.
   ///
   /// See also:
   ///

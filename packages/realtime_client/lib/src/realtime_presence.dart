@@ -62,8 +62,8 @@ class RealtimePresence {
   List<Map<String, dynamic>> pendingDiffs = [];
   String? joinRef;
   Map<String, dynamic> caller = {
-    'onJoin': (_, __, ___) {},
-    'onLeave': (_, __, ___) {},
+    'onJoin': (_, _, _) {},
+    'onLeave': (_, _, _) {},
     'onSync': () {},
   };
 
@@ -225,9 +225,9 @@ class RealtimePresence {
     final joins = _transformState(diff['joins']);
     final leaves = _transformState(diff['leaves']);
 
-    onJoin ??= (_, __, ___) => {};
+    onJoin ??= (_, _, _) => {};
 
-    onLeave ??= (_, __, ___) => {};
+    onLeave ??= (_, _, _) => {};
 
     _map(joins, (key, newPresences) {
       final currentPresences = state[key] ?? [];

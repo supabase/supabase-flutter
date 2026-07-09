@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
 import 'package:gotrue/src/constants.dart';
-import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/version.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
