@@ -2,6 +2,7 @@ import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:storage_client/src/fetch.dart';
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class StorageBucketApi {
   final String url;
@@ -24,6 +25,7 @@ class StorageBucketApi {
   }
 
   /// Retrieves the details of all Storage buckets within an existing project.
+<<<<<<< HEAD
   ///
   /// [options] optionally filters, sorts and paginates the returned buckets.
   /// Calling [listBuckets] without any options returns all buckets.
@@ -37,6 +39,11 @@ class StorageBucketApi {
       uri.toString(),
       options: fetchOptions,
     );
+=======
+  Future<List<Bucket>> listBuckets() async {
+    final FetchOptions options = FetchOptions(headers);
+    final response = await storageFetch.get('$url/bucket', options: options);
+>>>>>>> origin/main
     final buckets = List<Bucket>.from(
       (response as List).map(
         (value) => Bucket.fromJson(value),
@@ -49,7 +56,7 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to retrieve.
   Future<Bucket> getBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers: headers);
+    final FetchOptions options = FetchOptions(headers);
     final response = await storageFetch.get(
       '$url/bucket/$id',
       options: options,
@@ -77,7 +84,7 @@ class StorageBucketApi {
     String id, [
     BucketOptions bucketOptions = const BucketOptions(public: false),
   ]) async {
-    final FetchOptions options = FetchOptions(headers: headers);
+    final FetchOptions options = FetchOptions(headers);
     final response = await storageFetch.post(
       '$url/bucket',
       _bucketPayload(id, bucketOptions),
@@ -96,7 +103,7 @@ class StorageBucketApi {
     String id,
     BucketOptions bucketOptions,
   ) async {
-    final FetchOptions options = FetchOptions(headers: headers);
+    final FetchOptions options = FetchOptions(headers);
     final response = await storageFetch.put(
       '$url/bucket/$id',
       _bucketPayload(id, bucketOptions),
@@ -110,7 +117,7 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to empty.
   Future<String> emptyBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers: headers);
+    final FetchOptions options = FetchOptions(headers);
     final response = await storageFetch.post(
       '$url/bucket/$id/empty',
       {},
@@ -124,7 +131,7 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to delete.
   Future<String> deleteBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers: headers);
+    final FetchOptions options = FetchOptions(headers);
     final response = await storageFetch.delete(
       '$url/bucket/$id',
       {},

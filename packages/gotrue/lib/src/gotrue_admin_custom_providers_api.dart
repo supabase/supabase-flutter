@@ -33,7 +33,7 @@ class GoTrueAdminCustomProvidersApi {
       options: GotrueRequestOptions(
         headers: _headers,
         query: {
-          if (type != null) 'type': type.name,
+          'type': ?type?.name,
         },
       ),
     );

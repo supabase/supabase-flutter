@@ -1,13 +1,7 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
 import 'package:meta/meta.dart';
-
-class FetchOptions {
-  final Map<String, String>? headers;
-  final bool? noResolveJson;
-
-  const FetchOptions({this.headers, this.noResolveJson});
-}
+import 'package:supabase_common/supabase_common.dart';
 
 class Bucket {
   final String id;
@@ -514,23 +508,4 @@ class DownloadBehavior {
   /// The value appended to the `download` query parameter.
   @internal
   String get queryValue => _queryValue;
-}
-
-extension ToSnakeCase on Enum {
-  String get snakeCase {
-    final a = 'a'.codeUnitAt(0), z = 'z'.codeUnitAt(0);
-    final A = 'A'.codeUnitAt(0), Z = 'Z'.codeUnitAt(0);
-    final result = StringBuffer()..write(name[0].toLowerCase());
-    for (var i = 1; i < name.length; i++) {
-      final char = name.codeUnitAt(i);
-      if (A <= char && char <= Z) {
-        final pChar = name.codeUnitAt(i - 1);
-        if (a <= pChar && pChar <= z) {
-          result.write('_');
-        }
-      }
-      result.write(name[i].toLowerCase());
-    }
-    return result.toString();
-  }
 }

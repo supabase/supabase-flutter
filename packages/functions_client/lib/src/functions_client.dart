@@ -7,6 +7,7 @@ import 'package:functions_client/src/version.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show MultipartRequest;
 import 'package:logging/logging.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 class FunctionsClient {
@@ -161,7 +162,12 @@ class FunctionsClient {
 
     _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
 
-    final response = await (_httpClient?.send(request) ?? request.send());
+    final http.StreamedResponse response;
+    try {
+      response = await (_httpClient?.send(request) ?? request.send());
+    } catch (error) {
+      throw FunctionsFetchException(details: error);
+    }
     final responseType =
         (response.headers['Content-Type'] ??
                 response.headers['content-type'] ??
@@ -170,8 +176,9 @@ class FunctionsClient {
             .trim()
             .toLowerCase();
 
+    final isRelayError = response.headers['x-relay-error'] == 'true';
     final isSuccessStatus =
-        200 <= response.statusCode && response.statusCode < 300;
+        isSuccessStatusCode(response.statusCode) && !isRelayError;
 
     final dynamic data;
 
@@ -210,7 +217,14 @@ class FunctionsClient {
     if (isSuccessStatus) {
       return FunctionResponse(data: data, status: response.statusCode);
     }
-    throw FunctionException(
+    if (isRelayError) {
+      throw FunctionsRelayException(
+        status: response.statusCode,
+        details: data,
+        reasonPhrase: response.reasonPhrase,
+      );
+    }
+    throw FunctionsHttpException(
       status: response.statusCode,
       details: data,
       reasonPhrase: response.reasonPhrase,
