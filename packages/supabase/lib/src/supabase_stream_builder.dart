@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:supabase/supabase.dart';
 
 part 'supabase_stream_filter_builder.dart';
@@ -69,7 +68,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   final _log = Logger('supabase.supabase');
 
   /// StreamController for `stream()` method.
-  BehaviorSubject<SupabaseStreamEvent>? _streamController;
+  _BehaviorSubject<SupabaseStreamEvent>? _streamController;
 
   /// Contains the combined data of postgrest and realtime to emit as stream.
   SupabaseStreamEvent _streamData = [];
@@ -149,7 +148,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Sets up the stream controller and calls the method to get data as necessary
   void _setupStream() {
-    _streamController ??= BehaviorSubject(
+    _streamController ??= _BehaviorSubject(
       onListen: () {
         _getStreamData();
       },
@@ -370,7 +369,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   ) {
     // Copied from [Stream.asyncMap]
 
-    final controller = BehaviorSubject<E>();
+    final controller = _BehaviorSubject<E>();
 
     controller.onListen = () {
       StreamSubscription<SupabaseStreamEvent> subscription = listen(
@@ -414,7 +413,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     Stream<E>? Function(SupabaseStreamEvent event) convert,
   ) {
     //Copied from [Stream.asyncExpand]
-    final controller = BehaviorSubject<E>();
+    final controller = _BehaviorSubject<E>();
     controller.onListen = () {
       StreamSubscription<SupabaseStreamEvent> subscription = listen(
         null,
@@ -445,4 +444,85 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     };
     return controller.stream;
   }
+}
+
+/// A minimal broadcast stream controller that replays the most recent event
+/// (value or error) to every new subscriber.
+///
+/// This mirrors the only behavior of rxdart's `BehaviorSubject` that
+/// [SupabaseStreamBuilder] relies on: a listener that subscribes after an
+/// event has already been emitted immediately receives the latest event.
+class _BehaviorSubject<T> {
+  _BehaviorSubject({
+    void Function()? onListen,
+    FutureOr<void> Function()? onCancel,
+  }) : _onListen = onListen,
+       _onCancel = onCancel {
+    _controller = StreamController<T>.broadcast(
+      onListen: () => _onListen?.call(),
+      onCancel: () => _onCancel?.call(),
+    );
+  }
+
+  late final StreamController<T> _controller;
+
+  void Function()? _onListen;
+  FutureOr<void> Function()? _onCancel;
+
+  bool _hasEvent = false;
+  T? _latestValue;
+  Object? _latestError;
+  StackTrace? _latestStackTrace;
+  bool _latestIsError = false;
+
+  set onListen(void Function()? value) => _onListen = value;
+
+  set onCancel(FutureOr<void> Function()? value) => _onCancel = value;
+
+  // Broadcast subjects never pause, so these are no-ops. They exist only to
+  // satisfy the unreachable non-broadcast branch in the copied `asyncMap` and
+  // `asyncExpand` implementations.
+  set onPause(void Function()? value) {}
+
+  set onResume(void Function()? value) {}
+
+  bool get isClosed => _controller.isClosed;
+
+  Stream<T> get stream => Stream.multi((controller) {
+    if (_hasEvent) {
+      if (_latestIsError) {
+        controller.addError(_latestError!, _latestStackTrace);
+      } else {
+        controller.add(_latestValue as T);
+      }
+    }
+
+    final subscription = _controller.stream.listen(
+      controller.addSync,
+      onError: controller.addErrorSync,
+      onDone: controller.closeSync,
+    );
+    controller.onCancel = subscription.cancel;
+  }, isBroadcast: true);
+
+  void add(T event) {
+    _hasEvent = true;
+    _latestIsError = false;
+    _latestValue = event;
+    _latestError = null;
+    _latestStackTrace = null;
+    _controller.add(event);
+  }
+
+  void addError(Object error, [StackTrace? stackTrace]) {
+    _hasEvent = true;
+    _latestIsError = true;
+    _latestError = error;
+    _latestStackTrace = stackTrace;
+    _controller.addError(error, stackTrace);
+  }
+
+  Future<void> addStream(Stream<T> source) => _controller.addStream(source);
+
+  Future<void> close() => _controller.close();
 }
