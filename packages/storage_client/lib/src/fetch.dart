@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:mime/mime.dart';
-import 'package:retry/retry.dart';
+import 'package:storage_client/src/retry.dart';
 import 'package:storage_client/src/types.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
