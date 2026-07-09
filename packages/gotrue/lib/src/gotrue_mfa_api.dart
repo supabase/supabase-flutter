@@ -132,8 +132,12 @@ class GoTrueMFAApi {
   /// Prepares a challenge used to verify that a user has access to a MFA factor.
   ///
   /// [factorId] System assigned identifier for authenticator device as returned by enroll
+  ///
+  /// [channel] Messaging channel to use for phone factors (e.g. whatsapp or sms).
+  /// Defaults to the server's behavior (sms) when omitted.
   Future<AuthMFAChallengeResponse> challenge({
     required String factorId,
+    OtpChannel? channel,
   }) async {
     final session = _client.currentSession;
 
@@ -142,6 +146,7 @@ class GoTrueMFAApi {
       RequestMethodType.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
+        body: channel == null ? null : {'channel': channel.name},
         jwt: session?.accessToken,
       ),
     );
@@ -214,7 +219,7 @@ class GoTrueMFAApi {
         currentAuthenticationMethods: [],
       );
     }
-    final payload = Jwt.parseJwt(session.accessToken);
+    final payload = decodeJwtPayload(session.accessToken).claims;
 
     final currentLevel = AuthenticatorAssuranceLevels.values.firstWhereOrNull(
       (level) => level.name == payload['aal'],

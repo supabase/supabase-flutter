@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
+import 'package:gotrue/src/helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
 
@@ -303,6 +306,37 @@ void main() {
 
       expect(
         () => decodeJwt(invalidJwt),
+        throwsA(isA<AuthInvalidJwtException>()),
+      );
+    });
+
+    test('decodeJwtPayload() successfully decodes valid JWT', () {
+      final jwt =
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2lkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjk5OTk5OTk5OTl9.XyI0rWcOYLpz3R8G8qHWmg7U-tWMHJqzN_e1oDQKzgc';
+
+      final payload = decodeJwtPayload(jwt);
+
+      expect(payload.sub, '1234567890');
+      expect(payload.claims['name'], 'John Doe');
+      expect(payload.iat, 1516239022);
+      expect(payload.exp, 9999999999);
+    });
+
+    test('decodeJwtPayload() decodes payload despite a non-JSON header', () {
+      final payloadPart = base64.encode(
+        utf8.encode(json.encode({'exp': 9999999999, 'sub': '1234567890'})),
+      );
+      final jwt = 'any.$payloadPart.any';
+
+      final payload = decodeJwtPayload(jwt);
+
+      expect(payload.exp, 9999999999);
+      expect(payload.sub, '1234567890');
+    });
+
+    test('decodeJwtPayload() throws on wrong number of parts', () {
+      expect(
+        () => decodeJwtPayload('only.two'),
         throwsA(isA<AuthInvalidJwtException>()),
       );
     });
