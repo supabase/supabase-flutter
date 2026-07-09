@@ -567,7 +567,7 @@ class RealtimeClient {
   void _onConnOpen() {
     log('transport', 'connected to $endPointURL');
     log('transport', 'connected', null, Level.FINE);
-    _flushSendBuffer();
+    unawaited(_resolveAccessTokenAndFlush());
     reconnectTimer.reset();
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
     heartbeatTimer = Timer.periodic(
@@ -636,6 +636,38 @@ class RealtimeClient {
         callback();
       }
       sendBuffer = [];
+    }
+  }
+
+  /// Resolves the access token before flushing the send buffer so that
+  /// buffered channel join payloads carry the correct token.
+  ///
+  /// When [RealtimeChannel.subscribe] runs before an asynchronous access token
+  /// has resolved (common when [customAccessToken] reads from async storage),
+  /// the buffered join payload has no `access_token`. That buffered message
+  /// captured the stale payload, so once auth has settled the join payloads are
+  /// patched with the resolved token, the stale buffered joins are dropped, and
+  /// the join is re-sent for any channel still joining.
+  Future<void> _resolveAccessTokenAndFlush() async {
+    try {
+      if (customAccessToken != null) {
+        await setAuth(null);
+        if (accessToken != null) {
+          for (final channel in channels) {
+            channel.updateJoinPayload({'access_token': accessToken!});
+          }
+          sendBuffer = [];
+          for (final channel in channels) {
+            if (channel.isJoining) {
+              channel.forceRejoin();
+            }
+          }
+        }
+      }
+    } catch (error) {
+      log('transport', 'error resolving access token on connect', error);
+    } finally {
+      _flushSendBuffer();
     }
   }
 

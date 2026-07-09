@@ -11,7 +11,6 @@ import 'package:gotrue/src/helper.dart';
 import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
-import 'package:jwt_decode/jwt_decode.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:retry/retry.dart';
@@ -472,7 +471,7 @@ class GoTrueClient {
       options: GotrueRequestOptions(
         headers: _headers,
         body: {
-          'provider': provider.snakeCase,
+          'provider': provider.name,
           'id_token': idToken,
           'nonce': nonce,
           'gotrue_meta_security': {'captcha_token': captchaToken},
@@ -1071,7 +1070,7 @@ class GoTrueClient {
         headers: _headers,
         jwt: _currentSession?.accessToken,
         body: {
-          'provider': provider.snakeCase,
+          'provider': provider.name,
           'id_token': idToken,
           'nonce': nonce,
           'gotrue_meta_security': {'captcha_token': captchaToken},
@@ -1338,7 +1337,7 @@ class GoTrueClient {
     required Map<String, String>? queryParams,
     bool skipBrowserRedirect = false,
   }) async {
-    final urlParams = {'provider': provider.snakeCase};
+    final urlParams = {'provider': provider.name};
     if (scopes != null) {
       urlParams['scopes'] = scopes;
     }
