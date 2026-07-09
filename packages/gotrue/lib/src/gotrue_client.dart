@@ -13,7 +13,7 @@ import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
-import 'package:retry/retry.dart';
+import 'package:gotrue/src/retry.dart';
 
 import 'broadcast_stub.dart'
     if (dart.library.js_interop) './broadcast_web.dart'

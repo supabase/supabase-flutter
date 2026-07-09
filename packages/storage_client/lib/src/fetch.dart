@@ -4,11 +4,9 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-// ignore: unnecessary_import — needed for http < 1.6.0 which doesn't re-export MediaType
-import 'package:http_parser/http_parser.dart';
 import 'package:logging/logging.dart';
 import 'package:mime/mime.dart';
-import 'package:retry/retry.dart';
+import 'package:storage_client/src/retry.dart';
 import 'package:storage_client/src/types.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
