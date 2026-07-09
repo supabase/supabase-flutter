@@ -214,7 +214,7 @@ class GoTrueMFAApi {
         currentAuthenticationMethods: [],
       );
     }
-    final payload = Jwt.parseJwt(session.accessToken);
+    final payload = decodeJwtPayload(session.accessToken).claims;
 
     final currentLevel = AuthenticatorAssuranceLevels.values.firstWhereOrNull(
       (level) => level.name == payload['aal'],
