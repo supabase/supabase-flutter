@@ -15,5 +15,5 @@ environment:
 resolution: workspace
 
 dependencies:
-  lints: ^4.0.0
-  flutter_lints: ^4.0.0
+  lints: ^6.0.0
+  flutter_lints: ^6.0.0
