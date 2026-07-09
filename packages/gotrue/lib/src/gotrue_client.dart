@@ -197,9 +197,7 @@ class GoTrueClient {
   ///
   /// Unlike the synchronous [currentSession] getter, this waits for any
   /// in-flight refresh to settle and, when the session has expired, attempts
-  /// to refresh it before returning. Concurrent callers share a single refresh
-  /// through the same de-duplication used by [refreshSession], so an expired
-  /// session's refresh token is only spent once.
+  /// to refresh it before returning.
   ///
   /// Returns `null` when there is no session. Throws an [AuthException] when an
   /// expired session cannot be refreshed, unless its access token is still
@@ -221,6 +219,9 @@ class GoTrueClient {
     }
 
     try {
+      // Concurrent callers share a single refresh through the same
+      // de-duplication used by [refreshSession], so an expired session's
+      // refresh token is only spent once.
       final response = await _callRefreshToken(refreshToken);
       return response.session;
     } on AuthException {
