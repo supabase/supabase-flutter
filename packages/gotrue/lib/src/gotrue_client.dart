@@ -195,9 +195,9 @@ class GoTrueClient {
   /// Returns the current session, refreshing it on demand when the access
   /// token has expired.
   ///
-  /// Unlike the synchronous [currentSession] getter, this waits for any
-  /// in-flight refresh to settle and, when the session has expired, attempts
-  /// to refresh it before returning.
+  /// Unlike the synchronous [currentSession] getter, a still-valid session is
+  /// returned as-is, while an expired one is refreshed before returning, so the
+  /// access token is guaranteed to be valid when it resolves.
   ///
   /// Returns `null` when there is no session. Throws an [AuthException] when an
   /// expired session cannot be refreshed, unless its access token is still
