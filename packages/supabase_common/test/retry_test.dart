@@ -1,4 +1,4 @@
-import 'package:gotrue/src/retry.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {

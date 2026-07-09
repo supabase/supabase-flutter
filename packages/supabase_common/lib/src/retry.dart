@@ -1,13 +1,10 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:meta/meta.dart';
-
 /// Options for retrying a function.
 ///
 /// Minimal in-house replacement for the subset of the `retry` package the
 /// Supabase clients rely on.
-@internal
 class RetryOptions {
   /// Delay factor to double after every attempt.
   final Duration delayFactor;
@@ -69,7 +66,6 @@ class RetryOptions {
 
 /// Calls [fn], retrying so long as [retryIf] returns `true` for the thrown
 /// [Exception], up to [maxAttempts] times.
-@internal
 Future<T> retry<T>(
   FutureOr<T> Function() fn, {
   Duration delayFactor = const Duration(milliseconds: 200),

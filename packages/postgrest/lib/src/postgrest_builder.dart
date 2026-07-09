@@ -8,6 +8,7 @@ import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 part 'postgrest_filter_builder.dart';
@@ -236,7 +237,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
   /// Parse request response to json object if possible
   Future<T> _parseResponse(http.Response response, HttpMethod method) async {
-    if (response.statusCode >= 200 && response.statusCode <= 299) {
+    if (isSuccessStatusCode(response.statusCode)) {
       Object? body;
       int? count;
 

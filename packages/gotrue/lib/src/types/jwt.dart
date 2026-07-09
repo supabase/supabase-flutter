@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// JWT Header structure
 class JwtHeader {
@@ -281,18 +281,14 @@ class JWK {
   // clock 1.1.2 and so allows dart_jsonwebtoken 3.x. fromJWK also adds EC
   // (ES256) support.
   RSAPublicKey get publicKey {
-    final modulus = _base64UrlToBytes(this['n'] as String);
-    final exponent = _base64UrlToBytes(this['e'] as String);
+    final modulus = Base64Url.decodeToBytes(this['n'] as String);
+    final exponent = Base64Url.decodeToBytes(this['e'] as String);
     final der = _derSequence([
       _derInteger(modulus),
       _derInteger(exponent),
     ]);
     return RSAPublicKey.bytes(Uint8List.fromList(der));
   }
-}
-
-List<int> _base64UrlToBytes(String input) {
-  return base64Url.decode(base64Url.normalize(input));
 }
 
 /// DER-encodes an unsigned big-endian integer (prefixing a zero byte when the
