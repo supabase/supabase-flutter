@@ -56,7 +56,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final CountOption? _count;
   final bool _retryEnabled;
   final Duration Function(int attempt) _retryDelay;
-  final Completer<void>? _abortCompleter;
+  final Future? _abortSignal;
   final _log = Logger('supabase.postgrest');
 
   static Duration _defaultRetryDelay(int attempt) =>
@@ -75,7 +75,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     PostgrestConverter<S, R>? converter,
     bool retryEnabled = true,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-    Completer<void>? abortCompleter,
+    Future? abortSignal,
   }) : _maybeSingle = maybeSingle,
        _method = method,
        _converter = converter,
@@ -88,7 +88,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _body = body,
        _retryEnabled = retryEnabled,
        _retryDelay = retryDelay ?? _defaultRetryDelay,
-       _abortCompleter = abortCompleter;
+       _abortSignal = abortSignal;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
@@ -103,7 +103,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     PostgrestConverter<S, R>? converter,
     bool? retryEnabled,
     Duration Function(int attempt)? retryDelay,
-    Completer<void>? abortCompleter,
+    Future? abortSignal,
   }) {
     return PostgrestBuilder(
       url: url ?? _url,
@@ -118,7 +118,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       converter: converter ?? _converter,
       retryEnabled: retryEnabled ?? _retryEnabled,
       retryDelay: retryDelay ?? _retryDelay,
-      abortCompleter: abortCompleter ?? _abortCompleter,
+      abortSignal: abortSignal ?? _abortSignal,
     );
   }
 
@@ -132,28 +132,47 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       _copyWith(retryEnabled: enabled);
 
   /// Allows manually triggering request abortion by completing the provided
-  /// [Completer].
+  /// [Future].
+  ///
+  /// [abortSignal] must not complete with an error.
   ///
   /// On abort, a [RequestAbortedException] will be thrown.
   /// This is useful for setting a timeout for the request.
   ///
   /// Aborting a request will also stop any retries.
   ///
-  /// Example:
+  /// ## Examples:
+  /// ### Event based:
+  ///
   /// ```dart
-  /// final abortCompleter = Completer<void>();
-  /// Timer(Duration(seconds: 5), () => abortCompleter.complete());
+  /// final abortSignal = Completer<void>();
+  ///
+  /// abortSignal.complete(); // Call in some event handler to abort the request
+  ///
   /// try {
   ///   final response = await client
   ///   .from('table')
   ///   .select()
-  ///   .abortCompleter(abortCompleter);
+  ///   .abortSignal(abortSignal.future);
   /// } on RequestAbortedException catch (e) {
   ///  print('Request was aborted: $e');
   /// }
   /// ```
-  PostgrestBuilder<T, S, R> abortCompleter(Completer<void> abortCompleter) {
-    return _copyWith(abortCompleter: abortCompleter);
+  ///
+  /// ### Timer based:
+  ///
+  /// ```dart
+  /// try {
+  ///   final response = await client
+  ///   .from('table')
+  ///   .select()
+  ///   .abortSignal(Future.delayed(Duration(seconds: 5)));
+  /// } on RequestAbortedException catch (e) {
+  ///  print('Request was aborted: $e');
+  /// }
+  /// ```
+  PostgrestBuilder<T, S, R> abortSignal(Future abortSignal) {
+    return _copyWith(abortSignal: abortSignal);
   }
 
   PostgrestBuilder<T, S, R> setHeader(String key, String value) {
@@ -200,20 +219,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       final AbortableRequest request = AbortableRequest(
         method.value,
         _url,
-        abortTrigger: _abortCompleter?.future,
+        abortTrigger: _abortSignal,
       );
       request.headers.addAll(execHeaders);
-      if (method == HttpMethod.get) {
-      } else if (method == HttpMethod.post) {
-        request.body = bodyStr;
-      } else if (method == HttpMethod.put) {
-        request.body = bodyStr;
-      } else if (method == HttpMethod.patch) {
-        request.body = bodyStr;
-      } else if (method == HttpMethod.delete) {
-      } else if (method == HttpMethod.head) {
-      } else {
-        throw StateError('Unknown HTTP method: ${method.value}');
+      switch (method) {
+        case HttpMethod.post || HttpMethod.put || HttpMethod.patch:
+          request.body = bodyStr;
+        default:
       }
       final client = _httpClient ?? http.Client();
 

@@ -362,7 +362,7 @@ features:
   database.using_modifiers.request_cancellation:
     status: implemented
     symbols:
-      - PostgrestBuilder.abortCompleter
+      - PostgrestBuilder.abortSignal
 
   # database — configuration
   database.configuration.auto_retry:

@@ -497,14 +497,13 @@ void main() {
       // Abort after 1 second (before the 10-second function completes)
       Timer(Duration(seconds: 1), () => completer.complete());
 
-      try {
-        await postgrest
+      await expectLater(
+        () => postgrest
             .rpc('long_running_task')
             .select()
-            .abortCompleter(completer);
-      } on RequestAbortedException catch (e) {
-        print('Request aborted: $e');
-      }
+            .abortSignal(completer.future),
+        throwsA(isA<RequestAbortedException>()),
+      );
 
       final elapsedTime = DateTime.now().difference(startTime);
 

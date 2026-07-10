@@ -86,7 +86,7 @@ PostgrestClient _buildClient(
     'http://localhost:3000',
     httpClient: mock,
     retryEnabled: retryEnabled,
-    retryDelay: (_) => Duration(milliseconds: 500),
+    retryDelay: (_) => Duration(milliseconds: 200),
   );
 }
 
@@ -269,14 +269,14 @@ void main() {
 
         final completer = Completer<void>();
         // Abort after the first retry
-        Timer(Duration(milliseconds: 700), () => completer.complete());
+        Timer(Duration(milliseconds: 300), () => completer.complete());
 
         await expectLater(
           () => client
               .from('users')
               .select()
               .retry(enabled: true)
-              .abortCompleter(completer),
+              .abortSignal(completer.future),
           throwsA(isA<RequestAbortedException>()),
         );
 
