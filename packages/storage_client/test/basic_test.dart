@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:http/http.dart';
 import 'package:storage_client/storage_client.dart';
 import 'package:test/test.dart';
 
@@ -291,6 +293,73 @@ void main() {
       final response = await client.from('public').list();
       expect(response, isA<List<FileObject>>());
       expect(response.length, 2);
+    });
+
+    test('listPaginated posts options and parses the result', () async {
+      customHttpClient.response = {
+        'hasNext': true,
+        'nextCursor': 'cursor-2',
+        'folders': [
+          {'name': 'folder', 'key': 'prefix/folder/'},
+        ],
+        'objects': [
+          {
+            'name': 'image.png',
+            'key': 'prefix/image.png',
+            'id': 'object-id',
+            'updated_at': '2026-01-01T00:00:00Z',
+            'created_at': '2026-01-01T00:00:00Z',
+            'metadata': {'size': 10},
+          },
+        ],
+      };
+
+      final result = await client
+          .from('public')
+          .listPaginated(
+            options: const PaginatedSearchOptions(
+              prefix: 'prefix/',
+              limit: 100,
+              withDelimiter: true,
+              sortBy: FileSort(
+                column: FileSortColumn.createdAt,
+                order: FileSortOrder.descending,
+              ),
+            ),
+          );
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(request.url.toString(), '$objectUrl/list-v2/public');
+      expect(jsonDecode((request as Request).body), {
+        'prefix': 'prefix/',
+        'limit': 100,
+        'with_delimiter': true,
+        'sortBy': {'column': 'created_at', 'order': 'desc'},
+      });
+
+      expect(result.hasNext, isTrue);
+      expect(result.nextCursor, 'cursor-2');
+      expect(result.folders.single.name, 'folder');
+      expect(result.folders.single.key, 'prefix/folder/');
+      expect(result.objects.single.name, 'image.png');
+      expect(result.objects.single.id, 'object-id');
+      expect(result.objects.single.metadata, {'size': 10});
+    });
+
+    test('listPaginated defaults to an empty body and empty result', () async {
+      customHttpClient.response = {
+        'hasNext': false,
+        'objects': <dynamic>[],
+      };
+
+      final result = await client.from('public').listPaginated();
+
+      final request = customHttpClient.receivedRequests.single as Request;
+      expect(jsonDecode(request.body), <String, dynamic>{});
+      expect(result.hasNext, isFalse);
+      expect(result.folders, isEmpty);
+      expect(result.objects, isEmpty);
+      expect(result.nextCursor, isNull);
     });
 
     test('should download public file', () async {

@@ -670,4 +670,24 @@ class StorageFileApi {
     );
     return fileObjects;
   }
+
+  /// Lists files and folders within a bucket with cursor-based pagination and
+  /// hierarchical (delimiter) listing.
+  ///
+  /// [options] includes `prefix`, `cursor`, `limit`, `withDelimiter` and
+  /// `sortBy`.
+  ///
+  /// Folder entries in [PaginatedListResult.folders] only contain a name (and
+  /// optionally a key); full metadata is only available on the file entries in
+  /// [PaginatedListResult.objects].
+  Future<PaginatedListResult> listPaginated({
+    PaginatedSearchOptions options = const PaginatedSearchOptions(),
+  }) async {
+    final response = await _storageFetch.post(
+      '$url/object/list-v2/$bucketId',
+      options.toMap(),
+      options: _fetchOptions,
+    );
+    return PaginatedListResult.fromJson(response as Map<String, dynamic>);
+  }
 }
