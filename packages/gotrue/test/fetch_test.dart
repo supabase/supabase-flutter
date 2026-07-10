@@ -77,7 +77,7 @@ void main() {
 Future<void> _testFetchRequest(Client client) async {
   final GotrueFetch fetch = GotrueFetch(client);
   await expectLater(
-    () => fetch.request(_mockUrl, RequestMethodType.get),
+    fetch.request(_mockUrl, RequestMethodType.get),
     throwsA(
       isA<AuthException>()
           .having((e) => e.code, 'code', 'weak_password')

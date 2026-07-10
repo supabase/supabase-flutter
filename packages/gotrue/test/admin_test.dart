@@ -16,7 +16,7 @@ void main() {
   late GoTrueClient client;
 
   setUp(() async {
-    final res = await http.post(
+    final response = await http.post(
       Uri.parse('http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
       headers: {
         'apikey': getServiceRoleToken(env),
@@ -24,7 +24,7 @@ void main() {
       },
     );
 
-    if (res.body.isNotEmpty) throw res.body;
+    if (response.body.isNotEmpty) throw response.body;
 
     client = GoTrueClient(
       url: gotrueUrl,
@@ -48,21 +48,21 @@ void main() {
 
   group('User updates', () {
     test('modify email using updateUserById()', () async {
-      final res = await client.admin.updateUserById(
+      final response = await client.admin.updateUserById(
         userId1,
         attributes: AdminUserAttributes(email: 'new@email.com'),
       );
-      expect(res.user!.email, 'new@email.com');
+      expect(response.user!.email, 'new@email.com');
     });
 
     test('modify userMetadata using updateUserById()', () async {
-      final res = await client.admin.updateUserById(
+      final response = await client.admin.updateUserById(
         userId1,
         attributes: AdminUserAttributes(
           userMetadata: {'username': 'newUserName'},
         ),
       );
-      expect(res.user!.userMetadata!['username'], 'newUserName');
+      expect(response.user!.userMetadata!['username'], 'newUserName');
     });
   });
 
@@ -100,22 +100,22 @@ void main() {
       'inviteUserByEmail() creates a new user with an invited_at timestamp',
       () async {
         final newEmail = 'new${Random.secure().nextInt(4096)}@fake.org';
-        final res = await client.admin.inviteUserByEmail(newEmail);
-        expect(res.user, isNotNull);
-        expect(res.user?.email, newEmail);
-        expect(res.user?.invitedAt, isNotNull);
+        final response = await client.admin.inviteUserByEmail(newEmail);
+        expect(response.user, isNotNull);
+        expect(response.user?.email, newEmail);
+        expect(response.user?.invitedAt, isNotNull);
       },
     );
 
     test('createUser() creates a new user', () async {
       final newEmail = 'new${Random.secure().nextInt(4096)}@fake.org';
       final userMetadata = {'name': 'supabase'};
-      final res = await client.admin.createUser(
+      final response = await client.admin.createUser(
         AdminUserAttributes(email: newEmail, userMetadata: userMetadata),
       );
-      expect(res.user, isNotNull);
-      expect(res.user?.email, newEmail);
-      expect(res.user?.userMetadata, userMetadata);
+      expect(response.user, isNotNull);
+      expect(response.user?.email, newEmail);
+      expect(response.user?.userMetadata, userMetadata);
     });
   });
 

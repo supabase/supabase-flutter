@@ -32,56 +32,56 @@ void main() {
     });
 
     test('basic select table', () async {
-      final res = await postgrest.from('users').select();
-      expect(res.length, 4);
+      final response = await postgrest.from('users').select();
+      expect(response.length, 4);
     });
 
     test('stored procedure', () async {
-      final res = await postgrest.rpc<String>(
+      final result = await postgrest.rpc<String>(
         'get_status',
         params: {
           'name_param': 'supabot',
         },
       );
-      expect(res, 'ONLINE');
+      expect(result, 'ONLINE');
     });
 
     test('select on stored procedure', () async {
-      final res = await postgrest
+      final response = await postgrest
           .rpc(
             'get_username_and_status',
             params: {'name_param': 'supabot'},
           )
           .select('status');
       expect(
-        res.first['status'],
+        response.first['status'],
         'ONLINE',
       );
     });
 
     test('stored procedure returns void', () async {
-      final res = await postgrest.rpc('void_func');
-      expect(res, isNull);
+      final result = await postgrest.rpc('void_func');
+      expect(result, isNull);
     });
 
     test('stored procedure returns int', () async {
-      final res = await postgrest.rpc<int>('get_integer');
-      expect(res, isA<int>());
+      final result = await postgrest.rpc<int>('get_integer');
+      expect(result, isA<int>());
     });
 
     test('stored procedure with array parameter', () async {
-      final res = await postgrest.rpc<int>(
+      final result = await postgrest.rpc<int>(
         'get_array_element',
         params: {
           'arr': [37, 420, 64],
           'index': 2,
         },
       );
-      expect(res, 420);
+      expect(result, 420);
     });
 
     test('stored procedure with read-only access mode', () async {
-      final res = await postgrest.rpc<int>(
+      final result = await postgrest.rpc<int>(
         'get_array_element',
         params: {
           'arr': [37, 420, 64],
@@ -89,7 +89,7 @@ void main() {
         },
         get: true,
       );
-      expect(res, 420);
+      expect(result, 420);
     });
 
     test('custom headers', () async {
@@ -160,8 +160,8 @@ void main() {
         schema: 'personal',
         headers: apiHeaders,
       );
-      final res = await client.from('users').select();
-      expect(res.length, 5);
+      final response = await client.from('users').select();
+      expect(response.length, 5);
     });
 
     test('query non-public schema dynamically', () async {
@@ -178,19 +178,19 @@ void main() {
     });
 
     test('on_conflict upsert', () async {
-      final res = await postgrest.from('users').upsert(
+      final response = await postgrest.from('users').upsert(
         {'username': 'dragarcia', 'status': 'OFFLINE'},
         onConflict: 'username',
       ).select();
       expect(
-        res.first['status'],
+        response.first['status'],
         'OFFLINE',
       );
     });
 
     test('upsert', () async {
       final headersBefore = {...postgrest.headers};
-      final res = await postgrest.from('messages').upsert({
+      final response = await postgrest.from('messages').upsert({
         'id': 3,
         'message': 'foo',
         'username': 'supabot',
@@ -199,14 +199,14 @@ void main() {
       final headersAfter = {...postgrest.headers};
 
       expect(headersBefore, headersAfter);
-      expect(res.first['id'], 3);
+      expect(response.first['id'], 3);
 
-      final resMsg = await postgrest.from('messages').select();
-      expect(resMsg.length, 3);
+      final messagesResponse = await postgrest.from('messages').select();
+      expect(messagesResponse.length, 3);
     });
 
     test('ignoreDuplicates upsert', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('users')
           .upsert(
             {'username': 'dragarcia'},
@@ -214,50 +214,40 @@ void main() {
             ignoreDuplicates: true,
           )
           .select();
-      expect(res, isEmpty);
+      expect(response, isEmpty);
     });
 
     test('insert', () async {
-      final res = await postgrest.from('users').insert(
+      final response = await postgrest.from('users').insert(
         {
           'username': "bot",
           'status': 'OFFLINE',
         },
       ).select();
-      expect(res.length, 1);
-      expect(res.first['status'], 'OFFLINE');
+      expect(response.length, 1);
+      expect(response.first['status'], 'OFFLINE');
     });
 
     test('insert uses default value', () async {
-      final res = await postgrest.from('users').insert(
+      final response = await postgrest.from('users').insert(
         {
           'username': "bot",
         },
       ).select();
-      expect(res.length, 1);
-      expect(res.first['status'], 'ONLINE');
-    });
-
-    test('bulk insert with one row uses default value', () async {
-      final res = await postgrest.from('users').insert(
-        {
-          'username': "bot",
-        },
-      ).select();
-      expect(res.length, 1);
-      expect(res.first['status'], 'ONLINE');
+      expect(response.length, 1);
+      expect(response.first['status'], 'ONLINE');
     });
 
     test('bulk insert', () async {
-      final res = await postgrest.from('messages').insert([
+      final response = await postgrest.from('messages').insert([
         {'id': 4, 'message': 'foo', 'username': 'supabot', 'channel_id': 2},
         {'id': 5, 'message': 'foo', 'username': 'supabot', 'channel_id': 1},
       ]).select();
-      expect(res.length, 2);
+      expect(response.length, 2);
     });
 
     test('bulk insert without column defaults', () async {
-      final res = await postgrest.from('users').insert(
+      final response = await postgrest.from('users').insert(
         [
           {
             'username': "bot",
@@ -268,13 +258,13 @@ void main() {
           },
         ],
       ).select();
-      expect(res.length, 2);
-      expect(res.first['status'], 'OFFLINE');
-      expect(res.last['status'], null);
+      expect(response.length, 2);
+      expect(response.first['status'], 'OFFLINE');
+      expect(response.last['status'], null);
     });
 
     test('bulk insert with column defaults', () async {
-      final res = await postgrest.from('users').insert(
+      final response = await postgrest.from('users').insert(
         [
           {
             'username': "bot",
@@ -286,35 +276,35 @@ void main() {
         ],
         defaultToNull: false,
       ).select();
-      expect(res.length, 2);
-      expect(res.first['status'], 'OFFLINE');
-      expect(res.last['status'], 'ONLINE');
+      expect(response.length, 2);
+      expect(response.first['status'], 'OFFLINE');
+      expect(response.last['status'], 'ONLINE');
     });
 
     test('basic update', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('messages')
           .update(
             {'channel_id': 2},
           )
           .isFilter("data", null)
           .select();
-      expect(res, isNotEmpty);
-      expect(res, everyElement(containsPair("channel_id", 2)));
+      expect(response, isNotEmpty);
+      expect(response, everyElement(containsPair("channel_id", 2)));
 
       final messages = await postgrest.from('messages').select();
-      for (final rec in messages) {
-        expect(rec['channel_id'], 2);
+      for (final record in messages) {
+        expect(record['channel_id'], 2);
       }
     });
 
     test('basic delete', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('messages')
           .delete()
           .eq('message', 'Supabase Launch Week is on fire')
           .select();
-      expect(res, [
+      expect(response, [
         {
           'id': 3,
           'data': null,
@@ -325,11 +315,11 @@ void main() {
         },
       ]);
 
-      final resMsg = await postgrest
+      final messagesResponse = await postgrest
           .from('messages')
           .select()
           .eq('message', 'Supabase Launch Week is on fire');
-      expect(resMsg, isEmpty);
+      expect(messagesResponse, isEmpty);
     });
 
     test('missing table', () async {
@@ -349,11 +339,11 @@ void main() {
       );
     });
 
-    test('Prefer: return=minimal', () async {
+    test('Prefer: return=minimal completes successfully', () async {
       await postgrest.from('users').insert({'username': 'bar'});
     });
 
-    test('select with head:true', () async {
+    test('select with head:true completes successfully', () async {
       await postgrest.from('users').select('*').head();
     });
 
@@ -366,43 +356,43 @@ void main() {
     });
 
     test('select with head:true, count: exact', () async {
-      final int res = await postgrest.from('users').count(CountOption.exact);
-      expect(res, 4);
+      final int count = await postgrest.from('users').count(CountOption.exact);
+      expect(count, 4);
     });
 
     test('select with count: planned', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('users')
           .select('*')
           .count(CountOption.planned);
-      final int count = res.count;
+      final int count = response.count;
       expect(count, greaterThanOrEqualTo(0));
     });
 
     test('select with head:true, count: estimated', () async {
-      final int res = await postgrest
+      final int count = await postgrest
           .from('users')
           .count(CountOption.estimated);
-      expect(res, isA<int>());
+      expect(count, isA<int>());
     });
 
     test('select with csv', () async {
-      final res = await postgrest.from('users').select().csv();
-      expect(res, isA<String>());
+      final result = await postgrest.from('users').select().csv();
+      expect(result, isA<String>());
     });
 
     test('stored procedure with count: exact', () async {
-      final res = await postgrest
+      final response = await postgrest
           .rpc<String>(
             'get_status',
             params: {'name_param': 'supabot'},
           )
           .count(CountOption.exact);
-      expect(res.count, greaterThanOrEqualTo(0));
+      expect(response.count, greaterThanOrEqualTo(0));
     });
 
     test('insert with count: exact', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('users')
           .upsert(
             {'username': 'countexact', 'status': 'OFFLINE'},
@@ -410,11 +400,11 @@ void main() {
           )
           .select()
           .count(CountOption.exact);
-      expect(res.count, 1);
+      expect(response.count, 1);
     });
 
     test('update with count: exact', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('users')
           .update(
             {'status': 'ONLINE'},
@@ -422,18 +412,18 @@ void main() {
           .eq('username', 'kiwicopple')
           .select()
           .count(CountOption.exact);
-      expect(res.count, 1);
+      expect(response.count, 1);
     });
 
     test('delete with count: exact', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('users')
           .delete()
           .eq('username', 'kiwicopple')
           .select()
           .count(CountOption.exact);
 
-      expect(res.count, 1);
+      expect(response.count, 1);
     });
 
     test('execute without table operation', () async {
@@ -444,49 +434,49 @@ void main() {
     });
 
     test('select from uppercase table name', () async {
-      final res = await postgrest.from('TestTable').select();
-      expect(res.length, 2);
+      final response = await postgrest.from('TestTable').select();
+      expect(response.length, 2);
     });
 
     test('insert from uppercase table name', () async {
-      final res = await postgrest.from('TestTable').insert([
+      final response = await postgrest.from('TestTable').insert([
         {'slug': 'new slug'},
       ]).select();
       expect(
-        (res.first)['slug'],
+        (response.first)['slug'],
         'new slug',
       );
     });
 
     test('delete from uppercase table name', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('TestTable')
           .delete()
           .eq('slug', 'new slug')
           .select()
           .count(CountOption.exact);
-      expect(res.count, 1);
+      expect(response.count, 1);
     });
 
     test('withConverter', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('users')
           .select()
           .withConverter((data) => [data]);
-      expect(res, isNotEmpty);
-      expect(res.first, isNotEmpty);
-      expect(res.first, isA<List<dynamic>>());
+      expect(response, isNotEmpty);
+      expect(response.first, isNotEmpty);
+      expect(response.first, isA<List<dynamic>>());
     });
 
     test('withConverter and count', () async {
-      final res = await postgrest
+      final response = await postgrest
           .from('users')
           .select()
           .count(CountOption.exact)
           .withConverter((data) => [data]);
-      expect(res.data.first, isNotEmpty);
-      expect(res.data.first, isA<List<dynamic>>());
-      expect(res.count, greaterThan(3));
+      expect(response.data.first, isNotEmpty);
+      expect(response.data.first, isA<List<dynamic>>());
+      expect(response.count, greaterThan(3));
     });
 
     test('aborts long-running function call', () async {

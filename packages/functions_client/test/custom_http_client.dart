@@ -11,8 +11,7 @@ class CustomHttpClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    // Add request to receivedRequests list.
-    receivedRequests = receivedRequests..add(request);
+    receivedRequests.add(request);
     request.finalize();
 
     if (request.url.path.endsWith('network-error')) {

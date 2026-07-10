@@ -119,7 +119,7 @@ Future<void> primePostgresChanges({
 }) async {
   final deadline = DateTime.now().add(timeout);
   final client = createRealtimeClient(RealtimeProtocolVersion.v1);
-  final db = await openPostgresConnection();
+  final database = await openPostgresConnection();
   final received = Completer<void>();
 
   final channel = client.channel('postgres-changes-warmup');
@@ -149,7 +149,9 @@ Future<void> primePostgresChanges({
   try {
     await subscribed.future.timeout(const Duration(seconds: 15));
     while (!received.isCompleted && DateTime.now().isBefore(deadline)) {
-      await db.execute("INSERT INTO public.todos (task) VALUES ('warmup')");
+      await database.execute(
+        "INSERT INTO public.todos (task) VALUES ('warmup')",
+      );
       await Future.any([
         received.future,
         Future<void>.delayed(const Duration(seconds: 2)),
@@ -161,8 +163,8 @@ Future<void> primePostgresChanges({
       );
     }
   } finally {
-    await db.execute('TRUNCATE public.todos RESTART IDENTITY');
-    await db.close();
+    await database.execute('TRUNCATE public.todos RESTART IDENTITY');
+    await database.close();
     await client.removeAllChannels();
     await client.disconnect();
   }

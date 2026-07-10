@@ -22,8 +22,8 @@ void main() {
     });
 
     test('encode', () async {
-      final str = await isolate.encode(_jsonMap);
-      expect(str, _jsonString);
+      final encoded = await isolate.encode(_jsonMap);
+      expect(encoded, _jsonString);
     });
   });
 
@@ -42,8 +42,8 @@ void main() {
     });
 
     test('encode', () async {
-      final str = await isolate.encode(_jsonMap);
-      expect(str, _jsonString);
+      final encoded = await isolate.encode(_jsonMap);
+      expect(encoded, _jsonString);
     });
   });
 }

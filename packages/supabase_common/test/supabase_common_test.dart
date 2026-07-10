@@ -52,7 +52,7 @@ void main() {
     test('verifier is url safe and challenge is deterministic', () {
       final verifier = generatePKCEVerifier();
       expect(verifier, isNot(contains('=')));
-      expect(verifier.length, greaterThan(0));
+      expect(verifier, isNotEmpty);
       // Same verifier always yields the same challenge.
       expect(
         generatePKCEChallenge(verifier),

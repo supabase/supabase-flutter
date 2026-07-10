@@ -22,7 +22,7 @@ void main() {
     return 'custom:flutter-test-$timestamp';
   }
 
-  CreateCustomProviderParams oauth2Params(
+  CreateCustomProviderParams oauth2Parameters(
     String identifier, {
     List<String>? customClaimsAllowlist,
   }) {
@@ -40,7 +40,7 @@ void main() {
   }
 
   setUp(() async {
-    final res = await http.post(
+    final response = await http.post(
       Uri.parse('http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
       headers: {
         'x-forwarded-for': '127.0.0.1',
@@ -48,7 +48,7 @@ void main() {
         'Authorization': 'Bearer $serviceRoleToken',
       },
     );
-    if (res.body.isNotEmpty) throw res.body;
+    if (response.body.isNotEmpty) throw response.body;
 
     client = GoTrueClient(
       url: gotrueUrl,
@@ -65,7 +65,7 @@ void main() {
       final identifier = newIdentifier();
       try {
         final provider = await client.admin.customProviders.createProvider(
-          oauth2Params(identifier),
+          oauth2Parameters(identifier),
         );
 
         expect(provider.identifier, identifier);
@@ -83,7 +83,7 @@ void main() {
       try {
         // Exercises sending the custom_claims_allowlist field over the wire.
         final provider = await client.admin.customProviders.createProvider(
-          oauth2Params(
+          oauth2Parameters(
             identifier,
             customClaimsAllowlist: ['groups', 'org_id', 'mail'],
           ),
@@ -99,7 +99,7 @@ void main() {
       final identifier = newIdentifier();
       try {
         await client.admin.customProviders.createProvider(
-          oauth2Params(identifier),
+          oauth2Parameters(identifier),
         );
 
         final providers = await client.admin.customProviders.listProviders();
@@ -116,7 +116,7 @@ void main() {
       final identifier = newIdentifier();
       try {
         await client.admin.customProviders.createProvider(
-          oauth2Params(identifier),
+          oauth2Parameters(identifier),
         );
 
         final providers = await client.admin.customProviders.listProviders(
@@ -141,7 +141,7 @@ void main() {
       final identifier = newIdentifier();
       try {
         await client.admin.customProviders.createProvider(
-          oauth2Params(identifier),
+          oauth2Parameters(identifier),
         );
 
         final provider = await client.admin.customProviders.getProvider(
@@ -158,7 +158,7 @@ void main() {
       final identifier = newIdentifier();
       try {
         await client.admin.customProviders.createProvider(
-          oauth2Params(identifier),
+          oauth2Parameters(identifier),
         );
 
         final updated = await client.admin.customProviders.updateProvider(
@@ -183,7 +183,7 @@ void main() {
     test('delete custom provider', () async {
       final identifier = newIdentifier();
       await client.admin.customProviders.createProvider(
-        oauth2Params(identifier),
+        oauth2Parameters(identifier),
       );
 
       await client.admin.customProviders.deleteProvider(identifier);
