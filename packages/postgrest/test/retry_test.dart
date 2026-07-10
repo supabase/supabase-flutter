@@ -31,7 +31,10 @@ _ResponseFactory _status(int code) =>
     );
 
 _ResponseFactory _networkError() =>
-    (_) async => throw const SocketException('Connection refused');
+    (_) => Future.error(
+      const SocketException('Connection refused'),
+      StackTrace.current,
+    );
 
 class _MockRetryClient extends BaseClient {
   final List<_ResponseFactory> _responses;
