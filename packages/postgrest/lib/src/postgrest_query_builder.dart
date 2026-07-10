@@ -251,10 +251,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   Uri _setColumnsSearchParam(List values) {
     final newValues = PostgrestList.from(values);
-    final columns = newValues.fold<List<String>>(
-      [],
-      (value, element) => value..addAll(element.keys),
-    );
+    final columns = [for (final element in newValues) ...element.keys];
     if (newValues.isNotEmpty) {
       final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
       return appendSearchParams("columns", uniqueColumns);

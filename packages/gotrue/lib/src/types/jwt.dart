@@ -238,35 +238,23 @@ class JWK {
   }
 
   /// Allows accessing additional properties using operator[].
-  dynamic operator [](String key) {
-    switch (key) {
-      case 'kty':
-        return kty;
-      case 'key_ops':
-        return keyOps;
-      case 'alg':
-        return alg;
-      case 'kid':
-        return kid;
-      default:
-        return _additionalProperties[key];
-    }
-  }
+  dynamic operator [](String key) => switch (key) {
+    'kty' => kty,
+    'key_ops' => keyOps,
+    'alg' => alg,
+    'kid' => kid,
+    _ => _additionalProperties[key],
+  };
 
   /// Converts this [JWK] to a JSON map.
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> json = {
+    return {
       'kty': kty,
       'key_ops': keyOps,
       ..._additionalProperties,
+      'alg': ?alg,
+      'kid': ?kid,
     };
-    if (alg != null) {
-      json['alg'] = alg;
-    }
-    if (kid != null) {
-      json['kid'] = kid;
-    }
-    return json;
   }
 
   /// Builds the RSA public key for verifying RS256 JWTs from this JWK's

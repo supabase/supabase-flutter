@@ -81,18 +81,15 @@ class PhoneEnrollment {
     );
   }
 
-  factory PhoneEnrollment._fromJsonValue(dynamic value) {
-    if (value is String) {
-      // Server returns phone number as a string directly
-      return PhoneEnrollment(phone: value);
-    } else if (value is Map<String, dynamic>) {
-      // Server returns phone data as an object
-      return PhoneEnrollment.fromJson(value);
-    }
-    throw ArgumentError(
+  factory PhoneEnrollment._fromJsonValue(dynamic value) => switch (value) {
+    // Server returns phone number as a string directly
+    String() => PhoneEnrollment(phone: value),
+    // Server returns phone data as an object
+    Map<String, dynamic>() => PhoneEnrollment.fromJson(value),
+    _ => throw ArgumentError(
       'Invalid phone enrollment data type: ${value.runtimeType}',
-    );
-  }
+    ),
+  };
 }
 
 class AuthMFAChallengeResponse {
