@@ -87,7 +87,10 @@ void main() {
         mockClient.lastRequestBody?['challenge_id'],
         PasskeyMockClient.challengeId,
       );
-      expect(mockClient.lastRequestBody?['credential'], isA<Map>());
+      expect(
+        mockClient.lastRequestBody?['credential'],
+        isA<Map<dynamic, dynamic>>(),
+      );
       expect(response.session, isNotNull);
       expect(response.session?.accessToken, 'mock-access-token');
       expect(response.user?.id, PasskeyMockClient.userId);

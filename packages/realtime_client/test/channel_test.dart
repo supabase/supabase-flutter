@@ -409,7 +409,7 @@ void main() {
           'channel': 'topic',
         });
 
-        expect(received, isA<Map>());
+        expect(received, isA<Map<dynamic, dynamic>>());
 
         final system = RealtimeSystemPayload.fromJson(
           Map<String, dynamic>.from(received),

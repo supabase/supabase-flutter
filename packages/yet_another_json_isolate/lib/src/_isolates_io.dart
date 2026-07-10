@@ -69,7 +69,7 @@ class YAJsonIsolate {
     return _handleRes(await _events.next);
   }
 
-  Future<R> _handleRes<R>(List response) async {
+  Future<R> _handleRes<R>(List<dynamic> response) async {
     final int type = response.length;
     assert(1 <= type && type <= 3);
 

@@ -465,7 +465,7 @@ void main() {
           .withConverter((data) => [data]);
       expect(response, isNotEmpty);
       expect(response.first, isNotEmpty);
-      expect(response.first, isA<List>());
+      expect(response.first, isA<List<dynamic>>());
     });
 
     test('withConverter and count', () async {
@@ -475,7 +475,7 @@ void main() {
           .count(CountOption.exact)
           .withConverter((data) => [data]);
       expect(response.data.first, isNotEmpty);
-      expect(response.data.first, isA<List>());
+      expect(response.data.first, isA<List<dynamic>>());
       expect(response.count, greaterThan(3));
     });
 

@@ -185,7 +185,7 @@ class Supabase {
   ///
   /// Only set when [Supabase.initialize] is called without a custom
   /// `accessToken`, since session recovery is skipped for third-party auth.
-  CancelableOperation? _restoreSessionCancellableOperation;
+  CancelableOperation<dynamic>? _restoreSessionCancellableOperation;
 
   // Listener for app lifecycle events to handle Realtime reconnection.
   AppLifecycleListener? _lifecycleListener;
@@ -199,7 +199,7 @@ class Supabase {
   /// (e.g. abort a reconnect if the app went back to background).
   AppLifecycleState? _targetLifecycleState;
 
-  StreamSubscription? _logSubscription;
+  StreamSubscription<dynamic>? _logSubscription;
 
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {

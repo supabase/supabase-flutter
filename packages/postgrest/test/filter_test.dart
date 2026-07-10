@@ -540,7 +540,7 @@ void main() {
     }
   });
   test('filter on rpc', () async {
-    final List response = await postgrest
+    final List<dynamic> response = await postgrest
         .rpc('get_username_and_status', params: {'name_param': 'supabot'})
         .neq('status', 'ONLINE');
     expect(response, isEmpty);
