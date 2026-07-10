@@ -225,7 +225,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       switch (method) {
         case HttpMethod.post || HttpMethod.put || HttpMethod.patch:
           request.body = bodyStr;
-        default:
+        case HttpMethod.get || HttpMethod.head || HttpMethod.delete:
+          break;
       }
       final client = _httpClient ?? http.Client();
 

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
