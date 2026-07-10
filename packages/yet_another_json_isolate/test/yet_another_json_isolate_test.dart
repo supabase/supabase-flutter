@@ -190,9 +190,9 @@ void main() {
 
   group('lifecycle', () {
     test('dispose can be awaited on a lazily initialized isolate', () async {
-      final isolate = YAJsonIsolate();
-      await isolate.decode(_jsonString);
-      await expectLater(isolate.dispose(), completes);
+      final lazyIsolate = YAJsonIsolate();
+      await lazyIsolate.decode(_jsonString);
+      await expectLater(lazyIsolate.dispose(), completes);
     });
 
     test('two isolates operate independently', () async {
