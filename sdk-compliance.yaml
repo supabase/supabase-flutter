@@ -426,7 +426,12 @@ features:
   # realtime — client
   realtime.client.channel: implemented
   realtime.client.connect: implemented
-  realtime.client.disconnect: implemented
+  realtime.client.disconnect:
+    status: implemented
+    symbols:
+      - Constants.defaultConnectionCloseTimeout
+      - RealtimeClient.connectionCloseTimeout
+      - RealtimeClientOptions.connectionCloseTimeou
   realtime.client.connection_state: implemented
   realtime.client.get_channels: implemented
   realtime.client.remove_channel: implemented
