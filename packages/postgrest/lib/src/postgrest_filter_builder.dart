@@ -527,7 +527,9 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   @override
   PostgrestFilterBuilder<T> retry({bool enabled = true, int? count}) {
     return PostgrestFilterBuilder(
-      _copyWith(retryEnabled: enabled, retryCount: count),
+      _copyWith(
+        retry: _retry.copyWith(enabled: enabled, count: count),
+      ),
     );
   }
 

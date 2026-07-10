@@ -9,7 +9,9 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   @override
   PostgrestTransformBuilder<T> retry({bool enabled = true, int? count}) {
     return PostgrestTransformBuilder(
-      _copyWith(retryEnabled: enabled, retryCount: count),
+      _copyWith(
+        retry: _retry.copyWith(enabled: enabled, count: count),
+      ),
     );
   }
 

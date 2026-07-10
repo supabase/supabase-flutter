@@ -323,4 +323,38 @@ void main() {
       expect(mock.callCount, 2);
     });
   });
+
+  group('retry config propagation through builder chain', () {
+    test(
+      'count() preserves custom retryCount and retryableStatusCodes',
+      () async {
+        _ResponseFactory okWithCount() =>
+            (req) => Future.value(
+              StreamedResponse(
+                Stream.value(Uint8List.fromList('[]'.codeUnits)),
+                200,
+                request: req,
+                headers: {
+                  'content-type': 'application/json',
+                  'content-range': '0-0/0',
+                },
+              ),
+            );
+        final mock = _MockRetryClient([
+          _status(500),
+          _status(500),
+          okWithCount(),
+        ]);
+        final client = _buildClient(
+          mock,
+          retryCount: 5,
+          retryableStatusCodes: {500},
+        );
+
+        await client.from('users').select().count(CountOption.exact);
+
+        expect(mock.callCount, 3);
+      },
+    );
+  });
 }

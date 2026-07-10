@@ -3,7 +3,7 @@ part of 'postgrest_builder.dart';
 /// Needed as a wrapper around [PostgrestBuilder] to allow for the different return type of [withConverter] than in [ResponsePostgrestBuilder.withConverter].
 class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   RawPostgrestBuilder(PostgrestBuilder<T, S, R> builder)
-    : super(
+    : super._(
         url: builder._url,
         method: builder._method,
         headers: builder._headers,
@@ -14,10 +14,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         isolate: builder._isolate,
         maybeSingle: builder._maybeSingle,
         converter: builder._converter,
-        retryEnabled: builder._retryEnabled,
-        retryCount: builder._retryCount,
-        retryableStatusCodes: builder._retryableStatusCodes,
-        retryDelay: builder._retryDelay,
+        retry: builder._retry,
       );
 
   /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
@@ -34,7 +31,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     bool? maybeSingle,
   }) {
     return RawPostgrestBuilder(
-      PostgrestBuilder(
+      PostgrestBuilder._(
         url: url ?? _url,
         headers: headers ?? _headers,
         schema: schema ?? _schema,
@@ -44,10 +41,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         isolate: isolate ?? _isolate,
         count: count ?? _count,
         maybeSingle: maybeSingle ?? _maybeSingle,
-        retryEnabled: _retryEnabled,
-        retryCount: _retryCount,
-        retryableStatusCodes: _retryableStatusCodes,
-        retryDelay: _retryDelay,
+        retry: _retry,
       ),
     );
   }
@@ -72,7 +66,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   PostgrestBuilder<U, U, R> withConverter<U>(
     PostgrestConverter<U, R> converter,
   ) {
-    return PostgrestBuilder(
+    return PostgrestBuilder._(
       url: _url,
       headers: _headers,
       schema: _schema,
@@ -83,10 +77,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       count: _count,
       maybeSingle: _maybeSingle,
       converter: converter,
-      retryEnabled: _retryEnabled,
-      retryCount: _retryCount,
-      retryableStatusCodes: _retryableStatusCodes,
-      retryDelay: _retryDelay,
+      retry: _retry,
     );
   }
 }

@@ -290,9 +290,9 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       schema: _schema,
       isolate: _isolate,
       retryEnabled: enabled,
-      retryCount: count ?? _retryCount,
-      retryableStatusCodes: _retryableStatusCodes,
-      retryDelay: _retryDelay,
+      retryCount: count ?? _retry.count,
+      retryableStatusCodes: _retry.statusCodes,
+      retryDelay: _retry.delay,
     );
   }
 
@@ -305,10 +305,10 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       method: _method,
       schema: _schema,
       isolate: _isolate,
-      retryEnabled: _retryEnabled,
-      retryCount: _retryCount,
-      retryableStatusCodes: _retryableStatusCodes,
-      retryDelay: _retryDelay,
+      retryEnabled: _retry.enabled,
+      retryCount: _retry.count,
+      retryableStatusCodes: _retry.statusCodes,
+      retryDelay: _retry.delay,
     );
   }
 }

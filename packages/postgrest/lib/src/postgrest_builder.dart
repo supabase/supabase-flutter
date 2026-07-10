@@ -31,6 +31,42 @@ enum HttpMethod {
 
 typedef _Nullable<T> = T?;
 
+/// Bundles the automatic retry configuration so it can be carried through the
+/// builder chain as a single value instead of separate fields.
+@immutable
+class _RetryConfig {
+  _RetryConfig({
+    this.enabled = true,
+    this.count = 3,
+    Set<int> statusCodes = PostgrestBuilder.defaultRetryableStatusCodes,
+    Duration Function(int attempt)? delay,
+  }) : statusCodes = Set.unmodifiable(statusCodes),
+       delay = delay ?? PostgrestBuilder._defaultRetryDelay {
+    if (count < 0) {
+      throw ArgumentError.value(count, 'retryCount', 'must not be negative');
+    }
+  }
+
+  final bool enabled;
+  final int count;
+  final Set<int> statusCodes;
+  final Duration Function(int attempt) delay;
+
+  _RetryConfig copyWith({
+    bool? enabled,
+    int? count,
+    Set<int>? statusCodes,
+    Duration Function(int attempt)? delay,
+  }) {
+    return _RetryConfig(
+      enabled: enabled ?? this.enabled,
+      count: count ?? this.count,
+      statusCodes: statusCodes ?? this.statusCodes,
+      delay: delay ?? this.delay,
+    );
+  }
+}
+
 /// Treats an empty `Prefer` value as absent, so every append site can rely on
 /// a plain null check instead of separately re-checking for emptiness.
 String? _emptyPreferAsNull(String? prefer) =>
@@ -54,10 +90,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final Client? _httpClient;
   final YAJsonIsolate? _isolate;
   final CountOption? _count;
-  final bool _retryEnabled;
-  final int _retryCount;
-  final Set<int> _retryableStatusCodes;
-  final Duration Function(int attempt) _retryDelay;
+  final _RetryConfig _retry;
   final _log = Logger('supabase.postgrest');
 
   /// HTTP status codes that trigger an automatic retry by default.
@@ -81,6 +114,37 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     int retryCount = 3,
     Set<int> retryableStatusCodes = defaultRetryableStatusCodes,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
+  }) : this._(
+         url: url,
+         headers: headers,
+         schema: schema,
+         method: method,
+         body: body,
+         httpClient: httpClient,
+         isolate: isolate,
+         count: count,
+         maybeSingle: maybeSingle,
+         converter: converter,
+         retry: _RetryConfig(
+           enabled: retryEnabled,
+           count: retryCount,
+           statusCodes: retryableStatusCodes,
+           delay: retryDelay,
+         ),
+       );
+
+  PostgrestBuilder._({
+    required Uri url,
+    required Headers headers,
+    String? schema,
+    HttpMethod? method,
+    Object? body,
+    Client? httpClient,
+    YAJsonIsolate? isolate,
+    CountOption? count,
+    bool maybeSingle = false,
+    PostgrestConverter<S, R>? converter,
+    required _RetryConfig retry,
   }) : _maybeSingle = maybeSingle,
        _method = method,
        _converter = converter,
@@ -91,18 +155,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _isolate = isolate,
        _count = count,
        _body = body,
-       _retryEnabled = retryEnabled,
-       _retryCount = retryCount,
-       _retryableStatusCodes = Set.unmodifiable(retryableStatusCodes),
-       _retryDelay = retryDelay ?? _defaultRetryDelay {
-    if (retryCount < 0) {
-      throw ArgumentError.value(
-        retryCount,
-        'retryCount',
-        'must not be negative',
-      );
-    }
-  }
+       _retry = retry;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
@@ -115,12 +168,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
-    bool? retryEnabled,
-    int? retryCount,
-    Set<int>? retryableStatusCodes,
-    Duration Function(int attempt)? retryDelay,
+    _RetryConfig? retry,
   }) {
-    return PostgrestBuilder(
+    return PostgrestBuilder._(
       url: url ?? _url,
       headers: headers ?? _headers,
       schema: schema ?? _schema,
@@ -131,10 +181,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
-      retryEnabled: retryEnabled ?? _retryEnabled,
-      retryCount: retryCount ?? _retryCount,
-      retryableStatusCodes: retryableStatusCodes ?? _retryableStatusCodes,
-      retryDelay: retryDelay ?? _retryDelay,
+      retry: retry ?? _retry,
     );
   }
 
@@ -147,7 +194,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///
   /// [count] overrides the number of retry attempts for this request.
   PostgrestBuilder<T, S, R> retry({bool enabled = true, int? count}) =>
-      _copyWith(retryEnabled: enabled, retryCount: count);
+      _copyWith(
+        retry: _retry.copyWith(enabled: enabled, count: count),
+      );
 
   PostgrestBuilder<T, S, R> setHeader(String key, String value) {
     return _copyWith(
@@ -227,13 +276,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     HttpMethod method,
     Map<String, String> execHeaders,
   ) async {
-    final maxRetries = _retryCount;
-    final retryableStatusCodes = _retryableStatusCodes;
+    final maxRetries = _retry.count;
+    final retryableStatusCodes = _retry.statusCodes;
 
     final isRetryableMethod =
         method == HttpMethod.get || method == HttpMethod.head;
 
-    if (!_retryEnabled || !isRetryableMethod) {
+    if (!_retry.enabled || !isRetryableMethod) {
       return send();
     }
 
@@ -252,7 +301,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         if (attempt == maxRetries) rethrow;
       }
 
-      await Future.delayed(_retryDelay(attempt));
+      await Future.delayed(_retry.delay(attempt));
     }
 
     throw StateError('unreachable');
