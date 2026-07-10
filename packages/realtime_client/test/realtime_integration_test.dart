@@ -235,13 +235,10 @@ void main() {
               switch (payload.eventType) {
                 case PostgresChangeEvent.insert:
                   if (!inserts.isCompleted) inserts.complete(payload);
-                  break;
                 case PostgresChangeEvent.update:
                   if (!updates.isCompleted) updates.complete(payload);
-                  break;
                 case PostgresChangeEvent.delete:
                   if (!deletes.isCompleted) deletes.complete(payload);
-                  break;
                 case PostgresChangeEvent.all:
                   break;
               }

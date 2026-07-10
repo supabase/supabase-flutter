@@ -423,14 +423,12 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     /// The type of tsquery conversion to use on [query].
     TextSearchType? type,
   }) {
-    var typePart = '';
-    if (type == TextSearchType.plain) {
-      typePart = 'pl';
-    } else if (type == TextSearchType.phrase) {
-      typePart = 'ph';
-    } else if (type == TextSearchType.websearch) {
-      typePart = 'w';
-    }
+    final typePart = switch (type) {
+      TextSearchType.plain => 'pl',
+      TextSearchType.phrase => 'ph',
+      TextSearchType.websearch => 'w',
+      null => '',
+    };
     final configPart = config == null ? '' : '($config)';
     return copyWithUrl(
       appendSearchParams(column, '${typePart}fts$configPart.$query'),

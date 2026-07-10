@@ -159,43 +159,32 @@ class GotrueFetch {
     }
     Response response;
     try {
-      switch (method) {
-        case RequestMethodType.get:
-          response = await (httpClient?.get ?? get)(
-            uri,
-            headers: headers,
-          );
-
-          break;
-        case RequestMethodType.post:
-          response = await (httpClient?.post ?? post)(
-            uri,
-            headers: headers,
-            body: bodyStr,
-          );
-          break;
-        case RequestMethodType.put:
-          response = await (httpClient?.put ?? put)(
-            uri,
-            headers: headers,
-            body: bodyStr,
-          );
-          break;
-        case RequestMethodType.patch:
-          response = await (httpClient?.patch ?? patch)(
-            uri,
-            headers: headers,
-            body: bodyStr,
-          );
-          break;
-        case RequestMethodType.delete:
-          response = await (httpClient?.delete ?? delete)(
-            uri,
-            headers: headers,
-            body: bodyStr,
-          );
-          break;
-      }
+      response = await switch (method) {
+        RequestMethodType.get => (httpClient?.get ?? get)(
+          uri,
+          headers: headers,
+        ),
+        RequestMethodType.post => (httpClient?.post ?? post)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+        RequestMethodType.put => (httpClient?.put ?? put)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+        RequestMethodType.patch => (httpClient?.patch ?? patch)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+        RequestMethodType.delete => (httpClient?.delete ?? delete)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+      };
     } catch (e) {
       // fetch failed, likely due to a network or CORS error
       throw AuthRetryableFetchException(message: e.toString());

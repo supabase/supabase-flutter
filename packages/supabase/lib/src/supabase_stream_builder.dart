@@ -6,31 +6,15 @@ import 'package:supabase_common/supabase_common.dart';
 
 part 'supabase_stream_filter_builder.dart';
 
-class _StreamPostgrestFilter {
-  const _StreamPostgrestFilter({
-    required this.column,
-    required this.value,
-    required this.type,
-  });
+/// [column] name of the eq filter, [value] of the eq filter, and [type] of the
+/// filter being applied.
+typedef _StreamPostgrestFilter = ({
+  String column,
+  dynamic value,
+  PostgresChangeFilterType type,
+});
 
-  /// Column name of the eq filter
-  final String column;
-
-  /// Value of the eq filter
-  final dynamic value;
-
-  /// Type of the filer being applied
-  final PostgresChangeFilterType type;
-}
-
-class _Order {
-  const _Order({
-    required this.column,
-    required this.ascending,
-  });
-  final String column;
-  final bool ascending;
-}
+typedef _Order = ({String column, bool ascending});
 
 class RealtimeSubscribeException implements Exception {
   const RealtimeSubscribeException(this.status, [this.details]);
@@ -111,7 +95,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// supabase.from('users').stream(primaryKey: ['id']).order('username', ascending: false);
   /// ```
   SupabaseStreamBuilder order(String column, {bool ascending = false}) {
-    _orderBy = _Order(column: column, ascending: ascending);
+    _orderBy = (column: column, ascending: ascending);
     return this;
   }
 
@@ -193,7 +177,6 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
                 final newRecord = payload.newRecord;
                 _streamData.add(newRecord);
                 _addStream();
-                break;
               case PostgresChangeEvent.update:
                 final updatedIndex = _streamData.indexWhere(
                   (element) =>
@@ -207,7 +190,6 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
                   _streamData.add(updatedRecord);
                 }
                 _addStream();
-                break;
               case PostgresChangeEvent.delete:
                 final deletedIndex = _streamData.indexWhere(
                   (element) =>
@@ -218,7 +200,6 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
                   _streamData.removeAt(deletedIndex);
                   _addStream();
                 }
-                break;
               case PostgresChangeEvent.all:
                 break;
             }
@@ -233,14 +214,11 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
                 unawaited(_getPostgrestData());
               }
               _wasSubscribed = true;
-              break;
             case RealtimeSubscribeStatus.closed:
               unawaited(_streamController?.close());
-              break;
             case RealtimeSubscribeStatus.timedOut:
             case RealtimeSubscribeStatus.channelError:
               _addException(RealtimeSubscribeException(status, error));
-              break;
           }
         });
     unawaited(_getPostgrestData());
@@ -249,43 +227,49 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   Future<void> _getPostgrestData() async {
     PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select();
     if (_streamFilter != null) {
-      switch (_streamFilter!.type) {
-        case PostgresChangeFilterType.eq:
-          query = query.eq(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.neq:
-          query = query.neq(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.lt:
-          query = query.lt(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.lte:
-          query = query.lte(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.gt:
-          query = query.gt(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.gte:
-          query = query.gte(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.inFilter:
-          query = query.inFilter(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.like:
-        case PostgresChangeFilterType.ilike:
-        case PostgresChangeFilterType.isFilter:
-        case PostgresChangeFilterType.match:
-        case PostgresChangeFilterType.imatch:
-        case PostgresChangeFilterType.isDistinct:
-          // These operators are only reachable through the realtime
-          // `onPostgresChanges` API, not through `.stream()`'s filter builder,
-          // so they can never be set on `_streamFilter`. Guard the exhaustive
-          // switch defensively in case that ever changes.
-          throw UnsupportedError(
-            'The "${_streamFilter!.type.name}" filter is not supported by '
-            '`.stream()`. Use one of eq, neq, lt, lte, gt, gte or inFilter.',
-          );
-      }
+      query = switch (_streamFilter!.type) {
+        PostgresChangeFilterType.eq => query.eq(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.neq => query.neq(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.lt => query.lt(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.lte => query.lte(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.gt => query.gt(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.gte => query.gte(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.inFilter => query.inFilter(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        // These operators are only reachable through the realtime
+        // `onPostgresChanges` API, not through `.stream()`'s filter builder,
+        // so they can never be set on `_streamFilter`. Guard the exhaustive
+        // switch defensively in case that ever changes.
+        PostgresChangeFilterType.like ||
+        PostgresChangeFilterType.ilike ||
+        PostgresChangeFilterType.isFilter ||
+        PostgresChangeFilterType.match ||
+        PostgresChangeFilterType.imatch ||
+        PostgresChangeFilterType.isDistinct => throw UnsupportedError(
+          'The "${_streamFilter!.type.name}" filter is not supported by '
+          '`.stream()`. Use one of eq, neq, lt, lte, gt, gte or inFilter.',
+        ),
+      };
     }
     PostgrestTransformBuilder<PostgrestList>? transformQuery;
     if (_orderBy != null) {

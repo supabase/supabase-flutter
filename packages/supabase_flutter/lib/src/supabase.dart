@@ -90,6 +90,8 @@ class Supabase {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
+    TracePropagationOptions tracePropagationOptions =
+        const TracePropagationOptions(),
     Future<String?> Function()? accessToken,
     bool? debug,
   }) async {
@@ -142,6 +144,7 @@ class Supabase {
       authOptions: authOptions,
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
+      tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
     );
 
@@ -218,6 +221,7 @@ class Supabase {
     required PostgrestClientOptions postgrestOptions,
     required StorageClientOptions storageOptions,
     required AuthClientOptions authOptions,
+    required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
   }) {
     final headers = {
@@ -233,6 +237,7 @@ class Supabase {
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
       authOptions: authOptions,
+      tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
     );
 
