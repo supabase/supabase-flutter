@@ -431,7 +431,7 @@ features:
     symbols:
       - Constants.defaultConnectionCloseTimeout
       - RealtimeClient.connectionCloseTimeout
-      - RealtimeClientOptions.connectionCloseTimeou
+      - RealtimeClientOptions.connectionCloseTimeout
   realtime.client.connection_state: implemented
   realtime.client.get_channels: implemented
   realtime.client.remove_channel: implemented
