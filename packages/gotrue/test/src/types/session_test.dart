@@ -153,7 +153,7 @@ void main() {
 
         final json = session.toJson();
 
-        expect(json.containsKey('expires_at'), isTrue);
+        expect(json, contains('expires_at'));
         expect(json['expires_at'], equals(session.expiresAt));
       });
     });
@@ -490,16 +490,6 @@ void main() {
         );
 
         expect(session1, equals(session2));
-      });
-
-      test('returns true for reference equality', () {
-        final session = Session(
-          accessToken: 'test-token',
-          tokenType: 'bearer',
-          user: mockUser,
-        );
-
-        expect(session, same(session));
       });
     });
 

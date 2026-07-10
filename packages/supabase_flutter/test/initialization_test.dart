@@ -24,7 +24,7 @@ void main() {
     tearDown(() async {
       try {
         await Supabase.instance.dispose();
-      } catch (e) {
+      } catch (_) {
         // Ignore dispose errors
       }
     });

@@ -192,7 +192,7 @@ void main() {
 
         expect(user, isNotNull);
         expect(user!.identities, isNotNull);
-        expect(user.identities!.length, equals(1));
+        expect(user.identities, hasLength(1));
         expect(user.identities![0].id, equals('identity-1'));
         expect(user.identities![0].provider, equals('email'));
       });
@@ -220,7 +220,7 @@ void main() {
 
         expect(user, isNotNull);
         expect(user!.factors, isNotNull);
-        expect(user.factors!.length, equals(1));
+        expect(user.factors, hasLength(1));
         expect(user.factors![0].id, equals('factor-1'));
         expect(user.factors![0].friendlyName, equals('My Phone'));
       });
@@ -332,7 +332,7 @@ void main() {
         final json = user.toJson();
 
         expect(json['identities'], isA<List>());
-        expect(json['identities'].length, equals(1));
+        expect(json['identities'], hasLength(1));
         expect(json['identities'][0], equals(identity.toJson()));
       });
 
@@ -467,18 +467,6 @@ void main() {
         );
 
         expect(user1, equals(user2));
-      });
-
-      test('returns true for reference equality', () {
-        const user = User(
-          id: '123',
-          appMetadata: {},
-          userMetadata: <String, dynamic>{},
-          aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
-        );
-
-        expect(user, same(user));
       });
     });
 
@@ -781,20 +769,6 @@ void main() {
         );
 
         expect(identity1, equals(identity2));
-      });
-
-      test('returns true for reference equality', () {
-        const identity = UserIdentity(
-          id: 'identity-1',
-          userId: '123',
-          identityData: <String, dynamic>{'email': 'test@example.com'},
-          identityId: 'identity-1',
-          provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
-        );
-
-        expect(identity, same(identity));
       });
     });
 

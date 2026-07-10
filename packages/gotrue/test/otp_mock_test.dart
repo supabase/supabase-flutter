@@ -64,7 +64,7 @@ void main() {
 
     test('signInWithOtp() without email or phone should throw', () async {
       await expectLater(
-        () => client.signInWithOtp(),
+        client.signInWithOtp(),
         throwsA(
           isA<AuthException>().having(
             (e) => e.message,
@@ -159,7 +159,7 @@ void main() {
       () async {
         // Recovery type with tokenHash should not accept email/phone
         await expectLater(
-          () => client.verifyOTP(
+          client.verifyOTP(
             email: testEmail,
             tokenHash: 'mock-token-hash',
             type: OtpType.recovery,
@@ -179,7 +179,7 @@ void main() {
 
     test('verifyOTP() without token should throw', () async {
       await expectLater(
-        () => client.verifyOTP(
+        client.verifyOTP(
           email: testEmail,
           type: OtpType.email,
         ),
@@ -246,7 +246,7 @@ void main() {
 
     test('reauthenticate() throws when no session', () async {
       await expectLater(
-        () => client.reauthenticate(),
+        client.reauthenticate(),
         throwsA(isA<AuthSessionMissingException>()),
       );
     });
@@ -338,7 +338,7 @@ void main() {
 
     test('resend() with wrong type for phone throws', () async {
       await expectLater(
-        () => client.resend(
+        client.resend(
           phone: testPhone,
           type: OtpType.signup, // This should be sms or phoneChange for phone
         ),
@@ -348,7 +348,7 @@ void main() {
 
     test('resend() with wrong type for email throws', () async {
       await expectLater(
-        () => client.resend(
+        client.resend(
           email: testEmail,
           type: OtpType.sms, // This should be signup or emailChange for email
         ),
@@ -380,7 +380,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.verifyOTP(
+        client.verifyOTP(
           phone: testPhone,
           token: '123456',
           type: OtpType.sms,
@@ -405,7 +405,7 @@ void main() {
         );
 
         await expectLater(
-          () => client.signInWithPassword(
+          client.signInWithPassword(
             phone: testPhone,
             password: 'wrong-password',
           ),
@@ -428,7 +428,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.signUp(
+        client.signUp(
           phone: testPhone,
           password: testPassword,
         ),
@@ -463,7 +463,7 @@ void main() {
         );
 
         await expectLater(
-          () => client.verifyOTP(
+          client.verifyOTP(
             token: '123456',
             type: OtpType.sms,
           ),
@@ -480,7 +480,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.verifyOTP(
+        client.verifyOTP(
           phone: testPhone,
           token: '123456',
           type: OtpType.sms,
@@ -503,7 +503,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.resend(
+        client.resend(
           email: testEmail,
           phone: testPhone,
           type: OtpType.sms,
@@ -520,7 +520,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.signUp(password: testPassword),
+        client.signUp(password: testPassword),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -535,7 +535,7 @@ void main() {
         );
 
         await expectLater(
-          () => client.signInWithPassword(password: testPassword),
+          client.signInWithPassword(password: testPassword),
           throwsA(
             isA<AuthException>().having(
               (e) => e.message,
@@ -555,7 +555,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.signInWithOtp(phone: testPhone),
+        client.signInWithOtp(phone: testPhone),
         throwsA(
           isA<AuthException>().having((e) => e.statusCode, 'statusCode', '500'),
         ),

@@ -153,7 +153,7 @@ void main() {
 
       final response = await client.from('public').upload('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
 
     test('should update file', () async {
@@ -164,7 +164,7 @@ void main() {
 
       final response = await client.from('public').update('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
 
     test('should move file', () async {
@@ -187,8 +187,8 @@ void main() {
       () async {
         customHttpClient.response = {'signedURL': null};
 
-        expect(
-          () => client.from('public').createSignedUrl('missing.txt', 60),
+        await expectLater(
+          client.from('public').createSignedUrl('missing.txt', 60),
           throwsA(isA<StorageException>()),
         );
       },
@@ -350,11 +350,6 @@ void main() {
       );
     });
 
-    test('getPublicUrl leaves the URL unchanged when download is null', () {
-      final response = client.from('files').getPublicUrl('b.txt');
-      expect(response, '$objectUrl/public/files/b.txt');
-    });
-
     test('getPublicUrl with empty transform does not use render endpoint', () {
       final response = client
           .from('files')
@@ -470,7 +465,7 @@ void main() {
       final uploadTask = client
           .from('public')
           .upload('a.txt', file, retryAttempts: 1);
-      expect(uploadTask, throwsException);
+      await expectLater(uploadTask, throwsException);
     });
 
     test('should upload file with few network failures', () async {
@@ -479,7 +474,7 @@ void main() {
 
       final response = await client.from('public').upload('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
 
     test('aborting upload should throw', () async {
@@ -499,7 +494,7 @@ void main() {
       await Future.delayed(Duration(milliseconds: 500));
       retryController.cancel();
 
-      expect(future, throwsException);
+      await expectLater(future, throwsException);
     });
 
     test('should upload binary with few network failures', () async {
@@ -510,7 +505,7 @@ void main() {
           .from('public')
           .uploadBinary('a.txt', file.readAsBytesSync());
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
 
     test('should update file with few network failures', () async {
@@ -519,7 +514,7 @@ void main() {
 
       final response = await client.from('public').update('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
     test('should update binary with few network failures', () async {
       final file = File('a.txt');
@@ -529,7 +524,7 @@ void main() {
           .from('public')
           .updateBinary('a.txt', file.readAsBytesSync());
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
   });
 
@@ -546,7 +541,7 @@ void main() {
     });
     test('should list buckets', () async {
       await expectLater(
-        () => client.listBuckets(),
+        client.listBuckets(),
         throwsA(
           isA<StorageException>().having(
             (e) => e.statusCode,

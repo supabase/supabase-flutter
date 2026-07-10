@@ -73,7 +73,7 @@ void main() {
         const jwtSignature = 'SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
         final decoded = Base64Url.decodeToBytes(jwtSignature);
         expect(decoded, isA<List<int>>());
-        expect(decoded.length, greaterThan(0));
+        expect(decoded, isNotEmpty);
       });
     });
   });

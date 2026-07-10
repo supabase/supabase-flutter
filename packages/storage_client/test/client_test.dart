@@ -67,7 +67,7 @@ void main() {
 
   test('Get bucket with wrong id', () async {
     await expectLater(
-      () => storage.getBucket('not-exist-id'),
+      storage.getBucket('not-exist-id'),
       throwsA(isNotNull),
     );
   });
@@ -96,7 +96,7 @@ void main() {
     final newBucketName = 'my-new-bucket-${DateTime.now()}';
     await storage.createBucket(newBucketName);
 
-    final updateRes = await storage.updateBucket(
+    final updateResult = await storage.updateBucket(
       newBucketName,
       const BucketOptions(
         public: true,
@@ -104,13 +104,13 @@ void main() {
         allowedMimeTypes: ['image/jpeg'],
       ),
     );
-    expect(updateRes, 'Successfully updated');
+    expect(updateResult, 'Successfully updated');
 
-    final getRes = await storage.getBucket(newBucketName);
-    expect(getRes.public, isTrue);
-    expect(getRes.fileSizeLimit, 20000000);
-    expect(getRes.allowedMimeTypes!.length, 1);
-    expect(getRes.allowedMimeTypes!.first, 'image/jpeg');
+    final bucket = await storage.getBucket(newBucketName);
+    expect(bucket.public, isTrue);
+    expect(bucket.fileSizeLimit, 20000000);
+    expect(bucket.allowedMimeTypes, hasLength(1));
+    expect(bucket.allowedMimeTypes!.first, 'image/jpeg');
   });
 
   test('partially update bucket', () async {
@@ -123,16 +123,16 @@ void main() {
         allowedMimeTypes: ['image/jpeg'],
       ),
     );
-    final updateRes = await storage.updateBucket(
+    final updateResult = await storage.updateBucket(
       newBucketName,
       const BucketOptions(public: false),
     );
-    expect(updateRes, 'Successfully updated');
-    final getRes = await storage.getBucket(newBucketName);
-    expect(getRes.public, isFalse);
-    expect(getRes.fileSizeLimit, 20000000);
-    expect(getRes.allowedMimeTypes!.length, 1);
-    expect(getRes.allowedMimeTypes!.first, 'image/jpeg');
+    expect(updateResult, 'Successfully updated');
+    final bucket = await storage.getBucket(newBucketName);
+    expect(bucket.public, isFalse);
+    expect(bucket.fileSizeLimit, 20000000);
+    expect(bucket.allowedMimeTypes, hasLength(1));
+    expect(bucket.allowedMimeTypes!.first, 'image/jpeg');
   });
 
   test('Empty bucket', () async {
@@ -215,7 +215,7 @@ void main() {
 
       expect(uploadedPath, uploadPath);
       await expectLater(
-        () => storage
+        storage
             .from(newBucketName)
             .uploadToSignedUrl(response.path, response.token, file),
         throwsA(
@@ -265,10 +265,8 @@ void main() {
           );
 
       expect(
-        url.contains(
-          '$storageUrl/render/image/sign/$newBucketName/$uploadPath',
-        ),
-        isTrue,
+        url,
+        contains('$storageUrl/render/image/sign/$newBucketName/$uploadPath'),
       );
     });
 
@@ -287,7 +285,7 @@ void main() {
     });
 
     test('will download a public transformed file', () async {
-      final bytesArray = await storage
+      final bytes = await storage
           .from(newBucketName)
           .download(
             uploadPath,
@@ -301,7 +299,7 @@ void main() {
         '${Directory.current.path}/public-image.jpg',
       ).create();
       try {
-        await downloadedFile.writeAsBytes(bytesArray);
+        await downloadedFile.writeAsBytes(bytes);
         final size = await downloadedFile.length();
         final type = lookupMimeType(downloadedFile.path);
         expect(size, isPositive);
@@ -317,7 +315,7 @@ void main() {
 
       await storage.from(privateBucketName).upload(uploadPath, file);
 
-      final bytesArray = await storage
+      final bytes = await storage
           .from(privateBucketName)
           .download(
             uploadPath,
@@ -328,7 +326,7 @@ void main() {
         '${Directory.current.path}/private-image.jpg',
       ).create();
       try {
-        await downloadedFile.writeAsBytes(bytesArray);
+        await downloadedFile.writeAsBytes(bytes);
         final size = await downloadedFile.length();
         final type = lookupMimeType(
           downloadedFile.path,
@@ -348,7 +346,7 @@ void main() {
         'Accept': 'image/webp',
       });
 
-      final bytesArray = await client
+      final bytes = await client
           .from(newBucketName)
           .download(
             uploadPath,
@@ -361,7 +359,7 @@ void main() {
         '${Directory.current.path}/webpimage',
       ).create();
       try {
-        await downloadedFile.writeAsBytes(bytesArray);
+        await downloadedFile.writeAsBytes(bytes);
         final size = await downloadedFile.length();
         final type = lookupMimeType(
           downloadedFile.path,
@@ -383,7 +381,7 @@ void main() {
           'Accept': 'image/webp',
         });
 
-        final bytesArray = await client
+        final bytes = await client
             .from(newBucketName)
             .download(
               uploadPath,
@@ -397,7 +395,7 @@ void main() {
           '${Directory.current.path}/jpegimage',
         ).create();
         try {
-          await downloadedFile.writeAsBytes(bytesArray);
+          await downloadedFile.writeAsBytes(bytes);
           final size = await downloadedFile.length();
           final type = lookupMimeType(
             downloadedFile.path,
@@ -474,8 +472,8 @@ void main() {
         ),
       );
 
-      final res = await storage.from(bucketName).upload(uploadPath, file);
-      expect(res, isA<String>());
+      final response = await storage.from(bucketName).upload(uploadPath, file);
+      expect(response, isA<String>());
     });
 
     test('cannot upload a file that exceed the file size limit', () async {
@@ -502,7 +500,7 @@ void main() {
         ),
       );
 
-      final res = await storage
+      final response = await storage
           .from(bucketName)
           .upload(
             uploadPath,
@@ -511,7 +509,7 @@ void main() {
               contentType: 'image/png',
             ),
           );
-      expect(res, isA<String>());
+      expect(response, isA<String>());
     });
 
     test('cannot upload a file an invalid mime type', () async {
@@ -552,7 +550,7 @@ void main() {
       });
 
       await expectLater(
-        () => client.from('bucket2').download(uploadPath),
+        client.from('bucket2').download(uploadPath),
         throwsA(
           isA<StorageException>().having(
             (e) => e.statusCode,
@@ -577,7 +575,7 @@ void main() {
       });
 
       await expectLater(
-        () => client.from('bucket2').download('$uploadPath 3'),
+        client.from('bucket2').download('$uploadPath 3'),
         throwsA(
           isA<StorageException>().having(
             (e) => e.statusCode,
@@ -595,7 +593,7 @@ void main() {
         fail('File that was moved was not found');
       }
       await expectLater(
-        () => client.from(newBucketName).download(uploadPath),
+        client.from(newBucketName).download(uploadPath),
         throwsA(
           isA<StorageException>().having(
             (e) => e.statusCode,
@@ -624,17 +622,19 @@ void main() {
           ),
         );
 
-    final updateRes = await storage.from(newBucketName).info(path);
-    expect(updateRes.metadata, metadata);
+    final objectInfo = await storage.from(newBucketName).info(path);
+    expect(objectInfo.metadata, metadata);
   });
 
   test('check if object exists', () async {
     await storage.from(newBucketName).upload('$uploadPath-exists', file);
-    final res = await storage.from(newBucketName).exists('$uploadPath-exists');
-    expect(res, isTrue);
+    final exists = await storage
+        .from(newBucketName)
+        .exists('$uploadPath-exists');
+    expect(exists, isTrue);
 
-    final res2 = await storage.from(newBucketName).exists('not-exist');
-    expect(res2, isFalse);
+    final missing = await storage.from(newBucketName).exists('not-exist');
+    expect(missing, isFalse);
   });
 
   group('setHeader', () {
@@ -875,7 +875,7 @@ void main() {
     for (final invalidKey in ['folder/a#b.txt', 'folder/100%done.txt']) {
       test('rejects "$invalidKey" with an InvalidKey error', () async {
         await expectLater(
-          () => storage
+          storage
               .from(bucket)
               .upload(
                 invalidKey,

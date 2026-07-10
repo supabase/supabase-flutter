@@ -104,7 +104,7 @@ void main() {
         supabaseClient: supabase,
       );
 
-      var realtimeWebsocketURL = request.uri;
+      final realtimeWebsocketURL = request.uri;
 
       expect(
         realtimeWebsocketURL.queryParameters,
@@ -172,9 +172,9 @@ void main() {
       var count = 0;
 
       // Check for every request if the Authorization header is set properly
-      await for (final req in mockServer) {
+      await for (final request in mockServer) {
         expect(
-          req.headers.value('Authorization')?.split(" ").last,
+          request.headers.value('Authorization')?.split(" ").last,
           accessToken,
         );
         count++;
@@ -211,8 +211,8 @@ void main() {
       var secondAccessToken = "to be set";
 
       // Check for every request if the Authorization header is set properly
-      await for (final req in mockServer) {
-        if (req.uri.path == "/auth/v1/token") {
+      await for (final request in mockServer) {
+        if (request.uri.path == "/auth/v1/token") {
           if (gotTokenRefresh) {
             fail("Token was refreshed twice");
           }
@@ -222,14 +222,14 @@ void main() {
             DateTime.now().add(Duration(hours: 1)),
           );
 
-          req.response
+          request.response
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.json
             ..write(sessionString);
-          await req.response.close();
+          await request.response.close();
         } else {
           expect(
-            req.headers.value('Authorization')?.split(" ").last,
+            request.headers.value('Authorization')?.split(" ").last,
             secondAccessToken,
           );
           count++;

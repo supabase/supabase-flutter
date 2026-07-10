@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 void main() {
   group('CreateCustomProviderParams serialization', () {
     test('serializes required fields', () {
-      final params = CreateCustomProviderParams(
+      final parameters = CreateCustomProviderParams(
         providerType: CustomProviderType.oauth2,
         identifier: 'custom:mycompany',
         name: 'My Company',
@@ -12,7 +12,7 @@ void main() {
         clientSecret: 'client-secret',
       );
 
-      final json = params.toJson();
+      final json = parameters.toJson();
 
       expect(json['provider_type'], 'oauth2');
       expect(json['identifier'], 'custom:mycompany');
@@ -22,7 +22,7 @@ void main() {
     });
 
     test('omits custom_claims_allowlist when not provided', () {
-      final params = CreateCustomProviderParams(
+      final parameters = CreateCustomProviderParams(
         providerType: CustomProviderType.oidc,
         identifier: 'custom:mycompany',
         name: 'My Company',
@@ -30,11 +30,14 @@ void main() {
         clientSecret: 'client-secret',
       );
 
-      expect(params.toJson().containsKey('custom_claims_allowlist'), isFalse);
+      expect(
+        parameters.toJson().containsKey('custom_claims_allowlist'),
+        isFalse,
+      );
     });
 
     test('serializes custom_claims_allowlist when provided', () {
-      final params = CreateCustomProviderParams(
+      final parameters = CreateCustomProviderParams(
         providerType: CustomProviderType.oidc,
         identifier: 'custom:mycompany',
         name: 'My Company',
@@ -44,13 +47,13 @@ void main() {
       );
 
       expect(
-        params.toJson()['custom_claims_allowlist'],
+        parameters.toJson()['custom_claims_allowlist'],
         ['groups', 'org_id', 'mail'],
       );
     });
 
     test('serializes an empty custom_claims_allowlist', () {
-      final params = CreateCustomProviderParams(
+      final parameters = CreateCustomProviderParams(
         providerType: CustomProviderType.oidc,
         identifier: 'custom:mycompany',
         name: 'My Company',
@@ -59,25 +62,25 @@ void main() {
         customClaimsAllowlist: [],
       );
 
-      expect(params.toJson()['custom_claims_allowlist'], isEmpty);
+      expect(parameters.toJson()['custom_claims_allowlist'], isEmpty);
     });
   });
 
   group('UpdateCustomProviderParams serialization', () {
     test('omits custom_claims_allowlist when not provided', () {
-      const params = UpdateCustomProviderParams(name: 'New name');
+      const parameters = UpdateCustomProviderParams(name: 'New name');
 
-      final json = params.toJson();
+      final json = parameters.toJson();
       expect(json.containsKey('custom_claims_allowlist'), isFalse);
       expect(json['name'], 'New name');
     });
 
     test('serializes custom_claims_allowlist when provided', () {
-      const params = UpdateCustomProviderParams(
+      const parameters = UpdateCustomProviderParams(
         customClaimsAllowlist: ['groups'],
       );
 
-      expect(params.toJson()['custom_claims_allowlist'], ['groups']);
+      expect(parameters.toJson()['custom_claims_allowlist'], ['groups']);
     });
   });
 

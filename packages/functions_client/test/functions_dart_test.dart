@@ -24,7 +24,7 @@ void main() {
     });
     test('function throws', () async {
       await expectLater(
-        () => functionsCustomHttpClient.invoke('error-function'),
+        functionsCustomHttpClient.invoke('error-function'),
         throwsA(
           isA<FunctionsHttpException>().having((e) => e.status, 'status', 420),
         ),
@@ -33,7 +33,7 @@ void main() {
 
     test('a non-2xx response throws a FunctionsHttpException', () async {
       await expectLater(
-        () => functionsCustomHttpClient.invoke('error-function'),
+        functionsCustomHttpClient.invoke('error-function'),
         throwsA(
           isA<FunctionsHttpException>()
               .having((e) => e.status, 'status', 420)
@@ -49,7 +49,7 @@ void main() {
 
     test('a relay error throws a FunctionsRelayException', () async {
       await expectLater(
-        () => functionsCustomHttpClient.invoke('relay-error'),
+        functionsCustomHttpClient.invoke('relay-error'),
         throwsA(
           isA<FunctionsRelayException>()
               .having((e) => e.status, 'status', 500)
@@ -60,7 +60,7 @@ void main() {
 
     test('a transport failure throws a FunctionsFetchException', () async {
       await expectLater(
-        () => functionsCustomHttpClient.invoke('network-error'),
+        functionsCustomHttpClient.invoke('network-error'),
         throwsA(
           isA<FunctionsFetchException>()
               .having((e) => e.status, 'status', 0)
@@ -71,11 +71,11 @@ void main() {
 
     test('the subtypes remain catchable as FunctionException', () async {
       await expectLater(
-        () => functionsCustomHttpClient.invoke('relay-error'),
+        functionsCustomHttpClient.invoke('relay-error'),
         throwsA(isA<FunctionException>()),
       );
       await expectLater(
-        () => functionsCustomHttpClient.invoke('network-error'),
+        functionsCustomHttpClient.invoke('network-error'),
         throwsA(isA<FunctionException>()),
       );
     });
@@ -86,7 +86,7 @@ void main() {
         // The error body must be drained and decoded into `details` rather than
         // handed back as an unconsumed stream (which also leaks the connection).
         await expectLater(
-          () => functionsCustomHttpClient.invoke('error-sse'),
+          functionsCustomHttpClient.invoke('error-sse'),
           throwsA(
             isA<FunctionException>()
                 .having((e) => e.status, 'status', 500)
@@ -100,7 +100,7 @@ void main() {
       'error response labeled JSON with a non-JSON body reports the status',
       () async {
         await expectLater(
-          () => functionsCustomHttpClient.invoke('invalid-json-error'),
+          functionsCustomHttpClient.invoke('invalid-json-error'),
           throwsA(
             isA<FunctionException>()
                 .having((e) => e.status, 'status', 500)
@@ -121,7 +121,7 @@ void main() {
         // doesn't parse is a real anomaly, so the FormatException must surface
         // rather than silently degrading to a raw String.
         await expectLater(
-          () => functionsCustomHttpClient.invoke('success-invalid-json'),
+          functionsCustomHttpClient.invoke('success-invalid-json'),
           throwsA(isA<FormatException>()),
         );
       },
@@ -130,24 +130,26 @@ void main() {
     test(
       'an upper-cased application/JSON content type is parsed as JSON',
       () async {
-        final res = await functionsCustomHttpClient.invoke('uppercase-json');
-        expect(res.data, {'key': 'Hello World'});
-        expect(res.status, 200);
+        final response = await functionsCustomHttpClient.invoke(
+          'uppercase-json',
+        );
+        expect(response.data, {'key': 'Hello World'});
+        expect(response.status, 200);
       },
     );
 
     test('function call', () async {
-      final res = await functionsCustomHttpClient.invoke('function');
+      final response = await functionsCustomHttpClient.invoke('function');
       expect(
         customHttpClient.receivedRequests.last.headers["Content-Type"],
         null,
       );
-      expect(res.data, {'key': 'Hello World'});
-      expect(res.status, 200);
+      expect(response.data, {'key': 'Hello World'});
+      expect(response.status, 200);
     });
 
     test('function call with query parameters', () async {
-      final res = await functionsCustomHttpClient.invoke(
+      final response = await functionsCustomHttpClient.invoke(
         'function',
         queryParameters: {'key': 'value'},
       );
@@ -155,14 +157,14 @@ void main() {
       final request = customHttpClient.receivedRequests.last;
 
       expect(request.url.queryParameters, {'key': 'value'});
-      expect(res.data, {'key': 'Hello World'});
-      expect(res.status, 200);
+      expect(response.data, {'key': 'Hello World'});
+      expect(response.status, 200);
     });
 
     test('function call with files', () async {
       final fileName = "file.txt";
       final fileContent = "Hello World";
-      final res = await functionsCustomHttpClient.invoke(
+      final response = await functionsCustomHttpClient.invoke(
         'function',
         queryParameters: {'key': 'value'},
         files: [
@@ -174,10 +176,10 @@ void main() {
 
       expect(request.url.queryParameters, {'key': 'value'});
       expect(request.headers['Content-Type'], contains('multipart/form-data'));
-      expect(res.data, [
+      expect(response.data, [
         {'name': fileName, 'content': fileContent},
       ]);
-      expect(res.status, 200);
+      expect(response.status, 200);
     });
 
     test('dispose isolate', () async {
@@ -194,14 +196,14 @@ void main() {
       );
 
       await client.dispose();
-      final res = await client.invoke('function');
-      expect(res.data, {'key': 'Hello World'});
+      final response = await client.invoke('function');
+      expect(response.data, {'key': 'Hello World'});
     });
 
     test('Listen to SSE event', () async {
-      final res = await functionsCustomHttpClient.invoke('sse');
+      final response = await functionsCustomHttpClient.invoke('sse');
       expect(
-        res.data.transform(const Utf8Decoder()),
+        response.data.transform(const Utf8Decoder()),
         emitsInOrder(
           ['a', 'b', 'c'],
         ),
@@ -212,45 +214,45 @@ void main() {
       test('integer properly encoded', () async {
         await functionsCustomHttpClient.invoke('function', body: 42);
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req, isA<Request>());
+        final request = customHttpClient.receivedRequests.last;
+        expect(request, isA<Request>());
 
-        req as Request;
-        expect(req.body, '42');
-        expect(req.headers["Content-Type"], contains("application/json"));
+        request as Request;
+        expect(request.body, '42');
+        expect(request.headers["Content-Type"], contains("application/json"));
       });
 
       test('double is properly encoded', () async {
         await functionsCustomHttpClient.invoke('function', body: 42.9);
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req, isA<Request>());
+        final request = customHttpClient.receivedRequests.last;
+        expect(request, isA<Request>());
 
-        req as Request;
-        expect(req.body, '42.9');
-        expect(req.headers["Content-Type"], contains("application/json"));
+        request as Request;
+        expect(request.body, '42.9');
+        expect(request.headers["Content-Type"], contains("application/json"));
       });
 
       test('string is properly encoded', () async {
         await functionsCustomHttpClient.invoke('function', body: 'ExampleText');
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req, isA<Request>());
+        final request = customHttpClient.receivedRequests.last;
+        expect(request, isA<Request>());
 
-        req as Request;
-        expect(req.body, 'ExampleText');
-        expect(req.headers["Content-Type"], contains("text/plain"));
+        request as Request;
+        expect(request.body, 'ExampleText');
+        expect(request.headers["Content-Type"], contains("text/plain"));
       });
 
       test('list is properly encoded', () async {
         await functionsCustomHttpClient.invoke('function', body: [1, 2, 3]);
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req, isA<Request>());
+        final request = customHttpClient.receivedRequests.last;
+        expect(request, isA<Request>());
 
-        req as Request;
-        expect(req.body, '[1,2,3]');
-        expect(req.headers["Content-Type"], contains("application/json"));
+        request as Request;
+        expect(request.body, '[1,2,3]');
+        expect(request.headers["Content-Type"], contains("application/json"));
       });
 
       test('map is properly encoded', () async {
@@ -259,35 +261,38 @@ void main() {
           body: {'thekey': 'thevalue'},
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req, isA<Request>());
+        final request = customHttpClient.receivedRequests.last;
+        expect(request, isA<Request>());
 
-        req as Request;
-        expect(req.body, '{"thekey":"thevalue"}');
-        expect(req.headers["Content-Type"], contains("application/json"));
+        request as Request;
+        expect(request.body, '{"thekey":"thevalue"}');
+        expect(request.headers["Content-Type"], contains("application/json"));
       });
 
       test('Uint8List is properly encoded as binary data', () async {
         final binaryData = Uint8List.fromList([1, 2, 3, 4, 5]);
         await functionsCustomHttpClient.invoke('function', body: binaryData);
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req, isA<Request>());
+        final request = customHttpClient.receivedRequests.last;
+        expect(request, isA<Request>());
 
-        req as Request;
-        expect(req.bodyBytes, equals(binaryData));
-        expect(req.headers["Content-Type"], equals("application/octet-stream"));
+        request as Request;
+        expect(request.bodyBytes, equals(binaryData));
+        expect(
+          request.headers["Content-Type"],
+          equals("application/octet-stream"),
+        );
       });
 
       test('null body sends no content-type', () async {
         await functionsCustomHttpClient.invoke('function');
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req, isA<Request>());
+        final request = customHttpClient.receivedRequests.last;
+        expect(request, isA<Request>());
 
-        req as Request;
-        expect(req.body, '');
-        expect(req.headers.containsKey("Content-Type"), isFalse);
+        request as Request;
+        expect(request.body, '');
+        expect(request.headers.containsKey("Content-Type"), isFalse);
       });
     });
 
@@ -298,8 +303,8 @@ void main() {
           method: HttpMethod.get,
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.method, 'GET');
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.method, 'GET');
       });
 
       test('PUT method', () async {
@@ -308,8 +313,8 @@ void main() {
           method: HttpMethod.put,
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.method, 'PUT');
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.method, 'PUT');
       });
 
       test('DELETE method', () async {
@@ -318,8 +323,8 @@ void main() {
           method: HttpMethod.delete,
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.method, 'DELETE');
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.method, 'DELETE');
       });
 
       test('PATCH method', () async {
@@ -328,8 +333,8 @@ void main() {
           method: HttpMethod.patch,
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.method, 'PATCH');
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.method, 'PATCH');
       });
     });
 
@@ -339,8 +344,8 @@ void main() {
 
         await functionsCustomHttpClient.invoke('function');
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['Authorization'], 'Bearer new-token');
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.headers['Authorization'], 'Bearer new-token');
       });
 
       test('headers getter returns current headers', () {
@@ -357,8 +362,8 @@ void main() {
           headers: {'Content-Type': 'custom/type'},
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['Content-Type'], 'custom/type');
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.headers['Content-Type'], 'custom/type');
       });
 
       test('custom lowercase content-type header overrides defaults', () async {
@@ -368,8 +373,8 @@ void main() {
           headers: {'content-type': 'application/custom+json'},
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['content-type'], 'application/custom+json');
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.headers['content-type'], 'application/custom+json');
       });
 
       test('custom headers merge with defaults', () async {
@@ -378,9 +383,9 @@ void main() {
           headers: {'X-Custom': 'value'},
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['X-Custom'], 'value');
-        expect(req.headers, contains('X-Client-Info'));
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.headers['X-Custom'], 'value');
+        expect(request.headers, contains('X-Client-Info'));
       });
     });
 
@@ -393,9 +398,12 @@ void main() {
             region: 'us-west-1',
           );
 
-          final req = customHttpClient.receivedRequests.last;
-          expect(req.headers['x-region'], 'us-west-1');
-          expect(req.url.queryParameters['forceFunctionRegion'], 'us-west-1');
+          final request = customHttpClient.receivedRequests.last;
+          expect(request.headers['x-region'], 'us-west-1');
+          expect(
+            request.url.queryParameters['forceFunctionRegion'],
+            'us-west-1',
+          );
         },
       );
 
@@ -405,10 +413,10 @@ void main() {
           region: 'any',
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers.containsKey('x-region'), isFalse);
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.headers.containsKey('x-region'), isFalse);
         expect(
-          req.url.queryParameters.containsKey('forceFunctionRegion'),
+          request.url.queryParameters.containsKey('forceFunctionRegion'),
           isFalse,
         );
       });
@@ -425,9 +433,12 @@ void main() {
 
           await client.invoke('function');
 
-          final req = customHttpClient.receivedRequests.last;
-          expect(req.headers['x-region'], 'eu-west-1');
-          expect(req.url.queryParameters['forceFunctionRegion'], 'eu-west-1');
+          final request = customHttpClient.receivedRequests.last;
+          expect(request.headers['x-region'], 'eu-west-1');
+          expect(
+            request.url.queryParameters['forceFunctionRegion'],
+            'eu-west-1',
+          );
         },
       );
 
@@ -441,9 +452,9 @@ void main() {
 
         await client.invoke('function', region: 'us-east-1');
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['x-region'], 'us-east-1');
-        expect(req.url.queryParameters['forceFunctionRegion'], 'us-east-1');
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.headers['x-region'], 'us-east-1');
+        expect(request.url.queryParameters['forceFunctionRegion'], 'us-east-1');
       });
 
       test('region works with other query parameters', () async {
@@ -453,9 +464,9 @@ void main() {
           queryParameters: {'key': 'value', 'foo': 'bar'},
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['x-region'], 'ap-south-1');
-        expect(req.url.queryParameters, {
+        final request = customHttpClient.receivedRequests.last;
+        expect(request.headers['x-region'], 'ap-south-1');
+        expect(request.url.queryParameters, {
           'key': 'value',
           'foo': 'bar',
           'forceFunctionRegion': 'ap-south-1',
@@ -496,9 +507,12 @@ void main() {
           ],
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['Content-Type'], contains('multipart/form-data'));
-        expect(req, isA<MultipartRequest>());
+        final request = customHttpClient.receivedRequests.last;
+        expect(
+          request.headers['Content-Type'],
+          contains('multipart/form-data'),
+        );
+        expect(request, isA<MultipartRequest>());
       });
 
       test('multipart with only files', () async {
@@ -507,41 +521,44 @@ void main() {
           files: [MultipartFile.fromString('file', 'content')],
         );
 
-        final req = customHttpClient.receivedRequests.last;
-        expect(req.headers['Content-Type'], contains('multipart/form-data'));
-        expect(req, isA<MultipartRequest>());
+        final request = customHttpClient.receivedRequests.last;
+        expect(
+          request.headers['Content-Type'],
+          contains('multipart/form-data'),
+        );
+        expect(request, isA<MultipartRequest>());
       });
     });
 
     group('Response content types', () {
       test('handles application/octet-stream response', () async {
-        final res = await functionsCustomHttpClient.invoke('binary');
+        final response = await functionsCustomHttpClient.invoke('binary');
 
-        expect(res.data, isA<Uint8List>());
-        expect(res.data, equals(Uint8List.fromList([1, 2, 3, 4, 5])));
-        expect(res.status, 200);
+        expect(response.data, isA<Uint8List>());
+        expect(response.data, equals(Uint8List.fromList([1, 2, 3, 4, 5])));
+        expect(response.status, 200);
       });
 
       test('handles text/plain response', () async {
-        final res = await functionsCustomHttpClient.invoke('text');
+        final response = await functionsCustomHttpClient.invoke('text');
 
-        expect(res.data, isA<String>());
-        expect(res.data, 'Hello World');
-        expect(res.status, 200);
+        expect(response.data, isA<String>());
+        expect(response.data, 'Hello World');
+        expect(response.status, 200);
       });
 
       test('handles empty JSON response', () async {
-        final res = await functionsCustomHttpClient.invoke('empty-json');
+        final response = await functionsCustomHttpClient.invoke('empty-json');
 
-        expect(res.data, '');
-        expect(res.status, 200);
+        expect(response.data, '');
+        expect(response.status, 200);
       });
     });
 
     group('Error handling', () {
       test('FunctionException contains all error details', () async {
         await expectLater(
-          () => functionsCustomHttpClient.invoke('error-function'),
+          functionsCustomHttpClient.invoke('error-function'),
           throwsA(
             isA<FunctionException>()
                 .having((e) => e.status, 'status', 420)

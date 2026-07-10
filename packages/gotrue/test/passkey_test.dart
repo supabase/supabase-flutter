@@ -292,7 +292,7 @@ void main() {
       addTearDown(disabledClient.dispose);
 
       await expectLater(
-        () => disabledClient.passkey.startAuthentication(),
+        disabledClient.passkey.startAuthentication(),
         throwsA(
           isA<AuthApiException>()
               .having((e) => e.code, 'code', 'passkey_disabled')
