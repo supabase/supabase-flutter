@@ -33,9 +33,6 @@ _ResponseFactory _status(int code) =>
 _ResponseFactory _networkError() =>
     (_) => throw const SocketException('Connection refused');
 
-_ResponseFactory _delayed(Duration delay, _ResponseFactory inner) =>
-    (req) => Future.delayed(delay).then((_) => inner(req));
-
 class _MockRetryClient extends BaseClient {
   final List<_ResponseFactory> _responses;
   final List<BaseRequest> requests = [];
@@ -62,7 +59,6 @@ PostgrestClient _buildClient(
   bool retryEnabled = true,
   int retryCount = 3,
   Set<int> retryableStatusCodes = const {503, 520},
-  Duration? requestTimeout,
 }) {
   return PostgrestClient(
     'http://localhost:3000',
@@ -70,7 +66,6 @@ PostgrestClient _buildClient(
     retryEnabled: retryEnabled,
     retryCount: retryCount,
     retryableStatusCodes: retryableStatusCodes,
-    requestTimeout: requestTimeout,
     retryDelay: (_) => Duration.zero,
   );
 }
@@ -326,53 +321,6 @@ void main() {
 
       expect(result, isEmpty);
       expect(mock.callCount, 2);
-    });
-  });
-
-  group('request timeout', () {
-    test('times out a slow GET and retries', () async {
-      final mock = _MockRetryClient([
-        _delayed(const Duration(milliseconds: 200), _ok()),
-        _ok(),
-      ]);
-      final client = _buildClient(
-        mock,
-        requestTimeout: const Duration(milliseconds: 20),
-      );
-
-      final result = await client.from('users').select();
-
-      expect(result, isEmpty);
-      expect(mock.callCount, 2);
-    });
-
-    test('a slow POST throws TimeoutException and does not retry', () async {
-      final mock = _MockRetryClient([
-        _delayed(const Duration(milliseconds: 200), _ok()),
-      ]);
-      final client = _buildClient(
-        mock,
-        requestTimeout: const Duration(milliseconds: 20),
-      );
-
-      await expectLater(
-        () => client.from('users').insert({'name': 'foo'}),
-        throwsA(isA<TimeoutException>()),
-      );
-      expect(mock.callCount, 1);
-    });
-
-    test('a fast request within the timeout succeeds', () async {
-      final mock = _MockRetryClient([_ok()]);
-      final client = _buildClient(
-        mock,
-        requestTimeout: const Duration(seconds: 5),
-      );
-
-      final result = await client.from('users').select();
-
-      expect(result, isEmpty);
-      expect(mock.callCount, 1);
     });
   });
 }

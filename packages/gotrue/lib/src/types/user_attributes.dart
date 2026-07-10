@@ -20,12 +20,21 @@ class UserAttributes {
   /// The `data` should be a JSON object that includes user-specific info, such as their first and last name.
   Object? data;
 
+  /// The user's current password.
+  ///
+  /// This is only used when the user is changing their password and the
+  /// `GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD` setting is
+  /// enabled on the auth server, in which case the current password is required
+  /// to verify the change.
+  String? currentPassword;
+
   UserAttributes({
     this.email,
     this.phone,
     this.password,
     this.nonce,
     this.data,
+    this.currentPassword,
   }) : assert(data == null || data is List || data is Map);
 
   Map<String, dynamic> toJson() {
@@ -35,6 +44,7 @@ class UserAttributes {
       'nonce': ?nonce,
       'password': ?password,
       'data': ?data,
+      'current_password': ?currentPassword,
     };
   }
 
@@ -49,6 +59,7 @@ class UserAttributes {
         other.phone == phone &&
         other.password == password &&
         other.nonce == nonce &&
+        other.currentPassword == currentPassword &&
         mapEquals(other.data, data);
   }
 
@@ -58,6 +69,7 @@ class UserAttributes {
         phone.hashCode ^
         password.hashCode ^
         nonce.hashCode ^
+        currentPassword.hashCode ^
         data.hashCode;
   }
 }

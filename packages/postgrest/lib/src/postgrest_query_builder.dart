@@ -23,7 +23,6 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     int retryCount = 3,
     Set<int> retryableStatusCodes =
         PostgrestBuilder.defaultRetryableStatusCodes,
-    Duration? requestTimeout,
     Duration Function(int attempt)? retryDelay,
   }) : super(
          PostgrestBuilder(
@@ -36,7 +35,6 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
            retryEnabled: retryEnabled,
            retryCount: retryCount,
            retryableStatusCodes: retryableStatusCodes,
-           requestTimeout: requestTimeout,
            retryDelay: retryDelay,
          ),
        );
@@ -294,7 +292,6 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       retryEnabled: enabled,
       retryCount: count ?? _retryCount,
       retryableStatusCodes: _retryableStatusCodes,
-      requestTimeout: _requestTimeout,
       retryDelay: _retryDelay,
     );
   }
@@ -311,7 +308,6 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       retryEnabled: _retryEnabled,
       retryCount: _retryCount,
       retryableStatusCodes: _retryableStatusCodes,
-      requestTimeout: _requestTimeout,
       retryDelay: _retryDelay,
     );
   }

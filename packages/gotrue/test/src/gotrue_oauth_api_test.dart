@@ -81,6 +81,50 @@ void main() {
     });
   });
 
+  group('OAuthGrant', () {
+    test('can parse a valid JSON', () {
+      final json = {
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+          'uri': 'https://example.com',
+          'logo_uri': 'https://example.com/logo.png',
+        },
+        'scopes': ['email', 'profile'],
+        'granted_at': '2026-07-08T08:40:13.212Z',
+      };
+
+      final actual = OAuthGrant.fromJson(json);
+
+      expect(
+        actual.client.clientId,
+        equals('7263e727-435b-4d38-a5ff-a14c954b8680'),
+      );
+      expect(actual.client.clientName, equals('OAuth test client'));
+      expect(actual.client.clientUri, equals('https://example.com'));
+      expect(actual.client.logoUri, equals('https://example.com/logo.png'));
+      expect(actual.scopes, equals(['email', 'profile']));
+      expect(
+        actual.grantedAt,
+        equals(DateTime.parse('2026-07-08T08:40:13.212Z')),
+      );
+    });
+
+    test('defaults scopes to an empty list when missing', () {
+      final json = {
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'granted_at': '2026-07-08T08:40:13.212Z',
+      };
+
+      final actual = OAuthGrant.fromJson(json);
+
+      expect(actual.scopes, isEmpty);
+    });
+  });
+
   group('OAuth server', () {
     test('get authorization details', () async {
       final sut = await fixture.build();
@@ -164,6 +208,47 @@ void main() {
           ),
         ),
       );
+    });
+
+    test('lists grants after approving an authorization', () async {
+      final sut = await fixture.build();
+      final clientParams = CreateOAuthClientParams(
+        clientName: 'Test OAuth Client',
+        redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
+        responseTypes: [OAuthClientResponseType.code],
+        scope: 'email',
+      );
+      final client = await fixture.sutCreatesOAuthClient(clientParams);
+      await fixture.sutLogsIn(password: password, email: email1);
+      final authorizationId = await fixture.sutAuthorizesClient(client);
+      await sut.oauth.getAuthorizationDetails(authorizationId);
+      await sut.oauth.approveAuthorization(authorizationId);
+
+      final grants = await sut.oauth.listGrants();
+
+      expect(grants, hasLength(1));
+      expect(grants.first.client.clientId, equals(client.clientId));
+      expect(grants.first.scopes, contains('email'));
+    });
+
+    test('revokes a grant', () async {
+      final sut = await fixture.build();
+      final clientParams = CreateOAuthClientParams(
+        clientName: 'Test OAuth Client',
+        redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
+        responseTypes: [OAuthClientResponseType.code],
+        scope: 'email',
+      );
+      final client = await fixture.sutCreatesOAuthClient(clientParams);
+      await fixture.sutLogsIn(password: password, email: email1);
+      final authorizationId = await fixture.sutAuthorizesClient(client);
+      await sut.oauth.getAuthorizationDetails(authorizationId);
+      await sut.oauth.approveAuthorization(authorizationId);
+      expect(await sut.oauth.listGrants(), hasLength(1));
+
+      await sut.oauth.revokeGrant(client.clientId);
+
+      expect(await sut.oauth.listGrants(), isEmpty);
     });
 
     test(

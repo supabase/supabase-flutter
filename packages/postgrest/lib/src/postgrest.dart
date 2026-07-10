@@ -16,7 +16,6 @@ class PostgrestClient {
   final bool retryEnabled;
   final int retryCount;
   final Set<int> retryableStatusCodes;
-  final Duration? requestTimeout;
   final Duration Function(int attempt)? _retryDelay;
   final _log = Logger('supabase.postgrest');
 
@@ -41,10 +40,6 @@ class PostgrestClient {
   ///
   /// [retryableStatusCodes] are the HTTP status codes that trigger a retry.
   /// Defaults to `{503, 520}`.
-  ///
-  /// [requestTimeout] is an optional timeout applied to each HTTP request. When
-  /// a request exceeds it, a [TimeoutException] is thrown, which is treated as a
-  /// transient failure for retryable requests. Defaults to no timeout.
   PostgrestClient(
     this.url, {
     Map<String, String>? headers,
@@ -55,7 +50,6 @@ class PostgrestClient {
     this.retryCount = 3,
     Set<int> retryableStatusCodes =
         PostgrestBuilder.defaultRetryableStatusCodes,
-    this.requestTimeout,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
   }) : retryableStatusCodes = Set.unmodifiable(retryableStatusCodes),
        _schema = schema,
@@ -103,7 +97,6 @@ class PostgrestClient {
       retryEnabled: retryEnabled,
       retryCount: retryCount,
       retryableStatusCodes: retryableStatusCodes,
-      requestTimeout: requestTimeout,
       retryDelay: _retryDelay,
     );
   }
@@ -121,7 +114,6 @@ class PostgrestClient {
       retryEnabled: retryEnabled,
       retryCount: retryCount,
       retryableStatusCodes: retryableStatusCodes,
-      requestTimeout: requestTimeout,
       retryDelay: _retryDelay,
     );
   }
@@ -156,7 +148,6 @@ class PostgrestClient {
       retryEnabled: retryEnabled,
       retryCount: retryCount,
       retryableStatusCodes: retryableStatusCodes,
-      requestTimeout: requestTimeout,
       retryDelay: _retryDelay,
     ).rpc(params, get);
   }

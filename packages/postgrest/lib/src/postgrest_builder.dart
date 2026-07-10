@@ -8,6 +8,7 @@ import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 part 'postgrest_filter_builder.dart';
@@ -56,7 +57,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final bool _retryEnabled;
   final int _retryCount;
   final Set<int> _retryableStatusCodes;
-  final Duration? _requestTimeout;
   final Duration Function(int attempt) _retryDelay;
   final _log = Logger('supabase.postgrest');
 
@@ -80,7 +80,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     bool retryEnabled = true,
     int retryCount = 3,
     Set<int> retryableStatusCodes = defaultRetryableStatusCodes,
-    Duration? requestTimeout,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
   }) : _maybeSingle = maybeSingle,
        _method = method,
@@ -95,7 +94,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _retryEnabled = retryEnabled,
        _retryCount = retryCount,
        _retryableStatusCodes = Set.unmodifiable(retryableStatusCodes),
-       _requestTimeout = requestTimeout,
        _retryDelay = retryDelay ?? _defaultRetryDelay {
     if (retryCount < 0) {
       throw ArgumentError.value(
@@ -120,7 +118,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     bool? retryEnabled,
     int? retryCount,
     Set<int>? retryableStatusCodes,
-    Duration? requestTimeout,
     Duration Function(int attempt)? retryDelay,
   }) {
     return PostgrestBuilder(
@@ -137,7 +134,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       retryEnabled: retryEnabled ?? _retryEnabled,
       retryCount: retryCount ?? _retryCount,
       retryableStatusCodes: retryableStatusCodes ?? _retryableStatusCodes,
-      requestTimeout: requestTimeout ?? _requestTimeout,
       retryDelay: retryDelay ?? _retryDelay,
     );
   }
@@ -222,12 +218,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       throw StateError('Unknown HTTP method: ${method.value}');
     }
 
-    final requestTimeout = _requestTimeout;
-    final timedSend = requestTimeout == null
-        ? send
-        : () => send().timeout(requestTimeout);
-
-    final response = await _executeWithRetry(timedSend, method, execHeaders);
+    final response = await _executeWithRetry(send, method, execHeaders);
     return await _parseResponse(response, method);
   }
 
@@ -269,7 +260,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
   /// Parse request response to json object if possible
   Future<T> _parseResponse(http.Response response, HttpMethod method) async {
-    if (response.statusCode >= 200 && response.statusCode <= 299) {
+    if (isSuccessStatusCode(response.statusCode)) {
       Object? body;
       int? count;
 

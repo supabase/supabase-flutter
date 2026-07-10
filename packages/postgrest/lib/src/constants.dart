@@ -1,3 +1,6 @@
 import 'package:postgrest/src/version.dart';
+import 'package:supabase_common/supabase_common.dart';
 
-const defaultHeaders = {'X-Client-Info': 'postgrest-dart/$version'};
+final defaultHeaders = {
+  'X-Client-Info': buildClientInfoHeader('postgrest-dart', version),
+};

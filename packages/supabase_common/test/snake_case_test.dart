@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names
 
-import 'package:gotrue/src/types/auth_response.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 enum TestEnum {

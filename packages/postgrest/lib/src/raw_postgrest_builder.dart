@@ -17,7 +17,6 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         retryEnabled: builder._retryEnabled,
         retryCount: builder._retryCount,
         retryableStatusCodes: builder._retryableStatusCodes,
-        requestTimeout: builder._requestTimeout,
         retryDelay: builder._retryDelay,
       );
 
@@ -48,7 +47,6 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         retryEnabled: _retryEnabled,
         retryCount: _retryCount,
         retryableStatusCodes: _retryableStatusCodes,
-        requestTimeout: _requestTimeout,
         retryDelay: _retryDelay,
       ),
     );
@@ -88,7 +86,6 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       retryEnabled: _retryEnabled,
       retryCount: _retryCount,
       retryableStatusCodes: _retryableStatusCodes,
-      requestTimeout: _requestTimeout,
       retryDelay: _retryDelay,
     );
   }

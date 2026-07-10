@@ -11,15 +11,53 @@ class OAuthAuthorizedClient {
   /// Human-readable name of the OAuth client
   final String? clientName;
 
+  /// URI of the OAuth client's website
+  final String? clientUri;
+
+  /// URI of the OAuth client's logo
+  final String? logoUri;
+
   const OAuthAuthorizedClient({
     required this.clientId,
     this.clientName,
+    this.clientUri,
+    this.logoUri,
   });
 
   factory OAuthAuthorizedClient.fromJson(Map<String, dynamic> json) {
     return OAuthAuthorizedClient(
       clientId: json['id'] as String,
       clientName: json['name'] as String?,
+      clientUri: json['uri'] as String?,
+      logoUri: json['logo_uri'] as String?,
+    );
+  }
+}
+
+/// An OAuth grant representing a user's authorization of an OAuth client.
+///
+/// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+class OAuthGrant {
+  /// The OAuth client the grant was issued to.
+  final OAuthAuthorizedClient client;
+
+  /// The scopes granted to the client.
+  final List<String> scopes;
+
+  /// The moment the grant was created.
+  final DateTime grantedAt;
+
+  const OAuthGrant({
+    required this.client,
+    required this.scopes,
+    required this.grantedAt,
+  });
+
+  factory OAuthGrant.fromJson(Map<String, dynamic> json) {
+    return OAuthGrant(
+      client: OAuthAuthorizedClient.fromJson(json['client']),
+      scopes: (json['scopes'] as List?)?.cast<String>() ?? const <String>[],
+      grantedAt: DateTime.parse(json['granted_at'] as String),
     );
   }
 }
@@ -256,5 +294,42 @@ class GoTrueOAuthApi {
     );
 
     return OAuthConsentResponse.fromJson(data);
+  }
+
+  /// Lists all OAuth grants that the authenticated user has authorized.
+  ///
+  /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+  Future<List<OAuthGrant>> listGrants() async {
+    final session = _client.currentSession;
+
+    final data = await _fetch.request(
+      '${_client._url}/user/oauth/grants',
+      RequestMethodType.get,
+      options: GotrueRequestOptions(
+        headers: _client._headers,
+        jwt: session?.accessToken,
+      ),
+    );
+
+    return (data as List).map((grant) => OAuthGrant.fromJson(grant)).toList();
+  }
+
+  /// Revokes the authenticated user's OAuth grant for the client identified by
+  /// [clientId].
+  ///
+  /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+  Future<void> revokeGrant(String clientId) async {
+    final session = _client.currentSession;
+
+    await _fetch.request(
+      '${_client._url}/user/oauth/grants',
+      RequestMethodType.delete,
+      options: GotrueRequestOptions(
+        headers: _client._headers,
+        jwt: session?.accessToken,
+        query: {'client_id': clientId},
+        noResolveJson: true,
+      ),
+    );
   }
 }

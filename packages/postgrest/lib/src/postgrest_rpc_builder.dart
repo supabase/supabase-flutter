@@ -11,7 +11,6 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
     int retryCount = 3,
     Set<int> retryableStatusCodes =
         PostgrestBuilder.defaultRetryableStatusCodes,
-    Duration? requestTimeout,
     Duration Function(int attempt)? retryDelay,
   }) : super(
          PostgrestBuilder(
@@ -23,7 +22,6 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
            retryEnabled: retryEnabled,
            retryCount: retryCount,
            retryableStatusCodes: retryableStatusCodes,
-           requestTimeout: requestTimeout,
            retryDelay: retryDelay,
          ),
        );

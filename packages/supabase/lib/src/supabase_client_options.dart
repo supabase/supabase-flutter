@@ -13,15 +13,11 @@ class PostgrestClientOptions {
   /// The HTTP status codes that trigger an automatic retry.
   final Set<int> retryableStatusCodes;
 
-  /// An optional timeout applied to each HTTP request.
-  final Duration? requestTimeout;
-
   const PostgrestClientOptions({
     this.schema = 'public',
     this.retryEnabled = true,
     this.retryCount = 3,
     this.retryableStatusCodes = const {503, 520},
-    this.requestTimeout,
   });
 }
 
