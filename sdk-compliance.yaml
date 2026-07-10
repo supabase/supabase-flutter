@@ -359,7 +359,10 @@ features:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.stripNulls
-  database.using_modifiers.request_cancellation: not_implemented
+  database.using_modifiers.request_cancellation:
+    status: implemented
+    symbols:
+      - PostgrestBuilder.abortSignal
 
   # database — configuration
   database.configuration.auto_retry:
@@ -495,7 +498,12 @@ features:
   # realtime — client
   realtime.client.channel: implemented
   realtime.client.connect: implemented
-  realtime.client.disconnect: implemented
+  realtime.client.disconnect:
+    status: implemented
+    symbols:
+      - Constants.defaultConnectionCloseTimeout
+      - RealtimeClient.connectionCloseTimeout
+      - RealtimeClientOptions.connectionCloseTimeout
   realtime.client.connection_state: implemented
   realtime.client.get_channels: implemented
   realtime.client.remove_channel: implemented

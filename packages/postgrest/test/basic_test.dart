@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:postgrest/postgrest.dart';
@@ -474,7 +475,7 @@ void main() {
           .withConverter((data) => [data]);
       expect(res, isNotEmpty);
       expect(res.first, isNotEmpty);
-      expect(res.first, isA<List>());
+      expect(res.first, isA<List<dynamic>>());
     });
 
     test('withConverter and count', () async {
@@ -484,8 +485,29 @@ void main() {
           .count(CountOption.exact)
           .withConverter((data) => [data]);
       expect(res.data.first, isNotEmpty);
-      expect(res.data.first, isA<List>());
+      expect(res.data.first, isA<List<dynamic>>());
       expect(res.count, greaterThan(3));
+    });
+
+    test('aborts long-running function call', () async {
+      final startTime = DateTime.now();
+
+      final completer = Completer<void>();
+      // Abort after 1 second (before the 10-second function completes)
+      Timer(Duration(seconds: 1), () => completer.complete());
+
+      await expectLater(
+        () => postgrest
+            .rpc('long_running_task')
+            .select()
+            .abortSignal(completer.future),
+        throwsA(isA<RequestAbortedException>()),
+      );
+
+      final elapsedTime = DateTime.now().difference(startTime);
+
+      expect(elapsedTime.inSeconds, lessThan(5));
+      expect(elapsedTime.inSeconds, greaterThanOrEqualTo(1));
     });
   });
   group("Custom http client", () {

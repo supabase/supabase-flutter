@@ -31,7 +31,7 @@ class RealtimeSubscribeException implements Exception {
 typedef SupabaseStreamEvent = List<Map<String, dynamic>>;
 
 class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
-  final PostgrestQueryBuilder _queryBuilder;
+  final PostgrestQueryBuilder<dynamic> _queryBuilder;
 
   final RealtimeClient _realtimeClient;
 
@@ -72,7 +72,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   bool _wasSubscribed = false;
 
   SupabaseStreamBuilder({
-    required PostgrestQueryBuilder queryBuilder,
+    required PostgrestQueryBuilder<dynamic> queryBuilder,
     required String realtimeTopic,
     required RealtimeClient realtimeClient,
     required String schema,

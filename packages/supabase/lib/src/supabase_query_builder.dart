@@ -1,6 +1,6 @@
 import 'package:supabase/supabase.dart';
 
-class SupabaseQueryBuilder extends PostgrestQueryBuilder {
+class SupabaseQueryBuilder extends PostgrestQueryBuilder<dynamic> {
   final RealtimeClient _realtime;
   final String _schema;
   final String _table;
