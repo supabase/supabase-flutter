@@ -351,7 +351,7 @@ void main() {
         .limit(1)
         .single()
         .count(CountOption.exact);
-    expect(res.data, isA<Map>());
+    expect(res.data, isA<Map<dynamic, dynamic>>());
     expect(res.count, greaterThan(3));
   });
 
@@ -462,7 +462,7 @@ void main() {
         .explain(format: ExplainFormat.json);
 
     final decoded = jsonDecode(res);
-    expect(decoded, isA<List>());
+    expect(decoded, isA<List<dynamic>>());
     expect((decoded as List).first, contains('Plan'));
   });
 

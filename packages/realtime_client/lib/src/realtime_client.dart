@@ -126,8 +126,8 @@ class RealtimeClient {
   final RealtimeDecode decode;
   late TimerCalculation reconnectAfterMs;
   WebSocketChannel? conn;
-  StreamSubscription? _connectionSubscription;
-  List sendBuffer = [];
+  StreamSubscription<dynamic>? _connectionSubscription;
+  List<dynamic> sendBuffer = [];
   Map<String, List<Function>> stateChangeCallbacks = {
     'open': [],
     'close': [],

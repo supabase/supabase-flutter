@@ -446,7 +446,7 @@ void main() {
       customHttpClient.response = [testFileObjectJson, testFileObjectJson];
 
       final response = await client.from('public').remove(['a.txt', 'b.txt']);
-      expect(response, isA<List>());
+      expect(response, isA<List<dynamic>>());
       expect(response.length, 2);
     });
   });

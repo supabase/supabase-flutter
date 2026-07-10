@@ -331,7 +331,7 @@ void main() {
 
         final json = user.toJson();
 
-        expect(json['identities'], isA<List>());
+        expect(json['identities'], isA<List<dynamic>>());
         expect(json['identities'].length, equals(1));
         expect(json['identities'][0], equals(identity.toJson()));
       });
