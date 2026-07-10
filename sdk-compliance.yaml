@@ -363,6 +363,9 @@ features:
     status: implemented
     symbols:
       - PostgrestBuilder.abortCompleter
+      - PostgrestFilterBuilder.abortCompleter
+      - PostgrestTransformBuilder.abortCompleter
+      - PostgrestQueryBuilder.abortCompleter
       - RequestAbortedException
 
   # database — configuration

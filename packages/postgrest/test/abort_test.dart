@@ -32,7 +32,10 @@ class _AbortMockClient extends BaseClient {
       unawaited(
         abortTrigger.whenComplete(() {
           if (!completer.isCompleted) {
-            completer.completeError(RequestAbortedException(request.url));
+            completer.completeError(
+              RequestAbortedException(request.url),
+              StackTrace.current,
+            );
           }
         }),
       );
@@ -59,48 +62,44 @@ void main() {
     test('aborts a GET request before it completes', () async {
       final mock = _AbortMockClient();
       final client = _buildClient(mock);
-      final abort = Completer<void>();
+      final abort = Completer<void>()..complete();
 
-      final future = client.from('users').select().abortCompleter(abort);
-      abort.complete();
-
-      await expectLater(future, throwsA(isA<RequestAbortedException>()));
+      await expectLater(
+        () => client.from('users').select().abortCompleter(abort),
+        throwsA(isA<RequestAbortedException>()),
+      );
     });
 
     test('aborts an insert (POST) request', () async {
       final mock = _AbortMockClient();
       final client = _buildClient(mock);
-      final abort = Completer<void>();
+      final abort = Completer<void>()..complete();
 
-      final future = client
-          .from('users')
-          .insert({'name': 'foo'})
-          .abortCompleter(abort);
-      abort.complete();
-
-      await expectLater(future, throwsA(isA<RequestAbortedException>()));
+      await expectLater(
+        () =>
+            client.from('users').insert({'name': 'foo'}).abortCompleter(abort),
+        throwsA(isA<RequestAbortedException>()),
+      );
     });
 
     test('does not retry an aborted retryable request', () async {
       final mock = _AbortMockClient();
       final client = _buildClient(mock);
-      final abort = Completer<void>();
+      final abort = Completer<void>()..complete();
 
-      final future = client.from('users').select().abortCompleter(abort);
-      abort.complete();
-
-      await expectLater(future, throwsA(isA<RequestAbortedException>()));
+      await expectLater(
+        () => client.from('users').select().abortCompleter(abort),
+        throwsA(isA<RequestAbortedException>()),
+      );
       expect(mock.callCount, 1);
     });
 
     test('completes normally when the completer never fires', () async {
       final mock = _AbortMockClient();
       final client = _buildClient(mock);
+      final abort = Completer<void>();
 
-      final future = client
-          .from('users')
-          .select()
-          .abortCompleter(Completer<void>());
+      final future = client.from('users').select().abortCompleter(abort);
       mock.release();
 
       expect(await future, isEmpty);
@@ -109,16 +108,16 @@ void main() {
     test('survives further chaining after abortCompleter', () async {
       final mock = _AbortMockClient();
       final client = _buildClient(mock);
-      final abort = Completer<void>();
+      final abort = Completer<void>()..complete();
 
-      final future = client
-          .from('users')
-          .select()
-          .abortCompleter(abort)
-          .eq('name', 'foo');
-      abort.complete();
-
-      await expectLater(future, throwsA(isA<RequestAbortedException>()));
+      await expectLater(
+        () => client
+            .from('users')
+            .select()
+            .abortCompleter(abort)
+            .eq('name', 'foo'),
+        throwsA(isA<RequestAbortedException>()),
+      );
     });
   });
 }
