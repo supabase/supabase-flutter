@@ -18,6 +18,10 @@ class RealtimeClientOptions {
   /// the timeout to trigger push timeouts
   final Duration? timeout;
 
+  /// The timeout to wait for the connection to close before dismissing the
+  /// result.
+  final Duration? connectionCloseTimeout;
+
   /// Custom WebSocket transport factory for the RealtimeClient.
   final WebSocketTransport? transport;
 
@@ -26,6 +30,7 @@ class RealtimeClientOptions {
     this.eventsPerSecond,
     this.logLevel,
     this.timeout,
+    this.connectionCloseTimeout,
     this.transport,
   });
 }

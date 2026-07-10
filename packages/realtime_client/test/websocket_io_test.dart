@@ -16,7 +16,7 @@ Future<ServerSocket> _startUnresponsiveServer() async {
   final server = await ServerSocket.bind('localhost', 0);
   server.listen((socket) {
     final buffer = StringBuffer();
-    late StreamSubscription subscription;
+    late StreamSubscription<dynamic> subscription;
     subscription = socket.listen((data) {
       buffer.write(String.fromCharCodes(data));
       final request = buffer.toString();

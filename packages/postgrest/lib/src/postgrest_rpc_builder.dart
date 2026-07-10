@@ -1,6 +1,7 @@
 part of 'postgrest_builder.dart';
 
-class PostgrestRpcBuilder extends RawPostgrestBuilder {
+class PostgrestRpcBuilder
+    extends RawPostgrestBuilder<dynamic, dynamic, dynamic> {
   PostgrestRpcBuilder(
     String url, {
     Map<String, String>? headers,

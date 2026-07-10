@@ -124,6 +124,18 @@ create table public.imported_data (
   unique(external_id, source_system)
 );
 
+-- Long-running task for testing abortion
+create or replace function public.long_running_task()
+returns void as $$
+declare
+  start_time timestamp := clock_timestamp();
+begin
+  while clock_timestamp() < start_time + interval '10 seconds' loop
+    PERFORM pg_sleep(0.1);
+  end loop;
+end;
+$$ language plpgsql;
+
 -- Enable PostgREST's EXPLAIN/plan output for the .explain() tests (the previous
 -- Docker setup set PGRST_DB_PLAN_ENABLED=1). PostgREST reads this from the
 -- authenticator role on startup.
