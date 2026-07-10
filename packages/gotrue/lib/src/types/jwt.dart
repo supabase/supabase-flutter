@@ -254,8 +254,6 @@ class JWK {
       'alg': ?alg,
       'kid': ?kid,
       ..._additionalProperties,
-      'alg': ?alg,
-      'kid': ?kid,
     };
   }
 
