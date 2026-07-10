@@ -1056,7 +1056,7 @@ void main() {
         final streamController = StreamController<dynamic>.broadcast();
         final readyCompleter = Completer<void>();
         final capturedMessages = <String>[];
-        final joinSent = Completer<Map>();
+        final joinSent = Completer<Map<dynamic, dynamic>>();
 
         final mockedChannel = MockIOWebSocketChannel();
         final mockedSink = MockWebSocketSink();

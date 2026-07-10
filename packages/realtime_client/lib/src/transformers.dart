@@ -249,17 +249,17 @@ dynamic toArray(dynamic value, String type) {
   // Confirm value is a Postgres array by checking curly brackets
   if (openBrace == '{' && closeBrace == '}') {
     final valTrim = value.substring(1, lastIdx);
-    List arr;
+    List<dynamic> array;
 
     // TODO: find a better solution to separate Postgres array data
     try {
-      arr = json.decode('[$valTrim]') as List;
+      array = json.decode('[$valTrim]') as List;
     } catch (_) {
       // WARNING: splitting on comma does not cover all edge cases
-      arr = valTrim != '' ? valTrim.split(',') : [];
+      array = valTrim != '' ? valTrim.split(',') : [];
     }
 
-    return arr.map((val) => convertCell(type, val)).toList();
+    return array.map((val) => convertCell(type, val)).toList();
   }
 
   return value;
