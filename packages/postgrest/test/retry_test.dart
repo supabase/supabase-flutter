@@ -31,7 +31,7 @@ _ResponseFactory _status(int code) =>
     );
 
 _ResponseFactory _networkError() =>
-    (_) => throw const SocketException('Connection refused');
+    (_) async => throw const SocketException('Connection refused');
 
 class _MockRetryClient extends BaseClient {
   final List<_ResponseFactory> _responses;
@@ -56,7 +56,10 @@ class _MockRetryClient extends BaseClient {
       unawaited(
         request.abortTrigger?.then((_) {
           if (!completer.isCompleted) {
-            completer.completeError(RequestAbortedException());
+            completer.completeError(
+              RequestAbortedException(),
+              StackTrace.current,
+            );
           }
         }),
       );
@@ -68,7 +71,7 @@ class _MockRetryClient extends BaseClient {
         }
       }),
     );
-    return completer.future;
+    return await completer.future;
   }
 }
 
@@ -80,7 +83,7 @@ PostgrestClient _buildClient(
     'http://localhost:3000',
     httpClient: mock,
     retryEnabled: retryEnabled,
-    retryDelay: (_) => Duration(seconds: 1),
+    retryDelay: (_) => Duration(milliseconds: 500),
   );
 }
 
@@ -248,7 +251,7 @@ void main() {
         final client = _buildClient(mock);
 
         await expectLater(
-          client.from('users').select(),
+          () => client.from('users').select(),
           throwsA(isA<SocketException>()),
         );
         expect(mock.callCount, 4);
@@ -262,12 +265,11 @@ void main() {
         final client = _buildClient(mock);
 
         final completer = Completer<void>();
-        completer.complete();
-        // Abort after the first retry (before the success response)
-        // Timer(Duration(milliseconds: 60), () => completer.complete());
+        // Abort after the first retry
+        Timer(Duration(milliseconds: 700), () => completer.complete());
 
         await expectLater(
-          client
+          () => client
               .from('users')
               .select()
               .retry(enabled: true)
@@ -275,9 +277,9 @@ void main() {
           throwsA(isA<RequestAbortedException>()),
         );
 
-        // Verify that only 1 attempt was made before abort
+        // Verify that only 1 retry was made before abort
         // (not all 3 retries exhausted)
-        expect(mock.callCount, 1);
+        expect(mock.callCount, 2);
       },
     );
   });

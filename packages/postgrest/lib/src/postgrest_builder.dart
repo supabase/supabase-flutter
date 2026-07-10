@@ -197,32 +197,35 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
     final Future<http.Response> Function() send;
     send = () async {
-        final AbortableRequest request = AbortableRequest(method.value, _url,
-            abortTrigger: _abortCompleter?.future);
-        request.headers.addAll(execHeaders);
-        if (method == HttpMethod.get) {
-        } else if (method == HttpMethod.post) {
-          request.body = bodyStr;
-        } else if (method == HttpMethod.put) {
-          request.body = bodyStr;
-        } else if (method == HttpMethod.patch) {
-          request.body = bodyStr;
-        } else if (method == HttpMethod.delete) {
-        } else if (method == HttpMethod.head) {
-        } else {
-          throw StateError('Unknown HTTP method: ${method.value}');
-        }
-        final client = _httpClient ?? http.Client();
+      final AbortableRequest request = AbortableRequest(
+        method.value,
+        _url,
+        abortTrigger: _abortCompleter?.future,
+      );
+      request.headers.addAll(execHeaders);
+      if (method == HttpMethod.get) {
+      } else if (method == HttpMethod.post) {
+        request.body = bodyStr;
+      } else if (method == HttpMethod.put) {
+        request.body = bodyStr;
+      } else if (method == HttpMethod.patch) {
+        request.body = bodyStr;
+      } else if (method == HttpMethod.delete) {
+      } else if (method == HttpMethod.head) {
+      } else {
+        throw StateError('Unknown HTTP method: ${method.value}');
+      }
+      final client = _httpClient ?? http.Client();
 
-        try {
-          final streamResponse = await client.send(request);
-          return http.Response.fromStream(streamResponse);
-        } finally {
-          if (_httpClient == null) {
-            client.close();
-          }
+      try {
+        final streamResponse = await client.send(request);
+        return await http.Response.fromStream(streamResponse);
+      } finally {
+        if (_httpClient == null) {
+          client.close();
         }
-      };
+      }
+    };
 
     final response = await _executeWithRetry(send, method, execHeaders);
     return await _parseResponse(response, method);
