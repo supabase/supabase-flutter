@@ -56,7 +56,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final CountOption? _count;
   final bool _retryEnabled;
   final Duration Function(int attempt) _retryDelay;
-  final Future? _abortSignal;
+  final Future<void>? _abortSignal;
   final _log = Logger('supabase.postgrest');
 
   static Duration _defaultRetryDelay(int attempt) =>
@@ -75,7 +75,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     PostgrestConverter<S, R>? converter,
     bool retryEnabled = true,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-    Future? abortSignal,
+    Future<void>? abortSignal,
   }) : _maybeSingle = maybeSingle,
        _method = method,
        _converter = converter,
@@ -103,7 +103,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     PostgrestConverter<S, R>? converter,
     bool? retryEnabled,
     Duration Function(int attempt)? retryDelay,
-    Future? abortSignal,
+    Future<void>? abortSignal,
   }) {
     return PostgrestBuilder(
       url: url ?? _url,
@@ -171,7 +171,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///  print('Request was aborted: $e');
   /// }
   /// ```
-  PostgrestBuilder<T, S, R> abortSignal(Future abortSignal) {
+  PostgrestBuilder<T, S, R> abortSignal(Future<void> abortSignal) {
     return _copyWith(abortSignal: abortSignal);
   }
 
