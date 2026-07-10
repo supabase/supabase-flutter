@@ -200,11 +200,11 @@ class ListBucketsOptions {
 
   Map<String, String> toQueryParameters() {
     return {
-      if (limit != null) 'limit': '$limit',
-      if (offset != null) 'offset': '$offset',
+      'limit': ?limit?.toString(),
+      'offset': ?offset?.toString(),
       if (search != null && search!.isNotEmpty) 'search': search!,
-      if (sortColumn != null) 'sortColumn': sortColumn!.snakeCase,
-      if (sortOrder != null) 'sortOrder': sortOrder!.value,
+      'sortColumn': ?sortColumn?.snakeCase,
+      'sortOrder': ?sortOrder?.value,
     };
   }
 }
