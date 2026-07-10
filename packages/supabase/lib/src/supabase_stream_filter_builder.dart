@@ -19,7 +19,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).eq('name', 'Supabase');
   /// ```
   SupabaseStreamBuilder eq(String column, Object value) {
-    _streamFilter = _StreamPostgrestFilter(
+    _streamFilter = (
       type: PostgresChangeFilterType.eq,
       column: column,
       value: value,
@@ -35,7 +35,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).neq('name', 'Supabase');
   /// ```
   SupabaseStreamBuilder neq(String column, Object value) {
-    _streamFilter = _StreamPostgrestFilter(
+    _streamFilter = (
       type: PostgresChangeFilterType.neq,
       column: column,
       value: value,
@@ -51,7 +51,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).lt('likes', 100);
   /// ```
   SupabaseStreamBuilder lt(String column, Object value) {
-    _streamFilter = _StreamPostgrestFilter(
+    _streamFilter = (
       type: PostgresChangeFilterType.lt,
       column: column,
       value: value,
@@ -67,7 +67,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).lte('likes', 100);
   /// ```
   SupabaseStreamBuilder lte(String column, Object value) {
-    _streamFilter = _StreamPostgrestFilter(
+    _streamFilter = (
       type: PostgresChangeFilterType.lte,
       column: column,
       value: value,
@@ -83,7 +83,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).gt('likes', '100');
   /// ```
   SupabaseStreamBuilder gt(String column, Object value) {
-    _streamFilter = _StreamPostgrestFilter(
+    _streamFilter = (
       type: PostgresChangeFilterType.gt,
       column: column,
       value: value,
@@ -99,7 +99,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).gte('likes', 100);
   /// ```
   SupabaseStreamBuilder gte(String column, Object value) {
-    _streamFilter = _StreamPostgrestFilter(
+    _streamFilter = (
       type: PostgresChangeFilterType.gte,
       column: column,
       value: value,
@@ -115,7 +115,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).inFilter('name', ['Andy', 'Amy', 'Terry']);
   /// ```
   SupabaseStreamBuilder inFilter(String column, List<Object> values) {
-    _streamFilter = _StreamPostgrestFilter(
+    _streamFilter = (
       type: PostgresChangeFilterType.inFilter,
       column: column,
       value: values,

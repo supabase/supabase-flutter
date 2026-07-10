@@ -6,31 +6,15 @@ import 'package:supabase_common/supabase_common.dart';
 
 part 'supabase_stream_filter_builder.dart';
 
-class _StreamPostgrestFilter {
-  const _StreamPostgrestFilter({
-    required this.column,
-    required this.value,
-    required this.type,
-  });
+/// [column] name of the eq filter, [value] of the eq filter, and [type] of the
+/// filter being applied.
+typedef _StreamPostgrestFilter = ({
+  String column,
+  dynamic value,
+  PostgresChangeFilterType type,
+});
 
-  /// Column name of the eq filter
-  final String column;
-
-  /// Value of the eq filter
-  final dynamic value;
-
-  /// Type of the filer being applied
-  final PostgresChangeFilterType type;
-}
-
-class _Order {
-  const _Order({
-    required this.column,
-    required this.ascending,
-  });
-  final String column;
-  final bool ascending;
-}
+typedef _Order = ({String column, bool ascending});
 
 class RealtimeSubscribeException implements Exception {
   const RealtimeSubscribeException(this.status, [this.details]);
@@ -111,7 +95,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// supabase.from('users').stream(primaryKey: ['id']).order('username', ascending: false);
   /// ```
   SupabaseStreamBuilder order(String column, {bool ascending = false}) {
-    _orderBy = _Order(column: column, ascending: ascending);
+    _orderBy = (column: column, ascending: ascending);
     return this;
   }
 
