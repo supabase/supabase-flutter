@@ -845,7 +845,7 @@ void main() {
 
         // Should handle token errors gracefully
         await expectLater(
-          clientWithFailingToken.from('test').select(),
+          () => clientWithFailingToken.from('test').select(),
           throwsA(isA<Exception>()),
         );
 

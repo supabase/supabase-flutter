@@ -386,7 +386,7 @@ void main() {
 
     test('maybeSingle with multiple rows throws', () async {
       await expectLater(
-        postgrest.from('users').select().maybeSingle(),
+        () => postgrest.from('users').select().maybeSingle(),
         throwsA(
           isA<PostgrestException>().having((e) => e.code, 'code', '406'),
         ),
@@ -394,7 +394,7 @@ void main() {
     });
     test('maybeSingle with multiple inserts throws', () async {
       await expectLater(
-        postgrest
+        () => postgrest
             .from('channels')
             .insert([
               {'data': {}, 'slug': 'channel1'},
@@ -412,7 +412,7 @@ void main() {
       'maybeSingle followed by another transformer preserves the maybeSingle status',
       () async {
         await expectLater(
-          postgrest.from('channels').select().maybeSingle().limit(2),
+          () => postgrest.from('channels').select().maybeSingle().limit(2),
           throwsA(
             isA<PostgrestException>().having((e) => e.code, 'code', '406'),
           ),
@@ -424,7 +424,7 @@ void main() {
       'maybeSingle with converter throws if more than 1 rows were returned',
       () async {
         await expectLater(
-          postgrest
+          () => postgrest
               .from('channels')
               .select()
               .maybeSingle()

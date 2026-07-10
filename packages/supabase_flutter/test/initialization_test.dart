@@ -30,7 +30,7 @@ void main() {
     });
 
     group('Basic initialization', () {
-      test('initialize successfully with default options', () async {
+      test('initialize successfully with default options', () {
         expect(
           Supabase.initialize(
             url: supabaseUrl,
@@ -43,7 +43,7 @@ void main() {
     });
 
     group('Custom storage initialization', () {
-      test('initialize successfully with custom localStorage', () async {
+      test('initialize successfully with custom localStorage', () {
         const localStorage = MockLocalStorage();
         expect(
           Supabase.initialize(
@@ -75,7 +75,7 @@ void main() {
     });
 
     group('Auth options initialization', () {
-      test('initialize successfully with PKCE auth flow', () async {
+      test('initialize successfully with PKCE auth flow', () {
         expect(
           Supabase.initialize(
             url: supabaseUrl,
@@ -91,7 +91,7 @@ void main() {
     });
 
     group('Custom client initialization', () {
-      test('initialize successfully with custom HTTP client', () async {
+      test('initialize successfully with custom HTTP client', () {
         final httpClient = PkceHttpClient();
         expect(
           Supabase.initialize(

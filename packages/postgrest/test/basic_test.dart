@@ -324,7 +324,7 @@ void main() {
 
     test('missing table', () async {
       await expectLater(
-        postgrest.from('missing_table').select(),
+        () => postgrest.from('missing_table').select(),
         throwsA(
           isA<PostgrestException>().having((e) => e.code, 'code', 'PGRST205'),
         ),
@@ -334,17 +334,17 @@ void main() {
     test('connection error', () async {
       final client = PostgrestClient('http://this.url.does.not.exist');
       await expectLater(
-        client.from('user').select(),
+        () => client.from('user').select(),
         throwsA(isA<SocketException>()),
       );
     });
 
     test('Prefer: return=minimal completes successfully', () async {
-      expect(postgrest.from('users').insert({'username': 'bar'}), completes);
+      await postgrest.from('users').insert({'username': 'bar'});
     });
 
     test('select with head:true completes successfully', () async {
-      expect(postgrest.from('users').select('*').head(), completes);
+      await postgrest.from('users').select('*').head();
     });
 
     test('count with head: true, filters', () async {
@@ -428,7 +428,7 @@ void main() {
 
     test('execute without table operation', () async {
       await expectLater(
-        postgrest.from('users'),
+        () => postgrest.from('users'),
         throwsA(isA<ArgumentError>()),
       );
     });
@@ -487,7 +487,7 @@ void main() {
       Timer(Duration(seconds: 1), () => completer.complete());
 
       await expectLater(
-        postgrest
+        () => postgrest
             .rpc('long_running_task')
             .select()
             .abortSignal(completer.future),
@@ -517,7 +517,7 @@ void main() {
 
     test('basic select table', () async {
       await expectLater(
-        postgrestCustomHttpClient.from('users').select(),
+        () => postgrestCustomHttpClient.from('users').select(),
         throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
       );
     });
@@ -534,7 +534,7 @@ void main() {
     );
     test('basic select table with converter', () async {
       await expectLater(
-        postgrestCustomHttpClient
+        () => postgrestCustomHttpClient
             .from('users')
             .select()
             .withConverter((data) => data),
@@ -543,7 +543,7 @@ void main() {
     });
     test('basic stored procedure call', () async {
       await expectLater(
-        postgrestCustomHttpClient.rpc<String>(
+        () => postgrestCustomHttpClient.rpc<String>(
           'get_status',
           params: {'name_param': 'supabot'},
         ),
@@ -554,7 +554,7 @@ void main() {
 
     test('stored procedure call in read-only access mode', () async {
       await expectLater(
-        postgrestCustomHttpClient.rpc<String>(
+        () => postgrestCustomHttpClient.rpc<String>(
           'get_status',
           params: {'name_param': 'supabot'},
           get: true,
@@ -567,7 +567,7 @@ void main() {
 
     test('non-JSON body on 2xx response throws a structured error', () async {
       await expectLater(
-        postgrestCustomHttpClient.from('non-json-succ').select(),
+        () => postgrestCustomHttpClient.from('non-json-succ').select(),
         throwsA(
           isA<PostgrestException>()
               .having((e) => e.code, 'code', '200')
@@ -582,7 +582,10 @@ void main() {
 
     test('non-JSON body on 2xx response with maybeSingle throws', () async {
       await expectLater(
-        postgrestCustomHttpClient.from('non-json-succ').select().maybeSingle(),
+        () => postgrestCustomHttpClient
+            .from('non-json-succ')
+            .select()
+            .maybeSingle(),
         throwsA(
           isA<PostgrestException>().having((e) => e.code, 'code', '200'),
         ),
