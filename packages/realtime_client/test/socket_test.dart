@@ -1046,6 +1046,75 @@ void main() {
     });
   });
 
+  group('access token on connect', () {
+    test(
+      'resolves the token and patches buffered join payloads before flushing',
+      () async {
+        final token = generateJwt();
+        var tokenCallbackCalls = 0;
+
+        final streamController = StreamController<dynamic>.broadcast();
+        final readyCompleter = Completer<void>();
+        final capturedMessages = <String>[];
+        final joinSent = Completer<Map>();
+
+        final mockedChannel = MockIOWebSocketChannel();
+        final mockedSink = MockWebSocketSink();
+        when(() => mockedChannel.sink).thenReturn(mockedSink);
+        when(
+          () => mockedChannel.ready,
+        ).thenAnswer((_) => readyCompleter.future);
+        when(
+          () => mockedChannel.stream,
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockedSink.close(any(), any()),
+        ).thenAnswer((_) => Future.value());
+        when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+        when(() => mockedSink.add(any())).thenAnswer((invocation) {
+          final raw = invocation.positionalArguments.first as String;
+          capturedMessages.add(raw);
+          final frame = json.decode(raw) as List;
+          if (frame[3] == ChannelEvents.join.eventName() &&
+              !joinSent.isCompleted) {
+            joinSent.complete(frame[4] as Map);
+          }
+        });
+
+        final socket = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) => mockedChannel,
+          customAccessToken: () async {
+            tokenCallbackCalls++;
+            return token;
+          },
+        );
+
+        final channel = socket.channel('realtime:test');
+        channel.subscribe();
+
+        // The join is buffered while the socket is still connecting and the
+        // token has not resolved yet, so it carries no access_token.
+        expect(socket.sendBuffer, isNotEmpty);
+        expect(capturedMessages, isEmpty);
+
+        // Once the connection is ready the token is resolved and the buffered
+        // join is re-sent with the token patched into its payload.
+        readyCompleter.complete();
+        final joinPayload = await joinSent.future.timeout(
+          const Duration(seconds: 5),
+        );
+
+        expect(tokenCallbackCalls, greaterThan(0));
+        expect(socket.accessToken, token);
+        expect(joinPayload['access_token'], token);
+
+        await socket.disconnect();
+        await streamController.close();
+      },
+    );
+  });
+
   group('sendHeartbeat', () {
     IOWebSocketChannel mockedSocketChannel;
     late RealtimeClient mockedSocket;

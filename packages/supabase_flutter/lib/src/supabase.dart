@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/src/constants.dart';
 import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
@@ -13,7 +14,6 @@ import 'package:supabase_flutter/src/supabase_auth.dart';
 
 import 'hot_restart_cleanup_stub.dart'
     if (dart.library.js_interop) 'hot_restart_cleanup_web.dart';
-import 'platform_stub.dart' if (dart.library.io) 'platform_io.dart';
 import 'version.dart';
 
 final _log = Logger('supabase.supabase_flutter');
@@ -125,10 +125,12 @@ class Supabase {
     }
     if (authOptions.localStorage == null) {
       authOptions = authOptions.copyWith(
-        localStorage: SharedPreferencesLocalStorage(
-          persistSessionKey:
-              "sb-${Uri.parse(url).host.split(".").first}-auth-token",
-        ),
+        localStorage: authOptions.persistSession
+            ? SharedPreferencesLocalStorage(
+                persistSessionKey:
+                    "sb-${Uri.parse(url).host.split(".").first}-auth-token",
+              )
+            : const EmptyLocalStorage(),
       );
     }
     _instance._init(

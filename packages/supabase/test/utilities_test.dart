@@ -8,6 +8,7 @@ import 'package:supabase/src/auth_http_client.dart';
 import 'package:supabase/src/constants.dart';
 import 'package:supabase/src/counter.dart';
 import 'package:supabase/src/supabase_event_types.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 const bool kIsWeb = bool.fromEnvironment('dart.library.js_util');
@@ -60,30 +61,30 @@ void main() {
 
     test('should have platform getter', () {
       if (kIsWeb) {
-        expect(Constants.platform, isNull);
+        expect(conditionalPlatform, isNull);
       } else {
-        expect(Constants.platform, isNotNull);
-        expect(Constants.platform, isA<String>());
+        expect(conditionalPlatform, isNotNull);
+        expect(conditionalPlatform, isA<String>());
       }
     });
 
     test('should have platformVersion getter', () {
       if (kIsWeb) {
-        expect(Constants.platformVersion, isNull);
+        expect(conditionalPlatformVersion, isNull);
       } else {
-        expect(Constants.platformVersion, isNotNull);
-        expect(Constants.platformVersion, isA<String>());
+        expect(conditionalPlatformVersion, isNotNull);
+        expect(conditionalPlatformVersion, isA<String>());
       }
     });
 
     test('should have runtimeVersion getter', () {
       if (kIsWeb) {
-        expect(Constants.runtimeVersion, isNull);
+        expect(conditionalRuntimeVersion, isNull);
       } else {
-        expect(Constants.runtimeVersion, isNotNull);
-        expect(Constants.runtimeVersion, isA<String>());
+        expect(conditionalRuntimeVersion, isNotNull);
+        expect(conditionalRuntimeVersion, isA<String>());
         // Version should be a semver-like string (e.g. "3.7.2")
-        expect(Constants.runtimeVersion, matches(RegExp(r'^\d+\.\d+\.\d+')));
+        expect(conditionalRuntimeVersion, matches(RegExp(r'^\d+\.\d+\.\d+')));
       }
     });
   });

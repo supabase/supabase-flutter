@@ -1,6 +1,7 @@
 import 'package:gotrue/src/constants.dart';
+import 'package:gotrue/src/helper.dart';
 import 'package:gotrue/src/types/user.dart';
-import 'package:jwt_decode/jwt_decode.dart';
+import 'package:meta/meta.dart';
 
 class Session {
   final String? providerToken;
@@ -77,8 +78,7 @@ class Session {
 
   int? get _expiresAt {
     try {
-      final payload = Jwt.parseJwt(accessToken);
-      return payload['exp'] as int;
+      return decodeJwtPayload(accessToken).exp;
     } catch (_) {
       return null;
     }
@@ -94,6 +94,16 @@ class Session {
         .isAfter(
           DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
         );
+  }
+
+  /// Returns `true` if the token is expired right now, without applying the
+  /// [Constants.expiryMargin] buffer used by [isExpired].
+  @internal
+  bool get isExpiredWithoutMargin {
+    if (expiresAt == null) return false;
+    return DateTime.now().isAfter(
+      DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
+    );
   }
 
   Session copyWith({

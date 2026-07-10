@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:storage_client/src/fetch.dart';
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
@@ -51,7 +52,7 @@ class StorageFileApi {
     return path.replaceAll(RegExp(r'^/|/$'), '').replaceAll(RegExp(r'/+'), '/');
   }
 
-  FetchOptions get _fetchOptions => FetchOptions(headers: headers);
+  FetchOptions get _fetchOptions => FetchOptions(headers);
 
   void _assertValidRetryAttempts(int? retryAttempts) {
     assert(
@@ -212,12 +213,10 @@ class StorageFileApi {
     final data = await _storageFetch.post(
       '$url/object/upload/sign/$finalPath',
       {},
-      options: FetchOptions(
-        headers: {
-          ...headers,
-          if (upsert) 'x-upsert': 'true',
-        },
-      ),
+      options: FetchOptions({
+        ...headers,
+        if (upsert) 'x-upsert': 'true',
+      }),
     );
 
     final signedUrl = Uri.parse('$url${data['url']}');
@@ -487,16 +486,17 @@ class StorageFileApi {
     TransformOptions? transform,
     Map<String, String>? queryParams,
   }) async {
-    final wantsTransformations = transform != null;
+    final transformationQuery = transform?.toQueryParams ?? {};
+    final wantsTransformations = transformationQuery.isNotEmpty;
     final finalPath = _getFinalPath(path);
     final renderPath = wantsTransformations
         ? 'render/image/authenticated'
         : 'object';
 
-    Map<String, String> query = transform?.toQueryParams ?? {};
+    Map<String, String> query = transformationQuery;
     query.addAll(queryParams ?? {});
 
-    final options = FetchOptions(headers: headers, noResolveJson: true);
+    final options = FetchOptions(headers, noResolveJson: true);
 
     var fetchUrl = Uri.parse('$url/$renderPath/$finalPath');
     fetchUrl = fetchUrl.replace(queryParameters: query);
@@ -556,13 +556,16 @@ class StorageFileApi {
   }) {
     final finalPath = _getFinalPath(path);
 
-    final wantsTransformation = transform != null;
-    final renderPath = wantsTransformation ? 'render/image' : 'object';
     final transformationQuery = transform?.toQueryParams;
+    final wantsTransformation =
+        transformationQuery != null && transformationQuery.isNotEmpty;
+    final renderPath = wantsTransformation ? 'render/image' : 'object';
 
     var publicUrl = Uri.parse('$url/$renderPath/public/$finalPath');
 
-    publicUrl = publicUrl.replace(queryParameters: transformationQuery);
+    if (wantsTransformation) {
+      publicUrl = publicUrl.replace(queryParameters: transformationQuery);
+    }
 
     return _withDownload(publicUrl.toString(), download);
   }

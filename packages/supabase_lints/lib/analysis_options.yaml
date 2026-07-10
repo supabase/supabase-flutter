@@ -61,3 +61,4 @@ dcm:
     prefer-returning-shorthands: false # needs dot shorthands (experimental)
     prefer-shorthands-with-enums: false # needs dot shorthands (experimental)
     prefer-shorthands-with-static-fields: false # needs dot shorthands (experimental)
+    prefer-shorthands-with-constructors: false # needs dot shorthands (experimental)
