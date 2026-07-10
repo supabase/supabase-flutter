@@ -402,7 +402,7 @@ void main() {
           // meaning there is no double-dispose from sub-clients.
           final client = SupabaseClient(supabaseUrl, supabaseKey);
 
-          await client.dispose();
+          expect(client.dispose(), completes);
         },
       );
     });

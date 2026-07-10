@@ -209,12 +209,12 @@ void main() {
       );
     });
 
-    test('signInWithOtp with email', () async {
-      await client.signInWithOtp(email: newEmail);
+    test('signInWithOtp with email completes successfully', () async {
+      expect(client.signInWithOtp(email: newEmail), completes);
     });
 
-    test('signInWithOtp with phone', () async {
-      await client.signInWithOtp(phone: phone1);
+    test('signInWithOtp with phone completes successfully', () async {
+      expect(client.signInWithOtp(phone: phone1), completes);
     });
 
     test('signInWithPassword() with email', () async {

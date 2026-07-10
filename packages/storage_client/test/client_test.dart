@@ -76,9 +76,12 @@ void main() {
     final response = await storage.createBucket(newBucketName);
     expect(response, newBucketName);
   });
-  test('createSignedUrls does not throw', () async {
+  test('createSignedUrls completes successfully', () async {
     await storage.from(newBucketName).upload(uploadPath, file);
-    await storage.from(newBucketName).createSignedUrls([uploadPath], 2000);
+    expect(
+      storage.from(newBucketName).createSignedUrls([uploadPath], 2000),
+      completes,
+    );
   });
 
   test('Create new public bucket', () async {
@@ -536,12 +539,15 @@ void main() {
   });
 
   group('file operations', () {
-    test('copy', () async {
+    test('copy completes successfully', () async {
       final client = SupabaseStorageClient(storageUrl, {
         'Authorization': 'Bearer $storageKey',
       });
 
-      await client.from(newBucketName).copy(uploadPath, "$uploadPath 2");
+      expect(
+        client.from(newBucketName).copy(uploadPath, "$uploadPath 2"),
+        completes,
+      );
     });
 
     test('copy to different bucket', () async {

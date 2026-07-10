@@ -232,16 +232,13 @@ void main() {
       expect(client.currentUser?.phone, testPhone);
     });
 
-    test('reauthenticate() works correctly', () async {
-      // First sign in to set the session
+    test('reauthenticate() completes successfully', () async {
       await client.signInWithPassword(
         phone: testPhone,
         password: testPassword,
       );
 
-      // Then reauthenticate
-      await client.reauthenticate();
-      // This test passes if no exceptions are thrown
+      expect(client.reauthenticate(), completes);
     });
 
     test('reauthenticate() throws when no session', () async {
@@ -356,17 +353,14 @@ void main() {
       );
     });
 
-    test('signInWithOtp() with different channel types', () async {
-      // Test WhatsApp channel
-      await client.signInWithOtp(
-        phone: testPhone,
-        channel: OtpChannel.whatsapp,
+    test('signInWithOtp() completes for different channel types', () async {
+      expect(
+        client.signInWithOtp(phone: testPhone, channel: OtpChannel.whatsapp),
+        completes,
       );
-
-      // Test SMS channel (default)
-      await client.signInWithOtp(
-        phone: testPhone,
-        channel: OtpChannel.sms,
+      expect(
+        client.signInWithOtp(phone: testPhone, channel: OtpChannel.sms),
+        completes,
       );
     });
   });
@@ -442,16 +436,18 @@ void main() {
       );
     });
 
-    test('signInWithOtp() with empty response', () async {
-      final client = GoTrueClient(
-        url: 'https://example.com',
-        httpClient: EmptyResponseClient(),
-        asyncStorage: TestAsyncStorage(),
-      );
+    test(
+      'signInWithOtp() with empty response completes successfully',
+      () async {
+        final client = GoTrueClient(
+          url: 'https://example.com',
+          httpClient: EmptyResponseClient(),
+          asyncStorage: TestAsyncStorage(),
+        );
 
-      // Should not throw an exception
-      await client.signInWithOtp(phone: testPhone);
-    });
+        expect(client.signInWithOtp(phone: testPhone), completes);
+      },
+    );
 
     test(
       'verifyOTP() with neither email nor phone throws assertion error',

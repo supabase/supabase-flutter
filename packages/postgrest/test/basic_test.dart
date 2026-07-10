@@ -339,12 +339,12 @@ void main() {
       );
     });
 
-    test('Prefer: return=minimal', () async {
-      await postgrest.from('users').insert({'username': 'bar'});
+    test('Prefer: return=minimal completes successfully', () async {
+      expect(postgrest.from('users').insert({'username': 'bar'}), completes);
     });
 
-    test('select with head:true', () async {
-      await postgrest.from('users').select('*').head();
+    test('select with head:true completes successfully', () async {
+      expect(postgrest.from('users').select('*').head(), completes);
     });
 
     test('count with head: true, filters', () async {

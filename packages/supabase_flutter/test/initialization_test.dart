@@ -31,10 +31,13 @@ void main() {
 
     group('Basic initialization', () {
       test('initialize successfully with default options', () async {
-        await Supabase.initialize(
-          url: supabaseUrl,
-          publishableKey: supabaseKey,
-          debug: false,
+        expect(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            debug: false,
+          ),
+          completes,
         );
       });
     });
@@ -42,13 +45,16 @@ void main() {
     group('Custom storage initialization', () {
       test('initialize successfully with custom localStorage', () async {
         const localStorage = MockLocalStorage();
-        await Supabase.initialize(
-          url: supabaseUrl,
-          publishableKey: supabaseKey,
-          debug: false,
-          authOptions: const FlutterAuthClientOptions(
-            localStorage: localStorage,
+        expect(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            debug: false,
+            authOptions: const FlutterAuthClientOptions(
+              localStorage: localStorage,
+            ),
           ),
+          completes,
         );
       });
 
@@ -70,13 +76,16 @@ void main() {
 
     group('Auth options initialization', () {
       test('initialize successfully with PKCE auth flow', () async {
-        await Supabase.initialize(
-          url: supabaseUrl,
-          publishableKey: supabaseKey,
-          debug: false,
-          authOptions: const FlutterAuthClientOptions(
-            authFlowType: AuthFlowType.pkce,
+        expect(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            debug: false,
+            authOptions: const FlutterAuthClientOptions(
+              authFlowType: AuthFlowType.pkce,
+            ),
           ),
+          completes,
         );
       });
     });
@@ -84,11 +93,14 @@ void main() {
     group('Custom client initialization', () {
       test('initialize successfully with custom HTTP client', () async {
         final httpClient = PkceHttpClient();
-        await Supabase.initialize(
-          url: supabaseUrl,
-          publishableKey: supabaseKey,
-          debug: false,
-          httpClient: httpClient,
+        expect(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            debug: false,
+            httpClient: httpClient,
+          ),
+          completes,
         );
       });
 
