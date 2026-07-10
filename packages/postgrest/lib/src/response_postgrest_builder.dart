@@ -3,7 +3,7 @@ part of 'postgrest_builder.dart';
 /// Needed as a wrapper around [PostgrestBuilder] to allow for the different return type of [withConverter] than in [RawPostgrestBuilder.withConverter].
 class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   ResponsePostgrestBuilder(PostgrestBuilder<T, S, R> builder)
-    : super(
+    : super._(
         url: builder._url,
         method: builder._method,
         headers: builder._headers,
@@ -14,8 +14,9 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         isolate: builder._isolate,
         maybeSingle: builder._maybeSingle,
         converter: builder._converter,
-        retryEnabled: builder._retryEnabled,
-        retryDelay: builder._retryDelay,
+        retry: builder._retry,
+        requestTimeout: builder._requestTimeout,
+        abortSignal: builder._abortSignal,
       );
 
   @override
@@ -41,7 +42,7 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   PostgrestBuilder<PostgrestResponse<U>, U, R> withConverter<U>(
     PostgrestConverter<U, R> converter,
   ) {
-    return PostgrestBuilder(
+    return PostgrestBuilder._(
       url: _url,
       headers: _headers,
       schema: _schema,
@@ -52,8 +53,9 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       count: _count,
       maybeSingle: _maybeSingle,
       converter: converter,
-      retryEnabled: _retryEnabled,
-      retryDelay: _retryDelay,
+      retry: _retry,
+      requestTimeout: _requestTimeout,
+      abortSignal: _abortSignal,
     );
   }
 }

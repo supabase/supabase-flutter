@@ -31,6 +31,44 @@ enum HttpMethod {
 
 typedef _Nullable<T> = T?;
 
+/// Bundles the automatic retry configuration so it can be carried through the
+/// builder chain as a single value instead of separate fields.
+@immutable
+class _RetryConfig {
+  _RetryConfig({
+    this.enabled = true,
+    this.count = 3,
+    Set<int> statusCodes = PostgrestClient.defaultRetryableStatusCodes,
+    Duration Function(int attempt)? delay,
+  }) : statusCodes = Set.unmodifiable(statusCodes),
+       delay = delay ?? PostgrestBuilder._defaultRetryDelay {
+    if (count < 0) {
+      throw ArgumentError.value(count, 'retryCount', 'must not be negative');
+    }
+  }
+
+  final bool enabled;
+  final int count;
+  final Set<int> statusCodes;
+  final Duration Function(int attempt) delay;
+
+  _RetryConfig copyWith({
+    // retry() always passes enabled, but keep the standard copyWith shape.
+    // ignore: avoid-unnecessary-nullable-parameters
+    bool? enabled,
+    int? count,
+    Set<int>? statusCodes,
+    Duration Function(int attempt)? delay,
+  }) {
+    return _RetryConfig(
+      enabled: enabled ?? this.enabled,
+      count: count ?? this.count,
+      statusCodes: statusCodes ?? this.statusCodes,
+      delay: delay ?? this.delay,
+    );
+  }
+}
+
 /// Treats an empty `Prefer` value as absent, so every append site can rely on
 /// a plain null check instead of separately re-checking for emptiness.
 String? _emptyPreferAsNull(String? prefer) =>
@@ -54,8 +92,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final Client? _httpClient;
   final YAJsonIsolate? _isolate;
   final CountOption? _count;
-  final bool _retryEnabled;
-  final Duration Function(int attempt) _retryDelay;
+  final _RetryConfig _retry;
+  final Duration? _requestTimeout;
   final Future<void>? _abortSignal;
   final _log = Logger('supabase.postgrest');
 
@@ -74,7 +112,45 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
     bool retryEnabled = true,
+    int retryCount = 3,
+    Set<int> retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
+    Duration? requestTimeout,
+    Future<void>? abortSignal,
+  }) : this._(
+         url: url,
+         headers: headers,
+         schema: schema,
+         method: method,
+         body: body,
+         httpClient: httpClient,
+         isolate: isolate,
+         count: count,
+         maybeSingle: maybeSingle,
+         converter: converter,
+         retry: _RetryConfig(
+           enabled: retryEnabled,
+           count: retryCount,
+           statusCodes: retryableStatusCodes,
+           delay: retryDelay,
+         ),
+         requestTimeout: requestTimeout,
+         abortSignal: abortSignal,
+       );
+
+  PostgrestBuilder._({
+    required Uri url,
+    required Headers headers,
+    String? schema,
+    HttpMethod? method,
+    Object? body,
+    Client? httpClient,
+    YAJsonIsolate? isolate,
+    CountOption? count,
+    bool maybeSingle = false,
+    PostgrestConverter<S, R>? converter,
+    required _RetryConfig retry,
+    Duration? requestTimeout,
     Future<void>? abortSignal,
   }) : _maybeSingle = maybeSingle,
        _method = method,
@@ -86,8 +162,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _isolate = isolate,
        _count = count,
        _body = body,
-       _retryEnabled = retryEnabled,
-       _retryDelay = retryDelay ?? _defaultRetryDelay,
+       _retry = retry,
+       _requestTimeout = requestTimeout,
        _abortSignal = abortSignal;
 
   PostgrestBuilder<T, S, R> _copyWith({
@@ -101,11 +177,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
-    bool? retryEnabled,
-    Duration Function(int attempt)? retryDelay,
+    _RetryConfig? retry,
+    Duration? requestTimeout,
     Future<void>? abortSignal,
   }) {
-    return PostgrestBuilder(
+    return PostgrestBuilder._(
       url: url ?? _url,
       headers: headers ?? _headers,
       schema: schema ?? _schema,
@@ -116,8 +192,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
-      retryEnabled: retryEnabled ?? _retryEnabled,
-      retryDelay: retryDelay ?? _retryDelay,
+      retry: retry ?? _retry,
+      requestTimeout: requestTimeout ?? _requestTimeout,
       abortSignal: abortSignal ?? _abortSignal,
     );
   }
@@ -128,8 +204,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// [PostgrestClient] was configured with `retryEnabled: true`.
   /// When [enabled] is `true`, retries are enabled for this request even if
   /// [PostgrestClient] was configured with `retryEnabled: false`.
-  PostgrestBuilder<T, S, R> retry({required bool enabled}) =>
-      _copyWith(retryEnabled: enabled);
+  ///
+  /// [count] overrides the number of retry attempts for this request.
+  PostgrestBuilder<T, S, R> retry({bool enabled = true, int? count}) =>
+      _copyWith(
+        retry: _retry.copyWith(enabled: enabled, count: count),
+      );
 
   /// Allows manually triggering request abortion by completing the provided
   /// [Future].
@@ -214,12 +294,36 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     final bodyStr = jsonEncode(_body);
     _log.finest("Request: ${method.value} $_url");
 
-    final Future<http.Response> Function() send;
-    send = () async {
+    final requestTimeout = _requestTimeout;
+
+    Future<http.Response> send() async {
+      // The request timeout bounds each individual attempt. It is implemented
+      // on top of the abort mechanism so it actually cancels a stalled attempt
+      // instead of leaving it running. A timed-out attempt surfaces as a
+      // [TimeoutException] so the retry loop treats it as a retryable failure,
+      // whereas the caller-provided [_abortSignal] keeps its
+      // [RequestAbortedException] and stops retries outright.
+      var timedOut = false;
+      Timer? timeoutTimer;
+      Future<void>? abortTrigger = _abortSignal;
+      if (requestTimeout != null) {
+        final timeoutCompleter = Completer<void>();
+        timeoutTimer = Timer(requestTimeout, () {
+          timedOut = true;
+          if (!timeoutCompleter.isCompleted) {
+            timeoutCompleter.complete();
+          }
+        });
+        final abortSignal = _abortSignal;
+        abortTrigger = abortSignal == null
+            ? timeoutCompleter.future
+            : Future.any([abortSignal, timeoutCompleter.future]);
+      }
+
       final AbortableRequest request = AbortableRequest(
         method.value,
         _url,
-        abortTrigger: _abortSignal,
+        abortTrigger: abortTrigger,
       );
       request.headers.addAll(execHeaders);
       switch (method) {
@@ -233,12 +337,18 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       try {
         final streamResponse = await client.send(request);
         return await http.Response.fromStream(streamResponse);
+      } on RequestAbortedException {
+        if (timedOut) {
+          throw TimeoutException('Request timed out', requestTimeout);
+        }
+        rethrow;
       } finally {
+        timeoutTimer?.cancel();
         if (_httpClient == null) {
           client.close();
         }
       }
-    };
+    }
 
     final response = await _executeWithRetry(send, method, execHeaders);
     return await _parseResponse(response, method);
@@ -249,13 +359,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     HttpMethod method,
     Map<String, String> execHeaders,
   ) async {
-    const maxRetries = 3;
-    const retryableStatusCodes = {503, 520};
+    final maxRetries = _retry.count;
+    final retryableStatusCodes = _retry.statusCodes;
 
     final isRetryableMethod =
         method == HttpMethod.get || method == HttpMethod.head;
 
-    if (!_retryEnabled || !isRetryableMethod) {
+    if (!_retry.enabled || !isRetryableMethod) {
       return send();
     }
 
@@ -271,12 +381,15 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           return response;
         }
       } on RequestAbortedException catch (_) {
+        // A manual abort stops retrying immediately. A per-attempt timeout is
+        // surfaced as a TimeoutException instead, so it falls through to the
+        // retryable branch below.
         rethrow;
       } on Exception {
         if (attempt == maxRetries) rethrow;
       }
 
-      await Future.delayed(_retryDelay(attempt));
+      await Future.delayed(_retry.delay(attempt));
     }
 
     throw StateError('unreachable');
@@ -419,8 +532,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     http.Response response,
     PostgrestException error,
   ) {
-    if (error.details case final String details
-        when details.contains('Results contain 0 rows')) {
+    if (error.details is String &&
+        (error.details as String).contains('Results contain 0 rows')) {
       if (_count != null && response.request!.method != HttpMethod.head.value) {
         if (_converter != null) {
           return PostgrestResponse<S>(data: _converter(null as R), count: 0)

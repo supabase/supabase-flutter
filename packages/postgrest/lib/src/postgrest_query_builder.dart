@@ -20,7 +20,11 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     Client? httpClient,
     YAJsonIsolate? isolate,
     bool retryEnabled = true,
+    int retryCount = 3,
+    Set<int> retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
     Duration Function(int attempt)? retryDelay,
+    Duration? requestTimeout,
+    Future<void>? abortSignal,
   }) : super(
          PostgrestBuilder(
            url: url,
@@ -30,7 +34,11 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
            httpClient: httpClient,
            isolate: isolate,
            retryEnabled: retryEnabled,
+           retryCount: retryCount,
+           retryableStatusCodes: retryableStatusCodes,
            retryDelay: retryDelay,
+           requestTimeout: requestTimeout,
+           abortSignal: abortSignal,
          ),
        );
 
@@ -273,7 +281,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   }
 
   @override
-  PostgrestQueryBuilder<T> retry({required bool enabled}) {
+  PostgrestQueryBuilder<T> retry({bool enabled = true, int? count}) {
     return PostgrestQueryBuilder(
       url: _url,
       headers: _headers,
@@ -282,7 +290,11 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       schema: _schema,
       isolate: _isolate,
       retryEnabled: enabled,
-      retryDelay: _retryDelay,
+      retryCount: count ?? _retry.count,
+      retryableStatusCodes: _retry.statusCodes,
+      retryDelay: _retry.delay,
+      requestTimeout: _requestTimeout,
+      abortSignal: _abortSignal,
     );
   }
 
@@ -295,8 +307,12 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       method: _method,
       schema: _schema,
       isolate: _isolate,
-      retryEnabled: _retryEnabled,
-      retryDelay: _retryDelay,
+      retryEnabled: _retry.enabled,
+      retryCount: _retry.count,
+      retryableStatusCodes: _retry.statusCodes,
+      retryDelay: _retry.delay,
+      requestTimeout: _requestTimeout,
+      abortSignal: _abortSignal,
     );
   }
 }
