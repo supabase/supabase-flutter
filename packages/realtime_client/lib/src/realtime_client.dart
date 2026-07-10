@@ -105,6 +105,7 @@ class RealtimeClient {
   final Map<String, dynamic> params;
 
   final RealtimeProtocolVersion version;
+  final Duration connectionCloseTimeout;
   final Duration timeout;
   final WebSocketTransport transport;
   final Client? httpClient;
@@ -149,7 +150,10 @@ class RealtimeClient {
   ///
   /// [transport] The Websocket Transport, for example WebSocket.
   ///
-  /// [timeout] The default timeout in milliseconds to trigger push timeouts.
+  /// [timeout] The default timeout to trigger push timeouts.
+  ///
+  /// [connectionCloseTimeout] The timeout to wait for the connection to close
+  /// before dismissing the result. Defaults to 6 seconds.
   ///
   /// [params] The optional params to pass when connecting.
   ///
@@ -176,6 +180,7 @@ class RealtimeClient {
     String endPoint, {
     WebSocketTransport? transport,
     this.timeout = Constants.defaultTimeout,
+    this.connectionCloseTimeout = Constants.defaultConnectionCloseTimeout,
     this.heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs,
     this.logger,
     RealtimeEncode? encode,
@@ -308,17 +313,34 @@ class RealtimeClient {
         }, Level.FINE);
       }
 
-      // Connection cannot be closed while it's still connecting. Wait for connection to
-      // be ready and then close it.
-      if (oldState == SocketStates.connecting) {
-        await conn.ready.catchError((_) {});
-      }
-
       if (shouldCloseSink) {
+        onTimeout() {
+          log(
+            'transport',
+            'timeout while closing connection',
+            null,
+            Level.FINE,
+          );
+          // Handle as the connection would have been closed successfully, to
+          // avoid hanging the client. This is done by mimicking the onDone
+          // callback of the connection stream. By canceling the subscription,
+          // we avoid calling the onDone too.
+          connState = SocketStates.disconnected;
+          _onConnClose();
+        }
+
         if (code != null) {
-          await conn.sink.close(code, reason ?? '');
+          // Add a timeout to close the sink to avoid hanging in case something
+          // is wrong with the connection.
+          // The Dart SDK has a timeout of 5 seconds for closing the IO WebSocket connection, so we set a timeout of 6 seconds here to avoid hanging indefinitely.
+          await conn.sink
+              .close(code, reason ?? '')
+              .timeout(connectionCloseTimeout, onTimeout: onTimeout);
         } else {
-          await conn.sink.close();
+          await conn.sink.close().timeout(
+            connectionCloseTimeout,
+            onTimeout: onTimeout,
+          );
         }
         connState = SocketStates.disconnected;
         log('transport', 'disconnected', null, Level.FINE);
@@ -566,6 +588,17 @@ class RealtimeClient {
       Duration(milliseconds: heartbeatIntervalMs),
       (Timer t) => unawaited(sendHeartbeat()),
     );
+
+    try {
+      for (final channel in channels) {
+        if (channel.isErrored) {
+          channel.rejoin();
+        }
+      }
+    } catch (e) {
+      log('transport', 'error while rejoining channels', e, Level.WARNING);
+    }
+
     for (final callback in stateChangeCallbacks['open']!) {
       callback();
     }
