@@ -251,6 +251,8 @@ class JWK {
     return {
       'kty': kty,
       'key_ops': keyOps,
+      'alg': ?alg,
+      'kid': ?kid,
       ..._additionalProperties,
       'alg': ?alg,
       'kid': ?kid,

@@ -400,8 +400,21 @@ features:
   storage.file_buckets.create_file_bucket: implemented
   storage.file_buckets.get_bucket: implemented
   storage.file_buckets.list_file_buckets:
-    status: partially_implemented
-    note: "listBuckets() takes no arguments; the JS filter/sort/pagination options are not supported."
+    status: implemented
+    symbols:
+      - StorageBucketApi.listBuckets
+      - ListBucketsOptions
+      - ListBucketsOptions.ListBucketsOptions
+      - ListBucketsOptions.limit
+      - ListBucketsOptions.offset
+      - ListBucketsOptions.search
+      - ListBucketsOptions.sortColumn
+      - ListBucketsOptions.sortOrder
+      - ListBucketsOptions.toQueryParameters
+      - BucketSortColumn
+      - BucketSortOrder
+      - BucketSortOrder.BucketSortOrder
+      - BucketSortOrder.value
   storage.file_buckets.update_bucket: implemented
   storage.file_buckets.delete_file_bucket: implemented
   storage.file_buckets.empty_bucket: implemented
@@ -530,4 +543,18 @@ features:
       - FlutterAuthClientOptions.persistSession
   client.request_configuration.custom_http_client: implemented
   client.request_configuration.global_headers: implemented
-  client.observability.trace_propagation: not_implemented
+  client.observability.trace_propagation:
+    status: implemented
+    note: "Opt-in W3C trace context propagation (traceparent/tracestate/baggage) to Supabase hosts only, with sampling-decision respect. The active context is supplied through a traceContextProvider callback, the idiomatic Dart equivalent of supabase-js's automatic extraction from the OpenTelemetry global API, since Dart has no ubiquitous ambient trace context."
+    symbols:
+      - TraceContext
+      - TraceContext.TraceContext
+      - TraceContext.traceparent
+      - TraceContext.tracestate
+      - TraceContext.baggage
+      - TraceContextProvider
+      - TracePropagationOptions
+      - TracePropagationOptions.TracePropagationOptions
+      - TracePropagationOptions.enabled
+      - TracePropagationOptions.respectSamplingDecision
+      - TracePropagationOptions.traceContextProvider
