@@ -391,6 +391,61 @@ void main() {
       expect(request.url.queryParameters, {'version': '1'});
     });
 
+    test('downloadStream yields the response body as a byte stream', () async {
+      final file = File('a.txt');
+      file.writeAsStringSync('Streamed content');
+      customHttpClient.response = file.readAsBytesSync();
+
+      final stream = client.from('public_bucket').downloadStream('b.txt');
+      expect(stream, isA<Stream<Uint8List>>());
+      final bytes = await stream.expand((chunk) => chunk).toList();
+
+      expect(String.fromCharCodes(bytes), 'Streamed content');
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(request.url.toString(), contains('/object/public_bucket/b.txt'));
+    });
+
+    test('downloadStream appends transform and cacheNonce', () async {
+      customHttpClient.response = Uint8List.fromList([1, 2, 3]);
+
+      await client
+          .from('public_bucket')
+          .downloadStream(
+            'b.txt',
+            transform: const TransformOptions(width: 200),
+            cacheNonce: 'v2',
+          )
+          .drain<void>();
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(
+        request.url.toString(),
+        contains('/render/image/authenticated/public_bucket/b.txt'),
+      );
+      expect(request.url.queryParameters, {'width': '200', 'cacheNonce': 'v2'});
+    });
+
+    test('downloadStream surfaces an error status on the stream', () async {
+      addTearDown(() => customHttpClient.statusCode = 201);
+      customHttpClient.statusCode = 404;
+      customHttpClient.response = {'message': 'Object not found'};
+
+      await expectLater(
+        client
+            .from('public_bucket')
+            .downloadStream('missing.txt')
+            .drain<void>(),
+        throwsA(
+          isA<StorageException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            '404',
+          ),
+        ),
+      );
+    });
+
     test('should get public URL of a path', () {
       final response = client.from('files').getPublicUrl('b.txt');
       expect(response, '$objectUrl/public/files/b.txt');
