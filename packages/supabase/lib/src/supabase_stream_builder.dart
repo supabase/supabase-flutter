@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 part 'supabase_stream_filter_builder.dart';
 
@@ -69,7 +69,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   final _log = Logger('supabase.supabase');
 
   /// StreamController for `stream()` method.
-  BehaviorSubject<SupabaseStreamEvent>? _streamController;
+  ReplaySubject<SupabaseStreamEvent>? _streamController;
 
   /// Contains the combined data of postgrest and realtime to emit as stream.
   SupabaseStreamEvent _streamData = [];
@@ -149,7 +149,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Sets up the stream controller and calls the method to get data as necessary
   void _setupStream() {
-    _streamController ??= BehaviorSubject(
+    _streamController ??= ReplaySubject(
       onListen: () {
         _getStreamData();
       },
@@ -370,7 +370,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   ) {
     // Copied from [Stream.asyncMap]
 
-    final controller = BehaviorSubject<E>();
+    final controller = ReplaySubject<E>();
 
     controller.onListen = () {
       StreamSubscription<SupabaseStreamEvent> subscription = listen(
@@ -414,7 +414,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     Stream<E>? Function(SupabaseStreamEvent event) convert,
   ) {
     //Copied from [Stream.asyncExpand]
-    final controller = BehaviorSubject<E>();
+    final controller = ReplaySubject<E>();
     controller.onListen = () {
       StreamSubscription<SupabaseStreamEvent> subscription = listen(
         null,

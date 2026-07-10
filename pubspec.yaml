@@ -15,13 +15,14 @@ workspace:
   - packages/supabase/example
   - packages/supabase_flutter
   - packages/supabase_flutter/example
+  - packages/supabase_common
   - packages/supabase_lints
   - packages/yet_another_json_isolate
   - examples/launcher
   - examples/passkeys
 
 dev_dependencies:
-  melos: ^8.1.0
+  melos: ^8.2.0
 
 melos:
   command:

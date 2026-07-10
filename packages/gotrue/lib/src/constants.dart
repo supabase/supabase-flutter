@@ -1,11 +1,11 @@
 import 'package:gotrue/src/types/api_version.dart';
-import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/version.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class Constants {
   static const String defaultGotrueUrl = 'http://localhost:9999';
-  static const Map<String, String> defaultHeaders = {
-    'X-Client-Info': 'gotrue-dart/$version',
+  static final Map<String, String> defaultHeaders = {
+    'X-Client-Info': buildClientInfoHeader('gotrue-dart', version),
   };
 
   /// storage key prefix to store code verifiers

@@ -187,6 +187,42 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     );
   }
 
+  /// Omits `null`-valued properties from the response objects.
+  ///
+  /// This uses the `nulls=stripped` variant of the `Accept` header and
+  /// requires PostgREST 11.2 or higher.
+  ///
+  /// ```dart
+  /// supabase.from('users').select().stripNulls();
+  /// ```
+  PostgrestTransformBuilder<T> stripNulls() {
+    final newHeaders = {..._headers};
+    final accept = newHeaders['Accept'] ?? 'application/json';
+    newHeaders['Accept'] = '$accept;nulls=stripped';
+
+    return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
+  }
+
+  /// Runs the query but rolls back the transaction, so no changes are
+  /// persisted.
+  ///
+  /// The data that would have resulted from the query is still returned,
+  /// which is useful for previewing the effect of a mutation.
+  ///
+  /// ```dart
+  /// await supabase.from('users').insert({'username': 'foo'}).dryRun();
+  /// ```
+  PostgrestTransformBuilder<T> dryRun() {
+    final newHeaders = {..._headers};
+    final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
+    newHeaders['Prefer'] = [
+      ?prefer,
+      'tx=rollback',
+    ].join(',');
+
+    return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
+  }
+
   /// Retrieves the response as CSV.
   ///
   /// This will skip object parsing.

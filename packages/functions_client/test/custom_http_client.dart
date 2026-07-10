@@ -15,7 +15,21 @@ class CustomHttpClient extends BaseClient {
     receivedRequests = receivedRequests..add(request);
     request.finalize();
 
-    if (request.url.path.endsWith("error-function")) {
+    if (request.url.path.endsWith('network-error')) {
+      // Simulate a transport failure before any response is received.
+      throw ClientException('Connection failed', request.url);
+    } else if (request.url.path.endsWith('relay-error')) {
+      return StreamedResponse(
+        Stream.value(utf8.encode(jsonEncode({"error": "relay down"}))),
+        500,
+        request: request,
+        headers: {
+          "Content-Type": "application/json",
+          "x-relay-error": "true",
+        },
+        reasonPhrase: "Internal Server Error",
+      );
+    } else if (request.url.path.endsWith("error-function")) {
       //Return custom status code to check for usage of this client.
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
