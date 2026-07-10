@@ -4,9 +4,9 @@ class GoTrueMFAApi {
   final GoTrueClient _client;
   final GotrueFetch _fetch;
 
-  GoTrueMFAApi({required GoTrueClient client, required GotrueFetch fetch})
-      : _client = client,
-        _fetch = fetch;
+  const GoTrueMFAApi({required GoTrueClient client, required GotrueFetch fetch})
+    : _client = client,
+      _fetch = fetch;
 
   /// Unenroll removes a MFA factor.
   ///
@@ -56,13 +56,21 @@ class GoTrueMFAApi {
       'factor_type': factorType.name,
     };
 
-    if (factorType == FactorType.totp && issuer != null) {
-      body['issuer'] = issuer;
-    } else if (factorType == FactorType.phone && phone != null) {
+    if (factorType == FactorType.totp) {
+      if (issuer != null) {
+        body['issuer'] = issuer;
+      }
+    } else if (factorType == FactorType.phone) {
+      if (phone == null) {
+        throw ArgumentError(
+          'Invalid arguments, expected a phone for the phone factor type.',
+        );
+      }
       body['phone'] = phone;
     } else {
       throw ArgumentError(
-          'Invalid arguments, expected an issuer for totp factor type or phone for phone factor. type');
+        'Invalid arguments, unsupported factor type for enroll: ${factorType.name}.',
+      );
     }
 
     final data = await _fetch.request(
@@ -124,8 +132,12 @@ class GoTrueMFAApi {
   /// Prepares a challenge used to verify that a user has access to a MFA factor.
   ///
   /// [factorId] System assigned identifier for authenticator device as returned by enroll
+  ///
+  /// [channel] Messaging channel to use for phone factors (e.g. whatsapp or sms).
+  /// Defaults to the server's behavior (sms) when omitted.
   Future<AuthMFAChallengeResponse> challenge({
     required String factorId,
+    OtpChannel? channel,
   }) async {
     final session = _client.currentSession;
 
@@ -134,6 +146,7 @@ class GoTrueMFAApi {
       RequestMethodType.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
+        body: channel == null ? null : {'channel': channel.name},
         jwt: session?.accessToken,
       ),
     );
@@ -164,24 +177,40 @@ class GoTrueMFAApi {
     final user = _client.currentUser;
     final factors = user?.factors ?? [];
     final totp = factors
-        .where((factor) =>
-            factor.factorType == FactorType.totp &&
-            factor.status == FactorStatus.verified)
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.totp &&
+              factor.status == FactorStatus.verified,
+        )
         .toList();
     final phone = factors
-        .where((factor) =>
-            factor.factorType == FactorType.phone &&
-            factor.status == FactorStatus.verified)
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.phone &&
+              factor.status == FactorStatus.verified,
+        )
+        .toList();
+    final webauthn = factors
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.webauthn &&
+              factor.status == FactorStatus.verified,
+        )
         .toList();
 
-    return AuthMFAListFactorsResponse(all: factors, totp: totp, phone: phone);
+    return AuthMFAListFactorsResponse(
+      all: factors,
+      totp: totp,
+      phone: phone,
+      webauthn: webauthn,
+    );
   }
 
   /// Returns the Authenticator Assurance Level (AAL) for the active session.
   ///
   /// You can use this to check whether the current user needs to be shown a screen to verify their MFA factors.
   AuthMFAGetAuthenticatorAssuranceLevelResponse
-      getAuthenticatorAssuranceLevel() {
+  getAuthenticatorAssuranceLevel() {
     final session = _client.currentSession;
     if (session == null) {
       return AuthMFAGetAuthenticatorAssuranceLevelResponse(
@@ -190,20 +219,22 @@ class GoTrueMFAApi {
         currentAuthenticationMethods: [],
       );
     }
-    final payload = Jwt.parseJwt(session.accessToken);
+    final payload = decodeJwtPayload(session.accessToken).claims;
 
-    final currentLevel = AuthenticatorAssuranceLevels.values
-        .firstWhereOrNull((level) => level.name == payload['aal']);
+    final currentLevel = AuthenticatorAssuranceLevels.values.firstWhereOrNull(
+      (level) => level.name == payload['aal'],
+    );
 
     var nextLevel = currentLevel;
 
-    if (session.user.factors
-            ?.any((factor) => factor.status == FactorStatus.verified) ??
+    if (session.user.factors?.any(
+          (factor) => factor.status == FactorStatus.verified,
+        ) ??
         false) {
       nextLevel = AuthenticatorAssuranceLevels.aal2;
     }
 
-    final amr = (payload['amr'] as List)
+    final amr = (payload['amr'] as List? ?? [])
         .map((e) => AMREntry.fromJson(Map.from(e)))
         .toList();
     return AuthMFAGetAuthenticatorAssuranceLevelResponse(

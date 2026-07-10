@@ -1,0 +1,26 @@
+name: passkeys_example
+description: Demonstrates passkey (WebAuthn) authentication with supabase_flutter.
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+  flutter: '>=3.35.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  passkeys: ^2.21.1
+  supabase_flutter: ^2.16.0
+
+dev_dependencies:
+  supabase_lints: ^0.1.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

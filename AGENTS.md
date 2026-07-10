@@ -43,39 +43,36 @@ melos bs
 ### Linting and Formatting
 
 ```bash
-# Run all static analysis checks (analyze + format)
-melos run lint:all
+# Run the analyzer across the whole workspace
+melos analyze
 
-# Run analyzer on all packages
-melos run analyze
-
-# Format code (80 char line length)
-melos run format
+# Format code (80 char line length, configured in the root pubspec.yaml)
+melos format
 ```
 
 ### Testing
 
-Most packages have unit tests. The `postgrest`, `gotrue`, and `storage_client` packages require Docker services.
+Most packages have unit tests. The `postgrest`, `gotrue`, `realtime_client`, and `storage_client` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
-**For packages requiring Docker (postgrest, gotrue, storage_client):**
+**For packages requiring a backend (postgrest, gotrue, realtime_client, storage_client):**
 
 ```bash
-# 1. Start Docker services
-cd infra/<package>
-docker compose up -d
+# 1. Start the local Supabase stack from the repository root
+supabase start
 
-# 2. Run tests (from package directory)
-cd ../../packages/<package>
+# 2. Run tests (from the package directory)
+cd packages/<package>
 dart test -j 1
 
-# 3. Stop Docker services when done
-cd ../../infra/<package>
-docker compose down
+# 3. Stop the stack when done (from the repository root)
+supabase stop
 ```
 
-The `-j 1` flag runs tests sequentially (not concurrently), which is required since tests share the same Docker services.
+The single `supabase/` config at the repository root serves every package: its migrations and `seed.sql` create the schemas, functions, and test data all four packages rely on. The ports are offset from the CLI defaults (gateway on `http://127.0.0.1:54421`, database on `127.0.0.1:54422`) so this test stack can run alongside another local Supabase project.
 
-**For packages without Docker requirements:**
+The `-j 1` flag runs tests sequentially (not concurrently), which is required since tests share the same backend.
+
+**For packages without a backend requirement:**
 
 ```bash
 # Run tests from package directory
@@ -83,11 +80,19 @@ cd packages/<package>
 dart test
 ```
 
-**Run tests with coverage:**
+**Run every package's tests at once:**
 
 ```bash
-# From root or package directory
-melos run test:coverage
+# Runs `dart test`/`flutter test` in each package that has a test/ directory.
+# Start the local Supabase stack first (see above) so the backend packages pass.
+melos test
+```
+
+**Run tests with coverage (from a package directory):**
+
+```bash
+cd packages/<package>
+dart test --coverage=coverage
 ```
 
 ### Running a Single Test File
@@ -103,11 +108,11 @@ dart test test/specific_test.dart -n "test name pattern"
 ### Package Management
 
 ```bash
-# Upgrade dependencies across all packages
-melos run upgrade
+# Upgrade dependencies across the whole workspace (run at the repository root)
+dart pub upgrade
 
 # Check for outdated dependencies
-melos run outdated
+dart pub outdated
 ```
 
 ### Version Management
@@ -203,7 +208,7 @@ await Supabase.initialize(
 ## Contributing Guidelines
 
 - Fork the repo and create feature branches
-- Run `melos run lint:all` before committing
+- Run `melos analyze` and `melos format` before committing
 - Ensure tests pass for modified packages
 - Update package changelogs if making notable changes
 - Line length limit is 80 characters

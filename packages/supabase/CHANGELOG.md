@@ -1,3 +1,42 @@
+## 2.14.0
+
+ - **FEAT**(realtime_client): support new postgres changes filter operators, multi-filter, column selection, and replication-ready events ([#1526](https://github.com/supabase/supabase-flutter/issues/1526)). ([1f9d2951](https://github.com/supabase/supabase-flutter/commit/1f9d29516032c1f4bd8416fd7fa36737a335afaf))
+
+## 2.13.4
+
+ - Update a dependency to the latest release.
+
+## 2.13.3
+
+ - Update a dependency to the latest release.
+
+## 2.13.2
+
+ - Update a dependency to the latest release.
+
+## 2.13.1
+
+ - **REFACTOR**: de-abbreviate cond* platform getters to conditional* ([#1438](https://github.com/supabase/supabase-flutter/issues/1438)). ([9e71a240](https://github.com/supabase/supabase-flutter/commit/9e71a240bc7ed30126b5d90a81697303cb515ef7))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+
+## 2.13.0
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FEAT**(realtime): add support for protocol format 2.0.0 ([#1397](https://github.com/supabase/supabase-flutter/issues/1397)). ([c04d5d1a](https://github.com/supabase/supabase-flutter/commit/c04d5d1a5a0a6feedf8bfa082fc708a4472e85eb))
+
+## 2.12.2
+
+ - Update a dependency to the latest release.
+
+## 2.12.1
+
+ - Update a dependency to the latest release.
+
+## 2.12.0
+
+ - **FIX**: make `defaultHeaders` unmodifiable to prevent accidental mutation ([#1370](https://github.com/supabase/supabase-flutter/issues/1370)). ([957d7507](https://github.com/supabase/supabase-flutter/commit/957d7507a93f23ffab5f449a4da85804cb0c0010))
+ - **FEAT**: update X-Client-Info to use structured semicolon-delimited metadata ([#1362](https://github.com/supabase/supabase-flutter/issues/1362)). ([71653422](https://github.com/supabase/supabase-flutter/commit/71653422f1ce79ef83ae007eb52b411e09cdf86e))
+
 ## 2.11.0
 
  - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))

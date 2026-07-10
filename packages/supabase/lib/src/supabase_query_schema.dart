@@ -15,7 +15,7 @@ class SupabaseQuerySchema {
   final RealtimeClient _realtime;
   final PostgrestClient _rest;
 
-  SupabaseQuerySchema({
+  const SupabaseQuerySchema({
     required Counter counter,
     required String restUrl,
     required Map<String, String> headers,
@@ -24,14 +24,14 @@ class SupabaseQuerySchema {
     required Client? authHttpClient,
     required RealtimeClient realtime,
     required PostgrestClient rest,
-  })  : _counter = counter,
-        _restUrl = restUrl,
-        _headers = headers,
-        _schema = schema,
-        _isolate = isolate,
-        _authHttpClient = authHttpClient,
-        _realtime = realtime,
-        _rest = rest;
+  }) : _counter = counter,
+       _restUrl = restUrl,
+       _headers = headers,
+       _schema = schema,
+       _isolate = isolate,
+       _authHttpClient = authHttpClient,
+       _realtime = realtime,
+       _rest = rest;
 
   /// Perform a table operation.
   SupabaseQueryBuilder from(String table) {
@@ -54,7 +54,7 @@ class SupabaseQuerySchema {
     Map<String, dynamic>? params,
     bool get = false,
   }) {
-    _rest.headers.addAll({..._rest.headers, ..._headers});
+    _rest.headers.addAll(_headers);
     return _rest.rpc(
       fn,
       params: params,

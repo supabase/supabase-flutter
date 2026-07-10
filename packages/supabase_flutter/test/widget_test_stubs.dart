@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
@@ -23,10 +24,10 @@ class _MockWidgetState extends State<MockWidget> {
   Widget build(BuildContext context) {
     return isSignedIn
         ? TextButton(
-            onPressed: () async {
-              try {
-                await Supabase.instance.client.auth.signOut();
-              } catch (_) {}
+            onPressed: () {
+              unawaited(
+                Supabase.instance.client.auth.signOut().catchError((_) {}),
+              );
             },
             child: const Text('Sign out'),
           )
@@ -35,6 +36,7 @@ class _MockWidgetState extends State<MockWidget> {
 
   @override
   void initState() {
+    super.initState();
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (data.event == AuthChangeEvent.signedOut) {
         setState(() {
@@ -42,18 +44,19 @@ class _MockWidgetState extends State<MockWidget> {
         });
       }
     });
-    super.initState();
   }
 }
 
 /// Local storage that returns an expired session
 class MockExpiredStorage extends LocalStorage {
+  const MockExpiredStorage();
   @override
   Future<void> initialize() async {}
   @override
   Future<String?> accessToken() async {
-    return getSessionData(DateTime.now().subtract(const Duration(hours: 1)))
-        .sessionString;
+    return getSessionData(
+      DateTime.now().subtract(const Duration(hours: 1)),
+    ).sessionString;
   }
 
   @override
@@ -65,12 +68,14 @@ class MockExpiredStorage extends LocalStorage {
 }
 
 class MockLocalStorage extends LocalStorage {
+  const MockLocalStorage();
   @override
   Future<void> initialize() async {}
   @override
   Future<String?> accessToken() async {
-    return getSessionData(DateTime.now().add(const Duration(hours: 1)))
-        .sessionString;
+    return getSessionData(
+      DateTime.now().add(const Duration(hours: 1)),
+    ).sessionString;
   }
 
   @override
@@ -82,6 +87,7 @@ class MockLocalStorage extends LocalStorage {
 }
 
 class MockEmptyLocalStorage extends LocalStorage {
+  const MockEmptyLocalStorage();
   @override
   Future<void> initialize() async {}
   @override
@@ -110,7 +116,9 @@ void mockAppLink({
   // ignore: invalid_null_aware_operator
   TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
       .setMockMethodCallHandler(
-          channel, (call) async => mockMethodChannel ? initialLink : null);
+        channel,
+        (call) async => mockMethodChannel ? initialLink : null,
+      );
 
   // Mock event channel using method channel, to keep supporting older versions
   // of flutter_test in which setMockStreamHandler is not yet available.
@@ -118,17 +126,60 @@ void mockAppLink({
     // ignore: invalid_null_aware_operator
     TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      eventChannel,
-      (MethodCall methodCall) async {
-        // ignore: invalid_null_aware_operator
-        TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-            .handlePlatformMessage(
-          eventChannel.name,
-          const StandardMethodCodec().encodeSuccessEnvelope(initialLink),
-          (ByteData? data) {},
+          eventChannel,
+          // ignore: function-always-returns-null
+          (MethodCall methodCall) async {
+            await TestDefaultBinaryMessengerBinding
+                .instance
+                // ignore: invalid_null_aware_operator
+                ?.defaultBinaryMessenger
+                .handlePlatformMessage(
+                  eventChannel.name,
+                  const StandardMethodCodec().encodeSuccessEnvelope(
+                    initialLink,
+                  ),
+                  (ByteData? data) {},
+                );
+            return null;
+          },
         );
-        return null;
-      },
+  }
+}
+
+class GetUserHttpClient extends BaseClient {
+  GetUserHttpClient(this.email);
+
+  final String email;
+  int requestCount = 0;
+  Uri? lastRequestUrl;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    requestCount++;
+    lastRequestUrl = request.url;
+
+    return StreamedResponse(
+      Stream.value(
+        utf8.encode(
+          jsonEncode(
+            {
+              'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
+              'aud': '',
+              'role': '',
+              'email': email,
+              'app_metadata': {
+                'provider': 'email',
+                'providers': ['email'],
+              },
+              'user_metadata': {},
+              'created_at': '2023-04-01T09:38:59.784028Z',
+              'updated_at': '2023-04-01T09:38:59.908816Z',
+            },
+          ),
+        ),
+      ),
+      200,
+      request: request,
     );
   }
 }
@@ -193,7 +244,7 @@ class PkceHttpClient extends BaseClient {
                 'last_sign_in_at': '2023-04-01T09:38:59.904492805Z',
                 'app_metadata': {
                   'provider': 'email',
-                  'providers': ['email']
+                  'providers': ['email'],
                 },
                 'user_metadata': {},
                 'factors': [
@@ -203,8 +254,8 @@ class PkceHttpClient extends BaseClient {
                     'updated_at': '2023-04-01T09:38:59.784028Z',
                     'status': 'unverified',
                     'friendly_name': 'UnverifiedFactor',
-                    'factor_type': 'totp'
-                  }
+                    'factor_type': 'totp',
+                  },
                 ],
                 'identities': [
                   {
@@ -212,17 +263,17 @@ class PkceHttpClient extends BaseClient {
                     'user_id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
                     'identity_data': {
                       'email': 'fake1@email.com',
-                      'sub': '18bc7a4e-c095-4573-93dc-e0be29bada97'
+                      'sub': '18bc7a4e-c095-4573-93dc-e0be29bada97',
                     },
                     'provider': 'email',
                     'last_sign_in_at': '2023-04-01T09:38:59.784028Z',
                     'created_at': '2023-04-01T09:38:59.784028Z',
-                    'updated_at': '2023-04-01T09:38:59.784028Z'
-                  }
+                    'updated_at': '2023-04-01T09:38:59.784028Z',
+                  },
                 ],
                 'created_at': '2023-04-01T09:38:59.784028Z',
-                'updated_at': '2023-04-01T09:38:59.908816Z'
-              }
+                'updated_at': '2023-04-01T09:38:59.908816Z',
+              },
             },
           ),
         ),

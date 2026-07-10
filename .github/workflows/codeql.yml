@@ -1,0 +1,49 @@
+name: CodeQL
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: "30 4 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.language }}
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # CodeQL does not support Dart, so the package source cannot be
+        # analyzed. The only meaningful supported language in this monorepo
+        # is the GitHub Actions workflows themselves.
+        language:
+          - actions
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@8272c299f21ca24af15dfe9ac0971ba969e5e0d5 # v3.36.2
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@8272c299f21ca24af15dfe9ac0971ba969e5e0d5 # v3.36.2
+        with:
+          category: "/language:${{ matrix.language }}"

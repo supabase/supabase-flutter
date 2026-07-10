@@ -1,4 +1,3 @@
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
 import 'package:http/http.dart' as http;
@@ -11,20 +10,20 @@ void main() {
 
   env.load(); // Load env variables from .env file
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final serviceRoleToken = JWT(
-    {'role': 'service_role'},
-  ).sign(
-    SecretKey(
-        env['GOTRUE_JWT_SECRET'] ?? '37c304f8-51aa-419a-a1af-06154e63707a'),
-  );
+  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final serviceRoleToken = getServiceRoleToken(env);
 
   late GoTrueClient client;
 
   setUp(() async {
     final res = await http.post(
-        Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-        headers: {'x-forwarded-for': '127.0.0.1'});
+      Uri.parse('http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
+      headers: {
+        'x-forwarded-for': '127.0.0.1',
+        'apikey': serviceRoleToken,
+        'Authorization': 'Bearer $serviceRoleToken',
+      },
+    );
     if (res.body.isNotEmpty) throw res.body;
 
     client = GoTrueClient(
@@ -32,7 +31,7 @@ void main() {
       headers: {
         'Authorization': 'Bearer $serviceRoleToken',
         'apikey': serviceRoleToken,
-        'x-forwarded-for': '127.0.0.1'
+        'x-forwarded-for': '127.0.0.1',
       },
     );
   });
@@ -41,10 +40,14 @@ void main() {
     final res = await client.admin.mfa.listFactors(userId: userId2);
     expect(res.factors.length, 1);
     final factor = res.factors.first;
-    expect(factor.createdAt.difference(DateTime.now()) < Duration(seconds: 2),
-        true);
-    expect(factor.updatedAt.difference(DateTime.now()) < Duration(seconds: 2),
-        true);
+    expect(
+      factor.createdAt.difference(DateTime.now()) < Duration(seconds: 2),
+      true,
+    );
+    expect(
+      factor.updatedAt.difference(DateTime.now()) < Duration(seconds: 2),
+      true,
+    );
     expect(factor.id, factorId2);
   });
 

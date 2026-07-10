@@ -1,13 +1,28 @@
-# `supabase_flutter`
+<br />
+<p align="center">
+  <a href="https://supabase.com">
+    <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+  </a>
+
+  <h1 align="center">supabase_flutter</h1>
+
+  <p align="center">
+    Flutter client library for <a href="https://supabase.com">Supabase</a>.
+  </p>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/with-flutter">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/dart/introduction">Reference Docs</a>
+  </p>
+</p>
+
+<div align="center">
 
 [![pub package](https://img.shields.io/pub/v/supabase_flutter.svg)](https://pub.dev/packages/supabase_flutter)
 [![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
 
----
-
-Flutter Client library for [Supabase](https://supabase.com/).
-
-- Documentation: https://supabase.com/docs/reference/dart/introduction
+</div>
 
 ## Getting Started
 
@@ -43,6 +58,7 @@ final supabase = Supabase.instance.client;
   * [Native Apple Sign in](#native-apple-sign-in)
   * [Native Google sign in](#native-google-sign-in)
   * [OAuth login](#oauth-login)
+  * [Passkeys](#passkeys)
 * [Database](#database)
 * [Realtime](#realtime)
   * [Postgres Changes](#postgres-changes)
@@ -184,6 +200,73 @@ Future<AuthResponse> _googleSignIn() async {
 ...
 ```
 
+#### <a id="native-facebook-sign-in"></a>Native Facebook sign in
+
+You can use [flutter_facebook_auth](https://pub.dev/packages/flutter_facebook_auth) `^7.1.7` with `signInWithIdToken` on both iOS and Android.
+
+- **iOS** uses Facebook's [Limited Login](https://developers.facebook.com/docs/facebook-login/limited-login/) (`LoginTracking.limited`), which returns a `LimitedToken` containing an OIDC ID token directly.
+- **Android** requires `LoginBehavior.webOnly` and the `openid` permission to receive an OIDC ID token in `ClassicToken.authenticationToken`.
+
+```dart
+import 'dart:io';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<AuthResponse> _facebookSignIn() async {
+  late final LoginResult result;
+
+  if (Platform.isIOS) {
+    result = await FacebookAuth.instance.login(
+      permissions: ['public_profile', 'email'],
+      loginTracking: LoginTracking.limited,
+    );
+  } else {
+    // Android: webOnly behavior with openid scope returns an OIDC ID token.
+    result = await FacebookAuth.instance.login(
+      permissions: ['public_profile', 'email', 'openid'],
+      loginBehavior: LoginBehavior.webOnly,
+    );
+  }
+
+  if (result.status != LoginStatus.success) {
+    throw 'Facebook sign in failed: ${result.message}';
+  }
+
+  final accessToken = result.accessToken;
+  final String idToken;
+
+  if (accessToken is LimitedToken) {
+    idToken = accessToken.tokenString;
+  } else if (accessToken is ClassicToken) {
+    final authToken = accessToken.authenticationToken;
+    if (authToken == null) {
+      throw 'No ID token returned. Make sure to use LoginBehavior.webOnly and include the openid scope on Android.';
+    }
+    idToken = authToken;
+  } else {
+    throw 'Unexpected Facebook token type: ${accessToken?.runtimeType}';
+  }
+
+  return Supabase.instance.client.auth.signInWithIdToken(
+    provider: OAuthProvider.facebook,
+    idToken: idToken,
+  );
+}
+```
+
+Alternatively, if you do not want to use the native Facebook SDK, you can use the web-based `signInWithOAuth()` method. This will open the device's web browser to perform the classic Facebook OAuth 2.0 login flow.
+
+```dart
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> _facebookSignInWeb() async {
+  await Supabase.instance.client.auth.signInWithOAuth(
+    OAuthProvider.facebook,
+    redirectTo: 'io.supabase.flutterdemo://login-callback',
+  );
+}
+```
+
 ### <a id="oauth-login"></a>OAuth login
 
 The `signInWithIdToken()` method supports providers like Apple, Google, Facebook, Kakao, and Keycloak. For other providers, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
@@ -197,7 +280,7 @@ await supabase.auth.signInWithOAuth(
   redirectTo: kIsWeb ? null : 'io.supabase.flutter://callback',
 );
 
-// Listen to auth state changes in order to detect when ther OAuth login is complete.
+// Listen to auth state changes in order to detect when the OAuth login is complete.
 supabase.auth.onAuthStateChange.listen((data) {
   final AuthChangeEvent event = data.event;
   if(event == AuthChangeEvent.signedIn) {
@@ -205,6 +288,33 @@ supabase.auth.onAuthStateChange.listen((data) {
   }
 });
 ```
+
+### <a id="passkeys"></a>Passkeys
+
+> Passkeys are a BETA feature. Enable them for your project in the Supabase Dashboard under Authentication > Configuration > Passkeys before using these methods.
+
+`supabase_flutter` performs the server side of the WebAuthn ceremony for you and delegates the platform prompt (FaceID/TouchID/security key) to an authenticator you supply. This keeps `supabase_flutter` free of a passkey plugin dependency, so apps that do not use passkeys are not forced to raise their minimum platform versions.
+
+Add a passkey plugin to your own app and pass its authenticator in. The [`passkeys`](https://pub.dev/packages/passkeys) plugin's `PasskeyAuthenticator` implements the `PasskeyAuthenticatorInterface` these methods expect (since `passkeys` `2.21.0`), but you can pass any implementation of that interface.
+
+```dart
+import 'package:passkeys/authenticator.dart';
+
+final authenticator = PasskeyAuthenticator();
+
+// Sign in with a passkey. The user is prompted to pick and unlock a passkey.
+await supabase.auth.signInWithPasskey(authenticator);
+
+// Register a new passkey for the signed in user.
+await supabase.auth.registerPasskey(authenticator);
+
+// Manage the signed in user's passkeys with the server side API.
+final passkeys = await supabase.auth.passkey.list();
+await supabase.auth.passkey.update(passkeyId: passkeys.first.id, friendlyName: 'My phone');
+await supabase.auth.passkey.delete(passkeyId: passkeys.first.id);
+```
+
+The platform ceremony is handled by whichever plugin you add. Refer to your plugin's documentation, for example the [`passkeys` package documentation](https://pub.dev/packages/passkeys), for its platform requirements, setup, and how to handle ceremony failures such as the user cancelling.
 
 ### <a id="database"></a>[Database](https://supabase.com/docs/guides/database)
 
@@ -386,7 +496,7 @@ https://github.com/llfbandit/app_links/tree/master?tab=readme-ov-file#getting-st
 
 ### Platform specific config
 
-Follow the guide to find additional platform specidic condigs for your OAuth provider.
+Follow the guide to find additional platform specific configs for your OAuth provider.
 
 https://supabase.io/docs/guides/auth#third-party-logins
 
@@ -647,7 +757,7 @@ https://supabase.com/docs/reference/dart/upgrade-guide
 
 ## License
 
-This repo is licenced under MIT.
+This repo is licensed under MIT.
 
 ## Resources
 

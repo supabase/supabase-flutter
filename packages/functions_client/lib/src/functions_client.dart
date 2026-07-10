@@ -7,6 +7,7 @@ import 'package:functions_client/src/version.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show MultipartRequest;
 import 'package:logging/logging.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 class FunctionsClient {
@@ -25,14 +26,15 @@ class FunctionsClient {
     http.Client? httpClient,
     YAJsonIsolate? isolate,
     String? region,
-  })  : _url = url,
-        _headers = {...Constants.defaultHeaders, ...headers},
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null,
-        _httpClient = httpClient,
-        _region = region {
+  }) : _url = url,
+       _headers = {...Constants.defaultHeaders, ...headers},
+       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+       _hasCustomIsolate = isolate != null,
+       _httpClient = httpClient,
+       _region = region {
     _log.config(
-        "Initialize FunctionsClient v$version with url '$url' and region '$region'");
+      "Initialize FunctionsClient v$version with url '$url' and region '$region'",
+    );
     _log.finest("Initialize with headers: $headers");
   }
 
@@ -89,6 +91,7 @@ class FunctionsClient {
   /// ```
   Future<FunctionResponse> invoke(
     String functionName, {
+    // ignore: avoid-shadowing
     Map<String, String>? headers,
     Object? body,
     Iterable<http.MultipartFile>? files,
@@ -100,24 +103,26 @@ class FunctionsClient {
 
     // Merge query parameters with forceFunctionRegion if region is specified
     final effectiveQueryParams = <String, dynamic>{
-      if (queryParameters != null) ...queryParameters,
+      ...?queryParameters,
       if (effectiveRegion != null && effectiveRegion != 'any')
         'forceFunctionRegion': effectiveRegion,
     };
 
     final uri = Uri.parse('$_url/$functionName').replace(
-        queryParameters:
-            effectiveQueryParams.isNotEmpty ? effectiveQueryParams : null);
+      queryParameters: effectiveQueryParams.isNotEmpty
+          ? effectiveQueryParams
+          : null,
+    );
 
     final finalHeaders = <String, String>{
       ..._headers,
-      if (headers != null) ...headers,
+      ...?headers,
       if (effectiveRegion != null && effectiveRegion != 'any')
         'x-region': effectiveRegion,
     };
 
     if (body != null &&
-        (headers == null || headers.containsKey("Content-Type") == false)) {
+        !finalHeaders.keys.any((k) => k.toLowerCase() == 'content-type')) {
       finalHeaders['Content-Type'] = switch (body) {
         Uint8List() => 'application/octet-stream',
         String() => 'text/plain',
@@ -130,7 +135,7 @@ class FunctionsClient {
         body == null || body is Map<String, String>,
         'body must be of type Map',
       );
-      final fields = body as Map<String, String>?;
+      final fields = (body as Map?)?.cast<String, String>();
 
       request = http.MultipartRequest(method.name.toUpperCase(), uri)
         ..fields.addAll(fields ?? {})
@@ -157,38 +162,73 @@ class FunctionsClient {
 
     _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
 
-    final response = await (_httpClient?.send(request) ?? request.send());
-    final responseType = (response.headers['Content-Type'] ??
-            response.headers['content-type'] ??
-            'text/plain')
-        .split(';')[0]
-        .trim();
+    final http.StreamedResponse response;
+    try {
+      response = await (_httpClient?.send(request) ?? request.send());
+    } catch (error) {
+      throw FunctionsFetchException(details: error);
+    }
+    final responseType =
+        (response.headers['Content-Type'] ??
+                response.headers['content-type'] ??
+                'text/plain')
+            .split(';')[0]
+            .trim()
+            .toLowerCase();
+
+    final isRelayError = response.headers['x-relay-error'] == 'true';
+    final isSuccessStatus =
+        isSuccessStatusCode(response.statusCode) && !isRelayError;
 
     final dynamic data;
 
     if (responseType == 'application/json') {
       final bodyBytes = await response.stream.toBytes();
-      data = bodyBytes.isEmpty
-          ? ""
-          : await _isolate.decode(utf8.decode(bodyBytes));
+      if (bodyBytes.isEmpty) {
+        data = "";
+      } else {
+        final bodyText = utf8.decode(bodyBytes);
+        dynamic decoded;
+        try {
+          decoded = await _isolate.decode(bodyText);
+        } on FormatException {
+          // A body labeled JSON that doesn't parse is only tolerated on an
+          // error status, where the raw text still needs to reach the caller
+          // as the exception `details`. On a success status it's a real
+          // anomaly, so keep surfacing it instead of handing back a String.
+          if (isSuccessStatus) rethrow;
+          decoded = bodyText;
+        }
+        data = decoded;
+      }
     } else if (responseType == 'application/octet-stream') {
       data = await response.stream.toBytes();
-    } else if (responseType == 'text/event-stream') {
+    } else if (responseType == 'text/event-stream' && isSuccessStatus) {
+      // Only a successful streaming response hands the live stream to the
+      // caller. On an error status there is nothing to stream — fall through
+      // and drain the body so it becomes the exception `details` and the
+      // connection isn't left open.
       data = response.stream;
     } else {
       final bodyBytes = await response.stream.toBytes();
       data = utf8.decode(bodyBytes);
     }
 
-    if (200 <= response.statusCode && response.statusCode < 300) {
+    if (isSuccessStatus) {
       return FunctionResponse(data: data, status: response.statusCode);
-    } else {
-      throw FunctionException(
+    }
+    if (isRelayError) {
+      throw FunctionsRelayException(
         status: response.statusCode,
         details: data,
         reasonPhrase: response.reasonPhrase,
       );
     }
+    throw FunctionsHttpException(
+      status: response.statusCode,
+      details: data,
+      reasonPhrase: response.reasonPhrase,
+    );
   }
 
   /// Disposes the self created isolate for json encoding/decoding

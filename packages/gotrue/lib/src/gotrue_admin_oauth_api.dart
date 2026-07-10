@@ -8,7 +8,7 @@ import 'types/types.dart';
 class OAuthClientResponse {
   final OAuthClient? client;
 
-  OAuthClientResponse({this.client});
+  const OAuthClientResponse({this.client});
 
   factory OAuthClientResponse.fromJson(Map<String, dynamic> json) {
     return OAuthClientResponse(
@@ -26,7 +26,7 @@ class OAuthClientListResponse {
   final int? lastPage;
   final int total;
 
-  OAuthClientListResponse({
+  const OAuthClientListResponse({
     required this.clients,
     this.aud,
     this.nextPage,
@@ -54,13 +54,13 @@ class GoTrueAdminOAuthApi {
   final Map<String, String> _headers;
   final GotrueFetch _fetch;
 
-  GoTrueAdminOAuthApi({
+  const GoTrueAdminOAuthApi({
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,
-  })  : _url = url,
-        _headers = headers,
-        _fetch = fetch;
+  }) : _url = url,
+       _headers = headers,
+       _fetch = fetch;
 
   /// Lists all OAuth clients with optional pagination.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
@@ -76,8 +76,8 @@ class GoTrueAdminOAuthApi {
       options: GotrueRequestOptions(
         headers: _headers,
         query: {
-          if (page != null) 'page': page.toString(),
-          if (perPage != null) 'per_page': perPage.toString(),
+          'page': ?page?.toString(),
+          'per_page': ?perPage?.toString(),
         },
       ),
     );

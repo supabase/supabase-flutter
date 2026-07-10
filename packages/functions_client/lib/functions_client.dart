@@ -1,4 +1,5 @@
-library functions_client;
+/// A dart client library for Supabase Edge Functions.
+library;
 
 export 'package:http/http.dart' show ByteStream, MultipartFile;
 

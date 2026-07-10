@@ -1,3 +1,5 @@
+import 'package:supabase_common/supabase_common.dart';
+
 typedef BroadcastChannel = ({
   Stream<Map<String, dynamic>> onMessage,
   void Function(Map) postMessage,
@@ -88,6 +90,7 @@ final class OAuthProvider {
   /// misleading for custom providers whose names may not be snake_case.
   /// Use [name] directly instead.
   @Deprecated('Use name instead.')
+  // ignore: match-getter-setter-field-names
   String get snakeCase => name;
 
   @override
@@ -103,49 +106,32 @@ final class OAuthProvider {
 
 /// OAuth client grant types supported by the OAuth 2.1 server.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
-enum OAuthClientGrantType {
-  authorizationCode('authorization_code'),
-  refreshToken('refresh_token');
-
-  final String value;
-  const OAuthClientGrantType(this.value);
-}
+enum OAuthClientGrantType { authorizationCode, refreshToken }
 
 /// OAuth client response types supported by the OAuth 2.1 server.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
-enum OAuthClientResponseType {
-  code('code');
-
-  final String value;
-  const OAuthClientResponseType(this.value);
-}
+enum OAuthClientResponseType { code }
 
 /// OAuth client type indicating whether the client can keep credentials confidential.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 enum OAuthClientType {
-  public('public'),
-  confidential('confidential');
-
-  final String value;
-  const OAuthClientType(this.value);
+  public,
+  confidential;
 
   static OAuthClientType fromString(String value) {
-    return OAuthClientType.values.firstWhere((e) => e.value == value);
+    return OAuthClientType.values.firstWhere((e) => e.snakeCase == value);
   }
 }
 
 /// OAuth client registration type.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 enum OAuthClientRegistrationType {
-  dynamic('dynamic'),
-  manual('manual');
-
-  final String value;
-  const OAuthClientRegistrationType(this.value);
+  dynamic,
+  manual;
 
   static OAuthClientRegistrationType fromString(String value) {
     return OAuthClientRegistrationType.values.firstWhere(
-      (e) => e.value == value,
+      (e) => e.snakeCase == value,
     );
   }
 }
@@ -192,7 +178,7 @@ class OAuthClient {
   /// Timestamp when the client was last updated
   final String updatedAt;
 
-  OAuthClient({
+  const OAuthClient({
     required this.clientId,
     required this.clientName,
     this.clientSecret,
@@ -219,18 +205,18 @@ class OAuthClient {
         json['registration_type'] as String,
       ),
       clientUri: json['client_uri'] as String?,
-      redirectUris: (json['redirect_uris'] as List).cast<String>(),
+      redirectUris: (json['redirect_uris'] as List).cast(),
       grantTypes: (json['grant_types'] as List)
           .map(
             (e) => OAuthClientGrantType.values.firstWhere(
-              (gt) => gt.value == e as String,
+              (gt) => gt.snakeCase == e as String,
             ),
           )
           .toList(),
       responseTypes: (json['response_types'] as List)
           .map(
             (e) => OAuthClientResponseType.values.firstWhere(
-              (rt) => rt.value == e as String,
+              (rt) => rt.snakeCase == e as String,
             ),
           )
           .toList(),
@@ -262,7 +248,7 @@ class CreateOAuthClientParams {
   /// Scope of the OAuth client
   final String? scope;
 
-  CreateOAuthClientParams({
+  const CreateOAuthClientParams({
     required this.clientName,
     this.clientUri,
     required this.redirectUris,
@@ -274,13 +260,11 @@ class CreateOAuthClientParams {
   Map<String, dynamic> toJson() {
     return {
       'client_name': clientName,
-      if (clientUri != null) 'client_uri': clientUri,
+      'client_uri': ?clientUri,
       'redirect_uris': redirectUris,
-      if (grantTypes != null)
-        'grant_types': grantTypes!.map((e) => e.value).toList(),
-      if (responseTypes != null)
-        'response_types': responseTypes!.map((e) => e.value).toList(),
-      if (scope != null) 'scope': scope,
+      'grant_types': ?grantTypes?.map((e) => e.snakeCase).toList(),
+      'response_types': ?responseTypes?.map((e) => e.snakeCase).toList(),
+      'scope': ?scope,
     };
   }
 }
@@ -306,7 +290,7 @@ class UpdateOAuthClientParams {
   /// Scope of the OAuth client
   final String? scope;
 
-  UpdateOAuthClientParams({
+  const UpdateOAuthClientParams({
     this.clientName,
     this.clientUri,
     this.redirectUris,
@@ -317,14 +301,12 @@ class UpdateOAuthClientParams {
 
   Map<String, dynamic> toJson() {
     return {
-      if (clientName != null) 'client_name': clientName,
-      if (clientUri != null) 'client_uri': clientUri,
-      if (redirectUris != null) 'redirect_uris': redirectUris,
-      if (grantTypes != null)
-        'grant_types': grantTypes!.map((e) => e.value).toList(),
-      if (responseTypes != null)
-        'response_types': responseTypes!.map((e) => e.value).toList(),
-      if (scope != null) 'scope': scope,
+      'client_name': ?clientName,
+      'client_uri': ?clientUri,
+      'redirect_uris': ?redirectUris,
+      'grant_types': ?grantTypes?.map((e) => e.snakeCase).toList(),
+      'response_types': ?responseTypes?.map((e) => e.snakeCase).toList(),
+      'scope': ?scope,
     };
   }
 }

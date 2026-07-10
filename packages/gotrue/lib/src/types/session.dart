@@ -1,6 +1,7 @@
 import 'package:gotrue/src/constants.dart';
+import 'package:gotrue/src/helper.dart';
 import 'package:gotrue/src/types/user.dart';
-import 'package:jwt_decode/jwt_decode.dart';
+import 'package:meta/meta.dart';
 
 class Session {
   final String? providerToken;
@@ -67,14 +68,17 @@ class Session {
     };
   }
 
-  /// A timestamp of when the token will expire. Returned when a login is
-  /// confirmed.
+  /// The Unix timestamp, in **seconds**, of when the token will expire.
+  /// Returned when a login is confirmed.
+  ///
+  /// To convert this to a [DateTime], multiply by 1000 since
+  /// [DateTime.fromMillisecondsSinceEpoch] expects milliseconds:
+  /// `DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)`.
   late int? expiresAt = _expiresAt;
 
   int? get _expiresAt {
     try {
-      final payload = Jwt.parseJwt(accessToken);
-      return payload['exp'] as int;
+      return decodeJwtPayload(accessToken).exp;
     } catch (_) {
       return null;
     }
@@ -85,9 +89,21 @@ class Session {
   /// The 10 second buffer is to account for latency issues.
   bool get isExpired {
     if (expiresAt == null) return false;
-    return DateTime.now().add(Constants.expiryMargin).isAfter(
+    return DateTime.now()
+        .add(Constants.expiryMargin)
+        .isAfter(
           DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
         );
+  }
+
+  /// Returns `true` if the token is expired right now, without applying the
+  /// [Constants.expiryMargin] buffer used by [isExpired].
+  @internal
+  bool get isExpiredWithoutMargin {
+    if (expiresAt == null) return false;
+    return DateTime.now().isAfter(
+      DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
+    );
   }
 
   Session copyWith({

@@ -1,14 +1,12 @@
 import 'package:gotrue/src/types/api_version.dart';
-import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/version.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class Constants {
   static const String defaultGotrueUrl = 'http://localhost:9999';
-  static const String defaultAudience = '';
-  static const Map<String, String> defaultHeaders = {
-    'X-Client-Info': 'gotrue-dart/$version',
+  static final Map<String, String> defaultHeaders = {
+    'X-Client-Info': buildClientInfoHeader('gotrue-dart', version),
   };
-  static const int defaultExpiryMargin = 60 * 1000;
 
   /// storage key prefix to store code verifiers
   static const String defaultStorageKey = 'supabase.auth.token';
@@ -92,7 +90,7 @@ enum OtpType {
   magiclink,
   recovery,
   emailChange,
-  email
+  email,
 }
 
 /// Messaging channel to use (e.g. whatsapp or sms)

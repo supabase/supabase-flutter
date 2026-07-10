@@ -2,19 +2,19 @@ import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
 import 'reset_helper.dart';
+import 'test_utils.dart';
 
 void main() {
-  const rootUrl = 'http://localhost:3000';
   late PostgrestClient postgrest;
   final resetHelper = ResetHelper();
 
   setUpAll(() async {
-    postgrest = PostgrestClient(rootUrl);
+    postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
     await resetHelper.initialize(postgrest);
   });
 
   setUp(() {
-    postgrest = PostgrestClient(rootUrl);
+    postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
   });
 
   tearDown(() async {
@@ -28,20 +28,21 @@ void main() {
         .not('status', 'eq', 'OFFLINE');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['status'] != ('OFFLINE'), true);
+      expect(item['status'], isNot('OFFLINE'));
     }
   });
 
   test('not with in filter', () async {
-    final res = await postgrest
-        .from('users')
-        .select('username')
-        .not('username', 'in', ['supabot', 'kiwicopple']);
+    final res = await postgrest.from('users').select('username').not(
+      'username',
+      'in',
+      ['supabot', 'kiwicopple'],
+    );
     expect(res, isNotEmpty);
 
     for (final item in res) {
-      expect(item['username'] != ('supabot'), true);
-      expect(item['username'] != ('kiwicopple'), true);
+      expect(item['username'], isNot('supabot'));
+      expect(item['username'], isNot('kiwicopple'));
     }
   });
 
@@ -54,16 +55,19 @@ void main() {
   });
 
   test('not with List of values', () async {
-    final res = await postgrest
-        .from('users')
-        .select('status')
-        .not('interests', 'cs', ['baseball', 'basketball']);
+    final res = await postgrest.from('users').select('status').not(
+      'interests',
+      'cs',
+      ['baseball', 'basketball'],
+    );
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(
-        ((item['interests'] ?? []) as List)
-            .contains(['baseball', 'basketball']),
-        false,
+        ((item['interests'] ?? []) as List).contains([
+          'baseball',
+          'basketball',
+        ]),
+        isFalse,
       );
     }
   });
@@ -78,7 +82,7 @@ void main() {
     for (final item in res) {
       expect(
         item['username'] == ('supabot') || item['status'] == ('OFFLINE'),
-        true,
+        isTrue,
       );
     }
   });
@@ -92,19 +96,19 @@ void main() {
       expect(res, isNotEmpty);
 
       for (final item in res) {
-        expect(item['username'] == ('supabot'), true);
+        expect(item['username'], 'supabot');
       }
     });
 
     test('eq list', () async {
-      final res = await postgrest
-          .from('users')
-          .select('username')
-          .eq('interests', ["basketball", "baseball"]);
+      final res = await postgrest.from('users').select('username').eq(
+        'interests',
+        ["basketball", "baseball"],
+      );
       expect(res, isNotEmpty);
 
       for (final item in res) {
-        expect(item['username'] == ('supabot'), true);
+        expect(item['username'], 'supabot');
       }
     });
   });
@@ -118,15 +122,15 @@ void main() {
       expect(res, isNotEmpty);
 
       for (final item in res) {
-        expect(item['username'] == ('supabot'), false);
+        expect(item['username'], isNot('supabot'));
       }
     });
 
     test('neq list', () async {
-      final res = await postgrest
-          .from('users')
-          .select('username')
-          .neq('interests', ["football"]);
+      final res = await postgrest.from('users').select('username').neq(
+        'interests',
+        ["football"],
+      );
       expect(res, isNotEmpty);
 
       final onlyNames = res.map((row) => row["username"]).toList();
@@ -139,7 +143,7 @@ void main() {
     expect(res, isNotEmpty);
 
     for (final item in res) {
-      expect((item['id'] as int) > 1, true);
+      expect((item['id'] as int) > 1, isTrue);
     }
   });
 
@@ -148,7 +152,7 @@ void main() {
     expect(res, isNotEmpty);
 
     for (final item in res) {
-      expect((item['id'] as int) < 1, false);
+      expect((item['id'] as int) < 1, isFalse);
     }
   });
 
@@ -156,7 +160,7 @@ void main() {
     final res = await postgrest.from('messages').select('id').lt('id', 2);
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect((item['id'] as int) < 2, true);
+      expect((item['id'] as int) < 2, isTrue);
     }
   });
 
@@ -164,7 +168,7 @@ void main() {
     final res = await postgrest.from('messages').select('id').lte('id', 2);
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect((item['id'] as int) > 2, false);
+      expect((item['id'] as int) > 2, isFalse);
     }
   });
 
@@ -175,7 +179,7 @@ void main() {
         .like('username', '%supa%');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect((item['username'] as String).contains('supa'), true);
+      expect((item['username'] as String).contains('supa'), isTrue);
     }
   });
 
@@ -199,8 +203,9 @@ void main() {
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(
-          item['username'].contains('supa') || item['username'].contains('wai'),
-          true);
+        item['username'].contains('supa') || item['username'].contains('wai'),
+        isTrue,
+      );
     }
   });
 
@@ -212,7 +217,7 @@ void main() {
     expect(res, isNotEmpty);
     for (final item in res) {
       final user = (item['username'] as String).toLowerCase();
-      expect(user.contains('supa'), true);
+      expect(user.contains('supa'), isTrue);
     }
   });
 
@@ -236,15 +241,18 @@ void main() {
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(
-          item['username'].toLowerCase().contains('supa') ||
-              item['username'].toLowerCase().contains('wai'),
-          true);
+        item['username'].toLowerCase().contains('supa') ||
+            item['username'].toLowerCase().contains('wai'),
+        isTrue,
+      );
     }
   });
 
   test('is', () async {
-    final res =
-        await postgrest.from('users').select('data').isFilter('data', null);
+    final res = await postgrest
+        .from('users')
+        .select('data')
+        .isFilter('data', null);
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(item['data'], null);
@@ -252,15 +260,15 @@ void main() {
   });
 
   test('in', () async {
-    final res = await postgrest
-        .from('users')
-        .select('status')
-        .inFilter('status', ['ONLINE', 'OFFLINE']);
+    final res = await postgrest.from('users').select('status').inFilter(
+      'status',
+      ['ONLINE', 'OFFLINE'],
+    );
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(
         item['status'] == 'ONLINE' || item['status'] == 'OFFLINE',
-        true,
+        isTrue,
       );
     }
   });
@@ -290,10 +298,10 @@ void main() {
     });
 
     test('contains list', () async {
-      final res = await postgrest
-          .from('users')
-          .select('username')
-          .contains('interests', ["basketball", "baseball"]);
+      final res = await postgrest.from('users').select('username').contains(
+        'interests',
+        ["basketball", "baseball"],
+      );
       expect(res, isNotEmpty);
       expect(
         (res[0])['username'],
@@ -312,10 +320,10 @@ void main() {
     });
 
     test('containedBy list', () async {
-      final res = await postgrest
-          .from('users')
-          .select('username')
-          .containedBy('interests', ["basketball", "baseball", "xxxx"]);
+      final res = await postgrest.from('users').select('username').containedBy(
+        'interests',
+        ["basketball", "baseball", "xxxx"],
+      );
       expect(res, isNotEmpty);
       expect(res[0]['username'], 'supabot');
     });
@@ -337,7 +345,7 @@ void main() {
         .rangeGt('age_range', '[2,25)');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['username'] != 'supabot', true);
+      expect(item['username'], isNot('supabot'));
     }
   });
 
@@ -348,7 +356,7 @@ void main() {
         .rangeGte('age_range', '[2,25)');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['username'] != 'supabot', true);
+      expect(item['username'], isNot('supabot'));
     }
   });
 
@@ -359,7 +367,7 @@ void main() {
         .rangeLte('age_range', '[2,25)');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['username'] == 'supabot', true);
+      expect(item['username'], 'supabot');
     }
   });
 
@@ -384,10 +392,10 @@ void main() {
     });
 
     test('overlaps list', () async {
-      final res = await postgrest
-          .from('users')
-          .select('username')
-          .overlaps('interests', ["basketball", "baseball"]);
+      final res = await postgrest.from('users').select('username').overlaps(
+        'interests',
+        ["basketball", "baseball"],
+      );
       expect(
         (res[0])['username'],
         'supabot',
@@ -404,7 +412,10 @@ void main() {
   });
 
   test('textSearch with plainto_tsquery', () async {
-    final res = await postgrest.from('users').select('username').textSearch(
+    final res = await postgrest
+        .from('users')
+        .select('username')
+        .textSearch(
           'catchphrase',
           "'fat' & 'cat'",
           config: 'english',
@@ -414,7 +425,10 @@ void main() {
   });
 
   test('textSearch with phraseto_tsquery', () async {
-    final res = await postgrest.from('users').select('username').textSearch(
+    final res = await postgrest
+        .from('users')
+        .select('username')
+        .textSearch(
           'catchphrase',
           'cat',
           config: 'english',
@@ -424,7 +438,10 @@ void main() {
   });
 
   test('textSearch with websearch_to_tsquery', () async {
-    final res = await postgrest.from('users').select('username').textSearch(
+    final res = await postgrest
+        .from('users')
+        .select('username')
+        .textSearch(
           'catchphrase',
           "'fat' & 'cat'",
           config: 'english',
@@ -455,25 +472,26 @@ void main() {
     });
 
     test('filter in with List of values', () async {
-      final res = await postgrest
-          .from('users')
-          .select()
-          .filter('username', 'in', ['supabot', 'kiwicopple']);
+      final res = await postgrest.from('users').select().filter(
+        'username',
+        'in',
+        ['supabot', 'kiwicopple'],
+      );
       expect(res.length, 2);
       for (final item in res) {
         expect(
           item['username'] == 'supabot' || item['username'] == 'kiwicopple',
-          true,
+          isTrue,
         );
       }
     });
   });
 
   test('match', () async {
-    final res = await postgrest
-        .from('users')
-        .select()
-        .match({'username': 'supabot', 'status': 'ONLINE'});
+    final res = await postgrest.from('users').select().match({
+      'username': 'supabot',
+      'status': 'ONLINE',
+    });
     expect(res[0]['username'], 'supabot');
   });
 
@@ -484,7 +502,7 @@ void main() {
         .matchRegex('username', '^supa.*');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect((item['username'] as String).startsWith('supa'), true);
+      expect((item['username'] as String).startsWith('supa'), isTrue);
     }
   });
 
@@ -496,7 +514,9 @@ void main() {
     expect(res, isNotEmpty);
     for (final item in res) {
       expect(
-          (item['username'] as String).toLowerCase().startsWith('supa'), true);
+        (item['username'] as String).toLowerCase().startsWith('supa'),
+        isTrue,
+      );
     }
   });
 
@@ -507,12 +527,13 @@ void main() {
         .isDistinct('status', 'ONLINE');
     expect(res, isNotEmpty);
     for (final item in res) {
-      expect(item['status'] != 'ONLINE', true);
+      expect(item['status'], isNot('ONLINE'));
     }
   });
   test('filter on rpc', () async {
-    final List res = await postgrest.rpc('get_username_and_status',
-        params: {'name_param': 'supabot'}).neq('status', 'ONLINE');
+    final List res = await postgrest
+        .rpc('get_username_and_status', params: {'name_param': 'supabot'})
+        .neq('status', 'ONLINE');
     expect(res, isEmpty);
   });
 

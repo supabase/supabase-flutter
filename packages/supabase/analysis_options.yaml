@@ -1,5 +1,1 @@
-include: package:lints/recommended.yaml
-
-linter:
-  rules:
-    avoid_print: false
+include: package:supabase_lints/analysis_options.yaml

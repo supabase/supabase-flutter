@@ -6,7 +6,7 @@ typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
 
 class Binding {
   String type;
-  Map<String, String> filter;
+  Map<String, dynamic> filter;
   BindingCallback callback;
   String? id;
 
@@ -19,7 +19,7 @@ class Binding {
 
   Binding copyWith({
     String? type,
-    Map<String, String>? filter,
+    Map<String, dynamic>? filter,
     BindingCallback? callback,
     String? id,
   }) {
@@ -50,9 +50,8 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
   String toRealtimeEvent() {
     if (this == PostgresChangeEvent.all) {
       return '*';
-    } else {
-      return name.toUpperCase();
     }
+    return name.toUpperCase();
   }
 
   static PostgresChangeEvent fromString(String event) {
@@ -65,7 +64,8 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
         return PostgresChangeEvent.delete;
     }
     throw ArgumentError(
-        'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.');
+      'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.',
+    );
   }
 }
 
@@ -79,24 +79,31 @@ class ChannelFilter {
   final String? schema;
   final String? table;
 
-  /// For [RealtimeListenTypes.postgresChanges] it's of the format `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt, gte, in`
+  /// For [RealtimeListenTypes.postgresChanges] it's of the format `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt, gte, in, like, ilike, is, match, imatch, isdistinct`.
   ///
-  /// Only one filter can be applied
+  /// Multiple conditions can be combined with commas; they are applied as an `AND`.
+  /// Any operator can be negated with the `not.` prefix.
   final String? filter;
 
-  ChannelFilter({
+  /// For [RealtimeListenTypes.postgresChanges], restricts the change payload to
+  /// a subset of columns instead of the full row.
+  final List<String>? select;
+
+  const ChannelFilter({
     this.event,
     this.schema,
     this.table,
     this.filter,
+    this.select,
   });
 
-  Map<String, String> toMap() {
+  Map<String, dynamic> toMap() {
     return {
-      if (event != null) 'event': event!,
-      if (schema != null) 'schema': schema!,
-      if (table != null) 'table': table!,
-      if (filter != null) 'filter': filter!,
+      'event': ?event,
+      'schema': ?schema,
+      'table': ?table,
+      'filter': ?filter,
+      'select': ?select,
     };
   }
 }
@@ -105,9 +112,10 @@ enum ChannelResponse {
   ok,
   timedOut,
   @Deprecated(
-      'Client side rate limiting has been removed, and this enum value will never be returned.')
+    'Client side rate limiting has been removed, and this enum value will never be returned.',
+  )
   rateLimited,
-  error
+  error,
 }
 
 enum RealtimeListenTypes { postgresChanges, broadcast, presence, system }
@@ -122,7 +130,8 @@ extension PresenceEventExtended on PresenceEvent {
       }
     }
     throw ArgumentError(
-        'Only "sync", "join", or "leave" can be can be passed to `fromString()` method.');
+      'Only "sync", "join", or "leave" can be can be passed to `fromString()` method.',
+    );
   }
 }
 
@@ -132,9 +141,8 @@ extension ToType on RealtimeListenTypes {
   String toType() {
     if (this == RealtimeListenTypes.postgresChanges) {
       return 'postgres_changes';
-    } else {
-      return name;
     }
+    return name;
   }
 }
 
@@ -162,7 +170,7 @@ class ReplayOption {
 }
 
 class RealtimeChannelConfig {
-  /// [ack] option instructs server to acknowlege that broadcast message was received
+  /// [ack] option instructs server to acknowledge that broadcast message was received
   final bool ack;
 
   /// [self] option enables client to receive message it broadcasted
@@ -180,6 +188,16 @@ class RealtimeChannelConfig {
   /// Defines if the channel is private or not and if RLS policies will be used to check data
   final bool private;
 
+  /// [replicationReady] instructs the server to emit a `system` event once the
+  /// Postgres replication connection backing this channel is established and
+  /// ready to stream changes.
+  ///
+  /// Listen for it with [RealtimeChannel.onSystemEvents]; the payload's
+  /// [RealtimeSystemPayload.status] is `'ok'`
+  /// (message: `'Replication connection established'`) on success or `'error'`
+  /// if the connection is not ready in time.
+  final bool replicationReady;
+
   const RealtimeChannelConfig({
     this.ack = false,
     this.self = false,
@@ -187,6 +205,7 @@ class RealtimeChannelConfig {
     this.key = '',
     this.enabled = false,
     this.private = false,
+    this.replicationReady = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -197,6 +216,9 @@ class RealtimeChannelConfig {
     if (replay != null) {
       broadcastConfig['replay'] = replay!.toMap();
     }
+    if (replicationReady) {
+      broadcastConfig['replication_ready'] = true;
+    }
 
     return {
       'config': {
@@ -206,9 +228,51 @@ class RealtimeChannelConfig {
           'enabled': enabled,
         },
         'private': private,
-      }
+      },
     };
   }
+}
+
+/// Payload of a `system` event emitted by the server.
+///
+/// Most notably, when a channel is created with
+/// [RealtimeChannelConfig.replicationReady] set to `true`, the server sends one
+/// of these once the Postgres replication connection is ready
+/// ([status] is `'ok'`) or fails to become ready in time ([status] is
+/// `'error'`).
+class RealtimeSystemPayload {
+  /// The extension that produced the message, e.g. `'system'` or
+  /// `'postgres_changes'`.
+  final String extension;
+
+  /// `'ok'` on success, `'error'` on failure.
+  final String status;
+
+  /// Human-readable description, e.g. `'Replication connection established'`.
+  final String message;
+
+  /// The channel (sub)topic the message refers to.
+  final String channel;
+
+  const RealtimeSystemPayload({
+    required this.extension,
+    required this.status,
+    required this.message,
+    required this.channel,
+  });
+
+  factory RealtimeSystemPayload.fromJson(Map<String, dynamic> json) {
+    return RealtimeSystemPayload(
+      extension: json['extension']?.toString() ?? '',
+      status: json['status']?.toString() ?? '',
+      message: json['message']?.toString() ?? '',
+      channel: json['channel']?.toString() ?? '',
+    );
+  }
+
+  @override
+  String toString() =>
+      'RealtimeSystemPayload(extension: $extension, status: $status, message: $message, channel: $channel)';
 }
 
 /// Data class that contains the Postgres change event payload.
@@ -220,7 +284,7 @@ class PostgresChangePayload {
   final Map<String, dynamic> newRecord;
   final Map<String, dynamic> oldRecord;
   final dynamic errors;
-  PostgresChangePayload({
+  const PostgresChangePayload({
     required this.schema,
     required this.table,
     required this.commitTimestamp,
@@ -249,21 +313,18 @@ class PostgresChangePayload {
       schema: payload['schema'] as String,
       table: payload['table'] as String,
       commitTimestamp: commitTimestamp,
-      eventType:
-          PostgresChangeEventMethods.fromString(payload['eventType'] as String),
-      newRecord: newData is Map
-          ? Map<String, dynamic>.from(newData)
-          : <String, dynamic>{},
-      oldRecord: oldData is Map
-          ? Map<String, dynamic>.from(oldData)
-          : <String, dynamic>{},
+      eventType: PostgresChangeEventMethods.fromString(
+        payload['eventType'] as String,
+      ),
+      newRecord: newData is Map ? Map.from(newData) : {},
+      oldRecord: oldData is Map ? Map.from(oldData) : {},
       errors: payload['errors'],
     );
   }
 
   @override
   String toString() {
-    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: $eventType, newRow: $newRecord, oldRow: $oldRecord, errors: $errors)';
+    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: ${eventType.name}, newRow: $newRecord, oldRow: $oldRecord, errors: $errors)';
   }
 
   @override
@@ -293,6 +354,10 @@ class PostgresChangePayload {
 }
 
 /// Specifies the type of filter to be applied on realtime Postgres Change listener.
+///
+/// These mirror the PostgREST operator surface that the Realtime server
+/// evaluates for Postgres Changes. Any operator can be negated with the `not.`
+/// prefix via [PostgresChangeFilter.negate].
 enum PostgresChangeFilterType {
   /// Listens to changes where a column's value in a table equals a client-specified value.
   eq,
@@ -313,7 +378,55 @@ enum PostgresChangeFilterType {
   gte,
 
   /// Listen to changes when a column's value in a table equals any of the values specified.
-  inFilter;
+  inFilter,
+
+  /// Listens to changes where a column matches a case-sensitive pattern (`LIKE`).
+  ///
+  /// Use `%` and `_` as wildcards, e.g. `title=like.%foo%`.
+  like,
+
+  /// Listens to changes where a column matches a case-insensitive pattern (`ILIKE`).
+  ilike,
+
+  /// Listens to changes where a column `IS` a given value (`null`, `true`,
+  /// `false` or `unknown`), e.g. `deleted_at=is.null`.
+  isFilter,
+
+  /// Listens to changes where a column matches a POSIX regular expression (`~`).
+  match,
+
+  /// Listens to changes where a column matches a case-insensitive POSIX regular
+  /// expression (`~*`).
+  imatch,
+
+  /// Listens to changes where a column is distinct from a value (NULL-safe
+  /// inequality, `IS DISTINCT FROM`).
+  isDistinct;
+
+  /// The operator token used in the filter wire format (the part between
+  /// `column=` and `.value`). Most match [name], but a few differ because the
+  /// enum names avoid Dart reserved words / casing conventions.
+  String get token {
+    switch (this) {
+      case PostgresChangeFilterType.inFilter:
+        return 'in';
+      case PostgresChangeFilterType.isFilter:
+        return 'is';
+      case PostgresChangeFilterType.isDistinct:
+        return 'isdistinct';
+      case PostgresChangeFilterType.eq:
+      case PostgresChangeFilterType.neq:
+      case PostgresChangeFilterType.lt:
+      case PostgresChangeFilterType.lte:
+      case PostgresChangeFilterType.gt:
+      case PostgresChangeFilterType.gte:
+      case PostgresChangeFilterType.like:
+      case PostgresChangeFilterType.ilike:
+      case PostgresChangeFilterType.match:
+      case PostgresChangeFilterType.imatch:
+        return name;
+    }
+  }
 }
 
 /// {@template postgres_change_filter}
@@ -329,23 +442,42 @@ class PostgresChangeFilter {
   /// The value to perform the filter on.
   final dynamic value;
 
+  /// When `true`, the operator is negated with the `not.` prefix
+  /// (e.g. `status=not.in.(draft,archived)`, `deleted_at=not.is.null`).
+  final bool negate;
+
   /// {@macro postgres_change_filter}
-  PostgresChangeFilter({
+  const PostgresChangeFilter({
     required this.type,
     required this.column,
     required this.value,
+    this.negate = false,
   });
+
+  /// Quotes a scalar value PostgREST-style when it contains a reserved
+  /// character (`,`, `(`, `)`, `"`, `\`) or surrounding whitespace, so the
+  /// server's filter parser doesn't misread it as a condition/list boundary.
+  /// Values without reserved characters are sent verbatim.
+  static String _serializeScalar(Object? value) {
+    final serialized = value == null ? 'null' : '$value';
+    final needsQuoting =
+        RegExp(r'[,()"\\]').hasMatch(serialized) ||
+        serialized != serialized.trim();
+    if (!needsQuoting) return serialized;
+    final escaped = serialized.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+    return '"$escaped"';
+  }
 
   @override
   String toString() {
+    final prefix = negate ? 'not.' : '';
     if (type == PostgresChangeFilterType.inFilter) {
-      if (value is List<String>) {
-        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
-      } else {
-        return '$column=in.(${value.map((s) => '"$s"').join(',')})';
-      }
+      final items = (value as Iterable)
+          .map((s) => _serializeScalar(s))
+          .join(',');
+      return '$column=${prefix}in.($items)';
     }
-    return '$column=${type.name}.$value';
+    return '$column=$prefix${type.token}.${_serializeScalar(value)}';
   }
 }
 
@@ -354,20 +486,20 @@ abstract class RealtimePresencePayload {
   /// Name of the presence event.
   final PresenceEvent event;
 
-  RealtimePresencePayload({
+  const RealtimePresencePayload({
     required this.event,
   });
 
   RealtimePresencePayload.fromJson(Map<String, dynamic> json)
-      : event = PresenceEventExtended.fromString(json['event']);
+    : event = PresenceEventExtended.fromString(json['event']);
 
   @override
-  String toString() => 'PresencePayload(event: $event)';
+  String toString() => 'PresencePayload(event: ${event.name})';
 }
 
 /// Payload for [PresenceEvent.sync] callback.
 class RealtimePresenceSyncPayload extends RealtimePresencePayload {
-  RealtimePresenceSyncPayload({
+  const RealtimePresenceSyncPayload({
     required super.event,
   });
 
@@ -378,7 +510,7 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
   }
 
   @override
-  String toString() => 'PresenceSyncPayload(event: $event)';
+  String toString() => 'PresenceSyncPayload(event: ${event.name})';
 }
 
 /// Payload for [PresenceEvent.join] callback.
@@ -394,7 +526,7 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
   /// List of currently present presences.
   final List<Presence> currentPresences;
 
-  RealtimePresenceJoinPayload({
+  const RealtimePresenceJoinPayload({
     required super.event,
     required this.key,
     required this.currentPresences,
@@ -405,8 +537,8 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
     return RealtimePresenceJoinPayload(
       event: PresenceEventExtended.fromString(json['event']),
       key: json['key'] as String,
-      newPresences: json['newPresences'] as List<Presence>,
-      currentPresences: json['currentPresences'] as List<Presence>,
+      newPresences: (json['newPresences'] as List).cast(),
+      currentPresences: (json['currentPresences'] as List).cast(),
     );
   }
 
@@ -428,7 +560,7 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
   /// List of currently present presences.
   final List<Presence> currentPresences;
 
-  RealtimePresenceLeavePayload({
+  const RealtimePresenceLeavePayload({
     required super.event,
     required this.key,
     required this.currentPresences,
@@ -439,8 +571,8 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
     return RealtimePresenceLeavePayload(
       event: PresenceEventExtended.fromString(json['event']),
       key: json['key'] as String,
-      leftPresences: json['leftPresences'] as List<Presence>,
-      currentPresences: json['currentPresences'] as List<Presence>,
+      leftPresences: (json['leftPresences'] as List).cast(),
+      currentPresences: (json['currentPresences'] as List).cast(),
     );
   }
 
@@ -457,7 +589,7 @@ class SinglePresenceState {
   /// List of shared payloads of the client.
   final List<Presence> presences;
 
-  SinglePresenceState({
+  const SinglePresenceState({
     required this.key,
     required this.presences,
   });

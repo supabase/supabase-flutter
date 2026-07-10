@@ -2,6 +2,7 @@ import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:storage_client/src/fetch.dart';
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class StorageBucketApi {
   final String url;
@@ -13,9 +14,19 @@ class StorageBucketApi {
     storageFetch = Fetch(httpClient);
   }
 
+  Map<String, dynamic> _bucketPayload(String id, BucketOptions bucketOptions) {
+    return {
+      'id': id,
+      'name': id,
+      'public': bucketOptions.public,
+      'file_size_limit': ?bucketOptions.fileSizeLimit,
+      'allowed_mime_types': ?bucketOptions.allowedMimeTypes,
+    };
+  }
+
   /// Retrieves the details of all Storage buckets within an existing project.
   Future<List<Bucket>> listBuckets() async {
-    final FetchOptions options = FetchOptions(headers: headers);
+    final FetchOptions options = FetchOptions(headers);
     final response = await storageFetch.get('$url/bucket', options: options);
     final buckets = List<Bucket>.from(
       (response as List).map(
@@ -29,9 +40,11 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to retrieve.
   Future<Bucket> getBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers: headers);
-    final response =
-        await storageFetch.get('$url/bucket/$id', options: options);
+    final FetchOptions options = FetchOptions(headers);
+    final response = await storageFetch.get(
+      '$url/bucket/$id',
+      options: options,
+    );
     return Bucket.fromJson(response);
   }
 
@@ -55,18 +68,10 @@ class StorageBucketApi {
     String id, [
     BucketOptions bucketOptions = const BucketOptions(public: false),
   ]) async {
-    final FetchOptions options = FetchOptions(headers: headers);
+    final FetchOptions options = FetchOptions(headers);
     final response = await storageFetch.post(
       '$url/bucket',
-      {
-        'id': id,
-        'name': id,
-        'public': bucketOptions.public,
-        if (bucketOptions.fileSizeLimit != null)
-          'file_size_limit': bucketOptions.fileSizeLimit,
-        if (bucketOptions.allowedMimeTypes != null)
-          'allowed_mime_types': bucketOptions.allowedMimeTypes,
-      },
+      _bucketPayload(id, bucketOptions),
       options: options,
     );
     final bucketId = (response as Map<String, dynamic>)['name'] as String;
@@ -82,18 +87,10 @@ class StorageBucketApi {
     String id,
     BucketOptions bucketOptions,
   ) async {
-    final FetchOptions options = FetchOptions(headers: headers);
+    final FetchOptions options = FetchOptions(headers);
     final response = await storageFetch.put(
       '$url/bucket/$id',
-      {
-        'id': id,
-        'name': id,
-        'public': bucketOptions.public,
-        if (bucketOptions.fileSizeLimit != null)
-          'file_size_limit': bucketOptions.fileSizeLimit,
-        if (bucketOptions.allowedMimeTypes != null)
-          'allowed_mime_types': bucketOptions.allowedMimeTypes,
-      },
+      _bucketPayload(id, bucketOptions),
       options: options,
     );
     final message = (response as Map<String, dynamic>)['message'] as String;
@@ -104,9 +101,12 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to empty.
   Future<String> emptyBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers: headers);
-    final response =
-        await storageFetch.post('$url/bucket/$id/empty', {}, options: options);
+    final FetchOptions options = FetchOptions(headers);
+    final response = await storageFetch.post(
+      '$url/bucket/$id/empty',
+      {},
+      options: options,
+    );
     return (response as Map<String, dynamic>)['message'] as String;
   }
 
@@ -115,7 +115,7 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to delete.
   Future<String> deleteBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers: headers);
+    final FetchOptions options = FetchOptions(headers);
     final response = await storageFetch.delete(
       '$url/bucket/$id',
       {},

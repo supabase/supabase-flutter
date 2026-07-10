@@ -1,16 +1,29 @@
 import 'package:realtime_client/src/version.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class Constants {
-  static const String vsn = '1.0.0';
   static const Duration defaultTimeout = Duration(milliseconds: 10000);
   static const int defaultHeartbeatIntervalMs = 25000;
   static const int wsCloseNormal = 1000;
-  static const Map<String, String> defaultHeaders = {
-    'X-Client-Info': 'realtime-dart/$version',
+  static final Map<String, String> defaultHeaders = {
+    'X-Client-Info': buildClientInfoHeader('realtime-dart', version),
   };
 }
 
 typedef RealtimeConstants = Constants;
+
+enum RealtimeProtocolVersion {
+  /// Legacy protocol: object-shaped JSON text frames only.
+  v1('1.0.0'),
+
+  /// Positional JSON array text frames plus binary frames.
+  v2('2.0.0');
+
+  const RealtimeProtocolVersion(this.vsn);
+
+  /// The value sent as the `vsn` connection parameter.
+  final String vsn;
+}
 
 enum SocketStates {
   /// Client attempting to establish a connection

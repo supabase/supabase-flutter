@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "\U0001F4AC Questions & Discussions"
+    url: https://github.com/supabase/supabase-flutter/discussions
+    about: Ask questions and discuss with other community members.
+  - name: "\U0001F47E Discord Chat"
+    url: https://discord.supabase.com/
+    about: Join our Discord server to chat with the community.
+  - name: "\U0001F4DA Documentation"
+    url: https://supabase.com/docs/reference/dart/introduction
+    about: Check the Supabase Dart documentation.

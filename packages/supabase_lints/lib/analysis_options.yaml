@@ -1,0 +1,64 @@
+# Shared lint configuration for the Supabase Dart packages.
+#
+# The 'recommended' DCM preset is enabled, but the rules listed below currently
+# have violations in the existing codebase and are disabled for now. They are
+# meant to be re-enabled one by one as the violations get fixed (ratcheting),
+# so new code is not held to a rule the rest of the codebase does not yet pass.
+include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    unawaited_futures: true
+    discarded_futures: true
+
+formatter:
+  trailing_commas: preserve
+
+dcm:
+  extends:
+    - recommended
+  rules:
+    # Keep web and WASM support: dart:html / dart:js / dart:js_util work on the
+    # JS web target but break WASM, and dart:io / dart:ffi break both. The web
+    # interop libraries below are replaced by dart:js_interop + package:web, and
+    # dart:io is only allowed in conditional `_io.dart` files.
+    avoid-banned-imports:
+      entries:
+        - paths: ['.*/lib/.*\.dart$']
+          deny: ['^dart:html$', '^dart:js$', '^dart:js_util$']
+          message: Use dart:js_interop with package:web for WASM compatibility.
+          severity: error
+        - paths: ['.*/lib/.*\.dart$']
+          deny: ['^dart:ffi$']
+          message: dart:ffi is not available on web or WASM.
+          severity: error
+        - paths: ['.*/lib/.*\.dart$']
+          exclude-paths: ['.*_io\.dart$']
+          deny: ['^dart:io$']
+          message: Import dart:io only in conditional `_io.dart` files; use defaultTargetPlatform or conditional imports elsewhere.
+          severity: error
+    avoid-accessing-collections-by-constant-index: false
+    avoid-duplicate-initializers: false
+    avoid-duplicate-test-assertions: false
+    avoid-dynamic: false
+    avoid-never-passed-parameters: false
+    avoid-nullable-interpolation: false
+    avoid-throw-in-catch-block: false
+    avoid-unassigned-stream-subscriptions: false
+    avoid-unsafe-collection-methods: false
+    avoid-unused-parameters: false
+    move-variable-closer-to-its-usage: false
+    no-empty-block: false
+    prefer-correct-callback-field-name: false
+    prefer-explicit-function-type: false
+    prefer-match-file-name: false
+    prefer-overriding-parent-equality: false
+    prefer-prefixed-global-constants: false
+    prefer-switch-with-enums: false
+
+    # Blocked until dot shorthands stabilize. They are still an experimental
+    # language feature, so code targeting our 3.9.0 floor cannot use them.
+    prefer-returning-shorthands: false # needs dot shorthands (experimental)
+    prefer-shorthands-with-enums: false # needs dot shorthands (experimental)
+    prefer-shorthands-with-static-fields: false # needs dot shorthands (experimental)
+    prefer-shorthands-with-constructors: false # needs dot shorthands (experimental)

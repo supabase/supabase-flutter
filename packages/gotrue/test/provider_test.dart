@@ -10,8 +10,8 @@ void main() {
 
   env.load(); // Load env variables from .env file
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
+  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
 
   late GoTrueClient client;
   late Session session;
@@ -28,8 +28,9 @@ void main() {
   });
   group('Provider sign in', () {
     test('signIn() with Provider', () async {
-      final res =
-          await client.getOAuthSignInUrl(provider: OAuthProvider.google);
+      final res = await client.getOAuthSignInUrl(
+        provider: OAuthProvider.google,
+      );
       final url = res.url;
       final provider = res.provider;
       expect(url, startsWith('$gotrueUrl/authorize?provider=google'));
@@ -47,17 +48,51 @@ void main() {
       expect(
         url,
         startsWith(
-            '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL'),
+          '$gotrueUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL',
+        ),
       );
       expect(provider, OAuthProvider.github);
+    });
+
+    test('signIn() with custom OIDC provider', () async {
+      final res = await client.getOAuthSignInUrl(
+        provider: OAuthProvider('custom:my-oidc-provider'),
+      );
+      expect(
+        res.url,
+        startsWith(
+          '$gotrueUrl/authorize?provider=custom%3Amy-oidc-provider',
+        ),
+      );
+      expect(res.provider, OAuthProvider('custom:my-oidc-provider'));
+      expect(res.provider.name, 'custom:my-oidc-provider');
+    });
+
+    test('signIn() with custom OIDC provider and options', () async {
+      final res = await client.getOAuthSignInUrl(
+        provider: OAuthProvider('custom:my-oidc-provider'),
+        redirectTo: 'https://localhost:9000/callback',
+        scopes: 'openid profile email',
+      );
+      expect(res.url, contains('provider=custom%3Amy-oidc-provider'));
+      expect(res.url, contains('redirect_to='));
+      expect(res.url, contains('scopes='));
+      expect(res.provider.name, 'custom:my-oidc-provider');
     });
   });
 
   group('getSessionFromUrl()', () {
     setUp(() async {
       final res = await http.post(
-          Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-          headers: {'x-forwarded-for': '127.0.0.1'});
+        Uri.parse(
+          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+        ),
+        headers: {
+          'x-forwarded-for': '127.0.0.1',
+          'apikey': getServiceRoleToken(env),
+          'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+        },
+      );
       if (res.body.isNotEmpty) throw res.body;
 
       await client.signInWithPassword(email: email1, password: password);
@@ -103,28 +138,55 @@ void main() {
     });
 
     test('parse provider callback url with missing param error', () async {
-      try {
-        final accessToken = session.accessToken;
-        final url =
-            'http://my-callback-url.com?page=welcome&foo=bar#access_token=$accessToken';
-        await client.getSessionFromUrl(Uri.parse(url));
-        fail('Passed provider with missing param');
-      } catch (error) {
-        expect(error, isA<AuthException>());
-        expect((error as AuthException).message, 'No expires_in detected.');
-      }
+      await expectLater(
+        () async {
+          final accessToken = session.accessToken;
+          final url =
+              'http://my-callback-url.com?page=welcome&foo=bar#access_token=$accessToken';
+          await client.getSessionFromUrl(Uri.parse(url));
+        },
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'No expires_in detected.',
+          ),
+        ),
+      );
     });
 
     test('parse provider callback url with error', () async {
       const errorDesc = 'my_error_description';
-      try {
-        const url =
-            'http://my-callback-url.com?page=welcome&foo=bar#error_description=$errorDesc';
-        await client.getSessionFromUrl(Uri.parse(url));
-        fail('Passed provider with error');
-      } on AuthException catch (error) {
-        expect(error.message, errorDesc);
-      }
+      await expectLater(
+        () async {
+          const url =
+              'http://my-callback-url.com?page=welcome&foo=bar#error_description=$errorDesc';
+          await client.getSessionFromUrl(Uri.parse(url));
+        },
+        throwsA(
+          isA<AuthException>().having((e) => e.message, 'message', errorDesc),
+        ),
+      );
+    });
+
+    test('parse provider callback url with error query parameter', () async {
+      await expectLater(
+        () async {
+          const url =
+              'http://my-callback-url.com?error=access_denied&error_code=403';
+          await client.getSessionFromUrl(Uri.parse(url));
+        },
+        throwsA(
+          isA<AuthException>()
+              .having((e) => e.code, 'code', 'access_denied')
+              .having((e) => e.statusCode, 'statusCode', '403')
+              .having(
+                (e) => e.message,
+                'message',
+                'Error in URL with unspecified error_description',
+              ),
+        ),
+      );
     });
   });
 }

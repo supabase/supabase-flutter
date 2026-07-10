@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,6 +10,10 @@ void main() {
 
   const supabaseUrl = '';
   const supabaseKey = '';
+
+  setUpAll(() {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  });
 
   group('Supabase initialization', () {
     setUp(() {
@@ -29,26 +34,22 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
     });
 
     group('Custom storage initialization', () {
       test('initialize successfully with custom localStorage', () async {
-        final localStorage = MockLocalStorage();
+        const localStorage = MockLocalStorage();
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          authOptions: FlutterAuthClientOptions(
+          debug: false,
+          authOptions: const FlutterAuthClientOptions(
             localStorage: localStorage,
           ),
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
 
       test('handles initialization with expired session in storage', () async {
@@ -57,7 +58,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockExpiredStorage(),
+            localStorage: const MockExpiredStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
@@ -72,13 +73,11 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
           authOptions: const FlutterAuthClientOptions(
             authFlowType: AuthFlowType.pkce,
           ),
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
     });
 
@@ -88,22 +87,18 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
           httpClient: httpClient,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
 
       test('initialize successfully with custom access token', () async {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
           accessToken: () async => 'custom-access-token',
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
 
         // Should throw AuthException when trying to access auth
         expect(
@@ -119,9 +114,8 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
         );
-
-        expect(Supabase.instance, isNotNull);
 
         // Dispose
         await Supabase.instance.dispose();
@@ -133,9 +127,8 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
         );
-
-        expect(Supabase.instance, isNotNull);
       });
 
       test('handles multiple initializations correctly', () async {
@@ -144,7 +137,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: false,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockLocalStorage(),
+            localStorage: const MockLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
@@ -160,13 +153,12 @@ void main() {
           publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockEmptyLocalStorage(),
+            localStorage: const MockEmptyLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
 
         final secondInstance = Supabase.instance.client;
-        expect(secondInstance, isNotNull);
         expect(identical(firstInstance, secondInstance), isFalse);
       });
     });

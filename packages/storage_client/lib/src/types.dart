@@ -1,9 +1,7 @@
-class FetchOptions {
-  final Map<String, String>? headers;
-  final bool? noResolveJson;
+// ignore_for_file: deprecated_member_use_from_same_package
 
-  const FetchOptions({this.headers, this.noResolveJson});
-}
+import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class Bucket {
   final String id;
@@ -36,8 +34,9 @@ class Bucket {
       updatedAt: json['updated_at'] as String,
       public: json['public'] as bool,
       fileSizeLimit: json['file_size_limit'] as int?,
-      allowedMimeTypes:
-          allowedMimeTypes is List ? allowedMimeTypes.cast<String>() : null,
+      allowedMimeTypes: allowedMimeTypes is List
+          ? allowedMimeTypes.cast()
+          : null,
     );
   }
 }
@@ -49,6 +48,7 @@ class FileObject {
   final String? id;
   final String? updatedAt;
   final String? createdAt;
+  @Deprecated("")
   final String? lastAccessedAt;
   final Map<String, dynamic>? metadata;
   final Bucket? buckets;
@@ -95,6 +95,7 @@ class FileObjectV2 {
   final String bucketId;
   final String? updatedAt;
   final String createdAt;
+  @Deprecated("")
   final String? lastAccessedAt;
   final int? size;
   final String? cacheControl;
@@ -211,10 +212,7 @@ class SearchOptions {
   const SearchOptions({
     this.limit = 100,
     this.offset = 0,
-    this.sortBy = const SortBy(
-      column: 'name',
-      order: 'asc',
-    ),
+    this.sortBy = const SortBy(),
     this.search,
   });
 
@@ -232,12 +230,12 @@ class SortBy {
   final String? column;
   final String? order;
 
-  const SortBy({this.column, this.order});
+  const SortBy({this.column = 'name', this.order = 'asc'});
 
   Map<String, dynamic> toMap() {
     return {
-      'column': column,
-      'order': order,
+      'column': column ?? 'name',
+      'order': order ?? 'asc',
     };
   }
 }
@@ -280,6 +278,45 @@ class SignedUrl {
   }
 }
 
+/// Represents a per-item result from [StorageFileApi.createSignedUrlsResult].
+///
+/// Use exhaustive pattern matching to handle both outcomes:
+/// ```dart
+/// for (final result in results) {
+///   switch (result) {
+///     case SignedUrlSuccess(:final signedUrl):
+///       print('URL: $signedUrl');
+///     case SignedUrlFailure(:final error):
+///       print('Missing: $error');
+///   }
+/// }
+/// ```
+sealed class SignedUrlResult {
+  /// The requested file path.
+  final String path;
+  const SignedUrlResult({required this.path});
+}
+
+/// A successful [SignedUrlResult]: the file was found and a signed URL was generated.
+final class SignedUrlSuccess extends SignedUrlResult {
+  /// The signed URL ready for use.
+  final String signedUrl;
+  const SignedUrlSuccess({required super.path, required this.signedUrl});
+
+  @override
+  String toString() => 'SignedUrlSuccess(path: $path, signedUrl: $signedUrl)';
+}
+
+/// A failed [SignedUrlResult]: the path could not be signed (e.g. the file does not exist).
+final class SignedUrlFailure extends SignedUrlResult {
+  /// The reason the URL could not be created.
+  final String error;
+  const SignedUrlFailure({required super.path, required this.error});
+
+  @override
+  String toString() => 'SignedUrlFailure(path: $path, error: $error)';
+}
+
 class SignedUploadURLResponse extends SignedUrl {
   /// Token to be used when uploading files with the `uploadToSignedUrl` method.
   final String token;
@@ -296,17 +333,16 @@ class StorageException implements Exception {
   final String? error;
   final String? statusCode;
 
-  const StorageException(this.message, {this.error, this.statusCode}) : super();
+  const StorageException(this.message, {this.error, this.statusCode});
 
   factory StorageException.fromJson(
     Map<String, dynamic> json, [
     String? statusCode,
-  ]) =>
-      StorageException(
-        json['message'] as String? ?? json.toString(),
-        error: json['error'] as String?,
-        statusCode: (json['statusCode'] as String?) ?? statusCode,
-      );
+  ]) => StorageException(
+    json['message'] as String? ?? json.toString(),
+    error: json['error'] as String?,
+    statusCode: json['statusCode']?.toString() ?? statusCode,
+  );
 
   @override
   String toString() {
@@ -367,7 +403,7 @@ class TransformOptions {
   ///  Specify the format of the image requested.
   ///
   ///  When using 'origin' we force the format to be the same as the original image,
-  ///  bypassing automatic browser optimisation such as webp conversion
+  ///  bypassing automatic browser optimization such as webp conversion
   final RequestImageFormat? format;
 
   /// {@macro transform_options}
@@ -392,21 +428,34 @@ extension ToQueryParams on TransformOptions {
   }
 }
 
-extension ToSnakeCase on Enum {
-  String get snakeCase {
-    final a = 'a'.codeUnitAt(0), z = 'z'.codeUnitAt(0);
-    final A = 'A'.codeUnitAt(0), Z = 'Z'.codeUnitAt(0);
-    final result = StringBuffer()..write(name[0].toLowerCase());
-    for (var i = 1; i < name.length; i++) {
-      final char = name.codeUnitAt(i);
-      if (A <= char && char <= Z) {
-        final pChar = name.codeUnitAt(i - 1);
-        if (a <= pChar && pChar <= z) {
-          result.write('_');
-        }
-      }
-      result.write(name[i].toLowerCase());
-    }
-    return result.toString();
-  }
+/// Controls download behavior for signed and public URLs.
+///
+/// Passing a [DownloadBehavior] triggers the file to be downloaded rather than
+/// opened in the browser by setting the response's `Content-Disposition`
+/// header.
+///
+/// ```dart
+/// storage.from('docs').getPublicUrl(
+///   'report.pdf',
+///   download: DownloadBehavior.withOriginalName,
+/// );
+/// storage.from('docs').getPublicUrl(
+///   'report.pdf',
+///   download: DownloadBehavior.named('annual-2024.pdf'),
+/// );
+/// ```
+class DownloadBehavior {
+  const DownloadBehavior._(String fileName) : _queryValue = fileName;
+
+  /// Triggers a download using the file's original name.
+  static const DownloadBehavior withOriginalName = DownloadBehavior._('');
+
+  /// Triggers a download with a custom [fileName].
+  const DownloadBehavior.named(String fileName) : _queryValue = fileName;
+
+  final String _queryValue;
+
+  /// The value appended to the `download` query parameter.
+  @internal
+  String get queryValue => _queryValue;
 }

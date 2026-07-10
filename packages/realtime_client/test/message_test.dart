@@ -90,5 +90,34 @@ void main() {
       final json = message.toJson();
       expect(json.containsKey('ref'), isFalse);
     });
+
+    test('a nested empty map is preserved, not dropped', () {
+      final message = Message(
+        topic: 'room:lobby',
+        event: ChannelEvents.presence,
+        payload: {'event': 'track', 'payload': <String, dynamic>{}},
+      );
+      final json = message.toJson();
+      expect(json['payload'], equals({'event': 'track', 'payload': {}}));
+    });
+
+    test('nested non-empty maps still serialize correctly', () {
+      final message = Message(
+        topic: 'room:lobby',
+        event: ChannelEvents.presence,
+        payload: {
+          'event': 'track',
+          'payload': {'name': 'alice'},
+        },
+      );
+      final json = message.toJson();
+      expect(
+        json['payload'],
+        equals({
+          'event': 'track',
+          'payload': {'name': 'alice'},
+        }),
+      );
+    });
   });
 }

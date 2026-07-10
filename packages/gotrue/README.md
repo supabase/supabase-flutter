@@ -1,9 +1,28 @@
-# `gotrue-dart`
+<br />
+<p align="center">
+  <a href="https://supabase.com">
+    <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+  </a>
 
-Dart client for the [GoTrue](https://github.com/supabase/gotrue) API.
+  <h1 align="center">gotrue</h1>
+
+  <p align="center">
+    Dart client library for <a href="https://supabase.com/docs/guides/auth">Supabase Auth</a>.
+  </p>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/auth">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/dart/auth-signup">Reference Docs</a>
+  </p>
+</p>
+
+<div align="center">
 
 [![pub package](https://img.shields.io/pub/v/gotrue.svg)](https://pub.dev/packages/gotrue)
-[![pub test](https://github.com/supabase/gotrue-dart/workflows/Test/badge.svg)](https://github.com/supabase/gotrue-dart/actions?query=workflow%3ATest)
+[![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
+
+</div>
 
 ## Docs
 

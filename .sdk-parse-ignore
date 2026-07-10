@@ -1,0 +1,15 @@
+# Paths excluded from the SDK capability-matrix public API scan.
+#
+# The extractor over-approximates: it treats every non-underscore top-level
+# declaration under lib/** as public API. Files under lib/src are private to
+# the package by Dart convention and are not exported from the public library.
+#
+# Prefer annotating such declarations with `@internal` (from package:meta): the
+# extractor honours it and excludes them from the scan. Use this file only for
+# paths that cannot carry that annotation, e.g. generated sources.
+
+# supabase_common is an internal, cross-package helper library. Its public
+# symbols are imported by the other packages, so they cannot be marked
+# @internal (that would trigger invalid_use_of_internal_member in the
+# consumers). Exclude the whole package from the public-API scan instead.
+packages/supabase_common/

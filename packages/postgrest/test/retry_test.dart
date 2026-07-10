@@ -8,23 +8,30 @@ import 'package:test/test.dart';
 
 typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
 
-_ResponseFactory _ok() => (req) async => StreamedResponse(
-      Stream.value(Uint8List.fromList('[]'.codeUnits)),
-      200,
-      request: req,
-      headers: {'content-type': 'application/json'},
+_ResponseFactory _ok() =>
+    (req) => Future.value(
+      StreamedResponse(
+        Stream.value(Uint8List.fromList('[]'.codeUnits)),
+        200,
+        request: req,
+        headers: {'content-type': 'application/json'},
+      ),
     );
 
-_ResponseFactory _status(int code) => (req) async => StreamedResponse(
-      Stream.value(
-          Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits)),
-      code,
-      request: req,
-      headers: {'content-type': 'application/json'},
+_ResponseFactory _status(int code) =>
+    (req) => Future.value(
+      StreamedResponse(
+        Stream.value(
+          Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits),
+        ),
+        code,
+        request: req,
+        headers: {'content-type': 'application/json'},
+      ),
     );
 
 _ResponseFactory _networkError() =>
-    (_) async => throw const SocketException('Connection refused');
+    (_) => throw const SocketException('Connection refused');
 
 class _MockRetryClient extends BaseClient {
   final List<_ResponseFactory> _responses;
@@ -40,22 +47,27 @@ class _MockRetryClient extends BaseClient {
     requests.add(request);
     if (index >= _responses.length) {
       throw StateError(
-          'Unexpected call #${index + 1}, only ${_responses.length} configured');
+        'Unexpected call #${index + 1}, only ${_responses.length} configured',
+      );
     }
 
     final completer = Completer<StreamedResponse>();
     if (request is AbortableRequest) {
-      request.abortTrigger?.then((_) {
-        if (!completer.isCompleted) {
-          completer.completeError(RequestAbortedException());
-        }
-      });
+      unawaited(
+        request.abortTrigger?.then((_) {
+          if (!completer.isCompleted) {
+            completer.completeError(RequestAbortedException());
+          }
+        }),
+      );
     }
-    Future.delayed(Duration(milliseconds: 200)).then((_) {
-      if (!completer.isCompleted) {
-        completer.complete(_responses[index](request));
-      }
-    });
+    unawaited(
+      Future.delayed(Duration(milliseconds: 200)).then((_) {
+        if (!completer.isCompleted) {
+          completer.complete(_responses[index](request));
+        }
+      }),
+    );
     return completer.future;
   }
 }
@@ -74,32 +86,36 @@ PostgrestClient _buildClient(
 
 void main() {
   group('retry logic', () {
-    test('GET retries on 520 then succeeds, X-Retry-Count increments',
-        () async {
-      final mock = _MockRetryClient([_status(520), _status(520), _ok()]);
-      final client = _buildClient(mock);
+    test(
+      'GET retries on 520 then succeeds, X-Retry-Count increments',
+      () async {
+        final mock = _MockRetryClient([_status(520), _status(520), _ok()]);
+        final client = _buildClient(mock);
 
-      final result = await client.from('users').select();
+        final result = await client.from('users').select();
 
-      expect(result, isEmpty);
-      expect(mock.callCount, 3);
-      // Initial attempt: no header
-      expect(mock.requests[0].headers['x-retry-count'], isNull);
-      // First retry: X-Retry-Count: 1
-      expect(mock.requests[1].headers['x-retry-count'], '1');
-      // Second retry: X-Retry-Count: 2
-      expect(mock.requests[2].headers['x-retry-count'], '2');
-    });
+        expect(result, isEmpty);
+        expect(mock.callCount, 3);
+        // Initial attempt: no header
+        expect(mock.requests[0].headers['x-retry-count'], isNull);
+        // First retry: X-Retry-Count: 1
+        expect(mock.requests[1].headers['x-retry-count'], '1');
+        // Second retry: X-Retry-Count: 2
+        expect(mock.requests[2].headers['x-retry-count'], '2');
+      },
+    );
 
     test('HEAD retries on 520 then succeeds', () async {
       final mock = _MockRetryClient([
         _status(520),
-        (req) async => StreamedResponse(
-              Stream.empty(),
-              200,
-              request: req,
-              headers: {'content-range': '*/4'},
-            ),
+        (req) => Future.value(
+          StreamedResponse(
+            Stream.empty(),
+            200,
+            request: req,
+            headers: {'content-range': '*/4'},
+          ),
+        ),
       ]);
       final client = _buildClient(mock);
 
@@ -115,7 +131,7 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').insert({'name': 'foo'}),
+        () => client.from('users').insert({'name': 'foo'}),
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 1);
@@ -138,7 +154,7 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 1);
@@ -160,19 +176,23 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').insert({'name': 'foo'}),
+        () => client.from('users').insert({'name': 'foo'}),
         throwsA(isA<SocketException>()),
       );
       expect(mock.callCount, 1);
     });
 
     test('exhausts all 3 retries (4 total calls) then throws on 520', () async {
-      final mock = _MockRetryClient(
-          [_status(520), _status(520), _status(520), _status(520)]);
+      final mock = _MockRetryClient([
+        _status(520),
+        _status(520),
+        _status(520),
+        _status(520),
+      ]);
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').select(),
+        () => client.from('users').select(),
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 4);
@@ -183,74 +203,82 @@ void main() {
       final client = _buildClient(mock);
 
       await expectLater(
-        client.from('users').select().retry(enabled: false),
+        () => client.from('users').select().retry(enabled: false),
         throwsA(isA<PostgrestException>()),
       );
       expect(mock.callCount, 1);
     });
 
-    test('PostgrestClient(retryEnabled: false) disables retry globally',
-        () async {
-      final mock = _MockRetryClient([_status(520)]);
-      final client = _buildClient(mock, retryEnabled: false);
+    test(
+      'PostgrestClient(retryEnabled: false) disables retry globally',
+      () async {
+        final mock = _MockRetryClient([_status(520)]);
+        final client = _buildClient(mock, retryEnabled: false);
 
-      await expectLater(
-        client.from('users').select(),
-        throwsA(isA<PostgrestException>()),
-      );
-      expect(mock.callCount, 1);
-    });
+        await expectLater(
+          () => client.from('users').select(),
+          throwsA(isA<PostgrestException>()),
+        );
+        expect(mock.callCount, 1);
+      },
+    );
 
-    test('.retry(enabled: true) re-enables retry when client-level is false',
-        () async {
-      final mock = _MockRetryClient([_status(520), _ok()]);
-      final client = _buildClient(mock, retryEnabled: false);
+    test(
+      '.retry(enabled: true) re-enables retry when client-level is false',
+      () async {
+        final mock = _MockRetryClient([_status(520), _ok()]);
+        final client = _buildClient(mock, retryEnabled: false);
 
-      final result = await client.from('users').select().retry(enabled: true);
+        final result = await client.from('users').select().retry(enabled: true);
 
-      expect(result, isEmpty);
-      expect(mock.callCount, 2);
-    });
+        expect(result, isEmpty);
+        expect(mock.callCount, 2);
+      },
+    );
 
-    test('GET exhausts retries on repeated network errors then rethrows',
-        () async {
-      final mock = _MockRetryClient([
-        _networkError(),
-        _networkError(),
-        _networkError(),
-        _networkError(),
-      ]);
-      final client = _buildClient(mock);
+    test(
+      'GET exhausts retries on repeated network errors then rethrows',
+      () async {
+        final mock = _MockRetryClient([
+          _networkError(),
+          _networkError(),
+          _networkError(),
+          _networkError(),
+        ]);
+        final client = _buildClient(mock);
 
-      await expectLater(
-        client.from('users').select(),
-        throwsA(isA<SocketException>()),
-      );
-      expect(mock.callCount, 4);
-    });
+        await expectLater(
+          client.from('users').select(),
+          throwsA(isA<SocketException>()),
+        );
+        expect(mock.callCount, 4);
+      },
+    );
 
-    test('GET retries on 520 but aborts before exhausting all retries',
-        () async {
-      final mock = _MockRetryClient([_status(520), _status(520), _ok()]);
-      final client = _buildClient(mock);
+    test(
+      'GET retries on 520 but aborts before exhausting all retries',
+      () async {
+        final mock = _MockRetryClient([_status(520), _status(520), _ok()]);
+        final client = _buildClient(mock);
 
-      final completer = Completer<void>();
-      completer.complete();
-      // Abort after the first retry (before the success response)
-      // Timer(Duration(milliseconds: 60), () => completer.complete());
+        final completer = Completer<void>();
+        completer.complete();
+        // Abort after the first retry (before the success response)
+        // Timer(Duration(milliseconds: 60), () => completer.complete());
 
-      await expectLater(
-        client
-            .from('users')
-            .select()
-            .retry(enabled: true)
-            .abortCompleter(completer),
-        throwsA(isA<RequestAbortedException>()),
-      );
+        await expectLater(
+          client
+              .from('users')
+              .select()
+              .retry(enabled: true)
+              .abortCompleter(completer),
+          throwsA(isA<RequestAbortedException>()),
+        );
 
-      // Verify that only 1 attempt was made before abort
-      // (not all 3 retries exhausted)
-      expect(mock.callCount, 1);
-    });
+        // Verify that only 1 attempt was made before abort
+        // (not all 3 retries exhausted)
+        expect(mock.callCount, 1);
+      },
+    );
   });
 }

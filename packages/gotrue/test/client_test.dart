@@ -2,10 +2,8 @@ import 'dart:convert';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
-import 'package:gotrue/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:jwt_decode/jwt_decode.dart';
 import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
@@ -16,8 +14,8 @@ void main() {
 
   env.load(); // Load env variables from .env file
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
+  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
   late String newEmail;
   late String newPhone;
 
@@ -28,8 +26,14 @@ void main() {
 
     setUp(() async {
       final res = await http.post(
-        Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-        headers: {'x-forwarded-for': '127.0.0.1'},
+        Uri.parse(
+          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+        ),
+        headers: {
+          'x-forwarded-for': '127.0.0.1',
+          'apikey': getServiceRoleToken(env),
+          'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+        },
       );
       if (res.body.isNotEmpty) throw res.body;
 
@@ -99,15 +103,16 @@ void main() {
     test(
       'signUp() with weak password throws AuthWeakPasswordException',
       () async {
-        try {
-          await client.signUp(email: newEmail, password: '123');
-          fail('signUp with weak password should throw exception');
-        } on AuthException catch (error) {
-          expect(error, isA<AuthWeakPasswordException>());
-          expect(error.code, ErrorCode.weakPassword.code);
-        } catch (error) {
-          fail('signUp threw ${error.runtimeType} instead of AuthException');
-        }
+        await expectLater(
+          () => client.signUp(email: newEmail, password: '123'),
+          throwsA(
+            isA<AuthWeakPasswordException>().having(
+              (e) => e.code,
+              'code',
+              ErrorCode.weakPassword.code,
+            ),
+          ),
+        );
       },
     );
 
@@ -120,10 +125,10 @@ void main() {
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/welcome#expires_in=$expiresIn&refresh_token=$refreshToken&token_type=$tokenType&provider_token=$providerToken',
       );
-      try {
-        await client.getSessionFromUrl(urlWithoutAccessToken);
-        fail('getSessionFromUrl did not throw exception');
-      } catch (_) {}
+      await expectLater(
+        () => client.getSessionFromUrl(urlWithoutAccessToken),
+        throwsA(anything),
+      );
     });
 
     test('Parsing an error URL should throw', () async {
@@ -133,18 +138,15 @@ void main() {
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}',
       );
-      try {
-        await client.getSessionFromUrl(urlWithoutAccessToken);
-        fail('getSessionFromUrl did not throw exception');
-      } on AuthException catch (error) {
-        expect(error.message, errorMessage);
-        expect(error.statusCode, '401');
-        expect(error.code, 'unauthorized_client');
-      } catch (error) {
-        fail(
-          'getSessionFromUrl threw ${error.runtimeType} instead of AuthException',
-        );
-      }
+      await expectLater(
+        () => client.getSessionFromUrl(urlWithoutAccessToken),
+        throwsA(
+          isA<AuthException>()
+              .having((e) => e.message, 'message', errorMessage)
+              .having((e) => e.statusCode, 'statusCode', '401')
+              .having((e) => e.code, 'code', 'unauthorized_client'),
+        ),
+      );
     });
 
     test('Subscribe a listener', () async {
@@ -238,8 +240,8 @@ void main() {
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
 
-      final payload = Jwt.parseJwt(data!.accessToken);
-      expect(payload['exp'], data.expiresAt);
+      final payload = decodeJwt(data!.accessToken).payload;
+      expect(payload.exp, data.expiresAt);
     });
 
     test('Get user', () async {
@@ -262,8 +264,8 @@ void main() {
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
 
-      final payload = Jwt.parseJwt(data!.accessToken);
-      expect(payload['exp'], data.expiresAt);
+      final payload = decodeJwt(data!.accessToken).payload;
+      expect(payload.exp, data.expiresAt);
     });
 
     test('Set session', () async {
@@ -342,7 +344,8 @@ void main() {
         // Header: {"alg":"HS256","typ":"JWT"}
         // Payload: {"sub":"user","exp":1}  (epoch second 1 = Jan 1, 1970)
         // Signature: 3 zero bytes as valid base64url ("AAAA")
-        const expiredAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+        const expiredAccessToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
             '.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxfQ'
             '.AAAA';
 
@@ -437,12 +440,16 @@ void main() {
 
     test('Update user with the same password throws AuthException', () async {
       await client.signInWithPassword(email: email1, password: password);
-      try {
-        await client.updateUser(UserAttributes(password: password));
-        fail('updateUser did not throw');
-      } on AuthException catch (error) {
-        expect(error.code, ErrorCode.samePassword.code);
-      }
+      await expectLater(
+        () => client.updateUser(UserAttributes(password: password)),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.code,
+            'code',
+            ErrorCode.samePassword.code,
+          ),
+        ),
+      );
     });
 
     test('signOut', () async {
@@ -468,15 +475,15 @@ void main() {
     });
 
     test('signIn() with the wrong password', () async {
-      try {
-        await client.signInWithPassword(
+      await expectLater(
+        () => client.signInWithPassword(
           email: email1,
           password: 'wrong_$password',
-        );
-        fail('signInWithPassword did not throw');
-      } on AuthException catch (error) {
-        expect(error.message, isNotNull);
-      }
+        ),
+        throwsA(
+          isA<AuthException>().having((e) => e.message, 'message', isNotNull),
+        ),
+      );
     });
 
     group('The auth client can signin with third-party oAuth providers', () {
@@ -539,7 +546,7 @@ void main() {
 
     test('token refresh calls are bundled', () async {
       final httpClient = RetryTestHttpClient();
-      final client = GoTrueClient(
+      final bundledClient = GoTrueClient(
         url: gotrueUrl,
         headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
         asyncStorage: TestAsyncStorage(),
@@ -550,8 +557,8 @@ void main() {
 
       ///These 3 are bundled and in sum 1 refresh token requests is made, because the first 3 fail in [RetryTestHttpClient]
       final responses = await Future.wait([
-        client.recoverSession(session),
-        client.recoverSession(session),
+        bundledClient.recoverSession(session),
+        bundledClient.recoverSession(session),
       ]);
 
       expect(responses[0].session?.accessToken, isNotNull);
@@ -580,6 +587,12 @@ void main() {
         ]),
       );
 
+      Object? streamError;
+      final errorSubscription = stream.listen(
+        (_) {},
+        onError: (Object error) => streamError = error,
+      );
+
       final expiredSession = getSessionData(
         DateTime.now().subtract(Duration(hours: 1)),
       );
@@ -588,8 +601,10 @@ void main() {
         client.recoverSession(expiredSession.sessionString),
         throwsA(isA<AuthException>()),
       );
-      expect(stream, emitsError(isA<AuthException>()));
 
+      await pumpEventQueue();
+      await errorSubscription.cancel();
+      expect(streamError, isNull);
       expect(client.currentSession, isNull);
     });
 
@@ -639,11 +654,9 @@ void main() {
       } on ClientException {
         // the method should throw
       }
-      await for (final AuthState event in client.onAuthStateChange) {
-        expect(httpClient.retryCount, 4);
-        expect(event.event, AuthChangeEvent.tokenRefreshed);
-        break;
-      }
+      final event = await client.onAuthStateChange.first;
+      expect(httpClient.retryCount, 4);
+      expect(event.event, AuthChangeEvent.tokenRefreshed);
     });
   });
 
@@ -681,16 +694,120 @@ void main() {
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}',
       );
-      try {
-        await client.getSessionFromUrl(urlWithoutAccessToken);
-        fail('getSessionFromUrl did not throw exception');
-      } on AuthException catch (error) {
-        expect(error.message, errorMessage);
-      } catch (error) {
-        fail(
-          'getSessionFromUrl threw ${error.runtimeType} instead of AuthException',
+      await expectLater(
+        () => client.getSessionFromUrl(urlWithoutAccessToken),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            errorMessage,
+          ),
+        ),
+      );
+    });
+
+    test(
+      'getSessionFromUrl handles implicit tokens in the fragment',
+      () async {
+        final pkceClient = GoTrueClient(
+          url: gotrueUrl,
+          flowType: AuthFlowType.pkce,
+          asyncStorage: TestAsyncStorage(),
+          httpClient: MockedHttpClient({
+            'id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
+            'aud': '',
+            'role': '',
+            'email': 'new@email.com',
+            'app_metadata': {
+              'provider': 'email',
+              'providers': ['email'],
+            },
+            'user_metadata': {},
+            'created_at': '2023-04-01T09:38:59.784028Z',
+            'updated_at': '2023-04-01T09:38:59.908816Z',
+          }),
         );
-      }
+
+        final url = Uri.parse(
+          'http://my-callback-url.com/#access_token=my-access-token'
+          '&expires_in=3600&refresh_token=my-refresh-token'
+          '&token_type=bearer&type=email_change',
+        );
+
+        final emittedEvent = pkceClient.onAuthStateChange
+            .firstWhere(
+              (state) => state.event != AuthChangeEvent.initialSession,
+            )
+            .then((state) => state.event);
+
+        final response = await pkceClient.getSessionFromUrl(url);
+        expect(response.session.accessToken, 'my-access-token');
+        expect(response.session.refreshToken, 'my-refresh-token');
+        expect(response.session.user.email, 'new@email.com');
+        expect(response.redirectType, 'email_change');
+        expect(pkceClient.currentUser?.email, 'new@email.com');
+        expect(await emittedEvent, AuthChangeEvent.signedIn);
+      },
+    );
+  });
+
+  group('Recovering an already refreshed session', () {
+    late SingleUseRefreshTokenHttpClient httpClient;
+    late GoTrueClient client;
+
+    setUp(() {
+      httpClient = SingleUseRefreshTokenHttpClient();
+      client = GoTrueClient(
+        url: gotrueUrl,
+        headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
+        asyncStorage: TestAsyncStorage(),
+        httpClient: httpClient,
+      );
+    });
+
+    // Regression test for https://github.com/supabase/supabase-flutter/issues/1158
+    //
+    // On cold start both `recoverSession` and the auto-refresh tick (fired when
+    // the app resumes) can try to refresh the same persisted, expired session.
+    // If one of them refreshes first, the refresh token serialized in the
+    // session string handed to `recoverSession` becomes stale. Reusing it made
+    // the server respond with `refresh_token_already_used`, signing the user
+    // out. `recoverSession` must instead detect the already valid in-memory
+    // session and return it.
+    test('does not reuse a stale refresh token after another refresh', () async {
+      final expiredSessionString = getSessionData(
+        DateTime.now().subtract(const Duration(hours: 1)),
+      ).sessionString;
+
+      // First recovery refreshes the expired session, advancing the in-memory
+      // session onto a brand new refresh token.
+      final first = await client.recoverSession(expiredSessionString);
+      expect(first.session, isNotNull);
+      expect(first.session!.isExpired, isFalse);
+      expect(httpClient.refreshCount, 1);
+
+      var signedOut = false;
+      final sub = client.onAuthStateChange.listen(
+        (state) {
+          if (state.event == AuthChangeEvent.signedOut) signedOut = true;
+        },
+        onError: (_) {},
+      );
+
+      // Second recovery uses the same (now stale) persisted session, as happens
+      // when a second code path recovers the session it read before the first
+      // refresh completed. It must not resend the already-used refresh token.
+      final second = await client.recoverSession(expiredSessionString);
+      expect(second.session, isNotNull);
+      expect(second.session!.isExpired, isFalse);
+
+      // No second refresh request was made and the user stays signed in.
+      expect(httpClient.refreshCount, 1);
+      await pumpEventQueue();
+      expect(signedOut, isFalse);
+      expect(client.currentSession, isNotNull);
+
+      await sub.cancel();
     });
   });
 }

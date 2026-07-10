@@ -2,8 +2,9 @@ import 'dart:typed_data';
 
 import 'package:storage_client/src/fetch.dart';
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 
-import 'file_io.dart' if (dart.library.js) './file_stub.dart';
+import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 class StorageFileApi {
   final String url;
@@ -37,13 +38,27 @@ class StorageFileApi {
   }
 
   String _getFinalPath(String path) {
-    return '$bucketId/$path';
+    // Percent-encode each segment (RFC 3986) so object keys containing
+    // characters like `?`, `#`, `%` or spaces don't corrupt the request URL
+    // (for example a `?` being parsed as the start of the query string). `/`
+    // separators, the bucket id, and characters that are already valid in a
+    // path segment (such as `:` in ISO-8601 timestamps) are preserved, so URLs
+    // for existing valid keys are unchanged.
+    final encodedPath = Uri(pathSegments: path.split('/')).path;
+    return '$bucketId/$encodedPath';
   }
 
   String _removeEmptyFolders(String path) {
-    return path
-        .replaceAll(RegExp(r'/^\/|\/$/g'), '')
-        .replaceAll(RegExp(r'/\/+/g'), '/');
+    return path.replaceAll(RegExp(r'^/|/$'), '').replaceAll(RegExp(r'/+'), '/');
+  }
+
+  FetchOptions get _fetchOptions => FetchOptions(headers);
+
+  void _assertValidRetryAttempts(int? retryAttempts) {
+    assert(
+      retryAttempts == null || retryAttempts >= 0,
+      'retryAttempts has to be greater or equal to 0',
+    );
   }
 
   /// Uploads a file to an existing bucket.
@@ -66,14 +81,13 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.postFile(
       '$url/object/$finalPath',
       file,
       fileOptions,
-      options: FetchOptions(headers: headers),
+      options: _fetchOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
       retryController: retryController,
     );
@@ -101,14 +115,13 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.postBinaryFile(
       '$url/object/$finalPath',
       data,
       fileOptions,
-      options: FetchOptions(headers: headers),
+      options: _fetchOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
       retryController: retryController,
     );
@@ -131,16 +144,15 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   ]) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
 
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
-    var url = Uri.parse('${this.url}/object/upload/sign/$finalPath');
-    url = url.replace(queryParameters: {'token': token});
+    var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
+    requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
     await _storageFetch.putFile(
-      url.toString(),
+      requestUrl.toString(),
       file,
       fileOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
@@ -165,16 +177,15 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   ]) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
 
     final cleanPath = _removeEmptyFolders(path);
     final path0 = _getFinalPath(cleanPath);
-    var url = Uri.parse('${this.url}/object/upload/sign/$path0');
-    url = url.replace(queryParameters: {'token': token});
+    var requestUrl = Uri.parse('$url/object/upload/sign/$path0');
+    requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
     await _storageFetch.putBinaryFile(
-      url.toString(),
+      requestUrl.toString(),
       data,
       fileOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
@@ -190,13 +201,22 @@ class StorageFileApi {
   /// They are valid for one minute.
   ///
   /// [path] The file path, including the current file name. For example `folder/image.png`.
-  Future<SignedUploadURLResponse> createSignedUploadUrl(String path) async {
+  ///
+  /// When [upsert] is `true` the signed URL allows overwriting an existing
+  /// file at [path]. It defaults to `false`.
+  Future<SignedUploadURLResponse> createSignedUploadUrl(
+    String path, {
+    bool upsert = false,
+  }) async {
     final finalPath = _getFinalPath(path);
 
     final data = await _storageFetch.post(
       '$url/object/upload/sign/$finalPath',
       {},
-      options: FetchOptions(headers: headers),
+      options: FetchOptions({
+        ...headers,
+        if (upsert) 'x-upsert': 'true',
+      }),
     );
 
     final signedUrl = Uri.parse('$url${data['url']}');
@@ -212,8 +232,6 @@ class StorageFileApi {
       path: path,
       token: token,
     );
-
-    //   return { data: { signedUrl: url.toString(), path, token }, error: null }
   }
 
   /// Replaces an existing file at the specified path with a new one.
@@ -235,14 +253,13 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.putFile(
       '$url/object/$finalPath',
       file,
       fileOptions,
-      options: FetchOptions(headers: headers),
+      options: _fetchOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
       retryController: retryController,
     );
@@ -271,14 +288,13 @@ class StorageFileApi {
     int? retryAttempts,
     StorageRetryController? retryController,
   }) async {
-    assert(retryAttempts == null || retryAttempts >= 0,
-        'retryAttempts has to be greater or equal to 0');
+    _assertValidRetryAttempts(retryAttempts);
     final finalPath = _getFinalPath(path);
     final response = await _storageFetch.putBinaryFile(
       '$url/object/$finalPath',
       data,
       fileOptions,
-      options: FetchOptions(headers: headers),
+      options: _fetchOptions,
       retryAttempts: retryAttempts ?? _retryAttempts,
       retryController: retryController,
     );
@@ -299,14 +315,14 @@ class StorageFileApi {
     String toPath, {
     String? destinationBucket,
   }) async {
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/move',
       {
         'bucketId': bucketId,
         'sourceKey': fromPath,
         'destinationKey': toPath,
-        if (destinationBucket != null) 'destinationBucket': destinationBucket,
+        'destinationBucket': ?destinationBucket,
       },
       options: options,
     );
@@ -327,14 +343,14 @@ class StorageFileApi {
     String toPath, {
     String? destinationBucket,
   }) async {
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/copy',
       {
         'bucketId': bucketId,
         'sourceKey': fromPath,
         'destinationKey': toPath,
-        if (destinationBucket != null) 'destinationBucket': destinationBucket,
+        'destinationBucket': ?destinationBucket,
       },
       options: options,
     );
@@ -351,41 +367,88 @@ class StorageFileApi {
   /// example, `60` for a URL which are valid for one minute.
   ///
   /// [transform] adds image transformations parameters to the generated url.
+  ///
+  /// [download] triggers the file to be downloaded rather than opened in the
+  /// browser by setting the response's `Content-Disposition` header. Use
+  /// [DownloadBehavior.withOriginalName] to keep the original file name or
+  /// [DownloadBehavior.named] to override it.
   Future<String> createSignedUrl(
     String path,
     int expiresIn, {
     TransformOptions? transform,
+    DownloadBehavior? download,
   }) async {
     final finalPath = _getFinalPath(path);
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/sign/$finalPath',
       {
         'expiresIn': expiresIn,
-        if (transform != null) 'transform': transform.toQueryParams,
+        'transform': ?transform?.toQueryParams,
       },
       options: options,
     );
-    final signedUrlPath = (response as Map<String, dynamic>)['signedURL'];
-    final signedUrl = '$url$signedUrlPath';
-    return signedUrl;
+    final signedUrlPath =
+        (response as Map<String, dynamic>)['signedURL'] as String?;
+    if (signedUrlPath == null) {
+      throw StorageException('No signed URL returned by API');
+    }
+    return _withDownload('$url$signedUrlPath', download);
+  }
+
+  // TODO(v3): Remove this deprecated overload and rename createSignedUrlsResult
+  // to createSignedUrls. Dart lacks overloading so the preferred API had to be
+  // given a temporary name. https://linear.app/supabase/issue/SDK-1002
+  /// Create signed URLs to download files without requiring permissions.
+  ///
+  /// Items for paths that do not exist are silently omitted. Use
+  /// [createSignedUrlsResult] to distinguish missing paths from successful ones.
+  ///
+  /// [paths] is the file paths to be downloaded, including the current file
+  /// names. For example: `createSignedUrls(['folder/image.png', 'folder2/image2.png'])`.
+  ///
+  /// [expiresIn] is the number of seconds until the signed URLs expire. For
+  /// example, `60` for URLs which are valid for one minute.
+  @Deprecated('Use createSignedUrlsResult to handle missing paths correctly.')
+  Future<List<SignedUrl>> createSignedUrls(
+    List<String> paths,
+    int expiresIn, {
+    DownloadBehavior? download,
+  }) async {
+    final results = await createSignedUrlsResult(
+      paths,
+      expiresIn,
+      download: download,
+    );
+    return results
+        .whereType<SignedUrlSuccess>()
+        .map((r) => SignedUrl(path: r.path, signedUrl: r.signedUrl))
+        .toList();
   }
 
   /// Create signed URLs to download files without requiring permissions. These
   /// URLs can be valid for a set number of seconds.
   ///
+  /// Returns one [SignedUrlResult] per requested path. Each result is either a
+  /// [SignedUrlSuccess] (with a ready-to-use signed URL) or a [SignedUrlFailure]
+  /// (when the server could not sign that path, e.g. the file does not exist).
+  ///
   /// [paths] is the file paths to be downloaded, including the current file
-  /// names. For example: `createdSignedUrl(['folder/image.png', 'folder2/image2.png'])`.
+  /// names. For example: `createSignedUrlsResult(['folder/image.png', 'folder2/image2.png'])`.
   ///
   /// [expiresIn] is the number of seconds until the signed URLs expire. For
   /// example, `60` for URLs which are valid for one minute.
   ///
-  /// A list of [SignedUrl]s is returned.
-  Future<List<SignedUrl>> createSignedUrls(
+  /// [download] triggers the files to be downloaded rather than opened in the
+  /// browser by setting the response's `Content-Disposition` header. Use
+  /// [DownloadBehavior.withOriginalName] to keep the original file name or
+  /// [DownloadBehavior.named] to override it.
+  Future<List<SignedUrlResult>> createSignedUrlsResult(
     List<String> paths,
-    int expiresIn,
-  ) async {
-    final options = FetchOptions(headers: headers);
+    int expiresIn, {
+    DownloadBehavior? download,
+  }) async {
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/sign/$bucketId',
       {
@@ -394,15 +457,20 @@ class StorageFileApi {
       },
       options: options,
     );
-    final List<SignedUrl> urls = (response as List).map((e) {
-      return SignedUrl(
-        // Prevents exceptions being thrown when null value is returned
-        // https://github.com/supabase/storage-api/issues/353
-        path: e['path'] ?? '',
-        signedUrl: '$url${e['signedURL']}',
+    return (response as List).map<SignedUrlResult>((e) {
+      final signedUrlPath = e['signedURL'] as String?;
+      final path = e['path'] as String? ?? '';
+      if (signedUrlPath != null) {
+        return SignedUrlSuccess(
+          path: path,
+          signedUrl: _withDownload('$url$signedUrlPath', download),
+        );
+      }
+      return SignedUrlFailure(
+        path: path,
+        error: e['error'] as String? ?? 'Unknown error',
       );
     }).toList();
-    return urls;
   }
 
   /// Downloads a file.
@@ -413,30 +481,37 @@ class StorageFileApi {
   /// [transform] download a transformed variant of the image with the provided options
   ///
   /// [queryParams] additional query parameters to be added to the URL
-  Future<Uint8List> download(String path,
-      {TransformOptions? transform, Map<String, String>? queryParams}) async {
-    final wantsTransformations = transform != null;
+  Future<Uint8List> download(
+    String path, {
+    TransformOptions? transform,
+    Map<String, String>? queryParams,
+  }) async {
+    final transformationQuery = transform?.toQueryParams ?? {};
+    final wantsTransformations = transformationQuery.isNotEmpty;
     final finalPath = _getFinalPath(path);
-    final renderPath =
-        wantsTransformations ? 'render/image/authenticated' : 'object';
+    final renderPath = wantsTransformations
+        ? 'render/image/authenticated'
+        : 'object';
 
-    Map<String, String> query = transform?.toQueryParams ?? {};
+    Map<String, String> query = transformationQuery;
     query.addAll(queryParams ?? {});
 
-    final options = FetchOptions(headers: headers, noResolveJson: true);
+    final options = FetchOptions(headers, noResolveJson: true);
 
     var fetchUrl = Uri.parse('$url/$renderPath/$finalPath');
     fetchUrl = fetchUrl.replace(queryParameters: query);
 
-    final response =
-        await _storageFetch.get(fetchUrl.toString(), options: options);
+    final response = await _storageFetch.get(
+      fetchUrl.toString(),
+      options: options,
+    );
     return response as Uint8List;
   }
 
   /// Retrieves the details of an existing file
   Future<FileObjectV2> info(String path) async {
     final finalPath = _getFinalPath(path);
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.get(
       '$url/object/info/$finalPath',
       options: options,
@@ -448,7 +523,7 @@ class StorageFileApi {
   /// Checks the existence of a file
   Future<bool> exists(String path) async {
     final finalPath = _getFinalPath(path);
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     try {
       await _storageFetch.head(
         '$url/object/$finalPath',
@@ -469,21 +544,41 @@ class StorageFileApi {
   /// For example `getPublicUrl('folder/image.png')`.
   ///
   /// [transform] adds image transformations parameters to the generated url.
+  ///
+  /// [download] triggers the file to be downloaded rather than opened in the
+  /// browser by setting the response's `Content-Disposition` header. Use
+  /// [DownloadBehavior.withOriginalName] to keep the original file name or
+  /// [DownloadBehavior.named] to override it.
   String getPublicUrl(
     String path, {
     TransformOptions? transform,
+    DownloadBehavior? download,
   }) {
     final finalPath = _getFinalPath(path);
 
-    final wantsTransformation = transform != null;
-    final renderPath = wantsTransformation ? 'render/image' : 'object';
     final transformationQuery = transform?.toQueryParams;
+    final wantsTransformation =
+        transformationQuery != null && transformationQuery.isNotEmpty;
+    final renderPath = wantsTransformation ? 'render/image' : 'object';
 
     var publicUrl = Uri.parse('$url/$renderPath/public/$finalPath');
 
-    publicUrl = publicUrl.replace(queryParameters: transformationQuery);
+    if (wantsTransformation) {
+      publicUrl = publicUrl.replace(queryParameters: transformationQuery);
+    }
 
-    return publicUrl.toString();
+    return _withDownload(publicUrl.toString(), download);
+  }
+
+  /// Appends a `download` query parameter to [urlString] when [download] is
+  /// set, so the response is served with a `Content-Disposition` header.
+  String _withDownload(String urlString, DownloadBehavior? download) {
+    if (download == null) {
+      return urlString;
+    }
+    final separator = urlString.contains('?') ? '&' : '?';
+    return '$urlString${separator}download='
+        '${Uri.encodeQueryComponent(download.queryValue)}';
   }
 
   /// Deletes files within the same bucket
@@ -491,7 +586,7 @@ class StorageFileApi {
   /// [paths] is an array of files to be deleted, including the path and file
   /// name. For example: `remove(['folder/image.png'])`.
   Future<List<FileObject>> remove(List<String> paths) async {
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.delete(
       '$url/object/$bucketId',
       {'prefixes': paths},
@@ -518,7 +613,7 @@ class StorageFileApi {
       'prefix': path ?? '',
       ...searchOptions.toMap(),
     };
-    final options = FetchOptions(headers: headers);
+    final options = _fetchOptions;
     final response = await _storageFetch.post(
       '$url/object/list/$bucketId',
       body,

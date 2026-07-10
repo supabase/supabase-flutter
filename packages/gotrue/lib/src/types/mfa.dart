@@ -88,10 +88,10 @@ class PhoneEnrollment {
     } else if (value is Map<String, dynamic>) {
       // Server returns phone data as an object
       return PhoneEnrollment.fromJson(value);
-    } else {
-      throw ArgumentError(
-          'Invalid phone enrollment data type: ${value.runtimeType}');
     }
+    throw ArgumentError(
+      'Invalid phone enrollment data type: ${value.runtimeType}',
+    );
   }
 }
 
@@ -192,11 +192,13 @@ class AuthMFAListFactorsResponse {
   final List<Factor> all;
   final List<Factor> totp;
   final List<Factor> phone;
+  final List<Factor> webauthn;
 
-  AuthMFAListFactorsResponse({
+  const AuthMFAListFactorsResponse({
     required this.all,
     required this.totp,
     required this.phone,
+    this.webauthn = const [],
   });
 }
 
@@ -245,6 +247,7 @@ enum FactorStatus {
 enum FactorType {
   totp,
   phone,
+  webauthn,
 
   /// Returned when the backend sends an unknown factor type.
   /// This allows forward compatibility with new factor types.
@@ -258,7 +261,7 @@ class Factor {
   /// Friendly name of the factor, useful to disambiguate between multiple factors.
   final String? friendlyName;
 
-  /// Type of factor. Supports both `totp` and `phone`.
+  /// Type of factor. Supports `totp`, `phone` and `webauthn`.
   final FactorType factorType;
 
   /// Factor's status.
@@ -344,6 +347,11 @@ class Factor {
         createdAt.hashCode ^
         updatedAt.hashCode;
   }
+
+  @override
+  String toString() {
+    return 'Factor(id: $id, friendlyName: $friendlyName, factorType: ${factorType.name}, status: ${status.name}, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
 }
 
 enum AuthenticatorAssuranceLevels {
@@ -389,6 +397,8 @@ enum AMRMethod {
   tokenRefresh('token_refresh'),
   anonymous('anonymous'),
   mfaPhone('mfa/phone'),
+  mfaWebauthn('mfa/webauthn'),
+  passkey('passkey'),
   unknown('unknown');
 
   final String code;

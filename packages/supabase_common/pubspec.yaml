@@ -1,0 +1,23 @@
+name: supabase_common
+description: Shared internal utilities used across the Supabase Dart and Flutter client packages.
+version: 0.1.0
+homepage: 'https://supabase.com'
+repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_common'
+issue_tracker: 'https://github.com/supabase/supabase-flutter/issues'
+topics:
+  - supabase
+  - internal
+  - utilities
+
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+
+resolution: workspace
+
+dependencies:
+  crypto: ^3.0.7
+  meta: ^1.16.0
+
+dev_dependencies:
+  supabase_lints: ^0.1.0
+  test: ^1.25.0

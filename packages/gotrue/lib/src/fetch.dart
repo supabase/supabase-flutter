@@ -7,17 +7,14 @@ import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/error_code.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
+import 'package:supabase_common/supabase_common.dart';
 
-enum RequestMethodType { get, post, put, delete }
+enum RequestMethodType { get, post, put, patch, delete }
 
 class GotrueFetch {
   final Client? httpClient;
 
   const GotrueFetch([this.httpClient]);
-
-  bool isSuccessStatusCode(int code) {
-    return code >= 200 && code <= 299;
-  }
 
   String _getErrorMessage(dynamic error) {
     if (error is Map) {
@@ -120,7 +117,10 @@ class GotrueFetch {
     RequestMethodType method, {
     GotrueRequestOptions? options,
   }) async {
-    final headers = options?.headers ?? {};
+    // Copy the maps before mutating them. Callers pass the client's shared
+    // header/query maps by reference, so writing `Authorization`, the API
+    // version or `redirect_to` directly would leak into every later request.
+    final headers = {...?options?.headers};
 
     // Set the API version header if not already set
     if (!headers.containsKey(Constants.apiVersionHeaderName)) {
@@ -131,7 +131,7 @@ class GotrueFetch {
       headers['Authorization'] = 'Bearer ${options!.jwt}';
     }
 
-    final qs = options?.query ?? {};
+    final qs = {...?options?.query};
     if (options?.redirectTo != null) {
       qs['redirect_to'] = options!.redirectTo!;
     }
@@ -139,7 +139,11 @@ class GotrueFetch {
     uri = uri.replace(queryParameters: {...uri.queryParameters, ...qs});
 
     return await _handleRequest(
-        method: method, uri: uri, options: options, headers: headers);
+      method: method,
+      uri: uri,
+      options: options,
+      headers: headers,
+    );
   }
 
   Future<dynamic> _handleRequest({
@@ -172,6 +176,13 @@ class GotrueFetch {
           break;
         case RequestMethodType.put:
           response = await (httpClient?.put ?? put)(
+            uri,
+            headers: headers,
+            body: bodyStr,
+          );
+          break;
+        case RequestMethodType.patch:
+          response = await (httpClient?.patch ?? patch)(
             uri,
             headers: headers,
             body: bodyStr,

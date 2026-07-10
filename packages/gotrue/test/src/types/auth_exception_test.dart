@@ -100,8 +100,10 @@ void main() {
       });
 
       test('returns false for exceptions with different codes', () {
-        const exception1 =
-            AuthException('Test error', code: 'validation_failed');
+        const exception1 = AuthException(
+          'Test error',
+          code: 'validation_failed',
+        );
         const exception2 = AuthException('Test error', code: 'bad_json');
 
         expect(exception1, isNot(equals(exception2)));
@@ -109,8 +111,11 @@ void main() {
 
       test('handles null values correctly in equality', () {
         const exception1 = AuthException('Test error');
-        const exception2 =
-            AuthException('Test error', statusCode: null, code: null);
+        const exception2 = AuthException(
+          'Test error',
+          statusCode: null,
+          code: null,
+        );
 
         expect(exception1, equals(exception2));
       });
@@ -346,8 +351,10 @@ void main() {
       expect(exception.message, equals('Password is too weak'));
       expect(exception.statusCode, equals('422'));
       expect(exception.code, equals(ErrorCode.weakPassword.code));
-      expect(exception.reasons,
-          equals(['too_short', 'no_uppercase', 'no_numbers']));
+      expect(
+        exception.reasons,
+        equals(['too_short', 'no_uppercase', 'no_numbers']),
+      );
     });
 
     test('automatically sets code to weak_password', () {
@@ -414,63 +421,17 @@ void main() {
   });
 
   group('Exception hierarchy', () {
-    test('all exception types implement Exception', () {
-      final authException = const AuthException('error');
-      final pkceException = AuthPKCEGrantCodeExchangeError('error');
-      final sessionException = AuthSessionMissingException();
-      final retryException = AuthRetryableFetchException();
-      final apiException = AuthApiException('error');
-      final unknownException = AuthUnknownException(
-        message: 'error',
-        originalError: 'original',
-      );
-      final weakPasswordException = AuthWeakPasswordException(
-        message: 'error',
-        statusCode: '422',
-        reasons: [],
-      );
-
-      expect(authException, isA<Exception>());
-      expect(pkceException, isA<Exception>());
-      expect(sessionException, isA<Exception>());
-      expect(retryException, isA<Exception>());
-      expect(apiException, isA<Exception>());
-      expect(unknownException, isA<Exception>());
-      expect(weakPasswordException, isA<Exception>());
-    });
-
-    test('all exception types extend AuthException', () {
-      final pkceException = AuthPKCEGrantCodeExchangeError('error');
-      final sessionException = AuthSessionMissingException();
-      final retryException = AuthRetryableFetchException();
-      final apiException = AuthApiException('error');
-      final unknownException = AuthUnknownException(
-        message: 'error',
-        originalError: 'original',
-      );
-      final weakPasswordException = AuthWeakPasswordException(
-        message: 'error',
-        statusCode: '422',
-        reasons: [],
-      );
-
-      expect(pkceException, isA<AuthException>());
-      expect(sessionException, isA<AuthException>());
-      expect(retryException, isA<AuthException>());
-      expect(apiException, isA<AuthException>());
-      expect(unknownException, isA<AuthException>());
-      expect(weakPasswordException, isA<AuthException>());
-    });
-
     test('can catch all auth exceptions as AuthException', () {
-      final exceptions = <AuthException>[
+      final exceptions = [
         const AuthException('base error'),
         AuthPKCEGrantCodeExchangeError('pkce error'),
         AuthSessionMissingException(),
         AuthRetryableFetchException(),
         AuthApiException('api error'),
         AuthUnknownException(
-            message: 'unknown error', originalError: 'original'),
+          message: 'unknown error',
+          originalError: 'original',
+        ),
         AuthWeakPasswordException(
           message: 'weak password',
           statusCode: '422',

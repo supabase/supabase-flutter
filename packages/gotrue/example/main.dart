@@ -1,13 +1,16 @@
+// ignore_for_file: avoid_print
+
 import 'package:gotrue/gotrue.dart';
 
-Future<bool> main(List<String> arguments) async {
+/// Example to use with Supabase Auth https://supabase.com/
+Future<void> main() async {
   const gotrueUrl = 'http://localhost:9999';
-  const annonToken = '';
+  const supabaseKey = '';
   final client = GoTrueClient(
     url: gotrueUrl,
     headers: {
-      'Authorization': 'Bearer $annonToken',
-      'apikey': annonToken,
+      'Authorization': 'Bearer $supabaseKey',
+      'apikey': supabaseKey,
     },
   );
 
@@ -16,12 +19,11 @@ Future<bool> main(List<String> arguments) async {
       email: 'email',
       password: '12345',
     );
-    print('Logged in, uid: ${login.session!.user.id}');
+    print('Logged in, user id: ${login.session!.user.id}');
   } on AuthException catch (error) {
-    print('Sign in Error: ${error.message}');
+    print('Sign in error: ${error.message}');
   }
 
   await client.signOut();
   print('Logged out!');
-  return true;
 }

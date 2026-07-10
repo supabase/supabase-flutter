@@ -15,11 +15,12 @@ void main() {
     setUp(() async {
       mockServer = await HttpServer.bind('localhost', 0);
 
-      subscription =
-          mockServer.transform(WebSocketTransformer()).listen((webSocket) {
-        final channel = IOWebSocketChannel(webSocket);
-        channel.stream.listen((request) {
-          channel.sink.add(request);
+      subscription = mockServer.transform(WebSocketTransformer()).listen((
+        webSocket,
+      ) {
+        final ioChannel = IOWebSocketChannel(webSocket);
+        ioChannel.stream.listen((request) {
+          ioChannel.sink.add(request);
         });
       });
 
@@ -51,10 +52,11 @@ void main() {
     test('subscribe on existing subscription fail', () {
       channel
           .onPostgresChanges(
-              event: PostgresChangeEvent.insert,
-              schema: 'public',
-              table: 'countries',
-              callback: (payload) {})
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'countries',
+            callback: (payload) {},
+          )
           .subscribe(
             (event, [errorMsg]) {},
           );
@@ -171,8 +173,8 @@ void main() {
       );
 
       expect(
-        supabase.getChannels().length,
-        isZero,
+        supabase.getChannels(),
+        isEmpty,
       );
     });
   });

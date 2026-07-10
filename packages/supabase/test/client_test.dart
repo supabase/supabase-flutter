@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:supabase/supabase.dart';
@@ -11,7 +12,7 @@ void main() {
   Future<HttpRequest> getRealtimeRequest({
     required HttpServer server,
     required SupabaseClient supabaseClient,
-  }) async {
+  }) {
     supabaseClient.channel('name').subscribe();
 
     return server.first;
@@ -36,66 +37,64 @@ void main() {
       await supabase.dispose();
     });
 
-    test('X-Supabase-Client-Platform header is set properly', () {
-      expect(supabase.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
-    });
-    test('X-Supabase-Client-Platform header is set properly on auth', () {
-      expect(supabase.auth.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.auth.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
+    test('X-Client-Info includes structured platform metadata', () {
+      final clientInfo = supabase.headers['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Supabase-Client-Platform header is set properly on storage', () {
-      expect(supabase.storage.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.storage.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
+    test('X-Client-Info includes structured platform metadata on auth', () {
+      final clientInfo = supabase.auth.headers['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Supabase-Client-Platform header is set properly on functions', () {
-      expect(supabase.functions.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.functions.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
+    test('X-Client-Info includes structured platform metadata on storage', () {
+      final clientInfo = supabase.storage.headers['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Supabase-Client-Platform header is set properly on rest', () {
-      expect(supabase.rest.headers['X-Supabase-Client-Platform'],
-          Platform.operatingSystem);
-      expect(supabase.rest.headers['X-Supabase-Client-Platform-Version'],
-          Platform.operatingSystemVersion);
+    test(
+      'X-Client-Info includes structured platform metadata on functions',
+      () {
+        final clientInfo = supabase.functions.headers['X-Client-Info']!;
+        expect(clientInfo, startsWith('supabase-dart/'));
+        expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+        expect(clientInfo, contains('; runtime=dart'));
+      },
+    );
+
+    test('X-Client-Info includes structured platform metadata on rest', () {
+      final clientInfo = supabase.rest.headers['X-Client-Info']!;
+      expect(clientInfo, startsWith('supabase-dart/'));
+      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(clientInfo, contains('; runtime=dart'));
     });
 
-    test('X-Supabase-Client-Platform header is set properly on realtime',
-        () async {
-      final request = await getRealtimeRequest(
-        server: mockServer,
-        supabaseClient: supabase,
-      );
-      expect(request.headers['X-Supabase-Client-Platform']?.first,
-          Platform.operatingSystem);
-      expect(request.headers['X-Supabase-Client-Platform-Version']?.first,
-          Platform.operatingSystemVersion);
-    });
-    test('X-Client-Info header is set properly on realtime', () async {
-      final request = await getRealtimeRequest(
-        server: mockServer,
-        supabaseClient: supabase,
-      );
-
-      final xClientHeaderBeforeSlash =
-          request.headers['X-Client-Info']?.first.split('/').first;
-
-      expect(xClientHeaderBeforeSlash, 'supabase-dart');
-    });
+    test(
+      'X-Client-Info includes structured platform metadata on realtime',
+      () async {
+        final request = await getRealtimeRequest(
+          server: mockServer,
+          supabaseClient: supabase,
+        );
+        final clientInfo = request.headers['X-Client-Info']?.first;
+        expect(clientInfo, startsWith('supabase-dart/'));
+        expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+        expect(clientInfo, contains('; runtime=dart'));
+      },
+    );
 
     test('X-Client-Info header is set properly on storage', () {
-      final xClientHeaderBeforeSlash =
-          supabase.storage.headers['X-Client-Info']!.split('/').first;
+      final xClientHeaderBeforeSlash = supabase
+          .storage
+          .headers['X-Client-Info']!
+          .split('/')
+          .first;
       expect(xClientHeaderBeforeSlash, 'supabase-dart');
     });
 
@@ -115,9 +114,13 @@ void main() {
     });
 
     test('log_level query parameter is properly set', () async {
-      supabase = SupabaseClient(supabaseUrl, supabaseKey,
-          realtimeClientOptions:
-              RealtimeClientOptions(logLevel: RealtimeLogLevel.info));
+      supabase = SupabaseClient(
+        supabaseUrl,
+        supabaseKey,
+        realtimeClientOptions: RealtimeClientOptions(
+          logLevel: RealtimeLogLevel.info,
+        ),
+      );
 
       final request = await getRealtimeRequest(
         server: mockServer,
@@ -148,8 +151,9 @@ void main() {
 
   group('auth', () {
     test('properly set Authorization header', () async {
-      final (:sessionString, :accessToken) =
-          getSessionData(DateTime.now().add(Duration(hours: 1)));
+      final (:sessionString, :accessToken) = getSessionData(
+        DateTime.now().add(Duration(hours: 1)),
+      );
 
       final mockServer = await HttpServer.bind('localhost', 0);
       final supabase = SupabaseClient(
@@ -160,24 +164,26 @@ void main() {
       await supabase.auth.recoverSession(sessionString);
 
       // Make some requests
-      supabase.from("test").select().then((value) => null);
-      supabase.rpc("test").select().then((value) => null);
-      supabase.functions.invoke("test").then((value) => null);
-      supabase.storage.from("test").list().then((value) => null);
+      unawaited(supabase.from("test").select().then((value) => null));
+      unawaited(supabase.rpc("test").select().then((value) => null));
+      unawaited(supabase.functions.invoke("test").then((value) => null));
+      unawaited(supabase.storage.from("test").list().then((value) => null));
 
       var count = 0;
 
       // Check for every request if the Authorization header is set properly
       await for (final req in mockServer) {
         expect(
-            req.headers.value('Authorization')?.split(" ").last, accessToken);
+          req.headers.value('Authorization')?.split(" ").last,
+          accessToken,
+        );
         count++;
         if (count == 4) {
           break;
         }
       }
 
-      mockServer.close();
+      await mockServer.close();
     });
 
     test('call recoverSession', () async {
@@ -195,10 +201,10 @@ void main() {
       await Future.delayed(Duration(seconds: 11));
 
       // Make some requests
-      supabase.from("test").select().then((value) => null);
-      supabase.rpc("test").select().then((value) => null);
-      supabase.functions.invoke("test").then((value) => null);
-      supabase.storage.from("test").list().then((value) => null);
+      unawaited(supabase.from("test").select().then((value) => null));
+      unawaited(supabase.rpc("test").select().then((value) => null));
+      unawaited(supabase.functions.invoke("test").then((value) => null));
+      unawaited(supabase.storage.from("test").list().then((value) => null));
 
       var count = 0;
       var gotTokenRefresh = false;
@@ -212,17 +218,20 @@ void main() {
           }
           gotTokenRefresh = true;
           String sessionString;
-          (accessToken: secondAccessToken, :sessionString) =
-              getSessionData(DateTime.now().add(Duration(hours: 1)));
+          (accessToken: secondAccessToken, :sessionString) = getSessionData(
+            DateTime.now().add(Duration(hours: 1)),
+          );
 
           req.response
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.json
-            ..write(sessionString)
-            ..close();
+            ..write(sessionString);
+          await req.response.close();
         } else {
-          expect(req.headers.value('Authorization')?.split(" ").last,
-              secondAccessToken);
+          expect(
+            req.headers.value('Authorization')?.split(" ").last,
+            secondAccessToken,
+          );
           count++;
           if (count == 4) {
             break;
@@ -230,17 +239,25 @@ void main() {
         }
       }
 
-      mockServer.close();
+      await mockServer.close();
     });
 
     test('create a client with third-party auth accessToken', () async {
-      final supabase = SupabaseClient('URL', 'KEY', accessToken: () async {
-        return 'jwt';
-      });
+      final supabase = SupabaseClient(
+        'URL',
+        'KEY',
+        accessToken: () async {
+          return 'jwt';
+        },
+      );
       expect(
-          () => supabase.auth.currentUser,
-          throwsA(AuthException(
-              'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.')));
+        () => supabase.auth.currentUser,
+        throwsA(
+          AuthException(
+            'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
+          ),
+        ),
+      );
     });
   });
 
@@ -262,7 +279,7 @@ void main() {
     test('X-Client-Info header is set properly on realtime', () async {
       final mockServer = await HttpServer.bind('localhost', 0);
 
-      final supabase = SupabaseClient(
+      final client = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         supabaseKey,
         headers: {
@@ -272,7 +289,7 @@ void main() {
 
       final request = await getRealtimeRequest(
         server: mockServer,
-        supabaseClient: supabase,
+        supabaseClient: client,
       );
 
       expect(request.headers['X-Client-Info']?.first, 'supabase-flutter/0.0.0');
@@ -299,8 +316,7 @@ void main() {
 
     group('Headers Management', () {
       test('should update headers and propagate to all clients', () {
-        final newHeaders = {'Custom-Header': 'custom-value'};
-        supabase.headers = newHeaders;
+        supabase.headers = {'Custom-Header': 'custom-value'};
 
         expect(supabase.headers['Custom-Header'], 'custom-value');
         expect(supabase.rest.headers['Custom-Header'], 'custom-value');
@@ -310,11 +326,19 @@ void main() {
       });
 
       test('should preserve default headers when setting custom headers', () {
-        final newHeaders = {'Custom-Header': 'custom-value'};
-        supabase.headers = newHeaders;
+        supabase.headers = {'Custom-Header': 'custom-value'};
 
         expect(supabase.headers['X-Client-Info'], startsWith('supabase-dart/'));
       });
+
+      test(
+        'should preserve apikey on realtime headers when setting headers',
+        () {
+          supabase.headers = {'Custom-Header': 'custom-value'};
+
+          expect(supabase.realtime.headers['apikey'], supabaseKey);
+        },
+      );
 
       test('should not update auth headers when using custom access token', () {
         final customTokenClient = SupabaseClient(
@@ -323,8 +347,7 @@ void main() {
           accessToken: () async => 'custom-token',
         );
 
-        final newHeaders = {'Custom-Header': 'custom-value'};
-        customTokenClient.headers = newHeaders;
+        customTokenClient.headers = {'Custom-Header': 'custom-value'};
 
         expect(customTokenClient.headers['Custom-Header'], 'custom-value');
       });
@@ -332,164 +355,56 @@ void main() {
 
     group('Error Handling', () {
       test(
-          'should throw AuthException when accessing auth with custom access token',
-          () {
-        final customTokenClient = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          accessToken: () async => 'custom-token',
-        );
+        'should throw AuthException when accessing auth with custom access token',
+        () {
+          final customTokenClient = SupabaseClient(
+            supabaseUrl,
+            supabaseKey,
+            accessToken: () async => 'custom-token',
+          );
 
-        expect(
-          () => customTokenClient.auth,
-          throwsA(isA<AuthException>()),
-        );
-      });
-    });
-
-    group('Schema Support', () {
-      test('should create query builder with custom schema', () {
-        final customSchema = supabase.schema('custom');
-        expect(customSchema, isA<SupabaseQuerySchema>());
-
-        final queryBuilder = customSchema.from('table');
-        expect(queryBuilder, isA<SupabaseQueryBuilder>());
-      });
-
-      test('should handle nested schema calls', () {
-        final schema1 = supabase.schema('schema1');
-        final schema2 = schema1.schema('schema2');
-
-        expect(schema2, isA<SupabaseQuerySchema>());
-      });
-    });
-
-    group('RPC Support', () {
-      test('should create RPC call', () {
-        final rpcCall = supabase.rpc('test_function');
-        expect(rpcCall, isA<PostgrestFilterBuilder>());
-      });
-
-      test('should create RPC call with parameters', () {
-        final rpcCall =
-            supabase.rpc('test_function', params: {'param': 'value'});
-        expect(rpcCall, isA<PostgrestFilterBuilder>());
-      });
-
-      test('should create RPC call with get flag', () {
-        final rpcCall = supabase.rpc('test_function', params: {}, get: true);
-        expect(rpcCall, isA<PostgrestFilterBuilder>());
-      });
-    });
-
-    group('Client Options', () {
-      test('should accept custom Postgrest options', () {
-        final client = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          postgrestOptions: PostgrestClientOptions(schema: 'custom_schema'),
-        );
-
-        expect(client, isA<SupabaseClient>());
-      });
-
-      test('should accept custom Auth options', () {
-        final client = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          authOptions: AuthClientOptions(autoRefreshToken: false),
-        );
-
-        expect(client, isA<SupabaseClient>());
-      });
-
-      test('should accept custom Storage options', () {
-        final client = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          storageOptions: StorageClientOptions(retryAttempts: 5),
-        );
-
-        expect(client, isA<SupabaseClient>());
-      });
-
-      test('should accept custom Realtime options', () {
-        final client = SupabaseClient(
-          supabaseUrl,
-          supabaseKey,
-          realtimeClientOptions:
-              RealtimeClientOptions(logLevel: RealtimeLogLevel.debug),
-        );
-
-        expect(client, isA<SupabaseClient>());
-      });
-    });
-
-    group('Dispose', () {
-      test('should properly dispose all resources', () async {
-        final client = SupabaseClient(supabaseUrl, supabaseKey);
-
-        // Should not throw
-        await client.dispose();
-      });
+          expect(
+            () => customTokenClient.auth,
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
     });
 
     group('Shared YAJsonIsolate', () {
       test(
-          'does not dispose an injected YAJsonIsolate so the caller retains ownership',
-          () async {
-        final isolate = YAJsonIsolate();
-        await isolate.initialize();
+        'does not dispose an injected YAJsonIsolate so the caller retains ownership',
+        () async {
+          final isolate = YAJsonIsolate();
+          await isolate.initialize();
 
-        final client =
-            SupabaseClient(supabaseUrl, supabaseKey, isolate: isolate);
+          final client = SupabaseClient(
+            supabaseUrl,
+            supabaseKey,
+            isolate: isolate,
+          );
 
-        await client.dispose();
+          await client.dispose();
 
-        // Isolate is still alive — caller owns the lifecycle
-        expect(await isolate.encode({'key': 'value'}), isA<String>());
+          // Isolate is still alive — caller owns the lifecycle
+          expect(await isolate.encode({'key': 'value'}), isA<String>());
 
-        await isolate.dispose();
-      });
+          await isolate.dispose();
+        },
+      );
 
-      test('creates a single isolate shared across rest and functions clients',
-          () async {
-        // Creating a SupabaseClient without providing an isolate should
-        // still result in a single shared isolate (not one per sub-client).
-        // Verified indirectly: dispose() should complete without error,
-        // meaning there is no double-dispose from sub-clients.
-        final client = SupabaseClient(supabaseUrl, supabaseKey);
+      test(
+        'creates a single isolate shared across rest and functions clients',
+        () async {
+          // Creating a SupabaseClient without providing an isolate should
+          // still result in a single shared isolate (not one per sub-client).
+          // Verified indirectly: dispose() should complete without error,
+          // meaning there is no double-dispose from sub-clients.
+          final client = SupabaseClient(supabaseUrl, supabaseKey);
 
-        await client.dispose();
-      });
-    });
-  });
-
-  group('Query Schema', () {
-    late SupabaseClient supabase;
-    const supabaseUrl = 'https://example.supabase.co';
-    const supabaseKey = 'test-key';
-
-    setUp(() {
-      supabase = SupabaseClient(supabaseUrl, supabaseKey);
-    });
-
-    tearDown(() async {
-      await supabase.dispose();
-    });
-
-    test('should create SupabaseQueryBuilder from schema', () {
-      final schema = supabase.schema('custom_schema');
-      final queryBuilder = schema.from('test_table');
-
-      expect(queryBuilder, isA<SupabaseQueryBuilder>());
-    });
-
-    test('should create nested schemas', () {
-      final schema1 = supabase.schema('schema1');
-      final schema2 = schema1.schema('schema2');
-
-      expect(schema2, isA<SupabaseQuerySchema>());
+          await client.dispose();
+        },
+      );
     });
   });
 

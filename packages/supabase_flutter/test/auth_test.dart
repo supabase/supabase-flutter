@@ -9,7 +9,7 @@ class _MockLocalStorage extends MockLocalStorage {
   bool get initializeCalled => _initializeCalled;
 
   @override
-  Future<void> initialize() async {
+  Future<void> initialize() {
     _initializeCalled = true;
     return super.initialize();
   }
@@ -63,34 +63,38 @@ void main() {
 
     group('Auth state stream error handling', () {
       test(
-          'does not propagate auth state stream errors as unhandled exceptions',
-          () async {
-        await Supabase.initialize(
-          url: supabaseUrl,
-          publishableKey: supabaseKey,
-          debug: false,
-          authOptions: FlutterAuthClientOptions(
-            localStorage: MockEmptyLocalStorage(),
-            pkceAsyncStorage: MockAsyncStorage(),
-          ),
-        );
+        'does not propagate auth state stream errors as unhandled exceptions',
+        () async {
+          await Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            debug: false,
+            authOptions: FlutterAuthClientOptions(
+              localStorage: const MockEmptyLocalStorage(),
+              pkceAsyncStorage: MockAsyncStorage(),
+            ),
+          );
 
-        // Trigger an error on the auth state change stream via notifyException.
-        // This should not throw or cause an unhandled zone error.
-        final auth = Supabase.instance.client.auth;
-        // ignore: invalid_use_of_internal_member
-        auth.notifyException(Exception('test auth error'), StackTrace.current);
+          // Trigger an error on the auth state change stream via notifyException.
+          // This should not throw or cause an unhandled zone error.
+          final auth = Supabase.instance.client.auth;
+          // ignore: invalid_use_of_internal_member
+          auth.notifyException(
+            Exception('test auth error'),
+            StackTrace.current,
+          );
 
-        // Allow the stream listener to process the error.
-        await Future.delayed(Duration.zero);
+          // Allow the stream listener to process the error.
+          await Future.delayed(Duration.zero);
 
-        // If we reach here the error was not rethrown as an unhandled exception.
-      });
+          // If we reach here the error was not rethrown as an unhandled exception.
+        },
+      );
     });
 
     group('Session recovery', () {
       test('handles corrupted session data gracefully', () async {
-        final corruptedStorage = MockExpiredStorage();
+        const corruptedStorage = MockExpiredStorage();
 
         await Supabase.initialize(
           url: supabaseUrl,
@@ -108,7 +112,7 @@ void main() {
       });
 
       test('handles null session during initialization', () async {
-        final emptyStorage = MockEmptyLocalStorage();
+        const emptyStorage = MockEmptyLocalStorage();
 
         await Supabase.initialize(
           url: supabaseUrl,

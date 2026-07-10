@@ -7,15 +7,15 @@ import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
 import 'reset_helper.dart';
+import 'test_utils.dart';
 
 void main() {
-  const rootUrl = 'http://localhost:3000';
   late PostgrestClient postgrest;
   late PostgrestClient postgrestCustomHttpClient;
   final resetHelper = ResetHelper();
   group("Default http client", () {
     setUpAll(() async {
-      postgrest = PostgrestClient(rootUrl);
+      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
 
       await resetHelper.initialize(postgrest);
     });
@@ -25,7 +25,7 @@ void main() {
     });
 
     setUp(() {
-      postgrest = PostgrestClient(rootUrl);
+      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
     });
 
     tearDown(() async {
@@ -38,17 +38,22 @@ void main() {
     });
 
     test('stored procedure', () async {
-      final res = await postgrest.rpc<String>('get_status', params: {
-        'name_param': 'supabot',
-      });
+      final res = await postgrest.rpc<String>(
+        'get_status',
+        params: {
+          'name_param': 'supabot',
+        },
+      );
       expect(res, 'ONLINE');
     });
 
     test('select on stored procedure', () async {
-      final res = await postgrest.rpc(
-        'get_username_and_status',
-        params: {'name_param': 'supabot'},
-      ).select('status');
+      final res = await postgrest
+          .rpc(
+            'get_username_and_status',
+            params: {'name_param': 'supabot'},
+          )
+          .select('status');
       expect(
         res.first['status'],
         'ONLINE',
@@ -70,7 +75,7 @@ void main() {
         'get_array_element',
         params: {
           'arr': [37, 420, 64],
-          'index': 2
+          'index': 2,
         },
       );
       expect(res, 420);
@@ -81,7 +86,7 @@ void main() {
         'get_array_element',
         params: {
           'arr': [37, 420, 64],
-          'index': 2
+          'index': 2,
         },
         get: true,
       );
@@ -89,17 +94,17 @@ void main() {
     });
 
     test('custom headers', () async {
-      final postgrest = PostgrestClient(rootUrl, headers: {'apikey': 'foo'});
-      expect(postgrest.headers['apikey'], 'foo');
+      final client = PostgrestClient(rootUrl, headers: {'apikey': 'foo'});
+      expect(client.headers['apikey'], 'foo');
     });
 
     test('override X-Client-Info', () async {
-      final postgrest = PostgrestClient(
+      final client = PostgrestClient(
         rootUrl,
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
       );
       expect(
-        postgrest.headers['X-Client-Info'],
+        client.headers['X-Client-Info'],
         'supabase-dart/0.0.0',
       );
     });
@@ -114,9 +119,9 @@ void main() {
 
     test('set header on rpc', () async {
       final httpClient = CustomHttpClient();
-      final postgrest = PostgrestClient(rootUrl, httpClient: httpClient);
+      final client = PostgrestClient(rootUrl, httpClient: httpClient);
 
-      await postgrest
+      await client
           .rpc('empty-succ')
           .setHeader("myKey", "myValue")
           .select()
@@ -124,16 +129,18 @@ void main() {
       expect(httpClient.lastRequest!.headers, containsPair("myKey", "myValue"));
 
       // Other following requests should not have the header
-      await postgrest.rpc('empty-succ').select().head();
-      expect(httpClient.lastRequest!.headers,
-          isNot(containsPair("myKey", "myValue")));
+      await client.rpc('empty-succ').select().head();
+      expect(
+        httpClient.lastRequest!.headers,
+        isNot(containsPair("myKey", "myValue")),
+      );
     });
 
     test('set header on query builder', () async {
       final httpClient = CustomHttpClient();
-      final postgrest = PostgrestClient(rootUrl, httpClient: httpClient);
+      final client = PostgrestClient(rootUrl, httpClient: httpClient);
 
-      await postgrest
+      await client
           .from('empty-succ')
           .setHeader("myKey", "myValue")
           .select()
@@ -141,25 +148,33 @@ void main() {
       expect(httpClient.lastRequest!.headers, containsPair("myKey", "myValue"));
 
       // Other following requests should not have the header
-      await postgrest.from('empty-succ').select().head();
-      expect(httpClient.lastRequest!.headers,
-          isNot(containsPair("myKey", "myValue")));
+      await client.from('empty-succ').select().head();
+      expect(
+        httpClient.lastRequest!.headers,
+        isNot(containsPair("myKey", "myValue")),
+      );
     });
 
     test('switch schema', () async {
-      final postgrest = PostgrestClient(rootUrl, schema: 'personal');
-      final res = await postgrest.from('users').select();
+      final client = PostgrestClient(
+        rootUrl,
+        schema: 'personal',
+        headers: apiHeaders,
+      );
+      final res = await client.from('users').select();
       expect(res.length, 5);
     });
 
     test('query non-public schema dynamically', () async {
-      final postgrest = PostgrestClient(rootUrl);
-      final personalData =
-          await postgrest.schema('personal').from('users').select();
+      final client = PostgrestClient(rootUrl, headers: apiHeaders);
+      final personalData = await client
+          .schema('personal')
+          .from('users')
+          .select();
       expect(personalData.length, 5);
 
       // confirm that the client defaults to its initialized schema by default.
-      final publicData = await postgrest.from('users').select();
+      final publicData = await client.from('users').select();
       expect(publicData.length, 4);
     });
 
@@ -180,7 +195,7 @@ void main() {
         'id': 3,
         'message': 'foo',
         'username': 'supabot',
-        'channel_id': 2
+        'channel_id': 2,
       }).select();
       final headersAfter = {...postgrest.headers};
 
@@ -192,11 +207,14 @@ void main() {
     });
 
     test('ignoreDuplicates upsert', () async {
-      final res = await postgrest.from('users').upsert(
-        {'username': 'dragarcia'},
-        onConflict: 'username',
-        ignoreDuplicates: true,
-      ).select();
+      final res = await postgrest
+          .from('users')
+          .upsert(
+            {'username': 'dragarcia'},
+            onConflict: 'username',
+            ignoreDuplicates: true,
+          )
+          .select();
       expect(res, isEmpty);
     });
 
@@ -234,7 +252,7 @@ void main() {
     test('bulk insert', () async {
       final res = await postgrest.from('messages').insert([
         {'id': 4, 'message': 'foo', 'username': 'supabot', 'channel_id': 2},
-        {'id': 5, 'message': 'foo', 'username': 'supabot', 'channel_id': 1}
+        {'id': 5, 'message': 'foo', 'username': 'supabot', 'channel_id': 1},
       ]).select();
       expect(res.length, 2);
     });
@@ -304,8 +322,8 @@ void main() {
           'message': 'Supabase Launch Week is on fire',
           'username': 'supabot',
           'channel_id': 1,
-          'inserted_at': '2021-06-20T04:28:21.598+00:00'
-        }
+          'inserted_at': '2021-06-20T04:28:21.598+00:00',
+        },
       ]);
 
       final resMsg = await postgrest
@@ -316,22 +334,20 @@ void main() {
     });
 
     test('missing table', () async {
-      try {
-        await postgrest.from('missing_table').select();
-        fail('found missing table');
-      } on PostgrestException catch (error) {
-        expect(error.code, '42P01');
-      }
+      await expectLater(
+        () => postgrest.from('missing_table').select(),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', 'PGRST205'),
+        ),
+      );
     });
 
     test('connection error', () async {
-      final postgrest = PostgrestClient('http://this.url.does.not.exist');
-      try {
-        await postgrest.from('user').select();
-        fail('Success on connection error');
-      } catch (error) {
-        expect(error, isA<SocketException>());
-      }
+      final client = PostgrestClient('http://this.url.does.not.exist');
+      await expectLater(
+        () => client.from('user').select(),
+        throwsA(isA<SocketException>()),
+      );
     });
 
     test('Prefer: return=minimal', () async {
@@ -356,15 +372,18 @@ void main() {
     });
 
     test('select with count: planned', () async {
-      final res =
-          await postgrest.from('users').select('*').count(CountOption.planned);
+      final res = await postgrest
+          .from('users')
+          .select('*')
+          .count(CountOption.planned);
       final int count = res.count;
-      expect(count, isNotNull);
+      expect(count, greaterThanOrEqualTo(0));
     });
 
     test('select with head:true, count: estimated', () async {
-      final int res =
-          await postgrest.from('users').count(CountOption.estimated);
+      final int res = await postgrest
+          .from('users')
+          .count(CountOption.estimated);
       expect(res, isA<int>());
     });
 
@@ -374,11 +393,13 @@ void main() {
     });
 
     test('stored procedure with count: exact', () async {
-      final res = await postgrest.rpc<String>(
-        'get_status',
-        params: {'name_param': 'supabot'},
-      ).count(CountOption.exact);
-      expect(res, isNotNull);
+      final res = await postgrest
+          .rpc<String>(
+            'get_status',
+            params: {'name_param': 'supabot'},
+          )
+          .count(CountOption.exact);
+      expect(res.count, greaterThanOrEqualTo(0));
     });
 
     test('insert with count: exact', () async {
@@ -417,12 +438,10 @@ void main() {
     });
 
     test('execute without table operation', () async {
-      try {
-        await postgrest.from('users');
-        fail('can not execute without table operation');
-      } catch (e) {
-        expect(e, isA<ArgumentError>());
-      }
+      await expectLater(
+        () => postgrest.from('users'),
+        throwsA(isA<ArgumentError>()),
+      );
     });
 
     test('select from uppercase table name', () async {
@@ -432,7 +451,7 @@ void main() {
 
     test('insert from uppercase table name', () async {
       final res = await postgrest.from('TestTable').insert([
-        {'slug': 'new slug'}
+        {'slug': 'new slug'},
       ]).select();
       expect(
         (res.first)['slug'],
@@ -455,7 +474,6 @@ void main() {
           .from('users')
           .select()
           .withConverter((data) => [data]);
-      expect(res, isNotNull);
       expect(res, isNotEmpty);
       expect(res.first, isNotEmpty);
       expect(res.first, isA<List>());
@@ -500,6 +518,7 @@ void main() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
         rootUrl,
+        headers: apiHeaders,
         httpClient: customHttpClient,
       );
     });
@@ -509,50 +528,80 @@ void main() {
     });
 
     test('basic select table', () async {
-      try {
-        await postgrestCustomHttpClient.from('users').select();
-        fail('Table was able to be selected, even tho it does not exist');
-      } on PostgrestException catch (error) {
-        expect(error.code, '420');
-      }
+      await expectLater(
+        () => postgrestCustomHttpClient.from('users').select(),
+        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+      );
     });
+    test(
+      'select() builds a valid Prefer header without a preceding Prefer',
+      () async {
+        await postgrestCustomHttpClient.rpc('empty-succ').select().head();
+
+        expect(
+          customHttpClient.lastRequest!.headers['Prefer'],
+          'return=representation',
+        );
+      },
+    );
     test('basic select table with converter', () async {
-      try {
-        await postgrestCustomHttpClient
+      await expectLater(
+        () => postgrestCustomHttpClient
             .from('users')
             .select()
-            .withConverter((data) => data);
-        fail('Table was able to be selected, even tho it does not exist');
-      } on PostgrestException catch (error) {
-        expect(error.code, '420');
-      }
+            .withConverter((data) => data),
+        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+      );
     });
     test('basic stored procedure call', () async {
-      try {
-        await postgrestCustomHttpClient
-            .rpc<String>('get_status', params: {'name_param': 'supabot'});
-        fail(
-            'Stored procedure was able to be called, even tho it does not exist');
-      } on PostgrestException catch (error) {
-        expect(error.code, '420');
-        expect(customHttpClient.lastRequest?.method, "POST");
-      }
+      await expectLater(
+        () => postgrestCustomHttpClient.rpc<String>(
+          'get_status',
+          params: {'name_param': 'supabot'},
+        ),
+        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+      );
+      expect(customHttpClient.lastRequest?.method, "POST");
     });
 
     test('stored procedure call in read-only access mode', () async {
-      try {
-        await postgrestCustomHttpClient.rpc<String>(
+      await expectLater(
+        () => postgrestCustomHttpClient.rpc<String>(
           'get_status',
           params: {'name_param': 'supabot'},
           get: true,
-        );
-        fail(
-            'Stored procedure was able to be called, even tho it does not exist');
-      } on PostgrestException catch (error) {
-        expect(error.code, '420');
-        expect(customHttpClient.lastRequest?.method, "GET");
-        expect(customHttpClient.lastBody, isEmpty);
-      }
+        ),
+        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+      );
+      expect(customHttpClient.lastRequest?.method, "GET");
+      expect(customHttpClient.lastBody, isEmpty);
+    });
+
+    test('non-JSON body on 2xx response throws a structured error', () async {
+      await expectLater(
+        () => postgrestCustomHttpClient.from('non-json-succ').select(),
+        throwsA(
+          isA<PostgrestException>()
+              .having((e) => e.code, 'code', '200')
+              .having(
+                (e) => e.message,
+                'message',
+                '<html><body>502 Bad Gateway</body></html>',
+              ),
+        ),
+      );
+    });
+
+    test('non-JSON body on 2xx response with maybeSingle throws', () async {
+      await expectLater(
+        () => postgrestCustomHttpClient
+            .from('non-json-succ')
+            .select()
+            .maybeSingle(),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '200'),
+        ),
+      );
     });
   });
 }

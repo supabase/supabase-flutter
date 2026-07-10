@@ -17,16 +17,16 @@ void main() {
         publishableKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockLocalStorage(),
+          localStorage: const MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );
     });
 
-    test('can access Supabase singleton', () async {
+    test('can access Supabase singleton', () {
       final supabase = Supabase.instance.client;
 
-      expect(supabase, isNotNull);
+      expect(supabase, same(Supabase.instance.client));
     });
 
     test('can re-initialize client', () async {
@@ -37,7 +37,7 @@ void main() {
         publishableKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockLocalStorage(),
+          localStorage: const MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );
@@ -53,19 +53,13 @@ void main() {
       publishableKey: supabaseUrl,
       debug: false,
       authOptions: FlutterAuthClientOptions(
-        localStorage: MockLocalStorage(),
+        localStorage: const MockLocalStorage(),
         pkceAsyncStorage: MockAsyncStorage(),
       ),
       accessToken: () async => 'my-access-token',
     );
 
-    // print(supabase.client.auth.runtimeType);
-
-    void accessAuth() {
-      supabase.client.auth;
-    }
-
-    expect(accessAuth, throwsA(isA<AuthException>()));
+    expect(() => supabase.client.auth, throwsA(isA<AuthException>()));
   });
 
   group("Expired session", () {
@@ -76,7 +70,7 @@ void main() {
         publishableKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockExpiredStorage(),
+          localStorage: const MockExpiredStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
           autoRefreshToken: false,
         ),
@@ -87,8 +81,10 @@ void main() {
       // Give it a delay to wait for recoverSession to throw
       await Future.delayed(const Duration(milliseconds: 100));
 
-      await expectLater(Supabase.instance.client.auth.onAuthStateChange,
-          emitsError(isA<AuthException>()));
+      await expectLater(
+        Supabase.instance.client.auth.onAuthStateChange,
+        emitsError(isA<AuthException>()),
+      );
     });
   });
 
@@ -100,7 +96,7 @@ void main() {
         publishableKey: supabaseKey,
         debug: false,
         authOptions: FlutterAuthClientOptions(
-          localStorage: MockEmptyLocalStorage(),
+          localStorage: const MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
         ),
       );
@@ -132,38 +128,13 @@ void main() {
       );
     });
 
-    test('initialize does nothing', () async {
-      // Should not throw any exceptions
-      await localStorage.initialize();
-    });
-
-    test('hasAccessToken returns false', () async {
-      final result = await localStorage.hasAccessToken();
-      expect(result, false);
-    });
-
-    test('accessToken returns null', () async {
-      final result = await localStorage.accessToken();
-      expect(result, null);
-    });
-
-    test('removePersistedSession does nothing', () async {
-      // Should not throw any exceptions
-      await localStorage.removePersistedSession();
-    });
-
-    test('persistSession does nothing', () async {
-      // Should not throw any exceptions
-      await localStorage.persistSession('test-session-string');
-    });
-
     test('all methods work together in a typical flow', () async {
       // Initialize the storage
       await localStorage.initialize();
 
       // Check if there's a token (should be false)
       final hasToken = await localStorage.hasAccessToken();
-      expect(hasToken, false);
+      expect(hasToken, isFalse);
 
       // Get the token (should be null)
       final token = await localStorage.accessToken();
@@ -174,7 +145,7 @@ void main() {
 
       // Check if there's a token after persisting (should still be false)
       final hasTokenAfterPersist = await localStorage.hasAccessToken();
-      expect(hasTokenAfterPersist, false);
+      expect(hasTokenAfterPersist, isFalse);
 
       // Get the token after persisting (should still be null)
       final tokenAfterPersist = await localStorage.accessToken();
@@ -185,7 +156,7 @@ void main() {
 
       // Check if there's a token after removing (should still be false)
       final hasTokenAfterRemove = await localStorage.hasAccessToken();
-      expect(hasTokenAfterRemove, false);
+      expect(hasTokenAfterRemove, isFalse);
     });
   });
 }

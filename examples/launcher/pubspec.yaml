@@ -1,0 +1,17 @@
+name: examples_launcher
+description: Interactive launcher that boots local Supabase and runs an example.
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+
+resolution: workspace
+
+dependencies:
+  mason_logger: ^0.3.5
+
+dev_dependencies:
+  supabase_lints: ^0.1.0

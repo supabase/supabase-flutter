@@ -1,3 +1,34 @@
+## 2.11.0
+
+ - **FEAT**(realtime_client): support new postgres changes filter operators, multi-filter, column selection, and replication-ready events ([#1526](https://github.com/supabase/supabase-flutter/issues/1526)). ([1f9d2951](https://github.com/supabase/supabase-flutter/commit/1f9d29516032c1f4bd8416fd7fa36737a335afaf))
+
+## 2.10.0
+
+ - **FIX**(realtime): preserve nested empty maps in Message.toJson() ([#1518](https://github.com/supabase/supabase-flutter/issues/1518)). ([1777a225](https://github.com/supabase/supabase-flutter/commit/1777a225b0bf150a089abc06fbeb9b14cd6ace8d))
+ - **FIX**(realtime): escape quotes and backslashes in `in` filter values ([#1506](https://github.com/supabase/supabase-flutter/issues/1506)). ([30349e22](https://github.com/supabase/supabase-flutter/commit/30349e228f1d6e75610db51d9e081fc47450660c))
+ - **FEAT**(realtime): add onHeartbeat stream to RealtimeClient ([#1517](https://github.com/supabase/supabase-flutter/issues/1517)). ([d8c66cb0](https://github.com/supabase/supabase-flutter/commit/d8c66cb035600fed088544be9ed1869fb4a0a0eb))
+
+## 2.9.1
+
+ - **FIX**(realtime): cancel pending reconnect on disconnect after a dropped socket ([#1477](https://github.com/supabase/supabase-flutter/issues/1477)). ([b704932a](https://github.com/supabase/supabase-flutter/commit/b704932ac13a56a01c73cac603aed43e8a8aad3a))
+
+## 2.9.0
+
+ - **REFACTOR**(realtime_client): extract broadcast headers and body builders ([#1461](https://github.com/supabase/supabase-flutter/issues/1461)). ([7da70605](https://github.com/supabase/supabase-flutter/commit/7da706059de3af651e5e605acea081125d4b261c))
+ - **FIX**(realtime): surface async postgres_changes system error as channelError ([#1470](https://github.com/supabase/supabase-flutter/issues/1470)). ([d1271701](https://github.com/supabase/supabase-flutter/commit/d1271701775c84ee1e197790fb3f735129844fc6))
+ - **FIX**(realtime_client): detect dropped connections on iOS via WebSocket ping ([#1451](https://github.com/supabase/supabase-flutter/issues/1451)). ([db754cf0](https://github.com/supabase/supabase-flutter/commit/db754cf06b371f714a6a7f63912b4b8a4185868a))
+ - **FIX**(realtime_client): cancel connection stream subscription on disconnect ([#1423](https://github.com/supabase/supabase-flutter/issues/1423)). ([fc9bba60](https://github.com/supabase/supabase-flutter/commit/fc9bba60e680d175fab24ed2f719fb3e525dc194))
+ - **FEAT**(realtime): update httpSend to per-event broadcast URL with binary support ([#1467](https://github.com/supabase/supabase-flutter/issues/1467)). ([6f84df00](https://github.com/supabase/supabase-flutter/commit/6f84df0053d523523643cbd7042e7031d0d90925))
+
+## 2.8.0
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FEAT**(realtime): add support for protocol format 2.0.0 ([#1397](https://github.com/supabase/supabase-flutter/issues/1397)). ([c04d5d1a](https://github.com/supabase/supabase-flutter/commit/c04d5d1a5a0a6feedf8bfa082fc708a4472e85eb))
+
+## 2.7.4
+
+ - **FIX**(realtime_client): suppress InvalidJWTToken from setAuth in joinPush 'ok' handler ([#1365](https://github.com/supabase/supabase-flutter/issues/1365)). ([2fb3f1cc](https://github.com/supabase/supabase-flutter/commit/2fb3f1cc2ec531826a748524cd86d3096719d3e7))
+
 ## 2.7.3
 
  - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))

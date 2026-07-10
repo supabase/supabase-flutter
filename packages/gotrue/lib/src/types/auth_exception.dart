@@ -38,15 +38,15 @@ class AuthException implements Exception {
 }
 
 class AuthPKCEGrantCodeExchangeError extends AuthException {
-  AuthPKCEGrantCodeExchangeError(super.message);
+  const AuthPKCEGrantCodeExchangeError(super.message);
 }
 
 class AuthSessionMissingException extends AuthException {
   AuthSessionMissingException([String? message])
-      : super(
-          message ?? 'Auth session missing!',
-          statusCode: '400',
-        );
+    : super(
+        message ?? 'Auth session missing!',
+        statusCode: '400',
+      );
   @override
   String toString() =>
       'AuthSessionMissingException(message: $message, statusCode: $statusCode)';
@@ -64,7 +64,7 @@ class AuthRetryableFetchException extends AuthException {
 }
 
 class AuthApiException extends AuthException {
-  AuthApiException(super.message, {super.statusCode, super.code});
+  const AuthApiException(super.message, {super.statusCode, super.code});
 
   @override
   String toString() =>
@@ -79,11 +79,11 @@ class AuthUnknownException extends AuthException {
     required String message,
     required this.originalError,
   }) : super(
-          message,
-          statusCode: originalError is http.Response
-              ? originalError.statusCode.toString()
-              : null,
-        );
+         message,
+         statusCode: originalError is http.Response
+             ? originalError.statusCode.toString()
+             : null,
+       );
 
   @override
   String toString() =>
@@ -106,10 +106,10 @@ class AuthWeakPasswordException extends AuthException {
 
 class AuthInvalidJwtException extends AuthException {
   AuthInvalidJwtException(super.message)
-      : super(
-          statusCode: '400',
-          code: 'invalid_jwt',
-        );
+    : super(
+        statusCode: '400',
+        code: 'invalid_jwt',
+      );
 
   @override
   String toString() =>
