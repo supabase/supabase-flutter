@@ -442,6 +442,62 @@ void main() {
       expect(success.signedUrl, endsWith('?token=abc&download='));
     });
 
+    test('getPublicUrl appends cacheNonce', () {
+      final response = client
+          .from('files')
+          .getPublicUrl('b.txt', cacheNonce: 'v2');
+      expect(response, '$objectUrl/public/files/b.txt?cacheNonce=v2');
+    });
+
+    test('getPublicUrl appends download before cacheNonce', () {
+      final response = client
+          .from('files')
+          .getPublicUrl(
+            'b.txt',
+            download: DownloadBehavior.withOriginalName,
+            cacheNonce: 'v2',
+          );
+      expect(response, '$objectUrl/public/files/b.txt?download=&cacheNonce=v2');
+    });
+
+    test('download appends cacheNonce query parameter', () async {
+      final file = File('a.txt');
+      file.writeAsStringSync('Updated content');
+      customHttpClient.response = file.readAsBytesSync();
+
+      await client.from('public_bucket').download('b.txt', cacheNonce: 'v2');
+
+      final request = customHttpClient.receivedRequests.first;
+      expect(request.url.queryParameters, {'cacheNonce': 'v2'});
+    });
+
+    test('createSignedUrl appends cacheNonce to the token query', () async {
+      customHttpClient.response = {
+        'signedURL': '/object/sign/public/b.txt?token=abc',
+      };
+
+      final response = await client
+          .from('public')
+          .createSignedUrl('b.txt', 60, cacheNonce: 'v2');
+      expect(response, endsWith('?token=abc&cacheNonce=v2'));
+    });
+
+    test('createSignedUrlsResult appends cacheNonce to each URL', () async {
+      customHttpClient.response = [
+        {
+          'path': 'exists.txt',
+          'signedURL': '/object/sign/public/exists.txt?token=abc',
+        },
+      ];
+
+      final results = await client
+          .from('public')
+          .createSignedUrlsResult(['exists.txt'], 60, cacheNonce: 'v2');
+
+      final success = results.single as SignedUrlSuccess;
+      expect(success.signedUrl, endsWith('?token=abc&cacheNonce=v2'));
+    });
+
     test('should remove file', () async {
       customHttpClient.response = [testFileObjectJson, testFileObjectJson];
 
