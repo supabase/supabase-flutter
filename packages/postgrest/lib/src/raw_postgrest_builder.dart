@@ -15,6 +15,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         maybeSingle: builder._maybeSingle,
         converter: builder._converter,
         retry: builder._retry,
+        abortTrigger: builder._abortTrigger,
       );
 
   /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
@@ -42,6 +43,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         count: count ?? _count,
         maybeSingle: maybeSingle ?? _maybeSingle,
         retry: _retry,
+        abortTrigger: _abortTrigger,
       ),
     );
   }
@@ -78,6 +80,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       maybeSingle: _maybeSingle,
       converter: converter,
       retry: _retry,
+      abortTrigger: _abortTrigger,
     );
   }
 }

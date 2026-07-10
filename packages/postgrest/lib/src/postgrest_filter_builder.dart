@@ -534,6 +534,11 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   }
 
   @override
+  PostgrestFilterBuilder<T> abortCompleter(Completer<void> completer) {
+    return PostgrestFilterBuilder(_copyWith(abortTrigger: completer.future));
+  }
+
+  @override
   PostgrestFilterBuilder<T> setHeader(String key, String value) {
     return PostgrestFilterBuilder(
       _copyWith(headers: {..._headers, key: value}),

@@ -359,7 +359,11 @@ features:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.stripNulls
-  database.using_modifiers.request_cancellation: not_implemented
+  database.using_modifiers.request_cancellation:
+    status: implemented
+    symbols:
+      - PostgrestBuilder.abortCompleter
+      - RequestAbortedException
 
   # database — configuration
   database.configuration.auto_retry:

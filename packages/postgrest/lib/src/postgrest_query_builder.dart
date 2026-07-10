@@ -24,6 +24,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     Set<int> retryableStatusCodes =
         PostgrestBuilder.defaultRetryableStatusCodes,
     Duration Function(int attempt)? retryDelay,
+    Future<void>? abortTrigger,
   }) : super(
          PostgrestBuilder(
            url: url,
@@ -36,6 +37,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
            retryCount: retryCount,
            retryableStatusCodes: retryableStatusCodes,
            retryDelay: retryDelay,
+           abortTrigger: abortTrigger,
          ),
        );
 
@@ -293,6 +295,24 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       retryCount: count ?? _retry.count,
       retryableStatusCodes: _retry.statusCodes,
       retryDelay: _retry.delay,
+      abortTrigger: _abortTrigger,
+    );
+  }
+
+  @override
+  PostgrestQueryBuilder<T> abortCompleter(Completer<void> completer) {
+    return PostgrestQueryBuilder(
+      url: _url,
+      headers: _headers,
+      httpClient: _httpClient,
+      method: _method,
+      schema: _schema,
+      isolate: _isolate,
+      retryEnabled: _retry.enabled,
+      retryCount: _retry.count,
+      retryableStatusCodes: _retry.statusCodes,
+      retryDelay: _retry.delay,
+      abortTrigger: completer.future,
     );
   }
 
@@ -309,6 +329,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       retryCount: _retry.count,
       retryableStatusCodes: _retry.statusCodes,
       retryDelay: _retry.delay,
+      abortTrigger: _abortTrigger,
     );
   }
 }

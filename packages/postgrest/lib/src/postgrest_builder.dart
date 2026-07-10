@@ -91,6 +91,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   final YAJsonIsolate? _isolate;
   final CountOption? _count;
   final _RetryConfig _retry;
+  final Future<void>? _abortTrigger;
   final _log = Logger('supabase.postgrest');
 
   /// HTTP status codes that trigger an automatic retry by default.
@@ -114,6 +115,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     int retryCount = 3,
     Set<int> retryableStatusCodes = defaultRetryableStatusCodes,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
+    Future<void>? abortTrigger,
   }) : this._(
          url: url,
          headers: headers,
@@ -131,6 +133,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
            statusCodes: retryableStatusCodes,
            delay: retryDelay,
          ),
+         abortTrigger: abortTrigger,
        );
 
   PostgrestBuilder._({
@@ -145,6 +148,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
     required _RetryConfig retry,
+    Future<void>? abortTrigger,
   }) : _maybeSingle = maybeSingle,
        _method = method,
        _converter = converter,
@@ -155,7 +159,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _isolate = isolate,
        _count = count,
        _body = body,
-       _retry = retry;
+       _retry = retry,
+       _abortTrigger = abortTrigger;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
@@ -169,6 +174,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
     _RetryConfig? retry,
+    Future<void>? abortTrigger,
   }) {
     return PostgrestBuilder._(
       url: url ?? _url,
@@ -182,6 +188,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
       retry: retry ?? _retry,
+      abortTrigger: abortTrigger ?? _abortTrigger,
     );
   }
 
@@ -197,6 +204,24 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       _copyWith(
         retry: _retry.copyWith(enabled: enabled, count: count),
       );
+
+  /// Aborts this request when [completer] completes.
+  ///
+  /// ```dart
+  /// final completer = Completer<void>();
+  /// Timer(const Duration(seconds: 5), completer.complete);
+  /// try {
+  ///   await supabase.from('users').select().abortCompleter(completer);
+  /// } on RequestAbortedException {
+  ///   // The request was aborted before it completed.
+  /// }
+  /// ```
+  ///
+  /// Aborting is only effective when the underlying [Client] supports it and
+  /// does not trigger a retry. Completing [completer] after the response has
+  /// finished has no effect.
+  PostgrestBuilder<T, S, R> abortCompleter(Completer<void> completer) =>
+      _copyWith(abortTrigger: completer.future);
 
   PostgrestBuilder<T, S, R> setHeader(String key, String value) {
     return _copyWith(
@@ -237,8 +262,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     final bodyStr = jsonEncode(_body);
     _log.finest("Request: ${method.value} $_url");
 
+    final abortTrigger = _abortTrigger;
     final Future<http.Response> Function() send;
-    if (method == HttpMethod.get) {
+    if (abortTrigger != null) {
+      send = () => _sendAbortable(method, execHeaders, bodyStr, abortTrigger);
+    } else if (method == HttpMethod.get) {
       send = () => (_httpClient?.get ?? http.get)(_url, headers: execHeaders);
     } else if (method == HttpMethod.post) {
       send = () => (_httpClient?.post ?? http.post)(
@@ -271,6 +299,31 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     return await _parseResponse(response, method);
   }
 
+  Future<http.Response> _sendAbortable(
+    HttpMethod method,
+    Map<String, String> execHeaders,
+    String bodyStr,
+    Future<void> abortTrigger,
+  ) async {
+    final request = http.AbortableRequest(
+      method.value,
+      _url,
+      abortTrigger: abortTrigger,
+    )..headers.addAll(execHeaders);
+    if (method == HttpMethod.post ||
+        method == HttpMethod.put ||
+        method == HttpMethod.patch) {
+      request.body = bodyStr;
+    }
+
+    final client = _httpClient ?? http.Client();
+    try {
+      return await http.Response.fromStream(await client.send(request));
+    } finally {
+      if (_httpClient == null) client.close();
+    }
+  }
+
   Future<http.Response> _executeWithRetry(
     Future<http.Response> Function() send,
     HttpMethod method,
@@ -297,6 +350,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             attempt == maxRetries) {
           return response;
         }
+      } on http.RequestAbortedException {
+        // An aborted request is intentional, so it must not be retried.
+        rethrow;
       } on Exception {
         if (attempt == maxRetries) rethrow;
       }

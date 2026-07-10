@@ -15,6 +15,7 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         maybeSingle: builder._maybeSingle,
         converter: builder._converter,
         retry: builder._retry,
+        abortTrigger: builder._abortTrigger,
       );
 
   @override
@@ -52,6 +53,7 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       maybeSingle: _maybeSingle,
       converter: converter,
       retry: _retry,
+      abortTrigger: _abortTrigger,
     );
   }
 }

@@ -16,6 +16,11 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   }
 
   @override
+  PostgrestTransformBuilder<T> abortCompleter(Completer<void> completer) {
+    return PostgrestTransformBuilder(_copyWith(abortTrigger: completer.future));
+  }
+
+  @override
   PostgrestTransformBuilder<T> setHeader(String key, String value) {
     return PostgrestTransformBuilder(
       _copyWith(headers: {..._headers, key: value}),
