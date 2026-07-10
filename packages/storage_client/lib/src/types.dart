@@ -471,9 +471,9 @@ extension ToQueryParams on TransformOptions {
     return {
       if (width != null) 'width': '$width',
       if (height != null) 'height': '$height',
-      if (resize != null) 'resize': resize!.snakeCase,
+      'resize': ?resize?.snakeCase,
       if (quality != null) 'quality': '$quality',
-      if (format != null) 'format': format!.snakeCase,
+      'format': ?format?.snakeCase,
     };
   }
 }

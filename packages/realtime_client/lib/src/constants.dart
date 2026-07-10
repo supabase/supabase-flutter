@@ -67,18 +67,18 @@ extension ChannelEventsExtended on ChannelEvents {
     throw 'No type $type exists';
   }
 
-  String eventName() {
-    if (this == ChannelEvents.accessToken) {
-      return 'access_token';
-    } else if (this == ChannelEvents.postgresChanges) {
-      return 'postgres_changes';
-    } else if (this == ChannelEvents.broadcast) {
-      return 'broadcast';
-    } else if (this == ChannelEvents.presence) {
-      return 'presence';
-    }
-    return 'phx_$name';
-  }
+  String eventName() => switch (this) {
+    ChannelEvents.accessToken => 'access_token',
+    ChannelEvents.postgresChanges => 'postgres_changes',
+    ChannelEvents.broadcast => 'broadcast',
+    ChannelEvents.presence => 'presence',
+    ChannelEvents.close ||
+    ChannelEvents.error ||
+    ChannelEvents.join ||
+    ChannelEvents.reply ||
+    ChannelEvents.leave ||
+    ChannelEvents.heartbeat => 'phx_$name',
+  };
 }
 
 class Transports {

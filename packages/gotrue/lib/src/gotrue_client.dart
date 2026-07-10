@@ -1379,27 +1379,19 @@ class GoTrueClient {
     required Map<String, String>? queryParams,
     bool skipBrowserRedirect = false,
   }) async {
-    final urlParams = {'provider': provider.name};
-    if (scopes != null) {
-      urlParams['scopes'] = scopes;
-    }
-    if (redirectTo != null) {
-      urlParams['redirect_to'] = redirectTo;
-    }
-    if (queryParams != null) {
-      urlParams.addAll(queryParams);
-    }
     final codeChallenge = await _generatePKCECodeChallenge();
-    if (codeChallenge != null) {
-      urlParams.addAll({
+    final urlParams = {
+      'provider': provider.name,
+      'scopes': ?scopes,
+      'redirect_to': ?redirectTo,
+      ...?queryParams,
+      if (codeChallenge != null) ...{
         'flow_type': _flowType.name,
         'code_challenge': codeChallenge,
         'code_challenge_method': 's256',
-      });
-    }
-    if (skipBrowserRedirect) {
-      urlParams['skip_http_redirect'] = 'true';
-    }
+      },
+      if (skipBrowserRedirect) 'skip_http_redirect': 'true',
+    };
     final oauthUrl = '$url?${Uri(queryParameters: urlParams).query}';
     return OAuthResponse(provider: provider, url: oauthUrl);
   }

@@ -493,8 +493,7 @@ class StorageFileApi {
         ? 'render/image/authenticated'
         : 'object';
 
-    Map<String, String> query = transformationQuery;
-    query.addAll(queryParams ?? {});
+    final query = {...transformationQuery, ...?queryParams};
 
     final options = FetchOptions(headers, noResolveJson: true);
 

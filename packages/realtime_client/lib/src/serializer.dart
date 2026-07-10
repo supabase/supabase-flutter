@@ -137,12 +137,10 @@ class Serializer {
   Map<String, dynamic> _binaryDecode(Uint8List buffer) {
     final view = ByteData.sublistView(buffer);
     final kind = view.getUint8(0);
-    switch (kind) {
-      case kindUserBroadcast:
-        return _decodeUserBroadcast(buffer, view);
-      default:
-        return {};
-    }
+    return switch (kind) {
+      kindUserBroadcast => _decodeUserBroadcast(buffer, view),
+      _ => {},
+    };
   }
 
   Map<String, dynamic> _decodeUserBroadcast(Uint8List buffer, ByteData view) {

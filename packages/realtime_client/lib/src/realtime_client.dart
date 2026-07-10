@@ -401,21 +401,13 @@ class RealtimeClient {
       _heartbeatController.stream;
 
   /// Returns the current state of the socket.
-  String get connectionState {
-    switch (connState) {
-      case SocketStates.connecting:
-        return 'connecting';
-      case SocketStates.open:
-        return 'open';
-      case SocketStates.disconnecting:
-        return 'disconnecting';
-      case SocketStates.disconnected:
-        return 'disconnected';
-      case SocketStates.closed:
-      case null:
-        return 'closed';
-    }
-  }
+  String get connectionState => switch (connState) {
+    SocketStates.connecting => 'connecting',
+    SocketStates.open => 'open',
+    SocketStates.disconnecting => 'disconnecting',
+    SocketStates.disconnected => 'disconnected',
+    SocketStates.closed || null => 'closed',
+  };
 
   /// Returns `true` is the connection is open.
   bool get isConnected => connState == SocketStates.open;
