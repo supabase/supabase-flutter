@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
 import 'package:storage_client/src/types.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -232,6 +233,43 @@ class Fetch {
 
   Future<dynamic> get(String url, {FetchOptions? options}) {
     return _handleRequest('GET', url, null, options);
+  }
+
+  /// Performs a GET request and yields the response body as a byte stream
+  /// without buffering it in memory.
+  ///
+  /// The status code is inspected before the body is yielded, so a non-success
+  /// response surfaces as a [StorageException] on the stream before any bytes
+  /// are emitted.
+  @internal
+  Stream<Uint8List> getStream(
+    String url, {
+    FetchOptions? options,
+  }) async* {
+    final request = http.Request('GET', Uri.parse(url))
+      ..headers.addAll({...?options?.headers});
+
+    _log.finest('Request: GET (stream) $url ${request.headers}');
+    final http.StreamedResponse streamedResponse;
+    if (httpClient != null) {
+      streamedResponse = await httpClient!.send(request);
+    } else {
+      streamedResponse = await request.send();
+    }
+
+    if (!isSuccessStatusCode(streamedResponse.statusCode)) {
+      final response = await http.Response.fromStream(streamedResponse);
+      throw _handleError(
+        response,
+        StackTrace.current,
+        response.request?.url,
+        FetchOptions(options?.headers, noResolveJson: true),
+      );
+    }
+
+    yield* streamedResponse.stream.map(
+      (chunk) => chunk is Uint8List ? chunk : Uint8List.fromList(chunk),
+    );
   }
 
   Future<dynamic> post(

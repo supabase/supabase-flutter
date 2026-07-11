@@ -380,7 +380,11 @@ features:
   storage.file_buckets.update_file: implemented
   storage.file_buckets.download: implemented
   storage.file_buckets.download_with_transform: implemented
-  storage.file_buckets.download_as_stream: not_implemented
+  storage.file_buckets.download_as_stream:
+    status: implemented
+    note: "Exposed as a dedicated downloadStream method returning a lazy Stream<Uint8List> rather than an asStream() builder off download(); the request is sent on listen and a non-success status surfaces as a StorageException on the stream."
+    symbols:
+      - StorageFileApi.downloadStream
   storage.file_buckets.list_files: implemented
   storage.file_buckets.list_files_paginated:
     status: implemented

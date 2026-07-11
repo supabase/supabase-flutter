@@ -508,10 +508,31 @@ class StorageFileApi {
     Map<String, String>? queryParams,
     String? cacheNonce,
   }) async {
+    final fetchUrl = _downloadUri(
+      path,
+      transform: transform,
+      queryParams: queryParams,
+      cacheNonce: cacheNonce,
+    );
+
+    final response = await _storageFetch.get(
+      fetchUrl.toString(),
+      options: FetchOptions(headers, noResolveJson: true),
+    );
+    return response as Uint8List;
+  }
+
+  /// Builds the download URL shared by [download] and [downloadStream],
+  /// selecting the render endpoint when an image transformation is requested
+  /// and appending transform, [queryParams] and [cacheNonce] query parameters.
+  Uri _downloadUri(
+    String path, {
+    TransformOptions? transform,
+    Map<String, String>? queryParams,
+    String? cacheNonce,
+  }) {
     final transformationQuery = transform?.toQueryParams ?? {};
-    final wantsTransformations = transformationQuery.isNotEmpty;
-    final finalPath = _getFinalPath(path);
-    final renderPath = wantsTransformations
+    final renderPath = transformationQuery.isNotEmpty
         ? 'render/image/authenticated'
         : 'object';
 
@@ -521,16 +542,46 @@ class StorageFileApi {
       'cacheNonce': ?cacheNonce,
     };
 
-    final options = FetchOptions(headers, noResolveJson: true);
+    return Uri.parse(
+      '$url/$renderPath/${_getFinalPath(path)}',
+    ).replace(queryParameters: query);
+  }
 
-    var fetchUrl = Uri.parse('$url/$renderPath/$finalPath');
-    fetchUrl = fetchUrl.replace(queryParameters: query);
-
-    final response = await _storageFetch.get(
-      fetchUrl.toString(),
-      options: options,
+  /// Downloads a file as a byte stream for memory-efficient handling of large
+  /// files.
+  ///
+  /// Unlike [download], the response body is not buffered into a [Uint8List];
+  /// the stream yields the bytes as they arrive. The request is sent when the
+  /// stream is listened to, and a non-success response surfaces as a
+  /// [StorageException] on the stream before any bytes are emitted.
+  ///
+  /// [path] is the file path to be downloaded, including the path and file
+  /// name. For example `downloadStream('folder/image.png')`.
+  ///
+  /// [transform] download a transformed variant of the image with the provided
+  /// options.
+  ///
+  /// [queryParams] additional query parameters to be added to the URL.
+  ///
+  /// [cacheNonce] adds a `cacheNonce` query parameter to bypass CDN caching for
+  /// a specific file version.
+  Stream<Uint8List> downloadStream(
+    String path, {
+    TransformOptions? transform,
+    Map<String, String>? queryParams,
+    String? cacheNonce,
+  }) {
+    final fetchUrl = _downloadUri(
+      path,
+      transform: transform,
+      queryParams: queryParams,
+      cacheNonce: cacheNonce,
     );
-    return response as Uint8List;
+
+    return _storageFetch.getStream(
+      fetchUrl.toString(),
+      options: FetchOptions(headers, noResolveJson: true),
+    );
   }
 
   /// Retrieves the details of an existing file
