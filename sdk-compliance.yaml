@@ -382,7 +382,49 @@ features:
   storage.file_buckets.download_with_transform: implemented
   storage.file_buckets.download_as_stream: not_implemented
   storage.file_buckets.list_files: implemented
-  storage.file_buckets.list_files_paginated: not_implemented
+  storage.file_buckets.list_files_paginated:
+    status: implemented
+    note: "Exposed as listPaginated (paired with descriptive Dart type names) rather than the supabase-js listV2 name."
+    symbols:
+      - StorageFileApi.listPaginated
+      - PaginatedSearchOptions
+      - PaginatedSearchOptions.PaginatedSearchOptions
+      - PaginatedSearchOptions.cursor
+      - PaginatedSearchOptions.limit
+      - PaginatedSearchOptions.prefix
+      - PaginatedSearchOptions.sortBy
+      - PaginatedSearchOptions.toMap
+      - PaginatedSearchOptions.withDelimiter
+      - PaginatedListResult
+      - PaginatedListResult.PaginatedListResult
+      - PaginatedListResult.folders
+      - PaginatedListResult.fromJson
+      - PaginatedListResult.hasNext
+      - PaginatedListResult.nextCursor
+      - PaginatedListResult.objects
+      - PaginatedFile
+      - PaginatedFile.PaginatedFile
+      - PaginatedFile.createdAt
+      - PaginatedFile.fromJson
+      - PaginatedFile.id
+      - PaginatedFile.key
+      - PaginatedFile.metadata
+      - PaginatedFile.name
+      - PaginatedFile.updatedAt
+      - PaginatedFolder
+      - PaginatedFolder.PaginatedFolder
+      - PaginatedFolder.fromJson
+      - PaginatedFolder.key
+      - PaginatedFolder.name
+      - FileSort
+      - FileSort.FileSort
+      - FileSort.column
+      - FileSort.order
+      - FileSort.toMap
+      - FileSortColumn
+      - FileSortOrder
+      - FileSortOrder.FileSortOrder
+      - FileSortOrder.value
   storage.file_buckets.move: implemented
   storage.file_buckets.move_cross_bucket: implemented
   storage.file_buckets.copy: implemented
