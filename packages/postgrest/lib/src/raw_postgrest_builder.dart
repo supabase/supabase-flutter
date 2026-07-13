@@ -56,6 +56,6 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   PostgrestBuilder<U, U, R> withConverter<U>(
     PostgrestConverter<U, R> converter,
   ) {
-    return PostgrestBuilder<U, U, R>._(config: _config, converter: converter);
+    return PostgrestBuilder._(config: _config, converter: converter);
   }
 }

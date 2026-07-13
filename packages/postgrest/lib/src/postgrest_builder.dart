@@ -76,7 +76,7 @@ class _RetryConfig {
 /// single config instance without re-listing its fields.
 @immutable
 class _RequestConfig {
-  _RequestConfig({
+  const _RequestConfig({
     required this.url,
     required this.headers,
     this.schema,

@@ -28,9 +28,6 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   PostgrestBuilder<PostgrestResponse<U>, U, R> withConverter<U>(
     PostgrestConverter<U, R> converter,
   ) {
-    return PostgrestBuilder<PostgrestResponse<U>, U, R>._(
-      config: _config,
-      converter: converter,
-    );
+    return PostgrestBuilder._(config: _config, converter: converter);
   }
 }
