@@ -3,7 +3,7 @@ part of 'postgrest_builder.dart';
 /// Needed as a wrapper around [PostgrestBuilder] to allow for the different return type of [withConverter] than in [ResponsePostgrestBuilder.withConverter].
 class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   RawPostgrestBuilder(PostgrestBuilder<T, S, R> builder)
-    : super._(
+    : super(
         url: builder._url,
         method: builder._method,
         headers: builder._headers,
@@ -33,7 +33,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     bool? maybeSingle,
   }) {
     return RawPostgrestBuilder(
-      PostgrestBuilder._(
+      PostgrestBuilder(
         url: url ?? _url,
         headers: headers ?? _headers,
         schema: schema ?? _schema,
@@ -70,7 +70,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   PostgrestBuilder<U, U, R> withConverter<U>(
     PostgrestConverter<U, R> converter,
   ) {
-    return PostgrestBuilder._(
+    return PostgrestBuilder(
       url: _url,
       headers: _headers,
       schema: _schema,

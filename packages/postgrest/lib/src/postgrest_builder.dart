@@ -111,45 +111,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
+    _RetryConfig? retry,
     bool retryEnabled = true,
     int retryCount = 3,
     Set<int> retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-    Duration? requestTimeout,
-    Future<void>? abortSignal,
-  }) : this._(
-         url: url,
-         headers: headers,
-         schema: schema,
-         method: method,
-         body: body,
-         httpClient: httpClient,
-         isolate: isolate,
-         count: count,
-         maybeSingle: maybeSingle,
-         converter: converter,
-         retry: _RetryConfig(
-           enabled: retryEnabled,
-           count: retryCount,
-           statusCodes: retryableStatusCodes,
-           delay: retryDelay,
-         ),
-         requestTimeout: requestTimeout,
-         abortSignal: abortSignal,
-       );
-
-  PostgrestBuilder._({
-    required Uri url,
-    required Headers headers,
-    String? schema,
-    HttpMethod? method,
-    Object? body,
-    Client? httpClient,
-    YAJsonIsolate? isolate,
-    CountOption? count,
-    bool maybeSingle = false,
-    PostgrestConverter<S, R>? converter,
-    required _RetryConfig retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) : _maybeSingle = maybeSingle,
@@ -162,7 +128,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _isolate = isolate,
        _count = count,
        _body = body,
-       _retry = retry,
+       _retry =
+           retry ??
+           _RetryConfig(
+             enabled: retryEnabled,
+             count: retryCount,
+             statusCodes: retryableStatusCodes,
+             delay: retryDelay,
+           ),
        _requestTimeout = requestTimeout,
        _abortSignal = abortSignal;
 
@@ -181,7 +154,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) {
-    return PostgrestBuilder._(
+    return PostgrestBuilder(
       url: url ?? _url,
       headers: headers ?? _headers,
       schema: schema ?? _schema,
