@@ -1,0 +1,124 @@
+name: WASM
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect affected packages
+    runs-on: ubuntu-latest
+    outputs:
+      flutter: ${{ steps.detect.outputs.flutter }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c # v1.7.1
+        with:
+          sdk: stable
+
+      - name: Detect affected packages
+        id: detect
+        run: |
+          set -euo pipefail
+
+          dart pub global activate melos
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          FORCE_ALL=false
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            FORCE_ALL=true
+          elif git diff --name-only "$BASE...HEAD" \
+              | grep -qE '^(\.github/workflows/wasm\.yml|pubspec\.yaml|pubspec\.lock|supabase/)'; then
+            FORCE_ALL=true
+          fi
+
+          if [ "$FORCE_ALL" = "true" ]; then
+            echo "Running all packages."
+            CHANGED=$(melos list --json | jq -r '.[].name')
+          else
+            CHANGED=$(melos list --json --diff="$BASE...HEAD" --include-dependents | jq -r '.[].name')
+          fi
+
+          echo "Affected packages:"
+          echo "$CHANGED"
+
+          if echo "$CHANGED" | grep -qx "supabase_flutter"; then
+            echo "flutter=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flutter=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test-wasm:
+    name: Test and build WASM
+    needs: changes
+    if: ${{ needs.changes.outputs.flutter == 'true' }}
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: packages/supabase_flutter
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: 'stable'
+          # Caching the latest stable is flaky: the cached SDK contains
+          # runner-image-specific binaries that break silently when the runner
+          # image is updated.
+          cache: false
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Bootstrap workspace
+        run: |
+          cd ../../
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: Test web (WASM)
+        # Serial compilation avoids the memory pressure from parallel dart2wasm
+        # runs that previously caused suite loading timeouts in CI.
+        run: flutter test --platform chrome --wasm --concurrency=1
+
+      - name: Build example for web (WASM)
+        working-directory: packages/supabase_flutter/example
+        run: flutter build web --wasm
+
+  wasm-result:
+    name: WASM result
+    needs: [changes, test-wasm]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all jobs succeeded
+        run: |
+          if ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}; then
+            echo "One or more jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All required jobs passed or were skipped."
