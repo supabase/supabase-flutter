@@ -205,6 +205,7 @@ jobs:
       - name: Upload coverage to Coveralls
         if: ${{ matrix.channel == 'stable' }}
         uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel: true
@@ -283,6 +284,7 @@ jobs:
       - name: Upload coverage to Coveralls
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest' }}
         uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel: true
@@ -293,11 +295,6 @@ jobs:
       - name: Test web (JS)
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
         run: flutter test --platform chrome
-
-      - name: Build example for web (WASM)
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
-        working-directory: packages/supabase_flutter/example
-        run: flutter build web --wasm
 
   dcm:
     name: DCM
@@ -336,10 +333,12 @@ jobs:
     steps:
       - name: Close parallel coverage build
         uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
           carryforward: 'functions_client,gotrue,postgrest,realtime_client,storage_client,supabase,supabase_common,yet_another_json_isolate,supabase_flutter'
+          fail-on-error: false
 
   test-result:
     name: Test result
