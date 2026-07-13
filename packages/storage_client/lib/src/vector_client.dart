@@ -24,6 +24,7 @@ import 'package:supabase_common/supabase_common.dart';
 ///
 /// This API is part of a public alpha and may not be available to every
 /// project.
+@experimental
 class SupabaseVectorsClient {
   final String _url;
   final Map<String, String> _headers;
@@ -93,6 +94,7 @@ class SupabaseVectorsClient {
 /// Index operations scoped to a single vector bucket.
 ///
 /// Obtain an instance through [SupabaseVectorsClient.from].
+@experimental
 class StorageVectorBucketApi {
   final String _url;
   final Map<String, String> _headers;
@@ -198,6 +200,7 @@ class StorageVectorBucketApi {
 /// Vector data operations scoped to a single index within a bucket.
 ///
 /// Obtain an instance through [StorageVectorBucketApi.index].
+@experimental
 class StorageVectorIndexApi {
   final String _url;
   final Map<String, String> _headers;

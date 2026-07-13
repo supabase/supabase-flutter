@@ -1,25 +1,25 @@
+import 'package:meta/meta.dart';
+
 /// Supported data types for vector components.
 ///
 /// Currently the S3 Vectors service only supports 32-bit floats.
+@experimental
 enum VectorDataType {
-  float32('float32');
-
-  const VectorDataType(this.value);
+  float32;
 
   /// The value sent to and returned by the storage API.
-  final String value;
+  String get value => name.toLowerCase();
 }
 
 /// Distance metric used when comparing vectors during a similarity search.
+@experimental
 enum DistanceMetric {
-  cosine('cosine'),
-  euclidean('euclidean'),
-  dotProduct('dotproduct');
-
-  const DistanceMetric(this.value);
+  cosine,
+  euclidean,
+  dotProduct;
 
   /// The value sent to and returned by the storage API.
-  final String value;
+  String get value => name.toLowerCase();
 }
 
 VectorDataType? _vectorDataTypeFromValue(Object? value) {
@@ -44,6 +44,7 @@ List<double>? _parseFloat32(Object? data) {
 }
 
 /// Encryption settings attached to a vector bucket.
+@experimental
 class VectorBucketEncryption {
   /// The ARN of the KMS key used to encrypt the bucket, if any.
   final String? kmsKeyArn;
@@ -62,6 +63,7 @@ class VectorBucketEncryption {
 }
 
 /// Metadata describing a vector bucket.
+@experimental
 class VectorBucket {
   /// The unique name of the vector bucket.
   final String name;
@@ -93,6 +95,7 @@ class VectorBucket {
 }
 
 /// Metadata describing a vector index within a bucket.
+@experimental
 class VectorIndex {
   /// The unique name of the index within its bucket.
   final String name;
@@ -151,6 +154,7 @@ class VectorIndex {
 
 /// A single vector to insert or update through
 /// [StorageVectorIndexApi.putVectors].
+@experimental
 class Vector {
   /// The unique key identifying the vector within its index.
   final String key;
@@ -180,6 +184,7 @@ class Vector {
 ///
 /// [data], [metadata] and [distance] are only populated when the corresponding
 /// operation was asked to return them.
+@experimental
 class VectorMatch {
   /// The unique key identifying the vector within its index.
   final String key;
@@ -212,6 +217,7 @@ class VectorMatch {
 }
 
 /// The result of [SupabaseVectorsClient.listBuckets].
+@experimental
 class VectorBucketList {
   /// The buckets in this page.
   final List<VectorBucket> buckets;
@@ -236,6 +242,7 @@ class VectorBucketList {
 }
 
 /// The result of [StorageVectorBucketApi.listIndexes].
+@experimental
 class VectorIndexList {
   /// The indexes in this page.
   final List<VectorIndex> indexes;
@@ -260,6 +267,7 @@ class VectorIndexList {
 }
 
 /// The result of [StorageVectorIndexApi.listVectors].
+@experimental
 class VectorList {
   /// The vectors in this page.
   final List<VectorMatch> vectors;
@@ -284,6 +292,7 @@ class VectorList {
 }
 
 /// The result of [StorageVectorIndexApi.queryVectors].
+@experimental
 class VectorQueryResult {
   /// The matching vectors ordered by ascending distance from the query vector.
   final List<VectorMatch> matches;
