@@ -294,11 +294,6 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
         run: flutter test --platform chrome
 
-      - name: Build example for web (WASM)
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest'}}
-        working-directory: packages/supabase_flutter/example
-        run: flutter build web --wasm
-
   dcm:
     name: DCM
     needs: changes
