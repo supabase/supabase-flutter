@@ -485,9 +485,26 @@ features:
   storage.vector_buckets.parallel_scan: not_implemented
 
   # storage — analytics (Iceberg) buckets
-  storage.analytics.create_analytics_bucket: not_implemented
-  storage.analytics.list_analytics_buckets: not_implemented
-  storage.analytics.delete_analytics_bucket: not_implemented
+  storage.analytics.create_analytics_bucket:
+    status: implemented
+    symbols:
+      - StorageBucketApi.createAnalyticsBucket
+      - AnalyticsBucket
+      - AnalyticsBucket.AnalyticsBucket
+      - AnalyticsBucket.createdAt
+      - AnalyticsBucket.fromJson
+      - AnalyticsBucket.id
+      - AnalyticsBucket.name
+      - AnalyticsBucket.updatedAt
+  storage.analytics.list_analytics_buckets:
+    status: implemented
+    note: "Reuses ListBucketsOptions (limit/offset/search/sortColumn/sortOrder) for filtering, sorting and pagination, matching the file bucket listing API."
+    symbols:
+      - StorageBucketApi.listAnalyticsBuckets
+  storage.analytics.delete_analytics_bucket:
+    status: implemented
+    symbols:
+      - StorageBucketApi.deleteAnalyticsBucket
   storage.analytics.iceberg_namespace: not_implemented
   storage.analytics.iceberg_table: not_implemented
 
