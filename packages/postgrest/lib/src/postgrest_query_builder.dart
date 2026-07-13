@@ -217,7 +217,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> update(Map values) {
+  PostgrestFilterBuilder<T> update(Map<dynamic, dynamic> values) {
     final newHeaders = {..._headers}..remove('Prefer');
 
     return PostgrestFilterBuilder(
@@ -259,7 +259,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     );
   }
 
-  Uri _setColumnsSearchParam(List values) {
+  Uri _setColumnsSearchParam(List<dynamic> values) {
     final newValues = PostgrestList.from(values);
     final columns = [for (final element in newValues) ...element.keys];
     if (newValues.isNotEmpty) {

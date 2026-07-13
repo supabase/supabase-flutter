@@ -87,7 +87,10 @@ void main() {
         mockClient.lastRequestBody?['challenge_id'],
         PasskeyMockClient.challengeId,
       );
-      expect(mockClient.lastRequestBody?['credential'], isA<Map>());
+      expect(
+        mockClient.lastRequestBody?['credential'],
+        isA<Map<dynamic, dynamic>>(),
+      );
       expect(response.session, isNotNull);
       expect(response.session?.accessToken, 'mock-access-token');
       expect(response.user?.id, PasskeyMockClient.userId);
@@ -292,7 +295,7 @@ void main() {
       addTearDown(disabledClient.dispose);
 
       await expectLater(
-        () => disabledClient.passkey.startAuthentication(),
+        disabledClient.passkey.startAuthentication(),
         throwsA(
           isA<AuthApiException>()
               .having((e) => e.code, 'code', 'passkey_disabled')

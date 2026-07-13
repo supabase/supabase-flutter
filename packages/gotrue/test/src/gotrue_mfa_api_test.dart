@@ -42,7 +42,7 @@ void main() {
 
     late GoTrueClient client;
     setUp(() async {
-      final res = await http.post(
+      final response = await http.post(
         Uri.parse(
           'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
         ),
@@ -52,7 +52,7 @@ void main() {
           'Authorization': 'Bearer ${getServiceRoleToken(env)}',
         },
       );
-      if (res.body.isNotEmpty) throw res.body;
+      if (response.body.isNotEmpty) throw response.body;
 
       client = GoTrueClient(
         url: gotrueUrl,
@@ -67,13 +67,13 @@ void main() {
     test('enroll totp', () async {
       await client.signInWithPassword(password: password, email: email1);
 
-      final res = await client.mfa.enroll(
+      final response = await client.mfa.enroll(
         issuer: 'MyFriend',
         friendlyName: 'MyFriendName',
       );
-      final uri = Uri.parse(res.totp!.uri);
+      final uri = Uri.parse(response.totp!.uri);
 
-      expect(res.type, FactorType.totp);
+      expect(response.type, FactorType.totp);
       expect(uri.queryParameters['issuer'], 'MyFriend');
       expect(uri.scheme, 'otpauth');
     });
@@ -81,15 +81,15 @@ void main() {
     test('enroll phone', () async {
       await client.signInWithPassword(password: password, email: email1);
 
-      final res = await client.mfa.enroll(
+      final response = await client.mfa.enroll(
         factorType: FactorType.phone,
         phone: '+1234567890',
         friendlyName: 'MyPhone',
       );
 
-      expect(res.type, FactorType.phone);
-      expect(res.phone?.phone, '+1234567890');
-      expect(res.totp, isNull);
+      expect(response.type, FactorType.phone);
+      expect(response.phone?.phone, '+1234567890');
+      expect(response.totp, isNull);
     });
 
     test('enroll phone requires phone number', () async {
@@ -107,43 +107,43 @@ void main() {
     test('challenge', () async {
       await client.signInWithPassword(password: password, email: email1);
 
-      final res = await client.mfa.challenge(factorId: factorId1);
+      final response = await client.mfa.challenge(factorId: factorId1);
 
-      expect(res.expiresAt.isAfter(DateTime.now()), isTrue);
+      expect(response.expiresAt.isAfter(DateTime.now()), isTrue);
     });
 
     test('verify', () async {
       await client.signInWithPassword(password: password, email: email1);
 
       // Create a challenge first
-      final challengeRes = await client.mfa.challenge(factorId: factorId1);
+      final challengeResponse = await client.mfa.challenge(factorId: factorId1);
 
-      final res = await client.mfa.verify(
+      final response = await client.mfa.verify(
         factorId: factorId1,
-        challengeId: challengeRes.id,
+        challengeId: challengeResponse.id,
         code: getTOTP(),
       );
 
-      expect(client.currentSession?.accessToken, res.accessToken);
-      expect(client.currentUser, res.user);
-      expect(client.currentSession?.refreshToken, res.refreshToken);
-      expect(client.currentSession?.expiresIn, res.expiresIn.inSeconds);
+      expect(client.currentSession?.accessToken, response.accessToken);
+      expect(client.currentUser, response.user);
+      expect(client.currentSession?.refreshToken, response.refreshToken);
+      expect(client.currentSession?.expiresIn, response.expiresIn.inSeconds);
     });
 
     test('challenge and verify', () async {
       await client.signInWithPassword(password: password, email: email1);
 
-      expect(client.currentUser!.factors!.length, 1);
+      expect(client.currentUser!.factors!, hasLength(1));
       expect(
         client.currentUser!.factors!.first.status,
         FactorStatus.unverified,
       );
-      final res = await client.mfa.challengeAndVerify(
+      final response = await client.mfa.challengeAndVerify(
         factorId: factorId1,
         code: getTOTP(),
       );
-      expect(client.currentUser, res.user);
-      expect(client.currentUser!.factors!.length, 1);
+      expect(client.currentUser, response.user);
+      expect(client.currentUser!.factors!, hasLength(1));
       expect(client.currentUser!.factors!.first.id, factorId1);
       expect(client.currentUser!.factors!.first.status, FactorStatus.verified);
     });
@@ -153,29 +153,29 @@ void main() {
 
       await client.mfa.challengeAndVerify(factorId: factorId2, code: getTOTP());
 
-      final res = await client.mfa.unenroll(factorId2);
-      expect(res.id, factorId2);
+      final response = await client.mfa.unenroll(factorId2);
+      expect(response.id, factorId2);
     });
 
     test('list factors', () async {
       await client.signInWithPassword(password: password, email: email2);
 
-      final res = await client.mfa.listFactors();
+      final response = await client.mfa.listFactors();
 
-      expect(res.totp.length, 1);
-      expect(res.phone, isEmpty);
-      expect(res.all.length, 1);
-      expect(res.all.first.id, factorId2);
-      expect(res.all.first.status, FactorStatus.verified);
+      expect(response.totp, hasLength(1));
+      expect(response.phone, isEmpty);
+      expect(response.all, hasLength(1));
+      expect(response.all.first.id, factorId2);
+      expect(response.all.first.status, FactorStatus.verified);
       expect(
-        res.all.first.createdAt.difference(DateTime.now()) <
+        response.all.first.createdAt.difference(DateTime.now()) <
             Duration(seconds: 2),
-        true,
+        isTrue,
       );
       expect(
-        res.all.first.updatedAt.difference(DateTime.now()) <
+        response.all.first.updatedAt.difference(DateTime.now()) <
             Duration(seconds: 2),
-        true,
+        isTrue,
       );
     });
 
@@ -183,63 +183,65 @@ void main() {
       await client.signInWithPassword(password: password, email: email1);
 
       // First, enroll a phone factor
-      final enrollRes = await client.mfa.enroll(
+      final enrollResponse = await client.mfa.enroll(
         factorType: FactorType.phone,
         phone: '+1234567890',
         friendlyName: 'TestPhone',
       );
 
       // Verify enrollment worked
-      expect(enrollRes.type, FactorType.phone);
-      expect(enrollRes.phone?.phone, '+1234567890');
+      expect(enrollResponse.type, FactorType.phone);
+      expect(enrollResponse.phone?.phone, '+1234567890');
 
       // Now list factors and check that phone factor appears
-      final listRes = await client.mfa.listFactors();
+      final listResponse = await client.mfa.listFactors();
 
       // Should have 1 phone factor (unverified) and 0 verified phone factors
-      expect(listRes.all.length, greaterThanOrEqualTo(1));
+      expect(listResponse.all.length, greaterThanOrEqualTo(1));
 
       // Find the phone factor we just enrolled
-      final phoneFactor = listRes.all.firstWhere(
+      final phoneFactor = listResponse.all.firstWhere(
         (factor) => factor.factorType == FactorType.phone,
       );
 
-      expect(phoneFactor.id, enrollRes.id);
+      expect(phoneFactor.id, enrollResponse.id);
       expect(phoneFactor.factorType, FactorType.phone);
       expect(phoneFactor.friendlyName, 'TestPhone');
       expect(phoneFactor.status, FactorStatus.unverified);
 
       // Verified phone factors should be empty since we haven't verified yet
-      expect(listRes.phone, isEmpty);
+      expect(listResponse.phone, isEmpty);
 
       // But the factor should appear in the all list
-      expect(listRes.all.any((f) => f.factorType == FactorType.phone), isTrue);
+      expect(
+        listResponse.all.any((f) => f.factorType == FactorType.phone),
+        isTrue,
+      );
     });
 
     test('aal1 for only password', () async {
       await client.signInWithPassword(password: password, email: email2);
-      final res = client.mfa.getAuthenticatorAssuranceLevel();
-      expect(res.currentLevel, AuthenticatorAssuranceLevels.aal1);
-      expect(res.nextLevel, AuthenticatorAssuranceLevels.aal2);
+      final response = client.mfa.getAuthenticatorAssuranceLevel();
+      expect(response.currentLevel, AuthenticatorAssuranceLevels.aal1);
+      expect(response.nextLevel, AuthenticatorAssuranceLevels.aal2);
     });
 
     test('aal2 for password and totp', () async {
       await client.signInWithPassword(password: password, email: email2);
       await client.mfa.challengeAndVerify(factorId: factorId2, code: getTOTP());
-      final res = client.mfa.getAuthenticatorAssuranceLevel();
-      expect(res.currentLevel, AuthenticatorAssuranceLevels.aal2);
-      expect(res.nextLevel, AuthenticatorAssuranceLevels.aal2);
-      final passwordEntry = res.currentAuthenticationMethods.firstWhereOrNull(
-        (element) => element.method == AMRMethod.password,
-      );
-      final totpEntry = res.currentAuthenticationMethods.firstWhereOrNull(
+      final response = client.mfa.getAuthenticatorAssuranceLevel();
+      expect(response.currentLevel, AuthenticatorAssuranceLevels.aal2);
+      expect(response.nextLevel, AuthenticatorAssuranceLevels.aal2);
+      final passwordEntry = response.currentAuthenticationMethods
+          .firstWhereOrNull((element) => element.method == AMRMethod.password);
+      final totpEntry = response.currentAuthenticationMethods.firstWhereOrNull(
         (element) => element.method == AMRMethod.totp,
       );
       expect(passwordEntry, isNotNull);
       expect(totpEntry, isNotNull);
       expect(
         totpEntry!.timestamp.difference(DateTime.now()) < Duration(seconds: 2),
-        true,
+        isTrue,
       );
     });
 

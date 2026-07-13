@@ -409,7 +409,7 @@ void main() {
           'channel': 'topic',
         });
 
-        expect(received, isA<Map>());
+        expect(received, isA<Map<dynamic, dynamic>>());
 
         final system = RealtimeSystemPayload.fromJson(
           Map<String, dynamic>.from(received),
@@ -589,12 +589,12 @@ void main() {
 
     test("closes channel on 'ok' from server", () {
       final anotherChannel = socket.channel('another');
-      expect(socket.channels.length, 2);
+      expect(socket.channels, hasLength(2));
 
       unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
 
-      expect(socket.channels.length, 1);
+      expect(socket.channels, hasLength(1));
       expect(socket.channels[0].topic, anotherChannel.topic);
     });
 
@@ -609,7 +609,7 @@ void main() {
 
     test("able to unsubscribe from * subscription", () {
       channel.onEvents('*', ChannelFilter(), (payload, [ref]) {});
-      expect(socket.channels.length, 1);
+      expect(socket.channels, hasLength(1));
 
       unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
@@ -1030,17 +1030,20 @@ void main() {
           payload: {'myKey': 'myValue'},
         );
 
-        final req = await requestFuture;
-        expect(req.uri.path, '/realtime/v1/api/broadcast/myTopic/events/test');
-        expect(req.uri.queryParameters['private'], 'true');
-        expect(req.headers.value('apikey'), 'supabaseKey');
-        expect(req.headers.contentType?.mimeType, 'application/json');
+        final request = await requestFuture;
+        expect(
+          request.uri.path,
+          '/realtime/v1/api/broadcast/myTopic/events/test',
+        );
+        expect(request.uri.queryParameters['private'], 'true');
+        expect(request.headers.value('apikey'), 'supabaseKey');
+        expect(request.headers.contentType?.mimeType, 'application/json');
 
-        final body = json.decode(await utf8.decodeStream(req));
+        final body = json.decode(await utf8.decodeStream(request));
         expect(body, {'myKey': 'myValue'});
 
-        req.response.statusCode = 202;
-        await req.response.close();
+        request.response.statusCode = 202;
+        await request.response.close();
 
         await sendFuture;
       },
@@ -1060,12 +1063,15 @@ void main() {
         payload: {'myKey': 'myValue'},
       );
 
-      final req = await requestFuture;
-      expect(req.uri.path, '/realtime/v1/api/broadcast/myTopic/events/test');
-      expect(req.uri.queryParameters.containsKey('private'), isFalse);
+      final request = await requestFuture;
+      expect(
+        request.uri.path,
+        '/realtime/v1/api/broadcast/myTopic/events/test',
+      );
+      expect(request.uri.queryParameters.containsKey('private'), isFalse);
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1084,14 +1090,14 @@ void main() {
         payload: {'id': 1},
       );
 
-      final req = await requestFuture;
+      final request = await requestFuture;
       expect(
-        req.uri.toString(),
+        request.uri.toString(),
         contains('/api/broadcast/room%3A42/events/user%2Fjoined'),
       );
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1108,18 +1114,18 @@ void main() {
       final requestFuture = mockServer.first;
       final sendFuture = channel.httpSend(event: 'bin', payload: bytes);
 
-      final req = await requestFuture;
-      expect(req.uri.path, '/realtime/v1/api/broadcast/myTopic/events/bin');
-      expect(req.headers.contentType?.mimeType, 'application/octet-stream');
+      final request = await requestFuture;
+      expect(request.uri.path, '/realtime/v1/api/broadcast/myTopic/events/bin');
+      expect(request.headers.contentType?.mimeType, 'application/octet-stream');
 
-      final received = await req.fold<List<int>>(
+      final received = await request.fold<List<int>>(
         <int>[],
-        (acc, chunk) => acc..addAll(chunk),
+        (accumulated, chunk) => accumulated..addAll(chunk),
       );
       expect(received, equals(bytes));
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1136,17 +1142,17 @@ void main() {
       final requestFuture = mockServer.first;
       final sendFuture = channel.httpSend(event: 'bin', payload: bytes.buffer);
 
-      final req = await requestFuture;
-      expect(req.headers.contentType?.mimeType, 'application/octet-stream');
+      final request = await requestFuture;
+      expect(request.headers.contentType?.mimeType, 'application/octet-stream');
 
-      final received = await req.fold<List<int>>(
+      final received = await request.fold<List<int>>(
         <int>[],
-        (acc, chunk) => acc..addAll(chunk),
+        (accumulated, chunk) => accumulated..addAll(chunk),
       );
       expect(received, equals(bytes));
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1166,12 +1172,12 @@ void main() {
         payload: {'data': 'test'},
       );
 
-      final req = await requestFuture;
-      expect(req.headers.value('Authorization'), 'Bearer token123');
-      expect(req.headers.value('apikey'), 'abc123');
+      final request = await requestFuture;
+      expect(request.headers.value('Authorization'), 'Bearer token123');
+      expect(request.headers.value('apikey'), 'abc123');
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1189,10 +1195,10 @@ void main() {
         payload: {'data': 'test'},
       );
 
-      final req = await requestFuture;
-      req.response.statusCode = 500;
-      req.response.write(json.encode({'error': 'Server error'}));
-      await req.response.close();
+      final request = await requestFuture;
+      request.response.statusCode = 500;
+      request.response.write(json.encode({'error': 'Server error'}));
+      await request.response.close();
 
       await expectLater(
         sendFuture,
@@ -1213,10 +1219,10 @@ void main() {
 
       // Don't await the server - let it hang to trigger timeout
       unawaited(
-        mockServer.first.then((req) async {
+        mockServer.first.then((request) async {
           await Future.delayed(const Duration(seconds: 1));
-          req.response.statusCode = 202;
-          await req.response.close();
+          request.response.statusCode = 202;
+          await request.response.close();
         }),
       );
 

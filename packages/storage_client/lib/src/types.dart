@@ -290,6 +290,186 @@ class SortBy {
   }
 }
 
+/// The column that [StorageFileApi.listPaginated] can sort its results by.
+enum FileSortColumn { name, updatedAt, createdAt }
+
+/// The direction that [StorageFileApi.listPaginated] sorts its results in.
+enum FileSortOrder {
+  ascending('asc'),
+  descending('desc');
+
+  const FileSortOrder(this.value);
+
+  /// The value sent to the storage API.
+  final String value;
+}
+
+/// The column and direction that [StorageFileApi.listPaginated] sorts its
+/// results by.
+class FileSort {
+  /// The column to sort by.
+  final FileSortColumn column;
+
+  /// The sort direction.
+  final FileSortOrder order;
+
+  const FileSort({
+    this.column = FileSortColumn.name,
+    this.order = FileSortOrder.ascending,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'column': column.snakeCase,
+      'order': order.value,
+    };
+  }
+}
+
+/// Options for [StorageFileApi.listPaginated].
+class PaginatedSearchOptions {
+  /// The number of files to return.
+  ///
+  /// Defaults to `1000` on the server when omitted.
+  final int? limit;
+
+  /// The prefix to filter files by.
+  final String? prefix;
+
+  /// The cursor used for pagination. Pass the [PaginatedListResult.nextCursor]
+  /// value from the previous request to fetch the next page.
+  final String? cursor;
+
+  /// Whether to emulate a hierarchical listing of objects using delimiters.
+  ///
+  /// When `false` (default) all objects are listed as a flat list. When `true`
+  /// the response groups objects by delimiter, separating them into
+  /// [PaginatedListResult.folders] and [PaginatedListResult.objects].
+  final bool? withDelimiter;
+
+  /// The column and direction to sort by.
+  final FileSort? sortBy;
+
+  const PaginatedSearchOptions({
+    this.limit,
+    this.prefix,
+    this.cursor,
+    this.withDelimiter,
+    this.sortBy,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'limit': ?limit,
+      'prefix': ?prefix,
+      'cursor': ?cursor,
+      'with_delimiter': ?withDelimiter,
+      'sortBy': ?sortBy?.toMap(),
+    };
+  }
+}
+
+/// A file entry returned by [StorageFileApi.listPaginated].
+class PaginatedFile {
+  /// The file name.
+  final String name;
+
+  /// The full object key/path.
+  final String? key;
+
+  /// The unique identifier of the file.
+  final String? id;
+
+  /// The last update timestamp.
+  final String? updatedAt;
+
+  /// The creation timestamp.
+  final String? createdAt;
+
+  /// The file metadata, including size and mimetype. `null` when not yet set.
+  final Map<String, dynamic>? metadata;
+
+  const PaginatedFile({
+    required this.name,
+    required this.key,
+    required this.id,
+    required this.updatedAt,
+    required this.createdAt,
+    required this.metadata,
+  });
+
+  factory PaginatedFile.fromJson(Map<String, dynamic> json) {
+    return PaginatedFile(
+      name: json['name'] as String,
+      key: json['key'] as String?,
+      id: json['id'] as String?,
+      updatedAt: json['updated_at'] as String?,
+      createdAt: json['created_at'] as String?,
+      metadata: json['metadata'] as Map<String, dynamic>?,
+    );
+  }
+}
+
+/// A folder entry returned by [StorageFileApi.listPaginated] when using a
+/// delimiter.
+class PaginatedFolder {
+  /// The folder name/prefix.
+  final String name;
+
+  /// The full folder key/path.
+  final String? key;
+
+  const PaginatedFolder({
+    required this.name,
+    required this.key,
+  });
+
+  factory PaginatedFolder.fromJson(Map<String, dynamic> json) {
+    return PaginatedFolder(
+      name: json['name'] as String,
+      key: json['key'] as String?,
+    );
+  }
+}
+
+/// The result of [StorageFileApi.listPaginated].
+class PaginatedListResult {
+  /// Whether there are more results available on a subsequent page.
+  final bool hasNext;
+
+  /// The folders in this page. Only populated when a delimiter is used.
+  final List<PaginatedFolder> folders;
+
+  /// The files in this page.
+  final List<PaginatedFile> objects;
+
+  /// The cursor to pass as [PaginatedSearchOptions.cursor] to fetch the next
+  /// page.
+  final String? nextCursor;
+
+  const PaginatedListResult({
+    required this.hasNext,
+    required this.folders,
+    required this.objects,
+    required this.nextCursor,
+  });
+
+  factory PaginatedListResult.fromJson(Map<String, dynamic> json) {
+    final folders = json['folders'] as List? ?? const [];
+    final objects = json['objects'] as List? ?? const [];
+    return PaginatedListResult(
+      hasNext: json['hasNext'] as bool? ?? false,
+      folders: folders
+          .map((e) => PaginatedFolder.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      objects: objects
+          .map((e) => PaginatedFile.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      nextCursor: json['nextCursor'] as String?,
+    );
+  }
+}
+
 class SignedUrl {
   /// The file path, including the current file name. For example `folder/image.png`.
   final String path;

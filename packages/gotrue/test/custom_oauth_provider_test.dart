@@ -32,12 +32,12 @@ void main() {
         );
 
         final provider = OAuthProvider('custom:my-provider');
-        final res = await client.getOAuthSignInUrl(provider: provider);
+        final response = await client.getOAuthSignInUrl(provider: provider);
 
-        expect(res.provider, provider);
-        expect(res.url, startsWith('$gotrueUrl/authorize?'));
+        expect(response.provider, provider);
+        expect(response.url, startsWith('$gotrueUrl/authorize?'));
 
-        final uri = Uri.parse(res.url);
+        final uri = Uri.parse(response.url);
         expect(uri.queryParameters['provider'], 'custom:my-provider');
       },
     );
@@ -64,14 +64,14 @@ void main() {
       // Derive the expected count from the source file so this test stays
       // accurate when new static const providers are added without updating
       // the values list.
-      final src = File('lib/src/types/types.dart').readAsStringSync();
+      final source = File('lib/src/types/types.dart').readAsStringSync();
       // Matches `static const foo = OAuthProvider(` but not the `values` field
       // (which is typed `List<OAuthProvider>` and uses a list literal, not a
       // direct OAuthProvider constructor call).
       final declaredCount = RegExp(
         r'^\s*static\s+const\s+\w+\s*=\s*OAuthProvider\(',
         multiLine: true,
-      ).allMatches(src).length;
+      ).allMatches(source).length;
 
       expect(OAuthProvider.values, contains(OAuthProvider.google));
       expect(OAuthProvider.values, contains(OAuthProvider.linkedinOidc));

@@ -119,12 +119,6 @@ void main() {
 
         expect(exception1, equals(exception2));
       });
-
-      test('returns true for reference equality', () {
-        const exception = AuthException('Test error');
-
-        expect(exception, same(exception));
-      });
     });
 
     group('implements Exception', () {
@@ -495,7 +489,7 @@ void main() {
       expect(exception.message, equals('Password does not meet requirements'));
       expect(exception.statusCode, equals('422'));
       expect(exception.code, equals('weak_password'));
-      expect(exception.reasons.length, equals(3));
+      expect(exception.reasons, hasLength(3));
     });
 
     test('handles unknown HTTP error scenario', () {

@@ -632,7 +632,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   }
 
   /// Convert list filter to query params string
-  String _cleanFilterArray(List filter) {
+  String _cleanFilterArray(List<dynamic> filter) {
     if (filter.every((element) => element is num)) {
       return filter.map((s) => '$s').join(',');
     }

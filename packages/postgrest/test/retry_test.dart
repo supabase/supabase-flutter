@@ -9,23 +9,23 @@ import 'package:test/test.dart';
 typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
 
 _ResponseFactory _ok() =>
-    (req) => Future.value(
+    (request) => Future.value(
       StreamedResponse(
         Stream.value(Uint8List.fromList('[]'.codeUnits)),
         200,
-        request: req,
+        request: request,
         headers: {'content-type': 'application/json'},
       ),
     );
 
 _ResponseFactory _status(int code) =>
-    (req) => Future.value(
+    (request) => Future.value(
       StreamedResponse(
         Stream.value(
           Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits),
         ),
         code,
-        request: req,
+        request: request,
         headers: {'content-type': 'application/json'},
       ),
     );
@@ -123,11 +123,11 @@ void main() {
     test('HEAD retries on 520 then succeeds', () async {
       final mock = _MockRetryClient([
         _status(520),
-        (req) => Future.value(
+        (request) => Future.value(
           StreamedResponse(
             Stream.empty(),
             200,
-            request: req,
+            request: request,
             headers: {'content-range': '*/4'},
           ),
         ),

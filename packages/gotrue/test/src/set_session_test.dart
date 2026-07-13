@@ -43,7 +43,7 @@ class _SetSessionMockClient extends BaseClient {
       // Refresh-token fallback response with a freshly minted access token.
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       final iat = exp - 3600;
-      final freshAt = _makeRawJwt({
+      final freshAccessToken = _makeRawJwt({
         'exp': exp,
         'iat': iat,
         'sub': 'mock-user-id',
@@ -52,7 +52,7 @@ class _SetSessionMockClient extends BaseClient {
         Stream.value(
           utf8.encode(
             jsonEncode({
-              'access_token': freshAt,
+              'access_token': freshAccessToken,
               'token_type': 'bearer',
               'expires_in': 3600,
               'refresh_token': 'new-refresh-token',
@@ -78,8 +78,8 @@ String _makeRawJwt(Map<String, dynamic> payload) {
     utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
   );
   final body = base64Url.encode(utf8.encode(jsonEncode(payload)));
-  const sig = 'AAAA';
-  return '$header.$body.$sig';
+  const signature = 'AAAA';
+  return '$header.$body.$signature';
 }
 
 void main() {
@@ -99,14 +99,14 @@ void main() {
     test('empty refresh token with a non-null access token throws before '
         'inspecting the access token', () async {
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
-      final at = _makeRawJwt({
+      final accessToken = _makeRawJwt({
         'exp': exp,
         'iat': exp - 3600,
         'sub': 'mock-user-id',
       });
 
       await expectLater(
-        () => client.setSession('', accessToken: at),
+        client.setSession('', accessToken: accessToken),
         throwsA(isA<AuthSessionMissingException>()),
       );
       // No network call should have been made.
@@ -117,7 +117,7 @@ void main() {
         'as expired and falls back to the refresh-token path', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // exp is 20 s in the future, inside the 30 s Constants.expiryMargin.
-      final at = _makeRawJwt({
+      final accessToken = _makeRawJwt({
         'exp': timeNow + 20,
         'iat': timeNow - 3580,
         'sub': 'mock-user-id',
@@ -125,27 +125,30 @@ void main() {
 
       final response = await client.setSession(
         'some-refresh-token',
-        accessToken: at,
+        accessToken: accessToken,
       );
 
       expect(response.session, isNotNull);
       // The returned token must be the freshly refreshed one, not our near-expired JWT.
-      expect(response.session?.accessToken, isNot(equals(at)));
+      expect(response.session?.accessToken, isNot(equals(accessToken)));
       expect(mockClient.userCallCount, 0); // /user was NOT called
     });
 
     test('access token with no exp claim is treated as expired and falls back '
         'to the refresh-token path', () async {
       // JWT without an exp claim: decodeJwt succeeds but exp == null.
-      final at = _makeRawJwt({'role': 'authenticated', 'sub': 'mock-user-id'});
+      final accessToken = _makeRawJwt({
+        'role': 'authenticated',
+        'sub': 'mock-user-id',
+      });
 
       final response = await client.setSession(
         'some-refresh-token',
-        accessToken: at,
+        accessToken: accessToken,
       );
 
       expect(response.session, isNotNull);
-      expect(response.session?.accessToken, isNot(equals(at)));
+      expect(response.session?.accessToken, isNot(equals(accessToken)));
       expect(mockClient.userCallCount, 0);
     });
   });
@@ -156,11 +159,15 @@ void main() {
       () async {
         final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
         final exp = iat + 3600;
-        final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
+        final accessToken = _makeRawJwt({
+          'exp': exp,
+          'iat': iat,
+          'sub': 'mock-user-id',
+        });
 
         final response = await client.setSession(
           'some-refresh-token',
-          accessToken: at,
+          accessToken: accessToken,
         );
 
         // expiresIn should be the total token lifetime (exp - iat = 3600).
@@ -171,11 +178,11 @@ void main() {
     test('expiresIn is null when iat claim is absent', () async {
       final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       // JWT without iat.
-      final at = _makeRawJwt({'exp': exp, 'sub': 'mock-user-id'});
+      final accessToken = _makeRawJwt({'exp': exp, 'sub': 'mock-user-id'});
 
       final response = await client.setSession(
         'some-refresh-token',
-        accessToken: at,
+        accessToken: accessToken,
       );
 
       expect(response.session?.expiresIn, isNull);
@@ -184,11 +191,15 @@ void main() {
     test('expiresAt matches the exp claim in the JWT', () async {
       final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final exp = iat + 3600;
-      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
+      final accessToken = _makeRawJwt({
+        'exp': exp,
+        'iat': iat,
+        'sub': 'mock-user-id',
+      });
 
       final response = await client.setSession(
         'some-refresh-token',
-        accessToken: at,
+        accessToken: accessToken,
       );
 
       // expiresAt is re-derived from the JWT's own exp, not from expiresIn.
@@ -201,11 +212,18 @@ void main() {
         final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
         final exp = iat + 3600;
         const refreshToken = 'my-refresh-token';
-        final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
+        final accessToken = _makeRawJwt({
+          'exp': exp,
+          'iat': iat,
+          'sub': 'mock-user-id',
+        });
 
-        final response = await client.setSession(refreshToken, accessToken: at);
+        final response = await client.setSession(
+          refreshToken,
+          accessToken: accessToken,
+        );
 
-        expect(response.session?.accessToken, equals(at));
+        expect(response.session?.accessToken, equals(accessToken));
         expect(response.session?.refreshToken, equals(refreshToken));
         expect(response.session?.tokenType, equals('bearer'));
       },
@@ -216,20 +234,24 @@ void main() {
     test('fast path emits signedIn (not tokenRefreshed)', () async {
       final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final exp = iat + 3600;
-      final at = _makeRawJwt({'exp': exp, 'iat': iat, 'sub': 'mock-user-id'});
+      final accessToken = _makeRawJwt({
+        'exp': exp,
+        'iat': iat,
+        'sub': 'mock-user-id',
+      });
 
       expect(
         client.onAuthStateChange,
         emits(predicate<AuthState>((s) => s.event == AuthChangeEvent.signedIn)),
       );
 
-      await client.setSession('some-refresh-token', accessToken: at);
+      await client.setSession('some-refresh-token', accessToken: accessToken);
     });
 
     test('expired-fallback path emits tokenRefreshed (not signedIn)', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // Clearly expired token (exp well in the past).
-      final at = _makeRawJwt({
+      final accessToken = _makeRawJwt({
         'exp': timeNow - 100,
         'iat': timeNow - 3700,
         'sub': 'mock-user-id',
@@ -244,7 +266,7 @@ void main() {
         ),
       );
 
-      await client.setSession('some-refresh-token', accessToken: at);
+      await client.setSession('some-refresh-token', accessToken: accessToken);
     });
   });
 }

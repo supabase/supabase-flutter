@@ -138,7 +138,7 @@ void main() {
 
       // Get the token (should be null)
       final token = await localStorage.accessToken();
-      expect(token, null);
+      expect(token, isNull);
 
       // Try to persist a session
       await localStorage.persistSession('test-session-data');
@@ -149,7 +149,7 @@ void main() {
 
       // Get the token after persisting (should still be null)
       final tokenAfterPersist = await localStorage.accessToken();
-      expect(tokenAfterPersist, null);
+      expect(tokenAfterPersist, isNull);
 
       // Try to remove the session
       await localStorage.removePersistedSession();
