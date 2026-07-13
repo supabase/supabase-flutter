@@ -366,11 +366,21 @@ features:
 
   # database — configuration
   database.configuration.auto_retry:
-    status: partially_implemented
-    note: "Retries GET/HEAD requests on transient failures with backoff, but the retry count and conditions are hard-coded, not configurable."
+    status: implemented
+    symbols:
+      - PostgrestClient.retryEnabled
+      - PostgrestClient.retryCount
+      - PostgrestClient.retryableStatusCodes
+      - PostgrestClientOptions.retryEnabled
+      - PostgrestClientOptions.retryCount
+      - PostgrestClientOptions.retryableStatusCodes
+      - PostgrestBuilder.retry
+      - PostgrestClient.defaultRetryableStatusCodes
   database.configuration.request_timeout:
-    status: not_applicable
-    note: "Requires cancelling in-flight requests at the deadline, but the http.Client transport has no cancellation primitive. The only Dart-native option is Future.timeout, which lets the request keep running and is functionally identical to a caller applying .timeout() themselves, so it adds no real capability. Same reasoning as functions.invocation.timeout; a genuine version would require database.using_modifiers.request_cancellation."
+    status: implemented
+    symbols:
+      - PostgrestClient.requestTimeout
+      - PostgrestClientOptions.requestTimeout
 
   # storage — file buckets
   storage.file_buckets.access_bucket: implemented

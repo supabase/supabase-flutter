@@ -9,7 +9,11 @@ class PostgrestRpcBuilder
     Client? httpClient,
     required YAJsonIsolate isolate,
     bool retryEnabled = true,
+    int retryCount = 3,
+    Set<int> retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
     Duration Function(int attempt)? retryDelay,
+    Duration? requestTimeout,
+    Future<void>? abortSignal,
   }) : super(
          PostgrestBuilder(
            url: Uri.parse(url),
@@ -18,7 +22,11 @@ class PostgrestRpcBuilder
            httpClient: httpClient,
            isolate: isolate,
            retryEnabled: retryEnabled,
+           retryCount: retryCount,
+           retryableStatusCodes: retryableStatusCodes,
            retryDelay: retryDelay,
+           requestTimeout: requestTimeout,
+           abortSignal: abortSignal,
          ),
        );
 
