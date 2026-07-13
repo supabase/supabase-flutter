@@ -56,7 +56,7 @@ class OAuthGrant {
   factory OAuthGrant.fromJson(Map<String, dynamic> json) {
     return OAuthGrant(
       client: OAuthAuthorizedClient.fromJson(json['client']),
-      scopes: (json['scopes'] as List?)?.cast<String>() ?? const <String>[],
+      scopes: (json['scopes'] as List?)?.cast() ?? const [],
       grantedAt: DateTime.parse(json['granted_at'] as String),
     );
   }

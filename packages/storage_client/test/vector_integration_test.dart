@@ -35,7 +35,7 @@ void main() {
       expect(bucket.creationTime, isA<DateTime>());
 
       final list = await vectors.listBuckets(prefix: name);
-      expect(list.buckets.map((bucket) => bucket.name), contains(name));
+      expect(list.buckets.map((entry) => entry.name), contains(name));
 
       await vectors.deleteBucket(name);
       await expectLater(
@@ -81,7 +81,7 @@ void main() {
       expect(fetched.creationTime, isA<DateTime>());
 
       final list = await bucket.listIndexes();
-      expect(list.indexes.map((index) => index.name), contains('idx'));
+      expect(list.indexes.map((entry) => entry.name), contains('idx'));
     });
 
     test('put, get and list vectors', () async {

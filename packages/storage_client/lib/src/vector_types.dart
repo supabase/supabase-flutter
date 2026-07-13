@@ -152,7 +152,7 @@ class VectorIndex {
       dimension: (json['dimension'] as num?)?.toInt(),
       distanceMetric: _distanceMetricFromValue(json['distanceMetric']),
       nonFilterableMetadataKeys: nonFilterableMetadataKeys is List
-          ? nonFilterableMetadataKeys.cast<String>()
+          ? nonFilterableMetadataKeys.cast()
           : null,
       creationTime: _parseUnixSeconds(json['creationTime']),
     );

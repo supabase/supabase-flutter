@@ -31,7 +31,7 @@ class SupabaseVectorsClient {
   final Fetch _storageFetch;
 
   @internal
-  SupabaseVectorsClient(this._url, this._headers, this._storageFetch);
+  const SupabaseVectorsClient(this._url, this._headers, this._storageFetch);
 
   FetchOptions get _options => FetchOptions(_headers);
 
@@ -104,7 +104,7 @@ class StorageVectorBucketApi {
   final String bucketName;
 
   @internal
-  StorageVectorBucketApi(
+  const StorageVectorBucketApi(
     this._url,
     this._headers,
     this._storageFetch,
@@ -213,7 +213,7 @@ class StorageVectorIndexApi {
   final String indexName;
 
   @internal
-  StorageVectorIndexApi(
+  const StorageVectorIndexApi(
     this._url,
     this._headers,
     this._storageFetch,
