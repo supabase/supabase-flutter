@@ -563,7 +563,6 @@ features:
   realtime.configuration.deferred_disconnect:
     status: implemented
     symbols:
-      - RealtimeClient.disconnectOnEmptyChannelsAfterMs
       - RealtimeClientOptions.disconnectOnEmptyChannelsAfter
 
   # functions

@@ -618,21 +618,27 @@ void main() {
     test('defaults to twice the heartbeat interval', () {
       final socket = RealtimeClient(socketEndpoint);
       expect(
-        socket.disconnectOnEmptyChannelsAfterMs,
-        2 * Constants.defaultHeartbeatIntervalMs,
+        socket.disconnectOnEmptyChannelsAfter,
+        Duration(milliseconds: 2 * Constants.defaultHeartbeatIntervalMs),
       );
 
       final customSocket = RealtimeClient(
         socketEndpoint,
         heartbeatIntervalMs: 5000,
       );
-      expect(customSocket.disconnectOnEmptyChannelsAfterMs, 10000);
+      expect(
+        customSocket.disconnectOnEmptyChannelsAfter,
+        const Duration(milliseconds: 10000),
+      );
 
       final explicitSocket = RealtimeClient(
         socketEndpoint,
-        disconnectOnEmptyChannelsAfterMs: 1234,
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 1234),
       );
-      expect(explicitSocket.disconnectOnEmptyChannelsAfterMs, 1234);
+      expect(
+        explicitSocket.disconnectOnEmptyChannelsAfter,
+        const Duration(milliseconds: 1234),
+      );
     });
 
     test(
@@ -640,7 +646,7 @@ void main() {
       () async {
         final socket = RealtimeClient(
           'ws://localhost:${mockServer.port}',
-          disconnectOnEmptyChannelsAfterMs: 200,
+          disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
         );
         await socket.connect();
         expect(socket.isConnected, isTrue);
@@ -656,7 +662,7 @@ void main() {
     test('disconnects after the delay when channels stay empty', () async {
       final socket = RealtimeClient(
         'ws://localhost:${mockServer.port}',
-        disconnectOnEmptyChannelsAfterMs: 200,
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
       );
       await socket.connect();
 
@@ -673,7 +679,7 @@ void main() {
       () async {
         final socket = RealtimeClient(
           'ws://localhost:${mockServer.port}',
-          disconnectOnEmptyChannelsAfterMs: 200,
+          disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
         );
         await socket.connect();
 
@@ -688,11 +694,11 @@ void main() {
     );
 
     test(
-      'disconnects immediately when disconnectOnEmptyChannelsAfterMs is 0',
+      'disconnects immediately when disconnectOnEmptyChannelsAfter is zero',
       () async {
         final socket = RealtimeClient(
           'ws://localhost:${mockServer.port}',
-          disconnectOnEmptyChannelsAfterMs: 0,
+          disconnectOnEmptyChannelsAfter: Duration.zero,
         );
         await socket.connect();
 
@@ -707,7 +713,7 @@ void main() {
     test('disconnect cancels a pending deferred disconnect', () async {
       final socket = RealtimeClient(
         'ws://localhost:${mockServer.port}',
-        disconnectOnEmptyChannelsAfterMs: 200,
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
       );
       await socket.connect();
 
@@ -727,7 +733,7 @@ void main() {
       () async {
         final socket = RealtimeClient(
           'ws://localhost:${mockServer.port}',
-          disconnectOnEmptyChannelsAfterMs: 200,
+          disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
         );
         await socket.connect();
 
@@ -743,7 +749,7 @@ void main() {
     test('channel.unsubscribe schedules a deferred disconnect', () async {
       final socket = RealtimeClient(
         'ws://localhost:${mockServer.port}',
-        disconnectOnEmptyChannelsAfterMs: 200,
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
       );
       await socket.connect();
 
@@ -758,7 +764,7 @@ void main() {
     test('removeAllChannels disconnects immediately', () async {
       final socket = RealtimeClient(
         'ws://localhost:${mockServer.port}',
-        disconnectOnEmptyChannelsAfterMs: 10000,
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 10000),
       );
       await socket.connect();
       expect(socket.isConnected, isTrue);
