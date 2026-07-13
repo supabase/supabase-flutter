@@ -43,6 +43,14 @@ List<double>? _parseFloat32(Object? data) {
   return float32.map((value) => (value as num).toDouble()).toList();
 }
 
+DateTime? _parseUnixSeconds(Object? value) {
+  if (value is! num) return null;
+  return DateTime.fromMillisecondsSinceEpoch(
+    (value * 1000).round(),
+    isUtc: true,
+  );
+}
+
 /// Encryption settings attached to a vector bucket.
 @experimental
 class VectorBucketEncryption {
@@ -68,10 +76,9 @@ class VectorBucket {
   /// The unique name of the vector bucket.
   final String name;
 
-  /// The unix timestamp of when the bucket was created, as returned by the
-  /// server. `null` when the server does not include it (for example in list
-  /// responses).
-  final int? creationTime;
+  /// When the bucket was created, in UTC. `null` when the server does not
+  /// include it (for example in list responses).
+  final DateTime? creationTime;
 
   /// The bucket's encryption configuration, when present.
   final VectorBucketEncryption? encryption;
@@ -86,7 +93,7 @@ class VectorBucket {
     final encryption = json['encryptionConfiguration'];
     return VectorBucket(
       name: json['vectorBucketName'] as String,
-      creationTime: (json['creationTime'] as num?)?.toInt(),
+      creationTime: _parseUnixSeconds(json['creationTime']),
       encryption: encryption is Map<String, dynamic>
           ? VectorBucketEncryption.fromJson(encryption)
           : null,
@@ -118,9 +125,9 @@ class VectorIndex {
   /// Metadata keys that are stored but cannot be used in query filters.
   final List<String>? nonFilterableMetadataKeys;
 
-  /// The unix timestamp of when the index was created, as returned by the
-  /// server.
-  final int? creationTime;
+  /// When the index was created, in UTC. `null` when the server does not
+  /// include it.
+  final DateTime? creationTime;
 
   const VectorIndex({
     required this.name,
@@ -147,7 +154,7 @@ class VectorIndex {
       nonFilterableMetadataKeys: nonFilterableMetadataKeys is List
           ? nonFilterableMetadataKeys.cast<String>()
           : null,
-      creationTime: (json['creationTime'] as num?)?.toInt(),
+      creationTime: _parseUnixSeconds(json['creationTime']),
     );
   }
 }

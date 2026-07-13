@@ -57,7 +57,10 @@ void main() {
         'http://localhost/storage/v1/vector/GetVectorBucket',
       );
       expect(bucket.name, 'embeddings');
-      expect(bucket.creationTime, 1700000000);
+      expect(
+        bucket.creationTime,
+        DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
+      );
       expect(bucket.encryption?.sseType, 'AES256');
     });
 
