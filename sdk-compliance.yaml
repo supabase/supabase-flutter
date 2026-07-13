@@ -380,9 +380,55 @@ features:
   storage.file_buckets.update_file: implemented
   storage.file_buckets.download: implemented
   storage.file_buckets.download_with_transform: implemented
-  storage.file_buckets.download_as_stream: not_implemented
+  storage.file_buckets.download_as_stream:
+    status: implemented
+    note: "Exposed as a dedicated downloadStream method returning a lazy Stream<Uint8List> rather than an asStream() builder off download(); the request is sent on listen and a non-success status surfaces as a StorageException on the stream."
+    symbols:
+      - StorageFileApi.downloadStream
   storage.file_buckets.list_files: implemented
-  storage.file_buckets.list_files_paginated: not_implemented
+  storage.file_buckets.list_files_paginated:
+    status: implemented
+    note: "Exposed as listPaginated (paired with descriptive Dart type names) rather than the supabase-js listV2 name."
+    symbols:
+      - StorageFileApi.listPaginated
+      - PaginatedSearchOptions
+      - PaginatedSearchOptions.PaginatedSearchOptions
+      - PaginatedSearchOptions.cursor
+      - PaginatedSearchOptions.limit
+      - PaginatedSearchOptions.prefix
+      - PaginatedSearchOptions.sortBy
+      - PaginatedSearchOptions.toMap
+      - PaginatedSearchOptions.withDelimiter
+      - PaginatedListResult
+      - PaginatedListResult.PaginatedListResult
+      - PaginatedListResult.folders
+      - PaginatedListResult.fromJson
+      - PaginatedListResult.hasNext
+      - PaginatedListResult.nextCursor
+      - PaginatedListResult.objects
+      - PaginatedFile
+      - PaginatedFile.PaginatedFile
+      - PaginatedFile.createdAt
+      - PaginatedFile.fromJson
+      - PaginatedFile.id
+      - PaginatedFile.key
+      - PaginatedFile.metadata
+      - PaginatedFile.name
+      - PaginatedFile.updatedAt
+      - PaginatedFolder
+      - PaginatedFolder.PaginatedFolder
+      - PaginatedFolder.fromJson
+      - PaginatedFolder.key
+      - PaginatedFolder.name
+      - FileSort
+      - FileSort.FileSort
+      - FileSort.column
+      - FileSort.order
+      - FileSort.toMap
+      - FileSortColumn
+      - FileSortOrder
+      - FileSortOrder.FileSortOrder
+      - FileSortOrder.value
   storage.file_buckets.move: implemented
   storage.file_buckets.move_cross_bucket: implemented
   storage.file_buckets.copy: implemented
@@ -397,7 +443,7 @@ features:
   storage.file_buckets.create_signed_urls: implemented
   storage.file_buckets.create_signed_upload_url: implemented
   storage.file_buckets.get_public_url: implemented
-  storage.file_buckets.url_cache_nonce: not_implemented
+  storage.file_buckets.url_cache_nonce: implemented
   storage.file_buckets.file_exists: implemented
   storage.file_buckets.file_info: implemented
   storage.file_buckets.create_file_bucket: implemented

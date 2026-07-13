@@ -11,7 +11,7 @@ void main() {
         return 'ok';
       },
       delayFactor: const Duration(milliseconds: 1),
-      retryIf: (e) => e is FormatException,
+      retryIf: (error) => error is FormatException,
     );
     expect(result, 'ok');
     expect(attempts, 3);
@@ -42,7 +42,7 @@ void main() {
           throw const FormatException('nope');
         },
         delayFactor: const Duration(milliseconds: 1),
-        retryIf: (e) => false,
+        retryIf: (error) => false,
       ),
       throwsA(isA<FormatException>()),
     );
@@ -60,7 +60,7 @@ void main() {
           attempts++;
           throw const FormatException('x');
         },
-        retryIf: (e) => true,
+        retryIf: (error) => true,
       ),
       throwsA(isA<FormatException>()),
     );

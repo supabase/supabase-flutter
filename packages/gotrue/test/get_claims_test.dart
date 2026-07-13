@@ -20,7 +20,7 @@ void main() {
     late String newEmail;
 
     setUp(() async {
-      final res = await http.post(
+      final response = await http.post(
         Uri.parse(
           'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
         ),
@@ -30,7 +30,7 @@ void main() {
           'Authorization': 'Bearer ${getServiceRoleToken(env)}',
         },
       );
-      if (res.body.isNotEmpty) throw res.body;
+      if (response.body.isNotEmpty) throw response.body;
 
       newEmail = getNewEmail();
 
@@ -132,10 +132,10 @@ void main() {
           GetClaimsOptions(allowExpired: true),
         );
         // If we get here, the exp validation was skipped
-      } on AuthException catch (e) {
+      } on AuthException catch (error) {
         // We expect this to fail during getUser() verification,
         // not during exp validation
-        expect(e.message, isNot(contains('expired')));
+        expect(error.message, isNot(contains('expired')));
       }
     });
 
@@ -253,12 +253,12 @@ void main() {
         try {
           await client.getClaims(rs256Jwt);
           // If we get here, the server responded successfully (unlikely in test env)
-        } catch (e) {
+        } catch (error) {
           // The important part is that it should NOT crash with null error
           // It may fail with network error, invalid signature, etc.
           // but the error message should not contain null-related errors
-          expect(e.toString(), isNot(contains('Unexpected null value')));
-          expect(e.toString(), isNot(contains('Null check operator')));
+          expect(error.toString(), isNot(contains('Unexpected null value')));
+          expect(error.toString(), isNot(contains('Null check operator')));
         }
         // Test passes if we get here without null error
       },

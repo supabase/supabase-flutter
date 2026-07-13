@@ -40,7 +40,7 @@ void main() {
 
         // Check that rest api contains the correct filter in the URL
         if (expectedFilter != null) {
-          expect(url.contains(expectedFilter), isTrue);
+          expect(url, contains(expectedFilter));
         }
       }
       if (url == '/rest/v1/todos?select=task%2Cstatus') {
@@ -399,7 +399,7 @@ void main() {
 
     test('test mock server', () async {
       final data = await supabase.from('todos').select('task, status');
-      expect(data.length, 2);
+      expect(data, hasLength(2));
     });
 
     group('Basic client test', () {
@@ -427,10 +427,10 @@ void main() {
     group('stream()', () {
       test("listen, cancel and listen again", () async {
         final stream = supabase.from('todos').stream(primaryKey: ['id']);
-        final sub = stream.listen(expectAsync1((event) {}, count: 5));
+        final subscription = stream.listen(expectAsync1((event) {}, count: 5));
         await Future.delayed(Duration(seconds: 1));
 
-        await sub.cancel();
+        await subscription.cancel();
         await Future.delayed(Duration(seconds: 1));
 
         stream.listen(expectAsync1((event) {}, count: 5));
@@ -844,8 +844,8 @@ void main() {
         );
 
         // Should handle token errors gracefully
-        expect(
-          () async => await clientWithFailingToken.from('test').select(),
+        await expectLater(
+          () => clientWithFailingToken.from('test').select(),
           throwsA(isA<Exception>()),
         );
 

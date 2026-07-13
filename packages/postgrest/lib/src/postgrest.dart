@@ -112,7 +112,7 @@ class PostgrestClient {
   /// ```
   PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
-    Map? params,
+    Map<dynamic, dynamic>? params,
     bool get = false,
   }) {
     final requestUrl = '$url/rpc/$fn';

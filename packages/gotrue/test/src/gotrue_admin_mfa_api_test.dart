@@ -16,7 +16,7 @@ void main() {
   late GoTrueClient client;
 
   setUp(() async {
-    final res = await http.post(
+    final response = await http.post(
       Uri.parse('http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
       headers: {
         'x-forwarded-for': '127.0.0.1',
@@ -24,7 +24,7 @@ void main() {
         'Authorization': 'Bearer $serviceRoleToken',
       },
     );
-    if (res.body.isNotEmpty) throw res.body;
+    if (response.body.isNotEmpty) throw response.body;
 
     client = GoTrueClient(
       url: gotrueUrl,
@@ -37,26 +37,26 @@ void main() {
   });
 
   test('list factors', () async {
-    final res = await client.admin.mfa.listFactors(userId: userId2);
-    expect(res.factors.length, 1);
-    final factor = res.factors.first;
+    final response = await client.admin.mfa.listFactors(userId: userId2);
+    expect(response.factors, hasLength(1));
+    final factor = response.factors.first;
     expect(
       factor.createdAt.difference(DateTime.now()) < Duration(seconds: 2),
-      true,
+      isTrue,
     );
     expect(
       factor.updatedAt.difference(DateTime.now()) < Duration(seconds: 2),
-      true,
+      isTrue,
     );
     expect(factor.id, factorId2);
   });
 
   test('delete factor', () async {
-    final res = await client.admin.mfa.deleteFactor(
+    final response = await client.admin.mfa.deleteFactor(
       userId: userId2,
       factorId: factorId2,
     );
 
-    expect(res.id, factorId2);
+    expect(response.id, factorId2);
   });
 }

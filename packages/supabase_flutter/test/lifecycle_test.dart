@@ -121,8 +121,8 @@ void main() {
       var previousCount = -1;
       while (readyCompleters.length != previousCount) {
         previousCount = readyCompleters.length;
-        for (final c in readyCompleters) {
-          if (!c.isCompleted) c.complete();
+        for (final completer in readyCompleters) {
+          if (!completer.isCompleted) completer.complete();
         }
         await pumpEventQueue();
       }

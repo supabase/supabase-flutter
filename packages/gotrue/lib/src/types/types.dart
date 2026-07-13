@@ -2,7 +2,7 @@ import 'package:supabase_common/supabase_common.dart';
 
 typedef BroadcastChannel = ({
   Stream<Map<String, dynamic>> onMessage,
-  void Function(Map) postMessage,
+  void Function(Map<dynamic, dynamic>) postMessage,
   void Function() close,
 });
 

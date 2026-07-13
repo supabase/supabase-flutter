@@ -58,11 +58,11 @@ void main() {
             callback: (payload) {},
           )
           .subscribe(
-            (event, [errorMsg]) {},
+            (event, [errorMessage]) {},
           );
       expect(
         () => channel.subscribe(),
-        throwsA(const TypeMatcher<String>()),
+        throwsA(isA<String>()),
       );
     });
 
@@ -79,8 +79,8 @@ void main() {
       final channels = supabase.getChannels();
 
       expect(
-        channels.length,
-        2,
+        channels,
+        hasLength(2),
       );
     });
 
@@ -99,8 +99,8 @@ void main() {
       anotherChannel.subscribe();
 
       expect(
-        supabase.getChannels().length,
-        2,
+        supabase.getChannels(),
+        hasLength(2),
       );
 
       final status = await supabase.removeChannel(anotherChannel);
@@ -108,8 +108,8 @@ void main() {
       expect(status, 'ok');
 
       expect(
-        supabase.getChannels().length,
-        1,
+        supabase.getChannels(),
+        hasLength(1),
       );
     });
 
@@ -141,8 +141,8 @@ void main() {
       );
 
       expect(
-        supabase.getChannels().length,
-        0,
+        supabase.getChannels(),
+        isEmpty,
       );
     });
 
@@ -162,14 +162,10 @@ void main() {
       channel.subscribe();
       anotherChannel.subscribe();
 
-      final result1 = await supabase.removeAllChannels();
+      final result = await supabase.removeAllChannels();
       expect(
-        result1,
-        isNotEmpty,
-      );
-      expect(
-        result1.length,
-        2,
+        result,
+        hasLength(2),
       );
 
       expect(

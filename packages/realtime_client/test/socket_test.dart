@@ -96,7 +96,7 @@ void main() {
         socket.logger
             is void Function(
               String? kind,
-              String? msg,
+              String? message,
               dynamic data,
             ),
         isFalse,
@@ -114,7 +114,7 @@ void main() {
         timeout: const Duration(milliseconds: 40000),
         heartbeatIntervalMs: 60000,
         // ignore: avoid_print
-        logger: (kind, msg, data) => print('[$kind] $msg $data'),
+        logger: (kind, message, data) => print('[$kind] $message $data'),
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
       );
       expect(socket.channels, isEmpty);
@@ -133,7 +133,7 @@ void main() {
         socket.logger
             is void Function(
               String? kind,
-              String? msg,
+              String? message,
               dynamic data,
             ),
         isTrue,
@@ -199,15 +199,15 @@ void main() {
     });
 
     test('establishes websocket connection with endpoint', () async {
-      final connFuture = socket.connect();
+      final connectFuture = socket.connect();
       expect(socket.connState, SocketStates.connecting);
 
-      final conn = socket.conn;
+      final connection = socket.conn;
 
-      await connFuture;
+      await connectFuture;
       expect(socket.connState, SocketStates.open);
 
-      expect(conn, isA<IOWebSocketChannel>());
+      expect(connection, isA<IOWebSocketChannel>());
       //! Not verifying connection url
     });
 
@@ -220,9 +220,9 @@ void main() {
       socket.onClose((_) {
         closes += 1;
       });
-      late dynamic lastMsg;
-      socket.onMessage((m) {
-        lastMsg = m;
+      late dynamic lastMessage;
+      socket.onMessage((message) {
+        lastMessage = message;
       });
 
       await socket.connect();
@@ -232,7 +232,7 @@ void main() {
       await socket.sendHeartbeat();
       // need to wait for event to trigger
       await Future.delayed(const Duration(seconds: 1));
-      expect(lastMsg['event'], 'heartbeat');
+      expect(lastMessage['event'], 'heartbeat');
 
       await socket.disconnect();
       await Future.delayed(const Duration(seconds: 1));
@@ -240,22 +240,22 @@ void main() {
     });
 
     test('sets callback for errors', () {
-      dynamic lastErr;
+      dynamic lastError;
       final RealtimeClient erroneousSocket = RealtimeClient('badurl')
-        ..onError((e) {
-          lastErr = e;
+        ..onError((error) {
+          lastError = error;
         });
 
       unawaited(erroneousSocket.connect());
 
-      expect(lastErr, isA<WebSocketException>());
+      expect(lastError, isA<WebSocketException>());
     });
 
     test('is idempotent', () {
       unawaited(socket.connect());
-      final conn = socket.conn;
+      final connection = socket.conn;
       unawaited(socket.connect());
-      expect(socket.conn, conn);
+      expect(socket.conn, connection);
     });
   });
 
@@ -276,15 +276,6 @@ void main() {
       await socket.disconnect();
 
       expect(socket.conn, isNull);
-    });
-
-    test('calls callback', () async {
-      int closes = 0;
-      unawaited(socket.connect());
-      unawaited(socket.disconnect());
-      closes += 1;
-
-      expect(closes, 1);
     });
 
     test('calls connection close callback', () async {
@@ -588,7 +579,7 @@ void main() {
         tParams,
       );
 
-      expect(socket.channels.length, 1);
+      expect(socket.channels, hasLength(1));
 
       final foundChannel = socket.channels[0];
       expect(foundChannel, channel);
@@ -616,7 +607,7 @@ void main() {
       final channel2 = mockedSocket.channel(tTopic2);
 
       mockedSocket.remove(channel1);
-      expect(mockedSocket.channels.length, 1);
+      expect(mockedSocket.channels, hasLength(1));
 
       final foundChannel = mockedSocket.channels[0];
       expect(foundChannel, channel2);
@@ -689,7 +680,7 @@ void main() {
       mockedSocket.push(message);
 
       verifyNever(() => mockedSink.add(any()));
-      expect(mockedSocket.sendBuffer.length, 1);
+      expect(mockedSocket.sendBuffer, hasLength(1));
 
       final callback = mockedSocket.sendBuffer[0];
       callback();
@@ -1056,7 +1047,7 @@ void main() {
         final streamController = StreamController<dynamic>.broadcast();
         final readyCompleter = Completer<void>();
         final capturedMessages = <String>[];
-        final joinSent = Completer<Map>();
+        final joinSent = Completer<Map<dynamic, dynamic>>();
 
         final mockedChannel = MockIOWebSocketChannel();
         final mockedSink = MockWebSocketSink();

@@ -6,6 +6,10 @@
 # so new code is not held to a rule the rest of the codebase does not yet pass.
 include: package:lints/recommended.yaml
 
+analyzer:
+  language:
+    strict-raw-types: true
+
 linter:
   rules:
     unawaited_futures: true

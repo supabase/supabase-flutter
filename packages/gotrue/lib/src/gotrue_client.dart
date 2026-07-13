@@ -143,7 +143,7 @@ class GoTrueClient {
   /// Proxy to the web BroadcastChannel API. Should be null on non-web platforms.
   BroadcastChannel? _broadcastChannel;
 
-  StreamSubscription? _broadcastChannelSubscription;
+  StreamSubscription<dynamic>? _broadcastChannelSubscription;
 
   /// {@macro gotrue_client}
   GoTrueClient({
