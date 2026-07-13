@@ -523,10 +523,15 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   }
 
   @override
-  PostgrestFilterBuilder<T> retry({bool enabled = true, int? count}) {
+  PostgrestFilterBuilder<T> retry({
+    bool enabled = true,
+    int? count,
+    Duration? requestTimeout,
+  }) {
     return PostgrestFilterBuilder(
       _copyWith(
         retry: _retry.copyWith(enabled: enabled, count: count),
+        requestTimeout: requestTimeout,
       ),
     );
   }

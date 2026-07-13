@@ -206,10 +206,17 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// [PostgrestClient] was configured with `retryEnabled: false`.
   ///
   /// [count] overrides the number of retry attempts for this request.
-  PostgrestBuilder<T, S, R> retry({bool enabled = true, int? count}) =>
-      _copyWith(
-        retry: _retry.copyWith(enabled: enabled, count: count),
-      );
+  ///
+  /// [requestTimeout] overrides the per-attempt timeout for this request. When
+  /// `null`, the timeout configured on [PostgrestClient] is kept.
+  PostgrestBuilder<T, S, R> retry({
+    bool enabled = true,
+    int? count,
+    Duration? requestTimeout,
+  }) => _copyWith(
+    retry: _retry.copyWith(enabled: enabled, count: count),
+    requestTimeout: requestTimeout,
+  );
 
   /// Allows manually triggering request abortion by completing the provided
   /// [Future].

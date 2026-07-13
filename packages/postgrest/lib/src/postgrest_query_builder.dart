@@ -42,6 +42,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
          ),
        );
 
+  PostgrestQueryBuilder._(PostgrestBuilder<T, T, T> builder) : super(builder);
+
   /// Perform a SELECT query on the table or view.
   ///
   /// ```dart
@@ -281,20 +283,16 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   }
 
   @override
-  PostgrestQueryBuilder<T> retry({bool enabled = true, int? count}) {
-    return PostgrestQueryBuilder(
-      url: _url,
-      headers: _headers,
-      httpClient: _httpClient,
-      method: _method,
-      schema: _schema,
-      isolate: _isolate,
-      retryEnabled: enabled,
-      retryCount: count ?? _retry.count,
-      retryableStatusCodes: _retry.statusCodes,
-      retryDelay: _retry.delay,
-      requestTimeout: _requestTimeout,
-      abortSignal: _abortSignal,
+  PostgrestQueryBuilder<T> retry({
+    bool enabled = true,
+    int? count,
+    Duration? requestTimeout,
+  }) {
+    return PostgrestQueryBuilder._(
+      _copyWith(
+        retry: _retry.copyWith(enabled: enabled, count: count),
+        requestTimeout: requestTimeout,
+      ),
     );
   }
 

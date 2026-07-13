@@ -470,6 +470,28 @@ void main() {
       expect(mock.callCount, 1);
     });
 
+    test('.retry(requestTimeout:) overrides the timeout per request', () async {
+      // The client has no timeout, but the per-request override adds one that
+      // is shorter than every attempt, so each attempt times out and is retried.
+      final mock = _MockRetryClient([_ok(), _ok()]);
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: mock,
+        retryCount: 1,
+        retryDelay: (_) => Duration.zero,
+      );
+
+      await expectLater(
+        () => client
+            .from('users')
+            .select()
+            .retry(requestTimeout: const Duration(milliseconds: 50)),
+        throwsA(isA<TimeoutException>()),
+      );
+      // Initial attempt plus 1 retry.
+      expect(mock.callCount, 2);
+    });
+
     test('a manual abortSignal stops retrying immediately', () async {
       final mock = _MockRetryClient([_status(520), _status(520), _ok()]);
       final client = PostgrestClient(
