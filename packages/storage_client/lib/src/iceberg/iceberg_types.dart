@@ -152,9 +152,9 @@ class TableField {
     'name': name,
     'type': type.toJson(),
     'required': required,
-    if (doc != null) 'doc': doc,
-    if (initialDefault != null) 'initial-default': initialDefault,
-    if (writeDefault != null) 'write-default': writeDefault,
+    'doc': ?doc,
+    'initial-default': ?initialDefault,
+    'write-default': ?writeDefault,
   };
 }
 
@@ -272,8 +272,8 @@ class TableSchema {
   Map<String, dynamic> toJson() => {
     'type': 'struct',
     'fields': fields.map((field) => field.toJson()).toList(),
-    if (schemaId != null) 'schema-id': schemaId,
-    if (identifierFieldIds != null) 'identifier-field-ids': identifierFieldIds,
+    'schema-id': ?schemaId,
+    'identifier-field-ids': ?identifierFieldIds,
   };
 }
 
@@ -302,7 +302,7 @@ class PartitionField {
 
   Map<String, dynamic> toJson() => {
     'source-id': sourceId,
-    if (fieldId != null) 'field-id': fieldId,
+    'field-id': ?fieldId,
     'name': name,
     'transform': transform,
   };
@@ -327,7 +327,7 @@ class PartitionSpec {
   }
 
   Map<String, dynamic> toJson() => {
-    if (specId != null) 'spec-id': specId,
+    'spec-id': ?specId,
     'fields': fields.map((field) => field.toJson()).toList(),
   };
 }
@@ -414,9 +414,9 @@ class SnapshotReference {
   Map<String, dynamic> toJson() => {
     'type': type.value,
     'snapshot-id': snapshotId,
-    if (maxReferenceAgeMs != null) 'max-ref-age-ms': maxReferenceAgeMs,
-    if (maxSnapshotAgeMs != null) 'max-snapshot-age-ms': maxSnapshotAgeMs,
-    if (minSnapshotsToKeep != null) 'min-snapshots-to-keep': minSnapshotsToKeep,
+    'max-ref-age-ms': ?maxReferenceAgeMs,
+    'max-snapshot-age-ms': ?maxSnapshotAgeMs,
+    'min-snapshots-to-keep': ?minSnapshotsToKeep,
   };
 }
 
@@ -477,7 +477,7 @@ class TableMetadata {
           .map((order) => SortOrder.fromJson(order as Map<String, dynamic>))
           .toList(),
       defaultSortOrderId: json['default-sort-order-id'] as int?,
-      properties: Map<String, String>.from(
+      properties: Map.from(
         json['properties'] as Map? ?? const {},
       ),
       metadataLocation: json['metadata-location'] as String?,
@@ -512,7 +512,7 @@ class StorageCredential {
   factory StorageCredential.fromJson(Map<String, dynamic> json) {
     return StorageCredential(
       prefix: json['prefix'] as String,
-      config: Map<String, String>.from(json['config'] as Map? ?? const {}),
+      config: Map.from(json['config'] as Map? ?? const {}),
     );
   }
 }
@@ -544,9 +544,7 @@ class LoadTableResult {
         json['metadata'] as Map<String, dynamic>,
       ),
       metadataLocation: json['metadata-location'] as String?,
-      config: json['config'] == null
-          ? null
-          : Map<String, String>.from(json['config'] as Map),
+      config: json['config'] == null ? null : Map.from(json['config'] as Map),
       storageCredentials: (json['storage-credentials'] as List?)
           ?.map(
             (credential) =>
@@ -581,11 +579,11 @@ class CreateTableRequest {
   Map<String, dynamic> toJson() => {
     'name': name,
     'schema': schema.toJson(),
-    if (location != null) 'location': location,
-    if (partitionSpec != null) 'partition-spec': partitionSpec!.toJson(),
-    if (writeOrder != null) 'write-order': writeOrder!.toJson(),
-    if (properties != null) 'properties': properties,
-    if (stageCreate != null) 'stage-create': stageCreate,
+    'location': ?location,
+    'partition-spec': ?partitionSpec?.toJson(),
+    'write-order': ?writeOrder?.toJson(),
+    'properties': ?properties,
+    'stage-create': ?stageCreate,
   };
 }
 
@@ -604,7 +602,7 @@ class RegisterTableRequest {
   Map<String, dynamic> toJson() => {
     'name': name,
     'metadata-location': metadataLocation,
-    if (overwrite != null) 'overwrite': overwrite,
+    'overwrite': ?overwrite,
   };
 }
 

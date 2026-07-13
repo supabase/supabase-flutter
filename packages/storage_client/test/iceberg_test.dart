@@ -8,7 +8,7 @@ const String supabaseUrl = 'SUPABASE_TEST_URL';
 const String supabaseKey = 'SUPABASE_TEST_KEY';
 
 StreamedResponse _json(
-  Object? body,
+  Object body,
   int statusCode,
   BaseRequest request, {
   Map<String, String> headers = const {},

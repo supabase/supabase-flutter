@@ -62,7 +62,7 @@ class IcebergRestCatalog {
 
   String _idempotencyKey() {
     final milliseconds = DateTime.now().millisecondsSinceEpoch;
-    final bytes = List<int>.filled(16, 0);
+    final bytes = List.filled(16, 0);
     bytes[0] = (milliseconds >> 40) & 0xff;
     bytes[1] = (milliseconds >> 32) & 0xff;
     bytes[2] = (milliseconds >> 24) & 0xff;
@@ -233,9 +233,7 @@ class IcebergRestCatalog {
       '$prefix/namespaces/${_namespaceToPath(namespace)}',
     );
     final body = response.body as Map<String, dynamic>;
-    return Map<String, String>.from(
-      body['properties'] as Map? ?? const {},
-    );
+    return Map.from(body['properties'] as Map? ?? const {});
   }
 
   /// Sets and removes properties on a namespace.
