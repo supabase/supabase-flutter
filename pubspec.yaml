@@ -22,7 +22,7 @@ workspace:
   - examples/passkeys
 
 dev_dependencies:
-  melos: ^8.2.0
+  melos: ^8.2.1
 
 melos:
   command:
