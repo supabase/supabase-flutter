@@ -42,7 +42,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
          ),
        );
 
-  PostgrestQueryBuilder._(PostgrestBuilder<T, T, T> builder) : super(builder);
+  PostgrestQueryBuilder._(super.builder);
 
   /// Perform a SELECT query on the table or view.
   ///

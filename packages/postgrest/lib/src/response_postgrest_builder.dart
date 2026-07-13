@@ -14,7 +14,10 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         isolate: builder._isolate,
         maybeSingle: builder._maybeSingle,
         converter: builder._converter,
-        retry: builder._retry,
+        retryEnabled: builder._retry.enabled,
+        retryCount: builder._retry.count,
+        retryableStatusCodes: builder._retry.statusCodes,
+        retryDelay: builder._retry.delay,
         requestTimeout: builder._requestTimeout,
         abortSignal: builder._abortSignal,
       );
@@ -53,7 +56,10 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
       count: _count,
       maybeSingle: _maybeSingle,
       converter: converter,
-      retry: _retry,
+      retryEnabled: _retry.enabled,
+      retryCount: _retry.count,
+      retryableStatusCodes: _retry.statusCodes,
+      retryDelay: _retry.delay,
       requestTimeout: _requestTimeout,
       abortSignal: _abortSignal,
     );

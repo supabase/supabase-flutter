@@ -111,7 +111,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
-    _RetryConfig? retry,
     bool retryEnabled = true,
     int retryCount = 3,
     Set<int> retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
@@ -128,14 +127,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _isolate = isolate,
        _count = count,
        _body = body,
-       _retry =
-           retry ??
-           _RetryConfig(
-             enabled: retryEnabled,
-             count: retryCount,
-             statusCodes: retryableStatusCodes,
-             delay: retryDelay,
-           ),
+       _retry = _RetryConfig(
+         enabled: retryEnabled,
+         count: retryCount,
+         statusCodes: retryableStatusCodes,
+         delay: retryDelay,
+       ),
        _requestTimeout = requestTimeout,
        _abortSignal = abortSignal;
 
@@ -154,6 +151,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) {
+    final effectiveRetry = retry ?? _retry;
     return PostgrestBuilder(
       url: url ?? _url,
       headers: headers ?? _headers,
@@ -165,7 +163,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       count: count ?? _count,
       maybeSingle: maybeSingle ?? _maybeSingle,
       converter: converter ?? _converter,
-      retry: retry ?? _retry,
+      retryEnabled: effectiveRetry.enabled,
+      retryCount: effectiveRetry.count,
+      retryableStatusCodes: effectiveRetry.statusCodes,
+      retryDelay: effectiveRetry.delay,
       requestTimeout: requestTimeout ?? _requestTimeout,
       abortSignal: abortSignal ?? _abortSignal,
     );
