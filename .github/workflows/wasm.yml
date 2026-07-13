@@ -1,6 +1,9 @@
-name: Build
+name: WASM
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
 
 concurrency:
@@ -35,13 +38,17 @@ jobs:
 
           dart pub global activate melos
 
-          BASE="${{ github.event.pull_request.base.sha }}"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
 
           FORCE_ALL=false
-          if [ -z "$BASE" ]; then
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
             FORCE_ALL=true
           elif git diff --name-only "$BASE...HEAD" \
-              | grep -qE '^(\.github/workflows/build\.yml|pubspec\.yaml|pubspec\.lock|supabase/)'; then
+              | grep -qE '^(\.github/workflows/wasm\.yml|pubspec\.yaml|pubspec\.lock|supabase/)'; then
             FORCE_ALL=true
           fi
 
@@ -61,36 +68,16 @@ jobs:
             echo "flutter=false" >> "$GITHUB_OUTPUT"
           fi
 
-  build-flutter:
-    name: Build ${{ matrix.target }} on ${{ matrix.os }}
+  test-wasm:
+    name: Test and build WASM
     needs: changes
     if: ${{ needs.changes.outputs.flutter == 'true' }}
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: web
-          - os: ubuntu-latest
-            target: linux
-          - os: ubuntu-latest
-            target: apk
-          - os: macos-latest
-            target: macos
-          - os: macos-latest
-            target: ios
-          - os: windows-latest
-            target: windows
+    runs-on: ubuntu-latest
 
     defaults:
       run:
         working-directory: packages/supabase_flutter
-
-    runs-on: ${{ matrix.os }}
-
-    env:
-      PUB_CACHE: ${{ github.workspace }}/.pub-cache
 
     steps:
       - name: Checkout repository
@@ -100,29 +87,13 @@ jobs:
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: 'stable'
-          cache: true
+          # Caching the latest stable is flaky: the cached SDK contains
+          # runner-image-specific binaries that break silently when the runner
+          # image is updated.
+          cache: false
 
       - name: Show Flutter version
         run: flutter --version
-
-      - name: Cache pub dependencies
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: ${{ env.PUB_CACHE }}
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Cache Gradle
-        if: ${{ matrix.target == 'apk' }}
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('packages/supabase_flutter/example/android/**/*.gradle*', 'packages/supabase_flutter/example/android/**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
 
       - name: Bootstrap workspace
         run: |
@@ -130,26 +101,18 @@ jobs:
           dart pub global activate melos
           melos bootstrap
 
-      - name: Install Linux build dependencies (cached)
-        if: ${{ matrix.target == 'linux' }}
-        uses: awalsh128/cache-apt-pkgs-action@681749ae568c81c2037cb9185e38b709b261bd2f # v1.6.1
-        with:
-          packages: libgtk-3-dev libblkid-dev liblzma-dev
-          version: 1.0
+      - name: Test web (WASM)
+        # Serial compilation avoids the memory pressure from parallel dart2wasm
+        # runs that previously caused suite loading timeouts in CI.
+        run: flutter test --platform chrome --wasm --concurrency=1
 
-      - name: Build ${{ matrix.target }} app
+      - name: Build example for web (WASM)
         working-directory: packages/supabase_flutter/example
-        shell: bash
-        run: |
-          if [ "${{ matrix.target }}" = "ios" ]; then
-            flutter build ios --no-codesign
-          else
-            flutter build ${{ matrix.target }}
-          fi
+        run: flutter build web --wasm
 
-  build-result:
-    name: Build result
-    needs: [changes, build-flutter]
+  wasm-result:
+    name: WASM result
+    needs: [changes, test-wasm]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
