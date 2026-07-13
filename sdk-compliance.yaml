@@ -471,7 +471,6 @@ features:
   # storage — vector buckets
   storage.vector_buckets.create_vector_bucket:
     status: implemented
-    note: "Reached through storage.vectors (SupabaseVectorsClient). Operations return the parsed data directly and throw a StorageException on failure, matching the rest of the Dart storage client rather than the {data, error} envelope used by supabase-js."
     symbols:
       - SupabaseStorageClient.vectors
       - SupabaseVectorsClient
@@ -503,7 +502,6 @@ features:
       - SupabaseVectorsClient.deleteBucket
   storage.vector_buckets.access_vector_index:
     status: implemented
-    note: "Scoping mirrors supabase-js: vectors.from(bucket) returns a bucket-scoped client and .index(name) an index-scoped client."
     symbols:
       - SupabaseVectorsClient.from
       - StorageVectorBucketApi
@@ -514,7 +512,6 @@ features:
       - StorageVectorIndexApi.indexName
   storage.vector_buckets.create_index:
     status: implemented
-    note: "metadataConfiguration is flattened to a nonFilterableMetadataKeys parameter, and dataType/distanceMetric are Dart enums rather than open strings."
     symbols:
       - StorageVectorBucketApi.createIndex
       - VectorDataType
@@ -550,7 +547,6 @@ features:
       - StorageVectorBucketApi.deleteIndex
   storage.vector_buckets.put_vectors:
     status: implemented
-    note: "Batch size (1-500) is validated client-side and an ArgumentError is thrown when out of range."
     symbols:
       - StorageVectorIndexApi.putVectors
       - Vector
@@ -581,7 +577,6 @@ features:
       - VectorList.fromJson
   storage.vector_buckets.delete_vectors:
     status: implemented
-    note: "Batch size (1-500) is validated client-side and an ArgumentError is thrown when out of range."
     symbols:
       - StorageVectorIndexApi.deleteVectors
   storage.vector_buckets.query_vectors:
