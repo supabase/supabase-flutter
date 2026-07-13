@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -527,6 +528,47 @@ void main() {
           contains('multipart/form-data'),
         );
         expect(request, isA<MultipartRequest>());
+      });
+    });
+
+    group('Request cancellation', () {
+      test('aborts an in-flight request via abortSignal', () async {
+        final abortSignal = Completer<void>();
+        Timer(const Duration(milliseconds: 50), abortSignal.complete);
+
+        await expectLater(
+          functionsCustomHttpClient.invoke(
+            'slow',
+            abortSignal: abortSignal.future,
+          ),
+          throwsA(isA<RequestAbortedException>()),
+        );
+      });
+
+      test('aborts a multipart request via abortSignal', () async {
+        final abortSignal = Completer<void>();
+        Timer(const Duration(milliseconds: 50), abortSignal.complete);
+
+        await expectLater(
+          functionsCustomHttpClient.invoke(
+            'slow',
+            files: [MultipartFile.fromString('file', 'content')],
+            abortSignal: abortSignal.future,
+          ),
+          throwsA(isA<RequestAbortedException>()),
+        );
+      });
+
+      test('completes normally when the signal never fires', () async {
+        final abortSignal = Completer<void>();
+
+        final response = await functionsCustomHttpClient.invoke(
+          'function',
+          abortSignal: abortSignal.future,
+        );
+
+        expect(response.status, 200);
+        expect(response.data, {'key': 'Hello World'});
       });
     });
 
