@@ -116,9 +116,11 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// final vectors = storage.vectors;
   /// await vectors.createBucket('embeddings');
   /// ```
-  SupabaseVectorsClient get vectors {
-    return SupabaseVectorsClient('$url/vector', headers, storageFetch);
-  }
+  late final SupabaseVectorsClient vectors = SupabaseVectorsClient(
+    '$url/vector',
+    headers,
+    storageFetch,
+  );
 
   void setAuth(String jwt) {
     headers['Authorization'] = 'Bearer $jwt';
