@@ -2,9 +2,8 @@ part of 'postgrest_builder.dart';
 
 /// Needed as a wrapper around [PostgrestBuilder] to allow for the different return type of [withConverter] than in [RawPostgrestBuilder.withConverter].
 class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
-  // ignore: use_super_parameters, builder is also read for its converter
   ResponsePostgrestBuilder(PostgrestBuilder<T, S, R> builder)
-    : super._copy(builder, converter: builder._converter);
+    : super._(config: builder._config, converter: builder._converter);
 
   @override
   ResponsePostgrestBuilder<T, S, R> setHeader(String key, String value) {
@@ -29,8 +28,8 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   PostgrestBuilder<PostgrestResponse<U>, U, R> withConverter<U>(
     PostgrestConverter<U, R> converter,
   ) {
-    return PostgrestBuilder<PostgrestResponse<U>, U, R>._copy(
-      this,
+    return PostgrestBuilder<PostgrestResponse<U>, U, R>._(
+      config: _config,
       converter: converter,
     );
   }

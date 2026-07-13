@@ -69,6 +69,72 @@ class _RetryConfig {
   }
 }
 
+/// The immutable request state carried through the builder chain.
+///
+/// Everything here is independent of the builder's generic types (only the
+/// converter depends on them), so the typed builders can share and rewrap a
+/// single config instance without re-listing its fields.
+@immutable
+class _RequestConfig {
+  _RequestConfig({
+    required this.url,
+    required this.headers,
+    this.schema,
+    this.method,
+    this.body,
+    this.httpClient,
+    this.isolate,
+    this.count,
+    this.maybeSingle = false,
+    required this.retry,
+    this.requestTimeout,
+    this.abortSignal,
+  });
+
+  final Uri url;
+  final Headers headers;
+  final String? schema;
+  final HttpMethod? method;
+  final Object? body;
+  final Client? httpClient;
+  final YAJsonIsolate? isolate;
+  final CountOption? count;
+  final bool maybeSingle;
+  final _RetryConfig retry;
+  final Duration? requestTimeout;
+  final Future<void>? abortSignal;
+
+  _RequestConfig copyWith({
+    Uri? url,
+    Headers? headers,
+    String? schema,
+    HttpMethod? method,
+    Object? body,
+    Client? httpClient,
+    YAJsonIsolate? isolate,
+    CountOption? count,
+    bool? maybeSingle,
+    _RetryConfig? retry,
+    Duration? requestTimeout,
+    Future<void>? abortSignal,
+  }) {
+    return _RequestConfig(
+      url: url ?? this.url,
+      headers: headers ?? this.headers,
+      schema: schema ?? this.schema,
+      method: method ?? this.method,
+      body: body ?? this.body,
+      httpClient: httpClient ?? this.httpClient,
+      isolate: isolate ?? this.isolate,
+      count: count ?? this.count,
+      maybeSingle: maybeSingle ?? this.maybeSingle,
+      retry: retry ?? this.retry,
+      requestTimeout: requestTimeout ?? this.requestTimeout,
+      abortSignal: abortSignal ?? this.abortSignal,
+    );
+  }
+}
+
 /// Treats an empty `Prefer` value as absent, so every append site can rely on
 /// a plain null check instead of separately re-checking for emptiness.
 String? _emptyPreferAsNull(String? prefer) =>
@@ -82,20 +148,22 @@ String? _emptyPreferAsNull(String? prefer) =>
 /// Otherwise [S] and [R] are the same
 @immutable
 class PostgrestBuilder<T, S, R> implements Future<T> {
-  final Object? _body;
-  final Headers _headers;
-  final bool _maybeSingle;
-  final HttpMethod? _method;
-  final String? _schema;
-  final Uri _url;
+  final _RequestConfig _config;
   final PostgrestConverter<S, R>? _converter;
-  final Client? _httpClient;
-  final YAJsonIsolate? _isolate;
-  final CountOption? _count;
-  final _RetryConfig _retry;
-  final Duration? _requestTimeout;
-  final Future<void>? _abortSignal;
   final _log = Logger('supabase.postgrest');
+
+  Object? get _body => _config.body;
+  Headers get _headers => _config.headers;
+  bool get _maybeSingle => _config.maybeSingle;
+  HttpMethod? get _method => _config.method;
+  String? get _schema => _config.schema;
+  Uri get _url => _config.url;
+  Client? get _httpClient => _config.httpClient;
+  YAJsonIsolate? get _isolate => _config.isolate;
+  CountOption? get _count => _config.count;
+  _RetryConfig get _retry => _config.retry;
+  Duration? get _requestTimeout => _config.requestTimeout;
+  Future<void>? get _abortSignal => _config.abortSignal;
 
   static Duration _defaultRetryDelay(int attempt) =>
       Duration(seconds: math.min(math.pow(2, attempt).toInt(), 30));
@@ -117,58 +185,35 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     @visibleForTesting Duration Function(int attempt)? retryDelay,
     Duration? requestTimeout,
     Future<void>? abortSignal,
-  }) : _maybeSingle = maybeSingle,
-       _method = method,
-       _converter = converter,
-       _schema = schema,
-       _url = url,
-       _headers = headers,
-       _httpClient = httpClient,
-       _isolate = isolate,
-       _count = count,
-       _body = body,
-       _retry = _RetryConfig(
-         enabled: retryEnabled,
-         count: retryCount,
-         statusCodes: retryableStatusCodes,
-         delay: retryDelay,
-       ),
-       _requestTimeout = requestTimeout,
-       _abortSignal = abortSignal;
-
-  /// Copies every request field from [source], applying any provided overrides.
-  ///
-  /// [converter] is required rather than defaulted from [source] because it is
-  /// the only field tied to the generic types, so a [source] of any type can be
-  /// copied into a builder of any other type by supplying a matching converter.
-  PostgrestBuilder._copy(
-    PostgrestBuilder<dynamic, dynamic, dynamic> source, {
-    required PostgrestConverter<S, R>? converter,
-    Uri? url,
-    Headers? headers,
-    String? schema,
-    HttpMethod? method,
-    Object? body,
-    Client? httpClient,
-    YAJsonIsolate? isolate,
-    CountOption? count,
-    bool? maybeSingle,
-    _RetryConfig? retry,
-    Duration? requestTimeout,
-    Future<void>? abortSignal,
   }) : _converter = converter,
-       _url = url ?? source._url,
-       _headers = headers ?? source._headers,
-       _schema = schema ?? source._schema,
-       _method = method ?? source._method,
-       _body = body ?? source._body,
-       _httpClient = httpClient ?? source._httpClient,
-       _isolate = isolate ?? source._isolate,
-       _count = count ?? source._count,
-       _maybeSingle = maybeSingle ?? source._maybeSingle,
-       _retry = retry ?? source._retry,
-       _requestTimeout = requestTimeout ?? source._requestTimeout,
-       _abortSignal = abortSignal ?? source._abortSignal;
+       _config = _RequestConfig(
+         url: url,
+         headers: headers,
+         schema: schema,
+         method: method,
+         body: body,
+         httpClient: httpClient,
+         isolate: isolate,
+         count: count,
+         maybeSingle: maybeSingle,
+         retry: _RetryConfig(
+           enabled: retryEnabled,
+           count: retryCount,
+           statusCodes: retryableStatusCodes,
+           delay: retryDelay,
+         ),
+         requestTimeout: requestTimeout,
+         abortSignal: abortSignal,
+       );
+
+  /// Rewraps an existing [config] under a possibly different [converter] (and
+  /// therefore possibly different generic types). This is what lets the typed
+  /// builders share a single config instance without re-listing its fields.
+  PostgrestBuilder._({
+    required _RequestConfig config,
+    required PostgrestConverter<S, R>? converter,
+  }) : _config = config,
+       _converter = converter;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
@@ -184,21 +229,22 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     _RetryConfig? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
-  }) => PostgrestBuilder._copy(
-    this,
+  }) => PostgrestBuilder._(
+    config: _config.copyWith(
+      url: url,
+      headers: headers,
+      schema: schema,
+      method: method,
+      body: body,
+      httpClient: httpClient,
+      isolate: isolate,
+      count: count,
+      maybeSingle: maybeSingle,
+      retry: retry,
+      requestTimeout: requestTimeout,
+      abortSignal: abortSignal,
+    ),
     converter: converter ?? _converter,
-    url: url,
-    headers: headers,
-    schema: schema,
-    method: method,
-    body: body,
-    httpClient: httpClient,
-    isolate: isolate,
-    count: count,
-    maybeSingle: maybeSingle,
-    retry: retry,
-    requestTimeout: requestTimeout,
-    abortSignal: abortSignal,
   );
 
   /// Overrides the retry behavior for this specific request.
@@ -278,11 +324,12 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     // X-Retry-Count, etc.).
     final execHeaders = {..._headers};
 
-    if (_count != null) {
+    final count = _count;
+    if (count != null) {
       final oldPreferHeader = _emptyPreferAsNull(execHeaders['Prefer']);
       execHeaders['Prefer'] = oldPreferHeader != null
-          ? '$oldPreferHeader,count=${_count.name}'
-          : 'count=${_count.name}';
+          ? '$oldPreferHeader,count=${count.name}'
+          : 'count=${count.name}';
     }
 
     if (method == null) {
@@ -291,12 +338,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       );
     }
 
-    if (_schema == null) {
+    final schema = _schema;
+    if (schema == null) {
       // skip
     } else if (method == HttpMethod.get || method == HttpMethod.head) {
-      execHeaders['Accept-Profile'] = _schema;
+      execHeaders['Accept-Profile'] = schema;
     } else {
-      execHeaders['Content-Profile'] = _schema;
+      execHeaders['Content-Profile'] = schema;
     }
     if (method != HttpMethod.get && method != HttpMethod.head) {
       execHeaders['Content-Type'] = 'application/json';
@@ -421,8 +469,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           body = response.body;
         } else {
           try {
-            if ((response.contentLength ?? 0) > 10000 && _isolate != null) {
-              body = await _isolate.decode(response.body);
+            final isolate = _isolate;
+            if ((response.contentLength ?? 0) > 10000 && isolate != null) {
+              body = await isolate.decode(response.body);
             } else {
               body = jsonDecode(response.body);
             }
