@@ -36,7 +36,12 @@ features:
   auth.sign_in.sign_in_with_sso:
     status: partially_implemented
     note: "Exposed as getSSOSignInUrl, which returns Future<String> (the URL) rather than the structured {url} response used by JS."
-  auth.sign_in.sign_in_with_web3: not_implemented
+  auth.sign_in.sign_in_with_web3:
+    status: implemented
+    note: "Callers sign the SIWE/SIWS message with their own wallet library and pass the message and signature; the SDK does not auto-detect browser wallets or build the message, since window.ethereum/window.solana have no Flutter equivalent."
+    symbols:
+      - GoTrueClient.signInWithWeb3
+      - Web3Chain
   auth.sign_in.sign_in_anonymously: implemented
   auth.sign_in.verify_otp: implemented
   auth.sign_in.exchange_code_for_session: implemented
