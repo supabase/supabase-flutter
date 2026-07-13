@@ -469,20 +469,135 @@ features:
   storage.file_buckets.empty_bucket: implemented
 
   # storage — vector buckets
-  storage.vector_buckets.create_vector_bucket: not_implemented
-  storage.vector_buckets.list_vector_buckets: not_implemented
-  storage.vector_buckets.delete_vector_bucket: not_implemented
-  storage.vector_buckets.access_vector_index: not_implemented
-  storage.vector_buckets.create_index: not_implemented
-  storage.vector_buckets.get_index: not_implemented
-  storage.vector_buckets.list_indexes: not_implemented
-  storage.vector_buckets.delete_index: not_implemented
-  storage.vector_buckets.put_vectors: not_implemented
-  storage.vector_buckets.get_vectors: not_implemented
-  storage.vector_buckets.list_vectors: not_implemented
-  storage.vector_buckets.delete_vectors: not_implemented
-  storage.vector_buckets.query_vectors: not_implemented
-  storage.vector_buckets.parallel_scan: not_implemented
+  storage.vector_buckets.create_vector_bucket:
+    status: implemented
+    note: "Reached through storage.vectors (SupabaseVectorsClient). Operations return the parsed data directly and throw a StorageException on failure, matching the rest of the Dart storage client rather than the {data, error} envelope used by supabase-js."
+    symbols:
+      - SupabaseStorageClient.vectors
+      - SupabaseVectorsClient
+      - SupabaseVectorsClient.createBucket
+  storage.vector_buckets.list_vector_buckets:
+    status: implemented
+    symbols:
+      - SupabaseVectorsClient.listBuckets
+      - SupabaseVectorsClient.getBucket
+      - VectorBucket
+      - VectorBucket.VectorBucket
+      - VectorBucket.name
+      - VectorBucket.creationTime
+      - VectorBucket.encryption
+      - VectorBucket.fromJson
+      - VectorBucketEncryption
+      - VectorBucketEncryption.VectorBucketEncryption
+      - VectorBucketEncryption.kmsKeyArn
+      - VectorBucketEncryption.sseType
+      - VectorBucketEncryption.fromJson
+      - VectorBucketList
+      - VectorBucketList.VectorBucketList
+      - VectorBucketList.buckets
+      - VectorBucketList.nextToken
+      - VectorBucketList.fromJson
+  storage.vector_buckets.delete_vector_bucket:
+    status: implemented
+    symbols:
+      - SupabaseVectorsClient.deleteBucket
+  storage.vector_buckets.access_vector_index:
+    status: implemented
+    note: "Scoping mirrors supabase-js: vectors.from(bucket) returns a bucket-scoped client and .index(name) an index-scoped client."
+    symbols:
+      - SupabaseVectorsClient.from
+      - StorageVectorBucketApi
+      - StorageVectorBucketApi.bucketName
+      - StorageVectorBucketApi.index
+      - StorageVectorIndexApi
+      - StorageVectorIndexApi.bucketName
+      - StorageVectorIndexApi.indexName
+  storage.vector_buckets.create_index:
+    status: implemented
+    note: "metadataConfiguration is flattened to a nonFilterableMetadataKeys parameter, and dataType/distanceMetric are Dart enums rather than open strings."
+    symbols:
+      - StorageVectorBucketApi.createIndex
+      - VectorDataType
+      - VectorDataType.VectorDataType
+      - VectorDataType.value
+      - DistanceMetric
+      - DistanceMetric.DistanceMetric
+      - DistanceMetric.value
+  storage.vector_buckets.get_index:
+    status: implemented
+    symbols:
+      - StorageVectorBucketApi.getIndex
+      - VectorIndex
+      - VectorIndex.VectorIndex
+      - VectorIndex.name
+      - VectorIndex.bucketName
+      - VectorIndex.dataType
+      - VectorIndex.dimension
+      - VectorIndex.distanceMetric
+      - VectorIndex.nonFilterableMetadataKeys
+      - VectorIndex.creationTime
+      - VectorIndex.fromJson
+  storage.vector_buckets.list_indexes:
+    status: implemented
+    symbols:
+      - StorageVectorBucketApi.listIndexes
+      - VectorIndexList
+      - VectorIndexList.VectorIndexList
+      - VectorIndexList.indexes
+      - VectorIndexList.nextToken
+      - VectorIndexList.fromJson
+  storage.vector_buckets.delete_index:
+    status: implemented
+    symbols:
+      - StorageVectorBucketApi.deleteIndex
+  storage.vector_buckets.put_vectors:
+    status: implemented
+    note: "Batch size (1-500) is validated client-side and an ArgumentError is thrown when out of range."
+    symbols:
+      - StorageVectorIndexApi.putVectors
+      - Vector
+      - Vector.Vector
+      - Vector.key
+      - Vector.data
+      - Vector.metadata
+      - Vector.toJson
+  storage.vector_buckets.get_vectors:
+    status: implemented
+    symbols:
+      - StorageVectorIndexApi.getVectors
+      - VectorMatch
+      - VectorMatch.VectorMatch
+      - VectorMatch.key
+      - VectorMatch.data
+      - VectorMatch.metadata
+      - VectorMatch.distance
+      - VectorMatch.fromJson
+  storage.vector_buckets.list_vectors:
+    status: implemented
+    symbols:
+      - StorageVectorIndexApi.listVectors
+      - VectorList
+      - VectorList.VectorList
+      - VectorList.vectors
+      - VectorList.nextToken
+      - VectorList.fromJson
+  storage.vector_buckets.delete_vectors:
+    status: implemented
+    note: "Batch size (1-500) is validated client-side and an ArgumentError is thrown when out of range."
+    symbols:
+      - StorageVectorIndexApi.deleteVectors
+  storage.vector_buckets.query_vectors:
+    status: implemented
+    symbols:
+      - StorageVectorIndexApi.queryVectors
+      - VectorQueryResult
+      - VectorQueryResult.VectorQueryResult
+      - VectorQueryResult.matches
+      - VectorQueryResult.distanceMetric
+      - VectorQueryResult.fromJson
+  storage.vector_buckets.parallel_scan:
+    status: implemented
+    note: "Exposed through listVectors' segmentCount/segmentIndex parameters rather than a separate method; both are validated client-side."
 
   # storage — analytics (Iceberg) buckets
   storage.analytics.create_analytics_bucket: not_implemented

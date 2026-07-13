@@ -3,6 +3,7 @@ import 'package:logging/logging.dart';
 import 'package:storage_client/src/constants.dart';
 import 'package:storage_client/src/storage_bucket_api.dart';
 import 'package:storage_client/src/storage_file_api.dart';
+import 'package:storage_client/src/vector_client.dart';
 import 'package:storage_client/src/version.dart';
 
 class SupabaseStorageClient extends StorageBucketApi {
@@ -103,6 +104,20 @@ class SupabaseStorageClient extends StorageBucketApi {
       _defaultRetryAttempts,
       storageFetch,
     );
+  }
+
+  /// Access the Storage Vectors API to manage vector buckets, indexes and the
+  /// vectors stored inside them.
+  ///
+  /// This API is part of a public alpha and may not be available to every
+  /// project.
+  ///
+  /// ```dart
+  /// final vectors = storage.vectors;
+  /// await vectors.createBucket('embeddings');
+  /// ```
+  SupabaseVectorsClient get vectors {
+    return SupabaseVectorsClient('$url/vector', headers, storageFetch);
   }
 
   void setAuth(String jwt) {
