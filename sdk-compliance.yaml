@@ -524,11 +524,11 @@ features:
       - ListNamespacesResult.namespaces
       - ListNamespacesResult.nextPageToken
       - UpdateNamespacePropertiesResult
+      - UpdateNamespacePropertiesResult.UpdateNamespacePropertiesResult
       - UpdateNamespacePropertiesResult.fromJson
       - UpdateNamespacePropertiesResult.missing
       - UpdateNamespacePropertiesResult.removed
       - UpdateNamespacePropertiesResult.updated
-      - UpdateNamespacePropertiesResult.UpdateNamespacePropertiesResult
   storage.analytics.iceberg_table:
     status: implemented
     note: >-
@@ -602,25 +602,31 @@ features:
       - CreateTableRequest.stageCreate
       - CreateTableRequest.toJson
       - CreateTableRequest.writeOrder
+      - IcebergAuthenticationTimeoutException
+      - IcebergAuthenticationTimeoutException.IcebergAuthenticationTimeoutException
+      - IcebergCommitStateUnknownException
+      - IcebergCommitStateUnknownException.IcebergCommitStateUnknownException
+      - IcebergConflictException
+      - IcebergConflictException.IcebergConflictException
       - IcebergException
+      - IcebergException.IcebergException
       - IcebergException.code
       - IcebergException.details
       - IcebergException.fromResponse
-      - IcebergException.IcebergException
-      - IcebergException.isAuthenticationTimeout
-      - IcebergException.isCommitStateUnknown
-      - IcebergException.isConflict
-      - IcebergException.isNotFound
       - IcebergException.message
       - IcebergException.statusCode
       - IcebergException.toString
       - IcebergException.type
+      - IcebergNetworkException
+      - IcebergNetworkException.IcebergNetworkException
+      - IcebergNotFoundException
+      - IcebergNotFoundException.IcebergNotFoundException
       - IcebergRestCatalog
+      - IcebergRestCatalog.IcebergRestCatalog
       - IcebergRestCatalog.createTable
       - IcebergRestCatalog.createTableIfNotExists
       - IcebergRestCatalog.createTableResult
       - IcebergRestCatalog.dropTable
-      - IcebergRestCatalog.IcebergRestCatalog
       - IcebergRestCatalog.listTables
       - IcebergRestCatalog.loadTable
       - IcebergRestCatalog.loadTableResult
@@ -628,34 +634,38 @@ features:
       - IcebergRestCatalog.renameTable
       - IcebergRestCatalog.tableExists
       - IcebergRestCatalog.updateTable
+      - IcebergServerException
+      - IcebergServerException.IcebergServerException
       - IcebergType
-      - IcebergType.fromJson
       - IcebergType.IcebergType
+      - IcebergType.fromJson
       - IcebergType.toJson
+      - IcebergUnknownException
+      - IcebergUnknownException.IcebergUnknownException
       - ListTablesOptions
       - ListTablesOptions.ListTablesOptions
       - ListTablesOptions.pageSize
       - ListTablesOptions.pageToken
       - ListTablesResult
-      - ListTablesResult.identifiers
       - ListTablesResult.ListTablesResult
+      - ListTablesResult.identifiers
       - ListTablesResult.nextPageToken
       - ListType
+      - ListType.ListType
       - ListType.element
       - ListType.elementId
       - ListType.elementRequired
       - ListType.fromJson
-      - ListType.ListType
       - ListType.toJson
       - LoadTableOptions
-      - LoadTableOptions.ifNoneMatch
       - LoadTableOptions.LoadTableOptions
+      - LoadTableOptions.ifNoneMatch
       - LoadTableOptions.snapshots
       - LoadTableResult
+      - LoadTableResult.LoadTableResult
       - LoadTableResult.config
       - LoadTableResult.etag
       - LoadTableResult.fromJson
-      - LoadTableResult.LoadTableResult
       - LoadTableResult.metadata
       - LoadTableResult.metadataLocation
       - LoadTableResult.storageCredentials
@@ -663,70 +673,70 @@ features:
       - LoadTableSnapshots.LoadTableSnapshots
       - LoadTableSnapshots.value
       - MapType
+      - MapType.MapType
       - MapType.fromJson
       - MapType.key
       - MapType.keyId
-      - MapType.MapType
       - MapType.toJson
       - MapType.value
       - MapType.valueId
       - MapType.valueRequired
       - NullOrder
-      - NullOrder.fromValue
       - NullOrder.NullOrder
+      - NullOrder.fromValue
       - NullOrder.value
       - PartitionField
+      - PartitionField.PartitionField
       - PartitionField.fieldId
       - PartitionField.fromJson
       - PartitionField.name
-      - PartitionField.PartitionField
       - PartitionField.sourceId
       - PartitionField.toJson
       - PartitionField.transform
       - PartitionSpec
+      - PartitionSpec.PartitionSpec
       - PartitionSpec.fields
       - PartitionSpec.fromJson
-      - PartitionSpec.PartitionSpec
       - PartitionSpec.specId
       - PartitionSpec.toJson
       - PrimitiveType
-      - PrimitiveType.name
       - PrimitiveType.PrimitiveType
+      - PrimitiveType.name
       - PrimitiveType.toJson
       - RawTableUpdate
+      - RawTableUpdate.RawTableUpdate
       - RawTableUpdate.action
       - RawTableUpdate.body
-      - RawTableUpdate.RawTableUpdate
       - RawTableUpdate.toJson
       - RegisterTableRequest
+      - RegisterTableRequest.RegisterTableRequest
       - RegisterTableRequest.metadataLocation
       - RegisterTableRequest.name
       - RegisterTableRequest.overwrite
-      - RegisterTableRequest.RegisterTableRequest
       - RegisterTableRequest.toJson
       - RemovePartitionSpecsUpdate
       - RemovePartitionSpecsUpdate.RemovePartitionSpecsUpdate
       - RemovePartitionSpecsUpdate.specIds
       - RemovePartitionSpecsUpdate.toJson
       - RemovePropertiesUpdate
-      - RemovePropertiesUpdate.removals
       - RemovePropertiesUpdate.RemovePropertiesUpdate
+      - RemovePropertiesUpdate.removals
       - RemovePropertiesUpdate.toJson
       - RemoveSchemasUpdate
       - RemoveSchemasUpdate.RemoveSchemasUpdate
       - RemoveSchemasUpdate.schemaIds
       - RemoveSchemasUpdate.toJson
       - RemoveSnapshotReferenceUpdate
-      - RemoveSnapshotReferenceUpdate.referenceName
       - RemoveSnapshotReferenceUpdate.RemoveSnapshotReferenceUpdate
+      - RemoveSnapshotReferenceUpdate.referenceName
       - RemoveSnapshotReferenceUpdate.toJson
       - RemoveSnapshotsUpdate
       - RemoveSnapshotsUpdate.RemoveSnapshotsUpdate
       - RemoveSnapshotsUpdate.snapshotIds
       - RemoveSnapshotsUpdate.toJson
       - SetCurrentSchemaUpdate
-      - SetCurrentSchemaUpdate.schemaId
       - SetCurrentSchemaUpdate.SetCurrentSchemaUpdate
+      - SetCurrentSchemaUpdate.schemaId
       - SetCurrentSchemaUpdate.toJson
       - SetDefaultSortOrderUpdate
       - SetDefaultSortOrderUpdate.SetDefaultSortOrderUpdate
@@ -737,78 +747,79 @@ features:
       - SetDefaultSpecUpdate.specId
       - SetDefaultSpecUpdate.toJson
       - SetLocationUpdate
-      - SetLocationUpdate.location
       - SetLocationUpdate.SetLocationUpdate
+      - SetLocationUpdate.location
       - SetLocationUpdate.toJson
       - SetPropertiesUpdate
       - SetPropertiesUpdate.SetPropertiesUpdate
       - SetPropertiesUpdate.toJson
       - SetPropertiesUpdate.updates
       - SetSnapshotReferenceUpdate
+      - SetSnapshotReferenceUpdate.SetSnapshotReferenceUpdate
       - SetSnapshotReferenceUpdate.reference
       - SetSnapshotReferenceUpdate.referenceName
-      - SetSnapshotReferenceUpdate.SetSnapshotReferenceUpdate
       - SetSnapshotReferenceUpdate.toJson
       - SnapshotReference
+      - SnapshotReference.SnapshotReference
       - SnapshotReference.fromJson
       - SnapshotReference.maxReferenceAgeMs
       - SnapshotReference.maxSnapshotAgeMs
       - SnapshotReference.minSnapshotsToKeep
       - SnapshotReference.snapshotId
-      - SnapshotReference.SnapshotReference
       - SnapshotReference.toJson
       - SnapshotReference.type
       - SnapshotReferenceType
-      - SnapshotReferenceType.fromValue
       - SnapshotReferenceType.SnapshotReferenceType
+      - SnapshotReferenceType.fromValue
       - SnapshotReferenceType.value
       - SortDirection
-      - SortDirection.fromValue
       - SortDirection.SortDirection
+      - SortDirection.fromValue
       - SortDirection.value
       - SortField
+      - SortField.SortField
       - SortField.direction
       - SortField.fromJson
       - SortField.nullOrder
-      - SortField.SortField
       - SortField.sourceId
       - SortField.toJson
       - SortField.transform
       - SortOrder
+      - SortOrder.SortOrder
       - SortOrder.fields
       - SortOrder.fromJson
       - SortOrder.orderId
-      - SortOrder.SortOrder
       - SortOrder.toJson
       - StorageCredential
+      - StorageCredential.StorageCredential
       - StorageCredential.config
       - StorageCredential.fromJson
       - StorageCredential.prefix
-      - StorageCredential.StorageCredential
       - StructType
+      - StructType.StructType
       - StructType.fields
       - StructType.fromJson
-      - StructType.StructType
       - StructType.toJson
       - SupabaseStorageClient.analyticsCatalog
       - TableField
+      - TableField.TableField
       - TableField.doc
       - TableField.fromJson
       - TableField.id
       - TableField.initialDefault
       - TableField.name
       - TableField.required
-      - TableField.TableField
       - TableField.toJson
       - TableField.type
       - TableField.writeDefault
       - TableIdentifier
+      - TableIdentifier.TableIdentifier
       - TableIdentifier.fromJson
       - TableIdentifier.name
       - TableIdentifier.namespace
-      - TableIdentifier.TableIdentifier
       - TableIdentifier.toJson
       - TableMetadata
+      - TableMetadata.TableMetadata
       - TableMetadata.currentSchema
       - TableMetadata.currentSchemaId
       - TableMetadata.currentSnapshotId
@@ -825,26 +836,25 @@ features:
       - TableMetadata.refs
       - TableMetadata.schemas
       - TableMetadata.sortOrders
-      - TableMetadata.TableMetadata
       - TableMetadata.tableUuid
       - TableRequirement
       - TableRequirement.TableRequirement
       - TableRequirement.toJson
       - TableSchema
+      - TableSchema.TableSchema
       - TableSchema.fields
       - TableSchema.fromJson
       - TableSchema.identifierFieldIds
       - TableSchema.schemaId
-      - TableSchema.TableSchema
       - TableSchema.toJson
       - TableUpdate
-      - TableUpdate.raw
       - TableUpdate.TableUpdate
+      - TableUpdate.raw
       - TableUpdate.toJson
       - UpgradeFormatVersionUpdate
+      - UpgradeFormatVersionUpdate.UpgradeFormatVersionUpdate
       - UpgradeFormatVersionUpdate.formatVersion
       - UpgradeFormatVersionUpdate.toJson
-      - UpgradeFormatVersionUpdate.UpgradeFormatVersionUpdate
 
   # realtime — channel
   realtime.channel.subscribe: implemented

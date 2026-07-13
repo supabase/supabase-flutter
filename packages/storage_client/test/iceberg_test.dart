@@ -550,6 +550,52 @@ void main() {
       );
     });
 
+    test('maps status codes to sealed exception subtypes', () async {
+      mockClient.handler = (request) => _json(
+        {
+          'error': {'message': 'gone', 'type': 'NoSuchTableException'},
+        },
+        404,
+        request,
+      );
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(isA<IcebergNotFoundException>()),
+      );
+
+      mockClient.handler = (request) => _json(
+        {
+          'error': {'message': 'dupe', 'type': 'AlreadyExistsException'},
+        },
+        409,
+        request,
+      );
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(isA<IcebergConflictException>()),
+      );
+
+      mockClient.handler = (request) => _json(
+        {
+          'error': {'message': 'boom', 'type': 'ServiceUnavailable'},
+        },
+        503,
+        request,
+      );
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(isA<IcebergServerException>()),
+      );
+    });
+
+    test('commit state unknown is its own subtype regardless of status', () {
+      final exception = IcebergException.fromResponse(500, {
+        'error': {'message': 'unknown', 'type': 'CommitStateUnknownException'},
+      });
+
+      expect(exception, isA<IcebergCommitStateUnknownException>());
+    });
+
     test('TableUpdate raw escape hatch serializes the action', () {
       const update = TableUpdate.raw('add-snapshot', {
         'snapshot': {'snapshot-id': 1},

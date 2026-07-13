@@ -150,9 +150,8 @@ class IcebergRestCatalog {
           ? await _httpClient.send(request)
           : await request.send();
     } catch (error) {
-      throw IcebergException(
+      throw IcebergNetworkException(
         'Network request failed: $error',
-        statusCode: 0,
         details: error,
       );
     }
@@ -276,11 +275,8 @@ class IcebergRestCatalog {
         '$prefix/namespaces/${_namespaceToPath(namespace)}',
       );
       return true;
-    } on IcebergException catch (error) {
-      if (error.isNotFound) {
-        return false;
-      }
-      rethrow;
+    } on IcebergNotFoundException {
+      return false;
     }
   }
 
@@ -291,11 +287,8 @@ class IcebergRestCatalog {
   }) async {
     try {
       return await createNamespace(namespace, properties: properties);
-    } on IcebergException catch (error) {
-      if (error.isConflict) {
-        return null;
-      }
-      rethrow;
+    } on IcebergConflictException {
+      return null;
     }
   }
 
@@ -364,13 +357,10 @@ class IcebergRestCatalog {
   ) async {
     try {
       return await createTable(namespace, request);
-    } on IcebergException catch (error) {
-      if (error.isConflict) {
-        return loadTable(
-          TableIdentifier(namespace: namespace, name: request.name),
-        );
-      }
-      rethrow;
+    } on IcebergConflictException {
+      return loadTable(
+        TableIdentifier(namespace: namespace, name: request.name),
+      );
     }
   }
 
@@ -445,11 +435,8 @@ class IcebergRestCatalog {
         headers: _accessDelegationHeader(),
       );
       return true;
-    } on IcebergException catch (error) {
-      if (error.isNotFound) {
-        return false;
-      }
-      rethrow;
+    } on IcebergNotFoundException {
+      return false;
     }
   }
 
@@ -475,7 +462,7 @@ class IcebergRestCatalog {
     final body = response.body as Map<String, dynamic>;
     final metadataLocation = body['metadata-location'] as String?;
     if (metadataLocation == null) {
-      throw IcebergException(
+      throw IcebergUnknownException(
         'Server returned a commit response without the required '
         '`metadata-location` field',
         statusCode: response.statusCode,

@@ -1,7 +1,20 @@
 /// Error thrown by [IcebergRestCatalog] operations when the Iceberg REST
 /// Catalog API returns an error response or a request fails at the network
 /// level.
-class IcebergException implements Exception {
+///
+/// This is a sealed hierarchy: match on the concrete subtype to handle a
+/// specific failure, for example
+///
+/// ```dart
+/// try {
+///   await catalog.loadTable(id);
+/// } on IcebergNotFoundException {
+///   // the table does not exist
+/// } on IcebergException catch (error) {
+///   // any other Iceberg failure
+/// }
+/// ```
+sealed class IcebergException implements Exception {
   /// Human readable error message.
   final String message;
 
@@ -17,7 +30,7 @@ class IcebergException implements Exception {
   final int? code;
 
   /// The raw error payload, when available.
-  final dynamic details;
+  final Object? details;
 
   const IcebergException(
     this.message, {
@@ -27,41 +40,136 @@ class IcebergException implements Exception {
     this.details,
   });
 
-  /// Whether the error represents a commit whose outcome is unknown, meaning a
-  /// retry could result in duplicate data.
-  bool get isCommitStateUnknown => type == 'CommitStateUnknownException';
-
-  /// Whether the error is a 404 Not Found.
-  bool get isNotFound => statusCode == 404;
-
-  /// Whether the error is a 409 Conflict.
-  bool get isConflict => statusCode == 409;
-
-  /// Whether the error is a 419 Authentication Timeout.
-  bool get isAuthenticationTimeout => statusCode == 419;
-
-  factory IcebergException.fromResponse(int statusCode, dynamic body) {
+  /// Builds the appropriate [IcebergException] subtype from an error response.
+  factory IcebergException.fromResponse(int statusCode, Object? body) {
+    var message = 'Request failed with status $statusCode';
+    String? type;
+    int? code;
     if (body is Map<String, dynamic> && body['error'] is Map) {
       final error = body['error'] as Map<String, dynamic>;
-      return IcebergException(
-        (error['message'] as String?) ??
-            'Request failed with status $statusCode',
+      message = (error['message'] as String?) ?? message;
+      type = error['type'] as String?;
+      code = error['code'] as int?;
+    }
+
+    if (type == 'CommitStateUnknownException') {
+      return IcebergCommitStateUnknownException(
+        message,
         statusCode: statusCode,
-        type: error['type'] as String?,
-        code: error['code'] as int?,
+        code: code,
         details: body,
       );
     }
-    return IcebergException(
-      'Request failed with status $statusCode',
-      statusCode: statusCode,
-      details: body,
-    );
+
+    return switch (statusCode) {
+      404 => IcebergNotFoundException(
+        message,
+        type: type,
+        code: code,
+        details: body,
+      ),
+      409 => IcebergConflictException(
+        message,
+        type: type,
+        code: code,
+        details: body,
+      ),
+      419 => IcebergAuthenticationTimeoutException(
+        message,
+        type: type,
+        code: code,
+        details: body,
+      ),
+      >= 500 => IcebergServerException(
+        message,
+        statusCode: statusCode,
+        type: type,
+        code: code,
+        details: body,
+      ),
+      _ => IcebergUnknownException(
+        message,
+        statusCode: statusCode,
+        type: type,
+        code: code,
+        details: body,
+      ),
+    };
   }
 
   @override
-  String toString() {
-    return 'IcebergException(message: $message, statusCode: $statusCode, '
-        'type: $type, code: $code)';
-  }
+  String toString() =>
+      '$runtimeType(message: $message, statusCode: $statusCode, '
+      'type: $type, code: $code)';
+}
+
+/// A request failed at the network level, before any response was received.
+final class IcebergNetworkException extends IcebergException {
+  const IcebergNetworkException(super.message, {super.details})
+    : super(statusCode: 0);
+}
+
+/// The requested namespace or table does not exist (HTTP 404).
+final class IcebergNotFoundException extends IcebergException {
+  const IcebergNotFoundException(
+    super.message, {
+    super.type,
+    super.code,
+    super.details,
+  }) : super(statusCode: 404);
+}
+
+/// The request conflicts with the current state, for example the resource
+/// already exists or a commit lost a race (HTTP 409).
+final class IcebergConflictException extends IcebergException {
+  const IcebergConflictException(
+    super.message, {
+    super.type,
+    super.code,
+    super.details,
+  }) : super(statusCode: 409);
+}
+
+/// Authentication timed out and the request should be retried with fresh
+/// credentials (HTTP 419).
+final class IcebergAuthenticationTimeoutException extends IcebergException {
+  const IcebergAuthenticationTimeoutException(
+    super.message, {
+    super.type,
+    super.code,
+    super.details,
+  }) : super(statusCode: 419);
+}
+
+/// A table commit was sent but its outcome is unknown, so retrying it could
+/// duplicate data.
+final class IcebergCommitStateUnknownException extends IcebergException {
+  const IcebergCommitStateUnknownException(
+    super.message, {
+    required super.statusCode,
+    super.code,
+    super.details,
+  }) : super(type: 'CommitStateUnknownException');
+}
+
+/// The server failed to handle the request (HTTP 5xx).
+final class IcebergServerException extends IcebergException {
+  const IcebergServerException(
+    super.message, {
+    required super.statusCode,
+    super.type,
+    super.code,
+    super.details,
+  });
+}
+
+/// Any Iceberg failure that does not fit a more specific subtype.
+final class IcebergUnknownException extends IcebergException {
+  const IcebergUnknownException(
+    super.message, {
+    required super.statusCode,
+    super.type,
+    super.code,
+    super.details,
+  });
 }
