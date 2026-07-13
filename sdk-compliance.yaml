@@ -498,7 +498,6 @@ features:
       - AnalyticsBucket.updatedAt
   storage.analytics.list_analytics_buckets:
     status: implemented
-    note: "Reuses ListBucketsOptions (limit/offset/search/sortColumn/sortOrder) for filtering, sorting and pagination, matching the file bucket listing API."
     symbols:
       - StorageBucketApi.listAnalyticsBuckets
   storage.analytics.delete_analytics_bucket:
