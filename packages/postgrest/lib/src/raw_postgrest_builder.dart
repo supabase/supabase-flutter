@@ -2,25 +2,9 @@ part of 'postgrest_builder.dart';
 
 /// Needed as a wrapper around [PostgrestBuilder] to allow for the different return type of [withConverter] than in [ResponsePostgrestBuilder.withConverter].
 class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
+  // ignore: use_super_parameters, builder is also read for its converter
   RawPostgrestBuilder(PostgrestBuilder<T, S, R> builder)
-    : super(
-        url: builder._url,
-        method: builder._method,
-        headers: builder._headers,
-        schema: builder._schema,
-        body: builder._body,
-        httpClient: builder._httpClient,
-        count: builder._count,
-        isolate: builder._isolate,
-        maybeSingle: builder._maybeSingle,
-        converter: builder._converter,
-        retryEnabled: builder._retry.enabled,
-        retryCount: builder._retry.count,
-        retryableStatusCodes: builder._retry.statusCodes,
-        retryDelay: builder._retry.delay,
-        requestTimeout: builder._requestTimeout,
-        abortSignal: builder._abortSignal,
-      );
+    : super._copy(builder, converter: builder._converter);
 
   /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
   RawPostgrestBuilder<O, P, Q> _copyWithType<O, P, Q>({
@@ -36,22 +20,18 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     bool? maybeSingle,
   }) {
     return RawPostgrestBuilder(
-      PostgrestBuilder(
-        url: url ?? _url,
-        headers: headers ?? _headers,
-        schema: schema ?? _schema,
-        method: method ?? _method,
-        body: body ?? _body,
-        httpClient: httpClient ?? _httpClient,
-        isolate: isolate ?? _isolate,
-        count: count ?? _count,
-        maybeSingle: maybeSingle ?? _maybeSingle,
-        retryEnabled: _retry.enabled,
-        retryCount: _retry.count,
-        retryableStatusCodes: _retry.statusCodes,
-        retryDelay: _retry.delay,
-        requestTimeout: _requestTimeout,
-        abortSignal: _abortSignal,
+      PostgrestBuilder<O, P, Q>._copy(
+        this,
+        converter: null,
+        url: url,
+        headers: headers,
+        schema: schema,
+        method: method,
+        body: body,
+        httpClient: httpClient,
+        isolate: isolate,
+        count: count,
+        maybeSingle: maybeSingle,
       ),
     );
   }
@@ -76,23 +56,6 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   PostgrestBuilder<U, U, R> withConverter<U>(
     PostgrestConverter<U, R> converter,
   ) {
-    return PostgrestBuilder(
-      url: _url,
-      headers: _headers,
-      schema: _schema,
-      method: _method,
-      body: _body,
-      isolate: _isolate,
-      httpClient: _httpClient,
-      count: _count,
-      maybeSingle: _maybeSingle,
-      converter: converter,
-      retryEnabled: _retry.enabled,
-      retryCount: _retry.count,
-      retryableStatusCodes: _retry.statusCodes,
-      retryDelay: _retry.delay,
-      requestTimeout: _requestTimeout,
-      abortSignal: _abortSignal,
-    );
+    return PostgrestBuilder<U, U, R>._copy(this, converter: converter);
   }
 }

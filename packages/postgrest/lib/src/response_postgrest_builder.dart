@@ -2,25 +2,9 @@ part of 'postgrest_builder.dart';
 
 /// Needed as a wrapper around [PostgrestBuilder] to allow for the different return type of [withConverter] than in [RawPostgrestBuilder.withConverter].
 class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
+  // ignore: use_super_parameters, builder is also read for its converter
   ResponsePostgrestBuilder(PostgrestBuilder<T, S, R> builder)
-    : super(
-        url: builder._url,
-        method: builder._method,
-        headers: builder._headers,
-        schema: builder._schema,
-        body: builder._body,
-        httpClient: builder._httpClient,
-        count: builder._count,
-        isolate: builder._isolate,
-        maybeSingle: builder._maybeSingle,
-        converter: builder._converter,
-        retryEnabled: builder._retry.enabled,
-        retryCount: builder._retry.count,
-        retryableStatusCodes: builder._retry.statusCodes,
-        retryDelay: builder._retry.delay,
-        requestTimeout: builder._requestTimeout,
-        abortSignal: builder._abortSignal,
-      );
+    : super._copy(builder, converter: builder._converter);
 
   @override
   ResponsePostgrestBuilder<T, S, R> setHeader(String key, String value) {
@@ -45,23 +29,9 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   PostgrestBuilder<PostgrestResponse<U>, U, R> withConverter<U>(
     PostgrestConverter<U, R> converter,
   ) {
-    return PostgrestBuilder(
-      url: _url,
-      headers: _headers,
-      schema: _schema,
-      method: _method,
-      body: _body,
-      isolate: _isolate,
-      httpClient: _httpClient,
-      count: _count,
-      maybeSingle: _maybeSingle,
+    return PostgrestBuilder<PostgrestResponse<U>, U, R>._copy(
+      this,
       converter: converter,
-      retryEnabled: _retry.enabled,
-      retryCount: _retry.count,
-      retryableStatusCodes: _retry.statusCodes,
-      retryDelay: _retry.delay,
-      requestTimeout: _requestTimeout,
-      abortSignal: _abortSignal,
     );
   }
 }

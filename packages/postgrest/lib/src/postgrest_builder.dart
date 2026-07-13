@@ -136,6 +136,40 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
        _requestTimeout = requestTimeout,
        _abortSignal = abortSignal;
 
+  /// Copies every request field from [source], applying any provided overrides.
+  ///
+  /// [converter] is required rather than defaulted from [source] because it is
+  /// the only field tied to the generic types, so a [source] of any type can be
+  /// copied into a builder of any other type by supplying a matching converter.
+  PostgrestBuilder._copy(
+    PostgrestBuilder<dynamic, dynamic, dynamic> source, {
+    required PostgrestConverter<S, R>? converter,
+    Uri? url,
+    Headers? headers,
+    String? schema,
+    HttpMethod? method,
+    Object? body,
+    Client? httpClient,
+    YAJsonIsolate? isolate,
+    CountOption? count,
+    bool? maybeSingle,
+    _RetryConfig? retry,
+    Duration? requestTimeout,
+    Future<void>? abortSignal,
+  }) : _converter = converter,
+       _url = url ?? source._url,
+       _headers = headers ?? source._headers,
+       _schema = schema ?? source._schema,
+       _method = method ?? source._method,
+       _body = body ?? source._body,
+       _httpClient = httpClient ?? source._httpClient,
+       _isolate = isolate ?? source._isolate,
+       _count = count ?? source._count,
+       _maybeSingle = maybeSingle ?? source._maybeSingle,
+       _retry = retry ?? source._retry,
+       _requestTimeout = requestTimeout ?? source._requestTimeout,
+       _abortSignal = abortSignal ?? source._abortSignal;
+
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
     Headers? headers,
@@ -150,27 +184,22 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     _RetryConfig? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
-  }) {
-    final effectiveRetry = retry ?? _retry;
-    return PostgrestBuilder(
-      url: url ?? _url,
-      headers: headers ?? _headers,
-      schema: schema ?? _schema,
-      method: method ?? _method,
-      body: body ?? _body,
-      httpClient: httpClient ?? _httpClient,
-      isolate: isolate ?? _isolate,
-      count: count ?? _count,
-      maybeSingle: maybeSingle ?? _maybeSingle,
-      converter: converter ?? _converter,
-      retryEnabled: effectiveRetry.enabled,
-      retryCount: effectiveRetry.count,
-      retryableStatusCodes: effectiveRetry.statusCodes,
-      retryDelay: effectiveRetry.delay,
-      requestTimeout: requestTimeout ?? _requestTimeout,
-      abortSignal: abortSignal ?? _abortSignal,
-    );
-  }
+  }) => PostgrestBuilder._copy(
+    this,
+    converter: converter ?? _converter,
+    url: url,
+    headers: headers,
+    schema: schema,
+    method: method,
+    body: body,
+    httpClient: httpClient,
+    isolate: isolate,
+    count: count,
+    maybeSingle: maybeSingle,
+    retry: retry,
+    requestTimeout: requestTimeout,
+    abortSignal: abortSignal,
+  );
 
   /// Overrides the retry behavior for this specific request.
   ///
