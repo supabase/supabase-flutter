@@ -583,7 +583,6 @@ features:
     status: implemented
     symbols:
       - FunctionsClient.invoke
-    note: "invoke accepts an abortSignal Future; completing it cancels the in-flight request and throws RequestAbortedException, mirroring database.using_modifiers.request_cancellation."
 
   # client
   client.authentication_integration.third_party_auth: implemented
