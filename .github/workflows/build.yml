@@ -22,10 +22,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Dart
-        uses: dart-lang/setup-dart@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c # v1.7.1
+      # Use the Flutter SDK (not a standalone Dart SDK) so that melos can
+      # relaunch itself via `flutter pub run` if the globally activated melos
+      # version differs from the one pinned in pubspec.lock. A standalone Dart
+      # SDK cannot resolve this Flutter workspace and would fail the relaunch.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: stable
+          channel: 'stable'
+          cache: false
 
       - name: Detect affected packages
         id: detect
