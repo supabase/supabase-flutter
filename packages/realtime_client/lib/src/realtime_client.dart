@@ -241,7 +241,7 @@ class RealtimeClient {
     accessToken = customJWT ?? params['apikey'];
 
     this.disconnectOnEmptyChannelsAfterMs =
-        disconnectOnEmptyChannelsAfterMs ?? 2 * heartbeatIntervalMs;
+        disconnectOnEmptyChannelsAfterMs ?? (2 * heartbeatIntervalMs);
 
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
