@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -40,21 +41,36 @@ void main() {
     test('X-Client-Info includes structured platform metadata', () {
       final clientInfo = supabase.headers['X-Client-Info']!;
       expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(
+        clientInfo,
+        contains(
+          '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+        ),
+      );
       expect(clientInfo, contains('; runtime=dart'));
     });
 
     test('X-Client-Info includes structured platform metadata on auth', () {
       final clientInfo = supabase.auth.headers['X-Client-Info']!;
       expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(
+        clientInfo,
+        contains(
+          '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+        ),
+      );
       expect(clientInfo, contains('; runtime=dart'));
     });
 
     test('X-Client-Info includes structured platform metadata on storage', () {
       final clientInfo = supabase.storage.headers['X-Client-Info']!;
       expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(
+        clientInfo,
+        contains(
+          '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+        ),
+      );
       expect(clientInfo, contains('; runtime=dart'));
     });
 
@@ -63,7 +79,12 @@ void main() {
       () {
         final clientInfo = supabase.functions.headers['X-Client-Info']!;
         expect(clientInfo, startsWith('supabase-dart/'));
-        expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+        expect(
+          clientInfo,
+          contains(
+            '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+          ),
+        );
         expect(clientInfo, contains('; runtime=dart'));
       },
     );
@@ -71,7 +92,12 @@ void main() {
     test('X-Client-Info includes structured platform metadata on rest', () {
       final clientInfo = supabase.rest.headers['X-Client-Info']!;
       expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(
+        clientInfo,
+        contains(
+          '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+        ),
+      );
       expect(clientInfo, contains('; runtime=dart'));
     });
 
@@ -84,7 +110,12 @@ void main() {
         );
         final clientInfo = request.headers['X-Client-Info']?.first;
         expect(clientInfo, startsWith('supabase-dart/'));
-        expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+        expect(
+          clientInfo,
+          contains(
+            '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+          ),
+        );
         expect(clientInfo, contains('; runtime=dart'));
       },
     );

@@ -17,14 +17,14 @@ void main() {
         'supabase-dart',
         '2.0.0',
         platformInfo: const PlatformInfo(
-          platform: 'macos',
+          platform: 'macOS',
           platformVersion: 'Version 14.0',
           runtimeVersion: '3.9.0',
         ),
       );
       expect(
         header,
-        'supabase-dart/2.0.0; platform=macos; '
+        'supabase-dart/2.0.0; platform=macOS; '
         'platform-version=Version 14.0; runtime=dart; runtime-version=3.9.0',
       );
     });
@@ -36,6 +36,21 @@ void main() {
         platformInfo: const PlatformInfo(),
       );
       expect(header, 'supabase-dart/2.0.0; runtime=dart');
+    });
+  });
+
+  group('normalizePlatformName', () {
+    test('aligns casing with the other Supabase SDKs', () {
+      expect(normalizePlatformName('android'), 'Android');
+      expect(normalizePlatformName('ios'), 'iOS');
+      expect(normalizePlatformName('linux'), 'Linux');
+      expect(normalizePlatformName('macos'), 'macOS');
+      expect(normalizePlatformName('windows'), 'Windows');
+      expect(normalizePlatformName('fuchsia'), 'Fuchsia');
+    });
+
+    test('returns unknown values unchanged', () {
+      expect(normalizePlatformName('someNewPlatform'), 'someNewPlatform');
     });
   });
 
