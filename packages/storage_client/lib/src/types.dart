@@ -51,10 +51,10 @@ class AnalyticsBucket {
   final String name;
 
   /// The creation timestamp.
-  final String createdAt;
+  final DateTime createdAt;
 
   /// The last update timestamp.
-  final String updatedAt;
+  final DateTime updatedAt;
 
   const AnalyticsBucket({
     required this.id,
@@ -67,8 +67,8 @@ class AnalyticsBucket {
     return AnalyticsBucket(
       id: json['id'] as String,
       name: json['name'] as String,
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
     );
   }
 }

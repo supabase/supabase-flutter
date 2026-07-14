@@ -166,8 +166,8 @@ void main() {
       expect(response, isA<AnalyticsBucket>());
       expect(response.id, 'warehouse');
       expect(response.name, 'warehouse');
-      expect(response.createdAt, '2024-01-01T00:00:00.000Z');
-      expect(response.updatedAt, '2024-01-02T00:00:00.000Z');
+      expect(response.createdAt, DateTime.parse('2024-01-01T00:00:00.000Z'));
+      expect(response.updatedAt, DateTime.parse('2024-01-02T00:00:00.000Z'));
     });
 
     test('should list analytics buckets without query params', () async {
