@@ -12,6 +12,24 @@ class PlatformInfo {
   });
 }
 
+/// Platform names shared across the Supabase SDKs so per-platform stats can be
+/// aggregated regardless of language or framework. The casing matches the
+/// Swift SDK.
+const _platformNames = <String, String>{
+  'android': 'Android',
+  'ios': 'iOS',
+  'linux': 'Linux',
+  'macos': 'macOS',
+  'windows': 'Windows',
+  'fuchsia': 'Fuchsia',
+};
+
+/// Normalizes a `dart:io` `Platform.operatingSystem` value to the platform name
+/// shared across the Supabase SDKs. Unknown values are returned unchanged so
+/// they stay visible in stats.
+String normalizePlatformName(String operatingSystem) =>
+    _platformNames[operatingSystem] ?? operatingSystem;
+
 /// Builds the value of the `X-Client-Info` header.
 ///
 /// When [platformInfo] is `null` the minimal `'$clientName/$version'` form is
