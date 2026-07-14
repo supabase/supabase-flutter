@@ -67,6 +67,27 @@ void main() {
     expect(attempts, 2);
   });
 
+  test('invokes onRetry before each retry with the thrown error', () async {
+    final seenErrors = <Object>[];
+    var attempts = 0;
+    final result =
+        await const RetryOptions(
+          maxAttempts: 3,
+          delayFactor: Duration(milliseconds: 1),
+        ).retry(
+          () async {
+            attempts++;
+            if (attempts < 3) throw FormatException('fail $attempts');
+            return 'ok';
+          },
+          retryIf: (error) => true,
+          onRetry: seenErrors.add,
+        );
+    expect(result, 'ok');
+    expect(seenErrors, hasLength(2));
+    expect(seenErrors.every((error) => error is FormatException), isTrue);
+  });
+
   test('delay grows exponentially and is capped at maxDelay', () {
     const options = RetryOptions(
       delayFactor: Duration(milliseconds: 100),
