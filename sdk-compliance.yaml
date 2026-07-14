@@ -516,8 +516,10 @@ features:
       - StorageVectorBucketApi.createIndex
       - VectorDataType
       - VectorDataType.value
+      - VectorDataType.fromValue
       - DistanceMetric
       - DistanceMetric.value
+      - DistanceMetric.fromValue
   storage.vector_buckets.get_index:
     status: implemented
     symbols:

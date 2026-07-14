@@ -9,6 +9,15 @@ enum VectorDataType {
 
   /// The value sent to and returned by the storage API.
   String get value => name.toLowerCase();
+
+  /// The [VectorDataType] matching the given API [value], or `null` when it is
+  /// not recognized.
+  static VectorDataType? fromValue(Object? value) {
+    for (final type in values) {
+      if (type.value == value) return type;
+    }
+    return null;
+  }
 }
 
 /// Distance metric used when comparing vectors during a similarity search.
@@ -20,20 +29,15 @@ enum DistanceMetric {
 
   /// The value sent to and returned by the storage API.
   String get value => name.toLowerCase();
-}
 
-VectorDataType? _vectorDataTypeFromValue(Object? value) {
-  for (final type in VectorDataType.values) {
-    if (type.value == value) return type;
+  /// The [DistanceMetric] matching the given API [value], or `null` when it is
+  /// not recognized.
+  static DistanceMetric? fromValue(Object? value) {
+    for (final metric in values) {
+      if (metric.value == value) return metric;
+    }
+    return null;
   }
-  return null;
-}
-
-DistanceMetric? _distanceMetricFromValue(Object? value) {
-  for (final metric in DistanceMetric.values) {
-    if (metric.value == value) return metric;
-  }
-  return null;
 }
 
 List<double>? _parseFloat32(Object? data) {
@@ -148,9 +152,9 @@ class VectorIndex {
     return VectorIndex(
       name: json['indexName'] as String,
       bucketName: json['vectorBucketName'] as String?,
-      dataType: _vectorDataTypeFromValue(json['dataType']),
+      dataType: VectorDataType.fromValue(json['dataType']),
       dimension: (json['dimension'] as num?)?.toInt(),
-      distanceMetric: _distanceMetricFromValue(json['distanceMetric']),
+      distanceMetric: DistanceMetric.fromValue(json['distanceMetric']),
       nonFilterableMetadataKeys: nonFilterableMetadataKeys is List
           ? nonFilterableMetadataKeys.cast()
           : null,
@@ -319,7 +323,7 @@ class VectorQueryResult {
       matches: matches
           .map((value) => VectorMatch.fromJson(value as Map<String, dynamic>))
           .toList(),
-      distanceMetric: _distanceMetricFromValue(json['distanceMetric']),
+      distanceMetric: DistanceMetric.fromValue(json['distanceMetric']),
     );
   }
 }
