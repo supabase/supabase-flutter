@@ -372,6 +372,7 @@ class SupabaseClient {
           RealtimeConstants.defaultConnectionCloseTimeout,
       customAccessToken: accessToken,
       transport: options.transport,
+      disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
     );
   }
 

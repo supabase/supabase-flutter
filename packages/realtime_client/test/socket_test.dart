@@ -614,6 +614,169 @@ void main() {
     });
   });
 
+  group('deferred disconnect', () {
+    test('defaults to twice the heartbeat interval', () {
+      final socket = RealtimeClient(socketEndpoint);
+      expect(
+        socket.disconnectOnEmptyChannelsAfter,
+        Duration(milliseconds: 2 * Constants.defaultHeartbeatIntervalMs),
+      );
+
+      final customSocket = RealtimeClient(
+        socketEndpoint,
+        heartbeatIntervalMs: 5000,
+      );
+      expect(
+        customSocket.disconnectOnEmptyChannelsAfter,
+        const Duration(milliseconds: 10000),
+      );
+
+      final explicitSocket = RealtimeClient(
+        socketEndpoint,
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 1234),
+      );
+      expect(
+        explicitSocket.disconnectOnEmptyChannelsAfter,
+        const Duration(milliseconds: 1234),
+      );
+    });
+
+    test(
+      'does not disconnect immediately when the last channel is removed',
+      () async {
+        final socket = RealtimeClient(
+          'ws://localhost:${mockServer.port}',
+          disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+        );
+        await socket.connect();
+        expect(socket.isConnected, isTrue);
+
+        final channel = socket.channel('topic');
+        socket.remove(channel);
+
+        expect(socket.isConnected, isTrue);
+        await socket.disconnect();
+      },
+    );
+
+    test('disconnects after the delay when channels stay empty', () async {
+      final socket = RealtimeClient(
+        'ws://localhost:${mockServer.port}',
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+      );
+      await socket.connect();
+
+      final channel = socket.channel('topic');
+      socket.remove(channel);
+
+      expect(socket.isConnected, isTrue);
+      await Future.delayed(const Duration(milliseconds: 400));
+      expect(socket.isConnected, isFalse);
+    });
+
+    test(
+      'cancels the pending disconnect when a new channel is created',
+      () async {
+        final socket = RealtimeClient(
+          'ws://localhost:${mockServer.port}',
+          disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+        );
+        await socket.connect();
+
+        final channel = socket.channel('topic');
+        socket.remove(channel);
+        socket.channel('new-topic');
+
+        await Future.delayed(const Duration(milliseconds: 400));
+        expect(socket.isConnected, isTrue);
+        await socket.disconnect();
+      },
+    );
+
+    test(
+      'disconnects immediately when disconnectOnEmptyChannelsAfter is zero',
+      () async {
+        final socket = RealtimeClient(
+          'ws://localhost:${mockServer.port}',
+          disconnectOnEmptyChannelsAfter: Duration.zero,
+        );
+        await socket.connect();
+
+        final channel = socket.channel('topic');
+        socket.remove(channel);
+
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(socket.isConnected, isFalse);
+      },
+    );
+
+    test('disconnect cancels a pending deferred disconnect', () async {
+      final socket = RealtimeClient(
+        'ws://localhost:${mockServer.port}',
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+      );
+      await socket.connect();
+
+      final channel = socket.channel('topic');
+      socket.remove(channel);
+      await socket.disconnect();
+
+      await socket.connect();
+      socket.channel('topic-2');
+      await Future.delayed(const Duration(milliseconds: 400));
+      expect(socket.isConnected, isTrue);
+      await socket.disconnect();
+    });
+
+    test(
+      'removeChannel schedules a deferred disconnect for the last channel',
+      () async {
+        final socket = RealtimeClient(
+          'ws://localhost:${mockServer.port}',
+          disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+        );
+        await socket.connect();
+
+        final channel = socket.channel('topic');
+        await socket.removeChannel(channel);
+
+        expect(socket.isConnected, isTrue);
+        await Future.delayed(const Duration(milliseconds: 400));
+        expect(socket.isConnected, isFalse);
+      },
+    );
+
+    test('channel.unsubscribe schedules a deferred disconnect', () async {
+      final socket = RealtimeClient(
+        'ws://localhost:${mockServer.port}',
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+      );
+      await socket.connect();
+
+      final channel = socket.channel('topic');
+      await channel.unsubscribe();
+
+      expect(socket.isConnected, isTrue);
+      await Future.delayed(const Duration(milliseconds: 400));
+      expect(socket.isConnected, isFalse);
+    });
+
+    test('removeAllChannels disconnects immediately', () async {
+      final socket = RealtimeClient(
+        'ws://localhost:${mockServer.port}',
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 10000),
+      );
+      await socket.connect();
+      expect(socket.isConnected, isTrue);
+
+      socket.channel('channel-1');
+      socket.channel('channel-2');
+
+      await socket.removeAllChannels();
+      expect(socket.isConnected, isFalse);
+    });
+  });
+
   group('push', () {
     const topic = 'topic';
     const event = ChannelEvents.join;

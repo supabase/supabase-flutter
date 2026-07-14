@@ -113,6 +113,18 @@ class RealtimeClient {
   int heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs;
   Timer? heartbeatTimer;
 
+  /// Delay before the socket is disconnected once the last channel has been
+  /// removed. [Duration.zero] disconnects immediately. Defaults to twice the
+  /// heartbeat interval.
+  @internal
+  late final Duration disconnectOnEmptyChannelsAfter;
+
+  /// Timer that fires the deferred disconnect once all channels are gone.
+  ///
+  /// Cancelled when a new channel is created or the client disconnects before
+  /// it fires, so that quickly switching channels reuses the open socket.
+  Timer? _pendingDisconnectTimer;
+
   /// reference ID of the most recently sent heartbeat.
   ///
   /// Used to keep track of whether the client is connected to the server.
@@ -161,6 +173,12 @@ class RealtimeClient {
   ///
   /// [heartbeatIntervalMs] The millisec interval to send a heartbeat message.
   ///
+  /// [disconnectOnEmptyChannelsAfter] The delay before disconnecting the socket
+  /// once the last channel is removed. If a new channel is created before the
+  /// delay elapses, the pending disconnect is cancelled and the open socket is
+  /// reused. Pass [Duration.zero] to disconnect immediately. Defaults to twice
+  /// the heartbeat interval.
+  ///
   /// [logger] The optional function for specialized logging, ie: logger: (kind, message, data) => { console.log(`$kind: $message`, data) }
   ///
   /// [encode] Overrides how outgoing messages are serialized, for example to
@@ -182,6 +200,7 @@ class RealtimeClient {
     this.timeout = Constants.defaultTimeout,
     this.connectionCloseTimeout = Constants.defaultConnectionCloseTimeout,
     this.heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs,
+    Duration? disconnectOnEmptyChannelsAfter,
     this.logger,
     RealtimeEncode? encode,
     RealtimeDecode? decode,
@@ -221,6 +240,10 @@ class RealtimeClient {
     _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
+
+    this.disconnectOnEmptyChannelsAfter =
+        disconnectOnEmptyChannelsAfter ??
+        Duration(milliseconds: 2 * heartbeatIntervalMs);
 
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
@@ -299,6 +322,7 @@ class RealtimeClient {
 
   /// Disconnects the socket with status [code] and [reason] for the disconnect
   Future<void> disconnect({int? code, String? reason}) async {
+    _cancelPendingDisconnect();
     final conn = this.conn;
     if (conn != null) {
       final oldState = connState;
@@ -367,9 +391,6 @@ class RealtimeClient {
 
   Future<String> removeChannel(RealtimeChannel channel) async {
     final status = await channel.unsubscribe();
-    if (channels.isEmpty) {
-      unawaited(disconnect());
-    }
     return status;
   }
 
@@ -377,7 +398,7 @@ class RealtimeClient {
     final values = await Future.wait(
       channels.map((channel) => channel.unsubscribe()),
     );
-    unawaited(disconnect());
+    await disconnect();
     return values;
   }
 
@@ -438,6 +459,10 @@ class RealtimeClient {
   @internal
   void remove(RealtimeChannel channel) {
     channels = channels.where((c) => c.joinRef != channel.joinRef).toList();
+    if (channels.isEmpty) {
+      log('transport', 'no channels remaining, scheduling disconnect');
+      _schedulePendingDisconnect();
+    }
   }
 
   RealtimeChannel channel(
@@ -445,8 +470,50 @@ class RealtimeClient {
     RealtimeChannelConfig config = const RealtimeChannelConfig(),
   ]) {
     final newChannel = RealtimeChannel('realtime:$topic', this, params: config);
+    _cancelPendingDisconnect();
     channels.add(newChannel);
     return newChannel;
+  }
+
+  /// Schedules a disconnect once the last channel is removed.
+  ///
+  /// When [disconnectOnEmptyChannelsAfter] is [Duration.zero] the socket
+  /// disconnects immediately, otherwise the disconnect is deferred so that a
+  /// channel created within the delay can reuse the open socket.
+  void _schedulePendingDisconnect() {
+    _cancelPendingDisconnect();
+    if (disconnectOnEmptyChannelsAfter == Duration.zero) {
+      log('transport', 'disconnecting immediately - no channels');
+      unawaited(disconnect());
+      return;
+    }
+    _pendingDisconnectTimer = Timer(
+      disconnectOnEmptyChannelsAfter,
+      () {
+        _pendingDisconnectTimer = null;
+        if (channels.isEmpty) {
+          log(
+            'transport',
+            'deferred disconnect fired - no channels, disconnecting',
+          );
+          unawaited(disconnect());
+        }
+      },
+    );
+    log(
+      'transport',
+      'deferred disconnect scheduled in '
+          '${disconnectOnEmptyChannelsAfter.inMilliseconds}ms',
+    );
+  }
+
+  /// Cancels a scheduled disconnect when channel activity is detected.
+  void _cancelPendingDisconnect() {
+    if (_pendingDisconnectTimer != null) {
+      log('transport', 'pending disconnect cancelled - channel activity');
+      _pendingDisconnectTimer!.cancel();
+      _pendingDisconnectTimer = null;
+    }
   }
 
   /// Push out a message if the socket is connected.
