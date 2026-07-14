@@ -99,6 +99,12 @@ enum OtpChannel {
   whatsapp,
 }
 
+/// The blockchain used to sign in with a Web3 wallet.
+enum Web3Chain {
+  ethereum,
+  solana,
+}
+
 /// Determines which sessions should be logged out.
 enum SignOutScope {
   /// All sessions by this account will be signed out.
