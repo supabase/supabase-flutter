@@ -779,16 +779,16 @@ void main() {
           password: password,
         );
 
-        final newEmail = getNewEmail();
+        final updatedEmail = getNewEmail();
         final updateResponse = await pkceClient.updateUser(
-          UserAttributes(email: newEmail),
+          UserAttributes(email: updatedEmail),
         );
-        expect(updateResponse.user?.newEmail, newEmail);
+        expect(updateResponse.user?.newEmail, updatedEmail);
 
-        final code = await _pkceCodeFromEmailChange(newEmail);
+        final code = await _pkceCodeFromEmailChange(updatedEmail);
         final exchanged = await pkceClient.exchangeCodeForSession(code);
 
-        expect(exchanged.session.user.email, newEmail);
+        expect(exchanged.session.user.email, updatedEmail);
         expect(exchanged.session.accessToken, isNotEmpty);
       },
     );
