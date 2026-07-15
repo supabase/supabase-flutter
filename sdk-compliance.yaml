@@ -23,9 +23,7 @@ sdk: flutter
 features:
   # auth — sign in / sign up
   auth.sign_in.sign_up: implemented
-  auth.sign_in.sign_in_with_password:
-    status: partially_implemented
-    note: "Weak passwords surface as a thrown AuthWeakPasswordException rather than a weakPassword field on the response."
+  auth.sign_in.sign_in_with_password: implemented
   auth.sign_in.sign_in_with_otp: implemented
   auth.sign_in.sign_in_with_oauth:
     status: implemented
@@ -34,7 +32,7 @@ features:
       - OAuthProvider.OAuthProvider
   auth.sign_in.sign_in_with_id_token: implemented
   auth.sign_in.sign_in_with_sso:
-    status: partially_implemented
+    status: implemented
     note: "Exposed as getSSOSignInUrl, which returns Future<String> (the URL) rather than the structured {url} response used by JS."
   auth.sign_in.sign_in_with_web3:
     status: implemented
