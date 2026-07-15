@@ -607,6 +607,66 @@ void main() {
       });
     });
 
+    test('TableUpdate raw does not let the body override the action', () {
+      const update = TableUpdate.raw('add-snapshot', {
+        'action': 'malicious',
+        'snapshot': {'snapshot-id': 1},
+      });
+
+      expect(update.toJson(), {
+        'action': 'add-snapshot',
+        'snapshot': {'snapshot-id': 1},
+      });
+    });
+
+    test('TableMetadata parses the top level snapshots list', () {
+      final metadata = TableMetadata.fromJson({
+        'format-version': 2,
+        'table-uuid': 'uuid-1',
+        'current-schema-id': 0,
+        'schemas': [],
+        'partition-specs': [],
+        'sort-orders': [],
+        'properties': {},
+        'current-snapshot-id': 42,
+        'snapshots': [
+          {
+            'snapshot-id': 42,
+            'parent-snapshot-id': 41,
+            'sequence-number': 3,
+            'timestamp-ms': 1700000000000,
+            'manifest-list': 's3://bucket/manifest-list.avro',
+            'summary': {'operation': 'append'},
+            'schema-id': 0,
+          },
+        ],
+      });
+
+      expect(metadata.snapshots, hasLength(1));
+      final snapshot = metadata.snapshots.first;
+      expect(snapshot.snapshotId, 42);
+      expect(snapshot.parentSnapshotId, 41);
+      expect(snapshot.sequenceNumber, 3);
+      expect(snapshot.timestampMs, 1700000000000);
+      expect(snapshot.manifestList, 's3://bucket/manifest-list.avro');
+      expect(snapshot.summary['operation'], 'append');
+      expect(snapshot.schemaId, 0);
+    });
+
+    test('TableMetadata defaults snapshots to an empty list when absent', () {
+      final metadata = TableMetadata.fromJson({
+        'format-version': 2,
+        'table-uuid': 'uuid-1',
+        'current-schema-id': 0,
+        'schemas': [],
+        'partition-specs': [],
+        'sort-orders': [],
+        'properties': {},
+      });
+
+      expect(metadata.snapshots, isEmpty);
+    });
+
     test('AssertReferenceSnapshotId serializes a null snapshot id', () {
       const requirement = AssertReferenceSnapshotId(reference: 'main');
 

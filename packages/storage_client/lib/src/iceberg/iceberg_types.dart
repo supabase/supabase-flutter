@@ -420,6 +420,49 @@ class SnapshotReference {
   };
 }
 
+/// A snapshot of a table at a point in time.
+class Snapshot {
+  final int snapshotId;
+  final int? parentSnapshotId;
+  final int? sequenceNumber;
+  final int timestampMs;
+  final String manifestList;
+  final Map<String, String> summary;
+  final int? schemaId;
+
+  const Snapshot({
+    required this.snapshotId,
+    required this.timestampMs,
+    required this.manifestList,
+    required this.summary,
+    this.parentSnapshotId,
+    this.sequenceNumber,
+    this.schemaId,
+  });
+
+  factory Snapshot.fromJson(Map<String, dynamic> json) {
+    return Snapshot(
+      snapshotId: json['snapshot-id'] as int,
+      parentSnapshotId: json['parent-snapshot-id'] as int?,
+      sequenceNumber: json['sequence-number'] as int?,
+      timestampMs: json['timestamp-ms'] as int,
+      manifestList: json['manifest-list'] as String,
+      summary: Map.from(json['summary'] as Map? ?? const {}),
+      schemaId: json['schema-id'] as int?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'snapshot-id': snapshotId,
+    'parent-snapshot-id': ?parentSnapshotId,
+    'sequence-number': ?sequenceNumber,
+    'timestamp-ms': timestampMs,
+    'manifest-list': manifestList,
+    'summary': summary,
+    'schema-id': ?schemaId,
+  };
+}
+
 /// Metadata describing the current state of a table, returned when loading or
 /// committing to a table.
 class TableMetadata {
@@ -437,6 +480,7 @@ class TableMetadata {
   final Map<String, String> properties;
   final String? metadataLocation;
   final int? currentSnapshotId;
+  final List<Snapshot> snapshots;
   final Map<String, SnapshotReference>? refs;
 
   const TableMetadata({
@@ -454,6 +498,7 @@ class TableMetadata {
     this.defaultSortOrderId,
     this.metadataLocation,
     this.currentSnapshotId,
+    this.snapshots = const [],
     this.refs,
   });
 
@@ -482,6 +527,11 @@ class TableMetadata {
       ),
       metadataLocation: json['metadata-location'] as String?,
       currentSnapshotId: json['current-snapshot-id'] as int?,
+      snapshots: (json['snapshots'] as List? ?? [])
+          .map(
+            (snapshot) => Snapshot.fromJson(snapshot as Map<String, dynamic>),
+          )
+          .toList(),
       refs: refs?.map(
         (key, value) => MapEntry(
           key,

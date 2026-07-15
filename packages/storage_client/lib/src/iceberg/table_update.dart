@@ -22,7 +22,7 @@ class RawTableUpdate extends TableUpdate {
   const RawTableUpdate(this.action, this.body);
 
   @override
-  Map<String, dynamic> toJson() => {'action': action, ...body};
+  Map<String, dynamic> toJson() => {...body, 'action': action};
 }
 
 class AssignUuidUpdate extends TableUpdate {
