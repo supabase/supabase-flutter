@@ -59,8 +59,7 @@ features:
   auth.session.refresh_session: implemented
   auth.session.get_user: implemented
   auth.session.update_user:
-    status: partially_implemented
-    note: "Does not send a PKCE code_challenge when changing email under the PKCE flow."
+    status: implemented
     symbols:
       - UserAttributes.currentPassword
   auth.session.get_claims: implemented
