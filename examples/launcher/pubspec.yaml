@@ -14,4 +14,4 @@ dependencies:
   mason_logger: ^0.3.5
 
 dev_dependencies:
-  supabase_lints: ^0.1.0
+  supabase_lints: ^0.1.1

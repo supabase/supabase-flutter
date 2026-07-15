@@ -1,3 +1,9 @@
+## 2.7.0
+
+ - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))
+ - **FEAT**(functions): add request cancellation to invoke via abortSignal ([#1593](https://github.com/supabase/supabase-flutter/issues/1593)). ([b994dabd](https://github.com/supabase/supabase-flutter/commit/b994dabdb23aa43540bef6953d739c48521bb532))
+ - **FEAT**(functions): expose FunctionsFetchException/FunctionsRelayException/FunctionsHttpException subtypes ([#1545](https://github.com/supabase/supabase-flutter/issues/1545)). ([2d3a7202](https://github.com/supabase/supabase-flutter/commit/2d3a720215837722e25c51507d6be8c6f8f3edb7))
+
 ## 2.6.4
 
  - **FIX**(functions): don't lose error status on a non-JSON body labeled JSON ([#1507](https://github.com/supabase/supabase-flutter/issues/1507)). ([925b46e1](https://github.com/supabase/supabase-flutter/commit/925b46e118e62884dd65505e7a753e0f51958b4c))
