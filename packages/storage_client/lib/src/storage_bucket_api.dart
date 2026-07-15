@@ -133,4 +133,52 @@ class StorageBucketApi {
     );
     return (response as Map<String, dynamic>)['message'] as String;
   }
+
+  /// Creates a new analytics bucket backed by the Apache Iceberg table format.
+  ///
+  /// [id] is the unique identifier for the bucket you are creating.
+  Future<AnalyticsBucket> createAnalyticsBucket(String id) async {
+    final FetchOptions options = FetchOptions(headers);
+    final response = await storageFetch.post(
+      '$url/iceberg/bucket',
+      {'name': id},
+      options: options,
+    );
+    return AnalyticsBucket.fromJson(response as Map<String, dynamic>);
+  }
+
+  /// Retrieves the details of all analytics buckets within an existing project.
+  ///
+  /// [options] optionally filters, sorts and paginates the returned buckets.
+  /// Calling [listAnalyticsBuckets] without any options returns all buckets.
+  Future<List<AnalyticsBucket>> listAnalyticsBuckets([
+    ListBucketsOptions? options,
+  ]) async {
+    final FetchOptions fetchOptions = FetchOptions(headers);
+    final queryParameters = options?.toQueryParameters() ?? const {};
+    final uri = Uri.parse('$url/iceberg/bucket').replace(
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+    final response = await storageFetch.get(
+      uri.toString(),
+      options: fetchOptions,
+    );
+    return (response as List)
+        .map((value) => AnalyticsBucket.fromJson(value as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Deletes an existing analytics bucket. A bucket can't be deleted while it
+  /// still contains namespaces or tables.
+  ///
+  /// [id] is the unique identifier of the bucket you would like to delete.
+  Future<String> deleteAnalyticsBucket(String id) async {
+    final FetchOptions options = FetchOptions(headers);
+    final response = await storageFetch.delete(
+      '$url/iceberg/bucket/$id',
+      {},
+      options: options,
+    );
+    return (response as Map<String, dynamic>)['message'] as String;
+  }
 }

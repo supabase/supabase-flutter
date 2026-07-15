@@ -41,6 +41,38 @@ class Bucket {
   }
 }
 
+/// A bucket backed by the Apache Iceberg table format, used for structured
+/// analytical data storage.
+class AnalyticsBucket {
+  /// The unique identifier of the bucket.
+  final String id;
+
+  /// The name of the bucket.
+  final String name;
+
+  /// The creation timestamp.
+  final DateTime createdAt;
+
+  /// The last update timestamp.
+  final DateTime updatedAt;
+
+  const AnalyticsBucket({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory AnalyticsBucket.fromJson(Map<String, dynamic> json) {
+    return AnalyticsBucket(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
+  }
+}
+
 class FileObject {
   final String name;
   final String? bucketId;

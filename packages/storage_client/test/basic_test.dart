@@ -20,6 +20,13 @@ Map<String, dynamic> get testBucketJson => {
   'public': false,
 };
 
+Map<String, dynamic> get testAnalyticsBucketJson => {
+  'id': 'warehouse',
+  'name': 'warehouse',
+  'created_at': '2024-01-01T00:00:00.000Z',
+  'updated_at': '2024-01-02T00:00:00.000Z',
+};
+
 Map<String, dynamic> get testFileObjectJson => {
   'name': 'test_bucket',
   'id': 'test_bucket',
@@ -145,6 +152,71 @@ void main() {
 
       final response = await client.deleteBucket(testBucketId);
       expect(response, 'Deleted');
+    });
+
+    test('should create analytics bucket', () async {
+      customHttpClient.response = testAnalyticsBucketJson;
+
+      final response = await client.createAnalyticsBucket('warehouse');
+
+      final request = customHttpClient.receivedRequests.last as Request;
+      expect(request.method, 'POST');
+      expect(request.url.toString(), endsWith('/storage/v1/iceberg/bucket'));
+      expect(jsonDecode(request.body), {'name': 'warehouse'});
+      expect(response, isA<AnalyticsBucket>());
+      expect(response.id, 'warehouse');
+      expect(response.name, 'warehouse');
+      expect(response.createdAt, DateTime.parse('2024-01-01T00:00:00.000Z'));
+      expect(response.updatedAt, DateTime.parse('2024-01-02T00:00:00.000Z'));
+    });
+
+    test('should list analytics buckets without query params', () async {
+      customHttpClient.response = [testAnalyticsBucketJson];
+
+      final response = await client.listAnalyticsBuckets();
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'GET');
+      expect(request.url.toString(), endsWith('/storage/v1/iceberg/bucket'));
+      expect(request.url.query, isEmpty);
+      expect(response, isA<List<AnalyticsBucket>>());
+      expect(response.single.name, 'warehouse');
+    });
+
+    test('should list analytics buckets with options', () async {
+      customHttpClient.response = [testAnalyticsBucketJson];
+
+      await client.listAnalyticsBuckets(
+        const ListBucketsOptions(
+          limit: 10,
+          offset: 5,
+          search: 'ware',
+          sortColumn: BucketSortColumn.createdAt,
+          sortOrder: BucketSortOrder.descending,
+        ),
+      );
+
+      final queryParameters =
+          customHttpClient.receivedRequests.last.url.queryParameters;
+      expect(queryParameters['limit'], '10');
+      expect(queryParameters['offset'], '5');
+      expect(queryParameters['search'], 'ware');
+      expect(queryParameters['sortColumn'], 'created_at');
+      expect(queryParameters['sortOrder'], 'desc');
+    });
+
+    test('should delete analytics bucket', () async {
+      customHttpClient.response = {'message': 'Successfully deleted'};
+
+      final response = await client.deleteAnalyticsBucket('warehouse');
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.toString(),
+        endsWith('/storage/v1/iceberg/bucket/warehouse'),
+      );
+      expect(response, 'Successfully deleted');
     });
 
     test('should upload file', () async {
