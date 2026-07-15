@@ -873,6 +873,17 @@ features:
       - SetSnapshotReferenceUpdate.reference
       - SetSnapshotReferenceUpdate.referenceName
       - SetSnapshotReferenceUpdate.toJson
+      - Snapshot
+      - Snapshot.Snapshot
+      - Snapshot.fromJson
+      - Snapshot.manifestList
+      - Snapshot.parentSnapshotId
+      - Snapshot.schemaId
+      - Snapshot.sequenceNumber
+      - Snapshot.snapshotId
+      - Snapshot.summary
+      - Snapshot.timestampMs
+      - Snapshot.toJson
       - SnapshotReference
       - SnapshotReference.SnapshotReference
       - SnapshotReference.fromJson
@@ -949,6 +960,7 @@ features:
       - TableMetadata.properties
       - TableMetadata.refs
       - TableMetadata.schemas
+      - TableMetadata.snapshots
       - TableMetadata.sortOrders
       - TableMetadata.tableUuid
       - TableRequirement
