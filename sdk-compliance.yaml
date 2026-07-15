@@ -695,8 +695,11 @@ features:
   functions.invocation.region_selection: implemented
   functions.invocation.timeout:
     status: not_applicable
-    note: "A per-invocation timeout would only wrap the returned Future and cannot abort the in-flight request, so a caller could still see the function succeed after a timeout fires. That is identical to the caller applying Future.timeout themselves, so exposing it as an option adds no capability and would be misleading."
-  functions.invocation.request_cancellation: not_implemented
+    note: "A genuine timeout that aborts the in-flight request is already expressible as `invoke(..., abortSignal: Future.delayed(duration))` via functions.invocation.request_cancellation, so a dedicated timeout option would add no capability over that."
+  functions.invocation.request_cancellation:
+    status: implemented
+    symbols:
+      - FunctionsClient.invoke
 
   # client
   client.authentication_integration.third_party_auth: implemented

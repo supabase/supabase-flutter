@@ -14,7 +14,22 @@ class CustomHttpClient extends BaseClient {
     receivedRequests.add(request);
     request.finalize();
 
-    if (request.url.path.endsWith('network-error')) {
+    if (request.url.path.endsWith('slow')) {
+      // Hangs until the request is aborted, mirroring how a real client
+      // surfaces abortion. Without an abort trigger it responds immediately so
+      // non-abort tests don't stall.
+      final abortTrigger = request is Abortable ? request.abortTrigger : null;
+      if (abortTrigger != null) {
+        await abortTrigger;
+        throw RequestAbortedException(request.url);
+      }
+      return StreamedResponse(
+        Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
+        200,
+        request: request,
+        headers: {"Content-Type": "application/json"},
+      );
+    } else if (request.url.path.endsWith('network-error')) {
       // Simulate a transport failure before any response is received.
       throw ClientException('Connection failed', request.url);
     } else if (request.url.path.endsWith('relay-error')) {

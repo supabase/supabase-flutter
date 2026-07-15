@@ -66,6 +66,32 @@ class FunctionsClient {
   /// [region] optionally specify the region to invoke the function in.
   /// When specified, adds both `x-region` header and `forceFunctionRegion` query parameter.
   ///
+  /// [abortSignal] cancels the in-flight request when the provided [Future]
+  /// completes. It must not complete with an error. On abort, a
+  /// [RequestAbortedException] is thrown. This is useful for cancelling a
+  /// request in response to an event or for setting a request timeout:
+  ///
+  /// ```dart
+  /// // Event based
+  /// final abortSignal = Completer<void>();
+  /// abortSignal.complete(); // Call in some event handler to abort the request
+  ///
+  /// try {
+  ///   final response = await supabase.functions.invoke(
+  ///     'hello-world',
+  ///     abortSignal: abortSignal.future,
+  ///   );
+  /// } on RequestAbortedException catch (error) {
+  ///   print('Request was aborted: $error');
+  /// }
+  ///
+  /// // Timer based
+  /// final response = await supabase.functions.invoke(
+  ///   'hello-world',
+  ///   abortSignal: Future.delayed(Duration(seconds: 5)),
+  /// );
+  /// ```
+  ///
   /// ```dart
   /// // Call a standard function
   /// final response = await supabase.functions.invoke('hello-world');
@@ -98,6 +124,7 @@ class FunctionsClient {
     Map<String, dynamic>? queryParameters,
     HttpMethod method = HttpMethod.post,
     String? region,
+    Future<void>? abortSignal,
   }) async {
     final effectiveRegion = region ?? _region;
 
@@ -137,11 +164,20 @@ class FunctionsClient {
       );
       final fields = (body as Map?)?.cast<String, String>();
 
-      request = http.MultipartRequest(method.name.toUpperCase(), uri)
-        ..fields.addAll(fields ?? {})
-        ..files.addAll(files);
+      request =
+          http.AbortableMultipartRequest(
+              method.name.toUpperCase(),
+              uri,
+              abortTrigger: abortSignal,
+            )
+            ..fields.addAll(fields ?? {})
+            ..files.addAll(files);
     } else {
-      final bodyRequest = http.Request(method.name.toUpperCase(), uri);
+      final bodyRequest = http.AbortableRequest(
+        method.name.toUpperCase(),
+        uri,
+        abortTrigger: abortSignal,
+      );
 
       if (body == null) {
         // No body to set
@@ -165,6 +201,8 @@ class FunctionsClient {
     final http.StreamedResponse response;
     try {
       response = await (_httpClient?.send(request) ?? request.send());
+    } on http.RequestAbortedException {
+      rethrow;
     } catch (error) {
       throw FunctionsFetchException(details: error);
     }
