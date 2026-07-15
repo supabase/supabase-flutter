@@ -45,8 +45,8 @@ features:
   auth.sign_in.exchange_code_for_session: implemented
   auth.sign_in.resend_confirmation: implemented
   auth.sign_in.reauthenticate:
-    status: partially_implemented
-    note: "Returns Future<void>; the refreshed session is not returned to the caller."
+    status: implemented
+    note: "Returns Future<void>. supabase-js returns an AuthResponse, but its user and session are always null (the /reauthenticate endpoint only sends a reauthentication OTP and returns no session), so the void return is functionally equivalent."
   auth.sign_in.reset_password: implemented
 
   # auth — session & user
