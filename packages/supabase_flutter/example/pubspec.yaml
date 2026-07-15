@@ -13,13 +13,13 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^2.16.0
+  supabase_flutter: ^2.17.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  supabase_lints: ^0.1.0
+  supabase_lints: ^0.1.1
 
 flutter:
   uses-material-design: true

@@ -1,3 +1,16 @@
+## 2.15.0
+
+ - **REFACTOR**(supabase): convert private stream-builder holders to records ([#1575](https://github.com/supabase/supabase-flutter/issues/1575)). ([58c2dad4](https://github.com/supabase/supabase-flutter/commit/58c2dad4968d6be36c92ffaa983127827ac97c73))
+ - **REFACTOR**: modernize dart syntax across client packages ([#1574](https://github.com/supabase/supabase-flutter/issues/1574)). ([b74fdfee](https://github.com/supabase/supabase-flutter/commit/b74fdfee05c90d40dd3f0676ca86bd92e6013c65))
+ - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))
+ - **REFACTOR**(supabase): drop rxdart dependency ([#1569](https://github.com/supabase/supabase-flutter/issues/1569)). ([51dcf0f4](https://github.com/supabase/supabase-flutter/commit/51dcf0f45439f1133a7a97f5ae9929ed3b39076e))
+ - **FIX**(supabase_common): align platform stats casing with other SDKs ([#1596](https://github.com/supabase/supabase-flutter/issues/1596)). ([97a6fa6e](https://github.com/supabase/supabase-flutter/commit/97a6fa6eb1f7d5f58b693a5e175fbfe4fe7d2c17))
+ - **FIX**(realtime_client): faster channel rejoin on web ([#1471](https://github.com/supabase/supabase-flutter/issues/1471)). ([bc06a310](https://github.com/supabase/supabase-flutter/commit/bc06a310cf09bdba87668695b48bc8b8f353c495))
+ - **FEAT**(realtime): defer socket disconnect when channels become empty ([#1589](https://github.com/supabase/supabase-flutter/issues/1589)). ([0055d1dc](https://github.com/supabase/supabase-flutter/commit/0055d1dcb6f9a0d2727d908bc68077af707327d0))
+ - **FEAT**(postgrest): configurable auto-retry and request timeout ([#1560](https://github.com/supabase/supabase-flutter/issues/1560)). ([59d4b3af](https://github.com/supabase/supabase-flutter/commit/59d4b3af227e15a53208146a2930981526a39599))
+ - **FEAT**(client): add opt-in trace context propagation headers ([#1564](https://github.com/supabase/supabase-flutter/issues/1564)). ([85780e60](https://github.com/supabase/supabase-flutter/commit/85780e607a00904870fe7f68dbd45ee5797256b6))
+ - **FEAT**(auth): add async getSession() with on-demand refresh ([#1563](https://github.com/supabase/supabase-flutter/issues/1563)). ([0b1d9b6b](https://github.com/supabase/supabase-flutter/commit/0b1d9b6b61adf9f66ed6716032b1a25f096604ce))
+
 ## 2.14.0
 
  - **FEAT**(realtime_client): support new postgres changes filter operators, multi-filter, column selection, and replication-ready events ([#1526](https://github.com/supabase/supabase-flutter/issues/1526)). ([1f9d2951](https://github.com/supabase/supabase-flutter/commit/1f9d29516032c1f4bd8416fd7fa36737a335afaf))
