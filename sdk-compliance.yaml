@@ -77,9 +77,7 @@ features:
   auth.identities.link_identity:
     status: implemented
     note: "Split into getLinkIdentityUrl (OAuth) and linkIdentityWithIdToken (ID token) rather than a single overloaded method."
-  auth.identities.list_identities:
-    status: partially_implemented
-    note: "getUserIdentities returns a List<UserIdentity> directly rather than a {data, error} object."
+  auth.identities.list_identities: implemented
   auth.identities.unlink_identity: implemented
 
   # auth — MFA
