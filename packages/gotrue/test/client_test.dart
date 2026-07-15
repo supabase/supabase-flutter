@@ -891,14 +891,14 @@ Future<String> _pkceCodeFromEmailChange(String toEmail) async {
       .group(0)!
       .replaceAll(RegExp(r'[)>].*$'), '');
 
-  final client = http.Client();
+  final verifyClient = http.Client();
   try {
     final request = http.Request('GET', Uri.parse(link))
       ..followRedirects = false;
-    final response = await client.send(request);
+    final response = await verifyClient.send(request);
     final location = response.headers['location']!;
     return Uri.parse(location).queryParameters['code']!;
   } finally {
-    client.close();
+    verifyClient.close();
   }
 }
