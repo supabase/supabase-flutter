@@ -897,7 +897,17 @@ class GoTrueClient {
       throw AuthSessionMissingException();
     }
 
-    final body = attributes.toJson();
+    final codeChallenge = attributes.email != null
+        ? await _generatePKCECodeChallenge()
+        : null;
+
+    final body = {
+      ...attributes.toJson(),
+      if (attributes.email != null) ...{
+        'code_challenge': codeChallenge,
+        'code_challenge_method': codeChallenge != null ? 's256' : null,
+      },
+    };
     final options = GotrueRequestOptions(
       headers: _headers,
       body: body,

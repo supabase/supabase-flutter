@@ -333,6 +333,64 @@ void main() {
       expect(mockClient.lastResendBody?['code_challenge_method'], isNull);
     });
 
+    test(
+      'updateUser() with email in PKCE flow includes code challenge',
+      () async {
+        await client.verifyOTP(
+          phone: testPhone,
+          token: '123456',
+          type: OtpType.sms,
+        );
+
+        await client.updateUser(UserAttributes(email: testEmail));
+
+        expect(mockClient.lastUpdateUserBody?['code_challenge'], isNotNull);
+        expect(mockClient.lastUpdateUserBody?['code_challenge_method'], 's256');
+      },
+    );
+
+    test('updateUser() without email omits code challenge', () async {
+      await client.verifyOTP(
+        phone: testPhone,
+        token: '123456',
+        type: OtpType.sms,
+      );
+
+      await client.updateUser(UserAttributes(data: {'name': 'Test User'}));
+
+      expect(
+        mockClient.lastUpdateUserBody?.containsKey('code_challenge'),
+        isFalse,
+      );
+      expect(
+        mockClient.lastUpdateUserBody?.containsKey('code_challenge_method'),
+        isFalse,
+      );
+    });
+
+    test(
+      'updateUser() with email in implicit flow omits code challenge',
+      () async {
+        final implicitClient = GoTrueClient(
+          url: 'https://example.com',
+          httpClient: mockClient,
+          asyncStorage: asyncStorage,
+          flowType: AuthFlowType.implicit,
+        );
+
+        await implicitClient.verifyOTP(
+          phone: testPhone,
+          token: '123456',
+          type: OtpType.sms,
+        );
+
+        await implicitClient.updateUser(UserAttributes(email: testEmail));
+
+        expect(mockClient.lastUpdateUserBody?['code_challenge'], isNull);
+        expect(mockClient.lastUpdateUserBody?['code_challenge_method'], isNull);
+      },
+    );
+
     test('resend() with wrong type for phone throws', () async {
       await expectLater(
         client.resend(
