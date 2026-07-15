@@ -64,9 +64,7 @@ features:
     symbols:
       - UserAttributes.currentPassword
   auth.session.get_claims: implemented
-  auth.session.sign_out:
-    status: partially_implemented
-    note: "Default scope is local (current session); JS defaults to global (all sessions)."
+  auth.session.sign_out: implemented
   auth.session.auto_refresh: implemented
   auth.session.subscribe_auth_events: implemented
   auth.session.sign_out_reason:
@@ -77,7 +75,7 @@ features:
 
   # auth — identities
   auth.identities.link_identity:
-    status: partially_implemented
+    status: implemented
     note: "Split into getLinkIdentityUrl (OAuth) and linkIdentityWithIdToken (ID token) rather than a single overloaded method."
   auth.identities.list_identities:
     status: partially_implemented
