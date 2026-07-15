@@ -163,11 +163,9 @@ class StorageBucketApi {
       uri.toString(),
       options: fetchOptions,
     );
-    return List<AnalyticsBucket>.from(
-      (response as List).map(
-        (value) => AnalyticsBucket.fromJson(value as Map<String, dynamic>),
-      ),
-    );
+    return (response as List)
+        .map((value) => AnalyticsBucket.fromJson(value as Map<String, dynamic>))
+        .toList();
   }
 
   /// Deletes an existing analytics bucket. A bucket can't be deleted while it
