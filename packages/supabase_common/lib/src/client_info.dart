@@ -15,7 +15,7 @@ class PlatformInfo {
 /// Platform names shared across the Supabase SDKs so per-platform stats can be
 /// aggregated regardless of language or framework. The casing matches the
 /// Swift SDK.
-const _platformNames = <String, String>{
+const _platformNames = {
   'android': 'Android',
   'ios': 'iOS',
   'linux': 'Linux',
