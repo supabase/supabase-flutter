@@ -535,6 +535,54 @@ class GoTrueClient {
     return authResponse;
   }
 
+  /// Signs in a user by verifying a message signed with their Web3 wallet.
+  ///
+  /// Supports Ethereum (Sign-In with Ethereum) and Solana (Sign-In with
+  /// Solana), both of which derive from the EIP-4361 standard.
+  ///
+  /// Wallet interaction and message signing are performed by the caller using
+  /// their wallet library of choice. Provide the signed [message] together with
+  /// its [signature]. For [Web3Chain.ethereum] the signature is a hex encoded
+  /// string, for [Web3Chain.solana] it is a base64url encoded string.
+  ///
+  /// [captchaToken] is the verification token received when the user
+  /// completes the captcha on the app.
+  ///
+  /// See also https://eips.ethereum.org/EIPS/eip-4361
+  Future<AuthResponse> signInWithWeb3({
+    required Web3Chain chain,
+    required String message,
+    required String signature,
+    String? captchaToken,
+  }) async {
+    final response = await _fetch.request(
+      '$_url/token',
+      RequestMethodType.post,
+      options: GotrueRequestOptions(
+        headers: _headers,
+        body: {
+          'chain': chain.name,
+          'message': message,
+          'signature': signature,
+          if (captchaToken != null)
+            'gotrue_meta_security': {'captcha_token': captchaToken},
+        },
+        query: {'grant_type': 'web3'},
+      ),
+    );
+
+    final authResponse = AuthResponse.fromJson(response);
+
+    if (authResponse.session == null) {
+      throw AuthException('An error occurred on token verification.');
+    }
+
+    _saveSession(authResponse.session!);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
+
+    return authResponse;
+  }
+
   /// Log in a user using magiclink or a one-time password (OTP).
   ///
   /// If the `{{ .ConfirmationURL }}` variable is specified in the email template, a magiclink will be sent.
@@ -849,7 +897,17 @@ class GoTrueClient {
       throw AuthSessionMissingException();
     }
 
-    final body = attributes.toJson();
+    final codeChallenge = attributes.email != null
+        ? await _generatePKCECodeChallenge()
+        : null;
+
+    final body = {
+      ...attributes.toJson(),
+      if (attributes.email != null) ...{
+        'code_challenge': codeChallenge,
+        'code_challenge_method': codeChallenge != null ? 's256' : null,
+      },
+    };
     final options = GotrueRequestOptions(
       headers: _headers,
       body: body,

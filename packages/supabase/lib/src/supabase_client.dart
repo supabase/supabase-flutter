@@ -325,6 +325,10 @@ class SupabaseClient {
       schema: _postgrestOptions.schema,
       httpClient: _authHttpClient,
       isolate: _isolate,
+      retryEnabled: _postgrestOptions.retryEnabled,
+      retryCount: _postgrestOptions.retryCount,
+      retryableStatusCodes: _postgrestOptions.retryableStatusCodes,
+      requestTimeout: _postgrestOptions.requestTimeout,
     );
   }
 
@@ -368,6 +372,7 @@ class SupabaseClient {
           RealtimeConstants.defaultConnectionCloseTimeout,
       customAccessToken: accessToken,
       transport: options.transport,
+      disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
     );
   }
 

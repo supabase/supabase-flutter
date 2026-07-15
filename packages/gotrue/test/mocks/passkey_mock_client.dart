@@ -13,6 +13,10 @@ class PasskeyMockClient extends BaseClient {
   Map<String, dynamic>? lastRequestBody;
   Map<String, String>? lastHeaders;
 
+  /// When true, the registration options omit `user.name` and
+  /// `user.displayName`, mimicking a user without an email or phone.
+  bool omitUserName = false;
+
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
     lastMethod = request.method;
@@ -117,8 +121,8 @@ class PasskeyMockClient extends BaseClient {
       'rp': {'id': 'example.com', 'name': 'Example'},
       'user': {
         'id': 'YjEzODk4YmItM2I4NS00ZDgzLWE0NDctODQxZGMzMjMyZWEx',
-        'name': 'user@example.com',
-        'displayName': 'user@example.com',
+        if (!omitUserName) 'name': 'user@example.com',
+        if (!omitUserName) 'displayName': 'user@example.com',
       },
       'challenge': 'cmFuZG9tLWNoYWxsZW5nZQ',
       'pubKeyCredParams': [

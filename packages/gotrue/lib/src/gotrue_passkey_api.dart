@@ -54,9 +54,17 @@ class GoTruePasskeyApi {
   /// platform's passkey API to create a credential, then complete the
   /// registration with [verifyRegistration].
   ///
+  /// [friendlyName] is the account label the authenticator shows for the
+  /// passkey. When the server does not provide a `user.name` in the options
+  /// (for example when the user has neither an email nor a phone), it is filled
+  /// with [friendlyName] if given, or a generic default otherwise, so the
+  /// platform ceremony always has a name to display.
+  ///
   /// Requires a signed in (non-anonymous) user. If the user has verified MFA
   /// factors, the session has to be at `aal2` to manage passkeys.
-  Future<PasskeyRegistrationOptionsResponse> startRegistration() async {
+  Future<PasskeyRegistrationOptionsResponse> startRegistration({
+    String? friendlyName,
+  }) async {
     final session = _client.currentSession;
 
     final data = await _fetch.request(
@@ -69,7 +77,31 @@ class GoTruePasskeyApi {
       ),
     );
 
-    return PasskeyRegistrationOptionsResponse.fromJson(data);
+    final response = PasskeyRegistrationOptionsResponse.fromJson(data);
+    _applyUserNameFallback(response.options, friendlyName);
+    return response;
+  }
+
+  static const _defaultPasskeyName = 'Passkey';
+
+  void _applyUserNameFallback(
+    Map<String, dynamic> options,
+    String? friendlyName,
+  ) {
+    final user = options['user'];
+    if (user is! Map) {
+      return;
+    }
+
+    final name = user['name'];
+    if (name is! String || name.isEmpty) {
+      user['name'] = friendlyName ?? _defaultPasskeyName;
+    }
+
+    final displayName = user['displayName'];
+    if (displayName is! String || displayName.isEmpty) {
+      user['displayName'] = user['name'];
+    }
   }
 
   /// Completes the registration of a new passkey.

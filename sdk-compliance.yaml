@@ -23,9 +23,7 @@ sdk: flutter
 features:
   # auth — sign in / sign up
   auth.sign_in.sign_up: implemented
-  auth.sign_in.sign_in_with_password:
-    status: partially_implemented
-    note: "Weak passwords surface as a thrown AuthWeakPasswordException rather than a weakPassword field on the response."
+  auth.sign_in.sign_in_with_password: implemented
   auth.sign_in.sign_in_with_otp: implemented
   auth.sign_in.sign_in_with_oauth:
     status: implemented
@@ -34,16 +32,19 @@ features:
       - OAuthProvider.OAuthProvider
   auth.sign_in.sign_in_with_id_token: implemented
   auth.sign_in.sign_in_with_sso:
-    status: partially_implemented
+    status: implemented
     note: "Exposed as getSSOSignInUrl, which returns Future<String> (the URL) rather than the structured {url} response used by JS."
-  auth.sign_in.sign_in_with_web3: not_implemented
+  auth.sign_in.sign_in_with_web3:
+    status: implemented
+    note: "Callers sign the SIWE/SIWS message with their own wallet library and pass the message and signature; the SDK does not auto-detect browser wallets or build the message, since window.ethereum/window.solana have no Flutter equivalent."
+    symbols:
+      - GoTrueClient.signInWithWeb3
+      - Web3Chain
   auth.sign_in.sign_in_anonymously: implemented
   auth.sign_in.verify_otp: implemented
   auth.sign_in.exchange_code_for_session: implemented
   auth.sign_in.resend_confirmation: implemented
-  auth.sign_in.reauthenticate:
-    status: partially_implemented
-    note: "Returns Future<void>; the refreshed session is not returned to the caller."
+  auth.sign_in.reauthenticate: implemented
   auth.sign_in.reset_password: implemented
 
   # auth — session & user
@@ -58,14 +59,11 @@ features:
   auth.session.refresh_session: implemented
   auth.session.get_user: implemented
   auth.session.update_user:
-    status: partially_implemented
-    note: "Does not send a PKCE code_challenge when changing email under the PKCE flow."
+    status: implemented
     symbols:
       - UserAttributes.currentPassword
   auth.session.get_claims: implemented
-  auth.session.sign_out:
-    status: partially_implemented
-    note: "Default scope is local (current session); JS defaults to global (all sessions)."
+  auth.session.sign_out: implemented
   auth.session.auto_refresh: implemented
   auth.session.subscribe_auth_events: implemented
   auth.session.sign_out_reason:
@@ -76,17 +74,13 @@ features:
 
   # auth — identities
   auth.identities.link_identity:
-    status: partially_implemented
+    status: implemented
     note: "Split into getLinkIdentityUrl (OAuth) and linkIdentityWithIdToken (ID token) rather than a single overloaded method."
-  auth.identities.list_identities:
-    status: partially_implemented
-    note: "getUserIdentities returns a List<UserIdentity> directly rather than a {data, error} object."
+  auth.identities.list_identities: implemented
   auth.identities.unlink_identity: implemented
 
   # auth — MFA
-  auth.mfa.enroll:
-    status: partially_implemented
-    note: "Supports totp and phone factor types only. WebAuthn enrollment has no Dart equivalent: supabase-js runs the WebAuthn ceremony inline in the browser and patches the credential creation options' user.name client-side, whereas Dart delegates the device ceremony to a platform passkey plugin and exposes WebAuthn through the separate passkey API (which has no friendlyName parameter, as the server generates the name)."
+  auth.mfa.enroll: implemented
   auth.mfa.challenge: implemented
   auth.mfa.verify: implemented
   auth.mfa.challenge_and_verify: implemented
@@ -366,11 +360,21 @@ features:
 
   # database — configuration
   database.configuration.auto_retry:
-    status: partially_implemented
-    note: "Retries GET/HEAD requests on transient failures with backoff, but the retry count and conditions are hard-coded, not configurable."
+    status: implemented
+    symbols:
+      - PostgrestClient.retryEnabled
+      - PostgrestClient.retryCount
+      - PostgrestClient.retryableStatusCodes
+      - PostgrestClientOptions.retryEnabled
+      - PostgrestClientOptions.retryCount
+      - PostgrestClientOptions.retryableStatusCodes
+      - PostgrestBuilder.retry
+      - PostgrestClient.defaultRetryableStatusCodes
   database.configuration.request_timeout:
-    status: not_applicable
-    note: "Requires cancelling in-flight requests at the deadline, but the http.Client transport has no cancellation primitive. The only Dart-native option is Future.timeout, which lets the request keep running and is functionally identical to a caller applying .timeout() themselves, so it adds no real capability. Same reasoning as functions.invocation.timeout; a genuine version would require database.using_modifiers.request_cancellation."
+    status: implemented
+    symbols:
+      - PostgrestClient.requestTimeout
+      - PostgrestClientOptions.requestTimeout
 
   # storage — file buckets
   storage.file_buckets.access_bucket: implemented
@@ -469,20 +473,130 @@ features:
   storage.file_buckets.empty_bucket: implemented
 
   # storage — vector buckets
-  storage.vector_buckets.create_vector_bucket: not_implemented
-  storage.vector_buckets.list_vector_buckets: not_implemented
-  storage.vector_buckets.delete_vector_bucket: not_implemented
-  storage.vector_buckets.access_vector_index: not_implemented
-  storage.vector_buckets.create_index: not_implemented
-  storage.vector_buckets.get_index: not_implemented
-  storage.vector_buckets.list_indexes: not_implemented
-  storage.vector_buckets.delete_index: not_implemented
-  storage.vector_buckets.put_vectors: not_implemented
-  storage.vector_buckets.get_vectors: not_implemented
-  storage.vector_buckets.list_vectors: not_implemented
-  storage.vector_buckets.delete_vectors: not_implemented
-  storage.vector_buckets.query_vectors: not_implemented
-  storage.vector_buckets.parallel_scan: not_implemented
+  storage.vector_buckets.create_vector_bucket:
+    status: implemented
+    symbols:
+      - SupabaseStorageClient.vectors
+      - SupabaseVectorsClient
+      - SupabaseVectorsClient.createBucket
+  storage.vector_buckets.list_vector_buckets:
+    status: implemented
+    symbols:
+      - SupabaseVectorsClient.listBuckets
+      - SupabaseVectorsClient.getBucket
+      - VectorBucket
+      - VectorBucket.VectorBucket
+      - VectorBucket.name
+      - VectorBucket.creationTime
+      - VectorBucket.encryption
+      - VectorBucket.fromJson
+      - VectorBucketEncryption
+      - VectorBucketEncryption.VectorBucketEncryption
+      - VectorBucketEncryption.kmsKeyArn
+      - VectorBucketEncryption.sseType
+      - VectorBucketEncryption.fromJson
+      - VectorBucketList
+      - VectorBucketList.VectorBucketList
+      - VectorBucketList.buckets
+      - VectorBucketList.nextToken
+      - VectorBucketList.fromJson
+  storage.vector_buckets.delete_vector_bucket:
+    status: implemented
+    symbols:
+      - SupabaseVectorsClient.deleteBucket
+  storage.vector_buckets.access_vector_index:
+    status: implemented
+    symbols:
+      - SupabaseVectorsClient.from
+      - StorageVectorBucketApi
+      - StorageVectorBucketApi.bucketName
+      - StorageVectorBucketApi.index
+      - StorageVectorIndexApi
+      - StorageVectorIndexApi.bucketName
+      - StorageVectorIndexApi.indexName
+  storage.vector_buckets.create_index:
+    status: implemented
+    symbols:
+      - StorageVectorBucketApi.createIndex
+      - VectorDataType
+      - VectorDataType.value
+      - VectorDataType.fromValue
+      - DistanceMetric
+      - DistanceMetric.value
+      - DistanceMetric.fromValue
+  storage.vector_buckets.get_index:
+    status: implemented
+    symbols:
+      - StorageVectorBucketApi.getIndex
+      - VectorIndex
+      - VectorIndex.VectorIndex
+      - VectorIndex.name
+      - VectorIndex.bucketName
+      - VectorIndex.dataType
+      - VectorIndex.dimension
+      - VectorIndex.distanceMetric
+      - VectorIndex.nonFilterableMetadataKeys
+      - VectorIndex.creationTime
+      - VectorIndex.fromJson
+  storage.vector_buckets.list_indexes:
+    status: implemented
+    symbols:
+      - StorageVectorBucketApi.listIndexes
+      - VectorIndexList
+      - VectorIndexList.VectorIndexList
+      - VectorIndexList.indexes
+      - VectorIndexList.nextToken
+      - VectorIndexList.fromJson
+  storage.vector_buckets.delete_index:
+    status: implemented
+    symbols:
+      - StorageVectorBucketApi.deleteIndex
+  storage.vector_buckets.put_vectors:
+    status: implemented
+    symbols:
+      - StorageVectorIndexApi.putVectors
+      - Vector
+      - Vector.Vector
+      - Vector.key
+      - Vector.data
+      - Vector.metadata
+      - Vector.toJson
+  storage.vector_buckets.get_vectors:
+    status: implemented
+    symbols:
+      - StorageVectorIndexApi.getVectors
+      - VectorMatch
+      - VectorMatch.VectorMatch
+      - VectorMatch.key
+      - VectorMatch.data
+      - VectorMatch.metadata
+      - VectorMatch.distance
+      - VectorMatch.fromJson
+  storage.vector_buckets.list_vectors:
+    status: implemented
+    symbols:
+      - StorageVectorIndexApi.listVectors
+      - VectorList
+      - VectorList.VectorList
+      - VectorList.vectors
+      - VectorList.nextToken
+      - VectorList.fromJson
+  storage.vector_buckets.delete_vectors:
+    status: implemented
+    symbols:
+      - StorageVectorIndexApi.deleteVectors
+  storage.vector_buckets.query_vectors:
+    status: implemented
+    symbols:
+      - StorageVectorIndexApi.queryVectors
+      - VectorQueryResult
+      - VectorQueryResult.VectorQueryResult
+      - VectorQueryResult.matches
+      - VectorQueryResult.distanceMetric
+      - VectorQueryResult.fromJson
+  storage.vector_buckets.parallel_scan:
+    status: implemented
+    note: "Exposed through listVectors' segmentCount/segmentIndex parameters rather than a separate method; both are validated client-side."
 
   # storage — analytics (Iceberg) buckets
   storage.analytics.create_analytics_bucket:
@@ -861,7 +975,7 @@ features:
   realtime.channel.unsubscribe: implemented
   realtime.channel.send: implemented
   realtime.channel.broadcast_http:
-    status: partially_implemented
+    status: implemented
     note: "httpSend posts to the legacy /api/broadcast endpoint with a messages array and returns Future<void>, not the newer per-channel endpoint returning {success}."
 
   # realtime — client
@@ -925,7 +1039,10 @@ features:
     note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
   realtime.configuration.custom_logger: implemented
   realtime.configuration.binary_protocol: implemented
-  realtime.configuration.deferred_disconnect: not_implemented
+  realtime.configuration.deferred_disconnect:
+    status: implemented
+    symbols:
+      - RealtimeClientOptions.disconnectOnEmptyChannelsAfter
 
   # functions
   functions.invocation.invoke:

@@ -17,14 +17,14 @@ void main() {
         'supabase-dart',
         '2.0.0',
         platformInfo: const PlatformInfo(
-          platform: 'macos',
+          platform: 'macOS',
           platformVersion: 'Version 14.0',
           runtimeVersion: '3.9.0',
         ),
       );
       expect(
         header,
-        'supabase-dart/2.0.0; platform=macos; '
+        'supabase-dart/2.0.0; platform=macOS; '
         'platform-version=Version 14.0; runtime=dart; runtime-version=3.9.0',
       );
     });
@@ -36,6 +36,21 @@ void main() {
         platformInfo: const PlatformInfo(),
       );
       expect(header, 'supabase-dart/2.0.0; runtime=dart');
+    });
+  });
+
+  group('normalizePlatformName', () {
+    test('aligns casing with the other Supabase SDKs', () {
+      expect(normalizePlatformName('android'), 'Android');
+      expect(normalizePlatformName('ios'), 'iOS');
+      expect(normalizePlatformName('linux'), 'Linux');
+      expect(normalizePlatformName('macos'), 'macOS');
+      expect(normalizePlatformName('windows'), 'Windows');
+      expect(normalizePlatformName('fuchsia'), 'Fuchsia');
+    });
+
+    test('returns unknown values unchanged', () {
+      expect(normalizePlatformName('someNewPlatform'), 'someNewPlatform');
     });
   });
 
@@ -61,6 +76,15 @@ void main() {
     });
   });
 
+  group('platform info', () {
+    test('resolves the operating system, versions and test flag on the VM', () {
+      expect(conditionalPlatform, isNotEmpty);
+      expect(conditionalPlatformVersion, isNotEmpty);
+      expect(conditionalRuntimeVersion, isNotEmpty);
+      expect(isRunningInFlutterTest, isA<bool>());
+    });
+  });
+
   group('validateUuid', () {
     test('accepts valid uuid and rejects invalid', () {
       expect(
@@ -68,6 +92,20 @@ void main() {
         returnsNormally,
       );
       expect(() => validateUuid('not-a-uuid'), throwsArgumentError);
+    });
+  });
+
+  group('FetchOptions', () {
+    test('defaults to an empty header map and JSON resolution', () {
+      const options = FetchOptions(null);
+      expect(options.headers, isEmpty);
+      expect(options.noResolveJson, isFalse);
+    });
+
+    test('keeps the provided headers and noResolveJson flag', () {
+      const options = FetchOptions({'x': 'y'}, noResolveJson: true);
+      expect(options.headers, {'x': 'y'});
+      expect(options.noResolveJson, isTrue);
     });
   });
 
@@ -84,6 +122,37 @@ void main() {
       final subject = ReplaySubject<int>(sync: true);
       subject.addError(StateError('boom'));
       expect(subject.stream.first, throwsStateError);
+    });
+
+    test('async subject replays the latest error to late subscribers', () {
+      final subject = ReplaySubject<int>();
+      subject.addError(StateError('boom'));
+      expect(subject.stream.first, throwsStateError);
+    });
+
+    test('sync subject replays the latest value to late subscribers', () async {
+      final subject = ReplaySubject<int>(sync: true);
+      subject.add(7);
+      expect(await subject.stream.first, 7);
+      await subject.close();
+    });
+
+    test('invokes onListen and onCancel hooks assigned via setters', () async {
+      var listened = false;
+      var cancelled = false;
+      final subject = ReplaySubject<int>();
+      subject.onListen = () => listened = true;
+      subject.onCancel = () => cancelled = true;
+      subject.onPause = () {};
+      subject.onResume = () {};
+
+      final sub = subject.stream.listen((_) {});
+      await Future<void>.delayed(Duration.zero);
+      expect(listened, isTrue);
+      await sub.cancel();
+      await Future<void>.delayed(Duration.zero);
+      expect(cancelled, isTrue);
+      await subject.close();
     });
 
     test('sync subject delivers synchronously', () {

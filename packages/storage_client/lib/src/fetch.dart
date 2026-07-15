@@ -211,6 +211,9 @@ class Fetch {
       if (options?.noResolveJson == true) {
         return response.bodyBytes;
       }
+      if (response.body.isEmpty) {
+        return null;
+      }
       final jsonBody = json.decode(response.body);
       return jsonBody;
     }

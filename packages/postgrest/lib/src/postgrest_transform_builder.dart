@@ -7,8 +7,17 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       PostgrestTransformBuilder(_copyWith(url: url));
 
   @override
-  PostgrestTransformBuilder<T> retry({required bool enabled}) {
-    return PostgrestTransformBuilder(_copyWith(retryEnabled: enabled));
+  PostgrestTransformBuilder<T> retry({
+    bool enabled = true,
+    int? count,
+    Duration? requestTimeout,
+  }) {
+    return PostgrestTransformBuilder(
+      _copyWith(
+        retry: _retry.copyWith(enabled: enabled, count: count),
+        requestTimeout: requestTimeout,
+      ),
+    );
   }
 
   @override

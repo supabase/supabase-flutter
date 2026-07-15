@@ -11,6 +11,7 @@ class OtpMockClient extends BaseClient {
   final String refreshToken;
 
   Map<String, dynamic>? lastResendBody;
+  Map<String, dynamic>? lastUpdateUserBody;
 
   OtpMockClient({
     this.phoneNumber = '+11234567890',
@@ -67,6 +68,11 @@ class OtpMockClient extends BaseClient {
     // Simulate resend
     if (url.contains('/resend') && method == 'POST') {
       return _handleResend(requestBody);
+    }
+
+    // Simulate updating the current user
+    if (url.contains('/user') && method == 'PUT') {
+      return _handleUpdateUser(requestBody);
     }
 
     // Default response for unhandled requests
@@ -305,6 +311,37 @@ class OtpMockClient extends BaseClient {
           jsonEncode({
             'message': 'OTP resent',
             'message_id': 'mock-message-id-resend',
+          }),
+        ),
+      ),
+      200,
+      request: null,
+    );
+  }
+
+  StreamedResponse _handleUpdateUser(Map<String, dynamic>? requestBody) {
+    lastUpdateUserBody = requestBody;
+    final now = DateTime.now().toIso8601String();
+
+    return StreamedResponse(
+      Stream.value(
+        utf8.encode(
+          jsonEncode({
+            'id': userId,
+            'aud': 'authenticated',
+            'role': 'authenticated',
+            'email': requestBody?['email'] ?? email,
+            'phone': requestBody?['phone'] ?? phoneNumber,
+            'confirmed_at': now,
+            'last_sign_in_at': now,
+            'created_at': now,
+            'updated_at': now,
+            'app_metadata': {
+              'provider': 'email',
+              'providers': ['email'],
+            },
+            'user_metadata': {},
+            'identities': [],
           }),
         ),
       ),
