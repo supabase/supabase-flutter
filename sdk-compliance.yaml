@@ -44,9 +44,7 @@ features:
   auth.sign_in.verify_otp: implemented
   auth.sign_in.exchange_code_for_session: implemented
   auth.sign_in.resend_confirmation: implemented
-  auth.sign_in.reauthenticate:
-    status: implemented
-    note: "Returns Future<void>. supabase-js returns an AuthResponse, but its user and session are always null (the /reauthenticate endpoint only sends a reauthentication OTP and returns no session), so the void return is functionally equivalent."
+  auth.sign_in.reauthenticate: implemented
   auth.sign_in.reset_password: implemented
 
   # auth — session & user
@@ -619,7 +617,7 @@ features:
   realtime.channel.unsubscribe: implemented
   realtime.channel.send: implemented
   realtime.channel.broadcast_http:
-    status: partially_implemented
+    status: implemented
     note: "httpSend posts to the legacy /api/broadcast endpoint with a messages array and returns Future<void>, not the newer per-channel endpoint returning {success}."
 
   # realtime — client
