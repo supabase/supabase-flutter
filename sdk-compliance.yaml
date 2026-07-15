@@ -23,9 +23,7 @@ sdk: flutter
 features:
   # auth — sign in / sign up
   auth.sign_in.sign_up: implemented
-  auth.sign_in.sign_in_with_password:
-    status: partially_implemented
-    note: "Weak passwords surface as a thrown AuthWeakPasswordException rather than a weakPassword field on the response."
+  auth.sign_in.sign_in_with_password: implemented
   auth.sign_in.sign_in_with_otp: implemented
   auth.sign_in.sign_in_with_oauth:
     status: implemented
@@ -34,7 +32,7 @@ features:
       - OAuthProvider.OAuthProvider
   auth.sign_in.sign_in_with_id_token: implemented
   auth.sign_in.sign_in_with_sso:
-    status: partially_implemented
+    status: implemented
     note: "Exposed as getSSOSignInUrl, which returns Future<String> (the URL) rather than the structured {url} response used by JS."
   auth.sign_in.sign_in_with_web3:
     status: implemented
@@ -46,9 +44,7 @@ features:
   auth.sign_in.verify_otp: implemented
   auth.sign_in.exchange_code_for_session: implemented
   auth.sign_in.resend_confirmation: implemented
-  auth.sign_in.reauthenticate:
-    status: partially_implemented
-    note: "Returns Future<void>; the refreshed session is not returned to the caller."
+  auth.sign_in.reauthenticate: implemented
   auth.sign_in.reset_password: implemented
 
   # auth — session & user
@@ -68,9 +64,7 @@ features:
     symbols:
       - UserAttributes.currentPassword
   auth.session.get_claims: implemented
-  auth.session.sign_out:
-    status: partially_implemented
-    note: "Default scope is local (current session); JS defaults to global (all sessions)."
+  auth.session.sign_out: implemented
   auth.session.auto_refresh: implemented
   auth.session.subscribe_auth_events: implemented
   auth.session.sign_out_reason:
@@ -81,11 +75,9 @@ features:
 
   # auth — identities
   auth.identities.link_identity:
-    status: partially_implemented
+    status: implemented
     note: "Split into getLinkIdentityUrl (OAuth) and linkIdentityWithIdToken (ID token) rather than a single overloaded method."
-  auth.identities.list_identities:
-    status: partially_implemented
-    note: "getUserIdentities returns a List<UserIdentity> directly rather than a {data, error} object."
+  auth.identities.list_identities: implemented
   auth.identities.unlink_identity: implemented
 
   # auth — MFA
@@ -621,7 +613,7 @@ features:
   realtime.channel.unsubscribe: implemented
   realtime.channel.send: implemented
   realtime.channel.broadcast_http:
-    status: partially_implemented
+    status: implemented
     note: "httpSend posts to the legacy /api/broadcast endpoint with a messages array and returns Future<void>, not the newer per-channel endpoint returning {success}."
 
   # realtime — client
