@@ -745,6 +745,53 @@ void main() {
         expect(await emittedEvent, AuthChangeEvent.signedIn);
       },
     );
+
+    test(
+      'updateUser email change under PKCE can be exchanged for a session',
+      () async {
+        await http.post(
+          Uri.parse(
+            'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+          ),
+          headers: {
+            'x-forwarded-for': '127.0.0.1',
+            'apikey': getServiceRoleToken(env),
+            'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+          },
+        );
+        await http.delete(
+          Uri.parse('http://127.0.0.1:54424/api/v1/messages'),
+        );
+
+        final pkceClient = GoTrueClient(
+          url: gotrueUrl,
+          headers: {
+            'Authorization': 'Bearer $anonToken',
+            'apikey': anonToken,
+          },
+          asyncStorage: TestAsyncStorage(),
+          flowType: AuthFlowType.pkce,
+          autoRefreshToken: false,
+        );
+
+        await pkceClient.signInWithPassword(
+          email: email1,
+          password: password,
+        );
+
+        final newEmail = getNewEmail();
+        final updateResponse = await pkceClient.updateUser(
+          UserAttributes(email: newEmail),
+        );
+        expect(updateResponse.user?.newEmail, newEmail);
+
+        final code = await _pkceCodeFromEmailChange(newEmail);
+        final exchanged = await pkceClient.exchangeCodeForSession(code);
+
+        expect(exchanged.session.user.email, newEmail);
+        expect(exchanged.session.accessToken, isNotEmpty);
+      },
+    );
   });
 
   group('Recovering an already refreshed session', () {
@@ -806,4 +853,52 @@ void main() {
       await subscription.cancel();
     });
   });
+}
+
+/// Reads the email-change confirmation link that GoTrue delivered to
+/// [toEmail] via the local Mailpit server, follows it, and returns the PKCE
+/// `code` from the redirect so it can be passed to [exchangeCodeForSession].
+Future<String> _pkceCodeFromEmailChange(String toEmail) async {
+  Map<String, dynamic>? message;
+  for (var attempt = 0; attempt < 20 && message == null; attempt++) {
+    final search =
+        jsonDecode(
+              (await http.get(
+                Uri.parse(
+                  'http://127.0.0.1:54424/api/v1/search?query=to:$toEmail',
+                ),
+              )).body,
+            )
+            as Map<String, dynamic>;
+    final messages = search['messages'] as List;
+    if (messages.isNotEmpty) {
+      message =
+          jsonDecode(
+                (await http.get(
+                  Uri.parse(
+                    'http://127.0.0.1:54424/api/v1/message/${messages.first['ID']}',
+                  ),
+                )).body,
+              )
+              as Map<String, dynamic>;
+    } else {
+      await Future.delayed(const Duration(milliseconds: 250));
+    }
+  }
+
+  final link = RegExp(r'http://127\.0\.0\.1:54421/auth/v1/verify\?\S+')
+      .firstMatch(message!['Text'] as String)!
+      .group(0)!
+      .replaceAll(RegExp(r'[)>].*$'), '');
+
+  final client = http.Client();
+  try {
+    final request = http.Request('GET', Uri.parse(link))
+      ..followRedirects = false;
+    final response = await client.send(request);
+    final location = response.headers['location']!;
+    return Uri.parse(location).queryParameters['code']!;
+  } finally {
+    client.close();
+  }
 }
