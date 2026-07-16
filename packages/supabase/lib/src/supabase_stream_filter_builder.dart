@@ -107,7 +107,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
     return this;
   }
 
-  /// Filters the results where [column] is included in [value].
+  /// Filters the results where [column] is included in [values].
   ///
   /// Only one filter can be applied to `.stream()`.
   ///
@@ -119,6 +119,103 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
       type: PostgresChangeFilterType.inFilter,
       column: column,
       value: values,
+    );
+    return this;
+  }
+
+  /// Filters the results where [column] matches the [pattern] case-sensitive.
+  ///
+  /// Only one filter can be applied to `.stream()`.
+  ///
+  /// ```dart
+  /// supabase.from('users').stream(primaryKey: ['id']).like('title', '%foo%');
+  /// ```
+  SupabaseStreamBuilder like(String column, String pattern) {
+    _streamFilter = (
+      type: PostgresChangeFilterType.like,
+      column: column,
+      value: pattern,
+    );
+    return this;
+  }
+
+  /// Filters the results where [column] matches the [pattern] case-insensitive.
+  ///
+  /// Only one filter can be applied to `.stream()`.
+  ///
+  /// ```dart
+  /// supabase.from('users').stream(primaryKey: ['id']).ilike('title', '%foo%');
+  /// ```
+  SupabaseStreamBuilder ilike(String column, String pattern) {
+    _streamFilter = (
+      type: PostgresChangeFilterType.ilike,
+      column: column,
+      value: pattern,
+    );
+    return this;
+  }
+
+  /// Filters the results where [column] matches the POSIX [regex] case-sensitive.
+  ///
+  /// Only one filter can be applied to `.stream()`.
+  ///
+  /// ```dart
+  /// supabase.from('users').stream(primaryKey: ['id']).match('slug', r'^post-\d+$');
+  /// ```
+  SupabaseStreamBuilder match(String column, String regex) {
+    _streamFilter = (
+      type: PostgresChangeFilterType.match,
+      column: column,
+      value: regex,
+    );
+    return this;
+  }
+
+  /// Filters the results where [column] matches the POSIX [regex] case-insensitive.
+  ///
+  /// Only one filter can be applied to `.stream()`.
+  ///
+  /// ```dart
+  /// supabase.from('users').stream(primaryKey: ['id']).imatch('slug', r'^post-\d+$');
+  /// ```
+  SupabaseStreamBuilder imatch(String column, String regex) {
+    _streamFilter = (
+      type: PostgresChangeFilterType.imatch,
+      column: column,
+      value: regex,
+    );
+    return this;
+  }
+
+  /// Filters the results where [column] is `null`, `true` or `false`.
+  ///
+  /// Only one filter can be applied to `.stream()`.
+  ///
+  /// ```dart
+  /// supabase.from('users').stream(primaryKey: ['id']).isFilter('data', null);
+  /// ```
+  SupabaseStreamBuilder isFilter(String column, bool? value) {
+    _streamFilter = (
+      type: PostgresChangeFilterType.isFilter,
+      column: column,
+      value: value,
+    );
+    return this;
+  }
+
+  /// Filters the results where [column] is not equal to [value] treating `null
+  /// as a distinct value.
+  ///
+  /// Only one filter can be applied to `.stream()`.
+  ///
+  /// ```dart
+  /// supabase.from('users').stream(primaryKey: ['id']).isDistinct('age', null);
+  /// ```
+  SupabaseStreamBuilder isDistinct(String column, Object? value) {
+    _streamFilter = (
+      type: PostgresChangeFilterType.isDistinct,
+      column: column,
+      value: value,
     );
     return this;
   }

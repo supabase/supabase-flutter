@@ -256,18 +256,29 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           _streamFilter!.column,
           _streamFilter!.value,
         ),
-        // These operators are only reachable through the realtime
-        // `onPostgresChanges` API, not through `.stream()`'s filter builder,
-        // so they can never be set on `_streamFilter`. Guard the exhaustive
-        // switch defensively in case that ever changes.
-        PostgresChangeFilterType.like ||
-        PostgresChangeFilterType.ilike ||
-        PostgresChangeFilterType.isFilter ||
-        PostgresChangeFilterType.match ||
-        PostgresChangeFilterType.imatch ||
-        PostgresChangeFilterType.isDistinct => throw UnsupportedError(
-          'The "${_streamFilter!.type.name}" filter is not supported by '
-          '`.stream()`. Use one of eq, neq, lt, lte, gt, gte or inFilter.',
+        PostgresChangeFilterType.like => query.like(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.ilike => query.ilike(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.match => query.matchRegex(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.imatch => query.imatchRegex(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.isFilter => query.isFilter(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.isDistinct => query.isDistinct(
+          _streamFilter!.column,
+          _streamFilter!.value,
         ),
       };
     }
