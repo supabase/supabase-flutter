@@ -59,7 +59,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   SupabaseStreamEvent _streamData = [];
 
   /// Filters to be applied to the stream
-  List<_StreamPostgrestFilter> _streamFilter = [];
+  final List<_StreamPostgrestFilter> _streamFilter = [];
 
   /// Which column to order by and whether it's ascending
   _Order? _orderBy;
