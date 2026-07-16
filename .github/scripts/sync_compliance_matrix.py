@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Append capability IDs from the canonical spec that are missing locally.
+"""Insert capability IDs from the canonical spec that are missing locally.
 
 Reads the canonical capability files checked out under `_sdk-spec/capabilities/`
-and appends any IDs not already present in `sdk-compliance.yaml` as
-`not_implemented`, leaving them for a human to triage. The list of added IDs is
-also written to `new_ids.txt` for the workflow to use in the pull request body.
+and inserts any IDs not already present in `sdk-compliance.yaml` as
+`not_implemented`, next to their existing siblings (same `area.group.` prefix)
+so they land in the right section. IDs belonging to a group with no local
+sibling yet are appended at the end under a comment for manual placement. The
+list of added IDs is written to `new_ids.txt` for the workflow's pull request
+body.
 """
 import re
 import sys
@@ -28,33 +31,64 @@ def read_canonical_ids():
     return identifiers
 
 
+def feature_key_at(lines, index):
+    found = FEATURE_KEY.match(lines[index])
+    return found.group(1) if found else None
+
+
 def read_existing_ids(lines):
-    identifiers = set()
-    for line in lines:
-        found = FEATURE_KEY.match(line)
-        if found:
-            identifiers.add(found.group(1))
-    return identifiers
+    return {key for index in range(len(lines)) if (key := feature_key_at(lines, index))}
+
+
+def block_end(lines, start):
+    end = start + 1
+    while end < len(lines) and lines[end].startswith("    "):
+        end += 1
+    return end
+
+
+def insertion_index(lines, prefix):
+    last = None
+    for index in range(len(lines)):
+        key = feature_key_at(lines, index)
+        if key and key.startswith(prefix):
+            last = index
+    if last is None:
+        return None
+    return block_end(lines, last)
 
 
 def main():
     if not CAPABILITIES_DIRECTORY.is_dir():
         sys.exit(f"Canonical capabilities not found at {CAPABILITIES_DIRECTORY}")
-    text = COMPLIANCE_FILE.read_text()
-    new_identifiers = sorted(read_canonical_ids() - read_existing_ids(text.splitlines()))
+    lines = COMPLIANCE_FILE.read_text().splitlines()
+    new_identifiers = sorted(read_canonical_ids() - read_existing_ids(lines))
     Path("new_ids.txt").write_text("\n".join(new_identifiers))
     if not new_identifiers:
         print("No new capability IDs.")
         return
-    if not text.endswith("\n"):
-        text += "\n"
-    block = [
-        "",
-        "  # Newly synced from the canonical spec; triage status and symbols before merge.",
-    ]
-    block += [f"  {identifier}: not_implemented" for identifier in new_identifiers]
-    COMPLIANCE_FILE.write_text(text + "\n".join(block) + "\n")
-    print(f"Added {len(new_identifiers)} new capability IDs.")
+
+    orphans = []
+    for identifier in new_identifiers:
+        prefix = identifier.rsplit(".", 1)[0] + "."
+        index = insertion_index(lines, prefix)
+        if index is None:
+            orphans.append(identifier)
+            continue
+        lines.insert(index, f"  {identifier}: not_implemented")
+
+    if orphans:
+        lines.append("")
+        lines.append(
+            "  # Newly synced from the canonical spec; no local group yet, place manually."
+        )
+        lines += [f"  {identifier}: not_implemented" for identifier in orphans]
+
+    COMPLIANCE_FILE.write_text("\n".join(lines) + "\n")
+    print(
+        f"Added {len(new_identifiers)} new capability IDs "
+        f"({len(orphans)} without an existing group)."
+    )
 
 
 if __name__ == "__main__":
