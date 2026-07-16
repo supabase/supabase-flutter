@@ -248,6 +248,37 @@ void main() {
       expect(response, 'Move');
     });
 
+    test('should purgeCache issuing DELETE to /cdn/{bucket}/{path}', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client.from('public').purgeCache('folder/a.txt');
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.toString(),
+        endsWith('/storage/v1/cdn/public/folder/a.txt'),
+      );
+      expect(request.url.query, isEmpty);
+      expect(response, 'success');
+    });
+
+    test('should purgeCache with transformations query param', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client
+          .from('public')
+          .purgeCache('folder/a.txt', transformations: true);
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.queryParameters['transformations'],
+        'true',
+      );
+      expect(response, 'success');
+    });
+
     test('should createSignedUrl file', () async {
       customHttpClient.response = {'signedURL': '/signed/url'};
 
