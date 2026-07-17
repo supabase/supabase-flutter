@@ -34,8 +34,22 @@ void main() {
 
       expect(records, hasLength(1));
       expect(records.first.level, Level.WARNING);
-      expect(records.first.message, contains('sb_weirdtype_'));
+      expect(records.first.message, isNot(contains('weirdtype')));
       expect(records.first.message, isNot(contains('supersecretvalue')));
+    });
+
+    test('does not log the key when there is no second underscore', () {
+      final records = <LogRecord>[];
+      final subscription = Logger.root.onRecord.listen(records.add);
+      final log = Logger('test.api_key');
+
+      warnOnUnrecognizedApiKey('sb_sensitivevalue', log);
+
+      unawaited(subscription.cancel());
+
+      expect(records, hasLength(1));
+      expect(records.first.level, Level.WARNING);
+      expect(records.first.message, isNot(contains('sensitivevalue')));
     });
 
     test('does not warn on recognized or legacy keys', () {

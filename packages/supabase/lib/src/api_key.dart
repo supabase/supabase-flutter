@@ -24,12 +24,12 @@ void warnOnUnrecognizedApiKey(String key, Logger log) {
   final rest = key.substring('sb_'.length);
   final underscoreIndex = rest.indexOf('_');
   final subtype = underscoreIndex == -1
-      ? rest
+      ? ''
       : rest.substring(0, underscoreIndex);
   if (_warnedApiKeySubtypes.add(subtype)) {
     log.warning(
-      'Unrecognized Supabase API key subtype "sb_${subtype}_". '
-      'The key will be sent as-is. If this is unexpected, verify your API key.',
+      'Unrecognized Supabase API key format. The key will be sent as-is. '
+      'If this is unexpected, verify your API key.',
     );
   }
 }
