@@ -1,4 +1,5 @@
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 
 const _publishableKeyPrefix = 'sb_publishable_';
 const _secretKeyPrefix = 'sb_secret_';
@@ -8,6 +9,7 @@ const _secretKeyPrefix = 'sb_secret_';
 ///
 /// These keys are not JWTs and must never be sent as an
 /// `Authorization: Bearer` token.
+@internal
 bool isNewApiKey(String key) =>
     key.startsWith(_publishableKeyPrefix) || key.startsWith(_secretKeyPrefix);
 
@@ -17,6 +19,7 @@ final Set<String> _warnedApiKeySubtypes = {};
 ///
 /// Never throws: the server, not the SDK, decides key validity. The key value
 /// is never logged.
+@internal
 void warnOnUnrecognizedApiKey(String key, Logger log) {
   if (!key.startsWith('sb_') || isNewApiKey(key)) {
     return;
