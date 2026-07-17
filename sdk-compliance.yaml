@@ -442,6 +442,10 @@ features:
     status: implemented
     symbols:
       - StorageFileApi.purgeCache
+  storage.file_buckets.purge_bucket_cache:
+    status: implemented
+    symbols:
+      - StorageBucketApi.purgeBucketCache
   storage.file_buckets.create_signed_url:
     status: implemented
     symbols:
