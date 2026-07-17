@@ -129,6 +129,10 @@ dynamic convertColumn(
 /// => [1,2,3,4]
 /// ```
 dynamic convertCell(String type, dynamic value) {
+  if (value == null) {
+    return null;
+  }
+
   // if data type is an array
   if (type[0] == '_') {
     final dataType = type.substring(1);
@@ -197,24 +201,20 @@ double? toDouble(dynamic value) {
   if (value is double) {
     return value;
   }
-  try {
-    final temp = value.toString();
-    return double.parse(temp);
-  } catch (_) {
+  if (value == null) {
     return null;
   }
+  return double.tryParse(value.toString());
 }
 
 int? toInt(dynamic value) {
   if (value is int) {
     return value;
   }
-  try {
-    final temp = value.toString();
-    return int.parse(temp);
-  } catch (_) {
+  if (value == null) {
     return null;
   }
+  return int.tryParse(value.toString());
 }
 
 dynamic toJson(dynamic value) {

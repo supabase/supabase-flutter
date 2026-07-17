@@ -6,9 +6,11 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   validate:
     permissions:
       contents: read
+      pull-requests: write
     uses: supabase/sdk/.github/workflows/validate-sdk-compliance-dart.yml@main
