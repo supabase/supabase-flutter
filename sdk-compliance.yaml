@@ -438,6 +438,14 @@ features:
   storage.file_buckets.copy: implemented
   storage.file_buckets.copy_cross_bucket: implemented
   storage.file_buckets.remove: implemented
+  storage.file_buckets.purge_cache:
+    status: implemented
+    symbols:
+      - StorageFileApi.purgeCache
+  storage.file_buckets.purge_bucket_cache:
+    status: implemented
+    symbols:
+      - StorageBucketApi.purgeBucketCache
   storage.file_buckets.create_signed_url:
     status: implemented
     symbols:
