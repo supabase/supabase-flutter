@@ -7,6 +7,7 @@ import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
+import 'api_key.dart';
 import 'auth_http_client.dart';
 import 'counter.dart';
 import 'trace_http_client.dart';
@@ -55,6 +56,7 @@ class SupabaseClient {
   final Map<String, String> _headers;
   final Client? _httpClient;
   late final Client _authHttpClient;
+  late final Client _functionsHttpClient;
   late final Client _gotrueHttpClient;
 
   GoTrueClient? _authInstance;
@@ -168,6 +170,13 @@ class SupabaseClient {
       tracedHttpClient,
       _getAccessToken,
     );
+    _functionsHttpClient = AuthHttpClient(
+      _supabaseKey,
+      tracedHttpClient,
+      _getAccessToken,
+      omitNewApiKeyAsBearer: true,
+    );
+    warnOnUnrecognizedApiKey(_supabaseKey, _log);
     rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(
@@ -336,7 +345,7 @@ class SupabaseClient {
     return FunctionsClient(
       _functionsUrl,
       {...headers},
-      httpClient: _authHttpClient,
+      httpClient: _functionsHttpClient,
       isolate: _isolate,
       region: _functionsOptions.region,
     );
