@@ -13,3 +13,7 @@
 # @internal (that would trigger invalid_use_of_internal_member in the
 # consumers). Exclude the whole package from the public-API scan instead.
 packages/supabase_common/
+
+# The examples are standalone demo apps, not part of the published SDK, so their
+# public classes are not capability-matrix symbols.
+examples/
