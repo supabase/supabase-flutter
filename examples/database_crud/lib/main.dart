@@ -57,38 +57,55 @@ class _TasksPageState extends State<TasksPage> {
   String? _projectFilter;
   bool _onlyIncomplete = false;
   bool _loading = true;
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_load());
+    unawaited(_init());
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _search.dispose();
     super.dispose();
   }
 
-  /// Loads the projects (once) and the tasks matching the current filters.
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  /// Loads the projects once, then the tasks for the current filters.
+  Future<void> _init() async {
     try {
       final projects = await _repository.fetchProjects();
+      if (mounted) setState(() => _projects = projects);
+    } catch (error) {
+      _showError(error);
+    }
+    await _loadTasks();
+  }
+
+  /// Reloads the task list for the current filters. Leaves the previous list on
+  /// screen while it runs, so changing a filter or toggling a task doesn't flash
+  /// a spinner over the whole list.
+  Future<void> _loadTasks() async {
+    try {
       final tasks = await _repository.fetchTasks(
         projectId: _projectFilter,
         search: _search.text.trim(),
         onlyIncomplete: _onlyIncomplete,
       );
-      setState(() {
-        _projects = projects;
-        _tasks = tasks;
-      });
+      if (mounted) setState(() => _tasks = tasks);
     } catch (error) {
       _showError(error);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  /// Debounces the search field so typing doesn't fire a query per keystroke
+  /// and race the responses back out of order.
+  void _onSearchChanged(String _) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), _loadTasks);
   }
 
   Future<void> _toggle(Task task) async {
@@ -97,7 +114,7 @@ class _TasksPageState extends State<TasksPage> {
         id: task.id,
         isComplete: !task.isComplete,
       );
-      await _load();
+      await _loadTasks();
     } catch (error) {
       _showError(error);
     }
@@ -106,7 +123,7 @@ class _TasksPageState extends State<TasksPage> {
   Future<void> _delete(Task task) async {
     try {
       await _repository.deleteTask(task.id);
-      await _load();
+      await _loadTasks();
     } catch (error) {
       _showError(error);
     }
@@ -124,7 +141,7 @@ class _TasksPageState extends State<TasksPage> {
         title: result.title,
         priority: result.priority,
       );
-      await _load();
+      await _loadTasks();
     } catch (error) {
       _showError(error);
     }
@@ -156,7 +173,7 @@ class _TasksPageState extends State<TasksPage> {
     if (title == null || title.isEmpty) return;
     try {
       await _repository.renameTask(id: task.id, title: title);
-      await _load();
+      await _loadTasks();
     } catch (error) {
       _showError(error);
     }
@@ -180,12 +197,12 @@ class _TasksPageState extends State<TasksPage> {
             onlyIncomplete: _onlyIncomplete,
             onProjectChanged: (value) {
               setState(() => _projectFilter = value);
-              unawaited(_load());
+              unawaited(_loadTasks());
             },
-            onSearchChanged: (_) => unawaited(_load()),
+            onSearchChanged: _onSearchChanged,
             onOnlyIncompleteChanged: (value) {
               setState(() => _onlyIncomplete = value);
-              unawaited(_load());
+              unawaited(_loadTasks());
             },
           ),
           const Divider(height: 1),
@@ -195,7 +212,7 @@ class _TasksPageState extends State<TasksPage> {
                 : _tasks.isEmpty
                 ? const Center(child: Text('No tasks match these filters.'))
                 : RefreshIndicator(
-                    onRefresh: _load,
+                    onRefresh: _loadTasks,
                     child: ListView.builder(
                       itemCount: _tasks.length,
                       itemBuilder: (context, index) {
