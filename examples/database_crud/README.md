@@ -14,6 +14,11 @@ All database access is in
 [`lib/tasks_repository.dart`](lib/tasks_repository.dart), kept separate from the
 UI so the queries are easy to read and to drive from an integration test.
 
+To keep the focus on the Supabase calls, the screen uses plain `setState` and
+reloads the list after each write rather than pulling in a state management
+package or applying optimistic updates. A larger app would typically reach for a
+state management solution (for example Riverpod, Bloc or Provider) instead.
+
 The tables and sample data come from the shared Supabase config in
 [`../supabase`](../supabase): schema in
 `migrations/20240601000000_crud_example.sql`, seed rows in `seed.sql`.

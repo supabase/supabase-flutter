@@ -55,14 +55,14 @@ class TasksRepository {
   Future<Task> createTask({
     required String projectId,
     required String title,
-    int priority = 1,
+    Priority priority = Priority.low,
   }) async {
     final row = await _client
         .from('tasks')
         .insert({
           'project_id': projectId,
           'title': title,
-          'priority': priority,
+          'priority': priority.value,
         })
         .select(_taskColumns)
         .single();

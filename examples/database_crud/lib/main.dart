@@ -23,8 +23,6 @@ Future<void> main() async {
 
 SupabaseClient get supabase => Supabase.instance.client;
 
-const _priorityLabels = {1: 'Low', 2: 'Medium', 3: 'High'};
-
 class CrudExampleApp extends StatelessWidget {
   const CrudExampleApp({super.key});
 
@@ -57,6 +55,7 @@ class _TasksPageState extends State<TasksPage> {
   String? _projectFilter;
   bool _onlyIncomplete = false;
   bool _loading = true;
+  bool _mutating = false;
   Timer? _debounce;
 
   /// Bumped on every task reload so a slower earlier request can't overwrite the
@@ -118,26 +117,30 @@ class _TasksPageState extends State<TasksPage> {
     _debounce = Timer(const Duration(milliseconds: 300), _loadTasks);
   }
 
-  Future<void> _toggle(Task task) async {
+  /// Runs a single write, then reloads the list. Ignores the call if another
+  /// write is already in flight, so a double tap can't fire duplicate requests.
+  Future<void> _mutate(Future<void> Function() write) async {
+    if (_mutating) return;
+    setState(() => _mutating = true);
     try {
-      await _repository.setTaskComplete(
-        id: task.id,
-        isComplete: !task.isComplete,
-      );
+      await write();
       await _loadTasks();
     } catch (error) {
       _showError(error);
+    } finally {
+      if (mounted) setState(() => _mutating = false);
     }
   }
 
-  Future<void> _delete(Task task) async {
-    try {
-      await _repository.deleteTask(task.id);
-      await _loadTasks();
-    } catch (error) {
-      _showError(error);
-    }
-  }
+  Future<void> _toggle(Task task) => _mutate(
+    () => _repository.setTaskComplete(
+      id: task.id,
+      isComplete: !task.isComplete,
+    ),
+  );
+
+  Future<void> _delete(Task task) =>
+      _mutate(() => _repository.deleteTask(task.id));
 
   Future<void> _create() async {
     final result = await showDialog<_TaskFormResult>(
@@ -145,16 +148,13 @@ class _TasksPageState extends State<TasksPage> {
       builder: (context) => _TaskDialog(projects: _projects),
     );
     if (result == null) return;
-    try {
-      await _repository.createTask(
+    await _mutate(
+      () => _repository.createTask(
         projectId: result.projectId,
         title: result.title,
         priority: result.priority,
-      );
-      await _loadTasks();
-    } catch (error) {
-      _showError(error);
-    }
+      ),
+    );
   }
 
   Future<void> _rename(Task task) async {
@@ -181,12 +181,7 @@ class _TasksPageState extends State<TasksPage> {
       ),
     );
     if (title == null || title.isEmpty) return;
-    try {
-      await _repository.renameTask(id: task.id, title: title);
-      await _loadTasks();
-    } catch (error) {
-      _showError(error);
-    }
+    await _mutate(() => _repository.renameTask(id: task.id, title: title));
   }
 
   @override
@@ -194,7 +189,7 @@ class _TasksPageState extends State<TasksPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Tasks')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _projects.isEmpty ? null : _create,
+        onPressed: _projects.isEmpty || _mutating ? null : _create,
         icon: const Icon(Icons.add),
         label: const Text('New task'),
       ),
@@ -229,6 +224,7 @@ class _TasksPageState extends State<TasksPage> {
                         final task = _tasks[index];
                         return _TaskTile(
                           task: task,
+                          enabled: !_mutating,
                           onToggle: () => _toggle(task),
                           onRename: () => _rename(task),
                           onDelete: () => _delete(task),
@@ -303,14 +299,12 @@ class _Filters extends StatelessWidget {
               ),
             ],
           ),
-          Row(
-            children: [
-              Checkbox(
-                value: onlyIncomplete,
-                onChanged: (value) => onOnlyIncompleteChanged(value ?? false),
-              ),
-              const Text('Only incomplete'),
-            ],
+          CheckboxListTile(
+            value: onlyIncomplete,
+            onChanged: (value) => onOnlyIncompleteChanged(value ?? false),
+            title: const Text('Only incomplete'),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
           ),
         ],
       ),
@@ -321,23 +315,24 @@ class _Filters extends StatelessWidget {
 class _TaskTile extends StatelessWidget {
   const _TaskTile({
     required this.task,
+    required this.enabled,
     required this.onToggle,
     required this.onRename,
     required this.onDelete,
   });
 
   final Task task;
+  final bool enabled;
   final VoidCallback onToggle;
   final VoidCallback onRename;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    final priority = _priorityLabels[task.priority] ?? '${task.priority}';
     return ListTile(
       leading: Checkbox(
         value: task.isComplete,
-        onChanged: (_) => onToggle(),
+        onChanged: enabled ? (_) => onToggle() : null,
       ),
       title: Text(
         task.title,
@@ -345,12 +340,22 @@ class _TaskTile extends StatelessWidget {
             ? const TextStyle(decoration: TextDecoration.lineThrough)
             : null,
       ),
-      subtitle: Text('${task.projectName ?? 'Unknown'}  ·  $priority priority'),
+      subtitle: Text(
+        '${task.projectName ?? 'Unknown'}  ·  ${task.priority.label} priority',
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(icon: const Icon(Icons.edit), onPressed: onRename),
-          IconButton(icon: const Icon(Icons.delete), onPressed: onDelete),
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'Rename',
+            onPressed: enabled ? onRename : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: 'Delete',
+            onPressed: enabled ? onDelete : null,
+          ),
         ],
       ),
     );
@@ -366,7 +371,7 @@ class _TaskFormResult {
 
   final String projectId;
   final String title;
-  final int priority;
+  final Priority priority;
 }
 
 class _TaskDialog extends StatefulWidget {
@@ -381,7 +386,7 @@ class _TaskDialog extends StatefulWidget {
 class _TaskDialogState extends State<_TaskDialog> {
   final _title = TextEditingController();
   late String _projectId = widget.projects.first.id;
-  int _priority = 1;
+  Priority _priority = Priority.low;
 
   @override
   void dispose() {
@@ -429,13 +434,13 @@ class _TaskDialogState extends State<_TaskDialog> {
             onChanged: (value) => setState(() => _projectId = value!),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<int>(
+          DropdownButtonFormField<Priority>(
             initialValue: _priority,
             isExpanded: true,
             decoration: const InputDecoration(labelText: 'Priority'),
             items: [
-              for (final entry in _priorityLabels.entries)
-                DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+              for (final priority in Priority.values)
+                DropdownMenuItem(value: priority, child: Text(priority.label)),
             ],
             onChanged: (value) => setState(() => _priority = value!),
           ),
