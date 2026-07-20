@@ -26,6 +26,11 @@ rp_display_name = "Supabase Flutter examples"
 rp_id = "localhost"
 rp_origins = ["http://localhost:3000"]
 
+# Image transformations (resize, re-encode) are used by the storage_transforms
+# example to render images on the fly.
+[storage.image_transformation]
+enabled = true
+
 # Keep the stack lean: turn off services the examples don't use. The data plane
 # (database, API/PostgREST, auth, realtime, storage) stays on. Enable any of
 # these if a new example needs it.
