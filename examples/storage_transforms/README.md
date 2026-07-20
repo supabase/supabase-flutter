@@ -45,3 +45,20 @@ flutter run \
   --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
   --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
+
+## Integration test
+
+[`integration_test/storage_test.dart`](integration_test/storage_test.dart) is an
+end-to-end test that runs against the local stack. It drives the flow through the
+repository (upload, list, a transformed download whose bytes it decodes to check
+the image was resized, then delete) and drives the app widgets to upload an image
+and delete it again from the detail view.
+
+With the local stack running, pass the same defines the app uses and run it on a
+device (integration tests need one, so `-d macos`, an emulator or a real device):
+
+```bash
+flutter test integration_test/storage_test.dart -d macos \
+  --dart-define=SUPABASE_URL=http://localhost:54321 \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_LOCAL_PUBLISHABLE_KEY
+```
