@@ -3,10 +3,11 @@
 A collection of small apps that each show off a feature of `supabase_flutter`,
 all sharing a single local Supabase instance.
 
-| Example                          | What it shows                              |
-| -------------------------------- | ------------------------------------------ |
-| [`database_crud`](database_crud) | Database CRUD with PostgREST (`from(...)`) |
-| [`passkeys`](passkeys)           | Passkey (WebAuthn) sign in and management  |
+| Example                          | What it shows                                        |
+| -------------------------------- | --------------------------------------------------- |
+| [`database_crud`](database_crud) | Database CRUD with PostgREST (`from(...)`)          |
+| [`realtime_room`](realtime_room) | Realtime Postgres Changes, Broadcast and Presence   |
+| [`passkeys`](passkeys)           | Passkey (WebAuthn) sign in and management           |
 
 ## Quick start
 

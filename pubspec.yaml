@@ -21,6 +21,7 @@ workspace:
   - examples/database_crud
   - examples/launcher
   - examples/passkeys
+  - examples/realtime_room
 
 dev_dependencies:
   melos: ^8.2.1
