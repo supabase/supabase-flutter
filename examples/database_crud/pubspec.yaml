@@ -20,6 +20,8 @@ dev_dependencies:
   supabase_lints: ^0.1.1
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
