@@ -761,6 +761,33 @@ void main() {
     });
   });
 
+  group('track opts forwarding', () {
+    late _OptsCapturingChannel capturingChannel;
+
+    setUp(() {
+      socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
+      capturingChannel = _OptsCapturingChannel('topic', socket);
+    });
+
+    test('track forwards a custom non-timeout opt to send', () async {
+      await capturingChannel.track({'id': 123}, {'ack': true});
+
+      expect(capturingChannel.capturedOpts, containsPair('ack', true));
+    });
+
+    test('track forwards a custom timeout opt to send', () async {
+      await capturingChannel.track({'id': 123}, {'timeout': 2500});
+
+      expect(capturingChannel.capturedOpts, containsPair('timeout', 2500));
+    });
+
+    test('track forwards an empty opts map when none provided', () async {
+      await capturingChannel.track({'id': 123});
+
+      expect(capturingChannel.capturedOpts, isEmpty);
+    });
+  });
+
   group('presence enabled', () {
     setUp(() {
       socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
@@ -1254,5 +1281,22 @@ class _SetAuthThrowingSocket extends RealtimeClient {
   Future<void> setAuth(String? token) async {
     setAuthCalls++;
     throw thrown;
+  }
+}
+
+class _OptsCapturingChannel extends RealtimeChannel {
+  _OptsCapturingChannel(super.topic, super.socket);
+
+  Map<String, dynamic>? capturedOpts;
+
+  @override
+  Future<ChannelResponse> send({
+    required RealtimeListenTypes type,
+    String? event,
+    required Map<String, dynamic> payload,
+    Map<String, dynamic> opts = const {},
+  }) async {
+    capturedOpts = opts;
+    return ChannelResponse.ok;
   }
 }

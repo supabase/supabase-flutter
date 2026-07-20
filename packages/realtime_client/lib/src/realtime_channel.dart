@@ -328,7 +328,7 @@ class RealtimeChannel {
         'event': 'track',
         'payload': payload,
       },
-      opts: {'timeout': opts['timeout'] ?? _timeout},
+      opts: opts,
     );
   }
 
