@@ -3,9 +3,10 @@
 A collection of small apps that each show off a feature of `supabase_flutter`,
 all sharing a single local Supabase instance.
 
-| Example                | What it shows                             |
-| ---------------------- | ----------------------------------------- |
-| [`passkeys`](passkeys) | Passkey (WebAuthn) sign in and management |
+| Example                          | What it shows                              |
+| -------------------------------- | ------------------------------------------ |
+| [`database_crud`](database_crud) | Database CRUD with PostgREST (`from(...)`) |
+| [`passkeys`](passkeys)           | Passkey (WebAuthn) sign in and management  |
 
 ## Quick start
 
