@@ -781,10 +781,28 @@ void main() {
       expect(capturingChannel.capturedOpts, containsPair('timeout', 2500));
     });
 
-    test('track forwards an empty opts map when none provided', () async {
-      await capturingChannel.track({'id': 123});
+    test(
+      'track falls back to the channel timeout when none provided',
+      () async {
+        await capturingChannel.track({'id': 123});
 
-      expect(capturingChannel.capturedOpts, isEmpty);
+        expect(
+          capturingChannel.capturedOpts,
+          containsPair('timeout', const Duration(milliseconds: 1234)),
+        );
+      },
+    );
+
+    test('track keeps custom opts alongside the default timeout', () async {
+      await capturingChannel.track({'id': 123}, {'ack': true});
+
+      expect(
+        capturingChannel.capturedOpts,
+        allOf(
+          containsPair('ack', true),
+          containsPair('timeout', const Duration(milliseconds: 1234)),
+        ),
+      );
     });
   });
 
