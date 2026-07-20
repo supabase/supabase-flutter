@@ -170,7 +170,9 @@ class _RoomPageState extends State<RoomPage> {
     try {
       final messages = await _repository.fetchMessages();
       if (mounted) setState(() => _messages = messages);
-      await _channel.subscribe();
+      // Bound the join so a dropped connection surfaces as an error instead of
+      // leaving the spinner up forever waiting for the replication-ready event.
+      await _channel.subscribe().timeout(const Duration(seconds: 30));
     } catch (error) {
       _showError(error);
     } finally {
@@ -228,9 +230,20 @@ class _RoomPageState extends State<RoomPage> {
     }
   }
 
+  /// Deletes a message and reports any failure, like [_send]. The row leaves the
+  /// list through the Postgres Changes delete stream, so there's nothing to
+  /// remove here on success.
+  Future<void> _delete(String id) async {
+    try {
+      await _repository.deleteMessage(id);
+    } catch (error) {
+      _showError(error);
+    }
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
+      if (mounted && _scroll.hasClients) {
         _scroll.jumpTo(_scroll.position.maxScrollExtent);
       }
     });
@@ -262,7 +275,7 @@ class _RoomPageState extends State<RoomPage> {
                       return _MessageTile(
                         message: message,
                         isMine: message.username == widget.username,
-                        onDelete: () => _repository.deleteMessage(message.id),
+                        onDelete: () => _delete(message.id),
                       );
                     },
                   ),
