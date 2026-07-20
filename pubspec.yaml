@@ -22,6 +22,7 @@ workspace:
   - examples/edge_functions
   - examples/launcher
   - examples/passkeys
+  - examples/realtime_room
   - examples/storage_transforms
 
 dev_dependencies:
