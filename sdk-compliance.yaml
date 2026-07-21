@@ -1378,6 +1378,13 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.subscribe
+      - RealtimeConnectException
+      - RealtimeConnectException.RealtimeConnectException
+      - RealtimeConnectException.errorCode
+      - RealtimeConnectException.hint
+      - RealtimeConnectException.message
+      - RealtimeConnectException.statusCode
+      - RealtimeConnectException.toString
   realtime.client.disconnect:
     status: implemented
     symbols:

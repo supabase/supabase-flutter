@@ -12,7 +12,7 @@
 /// body of a failed upgrade, so this exception is only thrown on native
 /// platforms.
 class RealtimeConnectException implements Exception {
-  RealtimeConnectException({
+  const RealtimeConnectException({
     required this.statusCode,
     this.message,
     this.hint,
