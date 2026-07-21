@@ -32,11 +32,12 @@ void main() {
   });
 
   tearDown(() async {
-    // Remove anything the test created so it can run repeatedly.
-    await Supabase.instance.client
-        .from('tasks')
-        .delete()
-        .like('title', 'E2E %');
+    // Remove only what this run created so it can run repeatedly and safely
+    // alongside other runs sharing the same instance.
+    await Supabase.instance.client.from('tasks').delete().inFilter('title', [
+      createdTitle,
+      renamedTitle,
+    ]);
   });
 
   testWidgets('reads, filters and manages tasks through the UI', (
