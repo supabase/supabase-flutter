@@ -60,8 +60,15 @@ flutter run \
   `123456`, set as a test OTP in `config.toml`, so no SMS provider is needed.
 - **OAuth social** needs each provider enabled and configured with client
   credentials in the Supabase dashboard, so the buttons only complete against a
-  project set up for them. On mobile and desktop you also need to register the
-  redirect deep link for your app.
+  project set up for them.
+
+On native platforms the OAuth, magic link and password reset flows return to the
+app through a deep link. The example passes `io.supabase.authexample://login-callback/`
+as the `redirectTo` (it is null on web, which uses the site URL). That URL is
+already in the shared config's `additional_redirect_urls`; to actually receive
+it on iOS, Android or desktop you still need to register the URL scheme with the
+platform, as described in the
+[deep linking guide](https://supabase.com/docs/guides/auth/native-mobile-deep-linking?platform=flutter).
 - **Anonymous** works out of the box. After continuing as a guest, use *Keep
   this account* to attach an email and password.
 - **MFA** works out of the box: tap *Add app*, add the shown secret to any TOTP

@@ -38,8 +38,11 @@ class AuthRepository {
   }
 
   /// Sends a password recovery email carrying a `recovery` OTP and a link.
-  Future<void> sendPasswordReset(String email) {
-    return _client.auth.resetPasswordForEmail(email);
+  ///
+  /// [redirectTo] is the deep link the recovery link returns to on native
+  /// platforms; leave it null on web to use the project's site URL.
+  Future<void> sendPasswordReset(String email, {String? redirectTo}) {
+    return _client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
   }
 
   /// Verifies the recovery code from a password reset email. On success this
@@ -67,8 +70,15 @@ class AuthRepository {
   /// Sends a passwordless sign in email containing both a magic link and a
   /// one-time code. `shouldCreateUser` lets a brand new email sign up on its
   /// first code.
-  Future<void> sendEmailOtp(String email) {
-    return _client.auth.signInWithOtp(email: email, shouldCreateUser: true);
+  ///
+  /// [emailRedirectTo] is the deep link the magic link returns to on native
+  /// platforms; leave it null on web to use the project's site URL.
+  Future<void> sendEmailOtp(String email, {String? emailRedirectTo}) {
+    return _client.auth.signInWithOtp(
+      email: email,
+      emailRedirectTo: emailRedirectTo,
+      shouldCreateUser: true,
+    );
   }
 
   /// Verifies the code from a magic link email and, on success, starts a

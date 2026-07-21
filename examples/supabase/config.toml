@@ -8,7 +8,12 @@ project_id = "supabase_flutter_examples"
 
 [auth]
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000"]
+# The deep link is where the authentication example's native builds return
+# after an email link or OAuth redirect.
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "io.supabase.authexample://login-callback/",
+]
 # Anonymous sign in, used by the authentication example.
 enable_anonymous_sign_ins = true
 

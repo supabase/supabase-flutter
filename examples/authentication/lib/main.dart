@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,6 +11,14 @@ const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const supabasePublishableKey = String.fromEnvironment(
   'SUPABASE_PUBLISHABLE_KEY',
 );
+
+/// Where an email link or OAuth provider returns the user after authenticating.
+/// On web the project's site URL is used, so this stays null; native builds
+/// return through this deep link, which must be registered with the platform
+/// and added to the Supabase redirect allow list.
+const authRedirectTo = kIsWeb
+    ? null
+    : 'io.supabase.authexample://login-callback/';
 
 final messengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -164,7 +173,10 @@ class _PasswordFormState extends State<_PasswordForm> {
   /// Sends the reset email, then reveals the fields to finish the reset with the
   /// code from that email.
   Future<void> _startReset() => _run(() async {
-    await _auth.sendPasswordReset(_email.text.trim());
+    await _auth.sendPasswordReset(
+      _email.text.trim(),
+      redirectTo: authRedirectTo,
+    );
     if (mounted) setState(() => _resetting = true);
     _showMessage('Password reset email sent.');
   });
@@ -264,7 +276,10 @@ class _EmailOtpFormState extends State<_EmailOtpForm> {
   Future<void> _sendCode() async {
     setState(() => _busy = true);
     try {
-      await _auth.sendEmailOtp(_email.text.trim());
+      await _auth.sendEmailOtp(
+        _email.text.trim(),
+        emailRedirectTo: authRedirectTo,
+      );
       setState(() => _codeSent = true);
       _showMessage('Check your email for the code.');
     } catch (error) {
@@ -429,7 +444,9 @@ class _OAuthButtons extends StatelessWidget {
 
   Future<void> _signIn(OAuthProvider provider) async {
     try {
-      await AuthRepository(supabase).signInWithOAuth(provider);
+      await AuthRepository(
+        supabase,
+      ).signInWithOAuth(provider, redirectTo: authRedirectTo);
     } catch (error) {
       _showError(error);
     }
