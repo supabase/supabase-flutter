@@ -9,11 +9,36 @@ project_id = "supabase_flutter_examples"
 [auth]
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["http://localhost:3000"]
+# Anonymous sign in, used by the authentication example.
+enable_anonymous_sign_ins = true
 
 [auth.email]
 enable_signup = true
 # Skip email confirmation so the examples can sign in right away.
 enable_confirmations = false
+
+# Phone sign in for the authentication example.
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+
+# A provider has to be enabled for phone login to turn on, but the test OTP
+# below short-circuits before anything is actually sent, so these placeholder
+# Twilio credentials are never used and no real SMS provider is needed locally.
+[auth.sms.twilio]
+enabled = true
+account_sid = "test-account-sid"
+message_service_sid = "test-message-service-sid"
+auth_token = "test-auth-token"
+
+# Accept a fixed code for one phone number so the phone flow works offline.
+[auth.sms.test_otp]
+15555550100 = "123456"
+
+# TOTP multi-factor authentication for the authentication example.
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
 
 # Passkeys (WebAuthn) are a BETA Auth feature, used by the passkeys example.
 [auth.passkey]
@@ -37,9 +62,11 @@ enabled = true
 [studio]
 enabled = false
 
-# Email testing server.
-[inbucket]
-enabled = false
+# Local mail server that captures the emails the examples send (magic link,
+# email OTP, password reset) so no real SMTP provider is needed. Its web UI and
+# API are served on port 54324.
+[local_smtp]
+enabled = true
 
 # Edge Functions runtime.
 [edge_runtime]
