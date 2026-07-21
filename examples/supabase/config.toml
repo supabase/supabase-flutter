@@ -17,6 +17,13 @@ enable_signup = true
 # Skip email confirmation so the examples can sign in right away.
 enable_confirmations = false
 
+# Include the one-time code ({{ .Token }}) in the passwordless email so the
+# authentication example's email OTP flow can be completed by typing the code,
+# not only by following the magic link.
+[auth.email.template.magic_link]
+subject = "Your sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
 # Phone sign in for the authentication example.
 [auth.sms]
 enable_signup = true
