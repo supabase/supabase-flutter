@@ -115,12 +115,20 @@ class _PasswordFormState extends State<_PasswordForm> {
   final _auth = AuthRepository(supabase);
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _recoveryCode = TextEditingController();
+  final _newPassword = TextEditingController();
+
+  /// Whether the reset email has been sent and the form is now collecting the
+  /// recovery code and new password.
+  bool _resetting = false;
   bool _busy = false;
 
   @override
   void dispose() {
     _email.dispose();
     _password.dispose();
+    _recoveryCode.dispose();
+    _newPassword.dispose();
     super.dispose();
   }
 
@@ -149,9 +157,22 @@ class _PasswordFormState extends State<_PasswordForm> {
     ),
   );
 
-  Future<void> _resetPassword() => _run(() async {
+  /// Sends the reset email, then reveals the fields to finish the reset with the
+  /// code from that email.
+  Future<void> _startReset() => _run(() async {
     await _auth.sendPasswordReset(_email.text.trim());
+    if (mounted) setState(() => _resetting = true);
     _showMessage('Password reset email sent.');
+  });
+
+  /// Verifies the recovery code and sets the new password, which signs the user
+  /// in.
+  Future<void> _completeReset() => _run(() async {
+    await _auth.verifyRecoveryOtp(
+      email: _email.text.trim(),
+      token: _recoveryCode.text.trim(),
+    );
+    await _auth.updatePassword(_newPassword.text);
   });
 
   @override
@@ -161,29 +182,53 @@ class _PasswordFormState extends State<_PasswordForm> {
       children: [
         TextField(
           controller: _email,
+          enabled: !_resetting,
           decoration: const InputDecoration(labelText: 'Email'),
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: _password,
-          decoration: const InputDecoration(labelText: 'Password'),
-          obscureText: true,
-        ),
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: _busy ? null : _signIn,
-          child: const Text('Sign in'),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton(
-          onPressed: _busy ? null : _signUp,
-          child: const Text('Create an account'),
-        ),
-        TextButton(
-          onPressed: _busy ? null : _resetPassword,
-          child: const Text('Forgot password?'),
-        ),
+        if (!_resetting) ...[
+          TextField(
+            controller: _password,
+            decoration: const InputDecoration(labelText: 'Password'),
+            obscureText: true,
+          ),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: _busy ? null : _signIn,
+            child: const Text('Sign in'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: _busy ? null : _signUp,
+            child: const Text('Create an account'),
+          ),
+          TextButton(
+            onPressed: _busy ? null : _startReset,
+            child: const Text('Forgot password?'),
+          ),
+        ] else ...[
+          TextField(
+            controller: _recoveryCode,
+            decoration: const InputDecoration(labelText: 'Recovery code'),
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _newPassword,
+            decoration: const InputDecoration(labelText: 'New password'),
+            obscureText: true,
+          ),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: _busy ? null : _completeReset,
+            child: const Text('Set new password'),
+          ),
+          TextButton(
+            onPressed: _busy ? null : () => setState(() => _resetting = false),
+            child: const Text('Cancel'),
+          ),
+        ],
       ],
     );
   }

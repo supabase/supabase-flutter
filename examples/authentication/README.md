@@ -7,8 +7,9 @@ and can upgrade an anonymous user to a permanent account.
 
 What it shows, grouped by method:
 
-- **Email & password**: sign up, sign in and password reset
-  (`signUp`, `signInWithPassword`, `resetPasswordForEmail`).
+- **Email & password**: sign up, sign in and a full password reset (`signUp`,
+  `signInWithPassword`, `resetPasswordForEmail`, then `verifyOTP` with
+  `OtpType.recovery` and `updateUser`).
 - **Magic link & email OTP**: passwordless email sign in
   (`signInWithOtp(email: ...)` then `verifyOTP(type: OtpType.email)`).
 - **Phone (SMS OTP)**: passwordless phone sign in
@@ -49,7 +50,9 @@ flutter run \
 ## Trying each method locally
 
 - **Email & password** works out of the box; email confirmation is disabled in
-  the shared config, so creating an account signs you straight in.
+  the shared config, so creating an account signs you straight in. *Forgot
+  password?* sends a reset email; enter the code from it plus a new password to
+  finish resetting.
 - **Magic link & email OTP** and **password reset** send an email. Locally it is
   captured by the mail server, not delivered: open its web UI at
   http://localhost:54324 to read the code or link.

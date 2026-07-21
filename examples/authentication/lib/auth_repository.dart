@@ -37,14 +37,27 @@ class AuthRepository {
     return _client.auth.signInWithPassword(email: email, password: password);
   }
 
-  /// Sends a password recovery email. The user follows the link (or enters the
-  /// `recovery` OTP) and then calls [updatePassword] to set a new one.
+  /// Sends a password recovery email carrying a `recovery` OTP and a link.
   Future<void> sendPasswordReset(String email) {
     return _client.auth.resetPasswordForEmail(email);
   }
 
-  /// Sets a new password for the signed in user, for example after verifying a
-  /// recovery OTP.
+  /// Verifies the recovery code from a password reset email. On success this
+  /// starts a short-lived recovery session, after which [updatePassword] can
+  /// set the new password.
+  Future<AuthResponse> verifyRecoveryOtp({
+    required String email,
+    required String token,
+  }) {
+    return _client.auth.verifyOTP(
+      email: email,
+      token: token,
+      type: OtpType.recovery,
+    );
+  }
+
+  /// Sets a new password for the signed in user, for example right after
+  /// verifying a recovery OTP.
   Future<UserResponse> updatePassword(String password) {
     return _client.auth.updateUser(UserAttributes(password: password));
   }
