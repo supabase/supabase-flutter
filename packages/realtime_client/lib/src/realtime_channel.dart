@@ -593,6 +593,13 @@ class RealtimeChannel {
   ) {
     final typeLower = type.toLowerCase();
 
+    if ((isJoined || isJoining) && typeLower == 'postgres_changes') {
+      final message =
+          'cannot add `$typeLower` callbacks for $topic after `subscribe()`.';
+      socket.log('channel', message);
+      throw message;
+    }
+
     final binding = Binding(typeLower, filter.toMap(), callback);
 
     if (_bindings[typeLower] != null) {

@@ -487,6 +487,80 @@ void main() {
     });
   });
 
+  group('blocking listeners after subscribe', () {
+    setUp(() {
+      socket = RealtimeClient('wss://example.com/socket');
+      channel = socket.channel('topic');
+    });
+
+    test('throws when adding postgres_changes listener while joining', () {
+      channel.subscribe();
+      expect(channel.isJoining, isTrue);
+
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          callback: (_) {},
+        ),
+        throwsA(
+          allOf(
+            isA<String>(),
+            contains('cannot add `postgres_changes` callbacks'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when adding postgres_changes listener after join', () {
+      channel.subscribe();
+      channel.joinPush.trigger('ok', {});
+      expect(channel.isJoined, isTrue);
+
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          callback: (_) {},
+        ),
+        throwsA(
+          allOf(
+            isA<String>(),
+            contains('cannot add `postgres_changes` callbacks'),
+          ),
+        ),
+      );
+    });
+
+    test('allows adding postgres_changes listener before subscribe', () {
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          callback: (_) {},
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('does not block presence listeners after subscribe', () {
+      channel.subscribe();
+      expect(channel.isJoining, isTrue);
+
+      expect(
+        () => channel.onPresenceSync((_) {}),
+        returnsNormally,
+      );
+    });
+
+    test('does not block broadcast listeners after subscribe', () {
+      channel.subscribe();
+      expect(channel.isJoining, isTrue);
+
+      expect(
+        () => channel.onBroadcast(event: 'test', callback: (_) {}),
+        returnsNormally,
+      );
+    });
+  });
+
   group('off', () {
     setUp(() {
       socket = RealtimeClient('/socket');
