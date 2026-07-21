@@ -283,7 +283,16 @@ class RealtimeClient {
         if (connState != SocketStates.disconnected &&
             connState != SocketStates.disconnecting) {
           connState = SocketStates.closed;
-          _onConnError(error);
+          // A rejected WebSocket upgrade only exposes a status code to the
+          // client (and not even that on web), because the WebSocket API
+          // discards the handshake response body. Re-request the same endpoint
+          // over HTTP to recover the server's error body (for example the
+          // "Invalid API key" message and hint) and surface it.
+          final enrichedError = await _fetchConnectionError(error);
+          if (conn != localConn) {
+            return;
+          }
+          _onConnError(enrichedError);
           reconnectTimer.scheduleTimeout();
         }
         return;
@@ -693,18 +702,67 @@ class RealtimeClient {
   }
 
   void _onConnError(dynamic error) {
-    // The native transport reports a rejected upgrade as a
-    // [RealtimeConnectException], but [WebSocketChannel] wraps it in a
-    // [WebSocketChannelException]. Unwrap it so callers get the reason directly.
-    final unwrapped =
-        error is WebSocketChannelException &&
-            error.inner is RealtimeConnectException
-        ? error.inner
-        : error;
-    log('transport', unwrapped.toString());
-    _triggerChanError(unwrapped);
+    log('transport', error.toString());
+    _triggerChanError(error);
     for (final callback in stateChangeCallbacks['error']!) {
-      callback(unwrapped);
+      callback(error);
+    }
+  }
+
+  /// Re-requests [endPointURL] over HTTP after a failed WebSocket upgrade to
+  /// recover the server's error response, which the WebSocket handshake
+  /// discards.
+  ///
+  /// Returns a [RealtimeConnectException] carrying the status code, and the
+  /// `message`/`hint` body and `sb-error-code` header when the server provides
+  /// them. Falls back to [originalError] when the follow-up request succeeds or
+  /// cannot reach the server.
+  Future<Object?> _fetchConnectionError(Object originalError) async {
+    final uri = Uri.parse(endPointURL);
+    final httpUri = uri.replace(
+      scheme: switch (uri.scheme) {
+        'wss' => 'https',
+        'ws' => 'http',
+        final scheme => scheme,
+      },
+    );
+
+    final client = httpClient ?? Client();
+    try {
+      final response = await client
+          .get(httpUri, headers: headers)
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return originalError;
+      }
+
+      String? message;
+      String? hint;
+      if (response.body.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            message = decoded['message'] as String?;
+            hint = decoded['hint'] as String?;
+          }
+        } catch (_) {
+          // Body is not JSON; leave message and hint unset.
+        }
+      }
+
+      return RealtimeConnectException(
+        statusCode: response.statusCode,
+        message: message,
+        hint: hint,
+        errorCode: response.headers['sb-error-code'],
+      );
+    } catch (_) {
+      return originalError;
+    } finally {
+      if (httpClient == null) {
+        client.close();
+      }
     }
   }
 
