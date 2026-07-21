@@ -175,7 +175,7 @@ jobs:
       - name: Run integration tests
         if: matrix.target != 'android'
         shell: bash
-        run: bash .github/scripts/run_example_integration_tests.sh ${{ matrix.target }}
+        run: dart .github/scripts/run_example_integration_tests.dart ${{ matrix.target }}
 
       - name: Run integration tests (Android emulator)
         if: matrix.target == 'android'
@@ -184,7 +184,7 @@ jobs:
           api-level: 34
           arch: x86_64
           target: google_apis
-          script: bash .github/scripts/run_example_integration_tests.sh android
+          script: dart .github/scripts/run_example_integration_tests.dart android
 
       - name: Signal completion
         if: always()
