@@ -693,10 +693,18 @@ class RealtimeClient {
   }
 
   void _onConnError(dynamic error) {
-    log('transport', error.toString());
-    _triggerChanError(error);
+    // The native transport reports a rejected upgrade as a
+    // [RealtimeConnectException], but [WebSocketChannel] wraps it in a
+    // [WebSocketChannelException]. Unwrap it so callers get the reason directly.
+    final unwrapped =
+        error is WebSocketChannelException &&
+            error.inner is RealtimeConnectException
+        ? error.inner
+        : error;
+    log('transport', unwrapped.toString());
+    _triggerChanError(unwrapped);
     for (final callback in stateChangeCallbacks['error']!) {
-      callback(error);
+      callback(unwrapped);
     }
   }
 
