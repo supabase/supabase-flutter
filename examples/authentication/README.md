@@ -73,3 +73,31 @@ platform, as described in the
   this account* to attach an email and password.
 - **MFA** works out of the box: tap *Add app*, add the shown secret to any TOTP
   authenticator, and enter the six-digit code to confirm the factor.
+
+## Integration test
+
+[`integration_test/authentication_test.dart`](integration_test/authentication_test.dart)
+is an end-to-end test that drives the app widgets against the local stack, one
+sign in method per test: email & password (sign up, sign out, sign in), a full
+password reset (the recovery code is read back from the local mail server),
+passwordless email OTP (likewise), phone SMS OTP (using the configured test
+OTP), anonymous sign in with an upgrade to a permanent account, enrolling then
+removing a TOTP MFA factor (the code is computed in the test), and that the
+OAuth provider buttons render.
+
+The OAuth redirect itself is not driven: `signInWithOAuth` hands off to an
+external browser and deep link that cannot be automated headlessly, so only the
+buttons are asserted and the redirect is exercised manually with the app.
+
+The password reset and email OTP tests read the code back from the local mail
+server. A browser blocks that cross-origin request, so those two are skipped on
+web and run on native targets such as `-d macos`.
+
+With the local stack running, pass the same defines the app uses and run it on a
+device (integration tests need one, so `-d macos`, an emulator or a real device):
+
+```bash
+flutter test integration_test/authentication_test.dart -d macos \
+  --dart-define=SUPABASE_URL=http://localhost:54321 \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_LOCAL_PUBLISHABLE_KEY
+```
