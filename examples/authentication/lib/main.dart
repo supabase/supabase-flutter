@@ -54,7 +54,11 @@ class HomePage extends StatelessWidget {
           body: SafeArea(
             child: session == null
                 ? const _SignedOutView()
-                : const _SignedInView(),
+                // Pass the user so the view rebuilds when it changes, for
+                // example when an anonymous account is upgraded. A const
+                // `_SignedInView()` would be a single canonical instance that
+                // the framework skips rebuilding on later auth events.
+                : _SignedInView(user: session.user),
           ),
         );
       },
@@ -500,12 +504,16 @@ class _AnonymousFormState extends State<_AnonymousForm> {
 /// The account screen: shows who is signed in, lets an anonymous user upgrade to
 /// a permanent account, manages MFA factors and signs out.
 class _SignedInView extends StatelessWidget {
-  const _SignedInView();
+  const _SignedInView({required this.user});
+
+  final User user;
 
   @override
   Widget build(BuildContext context) {
-    final user = supabase.auth.currentUser!;
-    final identity = user.email ?? user.phone;
+    // A phone-only user comes back with an empty email rather than null, so
+    // fall back to the phone number when the email is blank.
+    final email = user.email;
+    final identity = (email != null && email.isNotEmpty) ? email : user.phone;
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
