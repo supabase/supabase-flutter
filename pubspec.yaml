@@ -20,8 +20,10 @@ workspace:
   - packages/yet_another_json_isolate
   - examples/authentication
   - examples/database_crud
+  - examples/edge_functions
   - examples/launcher
   - examples/passkeys
+  - examples/realtime_room
   - examples/storage_transforms
 
 dev_dependencies:

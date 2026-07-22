@@ -50,8 +50,8 @@ flutter run \
 ## Trying each method locally
 
 - **Email & password** works out of the box; email confirmation is disabled in
-  the shared config, so creating an account signs you straight in. *Forgot
-  password?* sends a reset email; enter the code from it plus a new password to
+  the shared config, so creating an account signs you straight in. _Forgot
+  password?_ sends a reset email; enter the code from it plus a new password to
   finish resetting.
 - **Magic link & email OTP** and **password reset** send an email. Locally it is
   captured by the mail server, not delivered: open its web UI at
@@ -69,9 +69,10 @@ already in the shared config's `additional_redirect_urls`; to actually receive
 it on iOS, Android or desktop you still need to register the URL scheme with the
 platform, as described in the
 [deep linking guide](https://supabase.com/docs/guides/auth/native-mobile-deep-linking?platform=flutter).
-- **Anonymous** works out of the box. After continuing as a guest, use *Keep
-  this account* to attach an email and password.
-- **MFA** works out of the box: tap *Add app*, add the shown secret to any TOTP
+
+- **Anonymous** works out of the box. After continuing as a guest, use _Keep
+  this account_ to attach an email and password.
+- **MFA** works out of the box: tap _Add app_, add the shown secret to any TOTP
   authenticator, and enter the six-digit code to confirm the factor.
 
 ## Integration test
