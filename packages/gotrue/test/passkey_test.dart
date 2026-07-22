@@ -87,7 +87,10 @@ void main() {
         mockClient.lastRequestBody?['challenge_id'],
         PasskeyMockClient.challengeId,
       );
-      expect(mockClient.lastRequestBody?['credential'], isA<Map>());
+      expect(
+        mockClient.lastRequestBody?['credential'],
+        isA<Map<dynamic, dynamic>>(),
+      );
       expect(response.session, isNotNull);
       expect(response.session?.accessToken, 'mock-access-token');
       expect(response.user?.id, PasskeyMockClient.userId);
@@ -114,6 +117,46 @@ void main() {
         DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000),
       );
     });
+
+    test('startRegistration keeps the server provided user.name', () async {
+      await signInWithPasskey();
+
+      final response = await client.passkey.startRegistration(
+        friendlyName: 'My MacBook',
+      );
+
+      expect(response.options['user']['name'], 'user@example.com');
+      expect(response.options['user']['displayName'], 'user@example.com');
+    });
+
+    test(
+      'startRegistration uses friendlyName when the server omits user.name',
+      () async {
+        mockClient.omitUserName = true;
+        await signInWithPasskey();
+
+        final response = await client.passkey.startRegistration(
+          friendlyName: 'My MacBook',
+        );
+
+        expect(response.options['user']['name'], 'My MacBook');
+        expect(response.options['user']['displayName'], 'My MacBook');
+      },
+    );
+
+    test(
+      'startRegistration falls back to a default when the server omits '
+      'user.name and no friendlyName is given',
+      () async {
+        mockClient.omitUserName = true;
+        await signInWithPasskey();
+
+        final response = await client.passkey.startRegistration();
+
+        expect(response.options['user']['name'], 'Passkey');
+        expect(response.options['user']['displayName'], 'Passkey');
+      },
+    );
 
     test('verifyRegistration returns the new passkey', () async {
       await signInWithPasskey();
@@ -292,7 +335,7 @@ void main() {
       addTearDown(disabledClient.dispose);
 
       await expectLater(
-        () => disabledClient.passkey.startAuthentication(),
+        disabledClient.passkey.startAuthentication(),
         throwsA(
           isA<AuthApiException>()
               .having((e) => e.code, 'code', 'passkey_disabled')

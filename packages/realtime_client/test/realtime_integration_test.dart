@@ -209,16 +209,16 @@ void main() {
       });
 
       group('postgres changes', () {
-        late Connection db;
+        late Connection database;
 
         setUp(() async {
-          db = await openPostgresConnection();
-          await db.execute('TRUNCATE public.todos RESTART IDENTITY');
+          database = await openPostgresConnection();
+          await database.execute('TRUNCATE public.todos RESTART IDENTITY');
         });
 
         tearDown(() async {
-          await db.execute('TRUNCATE public.todos RESTART IDENTITY');
-          await db.close();
+          await database.execute('TRUNCATE public.todos RESTART IDENTITY');
+          await database.close();
         });
 
         test('receives insert, update and delete events', () async {
@@ -235,13 +235,10 @@ void main() {
               switch (payload.eventType) {
                 case PostgresChangeEvent.insert:
                   if (!inserts.isCompleted) inserts.complete(payload);
-                  break;
                 case PostgresChangeEvent.update:
                   if (!updates.isCompleted) updates.complete(payload);
-                  break;
                 case PostgresChangeEvent.delete:
                   if (!deletes.isCompleted) deletes.complete(payload);
-                  break;
                 case PostgresChangeEvent.all:
                   break;
               }
@@ -251,7 +248,7 @@ void main() {
           await _subscribe(channel);
           await Future<void>.delayed(const Duration(seconds: 2));
 
-          await db.execute(
+          await database.execute(
             "INSERT INTO public.todos (task) VALUES ('write tests')",
           );
           final insert = await inserts.future.timeout(
@@ -260,7 +257,7 @@ void main() {
           expect(insert.eventType, PostgresChangeEvent.insert);
           expect(insert.newRecord['task'], 'write tests');
 
-          await db.execute(
+          await database.execute(
             "UPDATE public.todos SET is_complete = true WHERE task = 'write tests'",
           );
           final update = await updates.future.timeout(
@@ -270,7 +267,7 @@ void main() {
           expect(update.newRecord['is_complete'], isTrue);
           expect(update.oldRecord['is_complete'], isFalse);
 
-          await db.execute(
+          await database.execute(
             "DELETE FROM public.todos WHERE task = 'write tests'",
           );
           final delete = await deletes.future.timeout(
@@ -301,7 +298,7 @@ void main() {
           await _subscribe(channel);
           await Future<void>.delayed(const Duration(seconds: 2));
 
-          await db.execute(
+          await database.execute(
             "INSERT INTO public.todos (task, is_complete) VALUES ('ignored', false)",
           );
 
@@ -312,7 +309,7 @@ void main() {
             reason: 'the non-matching row must not be delivered',
           );
 
-          await db.execute(
+          await database.execute(
             "INSERT INTO public.todos (task, is_complete) VALUES ('matched', true)",
           );
 

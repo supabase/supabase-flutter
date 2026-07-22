@@ -155,7 +155,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .likeAllOf('username', ['%supa%', '%bot%']);
   /// ```
-  PostgrestFilterBuilder likeAllOf(String column, List<String> patterns) {
+  PostgrestFilterBuilder<T> likeAllOf(String column, List<String> patterns) {
     return copyWithUrl(
       appendSearchParams(column, 'like(all).{${patterns.join(',')}}'),
     );
@@ -169,7 +169,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .likeAnyOf('username', ['%supa%', '%bot%']);
   /// ```
-  PostgrestFilterBuilder likeAnyOf(String column, List<String> patterns) {
+  PostgrestFilterBuilder<T> likeAnyOf(String column, List<String> patterns) {
     return copyWithUrl(
       appendSearchParams(column, 'like(any).{${patterns.join(',')}}'),
     );
@@ -195,7 +195,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .ilikeAllOf('username', ['%supa%', '%bot%']);
   /// ```
-  PostgrestFilterBuilder ilikeAllOf(String column, List<String> patterns) {
+  PostgrestFilterBuilder<T> ilikeAllOf(String column, List<String> patterns) {
     return copyWithUrl(
       appendSearchParams(column, 'ilike(all).{${patterns.join(',')}}'),
     );
@@ -209,7 +209,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .ilikeAnyOf('username', ['%supa%', '%bot%']);
   /// ```
-  PostgrestFilterBuilder ilikeAnyOf(String column, List<String> patterns) {
+  PostgrestFilterBuilder<T> ilikeAnyOf(String column, List<String> patterns) {
     return copyWithUrl(
       appendSearchParams(column, 'ilike(any).{${patterns.join(',')}}'),
     );
@@ -236,7 +236,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .inFilter('status', ['ONLINE', 'OFFLINE']);
   /// ```
-  PostgrestFilterBuilder<T> inFilter(String column, List values) {
+  PostgrestFilterBuilder<T> inFilter(String column, List<dynamic> values) {
     return copyWithUrl(
       appendSearchParams(column, 'in.(${_cleanFilterArray(values)})'),
     );
@@ -423,14 +423,12 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     /// The type of tsquery conversion to use on [query].
     TextSearchType? type,
   }) {
-    var typePart = '';
-    if (type == TextSearchType.plain) {
-      typePart = 'pl';
-    } else if (type == TextSearchType.phrase) {
-      typePart = 'ph';
-    } else if (type == TextSearchType.websearch) {
-      typePart = 'w';
-    }
+    final typePart = switch (type) {
+      TextSearchType.plain => 'pl',
+      TextSearchType.phrase => 'ph',
+      TextSearchType.websearch => 'w',
+      null => '',
+    };
     final configPart = config == null ? '' : '($config)';
     return copyWithUrl(
       appendSearchParams(column, '${typePart}fts$configPart.$query'),
@@ -525,8 +523,17 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   }
 
   @override
-  PostgrestFilterBuilder<T> retry({required bool enabled}) {
-    return PostgrestFilterBuilder(_copyWith(retryEnabled: enabled));
+  PostgrestFilterBuilder<T> retry({
+    bool enabled = true,
+    int? count,
+    Duration? requestTimeout,
+  }) {
+    return PostgrestFilterBuilder(
+      _copyWith(
+        retry: _retry.copyWith(enabled: enabled, count: count),
+        requestTimeout: requestTimeout,
+      ),
+    );
   }
 
   @override

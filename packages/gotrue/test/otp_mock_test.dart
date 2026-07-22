@@ -64,7 +64,7 @@ void main() {
 
     test('signInWithOtp() without email or phone should throw', () async {
       await expectLater(
-        () => client.signInWithOtp(),
+        client.signInWithOtp(),
         throwsA(
           isA<AuthException>().having(
             (e) => e.message,
@@ -159,7 +159,7 @@ void main() {
       () async {
         // Recovery type with tokenHash should not accept email/phone
         await expectLater(
-          () => client.verifyOTP(
+          client.verifyOTP(
             email: testEmail,
             tokenHash: 'mock-token-hash',
             type: OtpType.recovery,
@@ -179,7 +179,7 @@ void main() {
 
     test('verifyOTP() without token should throw', () async {
       await expectLater(
-        () => client.verifyOTP(
+        client.verifyOTP(
           email: testEmail,
           type: OtpType.email,
         ),
@@ -232,21 +232,18 @@ void main() {
       expect(client.currentUser?.phone, testPhone);
     });
 
-    test('reauthenticate() works correctly', () async {
-      // First sign in to set the session
+    test('reauthenticate() completes successfully', () async {
       await client.signInWithPassword(
         phone: testPhone,
         password: testPassword,
       );
 
-      // Then reauthenticate
-      await client.reauthenticate();
-      // This test passes if no exceptions are thrown
+      expect(client.reauthenticate(), completes);
     });
 
     test('reauthenticate() throws when no session', () async {
       await expectLater(
-        () => client.reauthenticate(),
+        client.reauthenticate(),
         throwsA(isA<AuthSessionMissingException>()),
       );
     });
@@ -336,9 +333,67 @@ void main() {
       expect(mockClient.lastResendBody?['code_challenge_method'], isNull);
     });
 
+    test(
+      'updateUser() with email in PKCE flow includes code challenge',
+      () async {
+        await client.verifyOTP(
+          phone: testPhone,
+          token: '123456',
+          type: OtpType.sms,
+        );
+
+        await client.updateUser(UserAttributes(email: testEmail));
+
+        expect(mockClient.lastUpdateUserBody?['code_challenge'], isNotNull);
+        expect(mockClient.lastUpdateUserBody?['code_challenge_method'], 's256');
+      },
+    );
+
+    test('updateUser() without email omits code challenge', () async {
+      await client.verifyOTP(
+        phone: testPhone,
+        token: '123456',
+        type: OtpType.sms,
+      );
+
+      await client.updateUser(UserAttributes(data: {'name': 'Test User'}));
+
+      expect(
+        mockClient.lastUpdateUserBody?.containsKey('code_challenge'),
+        isFalse,
+      );
+      expect(
+        mockClient.lastUpdateUserBody?.containsKey('code_challenge_method'),
+        isFalse,
+      );
+    });
+
+    test(
+      'updateUser() with email in implicit flow omits code challenge',
+      () async {
+        final implicitClient = GoTrueClient(
+          url: 'https://example.com',
+          httpClient: mockClient,
+          asyncStorage: asyncStorage,
+          flowType: AuthFlowType.implicit,
+        );
+
+        await implicitClient.verifyOTP(
+          phone: testPhone,
+          token: '123456',
+          type: OtpType.sms,
+        );
+
+        await implicitClient.updateUser(UserAttributes(email: testEmail));
+
+        expect(mockClient.lastUpdateUserBody?['code_challenge'], isNull);
+        expect(mockClient.lastUpdateUserBody?['code_challenge_method'], isNull);
+      },
+    );
+
     test('resend() with wrong type for phone throws', () async {
       await expectLater(
-        () => client.resend(
+        client.resend(
           phone: testPhone,
           type: OtpType.signup, // This should be sms or phoneChange for phone
         ),
@@ -348,7 +403,7 @@ void main() {
 
     test('resend() with wrong type for email throws', () async {
       await expectLater(
-        () => client.resend(
+        client.resend(
           email: testEmail,
           type: OtpType.sms, // This should be signup or emailChange for email
         ),
@@ -356,17 +411,14 @@ void main() {
       );
     });
 
-    test('signInWithOtp() with different channel types', () async {
-      // Test WhatsApp channel
-      await client.signInWithOtp(
-        phone: testPhone,
-        channel: OtpChannel.whatsapp,
+    test('signInWithOtp() completes for different channel types', () async {
+      expect(
+        client.signInWithOtp(phone: testPhone, channel: OtpChannel.whatsapp),
+        completes,
       );
-
-      // Test SMS channel (default)
-      await client.signInWithOtp(
-        phone: testPhone,
-        channel: OtpChannel.sms,
+      expect(
+        client.signInWithOtp(phone: testPhone, channel: OtpChannel.sms),
+        completes,
       );
     });
   });
@@ -380,7 +432,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.verifyOTP(
+        client.verifyOTP(
           phone: testPhone,
           token: '123456',
           type: OtpType.sms,
@@ -405,7 +457,7 @@ void main() {
         );
 
         await expectLater(
-          () => client.signInWithPassword(
+          client.signInWithPassword(
             phone: testPhone,
             password: 'wrong-password',
           ),
@@ -428,7 +480,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.signUp(
+        client.signUp(
           phone: testPhone,
           password: testPassword,
         ),
@@ -442,16 +494,18 @@ void main() {
       );
     });
 
-    test('signInWithOtp() with empty response', () async {
-      final client = GoTrueClient(
-        url: 'https://example.com',
-        httpClient: EmptyResponseClient(),
-        asyncStorage: TestAsyncStorage(),
-      );
+    test(
+      'signInWithOtp() with empty response completes successfully',
+      () async {
+        final client = GoTrueClient(
+          url: 'https://example.com',
+          httpClient: EmptyResponseClient(),
+          asyncStorage: TestAsyncStorage(),
+        );
 
-      // Should not throw an exception
-      await client.signInWithOtp(phone: testPhone);
-    });
+        expect(client.signInWithOtp(phone: testPhone), completes);
+      },
+    );
 
     test(
       'verifyOTP() with neither email nor phone throws assertion error',
@@ -463,7 +517,7 @@ void main() {
         );
 
         await expectLater(
-          () => client.verifyOTP(
+          client.verifyOTP(
             token: '123456',
             type: OtpType.sms,
           ),
@@ -480,7 +534,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.verifyOTP(
+        client.verifyOTP(
           phone: testPhone,
           token: '123456',
           type: OtpType.sms,
@@ -503,7 +557,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.resend(
+        client.resend(
           email: testEmail,
           phone: testPhone,
           type: OtpType.sms,
@@ -520,7 +574,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.signUp(password: testPassword),
+        client.signUp(password: testPassword),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -535,7 +589,7 @@ void main() {
         );
 
         await expectLater(
-          () => client.signInWithPassword(password: testPassword),
+          client.signInWithPassword(password: testPassword),
           throwsA(
             isA<AuthException>().having(
               (e) => e.message,
@@ -555,7 +609,7 @@ void main() {
       );
 
       await expectLater(
-        () => client.signInWithOtp(phone: testPhone),
+        client.signInWithOtp(phone: testPhone),
         throwsA(
           isA<AuthException>().having((e) => e.statusCode, 'statusCode', '500'),
         ),

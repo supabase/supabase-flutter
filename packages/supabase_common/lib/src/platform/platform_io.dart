@@ -1,6 +1,9 @@
 import 'dart:io';
 
-String get conditionalPlatform => Platform.operatingSystem;
+import '../client_info.dart';
+
+String get conditionalPlatform =>
+    normalizePlatformName(Platform.operatingSystem);
 
 String get conditionalPlatformVersion => Platform.operatingSystemVersion;
 

@@ -11,24 +11,88 @@ class OAuthAuthorizedClient {
   /// Human-readable name of the OAuth client
   final String? clientName;
 
+  /// URI of the OAuth client's website
+  final String? clientUri;
+
+  /// URI of the OAuth client's logo
+  final String? logoUri;
+
   const OAuthAuthorizedClient({
     required this.clientId,
     this.clientName,
+    this.clientUri,
+    this.logoUri,
   });
 
   factory OAuthAuthorizedClient.fromJson(Map<String, dynamic> json) {
     return OAuthAuthorizedClient(
       clientId: json['id'] as String,
       clientName: json['name'] as String?,
+      clientUri: json['uri'] as String?,
+      logoUri: json['logo_uri'] as String?,
     );
   }
 }
 
-/// Response type representing the details of a pending OAuth authorization
-/// request.
+/// An OAuth grant representing a user's authorization of an OAuth client.
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
-class OAuthAuthorizationDetailsResponse {
+class OAuthGrant {
+  /// The OAuth client the grant was issued to.
+  final OAuthAuthorizedClient client;
+
+  /// The scopes granted to the client.
+  final List<String> scopes;
+
+  /// The moment the grant was created.
+  final DateTime grantedAt;
+
+  const OAuthGrant({
+    required this.client,
+    required this.scopes,
+    required this.grantedAt,
+  });
+
+  factory OAuthGrant.fromJson(Map<String, dynamic> json) {
+    return OAuthGrant(
+      client: OAuthAuthorizedClient.fromJson(json['client']),
+      scopes: (json['scopes'] as List?)?.cast() ?? const [],
+      grantedAt: DateTime.parse(json['granted_at'] as String),
+    );
+  }
+}
+
+/// Result returned by [GoTrueOAuthApi.getAuthorizationDetails].
+///
+/// The OAuth 2.1 server responds in one of two ways, depending on whether the
+/// signed-in user has already granted consent to the requesting client:
+///
+/// * [OAuthAuthorizationDetailsResponse] — consent is still required, so the
+///   requesting client, user and requested scopes are returned for display in
+///   a consent screen.
+/// * [OAuthAuthorizationRedirectResponse] — the user already granted consent
+///   to this client, so the server short-circuits the consent flow and returns
+///   only the redirect URL the caller should navigate to.
+///
+/// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+sealed class OAuthAuthorizationResponse {
+  const OAuthAuthorizationResponse();
+
+  factory OAuthAuthorizationResponse.fromJson(Map<String, dynamic> json) {
+    // When consent was already granted, the server short-circuits the flow and
+    // returns a redirect-only body ({"redirect_url": ...}) with no client or
+    // user information.
+    return json.containsKey('redirect_url')
+        ? OAuthAuthorizationRedirectResponse.fromJson(json)
+        : OAuthAuthorizationDetailsResponse.fromJson(json);
+  }
+}
+
+/// Response type representing the details of a pending OAuth authorization
+/// request that still requires the user's consent.
+///
+/// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
   /// The unique identifier for this authorization request.
   final String authorizationId;
 
@@ -70,6 +134,29 @@ class OAuthAuthorizationDetailsResponse {
       user: user,
       scope: json['scope'] as String?,
       redirectUri: json['redirect_uri'] as String,
+    );
+  }
+}
+
+/// Response type returned when the signed-in user has already granted consent
+/// to the requesting client.
+///
+/// The OAuth 2.1 server short-circuits the consent flow and only provides the
+/// redirect URL the caller should navigate to in order to complete the request.
+///
+/// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+class OAuthAuthorizationRedirectResponse extends OAuthAuthorizationResponse {
+  /// The URL the caller should redirect the user to in order to complete the
+  /// already-approved authorization request.
+  final String redirectUrl;
+
+  const OAuthAuthorizationRedirectResponse({required this.redirectUrl});
+
+  factory OAuthAuthorizationRedirectResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return OAuthAuthorizationRedirectResponse(
+      redirectUrl: json['redirect_url'] as String,
     );
   }
 }
@@ -134,10 +221,13 @@ class GoTrueOAuthApi {
   /// Retrieves details about an OAuth authorization request.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
   ///
-  /// Returns authorization details including client info, scopes, and user information.
-  /// If the response includes only a redirect_url field, it means consent was already given - the caller
-  /// should handle the redirect manually if needed.
-  Future<OAuthAuthorizationDetailsResponse> getAuthorizationDetails(
+  /// Returns an [OAuthAuthorizationDetailsResponse] with the client info,
+  /// scopes and user information when the user still has to consent. When the
+  /// user already granted consent to this client, the server short-circuits the
+  /// flow and an [OAuthAuthorizationRedirectResponse] carrying the redirect URL
+  /// is returned instead. Switch on the sealed [OAuthAuthorizationResponse] to
+  /// handle both cases.
+  Future<OAuthAuthorizationResponse> getAuthorizationDetails(
     String authorizationId,
   ) async {
     final session = _client.currentSession;
@@ -151,7 +241,7 @@ class GoTrueOAuthApi {
       ),
     );
 
-    return OAuthAuthorizationDetailsResponse.fromJson(data);
+    return OAuthAuthorizationResponse.fromJson(data);
   }
 
   /// Approves a pending OAuth authorization request.
@@ -204,5 +294,42 @@ class GoTrueOAuthApi {
     );
 
     return OAuthConsentResponse.fromJson(data);
+  }
+
+  /// Lists all OAuth grants that the authenticated user has authorized.
+  ///
+  /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+  Future<List<OAuthGrant>> listGrants() async {
+    final session = _client.currentSession;
+
+    final data = await _fetch.request(
+      '${_client._url}/user/oauth/grants',
+      RequestMethodType.get,
+      options: GotrueRequestOptions(
+        headers: _client._headers,
+        jwt: session?.accessToken,
+      ),
+    );
+
+    return (data as List).map((grant) => OAuthGrant.fromJson(grant)).toList();
+  }
+
+  /// Revokes the authenticated user's OAuth grant for the client identified by
+  /// [clientId].
+  ///
+  /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+  Future<void> revokeGrant(String clientId) async {
+    final session = _client.currentSession;
+
+    await _fetch.request(
+      '${_client._url}/user/oauth/grants',
+      RequestMethodType.delete,
+      options: GotrueRequestOptions(
+        headers: _client._headers,
+        jwt: session?.accessToken,
+        query: {'client_id': clientId},
+        noResolveJson: true,
+      ),
+    );
   }
 }

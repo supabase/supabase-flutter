@@ -34,12 +34,19 @@ extension GoTrueClientPasskey on GoTrueClient {
   /// Starts the registration with the Supabase server, calls [authenticator] to
   /// create a credential on the device, and verifies it with the server.
   ///
+  /// [friendlyName] is the account label the authenticator shows for the
+  /// passkey when the server does not provide one. See
+  /// [GoTruePasskeyApi.startRegistration].
+  ///
   /// Requires a signed in (non-anonymous) user. Returns the newly registered
   /// [Passkey].
   Future<Passkey> registerPasskey(
-    PasskeyAuthenticatorInterface authenticator,
-  ) async {
-    final registration = await passkey.startRegistration();
+    PasskeyAuthenticatorInterface authenticator, {
+    String? friendlyName,
+  }) async {
+    final registration = await passkey.startRegistration(
+      friendlyName: friendlyName,
+    );
     final response = await authenticator.register(
       passkeyRegisterRequestFromOptions(registration.options),
     );

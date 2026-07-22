@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -40,21 +41,36 @@ void main() {
     test('X-Client-Info includes structured platform metadata', () {
       final clientInfo = supabase.headers['X-Client-Info']!;
       expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(
+        clientInfo,
+        contains(
+          '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+        ),
+      );
       expect(clientInfo, contains('; runtime=dart'));
     });
 
     test('X-Client-Info includes structured platform metadata on auth', () {
       final clientInfo = supabase.auth.headers['X-Client-Info']!;
       expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(
+        clientInfo,
+        contains(
+          '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+        ),
+      );
       expect(clientInfo, contains('; runtime=dart'));
     });
 
     test('X-Client-Info includes structured platform metadata on storage', () {
       final clientInfo = supabase.storage.headers['X-Client-Info']!;
       expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(
+        clientInfo,
+        contains(
+          '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+        ),
+      );
       expect(clientInfo, contains('; runtime=dart'));
     });
 
@@ -63,7 +79,12 @@ void main() {
       () {
         final clientInfo = supabase.functions.headers['X-Client-Info']!;
         expect(clientInfo, startsWith('supabase-dart/'));
-        expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+        expect(
+          clientInfo,
+          contains(
+            '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+          ),
+        );
         expect(clientInfo, contains('; runtime=dart'));
       },
     );
@@ -71,7 +92,12 @@ void main() {
     test('X-Client-Info includes structured platform metadata on rest', () {
       final clientInfo = supabase.rest.headers['X-Client-Info']!;
       expect(clientInfo, startsWith('supabase-dart/'));
-      expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+      expect(
+        clientInfo,
+        contains(
+          '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+        ),
+      );
       expect(clientInfo, contains('; runtime=dart'));
     });
 
@@ -84,7 +110,12 @@ void main() {
         );
         final clientInfo = request.headers['X-Client-Info']?.first;
         expect(clientInfo, startsWith('supabase-dart/'));
-        expect(clientInfo, contains('; platform=${Platform.operatingSystem}'));
+        expect(
+          clientInfo,
+          contains(
+            '; platform=${normalizePlatformName(Platform.operatingSystem)}',
+          ),
+        );
         expect(clientInfo, contains('; runtime=dart'));
       },
     );
@@ -104,7 +135,7 @@ void main() {
         supabaseClient: supabase,
       );
 
-      var realtimeWebsocketURL = request.uri;
+      final realtimeWebsocketURL = request.uri;
 
       expect(
         realtimeWebsocketURL.queryParameters,
@@ -172,9 +203,9 @@ void main() {
       var count = 0;
 
       // Check for every request if the Authorization header is set properly
-      await for (final req in mockServer) {
+      await for (final request in mockServer) {
         expect(
-          req.headers.value('Authorization')?.split(" ").last,
+          request.headers.value('Authorization')?.split(" ").last,
           accessToken,
         );
         count++;
@@ -211,8 +242,8 @@ void main() {
       var secondAccessToken = "to be set";
 
       // Check for every request if the Authorization header is set properly
-      await for (final req in mockServer) {
-        if (req.uri.path == "/auth/v1/token") {
+      await for (final request in mockServer) {
+        if (request.uri.path == "/auth/v1/token") {
           if (gotTokenRefresh) {
             fail("Token was refreshed twice");
           }
@@ -222,14 +253,14 @@ void main() {
             DateTime.now().add(Duration(hours: 1)),
           );
 
-          req.response
+          request.response
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.json
             ..write(sessionString);
-          await req.response.close();
+          await request.response.close();
         } else {
           expect(
-            req.headers.value('Authorization')?.split(" ").last,
+            request.headers.value('Authorization')?.split(" ").last,
             secondAccessToken,
           );
           count++;
@@ -402,7 +433,7 @@ void main() {
           // meaning there is no double-dispose from sub-clients.
           final client = SupabaseClient(supabaseUrl, supabaseKey);
 
-          await client.dispose();
+          expect(client.dispose(), completes);
         },
       );
     });

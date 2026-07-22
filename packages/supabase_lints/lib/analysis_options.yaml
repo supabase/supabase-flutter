@@ -6,10 +6,16 @@
 # so new code is not held to a rule the rest of the codebase does not yet pass.
 include: package:lints/recommended.yaml
 
+analyzer:
+  language:
+    strict-raw-types: true
+
 linter:
   rules:
     unawaited_futures: true
     discarded_futures: true
+    use_enums: true
+    unnecessary_breaks: true
 
 formatter:
   trailing_commas: preserve
@@ -18,6 +24,7 @@ dcm:
   extends:
     - recommended
   rules:
+    prefer-switch-expression: true
     # Keep web and WASM support: dart:html / dart:js / dart:js_util work on the
     # JS web target but break WASM, and dart:io / dart:ffi break both. The web
     # interop libraries below are replaced by dart:js_interop + package:web, and
@@ -61,3 +68,4 @@ dcm:
     prefer-returning-shorthands: false # needs dot shorthands (experimental)
     prefer-shorthands-with-enums: false # needs dot shorthands (experimental)
     prefer-shorthands-with-static-fields: false # needs dot shorthands (experimental)
+    prefer-shorthands-with-constructors: false # needs dot shorthands (experimental)

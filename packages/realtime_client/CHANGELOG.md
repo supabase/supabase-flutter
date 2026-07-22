@@ -1,3 +1,15 @@
+## 2.12.0
+
+ - **REFACTOR**: modernize dart syntax across client packages ([#1574](https://github.com/supabase/supabase-flutter/issues/1574)). ([b74fdfee](https://github.com/supabase/supabase-flutter/commit/b74fdfee05c90d40dd3f0676ca86bd92e6013c65))
+ - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))
+ - **FIX**(realtime_client): faster channel rejoin on web ([#1471](https://github.com/supabase/supabase-flutter/issues/1471)). ([bc06a310](https://github.com/supabase/supabase-flutter/commit/bc06a310cf09bdba87668695b48bc8b8f353c495))
+ - **FIX**(realtime): patch channel join payloads with access token before flushing ([#1553](https://github.com/supabase/supabase-flutter/issues/1553)). ([e5de0c07](https://github.com/supabase/supabase-flutter/commit/e5de0c075a36129e75462d15b61d0da571e99bc9))
+ - **FEAT**(realtime): defer socket disconnect when channels become empty ([#1589](https://github.com/supabase/supabase-flutter/issues/1589)). ([0055d1dc](https://github.com/supabase/supabase-flutter/commit/0055d1dcb6f9a0d2727d908bc68077af707327d0))
+
+## 2.11.0
+
+ - **FEAT**(realtime_client): support new postgres changes filter operators, multi-filter, column selection, and replication-ready events ([#1526](https://github.com/supabase/supabase-flutter/issues/1526)). ([1f9d2951](https://github.com/supabase/supabase-flutter/commit/1f9d29516032c1f4bd8416fd7fa36737a335afaf))
+
 ## 2.10.0
 
  - **FIX**(realtime): preserve nested empty maps in Message.toJson() ([#1518](https://github.com/supabase/supabase-flutter/issues/1518)). ([1777a225](https://github.com/supabase/supabase-flutter/commit/1777a225b0bf150a089abc06fbeb9b14cd6ace8d))

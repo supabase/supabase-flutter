@@ -96,7 +96,7 @@ void main() {
         socket.logger
             is void Function(
               String? kind,
-              String? msg,
+              String? message,
               dynamic data,
             ),
         isFalse,
@@ -114,7 +114,7 @@ void main() {
         timeout: const Duration(milliseconds: 40000),
         heartbeatIntervalMs: 60000,
         // ignore: avoid_print
-        logger: (kind, msg, data) => print('[$kind] $msg $data'),
+        logger: (kind, message, data) => print('[$kind] $message $data'),
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
       );
       expect(socket.channels, isEmpty);
@@ -133,7 +133,7 @@ void main() {
         socket.logger
             is void Function(
               String? kind,
-              String? msg,
+              String? message,
               dynamic data,
             ),
         isTrue,
@@ -199,15 +199,15 @@ void main() {
     });
 
     test('establishes websocket connection with endpoint', () async {
-      final connFuture = socket.connect();
+      final connectFuture = socket.connect();
       expect(socket.connState, SocketStates.connecting);
 
-      final conn = socket.conn;
+      final connection = socket.conn;
 
-      await connFuture;
+      await connectFuture;
       expect(socket.connState, SocketStates.open);
 
-      expect(conn, isA<IOWebSocketChannel>());
+      expect(connection, isA<IOWebSocketChannel>());
       //! Not verifying connection url
     });
 
@@ -220,9 +220,9 @@ void main() {
       socket.onClose((_) {
         closes += 1;
       });
-      late dynamic lastMsg;
-      socket.onMessage((m) {
-        lastMsg = m;
+      late dynamic lastMessage;
+      socket.onMessage((message) {
+        lastMessage = message;
       });
 
       await socket.connect();
@@ -232,7 +232,7 @@ void main() {
       await socket.sendHeartbeat();
       // need to wait for event to trigger
       await Future.delayed(const Duration(seconds: 1));
-      expect(lastMsg['event'], 'heartbeat');
+      expect(lastMessage['event'], 'heartbeat');
 
       await socket.disconnect();
       await Future.delayed(const Duration(seconds: 1));
@@ -240,22 +240,22 @@ void main() {
     });
 
     test('sets callback for errors', () {
-      dynamic lastErr;
+      dynamic lastError;
       final RealtimeClient erroneousSocket = RealtimeClient('badurl')
-        ..onError((e) {
-          lastErr = e;
+        ..onError((error) {
+          lastError = error;
         });
 
       unawaited(erroneousSocket.connect());
 
-      expect(lastErr, isA<WebSocketException>());
+      expect(lastError, isA<WebSocketException>());
     });
 
     test('is idempotent', () {
       unawaited(socket.connect());
-      final conn = socket.conn;
+      final connection = socket.conn;
       unawaited(socket.connect());
-      expect(socket.conn, conn);
+      expect(socket.conn, connection);
     });
   });
 
@@ -276,15 +276,6 @@ void main() {
       await socket.disconnect();
 
       expect(socket.conn, isNull);
-    });
-
-    test('calls callback', () async {
-      int closes = 0;
-      unawaited(socket.connect());
-      unawaited(socket.disconnect());
-      closes += 1;
-
-      expect(closes, 1);
     });
 
     test('calls connection close callback', () async {
@@ -516,6 +507,37 @@ void main() {
     test('does not throw when no connection', () {
       expect(() => socket.disconnect(), returnsNormally);
     });
+
+    test('times out and finalizes disconnect when sink.close hangs', () async {
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+      final streamController = StreamController<dynamic>.broadcast();
+      final closeCompleter = Completer<void>();
+      final mockedSocket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedSocketChannel,
+      );
+      var closeCallbacks = 0;
+      mockedSocket.onClose((_) => closeCallbacks += 1);
+
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(
+        () => mockedSocketChannel.stream,
+      ).thenAnswer((_) => streamController.stream);
+      when(() => mockedSink.close()).thenAnswer((_) => closeCompleter.future);
+
+      await mockedSocket.connect();
+      expect(mockedSocket.connState, SocketStates.open);
+
+      await mockedSocket.disconnect();
+      expect(mockedSocket.connState, SocketStates.disconnected);
+      expect(mockedSocket.conn, isNull);
+      expect(closeCallbacks, 1);
+      verify(() => mockedSink.close()).called(1);
+
+      await streamController.close();
+    });
   });
 
   //! Note: not checking connection states since it is based on an enum.
@@ -557,7 +579,7 @@ void main() {
         tParams,
       );
 
-      expect(socket.channels.length, 1);
+      expect(socket.channels, hasLength(1));
 
       final foundChannel = socket.channels[0];
       expect(foundChannel, channel);
@@ -585,10 +607,173 @@ void main() {
       final channel2 = mockedSocket.channel(tTopic2);
 
       mockedSocket.remove(channel1);
-      expect(mockedSocket.channels.length, 1);
+      expect(mockedSocket.channels, hasLength(1));
 
       final foundChannel = mockedSocket.channels[0];
       expect(foundChannel, channel2);
+    });
+  });
+
+  group('deferred disconnect', () {
+    test('defaults to twice the heartbeat interval', () {
+      final socket = RealtimeClient(socketEndpoint);
+      expect(
+        socket.disconnectOnEmptyChannelsAfter,
+        Duration(milliseconds: 2 * Constants.defaultHeartbeatIntervalMs),
+      );
+
+      final customSocket = RealtimeClient(
+        socketEndpoint,
+        heartbeatIntervalMs: 5000,
+      );
+      expect(
+        customSocket.disconnectOnEmptyChannelsAfter,
+        const Duration(milliseconds: 10000),
+      );
+
+      final explicitSocket = RealtimeClient(
+        socketEndpoint,
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 1234),
+      );
+      expect(
+        explicitSocket.disconnectOnEmptyChannelsAfter,
+        const Duration(milliseconds: 1234),
+      );
+    });
+
+    test(
+      'does not disconnect immediately when the last channel is removed',
+      () async {
+        final socket = RealtimeClient(
+          'ws://localhost:${mockServer.port}',
+          disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+        );
+        await socket.connect();
+        expect(socket.isConnected, isTrue);
+
+        final channel = socket.channel('topic');
+        socket.remove(channel);
+
+        expect(socket.isConnected, isTrue);
+        await socket.disconnect();
+      },
+    );
+
+    test('disconnects after the delay when channels stay empty', () async {
+      final socket = RealtimeClient(
+        'ws://localhost:${mockServer.port}',
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+      );
+      await socket.connect();
+
+      final channel = socket.channel('topic');
+      socket.remove(channel);
+
+      expect(socket.isConnected, isTrue);
+      await Future.delayed(const Duration(milliseconds: 400));
+      expect(socket.isConnected, isFalse);
+    });
+
+    test(
+      'cancels the pending disconnect when a new channel is created',
+      () async {
+        final socket = RealtimeClient(
+          'ws://localhost:${mockServer.port}',
+          disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+        );
+        await socket.connect();
+
+        final channel = socket.channel('topic');
+        socket.remove(channel);
+        socket.channel('new-topic');
+
+        await Future.delayed(const Duration(milliseconds: 400));
+        expect(socket.isConnected, isTrue);
+        await socket.disconnect();
+      },
+    );
+
+    test(
+      'disconnects immediately when disconnectOnEmptyChannelsAfter is zero',
+      () async {
+        final socket = RealtimeClient(
+          'ws://localhost:${mockServer.port}',
+          disconnectOnEmptyChannelsAfter: Duration.zero,
+        );
+        await socket.connect();
+
+        final channel = socket.channel('topic');
+        socket.remove(channel);
+
+        await Future.delayed(const Duration(milliseconds: 100));
+        expect(socket.isConnected, isFalse);
+      },
+    );
+
+    test('disconnect cancels a pending deferred disconnect', () async {
+      final socket = RealtimeClient(
+        'ws://localhost:${mockServer.port}',
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+      );
+      await socket.connect();
+
+      final channel = socket.channel('topic');
+      socket.remove(channel);
+      await socket.disconnect();
+
+      await socket.connect();
+      socket.channel('topic-2');
+      await Future.delayed(const Duration(milliseconds: 400));
+      expect(socket.isConnected, isTrue);
+      await socket.disconnect();
+    });
+
+    test(
+      'removeChannel schedules a deferred disconnect for the last channel',
+      () async {
+        final socket = RealtimeClient(
+          'ws://localhost:${mockServer.port}',
+          disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+        );
+        await socket.connect();
+
+        final channel = socket.channel('topic');
+        await socket.removeChannel(channel);
+
+        expect(socket.isConnected, isTrue);
+        await Future.delayed(const Duration(milliseconds: 400));
+        expect(socket.isConnected, isFalse);
+      },
+    );
+
+    test('channel.unsubscribe schedules a deferred disconnect', () async {
+      final socket = RealtimeClient(
+        'ws://localhost:${mockServer.port}',
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 200),
+      );
+      await socket.connect();
+
+      final channel = socket.channel('topic');
+      await channel.unsubscribe();
+
+      expect(socket.isConnected, isTrue);
+      await Future.delayed(const Duration(milliseconds: 400));
+      expect(socket.isConnected, isFalse);
+    });
+
+    test('removeAllChannels disconnects immediately', () async {
+      final socket = RealtimeClient(
+        'ws://localhost:${mockServer.port}',
+        disconnectOnEmptyChannelsAfter: const Duration(milliseconds: 10000),
+      );
+      await socket.connect();
+      expect(socket.isConnected, isTrue);
+
+      socket.channel('channel-1');
+      socket.channel('channel-2');
+
+      await socket.removeAllChannels();
+      expect(socket.isConnected, isFalse);
     });
   });
 
@@ -658,7 +843,7 @@ void main() {
       mockedSocket.push(message);
 
       verifyNever(() => mockedSink.add(any()));
-      expect(mockedSocket.sendBuffer.length, 1);
+      expect(mockedSocket.sendBuffer, hasLength(1));
 
       final callback = mockedSocket.sendBuffer[0];
       callback();
@@ -974,6 +1159,112 @@ void main() {
         verify(
           () => channel3.push(ChannelEvents.accessToken, expectedPushPayload),
         ).called(1);
+      },
+    );
+  });
+
+  group('on connection open', () {
+    test('rejoins only errored channels', () async {
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+      final streamController = StreamController<dynamic>.broadcast();
+      final erroredChannel = MockChannel();
+      final healthyChannel = MockChannel();
+      final socket = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedSocketChannel,
+      );
+      var opens = 0;
+      socket.onOpen(() => opens += 1);
+
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(
+        () => mockedSocketChannel.stream,
+      ).thenAnswer((_) => streamController.stream);
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+      when(() => erroredChannel.isErrored).thenReturn(true);
+      when(() => healthyChannel.isErrored).thenReturn(false);
+      when(() => erroredChannel.rejoin()).thenReturn(null);
+
+      socket.channels.addAll([erroredChannel, healthyChannel]);
+      await socket.connect();
+
+      verify(() => erroredChannel.rejoin()).called(1);
+      verifyNever(() => healthyChannel.rejoin());
+      expect(opens, 1);
+      expect(socket.connState, SocketStates.open);
+
+      await socket.disconnect();
+      await streamController.close();
+    });
+  });
+
+  group('access token on connect', () {
+    test(
+      'resolves the token and patches buffered join payloads before flushing',
+      () async {
+        final token = generateJwt();
+        var tokenCallbackCalls = 0;
+
+        final streamController = StreamController<dynamic>.broadcast();
+        final readyCompleter = Completer<void>();
+        final capturedMessages = <String>[];
+        final joinSent = Completer<Map<dynamic, dynamic>>();
+
+        final mockedChannel = MockIOWebSocketChannel();
+        final mockedSink = MockWebSocketSink();
+        when(() => mockedChannel.sink).thenReturn(mockedSink);
+        when(
+          () => mockedChannel.ready,
+        ).thenAnswer((_) => readyCompleter.future);
+        when(
+          () => mockedChannel.stream,
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockedSink.close(any(), any()),
+        ).thenAnswer((_) => Future.value());
+        when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+        when(() => mockedSink.add(any())).thenAnswer((invocation) {
+          final raw = invocation.positionalArguments.first as String;
+          capturedMessages.add(raw);
+          final frame = json.decode(raw) as List;
+          if (frame[3] == ChannelEvents.join.eventName() &&
+              !joinSent.isCompleted) {
+            joinSent.complete(frame[4] as Map);
+          }
+        });
+
+        final socket = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) => mockedChannel,
+          customAccessToken: () async {
+            tokenCallbackCalls++;
+            return token;
+          },
+        );
+
+        final channel = socket.channel('realtime:test');
+        channel.subscribe();
+
+        // The join is buffered while the socket is still connecting and the
+        // token has not resolved yet, so it carries no access_token.
+        expect(socket.sendBuffer, isNotEmpty);
+        expect(capturedMessages, isEmpty);
+
+        // Once the connection is ready the token is resolved and the buffered
+        // join is re-sent with the token patched into its payload.
+        readyCompleter.complete();
+        final joinPayload = await joinSent.future.timeout(
+          const Duration(seconds: 5),
+        );
+
+        expect(tokenCallbackCalls, greaterThan(0));
+        expect(socket.accessToken, token);
+        expect(joinPayload['access_token'], token);
+
+        await socket.disconnect();
+        await streamController.close();
       },
     );
   });

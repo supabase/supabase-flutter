@@ -1,17 +1,34 @@
-# realtime_client
+<br />
+<p align="center">
+  <a href="https://supabase.com">
+    <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+  </a>
 
-Listens to changes in a PostgreSQL Database and via websockets.
+  <h1 align="center">realtime_client</h1>
 
-A dart client for Supabase [Realtime](https://github.com/supabase/realtime) server.
+  <p align="center">
+    Dart client library for <a href="https://supabase.com/docs/guides/realtime">Supabase Realtime</a>, to listen to changes in a PostgreSQL database over websockets.
+  </p>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/realtime">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/dart/subscribe">Reference Docs</a>
+  </p>
+</p>
+
+<div align="center">
 
 [![pub package](https://img.shields.io/pub/v/realtime_client.svg)](https://pub.dev/packages/realtime_client)
-[![pub test](https://github.com/supabase/realtime-dart/workflows/Test/badge.svg)](https://github.com/supabase/realtime-dart/actions?query=workflow%3ATest)
+[![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
+
+</div>
 
 ## Docs
 
 The docs can be found on the official Supabase website.
 
-- [Dart reference](https://supabase.com/docs/reference/dart/stream)
+- [Dart reference](https://supabase.com/docs/reference/dart/subscribe)
 - [Realtime guide](https://supabase.com/docs/guides/realtime)
 
 ## Testing
@@ -33,10 +50,10 @@ dart test
 supabase stop
 ```
 
-## Credits
-
-- https://github.com/supabase/realtime-js - ported from realtime-js library
-
 ## License
 
 This repo is licensed under MIT.
+
+## Credits
+
+- https://github.com/supabase/realtime-js - ported from realtime-js library

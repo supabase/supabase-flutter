@@ -30,8 +30,8 @@ String _makeRawJwt(Map<String, dynamic> payload) {
     utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
   );
   final body = base64Url.encode(utf8.encode(jsonEncode(payload)));
-  const sig = 'AAAA';
-  return '$header.$body.$sig';
+  const signature = 'AAAA';
+  return '$header.$body.$signature';
 }
 
 String _freshAccessToken({String sub = 'mock-user-id'}) {
@@ -43,9 +43,9 @@ String _freshAccessToken({String sub = 'mock-user-id'}) {
 String _tokenResponseJson({
   String refreshToken = 'new-refresh-token',
 }) {
-  final at = _freshAccessToken();
+  final accessToken = _freshAccessToken();
   return jsonEncode({
-    'access_token': at,
+    'access_token': accessToken,
     'token_type': 'bearer',
     'expires_in': 3600,
     'refresh_token': refreshToken,
@@ -183,10 +183,10 @@ void main() {
       // Meanwhile, set a new session via the fast path (valid access token).
       // This bypasses the refresh queue entirely and writes _currentSession
       // immediately, bumping _sessionVersion.
-      final freshAt = _freshAccessToken();
+      final freshAccessToken = _freshAccessToken();
       await client.setSession(
         'new-signin-refresh-token',
-        accessToken: freshAt,
+        accessToken: freshAccessToken,
       );
       expect(client.currentSession?.refreshToken, 'new-signin-refresh-token');
 
@@ -288,10 +288,10 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       // While the refresh is pending, set a new valid session (fast path).
-      final freshAt = _freshAccessToken();
+      final freshAccessToken = _freshAccessToken();
       await client.setSession(
         'new-refresh-token',
-        accessToken: freshAt,
+        accessToken: freshAccessToken,
       );
       expect(client.currentSession, isNotNull);
       expect(client.currentSession?.refreshToken, 'new-refresh-token');
@@ -316,8 +316,8 @@ void main() {
         });
 
         // Set an initial session.
-        final freshAt = _freshAccessToken();
-        await client.setSession('initial-token', accessToken: freshAt);
+        final freshAccessToken = _freshAccessToken();
+        await client.setSession('initial-token', accessToken: freshAccessToken);
         events.clear();
 
         // Now make a refresh that will fail with a non-retryable error.

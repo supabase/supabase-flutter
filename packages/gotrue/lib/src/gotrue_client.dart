@@ -8,14 +8,11 @@ import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
 import 'package:gotrue/src/helper.dart';
-import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
-import 'package:jwt_decode/jwt_decode.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
-import 'package:retry/retry.dart';
-import 'package:rxdart/subjects.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 import 'broadcast_stub.dart'
     if (dart.library.js_interop) './broadcast_web.dart'
@@ -94,8 +91,8 @@ class GoTrueClient {
   JWKSet? _jwks;
   DateTime? _jwksCachedAt;
 
-  final _onAuthStateChangeController = BehaviorSubject<AuthState>();
-  final _onAuthStateChangeControllerSync = BehaviorSubject<AuthState>(
+  final _onAuthStateChangeController = ReplaySubject<AuthState>();
+  final _onAuthStateChangeControllerSync = ReplaySubject<AuthState>(
     sync: true,
   );
 
@@ -146,7 +143,7 @@ class GoTrueClient {
   /// Proxy to the web BroadcastChannel API. Should be null on non-web platforms.
   BroadcastChannel? _broadcastChannel;
 
-  StreamSubscription? _broadcastChannelSubscription;
+  StreamSubscription<dynamic>? _broadcastChannelSubscription;
 
   /// {@macro gotrue_client}
   GoTrueClient({
@@ -191,6 +188,50 @@ class GoTrueClient {
 
   /// Returns the current session, if any;
   Session? get currentSession => _currentSession;
+
+  /// Returns the current session, refreshing it on demand when the access
+  /// token has expired.
+  ///
+  /// Where the synchronous [currentSession] getter returns whatever session is
+  /// stored, even one whose access token has already expired, this returns a
+  /// session whose access token is guaranteed to be valid when it resolves: a
+  /// still-valid session is returned as-is, while an expired one is refreshed
+  /// first. If a refresh is already in flight, the expired session waits for it
+  /// to settle instead of starting another one.
+  ///
+  /// Returns `null` when there is no session. Throws an [AuthException] when an
+  /// expired session cannot be refreshed, unless its access token is still
+  /// within its real validity window, in which case the still-valid session is
+  /// returned.
+  Future<Session?> getSession() async {
+    final session = _currentSession;
+    if (session == null) {
+      return null;
+    }
+
+    if (!session.isExpired) {
+      return session;
+    }
+
+    final refreshToken = session.refreshToken;
+    if (refreshToken == null) {
+      return session;
+    }
+
+    try {
+      // Concurrent callers share a single refresh through the same
+      // de-duplication used by [refreshSession], so an expired session's
+      // refresh token is only spent once.
+      final response = await _callRefreshToken(refreshToken);
+      return response.session;
+    } on AuthException {
+      final current = _currentSession;
+      if (current != null && !current.isExpiredWithoutMargin) {
+        return current;
+      }
+      rethrow;
+    }
+  }
 
   /// Creates a new anonymous user.
   ///
@@ -472,13 +513,61 @@ class GoTrueClient {
       options: GotrueRequestOptions(
         headers: _headers,
         body: {
-          'provider': provider.snakeCase,
+          'provider': provider.name,
           'id_token': idToken,
           'nonce': nonce,
           'gotrue_meta_security': {'captcha_token': captchaToken},
           'access_token': accessToken,
         },
         query: {'grant_type': 'id_token'},
+      ),
+    );
+
+    final authResponse = AuthResponse.fromJson(response);
+
+    if (authResponse.session == null) {
+      throw AuthException('An error occurred on token verification.');
+    }
+
+    _saveSession(authResponse.session!);
+    notifyAllSubscribers(AuthChangeEvent.signedIn);
+
+    return authResponse;
+  }
+
+  /// Signs in a user by verifying a message signed with their Web3 wallet.
+  ///
+  /// Supports Ethereum (Sign-In with Ethereum) and Solana (Sign-In with
+  /// Solana), both of which derive from the EIP-4361 standard.
+  ///
+  /// Wallet interaction and message signing are performed by the caller using
+  /// their wallet library of choice. Provide the signed [message] together with
+  /// its [signature]. For [Web3Chain.ethereum] the signature is a hex encoded
+  /// string, for [Web3Chain.solana] it is a base64url encoded string.
+  ///
+  /// [captchaToken] is the verification token received when the user
+  /// completes the captcha on the app.
+  ///
+  /// See also https://eips.ethereum.org/EIPS/eip-4361
+  Future<AuthResponse> signInWithWeb3({
+    required Web3Chain chain,
+    required String message,
+    required String signature,
+    String? captchaToken,
+  }) async {
+    final response = await _fetch.request(
+      '$_url/token',
+      RequestMethodType.post,
+      options: GotrueRequestOptions(
+        headers: _headers,
+        body: {
+          'chain': chain.name,
+          'message': message,
+          'signature': signature,
+          if (captchaToken != null)
+            'gotrue_meta_security': {'captcha_token': captchaToken},
+        },
+        query: {'grant_type': 'web3'},
       ),
     );
 
@@ -808,7 +897,17 @@ class GoTrueClient {
       throw AuthSessionMissingException();
     }
 
-    final body = attributes.toJson();
+    final codeChallenge = attributes.email != null
+        ? await _generatePKCECodeChallenge()
+        : null;
+
+    final body = {
+      ...attributes.toJson(),
+      if (attributes.email != null) ...{
+        'code_challenge': codeChallenge,
+        'code_challenge_method': codeChallenge != null ? 's256' : null,
+      },
+    };
     final options = GotrueRequestOptions(
       headers: _headers,
       body: body,
@@ -1071,7 +1170,7 @@ class GoTrueClient {
         headers: _headers,
         jwt: _currentSession?.accessToken,
         body: {
-          'provider': provider.snakeCase,
+          'provider': provider.name,
           'id_token': idToken,
           'nonce': nonce,
           'gotrue_meta_security': {'captcha_token': captchaToken},
@@ -1338,27 +1437,19 @@ class GoTrueClient {
     required Map<String, String>? queryParams,
     bool skipBrowserRedirect = false,
   }) async {
-    final urlParams = {'provider': provider.snakeCase};
-    if (scopes != null) {
-      urlParams['scopes'] = scopes;
-    }
-    if (redirectTo != null) {
-      urlParams['redirect_to'] = redirectTo;
-    }
-    if (queryParams != null) {
-      urlParams.addAll(queryParams);
-    }
     final codeChallenge = await _generatePKCECodeChallenge();
-    if (codeChallenge != null) {
-      urlParams.addAll({
+    final urlParams = {
+      'provider': provider.name,
+      'scopes': ?scopes,
+      'redirect_to': ?redirectTo,
+      ...?queryParams,
+      if (codeChallenge != null) ...{
         'flow_type': _flowType.name,
         'code_challenge': codeChallenge,
         'code_challenge_method': 's256',
-      });
-    }
-    if (skipBrowserRedirect) {
-      urlParams['skip_http_redirect'] = 'true';
-    }
+      },
+      if (skipBrowserRedirect) 'skip_http_redirect': 'true',
+    };
     final oauthUrl = '$url?${Uri(queryParameters: urlParams).query}';
     return OAuthResponse(provider: provider, url: oauthUrl);
   }

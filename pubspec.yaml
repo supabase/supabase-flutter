@@ -15,13 +15,17 @@ workspace:
   - packages/supabase/example
   - packages/supabase_flutter
   - packages/supabase_flutter/example
+  - packages/supabase_common
   - packages/supabase_lints
   - packages/yet_another_json_isolate
+  - examples/database_crud
+  - examples/edge_functions
   - examples/launcher
   - examples/passkeys
+  - examples/storage_transforms
 
 dev_dependencies:
-  melos: ^8.1.0
+  melos: ^8.2.1
 
 melos:
   command:
@@ -38,10 +42,10 @@ melos:
       description: Updates the version.dart file for each package except yet_another_json_isolate
       run: |
         for d in packages/*/ ; do
+          [ -f "${d}lib/src/version.dart" ] || continue
           version=$(awk '/version:/ {
             pos=match($2, /[0-9]+\.[0-9]+\.[0-9]+/);
             print substr($2, pos); }' $d/pubspec.yaml)
           echo "const version = '$version';" > $d/lib/src/version.dart
         done
-        rm packages/yet_another_json_isolate/lib/src/version.dart
         git add packages/*/lib/src/version.dart

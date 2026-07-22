@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
+import 'package:gotrue/src/helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
 
@@ -17,7 +20,7 @@ void main() {
     late String newEmail;
 
     setUp(() async {
-      final res = await http.post(
+      final response = await http.post(
         Uri.parse(
           'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
         ),
@@ -27,7 +30,7 @@ void main() {
           'Authorization': 'Bearer ${getServiceRoleToken(env)}',
         },
       );
-      if (res.body.isNotEmpty) throw res.body;
+      if (response.body.isNotEmpty) throw response.body;
 
       newEmail = getNewEmail();
 
@@ -129,10 +132,10 @@ void main() {
           GetClaimsOptions(allowExpired: true),
         );
         // If we get here, the exp validation was skipped
-      } on AuthException catch (e) {
+      } on AuthException catch (error) {
         // We expect this to fail during getUser() verification,
         // not during exp validation
-        expect(e.message, isNot(contains('expired')));
+        expect(error.message, isNot(contains('expired')));
       }
     });
 
@@ -250,12 +253,12 @@ void main() {
         try {
           await client.getClaims(rs256Jwt);
           // If we get here, the server responded successfully (unlikely in test env)
-        } catch (e) {
+        } catch (error) {
           // The important part is that it should NOT crash with null error
           // It may fail with network error, invalid signature, etc.
           // but the error message should not contain null-related errors
-          expect(e.toString(), isNot(contains('Unexpected null value')));
-          expect(e.toString(), isNot(contains('Null check operator')));
+          expect(error.toString(), isNot(contains('Unexpected null value')));
+          expect(error.toString(), isNot(contains('Null check operator')));
         }
         // Test passes if we get here without null error
       },
@@ -303,6 +306,37 @@ void main() {
 
       expect(
         () => decodeJwt(invalidJwt),
+        throwsA(isA<AuthInvalidJwtException>()),
+      );
+    });
+
+    test('decodeJwtPayload() successfully decodes valid JWT', () {
+      final jwt =
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2lkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjk5OTk5OTk5OTl9.XyI0rWcOYLpz3R8G8qHWmg7U-tWMHJqzN_e1oDQKzgc';
+
+      final payload = decodeJwtPayload(jwt);
+
+      expect(payload.sub, '1234567890');
+      expect(payload.claims['name'], 'John Doe');
+      expect(payload.iat, 1516239022);
+      expect(payload.exp, 9999999999);
+    });
+
+    test('decodeJwtPayload() decodes payload despite a non-JSON header', () {
+      final payloadPart = base64.encode(
+        utf8.encode(json.encode({'exp': 9999999999, 'sub': '1234567890'})),
+      );
+      final jwt = 'any.$payloadPart.any';
+
+      final payload = decodeJwtPayload(jwt);
+
+      expect(payload.exp, 9999999999);
+      expect(payload.sub, '1234567890');
+    });
+
+    test('decodeJwtPayload() throws on wrong number of parts', () {
+      expect(
+        () => decodeJwtPayload('only.two'),
         throwsA(isA<AuthInvalidJwtException>()),
       );
     });

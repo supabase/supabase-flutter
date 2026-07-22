@@ -2,8 +2,9 @@ import 'dart:typed_data';
 
 import 'package:storage_client/src/fetch.dart';
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 
-import 'file_io.dart' if (dart.library.js) './file_stub.dart';
+import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 class StorageFileApi {
   final String url;
@@ -51,7 +52,7 @@ class StorageFileApi {
     return path.replaceAll(RegExp(r'^/|/$'), '').replaceAll(RegExp(r'/+'), '/');
   }
 
-  FetchOptions get _fetchOptions => FetchOptions(headers: headers);
+  FetchOptions get _fetchOptions => FetchOptions(headers);
 
   void _assertValidRetryAttempts(int? retryAttempts) {
     assert(
@@ -212,12 +213,10 @@ class StorageFileApi {
     final data = await _storageFetch.post(
       '$url/object/upload/sign/$finalPath',
       {},
-      options: FetchOptions(
-        headers: {
-          ...headers,
-          if (upsert) 'x-upsert': 'true',
-        },
-      ),
+      options: FetchOptions({
+        ...headers,
+        if (upsert) 'x-upsert': 'true',
+      }),
     );
 
     final signedUrl = Uri.parse('$url${data['url']}');
@@ -373,11 +372,15 @@ class StorageFileApi {
   /// browser by setting the response's `Content-Disposition` header. Use
   /// [DownloadBehavior.withOriginalName] to keep the original file name or
   /// [DownloadBehavior.named] to override it.
+  ///
+  /// [cacheNonce] appends a `cacheNonce` query parameter to the URL to bypass
+  /// CDN caching for a specific file version.
   Future<String> createSignedUrl(
     String path,
     int expiresIn, {
     TransformOptions? transform,
     DownloadBehavior? download,
+    String? cacheNonce,
   }) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
@@ -394,7 +397,11 @@ class StorageFileApi {
     if (signedUrlPath == null) {
       throw StorageException('No signed URL returned by API');
     }
-    return _withDownload('$url$signedUrlPath', download);
+    return _withUrlOptions(
+      '$url$signedUrlPath',
+      download: download,
+      cacheNonce: cacheNonce,
+    );
   }
 
   // TODO(v3): Remove this deprecated overload and rename createSignedUrlsResult
@@ -415,11 +422,13 @@ class StorageFileApi {
     List<String> paths,
     int expiresIn, {
     DownloadBehavior? download,
+    String? cacheNonce,
   }) async {
     final results = await createSignedUrlsResult(
       paths,
       expiresIn,
       download: download,
+      cacheNonce: cacheNonce,
     );
     return results
         .whereType<SignedUrlSuccess>()
@@ -444,10 +453,14 @@ class StorageFileApi {
   /// browser by setting the response's `Content-Disposition` header. Use
   /// [DownloadBehavior.withOriginalName] to keep the original file name or
   /// [DownloadBehavior.named] to override it.
+  ///
+  /// [cacheNonce] appends a `cacheNonce` query parameter to each URL to bypass
+  /// CDN caching for a specific file version.
   Future<List<SignedUrlResult>> createSignedUrlsResult(
     List<String> paths,
     int expiresIn, {
     DownloadBehavior? download,
+    String? cacheNonce,
   }) async {
     final options = _fetchOptions;
     final response = await _storageFetch.post(
@@ -464,7 +477,11 @@ class StorageFileApi {
       if (signedUrlPath != null) {
         return SignedUrlSuccess(
           path: path,
-          signedUrl: _withDownload('$url$signedUrlPath', download),
+          signedUrl: _withUrlOptions(
+            '$url$signedUrlPath',
+            download: download,
+            cacheNonce: cacheNonce,
+          ),
         );
       }
       return SignedUrlFailure(
@@ -482,30 +499,89 @@ class StorageFileApi {
   /// [transform] download a transformed variant of the image with the provided options
   ///
   /// [queryParams] additional query parameters to be added to the URL
+  ///
+  /// [cacheNonce] adds a `cacheNonce` query parameter to bypass CDN caching for
+  /// a specific file version.
   Future<Uint8List> download(
     String path, {
     TransformOptions? transform,
     Map<String, String>? queryParams,
+    String? cacheNonce,
   }) async {
-    final wantsTransformations = transform != null;
-    final finalPath = _getFinalPath(path);
-    final renderPath = wantsTransformations
-        ? 'render/image/authenticated'
-        : 'object';
-
-    Map<String, String> query = transform?.toQueryParams ?? {};
-    query.addAll(queryParams ?? {});
-
-    final options = FetchOptions(headers: headers, noResolveJson: true);
-
-    var fetchUrl = Uri.parse('$url/$renderPath/$finalPath');
-    fetchUrl = fetchUrl.replace(queryParameters: query);
+    final fetchUrl = _downloadUri(
+      path,
+      transform: transform,
+      queryParams: queryParams,
+      cacheNonce: cacheNonce,
+    );
 
     final response = await _storageFetch.get(
       fetchUrl.toString(),
-      options: options,
+      options: FetchOptions(headers, noResolveJson: true),
     );
     return response as Uint8List;
+  }
+
+  /// Builds the download URL shared by [download] and [downloadStream],
+  /// selecting the render endpoint when an image transformation is requested
+  /// and appending transform, [queryParams] and [cacheNonce] query parameters.
+  Uri _downloadUri(
+    String path, {
+    TransformOptions? transform,
+    Map<String, String>? queryParams,
+    String? cacheNonce,
+  }) {
+    final transformationQuery = transform?.toQueryParams ?? {};
+    final renderPath = transformationQuery.isNotEmpty
+        ? 'render/image/authenticated'
+        : 'object';
+
+    final query = {
+      ...transformationQuery,
+      ...?queryParams,
+      'cacheNonce': ?cacheNonce,
+    };
+
+    return Uri.parse(
+      '$url/$renderPath/${_getFinalPath(path)}',
+    ).replace(queryParameters: query);
+  }
+
+  /// Downloads a file as a byte stream for memory-efficient handling of large
+  /// files.
+  ///
+  /// Unlike [download], the response body is not buffered into a [Uint8List];
+  /// the stream yields the bytes as they arrive. The request is sent when the
+  /// stream is listened to, and a non-success response surfaces as a
+  /// [StorageException] on the stream before any bytes are emitted.
+  ///
+  /// [path] is the file path to be downloaded, including the path and file
+  /// name. For example `downloadStream('folder/image.png')`.
+  ///
+  /// [transform] download a transformed variant of the image with the provided
+  /// options.
+  ///
+  /// [queryParams] additional query parameters to be added to the URL.
+  ///
+  /// [cacheNonce] adds a `cacheNonce` query parameter to bypass CDN caching for
+  /// a specific file version.
+  Stream<Uint8List> downloadStream(
+    String path, {
+    TransformOptions? transform,
+    Map<String, String>? queryParams,
+    String? cacheNonce,
+  }) {
+    final fetchUrl = _downloadUri(
+      path,
+      transform: transform,
+      queryParams: queryParams,
+      cacheNonce: cacheNonce,
+    );
+
+    return _storageFetch.getStream(
+      fetchUrl.toString(),
+      options: FetchOptions(headers, noResolveJson: true),
+    );
   }
 
   /// Retrieves the details of an existing file
@@ -549,33 +625,55 @@ class StorageFileApi {
   /// browser by setting the response's `Content-Disposition` header. Use
   /// [DownloadBehavior.withOriginalName] to keep the original file name or
   /// [DownloadBehavior.named] to override it.
+  ///
+  /// [cacheNonce] appends a `cacheNonce` query parameter to the URL to bypass
+  /// CDN caching for a specific file version.
   String getPublicUrl(
     String path, {
     TransformOptions? transform,
     DownloadBehavior? download,
+    String? cacheNonce,
   }) {
     final finalPath = _getFinalPath(path);
 
-    final wantsTransformation = transform != null;
-    final renderPath = wantsTransformation ? 'render/image' : 'object';
     final transformationQuery = transform?.toQueryParams;
+    final wantsTransformation =
+        transformationQuery != null && transformationQuery.isNotEmpty;
+    final renderPath = wantsTransformation ? 'render/image' : 'object';
 
     var publicUrl = Uri.parse('$url/$renderPath/public/$finalPath');
 
-    publicUrl = publicUrl.replace(queryParameters: transformationQuery);
+    if (wantsTransformation) {
+      publicUrl = publicUrl.replace(queryParameters: transformationQuery);
+    }
 
-    return _withDownload(publicUrl.toString(), download);
+    return _withUrlOptions(
+      publicUrl.toString(),
+      download: download,
+      cacheNonce: cacheNonce,
+    );
   }
 
-  /// Appends a `download` query parameter to [urlString] when [download] is
-  /// set, so the response is served with a `Content-Disposition` header.
-  String _withDownload(String urlString, DownloadBehavior? download) {
-    if (download == null) {
-      return urlString;
+  /// Appends the optional `download` and `cacheNonce` query parameters to
+  /// [urlString], in that order, when they are set.
+  String _withUrlOptions(
+    String urlString, {
+    DownloadBehavior? download,
+    String? cacheNonce,
+  }) {
+    var result = urlString;
+    if (download != null) {
+      result = _appendQueryParameter(result, 'download', download.queryValue);
     }
+    if (cacheNonce != null) {
+      result = _appendQueryParameter(result, 'cacheNonce', cacheNonce);
+    }
+    return result;
+  }
+
+  String _appendQueryParameter(String urlString, String key, String value) {
     final separator = urlString.contains('?') ? '&' : '?';
-    return '$urlString${separator}download='
-        '${Uri.encodeQueryComponent(download.queryValue)}';
+    return '$urlString$separator$key=${Uri.encodeQueryComponent(value)}';
   }
 
   /// Deletes files within the same bucket
@@ -595,6 +693,37 @@ class StorageFileApi {
       ),
     );
     return fileObjects;
+  }
+
+  /// Purges the CDN cache for a single object.
+  ///
+  /// Invalidates the CDN cache for the object at [path] (relative to the
+  /// bucket). There is no wildcard or recursion; pass the exact path of the
+  /// object to invalidate. For example: `purgeCache('folder/avatar.png')`.
+  ///
+  /// When [transformations] is `true`, only the resized/formatted variants are
+  /// purged, leaving the original cached file intact. When omitted the object
+  /// cache is purged.
+  ///
+  /// Requires the service-role key and the tenant `purgeCache` feature to be
+  /// enabled on the storage server.
+  Future<String> purgeCache(
+    String path, {
+    bool transformations = false,
+  }) async {
+    final finalPath = _getFinalPath(path);
+    var requestUrl = Uri.parse('$url/cdn/$finalPath');
+    if (transformations) {
+      requestUrl = requestUrl.replace(
+        queryParameters: {'transformations': 'true'},
+      );
+    }
+    final response = await _storageFetch.delete(
+      requestUrl.toString(),
+      {},
+      options: _fetchOptions,
+    );
+    return (response as Map<String, dynamic>)['message'] as String;
   }
 
   /// Lists all the files within a bucket.
@@ -622,5 +751,25 @@ class StorageFileApi {
       ),
     );
     return fileObjects;
+  }
+
+  /// Lists files and folders within a bucket with cursor-based pagination and
+  /// hierarchical (delimiter) listing.
+  ///
+  /// [options] includes `prefix`, `cursor`, `limit`, `withDelimiter` and
+  /// `sortBy`.
+  ///
+  /// Folder entries in [PaginatedListResult.folders] only contain a name (and
+  /// optionally a key); full metadata is only available on the file entries in
+  /// [PaginatedListResult.objects].
+  Future<PaginatedListResult> listPaginated({
+    PaginatedSearchOptions options = const PaginatedSearchOptions(),
+  }) async {
+    final response = await _storageFetch.post(
+      '$url/object/list-v2/$bucketId',
+      options.toMap(),
+      options: _fetchOptions,
+    );
+    return PaginatedListResult.fromJson(response as Map<String, dynamic>);
   }
 }

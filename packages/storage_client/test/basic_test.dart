@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:http/http.dart';
 import 'package:storage_client/storage_client.dart';
 import 'package:test/test.dart';
 
@@ -16,6 +18,13 @@ Map<String, dynamic> get testBucketJson => {
   'created_at': '',
   'updated_at': '',
   'public': false,
+};
+
+Map<String, dynamic> get testAnalyticsBucketJson => {
+  'id': 'warehouse',
+  'name': 'warehouse',
+  'created_at': '2024-01-01T00:00:00.000Z',
+  'updated_at': '2024-01-02T00:00:00.000Z',
 };
 
 Map<String, dynamic> get testFileObjectJson => {
@@ -58,6 +67,52 @@ void main() {
 
       final response = await client.listBuckets();
       expect(response, isA<List<Bucket>>());
+      expect(customHttpClient.receivedRequests.last.url.query, isEmpty);
+    });
+
+    test('should list buckets without query params when no options', () async {
+      customHttpClient.response = [testBucketJson];
+
+      await client.listBuckets(const ListBucketsOptions());
+      expect(customHttpClient.receivedRequests.last.url.query, isEmpty);
+    });
+
+    test(
+      'should list buckets with filter, sort and pagination options',
+      () async {
+        customHttpClient.response = [testBucketJson];
+
+        await client.listBuckets(
+          const ListBucketsOptions(
+            limit: 10,
+            offset: 5,
+            search: 'prod',
+            sortColumn: BucketSortColumn.createdAt,
+            sortOrder: BucketSortOrder.descending,
+          ),
+        );
+
+        final queryParameters =
+            customHttpClient.receivedRequests.last.url.queryParameters;
+        expect(queryParameters['limit'], '10');
+        expect(queryParameters['offset'], '5');
+        expect(queryParameters['search'], 'prod');
+        expect(queryParameters['sortColumn'], 'created_at');
+        expect(queryParameters['sortOrder'], 'desc');
+      },
+    );
+
+    test('should include limit and offset of zero', () async {
+      customHttpClient.response = [testBucketJson];
+
+      await client.listBuckets(
+        const ListBucketsOptions(limit: 0, offset: 0),
+      );
+
+      final queryParameters =
+          customHttpClient.receivedRequests.last.url.queryParameters;
+      expect(queryParameters['limit'], '0');
+      expect(queryParameters['offset'], '0');
     });
 
     test('should create bucket', () async {
@@ -99,6 +154,100 @@ void main() {
       expect(response, 'Deleted');
     });
 
+    test('should purgeBucketCache issuing DELETE to /cdn/{bucket}', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client.purgeBucketCache('test_bucket');
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.toString(),
+        endsWith('/storage/v1/cdn/test_bucket'),
+      );
+      expect(request.url.query, isEmpty);
+      expect(response, 'success');
+    });
+
+    test('should purgeBucketCache with transformations query param', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client.purgeBucketCache(
+        'test_bucket',
+        transformations: true,
+      );
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(request.url.queryParameters['transformations'], 'true');
+      expect(response, 'success');
+    });
+
+    test('should create analytics bucket', () async {
+      customHttpClient.response = testAnalyticsBucketJson;
+
+      final response = await client.createAnalyticsBucket('warehouse');
+
+      final request = customHttpClient.receivedRequests.last as Request;
+      expect(request.method, 'POST');
+      expect(request.url.toString(), endsWith('/storage/v1/iceberg/bucket'));
+      expect(jsonDecode(request.body), {'name': 'warehouse'});
+      expect(response, isA<AnalyticsBucket>());
+      expect(response.id, 'warehouse');
+      expect(response.name, 'warehouse');
+      expect(response.createdAt, DateTime.parse('2024-01-01T00:00:00.000Z'));
+      expect(response.updatedAt, DateTime.parse('2024-01-02T00:00:00.000Z'));
+    });
+
+    test('should list analytics buckets without query params', () async {
+      customHttpClient.response = [testAnalyticsBucketJson];
+
+      final response = await client.listAnalyticsBuckets();
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'GET');
+      expect(request.url.toString(), endsWith('/storage/v1/iceberg/bucket'));
+      expect(request.url.query, isEmpty);
+      expect(response, isA<List<AnalyticsBucket>>());
+      expect(response.single.name, 'warehouse');
+    });
+
+    test('should list analytics buckets with options', () async {
+      customHttpClient.response = [testAnalyticsBucketJson];
+
+      await client.listAnalyticsBuckets(
+        const ListBucketsOptions(
+          limit: 10,
+          offset: 5,
+          search: 'ware',
+          sortColumn: BucketSortColumn.createdAt,
+          sortOrder: BucketSortOrder.descending,
+        ),
+      );
+
+      final queryParameters =
+          customHttpClient.receivedRequests.last.url.queryParameters;
+      expect(queryParameters['limit'], '10');
+      expect(queryParameters['offset'], '5');
+      expect(queryParameters['search'], 'ware');
+      expect(queryParameters['sortColumn'], 'created_at');
+      expect(queryParameters['sortOrder'], 'desc');
+    });
+
+    test('should delete analytics bucket', () async {
+      customHttpClient.response = {'message': 'Successfully deleted'};
+
+      final response = await client.deleteAnalyticsBucket('warehouse');
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.toString(),
+        endsWith('/storage/v1/iceberg/bucket/warehouse'),
+      );
+      expect(response, 'Successfully deleted');
+    });
+
     test('should upload file', () async {
       final file = File('a.txt');
       file.writeAsStringSync('File content');
@@ -107,7 +256,7 @@ void main() {
 
       final response = await client.from('public').upload('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
 
     test('should update file', () async {
@@ -118,7 +267,7 @@ void main() {
 
       final response = await client.from('public').update('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
 
     test('should move file', () async {
@@ -126,6 +275,37 @@ void main() {
 
       final response = await client.from('public').move('a.txt', 'b.txt');
       expect(response, 'Move');
+    });
+
+    test('should purgeCache issuing DELETE to /cdn/{bucket}/{path}', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client.from('public').purgeCache('folder/a.txt');
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.toString(),
+        endsWith('/storage/v1/cdn/public/folder/a.txt'),
+      );
+      expect(request.url.query, isEmpty);
+      expect(response, 'success');
+    });
+
+    test('should purgeCache with transformations query param', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client
+          .from('public')
+          .purgeCache('folder/a.txt', transformations: true);
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.queryParameters['transformations'],
+        'true',
+      );
+      expect(response, 'success');
     });
 
     test('should createSignedUrl file', () async {
@@ -141,8 +321,8 @@ void main() {
       () async {
         customHttpClient.response = {'signedURL': null};
 
-        expect(
-          () => client.from('public').createSignedUrl('missing.txt', 60),
+        await expectLater(
+          client.from('public').createSignedUrl('missing.txt', 60),
           throwsA(isA<StorageException>()),
         );
       },
@@ -247,6 +427,73 @@ void main() {
       expect(response.length, 2);
     });
 
+    test('listPaginated posts options and parses the result', () async {
+      customHttpClient.response = {
+        'hasNext': true,
+        'nextCursor': 'cursor-2',
+        'folders': [
+          {'name': 'folder', 'key': 'prefix/folder/'},
+        ],
+        'objects': [
+          {
+            'name': 'image.png',
+            'key': 'prefix/image.png',
+            'id': 'object-id',
+            'updated_at': '2026-01-01T00:00:00Z',
+            'created_at': '2026-01-01T00:00:00Z',
+            'metadata': {'size': 10},
+          },
+        ],
+      };
+
+      final result = await client
+          .from('public')
+          .listPaginated(
+            options: const PaginatedSearchOptions(
+              prefix: 'prefix/',
+              limit: 100,
+              withDelimiter: true,
+              sortBy: FileSort(
+                column: FileSortColumn.createdAt,
+                order: FileSortOrder.descending,
+              ),
+            ),
+          );
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(request.url.toString(), '$objectUrl/list-v2/public');
+      expect(jsonDecode((request as Request).body), {
+        'prefix': 'prefix/',
+        'limit': 100,
+        'with_delimiter': true,
+        'sortBy': {'column': 'created_at', 'order': 'desc'},
+      });
+
+      expect(result.hasNext, isTrue);
+      expect(result.nextCursor, 'cursor-2');
+      expect(result.folders.single.name, 'folder');
+      expect(result.folders.single.key, 'prefix/folder/');
+      expect(result.objects.single.name, 'image.png');
+      expect(result.objects.single.id, 'object-id');
+      expect(result.objects.single.metadata, {'size': 10});
+    });
+
+    test('listPaginated defaults to an empty body and empty result', () async {
+      customHttpClient.response = {
+        'hasNext': false,
+        'objects': <dynamic>[],
+      };
+
+      final result = await client.from('public').listPaginated();
+
+      final request = customHttpClient.receivedRequests.single as Request;
+      expect(jsonDecode(request.body), <String, dynamic>{});
+      expect(result.hasNext, isFalse);
+      expect(result.folders, isEmpty);
+      expect(result.objects, isEmpty);
+      expect(result.nextCursor, isNull);
+    });
+
     test('should download public file', () async {
       final file = File('a.txt');
       file.writeAsStringSync('Updated content');
@@ -274,6 +521,61 @@ void main() {
 
       final request = customHttpClient.receivedRequests.first;
       expect(request.url.queryParameters, {'version': '1'});
+    });
+
+    test('downloadStream yields the response body as a byte stream', () async {
+      final file = File('a.txt');
+      file.writeAsStringSync('Streamed content');
+      customHttpClient.response = file.readAsBytesSync();
+
+      final stream = client.from('public_bucket').downloadStream('b.txt');
+      expect(stream, isA<Stream<Uint8List>>());
+      final bytes = await stream.expand((chunk) => chunk).toList();
+
+      expect(String.fromCharCodes(bytes), 'Streamed content');
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(request.url.toString(), contains('/object/public_bucket/b.txt'));
+    });
+
+    test('downloadStream appends transform and cacheNonce', () async {
+      customHttpClient.response = Uint8List.fromList([1, 2, 3]);
+
+      await client
+          .from('public_bucket')
+          .downloadStream(
+            'b.txt',
+            transform: const TransformOptions(width: 200),
+            cacheNonce: 'v2',
+          )
+          .drain<void>();
+
+      final request = customHttpClient.receivedRequests.single;
+      expect(
+        request.url.toString(),
+        contains('/render/image/authenticated/public_bucket/b.txt'),
+      );
+      expect(request.url.queryParameters, {'width': '200', 'cacheNonce': 'v2'});
+    });
+
+    test('downloadStream surfaces an error status on the stream', () async {
+      addTearDown(() => customHttpClient.statusCode = 201);
+      customHttpClient.statusCode = 404;
+      customHttpClient.response = {'message': 'Object not found'};
+
+      await expectLater(
+        client
+            .from('public_bucket')
+            .downloadStream('missing.txt')
+            .drain<void>(),
+        throwsA(
+          isA<StorageException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            '404',
+          ),
+        ),
+      );
     });
 
     test('should get public URL of a path', () {
@@ -304,9 +606,56 @@ void main() {
       );
     });
 
-    test('getPublicUrl leaves the URL unchanged when download is null', () {
-      final response = client.from('files').getPublicUrl('b.txt');
+    test('getPublicUrl with empty transform does not use render endpoint', () {
+      final response = client
+          .from('files')
+          .getPublicUrl('b.txt', transform: const TransformOptions());
       expect(response, '$objectUrl/public/files/b.txt');
+      expect(response, isNot(contains('/render/image/')));
+    });
+
+    test('getPublicUrl with actual transform uses render endpoint', () {
+      final response = client
+          .from('files')
+          .getPublicUrl('b.txt', transform: const TransformOptions(width: 200));
+      expect(
+        response,
+        '$supabaseUrl/storage/v1/render/image/public/files/b.txt?width=200',
+      );
+    });
+
+    test(
+      'download with empty transform does not use render endpoint',
+      () async {
+        final file = File('a.txt');
+        file.writeAsStringSync('Updated content');
+        customHttpClient.response = file.readAsBytesSync();
+
+        await client
+            .from('public_bucket')
+            .download('b.txt', transform: const TransformOptions());
+
+        final request = customHttpClient.receivedRequests.first;
+        expect(request.url.toString(), contains('/object/public_bucket/b.txt'));
+        expect(request.url.toString(), isNot(contains('/render/image/')));
+      },
+    );
+
+    test('download with actual transform uses render endpoint', () async {
+      final file = File('a.txt');
+      file.writeAsStringSync('Updated content');
+      customHttpClient.response = file.readAsBytesSync();
+
+      await client
+          .from('public_bucket')
+          .download('b.txt', transform: const TransformOptions(width: 200));
+
+      final request = customHttpClient.receivedRequests.first;
+      expect(
+        request.url.toString(),
+        contains('/render/image/authenticated/public_bucket/b.txt'),
+      );
+      expect(request.url.queryParameters, {'width': '200'});
     });
 
     test('createSignedUrl appends download to the token query', () async {
@@ -344,11 +693,67 @@ void main() {
       expect(success.signedUrl, endsWith('?token=abc&download='));
     });
 
+    test('getPublicUrl appends cacheNonce', () {
+      final response = client
+          .from('files')
+          .getPublicUrl('b.txt', cacheNonce: 'v2');
+      expect(response, '$objectUrl/public/files/b.txt?cacheNonce=v2');
+    });
+
+    test('getPublicUrl appends download before cacheNonce', () {
+      final response = client
+          .from('files')
+          .getPublicUrl(
+            'b.txt',
+            download: DownloadBehavior.withOriginalName,
+            cacheNonce: 'v2',
+          );
+      expect(response, '$objectUrl/public/files/b.txt?download=&cacheNonce=v2');
+    });
+
+    test('download appends cacheNonce query parameter', () async {
+      final file = File('a.txt');
+      file.writeAsStringSync('Updated content');
+      customHttpClient.response = file.readAsBytesSync();
+
+      await client.from('public_bucket').download('b.txt', cacheNonce: 'v2');
+
+      final request = customHttpClient.receivedRequests.first;
+      expect(request.url.queryParameters, {'cacheNonce': 'v2'});
+    });
+
+    test('createSignedUrl appends cacheNonce to the token query', () async {
+      customHttpClient.response = {
+        'signedURL': '/object/sign/public/b.txt?token=abc',
+      };
+
+      final response = await client
+          .from('public')
+          .createSignedUrl('b.txt', 60, cacheNonce: 'v2');
+      expect(response, endsWith('?token=abc&cacheNonce=v2'));
+    });
+
+    test('createSignedUrlsResult appends cacheNonce to each URL', () async {
+      customHttpClient.response = [
+        {
+          'path': 'exists.txt',
+          'signedURL': '/object/sign/public/exists.txt?token=abc',
+        },
+      ];
+
+      final results = await client
+          .from('public')
+          .createSignedUrlsResult(['exists.txt'], 60, cacheNonce: 'v2');
+
+      final success = results.single as SignedUrlSuccess;
+      expect(success.signedUrl, endsWith('?token=abc&cacheNonce=v2'));
+    });
+
     test('should remove file', () async {
       customHttpClient.response = [testFileObjectJson, testFileObjectJson];
 
       final response = await client.from('public').remove(['a.txt', 'b.txt']);
-      expect(response, isA<List>());
+      expect(response, isA<List<dynamic>>());
       expect(response.length, 2);
     });
   });
@@ -372,7 +777,7 @@ void main() {
       final uploadTask = client
           .from('public')
           .upload('a.txt', file, retryAttempts: 1);
-      expect(uploadTask, throwsException);
+      await expectLater(uploadTask, throwsException);
     });
 
     test('should upload file with few network failures', () async {
@@ -381,7 +786,7 @@ void main() {
 
       final response = await client.from('public').upload('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
 
     test('aborting upload should throw', () async {
@@ -401,7 +806,7 @@ void main() {
       await Future.delayed(Duration(milliseconds: 500));
       retryController.cancel();
 
-      expect(future, throwsException);
+      await expectLater(future, throwsException);
     });
 
     test('should upload binary with few network failures', () async {
@@ -412,7 +817,7 @@ void main() {
           .from('public')
           .uploadBinary('a.txt', file.readAsBytesSync());
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
 
     test('should update file with few network failures', () async {
@@ -421,7 +826,7 @@ void main() {
 
       final response = await client.from('public').update('a.txt', file);
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
     test('should update binary with few network failures', () async {
       final file = File('a.txt');
@@ -431,7 +836,7 @@ void main() {
           .from('public')
           .updateBinary('a.txt', file.readAsBytesSync());
       expect(response, isA<String>());
-      expect(response.endsWith('/a.txt'), isTrue);
+      expect(response, endsWith('/a.txt'));
     });
   });
 
@@ -448,7 +853,7 @@ void main() {
     });
     test('should list buckets', () async {
       await expectLater(
-        () => client.listBuckets(),
+        client.listBuckets(),
         throwsA(
           isA<StorageException>().having(
             (e) => e.statusCode,

@@ -6,13 +6,13 @@ import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
 _ResponseFactory _errorStatus(int code) =>
-    (req) => Future.value(
+    (request) => Future.value(
       StreamedResponse(
         Stream.value(
           Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits),
         ),
         code,
-        request: req,
+        request: request,
         headers: {'content-type': 'application/json'},
       ),
     );

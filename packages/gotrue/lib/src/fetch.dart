@@ -7,6 +7,7 @@ import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/error_code.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 enum RequestMethodType { get, post, put, patch, delete }
 
@@ -14,10 +15,6 @@ class GotrueFetch {
   final Client? httpClient;
 
   const GotrueFetch([this.httpClient]);
-
-  bool isSuccessStatusCode(int code) {
-    return code >= 200 && code <= 299;
-  }
 
   String _getErrorMessage(dynamic error) {
     if (error is Map) {
@@ -162,43 +159,32 @@ class GotrueFetch {
     }
     Response response;
     try {
-      switch (method) {
-        case RequestMethodType.get:
-          response = await (httpClient?.get ?? get)(
-            uri,
-            headers: headers,
-          );
-
-          break;
-        case RequestMethodType.post:
-          response = await (httpClient?.post ?? post)(
-            uri,
-            headers: headers,
-            body: bodyStr,
-          );
-          break;
-        case RequestMethodType.put:
-          response = await (httpClient?.put ?? put)(
-            uri,
-            headers: headers,
-            body: bodyStr,
-          );
-          break;
-        case RequestMethodType.patch:
-          response = await (httpClient?.patch ?? patch)(
-            uri,
-            headers: headers,
-            body: bodyStr,
-          );
-          break;
-        case RequestMethodType.delete:
-          response = await (httpClient?.delete ?? delete)(
-            uri,
-            headers: headers,
-            body: bodyStr,
-          );
-          break;
-      }
+      response = await switch (method) {
+        RequestMethodType.get => (httpClient?.get ?? get)(
+          uri,
+          headers: headers,
+        ),
+        RequestMethodType.post => (httpClient?.post ?? post)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+        RequestMethodType.put => (httpClient?.put ?? put)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+        RequestMethodType.patch => (httpClient?.patch ?? patch)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+        RequestMethodType.delete => (httpClient?.delete ?? delete)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+      };
     } catch (e) {
       // fetch failed, likely due to a network or CORS error
       throw AuthRetryableFetchException(message: e.toString());

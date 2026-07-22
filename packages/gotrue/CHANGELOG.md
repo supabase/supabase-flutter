@@ -1,3 +1,29 @@
+## 2.27.0
+
+ - **REFACTOR**: modernize dart syntax across client packages ([#1574](https://github.com/supabase/supabase-flutter/issues/1574)). ([b74fdfee](https://github.com/supabase/supabase-flutter/commit/b74fdfee05c90d40dd3f0676ca86bd92e6013c65))
+ - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))
+ - **REFACTOR**: drop retry dependency in favor of an in-house helper ([#1571](https://github.com/supabase/supabase-flutter/issues/1571)). ([b81d2121](https://github.com/supabase/supabase-flutter/commit/b81d212159f15bf4d9515acf75430550a715664d))
+ - **REFACTOR**(gotrue): drop rxdart dependency ([#1566](https://github.com/supabase/supabase-flutter/issues/1566)). ([3f70d5ed](https://github.com/supabase/supabase-flutter/commit/3f70d5edcea9e000156742a29f2a0ae3fb1d112b))
+ - **REFACTOR**(gotrue): derive OAuth client enum values from the snakeCase extension ([#1562](https://github.com/supabase/supabase-flutter/issues/1562)). ([ed50706f](https://github.com/supabase/supabase-flutter/commit/ed50706f0b026a3c30ece0b64f5e9e925a2262ca))
+ - **REFACTOR**(gotrue): drop jwt_decode dependency in favor of dart_jsonwebtoken ([#1565](https://github.com/supabase/supabase-flutter/issues/1565)). ([b1157efa](https://github.com/supabase/supabase-flutter/commit/b1157efaed65b8127dae0afbd61043d39f9ea2b0))
+ - **REFACTOR**(auth): use OAuthProvider.name and cover custom OIDC providers ([#1555](https://github.com/supabase/supabase-flutter/issues/1555)). ([ebb7564d](https://github.com/supabase/supabase-flutter/commit/ebb7564d7112e208b8d38f0279f949b733afca31))
+ - **FEAT**(auth): send PKCE code_challenge in updateUser when changing email ([#1601](https://github.com/supabase/supabase-flutter/issues/1601)). ([59d349e4](https://github.com/supabase/supabase-flutter/commit/59d349e43f873389ed3aec6b87a3f4ae4e85c8df))
+ - **FEAT**(auth): support friendlyName and user.name fallback for WebAuthn passkey enrollment ([#1603](https://github.com/supabase/supabase-flutter/issues/1603)). ([558b0346](https://github.com/supabase/supabase-flutter/commit/558b03461441d340b1656606d1086382481611f8))
+ - **FEAT**(auth): add signInWithWeb3 for Web3 wallet authentication ([#1590](https://github.com/supabase/supabase-flutter/issues/1590)). ([20a82beb](https://github.com/supabase/supabase-flutter/commit/20a82beb2eed6bc2dca86f14aefe0d58e0796c4f))
+ - **FEAT**(postgrest): configurable auto-retry and request timeout ([#1560](https://github.com/supabase/supabase-flutter/issues/1560)). ([59d4b3af](https://github.com/supabase/supabase-flutter/commit/59d4b3af227e15a53208146a2930981526a39599))
+ - **FEAT**(auth): add OAuth server listGrants and revokeGrant methods ([#1561](https://github.com/supabase/supabase-flutter/issues/1561)). ([67fed239](https://github.com/supabase/supabase-flutter/commit/67fed239e52e0f02213bee7ae71cb043473efe28))
+ - **FEAT**(auth): add async getSession() with on-demand refresh ([#1563](https://github.com/supabase/supabase-flutter/issues/1563)). ([0b1d9b6b](https://github.com/supabase/supabase-flutter/commit/0b1d9b6b61adf9f66ed6716032b1a25f096604ce))
+ - **FEAT**(gotrue): add channel parameter to mfa.challenge() ([#1547](https://github.com/supabase/supabase-flutter/issues/1547)). ([3bde140e](https://github.com/supabase/supabase-flutter/commit/3bde140e214f6e2928108ec496eb0e96bb9ac258))
+ - **FEAT**(gotrue): add currentPassword to UserAttributes ([#1554](https://github.com/supabase/supabase-flutter/issues/1554)). ([b04c6419](https://github.com/supabase/supabase-flutter/commit/b04c6419785842c9d2af1337206b572adcb367c1))
+
+## 2.26.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(gotrue): OAuth server throws FormatException instead of ArgumentE… ([#1535](https://github.com/supabase/supabase-flutter/issues/1535)). ([da0f6e02](https://github.com/supabase/supabase-flutter/commit/da0f6e0236f52cd8dfb087257dbedd4a9de97533))
+ - **FEAT**(gotrue): add custom OAuth providers admin API with custom_claims_allowlist ([#1519](https://github.com/supabase/supabase-flutter/issues/1519)). ([122e5cf2](https://github.com/supabase/supabase-flutter/commit/122e5cf2036877c32ce92f807d5a9077d991a7e7))
+ - **BREAKING** **FIX**(gotrue): handle already-consented OAuth authorization responses ([#1536](https://github.com/supabase/supabase-flutter/issues/1536)). ([22d41234](https://github.com/supabase/supabase-flutter/commit/22d412346a748d282b39004771f175e37c504a5a))
+
 ## 2.25.0
 
  - **FEAT**(gotrue): add shouldSoftDelete option to admin deleteUser ([#1513](https://github.com/supabase/supabase-flutter/issues/1513)). ([30e9f22f](https://github.com/supabase/supabase-flutter/commit/30e9f22f8572bb8a0d734978b011dc1f8950211c))

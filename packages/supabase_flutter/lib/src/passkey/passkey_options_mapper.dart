@@ -54,7 +54,7 @@ AuthenticateRequestType passkeyAuthenticateRequestFromOptions(
 }
 
 List<Map<String, dynamic>> _normalizeCredentials(List<dynamic> credentials) {
-  return credentials.whereType<Map>().map((credential) {
+  return credentials.whereType<Map<dynamic, dynamic>>().map((credential) {
     final normalized = Map<String, dynamic>.from(credential);
 
     final id = normalized['id'];

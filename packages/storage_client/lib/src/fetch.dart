@@ -4,24 +4,19 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-// ignore: unnecessary_import — needed for http < 1.6.0 which doesn't re-export MediaType
-import 'package:http_parser/http_parser.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
-import 'package:retry/retry.dart';
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 
-import 'file_io.dart' if (dart.library.js) './file_stub.dart';
+import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 class Fetch {
   final Client? httpClient;
   final _log = Logger('supabase.storage');
 
   Fetch([this.httpClient]);
-
-  bool _isSuccessStatusCode(int code) {
-    return code >= 200 && code <= 299;
-  }
 
   MediaType _parseMediaType(String path) {
     final mime = lookupMimeType(path);
@@ -212,9 +207,12 @@ class Fetch {
     FetchOptions? options,
   ) async {
     final response = await http.Response.fromStream(streamedResponse);
-    if (_isSuccessStatusCode(response.statusCode)) {
+    if (isSuccessStatusCode(response.statusCode)) {
       if (options?.noResolveJson == true) {
         return response.bodyBytes;
+      }
+      if (response.body.isEmpty) {
+        return null;
       }
       final jsonBody = json.decode(response.body);
       return jsonBody;
@@ -232,12 +230,49 @@ class Fetch {
       'HEAD',
       url,
       null,
-      FetchOptions(headers: options?.headers, noResolveJson: true),
+      FetchOptions(options?.headers, noResolveJson: true),
     );
   }
 
   Future<dynamic> get(String url, {FetchOptions? options}) {
     return _handleRequest('GET', url, null, options);
+  }
+
+  /// Performs a GET request and yields the response body as a byte stream
+  /// without buffering it in memory.
+  ///
+  /// The status code is inspected before the body is yielded, so a non-success
+  /// response surfaces as a [StorageException] on the stream before any bytes
+  /// are emitted.
+  @internal
+  Stream<Uint8List> getStream(
+    String url, {
+    FetchOptions? options,
+  }) async* {
+    final request = http.Request('GET', Uri.parse(url))
+      ..headers.addAll({...?options?.headers});
+
+    _log.finest('Request: GET (stream) $url ${request.headers}');
+    final http.StreamedResponse streamedResponse;
+    if (httpClient != null) {
+      streamedResponse = await httpClient!.send(request);
+    } else {
+      streamedResponse = await request.send();
+    }
+
+    if (!isSuccessStatusCode(streamedResponse.statusCode)) {
+      final response = await http.Response.fromStream(streamedResponse);
+      throw _handleError(
+        response,
+        StackTrace.current,
+        response.request?.url,
+        FetchOptions(options?.headers, noResolveJson: true),
+      );
+    }
+
+    yield* streamedResponse.stream.map(
+      (chunk) => chunk is Uint8List ? chunk : Uint8List.fromList(chunk),
+    );
   }
 
   Future<dynamic> post(

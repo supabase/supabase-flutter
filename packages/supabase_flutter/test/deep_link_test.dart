@@ -5,6 +5,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'widget_test_stubs.dart';
@@ -99,6 +100,155 @@ void main() {
         'new@email.com',
       );
     });
+  });
+
+  group('Custom session-URL-detection predicate', () {
+    test(
+      'predicate returning false suppresses detection of an otherwise valid '
+      'auth callback',
+      () async {
+        final pkceHttpClient = PkceHttpClient();
+
+        mockAppLink(
+          mockMethodChannel: false,
+          mockEventChannel: true,
+          initialLink: 'com.supabase://callback/?code=my-code-verifier',
+        );
+        final pkceAsyncStorage = MockAsyncStorage();
+        await pkceAsyncStorage.setItem(
+          key: 'supabase.auth.token-code-verifier',
+          value: 'raw-code-verifier',
+        );
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+          httpClient: pkceHttpClient,
+          authOptions: FlutterAuthClientOptions(
+            localStorage: const MockEmptyLocalStorage(),
+            pkceAsyncStorage: pkceAsyncStorage,
+            detectSessionInUriPredicate: (uri) => false,
+          ),
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500));
+        expect(pkceHttpClient.requestCount, 0);
+      },
+    );
+
+    test(
+      'predicate governs detection based on the incoming uri',
+      () async {
+        final pkceHttpClient = PkceHttpClient();
+        final receivedUris = <Uri>[];
+
+        mockAppLink(
+          mockMethodChannel: false,
+          mockEventChannel: true,
+          initialLink: 'com.supabase://callback/?code=my-code-verifier',
+        );
+        final pkceAsyncStorage = MockAsyncStorage();
+        await pkceAsyncStorage.setItem(
+          key: 'supabase.auth.token-code-verifier',
+          value: 'raw-code-verifier',
+        );
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+          httpClient: pkceHttpClient,
+          authOptions: FlutterAuthClientOptions(
+            localStorage: const MockEmptyLocalStorage(),
+            pkceAsyncStorage: pkceAsyncStorage,
+            detectSessionInUriPredicate: (uri) {
+              receivedUris.add(uri);
+              return uri.queryParameters.containsKey('code');
+            },
+          ),
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500));
+        expect(receivedUris.single.queryParameters['code'], 'my-code-verifier');
+        expect(pkceHttpClient.requestCount, 1);
+        expect(pkceHttpClient.lastRequestBody['auth_code'], 'my-code-verifier');
+      },
+    );
+  });
+
+  group('persistSession flag', () {
+    // With url '', the default persist session key resolves to this value.
+    const persistSessionKey = 'sb--auth-token';
+
+    test(
+      'persists the session to the default storage when persistSession is true',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final pkceHttpClient = PkceHttpClient();
+
+        mockAppLink(
+          mockMethodChannel: false,
+          mockEventChannel: true,
+          initialLink: 'com.supabase://callback/?code=my-code-verifier',
+        );
+        final pkceAsyncStorage = MockAsyncStorage();
+        await pkceAsyncStorage.setItem(
+          key: 'supabase.auth.token-code-verifier',
+          value: 'raw-code-verifier',
+        );
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+          httpClient: pkceHttpClient,
+          authOptions: FlutterAuthClientOptions(
+            pkceAsyncStorage: pkceAsyncStorage,
+          ),
+        );
+
+        await Supabase.instance.client.auth.onAuthStateChange
+            .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
+            .timeout(const Duration(seconds: 5));
+
+        final preferences = await SharedPreferences.getInstance();
+        expect(preferences.getString(persistSessionKey), isNotNull);
+      },
+    );
+
+    test(
+      'does not persist the session when persistSession is false',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final pkceHttpClient = PkceHttpClient();
+
+        mockAppLink(
+          mockMethodChannel: false,
+          mockEventChannel: true,
+          initialLink: 'com.supabase://callback/?code=my-code-verifier',
+        );
+        final pkceAsyncStorage = MockAsyncStorage();
+        await pkceAsyncStorage.setItem(
+          key: 'supabase.auth.token-code-verifier',
+          value: 'raw-code-verifier',
+        );
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+          httpClient: pkceHttpClient,
+          authOptions: FlutterAuthClientOptions(
+            pkceAsyncStorage: pkceAsyncStorage,
+            persistSession: false,
+          ),
+        );
+
+        await Supabase.instance.client.auth.onAuthStateChange
+            .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
+            .timeout(const Duration(seconds: 5));
+
+        final preferences = await SharedPreferences.getInstance();
+        expect(preferences.getString(persistSessionKey), isNull);
+      },
+    );
   });
 
   group('Deep Link with error query parameter', () {

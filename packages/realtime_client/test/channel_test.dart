@@ -117,7 +117,7 @@ void main() {
 
       expect(joinPush.timeout, Constants.defaultTimeout);
 
-      channel.subscribe((_, [__]) {}, newTimeout);
+      channel.subscribe((_, [_]) {}, newTimeout);
 
       expect(joinPush.timeout, newTimeout);
     });
@@ -180,7 +180,7 @@ void main() {
           await Future<void>.value();
           await Future<void>.value();
         },
-        (_, __) {
+        (_, _) {
           /* expected: rethrown FormatException */
         },
       );
@@ -409,7 +409,7 @@ void main() {
           'channel': 'topic',
         });
 
-        expect(received, isA<Map>());
+        expect(received, isA<Map<dynamic, dynamic>>());
 
         final system = RealtimeSystemPayload.fromJson(
           Map<String, dynamic>.from(received),
@@ -484,6 +484,80 @@ void main() {
       channel.trigger('realtime', {'event': 'UPDATE'});
       channel.trigger('realtime', {'event': 'DELETE'});
       expect(callbackCalled, 3);
+    });
+  });
+
+  group('blocking listeners after subscribe', () {
+    setUp(() {
+      socket = RealtimeClient('wss://example.com/socket');
+      channel = socket.channel('topic');
+    });
+
+    test('throws when adding postgres_changes listener while joining', () {
+      channel.subscribe();
+      expect(channel.isJoining, isTrue);
+
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          callback: (_) {},
+        ),
+        throwsA(
+          allOf(
+            isA<String>(),
+            contains('cannot add `postgres_changes` callbacks'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when adding postgres_changes listener after join', () {
+      channel.subscribe();
+      channel.joinPush.trigger('ok', {});
+      expect(channel.isJoined, isTrue);
+
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          callback: (_) {},
+        ),
+        throwsA(
+          allOf(
+            isA<String>(),
+            contains('cannot add `postgres_changes` callbacks'),
+          ),
+        ),
+      );
+    });
+
+    test('allows adding postgres_changes listener before subscribe', () {
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          callback: (_) {},
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('does not block presence listeners after subscribe', () {
+      channel.subscribe();
+      expect(channel.isJoining, isTrue);
+
+      expect(
+        () => channel.onPresenceSync((_) {}),
+        returnsNormally,
+      );
+    });
+
+    test('does not block broadcast listeners after subscribe', () {
+      channel.subscribe();
+      expect(channel.isJoining, isTrue);
+
+      expect(
+        () => channel.onBroadcast(event: 'test', callback: (_) {}),
+        returnsNormally,
+      );
     });
   });
 
@@ -589,12 +663,12 @@ void main() {
 
     test("closes channel on 'ok' from server", () {
       final anotherChannel = socket.channel('another');
-      expect(socket.channels.length, 2);
+      expect(socket.channels, hasLength(2));
 
       unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
 
-      expect(socket.channels.length, 1);
+      expect(socket.channels, hasLength(1));
       expect(socket.channels[0].topic, anotherChannel.topic);
     });
 
@@ -609,7 +683,7 @@ void main() {
 
     test("able to unsubscribe from * subscription", () {
       channel.onEvents('*', ChannelFilter(), (payload, [ref]) {});
-      expect(socket.channels.length, 1);
+      expect(socket.channels, hasLength(1));
 
       unawaited(channel.unsubscribe());
       channel.joinPush.trigger('ok', {});
@@ -758,6 +832,51 @@ void main() {
         'currentPresences': <Presence>[],
       }, '3');
       expect(leaveCalled, isTrue);
+    });
+  });
+
+  group('track opts forwarding', () {
+    late _OptsCapturingChannel capturingChannel;
+
+    setUp(() {
+      socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
+      capturingChannel = _OptsCapturingChannel('topic', socket);
+    });
+
+    test('track forwards a custom non-timeout opt to send', () async {
+      await capturingChannel.track({'id': 123}, {'ack': true});
+
+      expect(capturingChannel.capturedOpts, containsPair('ack', true));
+    });
+
+    test('track forwards a custom timeout opt to send', () async {
+      await capturingChannel.track({'id': 123}, {'timeout': 2500});
+
+      expect(capturingChannel.capturedOpts, containsPair('timeout', 2500));
+    });
+
+    test(
+      'track falls back to the channel timeout when none provided',
+      () async {
+        await capturingChannel.track({'id': 123});
+
+        expect(
+          capturingChannel.capturedOpts,
+          containsPair('timeout', const Duration(milliseconds: 1234)),
+        );
+      },
+    );
+
+    test('track keeps custom opts alongside the default timeout', () async {
+      await capturingChannel.track({'id': 123}, {'ack': true});
+
+      expect(
+        capturingChannel.capturedOpts,
+        allOf(
+          containsPair('ack', true),
+          containsPair('timeout', const Duration(milliseconds: 1234)),
+        ),
+      );
     });
   });
 
@@ -1030,17 +1149,20 @@ void main() {
           payload: {'myKey': 'myValue'},
         );
 
-        final req = await requestFuture;
-        expect(req.uri.path, '/realtime/v1/api/broadcast/myTopic/events/test');
-        expect(req.uri.queryParameters['private'], 'true');
-        expect(req.headers.value('apikey'), 'supabaseKey');
-        expect(req.headers.contentType?.mimeType, 'application/json');
+        final request = await requestFuture;
+        expect(
+          request.uri.path,
+          '/realtime/v1/api/broadcast/myTopic/events/test',
+        );
+        expect(request.uri.queryParameters['private'], 'true');
+        expect(request.headers.value('apikey'), 'supabaseKey');
+        expect(request.headers.contentType?.mimeType, 'application/json');
 
-        final body = json.decode(await utf8.decodeStream(req));
+        final body = json.decode(await utf8.decodeStream(request));
         expect(body, {'myKey': 'myValue'});
 
-        req.response.statusCode = 202;
-        await req.response.close();
+        request.response.statusCode = 202;
+        await request.response.close();
 
         await sendFuture;
       },
@@ -1060,12 +1182,15 @@ void main() {
         payload: {'myKey': 'myValue'},
       );
 
-      final req = await requestFuture;
-      expect(req.uri.path, '/realtime/v1/api/broadcast/myTopic/events/test');
-      expect(req.uri.queryParameters.containsKey('private'), isFalse);
+      final request = await requestFuture;
+      expect(
+        request.uri.path,
+        '/realtime/v1/api/broadcast/myTopic/events/test',
+      );
+      expect(request.uri.queryParameters.containsKey('private'), isFalse);
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1084,14 +1209,14 @@ void main() {
         payload: {'id': 1},
       );
 
-      final req = await requestFuture;
+      final request = await requestFuture;
       expect(
-        req.uri.toString(),
+        request.uri.toString(),
         contains('/api/broadcast/room%3A42/events/user%2Fjoined'),
       );
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1108,18 +1233,18 @@ void main() {
       final requestFuture = mockServer.first;
       final sendFuture = channel.httpSend(event: 'bin', payload: bytes);
 
-      final req = await requestFuture;
-      expect(req.uri.path, '/realtime/v1/api/broadcast/myTopic/events/bin');
-      expect(req.headers.contentType?.mimeType, 'application/octet-stream');
+      final request = await requestFuture;
+      expect(request.uri.path, '/realtime/v1/api/broadcast/myTopic/events/bin');
+      expect(request.headers.contentType?.mimeType, 'application/octet-stream');
 
-      final received = await req.fold<List<int>>(
+      final received = await request.fold<List<int>>(
         <int>[],
-        (acc, chunk) => acc..addAll(chunk),
+        (accumulated, chunk) => accumulated..addAll(chunk),
       );
       expect(received, equals(bytes));
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1136,17 +1261,17 @@ void main() {
       final requestFuture = mockServer.first;
       final sendFuture = channel.httpSend(event: 'bin', payload: bytes.buffer);
 
-      final req = await requestFuture;
-      expect(req.headers.contentType?.mimeType, 'application/octet-stream');
+      final request = await requestFuture;
+      expect(request.headers.contentType?.mimeType, 'application/octet-stream');
 
-      final received = await req.fold<List<int>>(
+      final received = await request.fold<List<int>>(
         <int>[],
-        (acc, chunk) => acc..addAll(chunk),
+        (accumulated, chunk) => accumulated..addAll(chunk),
       );
       expect(received, equals(bytes));
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1166,12 +1291,12 @@ void main() {
         payload: {'data': 'test'},
       );
 
-      final req = await requestFuture;
-      expect(req.headers.value('Authorization'), 'Bearer token123');
-      expect(req.headers.value('apikey'), 'abc123');
+      final request = await requestFuture;
+      expect(request.headers.value('Authorization'), 'Bearer token123');
+      expect(request.headers.value('apikey'), 'abc123');
 
-      req.response.statusCode = 202;
-      await req.response.close();
+      request.response.statusCode = 202;
+      await request.response.close();
 
       await sendFuture;
     });
@@ -1189,10 +1314,10 @@ void main() {
         payload: {'data': 'test'},
       );
 
-      final req = await requestFuture;
-      req.response.statusCode = 500;
-      req.response.write(json.encode({'error': 'Server error'}));
-      await req.response.close();
+      final request = await requestFuture;
+      request.response.statusCode = 500;
+      request.response.write(json.encode({'error': 'Server error'}));
+      await request.response.close();
 
       await expectLater(
         sendFuture,
@@ -1213,10 +1338,10 @@ void main() {
 
       // Don't await the server - let it hang to trigger timeout
       unawaited(
-        mockServer.first.then((req) async {
+        mockServer.first.then((request) async {
           await Future.delayed(const Duration(seconds: 1));
-          req.response.statusCode = 202;
-          await req.response.close();
+          request.response.statusCode = 202;
+          await request.response.close();
         }),
       );
 
@@ -1248,5 +1373,22 @@ class _SetAuthThrowingSocket extends RealtimeClient {
   Future<void> setAuth(String? token) async {
     setAuthCalls++;
     throw thrown;
+  }
+}
+
+class _OptsCapturingChannel extends RealtimeChannel {
+  _OptsCapturingChannel(super.topic, super.socket);
+
+  Map<String, dynamic>? capturedOpts;
+
+  @override
+  Future<ChannelResponse> send({
+    required RealtimeListenTypes type,
+    String? event,
+    required Map<String, dynamic> payload,
+    Map<String, dynamic> opts = const {},
+  }) async {
+    capturedOpts = opts;
+    return ChannelResponse.ok;
   }
 }

@@ -1,6 +1,7 @@
 part of 'postgrest_builder.dart';
 
-class PostgrestRpcBuilder extends RawPostgrestBuilder {
+class PostgrestRpcBuilder
+    extends RawPostgrestBuilder<dynamic, dynamic, dynamic> {
   PostgrestRpcBuilder(
     String url, {
     Map<String, String>? headers,
@@ -8,7 +9,11 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
     Client? httpClient,
     required YAJsonIsolate isolate,
     bool retryEnabled = true,
+    int retryCount = 3,
+    Set<int> retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
     Duration Function(int attempt)? retryDelay,
+    Duration? requestTimeout,
+    Future<void>? abortSignal,
   }) : super(
          PostgrestBuilder(
            url: Uri.parse(url),
@@ -17,7 +22,11 @@ class PostgrestRpcBuilder extends RawPostgrestBuilder {
            httpClient: httpClient,
            isolate: isolate,
            retryEnabled: retryEnabled,
+           retryCount: retryCount,
+           retryableStatusCodes: retryableStatusCodes,
            retryDelay: retryDelay,
+           requestTimeout: requestTimeout,
+           abortSignal: abortSignal,
          ),
        );
 

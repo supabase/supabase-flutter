@@ -28,23 +28,23 @@ void main() {
   });
   group('Provider sign in', () {
     test('signIn() with Provider', () async {
-      final res = await client.getOAuthSignInUrl(
+      final response = await client.getOAuthSignInUrl(
         provider: OAuthProvider.google,
       );
-      final url = res.url;
-      final provider = res.provider;
+      final url = response.url;
+      final provider = response.provider;
       expect(url, startsWith('$gotrueUrl/authorize?provider=google'));
       expect(provider, OAuthProvider.google);
     });
 
     test('signIn() with Provider and options', () async {
-      final res = await client.getOAuthSignInUrl(
+      final response = await client.getOAuthSignInUrl(
         provider: OAuthProvider.github,
         redirectTo: 'redirectToURL',
         scopes: 'repo',
       );
-      final url = res.url;
-      final provider = res.provider;
+      final url = response.url;
+      final provider = response.provider;
       expect(
         url,
         startsWith(
@@ -53,11 +53,37 @@ void main() {
       );
       expect(provider, OAuthProvider.github);
     });
+
+    test('signIn() with custom OIDC provider', () async {
+      final response = await client.getOAuthSignInUrl(
+        provider: OAuthProvider('custom:my-oidc-provider'),
+      );
+      expect(
+        response.url,
+        startsWith(
+          '$gotrueUrl/authorize?provider=custom%3Amy-oidc-provider',
+        ),
+      );
+      expect(response.provider, OAuthProvider('custom:my-oidc-provider'));
+      expect(response.provider.name, 'custom:my-oidc-provider');
+    });
+
+    test('signIn() with custom OIDC provider and options', () async {
+      final response = await client.getOAuthSignInUrl(
+        provider: OAuthProvider('custom:my-oidc-provider'),
+        redirectTo: 'https://localhost:9000/callback',
+        scopes: 'openid profile email',
+      );
+      expect(response.url, contains('provider=custom%3Amy-oidc-provider'));
+      expect(response.url, contains('redirect_to='));
+      expect(response.url, contains('scopes='));
+      expect(response.provider.name, 'custom:my-oidc-provider');
+    });
   });
 
   group('getSessionFromUrl()', () {
     setUp(() async {
-      final res = await http.post(
+      final response = await http.post(
         Uri.parse(
           'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
         ),
@@ -67,7 +93,7 @@ void main() {
           'Authorization': 'Bearer ${getServiceRoleToken(env)}',
         },
       );
-      if (res.body.isNotEmpty) throw res.body;
+      if (response.body.isNotEmpty) throw response.body;
 
       await client.signInWithPassword(email: email1, password: password);
       session = client.currentSession!;
@@ -83,13 +109,13 @@ void main() {
 
       final url =
           'http://my-callback-url.com/welcome#access_token=$accessToken&expires_in=$expiresIn&refresh_token=$refreshToken&token_type=$tokenType&provider_token=$providerToken&provider_refresh_token=$providerRefreshToken';
-      final res = await client.getSessionFromUrl(Uri.parse(url));
-      expect(res.session.accessToken, accessToken);
-      expect(res.session.expiresIn, expiresIn);
-      expect(res.session.refreshToken, refreshToken);
-      expect(res.session.tokenType, tokenType);
-      expect(res.session.providerToken, providerToken);
-      expect(res.session.providerRefreshToken, providerRefreshToken);
+      final response = await client.getSessionFromUrl(Uri.parse(url));
+      expect(response.session.accessToken, accessToken);
+      expect(response.session.expiresIn, expiresIn);
+      expect(response.session.refreshToken, refreshToken);
+      expect(response.session.tokenType, tokenType);
+      expect(response.session.providerToken, providerToken);
+      expect(response.session.providerRefreshToken, providerRefreshToken);
     });
 
     test('parse provider callback url with fragment and query', () async {
@@ -102,13 +128,13 @@ void main() {
 
       final url =
           'http://my-callback-url.com?page=welcome&foo=bar#access_token=$accessToken&expires_in=$expiresIn&refresh_token=$refreshToken&token_type=$tokenType&provider_token=$providerToken&provider_refresh_token=$providerRefreshToken';
-      final res = await client.getSessionFromUrl(Uri.parse(url));
-      expect(res.session.accessToken, accessToken);
-      expect(res.session.expiresIn, expiresIn);
-      expect(res.session.refreshToken, refreshToken);
-      expect(res.session.tokenType, tokenType);
-      expect(res.session.providerToken, providerToken);
-      expect(res.session.providerRefreshToken, providerRefreshToken);
+      final response = await client.getSessionFromUrl(Uri.parse(url));
+      expect(response.session.accessToken, accessToken);
+      expect(response.session.expiresIn, expiresIn);
+      expect(response.session.refreshToken, refreshToken);
+      expect(response.session.tokenType, tokenType);
+      expect(response.session.providerToken, providerToken);
+      expect(response.session.providerRefreshToken, providerRefreshToken);
     });
 
     test('parse provider callback url with missing param error', () async {
@@ -130,15 +156,19 @@ void main() {
     });
 
     test('parse provider callback url with error', () async {
-      const errorDesc = 'my_error_description';
+      const errorDescription = 'my_error_description';
       await expectLater(
         () async {
           const url =
-              'http://my-callback-url.com?page=welcome&foo=bar#error_description=$errorDesc';
+              'http://my-callback-url.com?page=welcome&foo=bar#error_description=$errorDescription';
           await client.getSessionFromUrl(Uri.parse(url));
         },
         throwsA(
-          isA<AuthException>().having((e) => e.message, 'message', errorDesc),
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            errorDescription,
+          ),
         ),
       );
     });

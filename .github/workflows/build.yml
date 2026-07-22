@@ -22,10 +22,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Dart
-        uses: dart-lang/setup-dart@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c # v1.7.1
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
-          sdk: stable
+          channel: 'stable'
+          cache: true
 
       - name: Detect affected packages
         id: detect
@@ -99,10 +100,7 @@ jobs:
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: 'stable'
-          # Caching the latest stable is flaky: the cached SDK contains
-          # runner-image-specific binaries that break silently when the runner
-          # image is updated.
-          cache: false
+          cache: true
 
       - name: Show Flutter version
         run: flutter --version

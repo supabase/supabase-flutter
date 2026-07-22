@@ -1,8 +1,8 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
 import 'package:gotrue/src/constants.dart';
-import 'package:gotrue/src/types/auth_response.dart';
 import 'package:gotrue/src/version.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -60,7 +60,7 @@ void main() {
 
   group('AuthChangeEvent', () {
     test('has correct enum values', () {
-      expect(AuthChangeEvent.values.length, equals(8));
+      expect(AuthChangeEvent.values, hasLength(8));
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.initialSession));
       expect(
         AuthChangeEvent.values,
@@ -161,7 +161,7 @@ void main() {
 
   group('GenerateLinkType', () {
     test('has correct enum values', () {
-      expect(GenerateLinkType.values.length, equals(7));
+      expect(GenerateLinkType.values, hasLength(7));
       expect(GenerateLinkType.values, contains(GenerateLinkType.signup));
       expect(GenerateLinkType.values, contains(GenerateLinkType.invite));
       expect(GenerateLinkType.values, contains(GenerateLinkType.magiclink));
@@ -244,7 +244,7 @@ void main() {
 
   group('OtpType', () {
     test('has correct enum values', () {
-      expect(OtpType.values.length, equals(8));
+      expect(OtpType.values, hasLength(8));
       expect(OtpType.values, contains(OtpType.sms));
       expect(OtpType.values, contains(OtpType.phoneChange));
       expect(OtpType.values, contains(OtpType.signup));
@@ -258,7 +258,7 @@ void main() {
 
   group('OtpChannel', () {
     test('has correct enum values', () {
-      expect(OtpChannel.values.length, equals(2));
+      expect(OtpChannel.values, hasLength(2));
       expect(OtpChannel.values, contains(OtpChannel.sms));
       expect(OtpChannel.values, contains(OtpChannel.whatsapp));
     });
@@ -273,7 +273,7 @@ void main() {
 
   group('SignOutScope', () {
     test('has correct enum values', () {
-      expect(SignOutScope.values.length, equals(3));
+      expect(SignOutScope.values, hasLength(3));
       expect(SignOutScope.values, contains(SignOutScope.global));
       expect(SignOutScope.values, contains(SignOutScope.local));
       expect(SignOutScope.values, contains(SignOutScope.others));

@@ -1,3 +1,17 @@
+## 2.17.0
+
+ - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))
+ - **FIX**(realtime_client): faster channel rejoin on web ([#1471](https://github.com/supabase/supabase-flutter/issues/1471)). ([bc06a310](https://github.com/supabase/supabase-flutter/commit/bc06a310cf09bdba87668695b48bc8b8f353c495))
+ - **FEAT**(auth): support friendlyName and user.name fallback for WebAuthn passkey enrollment ([#1603](https://github.com/supabase/supabase-flutter/issues/1603)). ([558b0346](https://github.com/supabase/supabase-flutter/commit/558b03461441d340b1656606d1086382481611f8))
+ - **FEAT**(client): add opt-in trace context propagation headers ([#1564](https://github.com/supabase/supabase-flutter/issues/1564)). ([85780e60](https://github.com/supabase/supabase-flutter/commit/85780e607a00904870fe7f68dbd45ee5797256b6))
+ - **FEAT**(client): add session-URL-detection predicate and persistSession flag ([#1558](https://github.com/supabase/supabase-flutter/issues/1558)). ([c8b02ed0](https://github.com/supabase/supabase-flutter/commit/c8b02ed062d78145671eecc2504875c19377a221))
+ - **DOCS**(auth): document getOAuthSignInUrl for URL-without-launch, mark oauth parity implemented ([#1548](https://github.com/supabase/supabase-flutter/issues/1548)). ([1a1c95bf](https://github.com/supabase/supabase-flutter/commit/1a1c95bf178a0af8301d54366ebbf999f911d8f0))
+
+## 2.16.0
+
+ - **FIX**(supabase_flutter): drop passkeys requireResidentKey workaround, bump dependency ([#1521](https://github.com/supabase/supabase-flutter/issues/1521)). ([7907c6cb](https://github.com/supabase/supabase-flutter/commit/7907c6cbc3dc31500a5cf85a81b97efc04f3006c))
+ - **FEAT**(supabase_flutter): default debug logging off under flutter test ([#1530](https://github.com/supabase/supabase-flutter/issues/1530)). ([941ee804](https://github.com/supabase/supabase-flutter/commit/941ee80498f7f6d1351351aca449b8a5bc2655da))
+
 ## 2.15.4
 
  - **FIX**(supabase_flutter): preserve hash routes and repeated query keys when clearing auth params ([#1511](https://github.com/supabase/supabase-flutter/issues/1511)). ([4fca4126](https://github.com/supabase/supabase-flutter/commit/4fca4126fe3649f218b296b0e40bb4bc2de87890))

@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// JWT Header structure
 class JwtHeader {
@@ -238,35 +238,23 @@ class JWK {
   }
 
   /// Allows accessing additional properties using operator[].
-  dynamic operator [](String key) {
-    switch (key) {
-      case 'kty':
-        return kty;
-      case 'key_ops':
-        return keyOps;
-      case 'alg':
-        return alg;
-      case 'kid':
-        return kid;
-      default:
-        return _additionalProperties[key];
-    }
-  }
+  dynamic operator [](String key) => switch (key) {
+    'kty' => kty,
+    'key_ops' => keyOps,
+    'alg' => alg,
+    'kid' => kid,
+    _ => _additionalProperties[key],
+  };
 
   /// Converts this [JWK] to a JSON map.
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> json = {
+    return {
       'kty': kty,
       'key_ops': keyOps,
+      'alg': ?alg,
+      'kid': ?kid,
       ..._additionalProperties,
     };
-    if (alg != null) {
-      json['alg'] = alg;
-    }
-    if (kid != null) {
-      json['kid'] = kid;
-    }
-    return json;
   }
 
   /// Builds the RSA public key for verifying RS256 JWTs from this JWK's
@@ -281,18 +269,14 @@ class JWK {
   // clock 1.1.2 and so allows dart_jsonwebtoken 3.x. fromJWK also adds EC
   // (ES256) support.
   RSAPublicKey get publicKey {
-    final modulus = _base64UrlToBytes(this['n'] as String);
-    final exponent = _base64UrlToBytes(this['e'] as String);
+    final modulus = Base64Url.decodeToBytes(this['n'] as String);
+    final exponent = Base64Url.decodeToBytes(this['e'] as String);
     final der = _derSequence([
       _derInteger(modulus),
       _derInteger(exponent),
     ]);
     return RSAPublicKey.bytes(Uint8List.fromList(der));
   }
-}
-
-List<int> _base64UrlToBytes(String input) {
-  return base64Url.decode(base64Url.normalize(input));
 }
 
 /// DER-encodes an unsigned big-endian integer (prefixing a zero byte when the

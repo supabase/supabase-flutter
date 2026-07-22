@@ -269,9 +269,9 @@ Future<void> _facebookSignInWeb() async {
 
 ### <a id="oauth-login"></a>OAuth login
 
-The `signInWithIdToken()` method supports providers like Apple, Google, Facebook, Kakao, and Keycloak. For other providers, you need to use the `signInWithOAuth()` method to perform OAuth login. This will open the web browser to perform the OAuth login.
+The `signInWithIdToken()` method supports providers like Apple, Google, Facebook, Kakao, and Keycloak. For other providers, you need to use the `signInWithOAuth()` method to perform OAuth login. On native platforms this opens a system web authentication session (`ASWebAuthenticationSession` on iOS and macOS, Custom Tabs on Android) that closes itself once the login completes. On web the current tab is redirected to the provider.
 
-Use the `redirectTo` parameter to redirect the user to a deep link to bring the user back to the app. Learn more about setting up deep links in [Deep link config](#deep-link-config).
+Use the `redirectTo` parameter to send the user back to the app after login. Its scheme is also the callback scheme the web authentication session listens for, so on native platforms you need to register it. See [OAuth native config](#oauth-native-config).
 
 ```dart
 // Perform web based OAuth login
@@ -288,6 +288,37 @@ supabase.auth.onAuthStateChange.listen((data) {
   }
 });
 ```
+
+#### <a id="oauth-native-config"></a>OAuth native config
+
+On native platforms `signInWithOAuth()`, `signInWithSSO()` and `linkIdentity()` run inside a system web authentication session that captures the redirect back to your app. The session listens for the scheme of your `redirectTo` URL, so that scheme has to be registered with the platform.
+
+**Android**
+
+Register the callback activity in `android/app/src/main/AndroidManifest.xml`, inside the `<application>` tag, using the scheme of your `redirectTo` (here `io.supabase.flutter`):
+
+```xml
+<activity
+    android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
+    android:exported="true">
+    <intent-filter android:label="flutter_web_auth_2">
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="io.supabase.flutter" />
+    </intent-filter>
+</activity>
+```
+
+**iOS and macOS**
+
+No configuration is required for custom URL schemes. If you use an `https` `redirectTo` (universal link), it is passed through automatically; on iOS 17.4+ and macOS 14.4+ the host and path are taken from `redirectTo` to satisfy the universal link requirements.
+
+**Web**
+
+No configuration is required. The current tab is redirected to the provider and the session is restored when the browser returns to your app.
+
+If you only need OAuth, SSO and identity linking, this replaces the app links deep link setup below. You still need to set up deep links for magic links, email confirmation and password recovery, which arrive as real deep links from outside the app.
 
 ### <a id="passkeys"></a>Passkeys
 
@@ -475,7 +506,8 @@ You need to setup deep links if you want your native app to open when a user cli
 - Magic link login
 - Have `confirm email` enabled and are using email login
 - Resetting password for email login
-- Calling `.signInWithOAuth()` method
+
+`.signInWithOAuth()`, `.signInWithSSO()` and `.linkIdentity()` no longer rely on these deep links. They run inside a system web authentication session that captures the redirect itself, see [OAuth native config](#oauth-native-config).
 
 \*Currently supabase_flutter supports deep links on Android, iOS, Web, MacOS and Windows.
 

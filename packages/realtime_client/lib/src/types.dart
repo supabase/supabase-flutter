@@ -54,19 +54,14 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
     return name.toUpperCase();
   }
 
-  static PostgresChangeEvent fromString(String event) {
-    switch (event) {
-      case 'INSERT':
-        return PostgresChangeEvent.insert;
-      case 'UPDATE':
-        return PostgresChangeEvent.update;
-      case 'DELETE':
-        return PostgresChangeEvent.delete;
-    }
-    throw ArgumentError(
+  static PostgresChangeEvent fromString(String event) => switch (event) {
+    'INSERT' => PostgresChangeEvent.insert,
+    'UPDATE' => PostgresChangeEvent.update,
+    'DELETE' => PostgresChangeEvent.delete,
+    _ => throw ArgumentError(
       'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.',
-    );
-  }
+    ),
+  };
 }
 
 class ChannelFilter {
@@ -406,27 +401,21 @@ enum PostgresChangeFilterType {
   /// The operator token used in the filter wire format (the part between
   /// `column=` and `.value`). Most match [name], but a few differ because the
   /// enum names avoid Dart reserved words / casing conventions.
-  String get token {
-    switch (this) {
-      case PostgresChangeFilterType.inFilter:
-        return 'in';
-      case PostgresChangeFilterType.isFilter:
-        return 'is';
-      case PostgresChangeFilterType.isDistinct:
-        return 'isdistinct';
-      case PostgresChangeFilterType.eq:
-      case PostgresChangeFilterType.neq:
-      case PostgresChangeFilterType.lt:
-      case PostgresChangeFilterType.lte:
-      case PostgresChangeFilterType.gt:
-      case PostgresChangeFilterType.gte:
-      case PostgresChangeFilterType.like:
-      case PostgresChangeFilterType.ilike:
-      case PostgresChangeFilterType.match:
-      case PostgresChangeFilterType.imatch:
-        return name;
-    }
-  }
+  String get token => switch (this) {
+    PostgresChangeFilterType.inFilter => 'in',
+    PostgresChangeFilterType.isFilter => 'is',
+    PostgresChangeFilterType.isDistinct => 'isdistinct',
+    PostgresChangeFilterType.eq ||
+    PostgresChangeFilterType.neq ||
+    PostgresChangeFilterType.lt ||
+    PostgresChangeFilterType.lte ||
+    PostgresChangeFilterType.gt ||
+    PostgresChangeFilterType.gte ||
+    PostgresChangeFilterType.like ||
+    PostgresChangeFilterType.ilike ||
+    PostgresChangeFilterType.match ||
+    PostgresChangeFilterType.imatch => name,
+  };
 }
 
 /// {@template postgres_change_filter}

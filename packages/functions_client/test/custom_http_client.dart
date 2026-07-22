@@ -11,11 +11,39 @@ class CustomHttpClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    // Add request to receivedRequests list.
-    receivedRequests = receivedRequests..add(request);
+    receivedRequests.add(request);
     request.finalize();
 
-    if (request.url.path.endsWith("error-function")) {
+    if (request.url.path.endsWith('slow')) {
+      // Hangs until the request is aborted, mirroring how a real client
+      // surfaces abortion. Without an abort trigger it responds immediately so
+      // non-abort tests don't stall.
+      final abortTrigger = request is Abortable ? request.abortTrigger : null;
+      if (abortTrigger != null) {
+        await abortTrigger;
+        throw RequestAbortedException(request.url);
+      }
+      return StreamedResponse(
+        Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),
+        200,
+        request: request,
+        headers: {"Content-Type": "application/json"},
+      );
+    } else if (request.url.path.endsWith('network-error')) {
+      // Simulate a transport failure before any response is received.
+      throw ClientException('Connection failed', request.url);
+    } else if (request.url.path.endsWith('relay-error')) {
+      return StreamedResponse(
+        Stream.value(utf8.encode(jsonEncode({"error": "relay down"}))),
+        500,
+        request: request,
+        headers: {
+          "Content-Type": "application/json",
+          "x-relay-error": "true",
+        },
+        reasonPhrase: "Internal Server Error",
+      );
+    } else if (request.url.path.endsWith("error-function")) {
       //Return custom status code to check for usage of this client.
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),

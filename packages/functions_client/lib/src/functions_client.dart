@@ -7,6 +7,7 @@ import 'package:functions_client/src/version.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show MultipartRequest;
 import 'package:logging/logging.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 class FunctionsClient {
@@ -65,6 +66,32 @@ class FunctionsClient {
   /// [region] optionally specify the region to invoke the function in.
   /// When specified, adds both `x-region` header and `forceFunctionRegion` query parameter.
   ///
+  /// [abortSignal] cancels the in-flight request when the provided [Future]
+  /// completes. It must not complete with an error. On abort, a
+  /// [RequestAbortedException] is thrown. This is useful for cancelling a
+  /// request in response to an event or for setting a request timeout:
+  ///
+  /// ```dart
+  /// // Event based
+  /// final abortSignal = Completer<void>();
+  /// abortSignal.complete(); // Call in some event handler to abort the request
+  ///
+  /// try {
+  ///   final response = await supabase.functions.invoke(
+  ///     'hello-world',
+  ///     abortSignal: abortSignal.future,
+  ///   );
+  /// } on RequestAbortedException catch (error) {
+  ///   print('Request was aborted: $error');
+  /// }
+  ///
+  /// // Timer based
+  /// final response = await supabase.functions.invoke(
+  ///   'hello-world',
+  ///   abortSignal: Future.delayed(Duration(seconds: 5)),
+  /// );
+  /// ```
+  ///
   /// ```dart
   /// // Call a standard function
   /// final response = await supabase.functions.invoke('hello-world');
@@ -97,6 +124,7 @@ class FunctionsClient {
     Map<String, dynamic>? queryParameters,
     HttpMethod method = HttpMethod.post,
     String? region,
+    Future<void>? abortSignal,
   }) async {
     final effectiveRegion = region ?? _region;
 
@@ -136,11 +164,20 @@ class FunctionsClient {
       );
       final fields = (body as Map?)?.cast<String, String>();
 
-      request = http.MultipartRequest(method.name.toUpperCase(), uri)
-        ..fields.addAll(fields ?? {})
-        ..files.addAll(files);
+      request =
+          http.AbortableMultipartRequest(
+              method.name.toUpperCase(),
+              uri,
+              abortTrigger: abortSignal,
+            )
+            ..fields.addAll(fields ?? {})
+            ..files.addAll(files);
     } else {
-      final bodyRequest = http.Request(method.name.toUpperCase(), uri);
+      final bodyRequest = http.AbortableRequest(
+        method.name.toUpperCase(),
+        uri,
+        abortTrigger: abortSignal,
+      );
 
       if (body == null) {
         // No body to set
@@ -161,7 +198,14 @@ class FunctionsClient {
 
     _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
 
-    final response = await (_httpClient?.send(request) ?? request.send());
+    final http.StreamedResponse response;
+    try {
+      response = await (_httpClient?.send(request) ?? request.send());
+    } on http.RequestAbortedException {
+      rethrow;
+    } catch (error) {
+      throw FunctionsFetchException(details: error);
+    }
     final responseType =
         (response.headers['Content-Type'] ??
                 response.headers['content-type'] ??
@@ -170,8 +214,9 @@ class FunctionsClient {
             .trim()
             .toLowerCase();
 
+    final isRelayError = response.headers['x-relay-error'] == 'true';
     final isSuccessStatus =
-        200 <= response.statusCode && response.statusCode < 300;
+        isSuccessStatusCode(response.statusCode) && !isRelayError;
 
     final dynamic data;
 
@@ -210,7 +255,14 @@ class FunctionsClient {
     if (isSuccessStatus) {
       return FunctionResponse(data: data, status: response.statusCode);
     }
-    throw FunctionException(
+    if (isRelayError) {
+      throw FunctionsRelayException(
+        status: response.statusCode,
+        details: data,
+        reasonPhrase: response.reasonPhrase,
+      );
+    }
+    throw FunctionsHttpException(
       status: response.statusCode,
       details: data,
       reasonPhrase: response.reasonPhrase,

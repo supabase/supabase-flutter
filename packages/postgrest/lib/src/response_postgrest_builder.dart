@@ -3,20 +3,7 @@ part of 'postgrest_builder.dart';
 /// Needed as a wrapper around [PostgrestBuilder] to allow for the different return type of [withConverter] than in [RawPostgrestBuilder.withConverter].
 class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   ResponsePostgrestBuilder(PostgrestBuilder<T, S, R> builder)
-    : super(
-        url: builder._url,
-        method: builder._method,
-        headers: builder._headers,
-        schema: builder._schema,
-        body: builder._body,
-        httpClient: builder._httpClient,
-        count: builder._count,
-        isolate: builder._isolate,
-        maybeSingle: builder._maybeSingle,
-        converter: builder._converter,
-        retryEnabled: builder._retryEnabled,
-        retryDelay: builder._retryDelay,
-      );
+    : super._(config: builder._config, converter: builder._converter);
 
   @override
   ResponsePostgrestBuilder<T, S, R> setHeader(String key, String value) {
@@ -41,19 +28,6 @@ class ResponsePostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   PostgrestBuilder<PostgrestResponse<U>, U, R> withConverter<U>(
     PostgrestConverter<U, R> converter,
   ) {
-    return PostgrestBuilder(
-      url: _url,
-      headers: _headers,
-      schema: _schema,
-      method: _method,
-      body: _body,
-      isolate: _isolate,
-      httpClient: _httpClient,
-      count: _count,
-      maybeSingle: _maybeSingle,
-      converter: converter,
-      retryEnabled: _retryEnabled,
-      retryDelay: _retryDelay,
-    );
+    return PostgrestBuilder._(config: _config, converter: converter);
   }
 }

@@ -107,7 +107,7 @@ void main() {
 
         final requestPath = mockClient.receivedRequests.single.url.path;
         expect(requestPath, endsWith('/bucket/folder/image.png'));
-        expect(requestPath.contains('//'), isFalse);
+        expect(requestPath, isNot(contains('//')));
       },
     );
   });
