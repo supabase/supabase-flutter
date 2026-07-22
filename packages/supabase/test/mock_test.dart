@@ -7,6 +7,19 @@ import 'dart:io';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
+extension type Todo(Map<String, dynamic> json) {
+  int get id => json['id'] as int;
+  String get task => json['task'] as String;
+  bool get status => json['status'] as bool;
+}
+
+class Todos {
+  static const table = PostgrestTable('todos', Todo.new);
+  static const id = TableColumn<int>('id');
+  static const task = TableColumn<String>('task');
+  static const status = TableColumn<bool>('status');
+}
+
 void main() {
   late SupabaseClient supabase;
   late SupabaseClient customHeadersClient;
@@ -867,6 +880,58 @@ void main() {
         // Operations after dispose should not throw
         expect(() => client.from('test'), returnsNormally);
       });
+    });
+  });
+
+  group('typed table access', () {
+    setUp(() async {
+      unawaited(handleRequests(mockServer));
+    });
+
+    test('select returns rows converted into the table row type', () async {
+      final List<Todo> todos = await supabase.table(Todos.table).select();
+
+      expect(todos.map((todo) => todo.task), ['task 1', 'task 2']);
+    });
+
+    test('stream emits typed rows', () async {
+      final stream = supabase.table(Todos.table).stream(primaryKey: [Todos.id]);
+
+      final List<Todo> todos = await stream.first;
+
+      expect(todos.map((todo) => todo.task), ['task 1', 'task 2']);
+    });
+  });
+
+  group('typed realtime filter', () {
+    test('can filter typed stream results', () {
+      unawaited(handleRequests(mockServer, expectedFilter: 'status=eq.true'));
+      final stream = supabase
+          .table(Todos.table)
+          .stream(primaryKey: [Todos.id])
+          .filter(Todos.status.eq(true));
+      expect(
+        stream,
+        emitsInOrder([
+          containsAllInOrder([
+            {'id': 1, 'task': 'task 1', 'status': true},
+          ]),
+          containsAllInOrder([
+            {'id': 1, 'task': 'task 1', 'status': true},
+            {'id': 3, 'task': 'task 3', 'status': true},
+          ]),
+        ]),
+      );
+    });
+
+    test('filters not supported by streams throw', () {
+      unawaited(handleRequests(mockServer));
+      final stream = supabase.table(Todos.table).stream(primaryKey: [Todos.id]);
+
+      expect(
+        () => stream.filter(Todos.task.like('%task%')),
+        throwsArgumentError,
+      );
     });
   });
 }

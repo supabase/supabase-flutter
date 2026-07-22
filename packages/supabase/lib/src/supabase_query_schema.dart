@@ -48,6 +48,11 @@ class SupabaseQuerySchema {
     );
   }
 
+  /// Perform a typed table operation, see [SupabaseClient.table].
+  SupabaseTypedQueryBuilder<Row> table<Row>(PostgrestTable<Row> table) {
+    return SupabaseTypedQueryBuilder(from(table.name), table);
+  }
+
   /// {@macro postgrest_rpc}
   PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
