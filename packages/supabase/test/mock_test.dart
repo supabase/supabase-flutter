@@ -7,10 +7,11 @@ import 'dart:io';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
-extension type Todo(Map<String, dynamic> json) {
-  int get id => json['id'] as int;
-  String get task => json['task'] as String;
-  bool get status => json['status'] as bool;
+extension type const Todo(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  int get id => _json['id'] as int;
+  String get task => _json['task'] as String;
+  bool get status => _json['status'] as bool;
 }
 
 class Todos {

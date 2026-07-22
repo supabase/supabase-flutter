@@ -6,7 +6,7 @@ part of 'postgrest_typed_builder.dart';
 /// checks the value type of each filter against its column at compile time.
 class PostgrestTypedFilterBuilder<Row, T>
     extends PostgrestTypedTransformBuilder<Row, T> {
-  PostgrestTypedFilterBuilder._(
+  const PostgrestTypedFilterBuilder._(
     PostgrestFilterBuilder<dynamic> super.rawBuilder,
     super.table,
     super.convert,

@@ -4,10 +4,13 @@ import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
-extension type Book(Map<String, dynamic> json) {
-  int get id => json['id'] as int;
-  String get title => json['title'] as String;
+extension type const Book(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  int get id => _json['id'] as int;
+  String get title => _json['title'] as String;
 }
+
+const bookRows = '[{"id":1,"title":"a"},{"id":2,"title":"b"}]';
 
 class Books {
   static const table = PostgrestTable('books', Book.new);
@@ -40,8 +43,6 @@ class MockHttpClient extends BaseClient {
 void main() {
   late MockHttpClient httpClient;
   late PostgrestClient client;
-
-  const bookRows = '[{"id":1,"title":"a"},{"id":2,"title":"b"}]';
 
   setUp(() {
     httpClient = MockHttpClient();
@@ -94,7 +95,7 @@ void main() {
           .where(Books.id.eq(1))
           .maybeSingle();
 
-      expect(book, isNull);
+      expect(book == null, isTrue);
     });
 
     test('maybeSingle returns the row when one matches', () async {

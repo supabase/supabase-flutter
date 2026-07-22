@@ -9,7 +9,7 @@ part of 'postgrest_typed_builder.dart';
 /// {@endtemplate}
 class PostgrestTypedQueryBuilder<Row> {
   /// {@macro postgrest_typed_query_builder}
-  PostgrestTypedQueryBuilder(
+  const PostgrestTypedQueryBuilder(
     PostgrestQueryBuilder<dynamic> queryBuilder,
     this.table,
   ) : _queryBuilder = queryBuilder;

@@ -26,7 +26,7 @@ void _toVoid(dynamic data) {}
 /// before it is returned, so awaiting it never exposes raw
 /// `Map<String, dynamic>` data.
 class PostgrestTypedBuilder<T> implements Future<T> {
-  PostgrestTypedBuilder._(this._rawBuilder, this._convert);
+  const PostgrestTypedBuilder._(this._rawBuilder, this._convert);
 
   final PostgrestBuilder<dynamic, dynamic, dynamic> _rawBuilder;
   final T Function(dynamic data) _convert;

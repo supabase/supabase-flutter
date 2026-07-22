@@ -10,7 +10,7 @@ class SupabaseTypedQueryBuilder<Row> extends PostgrestTypedQueryBuilder<Row> {
   // The query builder is also kept as a field to expose [stream], so it
   // cannot become a super parameter.
   // ignore: use_super_parameters
-  SupabaseTypedQueryBuilder(
+  const SupabaseTypedQueryBuilder(
     SupabaseQueryBuilder queryBuilder,
     PostgrestTable<Row> table,
   ) : _queryBuilder = queryBuilder,
