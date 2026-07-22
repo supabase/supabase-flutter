@@ -241,7 +241,9 @@ class _WordCountCardState extends State<_WordCountCard> {
     if (_running) return;
     setState(() => _running = true);
     try {
-      final result = await widget.repository.countWords(_text.text.trim());
+      // Send the text unchanged so the function counts the submitted
+      // characters; it trims internally to validate and split into words.
+      final result = await widget.repository.countWords(_text.text);
       if (mounted) setState(() => _result = result);
     } catch (error) {
       _showError(error);
