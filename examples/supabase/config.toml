@@ -84,9 +84,22 @@ enabled = false
 [local_smtp]
 enabled = true
 
-# Edge Functions runtime.
+# Edge Functions runtime, used by the edge_functions example. `supabase start`
+# serves every function under `supabase/functions/` while the stack is running.
 [edge_runtime]
-enabled = false
+enabled = true
+
+# The edge_functions example runs unauthenticated with the publishable (anon)
+# key, so JWT verification is turned off for its demo functions. A real app would
+# leave verify_jwt on and read the caller's user from the request.
+[functions.greet]
+verify_jwt = false
+
+[functions.shout]
+verify_jwt = false
+
+[functions.word-count]
+verify_jwt = false
 
 # Analytics (Logflare) and its log collector. Also avoids the Docker socket
 # mount that the vector container needs, which some runtimes (e.g. Colima)

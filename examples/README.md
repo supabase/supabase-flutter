@@ -3,11 +3,12 @@
 A collection of small apps that each show off a feature of `supabase_flutter`,
 all sharing a single local Supabase instance.
 
-| Example                                     | What it shows                                                         |
-| ------------------------------------------- | --------------------------------------------------------------------- |
+| Example                                    | What it shows                                                         |
+| ------------------------------------------ | --------------------------------------------------------------------- |
 | [`authentication`](authentication)         | Email/password, magic link, OTP, phone, OAuth, anonymous and MFA auth |
-| [`database_crud`](database_crud)            | Database CRUD with PostgREST (`from(...)`)                            |
-| [`passkeys`](passkeys)                      | Passkey (WebAuthn) sign in and management                             |
+| [`database_crud`](database_crud)           | Database CRUD with PostgREST (`from(...)`)                            |
+| [`edge_functions`](edge_functions)         | Invoking Edge Functions (`functions.invoke(...)`)                     |
+| [`passkeys`](passkeys)                     | Passkey (WebAuthn) sign in and management                             |
 | [`storage_transforms`](storage_transforms) | Storage uploads, downloads and image transforms                       |
 
 ## Quick start
