@@ -7,7 +7,8 @@
 
 Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
-  const text = typeof body.text === "string" ? body.text.trim() : "";
+  const rawText = typeof body.text === "string" ? body.text : "";
+  const text = rawText.trim();
 
   if (text.length === 0) {
     return new Response(
@@ -18,7 +19,10 @@ Deno.serve(async (req) => {
 
   const payload = {
     words: text.split(/\s+/).length,
-    characters: text.length,
+    // Count from the raw text so surrounding spaces are kept, and with
+    // Array.from so an emoji counts as one character rather than two UTF-16
+    // units.
+    characters: Array.from(rawText).length,
   };
   return new Response(JSON.stringify(payload), {
     headers: { "Content-Type": "application/json" },
