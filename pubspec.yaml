@@ -18,6 +18,7 @@ workspace:
   - packages/supabase_common
   - packages/supabase_lints
   - packages/yet_another_json_isolate
+  - examples/authentication
   - examples/database_crud
   - examples/edge_functions
   - examples/launcher
