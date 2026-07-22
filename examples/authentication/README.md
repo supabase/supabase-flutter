@@ -102,3 +102,13 @@ flutter test integration_test/authentication_test.dart -d macos \
   --dart-define=SUPABASE_URL=http://localhost:54321 \
   --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_LOCAL_PUBLISHABLE_KEY
 ```
+
+`localhost` only reaches the local stack from macOS or another desktop target,
+which is why the command uses `-d macos`. On other devices `localhost` points at
+the device itself, so set the host in `SUPABASE_URL` to one the device can reach
+the host machine on. The test derives the mail server address it reads codes
+from off the same host (Supabase on port `54321`, Mailpit on `54324`), so that
+single host covers both. An Android emulator reaches the host at `10.0.2.2` (or
+run `adb reverse tcp:54321 tcp:54321` and `adb reverse tcp:54324 tcp:54324` to
+keep using `localhost`), and a physical device needs the host machine's LAN IP
+address.
