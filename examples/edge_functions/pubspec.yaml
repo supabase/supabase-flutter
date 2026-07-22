@@ -1,5 +1,5 @@
-name: passkeys_example
-description: Demonstrates passkey (WebAuthn) authentication with supabase_flutter.
+name: edge_functions_example
+description: Demonstrates invoking Edge Functions using supabase_flutter.
 
 publish_to: 'none'
 
@@ -14,7 +14,6 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  passkeys: ^2.21.1
   supabase_flutter: ^2.17.0
 
 dev_dependencies:

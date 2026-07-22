@@ -8,12 +8,53 @@ project_id = "supabase_flutter_examples"
 
 [auth]
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000"]
+# The deep link is where the authentication example's native builds return
+# after an email link or OAuth redirect.
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "io.supabase.authexample://login-callback/",
+]
+# Anonymous sign in, used by the authentication example.
+enable_anonymous_sign_ins = true
 
 [auth.email]
 enable_signup = true
 # Skip email confirmation so the examples can sign in right away.
 enable_confirmations = false
+
+# Include the one-time code ({{ .Token }}) in the passwordless and recovery
+# emails so the authentication example's email OTP and password reset flows can
+# be completed by typing the code, not only by following the link.
+[auth.email.template.magic_link]
+subject = "Your sign-in code"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.recovery]
+subject = "Reset your password"
+content_path = "./supabase/templates/recovery.html"
+
+# Phone sign in for the authentication example.
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+
+# A provider has to be enabled for phone login to turn on, but the test OTP
+# below short-circuits before anything is actually sent, so these placeholder
+# Twilio credentials are never used and no real SMS provider is needed locally.
+[auth.sms.twilio]
+enabled = true
+account_sid = "test-account-sid"
+message_service_sid = "test-message-service-sid"
+auth_token = "test-auth-token"
+
+# Accept a fixed code for one phone number so the phone flow works offline.
+[auth.sms.test_otp]
+15555550100 = "123456"
+
+# TOTP multi-factor authentication for the authentication example.
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
 
 # Passkeys (WebAuthn) are a BETA Auth feature, used by the passkeys example.
 [auth.passkey]
@@ -26,19 +67,44 @@ rp_display_name = "Supabase Flutter examples"
 rp_id = "localhost"
 rp_origins = ["http://localhost:3000"]
 
+# Image transformations (resize, re-encode) are used by the storage_transforms
+# example to render images on the fly.
+[storage.image_transformation]
+enabled = true
+
 # Keep the stack lean: turn off services the examples don't use. The data plane
 # (database, API/PostgREST, auth, realtime, storage) stays on. Enable any of
 # these if a new example needs it.
 [studio]
 enabled = false
 
-# Email testing server.
-[inbucket]
-enabled = false
+# Local mail server that captures the emails the examples send (magic link,
+# email OTP, password reset) so no real SMTP provider is needed. Its web UI and
+# API are served on port 54324.
+[local_smtp]
+enabled = true
 
-# Edge Functions runtime.
+# Edge Functions runtime, used by the edge_functions example. `supabase start`
+# serves every function under `supabase/functions/` while the stack is running.
 [edge_runtime]
-enabled = false
+enabled = true
+
+# The edge_functions example runs unauthenticated with the publishable (anon)
+# key, so JWT verification is turned off for its demo functions. A real app would
+# leave verify_jwt on and read the caller's user from the request.
+[functions.greet]
+verify_jwt = false
+
+[functions.shout]
+verify_jwt = false
+
+[functions.word-count]
+verify_jwt = false
+
+# Test-support function used only by the edge_functions integration suite, not
+# by the example UI.
+[functions.echo]
+verify_jwt = false
 
 # Analytics (Logflare) and its log collector. Also avoids the Docker socket
 # mount that the vector container needs, which some runtimes (e.g. Colima)
