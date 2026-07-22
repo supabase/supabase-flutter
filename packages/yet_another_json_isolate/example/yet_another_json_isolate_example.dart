@@ -10,5 +10,5 @@ void main() async {
 
   final str = await isolate.encode(json);
   print(str);
-  isolate.dispose();
+  await isolate.dispose();
 }

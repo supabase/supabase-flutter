@@ -1,12 +1,17 @@
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:storage_client/src/constants.dart';
+import 'package:storage_client/src/iceberg/iceberg_rest_catalog.dart';
+import 'package:storage_client/src/iceberg/iceberg_types.dart';
 import 'package:storage_client/src/storage_bucket_api.dart';
 import 'package:storage_client/src/storage_file_api.dart';
+import 'package:storage_client/src/vector_client.dart';
 import 'package:storage_client/src/version.dart';
 
 class SupabaseStorageClient extends StorageBucketApi {
   final int _defaultRetryAttempts;
+  final Client? _httpClient;
   final _log = Logger('supabase.storage');
 
   /// To create a [SupabaseStorageClient], you need to provide an [url] and [headers].
@@ -43,18 +48,20 @@ class SupabaseStorageClient extends StorageBucketApi {
     Client? httpClient,
     int retryAttempts = 0,
     bool useNewHostname = false,
-  })  : assert(
-          retryAttempts >= 0,
-          'retryAttempts has to be greater than or equal to 0',
-        ),
-        _defaultRetryAttempts = retryAttempts,
-        super(
-          useNewHostname ? _transformStorageUrl(url) : url,
-          {...Constants.defaultHeaders, ...headers},
-          httpClient: httpClient,
-        ) {
+  }) : assert(
+         retryAttempts >= 0,
+         'retryAttempts has to be greater than or equal to 0',
+       ),
+       _defaultRetryAttempts = retryAttempts,
+       _httpClient = httpClient,
+       super(
+         useNewHostname ? _transformStorageUrl(url) : url,
+         {...Constants.defaultHeaders, ...headers},
+         httpClient: httpClient,
+       ) {
     _log.config(
-        'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts');
+      'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts',
+    );
     _log.finest('Initialize with headers: $headers');
   }
 
@@ -103,6 +110,45 @@ class SupabaseStorageClient extends StorageBucketApi {
       storageFetch,
     );
   }
+
+  /// Returns an Iceberg REST Catalog client for an analytics bucket.
+  ///
+  /// [bucketId] is the identifier of the analytics bucket (the warehouse) whose
+  /// namespaces and tables you want to manage.
+  ///
+  /// ```dart
+  /// final catalog = storage.analyticsCatalog('my-analytics-bucket');
+  /// await catalog.createNamespace(['analytics']);
+  /// ```
+  IcebergRestCatalog analyticsCatalog(
+    String bucketId, {
+    List<AccessDelegation>? accessDelegation,
+  }) {
+    return IcebergRestCatalog(
+      baseUrl: '$url/iceberg',
+      headers: headers,
+      warehouse: bucketId,
+      accessDelegation: accessDelegation,
+      httpClient: _httpClient,
+    );
+  }
+
+  /// Access the Storage Vectors API to manage vector buckets, indexes and the
+  /// vectors stored inside them.
+  ///
+  /// This API is part of a public alpha and may not be available to every
+  /// project.
+  ///
+  /// ```dart
+  /// final vectors = storage.vectors;
+  /// await vectors.createBucket('embeddings');
+  /// ```
+  @experimental
+  late final SupabaseVectorsClient vectors = SupabaseVectorsClient(
+    '$url/vector',
+    headers,
+    storageFetch,
+  );
 
   void setAuth(String jwt) {
     headers['Authorization'] = 'Bearer $jwt';

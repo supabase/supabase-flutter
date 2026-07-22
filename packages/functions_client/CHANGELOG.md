@@ -1,3 +1,25 @@
+## 2.7.0
+
+ - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))
+ - **FEAT**(functions): add request cancellation to invoke via abortSignal ([#1593](https://github.com/supabase/supabase-flutter/issues/1593)). ([b994dabd](https://github.com/supabase/supabase-flutter/commit/b994dabdb23aa43540bef6953d739c48521bb532))
+ - **FEAT**(functions): expose FunctionsFetchException/FunctionsRelayException/FunctionsHttpException subtypes ([#1545](https://github.com/supabase/supabase-flutter/issues/1545)). ([2d3a7202](https://github.com/supabase/supabase-flutter/commit/2d3a720215837722e25c51507d6be8c6f8f3edb7))
+
+## 2.6.4
+
+ - **FIX**(functions): don't lose error status on a non-JSON body labeled JSON ([#1507](https://github.com/supabase/supabase-flutter/issues/1507)). ([925b46e1](https://github.com/supabase/supabase-flutter/commit/925b46e118e62884dd65505e7a753e0f51958b4c))
+
+## 2.6.3
+
+ - **FIX**(functions): drain error responses with a streaming content type ([#1480](https://github.com/supabase/supabase-flutter/issues/1480)). ([0eeb4130](https://github.com/supabase/supabase-flutter/commit/0eeb4130a260216415dc81de0e9e1386ca8219d2))
+
+## 2.6.2
+
+ - **FIX**(functions_client): use case-insensitive check for Content-Type header in invoke() ([#1486](https://github.com/supabase/supabase-flutter/issues/1486)). ([b98536a3](https://github.com/supabase/supabase-flutter/commit/b98536a3183631cd207357c63ef75bd2d3c1ea83))
+
+## 2.6.1
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
 ## 2.6.0
 
  - **FIX**(functions_client): use uppercase HTTP method in requests ([#1353](https://github.com/supabase/supabase-flutter/issues/1353)). ([61cc7c03](https://github.com/supabase/supabase-flutter/commit/61cc7c03108a660beafd8cb2ca66a3789f88bb3f))

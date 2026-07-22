@@ -20,7 +20,7 @@ class FunctionResponse {
   final dynamic data;
   final int status;
 
-  FunctionResponse({
+  const FunctionResponse({
     this.data,
     required this.status,
   });
@@ -31,10 +31,44 @@ class FunctionException implements Exception {
   final dynamic details;
   final String? reasonPhrase;
 
-  const FunctionException(
-      {required this.status, this.details, this.reasonPhrase});
+  const FunctionException({
+    required this.status,
+    this.details,
+    this.reasonPhrase,
+  });
 
   @override
   String toString() =>
-      'FunctionException(status: $status, details: $details, reasonPhrase: $reasonPhrase)';
+      '$runtimeType(status: $status, details: $details, reasonPhrase: $reasonPhrase)';
+}
+
+/// Thrown when the request to the Edge Function could not be sent, for example
+/// because of a network or transport failure, before any response was received.
+///
+/// The originating error is available in [details] and [status] is `0` since no
+/// response reached the client.
+class FunctionsFetchException extends FunctionException {
+  const FunctionsFetchException({
+    super.details,
+    super.reasonPhrase,
+  }) : super(status: 0);
+}
+
+/// Thrown when the Supabase relay returns an error while invoking the Edge
+/// Function, indicated by the `x-relay-error` response header.
+class FunctionsRelayException extends FunctionException {
+  const FunctionsRelayException({
+    required super.status,
+    super.details,
+    super.reasonPhrase,
+  });
+}
+
+/// Thrown when the Edge Function itself responds with a non-2xx status code.
+class FunctionsHttpException extends FunctionException {
+  const FunctionsHttpException({
+    required super.status,
+    super.details,
+    super.reasonPhrase,
+  });
 }

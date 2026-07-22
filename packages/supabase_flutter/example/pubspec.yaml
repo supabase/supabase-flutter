@@ -6,18 +6,20 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=2.15.0 <3.0.0'
+  sdk: '>=3.9.0 <4.0.0'
+
+resolution: workspace
 
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^2.14.2
+  supabase_flutter: ^2.17.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^4.0.0
+  supabase_lints: ^0.1.1
 
 flutter:
   uses-material-design: true

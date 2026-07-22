@@ -25,8 +25,10 @@ class YAJsonIsolate {
   ///
   /// This method is called automatically when the first method is called. Manually initializing before first json de/encode can improve performance.
   Future<void> initialize() async {
-    assert(_hasStartedInitialize == false,
-        'initialize() can only be called once per isolate.');
+    assert(
+      _hasStartedInitialize == false,
+      'initialize() can only be called once per isolate.',
+    );
     _hasStartedInitialize = true;
     await Isolate.spawn(
       _compute,
@@ -51,7 +53,7 @@ class YAJsonIsolate {
 
   Future<dynamic> decode(String json) async {
     if (!_createdIsolate.isCompleted) {
-      if (!_hasStartedInitialize) initialize();
+      if (!_hasStartedInitialize) await initialize();
       await _createdIsolate.future;
     }
     _sendPort.send([json, false]);
@@ -60,14 +62,14 @@ class YAJsonIsolate {
 
   Future<String> encode(Object? json) async {
     if (!_createdIsolate.isCompleted) {
-      if (!_hasStartedInitialize) initialize();
+      if (!_hasStartedInitialize) await initialize();
       await _createdIsolate.future;
     }
     _sendPort.send([json, true]);
     return _handleRes(await _events.next);
   }
 
-  Future<R> _handleRes<R>(List response) async {
+  Future<R> _handleRes<R>(List<dynamic> response) async {
     final int type = response.length;
     assert(1 <= type && type <= 3);
 
@@ -78,10 +80,12 @@ class YAJsonIsolate {
 
       // native error; see Isolate.addErrorListener
       case 2:
-        await Future<Never>.error(RemoteError(
-          response[0] as String,
-          response[1] as String,
-        ));
+        await Future<Never>.error(
+          RemoteError(
+            response[0] as String,
+            response[1] as String,
+          ),
+        );
 
       // caught error; see _buildErrorResponse
       case 3:
@@ -107,6 +111,7 @@ void _compute(SendPort p) async {
 
       /// `true` for encoding and `false` for decoding
       final bool method = event.last;
+      // ignore: avoid-unnecessary-local-late
       late final List<dynamic> computationResult;
 
       try {
@@ -135,7 +140,7 @@ void _compute(SendPort p) async {
 /// [R] could also be a [List]. Meaning, a check `result is R` could return true
 /// for what was an error event.
 List<R> _buildSuccessResponse<R>(R result) {
-  return List<R>.filled(1, result);
+  return List.filled(1, result);
 }
 
 /// Wrap in [List] to ensure our expectations in the main isolate are met.

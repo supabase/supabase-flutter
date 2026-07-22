@@ -7,8 +7,17 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       PostgrestTransformBuilder(_copyWith(url: url));
 
   @override
-  PostgrestTransformBuilder<T> retry({required bool enabled}) {
-    return PostgrestTransformBuilder(_copyWith(retryEnabled: enabled));
+  PostgrestTransformBuilder<T> retry({
+    bool enabled = true,
+    int? count,
+    Duration? requestTimeout,
+  }) {
+    return PostgrestTransformBuilder(
+      _copyWith(
+        retry: _retry.copyWith(enabled: enabled, count: count),
+        requestTimeout: requestTimeout,
+      ),
+    );
   }
 
   @override
@@ -44,11 +53,12 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
 
     final url = overrideSearchParams('select', cleanedColumns);
-    if (newHeaders['Prefer'] != null) {
-      newHeaders['Prefer'] = '${newHeaders['Prefer']},';
-    }
-    newHeaders['Prefer'] = '${newHeaders['Prefer']}return=representation';
-    return PostgrestTransformBuilder<PostgrestList>(
+    final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
+    newHeaders['Prefer'] = [
+      ?prefer,
+      'return=representation',
+    ].join(',');
+    return PostgrestTransformBuilder(
       _copyWithType(
         url: url,
         headers: newHeaders,
@@ -82,7 +92,8 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   }) {
     final key = referencedTable == null ? 'order' : '$referencedTable.order';
     final existingOrder = _url.queryParameters[key];
-    final value = '${existingOrder == null ? '' : '$existingOrder,'}'
+    final value =
+        '${existingOrder == null ? '' : '$existingOrder,'}'
         '$column.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}';
     final url = overrideSearchParams(key, value);
     return PostgrestTransformBuilder(copyWithUrl(url));
@@ -105,7 +116,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   PostgrestTransformBuilder<T> limit(int count, {String? referencedTable}) {
     final key = referencedTable == null ? 'limit' : '$referencedTable.limit';
 
-    final url = appendSearchParams(key, '$count');
+    final url = overrideSearchParams(key, '$count');
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
@@ -126,15 +137,20 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .select('messages(*)')
   ///     .range(1, 1, referencedTable: 'messages');
   /// ```
-  PostgrestTransformBuilder<T> range(int from, int to,
-      {String? referencedTable}) {
-    final keyOffset =
-        referencedTable == null ? 'offset' : '$referencedTable.offset';
-    final keyLimit =
-        referencedTable == null ? 'limit' : '$referencedTable.limit';
+  PostgrestTransformBuilder<T> range(
+    int from,
+    int to, {
+    String? referencedTable,
+  }) {
+    final keyOffset = referencedTable == null
+        ? 'offset'
+        : '$referencedTable.offset';
+    final keyLimit = referencedTable == null
+        ? 'limit'
+        : '$referencedTable.limit';
 
-    var url = appendSearchParams(keyOffset, '$from');
-    url = appendSearchParams(keyLimit, '${to - from + 1}', url);
+    var url = overrideSearchParams(keyOffset, '$from');
+    url = overrideSearchParams(keyLimit, '${to - from + 1}', url);
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
@@ -168,12 +184,9 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     // Temporary fix for https://github.com/supabase/supabase-flutter/issues/560
     // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
     final newHeaders = {..._headers};
-
-    if (_method == HttpMethod.get) {
-      newHeaders['Accept'] = 'application/json';
-    } else {
-      newHeaders['Accept'] = 'application/vnd.pgrst.object+json';
-    }
+    newHeaders['Accept'] = _method == HttpMethod.get
+        ? 'application/json'
+        : 'application/vnd.pgrst.object+json';
 
     return PostgrestTransformBuilder(
       _copyWithType(
@@ -181,6 +194,42 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
         headers: newHeaders,
       ),
     );
+  }
+
+  /// Omits `null`-valued properties from the response objects.
+  ///
+  /// This uses the `nulls=stripped` variant of the `Accept` header and
+  /// requires PostgREST 11.2 or higher.
+  ///
+  /// ```dart
+  /// supabase.from('users').select().stripNulls();
+  /// ```
+  PostgrestTransformBuilder<T> stripNulls() {
+    final newHeaders = {..._headers};
+    final accept = newHeaders['Accept'] ?? 'application/json';
+    newHeaders['Accept'] = '$accept;nulls=stripped';
+
+    return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
+  }
+
+  /// Runs the query but rolls back the transaction, so no changes are
+  /// persisted.
+  ///
+  /// The data that would have resulted from the query is still returned,
+  /// which is useful for previewing the effect of a mutation.
+  ///
+  /// ```dart
+  /// await supabase.from('users').insert({'username': 'foo'}).dryRun();
+  /// ```
+  PostgrestTransformBuilder<T> dryRun() {
+    final newHeaders = {..._headers};
+    final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
+    newHeaders['Prefer'] = [
+      ?prefer,
+      'tx=rollback',
+    ].join(',');
+
+    return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
   }
 
   /// Retrieves the response as CSV.
@@ -217,8 +266,9 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// final users = res.data;
   /// int count = res.count;
   /// ```
-  ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count(
-      [CountOption count = CountOption.exact]) {
+  ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count([
+    CountOption count = CountOption.exact,
+  ]) {
     return ResponsePostgrestBuilder(
       _copyWithType(count: count),
     );
@@ -244,8 +294,12 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///
   /// https://supabase.com/docs/guides/database/extensions/postgis
   ///
-  ResponsePostgrestBuilder<Map<String, dynamic>, Map<String, dynamic>,
-      Map<String, dynamic>> geojson() {
+  ResponsePostgrestBuilder<
+    Map<String, dynamic>,
+    Map<String, dynamic>,
+    Map<String, dynamic>
+  >
+  geojson() {
     final newHeaders = {..._headers};
     newHeaders['Accept'] = 'application/geo+json;';
     return ResponsePostgrestBuilder(_copyWithType(headers: newHeaders));
@@ -267,18 +321,21 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final newHeaders = {..._headers};
 
     // Add handling=strict and max-affected headers
-    if (newHeaders['Prefer'] != null) {
-      var preferHeader = newHeaders['Prefer']!;
-      if (!preferHeader.contains('handling=strict')) {
-        preferHeader += ',handling=strict';
+    final existingPrefer = _emptyPreferAsNull(newHeaders['Prefer']);
+    final String preferHeader;
+    if (existingPrefer != null) {
+      var header = existingPrefer;
+      if (!header.contains('handling=strict')) {
+        header += ',handling=strict';
       }
-      if (!preferHeader.contains('max-affected=')) {
-        preferHeader += ',max-affected=$value';
+      if (!header.contains('max-affected=')) {
+        header += ',max-affected=$value';
       }
-      newHeaders['Prefer'] = preferHeader;
+      preferHeader = header;
     } else {
-      newHeaders['Prefer'] = 'handling=strict,max-affected=$value';
+      preferHeader = 'handling=strict,max-affected=$value';
     }
+    newHeaders['Prefer'] = preferHeader;
 
     return PostgrestTransformBuilder(_copyWith(headers: newHeaders));
   }
@@ -300,12 +357,17 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// [buffers] If `true`, include information on buffer usage.
   ///
   /// [wal] If `true`, include information on WAL record generation
+  ///
+  /// [format] The format of the returned plan. Defaults to
+  /// [ExplainFormat.text]. When [ExplainFormat.json] is used the plan is
+  /// returned as a JSON string.
   PostgrestBuilder<String, String, String> explain({
     bool analyze = false,
     bool verbose = false,
     bool settings = false,
     bool buffers = false,
     bool wal = false,
+    ExplainFormat format = ExplainFormat.text,
   }) {
     final options = [
       if (analyze) 'analyze',
@@ -319,7 +381,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final forMediatype = _headers['Accept'] ?? 'application/json';
     final newHeaders = {..._headers};
     newHeaders['Accept'] =
-        'application/vnd.pgrst.plan+text; for="$forMediatype"; options=$options;';
+        'application/vnd.pgrst.plan+${format.name}; for="$forMediatype"; options=$options;';
     return _copyWithType(headers: newHeaders);
   }
 }

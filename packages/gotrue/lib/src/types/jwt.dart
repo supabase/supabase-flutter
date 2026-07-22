@@ -1,6 +1,7 @@
-import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// JWT Header structure
 class JwtHeader {
@@ -13,7 +14,7 @@ class JwtHeader {
   /// Token type - typically 'JWT'
   final String? typ;
 
-  JwtHeader({
+  const JwtHeader({
     required this.alg,
     this.kid,
     this.typ,
@@ -30,8 +31,8 @@ class JwtHeader {
   Map<String, dynamic> toJson() {
     return {
       'alg': alg,
-      if (kid != null) 'kid': kid,
-      if (typ != null) 'typ': typ,
+      'kid': ?kid,
+      'typ': ?typ,
     };
   }
 }
@@ -82,12 +83,12 @@ class JwtPayload {
       nbf: json['nbf'] as int?,
       iat: json['iat'] as int?,
       jti: json['jti'] as String?,
-      claims: Map<String, dynamic>.from(json),
+      claims: Map<String, dynamic>.of(json),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return Map<String, dynamic>.from(claims);
+    return Map.of(claims);
   }
 }
 
@@ -105,7 +106,7 @@ class DecodedJwt {
   /// Raw encoded parts of the JWT
   final JwtRawParts raw;
 
-  DecodedJwt({
+  const DecodedJwt({
     required this.header,
     required this.payload,
     required this.signature,
@@ -124,7 +125,7 @@ class JwtRawParts {
   /// Raw base64url encoded signature
   final String signature;
 
-  JwtRawParts({
+  const JwtRawParts({
     required this.header,
     required this.payload,
     required this.signature,
@@ -142,7 +143,7 @@ class GetClaimsResponse {
   /// JWT signature
   final List<int> signature;
 
-  GetClaimsResponse({
+  const GetClaimsResponse({
     required this.claims,
     required this.header,
     required this.signature,
@@ -163,10 +164,11 @@ class GetClaimsOptions {
 class JWKSet {
   final List<JWK> keys;
 
-  JWKSet({required this.keys});
+  const JWKSet({required this.keys});
 
   factory JWKSet.fromJson(Map<String, dynamic> json) {
-    final keys = (json['keys'] as List<dynamic>?)
+    final keys =
+        (json['keys'] as List<dynamic>?)
             ?.map((e) => JWK.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
@@ -216,11 +218,11 @@ class JWK {
     final kty = json['kty'] as String;
     final keyOps =
         (json['key_ops'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-            [];
+        [];
     final alg = json['alg'] as String?;
     final kid = json['kid'] as String?;
 
-    final Map<String, dynamic> additionalProperties = Map.from(json);
+    final Map<String, dynamic> additionalProperties = Map.of(json);
     additionalProperties.remove('kty');
     additionalProperties.remove('key_ops');
     additionalProperties.remove('alg');
@@ -236,39 +238,74 @@ class JWK {
   }
 
   /// Allows accessing additional properties using operator[].
-  dynamic operator [](String key) {
-    switch (key) {
-      case 'kty':
-        return kty;
-      case 'key_ops':
-        return keyOps;
-      case 'alg':
-        return alg;
-      case 'kid':
-        return kid;
-      default:
-        return _additionalProperties[key];
-    }
-  }
+  dynamic operator [](String key) => switch (key) {
+    'kty' => kty,
+    'key_ops' => keyOps,
+    'alg' => alg,
+    'kid' => kid,
+    _ => _additionalProperties[key],
+  };
 
   /// Converts this [JWK] to a JSON map.
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> json = {
+    return {
       'kty': kty,
       'key_ops': keyOps,
+      'alg': ?alg,
+      'kid': ?kid,
       ..._additionalProperties,
     };
-    if (alg != null) {
-      json['alg'] = alg;
-    }
-    if (kid != null) {
-      json['kid'] = kid;
-    }
-    return json;
   }
 
-  RSAPublicKey get rsaPublicKey {
-    final bytes = utf8.encode(json.encode(toJson()));
-    return RSAPublicKey.bytes(bytes);
+  /// Builds the RSA public key for verifying RS256 JWTs from this JWK's
+  /// modulus (`n`) and exponent (`e`).
+  ///
+  /// The key is assembled as a PKCS#1 `RSAPublicKey` DER structure and handed to
+  /// [RSAPublicKey.bytes]. This avoids `JWTKey.fromJWK`, which is only available
+  /// in dart_jsonwebtoken 3.x and would force a dependency bump that is
+  /// incompatible with the minimum supported Flutter version.
+  // TODO: replace this manual DER assembly with `JWTKey.fromJWK` once the
+  // minimum Flutter is >= 3.29.0 (Dart 3.7.0), whose flutter_test bundles
+  // clock 1.1.2 and so allows dart_jsonwebtoken 3.x. fromJWK also adds EC
+  // (ES256) support.
+  RSAPublicKey get publicKey {
+    final modulus = Base64Url.decodeToBytes(this['n'] as String);
+    final exponent = Base64Url.decodeToBytes(this['e'] as String);
+    final der = _derSequence([
+      _derInteger(modulus),
+      _derInteger(exponent),
+    ]);
+    return RSAPublicKey.bytes(Uint8List.fromList(der));
   }
+}
+
+/// DER-encodes an unsigned big-endian integer (prefixing a zero byte when the
+/// high bit is set so it is not interpreted as negative).
+List<int> _derInteger(List<int> bytes) {
+  var content = bytes;
+  var start = 0;
+  while (start < content.length - 1 && content[start] == 0) {
+    start++;
+  }
+  content = content.sublist(start);
+  if (content.isNotEmpty && (content[0] & 0x80) != 0) {
+    content = [0, ...content];
+  }
+  return [0x02, ..._derLength(content.length), ...content];
+}
+
+List<int> _derSequence(List<List<int>> elements) {
+  final content = elements.expand((element) => element).toList();
+  return [0x30, ..._derLength(content.length), ...content];
+}
+
+List<int> _derLength(int length) {
+  if (length < 0x80) return [length];
+  final lengthBytes = <int>[];
+  var remaining = length;
+  while (remaining > 0) {
+    lengthBytes.insert(0, remaining & 0xff);
+    remaining >>= 8;
+  }
+  return [0x80 | lengthBytes.length, ...lengthBytes];
 }

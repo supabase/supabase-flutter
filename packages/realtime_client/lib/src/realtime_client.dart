@@ -14,10 +14,11 @@ import 'package:realtime_client/src/serializer.dart';
 import 'package:realtime_client/src/websocket/websocket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-typedef WebSocketTransport = WebSocketChannel Function(
-  String url,
-  Map<String, String> headers,
-);
+typedef WebSocketTransport =
+    WebSocketChannel Function(
+      String url,
+      Map<String, String> headers,
+    );
 
 /// Serializes an outgoing message into the `String` or binary frame written to
 /// the WebSocket.
@@ -50,6 +51,14 @@ class RealtimeCloseEvent {
   String toString() {
     return 'RealtimeCloseEvent(code: $code, reason: $reason)';
   }
+}
+
+/// The lifecycle status of a heartbeat reported to [RealtimeClient.onHeartbeat].
+enum RealtimeHeartbeatStatus {
+  sent,
+  ok,
+  error,
+  timeout,
 }
 
 /// Manages a persistent WebSocket connection to the Supabase Realtime server.
@@ -96,12 +105,25 @@ class RealtimeClient {
   final Map<String, dynamic> params;
 
   final RealtimeProtocolVersion version;
+  final Duration connectionCloseTimeout;
   final Duration timeout;
   final WebSocketTransport transport;
   final Client? httpClient;
   final _log = Logger('supabase.realtime');
   int heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs;
   Timer? heartbeatTimer;
+
+  /// Delay before the socket is disconnected once the last channel has been
+  /// removed. [Duration.zero] disconnects immediately. Defaults to twice the
+  /// heartbeat interval.
+  @internal
+  late final Duration disconnectOnEmptyChannelsAfter;
+
+  /// Timer that fires the deferred disconnect once all channels are gone.
+  ///
+  /// Cancelled when a new channel is created or the client disconnects before
+  /// it fires, so that quickly switching channels reuses the open socket.
+  Timer? _pendingDisconnectTimer;
 
   /// reference ID of the most recently sent heartbeat.
   ///
@@ -117,13 +139,17 @@ class RealtimeClient {
   final RealtimeDecode decode;
   late TimerCalculation reconnectAfterMs;
   WebSocketChannel? connection;
-  List sendBuffer = [];
+  StreamSubscription<dynamic>? _connectionSubscription;
+  List<dynamic> sendBuffer = [];
   Map<String, List<Function>> stateChangeCallbacks = {
     'open': [],
     'close': [],
     'error': [],
-    'message': []
+    'message': [],
   };
+
+  final _heartbeatController =
+      StreamController<RealtimeHeartbeatStatus>.broadcast();
 
   @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
@@ -136,13 +162,22 @@ class RealtimeClient {
   ///
   /// [transport] The Websocket Transport, for example WebSocket.
   ///
-  /// [timeout] The default timeout in milliseconds to trigger push timeouts.
+  /// [timeout] The default timeout to trigger push timeouts.
+  ///
+  /// [connectionCloseTimeout] The timeout to wait for the connection to close
+  /// before dismissing the result. Defaults to 6 seconds.
   ///
   /// [params] The optional params to pass when connecting.
   ///
   /// [headers] The optional headers to pass when connecting.
   ///
   /// [heartbeatIntervalMs] The millisec interval to send a heartbeat message.
+  ///
+  /// [disconnectOnEmptyChannelsAfter] The delay before disconnecting the socket
+  /// once the last channel is removed. If a new channel is created before the
+  /// delay elapses, the pending disconnect is cancelled and the open socket is
+  /// reused. Pass [Duration.zero] to disconnect immediately. Defaults to twice
+  /// the heartbeat interval.
   ///
   /// [logger] The optional function for specialized logging, ie: logger: (kind, message, data) => { console.log(`$kind: $message`, data) }
   ///
@@ -152,7 +187,7 @@ class RealtimeClient {
   /// [decode] Overrides how incoming frames are deserialized. Defaults to the
   /// codec for [version].
   ///
-  /// [reconnectAfterMs] The optional function that returns the millsec reconnect interval. Defaults to stepped backoff off.
+  /// [reconnectAfterMs] The optional function that returns the millisec reconnect interval. Defaults to stepped backoff off.
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
   ///
@@ -163,7 +198,9 @@ class RealtimeClient {
     String endPoint, {
     WebSocketTransport? transport,
     this.timeout = Constants.defaultTimeout,
+    this.connectionCloseTimeout = Constants.defaultConnectionCloseTimeout,
     this.heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs,
+    Duration? disconnectOnEmptyChannelsAfter,
     this.logger,
     RealtimeEncode? encode,
     RealtimeDecode? decode,
@@ -175,38 +212,43 @@ class RealtimeClient {
     this.httpClient,
     this.customAccessToken,
     this.version = RealtimeProtocolVersion.v2,
-  })  : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
-            .replace(
-              queryParameters:
-                  logLevel == null ? null : {'log_level': logLevel.name},
-            )
-            .toString(),
-        headers = {
-          ...Constants.defaultHeaders,
-          if (headers != null) ...headers,
-        },
-        transport = transport ?? createWebSocketClient,
-        encode = encode ??
-            (version == RealtimeProtocolVersion.v1
-                ? _encodeLegacy
-                : _serializer.encode),
-        decode = decode ??
-            (version == RealtimeProtocolVersion.v1
-                ? _decodeLegacy
-                : _serializer.decode) {
+  }) : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
+           .replace(
+             queryParameters: logLevel == null
+                 ? null
+                 : {'log_level': logLevel.name},
+           )
+           .toString(),
+       headers = {
+         ...Constants.defaultHeaders,
+         ...?headers,
+       },
+       transport = transport ?? createWebSocketClient,
+       encode =
+           encode ??
+           (version == RealtimeProtocolVersion.v1
+               ? _encodeLegacy
+               : _serializer.encode),
+       decode =
+           decode ??
+           (version == RealtimeProtocolVersion.v1
+               ? _decodeLegacy
+               : _serializer.decode) {
     _log.config(
-        'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: $logLevel');
+      'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: ${logLevel?.name}',
+    );
     _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? params['apikey'];
 
+    this.disconnectOnEmptyChannelsAfter =
+        disconnectOnEmptyChannelsAfter ??
+        Duration(milliseconds: 2 * heartbeatIntervalMs);
+
     this.reconnectAfterMs =
         reconnectAfterMs ?? RetryTimer.createRetryFunction();
     reconnectTimer = RetryTimer(
-      () async {
-        await disconnect();
-        await connect();
-      },
+      () => unawaited(_reconnect()),
       this.reconnectAfterMs,
     );
   }
@@ -215,7 +257,10 @@ class RealtimeClient {
   @internal
   Future<void> connect() async {
     if (connection != null) {
-      return;
+      if (connectionStatus != SocketStates.closed) {
+        return;
+      }
+      await disconnect();
     }
 
     try {
@@ -245,15 +290,14 @@ class RealtimeClient {
       }
 
       // Guard: bail out if disconnect() ran during the await
-      if (connection != localConnection ||
-          connectionStatus != SocketStates.connecting) {
+      if (connection != localConnection || connectionStatus != SocketStates.connecting) {
         return;
       }
 
       connectionStatus = SocketStates.open;
 
       _onConnectionOpen();
-      localConnection.stream.listen(
+      _connectionSubscription = localConnection.stream.listen(
         (message) => onConnectionMessage(message),
         onError: _onConnectionError,
         onDone: () {
@@ -271,8 +315,14 @@ class RealtimeClient {
     }
   }
 
+  Future<void> _reconnect() async {
+    await disconnect();
+    await connect();
+  }
+
   /// Disconnects the socket with status [code] and [reason] for the disconnect
   Future<void> disconnect({int? code, String? reason}) async {
+    _cancelPendingDisconnect();
     final connection = this.connection;
     if (connection != null) {
       final oldState = connectionStatus;
@@ -281,27 +331,54 @@ class RealtimeClient {
       if (shouldCloseSink) {
         // Don't set the state to `disconnecting` if the connection is already closed.
         connectionStatus = SocketStates.disconnecting;
-        log('transport', 'disconnecting', {'code': code, 'reason': reason},
-            Level.FINE);
-      }
-
-      // Connection cannot be closed while it's still connecting. Wait for connection to
-      // be ready and then close it.
-      if (oldState == SocketStates.connecting) {
-        await connection.ready.catchError((_) {});
+        log('transport', 'disconnecting', {
+          'code': code,
+          'reason': reason,
+        }, Level.FINE);
       }
 
       if (shouldCloseSink) {
+        onTimeout() {
+          log(
+            'transport',
+            'timeout while closing connection',
+            null,
+            Level.FINE,
+          );
+          // Handle as the connection would have been closed successfully, to
+          // avoid hanging the client. This is done by mimicking the onDone
+          // callback of the connection stream. By canceling the subscription,
+          // we avoid calling the onDone too.
+          connectionStatus = SocketStates.disconnected;
+          _onConnectionClose();
+        }
+
         if (code != null) {
-          await connection.sink.close(code, reason ?? '');
+          // Add a timeout to close the sink to avoid hanging in case something
+          // is wrong with the connection.
+          // The Dart SDK has a timeout of 5 seconds for closing the IO WebSocket connection, so we set a timeout of 6 seconds here to avoid hanging indefinitely.
+          await connection.sink
+              .close(code, reason ?? '')
+              .timeout(connectionCloseTimeout, onTimeout: onTimeout);
         } else {
-          await connection.sink.close();
+          await connection.sink.close().timeout(
+            connectionCloseTimeout,
+            onTimeout: onTimeout,
+          );
         }
         connectionStatus = SocketStates.disconnected;
-        reconnectTimer.reset();
         log('transport', 'disconnected', null, Level.FINE);
       }
+
+      // Cancel any reconnect scheduled by `_onConnectionClose`. When the socket has
+      // already dropped (`connectionStatus == closed`) the block above is skipped, so
+      // without this an armed backoff timer would fire after the user
+      // explicitly disconnected and silently reopen the connection.
+      reconnectTimer.cancel();
+
       this.connection = null;
+      await _connectionSubscription?.cancel();
+      _connectionSubscription = null;
 
       // remove open handles
       if (heartbeatTimer != null) heartbeatTimer?.cancel();
@@ -314,27 +391,26 @@ class RealtimeClient {
 
   Future<String> removeChannel(RealtimeChannel channel) async {
     final status = await channel.unsubscribe();
-    if (channels.isEmpty) {
-      disconnect();
-    }
     return status;
   }
 
   Future<List<String>> removeAllChannels() async {
-    final values =
-        await Future.wait(channels.map((channel) => channel.unsubscribe()));
-    disconnect();
+    final values = await Future.wait(
+      channels.map((channel) => channel.unsubscribe()),
+    );
+    await disconnect();
     return values;
   }
 
   /// Logs the message. Override `this.logger` for specialized logging.
   ///
-  /// [level] must be [Level.FINEST] for senitive data
-  void log(
-      [String? kind,
-      String? message,
-      dynamic data,
-      Level level = Level.FINEST]) {
+  /// [level] must be [Level.FINEST] for sensitive data
+  void log([
+    String? kind,
+    String? message,
+    dynamic data,
+    Level level = Level.FINEST,
+  ]) {
     _log.log(level, '$kind: $message', data);
     logger?.call(kind, message, data);
   }
@@ -363,22 +439,18 @@ class RealtimeClient {
     stateChangeCallbacks['message']!.add(callback);
   }
 
+  /// Emits a status whenever a heartbeat is sent, acknowledged, or times out.
+  Stream<RealtimeHeartbeatStatus> get onHeartbeat =>
+      _heartbeatController.stream;
+
   /// Returns the current state of the socket.
-  String get connectionState {
-    switch (connectionStatus) {
-      case SocketStates.connecting:
-        return 'connecting';
-      case SocketStates.open:
-        return 'open';
-      case SocketStates.disconnecting:
-        return 'disconnecting';
-      case SocketStates.disconnected:
-        return 'disconnected';
-      case SocketStates.closed:
-      default:
-        return 'closed';
-    }
-  }
+  String get connectionState => switch (connectionStatus) {
+    SocketStates.connecting => 'connecting',
+    SocketStates.open => 'open',
+    SocketStates.disconnecting => 'disconnecting',
+    SocketStates.disconnected => 'disconnected',
+    SocketStates.closed || null => 'closed',
+  };
 
   /// Returns `true` is the connection is open.
   bool get isConnected => connectionStatus == SocketStates.open;
@@ -386,31 +458,78 @@ class RealtimeClient {
   /// Removes a subscription from the socket.
   @internal
   void remove(RealtimeChannel channel) {
-    channels = channels
-        .where((c) => c.joinRef != channel.joinRef)
-        .toList()
-        .cast<RealtimeChannel>();
+    channels = channels.where((c) => c.joinRef != channel.joinRef).toList();
+    if (channels.isEmpty) {
+      log('transport', 'no channels remaining, scheduling disconnect');
+      _schedulePendingDisconnect();
+    }
   }
 
   RealtimeChannel channel(
     String topic, [
-    RealtimeChannelConfig params = const RealtimeChannelConfig(),
+    RealtimeChannelConfig config = const RealtimeChannelConfig(),
   ]) {
-    final chan = RealtimeChannel('realtime:$topic', this, params: params);
-    channels.add(chan);
-    return chan;
+    final newChannel = RealtimeChannel('realtime:$topic', this, params: config);
+    _cancelPendingDisconnect();
+    channels.add(newChannel);
+    return newChannel;
+  }
+
+  /// Schedules a disconnect once the last channel is removed.
+  ///
+  /// When [disconnectOnEmptyChannelsAfter] is [Duration.zero] the socket
+  /// disconnects immediately, otherwise the disconnect is deferred so that a
+  /// channel created within the delay can reuse the open socket.
+  void _schedulePendingDisconnect() {
+    _cancelPendingDisconnect();
+    if (disconnectOnEmptyChannelsAfter == Duration.zero) {
+      log('transport', 'disconnecting immediately - no channels');
+      unawaited(disconnect());
+      return;
+    }
+    _pendingDisconnectTimer = Timer(
+      disconnectOnEmptyChannelsAfter,
+      () {
+        _pendingDisconnectTimer = null;
+        if (channels.isEmpty) {
+          log(
+            'transport',
+            'deferred disconnect fired - no channels, disconnecting',
+          );
+          unawaited(disconnect());
+        }
+      },
+    );
+    log(
+      'transport',
+      'deferred disconnect scheduled in '
+          '${disconnectOnEmptyChannelsAfter.inMilliseconds}ms',
+    );
+  }
+
+  /// Cancels a scheduled disconnect when channel activity is detected.
+  void _cancelPendingDisconnect() {
+    if (_pendingDisconnectTimer != null) {
+      log('transport', 'pending disconnect cancelled - channel activity');
+      _pendingDisconnectTimer!.cancel();
+      _pendingDisconnectTimer = null;
+    }
   }
 
   /// Push out a message if the socket is connected.
   ///
   /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
+  // ignore: function-always-returns-null
   String? push(Message message) {
     void callback() {
       connection?.sink.add(encode(message.toJson()));
     }
 
-    log('push', '${message.topic} ${message.event} (${message.ref})',
-        message.payload);
+    log(
+      'push',
+      '${message.topic} ${message.event.name} (${message.ref})',
+      message.payload,
+    );
 
     if (isConnected) {
       callback();
@@ -432,23 +551,31 @@ class RealtimeClient {
     final topic = message['topic'] as String;
     final event = message['event'] as String;
     final payload = message['payload'];
-    final ref = message['ref'] as String?;
-    if (ref != null && ref == pendingHeartbeatRef) {
+    final messageRef = message['ref'] as String?;
+    if (messageRef != null && messageRef == pendingHeartbeatRef) {
       pendingHeartbeatRef = null;
+      final heartbeatStatus = payload is Map ? payload['status'] : null;
+      _heartbeatController.add(
+        heartbeatStatus == 'ok'
+            ? RealtimeHeartbeatStatus.ok
+            : RealtimeHeartbeatStatus.error,
+      );
     }
 
     final status = payload is Map ? (payload['status'] ?? '') : '';
     log(
       'receive',
-      "$status $topic $event ${ref != null ? '($ref)' : ''}",
+      "$status $topic $event ${messageRef != null ? '($messageRef)' : ''}",
       payload,
     );
 
-    channels.where((channel) => channel.isMember(topic)).forEach(
+    channels
+        .where((channel) => channel.isMember(topic))
+        .forEach(
           (channel) => channel.trigger(
             event,
             payload,
-            ref,
+            messageRef,
           ),
         );
     for (final callback in stateChangeCallbacks['message']!) {
@@ -460,13 +587,13 @@ class RealtimeClient {
       jsonEncode(message);
 
   static Map<String, dynamic> _decodeLegacy(Object rawMessage) =>
-      Map<String, dynamic>.from(jsonDecode(rawMessage as String) as Map);
+      Map.from(jsonDecode(rawMessage as String) as Map);
 
   /// Returns the URL of the websocket.
   String get endPointURL {
-    final params = Map<String, String>.from(this.params);
-    params['vsn'] = version.vsn;
-    return _appendParams(endPoint, params);
+    final queryParameters = Map<String, String>.from(params);
+    queryParameters['vsn'] = version.vsn;
+    return _appendParams(endPoint, queryParameters);
   }
 
   /// Return the next message ref, accounting for overflows
@@ -514,20 +641,31 @@ class RealtimeClient {
     );
     if (dupChannel != null) {
       log('transport', 'leaving duplicate topic "$topic"');
-      dupChannel.unsubscribe();
+      unawaited(dupChannel.unsubscribe());
     }
   }
 
   void _onConnectionOpen() {
     log('transport', 'connected to $endPointURL');
     log('transport', 'connected', null, Level.FINE);
-    _flushSendBuffer();
+    unawaited(_resolveAccessTokenAndFlush());
     reconnectTimer.reset();
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
     heartbeatTimer = Timer.periodic(
       Duration(milliseconds: heartbeatIntervalMs),
-      (Timer t) async => await sendHeartbeat(),
+      (Timer t) => unawaited(sendHeartbeat()),
     );
+
+    try {
+      for (final channel in channels) {
+        if (channel.isErrored) {
+          channel.rejoin();
+        }
+      }
+    } catch (e) {
+      log('transport', 'error while rejoining channels', e, Level.WARNING);
+    }
+
     for (final callback in stateChangeCallbacks['open']!) {
       callback();
     }
@@ -538,8 +676,7 @@ class RealtimeClient {
     final statusCode = connection?.closeCode;
     RealtimeCloseEvent? event;
     if (statusCode != null) {
-      event =
-          RealtimeCloseEvent(code: statusCode, reason: connection?.closeReason);
+      event = RealtimeCloseEvent(code: statusCode, reason: connection?.closeReason);
     }
     log('transport', 'close', event, Level.FINE);
 
@@ -569,16 +706,18 @@ class RealtimeClient {
     }
   }
 
-  String _appendParams(String url, Map<String, String> params) {
-    if (params.keys.isEmpty) {
+  String _appendParams(String url, Map<String, String> queryParameters) {
+    if (queryParameters.keys.isEmpty) {
       return url;
     }
 
     var endpoint = Uri.parse(url);
-    endpoint = endpoint.replace(queryParameters: {
-      ...endpoint.queryParameters,
-      ...params,
-    });
+    endpoint = endpoint.replace(
+      queryParameters: {
+        ...endpoint.queryParameters,
+        ...queryParameters,
+      },
+    );
 
     return endpoint.toString();
   }
@@ -589,6 +728,38 @@ class RealtimeClient {
         callback();
       }
       sendBuffer = [];
+    }
+  }
+
+  /// Resolves the access token before flushing the send buffer so that
+  /// buffered channel join payloads carry the correct token.
+  ///
+  /// When [RealtimeChannel.subscribe] runs before an asynchronous access token
+  /// has resolved (common when [customAccessToken] reads from async storage),
+  /// the buffered join payload has no `access_token`. That buffered message
+  /// captured the stale payload, so once auth has settled the join payloads are
+  /// patched with the resolved token, the stale buffered joins are dropped, and
+  /// the join is re-sent for any channel still joining.
+  Future<void> _resolveAccessTokenAndFlush() async {
+    try {
+      if (customAccessToken != null) {
+        await setAuth(null);
+        if (accessToken != null) {
+          for (final channel in channels) {
+            channel.updateJoinPayload({'access_token': accessToken!});
+          }
+          sendBuffer = [];
+          for (final channel in channels) {
+            if (channel.isJoining) {
+              channel.forceRejoin();
+            }
+          }
+        }
+      }
+    } catch (error) {
+      log('transport', 'error resolving access token on connect', error);
+    } finally {
+      _flushSendBuffer();
     }
   }
 
@@ -603,18 +774,22 @@ class RealtimeClient {
       pendingHeartbeatRef = null;
       log(
         'transport',
-        'heartbeat timeout. Attempting to re-establish connection',
+        'heartbeat timeout. Attempting to re-establish conn',
       );
-      connection?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout');
+      _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
+      unawaited(connection?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout'));
       return;
     }
     pendingHeartbeatRef = makeRef();
-    push(Message(
-      topic: 'phoenix',
-      event: ChannelEvents.heartbeat,
-      payload: {},
-      ref: pendingHeartbeatRef!,
-    ));
+    push(
+      Message(
+        topic: 'phoenix',
+        event: ChannelEvents.heartbeat,
+        payload: {},
+        ref: pendingHeartbeatRef!,
+      ),
+    );
+    _heartbeatController.add(RealtimeHeartbeatStatus.sent);
     await setAuth(accessToken);
   }
 }

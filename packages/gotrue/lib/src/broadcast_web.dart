@@ -24,11 +24,11 @@ BroadcastChannel getBroadcastChannel(String broadcastKey) {
     postMessage: (message) {
       _log.finest('Broadcasting message: $message');
       _log.fine('Broadcasting event: ${message['event']}');
-      broadcast.postMessage(message.jsify() as JSAny);
+      broadcast.postMessage(message.jsify()!);
     },
     close: () {
       broadcast.close();
-      controller.close();
+      unawaited(controller.close());
     },
   );
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -16,9 +17,13 @@ external JSFunction? supabaseFlutterClientToDispose;
 /// logged.
 void markClientToDispose(SupabaseClient client) {
   void dispose() {
-    client.realtime.disconnect(
-        code: 1000, reason: 'Closed due to Flutter Web hot-restart');
-    client.dispose();
+    unawaited(
+      client.realtime.disconnect(
+        code: 1000,
+        reason: 'Closed due to Flutter Web hot-restart',
+      ),
+    );
+    unawaited(client.dispose());
   }
 
   supabaseFlutterClientToDispose = dispose.toJS;

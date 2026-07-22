@@ -1,0 +1,16 @@
+name: SDK Compliance
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: supabase/sdk/.github/workflows/validate-sdk-compliance-dart.yml@main

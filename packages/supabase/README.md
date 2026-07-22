@@ -1,6 +1,28 @@
-# `supabase-dart`
+<br />
+<p align="center">
+  <a href="https://supabase.com">
+    <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+  </a>
 
-A Dart client for [Supabase](https://supabase.io/).
+  <h1 align="center">supabase</h1>
+
+  <p align="center">
+    Dart client library for <a href="https://supabase.com">Supabase</a>, for use in non-Flutter Dart environments.
+  </p>
+
+  <p align="center">
+    <a href="https://supabase.com/docs">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/dart/introduction">Reference Docs</a>
+  </p>
+</p>
+
+<div align="center">
+
+[![pub package](https://img.shields.io/pub/v/supabase.svg)](https://pub.dev/packages/supabase)
+[![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
+
+</div>
 
 > **Note**
 >
@@ -8,14 +30,9 @@ A Dart client for [Supabase](https://supabase.io/).
 >
 > If you are developing a Flutter application, use [supabase_flutter](https://pub.dev/packages/supabase_flutter) instead. `supabase` package is for non-Flutter Dart environments.
 
-[![pub package](https://img.shields.io/pub/v/supabase.svg)](https://pub.dev/packages/supabase)
-[![pub test](https://github.com/supabase/supabase-dart/workflows/Test/badge.svg)](https://github.com/supabase/supabase-dart/actions?query=workflow%3ATest)
-
----
-
 ## What is Supabase
 
-[Supabase](https://supabase.io/docs/) is an open source Firebase alternative. We are a service to:
+[Supabase](https://supabase.com/docs) is an open source Firebase alternative. We are a service to:
 
 - listen to database changes
 - query your tables, including filtering, pagination, and deeply nested relationships (like GraphQL)
@@ -27,12 +44,12 @@ A Dart client for [Supabase](https://supabase.io/).
 
 The docs can be found on the official Supabase website.
 
-- [Dart reference](https://supabase.com/docs/reference/dart)
+- [Dart reference](https://supabase.com/docs/reference/dart/introduction)
 - [Supabase docs](https://supabase.com/docs)
 
 ## License
 
-This repo is licenced under MIT.
+This repo is licensed under MIT.
 
 ## Credits
 

@@ -2,10 +2,8 @@ import 'dart:convert';
 
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
-import 'package:gotrue/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:jwt_decode/jwt_decode.dart';
 import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
@@ -16,8 +14,8 @@ void main() {
 
   env.load(); // Load env variables from .env file
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
+  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
   late String newEmail;
   late String newPhone;
 
@@ -27,11 +25,17 @@ void main() {
     late GoTrueClient clientWithAuthConfirmOff;
 
     setUp(() async {
-      final res = await http.post(
-        Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-        headers: {'x-forwarded-for': '127.0.0.1'},
+      final response = await http.post(
+        Uri.parse(
+          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+        ),
+        headers: {
+          'x-forwarded-for': '127.0.0.1',
+          'apikey': getServiceRoleToken(env),
+          'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+        },
       );
-      if (res.body.isNotEmpty) throw res.body;
+      if (response.body.isNotEmpty) throw response.body;
 
       newEmail = getNewEmail();
       newPhone = getNewPhone();
@@ -99,15 +103,16 @@ void main() {
     test(
       'signUp() with weak password throws AuthWeakPasswordException',
       () async {
-        try {
-          await client.signUp(email: newEmail, password: '123');
-          fail('signUp with weak password should throw exception');
-        } on AuthException catch (error) {
-          expect(error, isA<AuthWeakPasswordException>());
-          expect(error.code, ErrorCode.weakPassword.code);
-        } catch (error) {
-          fail('signUp threw ${error.runtimeType} instead of AuthException');
-        }
+        await expectLater(
+          client.signUp(email: newEmail, password: '123'),
+          throwsA(
+            isA<AuthWeakPasswordException>().having(
+              (e) => e.code,
+              'code',
+              ErrorCode.weakPassword.code,
+            ),
+          ),
+        );
       },
     );
 
@@ -120,10 +125,10 @@ void main() {
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/welcome#expires_in=$expiresIn&refresh_token=$refreshToken&token_type=$tokenType&provider_token=$providerToken',
       );
-      try {
-        await client.getSessionFromUrl(urlWithoutAccessToken);
-        fail('getSessionFromUrl did not throw exception');
-      } catch (_) {}
+      await expectLater(
+        client.getSessionFromUrl(urlWithoutAccessToken),
+        throwsA(anything),
+      );
     });
 
     test('Parsing an error URL should throw', () async {
@@ -133,18 +138,15 @@ void main() {
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}',
       );
-      try {
-        await client.getSessionFromUrl(urlWithoutAccessToken);
-        fail('getSessionFromUrl did not throw exception');
-      } on AuthException catch (error) {
-        expect(error.message, errorMessage);
-        expect(error.statusCode, '401');
-        expect(error.code, 'unauthorized_client');
-      } catch (error) {
-        fail(
-          'getSessionFromUrl threw ${error.runtimeType} instead of AuthException',
-        );
-      }
+      await expectLater(
+        client.getSessionFromUrl(urlWithoutAccessToken),
+        throwsA(
+          isA<AuthException>()
+              .having((e) => e.message, 'message', errorMessage)
+              .having((e) => e.statusCode, 'statusCode', '401')
+              .having((e) => e.code, 'code', 'unauthorized_client'),
+        ),
+      );
     });
 
     test('Subscribe a listener', () async {
@@ -181,50 +183,38 @@ void main() {
     });
 
     test('signUp() with autoConfirm off with email', () async {
-      final res = await clientWithAuthConfirmOff.signUp(
+      final response = await clientWithAuthConfirmOff.signUp(
         email: newEmail,
         password: password,
         emailRedirectTo: 'https://localhost:9999/welcome',
       );
-      expect(res.session, isNull);
-      expect(res.user, isNotNull);
-      expect(res.user!.email, 'fake1@email.com');
+      expect(response.session, isNull);
+      expect(response.user, isNotNull);
+      expect(response.user!.email, 'fake1@email.com');
     });
 
-    test(
-      'signUp() with autoConfirm off with phone should fail because Twilio is not setup',
-      () async {
-        try {
-          await clientWithAuthConfirmOff.signUp(
-            phone: phone1,
-            password: password,
-          );
-        } catch (error) {
-          expect(error, isA<AuthException>());
-        }
-      },
-    );
+    test('signUp() with autoConfirm off with phone', () async {
+      final response = await clientWithAuthConfirmOff.signUp(
+        phone: phone1,
+        password: password,
+      );
+      expect(response.session, isNull);
+      expect(response.user, isNotNull);
+    });
 
     test('signUp() with email should throw error if used twice', () async {
-      final localEmail = email1;
-
-      try {
-        await client.signUp(email: localEmail, password: password);
-      } catch (error) {
-        expect(error, isA<AuthException>());
-      }
+      await expectLater(
+        client.signUp(email: email1, password: password),
+        throwsA(isA<AuthException>()),
+      );
     });
 
-    test('signInWithOtp with email', () async {
-      await client.signInWithOtp(email: newEmail);
+    test('signInWithOtp with email completes successfully', () async {
+      expect(client.signInWithOtp(email: newEmail), completes);
     });
 
-    test('signInWithOtp with phone', () async {
-      try {
-        await client.signInWithOtp(phone: phone1);
-      } catch (error) {
-        expect(error, isA<AuthException>());
-      }
+    test('signInWithOtp with phone completes successfully', () async {
+      expect(client.signInWithOtp(phone: phone1), completes);
     });
 
     test('signInWithPassword() with email', () async {
@@ -238,8 +228,8 @@ void main() {
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
 
-      final payload = Jwt.parseJwt(data!.accessToken);
-      expect(payload['exp'], data.expiresAt);
+      final payload = decodeJwt(data!.accessToken).payload;
+      expect(payload.exp, data.expiresAt);
     });
 
     test('Get user', () async {
@@ -262,8 +252,8 @@ void main() {
       expect(data?.refreshToken, isA<String>());
       expect(data?.user.id, isA<String>());
 
-      final payload = Jwt.parseJwt(data!.accessToken);
-      expect(payload['exp'], data.expiresAt);
+      final payload = decodeJwt(data!.accessToken).payload;
+      expect(payload.exp, data.expiresAt);
     });
 
     test('Set session', () async {
@@ -287,7 +277,7 @@ void main() {
       'Set session with an empty refresh token throws AuthSessionMissingException',
       () async {
         await expectLater(
-          () => client.setSession(''),
+          client.setSession(''),
           throwsA(isA<AuthSessionMissingException>()),
         );
       },
@@ -342,7 +332,8 @@ void main() {
         // Header: {"alg":"HS256","typ":"JWT"}
         // Payload: {"sub":"user","exp":1}  (epoch second 1 = Jan 1, 1970)
         // Signature: 3 zero bytes as valid base64url ("AAAA")
-        const expiredAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+        const expiredAccessToken =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
             '.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxfQ'
             '.AAAA';
 
@@ -370,7 +361,7 @@ void main() {
       'Set session with empty access token throws AuthSessionMissingException',
       () async {
         await expectLater(
-          () => client.setSession('some-refresh-token', accessToken: ''),
+          client.setSession('some-refresh-token', accessToken: ''),
           throwsA(isA<AuthSessionMissingException>()),
         );
       },
@@ -380,7 +371,7 @@ void main() {
       'Set session with malformed access token throws AuthInvalidJwtException',
       () async {
         await expectLater(
-          () => client.setSession(
+          client.setSession(
             'some-refresh-token',
             accessToken: 'not-a-valid-jwt',
           ),
@@ -437,12 +428,16 @@ void main() {
 
     test('Update user with the same password throws AuthException', () async {
       await client.signInWithPassword(email: email1, password: password);
-      try {
-        await client.updateUser(UserAttributes(password: password));
-        fail('updateUser did not throw');
-      } on AuthException catch (error) {
-        expect(error.code, ErrorCode.samePassword.code);
-      }
+      await expectLater(
+        client.updateUser(UserAttributes(password: password)),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.code,
+            'code',
+            ErrorCode.samePassword.code,
+          ),
+        ),
+      );
     });
 
     test('signOut', () async {
@@ -468,64 +463,64 @@ void main() {
     });
 
     test('signIn() with the wrong password', () async {
-      try {
-        await client.signInWithPassword(
+      await expectLater(
+        client.signInWithPassword(
           email: email1,
           password: 'wrong_$password',
-        );
-        fail('signInWithPassword did not throw');
-      } on AuthException catch (error) {
-        expect(error.message, isNotNull);
-      }
+        ),
+        throwsA(
+          isA<AuthException>().having((e) => e.message, 'message', isNotNull),
+        ),
+      );
     });
 
     group('The auth client can signin with third-party oAuth providers', () {
       test('signIn() with Provider', () async {
-        final res = await client.getOAuthSignInUrl(
+        final response = await client.getOAuthSignInUrl(
           provider: OAuthProvider.google,
         );
-        expect(res.url, isA<String>());
-        expect(res.provider, OAuthProvider.google);
+        expect(response.url, isA<String>());
+        expect(response.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider with redirectTo', () async {
-        final res = await client.getOAuthSignInUrl(
+        final response = await client.getOAuthSignInUrl(
           provider: OAuthProvider.google,
           redirectTo: 'https://supabase.com',
         );
         expect(
-          res.url,
+          response.url,
           '$gotrueUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com',
         );
-        expect(res.provider, OAuthProvider.google);
+        expect(response.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append a redirectUrl', () async {
-        final res = await client.getOAuthSignInUrl(
+        final response = await client.getOAuthSignInUrl(
           provider: OAuthProvider.google,
           redirectTo: 'https://localhost:9000/welcome',
         );
-        expect(res.url, isA<String>());
-        expect(res.provider, OAuthProvider.google);
+        expect(response.url, isA<String>());
+        expect(response.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append scopes', () async {
-        final res = await client.getOAuthSignInUrl(
+        final response = await client.getOAuthSignInUrl(
           provider: OAuthProvider.google,
           scopes: 'repo',
         );
-        expect(res.url, isA<String>());
-        expect(res.provider, OAuthProvider.google);
+        expect(response.url, isA<String>());
+        expect(response.provider, OAuthProvider.google);
       });
 
       test('signIn() with Provider can append options', () async {
-        final res = await client.getOAuthSignInUrl(
+        final response = await client.getOAuthSignInUrl(
           provider: OAuthProvider.google,
           redirectTo: 'https://localhost:9000/welcome',
           scopes: 'repo',
         );
-        expect(res.url, isA<String>());
-        expect(res.provider, OAuthProvider.google);
+        expect(response.url, isA<String>());
+        expect(response.provider, OAuthProvider.google);
       });
     });
 
@@ -539,7 +534,7 @@ void main() {
 
     test('token refresh calls are bundled', () async {
       final httpClient = RetryTestHttpClient();
-      final client = GoTrueClient(
+      final bundledClient = GoTrueClient(
         url: gotrueUrl,
         headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
         asyncStorage: TestAsyncStorage(),
@@ -550,8 +545,8 @@ void main() {
 
       ///These 3 are bundled and in sum 1 refresh token requests is made, because the first 3 fail in [RetryTestHttpClient]
       final responses = await Future.wait([
-        client.recoverSession(session),
-        client.recoverSession(session),
+        bundledClient.recoverSession(session),
+        bundledClient.recoverSession(session),
       ]);
 
       expect(responses[0].session?.accessToken, isNotNull);
@@ -580,6 +575,12 @@ void main() {
         ]),
       );
 
+      Object? streamError;
+      final errorSubscription = stream.listen(
+        (_) {},
+        onError: (Object error) => streamError = error,
+      );
+
       final expiredSession = getSessionData(
         DateTime.now().subtract(Duration(hours: 1)),
       );
@@ -588,16 +589,18 @@ void main() {
         client.recoverSession(expiredSession.sessionString),
         throwsA(isA<AuthException>()),
       );
-      expect(stream, emitsError(isA<AuthException>()));
 
+      await pumpEventQueue();
+      await errorSubscription.cancel();
+      expect(streamError, isNull);
       expect(client.currentSession, isNull);
     });
 
     test('Call getLinkIdentityUrl', () async {
       await client.signInWithPassword(email: email1, password: password);
-      final res = await client.getLinkIdentityUrl(OAuthProvider.google);
-      expect(res.url, isA<String>());
-      final uri = Uri.parse(res.url);
+      final response = await client.getLinkIdentityUrl(OAuthProvider.google);
+      expect(response.url, isA<String>());
+      final uri = Uri.parse(response.url);
       expect(uri.host, 'accounts.google.com');
     });
   });
@@ -610,15 +613,23 @@ void main() {
     });
 
     test('signIn()', () async {
-      try {
-        await client.signInWithPassword(email: email1, password: password);
-      } catch (error) {
-        expect(error, isA<AuthUnknownException>());
-        error as AuthUnknownException;
-        expect(error.statusCode, '420');
-        expect(error.originalError, isA<http.Response>());
-        expect(error.message, contains('empty response'));
-      }
+      await expectLater(
+        client.signInWithPassword(email: email1, password: password),
+        throwsA(
+          isA<AuthUnknownException>()
+              .having((e) => e.statusCode, 'statusCode', '420')
+              .having(
+                (e) => e.originalError,
+                'originalError',
+                isA<http.Response>(),
+              )
+              .having(
+                (e) => e.message,
+                'message',
+                contains('empty response'),
+              ),
+        ),
+      );
     });
   });
 
@@ -639,11 +650,9 @@ void main() {
       } on ClientException {
         // the method should throw
       }
-      await for (final AuthState event in client.onAuthStateChange) {
-        expect(httpClient.retryCount, 4);
-        expect(event.event, AuthChangeEvent.tokenRefreshed);
-        break;
-      }
+      final event = await client.onAuthStateChange.first;
+      expect(httpClient.retryCount, 4);
+      expect(event.event, AuthChangeEvent.tokenRefreshed);
     });
   });
 
@@ -681,16 +690,16 @@ void main() {
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}',
       );
-      try {
-        await client.getSessionFromUrl(urlWithoutAccessToken);
-        fail('getSessionFromUrl did not throw exception');
-      } on AuthException catch (error) {
-        expect(error.message, errorMessage);
-      } catch (error) {
-        fail(
-          'getSessionFromUrl threw ${error.runtimeType} instead of AuthException',
-        );
-      }
+      await expectLater(
+        client.getSessionFromUrl(urlWithoutAccessToken),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            errorMessage,
+          ),
+        ),
+      );
     });
 
     test(
@@ -707,7 +716,7 @@ void main() {
             'email': 'new@email.com',
             'app_metadata': {
               'provider': 'email',
-              'providers': ['email']
+              'providers': ['email'],
             },
             'user_metadata': {},
             'created_at': '2023-04-01T09:38:59.784028Z',
@@ -723,7 +732,8 @@ void main() {
 
         final emittedEvent = pkceClient.onAuthStateChange
             .firstWhere(
-                (state) => state.event != AuthChangeEvent.initialSession)
+              (state) => state.event != AuthChangeEvent.initialSession,
+            )
             .then((state) => state.event);
 
         final response = await pkceClient.getSessionFromUrl(url);
@@ -733,6 +743,53 @@ void main() {
         expect(response.redirectType, 'email_change');
         expect(pkceClient.currentUser?.email, 'new@email.com');
         expect(await emittedEvent, AuthChangeEvent.signedIn);
+      },
+    );
+
+    test(
+      'updateUser email change under PKCE can be exchanged for a session',
+      () async {
+        await http.post(
+          Uri.parse(
+            'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+          ),
+          headers: {
+            'x-forwarded-for': '127.0.0.1',
+            'apikey': getServiceRoleToken(env),
+            'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+          },
+        );
+        await http.delete(
+          Uri.parse('http://127.0.0.1:54424/api/v1/messages'),
+        );
+
+        final pkceClient = GoTrueClient(
+          url: gotrueUrl,
+          headers: {
+            'Authorization': 'Bearer $anonToken',
+            'apikey': anonToken,
+          },
+          asyncStorage: TestAsyncStorage(),
+          flowType: AuthFlowType.pkce,
+          autoRefreshToken: false,
+        );
+
+        await pkceClient.signInWithPassword(
+          email: email1,
+          password: password,
+        );
+
+        final updatedEmail = getNewEmail();
+        final updateResponse = await pkceClient.updateUser(
+          UserAttributes(email: updatedEmail),
+        );
+        expect(updateResponse.user?.newEmail, updatedEmail);
+
+        final code = await _pkceCodeFromEmailChange(updatedEmail);
+        final exchanged = await pkceClient.exchangeCodeForSession(code);
+
+        expect(exchanged.session.user.email, updatedEmail);
+        expect(exchanged.session.accessToken, isNotEmpty);
       },
     );
   });
@@ -760,8 +817,7 @@ void main() {
     // the server respond with `refresh_token_already_used`, signing the user
     // out. `recoverSession` must instead detect the already valid in-memory
     // session and return it.
-    test('does not reuse a stale refresh token after another refresh',
-        () async {
+    test('does not reuse a stale refresh token after another refresh', () async {
       final expiredSessionString = getSessionData(
         DateTime.now().subtract(const Duration(hours: 1)),
       ).sessionString;
@@ -774,7 +830,7 @@ void main() {
       expect(httpClient.refreshCount, 1);
 
       var signedOut = false;
-      final sub = client.onAuthStateChange.listen(
+      final subscription = client.onAuthStateChange.listen(
         (state) {
           if (state.event == AuthChangeEvent.signedOut) signedOut = true;
         },
@@ -794,7 +850,55 @@ void main() {
       expect(signedOut, isFalse);
       expect(client.currentSession, isNotNull);
 
-      await sub.cancel();
+      await subscription.cancel();
     });
   });
+}
+
+/// Reads the email-change confirmation link that GoTrue delivered to
+/// [toEmail] via the local Mailpit server, follows it, and returns the PKCE
+/// `code` from the redirect so it can be passed to [exchangeCodeForSession].
+Future<String> _pkceCodeFromEmailChange(String toEmail) async {
+  Map<String, dynamic>? message;
+  for (var attempt = 0; attempt < 20 && message == null; attempt++) {
+    final search =
+        jsonDecode(
+              (await http.get(
+                Uri.parse(
+                  'http://127.0.0.1:54424/api/v1/search?query=to:$toEmail',
+                ),
+              )).body,
+            )
+            as Map<String, dynamic>;
+    final messages = search['messages'] as List;
+    if (messages.isNotEmpty) {
+      message =
+          jsonDecode(
+                (await http.get(
+                  Uri.parse(
+                    'http://127.0.0.1:54424/api/v1/message/${messages.first['ID']}',
+                  ),
+                )).body,
+              )
+              as Map<String, dynamic>;
+    } else {
+      await Future.delayed(const Duration(milliseconds: 250));
+    }
+  }
+
+  final link = RegExp(r'http://127\.0\.0\.1:54421/auth/v1/verify\?\S+')
+      .firstMatch(message!['Text'] as String)!
+      .group(0)!
+      .replaceAll(RegExp(r'[)>].*$'), '');
+
+  final verifyClient = http.Client();
+  try {
+    final request = http.Request('GET', Uri.parse(link))
+      ..followRedirects = false;
+    final response = await verifyClient.send(request);
+    final location = response.headers['location']!;
+    return Uri.parse(location).queryParameters['code']!;
+  } finally {
+    verifyClient.close();
+  }
 }

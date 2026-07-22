@@ -1,9 +1,28 @@
-# Postgrest Dart
+<br />
+<p align="center">
+  <a href="https://supabase.com">
+    <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+  </a>
 
-Dart client for [PostgREST](https://postgrest.org). The goal of this library is to make an "ORM-like" restful interface.
+  <h1 align="center">postgrest</h1>
+
+  <p align="center">
+    Dart client library for <a href="https://postgrest.org">PostgREST</a>, providing an ORM-like interface to the <a href="https://supabase.com/docs/guides/database">Supabase database</a>.
+  </p>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/database">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/dart/select">Reference Docs</a>
+  </p>
+</p>
+
+<div align="center">
 
 [![pub package](https://img.shields.io/pub/v/postgrest.svg)](https://pub.dev/packages/postgrest)
-[![pub test](https://github.com/supabase/postgrest-dart/workflows/Test/badge.svg)](https://github.com/supabase/postgrest-dart/actions?query=workflow%3ATest)
+[![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
+
+</div>
 
 ## Docs
 

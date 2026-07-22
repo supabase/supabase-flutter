@@ -5,12 +5,16 @@ import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
-_ResponseFactory _errorStatus(int code) => (req) async => StreamedResponse(
-      Stream.value(
-          Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits)),
-      code,
-      request: req,
-      headers: {'content-type': 'application/json'},
+_ResponseFactory _errorStatus(int code) =>
+    (request) => Future.value(
+      StreamedResponse(
+        Stream.value(
+          Uint8List.fromList('{"message":"err","code":"$code"}'.codeUnits),
+        ),
+        code,
+        request: request,
+        headers: {'content-type': 'application/json'},
+      ),
     );
 
 typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
@@ -48,7 +52,7 @@ void main() {
       );
 
       expect(
-        capturedTrace.toString(),
+        capturedTrace?.toString(),
         contains('theCallerFunction'),
         reason: 'Stack trace should include the caller frame',
       );
@@ -60,13 +64,16 @@ void main() {
       StackTrace? capturedTrace;
 
       Future<void> anotherCallerFunction() async {
-        await client.from('users').select().then(
-          (_) {},
-          onError: (Object error, StackTrace trace) {
-            capturedTrace = trace;
-            throw error;
-          },
-        );
+        await client
+            .from('users')
+            .select()
+            .then(
+              (_) {},
+              onError: (Object error, StackTrace trace) {
+                capturedTrace = trace;
+                throw error;
+              },
+            );
       }
 
       await expectLater(
@@ -75,48 +82,54 @@ void main() {
       );
 
       expect(
-        capturedTrace.toString(),
+        capturedTrace?.toString(),
         contains('anotherCallerFunction'),
         reason: 'Stack trace passed to onError should include the caller frame',
       );
     });
 
-    test('includes caller frame when using single-arg onError that re-throws',
-        () async {
-      final client = _buildClient(_MockClient(_errorStatus(400)));
+    test(
+      'includes caller frame when using single-arg onError that re-throws',
+      () async {
+        final client = _buildClient(_MockClient(_errorStatus(400)));
 
-      StackTrace? capturedTrace;
+        StackTrace? capturedTrace;
 
-      Future<void> singleArgCallerFunction() async {
-        try {
-          await client.from('users').select().then(
-                (_) {},
-                onError: (Object error) => throw error,
-              );
-        } catch (_, trace) {
-          capturedTrace = trace;
-          rethrow;
+        Future<void> singleArgCallerFunction() async {
+          try {
+            await client
+                .from('users')
+                .select()
+                .then(
+                  (_) {},
+                  onError: (Object error) => throw error,
+                );
+          } catch (_, trace) {
+            capturedTrace = trace;
+            rethrow;
+          }
         }
-      }
 
-      await expectLater(
-        singleArgCallerFunction(),
-        throwsA(isA<PostgrestException>()),
-      );
+        await expectLater(
+          singleArgCallerFunction(),
+          throwsA(isA<PostgrestException>()),
+        );
 
-      expect(
-        capturedTrace.toString(),
-        contains('singleArgCallerFunction'),
-        reason:
-            'Outer catch should include the caller frame even with a single-arg onError',
-      );
-    });
+        expect(
+          capturedTrace?.toString(),
+          contains('singleArgCallerFunction'),
+          reason:
+              'Outer catch should include the caller frame even with a single-arg onError',
+        );
+      },
+    );
 
     test('includes caller frame for non-PostgrestException errors', () async {
       final client = PostgrestClient(
         'http://localhost:3000',
-        httpClient:
-            _MockClient((_) async => throw const SocketException('refused')),
+        httpClient: _MockClient(
+          (_) async => throw const SocketException('refused'),
+        ),
         retryEnabled: false,
       );
 
@@ -137,44 +150,46 @@ void main() {
       );
 
       expect(
-        capturedTrace.toString(),
+        capturedTrace?.toString(),
         contains('networkErrorFunction'),
         reason:
             'Stack trace should include the caller frame for network errors',
       );
     });
 
-    test('includes caller frame when error passes through whenComplete',
-        () async {
-      final client = _buildClient(_MockClient(_errorStatus(400)));
+    test(
+      'includes caller frame when error passes through whenComplete',
+      () async {
+        final client = _buildClient(_MockClient(_errorStatus(400)));
 
-      StackTrace? capturedTrace;
-      var actionCalled = false;
+        StackTrace? capturedTrace;
+        var actionCalled = false;
 
-      Future<void> whenCompleteFunction() async {
-        try {
-          await client
-              .from('users')
-              .select()
-              .whenComplete(() => actionCalled = true);
-        } catch (_, trace) {
-          capturedTrace = trace;
-          rethrow;
+        Future<void> whenCompleteFunction() async {
+          try {
+            await client
+                .from('users')
+                .select()
+                .whenComplete(() => actionCalled = true);
+          } catch (_, trace) {
+            capturedTrace = trace;
+            rethrow;
+          }
         }
-      }
 
-      await expectLater(
-        whenCompleteFunction(),
-        throwsA(isA<PostgrestException>()),
-      );
+        await expectLater(
+          whenCompleteFunction(),
+          throwsA(isA<PostgrestException>()),
+        );
 
-      expect(actionCalled, isTrue);
-      expect(
-        capturedTrace.toString(),
-        contains('whenCompleteFunction'),
-        reason:
-            'Stack trace should include the caller frame after whenComplete',
-      );
-    });
+        expect(actionCalled, isTrue);
+        expect(
+          capturedTrace?.toString(),
+          contains('whenCompleteFunction'),
+          reason:
+              'Stack trace should include the caller frame after whenComplete',
+        );
+      },
+    );
   });
 }

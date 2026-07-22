@@ -28,20 +28,20 @@ void main() {
       test('hasAccessToken returns false when no session exists', () async {
         final localStorage = await createFreshLocalStorage();
         final result = await localStorage.hasAccessToken();
-        expect(result, false);
+        expect(result, isFalse);
       });
 
       test('hasAccessToken returns true when session exists', () async {
         final localStorage = await createFreshLocalStorage();
         await localStorage.persistSession(testSessionValue);
         final result = await localStorage.hasAccessToken();
-        expect(result, true);
+        expect(result, isTrue);
       });
 
       test('accessToken returns null when no session exists', () async {
         final localStorage = await createFreshLocalStorage();
         final result = await localStorage.accessToken();
-        expect(result, null);
+        expect(result, isNull);
       });
 
       test('accessToken returns session string when session exists', () async {
@@ -57,7 +57,7 @@ void main() {
 
         // Verify the session was stored by checking through localStorage's own methods
         final hasToken = await localStorage.hasAccessToken();
-        expect(hasToken, true);
+        expect(hasToken, isTrue);
 
         final storedValue = await localStorage.accessToken();
         expect(storedValue, testSessionValue);
@@ -67,12 +67,12 @@ void main() {
         final localStorage = await createFreshLocalStorage();
         // First store a session
         await localStorage.persistSession(testSessionValue);
-        expect(await localStorage.hasAccessToken(), true);
+        expect(await localStorage.hasAccessToken(), isTrue);
 
         // Then remove it
         await localStorage.removePersistedSession();
-        expect(await localStorage.hasAccessToken(), false);
-        expect(await localStorage.accessToken(), null);
+        expect(await localStorage.hasAccessToken(), isFalse);
+        expect(await localStorage.accessToken(), isNull);
       });
     });
 
@@ -92,14 +92,14 @@ void main() {
 
       test('setItem stores value for key', () async {
         await asyncStorage.setItem(key: testKey, value: testValue);
-        final prefs = await SharedPreferences.getInstance();
-        final storedValue = prefs.getString(testKey);
+        final preferences = await SharedPreferences.getInstance();
+        final storedValue = preferences.getString(testKey);
         expect(storedValue, testValue);
       });
 
       test('getItem returns null when no value exists', () async {
         final result = await asyncStorage.getItem(key: 'non_existent_key');
-        expect(result, null);
+        expect(result, isNull);
       });
 
       test('getItem returns value when value exists', () async {
@@ -115,7 +115,7 @@ void main() {
 
         // Then remove it
         await asyncStorage.removeItem(key: testKey);
-        expect(await asyncStorage.getItem(key: testKey), null);
+        expect(await asyncStorage.getItem(key: testKey), isNull);
       });
     });
   });

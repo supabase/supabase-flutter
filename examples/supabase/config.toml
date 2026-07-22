@@ -1,0 +1,65 @@
+# Shared local Supabase setup for the supabase_flutter examples.
+#
+# `supabase start` (run from the `examples` directory, which the launcher does
+# for you) boots a local stack from this file that every example can talk to.
+# Only a few defaults are overridden here; the CLI fills in the rest.
+
+project_id = "supabase_flutter_examples"
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+
+[auth.email]
+enable_signup = true
+# Skip email confirmation so the examples can sign in right away.
+enable_confirmations = false
+
+# Passkeys (WebAuthn) are a BETA Auth feature, used by the passkeys example.
+[auth.passkey]
+enabled = true
+
+# Relying party settings are required when passkeys are enabled. The launcher
+# serves the examples on http://localhost:3000, so the origin matches here.
+[auth.webauthn]
+rp_display_name = "Supabase Flutter examples"
+rp_id = "localhost"
+rp_origins = ["http://localhost:3000"]
+
+# Image transformations (resize, re-encode) are used by the storage_transforms
+# example to render images on the fly.
+[storage.image_transformation]
+enabled = true
+
+# Keep the stack lean: turn off services the examples don't use. The data plane
+# (database, API/PostgREST, auth, realtime, storage) stays on. Enable any of
+# these if a new example needs it.
+[studio]
+enabled = false
+
+# Email testing server.
+[inbucket]
+enabled = false
+
+# Edge Functions runtime, used by the edge_functions example. `supabase start`
+# serves every function under `supabase/functions/` while the stack is running.
+[edge_runtime]
+enabled = true
+
+# The edge_functions example runs unauthenticated with the publishable (anon)
+# key, so JWT verification is turned off for its demo functions. A real app would
+# leave verify_jwt on and read the caller's user from the request.
+[functions.greet]
+verify_jwt = false
+
+[functions.shout]
+verify_jwt = false
+
+[functions.word-count]
+verify_jwt = false
+
+# Analytics (Logflare) and its log collector. Also avoids the Docker socket
+# mount that the vector container needs, which some runtimes (e.g. Colima)
+# reject.
+[analytics]
+enabled = false

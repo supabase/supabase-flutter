@@ -24,6 +24,7 @@ class Serializer {
   static const int kindUserBroadcastPush = 3;
 
   /// Binary frame received from the server for a broadcast.
+  // ignore: avoid-duplicate-constant-values
   static const int kindUserBroadcast = 4;
 
   static const int binaryEncoding = 0;
@@ -34,8 +35,8 @@ class Serializer {
   /// sending a binary broadcast push.
   final List<String> allowedMetadataKeys;
 
-  Serializer({List<String>? allowedMetadataKeys})
-      : allowedMetadataKeys = allowedMetadataKeys ?? const [];
+  const Serializer({List<String>? allowedMetadataKeys})
+    : allowedMetadataKeys = allowedMetadataKeys ?? const [];
 
   /// Encodes a message map into the string or binary representation that is
   /// written to the WebSocket.
@@ -68,7 +69,7 @@ class Serializer {
       if (decoded is! List || decoded.length < 5) {
         throw FormatException('Invalid 2.0.0 text frame', rawPayload);
       }
-      return <String, dynamic>{
+      return {
         'join_ref': decoded[0],
         'ref': decoded[1],
         'topic': decoded[2],
@@ -82,23 +83,29 @@ class Serializer {
       return _binaryDecode(bytes);
     }
 
-    return <String, dynamic>{};
+    return {};
   }
 
   Uint8List _encodeBinaryUserBroadcastPush(
     Map<String, dynamic> message,
     Map<dynamic, dynamic> payload,
   ) {
-    final topic = (message['topic'] ?? '') as String;
-    final ref = (message['ref'] ?? '') as String;
-    final joinRef = (message['join_ref'] ?? '') as String;
-    final userEvent = payload['event'] as String;
     final encodedPayload = _asBytes(payload['payload'])!;
 
     final rest = allowedMetadataKeys.isEmpty
         ? const <String, dynamic>{}
         : _pick(payload, allowedMetadataKeys);
-    final metadata = rest.isEmpty ? '' : jsonEncode(rest);
+    final metadataString = rest.isEmpty ? '' : jsonEncode(rest);
+
+    // Encode each header field as UTF-8. The length prefixes are byte counts
+    // and the decode side uses utf8.decode, so measuring with String.length
+    // (UTF-16 code units) and writing one byte per unit would corrupt any
+    // multi-byte character (e.g. accents or emoji) and desynchronize the frame.
+    final topic = utf8.encode((message['topic'] ?? '') as String);
+    final ref = utf8.encode((message['ref'] ?? '') as String);
+    final joinRef = utf8.encode((message['join_ref'] ?? '') as String);
+    final userEvent = utf8.encode(payload['event'] as String);
+    final metadata = utf8.encode(metadataString);
 
     _checkLength('joinRef', joinRef.length);
     _checkLength('ref', ref.length);
@@ -106,7 +113,8 @@ class Serializer {
     _checkLength('userEvent', userEvent.length);
     _checkLength('metadata', metadata.length);
 
-    final metaLength = userBroadcastPushMetaLength +
+    final metaLength =
+        userBroadcastPushMetaLength +
         joinRef.length +
         ref.length +
         topic.length +
@@ -122,11 +130,11 @@ class Serializer {
     frame[offset++] = userEvent.length;
     frame[offset++] = metadata.length;
     frame[offset++] = binaryEncoding;
-    offset = _writeString(frame, offset, joinRef);
-    offset = _writeString(frame, offset, ref);
-    offset = _writeString(frame, offset, topic);
-    offset = _writeString(frame, offset, userEvent);
-    offset = _writeString(frame, offset, metadata);
+    offset = _writeBytes(frame, offset, joinRef);
+    offset = _writeBytes(frame, offset, ref);
+    offset = _writeBytes(frame, offset, topic);
+    offset = _writeBytes(frame, offset, userEvent);
+    offset = _writeBytes(frame, offset, metadata);
 
     frame.setAll(offset, encodedPayload);
     return frame;
@@ -135,12 +143,10 @@ class Serializer {
   Map<String, dynamic> _binaryDecode(Uint8List buffer) {
     final view = ByteData.sublistView(buffer);
     final kind = view.getUint8(0);
-    switch (kind) {
-      case kindUserBroadcast:
-        return _decodeUserBroadcast(buffer, view);
-      default:
-        return <String, dynamic>{};
-    }
+    return switch (kind) {
+      kindUserBroadcast => _decodeUserBroadcast(buffer, view),
+      _ => {},
+    };
   }
 
   Map<String, dynamic> _decodeUserBroadcast(Uint8List buffer, ByteData view) {
@@ -150,15 +156,18 @@ class Serializer {
     final payloadEncoding = view.getUint8(4);
 
     var offset = headerLength + userBroadcastMetaLength;
-    final topic =
-        utf8.decode(Uint8List.sublistView(buffer, offset, offset + topicSize));
+    final topic = utf8.decode(
+      Uint8List.sublistView(buffer, offset, offset + topicSize),
+    );
     offset += topicSize;
-    final userEvent = utf8
-        .decode(Uint8List.sublistView(buffer, offset, offset + userEventSize));
+    final userEvent = utf8.decode(
+      Uint8List.sublistView(buffer, offset, offset + userEventSize),
+    );
     offset += userEventSize;
     final metadata = metadataSize > 0
         ? utf8.decode(
-            Uint8List.sublistView(buffer, offset, offset + metadataSize))
+            Uint8List.sublistView(buffer, offset, offset + metadataSize),
+          )
         : '';
     offset += metadataSize;
 
@@ -167,7 +176,7 @@ class Serializer {
         ? jsonDecode(utf8.decode(payloadBytes))
         : payloadBytes;
 
-    final data = <String, dynamic>{
+    final data = {
       'type': broadcastEvent,
       'event': userEvent,
       'payload': parsedPayload,
@@ -176,7 +185,7 @@ class Serializer {
       data['meta'] = jsonDecode(metadata);
     }
 
-    return <String, dynamic>{
+    return {
       'join_ref': null,
       'ref': null,
       'topic': topic,
@@ -191,15 +200,9 @@ class Serializer {
     }
   }
 
-  // Writes one byte per UTF-16 code unit, matching the size byte (which is the
-  // code-unit count). Frame string fields (joinRef, ref, topic, userEvent,
-  // metadata) are therefore assumed to be ASCII; non-ASCII characters would be
-  // truncated and not round-trip through the utf8 decode on the other side.
-  int _writeString(Uint8List buffer, int offset, String value) {
-    for (final unit in value.codeUnits) {
-      buffer[offset++] = unit & 0xFF;
-    }
-    return offset;
+  int _writeBytes(Uint8List buffer, int offset, List<int> bytes) {
+    buffer.setAll(offset, bytes);
+    return offset + bytes.length;
   }
 
   bool _isBinary(dynamic value) {
@@ -223,7 +226,7 @@ class Serializer {
   }
 
   Map<String, dynamic> _pick(Map<dynamic, dynamic> source, List<String> keys) {
-    return <String, dynamic>{
+    return {
       for (final key in keys)
         if (source.containsKey(key)) key: source[key],
     };

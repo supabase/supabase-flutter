@@ -12,26 +12,26 @@ import '../utils.dart';
 // ---------------------------------------------------------------------------
 
 Map<String, dynamic> get _mockUserJson => {
-      'id': 'mock-user-id',
-      'aud': 'authenticated',
-      'role': 'authenticated',
-      'email': 'mock@example.com',
-      'app_metadata': {
-        'provider': 'email',
-        'providers': ['email'],
-      },
-      'user_metadata': {},
-      'created_at': '2024-01-01T00:00:00.000Z',
-      'updated_at': '2024-01-01T00:00:00.000Z',
-    };
+  'id': 'mock-user-id',
+  'aud': 'authenticated',
+  'role': 'authenticated',
+  'email': 'mock@example.com',
+  'app_metadata': {
+    'provider': 'email',
+    'providers': ['email'],
+  },
+  'user_metadata': {},
+  'created_at': '2024-01-01T00:00:00.000Z',
+  'updated_at': '2024-01-01T00:00:00.000Z',
+};
 
 String _makeRawJwt(Map<String, dynamic> payload) {
   final header = base64Url.encode(
     utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
   );
   final body = base64Url.encode(utf8.encode(jsonEncode(payload)));
-  const sig = 'AAAA';
-  return '$header.$body.$sig';
+  const signature = 'AAAA';
+  return '$header.$body.$signature';
 }
 
 String _freshAccessToken({String sub = 'mock-user-id'}) {
@@ -43,9 +43,9 @@ String _freshAccessToken({String sub = 'mock-user-id'}) {
 String _tokenResponseJson({
   String refreshToken = 'new-refresh-token',
 }) {
-  final at = _freshAccessToken();
+  final accessToken = _freshAccessToken();
   return jsonEncode({
-    'access_token': at,
+    'access_token': accessToken,
     'token_type': 'bearer',
     'expires_in': 3600,
     'refresh_token': refreshToken,
@@ -85,18 +85,26 @@ class _DelayedTokenMockClient extends BaseClient {
 
       if (tokenStatusOverride != null) {
         return StreamedResponse(
-          Stream.value(utf8.encode(jsonEncode({
-            'error': 'invalid_grant',
-            'error_description': 'Token has been revoked',
-          }))),
+          Stream.value(
+            utf8.encode(
+              jsonEncode({
+                'error': 'invalid_grant',
+                'error_description': 'Token has been revoked',
+              }),
+            ),
+          ),
           tokenStatusOverride!,
         );
       }
 
       return StreamedResponse(
-        Stream.value(utf8.encode(_tokenResponseJson(
-          refreshToken: responseRefreshToken,
-        ))),
+        Stream.value(
+          utf8.encode(
+            _tokenResponseJson(
+              refreshToken: responseRefreshToken,
+            ),
+          ),
+        ),
         200,
       );
     }
@@ -175,10 +183,10 @@ void main() {
       // Meanwhile, set a new session via the fast path (valid access token).
       // This bypasses the refresh queue entirely and writes _currentSession
       // immediately, bumping _sessionVersion.
-      final freshAt = _freshAccessToken();
+      final freshAccessToken = _freshAccessToken();
       await client.setSession(
         'new-signin-refresh-token',
-        accessToken: freshAt,
+        accessToken: freshAccessToken,
       );
       expect(client.currentSession?.refreshToken, 'new-signin-refresh-token');
 
@@ -211,8 +219,7 @@ void main() {
       expect(mockClient.tokenRequestCount, 1);
     });
 
-    test(
-        'concurrent refresh with different tokens '
+    test('concurrent refresh with different tokens '
         'both execute (version guard ensures correctness)', () async {
       final future1 = client.setSession('token-A');
       final future2 = client.setSession('token-B');
@@ -223,8 +230,7 @@ void main() {
       expect(mockClient.tokenRequestCount, 2);
     });
 
-    test(
-        'A-B-A pattern: repeated token request deduplicates '
+    test('A-B-A pattern: repeated token request deduplicates '
         'even when another token is in-flight', () async {
       mockClient.tokenGate = Completer<void>();
 
@@ -262,16 +268,17 @@ void main() {
 
       await expectLater(
         refreshFuture,
-        throwsA(isA<AuthException>().having(
-          (e) => e.message,
-          'message',
-          'Disposed',
-        )),
+        throwsA(
+          isA<AuthException>().having(
+            (e) => e.message,
+            'message',
+            'Disposed',
+          ),
+        ),
       );
     });
 
-    test(
-        'refresh failure does not sign out '
+    test('refresh failure does not sign out '
         'if session changed during refresh', () async {
       mockClient.tokenGate = Completer<void>();
       mockClient.tokenStatusOverride = 400; // non-retryable error
@@ -281,10 +288,10 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       // While the refresh is pending, set a new valid session (fast path).
-      final freshAt = _freshAccessToken();
+      final freshAccessToken = _freshAccessToken();
       await client.setSession(
         'new-refresh-token',
-        accessToken: freshAt,
+        accessToken: freshAccessToken,
       );
       expect(client.currentSession, isNotNull);
       expect(client.currentSession?.refreshToken, 'new-refresh-token');
@@ -300,28 +307,30 @@ void main() {
       expect(client.currentSession?.refreshToken, 'new-refresh-token');
     });
 
-    test('signOut event is emitted when refresh fails and session is unchanged',
-        () async {
-      final events = <AuthChangeEvent>[];
-      client.onAuthStateChange.listen((state) {
-        events.add(state.event);
-      });
+    test(
+      'signOut event is emitted when refresh fails and session is unchanged',
+      () async {
+        final events = <AuthChangeEvent>[];
+        client.onAuthStateChange.listen((state) {
+          events.add(state.event);
+        });
 
-      // Set an initial session.
-      final freshAt = _freshAccessToken();
-      await client.setSession('initial-token', accessToken: freshAt);
-      events.clear();
+        // Set an initial session.
+        final freshAccessToken = _freshAccessToken();
+        await client.setSession('initial-token', accessToken: freshAccessToken);
+        events.clear();
 
-      // Now make a refresh that will fail with a non-retryable error.
-      mockClient.tokenStatusOverride = 400;
+        // Now make a refresh that will fail with a non-retryable error.
+        mockClient.tokenStatusOverride = 400;
 
-      try {
-        await client.refreshSession('initial-token');
-      } catch (_) {}
+        try {
+          await client.refreshSession('initial-token');
+        } catch (_) {}
 
-      // Without any concurrent session changes, the failure should sign out.
-      expect(client.currentSession, isNull);
-      expect(events, contains(AuthChangeEvent.signedOut));
-    });
+        // Without any concurrent session changes, the failure should sign out.
+        expect(client.currentSession, isNull);
+        expect(events, contains(AuthChangeEvent.signedOut));
+      },
+    );
   });
 }

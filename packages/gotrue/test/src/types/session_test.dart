@@ -12,7 +12,7 @@ void main() {
     setUp(() {
       mockUser = const User(
         id: '123',
-        appMetadata: <String, dynamic>{},
+        appMetadata: {},
         userMetadata: <String, dynamic>{},
         aud: 'authenticated',
         createdAt: '2023-01-01T00:00:00Z',
@@ -103,8 +103,10 @@ void main() {
         expect(session.refreshToken, equals('test-refresh-token'));
         expect(session.tokenType, equals('bearer'));
         expect(session.providerToken, equals('test-provider-token'));
-        expect(session.providerRefreshToken,
-            equals('test-provider-refresh-token'));
+        expect(
+          session.providerRefreshToken,
+          equals('test-provider-refresh-token'),
+        );
         expect(session.user.id, equals('123'));
       });
     });
@@ -134,8 +136,10 @@ void main() {
         expect(json['refresh_token'], equals('test-refresh-token'));
         expect(json['token_type'], equals('bearer'));
         expect(json['provider_token'], equals('test-provider-token'));
-        expect(json['provider_refresh_token'],
-            equals('test-provider-refresh-token'));
+        expect(
+          json['provider_refresh_token'],
+          equals('test-provider-refresh-token'),
+        );
         expect(json['user'], equals(mockUser.toJson()));
         expect(json['expires_at'], isNotNull);
       });
@@ -149,7 +153,7 @@ void main() {
 
         final json = session.toJson();
 
-        expect(json.containsKey('expires_at'), isTrue);
+        expect(json, contains('expires_at'));
         expect(json['expires_at'], equals(session.expiresAt));
       });
     });
@@ -292,7 +296,7 @@ void main() {
 
         final newUser = const User(
           id: '456',
-          appMetadata: <String, dynamic>{},
+          appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
           createdAt: '2023-01-02T00:00:00Z',
@@ -317,7 +321,7 @@ void main() {
 
         final newUser = const User(
           id: '456',
-          appMetadata: <String, dynamic>{},
+          appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
           createdAt: '2023-01-02T00:00:00Z',
@@ -361,7 +365,9 @@ void main() {
         expect(copy.tokenType, equals(original.tokenType));
         expect(copy.providerToken, equals(original.providerToken));
         expect(
-            copy.providerRefreshToken, equals(original.providerRefreshToken));
+          copy.providerRefreshToken,
+          equals(original.providerRefreshToken),
+        );
         expect(copy.user, equals(original.user));
       });
     });
@@ -485,16 +491,6 @@ void main() {
 
         expect(session1, equals(session2));
       });
-
-      test('returns true for reference equality', () {
-        final session = Session(
-          accessToken: 'test-token',
-          tokenType: 'bearer',
-          user: mockUser,
-        );
-
-        expect(session, same(session));
-      });
     });
 
     group('roundtrip serialization', () {
@@ -518,8 +514,10 @@ void main() {
         expect(restored.refreshToken, equals(original.refreshToken));
         expect(restored.tokenType, equals(original.tokenType));
         expect(restored.providerToken, equals(original.providerToken));
-        expect(restored.providerRefreshToken,
-            equals(original.providerRefreshToken));
+        expect(
+          restored.providerRefreshToken,
+          equals(original.providerRefreshToken),
+        );
         expect(restored.user, equals(original.user));
       });
     });

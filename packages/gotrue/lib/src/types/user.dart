@@ -82,7 +82,8 @@ class User {
       updatedAt: json['updated_at'],
       identities: json['identities'] != null
           ? List<UserIdentity>.from(
-              json['identities']?.map((x) => UserIdentity.fromMap(x)))
+              json['identities']?.map((x) => UserIdentity.fromMap(x)),
+            )
           : null,
       factors: json['factors'] != null
           ? List<Factor>.from(json['factors']?.map((x) => Factor.fromJson(x)))
@@ -227,7 +228,7 @@ class UserIdentity {
     return UserIdentity(
       id: map['id'] as String,
       userId: map['user_id'] as String,
-      identityData: (map['identity_data'] as Map?)?.cast<String, dynamic>(),
+      identityData: (map['identity_data'] as Map?)?.cast(),
       identityId: (map['identity_id'] ?? '') as String,
       provider: map['provider'] as String,
       createdAt: map['created_at'] as String?,

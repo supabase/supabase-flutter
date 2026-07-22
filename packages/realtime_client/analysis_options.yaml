@@ -1,4 +1,1 @@
-include: package:lints/recommended.yaml
-
-formatter:
-  trailing_commas: preserve
+include: package:supabase_lints/analysis_options.yaml

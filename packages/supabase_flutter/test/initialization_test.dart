@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,6 +11,10 @@ void main() {
   const supabaseUrl = '';
   const supabaseKey = '';
 
+  setUpAll(() {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  });
+
   group('Supabase initialization', () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
@@ -19,36 +24,38 @@ void main() {
     tearDown(() async {
       try {
         await Supabase.instance.dispose();
-      } catch (e) {
+      } catch (_) {
         // Ignore dispose errors
       }
     });
 
     group('Basic initialization', () {
-      test('initialize successfully with default options', () async {
-        await Supabase.initialize(
-          url: supabaseUrl,
-          publishableKey: supabaseKey,
+      test('initialize successfully with default options', () {
+        expect(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            debug: false,
+          ),
+          completes,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
     });
 
     group('Custom storage initialization', () {
-      test('initialize successfully with custom localStorage', () async {
-        final localStorage = MockLocalStorage();
-        await Supabase.initialize(
-          url: supabaseUrl,
-          publishableKey: supabaseKey,
-          authOptions: FlutterAuthClientOptions(
-            localStorage: localStorage,
+      test('initialize successfully with custom localStorage', () {
+        const localStorage = MockLocalStorage();
+        expect(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            debug: false,
+            authOptions: const FlutterAuthClientOptions(
+              localStorage: localStorage,
+            ),
           ),
+          completes,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
 
       test('handles initialization with expired session in storage', () async {
@@ -57,7 +64,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockExpiredStorage(),
+            localStorage: const MockExpiredStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
@@ -68,42 +75,42 @@ void main() {
     });
 
     group('Auth options initialization', () {
-      test('initialize successfully with PKCE auth flow', () async {
-        await Supabase.initialize(
-          url: supabaseUrl,
-          publishableKey: supabaseKey,
-          authOptions: const FlutterAuthClientOptions(
-            authFlowType: AuthFlowType.pkce,
+      test('initialize successfully with PKCE auth flow', () {
+        expect(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            debug: false,
+            authOptions: const FlutterAuthClientOptions(
+              authFlowType: AuthFlowType.pkce,
+            ),
           ),
+          completes,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
     });
 
     group('Custom client initialization', () {
-      test('initialize successfully with custom HTTP client', () async {
+      test('initialize successfully with custom HTTP client', () {
         final httpClient = PkceHttpClient();
-        await Supabase.initialize(
-          url: supabaseUrl,
-          publishableKey: supabaseKey,
-          httpClient: httpClient,
+        expect(
+          Supabase.initialize(
+            url: supabaseUrl,
+            publishableKey: supabaseKey,
+            debug: false,
+            httpClient: httpClient,
+          ),
+          completes,
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
       });
 
       test('initialize successfully with custom access token', () async {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
           accessToken: () async => 'custom-access-token',
         );
-
-        expect(Supabase.instance, isNotNull);
-        expect(Supabase.instance.client, isNotNull);
 
         // Should throw AuthException when trying to access auth
         expect(
@@ -119,9 +126,8 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
         );
-
-        expect(Supabase.instance, isNotNull);
 
         // Dispose
         await Supabase.instance.dispose();
@@ -133,9 +139,8 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
+          debug: false,
         );
-
-        expect(Supabase.instance, isNotNull);
       });
 
       test('handles multiple initializations correctly', () async {
@@ -144,7 +149,7 @@ void main() {
           publishableKey: supabaseKey,
           debug: false,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockLocalStorage(),
+            localStorage: const MockLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
@@ -160,13 +165,12 @@ void main() {
           publishableKey: supabaseKey,
           debug: true,
           authOptions: FlutterAuthClientOptions(
-            localStorage: MockEmptyLocalStorage(),
+            localStorage: const MockEmptyLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
           ),
         );
 
         final secondInstance = Supabase.instance.client;
-        expect(secondInstance, isNotNull);
         expect(identical(firstInstance, secondInstance), isFalse);
       });
     });

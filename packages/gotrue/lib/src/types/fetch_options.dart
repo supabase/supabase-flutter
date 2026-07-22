@@ -1,13 +1,6 @@
-class FetchOptions {
-  final Map<String, String> headers;
-  final bool noResolveJson;
+import 'package:supabase_common/supabase_common.dart';
 
-  const FetchOptions(
-    Map<String, String>? headers, {
-    bool? noResolveJson,
-  })  : headers = headers ?? const {},
-        noResolveJson = noResolveJson ?? false;
-}
+export 'package:supabase_common/supabase_common.dart' show FetchOptions;
 
 class GotrueRequestOptions extends FetchOptions {
   final String? jwt;
