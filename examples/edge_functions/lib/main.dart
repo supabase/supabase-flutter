@@ -39,7 +39,8 @@ class EdgeFunctionsExampleApp extends StatelessWidget {
 
 /// Invokes the example's Edge Functions and shows what each one returns: a JSON
 /// greeting (over POST and GET), a plain-text transform, and a validating
-/// function whose error response is surfaced to the user.
+/// function whose error response is surfaced to the user. Each card drives one
+/// function through the shared [FunctionsRepository].
 class FunctionsPage extends StatefulWidget {
   const FunctionsPage({super.key});
 
@@ -49,39 +50,56 @@ class FunctionsPage extends StatefulWidget {
 
 class _FunctionsPageState extends State<FunctionsPage> {
   final _repository = FunctionsRepository(supabase);
-  final _name = TextEditingController(text: 'Ada');
-  final _shout = TextEditingController(text: 'edge functions');
-  final _count = TextEditingController(text: 'Functions run close to the user');
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Edge Functions')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _GreetCard(repository: _repository),
+          const SizedBox(height: 16),
+          _ShoutCard(repository: _repository),
+          const SizedBox(height: 16),
+          _WordCountCard(repository: _repository),
+        ],
+      ),
+    );
+  }
+}
+
+/// Invokes `greet` over POST and GET, both building the message server-side.
+class _GreetCard extends StatefulWidget {
+  const _GreetCard({required this.repository});
+
+  final FunctionsRepository repository;
+
+  @override
+  State<_GreetCard> createState() => _GreetCardState();
+}
+
+class _GreetCardState extends State<_GreetCard> {
+  final _name = TextEditingController(text: 'Ada');
   bool _excited = false;
   Greeting? _greeting;
-  String? _shoutResult;
-  WordCount? _wordCount;
 
-  /// Name of the function whose button is currently running, so only that
-  /// button shows a spinner and the others stay tappable.
+  /// Which button is running (`post` or `get`), or null when idle, so only the
+  /// tapped button shows a spinner and neither fires twice.
   String? _running;
 
   @override
   void dispose() {
     _name.dispose();
-    _shout.dispose();
-    _count.dispose();
     super.dispose();
   }
 
-  /// Runs [action] while marking [key] as in flight, then applies its result
-  /// with [onResult]. Any error is shown in a snackbar.
-  Future<void> _invoke<T>(
-    String key,
-    Future<T> Function() action,
-    void Function(T result) onResult,
-  ) async {
+  Future<void> _run(String key, Future<Greeting> Function() action) async {
     if (_running != null) return;
     setState(() => _running = key);
     try {
-      final result = await action();
-      if (mounted) setState(() => onResult(result));
+      final greeting = await action();
+      if (mounted) setState(() => _greeting = greeting);
     } catch (error) {
       _showError(error);
     } finally {
@@ -91,22 +109,6 @@ class _FunctionsPageState extends State<FunctionsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Edge Functions')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _greetCard(),
-          const SizedBox(height: 16),
-          _shoutCard(),
-          const SizedBox(height: 16),
-          _wordCountCard(),
-        ],
-      ),
-    );
-  }
-
-  Widget _greetCard() {
     return _DemoCard(
       title: 'Greeting',
       description:
@@ -129,25 +131,23 @@ class _FunctionsPageState extends State<FunctionsPage> {
           children: [
             _RunButton(
               label: 'Greet (POST)',
-              running: _running == 'greet-post',
-              onPressed: () => _invoke(
-                'greet-post',
-                () => _repository.greet(
+              running: _running == 'post',
+              onPressed: () => _run(
+                'post',
+                () => widget.repository.greet(
                   name: _name.text.trim(),
                   excited: _excited,
                 ),
-                (result) => _greeting = result,
               ),
             ),
             const SizedBox(width: 12),
             _RunButton(
               label: 'Greet (GET)',
               filled: false,
-              running: _running == 'greet-get',
-              onPressed: () => _invoke(
-                'greet-get',
-                () => _repository.greetViaQuery(_name.text.trim()),
-                (result) => _greeting = result,
+              running: _running == 'get',
+              onPressed: () => _run(
+                'get',
+                () => widget.repository.greetViaQuery(_name.text.trim()),
               ),
             ),
           ],
@@ -160,8 +160,44 @@ class _FunctionsPageState extends State<FunctionsPage> {
       ],
     );
   }
+}
 
-  Widget _shoutCard() {
+/// Invokes `shout`, which returns the text uppercased as plain text.
+class _ShoutCard extends StatefulWidget {
+  const _ShoutCard({required this.repository});
+
+  final FunctionsRepository repository;
+
+  @override
+  State<_ShoutCard> createState() => _ShoutCardState();
+}
+
+class _ShoutCardState extends State<_ShoutCard> {
+  final _text = TextEditingController(text: 'edge functions');
+  String? _result;
+  bool _running = false;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run() async {
+    if (_running) return;
+    setState(() => _running = true);
+    try {
+      final result = await widget.repository.shout(_text.text);
+      if (mounted) setState(() => _result = result);
+    } catch (error) {
+      _showError(error);
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return _DemoCard(
       title: 'Plain text',
       description:
@@ -169,24 +205,53 @@ class _FunctionsPageState extends State<FunctionsPage> {
           'text/plain. A plain-text response arrives as a Dart String.',
       children: [
         TextField(
-          controller: _shout,
+          controller: _text,
           decoration: const InputDecoration(labelText: 'Text to shout'),
         ),
-        _RunButton(
-          label: 'Shout',
-          running: _running == 'shout',
-          onPressed: () => _invoke(
-            'shout',
-            () => _repository.shout(_shout.text),
-            (result) => _shoutResult = result,
-          ),
-        ),
-        if (_shoutResult case final result?) _Result(result),
+        _RunButton(label: 'Shout', running: _running, onPressed: _run),
+        if (_result case final result?) _Result(result),
       ],
     );
   }
+}
 
-  Widget _wordCountCard() {
+/// Invokes `word-count`, which validates its input and responds with a 400 when
+/// the text is empty, surfacing here as a [FunctionException].
+class _WordCountCard extends StatefulWidget {
+  const _WordCountCard({required this.repository});
+
+  final FunctionsRepository repository;
+
+  @override
+  State<_WordCountCard> createState() => _WordCountCardState();
+}
+
+class _WordCountCardState extends State<_WordCountCard> {
+  final _text = TextEditingController(text: 'Functions run close to the user');
+  WordCount? _result;
+  bool _running = false;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run() async {
+    if (_running) return;
+    setState(() => _running = true);
+    try {
+      final result = await widget.repository.countWords(_text.text.trim());
+      if (mounted) setState(() => _result = result);
+    } catch (error) {
+      _showError(error);
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return _DemoCard(
       title: 'Validation and errors',
       description:
@@ -195,22 +260,12 @@ class _FunctionsPageState extends State<FunctionsPage> {
           'below.',
       children: [
         TextField(
-          controller: _count,
+          controller: _text,
           decoration: const InputDecoration(labelText: 'Text to count'),
         ),
-        _RunButton(
-          label: 'Count words',
-          running: _running == 'count',
-          onPressed: () => _invoke(
-            'count',
-            () => _repository.countWords(_count.text.trim()),
-            (result) => _wordCount = result,
-          ),
-        ),
-        if (_wordCount case final wordCount?)
-          _Result(
-            '${wordCount.words} words, ${wordCount.characters} characters',
-          ),
+        _RunButton(label: 'Count words', running: _running, onPressed: _run),
+        if (_result case final result?)
+          _Result('${result.words} words, ${result.characters} characters'),
       ],
     );
   }
