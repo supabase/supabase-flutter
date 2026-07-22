@@ -49,20 +49,29 @@ flutter run \
   --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
-## Integration test
+## Integration tests
 
-[`integration_test/functions_test.dart`](integration_test/functions_test.dart)
-is an end-to-end test that runs against the local stack. It drives the flow
-through the repository (a JSON greeting over POST and GET, a plain-text
-transform, and a validation error that surfaces as a `FunctionException`) and
-drives the app widgets to greet through the UI.
+There are two end-to-end test files, both run against the local stack:
 
-With the local stack running, pass the same defines the app uses and run it on a
-device (integration tests need one, so `-d macos`, an emulator or a real
+- [`integration_test/functions_test.dart`](integration_test/functions_test.dart)
+  drives the flow through the repository (a JSON greeting over POST and GET, a
+  plain-text transform, and a validation error that surfaces as a
+  `FunctionException`) and drives the app widgets to greet through the UI.
+- [`integration_test/invoke_test.dart`](integration_test/invoke_test.dart)
+  covers the full surface of `functions.invoke`: every HTTP method, query
+  parameters, custom headers, JSON / text / binary / multipart request bodies, a
+  region, every response type (JSON, text, binary, an SSE `ByteStream`), custom
+  status codes, the three `FunctionException` variants and request aborting. It
+  drives an `echo` test-support function (in `../supabase/functions/echo`) that
+  reflects the request back in whatever shape a query parameter asks for. That
+  function is not used by the example UI.
+
+With the local stack running, pass the same defines the app uses and run them on
+a device (integration tests need one, so `-d macos`, an emulator or a real
 device):
 
 ```bash
-flutter test integration_test/functions_test.dart -d macos \
+flutter test integration_test -d macos \
   --dart-define=SUPABASE_URL=http://localhost:54321 \
   --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_LOCAL_PUBLISHABLE_KEY
 ```

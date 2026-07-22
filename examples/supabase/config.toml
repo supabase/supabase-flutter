@@ -58,6 +58,11 @@ verify_jwt = false
 [functions.word-count]
 verify_jwt = false
 
+# Test-support function used only by the edge_functions integration suite, not
+# by the example UI.
+[functions.echo]
+verify_jwt = false
+
 # Analytics (Logflare) and its log collector. Also avoids the Docker socket
 # mount that the vector container needs, which some runtimes (e.g. Colima)
 # reject.
