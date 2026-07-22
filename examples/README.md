@@ -9,6 +9,7 @@ all sharing a single local Supabase instance.
 | [`database_crud`](database_crud)           | Database CRUD with PostgREST (`from(...)`)                            |
 | [`edge_functions`](edge_functions)         | Invoking Edge Functions (`functions.invoke(...)`)                     |
 | [`passkeys`](passkeys)                     | Passkey (WebAuthn) sign in and management                             |
+| [`realtime_room`](realtime_room)           | Realtime Postgres Changes, Broadcast and Presence                     |
 | [`storage_transforms`](storage_transforms) | Storage uploads, downloads and image transforms                       |
 
 ## Quick start
