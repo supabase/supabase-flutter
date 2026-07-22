@@ -7,8 +7,7 @@ extension SupabaseEventTypesName on SupabaseEventTypes {
     final name = toString().split('.').last;
     if (name == 'all') {
       return '*';
-    } else {
-      return name.toUpperCase();
     }
+    return name.toUpperCase();
   }
 }

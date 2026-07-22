@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -7,6 +8,7 @@ import 'package:supabase/src/auth_http_client.dart';
 import 'package:supabase/src/constants.dart';
 import 'package:supabase/src/counter.dart';
 import 'package:supabase/src/supabase_event_types.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 const bool kIsWeb = bool.fromEnvironment('dart.library.js_util');
@@ -38,34 +40,51 @@ void main() {
 
   group('Constants', () {
     test('should have default headers with X-Client-Info', () {
-      expect(Constants.defaultHeaders,
-          containsPair('X-Client-Info', startsWith('supabase-dart/')));
+      expect(
+        Constants.defaultHeaders,
+        containsPair('X-Client-Info', startsWith('supabase-dart/')),
+      );
     });
 
-    test('should include platform headers when not on web', () {
-      if (!kIsWeb) {
-        expect(
-            Constants.defaultHeaders, contains('X-Supabase-Client-Platform'));
-        expect(Constants.defaultHeaders,
-            contains('X-Supabase-Client-Platform-Version'));
-      }
-    });
+    test(
+      'should include structured platform metadata in X-Client-Info when not on web',
+      () {
+        if (!kIsWeb) {
+          final clientInfo = Constants.defaultHeaders['X-Client-Info']!;
+          expect(clientInfo, contains('; platform='));
+          expect(clientInfo, contains('; platform-version='));
+          expect(clientInfo, contains('; runtime=dart'));
+          expect(clientInfo, contains('; runtime-version='));
+        }
+      },
+    );
 
     test('should have platform getter', () {
       if (kIsWeb) {
-        expect(Constants.platform, isNull);
+        expect(conditionalPlatform, isNull);
       } else {
-        expect(Constants.platform, isNotNull);
-        expect(Constants.platform, isA<String>());
+        expect(conditionalPlatform, isNotNull);
+        expect(conditionalPlatform, isA<String>());
       }
     });
 
     test('should have platformVersion getter', () {
       if (kIsWeb) {
-        expect(Constants.platformVersion, isNull);
+        expect(conditionalPlatformVersion, isNull);
       } else {
-        expect(Constants.platformVersion, isNotNull);
-        expect(Constants.platformVersion, isA<String>());
+        expect(conditionalPlatformVersion, isNotNull);
+        expect(conditionalPlatformVersion, isA<String>());
+      }
+    });
+
+    test('should have runtimeVersion getter', () {
+      if (kIsWeb) {
+        expect(conditionalRuntimeVersion, isNull);
+      } else {
+        expect(conditionalRuntimeVersion, isNotNull);
+        expect(conditionalRuntimeVersion, isA<String>());
+        // Version should be a semver-like string (e.g. "3.7.2")
+        expect(conditionalRuntimeVersion, matches(RegExp(r'^\d+\.\d+\.\d+')));
       }
     });
   });
@@ -81,8 +100,8 @@ void main() {
         request.response
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.json
-          ..write('{"success": true}')
-          ..close();
+          ..write('{"success": true}');
+        unawaited(request.response.close());
       });
 
       authClient = AuthHttpClient(
@@ -98,7 +117,8 @@ void main() {
 
     test('should add Authorization header with access token', () async {
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
 
       await authClient.send(request);
@@ -108,7 +128,8 @@ void main() {
 
     test('should add apikey header', () async {
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
 
       await authClient.send(request);
@@ -124,7 +145,8 @@ void main() {
       );
 
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
 
       await authClientNoToken.send(request);
@@ -134,7 +156,8 @@ void main() {
 
     test('should not override existing Authorization header', () async {
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
       request.headers['Authorization'] = 'Bearer existing-token';
 
@@ -145,7 +168,8 @@ void main() {
 
     test('should not override existing apikey header', () async {
       final uri = Uri.parse(
-          'http://${mockServer.address.host}:${mockServer.port}/test');
+        'http://${mockServer.address.host}:${mockServer.port}/test',
+      );
       final request = http.Request('GET', uri);
       request.headers['apikey'] = 'existing-key';
 

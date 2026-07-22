@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/src/constants.dart';
 import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
@@ -89,6 +90,8 @@ class Supabase {
     PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FlutterAuthClientOptions authOptions = const FlutterAuthClientOptions(),
+    TracePropagationOptions tracePropagationOptions =
+        const TracePropagationOptions(),
     Future<String?> Function()? accessToken,
     bool? debug,
   }) async {
@@ -103,7 +106,7 @@ class Supabase {
       return _instance;
     }
 
-    _instance._debugEnable = debug ?? kDebugMode;
+    _instance._debugEnable = debug ?? (kDebugMode && !isRunningInFlutterTest);
 
     if (_instance._debugEnable) {
       _instance._logSubscription = Logger('supabase').onRecord.listen((record) {
@@ -124,10 +127,12 @@ class Supabase {
     }
     if (authOptions.localStorage == null) {
       authOptions = authOptions.copyWith(
-        localStorage: SharedPreferencesLocalStorage(
-          persistSessionKey:
-              "sb-${Uri.parse(url).host.split(".").first}-auth-token",
-        ),
+        localStorage: authOptions.persistSession
+            ? SharedPreferencesLocalStorage(
+                persistSessionKey:
+                    "sb-${Uri.parse(url).host.split(".").first}-auth-token",
+              )
+            : const EmptyLocalStorage(),
       );
     }
     _instance._init(
@@ -139,6 +144,7 @@ class Supabase {
       authOptions: authOptions,
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
+      tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
     );
 
@@ -176,7 +182,10 @@ class Supabase {
   bool _debugEnable = false;
 
   /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
-  late CancelableOperation _restoreSessionCancellableOperation;
+  ///
+  /// Only set when [Supabase.initialize] is called without a custom
+  /// `accessToken`, since session recovery is skipped for third-party auth.
+  CancelableOperation<dynamic>? _restoreSessionCancellableOperation;
 
   // Listener for app lifecycle events to handle Realtime reconnection.
   AppLifecycleListener? _lifecycleListener;
@@ -190,14 +199,14 @@ class Supabase {
   /// (e.g. abort a reconnect if the app went back to background).
   AppLifecycleState? _targetLifecycleState;
 
-  StreamSubscription? _logSubscription;
+  StreamSubscription<dynamic>? _logSubscription;
 
   /// Dispose the instance to free up resources.
   Future<void> dispose() async {
     _targetLifecycleState = null;
-    await _restoreSessionCancellableOperation.cancel();
-    _logSubscription?.cancel();
-    client.dispose();
+    await _restoreSessionCancellableOperation?.cancel();
+    await _logSubscription?.cancel();
+    await client.dispose();
     _instance._supabaseAuth?.dispose();
     _lifecycleListener?.dispose();
     _isInitialized = false;
@@ -212,11 +221,12 @@ class Supabase {
     required PostgrestClientOptions postgrestOptions,
     required StorageClientOptions storageOptions,
     required AuthClientOptions authOptions,
+    required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
   }) {
     final headers = {
       ...Constants.defaultHeaders,
-      if (customHeaders != null) ...customHeaders,
+      ...?customHeaders,
     };
     client = SupabaseClient(
       supabaseUrl,
@@ -227,6 +237,7 @@ class Supabase {
       postgrestOptions: postgrestOptions,
       storageOptions: storageOptions,
       authOptions: authOptions,
+      tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
     );
 
@@ -253,7 +264,8 @@ class Supabase {
             _pendingLifecycleOperation = _pendingLifecycleOperation
                 .then((_) => _processLifecycle(state))
                 .catchError((_) {});
-          default:
+          case AppLifecycleState.inactive:
+          case AppLifecycleState.hidden:
             break;
         }
       },
@@ -298,6 +310,7 @@ class Supabase {
       }
     } else {
       // paused or detached — disconnect the WebSocket if it is active.
+      // These states are not triggered on web
       if (realtime.isConnected ||
           realtime.connState == SocketStates.connecting) {
         await realtime.disconnect();

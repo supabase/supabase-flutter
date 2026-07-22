@@ -1,3 +1,60 @@
+## 2.27.0
+
+ - **REFACTOR**: modernize dart syntax across client packages ([#1574](https://github.com/supabase/supabase-flutter/issues/1574)). ([b74fdfee](https://github.com/supabase/supabase-flutter/commit/b74fdfee05c90d40dd3f0676ca86bd92e6013c65))
+ - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))
+ - **REFACTOR**: drop retry dependency in favor of an in-house helper ([#1571](https://github.com/supabase/supabase-flutter/issues/1571)). ([b81d2121](https://github.com/supabase/supabase-flutter/commit/b81d212159f15bf4d9515acf75430550a715664d))
+ - **REFACTOR**(gotrue): drop rxdart dependency ([#1566](https://github.com/supabase/supabase-flutter/issues/1566)). ([3f70d5ed](https://github.com/supabase/supabase-flutter/commit/3f70d5edcea9e000156742a29f2a0ae3fb1d112b))
+ - **REFACTOR**(gotrue): derive OAuth client enum values from the snakeCase extension ([#1562](https://github.com/supabase/supabase-flutter/issues/1562)). ([ed50706f](https://github.com/supabase/supabase-flutter/commit/ed50706f0b026a3c30ece0b64f5e9e925a2262ca))
+ - **REFACTOR**(gotrue): drop jwt_decode dependency in favor of dart_jsonwebtoken ([#1565](https://github.com/supabase/supabase-flutter/issues/1565)). ([b1157efa](https://github.com/supabase/supabase-flutter/commit/b1157efaed65b8127dae0afbd61043d39f9ea2b0))
+ - **REFACTOR**(auth): use OAuthProvider.name and cover custom OIDC providers ([#1555](https://github.com/supabase/supabase-flutter/issues/1555)). ([ebb7564d](https://github.com/supabase/supabase-flutter/commit/ebb7564d7112e208b8d38f0279f949b733afca31))
+ - **FEAT**(auth): send PKCE code_challenge in updateUser when changing email ([#1601](https://github.com/supabase/supabase-flutter/issues/1601)). ([59d349e4](https://github.com/supabase/supabase-flutter/commit/59d349e43f873389ed3aec6b87a3f4ae4e85c8df))
+ - **FEAT**(auth): support friendlyName and user.name fallback for WebAuthn passkey enrollment ([#1603](https://github.com/supabase/supabase-flutter/issues/1603)). ([558b0346](https://github.com/supabase/supabase-flutter/commit/558b03461441d340b1656606d1086382481611f8))
+ - **FEAT**(auth): add signInWithWeb3 for Web3 wallet authentication ([#1590](https://github.com/supabase/supabase-flutter/issues/1590)). ([20a82beb](https://github.com/supabase/supabase-flutter/commit/20a82beb2eed6bc2dca86f14aefe0d58e0796c4f))
+ - **FEAT**(postgrest): configurable auto-retry and request timeout ([#1560](https://github.com/supabase/supabase-flutter/issues/1560)). ([59d4b3af](https://github.com/supabase/supabase-flutter/commit/59d4b3af227e15a53208146a2930981526a39599))
+ - **FEAT**(auth): add OAuth server listGrants and revokeGrant methods ([#1561](https://github.com/supabase/supabase-flutter/issues/1561)). ([67fed239](https://github.com/supabase/supabase-flutter/commit/67fed239e52e0f02213bee7ae71cb043473efe28))
+ - **FEAT**(auth): add async getSession() with on-demand refresh ([#1563](https://github.com/supabase/supabase-flutter/issues/1563)). ([0b1d9b6b](https://github.com/supabase/supabase-flutter/commit/0b1d9b6b61adf9f66ed6716032b1a25f096604ce))
+ - **FEAT**(gotrue): add channel parameter to mfa.challenge() ([#1547](https://github.com/supabase/supabase-flutter/issues/1547)). ([3bde140e](https://github.com/supabase/supabase-flutter/commit/3bde140e214f6e2928108ec496eb0e96bb9ac258))
+ - **FEAT**(gotrue): add currentPassword to UserAttributes ([#1554](https://github.com/supabase/supabase-flutter/issues/1554)). ([b04c6419](https://github.com/supabase/supabase-flutter/commit/b04c6419785842c9d2af1337206b572adcb367c1))
+
+## 2.26.0
+
+> Note: This release has breaking changes.
+
+ - **FIX**(gotrue): OAuth server throws FormatException instead of ArgumentE… ([#1535](https://github.com/supabase/supabase-flutter/issues/1535)). ([da0f6e02](https://github.com/supabase/supabase-flutter/commit/da0f6e0236f52cd8dfb087257dbedd4a9de97533))
+ - **FEAT**(gotrue): add custom OAuth providers admin API with custom_claims_allowlist ([#1519](https://github.com/supabase/supabase-flutter/issues/1519)). ([122e5cf2](https://github.com/supabase/supabase-flutter/commit/122e5cf2036877c32ce92f807d5a9077d991a7e7))
+ - **BREAKING** **FIX**(gotrue): handle already-consented OAuth authorization responses ([#1536](https://github.com/supabase/supabase-flutter/issues/1536)). ([22d41234](https://github.com/supabase/supabase-flutter/commit/22d412346a748d282b39004771f175e37c504a5a))
+
+## 2.25.0
+
+ - **FEAT**(gotrue): add shouldSoftDelete option to admin deleteUser ([#1513](https://github.com/supabase/supabase-flutter/issues/1513)). ([30e9f22f](https://github.com/supabase/supabase-flutter/commit/30e9f22f8572bb8a0d734978b011dc1f8950211c))
+
+## 2.24.0
+
+ - **FIX**(gotrue): handle access token without amr claim in getAuthenticatorAssuranceLevel ([#1478](https://github.com/supabase/supabase-flutter/issues/1478)). ([63a91f2e](https://github.com/supabase/supabase-flutter/commit/63a91f2e20e7000898b91ada76678e11687e0fbb))
+ - **FIX**(gotrue): allow TOTP MFA enrollment without an issuer ([#1501](https://github.com/supabase/supabase-flutter/issues/1501)). ([3a84e4e5](https://github.com/supabase/supabase-flutter/commit/3a84e4e5f122958e1706bf80ecc6083ad7055ab8))
+ - **FEAT**(gotrue): add user-facing OAuth 2.1 server authorization API ([#1499](https://github.com/supabase/supabase-flutter/issues/1499)). ([4f98f493](https://github.com/supabase/supabase-flutter/commit/4f98f493e4848ce03822cb8699db18234a3ec7c7))
+
+## 2.23.0
+
+ - **REFACTOR**(gotrue): extract PKCE code challenge generation into a helper ([#1460](https://github.com/supabase/supabase-flutter/issues/1460)). ([3252ca71](https://github.com/supabase/supabase-flutter/commit/3252ca7151241aa80c291ea7968b6c1fd70c055f))
+ - **FIX**(gotrue): copy request header/query maps before mutating them ([#1476](https://github.com/supabase/supabase-flutter/issues/1476)). ([fe8a84d0](https://github.com/supabase/supabase-flutter/commit/fe8a84d08822b8eeef7f3a712061b076aeef1377))
+ - **FIX**(auth): recognize error query parameter in auth callback redirects ([#1472](https://github.com/supabase/supabase-flutter/issues/1472)). ([cb7e7e62](https://github.com/supabase/supabase-flutter/commit/cb7e7e62d04d887d888fd3e73ef83a584ae45d77))
+ - **FIX**(gotrue): avoid duplicate auth error on recoverSession with invalid refresh token ([#1450](https://github.com/supabase/supabase-flutter/issues/1450)). ([a154852f](https://github.com/supabase/supabase-flutter/commit/a154852f6be369f03298656f4515fad68e0038f8))
+ - **FIX**(gotrue): include code challenge in resend with PKCE flow ([#1469](https://github.com/supabase/supabase-flutter/issues/1469)). ([33402e80](https://github.com/supabase/supabase-flutter/commit/33402e80f24cb0d18ad6702bb27db33bbe6e0563))
+ - **FIX**(gotrue): don't throw in verifyOTP when secure email/phone change returns no session ([#1448](https://github.com/supabase/supabase-flutter/issues/1448)). ([44300aca](https://github.com/supabase/supabase-flutter/commit/44300acaec47f93d75a04370768222af578456fd))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+ - **FEAT**(gotrue): surface the sign-out reason on the signedOut event ([#1453](https://github.com/supabase/supabase-flutter/issues/1453)). ([a182b204](https://github.com/supabase/supabase-flutter/commit/a182b204f1dc86be5d9f7656649c84d398e16cbd))
+ - **DOCS**(gotrue): clarify Session.expiresAt is in seconds ([#1447](https://github.com/supabase/supabase-flutter/issues/1447)). ([9dffae17](https://github.com/supabase/supabase-flutter/commit/9dffae1779e7853ec62aad2cddc23c825ffc36ca))
+
+## 2.22.0
+
+ - **FIX**(gotrue): support asymmetric JWTs in getClaims ([#1410](https://github.com/supabase/supabase-flutter/issues/1410)). ([cc3137f9](https://github.com/supabase/supabase-flutter/commit/cc3137f98690e96a8b21f56b8db3c33def40e2b0))
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+ - **FIX**(auth): update session on email change links in PKCE flow ([#1395](https://github.com/supabase/supabase-flutter/issues/1395)). ([6b7871d9](https://github.com/supabase/supabase-flutter/commit/6b7871d920836a1751699fe0dfde90d460c4df16))
+ - **FIX**(gotrue): prevent stale token refresh from overwriting concurrent session changes ([#1351](https://github.com/supabase/supabase-flutter/issues/1351)). ([368609ab](https://github.com/supabase/supabase-flutter/commit/368609abfd59ca04f9d3df80ebcaeedae89a4bef))
+ - **FIX**(auth): avoid reusing a stale refresh token in recoverSession ([#1391](https://github.com/supabase/supabase-flutter/issues/1391)). ([de2adf99](https://github.com/supabase/supabase-flutter/commit/de2adf9980b6981c638f6527f4ddb6c9aff9376b))
+ - **FEAT**(gotrue): add passkey (WebAuthn) support ([#1392](https://github.com/supabase/supabase-flutter/issues/1392)). ([3e890b57](https://github.com/supabase/supabase-flutter/commit/3e890b57bdc7c2fd837e8b3c7144fd8b0b1e99f2))
+
 ## 2.21.0
 
  - **FEAT**: rename anon key → publishable key, service role key → secret key ([#1360](https://github.com/supabase/supabase-flutter/issues/1360)). ([d4e23707](https://github.com/supabase/supabase-flutter/commit/d4e237077899c49f1c5e1faeeebf17f9a82d3d76))

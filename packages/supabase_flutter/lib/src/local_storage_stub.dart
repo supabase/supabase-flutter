@@ -1,9 +1,10 @@
 // coverage:ignore-file
-Future<bool> hasAccessToken(_) => throw UnimplementedError();
+bool hasAccessToken(String _) => throw UnimplementedError();
 
-Future<String?> accessToken(_) async => throw UnimplementedError();
+// ignore: avoid-unnecessary-nullable-return-type
+String? accessToken(String _) => throw UnimplementedError();
 
-Future<void> removePersistedSession(_) async => throw UnimplementedError();
+void removePersistedSession(String _) => throw UnimplementedError();
 
-Future<void> persistSession(_, persistSessionString) async =>
+void persistSession(String _, String persistSessionString) =>
     throw UnimplementedError();

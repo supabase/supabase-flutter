@@ -34,7 +34,7 @@ class NoEmailConfirmationHttpClient extends BaseClient {
               'confirmation_sent_at': now,
               'app_metadata': {
                 'provider': 'email',
-                'providers': ['email']
+                'providers': ['email'],
               },
               'user_metadata': {},
               'identities': [
@@ -43,13 +43,13 @@ class NoEmailConfirmationHttpClient extends BaseClient {
                   'user_id': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136',
                   'identity_data': {
                     'email': 'fake1@email.com',
-                    'sub': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136'
+                    'sub': 'ef507d02-ce6a-4b3a-a8a6-6f0e14740136',
                   },
                   'provider': 'email',
                   'last_sign_in_at': now,
                   'created_at': now,
-                  'updated_at': now
-                }
+                  'updated_at': now,
+                },
               ],
               'created_at': now,
               'updated_at': now,
@@ -65,7 +65,7 @@ class NoEmailConfirmationHttpClient extends BaseClient {
 
 /// Client to test out the token refresh retry logic.
 ///
-/// This client will fail the first 3 requests and succede on the 4th one.
+/// This client will fail the first 3 requests and succeed on the 4th one.
 class RetryTestHttpClient extends BaseClient {
   var retryCount = 0;
 
@@ -107,7 +107,7 @@ class RetryTestHttpClient extends BaseClient {
                 'last_sign_in_at': '2023-04-01T09:38:59.904492805Z',
                 'app_metadata': {
                   'provider': 'email',
-                  'providers': ['email']
+                  'providers': ['email'],
                 },
                 'user_metadata': {},
                 'factors': [
@@ -117,8 +117,8 @@ class RetryTestHttpClient extends BaseClient {
                     'updated_at': '2023-04-01T09:38:59.784028Z',
                     'status': 'unverified',
                     'friendly_name': 'UnverifiedFactor',
-                    'factor_type': 'totp'
-                  }
+                    'factor_type': 'totp',
+                  },
                 ],
                 'identities': [
                   {
@@ -126,22 +126,108 @@ class RetryTestHttpClient extends BaseClient {
                     'user_id': '18bc7a4e-c095-4573-93dc-e0be29bada97',
                     'identity_data': {
                       'email': 'fake1@email.com',
-                      'sub': '18bc7a4e-c095-4573-93dc-e0be29bada97'
+                      'sub': '18bc7a4e-c095-4573-93dc-e0be29bada97',
                     },
                     'provider': 'email',
                     'last_sign_in_at': '2023-04-01T09:38:59.784028Z',
                     'created_at': '2023-04-01T09:38:59.784028Z',
-                    'updated_at': '2023-04-01T09:38:59.784028Z'
-                  }
+                    'updated_at': '2023-04-01T09:38:59.784028Z',
+                  },
                 ],
                 'created_at': '2023-04-01T09:38:59.784028Z',
-                'updated_at': '2023-04-01T09:38:59.908816Z'
-              }
+                'updated_at': '2023-04-01T09:38:59.908816Z',
+              },
             },
           ),
         ),
       ),
       201,
+      request: request,
+    );
+  }
+}
+
+/// Simulates GoTrue's single-use refresh token semantics.
+///
+/// The first time a given refresh token is presented it is exchanged for a new
+/// session with a fresh refresh token. Presenting the same refresh token a
+/// second time fails with a non-retryable `refresh_token_already_used` error,
+/// mirroring the server behavior behind issue #1158.
+class SingleUseRefreshTokenHttpClient extends BaseClient {
+  /// Number of token refresh requests that reached the server.
+  var refreshCount = 0;
+
+  final _usedRefreshTokens = <String>{};
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    final isRefresh =
+        request.url.queryParameters['grant_type'] == 'refresh_token';
+    if (!isRefresh || request is! Request) {
+      return StreamedResponse(const Stream.empty(), 404, request: request);
+    }
+
+    refreshCount++;
+    final body = jsonDecode(request.body) as Map<String, dynamic>;
+    final refreshToken = body['refresh_token'] as String;
+
+    if (_usedRefreshTokens.contains(refreshToken)) {
+      return StreamedResponse(
+        Stream.value(
+          utf8.encode(
+            jsonEncode({
+              'code': 'refresh_token_already_used',
+              'error_code': 'refresh_token_already_used',
+              'msg': 'Invalid Refresh Token: Already Used',
+            }),
+          ),
+        ),
+        400,
+        request: request,
+      );
+    }
+    _usedRefreshTokens.add(refreshToken);
+
+    final accessToken = JWT(
+      {
+        'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 3600,
+        'refresh_count': refreshCount,
+      },
+      subject: sessionDataUserId,
+    ).sign(SecretKey('37c304f8-51aa-419a-a1af-06154e63707a'));
+
+    return StreamedResponse(
+      Stream.value(
+        utf8.encode(
+          jsonEncode(
+            {
+              'access_token': accessToken,
+              'token_type': 'bearer',
+              'expires_in': 3600,
+              'refresh_token': 'refresh_token_$refreshCount',
+              'user': {
+                'id': sessionDataUserId,
+                'aud': '',
+                'role': '',
+                'email': email1,
+                'email_confirmed_at': '2023-04-01T09:38:59.784028Z',
+                'phone': phone1,
+                'confirmed_at': '2023-04-01T09:38:59.784028Z',
+                'last_sign_in_at': '2023-04-01T09:38:59.904492805Z',
+                'app_metadata': {
+                  'provider': 'email',
+                  'providers': ['email'],
+                },
+                'user_metadata': {},
+                'identities': <dynamic>[],
+                'created_at': '2023-04-01T09:38:59.784028Z',
+                'updated_at': '2023-04-01T09:38:59.908816Z',
+              },
+            },
+          ),
+        ),
+      ),
+      200,
       request: request,
     );
   }

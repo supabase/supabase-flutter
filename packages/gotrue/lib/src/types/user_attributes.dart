@@ -20,21 +20,31 @@ class UserAttributes {
   /// The `data` should be a JSON object that includes user-specific info, such as their first and last name.
   Object? data;
 
+  /// The user's current password.
+  ///
+  /// This is only used when the user is changing their password and the
+  /// `GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD` setting is
+  /// enabled on the auth server, in which case the current password is required
+  /// to verify the change.
+  String? currentPassword;
+
   UserAttributes({
     this.email,
     this.phone,
     this.password,
     this.nonce,
     this.data,
+    this.currentPassword,
   }) : assert(data == null || data is List || data is Map);
 
   Map<String, dynamic> toJson() {
     return {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
-      if (nonce != null) 'nonce': nonce,
-      if (password != null) 'password': password,
-      if (data != null) 'data': data,
+      'email': ?email,
+      'phone': ?phone,
+      'nonce': ?nonce,
+      'password': ?password,
+      'data': ?data,
+      'current_password': ?currentPassword,
     };
   }
 
@@ -49,6 +59,7 @@ class UserAttributes {
         other.phone == phone &&
         other.password == password &&
         other.nonce == nonce &&
+        other.currentPassword == currentPassword &&
         mapEquals(other.data, data);
   }
 
@@ -58,6 +69,7 @@ class UserAttributes {
         phone.hashCode ^
         password.hashCode ^
         nonce.hashCode ^
+        currentPassword.hashCode ^
         data.hashCode;
   }
 }
@@ -116,15 +128,15 @@ class AdminUserAttributes extends UserAttributes {
   @override
   Map<String, dynamic> toJson() {
     return {
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
-      if (password != null) 'password': password,
-      if (data != null) 'data': data,
-      if (userMetadata != null) 'user_metadata': userMetadata,
-      if (appMetadata != null) 'app_metadata': appMetadata,
-      if (emailConfirm != null) 'email_confirm': emailConfirm,
-      if (phoneConfirm != null) 'phone_confirm': phoneConfirm,
-      if (banDuration != null) 'ban_duration': banDuration,
+      'email': ?email,
+      'phone': ?phone,
+      'password': ?password,
+      'data': ?data,
+      'user_metadata': ?userMetadata,
+      'app_metadata': ?appMetadata,
+      'email_confirm': ?emailConfirm,
+      'phone_confirm': ?phoneConfirm,
+      'ban_duration': ?banDuration,
     };
   }
 

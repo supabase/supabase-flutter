@@ -6,7 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import './local_storage_stub.dart'
-    if (dart.library.js_interop) './local_storage_web.dart' as web;
+    if (dart.library.js_interop) './local_storage_web.dart'
+    as web;
 
 /// Only used for migration from Hive to SharedPreferences. Not actually in use.
 const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
@@ -64,7 +65,7 @@ class EmptyLocalStorage extends LocalStorage {
 /// A [LocalStorage] implementation that implements SharedPreferences as the
 /// storage method.
 class SharedPreferencesLocalStorage extends LocalStorage {
-  late final SharedPreferences _prefs;
+  late final SharedPreferences _preferences;
 
   SharedPreferencesLocalStorage({required this.persistSessionKey});
 
@@ -76,7 +77,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   Future<void> initialize() async {
     if (!_useWebLocalStorage) {
       WidgetsFlutterBinding.ensureInitialized();
-      _prefs = await SharedPreferences.getInstance();
+      _preferences = await SharedPreferences.getInstance();
     }
   }
 
@@ -85,7 +86,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       return web.hasAccessToken(persistSessionKey);
     }
-    return _prefs.containsKey(persistSessionKey);
+    return _preferences.containsKey(persistSessionKey);
   }
 
   @override
@@ -93,7 +94,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       return web.accessToken(persistSessionKey);
     }
-    return _prefs.getString(persistSessionKey);
+    return _preferences.getString(persistSessionKey);
   }
 
   @override
@@ -101,50 +102,55 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     if (_useWebLocalStorage) {
       web.removePersistedSession(persistSessionKey);
     } else {
-      await _prefs.remove(persistSessionKey);
+      await _preferences.remove(persistSessionKey);
     }
   }
 
   @override
-  Future<void> persistSession(String persistSessionString) {
+  Future<void> persistSession(String persistSessionString) async {
     if (_useWebLocalStorage) {
-      return web.persistSession(persistSessionKey, persistSessionString);
+      web.persistSession(persistSessionKey, persistSessionString);
+      return;
     }
-    return _prefs.setString(persistSessionKey, persistSessionString);
+    await _preferences.setString(persistSessionKey, persistSessionString);
   }
 }
 
 /// local storage to store pkce flow code verifier.
 class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
   SharedPreferencesGotrueAsyncStorage() {
-    _initialize();
+    unawaited(_initialize());
   }
 
   final Completer<void> _initializationCompleter = Completer();
 
-  late final SharedPreferences _prefs;
+  late final SharedPreferences _preferences;
 
   Future<void> _initialize() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    _prefs = await SharedPreferences.getInstance();
-    _initializationCompleter.complete();
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+      _preferences = await SharedPreferences.getInstance();
+      _initializationCompleter.complete();
+    } catch (error, stackTrace) {
+      _initializationCompleter.completeError(error, stackTrace);
+    }
   }
 
   @override
   Future<String?> getItem({required String key}) async {
     await _initializationCompleter.future;
-    return _prefs.getString(key);
+    return _preferences.getString(key);
   }
 
   @override
   Future<void> removeItem({required String key}) async {
     await _initializationCompleter.future;
-    await _prefs.remove(key);
+    await _preferences.remove(key);
   }
 
   @override
   Future<void> setItem({required String key, required String value}) async {
     await _initializationCompleter.future;
-    await _prefs.setString(key, value);
+    await _preferences.setString(key, value);
   }
 }

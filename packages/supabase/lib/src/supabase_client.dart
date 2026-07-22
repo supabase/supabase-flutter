@@ -7,8 +7,10 @@ import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
+import 'api_key.dart';
 import 'auth_http_client.dart';
 import 'counter.dart';
+import 'trace_http_client.dart';
 
 /// {@template supabase_client}
 /// Creates a Supabase client to interact with your Supabase instance.
@@ -54,6 +56,8 @@ class SupabaseClient {
   final Map<String, String> _headers;
   final Client? _httpClient;
   late final Client _authHttpClient;
+  late final Client _functionsHttpClient;
+  late final Client _gotrueHttpClient;
 
   GoTrueClient? _authInstance;
 
@@ -65,8 +69,8 @@ class SupabaseClient {
   late final RealtimeClient realtime;
   late final PostgrestClient rest;
   StreamSubscription<AuthState>? _authStateSubscription;
-  late final YAJsonIsolate _isolate;
-  late final bool _hasCustomIsolate;
+  final YAJsonIsolate _isolate;
+  final bool _hasCustomIsolate;
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each stream
@@ -75,16 +79,14 @@ class SupabaseClient {
   final _log = Logger('supabase.supabase');
 
   /// Getter for the HTTP headers
-  Map<String, String> get headers {
-    return _headers;
-  }
+  Map<String, String> get headers => Map.unmodifiable(_headers);
 
   /// To apply the new headers in existing realtime channels, manually unsubscribe and resubscribe these channels.
-  set headers(Map<String, String> headers) {
+  set headers(Map<String, String> newHeaders) {
     _headers.clear();
     _headers.addAll({
       ...Constants.defaultHeaders,
-      ...headers,
+      ...newHeaders,
     });
 
     rest.headers
@@ -113,7 +115,10 @@ class SupabaseClient {
     // manually unsubscribe and resubscribe to all channels.
     realtime.headers
       ..clear()
-      ..addAll(_headers);
+      ..addAll({
+        'apikey': _supabaseKey,
+        ..._headers,
+      });
   }
 
   /// {@macro supabase_client}
@@ -125,55 +130,79 @@ class SupabaseClient {
     StorageClientOptions storageOptions = const StorageClientOptions(),
     FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    TracePropagationOptions tracePropagationOptions =
+        const TracePropagationOptions(),
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
     YAJsonIsolate? isolate,
-  })  : _supabaseKey = supabaseKey,
-        _functionsOptions = functionsOptions,
-        _restUrl = '$supabaseUrl/rest/v1',
-        _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
-        _authUrl = '$supabaseUrl/auth/v1',
-        _storageUrl = '$supabaseUrl/storage/v1',
-        _functionsUrl = '$supabaseUrl/functions/v1',
-        _postgrestOptions = postgrestOptions,
-        _headers = {
-          ...Constants.defaultHeaders,
-          if (headers != null) ...headers
-        },
-        _httpClient = httpClient,
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null {
+  }) : _supabaseKey = supabaseKey,
+       _functionsOptions = functionsOptions,
+       _restUrl = '$supabaseUrl/rest/v1',
+       _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
+       _authUrl = '$supabaseUrl/auth/v1',
+       _storageUrl = '$supabaseUrl/storage/v1',
+       _functionsUrl = '$supabaseUrl/functions/v1',
+       _postgrestOptions = postgrestOptions,
+       _headers = {
+         ...Constants.defaultHeaders,
+         ...?headers,
+       },
+       _httpClient = httpClient,
+       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+       _hasCustomIsolate = isolate != null {
+    final baseHttpClient = httpClient ?? Client();
+    final tracedHttpClient = tracePropagationOptions.enabled
+        ? TracePropagationClient(
+            baseHttpClient,
+            tracePropagationOptions,
+            supabaseUrl,
+          )
+        : baseHttpClient;
+    _gotrueHttpClient = tracedHttpClient;
     _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
       gotrueAsyncStorage: authOptions.pkceAsyncStorage,
       authFlowType: authOptions.authFlowType,
     );
-    _authHttpClient =
-        AuthHttpClient(_supabaseKey, httpClient ?? Client(), _getAccessToken);
+    _authHttpClient = AuthHttpClient(
+      _supabaseKey,
+      tracedHttpClient,
+      _getAccessToken,
+    );
+    _functionsHttpClient = AuthHttpClient(
+      _supabaseKey,
+      tracedHttpClient,
+      _getAccessToken,
+      omitNewApiKeyAsBearer: true,
+    );
+    warnOnUnrecognizedApiKey(_supabaseKey, _log);
     rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(
-        storageOptions.retryAttempts, storageOptions.useNewHostname);
+      storageOptions.retryAttempts,
+      storageOptions.useNewHostname,
+    );
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
       _log.config(
-          'Initialize SupabaseClient v$version with no custom access token');
+        'Initialize SupabaseClient v$version with no custom access token',
+      );
       _listenForAuthEvents();
     } else {
       _log.config(
-          'Initialize SupabaseClient v$version with custom access token');
+        'Initialize SupabaseClient v$version with custom access token',
+      );
     }
   }
 
   GoTrueClient get auth {
     if (accessToken == null) {
       return _authInstance!;
-    } else {
-      throw AuthException(
-        'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
-      );
     }
+    throw AuthException(
+      'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
+    );
   }
 
   /// Perform a table operation.
@@ -214,13 +243,15 @@ class SupabaseClient {
     Map<String, dynamic>? params,
     get = false,
   }) {
-    rest.headers.addAll({...rest.headers, ...headers});
+    rest.headers.addAll(headers);
     return rest.rpc(fn, params: params, get: get);
   }
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
-  RealtimeChannel channel(String name,
-      {RealtimeChannelConfig opts = const RealtimeChannelConfig()}) {
+  RealtimeChannel channel(
+    String name, {
+    RealtimeChannelConfig opts = const RealtimeChannelConfig(),
+  }) {
     return realtime.channel(name, opts);
   }
 
@@ -248,44 +279,37 @@ class SupabaseClient {
       return await accessToken!();
     }
 
-    final authInstance = _authInstance!;
-
-    if (authInstance.currentSession?.isExpired ?? false) {
-      try {
-        await authInstance.refreshSession();
-      } catch (error, stackTrace) {
-        final expiresAt = authInstance.currentSession?.expiresAt;
-        if (expiresAt != null) {
-          // Failed to refresh the token.
-          final isExpiredWithoutMargin = DateTime.now()
-              .isAfter(DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000));
-          if (isExpiredWithoutMargin) {
-            // Throw the error instead of making an API request with an expired token.
-            _log.warning(
-              'Access token is expired and refreshing failed, aborting api request',
-              error,
-              stackTrace,
-            );
-            rethrow;
-          }
-        }
-      }
+    try {
+      final session = await _authInstance!.getSession();
+      return session?.accessToken;
+    } on AuthException catch (error, stackTrace) {
+      // Throw the error instead of making an API request with an expired token.
+      _log.warning(
+        'Access token is expired and refreshing failed, aborting api request',
+        error,
+        stackTrace,
+      );
+      rethrow;
     }
-    return authInstance.currentSession?.accessToken;
   }
 
   Future<void> dispose() async {
     _log.fine('Dispose SupabaseClient');
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
+    await functions.dispose();
+    await rest.dispose();
     if (!_hasCustomIsolate) {
       await _isolate.dispose();
+    }
+    if (_httpClient == null) {
+      _authHttpClient.close();
     }
     _authInstance?.dispose();
   }
 
   GoTrueClient _initSupabaseAuthClient({
-    bool? autoRefreshToken,
+    required bool autoRefreshToken,
     required GotrueAsyncStorage? gotrueAsyncStorage,
     required AuthFlowType authFlowType,
   }) {
@@ -297,7 +321,7 @@ class SupabaseClient {
       url: _authUrl,
       headers: authHeaders,
       autoRefreshToken: autoRefreshToken,
-      httpClient: _httpClient,
+      httpClient: _gotrueHttpClient,
       asyncStorage: gotrueAsyncStorage,
       flowType: authFlowType,
     );
@@ -310,6 +334,10 @@ class SupabaseClient {
       schema: _postgrestOptions.schema,
       httpClient: _authHttpClient,
       isolate: _isolate,
+      retryEnabled: _postgrestOptions.retryEnabled,
+      retryCount: _postgrestOptions.retryCount,
+      retryableStatusCodes: _postgrestOptions.retryableStatusCodes,
+      requestTimeout: _postgrestOptions.requestTimeout,
     );
   }
 
@@ -317,14 +345,16 @@ class SupabaseClient {
     return FunctionsClient(
       _functionsUrl,
       {...headers},
-      httpClient: _authHttpClient,
+      httpClient: _functionsHttpClient,
       isolate: _isolate,
       region: _functionsOptions.region,
     );
   }
 
   SupabaseStorageClient _initStorageClient(
-      int storageRetryAttempts, bool useNewHostname) {
+    int storageRetryAttempts,
+    bool useNewHostname,
+  ) {
     return SupabaseStorageClient(
       _storageUrl,
       {...headers},
@@ -346,8 +376,12 @@ class SupabaseClient {
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
       timeout: options.timeout ?? RealtimeConstants.defaultTimeout,
+      connectionCloseTimeout:
+          options.connectionCloseTimeout ??
+          RealtimeConstants.defaultConnectionCloseTimeout,
       customAccessToken: accessToken,
       transport: options.transport,
+      disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
     );
   }
 
@@ -358,15 +392,17 @@ class SupabaseClient {
       'apikey': _supabaseKey,
       'Authorization': 'Bearer $authBearer',
     };
-    final headers = {...defaultHeaders, ..._headers};
-    return headers;
+    final mergedHeaders = {...defaultHeaders, ..._headers};
+    return mergedHeaders;
   }
 
   void _listenForAuthEvents() {
     // ignore: invalid_use_of_internal_member
     _authStateSubscription = auth.onAuthStateChangeSync.listen(
-      (data) async {
-        await _handleTokenChanged(data.event, data.session?.accessToken);
+      (data) {
+        unawaited(
+          _handleTokenChanged(data.event, data.session?.accessToken),
+        );
       },
       onError: (error, stack) {},
     );

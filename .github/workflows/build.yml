@@ -1,0 +1,162 @@
+name: Build
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Detect affected packages
+    runs-on: ubuntu-latest
+    outputs:
+      flutter: ${{ steps.detect.outputs.flutter }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Detect affected packages
+        id: detect
+        run: |
+          set -euo pipefail
+
+          dart pub global activate melos
+
+          BASE="${{ github.event.pull_request.base.sha }}"
+
+          FORCE_ALL=false
+          if [ -z "$BASE" ]; then
+            FORCE_ALL=true
+          elif git diff --name-only "$BASE...HEAD" \
+              | grep -qE '^(\.github/workflows/build\.yml|pubspec\.yaml|pubspec\.lock|supabase/)'; then
+            FORCE_ALL=true
+          fi
+
+          if [ "$FORCE_ALL" = "true" ]; then
+            echo "Running all packages."
+            CHANGED=$(melos list --json | jq -r '.[].name')
+          else
+            CHANGED=$(melos list --json --diff="$BASE...HEAD" --include-dependents | jq -r '.[].name')
+          fi
+
+          echo "Affected packages:"
+          echo "$CHANGED"
+
+          if echo "$CHANGED" | grep -qx "supabase_flutter"; then
+            echo "flutter=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flutter=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-flutter:
+    name: Build ${{ matrix.target }} on ${{ matrix.os }}
+    needs: changes
+    if: ${{ needs.changes.outputs.flutter == 'true' }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: web
+          - os: ubuntu-latest
+            target: linux
+          - os: ubuntu-latest
+            target: apk
+          - os: macos-latest
+            target: macos
+          - os: macos-latest
+            target: ios
+          - os: windows-latest
+            target: windows
+
+    defaults:
+      run:
+        working-directory: packages/supabase_flutter
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      PUB_CACHE: ${{ github.workspace }}/.pub-cache
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Show Flutter version
+        run: flutter --version
+
+      - name: Cache pub dependencies
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ${{ env.PUB_CACHE }}
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Cache Gradle
+        if: ${{ matrix.target == 'apk' }}
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('packages/supabase_flutter/example/android/**/*.gradle*', 'packages/supabase_flutter/example/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Bootstrap workspace
+        run: |
+          cd ../../
+          dart pub global activate melos
+          melos bootstrap
+
+      - name: Install Linux build dependencies (cached)
+        if: ${{ matrix.target == 'linux' }}
+        uses: awalsh128/cache-apt-pkgs-action@681749ae568c81c2037cb9185e38b709b261bd2f # v1.6.1
+        with:
+          packages: libgtk-3-dev libblkid-dev liblzma-dev
+          version: 1.0
+
+      - name: Build ${{ matrix.target }} app
+        working-directory: packages/supabase_flutter/example
+        shell: bash
+        run: |
+          if [ "${{ matrix.target }}" = "ios" ]; then
+            flutter build ios --no-codesign
+          else
+            flutter build ${{ matrix.target }}
+          fi
+
+  build-result:
+    name: Build result
+    needs: [changes, build-flutter]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all jobs succeeded
+        run: |
+          if ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}; then
+            echo "One or more jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All required jobs passed or were skipped."

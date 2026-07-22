@@ -4,13 +4,13 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
-import 'package:retry/retry.dart';
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 
-import 'file_io.dart' if (dart.library.js) './file_stub.dart';
+import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 class Fetch {
   final Client? httpClient;
@@ -18,11 +18,7 @@ class Fetch {
 
   Fetch([this.httpClient]);
 
-  bool _isSuccessStatusCode(int code) {
-    return code >= 200 && code <= 299;
-  }
-
-  MediaType? _parseMediaType(String path) {
+  MediaType _parseMediaType(String path) {
     final mime = lookupMimeType(path);
     return MediaType.parse(mime ?? 'application/octet-stream');
   }
@@ -36,15 +32,17 @@ class Fetch {
     if (error is http.Response) {
       if (options?.noResolveJson == true) {
         return StorageException(
-          error.body.isEmpty ? error.reasonPhrase ?? '' : error.body,
+          error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
           statusCode: '${error.statusCode}',
         );
       }
       try {
         final data = json.decode(error.body) as Map<String, dynamic>;
 
-        final exception =
-            StorageException.fromJson(data, '${error.statusCode}');
+        final exception = StorageException.fromJson(
+          data,
+          '${error.statusCode}',
+        );
         _log.fine('StorageException for $url', exception, stack);
         return exception;
       } on FormatException catch (_) {
@@ -71,8 +69,9 @@ class Fetch {
   ) async {
     final headers = {...?options?.headers};
     if (method != 'GET') {
-      final hasContentType =
-          headers.keys.any((key) => key.toLowerCase() == 'content-type');
+      final hasContentType = headers.keys.any(
+        (key) => key.toLowerCase() == 'content-type',
+      );
       if (!hasContentType) {
         headers['Content-Type'] = 'application/json';
       }
@@ -102,20 +101,20 @@ class Fetch {
     FetchOptions? options,
     int retryAttempts,
     StorageRetryController? retryController,
-  ) async {
+  ) {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
         : _parseMediaType(file.path);
-    final multipartFile = http.MultipartFile.fromBytes(
-      '',
-      file.readAsBytesSync(),
-      filename: file.path,
-      contentType: contentType,
-    );
+    final bytes = file.readAsBytesSync();
     return _handleMultipartRequest(
       method,
       url,
-      multipartFile,
+      () => http.MultipartFile.fromBytes(
+        '',
+        bytes,
+        filename: file.path,
+        contentType: contentType,
+      ),
       fileOptions,
       options,
       retryAttempts,
@@ -131,21 +130,20 @@ class Fetch {
     FetchOptions? options,
     int retryAttempts,
     StorageRetryController? retryController,
-  ) async {
+  ) {
     final contentType = fileOptions.contentType != null
         ? MediaType.parse(fileOptions.contentType!)
-        : _parseMediaType(url);
-    final multipartFile = http.MultipartFile.fromBytes(
-      '',
-      data,
-      // request fails with null filename so set it empty instead.
-      filename: '',
-      contentType: contentType,
-    );
+        : _parseMediaType(Uri.parse(url).path);
     return _handleMultipartRequest(
       method,
       url,
-      multipartFile,
+      () => http.MultipartFile.fromBytes(
+        '',
+        data,
+        // request fails with null filename so set it empty instead.
+        filename: '',
+        contentType: contentType,
+      ),
       fileOptions,
       options,
       retryAttempts,
@@ -156,7 +154,7 @@ class Fetch {
   Future<dynamic> _handleMultipartRequest(
     String method,
     String url,
-    MultipartFile multipartFile,
+    MultipartFile Function() createMultipartFile,
     FileOptions fileOptions,
     FetchOptions? options,
     int retryAttempts,
@@ -168,7 +166,7 @@ class Fetch {
     http.MultipartRequest createRequest() {
       final request = http.MultipartRequest(method, Uri.parse(url))
         ..headers.addAll(headers)
-        ..files.add(multipartFile)
+        ..files.add(createMultipartFile())
         ..fields['cacheControl'] = fileOptions.cacheControl
         ..headers['x-upsert'] = fileOptions.upsert.toString();
       if (fileOptions.metadata != null) {
@@ -193,9 +191,8 @@ class Fetch {
 
         if (httpClient != null) {
           return httpClient!.send(request);
-        } else {
-          return request.send();
         }
+        return request.send();
       },
       retryIf: (error) =>
           retryController?.cancelled != true &&
@@ -210,41 +207,79 @@ class Fetch {
     FetchOptions? options,
   ) async {
     final response = await http.Response.fromStream(streamedResponse);
-    if (_isSuccessStatusCode(response.statusCode)) {
+    if (isSuccessStatusCode(response.statusCode)) {
       if (options?.noResolveJson == true) {
         return response.bodyBytes;
-      } else {
-        final jsonBody = json.decode(response.body);
-        return jsonBody;
       }
-    } else {
-      throw _handleError(
-        response,
-        StackTrace.current,
-        response.request?.url,
-        options,
-      );
+      if (response.body.isEmpty) {
+        return null;
+      }
+      final jsonBody = json.decode(response.body);
+      return jsonBody;
     }
+    throw _handleError(
+      response,
+      StackTrace.current,
+      response.request?.url,
+      options,
+    );
   }
 
-  Future<dynamic> head(String url, {FetchOptions? options}) async {
+  Future<dynamic> head(String url, {FetchOptions? options}) {
     return _handleRequest(
       'HEAD',
       url,
       null,
-      FetchOptions(headers: options?.headers, noResolveJson: true),
+      FetchOptions(options?.headers, noResolveJson: true),
     );
   }
 
-  Future<dynamic> get(String url, {FetchOptions? options}) async {
+  Future<dynamic> get(String url, {FetchOptions? options}) {
     return _handleRequest('GET', url, null, options);
+  }
+
+  /// Performs a GET request and yields the response body as a byte stream
+  /// without buffering it in memory.
+  ///
+  /// The status code is inspected before the body is yielded, so a non-success
+  /// response surfaces as a [StorageException] on the stream before any bytes
+  /// are emitted.
+  @internal
+  Stream<Uint8List> getStream(
+    String url, {
+    FetchOptions? options,
+  }) async* {
+    final request = http.Request('GET', Uri.parse(url))
+      ..headers.addAll({...?options?.headers});
+
+    _log.finest('Request: GET (stream) $url ${request.headers}');
+    final http.StreamedResponse streamedResponse;
+    if (httpClient != null) {
+      streamedResponse = await httpClient!.send(request);
+    } else {
+      streamedResponse = await request.send();
+    }
+
+    if (!isSuccessStatusCode(streamedResponse.statusCode)) {
+      final response = await http.Response.fromStream(streamedResponse);
+      throw _handleError(
+        response,
+        StackTrace.current,
+        response.request?.url,
+        FetchOptions(options?.headers, noResolveJson: true),
+      );
+    }
+
+    yield* streamedResponse.stream.map(
+      (chunk) => chunk is Uint8List ? chunk : Uint8List.fromList(chunk),
+    );
   }
 
   Future<dynamic> post(
     String url,
     Map<String, dynamic>? body, {
     FetchOptions? options,
-  }) async {
+  }) {
     return _handleRequest('POST', url, body, options);
   }
 
@@ -252,7 +287,7 @@ class Fetch {
     String url,
     Map<String, dynamic>? body, {
     FetchOptions? options,
-  }) async {
+  }) {
     return _handleRequest('PUT', url, body, options);
   }
 
@@ -260,7 +295,7 @@ class Fetch {
     String url,
     Map<String, dynamic>? body, {
     FetchOptions? options,
-  }) async {
+  }) {
     return _handleRequest('DELETE', url, body, options);
   }
 
@@ -271,7 +306,7 @@ class Fetch {
     FetchOptions? options,
     required int retryAttempts,
     required StorageRetryController? retryController,
-  }) async {
+  }) {
     return _handleFileRequest(
       'POST',
       url,
@@ -290,7 +325,7 @@ class Fetch {
     FetchOptions? options,
     required int retryAttempts,
     required StorageRetryController? retryController,
-  }) async {
+  }) {
     return _handleFileRequest(
       'PUT',
       url,
@@ -309,7 +344,7 @@ class Fetch {
     FetchOptions? options,
     required int retryAttempts,
     required StorageRetryController? retryController,
-  }) async {
+  }) {
     return _handleBinaryFileRequest(
       'POST',
       url,
@@ -328,7 +363,7 @@ class Fetch {
     FetchOptions? options,
     required int retryAttempts,
     required StorageRetryController? retryController,
-  }) async {
+  }) {
     return _handleBinaryFileRequest(
       'PUT',
       url,

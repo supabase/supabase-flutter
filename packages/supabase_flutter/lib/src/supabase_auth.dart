@@ -1,18 +1,22 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:app_links/app_links.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:logging/logging.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import './oauth_redirect_stub.dart'
     if (dart.library.js_interop) './oauth_redirect_web.dart';
+
+import 'clear_auth_url_parameters_stub.dart'
+    if (dart.library.js_interop) 'clear_auth_url_parameters_web.dart';
 
 /// Integrates Supabase Auth with the Flutter application lifecycle.
 ///
@@ -52,13 +56,16 @@ import './oauth_redirect_stub.dart'
 /// - Deep link handling is skipped on web (`kIsWeb`) because the browser
 ///   handles URL-based redirects directly.
 class SupabaseAuth with WidgetsBindingObserver {
-  static WidgetsBinding? get _widgetsBindingInstance => WidgetsBinding.instance;
+  static WidgetsBinding get _widgetsBindingInstance => WidgetsBinding.instance;
 
   late LocalStorage _localStorage;
-  late AuthFlowType _authFlowType;
 
   /// Whether to automatically refresh the token
   late bool _autoRefreshToken;
+
+  /// Optional custom predicate to decide whether a deep link is an auth
+  /// callback. When null, [_defaultIsAuthCallbackDeeplink] is used.
+  bool Function(Uri uri)? _detectSessionInUriPredicate;
 
   /// **ATTENTION**: `getInitialLink`/`getInitialUri` should be handled
   /// ONLY ONCE in your app's lifetime, since it is not meant to change
@@ -84,12 +91,12 @@ class SupabaseAuth with WidgetsBindingObserver {
     required FlutterAuthClientOptions options,
   }) async {
     _localStorage = options.localStorage!;
-    _authFlowType = options.authFlowType;
     _autoRefreshToken = options.autoRefreshToken;
+    _detectSessionInUriPredicate = options.detectSessionInUriPredicate;
 
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
-        _onAuthStateChange(data.event, data.session);
+        unawaited(_onAuthStateChange(data.event, data.session));
       },
       onError: (error, stackTrace) {
         // Errors are already logged by GoTrueClient.notifyException before
@@ -106,21 +113,25 @@ class SupabaseAuth with WidgetsBindingObserver {
       final persistedSession = await _localStorage.accessToken();
       if (persistedSession != null) {
         try {
-          await Supabase.instance.client.auth
-              .setInitialSession(persistedSession);
+          await Supabase.instance.client.auth.setInitialSession(
+            persistedSession,
+          );
           shouldEmitInitialSession = false;
         } catch (error, stackTrace) {
           _log.warning(
-              'Error while setting initial session', error, stackTrace);
+            'Error while setting initial session',
+            error,
+            stackTrace,
+          );
         }
       }
     }
     if (shouldEmitInitialSession) {
       Supabase.instance.client.auth
-          // ignore: invalid_use_of_internal_member
-          .notifyAllSubscribers(AuthChangeEvent.initialSession);
+      // ignore: invalid_use_of_internal_member
+      .notifyAllSubscribers(AuthChangeEvent.initialSession);
     }
-    _widgetsBindingInstance?.addObserver(this);
+    _widgetsBindingInstance.addObserver(this);
 
     if (options.detectSessionInUri) {
       await _startDeeplinkObserver();
@@ -150,12 +161,12 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Dispose the instance to free up resources
   void dispose() {
-    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (isRunningInFlutterTest) {
       _initialDeeplinkIsHandled = false;
     }
-    _authSubscription?.cancel();
+    unawaited(_authSubscription?.cancel());
     _stopDeeplinkObserver();
-    _widgetsBindingInstance?.removeObserver(this);
+    _widgetsBindingInstance.removeObserver(this);
   }
 
   @override
@@ -167,28 +178,61 @@ class SupabaseAuth with WidgetsBindingObserver {
         }
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
-        if (kIsWeb || Platform.isAndroid || Platform.isIOS) {
+        if (kIsWeb ||
+            defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS) {
           Supabase.instance.client.auth.stopAutoRefresh();
         }
-      default:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
     }
   }
 
-  void _onAuthStateChange(AuthChangeEvent event, Session? session) {
-    if (session != null) {
-      _localStorage.persistSession(jsonEncode(session.toJson()));
-    } else if (event == AuthChangeEvent.signedOut) {
-      _localStorage.removePersistedSession();
+  Future<void> _onAuthStateChange(
+    AuthChangeEvent event,
+    Session? session,
+  ) async {
+    try {
+      if (session != null) {
+        await _localStorage.persistSession(jsonEncode(session.toJson()));
+      } else if (event == AuthChangeEvent.signedOut) {
+        await _localStorage.removePersistedSession();
+      }
+    } catch (error, stackTrace) {
+      _log.warning(
+        'Error while persisting auth state change',
+        error,
+        stackTrace,
+      );
     }
   }
 
-  /// If _authCallbackUrlHost not init, we treat all deep links as auth callback
+  /// Decides whether an incoming deep link should be exchanged for a session.
+  ///
+  /// Uses the custom predicate supplied via
+  /// [FlutterAuthClientOptions.detectSessionInUriPredicate] when available,
+  /// otherwise falls back to [_defaultIsAuthCallbackDeeplink].
   bool _isAuthCallbackDeeplink(Uri uri) {
-    return (uri.fragment.contains('access_token') &&
-            _authFlowType == AuthFlowType.implicit) ||
-        (uri.queryParameters.containsKey('code') &&
-            _authFlowType == AuthFlowType.pkce) ||
-        (uri.fragment.contains('error_description'));
+    final predicate = _detectSessionInUriPredicate;
+    if (predicate != null) {
+      return predicate(uri);
+    }
+    return _defaultIsAuthCallbackDeeplink(uri);
+  }
+
+  /// Default heuristic: treat a deep link as an auth callback when it carries
+  /// any of the auth-related parameters, in the query or the fragment.
+  bool _defaultIsAuthCallbackDeeplink(Uri uri) {
+    final fragmentParameters = Uri.splitQueryString(uri.fragment);
+    bool hasParameter(String key) =>
+        uri.queryParameters.containsKey(key) ||
+        fragmentParameters.containsKey(key);
+
+    return hasParameter('access_token') ||
+        hasParameter('code') ||
+        hasParameter('error') ||
+        hasParameter('error_code') ||
+        hasParameter('error_description');
   }
 
   /// Enable deep link observer to handle deep links
@@ -204,7 +248,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   void _stopDeeplinkObserver() {
     if (_deeplinkSubscription != null) {
       _log.fine('Stopping deeplink observer');
-      _deeplinkSubscription?.cancel();
+      unawaited(_deeplinkSubscription?.cancel());
     }
   }
 
@@ -217,7 +261,7 @@ class SupabaseAuth with WidgetsBindingObserver {
       _deeplinkSubscription = _appLinks.uriLinkStream.listen(
         (Uri? uri) {
           if (uri != null) {
-            _handleDeeplink(uri);
+            unawaited(_handleDeeplink(uri));
           }
         },
         onError: (Object err, StackTrace stackTrace) {
@@ -266,6 +310,9 @@ class SupabaseAuth with WidgetsBindingObserver {
 
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
+      if (kIsWeb) {
+        clearAuthUrlParameters();
+      }
     } on AuthException catch (error, stackTrace) {
       // ignore: invalid_use_of_internal_member
       Supabase.instance.client.auth.notifyException(error, stackTrace);
@@ -292,8 +339,11 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// ```
   ///
   /// The return value of this method is not the auth result, and whether the
-  /// OAuth sign-in has succeded or not should be observed by setting a listener
+  /// OAuth sign-in has succeeded or not should be observed by setting a listener
   /// on [auth.onAuthStateChanged].
+  ///
+  /// To obtain the OAuth URL without launching a browser, use
+  /// [getOAuthSignInUrl] instead.
   ///
   /// See also:
   ///
@@ -362,7 +412,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
 
   String generateRawNonce() {
     final random = Random.secure();
-    return base64Url.encode(List<int>.generate(16, (_) => random.nextInt(256)));
+    return base64Url.encode(List.generate(16, (_) => random.nextInt(256)));
   }
 
   /// Links an oauth identity to an existing user.

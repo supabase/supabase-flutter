@@ -56,6 +56,34 @@ void main() {
       // assert
       expect(userAttributesOne, isNot(equals(userAttributesThree)));
     });
+
+    test('currentPassword is serialized as current_password', () {
+      final userAttributes = UserAttributes(
+        password: 'new-password',
+        currentPassword: 'old-password',
+      );
+
+      expect(userAttributes.toJson(), {
+        'password': 'new-password',
+        'current_password': 'old-password',
+      });
+    });
+
+    test('currentPassword is omitted from JSON when null', () {
+      final userAttributes = UserAttributes(password: 'new-password');
+
+      expect(userAttributes.toJson().containsKey('current_password'), isFalse);
+    });
+
+    test('Attributes with different currentPassword are not equal', () {
+      final withCurrentPassword = UserAttributes(
+        password: password,
+        currentPassword: 'old-password',
+      );
+      final withoutCurrentPassword = UserAttributes(password: password);
+
+      expect(withCurrentPassword, isNot(equals(withoutCurrentPassword)));
+    });
   });
 
   group('Admin user attributes', () {
@@ -71,7 +99,7 @@ void main() {
     setUp(() {
       userMetadata = {'first_name': 'John', 'last_name': 'Doe'};
       appMetadata = {
-        'roles': ['admin']
+        'roles': ['admin'],
       };
       emailConfirm = true;
       phoneConfirm = true;

@@ -1,14 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   await Supabase.initialize(
-      url: 'SUPABASE_URL', publishableKey: 'SUPABASE_PUBLISHABLE_KEY');
+    url: 'SUPABASE_URL',
+    publishableKey: 'SUPABASE_PUBLISHABLE_KEY',
+  );
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +24,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyWidget extends StatefulWidget {
-  const MyWidget({Key? key}) : super(key: key);
+  const MyWidget({super.key});
 
   @override
   State<MyWidget> createState() => _MyWidgetState();
@@ -28,17 +32,13 @@ class MyWidget extends StatefulWidget {
 
 class _MyWidgetState extends State<MyWidget> {
   User? _user;
+  StreamSubscription<AuthState>? _authSubscription;
+
   @override
   void initState() {
-    _getAuth();
     super.initState();
-  }
-
-  Future<void> _getAuth() async {
-    setState(() {
-      _user = Supabase.instance.client.auth.currentUser;
-    });
-    Supabase.instance.client.auth.onAuthStateChange.listen(
+    _user = Supabase.instance.client.auth.currentUser;
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
       (data) {
         setState(() {
           _user = data.session?.user;
@@ -53,6 +53,12 @@ class _MyWidgetState extends State<MyWidget> {
   }
 
   @override
+  void dispose() {
+    unawaited(_authSubscription?.cancel());
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -64,7 +70,7 @@ class _MyWidgetState extends State<MyWidget> {
 }
 
 class _LoginForm extends StatefulWidget {
-  const _LoginForm({Key? key}) : super(key: key);
+  const _LoginForm();
 
   @override
   State<_LoginForm> createState() => _LoginFormState();
@@ -80,6 +86,56 @@ class _LoginFormState extends State<_LoginForm> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signIn() async {
+    setState(() {
+      _loading = true;
+    });
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    try {
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Login failed'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signUp() async {
+    setState(() {
+      _loading = true;
+    });
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    try {
+      await Supabase.instance.client.auth.signUp(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Signup failed'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -102,56 +158,12 @@ class _LoginFormState extends State<_LoginForm> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () async {
-                  setState(() {
-                    _loading = true;
-                  });
-                  final ScaffoldMessengerState scaffoldMessenger =
-                      ScaffoldMessenger.of(context);
-                  try {
-                    final email = _emailController.text;
-                    final password = _passwordController.text;
-                    await Supabase.instance.client.auth.signInWithPassword(
-                      email: email,
-                      password: password,
-                    );
-                  } catch (e) {
-                    scaffoldMessenger.showSnackBar(const SnackBar(
-                      content: Text('Login failed'),
-                      backgroundColor: Colors.red,
-                    ));
-                    setState(() {
-                      _loading = false;
-                    });
-                  }
-                },
+                onPressed: () => unawaited(_signIn()),
                 child: const Text('Login'),
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () async {
-                  setState(() {
-                    _loading = true;
-                  });
-                  final ScaffoldMessengerState scaffoldMessenger =
-                      ScaffoldMessenger.of(context);
-                  try {
-                    final email = _emailController.text;
-                    final password = _passwordController.text;
-                    await Supabase.instance.client.auth.signUp(
-                      email: email,
-                      password: password,
-                    );
-                  } catch (e) {
-                    scaffoldMessenger.showSnackBar(const SnackBar(
-                      content: Text('Signup failed'),
-                      backgroundColor: Colors.red,
-                    ));
-                    setState(() {
-                      _loading = false;
-                    });
-                  }
-                },
+                onPressed: () => unawaited(_signUp()),
                 child: const Text('Signup'),
               ),
             ],
@@ -160,7 +172,7 @@ class _LoginFormState extends State<_LoginForm> {
 }
 
 class _ProfileForm extends StatefulWidget {
-  const _ProfileForm({Key? key}) : super(key: key);
+  const _ProfileForm();
 
   @override
   State<_ProfileForm> createState() => _ProfileFormState();
@@ -173,8 +185,8 @@ class _ProfileFormState extends State<_ProfileForm> {
 
   @override
   void initState() {
-    _loadProfile();
     super.initState();
+    unawaited(_loadProfile());
   }
 
   @override
@@ -185,29 +197,65 @@ class _ProfileFormState extends State<_ProfileForm> {
   }
 
   Future<void> _loadProfile() async {
-    final ScaffoldMessengerState scaffoldMessenger =
-        ScaffoldMessenger.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
       final userId = Supabase.instance.client.auth.currentUser!.id;
-      final data = (await Supabase.instance.client
+      final data = await Supabase.instance.client
           .from('profiles')
           .select()
-          .match({'id': userId}).maybeSingle());
-      if (data != null) {
+          .match({'id': userId})
+          .maybeSingle();
+      if (data != null && mounted) {
         setState(() {
           _usernameController.text = data['username'];
           _websiteController.text = data['website'];
         });
       }
     } catch (e) {
-      scaffoldMessenger.showSnackBar(const SnackBar(
-        content: Text('Error occurred while getting profile'),
-        backgroundColor: Colors.red,
-      ));
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Error occurred while getting profile'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
+    if (mounted) {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _saveProfile() async {
     setState(() {
-      _loading = false;
+      _loading = true;
     });
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    try {
+      final userId = Supabase.instance.client.auth.currentUser!.id;
+      await Supabase.instance.client.from('profiles').upsert({
+        'id': userId,
+        'username': _usernameController.text,
+        'website': _websiteController.text,
+      });
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Saved profile'),
+        ),
+      );
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(
+          content: Text('Error saving profile'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    if (mounted) {
+      setState(() {
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -232,42 +280,16 @@ class _ProfileFormState extends State<_ProfileForm> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                  onPressed: () async {
-                    final ScaffoldMessengerState scaffoldMessenger =
-                        ScaffoldMessenger.of(context);
-                    try {
-                      setState(() {
-                        _loading = true;
-                      });
-                      final userId =
-                          Supabase.instance.client.auth.currentUser!.id;
-                      final username = _usernameController.text;
-                      final website = _websiteController.text;
-                      await Supabase.instance.client.from('profiles').upsert({
-                        'id': userId,
-                        'username': username,
-                        'website': website,
-                      });
-                      if (mounted) {
-                        scaffoldMessenger.showSnackBar(const SnackBar(
-                          content: Text('Saved profile'),
-                        ));
-                      }
-                    } catch (e) {
-                      scaffoldMessenger.showSnackBar(const SnackBar(
-                        content: Text('Error saving profile'),
-                        backgroundColor: Colors.red,
-                      ));
-                    }
-                    setState(() {
-                      _loading = false;
-                    });
-                  },
-                  child: const Text('Save')),
+                onPressed: () => unawaited(_saveProfile()),
+                child: const Text('Save'),
+              ),
               const SizedBox(height: 16),
               TextButton(
-                  onPressed: () => Supabase.instance.client.auth.signOut(),
-                  child: const Text('Sign Out')),
+                onPressed: () => unawaited(
+                  Supabase.instance.client.auth.signOut(),
+                ),
+                child: const Text('Sign Out'),
+              ),
             ],
           );
   }

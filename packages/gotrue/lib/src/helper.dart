@@ -1,38 +1,12 @@
 import 'dart:convert';
-import 'dart:math';
 
-import 'package:crypto/crypto.dart';
-import 'package:gotrue/src/base64url.dart';
 import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/jwt.dart';
+import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
-/// Converts base 10 int into String representation of base 16 int and takes the last two digets.
-String dec2hex(int dec) {
-  final radixString = '0${dec.toRadixString(16)}';
-  return radixString.substring(radixString.length - 2);
-}
-
-/// Generates a random code verifier
-String generatePKCEVerifier() {
-  const verifierLength = 56;
-  final random = Random.secure();
-  return base64UrlEncode(
-      List.generate(verifierLength, (_) => random.nextInt(256))).split('=')[0];
-}
-
-String generatePKCEChallenge(String verifier) {
-  return base64UrlEncode(sha256.convert(ascii.encode(verifier)).bytes)
-      .split('=')[0];
-}
-
-final uuidRegex =
-    RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
-
-void validateUuid(String id) {
-  if (!uuidRegex.hasMatch(id)) {
-    throw ArgumentError('Invalid id: $id, must be a valid UUID');
-  }
-}
+export 'package:supabase_common/supabase_common.dart'
+    show generatePKCEVerifier, generatePKCEChallenge, uuidRegex, validateUuid;
 
 /// Decodes a JWT token without performing validation
 ///
@@ -70,6 +44,29 @@ DecodedJwt decodeJwt(String token) {
         signature: rawSignature,
       ),
     );
+  } catch (e) {
+    if (e is AuthInvalidJwtException) {
+      rethrow;
+    }
+    throw AuthInvalidJwtException('Failed to decode JWT: $e');
+  }
+}
+
+/// Decodes only the payload of a JWT without validating the header or signature.
+///
+/// Useful where just the claims are needed and the token may not carry a
+/// well-formed header or signature. Throws [AuthInvalidJwtException] if the
+/// structure or payload is invalid.
+@internal
+JwtPayload decodeJwtPayload(String token) {
+  final parts = token.split('.');
+  if (parts.length != 3) {
+    throw AuthInvalidJwtException('Invalid JWT structure');
+  }
+
+  try {
+    final payloadJson = Base64Url.decodeToString(parts[1]);
+    return JwtPayload.fromJson(json.decode(payloadJson));
   } catch (e) {
     if (e is AuthInvalidJwtException) {
       rethrow;

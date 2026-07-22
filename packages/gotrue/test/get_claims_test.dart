@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:dotenv/dotenv.dart';
 import 'package:gotrue/gotrue.dart';
+import 'package:gotrue/src/helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
 
@@ -9,18 +12,25 @@ void main() {
   final env = DotEnv();
   env.load();
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://localhost:9998';
-  final anonToken = env['GOTRUE_TOKEN'] ?? 'anonKey';
+  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
 
   group('getClaims', () {
     late GoTrueClient client;
     late String newEmail;
 
     setUp(() async {
-      final res = await http.post(
-          Uri.parse('http://localhost:3000/rpc/reset_and_init_auth_data'),
-          headers: {'x-forwarded-for': '127.0.0.1'});
-      if (res.body.isNotEmpty) throw res.body;
+      final response = await http.post(
+        Uri.parse(
+          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+        ),
+        headers: {
+          'x-forwarded-for': '127.0.0.1',
+          'apikey': getServiceRoleToken(env),
+          'Authorization': 'Bearer ${getServiceRoleToken(env)}',
+        },
+      );
+      if (response.body.isNotEmpty) throw response.body;
 
       newEmail = getNewEmail();
 
@@ -122,10 +132,10 @@ void main() {
           GetClaimsOptions(allowExpired: true),
         );
         // If we get here, the exp validation was skipped
-      } on AuthException catch (e) {
+      } on AuthException catch (error) {
         // We expect this to fail during getUser() verification,
         // not during exp validation
-        expect(e.message, isNot(contains('expired')));
+        expect(error.message, isNot(contains('expired')));
       }
     });
 
@@ -143,7 +153,6 @@ void main() {
         GetClaimsOptions(allowExpired: false),
       );
 
-      expect(claimsResponse.claims, isNotNull);
       expect(claimsResponse.claims.claims['email'], newEmail);
     });
 
@@ -161,7 +170,6 @@ void main() {
       final claimsResponse = await client.getClaims(accessToken);
 
       // If we get here without error, verification succeeded
-      expect(claimsResponse.claims, isNotNull);
       expect(claimsResponse.claims.claims['email'], newEmail);
     });
 
@@ -203,7 +211,7 @@ void main() {
 
       // The user metadata should be accessible via the user object
       // which is verified through getUser() call
-      expect(claims, isNotNull);
+      expect(claims.claims, isNotEmpty);
     });
   });
 
@@ -224,35 +232,37 @@ void main() {
       );
     });
 
-    test('getClaims() with RS256 JWT on first call should not crash (SDK-627)',
-        () async {
-      // This test reproduces the bug reported in SDK-627
-      // A JWT with RS256 algorithm and kid in header
-      // Header: {"alg":"RS256","typ":"JWT","kid":"test-key-id"}
-      // Payload: {"sub":"1234567890","aud":"authenticated","exp":9999999999,"iat":1516239022,"email":"test@example.com","role":"authenticated"}
-      // Signature: dummy base64url encoded signature (not cryptographically valid, but structurally valid)
-      const rs256Jwt =
-          'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNTE2MjM5MDIyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.SW52YWxpZFNpZ25hdHVyZURhdGFIZXJlVGhhdElzTm90UmVhbEJ1dFZhbGlkQmFzZTY0VXJs';
+    test(
+      'getClaims() with RS256 JWT on first call should not crash (SDK-627)',
+      () async {
+        // This test reproduces the bug reported in SDK-627
+        // A JWT with RS256 algorithm and kid in header
+        // Header: {"alg":"RS256","typ":"JWT","kid":"test-key-id"}
+        // Payload: {"sub":"1234567890","aud":"authenticated","exp":9999999999,"iat":1516239022,"email":"test@example.com","role":"authenticated"}
+        // Signature: dummy base64url encoded signature (not cryptographically valid, but structurally valid)
+        const rs256Jwt =
+            'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNTE2MjM5MDIyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.SW52YWxpZFNpZ25hdHVyZURhdGFIZXJlVGhhdElzTm90UmVhbEJ1dFZhbGlkQmFzZTY0VXJs';
 
-      // Before the fix, this would crash with:
-      // "Null check operator used on a null value"
-      // because _jwks is null on first call and the code does _jwks!
-      //
-      // After the fix, this should attempt to fetch JWKS from the server
-      // and fail gracefully (either with network error or invalid signature)
-      // but NOT crash with null error
-      try {
-        await client.getClaims(rs256Jwt);
-        // If we get here, the server responded successfully (unlikely in test env)
-      } catch (e) {
-        // The important part is that it should NOT crash with null error
-        // It may fail with network error, invalid signature, etc.
-        // but the error message should not contain null-related errors
-        expect(e.toString(), isNot(contains('Unexpected null value')));
-        expect(e.toString(), isNot(contains('Null check operator')));
-      }
-      // Test passes if we get here without null error
-    });
+        // Before the fix, this would crash with:
+        // "Null check operator used on a null value"
+        // because _jwks is null on first call and the code does _jwks!
+        //
+        // After the fix, this should attempt to fetch JWKS from the server
+        // and fail gracefully (either with network error or invalid signature)
+        // but NOT crash with null error
+        try {
+          await client.getClaims(rs256Jwt);
+          // If we get here, the server responded successfully (unlikely in test env)
+        } catch (error) {
+          // The important part is that it should NOT crash with null error
+          // It may fail with network error, invalid signature, etc.
+          // but the error message should not contain null-related errors
+          expect(error.toString(), isNot(contains('Unexpected null value')));
+          expect(error.toString(), isNot(contains('Null check operator')));
+        }
+        // Test passes if we get here without null error
+      },
+    );
   });
 
   group('JWT helper functions', () {
@@ -296,6 +306,37 @@ void main() {
 
       expect(
         () => decodeJwt(invalidJwt),
+        throwsA(isA<AuthInvalidJwtException>()),
+      );
+    });
+
+    test('decodeJwtPayload() successfully decodes valid JWT', () {
+      final jwt =
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2lkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjk5OTk5OTk5OTl9.XyI0rWcOYLpz3R8G8qHWmg7U-tWMHJqzN_e1oDQKzgc';
+
+      final payload = decodeJwtPayload(jwt);
+
+      expect(payload.sub, '1234567890');
+      expect(payload.claims['name'], 'John Doe');
+      expect(payload.iat, 1516239022);
+      expect(payload.exp, 9999999999);
+    });
+
+    test('decodeJwtPayload() decodes payload despite a non-JSON header', () {
+      final payloadPart = base64.encode(
+        utf8.encode(json.encode({'exp': 9999999999, 'sub': '1234567890'})),
+      );
+      final jwt = 'any.$payloadPart.any';
+
+      final payload = decodeJwtPayload(jwt);
+
+      expect(payload.exp, 9999999999);
+      expect(payload.sub, '1234567890');
+    });
+
+    test('decodeJwtPayload() throws on wrong number of parts', () {
+      expect(
+        () => decodeJwtPayload('only.two'),
         throwsA(isA<AuthInvalidJwtException>()),
       );
     });

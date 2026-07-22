@@ -1,3 +1,35 @@
+## 2.9.0
+
+ - **REFACTOR**: modernize dart syntax across client packages ([#1574](https://github.com/supabase/supabase-flutter/issues/1574)). ([b74fdfee](https://github.com/supabase/supabase-flutter/commit/b74fdfee05c90d40dd3f0676ca86bd92e6013c65))
+ - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))
+ - **FEAT**(postgrest): configurable auto-retry and request timeout ([#1560](https://github.com/supabase/supabase-flutter/issues/1560)). ([59d4b3af](https://github.com/supabase/supabase-flutter/commit/59d4b3af227e15a53208146a2930981526a39599))
+ - **FEAT**(postgrest): abort requests ([#1368](https://github.com/supabase/supabase-flutter/issues/1368)). ([c267e4fa](https://github.com/supabase/supabase-flutter/commit/c267e4fa4128508492ddd35651842abee7b41a7e))
+ - **FEAT**(database): add dryRun and stripNulls query modifiers ([#1559](https://github.com/supabase/supabase-flutter/issues/1559)). ([896bc1f7](https://github.com/supabase/supabase-flutter/commit/896bc1f71094fad8e390b47d50d5d424011749b0))
+
+## 2.8.0
+
+ - **FIX**(postgrest): override limit and offset instead of appending duplicates ([#1512](https://github.com/supabase/supabase-flutter/issues/1512)). ([f1c80d60](https://github.com/supabase/supabase-flutter/commit/f1c80d60113dc9a6cd37fd1fdb89b9eda25cf8a2))
+ - **FEAT**(postgrest): add format option to explain() ([#1516](https://github.com/supabase/supabase-flutter/issues/1516)). ([e549d390](https://github.com/supabase/supabase-flutter/commit/e549d39021edc624ca422a18321f312cb95f5826))
+
+## 2.7.4
+
+ - **FIX**(postgrest): stop seeding Prefer header with an empty string ([#1505](https://github.com/supabase/supabase-flutter/issues/1505)). ([0a37f0d7](https://github.com/supabase/supabase-flutter/commit/0a37f0d746abf690151825a1de9f2c9c50322de7))
+
+## 2.7.3
+
+ - **FIX**(postgrest): escape quotes and backslashes in list filter values ([#1481](https://github.com/supabase/supabase-flutter/issues/1481)). ([66e4d139](https://github.com/supabase/supabase-flutter/commit/66e4d1399ea615abb1d58b468a4943e7c408ef2f))
+ - **FIX**(postgrest): return structured error for non-JSON body on 2xx responses ([#1474](https://github.com/supabase/supabase-flutter/issues/1474)). ([2d7c9cf5](https://github.com/supabase/supabase-flutter/commit/2d7c9cf5537f997baf733f0ee32d38303a6f752a))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+ - **FIX**(postgrest): build a valid Prefer header in select() when none is set ([#1433](https://github.com/supabase/supabase-flutter/issues/1433)). ([871d39d5](https://github.com/supabase/supabase-flutter/commit/871d39d5213f776b6360ef65f69cec76a9fbf9a0))
+
+## 2.7.2
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
+## 2.7.1
+
+ - **FIX**(postgrest): include caller frames in PostgrestException stack traces ([#1387](https://github.com/supabase/supabase-flutter/issues/1387)). ([716121a5](https://github.com/supabase/supabase-flutter/commit/716121a5c749bdf9fb9e07b6103a3f058fc4f79d))
+
 ## 2.7.0
 
  - **FIX**(types): improve JSON decoding resilience ([#1301](https://github.com/supabase/supabase-flutter/issues/1301)). ([1523f5d6](https://github.com/supabase/supabase-flutter/commit/1523f5d6dedb2f59af33f9783db84d27369ef10a))

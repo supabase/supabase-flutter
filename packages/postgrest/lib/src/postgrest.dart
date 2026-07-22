@@ -7,6 +7,9 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 /// A PostgREST api client written in Dartlang. The goal of this library is to make an "ORM-like" restful interface.
 class PostgrestClient {
+  /// HTTP status codes that trigger an automatic retry by default.
+  static const Set<int> defaultRetryableStatusCodes = {503, 520};
+
   final String url;
   final Map<String, String> headers;
   final String? _schema;
@@ -14,6 +17,9 @@ class PostgrestClient {
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
   final bool retryEnabled;
+  final int retryCount;
+  final Set<int> retryableStatusCodes;
+  final Duration? requestTimeout;
   final Duration Function(int attempt)? _retryDelay;
   final _log = Logger('supabase.postgrest');
 
@@ -30,8 +36,22 @@ class PostgrestClient {
   /// [isolate] is optional and can be used to provide a custom isolate, which is used for heavy json computation
   ///
   /// [retryEnabled] controls whether automatic retries are performed for GET and
-  /// HEAD requests that fail with HTTP 503, HTTP 520, or a network error. Defaults to `true`.
-  /// Use [PostgrestBuilder.retry] to override this per request.
+  /// HEAD requests that fail with a retryable status code or a network error.
+  /// Defaults to `true`. Use [PostgrestBuilder.retry] to override this per request.
+  ///
+  /// [retryCount] is the number of retry attempts made for a retryable request
+  /// before giving up. Defaults to `3`.
+  ///
+  /// [retryableStatusCodes] are the HTTP status codes that trigger a retry.
+  /// Defaults to `{503, 520}`.
+  ///
+  /// [requestTimeout] optionally bounds how long a single request attempt may
+  /// take. It is implemented on top of the abort mechanism, so it actually
+  /// cancels a stalled attempt instead of leaving it running. A timed-out
+  /// attempt is retried like any other failure, and a [TimeoutException] is
+  /// thrown once the retries are exhausted. When `null` (the default) no
+  /// timeout is applied. Use [PostgrestBuilder.abortSignal] to cancel a request
+  /// outright, which stops retrying immediately.
   PostgrestClient(
     this.url, {
     Map<String, String>? headers,
@@ -39,12 +59,23 @@ class PostgrestClient {
     this.httpClient,
     YAJsonIsolate? isolate,
     this.retryEnabled = true,
+    this.retryCount = 3,
+    Set<int> retryableStatusCodes = defaultRetryableStatusCodes,
+    this.requestTimeout,
     @visibleForTesting Duration Function(int attempt)? retryDelay,
-  })  : _schema = schema,
-        headers = {...defaultHeaders, if (headers != null) ...headers},
-        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-        _hasCustomIsolate = isolate != null,
-        _retryDelay = retryDelay {
+  }) : retryableStatusCodes = Set.unmodifiable(retryableStatusCodes),
+       _schema = schema,
+       headers = {...defaultHeaders, ...?headers},
+       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
+       _hasCustomIsolate = isolate != null,
+       _retryDelay = retryDelay {
+    if (retryCount < 0) {
+      throw ArgumentError.value(
+        retryCount,
+        'retryCount',
+        'must not be negative',
+      );
+    }
     _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
     _log.finest('Initialize with headers: $headers');
   }
@@ -68,14 +99,17 @@ class PostgrestClient {
 
   /// Perform a table operation.
   PostgrestQueryBuilder<void> from(String table) {
-    final url = '${this.url}/$table';
-    return PostgrestQueryBuilder<void>(
-      url: Uri.parse(url),
+    final requestUrl = '$url/$table';
+    return PostgrestQueryBuilder(
+      url: Uri.parse(requestUrl),
       headers: {...headers},
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
       retryEnabled: retryEnabled,
+      retryCount: retryCount,
+      retryableStatusCodes: retryableStatusCodes,
+      requestTimeout: requestTimeout,
       retryDelay: _retryDelay,
     );
   }
@@ -91,6 +125,9 @@ class PostgrestClient {
       httpClient: httpClient,
       isolate: _isolate,
       retryEnabled: retryEnabled,
+      retryCount: retryCount,
+      retryableStatusCodes: retryableStatusCodes,
+      requestTimeout: requestTimeout,
       retryDelay: _retryDelay,
     );
   }
@@ -112,17 +149,20 @@ class PostgrestClient {
   /// ```
   PostgrestFilterBuilder<T> rpc<T>(
     String fn, {
-    Map? params,
+    Map<dynamic, dynamic>? params,
     bool get = false,
   }) {
-    final url = '${this.url}/rpc/$fn';
+    final requestUrl = '$url/rpc/$fn';
     return PostgrestRpcBuilder(
-      url,
+      requestUrl,
       headers: {...headers},
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
       retryEnabled: retryEnabled,
+      retryCount: retryCount,
+      retryableStatusCodes: retryableStatusCodes,
+      requestTimeout: requestTimeout,
       retryDelay: _retryDelay,
     ).rpc(params, get);
   }

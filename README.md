@@ -1,10 +1,33 @@
-![Supabase](https://raw.githubusercontent.com/supabase/supabase-flutter/main/.github/images/supabase-banner.jpg)
+<br />
+<p align="center">
+  <a href="https://supabase.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/supabase-logo-wordmark--light.svg">
+      <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+    </picture>
+  </a>
 
-# `Supabase Flutter`
+  <h1 align="center">Supabase Flutter</h1>
 
-Flutter Client library for [Supabase](https://supabase.com/).
+  <p align="center">
+    Flutter client library for <a href="https://supabase.com">Supabase</a>.
+  </p>
 
-- Documentation: https://supabase.com/docs/reference/dart/introduction
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/with-flutter">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/dart/introduction">Reference Docs</a>
+  </p>
+</p>
+
+<div align="center">
+
+[![Build](https://github.com/supabase/supabase-flutter/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/supabase/supabase-flutter/actions/workflows/test.yml?query=branch%3Amain)
+[![Package](https://img.shields.io/pub/v/supabase_flutter.svg)](https://pub.dev/packages/supabase_flutter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](#license)
+
+</div>
 
 ## Run locally
 
@@ -23,28 +46,29 @@ To install on a locally developed app:
 
 ## Testing
 
-The tests for the packages `postgrest`, `gotrue` and `storage_client` need some Supabase services running.
-To run these tests locally, you need to have the `docker` cli with `docker-compose` installed.
+The tests for the packages `postgrest`, `gotrue`, `realtime_client` and `storage_client` run against a
+local Supabase stack. To run these tests locally you need `docker` and the
+[Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
-The needed configuration for starting the services are in the `infra` directory.
-
-To start the services change working directory to `infra/<package>` and run the following command:
+The single configuration for the stack lives in the `supabase` directory at the repository root.
+Start it with:
 
 ```bash
-docker compose up -d
+supabase start
 ```
 
-Run the Dart tests within the package directory in `packages/<package>` with the following command:
-The `-j 1` flag runs the tests not concurrently, which works better since the tests are running against the same services.
+Run the Dart tests within the package directory in `packages/<package>` with the following command.
+The `-j 1` flag runs the tests not concurrently, which works better since the tests run against the
+same services.
 
 ```bash
 dart test -j 1
 ```
 
-To stop the services run the following command in the `infra/<package>` directory:
+To stop the stack run the following command from the repository root:
 
 ```bash
-docker compose down
+supabase stop
 ```
 
 ## Contributing

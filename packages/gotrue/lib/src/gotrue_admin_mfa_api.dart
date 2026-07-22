@@ -8,16 +8,17 @@ class GoTrueAdminMFAApi {
   final Map<String, String> _headers;
   final GotrueFetch _fetch;
 
-  GoTrueAdminMFAApi({
+  const GoTrueAdminMFAApi({
     required String url,
     required Map<String, String> headers,
     required GotrueFetch fetch,
-  })  : _url = url,
-        _headers = headers,
-        _fetch = fetch;
+  }) : _url = url,
+       _headers = headers,
+       _fetch = fetch;
 
-  Future<AuthMFAAdminListFactorsResponse> listFactors(
-      {required String userId}) async {
+  Future<AuthMFAAdminListFactorsResponse> listFactors({
+    required String userId,
+  }) async {
     validateUuid(userId);
 
     final data = await _fetch.request(
@@ -29,7 +30,8 @@ class GoTrueAdminMFAApi {
     );
 
     return AuthMFAAdminListFactorsResponse(
-        factors: (data as List).map((e) => Factor.fromJson(e)).toList());
+      factors: (data as List).map((e) => Factor.fromJson(e)).toList(),
+    );
   }
 
   Future<AuthMFAAdminDeleteFactorResponse> deleteFactor({

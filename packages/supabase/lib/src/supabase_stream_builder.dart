@@ -1,53 +1,37 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 part 'supabase_stream_filter_builder.dart';
 
-class _StreamPostgrestFilter {
-  _StreamPostgrestFilter({
-    required this.column,
-    required this.value,
-    required this.type,
-  });
+/// [column] name of the eq filter, [value] of the eq filter, and [type] of the
+/// filter being applied.
+typedef _StreamPostgrestFilter = ({
+  String column,
+  dynamic value,
+  PostgresChangeFilterType type,
+});
 
-  /// Column name of the eq filter
-  final String column;
-
-  /// Value of the eq filter
-  final dynamic value;
-
-  /// Type of the filer being applied
-  final PostgresChangeFilterType type;
-}
-
-class _Order {
-  _Order({
-    required this.column,
-    required this.ascending,
-  });
-  final String column;
-  final bool ascending;
-}
+typedef _Order = ({String column, bool ascending});
 
 class RealtimeSubscribeException implements Exception {
-  RealtimeSubscribeException(this.status, [this.details]);
+  const RealtimeSubscribeException(this.status, [this.details]);
 
   final RealtimeSubscribeStatus status;
   final Object? details;
 
   @override
   String toString() {
-    return 'RealtimeSubscribeException(status: $status, details: $details)';
+    return 'RealtimeSubscribeException(status: ${status.name}, details: $details)';
   }
 }
 
 typedef SupabaseStreamEvent = List<Map<String, dynamic>>;
 
 class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
-  final PostgrestQueryBuilder _queryBuilder;
+  final PostgrestQueryBuilder<dynamic> _queryBuilder;
 
   final RealtimeClient _realtimeClient;
 
@@ -69,12 +53,13 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   final _log = Logger('supabase.supabase');
 
   /// StreamController for `stream()` method.
-  BehaviorSubject<SupabaseStreamEvent>? _streamController;
+  ReplaySubject<SupabaseStreamEvent>? _streamController;
 
   /// Contains the combined data of postgrest and realtime to emit as stream.
   SupabaseStreamEvent _streamData = [];
 
   /// `eq` filter used for both postgrest and realtime
+  // ignore: avoid-unassigned-fields
   _StreamPostgrestFilter? _streamFilter;
 
   /// Which column to order by and whether it's ascending
@@ -87,20 +72,20 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   bool _wasSubscribed = false;
 
   SupabaseStreamBuilder({
-    required PostgrestQueryBuilder queryBuilder,
+    required PostgrestQueryBuilder<dynamic> queryBuilder,
     required String realtimeTopic,
     required RealtimeClient realtimeClient,
     required String schema,
     required String table,
     required List<String> primaryKey,
     required bool private,
-  })  : _queryBuilder = queryBuilder,
-        _realtimeTopic = realtimeTopic,
-        _realtimeClient = realtimeClient,
-        _schema = schema,
-        _table = table,
-        _uniqueColumns = primaryKey,
-        _private = private;
+  }) : _queryBuilder = queryBuilder,
+       _realtimeTopic = realtimeTopic,
+       _realtimeClient = realtimeClient,
+       _schema = schema,
+       _table = table,
+       _uniqueColumns = primaryKey,
+       _private = private;
 
   /// Orders the result with the specified [column].
   ///
@@ -110,7 +95,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// supabase.from('users').stream(primaryKey: ['id']).order('username', ascending: false);
   /// ```
   SupabaseStreamBuilder order(String column, {bool ascending = false}) {
-    _orderBy = _Order(column: column, ascending: ascending);
+    _orderBy = (column: column, ascending: ascending);
     return this;
   }
 
@@ -148,20 +133,20 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Sets up the stream controller and calls the method to get data as necessary
   void _setupStream() {
-    _streamController ??= BehaviorSubject(
+    _streamController ??= ReplaySubject(
       onListen: () {
         _getStreamData();
       },
       onCancel: () {
         _log.fine('stream controller for table: $_table got closed');
-        _channel?.unsubscribe();
-        _streamController?.close();
+        unawaited(_channel?.unsubscribe());
+        unawaited(_streamController?.close());
         _streamController = null;
       },
     );
   }
 
-  Future<void> _getStreamData() async {
+  void _getStreamData() {
     final currentStreamFilter = _streamFilter;
     _streamData = [];
     PostgresChangeFilter? realtimeFilter;
@@ -182,101 +167,116 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     _channel!
         .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: _schema,
-            table: _table,
-            filter: realtimeFilter,
-            callback: (payload) {
-              switch (payload.eventType) {
-                case PostgresChangeEvent.insert:
-                  final newRecord = payload.newRecord;
-                  _streamData.add(newRecord);
-                  _addStream();
-                  break;
-                case PostgresChangeEvent.update:
-                  final updatedIndex = _streamData.indexWhere(
-                    (element) =>
-                        _isTargetRecord(record: element, payload: payload),
-                  );
+          event: PostgresChangeEvent.all,
+          schema: _schema,
+          table: _table,
+          filter: realtimeFilter,
+          callback: (payload) {
+            switch (payload.eventType) {
+              case PostgresChangeEvent.insert:
+                final newRecord = payload.newRecord;
+                _streamData.add(newRecord);
+                _addStream();
+              case PostgresChangeEvent.update:
+                final updatedIndex = _streamData.indexWhere(
+                  (element) =>
+                      _isTargetRecord(record: element, payload: payload),
+                );
 
-                  final updatedRecord = payload.newRecord;
-                  if (updatedIndex >= 0) {
-                    _streamData[updatedIndex] = updatedRecord;
-                  } else {
-                    _streamData.add(updatedRecord);
-                  }
+                final updatedRecord = payload.newRecord;
+                if (updatedIndex >= 0) {
+                  _streamData[updatedIndex] = updatedRecord;
+                } else {
+                  _streamData.add(updatedRecord);
+                }
+                _addStream();
+              case PostgresChangeEvent.delete:
+                final deletedIndex = _streamData.indexWhere(
+                  (element) =>
+                      _isTargetRecord(record: element, payload: payload),
+                );
+                if (deletedIndex >= 0) {
+                  /// Delete the data from in memory cache if it was found
+                  _streamData.removeAt(deletedIndex);
                   _addStream();
-                  break;
-                case PostgresChangeEvent.delete:
-                  final deletedIndex = _streamData.indexWhere(
-                    (element) =>
-                        _isTargetRecord(record: element, payload: payload),
-                  );
-                  if (deletedIndex >= 0) {
-                    /// Delete the data from in memory cache if it was found
-                    _streamData.removeAt(deletedIndex);
-                    _addStream();
-                  }
-                  break;
-                default:
-                  break;
-              }
-            })
+                }
+              case PostgresChangeEvent.all:
+                break;
+            }
+          },
+        )
         .subscribe((status, [error]) {
-      switch (status) {
-        case RealtimeSubscribeStatus.subscribed:
-          // Reload all data after a reconnect from postgrest
-          // First data from postgrest gets loaded before the realtime connect
-          if (_wasSubscribed) {
-            _getPostgrestData();
+          switch (status) {
+            case RealtimeSubscribeStatus.subscribed:
+              // Reload all data after a reconnect from postgrest
+              // First data from postgrest gets loaded before the realtime connect
+              if (_wasSubscribed) {
+                unawaited(_getPostgrestData());
+              }
+              _wasSubscribed = true;
+            case RealtimeSubscribeStatus.closed:
+              unawaited(_streamController?.close());
+            case RealtimeSubscribeStatus.timedOut:
+            case RealtimeSubscribeStatus.channelError:
+              _addException(RealtimeSubscribeException(status, error));
           }
-          _wasSubscribed = true;
-          break;
-        case RealtimeSubscribeStatus.closed:
-          _streamController?.close();
-          break;
-        case RealtimeSubscribeStatus.timedOut:
-          _addException(RealtimeSubscribeException(status, error));
-          break;
-        case RealtimeSubscribeStatus.channelError:
-          _addException(RealtimeSubscribeException(status, error));
-          break;
-      }
-    });
-    _getPostgrestData();
+        });
+    unawaited(_getPostgrestData());
   }
 
   Future<void> _getPostgrestData() async {
     PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select();
     if (_streamFilter != null) {
-      switch (_streamFilter!.type) {
-        case PostgresChangeFilterType.eq:
-          query = query.eq(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.neq:
-          query = query.neq(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.lt:
-          query = query.lt(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.lte:
-          query = query.lte(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.gt:
-          query = query.gt(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.gte:
-          query = query.gte(_streamFilter!.column, _streamFilter!.value);
-          break;
-        case PostgresChangeFilterType.inFilter:
-          query = query.inFilter(_streamFilter!.column, _streamFilter!.value);
-          break;
-      }
+      query = switch (_streamFilter!.type) {
+        PostgresChangeFilterType.eq => query.eq(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.neq => query.neq(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.lt => query.lt(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.lte => query.lte(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.gt => query.gt(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.gte => query.gte(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        PostgresChangeFilterType.inFilter => query.inFilter(
+          _streamFilter!.column,
+          _streamFilter!.value,
+        ),
+        // These operators are only reachable through the realtime
+        // `onPostgresChanges` API, not through `.stream()`'s filter builder,
+        // so they can never be set on `_streamFilter`. Guard the exhaustive
+        // switch defensively in case that ever changes.
+        PostgresChangeFilterType.like ||
+        PostgresChangeFilterType.ilike ||
+        PostgresChangeFilterType.isFilter ||
+        PostgresChangeFilterType.match ||
+        PostgresChangeFilterType.imatch ||
+        PostgresChangeFilterType.isDistinct => throw UnsupportedError(
+          'The "${_streamFilter!.type.name}" filter is not supported by '
+          '`.stream()`. Use one of eq, neq, lt, lte, gt, gte or inFilter.',
+        ),
+      };
     }
     PostgrestTransformBuilder<PostgrestList>? transformQuery;
     if (_orderBy != null) {
-      transformQuery =
-          query.order(_orderBy!.column, ascending: _orderBy!.ascending);
+      transformQuery = query.order(
+        _orderBy!.column,
+        ascending: _orderBy!.ascending,
+      );
     }
     if (_limit != null) {
       transformQuery = (transformQuery ?? query).limit(_limit!);
@@ -284,15 +284,15 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
     try {
       final data = await (transformQuery ?? query);
-      final rows = SupabaseStreamEvent.from(data);
+      final rows = SupabaseStreamEvent.of(data);
       _streamData = rows;
       _addStream();
     } catch (error, stackTrace) {
       _addException(error, stackTrace);
       // In case the postgrest call fails, there is no need to keep the
       // realtime connection open
-      _channel?.unsubscribe();
-      _streamController?.close();
+      unawaited(_channel?.unsubscribe());
+      unawaited(_streamController?.close());
     }
   }
 
@@ -306,8 +306,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     } else if (payload.eventType == PostgresChangeEvent.delete) {
       targetRecord = payload.oldRecord;
     }
-    return _uniqueColumns
-        .every((column) => record[column] == targetRecord[column]);
+    return _uniqueColumns.every(
+      (column) => record[column] == targetRecord[column],
+    );
   }
 
   void _sortData() {
@@ -320,9 +321,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         return orderModifier * columnA.compareTo(columnB);
       } else if (columnA is String && columnB is String) {
         return orderModifier * columnA.compareTo(columnB);
-      } else {
-        return 0;
       }
+      return 0;
     });
   }
 
@@ -350,15 +350,18 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   @override
   Stream<E> asyncMap<E>(
-      FutureOr<E> Function(SupabaseStreamEvent event) convert) {
+    FutureOr<E> Function(SupabaseStreamEvent event) convert,
+  ) {
     // Copied from [Stream.asyncMap]
 
-    final controller = BehaviorSubject<E>();
+    final controller = ReplaySubject<E>();
 
     controller.onListen = () {
-      StreamSubscription<SupabaseStreamEvent> subscription = listen(null,
-          onError: controller.addError, // Avoid Zone error replacement.
-          onDone: controller.close);
+      StreamSubscription<SupabaseStreamEvent> subscription = listen(
+        null,
+        onError: controller.addError, // Avoid Zone error replacement.
+        onDone: () => unawaited(controller.close()),
+      );
       FutureOr<void> add(E value) {
         controller.add(value);
       }
@@ -375,9 +378,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         }
         if (newValue is Future<E>) {
           subscription.pause();
-          newValue.then(add, onError: addError).whenComplete(resume);
+          unawaited(newValue.then(add, onError: addError).whenComplete(resume));
         } else {
-          controller.add(newValue as dynamic);
+          controller.add(newValue);
         }
       });
       controller.onCancel = subscription.cancel;
@@ -392,13 +395,16 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   @override
   Stream<E> asyncExpand<E>(
-      Stream<E>? Function(SupabaseStreamEvent event) convert) {
+    Stream<E>? Function(SupabaseStreamEvent event) convert,
+  ) {
     //Copied from [Stream.asyncExpand]
-    final controller = BehaviorSubject<E>();
+    final controller = ReplaySubject<E>();
     controller.onListen = () {
-      StreamSubscription<SupabaseStreamEvent> subscription = listen(null,
-          onError: controller.addError, // Avoid Zone error replacement.
-          onDone: controller.close);
+      StreamSubscription<SupabaseStreamEvent> subscription = listen(
+        null,
+        onError: controller.addError, // Avoid Zone error replacement.
+        onDone: () => unawaited(controller.close()),
+      );
       subscription.onData((SupabaseStreamEvent event) {
         Stream<E>? newStream;
         try {
@@ -409,7 +415,9 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         }
         if (newStream != null) {
           subscription.pause();
-          controller.addStream(newStream).whenComplete(subscription.resume);
+          unawaited(
+            controller.addStream(newStream).whenComplete(subscription.resume),
+          );
         }
       });
       controller.onCancel = subscription.cancel;

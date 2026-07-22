@@ -1,4 +1,7 @@
 @TestOn('browser')
+/// Tests for the web BroadcastChannel implementation.
+library;
+
 import 'dart:async';
 
 import 'package:gotrue/src/broadcast_web.dart';
@@ -31,7 +34,7 @@ void main() {
       // Send message from channel1
       final testMessage = {
         'event': 'test-event',
-        'data': {'foo': 'bar'}
+        'data': {'foo': 'bar'},
       };
       channel1.postMessage(testMessage);
 

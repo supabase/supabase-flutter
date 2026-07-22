@@ -80,9 +80,9 @@ Map<String, dynamic> convertChangeData(
     }
   }
 
-  record.forEach((key, value) {
+  for (final key in record.keys) {
     result[key] = convertColumn(key, parsedColumns, record, skipTypes ?? []);
-  });
+  }
   return result;
 }
 
@@ -129,14 +129,17 @@ dynamic convertColumn(
 /// => [1,2,3,4]
 /// ```
 dynamic convertCell(String type, dynamic value) {
+  if (value == null) {
+    return null;
+  }
+
   // if data type is an array
   if (type[0] == '_') {
     final dataType = type.substring(1);
     return toArray(value, dataType);
   }
 
-  final typeEnum = PostgresTypes.values
-      .firstWhereOrNull((e) => e.toString() == 'PostgresTypes.$type');
+  final typeEnum = PostgresTypes.values.firstWhereOrNull((e) => e.name == type);
   // If not null, convert to correct type.
   switch (typeEnum) {
     case PostgresTypes.bool:
@@ -167,13 +170,11 @@ dynamic convertCell(String type, dynamic value) {
     case PostgresTypes.text:
     case PostgresTypes.time: // To allow users to cast it based on Timezone
     case PostgresTypes
-          .timestamptz: // To allow users to cast it based on Timezone
+        .timestamptz: // To allow users to cast it based on Timezone
     case PostgresTypes.timetz: // To allow users to cast it based on Timezone
     case PostgresTypes.tsrange:
     case PostgresTypes.tstzrange:
-      return noop(value);
-    default:
-      // Return the value for remaining types
+    case null:
       return noop(value);
   }
 }
@@ -199,27 +200,21 @@ bool? toBoolean(dynamic value) {
 double? toDouble(dynamic value) {
   if (value is double) {
     return value;
-  } else {
-    try {
-      final temp = value.toString();
-      return double.parse(temp);
-    } catch (_) {
-      return null;
-    }
   }
+  if (value == null) {
+    return null;
+  }
+  return double.tryParse(value.toString());
 }
 
 int? toInt(dynamic value) {
   if (value is int) {
     return value;
-  } else {
-    try {
-      final temp = value.toString();
-      return int.parse(temp);
-    } catch (_) {
-      return null;
-    }
   }
+  if (value == null) {
+    return null;
+  }
+  return int.tryParse(value.toString());
 }
 
 dynamic toJson(dynamic value) {
@@ -254,17 +249,17 @@ dynamic toArray(dynamic value, String type) {
   // Confirm value is a Postgres array by checking curly brackets
   if (openBrace == '{' && closeBrace == '}') {
     final valTrim = value.substring(1, lastIdx);
-    List arr;
+    List<dynamic> array;
 
     // TODO: find a better solution to separate Postgres array data
     try {
-      arr = json.decode('[$valTrim]') as List;
+      array = json.decode('[$valTrim]') as List;
     } catch (_) {
       // WARNING: splitting on comma does not cover all edge cases
-      arr = valTrim != '' ? valTrim.split(',') : [];
+      array = valTrim != '' ? valTrim.split(',') : [];
     }
 
-    return arr.map((val) => convertCell(type, val)).toList();
+    return array.map((val) => convertCell(type, val)).toList();
   }
 
   return value;
@@ -309,7 +304,9 @@ Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
 }
 
 Map<String, Map<String, dynamic>> getPayloadRecords(
-    Map<String, dynamic> payload) {
+  Map<String, dynamic> payload,
+) {
+  // ignore: avoid-inferrable-type-arguments
   final records = <String, Map<String, dynamic>>{
     'new': {},
     'old': {},

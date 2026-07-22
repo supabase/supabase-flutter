@@ -1,3 +1,50 @@
+## 2.7.0
+
+ - **REFACTOR**: modernize dart syntax across client packages ([#1574](https://github.com/supabase/supabase-flutter/issues/1574)). ([b74fdfee](https://github.com/supabase/supabase-flutter/commit/b74fdfee05c90d40dd3f0676ca86bd92e6013c65))
+ - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))
+ - **REFACTOR**: drop retry dependency in favor of an in-house helper ([#1571](https://github.com/supabase/supabase-flutter/issues/1571)). ([b81d2121](https://github.com/supabase/supabase-flutter/commit/b81d212159f15bf4d9515acf75430550a715664d))
+ - **REFACTOR**(storage): drop direct http_parser dependency ([#1570](https://github.com/supabase/supabase-flutter/issues/1570)). ([6dadaefb](https://github.com/supabase/supabase-flutter/commit/6dadaefbf847f254789c1f848b456c21cdd29d3e))
+ - **FIX**(storage): guard against empty transform routing through render endpoint ([#1551](https://github.com/supabase/supabase-flutter/issues/1551)). ([3f3e6f6c](https://github.com/supabase/supabase-flutter/commit/3f3e6f6c52dfb6020e4ea63b25a26eef855c50eb))
+ - **FIX**(storage): make storage_client WASM-compatible ([#1543](https://github.com/supabase/supabase-flutter/issues/1543)). ([7097b2ce](https://github.com/supabase/supabase-flutter/commit/7097b2ce6fdf206d56bdefb682d3ac5e43c8572d))
+ - **FEAT**(storage): add analytics (Iceberg) bucket CRUD ([#1588](https://github.com/supabase/supabase-flutter/issues/1588)). ([e3eeb9e6](https://github.com/supabase/supabase-flutter/commit/e3eeb9e6b89465a2f76ef243b42be7a14cbcf174))
+ - **FEAT**(storage): add vector buckets support ([#1585](https://github.com/supabase/supabase-flutter/issues/1585)). ([4f7fcc63](https://github.com/supabase/supabase-flutter/commit/4f7fcc63ad9b5d2d4b73e41d37e1ca145440e826))
+ - **FEAT**(storage): add downloadStream for streaming file downloads ([#1580](https://github.com/supabase/supabase-flutter/issues/1580)). ([8b839a10](https://github.com/supabase/supabase-flutter/commit/8b839a1028e591d7125e15b66164aa56e4d441e9))
+ - **FEAT**(storage): add listPaginated for cursor-based file listing ([#1579](https://github.com/supabase/supabase-flutter/issues/1579)). ([a6428c64](https://github.com/supabase/supabase-flutter/commit/a6428c6481c0b9d8d7a5b91d9e2c5424ed3f5c25))
+ - **FEAT**(storage): add cacheNonce parameter for cache invalidation ([#1578](https://github.com/supabase/supabase-flutter/issues/1578)). ([a9ff8086](https://github.com/supabase/supabase-flutter/commit/a9ff808653f16457f6caa8938610292888d65e17))
+ - **FEAT**(storage): support filter/sort/pagination options on listBuckets() ([#1557](https://github.com/supabase/supabase-flutter/issues/1557)). ([b72739e2](https://github.com/supabase/supabase-flutter/commit/b72739e231e964a867499c36c08910ef04aa78f9))
+
+## 2.6.0
+
+ - **FEAT**(storage): add download option to signed and public URLs ([#1514](https://github.com/supabase/supabase-flutter/issues/1514)). ([2c0370c1](https://github.com/supabase/supabase-flutter/commit/2c0370c19ac08f6d9e5b09fd2025cbee0f6f3ec2))
+ - **FEAT**(storage): add upsert option to createSignedUploadUrl ([#1515](https://github.com/supabase/supabase-flutter/issues/1515)). ([6f6ea5cd](https://github.com/supabase/supabase-flutter/commit/6f6ea5cd947a8b86fc5b7f8356f8e3db2ea08d36))
+
+## 2.5.9
+
+ - **FIX**(storage): percent-encode object paths in request URLs ([#1479](https://github.com/supabase/supabase-flutter/issues/1479)). ([ffe4c256](https://github.com/supabase/supabase-flutter/commit/ffe4c2562cd12aa11969ba4298a7f266caf771c0))
+
+## 2.5.8
+
+ - **REFACTOR**(storage_client): dedupe retry assertion and fetch options ([#1462](https://github.com/supabase/supabase-flutter/issues/1462)). ([ba4363ed](https://github.com/supabase/supabase-flutter/commit/ba4363ed7f55bb91ef7d4eac16118d139a83d4ae))
+ - **REFACTOR**: dedupe bucket payload and OAuth launch logic ([#1463](https://github.com/supabase/supabase-flutter/issues/1463)). ([c5f9b247](https://github.com/supabase/supabase-flutter/commit/c5f9b2471c64d65b604802cbda36221cca0a6506))
+ - **FIX**(storage): preserve sortBy defaults when list receives a partial sortBy ([#1490](https://github.com/supabase/supabase-flutter/issues/1490)). ([c68a9645](https://github.com/supabase/supabase-flutter/commit/c68a9645e22c9b7f3b148e7156a3c78394ceca96))
+ - **FIX**: correctness fixes across gotrue, postgrest, storage, supabase and supabase_flutter ([#1445](https://github.com/supabase/supabase-flutter/issues/1445)). ([bf31389d](https://github.com/supabase/supabase-flutter/commit/bf31389d4adb64bad92205015224882ccd75d48a))
+
+## 2.5.7
+
+ - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))
+
+## 2.5.6
+
+ - **FIX**(storage): handle null signedURL in createSignedUrls response ([#1385](https://github.com/supabase/supabase-flutter/issues/1385)). ([dd566b3b](https://github.com/supabase/supabase-flutter/commit/dd566b3bc82dac24c50084289867e80e9117cdf3))
+
+## 2.5.5
+
+ - **FIX**(storage): use toString() for statusCode to handle non-string types ([#1323](https://github.com/supabase/supabase-flutter/issues/1323)). ([b8583642](https://github.com/supabase/supabase-flutter/commit/b858364271144899f38e033c74437d0f1c52c6b4))
+
+## 2.5.4
+
+ - **FIX**: mark lastAccessedAt field as deprecated ([#1279](https://github.com/supabase/supabase-flutter/issues/1279)). ([cdf24dbc](https://github.com/supabase/supabase-flutter/commit/cdf24dbc075e263b69d508594b7e7150f18cd6d9))
+
 ## 2.5.3
 
  - **FIX**(storage): avoid duplicate Content-Type headers and header mutation ([#1359](https://github.com/supabase/supabase-flutter/issues/1359)). ([99d91367](https://github.com/supabase/supabase-flutter/commit/99d913673525cabdcf8c2466e58dcd406ab680e7))

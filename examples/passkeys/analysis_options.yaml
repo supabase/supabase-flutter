@@ -1,0 +1,6 @@
+include: package:supabase_lints/analysis_options_flutter.yaml
+
+analyzer:
+  errors:
+    # The passkey API is intentionally marked @experimental upstream.
+    experimental_member_use: ignore

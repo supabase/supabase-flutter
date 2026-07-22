@@ -13,6 +13,8 @@ enum ErrorCode {
   noAuthorization('no_authorization'),
   userNotFound('user_not_found'),
   sessionNotFound('session_not_found'),
+  sessionExpired('session_expired'),
+  sessionMissing('session_missing'),
   flowStateNotFound('flow_state_not_found'),
   flowStateExpired('flow_state_expired'),
   signupDisabled('signup_disabled'),
@@ -77,7 +79,16 @@ enum ErrorCode {
   mfaPhoneEnrollDisabled('mfa_phone_enroll_not_enabled'),
   mfaPhoneVerifyDisabled('mfa_phone_verify_not_enabled'),
   mfaTotpEnrollDisabled('mfa_totp_enroll_not_enabled'),
-  mfaTotpVerifyDisabled('mfa_totp_verify_not_enabled');
+  mfaTotpVerifyDisabled('mfa_totp_verify_not_enabled'),
+  mfaWebauthnEnrollDisabled('mfa_webauthn_enroll_not_enabled'),
+  mfaWebauthnVerifyDisabled('mfa_webauthn_verify_not_enabled'),
+  passkeyDisabled('passkey_disabled'),
+  tooManyPasskeys('too_many_passkeys'),
+  webauthnChallengeNotFound('webauthn_challenge_not_found'),
+  webauthnChallengeExpired('webauthn_challenge_expired'),
+  webauthnCredentialExists('webauthn_credential_exists'),
+  webauthnCredentialNotFound('webauthn_credential_not_found'),
+  webauthnVerificationFailed('webauthn_verification_failed');
 
   final String code;
   const ErrorCode(this.code);

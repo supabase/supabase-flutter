@@ -21,35 +21,39 @@ void main() {
       await _testFetchRequest(client);
     });
 
-    test('without API version and weak password error code with payload',
-        () async {
-      final client = MockedHttpClient(
-        {
-          'code': 400,
-          'msg': 'error_message',
-          'error_code': 'weak_password',
-          'weak_password': {
-            'reasons': ['characters'],
+    test(
+      'without API version and weak password error code with payload',
+      () async {
+        final client = MockedHttpClient(
+          {
+            'code': 400,
+            'msg': 'error_message',
+            'error_code': 'weak_password',
+            'weak_password': {
+              'reasons': ['characters'],
+            },
           },
-        },
-        statusCode: 400,
-      );
-      await _testFetchRequest(client);
-    });
+          statusCode: 400,
+        );
+        await _testFetchRequest(client);
+      },
+    );
 
-    test('without API version, no error code and weak_password payload',
-        () async {
-      final client = MockedHttpClient(
-        {
-          'msg': 'error_message',
-          'weak_password': {
-            'reasons': ['characters'],
+    test(
+      'without API version, no error code and weak_password payload',
+      () async {
+        final client = MockedHttpClient(
+          {
+            'msg': 'error_message',
+            'weak_password': {
+              'reasons': ['characters'],
+            },
           },
-        },
-        statusCode: 400,
-      );
-      await _testFetchRequest(client);
-    });
+          statusCode: 400,
+        );
+        await _testFetchRequest(client);
+      },
+    );
 
     test('with API version 2024-01-01 and error code', () async {
       final client = MockedHttpClient(
@@ -72,12 +76,12 @@ void main() {
 
 Future<void> _testFetchRequest(Client client) async {
   final GotrueFetch fetch = GotrueFetch(client);
-  try {
-    await fetch.request(_mockUrl, RequestMethodType.get);
-  } on AuthException catch (error) {
-    expect(error.code, 'weak_password');
-    expect(error.message, 'error_message');
-  } catch (error) {
-    fail('Should have thrown AuthException');
-  }
+  await expectLater(
+    fetch.request(_mockUrl, RequestMethodType.get),
+    throwsA(
+      isA<AuthException>()
+          .having((e) => e.code, 'code', 'weak_password')
+          .having((e) => e.message, 'message', 'error_message'),
+    ),
+  );
 }

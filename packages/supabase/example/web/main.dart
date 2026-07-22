@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:supabase/supabase.dart';
@@ -8,16 +9,18 @@ void main() {
   const supabaseKey = 'YOUR_SUPABASE_KEY';
   final supabase = SupabaseClient(supabaseUrl, supabaseKey);
 
-  final element = web.document.querySelector('#output') as web.HTMLDivElement;
-  element.textContent = 'Supabase Dart Web Example';
+  final element = web.document.querySelector('#output');
+  element?.textContent = 'Supabase Dart Web Example';
 
   exampleUsage(supabase);
 }
 
 void exampleUsage(SupabaseClient supabase) async {
   // query data
-  final data =
-      await supabase.from('countries').select().order('name', ascending: true);
+  final data = await supabase
+      .from('countries')
+      .select()
+      .order('name', ascending: true);
   print(data);
 
   // insert data
@@ -43,7 +46,7 @@ void exampleUsage(SupabaseClient supabase) async {
       .subscribe();
 
   // remember to remove channel when no longer needed
-  supabase.removeChannel(realtimeChannel);
+  unawaited(supabase.removeChannel(realtimeChannel));
 
   // stream
   final streamSubscription = supabase
@@ -56,17 +59,9 @@ void exampleUsage(SupabaseClient supabase) async {
       });
 
   // remember to remove subscription
-  streamSubscription.cancel();
+  unawaited(streamSubscription.cancel());
 
-  // Upload file to bucket "public" with dart:io
-
-  // final file = File('example.txt');
-  // file.writeAsStringSync('File content');
-  // final storageResponse = await supabase.storage
-  //     .from('public')
-  //     .upload('example.txt', file);
-
-  // Upload file to bucket "public" without dart:io
+  // Upload file to bucket "public"
   final content = "my file content";
   final storageResponse = await supabase.storage
       .from('public')
@@ -74,13 +69,15 @@ void exampleUsage(SupabaseClient supabase) async {
   print('upload response : $storageResponse');
 
   // Get download url
-  final urlResponse =
-      await supabase.storage.from('public').createSignedUrl('example.txt', 60);
+  final urlResponse = await supabase.storage
+      .from('public')
+      .createSignedUrl('example.txt', 60);
   print('download url : $urlResponse');
 
   // Download text file
-  final fileResponse =
-      await supabase.storage.from('public').download('example.txt');
+  final fileResponse = await supabase.storage
+      .from('public')
+      .download('example.txt');
   print('downloaded file : ${String.fromCharCodes(fileResponse)}');
 
   // Delete file
@@ -88,7 +85,4 @@ void exampleUsage(SupabaseClient supabase) async {
     'example.txt',
   ]);
   print('deleted file id : ${deleteFileResponse.first.id}');
-
-  // Local file cleanup on dart:io
-  // if (file.existsSync()) file.deleteSync();
 }

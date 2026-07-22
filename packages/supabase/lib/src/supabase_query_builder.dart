@@ -1,6 +1,6 @@
 import 'package:supabase/supabase.dart';
 
-class SupabaseQueryBuilder extends PostgrestQueryBuilder {
+class SupabaseQueryBuilder extends PostgrestQueryBuilder<dynamic> {
   final RealtimeClient _realtime;
   final String _schema;
   final String _table;
@@ -15,13 +15,13 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
     super.httpClient,
     required int incrementId,
     required super.isolate,
-  })  : _realtime = realtime,
-        _schema = schema,
-        _table = table,
-        _incrementId = incrementId,
-        super(
-          url: Uri.parse(url),
-        );
+  }) : _realtime = realtime,
+       _schema = schema,
+       _table = table,
+       _incrementId = incrementId,
+       super(
+         url: Uri.parse(url),
+       );
 
   /// Combines the current state of your table from PostgREST with changes from the realtime server to return real-time data from your table as a [Stream].
   ///

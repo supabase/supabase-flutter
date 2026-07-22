@@ -14,26 +14,35 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// {@macro postgrest_query_builder}
   PostgrestQueryBuilder({
     required Uri url,
-    // ignore: library_private_types_in_public_api
-    _HttpMethod? method,
+    HttpMethod? method,
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
     YAJsonIsolate? isolate,
     bool retryEnabled = true,
+    int retryCount = 3,
+    Set<int> retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
     Duration Function(int attempt)? retryDelay,
+    Duration? requestTimeout,
+    Future<void>? abortSignal,
   }) : super(
-          PostgrestBuilder(
-            url: url,
-            method: method,
-            headers: headers ?? {},
-            schema: schema,
-            httpClient: httpClient,
-            isolate: isolate,
-            retryEnabled: retryEnabled,
-            retryDelay: retryDelay,
-          ),
-        );
+         PostgrestBuilder(
+           url: url,
+           method: method,
+           headers: headers ?? {},
+           schema: schema,
+           httpClient: httpClient,
+           isolate: isolate,
+           retryEnabled: retryEnabled,
+           retryCount: retryCount,
+           retryableStatusCodes: retryableStatusCodes,
+           retryDelay: retryDelay,
+           requestTimeout: requestTimeout,
+           abortSignal: abortSignal,
+         ),
+       );
+
+  PostgrestQueryBuilder._(super.builder);
 
   /// Perform a SELECT query on the table or view.
   ///
@@ -60,10 +69,12 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     }).join();
 
     final url = overrideSearchParams('select', cleanedColumns);
-    return PostgrestFilterBuilder(_copyWithType(
-      url: url,
-      method: _HttpMethod.get,
-    ));
+    return PostgrestFilterBuilder(
+      _copyWithType(
+        url: url,
+        method: HttpMethod.get,
+      ),
+    );
   }
 
   /// Perform an INSERT into the table or view.
@@ -95,9 +106,9 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     bool defaultToNull = true,
   }) {
     final newHeaders = {..._headers};
-    newHeaders['Prefer'] = '';
-
-    if (!defaultToNull) {
+    if (defaultToNull) {
+      newHeaders.remove('Prefer');
+    } else {
       newHeaders['Prefer'] = 'missing=default';
     }
 
@@ -106,12 +117,14 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       url = _setColumnsSearchParam(values);
     }
 
-    return PostgrestFilterBuilder(_copyWith(
-      method: _HttpMethod.post,
-      headers: newHeaders,
-      body: values,
-      url: url,
-    ));
+    return PostgrestFilterBuilder(
+      _copyWith(
+        method: HttpMethod.post,
+        headers: newHeaders,
+        body: values,
+        url: url,
+      ),
+    );
   }
 
   /// Perform an UPSERT on the table or view.
@@ -174,12 +187,14 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       );
     }
 
-    return PostgrestFilterBuilder<T>(_copyWith(
-      method: _HttpMethod.post,
-      headers: newHeaders,
-      body: values,
-      url: url,
-    ));
+    return PostgrestFilterBuilder(
+      _copyWith(
+        method: HttpMethod.post,
+        headers: newHeaders,
+        body: values,
+        url: url,
+      ),
+    );
   }
 
   /// Perform an UPDATE on the table or view.
@@ -202,15 +217,16 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> update(Map values) {
-    final newHeaders = {..._headers};
-    newHeaders['Prefer'] = '';
+  PostgrestFilterBuilder<T> update(Map<dynamic, dynamic> values) {
+    final newHeaders = {..._headers}..remove('Prefer');
 
-    return PostgrestFilterBuilder<T>(_copyWith(
-      method: _HttpMethod.patch,
-      headers: newHeaders,
-      body: values,
-    ));
+    return PostgrestFilterBuilder(
+      _copyWith(
+        method: HttpMethod.patch,
+        headers: newHeaders,
+        body: values,
+      ),
+    );
   }
 
   /// Perform a DELETE on the table or view.
@@ -234,18 +250,18 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .select();
   /// ```
   PostgrestFilterBuilder<T> delete() {
-    final newHeaders = {..._headers};
-    newHeaders['Prefer'] = '';
-    return PostgrestFilterBuilder<T>(_copyWith(
-      method: _HttpMethod.delete,
-      headers: newHeaders,
-    ));
+    final newHeaders = {..._headers}..remove('Prefer');
+    return PostgrestFilterBuilder(
+      _copyWith(
+        method: HttpMethod.delete,
+        headers: newHeaders,
+      ),
+    );
   }
 
-  Uri _setColumnsSearchParam(List values) {
+  Uri _setColumnsSearchParam(List<dynamic> values) {
     final newValues = PostgrestList.from(values);
-    final columns = newValues.fold<List<String>>(
-        [], (value, element) => value..addAll(element.keys));
+    final columns = [for (final element in newValues) ...element.keys];
     if (newValues.isNotEmpty) {
       final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
       return appendSearchParams("columns", uniqueColumns);
@@ -258,23 +274,25 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// int count = await supabase.from('users').count();
   /// ```
   PostgrestFilterBuilder<int> count([CountOption option = CountOption.exact]) {
-    return PostgrestFilterBuilder<int>(_copyWithType(
-      method: _HttpMethod.head,
-      count: option,
-    ));
+    return PostgrestFilterBuilder(
+      _copyWithType(
+        method: HttpMethod.head,
+        count: option,
+      ),
+    );
   }
 
   @override
-  PostgrestQueryBuilder<T> retry({required bool enabled}) {
-    return PostgrestQueryBuilder(
-      url: _url,
-      headers: _headers,
-      httpClient: _httpClient,
-      method: _method,
-      schema: _schema,
-      isolate: _isolate,
-      retryEnabled: enabled,
-      retryDelay: _retryDelay,
+  PostgrestQueryBuilder<T> retry({
+    bool enabled = true,
+    int? count,
+    Duration? requestTimeout,
+  }) {
+    return PostgrestQueryBuilder._(
+      _copyWith(
+        retry: _retry.copyWith(enabled: enabled, count: count),
+        requestTimeout: requestTimeout,
+      ),
     );
   }
 
@@ -287,8 +305,12 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       method: _method,
       schema: _schema,
       isolate: _isolate,
-      retryEnabled: _retryEnabled,
-      retryDelay: _retryDelay,
+      retryEnabled: _retry.enabled,
+      retryCount: _retry.count,
+      retryableStatusCodes: _retry.statusCodes,
+      retryDelay: _retry.delay,
+      requestTimeout: _requestTimeout,
+      abortSignal: _abortSignal,
     );
   }
 }
