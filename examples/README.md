@@ -6,6 +6,7 @@ all sharing a single local Supabase instance.
 | Example                                     | What it shows                                    |
 | ------------------------------------------- | ------------------------------------------------ |
 | [`database_crud`](database_crud)            | Database CRUD with PostgREST (`from(...)`)       |
+| [`edge_functions`](edge_functions)          | Invoking Edge Functions (`functions.invoke(...)`)|
 | [`passkeys`](passkeys)                      | Passkey (WebAuthn) sign in and management        |
 | [`storage_transforms`](storage_transforms) | Storage uploads, downloads and image transforms  |
 
