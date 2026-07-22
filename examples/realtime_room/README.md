@@ -48,3 +48,20 @@ flutter run \
   --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
   --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
+
+## Integration test
+
+[`integration_test/room_test.dart`](integration_test/room_test.dart) is an
+end-to-end test that drives the app widgets against the local stack: it joins the
+room, posts a message through the composer and asserts it appears (Postgres
+Changes), checks the roster (Presence) and the typing indicator (Broadcast) using
+a second client as another user, then deletes a message through the UI.
+
+With the local stack running, pass the same defines the app uses and run it on a
+device (integration tests need one, so `-d macos`, an emulator or a real device):
+
+```bash
+flutter test integration_test/room_test.dart -d macos \
+  --dart-define=SUPABASE_URL=http://localhost:54321 \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_LOCAL_PUBLISHABLE_KEY
+```
