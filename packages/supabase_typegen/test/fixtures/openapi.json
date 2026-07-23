@@ -1,0 +1,111 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "PostgREST API",
+    "description": "standard public schema",
+    "version": "12.2.0"
+  },
+  "definitions": {
+    "books": {
+      "description": "Books available in the library",
+      "required": ["title", "author_id"],
+      "properties": {
+        "id": {
+          "description": "Note:\nThis is a Primary Key.<pk/>",
+          "format": "bigint",
+          "type": "integer",
+          "default": "nextval('books_id_seq'::regclass)"
+        },
+        "title": {
+          "format": "text",
+          "type": "string"
+        },
+        "author_id": {
+          "description": "Note:\nThis is a Foreign Key to `authors.id`.<fk table='authors' column='id'/>",
+          "format": "bigint",
+          "type": "integer"
+        },
+        "price": {
+          "format": "numeric",
+          "type": "number"
+        },
+        "rating": {
+          "format": "double precision",
+          "type": "number"
+        },
+        "in_print": {
+          "format": "boolean",
+          "type": "boolean",
+          "default": true
+        },
+        "mood": {
+          "enum": ["happy", "very happy", "sad"],
+          "format": "public.mood",
+          "type": "string"
+        },
+        "tags": {
+          "format": "text[]",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "page_counts": {
+          "format": "integer[]",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "metadata": {
+          "format": "jsonb"
+        },
+        "cover_uuid": {
+          "format": "uuid",
+          "type": "string"
+        },
+        "published_on": {
+          "format": "date",
+          "type": "string"
+        },
+        "created_at": {
+          "description": "When the row was created",
+          "format": "timestamp with time zone",
+          "type": "string",
+          "default": "now()"
+        }
+      },
+      "type": "object"
+    },
+    "authors": {
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "description": "Note:\nThis is a Primary Key.<pk/>",
+          "format": "bigint",
+          "type": "integer"
+        },
+        "name": {
+          "format": "text",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "author_stats": {
+      "description": "Aggregated statistics per author",
+      "properties": {
+        "author_id": {
+          "format": "bigint",
+          "type": "integer"
+        },
+        "book_count": {
+          "format": "bigint",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "paths": {}
+}
