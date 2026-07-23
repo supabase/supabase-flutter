@@ -16,8 +16,14 @@ enum Mood {
   final String wireName;
 
   /// Parses the database representation of the enum.
-  static Mood fromWire(String wireName) =>
-      values.firstWhere((value) => value.wireName == wireName);
+  static Mood fromWire(String wireName) => values.firstWhere(
+    (value) => value.wireName == wireName,
+    orElse: () => throw ArgumentError.value(
+      wireName,
+      'wireName',
+      'No Mood value with this wire name',
+    ),
+  );
 
   @override
   String toString() => wireName;
@@ -38,7 +44,7 @@ extension type const AuthorStatsInsert._(Map<String, dynamic> _json)
     : this._({'author_id': ?authorId, 'book_count': ?bookCount});
 }
 
-/// Values for updating rows of `author_stats`. All columns are optional; passing `null` leaves the column unchanged.
+/// Values for updating rows of `author_stats`. All columns are optional; passing `null` omits the column, leaving it unchanged. To write SQL NULL explicitly, set the raw key: `AuthorStatsUpdate()..['column_name'] = null`.
 extension type const AuthorStatsUpdate._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
   AuthorStatsUpdate({int? authorId, int? bookCount})
@@ -70,7 +76,7 @@ extension type const AuthorsInsert._(Map<String, dynamic> _json)
     : this._({'id': id, 'name': name});
 }
 
-/// Values for updating rows of `authors`. All columns are optional; passing `null` leaves the column unchanged.
+/// Values for updating rows of `authors`. All columns are optional; passing `null` omits the column, leaving it unchanged. To write SQL NULL explicitly, set the raw key: `AuthorsUpdate()..['column_name'] = null`.
 extension type const AuthorsUpdate._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
   AuthorsUpdate({int? id, String? name}) : this._({'id': ?id, 'name': ?name});
@@ -115,6 +121,10 @@ extension type const BooksRow(Map<String, dynamic> _json)
     null => null,
     final Object value => DateTime.parse(value as String),
   };
+  DateTime? get updatedAt => switch (_json['updated_at']) {
+    null => null,
+    final Object value => DateTime.parse(value as String),
+  };
 }
 
 /// Values for inserting a row into `books`. Columns that are nullable, part of a generated primary key, or covered by a database default are optional; passing `null` omits the column so the database default applies.
@@ -134,6 +144,7 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
     String? coverUuid,
     DateTime? publishedOn,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) : this._({
          'id': ?id,
          'title': title,
@@ -146,12 +157,16 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
          'page_counts': ?pageCounts,
          'metadata': ?metadata,
          'cover_uuid': ?coverUuid,
-         'published_on': ?publishedOn?.toIso8601String(),
-         'created_at': ?createdAt?.toIso8601String(),
+         'published_on': ?switch (publishedOn) {
+           null => null,
+           final value => _dateString(value),
+         },
+         'created_at': ?createdAt?.toUtc().toIso8601String(),
+         'updated_at': ?updatedAt?.toIso8601String(),
        });
 }
 
-/// Values for updating rows of `books`. All columns are optional; passing `null` leaves the column unchanged.
+/// Values for updating rows of `books`. All columns are optional; passing `null` omits the column, leaving it unchanged. To write SQL NULL explicitly, set the raw key: `BooksUpdate()..['column_name'] = null`.
 extension type const BooksUpdate._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
   BooksUpdate({
@@ -168,6 +183,7 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
     String? coverUuid,
     DateTime? publishedOn,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) : this._({
          'id': ?id,
          'title': ?title,
@@ -180,8 +196,12 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
          'page_counts': ?pageCounts,
          'metadata': ?metadata,
          'cover_uuid': ?coverUuid,
-         'published_on': ?publishedOn?.toIso8601String(),
-         'created_at': ?createdAt?.toIso8601String(),
+         'published_on': ?switch (publishedOn) {
+           null => null,
+           final value => _dateString(value),
+         },
+         'created_at': ?createdAt?.toUtc().toIso8601String(),
+         'updated_at': ?updatedAt?.toIso8601String(),
        });
 }
 
@@ -205,4 +225,10 @@ class Books {
   static const coverUuid = TableColumn<String>('cover_uuid');
   static const publishedOn = TableColumn<DateTime>('published_on');
   static const createdAt = TableColumn<DateTime>('created_at');
+  static const updatedAt = TableColumn<DateTime>('updated_at');
 }
+
+String _dateString(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';

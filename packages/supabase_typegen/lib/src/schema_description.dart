@@ -14,8 +14,17 @@ enum ColumnTypeKind {
   /// The `boolean` type.
   boolean,
 
-  /// Date and timestamp types, mapped to `DateTime`.
-  dateTime,
+  /// The `date` type, mapped to `DateTime` and written back date-only so
+  /// the calendar date never shifts with the client timezone.
+  date,
+
+  /// Timestamps without a timezone, mapped to `DateTime` and written back as
+  /// the local wall time.
+  timestamp,
+
+  /// Timestamps with a timezone, mapped to `DateTime` and written back in
+  /// UTC.
+  timestampWithTimeZone,
 
   /// Types carried as text, such as `text`, `uuid` and `character varying`.
   text,

@@ -9,6 +9,12 @@ void main() {
       expect(pascalCase('user-profiles'), 'UserProfiles');
     });
 
+    test('keeps existing camel humps', () {
+      expect(pascalCase('UserProfiles'), 'UserProfiles');
+      expect(pascalCase('userId'), 'UserId');
+      expect(camelCase('userId'), 'userId');
+    });
+
     test('prefixes names starting with a digit', () {
       expect(pascalCase('2fa_codes'), r'$2faCodes');
     });
