@@ -28,17 +28,46 @@ Future<void> main(List<String> arguments) async {
     chromedriver = await Process.start('chromedriver', [
       '--port=4444',
     ], mode: ProcessStartMode.inheritStdio);
+    if (!await _waitForPort(4444)) {
+      stderr.writeln('chromedriver did not start listening on port 4444.');
+      chromedriver.kill();
+      exit(70);
+    }
   }
 
+  int? failureCode;
   try {
     for (final example in examples) {
       print('::group::$example ($target)');
       await _runTarget(target, 'examples/$example', defines);
       print('::endgroup::');
     }
+  } on _ProcessFailure catch (failure) {
+    failureCode = failure.exitCode;
   } finally {
     chromedriver?.kill();
   }
+
+  if (failureCode != null) {
+    exit(failureCode);
+  }
+}
+
+Future<bool> _waitForPort(
+  int port, {
+  Duration timeout = const Duration(seconds: 30),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    try {
+      final socket = await Socket.connect('localhost', port);
+      await socket.close();
+      return true;
+    } on SocketException {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+  }
+  return false;
 }
 
 Future<void> _runTarget(
@@ -136,9 +165,24 @@ Future<void> _run(
     mode: ProcessStartMode.inheritStdio,
     runInShell: Platform.isWindows,
   );
-  final exitCode = await process.exitCode;
+  final exitCode = await process.exitCode.timeout(
+    const Duration(minutes: 15),
+    onTimeout: () {
+      stderr.writeln(
+        '$executable ${arguments.join(' ')} timed out after 15 minutes.',
+      );
+      process.kill(ProcessSignal.sigkill);
+      return -1;
+    },
+  );
   if (exitCode != 0) {
     stderr.writeln('$executable ${arguments.join(' ')} failed ($exitCode).');
-    exit(exitCode);
+    throw _ProcessFailure(exitCode);
   }
+}
+
+class _ProcessFailure implements Exception {
+  const _ProcessFailure(this.exitCode);
+
+  final int exitCode;
 }
