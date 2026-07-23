@@ -50,8 +50,8 @@ flutter run \
 ## Trying each method locally
 
 - **Email & password** works out of the box; email confirmation is disabled in
-  the shared config, so creating an account signs you straight in. *Forgot
-  password?* sends a reset email; enter the code from it plus a new password to
+  the shared config, so creating an account signs you straight in. _Forgot
+  password?_ sends a reset email; enter the code from it plus a new password to
   finish resetting.
 - **Magic link & email OTP** and **password reset** send an email. Locally it is
   captured by the mail server, not delivered: open its web UI at
@@ -69,7 +69,46 @@ already in the shared config's `additional_redirect_urls`; to actually receive
 it on iOS, Android or desktop you still need to register the URL scheme with the
 platform, as described in the
 [deep linking guide](https://supabase.com/docs/guides/auth/native-mobile-deep-linking?platform=flutter).
-- **Anonymous** works out of the box. After continuing as a guest, use *Keep
-  this account* to attach an email and password.
-- **MFA** works out of the box: tap *Add app*, add the shown secret to any TOTP
+
+- **Anonymous** works out of the box. After continuing as a guest, use _Keep
+  this account_ to attach an email and password.
+- **MFA** works out of the box: tap _Add app_, add the shown secret to any TOTP
   authenticator, and enter the six-digit code to confirm the factor.
+
+## Integration test
+
+[`integration_test/authentication_test.dart`](integration_test/authentication_test.dart)
+is an end-to-end test that drives the app widgets against the local stack, one
+sign in method per test: email & password (sign up, sign out, sign in), a full
+password reset (the recovery code is read back from the local mail server),
+passwordless email OTP (likewise), phone SMS OTP (using the configured test
+OTP), anonymous sign in with an upgrade to a permanent account, enrolling then
+removing a TOTP MFA factor (the code is computed in the test), and that the
+OAuth provider buttons render.
+
+The OAuth redirect itself is not driven: `signInWithOAuth` hands off to an
+external browser and deep link that cannot be automated headlessly, so only the
+buttons are asserted and the redirect is exercised manually with the app.
+
+The password reset and email OTP tests read the code back from the local mail
+server. A browser blocks that cross-origin request, so those two are skipped on
+web and run on native targets such as `-d macos`.
+
+With the local stack running, pass the same defines the app uses and run it on a
+device (integration tests need one, so `-d macos`, an emulator or a real device):
+
+```bash
+flutter test integration_test/authentication_test.dart -d macos \
+  --dart-define=SUPABASE_URL=http://localhost:54321 \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_LOCAL_PUBLISHABLE_KEY
+```
+
+`localhost` only reaches the local stack from macOS or another desktop target,
+which is why the command uses `-d macos`. On other devices `localhost` points at
+the device itself, so set the host in `SUPABASE_URL` to one the device can reach
+the host machine on. The test derives the mail server address it reads codes
+from off the same host (Supabase on port `54321`, Mailpit on `54324`), so that
+single host covers both. An Android emulator reaches the host at `10.0.2.2` (or
+run `adb reverse tcp:54321 tcp:54321` and `adb reverse tcp:54324 tcp:54324` to
+keep using `localhost`), and a physical device needs the host machine's LAN IP
+address.

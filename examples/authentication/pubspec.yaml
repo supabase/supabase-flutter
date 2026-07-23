@@ -18,6 +18,10 @@ dependencies:
 
 dev_dependencies:
   supabase_lints: ^0.1.1
+  # Used only by the integration test: `http` reads OTP emails from the local
+  # mail server and `crypto` computes a TOTP code for the MFA flow.
+  crypto: ^3.0.0
+  http: ^1.0.0
   flutter_test:
     sdk: flutter
   integration_test:
