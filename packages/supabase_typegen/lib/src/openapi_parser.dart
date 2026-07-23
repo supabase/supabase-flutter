@@ -12,10 +12,8 @@ const _integerFormats = {
 };
 const _floatingFormats = {'real', 'double precision', 'float4', 'float8'};
 const _numericFormats = {'numeric', 'decimal'};
-const _dateTimeFormats = {
-  'date',
-  'timestamp',
-  'timestamp without time zone',
+const _timestampFormats = {'timestamp', 'timestamp without time zone'};
+const _timestampWithTimeZoneFormats = {
   'timestamp with time zone',
   'timestamptz',
 };
@@ -29,15 +27,19 @@ ColumnTypeKind _typeKind({
   required String? jsonType,
   required bool isEnum,
 }) {
-  if (isEnum) return ColumnTypeKind.enumType;
   if (format.endsWith('[]') || jsonType == 'array') {
     return ColumnTypeKind.array;
   }
+  if (isEnum) return ColumnTypeKind.enumType;
   if (_integerFormats.contains(format)) return ColumnTypeKind.integer;
   if (_floatingFormats.contains(format)) return ColumnTypeKind.floating;
   if (_numericFormats.contains(format)) return ColumnTypeKind.numeric;
   if (format == 'boolean') return ColumnTypeKind.boolean;
-  if (_dateTimeFormats.contains(format)) return ColumnTypeKind.dateTime;
+  if (format == 'date') return ColumnTypeKind.date;
+  if (_timestampFormats.contains(format)) return ColumnTypeKind.timestamp;
+  if (_timestampWithTimeZoneFormats.contains(format)) {
+    return ColumnTypeKind.timestampWithTimeZone;
+  }
   if (_jsonFormats.contains(format)) return ColumnTypeKind.json;
   return switch (jsonType) {
     'integer' => ColumnTypeKind.integer,
@@ -76,7 +78,7 @@ SchemaDescription parseOpenApiDocument(
 
   for (final MapEntry(key: tableName, value: definition)
       in definitions.entries) {
-    definition as Map<String, dynamic>;
+    if (definition is! Map<String, dynamic>) continue;
     final required = {
       ...?(definition['required'] as List<dynamic>?)?.cast<String>(),
     };
@@ -90,8 +92,13 @@ SchemaDescription parseOpenApiDocument(
       final description = property['description'] as String?;
       final format = property['format'] as String? ?? '';
       final enumValues = (property['enum'] as List<dynamic>?)?.cast<String>();
+      final typeKind = _typeKind(
+        format: format,
+        jsonType: property['type'] as String?,
+        isEnum: enumValues != null,
+      );
 
-      if (enumValues != null) {
+      if (enumValues != null && typeKind == ColumnTypeKind.enumType) {
         enumsByQualifiedName.putIfAbsent(
           format,
           () => EnumDescription(qualifiedName: format, values: enumValues),
@@ -106,11 +113,7 @@ SchemaDescription parseOpenApiDocument(
         ColumnDescription(
           name: columnName,
           postgresFormat: format,
-          typeKind: _typeKind(
-            format: format,
-            jsonType: property['type'] as String?,
-            isEnum: enumValues != null,
-          ),
+          typeKind: typeKind,
           elementTypeKind: _elementTypeKind(
             (property['items'] as Map<String, dynamic>?)?['type'] as String?,
           ),
@@ -156,9 +159,8 @@ String? _cleanComment(String? description) {
   final cleaned = description
       .replaceAll(_foreignKeyPattern, '')
       .replaceAll('<pk/>', '')
-      .replaceAll(RegExp(r'Note:\s*'), '')
       .replaceAll(
-        RegExp(r'This is a (Primary|Foreign) Key( to `[^`]+`)?\.'),
+        RegExp(r'Note:\s*This is a (Primary|Foreign) Key( to `[^`]+`)?\.'),
         '',
       )
       .trim();

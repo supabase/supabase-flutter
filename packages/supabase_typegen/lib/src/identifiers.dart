@@ -97,9 +97,12 @@ const _mapMembers = {
 };
 
 final _wordSeparator = RegExp('[^a-zA-Z0-9]+');
+final _camelHumpBoundary = RegExp('(?<=[a-z0-9])(?=[A-Z])');
 
-List<String> _words(String name) =>
-    name.split(_wordSeparator).where((word) => word.isNotEmpty).toList();
+List<String> _words(String name) => [
+  for (final part in name.split(_wordSeparator))
+    ...part.split(_camelHumpBoundary),
+].where((word) => word.isNotEmpty).toList();
 
 /// Converts [name] to PascalCase, for example `author_stats` to
 /// `AuthorStats`.

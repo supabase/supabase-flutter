@@ -38,7 +38,13 @@ final _argParser = ArgParser()
   )
   ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this usage.');
 
-Future<int> main(List<String> arguments) async {
+Future<void> main(List<String> arguments) async {
+  // The value returned from main is ignored by the Dart VM, so the exit
+  // code has to be set explicitly.
+  exitCode = await _run(arguments);
+}
+
+Future<int> _run(List<String> arguments) async {
   final ArgResults options;
   try {
     options = _argParser.parse(arguments);
@@ -72,7 +78,8 @@ Future<int> main(List<String> arguments) async {
   }
 
   final schemaName = options.option('schema')!;
-  final endpoint = Uri.parse('$url/rest/v1/');
+  final baseUrl = url.replaceAll(RegExp(r'/+$'), '');
+  final endpoint = Uri.parse('$baseUrl/rest/v1/');
   final http.Response response;
   try {
     response = await http.get(
@@ -95,19 +102,37 @@ Future<int> main(List<String> arguments) async {
     return 1;
   }
 
-  final schema = parseOpenApiDocument(
-    jsonDecode(response.body) as Map<String, dynamic>,
-    schemaName: schemaName,
-  );
+  final Map<String, dynamic> document;
+  try {
+    document =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+  } on FormatException catch (error) {
+    stderr.writeln('The response from $endpoint is not valid JSON: $error');
+    return 1;
+  } on TypeError {
+    stderr.writeln(
+      'The response from $endpoint is not an OpenAPI document. Check that '
+      'the URL points to a Supabase project or PostgREST instance.',
+    );
+    return 1;
+  }
+
+  final schema = parseOpenApiDocument(document, schemaName: schemaName);
   final code = generateDartCode(schema, importUri: options.option('import')!);
 
   final outputFile = File(options.option('output')!);
   outputFile.parent.createSync(recursive: true);
   outputFile.writeAsStringSync(code);
 
+  final emittedTables = schema.tables
+      .where((table) => table.columns.isNotEmpty)
+      .length;
+  final skippedTables = schema.tables.length - emittedTables;
   stdout.writeln(
-    'Generated ${outputFile.path} with ${schema.tables.length} tables and '
-    '${schema.enums.length} enums from schema "$schemaName".',
+    'Generated ${outputFile.path} with $emittedTables tables and '
+    '${schema.enums.length} enums from schema "$schemaName".'
+    '${skippedTables == 0 ? '' : ' Skipped $skippedTables tables '
+              'without columns.'}',
   );
   return 0;
 }

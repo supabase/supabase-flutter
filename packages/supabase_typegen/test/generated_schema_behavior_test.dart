@@ -102,6 +102,45 @@ void main() {
     });
   });
 
+  test(
+    'timestamps are sent as UTC instants and dates keep their day',
+    () async {
+      httpClient.responseBody = '';
+
+      await client
+          .table(Books.table)
+          .insert(
+            BooksInsert(
+              title: 'A typed row',
+              authorId: 7,
+              createdAt: DateTime(2026, 7, 23, 10), // local wall time
+              publishedOn: DateTime(2026, 7, 23, 23, 30),
+            ),
+          );
+
+      final sent =
+          jsonDecode(httpClient.lastRequestBody!) as Map<String, dynamic>;
+      expect(
+        sent['created_at'],
+        DateTime(2026, 7, 23, 10).toUtc().toIso8601String(),
+      );
+      expect(sent['published_on'], '2026-07-23');
+    },
+  );
+
+  test('unknown enum wire values throw a descriptive error', () {
+    expect(
+      () => Mood.fromWire('grumpy'),
+      throwsA(
+        isA<ArgumentError>().having(
+          (error) => error.message,
+          'message',
+          contains('No Mood value'),
+        ),
+      ),
+    );
+  });
+
   test('update sends only the provided columns', () async {
     httpClient.responseBody = '';
 

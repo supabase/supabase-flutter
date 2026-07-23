@@ -8,7 +8,10 @@
   "definitions": {
     "books": {
       "description": "Books available in the library",
-      "required": ["title", "author_id"],
+      "required": [
+        "title",
+        "author_id"
+      ],
       "properties": {
         "id": {
           "description": "Note:\nThis is a Primary Key.<pk/>",
@@ -39,7 +42,11 @@
           "default": true
         },
         "mood": {
-          "enum": ["happy", "very happy", "sad"],
+          "enum": [
+            "happy",
+            "very happy",
+            "sad"
+          ],
           "format": "public.mood",
           "type": "string"
         },
@@ -73,12 +80,19 @@
           "format": "timestamp with time zone",
           "type": "string",
           "default": "now()"
+        },
+        "updated_at": {
+          "format": "timestamp without time zone",
+          "type": "string"
         }
       },
       "type": "object"
     },
     "authors": {
-      "required": ["id", "name"],
+      "required": [
+        "id",
+        "name"
+      ],
       "properties": {
         "id": {
           "description": "Note:\nThis is a Primary Key.<pk/>",

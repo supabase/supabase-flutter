@@ -65,7 +65,9 @@ void main() {
     expect(kindOf('in_print'), ColumnTypeKind.boolean);
     expect(kindOf('mood'), ColumnTypeKind.enumType);
     expect(kindOf('metadata'), ColumnTypeKind.json);
-    expect(kindOf('created_at'), ColumnTypeKind.dateTime);
+    expect(kindOf('created_at'), ColumnTypeKind.timestampWithTimeZone);
+    expect(kindOf('updated_at'), ColumnTypeKind.timestamp);
+    expect(kindOf('published_on'), ColumnTypeKind.date);
     expect(kindOf('cover_uuid'), ColumnTypeKind.text);
   });
 
