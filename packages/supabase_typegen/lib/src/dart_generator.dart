@@ -161,7 +161,8 @@ void _writeTable(
         'Values for inserting a row into `${table.name}`. Columns that are '
         'nullable, part of a generated primary key, or covered by a database '
         'default are optional; passing `null` omits the column so the '
-        'database default applies.',
+        'database default applies. Use the `set…ToNull` methods to insert '
+        'SQL NULL explicitly.',
   );
   _writeValues(
     buffer,
@@ -173,8 +174,7 @@ void _writeTable(
     docLine:
         'Values for updating rows of `${table.name}`. All columns are '
         'optional; passing `null` omits the column, leaving it unchanged. '
-        'To write SQL NULL explicitly, set the raw key: '
-        '`$updateType()..[\'column_name\'] = null`.',
+        'Use the `set…ToNull` methods to write SQL NULL explicitly.',
   );
   _writeNamespace(buffer, table, namespaceType, rowType, memberNames, bindings);
 }
@@ -245,8 +245,23 @@ void _writeValues(
       );
     }
   }
+  buffer.writeln('       });');
+  for (final column in table.columns) {
+    if (!column.isNullable) continue;
+    final name = memberNames[column.name]!;
+    final methodName = 'set${name[0].toUpperCase()}${name.substring(1)}ToNull';
+    buffer
+      ..writeln()
+      ..writeln(
+        '  /// Returns a copy with `${column.name}` set to SQL NULL, '
+        'overriding any database default.',
+      )
+      ..writeln(
+        '  $typeName $methodName() => '
+        '$typeName._({..._json, ${_stringLiteral(column.name)}: null});',
+      );
+  }
   buffer
-    ..writeln('       });')
     ..writeln('}')
     ..writeln();
 }

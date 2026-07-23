@@ -152,4 +152,37 @@ void main() {
     expect(jsonDecode(httpClient.lastRequestBody!), {'in_print': false});
     expect(httpClient.lastRequest!.url.queryParameters['id'], 'eq.1');
   });
+
+  test('setXToNull writes SQL NULL explicitly', () async {
+    httpClient.responseBody = '';
+
+    final update = BooksUpdate(inPrint: false);
+    await client
+        .table(Books.table)
+        .update(update.setPriceToNull().setMoodToNull())
+        .where(Books.id.eq(1));
+
+    expect(jsonDecode(httpClient.lastRequestBody!), {
+      'in_print': false,
+      'price': null,
+      'mood': null,
+    });
+    expect(
+      update.containsKey('price'),
+      isFalse,
+      reason: 'setPriceToNull returns a copy and must not mutate',
+    );
+
+    await client
+        .table(Books.table)
+        .insert(
+          BooksInsert(title: 'x', authorId: 7).setPublishedOnToNull(),
+        );
+
+    expect(jsonDecode(httpClient.lastRequestBody!), {
+      'title': 'x',
+      'author_id': 7,
+      'published_on': null,
+    });
+  });
 }
