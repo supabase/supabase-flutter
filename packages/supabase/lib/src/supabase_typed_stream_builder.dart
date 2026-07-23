@@ -73,8 +73,8 @@ class SupabaseTypedStreamFilterBuilder<Row>
   ///
   /// Named [filter] instead of `where` because [Stream.where] already exists.
   ///
-  /// Only one filter can be applied to a stream, and only equality and
-  /// comparison filters are supported: [TableColumn.eq], [TableColumn.neq],
+  /// Only one filter can be applied to a stream, and only [ComparisonFilter]
+  /// and [InListFilter] are supported: [TableColumn.eq], [TableColumn.neq],
   /// [TableColumn.lt], [TableColumn.lte], [TableColumn.gt], [TableColumn.gte]
   /// and [TableColumn.inFilter].
   ///
@@ -85,45 +85,27 @@ class SupabaseTypedStreamFilterBuilder<Row>
   ///     .filter(Books.title.eq('foo'));
   /// ```
   SupabaseTypedStreamBuilder<Row> filter(ColumnFilter columnFilter) {
-    switch (columnFilter.operator) {
-      case 'eq':
-        _streamFilterBuilder.eq(
-          columnFilter.column,
-          columnFilter.value as Object,
-        );
-      case 'neq':
-        _streamFilterBuilder.neq(
-          columnFilter.column,
-          columnFilter.value as Object,
-        );
-      case 'lt':
-        _streamFilterBuilder.lt(
-          columnFilter.column,
-          columnFilter.value as Object,
-        );
-      case 'lte':
-        _streamFilterBuilder.lte(
-          columnFilter.column,
-          columnFilter.value as Object,
-        );
-      case 'gt':
-        _streamFilterBuilder.gt(
-          columnFilter.column,
-          columnFilter.value as Object,
-        );
-      case 'gte':
-        _streamFilterBuilder.gte(
-          columnFilter.column,
-          columnFilter.value as Object,
-        );
-      case 'in':
-        _streamFilterBuilder.inFilter(
-          columnFilter.column,
-          List<Object>.from(columnFilter.value as List),
-        );
+    switch (columnFilter) {
+      case ComparisonFilter(:final column, :final comparison, :final value):
+        switch (comparison) {
+          case ComparisonOperator.eq:
+            _streamFilterBuilder.eq(column, value);
+          case ComparisonOperator.neq:
+            _streamFilterBuilder.neq(column, value);
+          case ComparisonOperator.lt:
+            _streamFilterBuilder.lt(column, value);
+          case ComparisonOperator.lte:
+            _streamFilterBuilder.lte(column, value);
+          case ComparisonOperator.gt:
+            _streamFilterBuilder.gt(column, value);
+          case ComparisonOperator.gte:
+            _streamFilterBuilder.gte(column, value);
+        }
+      case InListFilter(:final column, :final values):
+        _streamFilterBuilder.inFilter(column, values);
       default:
         throw ArgumentError.value(
-          columnFilter.operator,
+          columnFilter,
           'columnFilter',
           'Streams only support the eq, neq, lt, lte, gt, gte and inFilter '
               'filters.',

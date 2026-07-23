@@ -51,13 +51,12 @@ class PostgrestTypedFilterBuilder<Row, T>
   }
 
   static String _orFragment(ColumnFilter filter) {
+    final unwrapped = filter is _NegatedColumnFilter ? filter._inner : filter;
     final value = filter.value;
     final String rendered;
     if (value is List) {
       final elements = value.map(_quoteOrElement).join(',');
-      rendered = filter.operator == 'in' || filter.operator == 'not.in'
-          ? '($elements)'
-          : '{$elements}';
+      rendered = unwrapped is InListFilter ? '($elements)' : '{$elements}';
     } else {
       rendered = _quoteOrElement(value);
     }

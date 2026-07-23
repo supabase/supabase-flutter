@@ -500,6 +500,14 @@ features:
     symbols:
       - PostgrestFilterBuilder.eq
       - TableColumn.eq
+      - ComparisonFilter
+      - ComparisonFilter.column
+      - ComparisonFilter.comparison
+      - ComparisonFilter.operator
+      - ComparisonFilter.value
+      - ComparisonOperator
+      - ComparisonOperator.ComparisonOperator
+      - ComparisonOperator.wireName
   database.using_filters.neq:
     status: implemented
     symbols:
@@ -531,11 +539,29 @@ features:
       - PostgrestFilterBuilder.like
       - TextTableColumnFilters
       - TextTableColumnFilters.like
+      - PatternFilter
+      - PatternFilter.column
+      - PatternFilter.match
+      - PatternFilter.operator
+      - PatternFilter.pattern
+      - PatternFilter.value
+      - PatternOperator
+      - PatternOperator.PatternOperator
+      - PatternOperator.wireName
   database.using_filters.like_all:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.likeAllOf
       - TextTableColumnFilters.likeAllOf
+      - PatternListFilter
+      - PatternListFilter.column
+      - PatternListFilter.match
+      - PatternListFilter.operator
+      - PatternListFilter.patterns
+      - PatternListFilter.value
+      - PatternListOperator
+      - PatternListOperator.PatternListOperator
+      - PatternListOperator.wireName
   database.using_filters.like_any:
     status: implemented
     symbols:
@@ -562,16 +588,29 @@ features:
       - PostgrestFilterBuilder.isFilter
       - TableColumn.isNull
       - TableColumn.isNotNull
+      - IsNullFilter
+      - IsNullFilter.column
+      - IsNullFilter.operator
+      - IsNullFilter.value
   database.using_filters.is_distinct:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isDistinct
       - TableColumn.isDistinctFrom
+      - IsDistinctFilter
+      - IsDistinctFilter.column
+      - IsDistinctFilter.operator
+      - IsDistinctFilter.value
   database.using_filters.in:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.inFilter
       - TableColumn.inFilter
+      - InListFilter
+      - InListFilter.column
+      - InListFilter.operator
+      - InListFilter.value
+      - InListFilter.values
   database.using_filters.not_in:
     status: implemented
     symbols:
@@ -581,6 +620,14 @@ features:
     symbols:
       - PostgrestFilterBuilder.contains
       - TableColumn.contains
+      - ContainmentFilter
+      - ContainmentFilter.column
+      - ContainmentFilter.containment
+      - ContainmentFilter.operator
+      - ContainmentFilter.value
+      - ContainmentOperator
+      - ContainmentOperator.ContainmentOperator
+      - ContainmentOperator.wireName
   database.using_filters.contained_by:
     status: implemented
     symbols:
@@ -610,6 +657,15 @@ features:
     symbols:
       - PostgrestFilterBuilder.rangeGt
       - TableColumn.rangeGt
+      - RangeFilter
+      - RangeFilter.column
+      - RangeFilter.operator
+      - RangeFilter.range
+      - RangeFilter.rangeComparison
+      - RangeFilter.value
+      - RangeOperator
+      - RangeOperator.RangeOperator
+      - RangeOperator.wireName
   database.using_filters.range_gte:
     status: implemented
     symbols:
@@ -635,6 +691,13 @@ features:
     symbols:
       - PostgrestFilterBuilder.textSearch
       - TextTableColumnFilters.textSearch
+      - TextSearchFilter
+      - TextSearchFilter.column
+      - TextSearchFilter.config
+      - TextSearchFilter.operator
+      - TextSearchFilter.query
+      - TextSearchFilter.type
+      - TextSearchFilter.value
   database.using_filters.regex:
     status: implemented
     symbols:
