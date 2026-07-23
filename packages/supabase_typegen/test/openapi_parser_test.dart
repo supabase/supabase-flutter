@@ -53,6 +53,22 @@ void main() {
     expect(authorId.foreignKey?.column, 'id');
   });
 
+  test('derives type kinds from formats', () {
+    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    ColumnTypeKind kindOf(String name) =>
+        books.columns.singleWhere((column) => column.name == name).typeKind;
+
+    expect(kindOf('id'), ColumnTypeKind.integer);
+    expect(kindOf('title'), ColumnTypeKind.text);
+    expect(kindOf('price'), ColumnTypeKind.numeric);
+    expect(kindOf('rating'), ColumnTypeKind.floating);
+    expect(kindOf('in_print'), ColumnTypeKind.boolean);
+    expect(kindOf('mood'), ColumnTypeKind.enumType);
+    expect(kindOf('metadata'), ColumnTypeKind.json);
+    expect(kindOf('created_at'), ColumnTypeKind.dateTime);
+    expect(kindOf('cover_uuid'), ColumnTypeKind.text);
+  });
+
   test('collects Postgres enums', () {
     expect(schema.enums, hasLength(1));
     final mood = schema.enums.single;
@@ -65,7 +81,8 @@ void main() {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     final tags = books.columns.singleWhere((column) => column.name == 'tags');
     expect(tags.postgresFormat, 'text[]');
-    expect(tags.arrayElementJsonType, 'string');
+    expect(tags.typeKind, ColumnTypeKind.array);
+    expect(tags.elementTypeKind, ColumnTypeKind.text);
   });
 
   test('keeps human column comments without the key markers', () {

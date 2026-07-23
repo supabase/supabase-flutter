@@ -2,6 +2,62 @@ import 'schema_description.dart';
 
 final _foreignKeyPattern = RegExp("<fk table='([^']+)' column='([^']+)'/>");
 
+const _integerFormats = {
+  'smallint',
+  'integer',
+  'bigint',
+  'int2',
+  'int4',
+  'int8',
+};
+const _floatingFormats = {'real', 'double precision', 'float4', 'float8'};
+const _numericFormats = {'numeric', 'decimal'};
+const _dateTimeFormats = {
+  'date',
+  'timestamp',
+  'timestamp without time zone',
+  'timestamp with time zone',
+  'timestamptz',
+};
+const _jsonFormats = {'json', 'jsonb'};
+
+/// Derives the [ColumnTypeKind] from the Postgres [format] and JSON schema
+/// [jsonType] of a column. This is the single place where type names are
+/// compared as strings; everything downstream works with the enum.
+ColumnTypeKind _typeKind({
+  required String format,
+  required String? jsonType,
+  required bool isEnum,
+}) {
+  if (isEnum) return ColumnTypeKind.enumType;
+  if (format.endsWith('[]') || jsonType == 'array') {
+    return ColumnTypeKind.array;
+  }
+  if (_integerFormats.contains(format)) return ColumnTypeKind.integer;
+  if (_floatingFormats.contains(format)) return ColumnTypeKind.floating;
+  if (_numericFormats.contains(format)) return ColumnTypeKind.numeric;
+  if (format == 'boolean') return ColumnTypeKind.boolean;
+  if (_dateTimeFormats.contains(format)) return ColumnTypeKind.dateTime;
+  if (_jsonFormats.contains(format)) return ColumnTypeKind.json;
+  return switch (jsonType) {
+    'integer' => ColumnTypeKind.integer,
+    'number' => ColumnTypeKind.numeric,
+    'boolean' => ColumnTypeKind.boolean,
+    'string' => ColumnTypeKind.text,
+    _ => ColumnTypeKind.unknown,
+  };
+}
+
+ColumnTypeKind? _elementTypeKind(String? itemsJsonType) => itemsJsonType == null
+    ? null
+    : switch (itemsJsonType) {
+        'integer' => ColumnTypeKind.integer,
+        'number' => ColumnTypeKind.numeric,
+        'boolean' => ColumnTypeKind.boolean,
+        'string' => ColumnTypeKind.text,
+        _ => ColumnTypeKind.unknown,
+      };
+
 /// Parses the OpenAPI (Swagger 2.0) document that PostgREST serves at the
 /// API root into a [SchemaDescription].
 ///
@@ -50,9 +106,14 @@ SchemaDescription parseOpenApiDocument(
         ColumnDescription(
           name: columnName,
           postgresFormat: format,
-          jsonType: property['type'] as String? ?? '',
-          arrayElementJsonType:
-              (property['items'] as Map<String, dynamic>?)?['type'] as String?,
+          typeKind: _typeKind(
+            format: format,
+            jsonType: property['type'] as String?,
+            isEnum: enumValues != null,
+          ),
+          elementTypeKind: _elementTypeKind(
+            (property['items'] as Map<String, dynamic>?)?['type'] as String?,
+          ),
           enumValues: enumValues,
           isRequired: required.contains(columnName),
           isPrimaryKey: description?.contains('<pk/>') ?? false,

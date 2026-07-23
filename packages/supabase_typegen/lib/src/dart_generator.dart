@@ -3,34 +3,13 @@ import 'package:dart_style/dart_style.dart';
 import 'identifiers.dart';
 import 'schema_description.dart';
 
-enum _Kind { direct, floating, dateTime, list, enumType, json }
-
 class _Binding {
   const _Binding(this.dartType, this.kind);
 
   /// The non-nullable Dart type of the column.
   final String dartType;
-  final _Kind kind;
+  final ColumnTypeKind kind;
 }
-
-const _integerFormats = {
-  'smallint',
-  'integer',
-  'bigint',
-  'int2',
-  'int4',
-  'int8',
-};
-const _floatingFormats = {'real', 'double precision', 'float4', 'float8'};
-const _numericFormats = {'numeric', 'decimal'};
-const _dateTimeFormats = {
-  'date',
-  'timestamp',
-  'timestamp without time zone',
-  'timestamp with time zone',
-  'timestamptz',
-};
-const _jsonFormats = {'json', 'jsonb'};
 
 /// Generates a Dart source file with typed table definitions, row extension
 /// types, insert and update value types, column tokens and Postgres enums for
@@ -274,56 +253,45 @@ void _writeNamespace(
 _Binding _bindingFor(
   ColumnDescription column,
   Map<String, String> enumTypeNames,
-) {
-  final format = column.postgresFormat;
-
-  final enumTypeName = enumTypeNames[format];
-  if (enumTypeName != null) {
-    return _Binding(enumTypeName, _Kind.enumType);
-  }
-  if (format.endsWith('[]')) {
-    return _Binding(
-      'List<${_arrayElementType(column.arrayElementJsonType)}>',
-      _Kind.list,
-    );
-  }
-  if (_integerFormats.contains(format)) {
-    return const _Binding('int', _Kind.direct);
-  }
-  if (_floatingFormats.contains(format)) {
-    return const _Binding('double', _Kind.floating);
-  }
-  if (_numericFormats.contains(format)) {
-    return const _Binding('num', _Kind.direct);
-  }
-  if (format == 'boolean') {
-    return const _Binding('bool', _Kind.direct);
-  }
-  if (_dateTimeFormats.contains(format)) {
-    return const _Binding('DateTime', _Kind.dateTime);
-  }
-  if (_jsonFormats.contains(format)) {
-    return const _Binding('Object', _Kind.json);
-  }
-  return switch (column.jsonType) {
-    'integer' => const _Binding('int', _Kind.direct),
-    'number' => const _Binding('num', _Kind.direct),
-    'boolean' => const _Binding('bool', _Kind.direct),
-    'string' => const _Binding('String', _Kind.direct),
-    _ => const _Binding('Object', _Kind.json),
-  };
-}
-
-String _arrayElementType(String? elementJsonType) => switch (elementJsonType) {
-  'integer' => 'int',
-  'number' => 'num',
-  'boolean' => 'bool',
-  'string' => 'String',
-  _ => 'Object',
+) => switch (column.typeKind) {
+  ColumnTypeKind.enumType => _Binding(
+    enumTypeNames[column.postgresFormat]!,
+    ColumnTypeKind.enumType,
+  ),
+  ColumnTypeKind.array => _Binding(
+    'List<${_elementDartType(column.elementTypeKind)}>',
+    ColumnTypeKind.array,
+  ),
+  ColumnTypeKind.integer => const _Binding('int', ColumnTypeKind.integer),
+  ColumnTypeKind.floating => const _Binding('double', ColumnTypeKind.floating),
+  ColumnTypeKind.numeric => const _Binding('num', ColumnTypeKind.numeric),
+  ColumnTypeKind.boolean => const _Binding('bool', ColumnTypeKind.boolean),
+  ColumnTypeKind.dateTime => const _Binding(
+    'DateTime',
+    ColumnTypeKind.dateTime,
+  ),
+  ColumnTypeKind.text => const _Binding('String', ColumnTypeKind.text),
+  ColumnTypeKind.json ||
+  ColumnTypeKind.unknown => const _Binding('Object', ColumnTypeKind.json),
 };
 
+String _elementDartType(ColumnTypeKind? elementTypeKind) =>
+    switch (elementTypeKind) {
+      ColumnTypeKind.integer => 'int',
+      ColumnTypeKind.floating => 'double',
+      ColumnTypeKind.numeric => 'num',
+      ColumnTypeKind.boolean => 'bool',
+      ColumnTypeKind.text => 'String',
+      ColumnTypeKind.dateTime ||
+      ColumnTypeKind.json ||
+      ColumnTypeKind.enumType ||
+      ColumnTypeKind.array ||
+      ColumnTypeKind.unknown ||
+      null => 'Object',
+    };
+
 String _getterType(ColumnDescription column, _Binding binding) {
-  if (binding.kind == _Kind.json) return 'Object?';
+  if (binding.kind == ColumnTypeKind.json) return 'Object?';
   return column.isNullable ? '${binding.dartType}?' : binding.dartType;
 }
 
@@ -331,27 +299,31 @@ String _readExpression(ColumnDescription column, _Binding binding) {
   final access = "_json[${_stringLiteral(column.name)}]";
   final nullable = column.isNullable;
   return switch (binding.kind) {
-    _Kind.direct => '$access as ${binding.dartType}${nullable ? '?' : ''}',
-    _Kind.floating =>
+    ColumnTypeKind.integer ||
+    ColumnTypeKind.numeric ||
+    ColumnTypeKind.boolean ||
+    ColumnTypeKind.text =>
+      '$access as ${binding.dartType}${nullable ? '?' : ''}',
+    ColumnTypeKind.floating =>
       nullable
           ? '($access as num?)?.toDouble()'
           : '($access as num).toDouble()',
-    _Kind.list =>
+    ColumnTypeKind.array =>
       nullable
           ? '($access as List<dynamic>?)?.cast()'
           : '($access as List<dynamic>).cast()',
-    _Kind.dateTime =>
+    ColumnTypeKind.dateTime =>
       nullable
           ? _nullableSwitch(access, 'DateTime.parse(value as String)')
           : 'DateTime.parse($access as String)',
-    _Kind.enumType =>
+    ColumnTypeKind.enumType =>
       nullable
           ? _nullableSwitch(
               access,
               '${binding.dartType}.fromWire(value as String)',
             )
           : '${binding.dartType}.fromWire($access as String)',
-    _Kind.json => '$access as Object?',
+    ColumnTypeKind.json || ColumnTypeKind.unknown => '$access as Object?',
   };
 }
 
@@ -365,9 +337,16 @@ String _writeExpression(
 }) {
   final access = nullable ? '$parameterName?' : parameterName;
   return switch (binding.kind) {
-    _Kind.dateTime => '$access.toIso8601String()',
-    _Kind.enumType => '$access.wireName',
-    _Kind.direct || _Kind.floating || _Kind.list || _Kind.json => parameterName,
+    ColumnTypeKind.dateTime => '$access.toIso8601String()',
+    ColumnTypeKind.enumType => '$access.wireName',
+    ColumnTypeKind.integer ||
+    ColumnTypeKind.floating ||
+    ColumnTypeKind.numeric ||
+    ColumnTypeKind.boolean ||
+    ColumnTypeKind.text ||
+    ColumnTypeKind.array ||
+    ColumnTypeKind.json ||
+    ColumnTypeKind.unknown => parameterName,
   };
 }
 
