@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:postgrest/postgrest.dart';
 
@@ -37,7 +38,24 @@ class PostgrestTypedBuilder<T> implements Future<T> {
   }
 
   @override
-  Stream<T> asStream() => _execute().asStream();
+  Stream<T> asStream() {
+    // Mirrors [PostgrestBuilder.asStream], which returns a broadcast stream.
+    final controller = StreamController<T>.broadcast();
+
+    unawaited(
+      then((value) {
+            controller.add(value);
+          })
+          .catchError((Object error, StackTrace stack) {
+            controller.addError(error, stack);
+          })
+          .whenComplete(() {
+            unawaited(controller.close());
+          }),
+    );
+
+    return controller.stream;
+  }
 
   @override
   Future<T> catchError(Function onError, {bool Function(Object error)? test}) =>

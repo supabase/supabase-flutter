@@ -42,6 +42,13 @@ class PostgrestTypedFilterBuilder<Row, T>
   ///     .whereAny([Books.id.eq(1), Books.title.eq('foo')]);
   /// ```
   PostgrestTypedFilterBuilder<Row, T> whereAny(List<ColumnFilter> filters) {
+    if (filters.isEmpty) {
+      throw ArgumentError.value(
+        filters,
+        'filters',
+        'whereAny needs at least one filter',
+      );
+    }
     final fragments = [for (final filter in filters) _orFragment(filter)];
     return PostgrestTypedFilterBuilder._(
       _filterBuilder.or(fragments.join(',')),
@@ -69,7 +76,9 @@ class PostgrestTypedFilterBuilder<Row, T>
     if (value == null || value is num || value is bool) {
       return '$value';
     }
-    final escaped = '$value'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+    // Maps are encoded as json, matching the positive containment paths.
+    final rendered = value is Map ? json.encode(value) : '$value';
+    final escaped = rendered.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
     return '"$escaped"';
   }
 }

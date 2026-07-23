@@ -18,6 +18,7 @@ class Books {
   static const title = TableColumn<String>('title');
   static const tags = TableColumn<List<String>>('tags');
   static const ageRange = TableColumn<String>('age_range');
+  static const metadata = TableColumn<Map<String, dynamic>>('metadata');
 }
 
 class MockHttpClient extends BaseClient {
@@ -226,6 +227,50 @@ void main() {
 
     test('negating a filter twice throws', () {
       expect(() => Books.id.eq(1).not().not(), throwsStateError);
+    });
+
+    test('negated json containment encodes the value as json', () async {
+      await client
+          .table(Books.table)
+          .select()
+          .where(Books.metadata.contains({'a': 1}).not());
+
+      expect(requestParameters()['metadata'], 'not.cs.{"a":1}');
+    });
+
+    test('whereAny encodes json containment values', () async {
+      await client.table(Books.table).select().whereAny([
+        Books.metadata.contains({'a': 1}),
+        Books.id.eq(1),
+      ]);
+
+      expect(
+        requestParameters()['or'],
+        r'(metadata.cs."{\"a\":1}",id.eq.1)',
+      );
+    });
+
+    test('whereAny without filters throws', () {
+      expect(
+        () => client.table(Books.table).select().whereAny([]),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('asStream', () {
+    test('returns a broadcast stream that supports multiple listeners', () {
+      httpClient.responseBody = bookRows;
+
+      final stream = client.table(Books.table).select().asStream();
+
+      expect(stream.isBroadcast, isTrue);
+      stream.listen(
+        expectAsync1((books) {
+          expect(books, hasLength(2));
+        }),
+      );
+      stream.listen(expectAsync1((books) {}));
     });
   });
 

@@ -711,5 +711,14 @@ final class NegatedFilter extends ColumnFilter {
   @override
   PostgrestFilterBuilder<dynamic> _apply(
     PostgrestFilterBuilder<dynamic> builder,
-  ) => builder.not(column, inner.operator, inner.value);
+  ) {
+    // The untyped `not` stringifies map values with `Map.toString`, unlike
+    // the json-encoding positive paths such as `contains`, so encode here.
+    final innerValue = inner.value;
+    return builder.not(
+      column,
+      inner.operator,
+      innerValue is Map ? json.encode(innerValue) : innerValue,
+    );
+  }
 }
