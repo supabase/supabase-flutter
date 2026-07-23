@@ -64,7 +64,7 @@ jobs:
           echo "Affected packages:"
           echo "$CHANGED"
 
-          DART_PACKAGES="functions_client gotrue postgrest realtime_client storage_client supabase supabase_common yet_another_json_isolate"
+          DART_PACKAGES="functions_client gotrue postgrest realtime_client storage_client supabase supabase_common supabase_typegen yet_another_json_isolate"
 
           entries=()
           for package in $DART_PACKAGES; do
