@@ -1,4 +1,5 @@
 import 'package:http/http.dart';
+import 'package:meta/meta.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -46,6 +47,12 @@ class SupabaseQuerySchema {
       incrementId: _counter.increment(),
       isolate: _isolate,
     );
+  }
+
+  /// Perform a typed table operation, see [SupabaseClient.table].
+  @experimental
+  SupabaseTypedQueryBuilder<Row> table<Row>(PostgrestTable<Row> table) {
+    return SupabaseTypedQueryBuilder(from(table.name), table);
   }
 
   /// {@macro postgrest_rpc}

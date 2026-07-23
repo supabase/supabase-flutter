@@ -426,10 +426,36 @@ features:
     status: implemented
     symbols:
       - PostgrestClient.from
+      - PostgrestClient.table
+      - SupabaseClient.table
+      - PostgrestTable
+      - PostgrestTable.PostgrestTable
+      - PostgrestTable.name
+      - PostgrestTable.rowFromJson
+      - RowConverter
+      - TableColumn
+      - TableColumn.TableColumn
+      - TableColumn.name
+      - TableColumn.toString
+      - PostgrestTypedQueryBuilder
+      - PostgrestTypedQueryBuilder.PostgrestTypedQueryBuilder
+      - PostgrestTypedQueryBuilder.table
+      - SupabaseTypedQueryBuilder
+      - SupabaseTypedQueryBuilder.SupabaseTypedQueryBuilder
+      - PostgrestTypedBuilder
+      - PostgrestTypedBuilder.asStream
+      - PostgrestTypedBuilder.catchError
+      - PostgrestTypedBuilder.then
+      - PostgrestTypedBuilder.timeout
+      - PostgrestTypedBuilder.whenComplete
   database.query.select:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.select
+      - PostgrestTypedQueryBuilder.select
+      - PostgrestTypedQueryBuilder.count
+      - PostgrestTypedTransformBuilder
+      - PostgrestTypedTransformBuilder.count
   database.query.rpc:
     status: implemented
     note: "head and count are applied via type-safe chaining (.head()/.count()) rather than inline call options, which is the idiomatic Dart builder pattern; inline options cannot preserve the distinct return types."
@@ -439,90 +465,161 @@ features:
     status: implemented
     symbols:
       - PostgrestClient.schema
+      - SupabaseQuerySchema.table
 
   # database — mutate
   database.mutate.insert:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.insert
+      - PostgrestTypedQueryBuilder.insert
   database.mutate.update:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.update
+      - PostgrestTypedQueryBuilder.update
   database.mutate.upsert:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.upsert
+      - PostgrestTypedQueryBuilder.upsert
   database.mutate.delete:
     status: implemented
     symbols:
       - PostgrestQueryBuilder.delete
+      - PostgrestTypedQueryBuilder.delete
   database.mutate.select_after_mutation:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.select
+      - PostgrestTypedTransformBuilder.select
 
   # database — filters
   database.using_filters.eq:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.eq
+      - TableColumn.eq
+      - ComparisonFilter
+      - ComparisonFilter.column
+      - ComparisonFilter.value
+      - EqFilter
+      - EqFilter.operator
   database.using_filters.neq:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.neq
+      - TableColumn.neq
+      - NeqFilter
+      - NeqFilter.operator
   database.using_filters.gt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gt
+      - TableColumn.gt
+      - GtFilter
+      - GtFilter.operator
   database.using_filters.gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gte
+      - TableColumn.gte
+      - GteFilter
+      - GteFilter.operator
   database.using_filters.lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lt
+      - TableColumn.lt
+      - LtFilter
+      - LtFilter.operator
   database.using_filters.lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lte
+      - TableColumn.lte
+      - LteFilter
+      - LteFilter.operator
   database.using_filters.like:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.like
+      - TextTableColumnFilters
+      - TextTableColumnFilters.like
+      - PatternFilter
+      - PatternFilter.column
+      - PatternFilter.pattern
+      - PatternFilter.value
+      - LikeFilter
+      - LikeFilter.operator
   database.using_filters.like_all:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.likeAllOf
+      - TextTableColumnFilters.likeAllOf
+      - PatternListFilter
+      - PatternListFilter.column
+      - PatternListFilter.patterns
+      - PatternListFilter.value
+      - LikeAllOfFilter
+      - LikeAllOfFilter.operator
   database.using_filters.like_any:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.likeAnyOf
+      - TextTableColumnFilters.likeAnyOf
+      - LikeAnyOfFilter
+      - LikeAnyOfFilter.operator
   database.using_filters.ilike:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilike
+      - TextTableColumnFilters.ilike
+      - IlikeFilter
+      - IlikeFilter.operator
   database.using_filters.ilike_all:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilikeAllOf
+      - TextTableColumnFilters.ilikeAllOf
+      - IlikeAllOfFilter
+      - IlikeAllOfFilter.operator
   database.using_filters.ilike_any:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilikeAnyOf
+      - TextTableColumnFilters.ilikeAnyOf
+      - IlikeAnyOfFilter
+      - IlikeAnyOfFilter.operator
   database.using_filters.is:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isFilter
+      - TableColumn.isNull
+      - TableColumn.isNotNull
+      - IsNullFilter
+      - IsNullFilter.column
+      - IsNullFilter.operator
+      - IsNullFilter.value
   database.using_filters.is_distinct:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isDistinct
+      - TableColumn.isDistinctFrom
+      - IsDistinctFilter
+      - IsDistinctFilter.column
+      - IsDistinctFilter.operator
+      - IsDistinctFilter.value
   database.using_filters.in:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.inFilter
+      - TableColumn.inFilter
+      - InListFilter
+      - InListFilter.column
+      - InListFilter.operator
+      - InListFilter.value
+      - InListFilter.values
   database.using_filters.not_in:
     status: implemented
     symbols:
@@ -531,14 +628,26 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.contains
+      - TableColumn.contains
+      - ContainmentFilter
+      - ContainmentFilter.column
+      - ContainmentFilter.value
+      - ContainsFilter
+      - ContainsFilter.operator
   database.using_filters.contained_by:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.containedBy
+      - TableColumn.containedBy
+      - ContainedByFilter
+      - ContainedByFilter.operator
   database.using_filters.overlaps:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.overlaps
+      - TableColumn.overlaps
+      - OverlapsFilter
+      - OverlapsFilter.operator
   database.using_filters.match:
     status: implemented
     symbols:
@@ -547,68 +656,122 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.not
+      - ColumnFilter.not
+      - NegatedFilter
+      - NegatedFilter.column
+      - NegatedFilter.inner
+      - NegatedFilter.not
+      - NegatedFilter.operator
+      - NegatedFilter.value
   database.using_filters.or:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.or
+      - PostgrestTypedFilterBuilder.whereAny
   database.using_filters.range_gt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeGt
+      - TableColumn.rangeGt
+      - RangeFilter
+      - RangeFilter.column
+      - RangeFilter.range
+      - RangeFilter.value
+      - RangeGtFilter
+      - RangeGtFilter.operator
   database.using_filters.range_gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeGte
+      - TableColumn.rangeGte
+      - RangeGteFilter
+      - RangeGteFilter.operator
   database.using_filters.range_lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLt
+      - TableColumn.rangeLt
+      - RangeLtFilter
+      - RangeLtFilter.operator
   database.using_filters.range_lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLte
+      - TableColumn.rangeLte
+      - RangeLteFilter
+      - RangeLteFilter.operator
   database.using_filters.range_adjacent:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeAdjacent
+      - TableColumn.rangeAdjacent
+      - RangeAdjacentFilter
+      - RangeAdjacentFilter.operator
   database.using_filters.text_search:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.textSearch
+      - TextTableColumnFilters.textSearch
+      - TextSearchFilter
+      - TextSearchFilter.column
+      - TextSearchFilter.config
+      - TextSearchFilter.operator
+      - TextSearchFilter.query
+      - TextSearchFilter.type
+      - TextSearchFilter.value
   database.using_filters.regex:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.matchRegex
+      - TextTableColumnFilters.matchRegex
+      - MatchRegexFilter
+      - MatchRegexFilter.operator
   database.using_filters.regex_icase:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.imatchRegex
+      - TextTableColumnFilters.imatchRegex
+      - ImatchRegexFilter
+      - ImatchRegexFilter.operator
   database.using_filters.raw:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.filter
+      - PostgrestTypedFilterBuilder
+      - PostgrestTypedFilterBuilder.where
+      - ColumnFilter
+      - ColumnFilter.column
+      - ColumnFilter.operator
+      - ColumnFilter.value
 
   # database — modifiers
   database.using_modifiers.order:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.order
+      - PostgrestTypedTransformBuilder.order
+      - SupabaseTypedStreamBuilder.order
   database.using_modifiers.limit:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.limit
+      - PostgrestTypedTransformBuilder.limit
+      - SupabaseTypedStreamBuilder.limit
   database.using_modifiers.range:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.range
+      - PostgrestTypedTransformBuilder.range
   database.using_modifiers.single_row:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.single
+      - PostgrestTypedTransformBuilder.single
   database.using_modifiers.maybe_single_row:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.maybeSingle
+      - PostgrestTypedTransformBuilder.maybeSingle
   database.using_modifiers.max_affected_rows:
     status: implemented
     symbols:
@@ -1428,11 +1591,19 @@ features:
       - RealtimeSystemPayload.message
       - RealtimeSystemPayload.status
       - RealtimeSystemPayload.toString
+      - SupabaseTypedQueryBuilder.stream
+      - SupabaseTypedStreamBuilder
+      - SupabaseTypedStreamBuilder.SupabaseTypedStreamBuilder
+      - SupabaseTypedStreamBuilder.isBroadcast
+      - SupabaseTypedStreamBuilder.listen
+      - SupabaseTypedStreamFilterBuilder
+      - SupabaseTypedStreamFilterBuilder.SupabaseTypedStreamFilterBuilder
   realtime.subscriptions.postgres_changes_filter:
     status: implemented
     symbols:
       - PostgresChangeFilter.negate
       - PostgresChangeFilterType.token
+      - SupabaseTypedStreamFilterBuilder.filter
   realtime.subscriptions.subscribe_presence:
     status: implemented
     symbols:

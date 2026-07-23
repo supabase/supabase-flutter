@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:supabase/src/constants.dart';
 import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
@@ -218,6 +219,23 @@ class SupabaseClient {
       incrementId: _incrementId.increment(),
       isolate: _isolate,
     );
+  }
+
+  /// Perform a typed table operation.
+  ///
+  /// Unlike [from], results are converted into the row type of [table]
+  /// instead of raw `Map<String, dynamic>` data, and filters are built from
+  /// [TableColumn]s, which makes them compile-time checked.
+  ///
+  /// ```dart
+  /// final List<Book> books = await supabase
+  ///     .table(Books.table)
+  ///     .select()
+  ///     .where(Books.id.gt(10));
+  /// ```
+  @experimental
+  SupabaseTypedQueryBuilder<Row> table<Row>(PostgrestTable<Row> table) {
+    return SupabaseTypedQueryBuilder(from(table.name), table);
   }
 
   /// Select a schema to query or perform an function (rpc) call.
