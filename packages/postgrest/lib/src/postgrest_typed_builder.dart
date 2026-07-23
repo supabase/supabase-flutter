@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 
 part 'postgrest_table.dart';
@@ -26,6 +27,7 @@ void _toVoid(dynamic data) {}
 /// Wraps an untyped [PostgrestBuilder] and converts its result into [T]
 /// before it is returned, so awaiting it never exposes raw
 /// `Map<String, dynamic>` data.
+@experimental
 class PostgrestTypedBuilder<T> implements Future<T> {
   const PostgrestTypedBuilder._(this._rawBuilder, this._convert);
 

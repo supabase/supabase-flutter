@@ -4,6 +4,7 @@ part of 'postgrest_typed_builder.dart';
 ///
 /// [Row] is the type a single row converts into and [T] is the type the
 /// request resolves to when awaited.
+@experimental
 class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   const PostgrestTypedTransformBuilder._(
     PostgrestTransformBuilder<dynamic> super.rawBuilder,

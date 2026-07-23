@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'package:supabase/supabase.dart';
 
 /// The typed counterpart of [SupabaseQueryBuilder], returned by
@@ -6,6 +7,7 @@ import 'package:supabase/supabase.dart';
 /// In addition to the typed query methods inherited from
 /// [PostgrestTypedQueryBuilder], this builder exposes a typed realtime
 /// [stream].
+@experimental
 class SupabaseTypedQueryBuilder<Row> extends PostgrestTypedQueryBuilder<Row> {
   // The query builder is also kept as a field to expose [stream], so it
   // cannot become a super parameter.

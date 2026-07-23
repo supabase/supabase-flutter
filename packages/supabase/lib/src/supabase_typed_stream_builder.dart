@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:supabase/supabase.dart';
 
 /// The typed counterpart of [SupabaseStreamBuilder]; emits the rows of the
 /// table converted into [Row] through [PostgrestTable.rowFromJson].
+@experimental
 class SupabaseTypedStreamBuilder<Row> extends Stream<List<Row>> {
   const SupabaseTypedStreamBuilder(
     SupabaseStreamBuilder streamBuilder,
@@ -59,6 +61,7 @@ class SupabaseTypedStreamBuilder<Row> extends Stream<List<Row>> {
 }
 
 /// A [SupabaseTypedStreamBuilder] that can still be filtered with [filter].
+@experimental
 class SupabaseTypedStreamFilterBuilder<Row>
     extends SupabaseTypedStreamBuilder<Row> {
   const SupabaseTypedStreamFilterBuilder(

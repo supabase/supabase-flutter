@@ -1,4 +1,6 @@
 // ignore_for_file: deprecated_member_use_from_same_package
+// The typed table access API under test is annotated @experimental.
+// ignore_for_file: experimental_member_use
 
 import 'dart:async';
 import 'dart:convert';

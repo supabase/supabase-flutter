@@ -4,6 +4,7 @@ part of 'postgrest_typed_builder.dart';
 ///
 /// Filters are built from [TableColumn]s and applied with [where], which
 /// checks the value type of each filter against its column at compile time.
+@experimental
 class PostgrestTypedFilterBuilder<Row, T>
     extends PostgrestTypedTransformBuilder<Row, T> {
   const PostgrestTypedFilterBuilder._(

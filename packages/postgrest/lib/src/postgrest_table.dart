@@ -1,6 +1,7 @@
 part of 'postgrest_typed_builder.dart';
 
 /// Converts a single decoded PostgREST row into [Row].
+@experimental
 typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 
 /// Describes a database table (or view) together with the Dart type its rows
@@ -31,6 +32,7 @@ typedef RowConverter<Row> = Row Function(Map<String, dynamic> json);
 /// row representation since they carry no conversion cost and tolerate
 /// partial selects, but any converter works, for example `Book.fromJson` on a
 /// regular data class.
+@experimental
 class PostgrestTable<Row> {
   const PostgrestTable(this.name, this.rowFromJson);
 
@@ -48,6 +50,7 @@ class PostgrestTable<Row> {
 ///
 /// [Value] is always the non-nullable value type of the column. Null checks
 /// are expressed with [isNull] and [isNotNull] instead of nullable values.
+@experimental
 class TableColumn<Value extends Object> {
   const TableColumn(this.name);
 
@@ -123,6 +126,7 @@ class TableColumn<Value extends Object> {
 }
 
 /// Filters that only apply to text columns.
+@experimental
 extension TextTableColumnFilters on TableColumn<String> {
   /// Only rows whose value matches [pattern] case-sensitively.
   LikeFilter like(String pattern) => LikeFilter._(name, pattern);
@@ -173,6 +177,7 @@ extension TextTableColumnFilters on TableColumn<String> {
 /// hierarchy is sealed with one class per operator, so consumers can switch
 /// on the filter itself instead of comparing operator values; realtime
 /// streams for example only accept [ComparisonFilter]s and [InListFilter].
+@experimental
 sealed class ColumnFilter {
   const ColumnFilter._();
 
@@ -202,6 +207,7 @@ sealed class ColumnFilter {
 ///
 /// Besides regular queries, these are the filters that realtime streams
 /// support, together with [InListFilter].
+@experimental
 sealed class ComparisonFilter extends ColumnFilter {
   const ComparisonFilter._(this.column, this.value) : super._();
 
@@ -213,6 +219,7 @@ sealed class ComparisonFilter extends ColumnFilter {
 }
 
 /// Only rows where the column equals [value]; created by [TableColumn.eq].
+@experimental
 final class EqFilter extends ComparisonFilter {
   const EqFilter._(super.column, super.value) : super._();
 
@@ -227,6 +234,7 @@ final class EqFilter extends ComparisonFilter {
 
 /// Only rows where the column does not equal [value]; created by
 /// [TableColumn.neq].
+@experimental
 final class NeqFilter extends ComparisonFilter {
   const NeqFilter._(super.column, super.value) : super._();
 
@@ -241,6 +249,7 @@ final class NeqFilter extends ComparisonFilter {
 
 /// Only rows where the column is greater than [value]; created by
 /// [TableColumn.gt].
+@experimental
 final class GtFilter extends ComparisonFilter {
   const GtFilter._(super.column, super.value) : super._();
 
@@ -255,6 +264,7 @@ final class GtFilter extends ComparisonFilter {
 
 /// Only rows where the column is greater than or equal to [value]; created
 /// by [TableColumn.gte].
+@experimental
 final class GteFilter extends ComparisonFilter {
   const GteFilter._(super.column, super.value) : super._();
 
@@ -269,6 +279,7 @@ final class GteFilter extends ComparisonFilter {
 
 /// Only rows where the column is less than [value]; created by
 /// [TableColumn.lt].
+@experimental
 final class LtFilter extends ComparisonFilter {
   const LtFilter._(super.column, super.value) : super._();
 
@@ -283,6 +294,7 @@ final class LtFilter extends ComparisonFilter {
 
 /// Only rows where the column is less than or equal to [value]; created by
 /// [TableColumn.lte].
+@experimental
 final class LteFilter extends ComparisonFilter {
   const LteFilter._(super.column, super.value) : super._();
 
@@ -300,6 +312,7 @@ final class LteFilter extends ComparisonFilter {
 ///
 /// Besides regular queries, this filter is supported by realtime streams,
 /// together with [ComparisonFilter]s.
+@experimental
 final class InListFilter extends ColumnFilter {
   const InListFilter._(this.column, this.values) : super._();
 
@@ -325,6 +338,7 @@ final class InListFilter extends ColumnFilter {
 
 /// A filter matching rows whose column value is `null`; created by
 /// [TableColumn.isNull].
+@experimental
 final class IsNullFilter extends ColumnFilter {
   const IsNullFilter._(this.column) : super._();
 
@@ -346,6 +360,7 @@ final class IsNullFilter extends ColumnFilter {
 /// A filter matching rows whose column value is distinct from [value],
 /// treating `null` as a comparable value; created by
 /// [TableColumn.isDistinctFrom].
+@experimental
 final class IsDistinctFilter extends ColumnFilter {
   const IsDistinctFilter._(this.column, this.value) : super._();
 
@@ -365,6 +380,7 @@ final class IsDistinctFilter extends ColumnFilter {
 }
 
 /// A containment or overlap filter on a json, array, or range column.
+@experimental
 sealed class ContainmentFilter extends ColumnFilter {
   const ContainmentFilter._(this.column, this.value) : super._();
 
@@ -376,6 +392,7 @@ sealed class ContainmentFilter extends ColumnFilter {
 }
 
 /// Only rows whose value contains [value]; created by [TableColumn.contains].
+@experimental
 final class ContainsFilter extends ContainmentFilter {
   const ContainsFilter._(super.column, super.value) : super._();
 
@@ -390,6 +407,7 @@ final class ContainsFilter extends ContainmentFilter {
 
 /// Only rows whose value is contained by [value]; created by
 /// [TableColumn.containedBy].
+@experimental
 final class ContainedByFilter extends ContainmentFilter {
   const ContainedByFilter._(super.column, super.value) : super._();
 
@@ -404,6 +422,7 @@ final class ContainedByFilter extends ContainmentFilter {
 
 /// Only rows whose value overlaps with [value]; created by
 /// [TableColumn.overlaps].
+@experimental
 final class OverlapsFilter extends ContainmentFilter {
   const OverlapsFilter._(super.column, super.value) : super._();
 
@@ -417,6 +436,7 @@ final class OverlapsFilter extends ContainmentFilter {
 }
 
 /// A filter comparing a range column against the range literal [range].
+@experimental
 sealed class RangeFilter extends ColumnFilter {
   const RangeFilter._(this.column, this.range) : super._();
 
@@ -434,6 +454,7 @@ sealed class RangeFilter extends ColumnFilter {
 
 /// Only rows whose range is strictly to the left of [range]; created by
 /// [TableColumn.rangeLt].
+@experimental
 final class RangeLtFilter extends RangeFilter {
   const RangeLtFilter._(super.column, super.range) : super._();
 
@@ -448,6 +469,7 @@ final class RangeLtFilter extends RangeFilter {
 
 /// Only rows whose range is strictly to the right of [range]; created by
 /// [TableColumn.rangeGt].
+@experimental
 final class RangeGtFilter extends RangeFilter {
   const RangeGtFilter._(super.column, super.range) : super._();
 
@@ -462,6 +484,7 @@ final class RangeGtFilter extends RangeFilter {
 
 /// Only rows whose range does not extend to the left of [range]; created by
 /// [TableColumn.rangeGte].
+@experimental
 final class RangeGteFilter extends RangeFilter {
   const RangeGteFilter._(super.column, super.range) : super._();
 
@@ -476,6 +499,7 @@ final class RangeGteFilter extends RangeFilter {
 
 /// Only rows whose range does not extend to the right of [range]; created by
 /// [TableColumn.rangeLte].
+@experimental
 final class RangeLteFilter extends RangeFilter {
   const RangeLteFilter._(super.column, super.range) : super._();
 
@@ -490,6 +514,7 @@ final class RangeLteFilter extends RangeFilter {
 
 /// Only rows whose range is adjacent to [range]; created by
 /// [TableColumn.rangeAdjacent].
+@experimental
 final class RangeAdjacentFilter extends RangeFilter {
   const RangeAdjacentFilter._(super.column, super.range) : super._();
 
@@ -503,6 +528,7 @@ final class RangeAdjacentFilter extends RangeFilter {
 }
 
 /// A filter matching a text column against a single [pattern].
+@experimental
 sealed class PatternFilter extends ColumnFilter {
   const PatternFilter._(this.column, this.pattern) : super._();
 
@@ -520,6 +546,7 @@ sealed class PatternFilter extends ColumnFilter {
 
 /// Only rows matching [pattern] case-sensitively; created by
 /// [TextTableColumnFilters.like].
+@experimental
 final class LikeFilter extends PatternFilter {
   const LikeFilter._(super.column, super.pattern) : super._();
 
@@ -534,6 +561,7 @@ final class LikeFilter extends PatternFilter {
 
 /// Only rows matching [pattern] case-insensitively; created by
 /// [TextTableColumnFilters.ilike].
+@experimental
 final class IlikeFilter extends PatternFilter {
   const IlikeFilter._(super.column, super.pattern) : super._();
 
@@ -548,6 +576,7 @@ final class IlikeFilter extends PatternFilter {
 
 /// Only rows matching the regular expression [pattern] case-sensitively;
 /// created by [TextTableColumnFilters.matchRegex].
+@experimental
 final class MatchRegexFilter extends PatternFilter {
   const MatchRegexFilter._(super.column, super.pattern) : super._();
 
@@ -562,6 +591,7 @@ final class MatchRegexFilter extends PatternFilter {
 
 /// Only rows matching the regular expression [pattern] case-insensitively;
 /// created by [TextTableColumnFilters.imatchRegex].
+@experimental
 final class ImatchRegexFilter extends PatternFilter {
   const ImatchRegexFilter._(super.column, super.pattern) : super._();
 
@@ -575,6 +605,7 @@ final class ImatchRegexFilter extends PatternFilter {
 }
 
 /// A filter matching a text column against several [patterns] at once.
+@experimental
 sealed class PatternListFilter extends ColumnFilter {
   const PatternListFilter._(this.column, this.patterns) : super._();
 
@@ -592,6 +623,7 @@ sealed class PatternListFilter extends ColumnFilter {
 
 /// Only rows matching all of [patterns] case-sensitively; created by
 /// [TextTableColumnFilters.likeAllOf].
+@experimental
 final class LikeAllOfFilter extends PatternListFilter {
   const LikeAllOfFilter._(super.column, super.patterns) : super._();
 
@@ -606,6 +638,7 @@ final class LikeAllOfFilter extends PatternListFilter {
 
 /// Only rows matching any of [patterns] case-sensitively; created by
 /// [TextTableColumnFilters.likeAnyOf].
+@experimental
 final class LikeAnyOfFilter extends PatternListFilter {
   const LikeAnyOfFilter._(super.column, super.patterns) : super._();
 
@@ -620,6 +653,7 @@ final class LikeAnyOfFilter extends PatternListFilter {
 
 /// Only rows matching all of [patterns] case-insensitively; created by
 /// [TextTableColumnFilters.ilikeAllOf].
+@experimental
 final class IlikeAllOfFilter extends PatternListFilter {
   const IlikeAllOfFilter._(super.column, super.patterns) : super._();
 
@@ -634,6 +668,7 @@ final class IlikeAllOfFilter extends PatternListFilter {
 
 /// Only rows matching any of [patterns] case-insensitively; created by
 /// [TextTableColumnFilters.ilikeAnyOf].
+@experimental
 final class IlikeAnyOfFilter extends PatternListFilter {
   const IlikeAnyOfFilter._(super.column, super.patterns) : super._();
 
@@ -648,6 +683,7 @@ final class IlikeAnyOfFilter extends PatternListFilter {
 
 /// A full text search filter on a text or tsvector column; created by
 /// [TextTableColumnFilters.textSearch].
+@experimental
 final class TextSearchFilter extends ColumnFilter {
   const TextSearchFilter._(this.column, this.query, {this.config, this.type})
     : super._();
@@ -689,6 +725,7 @@ final class TextSearchFilter extends ColumnFilter {
 
 /// The negation of another [ColumnFilter], created through
 /// [ColumnFilter.not].
+@experimental
 final class NegatedFilter extends ColumnFilter {
   const NegatedFilter._(this.inner) : super._();
 

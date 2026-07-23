@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:supabase/src/constants.dart';
 import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
@@ -232,6 +233,7 @@ class SupabaseClient {
   ///     .select()
   ///     .where(Books.id.gt(10));
   /// ```
+  @experimental
   SupabaseTypedQueryBuilder<Row> table<Row>(PostgrestTable<Row> table) {
     return SupabaseTypedQueryBuilder(from(table.name), table);
   }

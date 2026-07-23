@@ -7,6 +7,7 @@ part of 'postgrest_typed_builder.dart';
 /// Query results are converted into [Row] through
 /// [PostgrestTable.rowFromJson], so no raw `Map<String, dynamic>` is exposed.
 /// {@endtemplate}
+@experimental
 class PostgrestTypedQueryBuilder<Row> {
   /// {@macro postgrest_typed_query_builder}
   const PostgrestTypedQueryBuilder(
