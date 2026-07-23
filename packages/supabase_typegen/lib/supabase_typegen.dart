@@ -1,6 +1,8 @@
-/// Command-line code generator that turns a Supabase database schema into
-/// typed Dart table definitions.
-///
-/// This is a placeholder release that reserves the package name. The generator
-/// implementation is not available yet.
+/// Generates typed Supabase table definitions, row extension types and
+/// column tokens from a database schema.
 library;
+
+export 'src/dart_generator.dart';
+export 'src/identifiers.dart';
+export 'src/openapi_parser.dart';
+export 'src/schema_description.dart';
