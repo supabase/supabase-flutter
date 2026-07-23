@@ -1,3 +1,39 @@
+/// The Dart-relevant type of a column, derived from the Postgres type at
+/// parse time so that later stages never have to compare type name strings.
+enum ColumnTypeKind {
+  /// Whole number types such as `smallint`, `integer` and `bigint`.
+  integer,
+
+  /// Floating point types such as `real` and `double precision`.
+  floating,
+
+  /// Arbitrary precision types such as `numeric`, mapped to `num` since the
+  /// decoded JSON value may be either an integer or a double.
+  numeric,
+
+  /// The `boolean` type.
+  boolean,
+
+  /// Date and timestamp types, mapped to `DateTime`.
+  dateTime,
+
+  /// Types carried as text, such as `text`, `uuid` and `character varying`.
+  text,
+
+  /// The `json` and `jsonb` types, mapped to `Object?`.
+  json,
+
+  /// A Postgres enum type.
+  enumType,
+
+  /// An array type; the element type is in
+  /// [ColumnDescription.elementTypeKind].
+  array,
+
+  /// A type without a specific mapping, treated like [json].
+  unknown,
+}
+
 /// Description of a single database schema, the input to the code generator.
 class SchemaDescription {
   const SchemaDescription({
@@ -39,11 +75,11 @@ class ColumnDescription {
   const ColumnDescription({
     required this.name,
     required this.postgresFormat,
-    required this.jsonType,
+    required this.typeKind,
     required this.isRequired,
     required this.isPrimaryKey,
     required this.hasDefault,
-    this.arrayElementJsonType,
+    this.elementTypeKind,
     this.enumValues,
     this.foreignKey,
     this.comment,
@@ -55,11 +91,12 @@ class ColumnDescription {
   /// The Postgres type, for example `bigint`, `text[]` or `public.mood`.
   final String postgresFormat;
 
-  /// The JSON schema type, for example `integer` or `string`.
-  final String jsonType;
+  /// The kind of Dart type the column maps to.
+  final ColumnTypeKind typeKind;
 
-  /// The JSON schema type of the array elements for array columns.
-  final String? arrayElementJsonType;
+  /// The kind of Dart type of the array elements for [ColumnTypeKind.array]
+  /// columns.
+  final ColumnTypeKind? elementTypeKind;
 
   /// The values of the Postgres enum for enum columns.
   final List<String>? enumValues;
