@@ -502,37 +502,44 @@ features:
       - TableColumn.eq
       - ComparisonFilter
       - ComparisonFilter.column
-      - ComparisonFilter.comparison
-      - ComparisonFilter.operator
       - ComparisonFilter.value
-      - ComparisonOperator
-      - ComparisonOperator.ComparisonOperator
-      - ComparisonOperator.wireName
+      - EqFilter
+      - EqFilter.operator
   database.using_filters.neq:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.neq
       - TableColumn.neq
+      - NeqFilter
+      - NeqFilter.operator
   database.using_filters.gt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gt
       - TableColumn.gt
+      - GtFilter
+      - GtFilter.operator
   database.using_filters.gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gte
       - TableColumn.gte
+      - GteFilter
+      - GteFilter.operator
   database.using_filters.lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lt
       - TableColumn.lt
+      - LtFilter
+      - LtFilter.operator
   database.using_filters.lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lte
       - TableColumn.lte
+      - LteFilter
+      - LteFilter.operator
   database.using_filters.like:
     status: implemented
     symbols:
@@ -541,13 +548,10 @@ features:
       - TextTableColumnFilters.like
       - PatternFilter
       - PatternFilter.column
-      - PatternFilter.match
-      - PatternFilter.operator
       - PatternFilter.pattern
       - PatternFilter.value
-      - PatternOperator
-      - PatternOperator.PatternOperator
-      - PatternOperator.wireName
+      - LikeFilter
+      - LikeFilter.operator
   database.using_filters.like_all:
     status: implemented
     symbols:
@@ -555,33 +559,38 @@ features:
       - TextTableColumnFilters.likeAllOf
       - PatternListFilter
       - PatternListFilter.column
-      - PatternListFilter.match
-      - PatternListFilter.operator
       - PatternListFilter.patterns
       - PatternListFilter.value
-      - PatternListOperator
-      - PatternListOperator.PatternListOperator
-      - PatternListOperator.wireName
+      - LikeAllOfFilter
+      - LikeAllOfFilter.operator
   database.using_filters.like_any:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.likeAnyOf
       - TextTableColumnFilters.likeAnyOf
+      - LikeAnyOfFilter
+      - LikeAnyOfFilter.operator
   database.using_filters.ilike:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilike
       - TextTableColumnFilters.ilike
+      - IlikeFilter
+      - IlikeFilter.operator
   database.using_filters.ilike_all:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilikeAllOf
       - TextTableColumnFilters.ilikeAllOf
+      - IlikeAllOfFilter
+      - IlikeAllOfFilter.operator
   database.using_filters.ilike_any:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilikeAnyOf
       - TextTableColumnFilters.ilikeAnyOf
+      - IlikeAnyOfFilter
+      - IlikeAnyOfFilter.operator
   database.using_filters.is:
     status: implemented
     symbols:
@@ -622,22 +631,23 @@ features:
       - TableColumn.contains
       - ContainmentFilter
       - ContainmentFilter.column
-      - ContainmentFilter.containment
-      - ContainmentFilter.operator
       - ContainmentFilter.value
-      - ContainmentOperator
-      - ContainmentOperator.ContainmentOperator
-      - ContainmentOperator.wireName
+      - ContainsFilter
+      - ContainsFilter.operator
   database.using_filters.contained_by:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.containedBy
       - TableColumn.containedBy
+      - ContainedByFilter
+      - ContainedByFilter.operator
   database.using_filters.overlaps:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.overlaps
       - TableColumn.overlaps
+      - OverlapsFilter
+      - OverlapsFilter.operator
   database.using_filters.match:
     status: implemented
     symbols:
@@ -647,6 +657,12 @@ features:
     symbols:
       - PostgrestFilterBuilder.not
       - ColumnFilter.not
+      - NegatedFilter
+      - NegatedFilter.column
+      - NegatedFilter.inner
+      - NegatedFilter.not
+      - NegatedFilter.operator
+      - NegatedFilter.value
   database.using_filters.or:
     status: implemented
     symbols:
@@ -659,33 +675,38 @@ features:
       - TableColumn.rangeGt
       - RangeFilter
       - RangeFilter.column
-      - RangeFilter.operator
       - RangeFilter.range
-      - RangeFilter.rangeComparison
       - RangeFilter.value
-      - RangeOperator
-      - RangeOperator.RangeOperator
-      - RangeOperator.wireName
+      - RangeGtFilter
+      - RangeGtFilter.operator
   database.using_filters.range_gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeGte
       - TableColumn.rangeGte
+      - RangeGteFilter
+      - RangeGteFilter.operator
   database.using_filters.range_lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLt
       - TableColumn.rangeLt
+      - RangeLtFilter
+      - RangeLtFilter.operator
   database.using_filters.range_lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLte
       - TableColumn.rangeLte
+      - RangeLteFilter
+      - RangeLteFilter.operator
   database.using_filters.range_adjacent:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeAdjacent
       - TableColumn.rangeAdjacent
+      - RangeAdjacentFilter
+      - RangeAdjacentFilter.operator
   database.using_filters.text_search:
     status: implemented
     symbols:
@@ -703,11 +724,15 @@ features:
     symbols:
       - PostgrestFilterBuilder.matchRegex
       - TextTableColumnFilters.matchRegex
+      - MatchRegexFilter
+      - MatchRegexFilter.operator
   database.using_filters.regex_icase:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.imatchRegex
       - TextTableColumnFilters.imatchRegex
+      - ImatchRegexFilter
+      - ImatchRegexFilter.operator
   database.using_filters.raw:
     status: implemented
     symbols:

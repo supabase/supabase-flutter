@@ -73,7 +73,7 @@ class SupabaseTypedStreamFilterBuilder<Row>
   ///
   /// Named [filter] instead of `where` because [Stream.where] already exists.
   ///
-  /// Only one filter can be applied to a stream, and only [ComparisonFilter]
+  /// Only one filter can be applied to a stream, and only [ComparisonFilter]s
   /// and [InListFilter] are supported: [TableColumn.eq], [TableColumn.neq],
   /// [TableColumn.lt], [TableColumn.lte], [TableColumn.gt], [TableColumn.gte]
   /// and [TableColumn.inFilter].
@@ -86,24 +86,28 @@ class SupabaseTypedStreamFilterBuilder<Row>
   /// ```
   SupabaseTypedStreamBuilder<Row> filter(ColumnFilter columnFilter) {
     switch (columnFilter) {
-      case ComparisonFilter(:final column, :final comparison, :final value):
-        switch (comparison) {
-          case ComparisonOperator.eq:
-            _streamFilterBuilder.eq(column, value);
-          case ComparisonOperator.neq:
-            _streamFilterBuilder.neq(column, value);
-          case ComparisonOperator.lt:
-            _streamFilterBuilder.lt(column, value);
-          case ComparisonOperator.lte:
-            _streamFilterBuilder.lte(column, value);
-          case ComparisonOperator.gt:
-            _streamFilterBuilder.gt(column, value);
-          case ComparisonOperator.gte:
-            _streamFilterBuilder.gte(column, value);
-        }
-      case InListFilter(:final column, :final values):
-        _streamFilterBuilder.inFilter(column, values);
-      default:
+      case EqFilter():
+        _streamFilterBuilder.eq(columnFilter.column, columnFilter.value);
+      case NeqFilter():
+        _streamFilterBuilder.neq(columnFilter.column, columnFilter.value);
+      case LtFilter():
+        _streamFilterBuilder.lt(columnFilter.column, columnFilter.value);
+      case LteFilter():
+        _streamFilterBuilder.lte(columnFilter.column, columnFilter.value);
+      case GtFilter():
+        _streamFilterBuilder.gt(columnFilter.column, columnFilter.value);
+      case GteFilter():
+        _streamFilterBuilder.gte(columnFilter.column, columnFilter.value);
+      case InListFilter():
+        _streamFilterBuilder.inFilter(columnFilter.column, columnFilter.values);
+      case IsNullFilter() ||
+          IsDistinctFilter() ||
+          ContainmentFilter() ||
+          RangeFilter() ||
+          PatternFilter() ||
+          PatternListFilter() ||
+          TextSearchFilter() ||
+          NegatedFilter():
         throw ArgumentError.value(
           columnFilter,
           'columnFilter',

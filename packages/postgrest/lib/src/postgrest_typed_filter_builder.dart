@@ -51,7 +51,7 @@ class PostgrestTypedFilterBuilder<Row, T>
   }
 
   static String _orFragment(ColumnFilter filter) {
-    final unwrapped = filter is _NegatedColumnFilter ? filter._inner : filter;
+    final unwrapped = filter is NegatedFilter ? filter.inner : filter;
     final value = filter.value;
     final String rendered;
     if (value is List) {
