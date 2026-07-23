@@ -2,6 +2,9 @@
 //
 // Source schema: public
 
+// The typed table access API is still experimental.
+// ignore_for_file: experimental_member_use
+
 import 'package:postgrest/postgrest.dart';
 
 /// Postgres enum `public.mood`.

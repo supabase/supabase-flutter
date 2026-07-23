@@ -32,6 +32,9 @@ String generateDartCode(
     ..writeln('//')
     ..writeln('// Source schema: ${schema.schemaName}')
     ..writeln()
+    ..writeln('// The typed table access API is still experimental.')
+    ..writeln('// ignore_for_file: experimental_member_use')
+    ..writeln()
     ..writeln("import '$importUri';")
     ..writeln();
 
