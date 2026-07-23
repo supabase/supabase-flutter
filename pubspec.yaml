@@ -17,6 +17,7 @@ workspace:
   - packages/supabase_flutter/example
   - packages/supabase_common
   - packages/supabase_lints
+  - packages/supabase_typegen
   - packages/yet_another_json_isolate
   - examples/authentication
   - examples/database_crud

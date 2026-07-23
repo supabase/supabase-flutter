@@ -33,6 +33,7 @@ jobs:
           - supabase
           - supabase_common
           - supabase_flutter
+          - supabase_typegen
           - yet_another_json_isolate
     steps:
       - name: Checkout
