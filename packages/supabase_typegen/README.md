@@ -49,7 +49,9 @@ await client.table(Books.table).insert(
   `NOT NULL` columns with a database default, so getters for defaulted
   columns other than primary keys are conservatively nullable.
 - Passing `null` to an `Insert`/`Update` parameter omits the column. To write
-  SQL NULL explicitly, set the raw key: `BooksUpdate()..['price'] = null`.
+  SQL NULL explicitly, use the generated `set…ToNull` methods, for example
+  `BooksUpdate(inPrint: false).setPriceToNull()`; they only exist for
+  nullable columns, so nulling a `NOT NULL` column is a compile error.
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
   matching the supabase-js type generator; arrays containing SQL NULL
   elements throw when the element is read. Enum array columns degrade to
