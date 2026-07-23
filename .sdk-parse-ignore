@@ -21,7 +21,3 @@ packages/supabase_typegen/
 # The examples are standalone demo apps, not part of the published SDK, so their
 # public classes are not capability-matrix symbols.
 examples/
-
-# supabase_typegen is a development-time code generator invoked through its CLI;
-# its library API is tool internals, not SDK client surface.
-packages/supabase_typegen/
