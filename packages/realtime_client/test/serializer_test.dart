@@ -233,6 +233,63 @@ void main() {
       expect(jsonDecode(metadata), {'trace_id': 'abc'});
     });
 
+    test('encodes multi-byte header fields as UTF-8 byte lengths', () {
+      final serializerWithMeta = Serializer(allowedMetadataKeys: ['label']);
+      final topic = 'realtime:café';
+      final userEvent = 'café-🎉';
+      final payload = Uint8List.fromList([1, 2, 3]);
+      final result = serializerWithMeta.encode({
+        'join_ref': '10',
+        'ref': '1',
+        'topic': topic,
+        'event': 'broadcast',
+        'payload': {
+          'type': 'broadcast',
+          'event': userEvent,
+          'label': 'naïve',
+          'payload': payload,
+        },
+      });
+
+      final bytes = result as Uint8List;
+      final joinRefBytes = utf8.encode('10');
+      final refBytes = utf8.encode('1');
+      final topicBytes = utf8.encode(topic);
+      final userEventBytes = utf8.encode(userEvent);
+      final metadataBytes = utf8.encode(jsonEncode({'label': 'naïve'}));
+
+      // Length prefixes must be UTF-8 byte lengths, not UTF-16 code-unit counts.
+      expect(bytes[1], joinRefBytes.length);
+      expect(bytes[2], refBytes.length);
+      expect(bytes[3], topicBytes.length);
+      expect(bytes[4], userEventBytes.length);
+      expect(bytes[5], metadataBytes.length);
+      expect(bytes[4], greaterThan(userEvent.length));
+
+      // The written bytes must round-trip through utf8.decode, as decode does.
+      var offset =
+          Serializer.headerLength + Serializer.userBroadcastPushMetaLength;
+      offset += joinRefBytes.length + refBytes.length;
+      expect(
+        utf8.decode(bytes.sublist(offset, offset + topicBytes.length)),
+        topic,
+      );
+      offset += topicBytes.length;
+      expect(
+        utf8.decode(bytes.sublist(offset, offset + userEventBytes.length)),
+        userEvent,
+      );
+      offset += userEventBytes.length;
+      expect(
+        jsonDecode(
+          utf8.decode(bytes.sublist(offset, offset + metadataBytes.length)),
+        ),
+        {'label': 'naïve'},
+      );
+      offset += metadataBytes.length;
+      expect(bytes.sublist(offset), payload);
+    });
+
     test('throws when a frame field exceeds 255 bytes', () {
       final longTopic = 'a' * 256;
       expect(

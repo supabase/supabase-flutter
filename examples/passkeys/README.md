@@ -77,3 +77,23 @@ Then:
 
 > Passkeys are bound to the domain (relying party) they were created on, so a
 > passkey registered on `localhost` only works on `localhost`.
+
+## Integration test
+
+[`integration_test/passkeys_test.dart`](integration_test/passkeys_test.dart) is
+an end-to-end test that drives the app widgets against the local stack: it
+creates an account, lands on the passkey management screen, signs out, tries a
+wrong password and signs back in.
+
+The WebAuthn ceremony itself (`registerPasskey` / `signInWithPasskey`) drives a
+platform authenticator prompt that cannot be automated headlessly, so it is
+exercised manually with the steps above rather than in this test.
+
+With the local stack running, pass the same defines the app uses and run it on a
+device (integration tests need one, so `-d macos`, an emulator or a real device):
+
+```bash
+flutter test integration_test/passkeys_test.dart -d macos \
+  --dart-define=SUPABASE_URL=http://localhost:54321 \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_LOCAL_PUBLISHABLE_KEY
+```

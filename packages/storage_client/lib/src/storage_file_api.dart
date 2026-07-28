@@ -695,6 +695,37 @@ class StorageFileApi {
     return fileObjects;
   }
 
+  /// Purges the CDN cache for a single object.
+  ///
+  /// Invalidates the CDN cache for the object at [path] (relative to the
+  /// bucket). There is no wildcard or recursion; pass the exact path of the
+  /// object to invalidate. For example: `purgeCache('folder/avatar.png')`.
+  ///
+  /// When [transformations] is `true`, only the resized/formatted variants are
+  /// purged, leaving the original cached file intact. When omitted the object
+  /// cache is purged.
+  ///
+  /// Requires the service-role key and the tenant `purgeCache` feature to be
+  /// enabled on the storage server.
+  Future<String> purgeCache(
+    String path, {
+    bool transformations = false,
+  }) async {
+    final finalPath = _getFinalPath(path);
+    var requestUrl = Uri.parse('$url/cdn/$finalPath');
+    if (transformations) {
+      requestUrl = requestUrl.replace(
+        queryParameters: {'transformations': 'true'},
+      );
+    }
+    final response = await _storageFetch.delete(
+      requestUrl.toString(),
+      {},
+      options: _fetchOptions,
+    );
+    return (response as Map<String, dynamic>)['message'] as String;
+  }
+
   /// Lists all the files within a bucket.
   ///
   /// [path] The folder path.

@@ -1,0 +1,31 @@
+name: authentication_example
+description: Demonstrates every supabase_flutter sign in method except passkeys.
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+  flutter: '>=3.35.0'
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.17.0
+
+dev_dependencies:
+  supabase_lints: ^0.1.1
+  # Used only by the integration test: `http` reads OTP emails from the local
+  # mail server and `crypto` computes a TOTP code for the MFA flow.
+  crypto: ^3.0.0
+  http: ^1.0.0
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

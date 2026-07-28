@@ -154,6 +154,35 @@ void main() {
       expect(response, 'Deleted');
     });
 
+    test('should purgeBucketCache issuing DELETE to /cdn/{bucket}', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client.purgeBucketCache('test_bucket');
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.toString(),
+        endsWith('/storage/v1/cdn/test_bucket'),
+      );
+      expect(request.url.query, isEmpty);
+      expect(response, 'success');
+    });
+
+    test('should purgeBucketCache with transformations query param', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client.purgeBucketCache(
+        'test_bucket',
+        transformations: true,
+      );
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(request.url.queryParameters['transformations'], 'true');
+      expect(response, 'success');
+    });
+
     test('should create analytics bucket', () async {
       customHttpClient.response = testAnalyticsBucketJson;
 
@@ -246,6 +275,37 @@ void main() {
 
       final response = await client.from('public').move('a.txt', 'b.txt');
       expect(response, 'Move');
+    });
+
+    test('should purgeCache issuing DELETE to /cdn/{bucket}/{path}', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client.from('public').purgeCache('folder/a.txt');
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.toString(),
+        endsWith('/storage/v1/cdn/public/folder/a.txt'),
+      );
+      expect(request.url.query, isEmpty);
+      expect(response, 'success');
+    });
+
+    test('should purgeCache with transformations query param', () async {
+      customHttpClient.response = {'message': 'success'};
+
+      final response = await client
+          .from('public')
+          .purgeCache('folder/a.txt', transformations: true);
+
+      final request = customHttpClient.receivedRequests.last;
+      expect(request.method, 'DELETE');
+      expect(
+        request.url.queryParameters['transformations'],
+        'true',
+      );
+      expect(response, 'success');
     });
 
     test('should createSignedUrl file', () async {

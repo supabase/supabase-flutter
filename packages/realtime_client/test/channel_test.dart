@@ -487,6 +487,80 @@ void main() {
     });
   });
 
+  group('blocking listeners after subscribe', () {
+    setUp(() {
+      socket = RealtimeClient('wss://example.com/socket');
+      channel = socket.channel('topic');
+    });
+
+    test('throws when adding postgres_changes listener while joining', () {
+      channel.subscribe();
+      expect(channel.isJoining, isTrue);
+
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          callback: (_) {},
+        ),
+        throwsA(
+          allOf(
+            isA<String>(),
+            contains('cannot add `postgres_changes` callbacks'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when adding postgres_changes listener after join', () {
+      channel.subscribe();
+      channel.joinPush.trigger('ok', {});
+      expect(channel.isJoined, isTrue);
+
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          callback: (_) {},
+        ),
+        throwsA(
+          allOf(
+            isA<String>(),
+            contains('cannot add `postgres_changes` callbacks'),
+          ),
+        ),
+      );
+    });
+
+    test('allows adding postgres_changes listener before subscribe', () {
+      expect(
+        () => channel.onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          callback: (_) {},
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('does not block presence listeners after subscribe', () {
+      channel.subscribe();
+      expect(channel.isJoining, isTrue);
+
+      expect(
+        () => channel.onPresenceSync((_) {}),
+        returnsNormally,
+      );
+    });
+
+    test('does not block broadcast listeners after subscribe', () {
+      channel.subscribe();
+      expect(channel.isJoining, isTrue);
+
+      expect(
+        () => channel.onBroadcast(event: 'test', callback: (_) {}),
+        returnsNormally,
+      );
+    });
+  });
+
   group('off', () {
     setUp(() {
       socket = RealtimeClient('/socket');
@@ -758,6 +832,51 @@ void main() {
         'currentPresences': <Presence>[],
       }, '3');
       expect(leaveCalled, isTrue);
+    });
+  });
+
+  group('track opts forwarding', () {
+    late _OptsCapturingChannel capturingChannel;
+
+    setUp(() {
+      socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
+      capturingChannel = _OptsCapturingChannel('topic', socket);
+    });
+
+    test('track forwards a custom non-timeout opt to send', () async {
+      await capturingChannel.track({'id': 123}, {'ack': true});
+
+      expect(capturingChannel.capturedOpts, containsPair('ack', true));
+    });
+
+    test('track forwards a custom timeout opt to send', () async {
+      await capturingChannel.track({'id': 123}, {'timeout': 2500});
+
+      expect(capturingChannel.capturedOpts, containsPair('timeout', 2500));
+    });
+
+    test(
+      'track falls back to the channel timeout when none provided',
+      () async {
+        await capturingChannel.track({'id': 123});
+
+        expect(
+          capturingChannel.capturedOpts,
+          containsPair('timeout', const Duration(milliseconds: 1234)),
+        );
+      },
+    );
+
+    test('track keeps custom opts alongside the default timeout', () async {
+      await capturingChannel.track({'id': 123}, {'ack': true});
+
+      expect(
+        capturingChannel.capturedOpts,
+        allOf(
+          containsPair('ack', true),
+          containsPair('timeout', const Duration(milliseconds: 1234)),
+        ),
+      );
     });
   });
 
@@ -1254,5 +1373,22 @@ class _SetAuthThrowingSocket extends RealtimeClient {
   Future<void> setAuth(String? token) async {
     setAuthCalls++;
     throw thrown;
+  }
+}
+
+class _OptsCapturingChannel extends RealtimeChannel {
+  _OptsCapturingChannel(super.topic, super.socket);
+
+  Map<String, dynamic>? capturedOpts;
+
+  @override
+  Future<ChannelResponse> send({
+    required RealtimeListenTypes type,
+    String? event,
+    required Map<String, dynamic> payload,
+    Map<String, dynamic> opts = const {},
+  }) async {
+    capturedOpts = opts;
+    return ChannelResponse.ok;
   }
 }

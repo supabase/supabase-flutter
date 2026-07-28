@@ -20,6 +20,23 @@ void main() {
     expect(toBoolean(null), isNull);
   });
 
+  test('transformers toInt', () {
+    expect(toInt(10), equals(10));
+    expect(toInt('10'), equals(10));
+    expect(toInt(null), isNull);
+    expect(toInt(''), isNull);
+    expect(toInt('not a number'), isNull);
+  });
+
+  test('transformers toDouble', () {
+    expect(toDouble(1.23), equals(1.23));
+    expect(toDouble('1.23'), equals(1.23));
+    expect(toDouble(1), equals(1.0));
+    expect(toDouble(null), isNull);
+    expect(toDouble(''), isNull);
+    expect(toDouble('not a number'), isNull);
+  });
+
   test('transformers noop', () {
     expect(noop(null), equals(null));
     expect(noop(''), equals(''));
