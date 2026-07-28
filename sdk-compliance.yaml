@@ -467,6 +467,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.eq
+      - SupabaseStreamFilterBuilder.eq
   database.using_filters.neq:
     status: implemented
     symbols:
@@ -491,6 +492,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.like
+      - SupabaseStreamFilterBuilder.like
   database.using_filters.like_all:
     status: implemented
     symbols:
@@ -503,6 +505,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilike
+      - SupabaseStreamFilterBuilder.ilike
   database.using_filters.ilike_all:
     status: implemented
     symbols:
@@ -515,10 +518,12 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isFilter
+      - SupabaseStreamFilterBuilder.isFilter
   database.using_filters.is_distinct:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isDistinct
+      - SupabaseStreamFilterBuilder.isDistinct
   database.using_filters.in:
     status: implemented
     symbols:
@@ -579,10 +584,12 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.matchRegex
+      - SupabaseStreamFilterBuilder.match
   database.using_filters.regex_icase:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.imatchRegex
+      - SupabaseStreamFilterBuilder.imatch
   database.using_filters.raw:
     status: implemented
     symbols:
