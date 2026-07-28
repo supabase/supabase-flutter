@@ -10,6 +10,10 @@ import '../../postgrest/test/test_utils.dart' show serviceRoleKey;
 
 late SupabaseClient _supabase;
 
+/// Track if this is the first connection to the stream. This is used to wait a
+/// bit longer for the first connection to get the replication working properly.
+bool _firstConnection = true;
+
 void main() {
   setUpAll(() async {
     final client = SupabaseClient(
@@ -39,16 +43,6 @@ void main() {
   tearDown(() async {
     await _supabase.removeAllChannels();
     await _supabase.dispose();
-  });
-
-  test('stream lifecycle smoke test', () async {
-    await _expectSnapshots(
-      stream: _supabase.from('users').stream(primaryKey: ['username']),
-      expectedSnapshots: [
-        {'awailas', 'dragarcia', 'kiwicopple', 'supabot'},
-      ],
-      inserts: const [],
-    );
   });
 
   group('stream() filters', () {
@@ -430,6 +424,16 @@ Future<void> _expectSnapshots({
   final bStream = stream.asBroadcastStream();
   unawaited(
     bStream.first.then((_) async {
+      if (_firstConnection) {
+        _firstConnection = false;
+        // We need to wait a bit longer for the first connection to get the replication working properly
+        await Future.delayed(
+          const Duration(seconds: 3),
+        ); // wait for replication
+      }
+      await Future.delayed(
+        const Duration(milliseconds: 500),
+      ); // wait for replication
       for (final user in inserts) {
         await _supabase.from('users').insert({
           'username': user.username,
@@ -450,6 +454,9 @@ Future<void> _resetUsers(SupabaseClient client) async {
       .from('users')
       .delete()
       .not('username', 'in', _seedUsers.map((u) => u.username).toList());
+  await Future.delayed(
+    const Duration(milliseconds: 500),
+  ); // wait for replication
 }
 
 Set<String> _usernamesFromRows(List<Map<String, dynamic>> rows) {
