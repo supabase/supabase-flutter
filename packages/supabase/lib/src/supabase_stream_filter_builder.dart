@@ -179,7 +179,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
     return this;
   }
 
-  /// Filters the results where [column] is not equal to [value] treating `null
+  /// Filters the results where [column] is not equal to [value] treating `null`
   /// as a distinct value.
   ///
   /// ```dart
