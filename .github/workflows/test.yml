@@ -72,7 +72,7 @@ jobs:
               continue
             fi
             case "$package" in
-              gotrue|postgrest|realtime_client|storage_client) backend=true ;;
+              gotrue|postgrest|realtime_client|storage_client|supabase) backend=true ;;
               *) backend=false ;;
             esac
             case "$package" in
