@@ -58,7 +58,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder<dynamic> {
   /// ```
   ///
   /// `eq`, `neq`, `lt`, `lte`, `gt` `gte`, `like`, `ilike`, `match`, `imatch`,
-  /// or `isDistinct` and `order`, `limit` filter are available to limit the
+  /// `isDistinct`, `isFilter` or `inFilter` and `order`, `limit` filter are available to limit the
   /// data being queried.
   ///
   /// ```dart

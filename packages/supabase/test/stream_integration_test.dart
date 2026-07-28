@@ -27,6 +27,7 @@ void main() {
         'status': user.status,
       });
     }
+    await client.dispose();
     await Future.delayed(
       const Duration(milliseconds: 500),
     ); // wait for replication
