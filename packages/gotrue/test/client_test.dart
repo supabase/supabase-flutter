@@ -14,7 +14,7 @@ void main() {
 
   env.load(); // Load env variables from .env file
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final gotrueUrl = env['GOTRUE_URL'] ?? defaultGotrueUrl;
   final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
   late String newEmail;
   late String newPhone;
@@ -27,7 +27,7 @@ void main() {
     setUp(() async {
       final response = await http.post(
         Uri.parse(
-          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+          resetAuthDataUrl,
         ),
         headers: {
           'x-forwarded-for': '127.0.0.1',
@@ -751,7 +751,7 @@ void main() {
       () async {
         await http.post(
           Uri.parse(
-            'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+            resetAuthDataUrl,
           ),
           headers: {
             'x-forwarded-for': '127.0.0.1',
@@ -886,7 +886,7 @@ Future<String> _pkceCodeFromEmailChange(String toEmail) async {
     }
   }
 
-  final link = RegExp(r'http://127\.0\.0\.1:54421/auth/v1/verify\?\S+')
+  final link = RegExp('${RegExp.escape(defaultGotrueUrl)}/verify\\?\\S+')
       .firstMatch(message!['Text'] as String)!
       .group(0)!
       .replaceAll(RegExp(r'[)>].*$'), '');

@@ -9,6 +9,8 @@ import 'dart:io';
 import 'package:gotrue/gotrue.dart';
 import 'package:test/test.dart';
 
+import 'utils.dart';
+
 void main() {
   group('Custom OAuth provider (issue #1337)', () {
     test('OAuthProvider can be constructed with a custom provider string', () {
@@ -24,7 +26,7 @@ void main() {
     test(
       'getOAuthSignInUrl builds correct URL for a custom provider',
       () async {
-        const gotrueUrl = 'http://127.0.0.1:54421/auth/v1';
+        const gotrueUrl = defaultGotrueUrl;
         final client = GoTrueClient(
           url: gotrueUrl,
           headers: {},

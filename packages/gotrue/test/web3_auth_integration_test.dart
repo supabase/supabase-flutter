@@ -33,7 +33,7 @@ String _base58Encode(List<int> bytes) {
 
 void main() {
   final env = DotEnv()..load();
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final gotrueUrl = env['GOTRUE_URL'] ?? defaultGotrueUrl;
   final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
   final ed25519 = Ed25519();
 

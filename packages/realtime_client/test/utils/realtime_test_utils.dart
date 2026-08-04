@@ -5,23 +5,24 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:postgres/postgres.dart';
 import 'package:realtime_client/realtime_client.dart';
+import 'package:supabase_common/testing.dart';
 
 /// The host and port the local Supabase CLI gateway is reachable at.
-const realtimeHttpHost = '127.0.0.1';
-const realtimePort = 54421;
+const realtimeHttpHost = localStackHost;
+const realtimePort = localStackPort;
 
 /// The Realtime WebSocket endpoint exposed by the gateway.
-const realtimeUrl = 'ws://$realtimeHttpHost:$realtimePort/realtime/v1';
+const realtimeUrl = localStackRealtimeUrl;
 
 /// The JWT secret the local Supabase CLI stack signs and verifies tokens with.
-const apiJwtSecret = 'super-secret-jwt-token-with-at-least-32-characters-long';
+const apiJwtSecret = localStackJwtSecret;
 
 const _postgresEndpoint = (
-  host: '127.0.0.1',
-  port: 54422,
-  database: 'postgres',
-  username: 'postgres',
-  password: 'postgres',
+  host: localStackHost,
+  port: localStackDatabasePort,
+  database: localStackDatabaseName,
+  username: localStackDatabaseUsername,
+  password: localStackDatabasePassword,
 );
 
 String _base64Url(List<int> bytes) =>

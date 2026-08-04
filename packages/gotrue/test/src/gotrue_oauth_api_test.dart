@@ -300,7 +300,7 @@ class GotrueOauthApiFixture {
     final env = DotEnv();
     env.load(); // Load env variables from .env file
 
-    _gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+    _gotrueUrl = env['GOTRUE_URL'] ?? defaultGotrueUrl;
     _serviceRoleToken = getServiceRoleToken(env);
 
     _client = GoTrueClient(
@@ -331,8 +331,8 @@ class GotrueOauthApiFixture {
       'GET',
       Uri(
         scheme: 'http',
-        host: '127.0.0.1',
-        port: 54421,
+        host: localStackHost,
+        port: localStackPort,
         path: '/auth/v1/oauth/authorize',
         queryParameters: {
           'response_type': client.responseTypes.first.name,
@@ -360,7 +360,7 @@ class GotrueOauthApiFixture {
 
   Future<void> _reset() async {
     final response = await http.post(
-      Uri.parse('http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data'),
+      Uri.parse(resetAuthDataUrl),
       headers: {
         'x-forwarded-for': '127.0.0.1',
         'apikey': _serviceRoleToken,
