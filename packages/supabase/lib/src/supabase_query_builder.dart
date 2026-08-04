@@ -34,7 +34,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder<dynamic> {
   /// receives realtime updates.
   ///
   /// The underlying [RealtimeChannel] is public by default. Set [private] to
-  /// true` to make it private, which requires additional RLS policies to be
+  /// `true` to make it private, which requires additional RLS policies to be
   /// set up. See https://supabase.com/docs/guides/realtime/authorization for
   /// more details.
   ///
