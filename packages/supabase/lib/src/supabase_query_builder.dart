@@ -24,7 +24,8 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder<dynamic> {
        );
 
   /// Combines the current state of your table from PostgREST with changes from
-  /// the realtime server to return real-time data from your table as a [Stream].
+  /// the realtime server to return real-time data from your table as a
+  /// [Stream].
   ///
   /// Realtime is disabled by default for new tables. You can turn it on by
   /// [managing replication](https://supabase.com/docs/guides/realtime/subscribing-to-database-changes#enable-postgres-changes).
@@ -57,7 +58,10 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder<dynamic> {
   ///   the documentation about [receiving old records](https://supabase.com/docs/guides/realtime/postgres-changes?queryGroups=language&language=dart#receiving-old-records).
   ///
   /// ```dart
-  /// supabase.from('chats').stream(primaryKey: ['id']).listen(_onChatsReceived);
+  /// supabase
+  ///     .from('chats')
+  ///     .stream(primaryKey: ['id'])
+  ///     .listen(_onChatsReceived);
   /// ```
   ///
   /// `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `inFilter`, `like`, `ilike`,
@@ -66,11 +70,22 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder<dynamic> {
   /// `order` and `limit` are available to sort and cap the result.
   ///
   /// ```dart
-  /// supabase.from('chats').stream(primaryKey: ['id']).eq('room_id','123').order('created_at').limit(20).listen(_onChatsReceived);
+  /// supabase
+  ///     .from('chats')
+  ///     .stream(primaryKey: ['id'])
+  ///     .eq('room_id', '123')
+  ///     .order('created_at')
+  ///     .limit(20)
+  ///     .listen(_onChatsReceived);
   /// ```
   ///
   /// ```dart
-  /// supabase.from('chats').stream(primaryKey: ['id']).eq('room_id','123').like('message', '%supabase%').listen(_onChatsReceived);
+  /// supabase
+  ///     .from('chats')
+  ///     .stream(primaryKey: ['id'])
+  ///     .eq('room_id', '123')
+  ///     .like('message', '%supabase%')
+  ///     .listen(_onChatsReceived);
   /// ```
   SupabaseStreamFilterBuilder stream({
     required List<String> primaryKey,

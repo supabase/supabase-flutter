@@ -19,7 +19,9 @@ void main() {
   setUp(() async {
     postgresChanges = [];
     restQueries = [];
-    mockServer = await HttpServer.bind('localhost', 0);
+    // Bound to an explicit address, because `localhost` can resolve to `::1`,
+    // which does not survive being interpolated into a URL unbracketed.
+    mockServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
 
     mockServer.listen((request) {
       unawaited(
@@ -32,7 +34,7 @@ void main() {
     });
 
     supabase = SupabaseClient(
-      'http://${mockServer.address.host}:${mockServer.port}',
+      'http://${InternetAddress.loopbackIPv4.address}:${mockServer.port}',
       serviceRoleKey,
     );
   });

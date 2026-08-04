@@ -98,7 +98,10 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// Filters the results where [column] is included in [values].
   ///
   /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).inFilter('name', ['Andy', 'Amy', 'Terry']);
+  /// supabase
+  ///     .from('users')
+  ///     .stream(primaryKey: ['id'])
+  ///     .inFilter('name', ['Andy', 'Amy', 'Terry']);
   /// ```
   SupabaseStreamFilterBuilder inFilter(String column, List<Object> values) {
     _streamFilters.add((
@@ -141,7 +144,10 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// expression [pattern] case-sensitive.
   ///
   /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).matchRegex('slug', r'^post-\d+$');
+  /// supabase
+  ///     .from('users')
+  ///     .stream(primaryKey: ['id'])
+  ///     .matchRegex('slug', r'^post-\d+$');
   /// ```
   SupabaseStreamFilterBuilder matchRegex(String column, String pattern) {
     _streamFilters.add((
@@ -156,7 +162,10 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// expression [pattern] case-insensitive.
   ///
   /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).imatchRegex('slug', r'^post-\d+$');
+  /// supabase
+  ///     .from('users')
+  ///     .stream(primaryKey: ['id'])
+  ///     .imatchRegex('slug', r'^post-\d+$');
   /// ```
   SupabaseStreamFilterBuilder imatchRegex(String column, String pattern) {
     _streamFilters.add((
