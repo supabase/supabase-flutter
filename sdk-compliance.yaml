@@ -472,22 +472,27 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.neq
+      - SupabaseStreamFilterBuilder.neq
   database.using_filters.gt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gt
+      - SupabaseStreamFilterBuilder.gt
   database.using_filters.gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gte
+      - SupabaseStreamFilterBuilder.gte
   database.using_filters.lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lt
+      - SupabaseStreamFilterBuilder.lt
   database.using_filters.lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lte
+      - SupabaseStreamFilterBuilder.lte
   database.using_filters.like:
     status: implemented
     symbols:
@@ -528,6 +533,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.inFilter
+      - SupabaseStreamFilterBuilder.inFilter
   database.using_filters.not_in:
     status: implemented
     symbols:
@@ -584,12 +590,12 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.matchRegex
-      - SupabaseStreamFilterBuilder.match
+      - SupabaseStreamFilterBuilder.matchRegex
   database.using_filters.regex_icase:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.imatchRegex
-      - SupabaseStreamFilterBuilder.imatch
+      - SupabaseStreamFilterBuilder.imatchRegex
   database.using_filters.raw:
     status: implemented
     symbols:
