@@ -16,6 +16,7 @@ create table public.users (
 );
 alter table public.users replica identity full;
 comment on column public.users.data is 'For unstructured data and prototyping.';
+alter publication supabase_realtime add table public.users;
 
 -- CHANNELS
 create table public.channels (

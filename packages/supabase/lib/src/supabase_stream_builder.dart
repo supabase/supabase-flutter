@@ -58,9 +58,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Contains the combined data of postgrest and realtime to emit as stream.
   SupabaseStreamEvent _streamData = [];
 
-  /// `eq` filter used for both postgrest and realtime
-  // ignore: avoid-unassigned-fields
-  _StreamPostgrestFilter? _streamFilter;
+  /// Filters to be applied to the stream
+  final List<_StreamPostgrestFilter> _streamFilter = [];
 
   /// Which column to order by and whether it's ascending
   _Order? _orderBy;
@@ -147,16 +146,16 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   }
 
   void _getStreamData() {
-    final currentStreamFilter = _streamFilter;
     _streamData = [];
-    PostgresChangeFilter? realtimeFilter;
-    if (currentStreamFilter != null) {
-      realtimeFilter = PostgresChangeFilter(
-        type: currentStreamFilter.type,
-        column: currentStreamFilter.column,
-        value: currentStreamFilter.value,
-      );
-    }
+    List<PostgresChangeFilter> realtimeFilter = _streamFilter
+        .map(
+          (filter) => PostgresChangeFilter(
+            column: filter.column,
+            type: filter.type,
+            value: filter.value,
+          ),
+        )
+        .toList();
 
     _channel = _realtimeClient.channel(
       _realtimeTopic,
@@ -170,7 +169,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           event: PostgresChangeEvent.all,
           schema: _schema,
           table: _table,
-          filter: realtimeFilter,
+          filters: realtimeFilter,
           callback: (payload) {
             switch (payload.eventType) {
               case PostgresChangeEvent.insert:
@@ -226,48 +225,59 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   Future<void> _getPostgrestData() async {
     PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select();
-    if (_streamFilter != null) {
-      query = switch (_streamFilter!.type) {
+    for (final filter in _streamFilter) {
+      query = switch (filter.type) {
         PostgresChangeFilterType.eq => query.eq(
-          _streamFilter!.column,
-          _streamFilter!.value,
+          filter.column,
+          filter.value,
         ),
         PostgresChangeFilterType.neq => query.neq(
-          _streamFilter!.column,
-          _streamFilter!.value,
+          filter.column,
+          filter.value,
         ),
         PostgresChangeFilterType.lt => query.lt(
-          _streamFilter!.column,
-          _streamFilter!.value,
+          filter.column,
+          filter.value,
         ),
         PostgresChangeFilterType.lte => query.lte(
-          _streamFilter!.column,
-          _streamFilter!.value,
+          filter.column,
+          filter.value,
         ),
         PostgresChangeFilterType.gt => query.gt(
-          _streamFilter!.column,
-          _streamFilter!.value,
+          filter.column,
+          filter.value,
         ),
         PostgresChangeFilterType.gte => query.gte(
-          _streamFilter!.column,
-          _streamFilter!.value,
+          filter.column,
+          filter.value,
         ),
         PostgresChangeFilterType.inFilter => query.inFilter(
-          _streamFilter!.column,
-          _streamFilter!.value,
+          filter.column,
+          filter.value,
         ),
-        // These operators are only reachable through the realtime
-        // `onPostgresChanges` API, not through `.stream()`'s filter builder,
-        // so they can never be set on `_streamFilter`. Guard the exhaustive
-        // switch defensively in case that ever changes.
-        PostgresChangeFilterType.like ||
-        PostgresChangeFilterType.ilike ||
-        PostgresChangeFilterType.isFilter ||
-        PostgresChangeFilterType.match ||
-        PostgresChangeFilterType.imatch ||
-        PostgresChangeFilterType.isDistinct => throw UnsupportedError(
-          'The "${_streamFilter!.type.name}" filter is not supported by '
-          '`.stream()`. Use one of eq, neq, lt, lte, gt, gte or inFilter.',
+        PostgresChangeFilterType.like => query.like(
+          filter.column,
+          filter.value,
+        ),
+        PostgresChangeFilterType.ilike => query.ilike(
+          filter.column,
+          filter.value,
+        ),
+        PostgresChangeFilterType.match => query.matchRegex(
+          filter.column,
+          filter.value,
+        ),
+        PostgresChangeFilterType.imatch => query.imatchRegex(
+          filter.column,
+          filter.value,
+        ),
+        PostgresChangeFilterType.isFilter => query.isFilter(
+          filter.column,
+          filter.value,
+        ),
+        PostgresChangeFilterType.isDistinct => query.isDistinct(
+          filter.column,
+          filter.value,
         ),
       };
     }
