@@ -14,8 +14,10 @@ void main() {
   setUpAll(() async {
     final client = _createClient();
     await _restoreSeedUsers(client);
-    await _warmUpReplication(client);
+    // Before the warm up, so that rows left behind by an aborted run cannot
+    // collide with the ones it inserts.
     await _deleteExtraUsers(client);
+    await _warmUpReplication(client);
     await client.dispose();
   });
 
@@ -27,6 +29,14 @@ void main() {
   tearDown(() async {
     await _supabase.removeAllChannels();
     await _supabase.dispose();
+  });
+
+  // The users table is shared with the tests of the other packages, so leave it
+  // the way it was found.
+  tearDownAll(() async {
+    final client = _createClient();
+    await _deleteExtraUsers(client);
+    await client.dispose();
   });
 
   group('stream() without filters', () {
@@ -529,6 +539,7 @@ void main() {
 }
 
 const _streamTimeout = Duration(seconds: 10);
+const _warmUpPrefix = 'warm_up_';
 
 SupabaseClient _createClient() => SupabaseClient(localStackUrl, serviceRoleKey);
 
@@ -536,8 +547,8 @@ SupabaseClient _createClient() => SupabaseClient(localStackUrl, serviceRoleKey);
 /// where every snapshot is the result of [project] applied to the emitted rows.
 ///
 /// [mutate] runs once the initial PostgREST snapshot has been emitted and the
-/// realtime channel has joined, so its changes are guaranteed to be seen by the
-/// subscription instead of racing with it.
+/// realtime channel has joined, so that its changes are not lost to a
+/// subscription that is still starting up.
 Future<void> _expectSnapshots({
   required Stream<SupabaseStreamEvent> stream,
   required List<Set<String>> expectedSnapshots,
@@ -610,34 +621,48 @@ Future<void> _waitUntilJoined() async {
 /// free of guessed delays.
 Future<void> _warmUpReplication(SupabaseClient client) async {
   final received = <String>{};
+  Object? streamError;
   final subscription = client
       .from('users')
       .stream(primaryKey: ['username'])
-      .listen((rows) => received.addAll(_usernames(rows)));
+      .listen(
+        (rows) => received.addAll(_usernames(rows)),
+        onError: (Object error) => streamError ??= error,
+      );
 
-  for (var attempt = 0; attempt < 20; attempt++) {
-    final username = 'warm_up_$attempt';
-    await client.from('users').insert({
-      'username': username,
-      'status': 'ONLINE',
-    });
-    for (var wait = 0; wait < 20 && !received.contains(username); wait++) {
-      await Future.delayed(const Duration(milliseconds: 250));
+  try {
+    // The budget has to stay well below the timeout of the test that runs
+    // this, so that a stack which never delivers changes fails with the
+    // message below instead of an unexplained timeout.
+    for (var attempt = 0; attempt < 8 && streamError == null; attempt++) {
+      final username = '$_warmUpPrefix$attempt';
+      await client.from('users').insert({
+        'username': username,
+        'status': 'ONLINE',
+      });
+      for (
+        var wait = 0;
+        wait < 12 && !received.contains(username) && streamError == null;
+        wait++
+      ) {
+        await Future.delayed(const Duration(milliseconds: 250));
+      }
+      if (received.contains(username)) {
+        return;
+      }
     }
-    if (received.contains(username)) {
-      await subscription.cancel();
-      await client.removeAllChannels();
-      return;
-    }
+
+    fail(
+      'Realtime did not deliver any change of the users table. Make sure the '
+      'local stack is running and up to date, the table has to be part of the '
+      'supabase_realtime publication. '
+      '${streamError == null ? '' : 'The stream failed with: $streamError'}',
+    );
+  } finally {
+    await subscription.cancel();
+    await client.removeAllChannels();
+    await client.from('users').delete().like('username', '$_warmUpPrefix%');
   }
-
-  await subscription.cancel();
-  await client.removeAllChannels();
-  fail(
-    'Realtime did not deliver any change of the users table. Make sure the '
-    'local stack is up to date, the table has to be part of the '
-    'supabase_realtime publication.',
-  );
 }
 
 Future<void> _insertUsers(List<_User> users) async {

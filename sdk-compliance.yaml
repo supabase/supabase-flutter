@@ -606,10 +606,12 @@ features:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.order
+      - SupabaseStreamBuilder.order
   database.using_modifiers.limit:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.limit
+      - SupabaseStreamBuilder.limit
   database.using_modifiers.range:
     status: implemented
     symbols:
