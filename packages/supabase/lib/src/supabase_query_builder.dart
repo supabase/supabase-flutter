@@ -50,19 +50,27 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder<dynamic> {
   ///   will be received. Therefore, an update that changes a record to no
   ///   longer match the filter will not be received, and the record will remain
   ///   in the stream.
-  /// - By default, for DELETE events only the primary key columns can be used.
-  ///   Refer to the documentation about [receiving old records](https://supabase.com/docs/guides/realtime/postgres-changes?queryGroups=language&language=dart#receiving-old-records).
+  /// - By default, the old record of a DELETE event only contains the primary
+  ///   key columns, so a filter on any other column never matches and the
+  ///   deleted record remains in the stream. Set the replica identity of the
+  ///   table to `full` to filter deletions on other columns as well. Refer to
+  ///   the documentation about [receiving old records](https://supabase.com/docs/guides/realtime/postgres-changes?queryGroups=language&language=dart#receiving-old-records).
   ///
   /// ```dart
   /// supabase.from('chats').stream(primaryKey: ['id']).listen(_onChatsReceived);
   /// ```
   ///
-  /// `eq`, `neq`, `lt`, `lte`, `gt` `gte`, `like`, `ilike`, `match`, `imatch`,
-  /// `isDistinct`, `isFilter` or `inFilter` and `order`, `limit` filter are available to limit the
-  /// data being queried.
+  /// `eq`, `neq`, `lt`, `lte`, `gt`, `gte`, `inFilter`, `like`, `ilike`,
+  /// `matchRegex`, `imatchRegex`, `isFilter` and `isDistinct` are available to
+  /// limit the data being queried. Multiple filters are combined with an `AND`.
+  /// `order` and `limit` are available to sort and cap the result.
   ///
   /// ```dart
   /// supabase.from('chats').stream(primaryKey: ['id']).eq('room_id','123').order('created_at').limit(20).listen(_onChatsReceived);
+  /// ```
+  ///
+  /// ```dart
+  /// supabase.from('chats').stream(primaryKey: ['id']).eq('room_id','123').like('message', '%supabase%').listen(_onChatsReceived);
   /// ```
   SupabaseStreamFilterBuilder stream({
     required List<String> primaryKey,
