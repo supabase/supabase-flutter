@@ -760,7 +760,7 @@ void main() {
           },
         );
         await http.delete(
-          Uri.parse('http://127.0.0.1:54424/api/v1/messages'),
+          Uri.parse('$localStackMailUrl/api/v1/messages'),
         );
 
         final pkceClient = GoTrueClient(
@@ -865,7 +865,7 @@ Future<String> _pkceCodeFromEmailChange(String toEmail) async {
         jsonDecode(
               (await http.get(
                 Uri.parse(
-                  'http://127.0.0.1:54424/api/v1/search?query=to:$toEmail',
+                  '$localStackMailUrl/api/v1/search?query=to:$toEmail',
                 ),
               )).body,
             )
@@ -876,7 +876,7 @@ Future<String> _pkceCodeFromEmailChange(String toEmail) async {
           jsonDecode(
                 (await http.get(
                   Uri.parse(
-                    'http://127.0.0.1:54424/api/v1/message/${messages.first['ID']}',
+                    '$localStackMailUrl/api/v1/message/${messages.first['ID']}',
                   ),
                 )).body,
               )
@@ -886,10 +886,12 @@ Future<String> _pkceCodeFromEmailChange(String toEmail) async {
     }
   }
 
-  final link = RegExp('${RegExp.escape(defaultGotrueUrl)}/verify\\?\\S+')
-      .firstMatch(message!['Text'] as String)!
-      .group(0)!
-      .replaceAll(RegExp(r'[)>].*$'), '');
+  // The link is followed by the text of the mail, so it ends at the first
+  // whitespace or wrapping bracket.
+  final link = RegExp(
+    '${RegExp.escape(defaultGotrueUrl)}'
+    r'/verify\?[^\s)>]+',
+  ).firstMatch(message!['Text'] as String)!.group(0)!;
 
   final verifyClient = http.Client();
   try {

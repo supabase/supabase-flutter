@@ -29,6 +29,16 @@ const localStackStorageUrl = '$localStackUrl/storage/v1';
 const localStackRealtimeUrl =
     'ws://$localStackHost:$localStackPort/realtime/v1';
 
+/// Web interface of the mail server of the local stack, which collects the
+/// mails the auth service would have sent. The `[inbucket]` section of
+/// `supabase/config.toml` exposes it.
+@visibleForTesting
+const localStackMailPort = 54424;
+
+/// Base URL of the mail server web interface of the local stack.
+@visibleForTesting
+const localStackMailUrl = 'http://$localStackHost:$localStackMailPort';
+
 /// Port Postgres itself is exposed on, for tests that need to run SQL.
 @visibleForTesting
 const localStackDatabasePort = 54422;
