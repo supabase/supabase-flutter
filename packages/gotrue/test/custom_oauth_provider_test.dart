@@ -26,7 +26,7 @@ void main() {
     test(
       'getOAuthSignInUrl builds correct URL for a custom provider',
       () async {
-        const gotrueUrl = defaultGotrueUrl;
+        const gotrueUrl = localStackAuthUrl;
         final client = GoTrueClient(
           url: gotrueUrl,
           headers: {},

@@ -300,7 +300,7 @@ class GotrueOauthApiFixture {
     final env = DotEnv();
     env.load(); // Load env variables from .env file
 
-    _gotrueUrl = env['GOTRUE_URL'] ?? defaultGotrueUrl;
+    _gotrueUrl = env['GOTRUE_URL'] ?? localStackAuthUrl;
     _serviceRoleToken = getServiceRoleToken(env);
 
     _client = GoTrueClient(

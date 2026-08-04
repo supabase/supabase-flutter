@@ -10,9 +10,6 @@ import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
 
-const storageUrl = localStackStorageUrl;
-const storageKey = localStackServiceRoleKey;
-
 final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round();
 final newBucketName = 'my-new-bucket-$timestamp';
 
@@ -38,8 +35,8 @@ void main() {
 
   setUp(() async {
     // init SupabaseClient with test url & test key
-    storage = SupabaseStorageClient(storageUrl, {
-      'Authorization': 'Bearer $storageKey',
+    storage = SupabaseStorageClient(localStackStorageUrl, {
+      'Authorization': 'Bearer $localStackServiceRoleKey',
     });
 
     file = File(
@@ -171,7 +168,7 @@ void main() {
       expect(
         response.signedUrl,
         contains(
-          '$storageUrl/object/upload/sign/$newBucketName/$uploadPath',
+          '$localStackStorageUrl/object/upload/sign/$newBucketName/$uploadPath',
         ),
       );
     });
@@ -266,7 +263,9 @@ void main() {
 
       expect(
         url,
-        contains('$storageUrl/render/image/sign/$newBucketName/$uploadPath'),
+        contains(
+          '$localStackStorageUrl/render/image/sign/$newBucketName/$uploadPath',
+        ),
       );
     });
 
@@ -280,7 +279,7 @@ void main() {
 
       expect(
         url,
-        '$storageUrl/render/image/public/$newBucketName/$uploadPath?width=200&height=300&quality=60',
+        '$localStackStorageUrl/render/image/public/$newBucketName/$uploadPath?width=200&height=300&quality=60',
       );
     });
 
@@ -341,8 +340,8 @@ void main() {
     });
 
     test('will return the image as webp when the browser support it', () async {
-      final client = SupabaseStorageClient(storageUrl, {
-        'Authorization': 'Bearer $storageKey',
+      final client = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
         'Accept': 'image/webp',
       });
 
@@ -376,8 +375,8 @@ void main() {
     test(
       'will return the original image format when format is origin',
       () async {
-        final client = SupabaseStorageClient(storageUrl, {
-          'Authorization': 'Bearer $storageKey',
+        final client = SupabaseStorageClient(localStackStorageUrl, {
+          'Authorization': 'Bearer $localStackServiceRoleKey',
           'Accept': 'image/webp',
         });
 
@@ -537,8 +536,8 @@ void main() {
 
   group('file operations', () {
     test('copy completes successfully', () async {
-      final client = SupabaseStorageClient(storageUrl, {
-        'Authorization': 'Bearer $storageKey',
+      final client = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
       });
 
       expect(
@@ -548,8 +547,8 @@ void main() {
     });
 
     test('copy to different bucket', () async {
-      final client = SupabaseStorageClient(storageUrl, {
-        'Authorization': 'Bearer $storageKey',
+      final client = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
       });
 
       await expectLater(
@@ -573,8 +572,8 @@ void main() {
     });
 
     test('move to different bucket', () async {
-      final client = SupabaseStorageClient(storageUrl, {
-        'Authorization': 'Bearer $storageKey',
+      final client = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
       });
 
       await expectLater(
@@ -647,8 +646,8 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       client = SupabaseStorageClient(
-        storageUrl,
-        {'Authorization': 'Bearer $storageKey'},
+        localStackStorageUrl,
+        {'Authorization': 'Bearer $localStackServiceRoleKey'},
         httpClient: customHttpClient,
       );
     });
@@ -775,8 +774,8 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       client = SupabaseStorageClient(
-        storageUrl,
-        {'Authorization': 'Bearer $storageKey'},
+        localStackStorageUrl,
+        {'Authorization': 'Bearer $localStackServiceRoleKey'},
         httpClient: customHttpClient,
       );
     });
@@ -898,8 +897,8 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       client = SupabaseStorageClient(
-        storageUrl,
-        {'Authorization': 'Bearer $storageKey'},
+        localStackStorageUrl,
+        {'Authorization': 'Bearer $localStackServiceRoleKey'},
         httpClient: customHttpClient,
       );
     });

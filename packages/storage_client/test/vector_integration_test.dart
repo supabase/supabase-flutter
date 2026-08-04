@@ -2,9 +2,6 @@ import 'package:storage_client/storage_client.dart';
 import 'package:supabase_common/testing.dart';
 import 'package:test/test.dart';
 
-const storageUrl = localStackStorageUrl;
-const storageKey = localStackServiceRoleKey;
-
 // These tests exercise the Storage Vectors API against a live Supabase stack
 // with `[storage.vector] enabled = true`. Each test provisions and tears down
 // its own bucket/index, so they are self-contained and can run in any order.
@@ -14,8 +11,8 @@ void main() {
   var counter = 0;
 
   setUpAll(() {
-    vectors = SupabaseStorageClient(storageUrl, {
-      'Authorization': 'Bearer $storageKey',
+    vectors = SupabaseStorageClient(localStackStorageUrl, {
+      'Authorization': 'Bearer $localStackServiceRoleKey',
     }).vectors;
   });
 

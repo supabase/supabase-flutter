@@ -12,7 +12,7 @@ void main() {
   final env = DotEnv();
   env.load();
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? defaultGotrueUrl;
+  final gotrueUrl = env['GOTRUE_URL'] ?? localStackAuthUrl;
   final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
 
   group('getClaims', () {

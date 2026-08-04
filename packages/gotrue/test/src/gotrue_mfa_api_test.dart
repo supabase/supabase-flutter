@@ -36,7 +36,7 @@ void main() {
 
     env.load(); // Load env variables from .env file
 
-    final gotrueUrl = env['GOTRUE_URL'] ?? defaultGotrueUrl;
+    final gotrueUrl = env['GOTRUE_URL'] ?? localStackAuthUrl;
 
     final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
 

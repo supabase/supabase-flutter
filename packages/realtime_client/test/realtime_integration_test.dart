@@ -46,7 +46,7 @@ void main() {
 
       test('reports heartbeat sent and ok statuses', () async {
         final heartbeatClient = RealtimeClient(
-          realtimeUrl,
+          localStackRealtimeUrl,
           version: version,
           params: {'apikey': generateRealtimeToken()},
           heartbeatIntervalMs: 500,

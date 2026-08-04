@@ -9,11 +9,9 @@ library;
 
 import 'package:supabase_common/testing.dart';
 
-const rootUrl = localStackRestUrl;
-
-const serviceRoleKey = localStackServiceRoleKey;
+export 'package:supabase_common/testing.dart';
 
 const apiHeaders = {
-  'apikey': serviceRoleKey,
-  'Authorization': 'Bearer $serviceRoleKey',
+  'apikey': localStackServiceRoleKey,
+  'Authorization': 'Bearer $localStackServiceRoleKey',
 };

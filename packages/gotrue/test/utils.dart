@@ -41,16 +41,13 @@ String getNewPhone() {
   return '$timestamp';
 }
 
-/// Default endpoints and API keys of the local Supabase CLI stack.
-const defaultGotrueUrl = localStackAuthUrl;
+/// Endpoint of the local Supabase CLI stack that resets the auth fixtures.
 const resetAuthDataUrl = '$localStackRestUrl/rpc/reset_and_init_auth_data';
-const _serviceRoleKey = localStackServiceRoleKey;
-const _anonKey = localStackAnonKey;
 
 String getServiceRoleToken(DotEnv env) =>
-    env['GOTRUE_SERVICE_ROLE_TOKEN'] ?? _serviceRoleKey;
+    env['GOTRUE_SERVICE_ROLE_TOKEN'] ?? localStackServiceRoleKey;
 
-String getAnonToken(DotEnv env) => env['GOTRUE_TOKEN'] ?? _anonKey;
+String getAnonToken(DotEnv env) => env['GOTRUE_TOKEN'] ?? localStackAnonKey;
 
 /// User id embedded in the session produced by [getSessionData].
 const sessionDataUserId = '4d2583da-8de4-49d3-9cd1-37a9a74f55bd';

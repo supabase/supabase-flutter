@@ -7,15 +7,7 @@ import 'package:postgres/postgres.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:supabase_common/testing.dart';
 
-/// The host and port the local Supabase CLI gateway is reachable at.
-const realtimeHttpHost = localStackHost;
-const realtimePort = localStackPort;
-
-/// The Realtime WebSocket endpoint exposed by the gateway.
-const realtimeUrl = localStackRealtimeUrl;
-
-/// The JWT secret the local Supabase CLI stack signs and verifies tokens with.
-const apiJwtSecret = localStackJwtSecret;
+export 'package:supabase_common/testing.dart';
 
 const _postgresEndpoint = (
   host: localStackHost,
@@ -28,7 +20,7 @@ const _postgresEndpoint = (
 String _base64Url(List<int> bytes) =>
     base64Url.encode(bytes).replaceAll('=', '');
 
-/// Generates an HS256 JWT signed with [apiJwtSecret] that the Realtime server
+/// Generates an HS256 JWT signed with [localStackJwtSecret] that the Realtime server
 /// accepts as the connection apikey.
 String generateRealtimeToken({String role = 'anon'}) {
   final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -53,7 +45,7 @@ String generateRealtimeToken({String role = 'anon'}) {
   final signature = _base64Url(
     Hmac(
       sha256,
-      utf8.encode(apiJwtSecret),
+      utf8.encode(localStackJwtSecret),
     ).convert(utf8.encode(signingInput)).bytes,
   );
   return '$signingInput.$signature';
@@ -67,7 +59,7 @@ RealtimeClient createRealtimeClient(
 }) {
   final apikey = token ?? generateRealtimeToken();
   return RealtimeClient(
-    realtimeUrl,
+    localStackRealtimeUrl,
     version: version,
     params: {'apikey': apikey},
     heartbeatIntervalMs: 5000,
@@ -96,7 +88,7 @@ Future<bool> _isRealtimeHttpReachable() async {
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 2);
   try {
     final request = await client
-        .get(realtimeHttpHost, realtimePort, '/')
+        .get(localStackHost, localStackPort, '/')
         .timeout(const Duration(seconds: 3));
     final response = await request.close().timeout(const Duration(seconds: 3));
     await response.drain<void>();

@@ -13,12 +13,12 @@ void main() {
   final resetHelper = ResetHelper();
 
   setUpAll(() async {
-    postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+    postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
     await resetHelper.initialize(postgrest);
   });
 
   setUp(() {
-    postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+    postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
   });
 
   tearDown(() async {
@@ -222,7 +222,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );
@@ -478,7 +478,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );
@@ -579,7 +579,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );
@@ -621,7 +621,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );
