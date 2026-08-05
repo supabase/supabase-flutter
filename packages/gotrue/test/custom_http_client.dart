@@ -252,6 +252,9 @@ class RawBodyHttpClient extends BaseClient {
       statusCode,
       request: request,
       reasonPhrase: reasonPhrase,
+      // Without an explicit charset `package:http` decodes the body as
+      // Latin-1, which would mangle non-ASCII bodies.
+      headers: {'content-type': 'text/plain; charset=utf-8'},
     );
   }
 }

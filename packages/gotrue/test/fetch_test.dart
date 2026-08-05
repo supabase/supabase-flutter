@@ -175,6 +175,20 @@ void main() {
       );
     });
 
+    test(
+      'falls back to the status code on an empty 5xx body without a reason '
+      'phrase',
+      () async {
+        final client = RawBodyHttpClient('', statusCode: 503);
+
+        await _expectRetryableFetch(
+          client,
+          message: 'HTTP 503',
+          statusCode: '503',
+        );
+      },
+    );
+
     test('throws an unknown exception on a non-JSON 4xx body', () async {
       final client = RawBodyHttpClient(
         '<html><body><h1>400 Bad Request</h1></body></html>',
