@@ -785,7 +785,7 @@ void main() {
         );
         expect(updateResponse.user?.newEmail, updatedEmail);
 
-        final code = await _pkceCodeFromEmailChange(updatedEmail);
+        final code = await _pkceCodeFromEmailChange(gotrueUrl, updatedEmail);
         final exchanged = await pkceClient.exchangeCodeForSession(code);
 
         expect(exchanged.session.user.email, updatedEmail);
@@ -858,7 +858,10 @@ void main() {
 /// Reads the email-change confirmation link that GoTrue delivered to
 /// [toEmail] via the local Mailpit server, follows it, and returns the PKCE
 /// `code` from the redirect so it can be passed to [exchangeCodeForSession].
-Future<String> _pkceCodeFromEmailChange(String toEmail) async {
+Future<String> _pkceCodeFromEmailChange(
+  String gotrueUrl,
+  String toEmail,
+) async {
   Map<String, dynamic>? message;
   for (var attempt = 0; attempt < 20 && message == null; attempt++) {
     final search =
@@ -889,7 +892,7 @@ Future<String> _pkceCodeFromEmailChange(String toEmail) async {
   // The link is followed by the text of the mail, so it ends at the first
   // whitespace or wrapping bracket.
   final link = RegExp(
-    '${RegExp.escape(localStackAuthUrl)}'
+    '${RegExp.escape(gotrueUrl)}'
     r'/verify\?[^\s)>]+',
   ).firstMatch(message!['Text'] as String)!.group(0)!;
 

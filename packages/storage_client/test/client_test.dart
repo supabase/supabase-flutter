@@ -279,7 +279,8 @@ void main() {
 
       expect(
         url,
-        '$localStackStorageUrl/render/image/public/$newBucketName/$uploadPath?width=200&height=300&quality=60',
+        '$localStackStorageUrl/render/image/public/'
+        '$newBucketName/$uploadPath?width=200&height=300&quality=60',
       );
     });
 

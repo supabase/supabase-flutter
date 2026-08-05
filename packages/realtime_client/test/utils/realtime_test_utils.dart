@@ -20,8 +20,8 @@ const _postgresEndpoint = (
 String _base64Url(List<int> bytes) =>
     base64Url.encode(bytes).replaceAll('=', '');
 
-/// Generates an HS256 JWT signed with [localStackJwtSecret] that the Realtime server
-/// accepts as the connection apikey.
+/// Generates an HS256 JWT signed with [localStackJwtSecret] that the Realtime
+/// server accepts as the connection apikey.
 String generateRealtimeToken({String role = 'anon'}) {
   final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
   final header = _base64Url(
