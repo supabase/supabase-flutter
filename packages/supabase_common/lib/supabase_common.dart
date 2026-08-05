@@ -5,6 +5,7 @@
 /// notice.
 library;
 
+export 'src/backoff.dart';
 export 'src/base64url.dart';
 export 'src/client_info.dart';
 export 'src/fetch_options.dart';
