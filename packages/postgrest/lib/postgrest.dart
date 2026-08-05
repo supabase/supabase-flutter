@@ -1,7 +1,8 @@
 /// PostgREST client for Dart. Provides an ORM interface to PostgREST.
 library;
 
-export 'package:supabase_common/supabase_common.dart' show SupabaseException;
+export 'package:supabase_common/supabase_common.dart'
+    show HttpMethod, SupabaseException;
 
 export 'src/postgrest.dart';
 export 'src/postgrest_builder.dart';

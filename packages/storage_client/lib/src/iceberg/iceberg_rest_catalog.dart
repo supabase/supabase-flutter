@@ -7,6 +7,7 @@ import 'package:storage_client/src/iceberg/iceberg_error.dart';
 import 'package:storage_client/src/iceberg/iceberg_types.dart';
 import 'package:storage_client/src/iceberg/table_requirement.dart';
 import 'package:storage_client/src/iceberg/table_update.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class _IcebergResponse {
   final int statusCode;
@@ -90,7 +91,7 @@ class IcebergRestCatalog {
     }
     try {
       final response = await _request(
-        'GET',
+        HttpMethod.get,
         'v1/config',
         query: {'warehouse': _warehouse},
       );
@@ -124,7 +125,7 @@ class IcebergRestCatalog {
   }
 
   Future<_IcebergResponse> _request(
-    String method,
+    HttpMethod method,
     String path, {
     Map<String, String>? query,
     Object? body,
@@ -137,12 +138,13 @@ class IcebergRestCatalog {
       ...?headers,
     };
 
-    final request = http.Request(method, uri)..headers.addAll(requestHeaders);
+    final request = http.Request(method.value, uri)
+      ..headers.addAll(requestHeaders);
     if (body != null) {
       request.body = json.encode(body);
     }
 
-    _log.finest('Request: $method $uri');
+    _log.finest('Request: ${method.value} $uri');
 
     final http.StreamedResponse streamedResponse;
     try {
@@ -190,7 +192,7 @@ class IcebergRestCatalog {
       if (options?.pageSize != null) 'pageSize': '${options!.pageSize}',
     };
     final response = await _request(
-      'GET',
+      HttpMethod.get,
       '$prefix/namespaces',
       query: query.isEmpty ? null : query,
     );
@@ -210,7 +212,7 @@ class IcebergRestCatalog {
   }) async {
     final prefix = await _resolvePrefix();
     final response = await _request(
-      'POST',
+      HttpMethod.post,
       '$prefix/namespaces',
       body: {
         'namespace': namespace,
@@ -228,7 +230,7 @@ class IcebergRestCatalog {
   ) async {
     final prefix = await _resolvePrefix();
     final response = await _request(
-      'GET',
+      HttpMethod.get,
       '$prefix/namespaces/${_namespaceToPath(namespace)}',
     );
     final body = response.body as Map<String, dynamic>;
@@ -243,7 +245,7 @@ class IcebergRestCatalog {
   }) async {
     final prefix = await _resolvePrefix();
     final response = await _request(
-      'POST',
+      HttpMethod.post,
       '$prefix/namespaces/${_namespaceToPath(namespace)}/properties',
       body: {
         'updates': ?updates,
@@ -260,7 +262,7 @@ class IcebergRestCatalog {
   Future<void> dropNamespace(List<String> namespace) async {
     final prefix = await _resolvePrefix();
     await _request(
-      'DELETE',
+      HttpMethod.delete,
       '$prefix/namespaces/${_namespaceToPath(namespace)}',
       headers: {'Idempotency-Key': _idempotencyKey()},
     );
@@ -271,7 +273,7 @@ class IcebergRestCatalog {
     final prefix = await _resolvePrefix();
     try {
       await _request(
-        'HEAD',
+        HttpMethod.head,
         '$prefix/namespaces/${_namespaceToPath(namespace)}',
       );
       return true;
@@ -303,7 +305,7 @@ class IcebergRestCatalog {
       if (options?.pageSize != null) 'pageSize': '${options!.pageSize}',
     };
     final response = await _request(
-      'GET',
+      HttpMethod.get,
       '$prefix/namespaces/${_namespaceToPath(namespace)}/tables',
       query: query.isEmpty ? null : query,
     );
@@ -336,7 +338,7 @@ class IcebergRestCatalog {
   ) async {
     final prefix = await _resolvePrefix();
     final response = await _request(
-      'POST',
+      HttpMethod.post,
       '$prefix/namespaces/${_namespaceToPath(namespace)}/tables',
       body: request.toJson(),
       headers: {
@@ -371,7 +373,7 @@ class IcebergRestCatalog {
   ) async {
     final prefix = await _resolvePrefix();
     final response = await _request(
-      'POST',
+      HttpMethod.post,
       '$prefix/namespaces/${_namespaceToPath(namespace)}/register',
       body: request.toJson(),
       headers: {
@@ -405,9 +407,9 @@ class IcebergRestCatalog {
       if (options?.snapshots != null) 'snapshots': options!.snapshots!.value,
     };
     final response = await _request(
-      'GET',
+      HttpMethod.get,
       '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
-          '${Uri.encodeComponent(id.name)}',
+      '${Uri.encodeComponent(id.name)}',
       query: query.isEmpty ? null : query,
       headers: {
         ..._accessDelegationHeader(),
@@ -429,9 +431,9 @@ class IcebergRestCatalog {
     final prefix = await _resolvePrefix();
     try {
       await _request(
-        'HEAD',
+        HttpMethod.head,
         '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
-            '${Uri.encodeComponent(id.name)}',
+        '${Uri.encodeComponent(id.name)}',
         headers: _accessDelegationHeader(),
       );
       return true;
@@ -448,9 +450,9 @@ class IcebergRestCatalog {
   }) async {
     final prefix = await _resolvePrefix();
     final response = await _request(
-      'POST',
+      HttpMethod.post,
       '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
-          '${Uri.encodeComponent(id.name)}',
+      '${Uri.encodeComponent(id.name)}',
       body: {
         'requirements': requirements
             .map((requirement) => requirement.toJson())
@@ -481,9 +483,9 @@ class IcebergRestCatalog {
   Future<void> dropTable(TableIdentifier id, {bool purge = false}) async {
     final prefix = await _resolvePrefix();
     await _request(
-      'DELETE',
+      HttpMethod.delete,
       '$prefix/namespaces/${_namespaceToPath(id.namespace)}/tables/'
-          '${Uri.encodeComponent(id.name)}',
+      '${Uri.encodeComponent(id.name)}',
       query: {'purgeRequested': '$purge'},
       headers: {'Idempotency-Key': _idempotencyKey()},
     );
@@ -496,7 +498,7 @@ class IcebergRestCatalog {
   ) async {
     final prefix = await _resolvePrefix();
     await _request(
-      'POST',
+      HttpMethod.post,
       '$prefix/tables/rename',
       body: {'source': source.toJson(), 'destination': destination.toJson()},
       headers: {'Idempotency-Key': _idempotencyKey()},

@@ -18,17 +18,6 @@ part 'postgrest_transform_builder.dart';
 part 'raw_postgrest_builder.dart';
 part 'response_postgrest_builder.dart';
 
-enum HttpMethod {
-  get,
-  head,
-  post,
-  put,
-  patch,
-  delete;
-
-  String get value => name.toUpperCase();
-}
-
 typedef _Nullable<T> = T?;
 
 /// Bundles the automatic retry configuration so it can be carried through the

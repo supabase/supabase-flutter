@@ -2,6 +2,7 @@ import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
 import 'package:http/http.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
@@ -77,7 +78,7 @@ void main() {
 Future<void> _testFetchRequest(Client client) async {
   final GotrueFetch fetch = GotrueFetch(client);
   await expectLater(
-    fetch.request(_mockUrl, RequestMethodType.get),
+    fetch.request(_mockUrl, HttpMethod.get),
     throwsA(
       isA<AuthException>()
           .having((e) => e.errorCode, 'errorCode', 'weak_password')

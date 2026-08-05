@@ -16,7 +16,7 @@ class GoTrueMFAApi {
 
     final data = await _fetch.request(
       '${_client._url}/factors/$factorId',
-      RequestMethodType.delete,
+      HttpMethod.delete,
       options: GotrueRequestOptions(
         headers: _client._headers,
         jwt: session?.accessToken,
@@ -75,7 +75,7 @@ class GoTrueMFAApi {
 
     final data = await _fetch.request(
       '${_client._url}/factors',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
         body: body,
@@ -104,7 +104,7 @@ class GoTrueMFAApi {
 
     final data = await _fetch.request(
       '${_client._url}/factors/$factorId/verify',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
         body: {
@@ -143,7 +143,7 @@ class GoTrueMFAApi {
 
     final data = await _fetch.request(
       '${_client._url}/factors/$factorId/challenge',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
         body: channel == null ? null : {'channel': channel.name},

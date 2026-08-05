@@ -62,13 +62,13 @@ class Fetch {
   }
 
   Future<dynamic> _handleRequest(
-    String method,
+    HttpMethod method,
     String url,
     Map<String, dynamic>? body,
     FetchOptions? options,
   ) async {
     final headers = {...?options?.headers};
-    if (method != 'GET') {
+    if (method != HttpMethod.get) {
       final hasContentType = headers.keys.any(
         (key) => key.toLowerCase() == 'content-type',
       );
@@ -77,13 +77,13 @@ class Fetch {
       }
     }
 
-    final request = http.Request(method, Uri.parse(url))
+    final request = http.Request(method.value, Uri.parse(url))
       ..headers.addAll(headers);
     if (body != null) {
       request.body = json.encode(body);
     }
 
-    _log.finest('Request: $method $url $headers');
+    _log.finest('Request: ${method.value} $url $headers');
     final http.StreamedResponse streamedResponse;
     if (httpClient != null) {
       streamedResponse = await httpClient!.send(request);
@@ -94,7 +94,7 @@ class Fetch {
   }
 
   Future<dynamic> _handleFileRequest(
-    String method,
+    HttpMethod method,
     String url,
     File file,
     FileOptions fileOptions,
@@ -123,7 +123,7 @@ class Fetch {
   }
 
   Future<dynamic> _handleBinaryFileRequest(
-    String method,
+    HttpMethod method,
     String url,
     Uint8List data,
     FileOptions fileOptions,
@@ -152,7 +152,7 @@ class Fetch {
   }
 
   Future<dynamic> _handleMultipartRequest(
-    String method,
+    HttpMethod method,
     String url,
     MultipartFile Function() createMultipartFile,
     FileOptions fileOptions,
@@ -164,7 +164,7 @@ class Fetch {
 
     // Create a factory function that generates a fresh MultipartRequest for each attempt
     http.MultipartRequest createRequest() {
-      final request = http.MultipartRequest(method, Uri.parse(url))
+      final request = http.MultipartRequest(method.value, Uri.parse(url))
         ..headers.addAll(headers)
         ..files.add(createMultipartFile())
         ..fields['cacheControl'] = fileOptions.cacheControl
@@ -184,7 +184,9 @@ class Fetch {
     streamedResponse = await r.retry<http.StreamedResponse>(
       () async {
         attempts++;
-        _log.finest('Request: attempt: $attempts $method $url $headers');
+        _log.finest(
+          'Request: attempt: $attempts ${method.value} $url $headers',
+        );
 
         // Create a fresh request for each retry attempt
         final request = createRequest();
@@ -227,7 +229,7 @@ class Fetch {
 
   Future<dynamic> head(String url, {FetchOptions? options}) {
     return _handleRequest(
-      'HEAD',
+      HttpMethod.head,
       url,
       null,
       FetchOptions(options?.headers, noResolveJson: true),
@@ -235,7 +237,7 @@ class Fetch {
   }
 
   Future<dynamic> get(String url, {FetchOptions? options}) {
-    return _handleRequest('GET', url, null, options);
+    return _handleRequest(HttpMethod.get, url, null, options);
   }
 
   /// Performs a GET request and yields the response body as a byte stream
@@ -249,7 +251,7 @@ class Fetch {
     String url, {
     FetchOptions? options,
   }) async* {
-    final request = http.Request('GET', Uri.parse(url))
+    final request = http.Request(HttpMethod.get.value, Uri.parse(url))
       ..headers.addAll({...?options?.headers});
 
     _log.finest('Request: GET (stream) $url ${request.headers}');
@@ -280,7 +282,7 @@ class Fetch {
     Map<String, dynamic>? body, {
     FetchOptions? options,
   }) {
-    return _handleRequest('POST', url, body, options);
+    return _handleRequest(HttpMethod.post, url, body, options);
   }
 
   Future<dynamic> put(
@@ -288,7 +290,7 @@ class Fetch {
     Map<String, dynamic>? body, {
     FetchOptions? options,
   }) {
-    return _handleRequest('PUT', url, body, options);
+    return _handleRequest(HttpMethod.put, url, body, options);
   }
 
   Future<dynamic> delete(
@@ -296,7 +298,7 @@ class Fetch {
     Map<String, dynamic>? body, {
     FetchOptions? options,
   }) {
-    return _handleRequest('DELETE', url, body, options);
+    return _handleRequest(HttpMethod.delete, url, body, options);
   }
 
   Future<dynamic> postFile(
@@ -308,7 +310,7 @@ class Fetch {
     required StorageRetryController? retryController,
   }) {
     return _handleFileRequest(
-      'POST',
+      HttpMethod.post,
       url,
       file,
       fileOptions,
@@ -327,7 +329,7 @@ class Fetch {
     required StorageRetryController? retryController,
   }) {
     return _handleFileRequest(
-      'PUT',
+      HttpMethod.put,
       url,
       file,
       fileOptions,
@@ -346,7 +348,7 @@ class Fetch {
     required StorageRetryController? retryController,
   }) {
     return _handleBinaryFileRequest(
-      'POST',
+      HttpMethod.post,
       url,
       data,
       fileOptions,
@@ -365,7 +367,7 @@ class Fetch {
     required StorageRetryController? retryController,
   }) {
     return _handleBinaryFileRequest(
-      'PUT',
+      HttpMethod.put,
       url,
       data,
       fileOptions,

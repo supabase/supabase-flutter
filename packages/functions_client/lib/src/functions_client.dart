@@ -166,7 +166,7 @@ class FunctionsClient {
 
       request =
           http.AbortableMultipartRequest(
-              method.name.toUpperCase(),
+              method.value,
               uri,
               abortTrigger: abortSignal,
             )
@@ -174,7 +174,7 @@ class FunctionsClient {
             ..files.addAll(files);
     } else {
       final bodyRequest = http.AbortableRequest(
-        method.name.toUpperCase(),
+        method.value,
         uri,
         abortTrigger: abortSignal,
       );

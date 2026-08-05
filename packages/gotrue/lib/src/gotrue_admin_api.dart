@@ -72,7 +72,7 @@ class GoTrueAdminApi {
 
     await _fetch.request(
       '$_url/logout',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: options,
     );
   }
@@ -89,7 +89,7 @@ class GoTrueAdminApi {
     );
     final response = await _fetch.request(
       '$_url/admin/users',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: options,
     );
     return UserResponse.fromJson(response);
@@ -112,7 +112,7 @@ class GoTrueAdminApi {
     );
     await _fetch.request(
       '$_url/admin/users/$id',
-      RequestMethodType.delete,
+      HttpMethod.delete,
       options: options,
     );
   }
@@ -132,7 +132,7 @@ class GoTrueAdminApi {
     );
     final response = await _fetch.request(
       '$_url/admin/users',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: options,
     );
     return (response['users'] as List).map((e) => User.fromJson(e)!).toList();
@@ -156,7 +156,7 @@ class GoTrueAdminApi {
 
     final response = await _fetch.request(
       '$_url/invite',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: fetchOptions,
     );
     return UserResponse.fromJson(response);
@@ -204,7 +204,7 @@ class GoTrueAdminApi {
 
     final response = await _fetch.request(
       '$_url/admin/generate_link',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: fetchOptions,
     );
     return GenerateLinkResponse.fromJson(response);
@@ -216,7 +216,7 @@ class GoTrueAdminApi {
     final options = GotrueRequestOptions(headers: _headers);
     final response = await _fetch.request(
       '$_url/admin/users/$uid',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: options,
     );
     return UserResponse.fromJson(response);
@@ -232,7 +232,7 @@ class GoTrueAdminApi {
     final options = GotrueRequestOptions(headers: _headers, body: body);
     final response = await _fetch.request(
       '$_url/admin/users/$uid',
-      RequestMethodType.put,
+      HttpMethod.put,
       options: options,
     );
     return UserResponse.fromJson(response);

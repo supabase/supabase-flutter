@@ -4,14 +4,6 @@ import 'dart:typed_data';
 import 'package:http/http.dart';
 import 'package:supabase_common/supabase_common.dart';
 
-enum HttpMethod {
-  get,
-  post,
-  put,
-  delete,
-  patch,
-}
-
 class FunctionResponse {
   /// The data returned by the function. Type depends on the header `Content-Type`:
   /// - 'text/plain': [String]
