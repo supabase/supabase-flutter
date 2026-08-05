@@ -95,7 +95,9 @@ void main() {
 
     test('returns null for JSON that is not an object', () {
       expect(tryDecodeJsonObject('["boom"]'), isNull);
+      expect(tryDecodeJsonObject('"boom"'), isNull);
       expect(tryDecodeJsonObject('42'), isNull);
+      expect(tryDecodeJsonObject('null'), isNull);
     });
   });
 }
