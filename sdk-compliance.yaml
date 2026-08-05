@@ -1525,6 +1525,7 @@ features:
   functions.invocation.invoke:
     status: implemented
     symbols:
+      - FunctionResponse.statusCode
       - FunctionsFetchException
       - FunctionsFetchException.FunctionsFetchException
       - FunctionsRelayException
