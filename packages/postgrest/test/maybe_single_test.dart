@@ -71,26 +71,29 @@ void main() {
     },
   );
 
-  test('maybeSingle() keeps the reported code and hint on a real error', () {
-    final postgrest = PostgrestClient(
-      'https://example.com',
-      httpClient: MultipleRowsHttpClient(),
-    );
+  test(
+    'maybeSingle() keeps the reported code and hint on a real error',
+    () async {
+      final postgrest = PostgrestClient(
+        'https://example.com',
+        httpClient: MultipleRowsHttpClient(),
+      );
 
-    expect(
-      postgrest.from('users').select().maybeSingle(),
-      throwsA(
-        isA<PostgrestApiException>()
-            .having((e) => e.statusCode, 'statusCode', 406)
-            .having((e) => e.errorCode, 'errorCode', 'PGRST116')
-            .having((e) => e.hint, 'hint', 'Ask for more rows')
-            .having(
-              (e) => e.details,
-              'details',
-              'Results contain 2 rows, application/vnd.pgrst.object+json '
-                  'requires 1 row',
-            ),
-      ),
-    );
-  });
+      await expectLater(
+        () => postgrest.from('users').select().maybeSingle(),
+        throwsA(
+          isA<PostgrestApiException>()
+              .having((e) => e.statusCode, 'statusCode', 406)
+              .having((e) => e.errorCode, 'errorCode', 'PGRST116')
+              .having((e) => e.hint, 'hint', 'Ask for more rows')
+              .having(
+                (e) => e.details,
+                'details',
+                'Results contain 2 rows, application/vnd.pgrst.object+json '
+                    'requires 1 row',
+              ),
+        ),
+      );
+    },
+  );
 }
