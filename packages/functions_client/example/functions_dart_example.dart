@@ -18,7 +18,7 @@ Future<void> main() async {
       'get_countries',
       body: {'name': 'The Shire'},
     );
-    print('status: ${response.status}');
+    print('status: ${response.statusCode}');
     print('data: ${response.data}');
   } on FunctionException catch (error) {
     print('Function error: ${error.statusCode} ${error.details}');

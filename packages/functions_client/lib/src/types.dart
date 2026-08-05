@@ -19,11 +19,13 @@ class FunctionResponse {
   /// - 'application/json': dynamic ([jsonDecode] is used)
   /// - 'text/event-stream': [ByteStream]
   final dynamic data;
-  final int status;
+
+  /// HTTP status code of the response.
+  final int statusCode;
 
   const FunctionResponse({
     this.data,
-    required this.status,
+    required this.statusCode,
   });
 }
 

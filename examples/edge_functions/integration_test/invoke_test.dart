@@ -40,7 +40,7 @@ void main() {
   group('request', () {
     testWidgets('POST sends a JSON body that comes back decoded', (_) async {
       final response = await functions.invoke('echo', body: {'hello': 'world'});
-      expect(response.status, 200);
+      expect(response.statusCode, 200);
       expect(response.data['method'], 'POST');
       expect(response.data['body'], {'hello': 'world'});
     });
@@ -163,7 +163,7 @@ void main() {
         'echo',
         queryParameters: {'status': '201'},
       );
-      expect(response.status, 201);
+      expect(response.statusCode, 201);
     });
   });
 
