@@ -10,15 +10,20 @@ import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
 
+/// Prefix of every bucket this suite creates, so the clean up can tell them
+/// apart from the seeded buckets and from those of any other suite.
+const _bucketNamespace = 'client-test-';
+
 final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round();
-final newBucketName = 'my-new-bucket-$timestamp';
+final newBucketName = '${_bucketNamespace}bucket-$timestamp';
 
 final uploadPath = 'testpath/file-${DateTime.now().toIso8601String()}.jpg';
 
-// These tests run against the buckets seeded by supabase/seed.sql and create
-// additional buckets as they go, so they are order-dependent and not idempotent
-// (for example "List buckets" expects exactly the four seeded buckets). They
-// assume a freshly started stack; in CI each job starts Supabase from scratch.
+// These tests run against the buckets and objects seeded by supabase/seed.sql
+// and create additional buckets as they go, so they are order-dependent: later
+// tests reuse the buckets earlier ones created. The buckets they create are
+// removed before and after the suite, so a run can be repeated against the same
+// stack.
 void main() {
   late SupabaseStorageClient storage;
 
@@ -32,6 +37,12 @@ void main() {
     }
     return name;
   }
+
+  // Buckets an interrupted run left behind would make creating them again fail
+  // and would show up in the bucket listing, so they are removed up front.
+  setUpAll(_removeTemporaryBuckets);
+
+  tearDownAll(_removeTemporaryBuckets);
 
   setUp(() async {
     // init SupabaseClient with test url & test key
@@ -51,7 +62,7 @@ void main() {
 
   test('List buckets', () async {
     final response = await storage.listBuckets();
-    expect(response.length, 4);
+    expect(response.map((bucket) => bucket.name), containsAll(_seededBuckets));
   });
 
   test('Get bucket by id', () async {
@@ -79,7 +90,7 @@ void main() {
   });
 
   test('Create new public bucket', () async {
-    const newPublicBucketName = 'my-new-public-bucket';
+    const newPublicBucketName = '${_bucketNamespace}public-bucket';
     await storage.createBucket(
       newPublicBucketName,
       const BucketOptions(public: true),
@@ -90,7 +101,7 @@ void main() {
   });
 
   test('update bucket', () async {
-    final newBucketName = 'my-new-bucket-${DateTime.now()}';
+    final newBucketName = '${_bucketNamespace}bucket-${DateTime.now()}';
     await storage.createBucket(newBucketName);
 
     final updateResult = await storage.updateBucket(
@@ -111,7 +122,7 @@ void main() {
   });
 
   test('partially update bucket', () async {
-    final newBucketName = 'my-new-bucket-${DateTime.now()}';
+    final newBucketName = '${_bucketNamespace}bucket-${DateTime.now()}';
     await storage.createBucket(
       newBucketName,
       const BucketOptions(
@@ -310,7 +321,7 @@ void main() {
     });
 
     test('will download an authenticated transformed file', () async {
-      const privateBucketName = 'my-private-bucket';
+      const privateBucketName = '${_bucketNamespace}private-bucket';
       await findOrCreateBucket(privateBucketName);
 
       await storage.from(privateBucketName).upload(uploadPath, file);
@@ -412,7 +423,7 @@ void main() {
   });
 
   group('download option', () {
-    const downloadBucket = 'my-download-bucket';
+    const downloadBucket = '${_bucketNamespace}download-bucket';
 
     setUp(() async {
       await findOrCreateBucket(downloadBucket, true);
@@ -463,7 +474,7 @@ void main() {
 
   group('bucket limits', () {
     test('can upload a file within the file size limit', () async {
-      final bucketName = 'with-limit-${DateTime.now()}';
+      final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
       await storage.createBucket(
         bucketName,
         const BucketOptions(
@@ -477,7 +488,7 @@ void main() {
     });
 
     test('cannot upload a file that exceed the file size limit', () async {
-      final bucketName = 'with-limit-${DateTime.now()}';
+      final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
       await storage.createBucket(
         bucketName,
         const BucketOptions(
@@ -491,7 +502,7 @@ void main() {
     });
 
     test('can upload a file with a valid mime type', () async {
-      final bucketName = 'with-limit-${DateTime.now()}';
+      final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
       await storage.createBucket(
         bucketName,
         BucketOptions(
@@ -513,7 +524,7 @@ void main() {
     });
 
     test('cannot upload a file an invalid mime type', () async {
-      final bucketName = 'with-limit-${DateTime.now()}';
+      final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
       await storage.createBucket(
         bucketName,
         const BucketOptions(
@@ -835,7 +846,7 @@ void main() {
 
     setUp(() async {
       bucket = await findOrCreateBucket(
-        'reserved-${DateTime.now().millisecondsSinceEpoch}',
+        '${_bucketNamespace}reserved-${DateTime.now().millisecondsSinceEpoch}',
       );
     });
 
@@ -979,4 +990,32 @@ void main() {
       expect(sentSortBy(), {'column': 'created_at', 'order': 'desc'});
     });
   });
+}
+
+/// Buckets that supabase/seed.sql provides, which the suite must leave alone.
+const _seededBuckets = ['bucket2', 'bucket3', 'bucket4', 'bucket5'];
+
+/// Removes every bucket of [_bucketNamespace], so the suite leaves the stack
+/// with only the seeded buckets and can run again without tripping over its own
+/// leftovers.
+Future<void> _removeTemporaryBuckets() async {
+  final storage = SupabaseStorageClient(localStackStorageUrl, {
+    'Authorization': 'Bearer $localStackServiceRoleKey',
+  });
+  for (final bucket in await storage.listBuckets()) {
+    if (!bucket.name.startsWith(_bucketNamespace)) {
+      continue;
+    }
+    try {
+      await storage.emptyBucket(bucket.name);
+      await storage.deleteBucket(bucket.name);
+    } on StorageException catch (error) {
+      // A test of this suite may have removed it itself. Anything else, like a
+      // bucket that stays behind because it could not be emptied, has to
+      // surface instead of leaving the next run to fail on it.
+      if (error.statusCode != '404') {
+        rethrow;
+      }
+    }
+  }
 }
