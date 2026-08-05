@@ -8,6 +8,8 @@ import 'package:web_socket_channel/io.dart';
 
 import 'package:supabase_common/testing.dart';
 
+import 'utils.dart';
+
 /// Asserts how the filters of `stream()` are sent to the realtime server and to
 /// PostgREST, without needing either of them to be running.
 void main() {
@@ -36,6 +38,7 @@ void main() {
     supabase = SupabaseClient(
       'http://${InternetAddress.loopbackIPv4.address}:${mockServer.port}',
       localStackServiceRoleKey,
+      authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
     );
   });
 
