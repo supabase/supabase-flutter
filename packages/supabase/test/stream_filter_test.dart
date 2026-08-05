@@ -272,8 +272,9 @@ final _testCases = <_TestCase>[
   ),
 ];
 
-extension type _User(Map<String, dynamic> json) {
-  String get username => json['username'] as String;
+extension type const _User(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  String get username => _json['username'] as String;
 }
 
 class _Users {
