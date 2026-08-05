@@ -1,8 +1,10 @@
+# Runs on release pull requests, and on any pull request labelled
+# "integration tests" so the suite can be exercised on demand.
 name: Example integration tests
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, edited]
+    types: [opened, reopened, synchronize, edited, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,7 +20,9 @@ env:
 jobs:
   backend:
     name: Host shared Supabase
-    if: startsWith(github.event.pull_request.title, 'chore(release)')
+    if: >-
+      startsWith(github.event.pull_request.title, 'chore(release)')
+      || contains(github.event.pull_request.labels.*.name, 'integration tests')
     timeout-minutes: 60
     runs-on: ubuntu-latest
     env:
@@ -105,7 +109,9 @@ jobs:
 
   test:
     name: ${{ matrix.id }}
-    if: startsWith(github.event.pull_request.title, 'chore(release)')
+    if: >-
+      startsWith(github.event.pull_request.title, 'chore(release)')
+      || contains(github.event.pull_request.labels.*.name, 'integration tests')
     timeout-minutes: 45
     runs-on: ${{ matrix.os }}
     strategy:
@@ -135,6 +141,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build libgtk-3-dev xvfb
+
+      - name: Enable KVM
+        if: matrix.target == 'android'
+        run: |
+          # Without access to /dev/kvm the emulator falls back to software
+          # emulation, which takes minutes to boot and then stops responding.
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
 
       - name: Boot iOS simulator
         if: matrix.target == 'ios'
@@ -170,6 +186,22 @@ jobs:
             (cd "examples/$example" \
               && flutter create --platforms=${{ matrix.target }} . \
               && flutter pub get)
+          done
+
+      - name: Let the scaffolded macOS apps reach the network
+        if: matrix.target == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The scaffolding only grants the sandbox the network server
+          # entitlement, so without the client one every request to Supabase
+          # fails with "Operation not permitted".
+          for example in database_crud passkeys; do
+            for config in DebugProfile Release; do
+              /usr/libexec/PlistBuddy \
+                -c 'Add :com.apple.security.network.client bool true' \
+                "examples/$example/macos/Runner/$config.entitlements"
+            done
           done
 
       - name: Run integration tests
