@@ -40,7 +40,7 @@ void main() {
   });
 
   test('emits sent when a heartbeat is pushed', () async {
-    client.connState = SocketStates.open;
+    client.connectionStatus = SocketStates.open;
 
     await client.sendHeartbeat();
     await pumpEventQueue();
@@ -52,7 +52,7 @@ void main() {
   test(
     'emits timeout when the previous heartbeat was not acknowledged',
     () async {
-      client.connState = SocketStates.open;
+      client.connectionStatus = SocketStates.open;
       client.pendingHeartbeatRef = 'stale-ref';
 
       await client.sendHeartbeat();
@@ -66,7 +66,7 @@ void main() {
   test('emits ok when the heartbeat reply succeeds', () async {
     client.pendingHeartbeatRef = 'ref-1';
 
-    client.onConnMessage(heartbeatReply('ref-1', 'ok'));
+    client.onConnectionMessage(heartbeatReply('ref-1', 'ok'));
     await pumpEventQueue();
 
     expect(statuses, [RealtimeHeartbeatStatus.ok]);
@@ -76,7 +76,7 @@ void main() {
   test('emits error when the heartbeat reply fails', () async {
     client.pendingHeartbeatRef = 'ref-2';
 
-    client.onConnMessage(heartbeatReply('ref-2', 'error'));
+    client.onConnectionMessage(heartbeatReply('ref-2', 'error'));
     await pumpEventQueue();
 
     expect(statuses, [RealtimeHeartbeatStatus.error]);
@@ -87,7 +87,7 @@ void main() {
     () async {
       client.pendingHeartbeatRef = 'ref-3';
 
-      client.onConnMessage(heartbeatReply('other-ref', 'ok'));
+      client.onConnectionMessage(heartbeatReply('other-ref', 'ok'));
       await pumpEventQueue();
 
       expect(statuses, isEmpty);
