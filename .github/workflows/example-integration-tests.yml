@@ -237,6 +237,13 @@ jobs:
           target: google_apis
           script: dart .github/scripts/run_example_integration_tests.dart android
 
+      - name: Dump the simulator log
+        if: always() && matrix.target == 'ios'
+        continue-on-error: true
+        run: |
+          xcrun simctl spawn "$IOS_DEVICE" log show --last 20m --style compact \
+            --predicate 'processImagePath CONTAINS "example"' | tail -n 300
+
       - name: Signal completion
         if: always()
         shell: bash

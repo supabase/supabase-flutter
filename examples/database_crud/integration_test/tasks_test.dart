@@ -125,7 +125,22 @@ Future<void> _pumpUntil(
     await tester.pump(const Duration(milliseconds: 100));
     if (finder.evaluate().isNotEmpty) return;
   }
-  fail('Timed out waiting for: $finder');
+  fail('Timed out waiting for: $finder\n${_screen()}');
+}
+
+/// What is on screen, so a timeout says whether the app got somewhere else
+/// rather than only which finder came up empty.
+String _screen() {
+  final labels = find
+      .byType(Text)
+      .evaluate()
+      .map((element) => (element.widget as Text).data)
+      .whereType<String>();
+  final fields = find
+      .byType(EditableText)
+      .evaluate()
+      .map((element) => '"${(element.widget as EditableText).controller.text}"');
+  return 'Labels: ${labels.join(' | ')}\nText fields: ${fields.join(' | ')}';
 }
 
 /// The inverse of [_pumpUntil]: pumps until [finder] matches nothing.
@@ -139,5 +154,5 @@ Future<void> _pumpUntilGone(
     await tester.pump(const Duration(milliseconds: 100));
     if (finder.evaluate().isEmpty) return;
   }
-  fail('Timed out waiting for it to disappear: $finder');
+  fail('Timed out waiting for it to disappear: $finder\n${_screen()}');
 }
