@@ -233,6 +233,29 @@ class SingleUseRefreshTokenHttpClient extends BaseClient {
   }
 }
 
+/// Returns [body] verbatim, so that non-JSON error responses can be tested.
+class RawBodyHttpClient extends BaseClient {
+  RawBodyHttpClient(
+    this.body, {
+    required this.statusCode,
+    this.reasonPhrase,
+  });
+
+  final String body;
+  final int statusCode;
+  final String? reasonPhrase;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    return StreamedResponse(
+      Stream.value(utf8.encode(body)),
+      statusCode,
+      request: request,
+      reasonPhrase: reasonPhrase,
+    );
+  }
+}
+
 class MockedHttpClient extends BaseClient {
   MockedHttpClient(
     this.response, {

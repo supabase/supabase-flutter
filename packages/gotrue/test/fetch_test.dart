@@ -72,6 +72,120 @@ void main() {
       await _testFetchRequest(client);
     });
   });
+
+  group('GotrueFetch server errors', () {
+    test('preserves the server sent message on a JSON 5xx body', () async {
+      final client = MockedHttpClient(
+        {
+          'code': 'unexpected_failure',
+          'message': 'Error sending confirmation email',
+        },
+        headers: {
+          Constants.apiVersionHeaderName: '2024-01-01',
+        },
+        statusCode: 500,
+      );
+
+      await _expectRetryableFetch(
+        client,
+        message: 'Error sending confirmation email',
+        statusCode: '500',
+      );
+    });
+
+    test(
+      'preserves the server sent message on a JSON 5xx body without an API '
+      'version',
+      () async {
+        final client = MockedHttpClient(
+          {
+            'code': 500,
+            'error_code': 'unexpected_failure',
+            'msg': 'Error sending confirmation email',
+          },
+          statusCode: 500,
+        );
+
+        await _expectRetryableFetch(
+          client,
+          message: 'Error sending confirmation email',
+          statusCode: '500',
+        );
+      },
+    );
+
+    test('falls back to the reason phrase on a non-JSON 5xx body', () async {
+      final client = RawBodyHttpClient(
+        '<html><body><h1>502 Bad Gateway</h1></body></html>',
+        statusCode: 502,
+        reasonPhrase: 'Bad Gateway',
+      );
+
+      await _expectRetryableFetch(
+        client,
+        message: 'Bad Gateway',
+        statusCode: '502',
+      );
+    });
+
+    test(
+      'falls back to the status code when there is no reason phrase',
+      () async {
+        final client = RawBodyHttpClient(
+          '<html><body><h1>502 Bad Gateway</h1></body></html>',
+          statusCode: 502,
+        );
+
+        await _expectRetryableFetch(
+          client,
+          message: 'HTTP 502',
+          statusCode: '502',
+        );
+      },
+    );
+
+    test('falls back to the reason phrase on an empty 5xx body', () async {
+      final client = RawBodyHttpClient(
+        '',
+        statusCode: 503,
+        reasonPhrase: 'Service Unavailable',
+      );
+
+      await _expectRetryableFetch(
+        client,
+        message: 'Service Unavailable',
+        statusCode: '503',
+      );
+    });
+
+    test('throws an unknown exception on a non-JSON 4xx body', () async {
+      final client = RawBodyHttpClient(
+        '<html><body><h1>400 Bad Request</h1></body></html>',
+        statusCode: 400,
+        reasonPhrase: 'Bad Request',
+      );
+
+      await expectLater(
+        GotrueFetch(client).request(_mockUrl, RequestMethodType.get),
+        throwsA(isA<AuthUnknownException>()),
+      );
+    });
+  });
+}
+
+Future<void> _expectRetryableFetch(
+  Client client, {
+  required String message,
+  required String statusCode,
+}) async {
+  await expectLater(
+    GotrueFetch(client).request(_mockUrl, RequestMethodType.get),
+    throwsA(
+      isA<AuthRetryableFetchException>()
+          .having((e) => e.message, 'message', message)
+          .having((e) => e.statusCode, 'statusCode', statusCode),
+    ),
+  );
 }
 
 Future<void> _testFetchRequest(Client client) async {

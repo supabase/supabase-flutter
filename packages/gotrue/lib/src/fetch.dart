@@ -38,6 +38,18 @@ class GotrueFetch {
     return null;
   }
 
+  /// Message to use when a response body carries no usable error description.
+  ///
+  /// Falls back to the reason phrase, which HTTP/2 responses don't have, and
+  /// then to a message synthesized from the status code.
+  String _getStatusMessage(Response response) {
+    final reasonPhrase = response.reasonPhrase;
+    if (reasonPhrase != null && reasonPhrase.isNotEmpty) {
+      return reasonPhrase;
+    }
+    return 'HTTP ${response.statusCode}';
+  }
+
   AuthException _handleError(dynamic error) {
     if (error is! Response) {
       throw AuthRetryableFetchException(message: error.toString());
@@ -46,17 +58,18 @@ class GotrueFetch {
 
     // If the status is 500 or above, it's likely a server error,
     // and can be retried.
-    if (response.statusCode >= 500) {
-      throw AuthRetryableFetchException(
-        message: response.body,
-        statusCode: response.statusCode.toString(),
-      );
-    }
+    final isRetryable = response.statusCode >= 500;
 
     final dynamic data;
 
     // Catch this case as trying to decode it will throw a misleading [FormatException]
     if (response.body.isEmpty) {
+      if (isRetryable) {
+        throw AuthRetryableFetchException(
+          message: _getStatusMessage(response),
+          statusCode: response.statusCode.toString(),
+        );
+      }
       throw AuthUnknownException(
         message:
             'Received an empty response with status code ${response.statusCode}',
@@ -66,11 +79,25 @@ class GotrueFetch {
     try {
       data = jsonDecode(response.body);
     } catch (error) {
+      if (isRetryable) {
+        throw AuthRetryableFetchException(
+          message: _getStatusMessage(response),
+          statusCode: response.statusCode.toString(),
+        );
+      }
       throw AuthUnknownException(
         message: 'Failed to decode error response',
         originalError: error,
       );
     }
+
+    if (isRetryable) {
+      throw AuthRetryableFetchException(
+        message: _getErrorMessage(data),
+        statusCode: response.statusCode.toString(),
+      );
+    }
+
     String? errorCode;
 
     final responseApiVersion = ApiVersion.fromResponse(response);
