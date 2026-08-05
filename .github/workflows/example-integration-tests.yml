@@ -161,8 +161,12 @@ jobs:
           set -euo pipefail
           udid=$(xcrun simctl list devices available -j \
             | jq -r '[.devices[][] | select(.name | test("iPhone"))][0].udid')
-          # Boots and then waits for the boot to finish, so the tests cannot
-          # launch into a simulator that is still coming up.
+          # Erases first: the tests hang waiting for the app's VM service on a
+          # simulator carrying state from the runner image. Then boots and waits
+          # for the boot to finish, so the tests cannot launch into a simulator
+          # that is still coming up.
+          xcrun simctl shutdown all || true
+          xcrun simctl erase "$udid"
           xcrun simctl bootstatus "$udid" -b
           echo "IOS_DEVICE=$udid" >> "$GITHUB_ENV"
 

@@ -144,9 +144,6 @@ Future<void> _runTarget(
         'integration_test',
         '-d',
         device,
-        // TODO(spydon): drop once the simulator stops hanging between the build
-        // and the first test; this shows how far the tooling gets.
-        '--verbose',
         ...defines,
       ]);
     default:
