@@ -70,8 +70,12 @@ void main() {
       createdTitle,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
-    // Waits for the tile instead of the title text, which also matches the text
-    // field of the dialog that is still animating away.
+    // Searches for the new task rather than looking for it in the full list: the
+    // dialog leaves the keyboard up, and on a phone that leaves room for only a
+    // couple of tiles, so it would otherwise end up below the fold. Waits for the
+    // tile rather than the title text, which also matches the text field of the
+    // dialog that is still animating away.
+    await _searchFor(tester, createdTitle);
     await _pumpUntil(tester, _tile(createdTitle));
 
     // Complete it by ticking the checkbox in its tile (update).
@@ -95,8 +99,11 @@ void main() {
       renamedTitle,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    // The row stops matching the search for the old title, which is the filter
+    // still in the field, so it leaves the list.
+    await _pumpUntilGone(tester, _tile(createdTitle));
+    await _searchFor(tester, renamedTitle);
     await _pumpUntil(tester, _tile(renamedTitle));
-    expect(_tile(createdTitle), findsNothing);
 
     // Delete it (delete).
     await tester.tap(_inTile(renamedTitle, find.byIcon(Icons.delete)));
@@ -110,6 +117,10 @@ Finder _tile(String title) => find.widgetWithText(ListTile, title);
 /// Finds [target] within the [ListTile] that contains [title].
 Finder _inTile(String title, Finder target) =>
     find.descendant(of: _tile(title), matching: target);
+
+/// Filters the list down to [query] through the search field.
+Future<void> _searchFor(WidgetTester tester, String query) =>
+    tester.enterText(find.widgetWithText(TextField, 'Search title'), query);
 
 /// Pumps frames until [finder] matches at least one widget or [timeout] elapses.
 ///
@@ -142,7 +153,13 @@ String _screen() {
       .map(
         (element) => '"${(element.widget as EditableText).controller.text}"',
       );
-  return 'Labels: ${labels.join(' | ')}\nText fields: ${fields.join(' | ')}';
+  final boxes = find
+      .byType(Checkbox)
+      .evaluate()
+      .map((element) => '${(element.widget as Checkbox).value}');
+  return 'Labels: ${labels.join(' | ')}\n'
+      'Text fields: ${fields.join(' | ')}\n'
+      'Checkboxes: ${boxes.join(' | ')}';
 }
 
 /// The inverse of [_pumpUntil]: pumps until [finder] matches nothing.

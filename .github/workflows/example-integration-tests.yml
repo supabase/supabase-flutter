@@ -242,7 +242,7 @@ jobs:
         continue-on-error: true
         run: |
           xcrun simctl spawn "$IOS_DEVICE" log show --last 20m --style compact \
-            --predicate 'processImagePath CONTAINS "example"' | tail -n 300
+            --predicate 'processImagePath ENDSWITH "Runner"' | tail -n 300
 
       - name: Signal completion
         if: always()
