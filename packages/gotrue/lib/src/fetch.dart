@@ -62,7 +62,8 @@ class GotrueFetch {
 
     final dynamic data;
 
-    // Catch this case as trying to decode it will throw a misleading [FormatException]
+    // Catch this case as trying to decode it will throw a misleading
+    // [FormatException]
     if (response.body.isEmpty) {
       if (isRetryable) {
         throw AuthRetryableFetchException(

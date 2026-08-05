@@ -144,6 +144,23 @@ void main() {
       },
     );
 
+    test(
+      'falls back to the status code when the reason phrase is empty',
+      () async {
+        final client = RawBodyHttpClient(
+          '<html><body><h1>502 Bad Gateway</h1></body></html>',
+          statusCode: 502,
+          reasonPhrase: '',
+        );
+
+        await _expectRetryableFetch(
+          client,
+          message: 'HTTP 502',
+          statusCode: '502',
+        );
+      },
+    );
+
     test('falls back to the reason phrase on an empty 5xx body', () async {
       final client = RawBodyHttpClient(
         '',
