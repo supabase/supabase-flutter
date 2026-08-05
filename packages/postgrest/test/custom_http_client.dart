@@ -30,6 +30,19 @@ class CustomHttpClient extends BaseClient {
         reasonPhrase: 'OK',
       );
     }
+    // A gateway error body: a JSON object, but with `code` as a number rather
+    // than the string PostgREST reports.
+    if (request.url.path.endsWith("gateway-json-error")) {
+      return StreamedResponse(
+        Stream.value(
+          utf8.encode(jsonEncode({'code': 502, 'message': 'Bad gateway'})),
+        ),
+        502,
+        request: request,
+        reasonPhrase: 'Bad Gateway',
+      );
+    }
+
     //Return custom status code to check for usage of this client.
     return StreamedResponse(
       Stream.value(lastBody!),

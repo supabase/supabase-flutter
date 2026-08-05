@@ -605,14 +605,23 @@ class StorageApiException extends StorageException with SupabaseApiException {
     super.errorCode,
   });
 
+  /// Builds an exception from an error response body.
+  ///
+  /// A JSON object is no guarantee that its fields carry the types the storage
+  /// API documents, since a proxy or gateway in front of it can answer with a
+  /// shape of its own, so every field is read defensively. [statusCode] is used
+  /// when the body reports none.
   factory StorageApiException.fromJson(
     Map<String, dynamic> json,
     int statusCode,
-  ) => StorageApiException(
-    json['message'] as String? ?? json.toString(),
-    errorCode: json['error'] as String?,
-    statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
-  );
+  ) {
+    final message = json['message'];
+    return StorageApiException(
+      message is String ? message : json.toString(),
+      errorCode: json['error']?.toString(),
+      statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
+    );
+  }
 }
 
 class StorageRetryController {
