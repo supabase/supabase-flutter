@@ -1,5 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 import 'package:realtime_client/realtime_client.dart';
 
 typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
@@ -43,10 +44,9 @@ enum PostgresChangeEvent {
   update,
 
   /// Listen to delete events.
-  delete,
-}
+  delete;
 
-extension PostgresChangeEventMethods on PostgresChangeEvent {
+  @internal
   String toRealtimeEvent() {
     if (this == PostgresChangeEvent.all) {
       return '*';
@@ -54,6 +54,7 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
     return name.toUpperCase();
   }
 
+  @internal
   static PostgresChangeEvent fromString(String event) => switch (event) {
     'INSERT' => PostgresChangeEvent.insert,
     'UPDATE' => PostgresChangeEvent.update,
@@ -65,22 +66,22 @@ extension PostgresChangeEventMethods on PostgresChangeEvent {
 }
 
 class ChannelFilter {
-  /// For [RealtimeListenTypes.postgresChanges] it's one of: `INSERT`, `UPDATE`, `DELETE`
+  /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`, `DELETE`
   ///
-  /// For [RealtimeListenTypes.presence] it's one of: `sync`, `join`, `leave`
+  /// For [RealtimeListenType.presence] it's one of: `sync`, `join`, `leave`
   ///
-  /// For [RealtimeListenTypes.broadcast] it can be any string
+  /// For [RealtimeListenType.broadcast] it can be any string
   final String? event;
   final String? schema;
   final String? table;
 
-  /// For [RealtimeListenTypes.postgresChanges] it's of the format `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt, gte, in, like, ilike, is, match, imatch, isdistinct`.
+  /// For [RealtimeListenType.postgresChanges] it's of the format `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt, gte, in, like, ilike, is, match, imatch, isdistinct`.
   ///
   /// Multiple conditions can be combined with commas; they are applied as an `AND`.
   /// Any operator can be negated with the `not.` prefix.
   final String? filter;
 
-  /// For [RealtimeListenTypes.postgresChanges], restricts the change payload to
+  /// For [RealtimeListenType.postgresChanges], restricts the change payload to
   /// a subset of columns instead of the full row.
   final List<String>? select;
 
@@ -113,11 +114,27 @@ enum ChannelResponse {
   error,
 }
 
-enum RealtimeListenTypes { postgresChanges, broadcast, presence, system }
+@internal
+enum RealtimeListenType {
+  postgresChanges,
+  broadcast,
+  presence,
+  system;
 
-enum PresenceEvent { sync, join, leave }
+  String toType() {
+    if (this == RealtimeListenType.postgresChanges) {
+      return 'postgres_changes';
+    }
+    return name;
+  }
+}
 
-extension PresenceEventExtended on PresenceEvent {
+enum PresenceEvent {
+  sync,
+  join,
+  leave;
+
+  @internal
   static PresenceEvent fromString(String val) {
     for (final event in PresenceEvent.values) {
       if (event.name == val) {
@@ -131,15 +148,6 @@ extension PresenceEventExtended on PresenceEvent {
 }
 
 enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
-
-extension ToType on RealtimeListenTypes {
-  String toType() {
-    if (this == RealtimeListenTypes.postgresChanges) {
-      return 'postgres_changes';
-    }
-    return name;
-  }
-}
 
 /// Configuration for broadcast replay feature.
 /// Allows replaying broadcast messages from a specific timestamp.
@@ -308,7 +316,7 @@ class PostgresChangePayload {
       schema: payload['schema'] as String,
       table: payload['table'] as String,
       commitTimestamp: commitTimestamp,
-      eventType: PostgresChangeEventMethods.fromString(
+      eventType: PostgresChangeEvent.fromString(
         payload['eventType'] as String,
       ),
       newRecord: newData is Map ? Map.from(newData) : {},
@@ -480,7 +488,7 @@ abstract class RealtimePresencePayload {
   });
 
   RealtimePresencePayload.fromJson(Map<String, dynamic> json)
-    : event = PresenceEventExtended.fromString(json['event']);
+    : event = PresenceEvent.fromString(json['event']);
 
   @override
   String toString() => 'PresencePayload(event: ${event.name})';
@@ -494,7 +502,7 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
 
   factory RealtimePresenceSyncPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceSyncPayload(
-      event: PresenceEventExtended.fromString(json['event']),
+      event: PresenceEvent.fromString(json['event']),
     );
   }
 
@@ -524,7 +532,7 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
 
   factory RealtimePresenceJoinPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceJoinPayload(
-      event: PresenceEventExtended.fromString(json['event']),
+      event: PresenceEvent.fromString(json['event']),
       key: json['key'] as String,
       newPresences: (json['newPresences'] as List).cast(),
       currentPresences: (json['currentPresences'] as List).cast(),
@@ -558,7 +566,7 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
 
   factory RealtimePresenceLeavePayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceLeavePayload(
-      event: PresenceEventExtended.fromString(json['event']),
+      event: PresenceEvent.fromString(json['event']),
       key: json['key'] as String,
       leftPresences: (json['leftPresences'] as List).cast(),
       currentPresences: (json['currentPresences'] as List).cast(),

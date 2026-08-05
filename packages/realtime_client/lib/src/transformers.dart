@@ -5,7 +5,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart' show IterableExtension;
 
-enum PostgresTypes {
+enum PostgresType {
   abstime,
   bool,
   date,
@@ -139,41 +139,41 @@ dynamic convertCell(String type, dynamic value) {
     return toArray(value, dataType);
   }
 
-  final typeEnum = PostgresTypes.values.firstWhereOrNull((e) => e.name == type);
+  final typeEnum = PostgresType.values.firstWhereOrNull((e) => e.name == type);
   // If not null, convert to correct type.
   switch (typeEnum) {
-    case PostgresTypes.bool:
+    case PostgresType.bool:
       return toBoolean(value);
-    case PostgresTypes.float4:
-    case PostgresTypes.float8:
-    case PostgresTypes.numeric:
+    case PostgresType.float4:
+    case PostgresType.float8:
+    case PostgresType.numeric:
       return toDouble(value);
-    case PostgresTypes.int2:
-    case PostgresTypes.int4:
-    case PostgresTypes.int8:
-    case PostgresTypes.oid:
+    case PostgresType.int2:
+    case PostgresType.int4:
+    case PostgresType.int8:
+    case PostgresType.oid:
       return toInt(value);
-    case PostgresTypes.json:
-    case PostgresTypes.jsonb:
+    case PostgresType.json:
+    case PostgresType.jsonb:
       return toJson(value);
-    case PostgresTypes.timestamp:
+    case PostgresType.timestamp:
       return toTimestampString(
         value?.toString(),
       ); // Format to be consistent with PostgREST
-    case PostgresTypes.abstime: // To allow users to cast it based on Timezone
-    case PostgresTypes.date: // To allow users to cast it based on Timezone
-    case PostgresTypes.daterange:
-    case PostgresTypes.int4range:
-    case PostgresTypes.int8range:
-    case PostgresTypes.money:
-    case PostgresTypes.reltime: // To allow users to cast it based on Timezone
-    case PostgresTypes.text:
-    case PostgresTypes.time: // To allow users to cast it based on Timezone
-    case PostgresTypes
+    case PostgresType.abstime: // To allow users to cast it based on Timezone
+    case PostgresType.date: // To allow users to cast it based on Timezone
+    case PostgresType.daterange:
+    case PostgresType.int4range:
+    case PostgresType.int8range:
+    case PostgresType.money:
+    case PostgresType.reltime: // To allow users to cast it based on Timezone
+    case PostgresType.text:
+    case PostgresType.time: // To allow users to cast it based on Timezone
+    case PostgresType
         .timestamptz: // To allow users to cast it based on Timezone
-    case PostgresTypes.timetz: // To allow users to cast it based on Timezone
-    case PostgresTypes.tsrange:
-    case PostgresTypes.tstzrange:
+    case PostgresType.timetz: // To allow users to cast it based on Timezone
+    case PostgresType.tsrange:
+    case PostgresType.tstzrange:
     case null:
       return noop(value);
   }

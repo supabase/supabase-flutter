@@ -7,7 +7,7 @@ void main() {
     test('message with null refs serializes correctly', () {
       final message = Message(
         topic: 'phoenix',
-        event: ChannelEvents.heartbeat,
+        event: ChannelEvent.heartbeat,
         payload: {},
         ref: null,
         joinRef: null,
@@ -23,7 +23,7 @@ void main() {
     test('heartbeat message with null joinRef', () {
       final message = Message(
         topic: 'phoenix',
-        event: ChannelEvents.heartbeat,
+        event: ChannelEvent.heartbeat,
         payload: {},
         ref: '123',
         joinRef: null,
@@ -38,7 +38,7 @@ void main() {
     test('message with null ref but valid joinRef', () {
       final message = Message(
         topic: 'room:lobby',
-        event: ChannelEvents.join,
+        event: ChannelEvent.join,
         payload: {'user_id': '123'},
         ref: null,
         joinRef: 'join-456',
@@ -53,7 +53,7 @@ void main() {
     test('message with both ref and joinRef', () {
       final message = Message(
         topic: 'room:lobby',
-        event: ChannelEvents.join,
+        event: ChannelEvent.join,
         payload: {'user_id': '123'},
         ref: 'ref-789',
         joinRef: 'join-456',
@@ -68,7 +68,7 @@ void main() {
     test('message with ref but null joinRef', () {
       final message = Message(
         topic: 'room:lobby',
-        event: ChannelEvents.leave,
+        event: ChannelEvent.leave,
         payload: {},
         ref: 'ref-999',
         joinRef: null,
@@ -82,7 +82,7 @@ void main() {
     test('ref parameter is optional in constructor', () {
       final message = Message(
         topic: 'phoenix',
-        event: ChannelEvents.heartbeat,
+        event: ChannelEvent.heartbeat,
         payload: {},
         // ref is not provided, should be null
       );
@@ -94,7 +94,7 @@ void main() {
     test('a nested empty map is preserved, not dropped', () {
       final message = Message(
         topic: 'room:lobby',
-        event: ChannelEvents.presence,
+        event: ChannelEvent.presence,
         payload: {'event': 'track', 'payload': <String, dynamic>{}},
       );
       final json = message.toJson();
@@ -104,7 +104,7 @@ void main() {
     test('nested non-empty maps still serialize correctly', () {
       final message = Message(
         topic: 'room:lobby',
-        event: ChannelEvents.presence,
+        event: ChannelEvent.presence,
         payload: {
           'event': 'track',
           'payload': {'name': 'alice'},

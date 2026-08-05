@@ -222,16 +222,16 @@ void main() {
     test('aal1 for only password', () async {
       await client.signInWithPassword(password: password, email: email2);
       final response = client.mfa.getAuthenticatorAssuranceLevel();
-      expect(response.currentLevel, AuthenticatorAssuranceLevels.aal1);
-      expect(response.nextLevel, AuthenticatorAssuranceLevels.aal2);
+      expect(response.currentLevel, AuthenticatorAssuranceLevel.aal1);
+      expect(response.nextLevel, AuthenticatorAssuranceLevel.aal2);
     });
 
     test('aal2 for password and totp', () async {
       await client.signInWithPassword(password: password, email: email2);
       await client.mfa.challengeAndVerify(factorId: factorId2, code: getTOTP());
       final response = client.mfa.getAuthenticatorAssuranceLevel();
-      expect(response.currentLevel, AuthenticatorAssuranceLevels.aal2);
-      expect(response.nextLevel, AuthenticatorAssuranceLevels.aal2);
+      expect(response.currentLevel, AuthenticatorAssuranceLevel.aal2);
+      expect(response.nextLevel, AuthenticatorAssuranceLevel.aal2);
       final passwordEntry = response.currentAuthenticationMethods
           .firstWhereOrNull((element) => element.method == AMRMethod.password);
       final totpEntry = response.currentAuthenticationMethods.firstWhereOrNull(
@@ -278,7 +278,7 @@ void main() {
 
       final result = localClient.mfa.getAuthenticatorAssuranceLevel();
 
-      expect(result.currentLevel, AuthenticatorAssuranceLevels.aal1);
+      expect(result.currentLevel, AuthenticatorAssuranceLevel.aal1);
       expect(result.currentAuthenticationMethods, isEmpty);
     },
   );

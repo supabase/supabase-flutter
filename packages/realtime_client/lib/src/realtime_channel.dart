@@ -15,7 +15,7 @@ import 'package:realtime_client/src/types.dart';
 class RealtimeChannel {
   final Map<String, List<Binding>> _bindings = {};
   final Duration _timeout;
-  ChannelStates _state = ChannelStates.closed;
+  ChannelState _state = ChannelState.closed;
   @internal
   bool joinedOnce = false;
   @internal
@@ -52,7 +52,7 @@ class RealtimeChannel {
 
     joinPush = Push(
       this,
-      ChannelEvents.join,
+      ChannelEvent.join,
       this.params,
       _timeout,
     );
@@ -61,7 +61,7 @@ class RealtimeChannel {
       socket.reconnectAfterMs,
     );
     joinPush.receive('ok', (_) {
-      _state = ChannelStates.joined;
+      _state = ChannelState.joined;
       _rejoinTimer.reset();
       for (final pushEvent in _pushBuffer) {
         pushEvent.send();
@@ -72,7 +72,7 @@ class RealtimeChannel {
     _onClose(() {
       _rejoinTimer.reset();
       socket.log('channel', 'close $topic $joinRef');
-      _state = ChannelStates.closed;
+      _state = ChannelState.closed;
       socket.remove(this);
     });
 
@@ -81,7 +81,7 @@ class RealtimeChannel {
         return;
       }
       socket.log('channel', 'error $topic', reason);
-      _state = ChannelStates.errored;
+      _state = ChannelState.errored;
       _rejoinTimer.scheduleTimeout();
     });
 
@@ -90,11 +90,11 @@ class RealtimeChannel {
         return;
       }
       socket.log('channel', 'timeout $topic', joinPush.timeout);
-      _state = ChannelStates.errored;
+      _state = ChannelState.errored;
       _rejoinTimer.scheduleTimeout();
     });
 
-    onEvents(ChannelEvents.reply.eventName(), ChannelFilter(), (
+    onEvents(ChannelEvent.reply.eventName(), ChannelFilter(), (
       payload, [
       ref,
     ]) {
@@ -323,7 +323,7 @@ class RealtimeChannel {
     Map<String, dynamic> opts = const {},
   ]) {
     return send(
-      type: RealtimeListenTypes.presence,
+      type: RealtimeListenType.presence,
       payload: {
         'event': 'track',
         'payload': payload,
@@ -339,7 +339,7 @@ class RealtimeChannel {
     Map<String, dynamic> opts = const {},
   ]) {
     return send(
-      type: RealtimeListenTypes.presence,
+      type: RealtimeListenType.presence,
       payload: {
         'event': 'untrack',
       },
@@ -350,7 +350,7 @@ class RealtimeChannel {
   /// Registers a callback that will be executed when the channel closes.
   void _onClose(Function callback) {
     onEvents(
-      ChannelEvents.close.eventName(),
+      ChannelEvent.close.eventName(),
       ChannelFilter(),
       (reason, [ref]) => callback(),
     );
@@ -359,7 +359,7 @@ class RealtimeChannel {
   /// Registers a callback that will be executed when the channel encounters an error.
   void _onError(Function callback) {
     onEvents(
-      ChannelEvents.error.eventName(),
+      ChannelEvent.error.eventName(),
       ChannelFilter(),
       (reason, [ref]) => callback(reason),
     );
@@ -632,7 +632,7 @@ class RealtimeChannel {
 
   @internal
   Push push(
-    ChannelEvents event,
+    ChannelEvent event,
     Map<String, dynamic> payload, [
     Duration? timeout,
   ]) {
@@ -770,7 +770,7 @@ class RealtimeChannel {
     required Map<String, dynamic> payload,
   }) {
     return send(
-      type: RealtimeListenTypes.broadcast,
+      type: RealtimeListenType.broadcast,
       event: event,
       payload: payload,
     );
@@ -778,7 +778,7 @@ class RealtimeChannel {
 
   @internal
   Future<ChannelResponse> send({
-    required RealtimeListenTypes type,
+    required RealtimeListenType type,
     String? event,
     required Map<String, dynamic> payload,
     Map<String, dynamic> opts = const {},
@@ -790,7 +790,7 @@ class RealtimeChannel {
       payload['event'] = event;
     }
 
-    if (!canPush && type == RealtimeListenTypes.broadcast) {
+    if (!canPush && type == RealtimeListenType.broadcast) {
       socket.log(
         'channel',
         'send() is automatically falling back to REST API. '
@@ -814,7 +814,7 @@ class RealtimeChannel {
       }
     } else {
       final push = this.push(
-        ChannelEventsExtended.fromType(payload['type']),
+        ChannelEvent.fromType(payload['type']),
         payload,
         opts['timeout'] ?? _timeout,
       );
@@ -885,10 +885,10 @@ class RealtimeChannel {
   /// channel.unsubscribe().receive("ok", (_){print("left!");} );
   /// ```
   Future<String> unsubscribe([Duration? timeout]) {
-    _state = ChannelStates.leaving;
+    _state = ChannelState.leaving;
     void onClose() {
       socket.log('channel', 'leave $topic');
-      trigger(ChannelEvents.close.eventName(), 'leave', joinRef);
+      trigger(ChannelEvent.close.eventName(), 'leave', joinRef);
     }
 
     // Destroy joinPush to avoid connection timeouts during unsubscription phase
@@ -896,7 +896,7 @@ class RealtimeChannel {
 
     final completer = Completer<String>();
 
-    final leavePush = Push(this, ChannelEvents.leave, {}, timeout ?? _timeout);
+    final leavePush = Push(this, ChannelEvent.leave, {}, timeout ?? _timeout);
 
     leavePush
         .receive('ok', (_) {
@@ -950,16 +950,16 @@ class RealtimeChannel {
       return;
     }
     socket.leaveOpenTopic(topic);
-    _state = ChannelStates.joining;
+    _state = ChannelState.joining;
     joinPush.resend(timeout ?? _timeout);
   }
 
   /// Resends [joinPush] to tell the server we join this channel again and marks
-  /// the channel as [ChannelStates.joining].
+  /// the channel as [ChannelState.joining].
   ///
   /// Usually [rejoin] only happens when the channel timeouts or errors out.
   /// When manually disconnecting, the channel is still marked as
-  /// [ChannelStates.joined]. Calling [RealtimeClient.leaveOpenTopic] will
+  /// [ChannelState.joined]. Calling [RealtimeClient.leaveOpenTopic] will
   /// unsubscribe itself, which causes issues when trying to rejoin. This method
   /// therefore doesn't call [RealtimeClient.leaveOpenTopic].
   @internal
@@ -967,7 +967,7 @@ class RealtimeChannel {
     if (isLeaving) {
       return;
     }
-    _state = ChannelStates.joining;
+    _state = ChannelState.joining;
     joinPush.resend(timeout ?? _timeout);
   }
 
@@ -975,10 +975,10 @@ class RealtimeChannel {
     final typeLower = type.toLowerCase();
 
     final events = [
-      ChannelEvents.close,
-      ChannelEvents.error,
-      ChannelEvents.leave,
-      ChannelEvents.join,
+      ChannelEvent.close,
+      ChannelEvent.error,
+      ChannelEvent.leave,
+      ChannelEvent.join,
     ].map((e) => e.eventName()).toSet();
 
     if (ref != null && events.contains(typeLower) && ref != joinRef) {
@@ -1036,19 +1036,19 @@ class RealtimeChannel {
   }
 
   @internal
-  bool get isClosed => _state == ChannelStates.closed;
+  bool get isClosed => _state == ChannelState.closed;
 
   @internal
-  bool get isErrored => _state == ChannelStates.errored;
+  bool get isErrored => _state == ChannelState.errored;
 
   @internal
-  bool get isJoined => _state == ChannelStates.joined;
+  bool get isJoined => _state == ChannelState.joined;
 
   @internal
-  bool get isJoining => _state == ChannelStates.joining;
+  bool get isJoining => _state == ChannelState.joining;
 
   @internal
-  bool get isLeaving => _state == ChannelStates.leaving;
+  bool get isLeaving => _state == ChannelState.leaving;
 
   static bool _isEqual(Map<String, Object?> obj1, Map<String, Object?> obj2) {
     if (obj1.keys.length != obj2.keys.length) {

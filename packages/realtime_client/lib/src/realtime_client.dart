@@ -628,7 +628,7 @@ class RealtimeClient {
         });
       }
       if (channel.joinedOnce && channel.isJoined) {
-        channel.push(ChannelEvents.accessToken, {'access_token': tokenToSend});
+        channel.push(ChannelEvent.accessToken, {'access_token': tokenToSend});
       }
     }
   }
@@ -702,7 +702,7 @@ class RealtimeClient {
 
   void _triggerChanError([dynamic error]) {
     for (final channel in channels) {
-      channel.trigger(ChannelEvents.error.eventName(), error);
+      channel.trigger(ChannelEvent.error.eventName(), error);
     }
   }
 
@@ -784,7 +784,7 @@ class RealtimeClient {
     push(
       Message(
         topic: 'phoenix',
-        event: ChannelEvents.heartbeat,
+        event: ChannelEvent.heartbeat,
         payload: {},
         ref: pendingHeartbeatRef!,
       ),

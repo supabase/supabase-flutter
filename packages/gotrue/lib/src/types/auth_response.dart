@@ -1,5 +1,4 @@
 import 'package:gotrue/gotrue.dart';
-import 'package:gotrue/src/constants.dart';
 
 /// Response which might or might not contain session and/or user
 class AuthResponse {
@@ -98,7 +97,7 @@ class GenerateLinkProperties {
       emailOtp = json['email_otp'] ?? '',
       hashedToken = json['hashed_token'] ?? '',
       redirectTo = json['redirect_to'] ?? '',
-      verificationType = GenerateLinkTypeExtended.fromString(
+      verificationType = GenerateLinkType.fromString(
         json['verification_type'],
       );
 }

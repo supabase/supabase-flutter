@@ -21,8 +21,8 @@ class Push {
   /// The channel
   final RealtimeChannel _channel;
 
-  /// The event, for example [ChannelEvents.join]
-  final ChannelEvents _event;
+  /// The event, for example [ChannelEvent.join]
+  final ChannelEvent _event;
 
   /// The payload, for example `{user_id: 123}`
   late Map<String, dynamic> payload;

@@ -167,6 +167,7 @@ features:
   auth.mfa.get_authenticator_assurance_level:
     status: implemented
     symbols:
+      - AuthenticatorAssuranceLevel
       - GoTrueMFAApi.getAuthenticatorAssuranceLevel
 
   # auth — passkeys (experimental)
@@ -1166,9 +1167,6 @@ features:
       - LoadTableResult.metadata
       - LoadTableResult.metadataLocation
       - LoadTableResult.storageCredentials
-      - LoadTableSnapshots
-      - LoadTableSnapshots.LoadTableSnapshots
-      - LoadTableSnapshots.value
       - MapType
       - MapType.MapType
       - MapType.fromJson
@@ -1356,6 +1354,9 @@ features:
       - TableSchema.identifierFieldIds
       - TableSchema.schemaId
       - TableSchema.toJson
+      - TableSnapshotScope
+      - TableSnapshotScope.TableSnapshotScope
+      - TableSnapshotScope.value
       - TableUpdate
       - TableUpdate.TableUpdate
       - TableUpdate.raw
@@ -1434,6 +1435,7 @@ features:
     status: implemented
     symbols:
       - ChannelFilter.select
+      - PostgresType
       - RealtimeChannelConfig.replicationReady
       - RealtimeSystemPayload
       - RealtimeSystemPayload.RealtimeSystemPayload

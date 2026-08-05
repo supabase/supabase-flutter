@@ -1,5 +1,6 @@
 import 'package:gotrue/src/types/api_version.dart';
 import 'package:gotrue/src/version.dart';
+import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class Constants {
@@ -48,9 +49,8 @@ enum AuthChangeEvent {
 
   final String jsName;
   const AuthChangeEvent(this.jsName);
-}
 
-extension AuthChangeEventExtended on AuthChangeEvent {
+  @internal
   static AuthChangeEvent? fromString(String? val) {
     for (final event in AuthChangeEvent.values) {
       if (event.name == val) {
@@ -68,10 +68,9 @@ enum GenerateLinkType {
   recovery,
   emailChangeCurrent,
   emailChangeNew,
-  unknown,
-}
+  unknown;
 
-extension GenerateLinkTypeExtended on GenerateLinkType {
+  @internal
   static GenerateLinkType fromString(String? val) {
     for (final type in GenerateLinkType.values) {
       if (type.snakeCase == val) {
