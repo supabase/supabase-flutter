@@ -58,8 +58,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// Contains the combined data of postgrest and realtime to emit as stream.
   SupabaseStreamEvent _streamData = [];
 
-  /// Filters to be applied to the stream
-  final List<_StreamPostgrestFilter> _streamFilter = [];
+  /// Filters to be applied to the stream, combined with an `AND`
+  final List<_StreamPostgrestFilter> _streamFilters = [];
 
   /// Which column to order by and whether it's ascending
   _Order? _orderBy;
@@ -147,7 +147,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   void _getStreamData() {
     _streamData = [];
-    List<PostgresChangeFilter> realtimeFilter = _streamFilter
+    final realtimeFilters = _streamFilters
         .map(
           (filter) => PostgresChangeFilter(
             column: filter.column,
@@ -169,7 +169,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
           event: PostgresChangeEvent.all,
           schema: _schema,
           table: _table,
-          filters: realtimeFilter,
+          filters: realtimeFilters,
           callback: (payload) {
             switch (payload.eventType) {
               case PostgresChangeEvent.insert:
@@ -225,7 +225,7 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   Future<void> _getPostgrestData() async {
     PostgrestFilterBuilder<PostgrestList> query = _queryBuilder.select();
-    for (final filter in _streamFilter) {
+    for (final filter in _streamFilters) {
       query = switch (filter.type) {
         PostgresChangeFilterType.eq => query.eq(
           filter.column,

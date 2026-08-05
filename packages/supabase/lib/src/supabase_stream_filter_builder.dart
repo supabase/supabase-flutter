@@ -17,7 +17,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).eq('name', 'Supabase');
   /// ```
   SupabaseStreamFilterBuilder eq(String column, Object value) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.eq,
       column: column,
       value: value,
@@ -31,7 +31,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).neq('name', 'Supabase');
   /// ```
   SupabaseStreamFilterBuilder neq(String column, Object value) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.neq,
       column: column,
       value: value,
@@ -45,7 +45,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).lt('likes', 100);
   /// ```
   SupabaseStreamFilterBuilder lt(String column, Object value) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.lt,
       column: column,
       value: value,
@@ -59,7 +59,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).lte('likes', 100);
   /// ```
   SupabaseStreamFilterBuilder lte(String column, Object value) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.lte,
       column: column,
       value: value,
@@ -73,7 +73,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).gt('likes', '100');
   /// ```
   SupabaseStreamFilterBuilder gt(String column, Object value) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.gt,
       column: column,
       value: value,
@@ -87,7 +87,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).gte('likes', 100);
   /// ```
   SupabaseStreamFilterBuilder gte(String column, Object value) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.gte,
       column: column,
       value: value,
@@ -98,10 +98,13 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// Filters the results where [column] is included in [values].
   ///
   /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).inFilter('name', ['Andy', 'Amy', 'Terry']);
+  /// supabase
+  ///     .from('users')
+  ///     .stream(primaryKey: ['id'])
+  ///     .inFilter('name', ['Andy', 'Amy', 'Terry']);
   /// ```
   SupabaseStreamFilterBuilder inFilter(String column, List<Object> values) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.inFilter,
       column: column,
       value: values,
@@ -115,7 +118,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).like('title', '%foo%');
   /// ```
   SupabaseStreamFilterBuilder like(String column, String pattern) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.like,
       column: column,
       value: pattern,
@@ -129,7 +132,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).ilike('title', '%foo%');
   /// ```
   SupabaseStreamFilterBuilder ilike(String column, String pattern) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.ilike,
       column: column,
       value: pattern,
@@ -137,30 +140,38 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
     return this;
   }
 
-  /// Filters the results where [column] matches the POSIX [regex] case-sensitive.
+  /// Filters the results where [column] matches the PostgreSQL regular
+  /// expression [pattern] case-sensitive.
   ///
   /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).match('slug', r'^post-\d+$');
+  /// supabase
+  ///     .from('users')
+  ///     .stream(primaryKey: ['id'])
+  ///     .matchRegex('slug', r'^post-\d+$');
   /// ```
-  SupabaseStreamFilterBuilder match(String column, String regex) {
-    _streamFilter.add((
+  SupabaseStreamFilterBuilder matchRegex(String column, String pattern) {
+    _streamFilters.add((
       type: PostgresChangeFilterType.match,
       column: column,
-      value: regex,
+      value: pattern,
     ));
     return this;
   }
 
-  /// Filters the results where [column] matches the POSIX [regex] case-insensitive.
+  /// Filters the results where [column] matches the PostgreSQL regular
+  /// expression [pattern] case-insensitive.
   ///
   /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).imatch('slug', r'^post-\d+$');
+  /// supabase
+  ///     .from('users')
+  ///     .stream(primaryKey: ['id'])
+  ///     .imatchRegex('slug', r'^post-\d+$');
   /// ```
-  SupabaseStreamFilterBuilder imatch(String column, String regex) {
-    _streamFilter.add((
+  SupabaseStreamFilterBuilder imatchRegex(String column, String pattern) {
+    _streamFilters.add((
       type: PostgresChangeFilterType.imatch,
       column: column,
-      value: regex,
+      value: pattern,
     ));
     return this;
   }
@@ -171,7 +182,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).isFilter('data', null);
   /// ```
   SupabaseStreamFilterBuilder isFilter(String column, bool? value) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.isFilter,
       column: column,
       value: value,
@@ -186,7 +197,7 @@ class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   /// supabase.from('users').stream(primaryKey: ['id']).isDistinct('age', null);
   /// ```
   SupabaseStreamFilterBuilder isDistinct(String column, Object? value) {
-    _streamFilter.add((
+    _streamFilters.add((
       type: PostgresChangeFilterType.isDistinct,
       column: column,
       value: value,
