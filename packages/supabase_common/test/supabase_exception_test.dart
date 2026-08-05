@@ -1,14 +1,14 @@
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
-class _TestException extends SupabaseException {
-  const _TestException(super.message, {super.statusCode, super.errorCode});
+class TestException extends SupabaseException {
+  const TestException(super.message, {super.statusCode, super.errorCode});
 }
 
-class _DetailedException extends SupabaseException {
+class DetailedException extends SupabaseException {
   final String details;
 
-  const _DetailedException(super.message, {required this.details});
+  const DetailedException(super.message, {required this.details});
 
   @override
   String toString() => '$runtimeType(message: $message, details: $details)';
@@ -17,11 +17,11 @@ class _DetailedException extends SupabaseException {
 void main() {
   group('SupabaseException', () {
     test('is an Exception', () {
-      expect(const _TestException('boom'), isA<Exception>());
+      expect(const TestException('boom'), isA<Exception>());
     });
 
     test('defaults the status and error code to null', () {
-      const exception = _TestException('boom');
+      const exception = TestException('boom');
 
       expect(exception.message, 'boom');
       expect(exception.statusCode, isNull);
@@ -29,7 +29,7 @@ void main() {
     });
 
     test('toString names the concrete subtype and lists all fields', () {
-      const exception = _TestException(
+      const exception = TestException(
         'boom',
         statusCode: 500,
         errorCode: 'server_error',
@@ -37,17 +37,17 @@ void main() {
 
       expect(
         exception.toString(),
-        '_TestException(message: boom, statusCode: 500, '
+        'TestException(message: boom, statusCode: 500, '
         'errorCode: server_error)',
       );
     });
 
     test('subtypes can extend toString with their own fields', () {
-      const exception = _DetailedException('boom', details: 'stack');
+      const exception = DetailedException('boom', details: 'stack');
 
       expect(
         exception.toString(),
-        '_DetailedException(message: boom, details: stack)',
+        'DetailedException(message: boom, details: stack)',
       );
     });
   });

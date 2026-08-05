@@ -1047,7 +1047,7 @@ class GoTrueClient {
       throw AuthException(
         errorDescription ?? 'Error in URL with unspecified error_description',
         statusCode: statusCode,
-        errorCode: statusCode == null ? errorCode ?? error : error,
+        errorCode: statusCode == null ? (errorCode ?? error) : error,
       );
     }
 
