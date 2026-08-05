@@ -64,7 +64,7 @@ void main() {
       repository.countWords(''),
       throwsA(
         isA<FunctionException>()
-            .having((error) => error.status, 'status', 400)
+            .having((error) => error.statusCode, 'statusCode', 400)
             .having(
               (error) => (error.details as Map)['error'],
               'details.error',

@@ -27,7 +27,11 @@ void main() {
       await expectLater(
         functionsCustomHttpClient.invoke('error-function'),
         throwsA(
-          isA<FunctionsHttpException>().having((e) => e.status, 'status', 420),
+          isA<FunctionsHttpException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
         ),
       );
     });
@@ -37,12 +41,8 @@ void main() {
         functionsCustomHttpClient.invoke('error-function'),
         throwsA(
           isA<FunctionsHttpException>()
-              .having((e) => e.status, 'status', 420)
-              .having(
-                (e) => e.reasonPhrase,
-                'reasonPhrase',
-                'Enhance Your Calm',
-              )
+              .having((e) => e.statusCode, 'statusCode', 420)
+              .having((e) => e.message, 'message', 'Enhance Your Calm')
               .having((e) => e.details, 'details', {'key': 'Hello World'}),
         ),
       );
@@ -53,7 +53,7 @@ void main() {
         functionsCustomHttpClient.invoke('relay-error'),
         throwsA(
           isA<FunctionsRelayException>()
-              .having((e) => e.status, 'status', 500)
+              .having((e) => e.statusCode, 'statusCode', 500)
               .having((e) => e.details, 'details', {'error': 'relay down'}),
         ),
       );
@@ -64,7 +64,12 @@ void main() {
         functionsCustomHttpClient.invoke('network-error'),
         throwsA(
           isA<FunctionsFetchException>()
-              .having((e) => e.status, 'status', 0)
+              .having((e) => e.statusCode, 'statusCode', isNull)
+              .having(
+                (e) => e.message,
+                'message',
+                'Failed to send a request to the Edge Function',
+              )
               .having((e) => e.details, 'details', isA<ClientException>()),
         ),
       );
@@ -90,7 +95,7 @@ void main() {
           functionsCustomHttpClient.invoke('error-sse'),
           throwsA(
             isA<FunctionException>()
-                .having((e) => e.status, 'status', 500)
+                .having((e) => e.statusCode, 'statusCode', 500)
                 .having((e) => e.details, 'details', 'error: boom'),
           ),
         );
@@ -104,7 +109,7 @@ void main() {
           functionsCustomHttpClient.invoke('invalid-json-error'),
           throwsA(
             isA<FunctionException>()
-                .having((e) => e.status, 'status', 500)
+                .having((e) => e.statusCode, 'statusCode', 500)
                 .having(
                   (e) => e.details,
                   'details',
@@ -603,9 +608,9 @@ void main() {
           functionsCustomHttpClient.invoke('error-function'),
           throwsA(
             isA<FunctionException>()
-                .having((e) => e.status, 'status', 420)
+                .having((e) => e.statusCode, 'statusCode', 420)
                 .having((e) => e.details, 'details', isNotNull)
-                .having((e) => e.reasonPhrase, 'reasonPhrase', isNotNull)
+                .having((e) => e.message, 'message', 'Enhance Your Calm')
                 .having((e) => e.toString(), 'toString()', contains('420')),
           ),
         );

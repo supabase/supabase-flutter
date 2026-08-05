@@ -255,17 +255,19 @@ class FunctionsClient {
     if (isSuccessStatus) {
       return FunctionResponse(data: data, status: response.statusCode);
     }
+    // The reason phrase is the only message the response itself carries; when
+    // it is absent, as it is over HTTP/2, each exception uses its own default.
     if (isRelayError) {
       throw FunctionsRelayException(
-        status: response.statusCode,
+        statusCode: response.statusCode,
         details: data,
-        reasonPhrase: response.reasonPhrase,
+        message: response.reasonPhrase,
       );
     }
     throw FunctionsHttpException(
-      status: response.statusCode,
+      statusCode: response.statusCode,
       details: data,
-      reasonPhrase: response.reasonPhrase,
+      message: response.reasonPhrase,
     );
   }
 

@@ -329,7 +329,11 @@ void main() {
       await expectLater(
         () => postgrest.from('missing_table').select(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', 'PGRST205'),
+          isA<PostgrestException>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            'PGRST205',
+          ),
         ),
       );
     });
@@ -521,7 +525,13 @@ void main() {
     test('basic select table', () async {
       await expectLater(
         () => postgrestCustomHttpClient.from('users').select(),
-        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+        throwsA(
+          isA<PostgrestException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
+        ),
       );
     });
     test(
@@ -541,7 +551,13 @@ void main() {
             .from('users')
             .select()
             .withConverter((data) => data),
-        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+        throwsA(
+          isA<PostgrestException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
+        ),
       );
     });
     test('basic stored procedure call', () async {
@@ -550,7 +566,13 @@ void main() {
           'get_status',
           params: {'name_param': 'supabot'},
         ),
-        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+        throwsA(
+          isA<PostgrestException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
+        ),
       );
       expect(customHttpClient.lastRequest?.method, "POST");
     });
@@ -562,7 +584,13 @@ void main() {
           params: {'name_param': 'supabot'},
           get: true,
         ),
-        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+        throwsA(
+          isA<PostgrestException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
+        ),
       );
       expect(customHttpClient.lastRequest?.method, "GET");
       expect(customHttpClient.lastBody, isEmpty);
@@ -573,7 +601,7 @@ void main() {
         () => postgrestCustomHttpClient.from('non-json-succ').select(),
         throwsA(
           isA<PostgrestException>()
-              .having((e) => e.code, 'code', '200')
+              .having((e) => e.statusCode, 'statusCode', 200)
               .having(
                 (e) => e.message,
                 'message',
@@ -590,7 +618,11 @@ void main() {
             .select()
             .maybeSingle(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '200'),
+          isA<PostgrestException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            200,
+          ),
         ),
       );
     });

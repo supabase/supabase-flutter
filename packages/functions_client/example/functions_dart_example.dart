@@ -21,6 +21,6 @@ Future<void> main() async {
     print('status: ${response.status}');
     print('data: ${response.data}');
   } on FunctionException catch (error) {
-    print('Function error: ${error.status} ${error.details}');
+    print('Function error: ${error.statusCode} ${error.details}');
   }
 }

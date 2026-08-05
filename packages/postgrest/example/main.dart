@@ -14,7 +14,7 @@ dynamic main() async {
     print(response);
   } on PostgrestException catch (e) {
     // handle PostgrestError
-    print(e.code);
+    print(e.errorCode);
     print(e.message);
   }
 }

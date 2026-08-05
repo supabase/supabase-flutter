@@ -49,7 +49,7 @@ class GotrueFetch {
     if (response.statusCode >= 500) {
       throw AuthRetryableFetchException(
         message: response.body,
-        statusCode: response.statusCode.toString(),
+        statusCode: response.statusCode,
       );
     }
 
@@ -93,22 +93,22 @@ class GotrueFetch {
               .isEmpty) {
         throw AuthWeakPasswordException(
           message: _getErrorMessage(data),
-          statusCode: response.statusCode.toString(),
+          statusCode: response.statusCode,
           reasons: List<String>.from(data['weak_password']['reasons']),
         );
       }
     } else if (errorCode == ErrorCode.weakPassword.code) {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
-        statusCode: response.statusCode.toString(),
+        statusCode: response.statusCode,
         reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
       );
     }
 
     throw AuthApiException(
       _getErrorMessage(data),
-      statusCode: response.statusCode.toString(),
-      code: errorCode,
+      statusCode: response.statusCode,
+      errorCode: errorCode,
     );
   }
 

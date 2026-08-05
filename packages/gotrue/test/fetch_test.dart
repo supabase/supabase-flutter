@@ -80,7 +80,7 @@ Future<void> _testFetchRequest(Client client) async {
     fetch.request(_mockUrl, RequestMethodType.get),
     throwsA(
       isA<AuthException>()
-          .having((e) => e.code, 'code', 'weak_password')
+          .having((e) => e.errorCode, 'errorCode', 'weak_password')
           .having((e) => e.message, 'message', 'error_message'),
     ),
   );

@@ -338,8 +338,8 @@ void main() {
         disabledClient.passkey.startAuthentication(),
         throwsA(
           isA<AuthApiException>()
-              .having((e) => e.code, 'code', 'passkey_disabled')
-              .having((e) => e.statusCode, 'statusCode', '404'),
+              .having((e) => e.errorCode, 'errorCode', 'passkey_disabled')
+              .having((e) => e.statusCode, 'statusCode', 404),
         ),
       );
     });

@@ -590,26 +590,18 @@ class SignedUploadURLResponse extends SignedUrl {
   });
 }
 
-class StorageException implements Exception {
-  final String message;
-  final String? error;
-  final String? statusCode;
-
-  const StorageException(this.message, {this.error, this.statusCode});
+/// Thrown when a storage operation fails.
+class StorageException extends SupabaseException {
+  const StorageException(super.message, {super.statusCode, super.errorCode});
 
   factory StorageException.fromJson(
     Map<String, dynamic> json, [
-    String? statusCode,
+    int? statusCode,
   ]) => StorageException(
     json['message'] as String? ?? json.toString(),
-    error: json['error'] as String?,
-    statusCode: json['statusCode']?.toString() ?? statusCode,
+    errorCode: json['error'] as String?,
+    statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
   );
-
-  @override
-  String toString() {
-    return 'StorageException(message: $message, statusCode: $statusCode, error: $error)';
-  }
 }
 
 class StorageRetryController {

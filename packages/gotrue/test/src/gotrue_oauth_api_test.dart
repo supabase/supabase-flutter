@@ -209,8 +209,8 @@ void main() {
         () async => sut.oauth.approveAuthorization(authorizationId),
         throwsA(
           isAnAuthApiException(
-            statusCode: equals('404'),
-            code: equals('oauth_authorization_not_found'),
+            statusCode: equals(404),
+            errorCode: equals('oauth_authorization_not_found'),
           ),
         ),
       );
@@ -379,7 +379,7 @@ class GotrueOauthApiFixture {
   }
 }
 
-Matcher isAnAuthApiException({Matcher? statusCode, Matcher? code}) =>
+Matcher isAnAuthApiException({Matcher? statusCode, Matcher? errorCode}) =>
     isA<AuthApiException>()
         .having((e) => e.statusCode, 'statusCode', statusCode)
-        .having((e) => e.code, 'code', code);
+        .having((e) => e.errorCode, 'errorCode', errorCode);
