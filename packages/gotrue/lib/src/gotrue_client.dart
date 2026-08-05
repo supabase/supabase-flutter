@@ -1040,10 +1040,14 @@ class GoTrueClient {
     final errorCode = url.queryParameters['error_code'];
     final error = url.queryParameters['error'];
     if (error != null || errorDescription != null || errorCode != null) {
+      // `error_code` carries either a numeric HTTP status (older links) or a
+      // code such as `otp_expired`. Only the numeric form is a status, so fall
+      // back to the `error` parameter for the code in that case.
+      final statusCode = int.tryParse(errorCode ?? '');
       throw AuthException(
         errorDescription ?? 'Error in URL with unspecified error_description',
-        statusCode: errorCode,
-        code: error,
+        statusCode: statusCode,
+        errorCode: statusCode == null ? errorCode ?? error : error,
       );
     }
 
@@ -1143,9 +1147,9 @@ class GoTrueClient {
         // current session.
         // Ignore 403s since the user might not exist anymore.
         // Ignore 404s since the user might not exist anymore.
-        if (error.statusCode != '401' &&
-            error.statusCode != '403' &&
-            error.statusCode != '404') {
+        if (error.statusCode != 401 &&
+            error.statusCode != 403 &&
+            error.statusCode != 404) {
           rethrow;
         }
       }
@@ -1289,7 +1293,7 @@ class GoTrueClient {
       throw notifyException(
         AuthException(
           'Initial session is missing data.',
-          code: ErrorCode.sessionMissing.code,
+          errorCode: ErrorCode.sessionMissing.code,
         ),
       );
     }
@@ -1313,7 +1317,7 @@ class GoTrueClient {
         // here to avoid emitting the error onto the stream twice.
         throw AuthException(
           'Current session is missing data.',
-          code: ErrorCode.sessionMissing.code,
+          errorCode: ErrorCode.sessionMissing.code,
         );
       }
 
@@ -1348,7 +1352,7 @@ class GoTrueClient {
         );
         throw AuthException(
           'Session expired.',
-          code: ErrorCode.sessionExpired.code,
+          errorCode: ErrorCode.sessionExpired.code,
         );
       }
       refreshToken = token;
@@ -1654,7 +1658,7 @@ class GoTrueClient {
     } on AuthException catch (error, stack) {
       final existingSession = _currentSession;
       if (error is AuthApiException &&
-          error.code == 'refresh_token_already_used' &&
+          error.errorCode == 'refresh_token_already_used' &&
           existingSession != null &&
           !existingSession.isExpired) {
         _log.fine(

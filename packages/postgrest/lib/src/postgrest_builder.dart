@@ -470,7 +470,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             // returning null.
             throw PostgrestException(
               message: response.body,
-              code: '${response.statusCode}',
+              statusCode: response.statusCode,
               details: response.reasonPhrase,
             );
           }
@@ -482,7 +482,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         if (body.length > 1) {
           final exception = PostgrestException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
-            code: '406',
+            statusCode: 406,
             details:
                 'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
             hint: null,
@@ -542,7 +542,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         error = PostgrestException.fromJson(
           errorJson,
           message: response.body,
-          code: response.statusCode,
+          statusCode: response.statusCode,
           details: response.reasonPhrase,
         );
 
@@ -552,13 +552,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       } catch (_) {
         error = PostgrestException(
           message: response.body,
-          code: '${response.statusCode}',
+          statusCode: response.statusCode,
           details: response.reasonPhrase,
         );
       }
     } else {
       error = PostgrestException(
-        code: '${response.statusCode}',
+        statusCode: response.statusCode,
         message: response.body,
         details: 'Error in Postgrest response for method HEAD',
         hint: response.reasonPhrase,

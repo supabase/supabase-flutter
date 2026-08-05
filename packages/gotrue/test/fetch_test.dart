@@ -131,7 +131,7 @@ void main() {
       await _expectRetryableFetch(
         client,
         message: 'Error sending confirmation email',
-        statusCode: '500',
+        statusCode: 500,
       );
     });
 
@@ -151,7 +151,7 @@ void main() {
         await _expectRetryableFetch(
           client,
           message: 'Error sending confirmation email',
-          statusCode: '500',
+          statusCode: 500,
         );
       },
     );
@@ -166,7 +166,7 @@ void main() {
       await _expectRetryableFetch(
         client,
         message: 'Bad Gateway',
-        statusCode: '502',
+        statusCode: 502,
       );
     });
 
@@ -181,7 +181,7 @@ void main() {
         await _expectRetryableFetch(
           client,
           message: 'HTTP 502',
-          statusCode: '502',
+          statusCode: 502,
         );
       },
     );
@@ -198,7 +198,7 @@ void main() {
         await _expectRetryableFetch(
           client,
           message: 'HTTP 502',
-          statusCode: '502',
+          statusCode: 502,
         );
       },
     );
@@ -213,7 +213,7 @@ void main() {
       await _expectRetryableFetch(
         client,
         message: 'Service Unavailable',
-        statusCode: '503',
+        statusCode: 503,
       );
     });
 
@@ -226,7 +226,7 @@ void main() {
         await _expectRetryableFetch(
           client,
           message: 'HTTP 503',
-          statusCode: '503',
+          statusCode: 503,
         );
       },
     );
@@ -249,7 +249,7 @@ void main() {
 Future<void> _expectRetryableFetch(
   Client client, {
   required String message,
-  required String statusCode,
+  required int statusCode,
 }) async {
   await expectLater(
     GotrueFetch(client).request(_mockUrl, HttpMethod.get),
@@ -266,7 +266,7 @@ Future<void> _expectUncodedApiException(Client client) async {
     GotrueFetch(client).request(_mockUrl, HttpMethod.get),
     throwsA(
       isA<AuthApiException>()
-          .having((e) => e.code, 'code', isNull)
+          .having((e) => e.errorCode, 'errorCode', isNull)
           .having((e) => e.message, 'message', 'error_message'),
     ),
   );
@@ -278,7 +278,7 @@ Future<void> _testFetchRequest(Client client) async {
     fetch.request(_mockUrl, HttpMethod.get),
     throwsA(
       isA<AuthWeakPasswordException>()
-          .having((e) => e.code, 'code', 'weak_password')
+          .having((e) => e.errorCode, 'errorCode', 'weak_password')
           .having((e) => e.message, 'message', 'error_message')
           .having((e) => e.reasons, 'reasons', ['characters']),
     ),

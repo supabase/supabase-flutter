@@ -66,7 +66,7 @@ class GotrueFetch {
       if (isRetryable) {
         throw AuthRetryableFetchException(
           message: _getStatusMessage(response),
-          statusCode: response.statusCode.toString(),
+          statusCode: response.statusCode,
         );
       }
       throw AuthUnknownException(
@@ -82,7 +82,7 @@ class GotrueFetch {
       if (isRetryable) {
         throw AuthRetryableFetchException(
           message: _getStatusMessage(response),
-          statusCode: response.statusCode.toString(),
+          statusCode: response.statusCode,
         );
       }
       throw AuthUnknownException(
@@ -94,7 +94,7 @@ class GotrueFetch {
     if (isRetryable) {
       throw AuthRetryableFetchException(
         message: _getErrorMessage(data),
-        statusCode: response.statusCode.toString(),
+        statusCode: response.statusCode,
       );
     }
 
@@ -103,15 +103,15 @@ class GotrueFetch {
     if (errorCode == ErrorCode.weakPassword.code) {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
-        statusCode: response.statusCode.toString(),
+        statusCode: response.statusCode,
         reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
       );
     }
 
     throw AuthApiException(
       _getErrorMessage(data),
-      statusCode: response.statusCode.toString(),
-      code: errorCode,
+      statusCode: response.statusCode,
+      errorCode: errorCode,
     );
   }
 

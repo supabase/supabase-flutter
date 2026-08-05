@@ -182,8 +182,8 @@ void main() {
         },
         throwsA(
           isA<AuthException>()
-              .having((e) => e.code, 'code', 'access_denied')
-              .having((e) => e.statusCode, 'statusCode', '403')
+              .having((e) => e.errorCode, 'errorCode', 'access_denied')
+              .having((e) => e.statusCode, 'statusCode', 403)
               .having(
                 (e) => e.message,
                 'message',

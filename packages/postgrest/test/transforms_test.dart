@@ -412,7 +412,11 @@ void main() {
       await expectLater(
         () => postgrest.from('users').select().maybeSingle(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+          isA<PostgrestException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            406,
+          ),
         ),
       );
     });
@@ -427,7 +431,11 @@ void main() {
             .select()
             .maybeSingle(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+          isA<PostgrestException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            406,
+          ),
         ),
       );
     });
@@ -439,7 +447,11 @@ void main() {
         await expectLater(
           () => postgrest.from('channels').select().maybeSingle().limit(2),
           throwsA(
-            isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+            isA<PostgrestException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              406,
+            ),
           ),
         );
       },
@@ -455,7 +467,11 @@ void main() {
               .maybeSingle()
               .withConverter((data) => data?.entries.length),
           throwsA(
-            isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+            isA<PostgrestException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              406,
+            ),
           ),
         );
       },

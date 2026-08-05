@@ -1,4 +1,5 @@
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -301,15 +302,22 @@ void main() {
   });
 
   group('StorageException', () {
-    test('toString includes message, status code and error', () {
+    test('is a SupabaseException', () {
+      const exception = StorageException('boom');
+
+      expect(exception, isA<SupabaseException>());
+    });
+
+    test('toString includes message, status code and error code', () {
       const exception = StorageException(
         'boom',
-        statusCode: '500',
-        error: 'server_error',
+        statusCode: 500,
+        errorCode: 'server_error',
       );
       expect(
         exception.toString(),
-        'StorageException(message: boom, statusCode: 500, error: server_error)',
+        'StorageException(message: boom, statusCode: 500, '
+        'errorCode: server_error)',
       );
     });
 
@@ -320,16 +328,24 @@ void main() {
         'statusCode': 404,
       });
       expect(exception.message, 'not found');
-      expect(exception.error, 'NotFound');
-      expect(exception.statusCode, '404');
+      expect(exception.errorCode, 'NotFound');
+      expect(exception.statusCode, 404);
+    });
+
+    test('fromJson reads a stringified statusCode', () {
+      final exception = StorageException.fromJson({
+        'message': 'not found',
+        'statusCode': '404',
+      });
+      expect(exception.statusCode, 404);
     });
 
     test(
       'fromJson falls back to the fallback status code and stringified body',
       () {
-        final exception = StorageException.fromJson({'foo': 'bar'}, '400');
+        final exception = StorageException.fromJson({'foo': 'bar'}, 400);
         expect(exception.message, "{foo: bar}");
-        expect(exception.statusCode, '400');
+        expect(exception.statusCode, 400);
       },
     );
   });

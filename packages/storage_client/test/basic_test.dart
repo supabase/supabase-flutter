@@ -543,7 +543,7 @@ void main() {
           isA<StorageException>().having(
             (e) => e.statusCode,
             'statusCode',
-            '404',
+            404,
           ),
         ),
       );
@@ -830,7 +830,7 @@ void main() {
           isA<StorageException>().having(
             (e) => e.statusCode,
             'statusCode',
-            '420',
+            420,
           ),
         ),
       );

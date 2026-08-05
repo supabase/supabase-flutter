@@ -1,6 +1,7 @@
 import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -11,30 +12,30 @@ void main() {
 
         expect(exception.message, equals('Test error message'));
         expect(exception.statusCode, isNull);
-        expect(exception.code, isNull);
+        expect(exception.errorCode, isNull);
       });
 
       test('creates exception with message and statusCode', () {
         const exception = AuthException(
           'Test error message',
-          statusCode: '400',
+          statusCode: 400,
         );
 
         expect(exception.message, equals('Test error message'));
-        expect(exception.statusCode, equals('400'));
-        expect(exception.code, isNull);
+        expect(exception.statusCode, equals(400));
+        expect(exception.errorCode, isNull);
       });
 
       test('creates exception with all parameters', () {
         const exception = AuthException(
           'Test error message',
-          statusCode: '400',
-          code: 'validation_failed',
+          statusCode: 400,
+          errorCode: 'validation_failed',
         );
 
         expect(exception.message, equals('Test error message'));
-        expect(exception.statusCode, equals('400'));
-        expect(exception.code, equals('validation_failed'));
+        expect(exception.statusCode, equals(400));
+        expect(exception.errorCode, equals('validation_failed'));
       });
     });
 
@@ -42,8 +43,8 @@ void main() {
       test('includes all properties in string representation', () {
         const exception = AuthException(
           'Test error message',
-          statusCode: '400',
-          code: 'validation_failed',
+          statusCode: 400,
+          errorCode: 'validation_failed',
         );
 
         final string = exception.toString();
@@ -51,7 +52,7 @@ void main() {
         expect(string, contains('AuthException('));
         expect(string, contains('message: Test error message'));
         expect(string, contains('statusCode: 400'));
-        expect(string, contains('code: validation_failed'));
+        expect(string, contains('errorCode: validation_failed'));
       });
 
       test('handles null values correctly', () {
@@ -62,7 +63,7 @@ void main() {
         expect(string, contains('AuthException('));
         expect(string, contains('message: Test error message'));
         expect(string, contains('statusCode: null'));
-        expect(string, contains('code: null'));
+        expect(string, contains('errorCode: null'));
       });
     });
 
@@ -70,14 +71,14 @@ void main() {
       test('returns true for identical exceptions', () {
         const exception1 = AuthException(
           'Test error message',
-          statusCode: '400',
-          code: 'validation_failed',
+          statusCode: 400,
+          errorCode: 'validation_failed',
         );
 
         const exception2 = AuthException(
           'Test error message',
-          statusCode: '400',
-          code: 'validation_failed',
+          statusCode: 400,
+          errorCode: 'validation_failed',
         );
 
         expect(exception1, equals(exception2));
@@ -93,8 +94,8 @@ void main() {
       });
 
       test('returns false for exceptions with different status codes', () {
-        const exception1 = AuthException('Test error', statusCode: '400');
-        const exception2 = AuthException('Test error', statusCode: '401');
+        const exception1 = AuthException('Test error', statusCode: 400);
+        const exception2 = AuthException('Test error', statusCode: 401);
 
         expect(exception1, isNot(equals(exception2)));
       });
@@ -102,9 +103,9 @@ void main() {
       test('returns false for exceptions with different codes', () {
         const exception1 = AuthException(
           'Test error',
-          code: 'validation_failed',
+          errorCode: 'validation_failed',
         );
-        const exception2 = AuthException('Test error', code: 'bad_json');
+        const exception2 = AuthException('Test error', errorCode: 'bad_json');
 
         expect(exception1, isNot(equals(exception2)));
       });
@@ -114,7 +115,7 @@ void main() {
         const exception2 = AuthException(
           'Test error',
           statusCode: null,
-          code: null,
+          errorCode: null,
         );
 
         expect(exception1, equals(exception2));
@@ -127,6 +128,12 @@ void main() {
 
         expect(exception, isA<Exception>());
       });
+
+      test('is an instance of SupabaseException', () {
+        const exception = AuthException('Test error');
+
+        expect(exception, isA<SupabaseException>());
+      });
     });
   });
 
@@ -137,7 +144,7 @@ void main() {
       expect(exception, isA<AuthException>());
       expect(exception.message, equals('PKCE error'));
       expect(exception.statusCode, isNull);
-      expect(exception.code, isNull);
+      expect(exception.errorCode, isNull);
     });
 
     test('has correct toString format', () {
@@ -145,7 +152,7 @@ void main() {
 
       final string = exception.toString();
 
-      expect(string, contains('AuthException('));
+      expect(string, contains('AuthPKCEGrantCodeExchangeError('));
       expect(string, contains('message: PKCE error'));
     });
   });
@@ -161,14 +168,14 @@ void main() {
       final exception = AuthSessionMissingException();
 
       expect(exception.message, equals('Auth session missing!'));
-      expect(exception.statusCode, equals('400'));
+      expect(exception.statusCode, equals(400));
     });
 
     test('uses custom message when provided', () {
       final exception = AuthSessionMissingException('Custom session error');
 
       expect(exception.message, equals('Custom session error'));
-      expect(exception.statusCode, equals('400'));
+      expect(exception.statusCode, equals(400));
     });
 
     test('has correct toString format', () {
@@ -199,17 +206,17 @@ void main() {
     test('uses custom message and statusCode when provided', () {
       final exception = AuthRetryableFetchException(
         message: 'Network timeout',
-        statusCode: '408',
+        statusCode: 408,
       );
 
       expect(exception.message, equals('Network timeout'));
-      expect(exception.statusCode, equals('408'));
+      expect(exception.statusCode, equals(408));
     });
 
     test('has correct toString format', () {
       final exception = AuthRetryableFetchException(
         message: 'Retry error',
-        statusCode: '500',
+        statusCode: 500,
       );
 
       final string = exception.toString();
@@ -232,26 +239,26 @@ void main() {
 
       expect(exception.message, equals('API error'));
       expect(exception.statusCode, isNull);
-      expect(exception.code, isNull);
+      expect(exception.errorCode, isNull);
     });
 
     test('creates exception with all parameters', () {
       final exception = AuthApiException(
         'API error',
-        statusCode: '422',
-        code: 'validation_failed',
+        statusCode: 422,
+        errorCode: 'validation_failed',
       );
 
       expect(exception.message, equals('API error'));
-      expect(exception.statusCode, equals('422'));
-      expect(exception.code, equals('validation_failed'));
+      expect(exception.statusCode, equals(422));
+      expect(exception.errorCode, equals('validation_failed'));
     });
 
     test('has correct toString format', () {
       final exception = AuthApiException(
         'API error',
-        statusCode: '422',
-        code: 'bad_json',
+        statusCode: 422,
+        errorCode: 'bad_json',
       );
 
       final string = exception.toString();
@@ -259,7 +266,7 @@ void main() {
       expect(string, contains('AuthApiException('));
       expect(string, contains('message: API error'));
       expect(string, contains('statusCode: 422'));
-      expect(string, contains('code: bad_json'));
+      expect(string, contains('errorCode: bad_json'));
     });
   });
 
@@ -293,7 +300,7 @@ void main() {
 
       expect(exception.message, equals('Unknown error'));
       expect(exception.originalError, equals(response));
-      expect(exception.statusCode, equals('500'));
+      expect(exception.statusCode, equals(500));
     });
 
     test('handles non-http.Response objects', () {
@@ -328,7 +335,7 @@ void main() {
     test('extends AuthException', () {
       final exception = AuthWeakPasswordException(
         message: 'Password too weak',
-        statusCode: '422',
+        statusCode: 422,
         reasons: ['too_short'],
       );
 
@@ -338,13 +345,13 @@ void main() {
     test('creates exception with all required parameters', () {
       final exception = AuthWeakPasswordException(
         message: 'Password is too weak',
-        statusCode: '422',
+        statusCode: 422,
         reasons: ['too_short', 'no_uppercase', 'no_numbers'],
       );
 
       expect(exception.message, equals('Password is too weak'));
-      expect(exception.statusCode, equals('422'));
-      expect(exception.code, equals(ErrorCode.weakPassword.code));
+      expect(exception.statusCode, equals(422));
+      expect(exception.errorCode, equals(ErrorCode.weakPassword.code));
       expect(
         exception.reasons,
         equals(['too_short', 'no_uppercase', 'no_numbers']),
@@ -354,17 +361,17 @@ void main() {
     test('automatically sets code to weak_password', () {
       final exception = AuthWeakPasswordException(
         message: 'Password too weak',
-        statusCode: '422',
+        statusCode: 422,
         reasons: ['too_short'],
       );
 
-      expect(exception.code, equals('weak_password'));
+      expect(exception.errorCode, equals('weak_password'));
     });
 
     test('handles empty reasons list', () {
       final exception = AuthWeakPasswordException(
         message: 'Password too weak',
-        statusCode: '422',
+        statusCode: 422,
         reasons: [],
       );
 
@@ -374,7 +381,7 @@ void main() {
     test('has correct toString format', () {
       final exception = AuthWeakPasswordException(
         message: 'Password too weak',
-        statusCode: '422',
+        statusCode: 422,
         reasons: ['too_short', 'no_special_chars'],
       );
 
@@ -389,25 +396,25 @@ void main() {
     test('maintains equality based on parent class and reasons', () {
       final exception1 = AuthWeakPasswordException(
         message: 'Password too weak',
-        statusCode: '422',
+        statusCode: 422,
         reasons: ['too_short'],
       );
 
       final exception2 = AuthWeakPasswordException(
         message: 'Password too weak',
-        statusCode: '422',
+        statusCode: 422,
         reasons: ['too_short'],
       );
 
       final exception3 = AuthWeakPasswordException(
         message: 'Password too weak',
-        statusCode: '422',
+        statusCode: 422,
         reasons: ['no_uppercase'],
       );
 
       expect(exception1.message, equals(exception2.message));
       expect(exception1.statusCode, equals(exception2.statusCode));
-      expect(exception1.code, equals(exception2.code));
+      expect(exception1.errorCode, equals(exception2.errorCode));
       expect(exception1.reasons, equals(exception2.reasons));
 
       expect(exception1.reasons, isNot(equals(exception3.reasons)));
@@ -428,7 +435,7 @@ void main() {
         ),
         AuthWeakPasswordException(
           message: 'weak password',
-          statusCode: '422',
+          statusCode: 422,
           reasons: ['too_short'],
         ),
       ];
@@ -444,41 +451,41 @@ void main() {
     test('handles network timeout scenario', () {
       final exception = AuthRetryableFetchException(
         message: 'Request timeout',
-        statusCode: '408',
+        statusCode: 408,
       );
 
       expect(exception.message, equals('Request timeout'));
-      expect(exception.statusCode, equals('408'));
+      expect(exception.statusCode, equals(408));
     });
 
     test('handles validation error scenario', () {
       final exception = AuthApiException(
         'Validation failed',
-        statusCode: '422',
-        code: 'validation_failed',
+        statusCode: 422,
+        errorCode: 'validation_failed',
       );
 
       expect(exception.message, equals('Validation failed'));
-      expect(exception.statusCode, equals('422'));
-      expect(exception.code, equals('validation_failed'));
+      expect(exception.statusCode, equals(422));
+      expect(exception.errorCode, equals('validation_failed'));
     });
 
     test('handles authentication error scenario', () {
       final exception = AuthApiException(
         'Invalid credentials',
-        statusCode: '401',
-        code: 'bad_jwt',
+        statusCode: 401,
+        errorCode: 'bad_jwt',
       );
 
       expect(exception.message, equals('Invalid credentials'));
-      expect(exception.statusCode, equals('401'));
-      expect(exception.code, equals('bad_jwt'));
+      expect(exception.statusCode, equals(401));
+      expect(exception.errorCode, equals('bad_jwt'));
     });
 
     test('handles weak password scenario', () {
       final exception = AuthWeakPasswordException(
         message: 'Password does not meet requirements',
-        statusCode: '422',
+        statusCode: 422,
         reasons: [
           'Password must be at least 8 characters',
           'Password must contain uppercase letters',
@@ -487,8 +494,8 @@ void main() {
       );
 
       expect(exception.message, equals('Password does not meet requirements'));
-      expect(exception.statusCode, equals('422'));
-      expect(exception.code, equals('weak_password'));
+      expect(exception.statusCode, equals(422));
+      expect(exception.errorCode, equals('weak_password'));
       expect(exception.reasons, hasLength(3));
     });
 
@@ -500,7 +507,7 @@ void main() {
       );
 
       expect(exception.message, equals('An unexpected error occurred'));
-      expect(exception.statusCode, equals('500'));
+      expect(exception.statusCode, equals(500));
       expect(exception.originalError, equals(response));
     });
 

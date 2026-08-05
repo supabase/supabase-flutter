@@ -34,25 +34,21 @@ class Fetch {
       try {
         final data = json.decode(error.body) as Map<String, dynamic>;
 
-        final exception = StorageException.fromJson(
-          data,
-          '${error.statusCode}',
-        );
+        final exception = StorageException.fromJson(data, error.statusCode);
         _log.fine('StorageException for $url', exception, stack);
         return exception;
       } on FormatException catch (_) {
         _log.fine('StorageException for $url', error.body, stack);
         return StorageException(
           error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
-          statusCode: '${error.statusCode}',
+          statusCode: error.statusCode,
         );
       }
     } else {
+      // No response was received, so there is neither a status nor a service
+      // error code to report. The error's own toString names its type.
       _log.fine('StorageException for $url', error, stack);
-      return StorageException(
-        error.toString(),
-        statusCode: error.runtimeType.toString(),
-      );
+      return StorageException(error.toString());
     }
   }
 

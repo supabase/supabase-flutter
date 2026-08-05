@@ -364,7 +364,7 @@ void _showError(Object error) {
     final details = error.details;
     message = details is Map && details['error'] is String
         ? details['error'] as String
-        : 'Function failed with status ${error.status}';
+        : 'Function failed with status ${error.statusCode}';
   } else {
     message = error.toString();
   }

@@ -1604,15 +1604,12 @@ features:
   # storage — errors
   storage.errors.error_codes:
     status: implemented
+    note: "The error code is read from the inherited SupabaseException.errorCode, which is declared in the shared internal package and so is not registrable on its own."
     symbols:
-      - StorageException.error
-    supporting_symbols:
       - StorageException
+    supporting_symbols:
       - StorageException.StorageException
       - StorageException.fromJson
-      - StorageException.message
-      - StorageException.statusCode
-      - StorageException.toString
 
   # realtime — channel
   realtime.channel.subscribe:
@@ -1928,7 +1925,6 @@ features:
     supporting_symbols:
       - FunctionResponse
       - FunctionResponse.FunctionResponse
-      - FunctionResponse.status
   functions.invocation.set_auth_token:
     status: implemented
     symbols:
@@ -2088,20 +2084,14 @@ supporting_symbols:
   - AdminUserAttributes.userMetadata
   - AuthApiException
   - AuthApiException.AuthApiException
-  - AuthApiException.toString
   - AuthClientOptions
   - AuthClientOptions.AuthClientOptions
   - AuthException
   - AuthException.==
   - AuthException.AuthException
-  - AuthException.code
   - AuthException.hashCode
-  - AuthException.message
-  - AuthException.statusCode
-  - AuthException.toString
   - AuthInvalidJwtException
   - AuthInvalidJwtException.AuthInvalidJwtException
-  - AuthInvalidJwtException.toString
   - AuthPKCEGrantCodeExchangeError
   - AuthPKCEGrantCodeExchangeError.AuthPKCEGrantCodeExchangeError
   - AuthResponse
@@ -2111,10 +2101,8 @@ supporting_symbols:
   - AuthResponse.user
   - AuthRetryableFetchException
   - AuthRetryableFetchException.AuthRetryableFetchException
-  - AuthRetryableFetchException.toString
   - AuthSessionMissingException
   - AuthSessionMissingException.AuthSessionMissingException
-  - AuthSessionMissingException.toString
   - AuthUnknownException
   - AuthUnknownException.AuthUnknownException
   - AuthUnknownException.originalError
@@ -2176,8 +2164,6 @@ supporting_symbols:
   - FunctionException
   - FunctionException.FunctionException
   - FunctionException.details
-  - FunctionException.reasonPhrase
-  - FunctionException.status
   - FunctionException.toString
   - FunctionsClient
   - FunctionsClient.FunctionsClient
@@ -2328,11 +2314,9 @@ supporting_symbols:
   - PostgrestConverter
   - PostgrestException
   - PostgrestException.PostgrestException
-  - PostgrestException.code
   - PostgrestException.details
   - PostgrestException.fromJson
   - PostgrestException.hint
-  - PostgrestException.message
   - PostgrestException.toJson
   - PostgrestException.toString
   - PostgrestFilterBuilder

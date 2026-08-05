@@ -16,5 +16,6 @@ export 'src/platform/platform_info.dart';
 export 'src/replay_subject.dart';
 export 'src/retry.dart';
 export 'src/snake_case.dart';
+export 'src/supabase_exception.dart';
 export 'src/timestamp.dart';
 export 'src/uuid.dart';

@@ -293,8 +293,8 @@ void main() {
       final exception = await errorCompleter.future.timeout(
         const Duration(seconds: 5),
       );
-      expect(exception.code, 'access_denied');
-      expect(exception.statusCode, '403');
+      expect(exception.errorCode, 'access_denied');
+      expect(exception.statusCode, 403);
     });
   });
 }

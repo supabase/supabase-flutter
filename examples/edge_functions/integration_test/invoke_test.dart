@@ -180,7 +180,7 @@ void main() {
         functions.invoke('echo', queryParameters: {'status': '422'}),
         throwsA(
           isA<FunctionsHttpException>()
-              .having((error) => error.status, 'status', 422)
+              .having((error) => error.statusCode, 'statusCode', 422)
               .having(
                 (error) => (error.details as Map)['error'],
                 'details.error',
@@ -200,7 +200,7 @@ void main() {
         ),
         throwsA(
           isA<FunctionsHttpException>()
-              .having((error) => error.status, 'status', 500)
+              .having((error) => error.statusCode, 'statusCode', 500)
               .having((error) => error.details, 'details', 'boom'),
         ),
       );
@@ -210,8 +210,8 @@ void main() {
       _,
     ) async {
       // A client pointed at a closed port can never connect, so the request
-      // fails before any response, surfacing as a fetch exception with status
-      // 0.
+      // fails before any response, surfacing as a fetch exception without a
+      // status code.
       final unreachable = FunctionsClient(
         'http://127.0.0.1:1/functions/v1',
         const {'apikey': supabasePublishableKey},
@@ -221,9 +221,9 @@ void main() {
         unreachable.invoke('echo'),
         throwsA(
           isA<FunctionsFetchException>().having(
-            (error) => error.status,
-            'status',
-            0,
+            (error) => error.statusCode,
+            'statusCode',
+            isNull,
           ),
         ),
       );

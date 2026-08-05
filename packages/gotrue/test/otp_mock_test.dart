@@ -693,7 +693,7 @@ void main() {
       await expectLater(
         client.signInWithOtp(phone: testPhone),
         throwsA(
-          isA<AuthException>().having((e) => e.statusCode, 'statusCode', '500'),
+          isA<AuthException>().having((e) => e.statusCode, 'statusCode', 500),
         ),
       );
     });

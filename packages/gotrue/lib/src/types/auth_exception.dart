@@ -1,27 +1,17 @@
 import 'package:gotrue/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_common/supabase_common.dart';
 
-class AuthException implements Exception {
-  /// Human readable error message associated with the error.
-  final String message;
-
-  /// HTTP status code that caused the error.
-  final String? statusCode;
-
-  /// Error code associated with the error. Most errors coming from
-  /// HTTP responses will have a code, though some errors that occur
-  /// before a response is received will not have one present.
-  /// In that case [statusCode] will also be null.
-  ///
-  /// Find the full list of error codes in our documentation.
-  /// https://supabase.com/docs/guides/auth/debugging/error-codes
-  final String? code;
-
-  const AuthException(this.message, {this.statusCode, this.code});
-
-  @override
-  String toString() =>
-      'AuthException(message: $message, statusCode: $statusCode, code: $code)';
+/// Thrown when an auth operation fails.
+///
+/// Most errors coming from HTTP responses carry an `errorCode`, though some
+/// errors that occur before a response is received will not have one present.
+/// In that case `statusCode` will also be null.
+///
+/// Find the full list of error codes in our documentation.
+/// https://supabase.com/docs/guides/auth/debugging/error-codes
+class AuthException extends SupabaseException {
+  const AuthException(super.message, {super.statusCode, super.errorCode});
 
   @override
   bool operator ==(Object other) {
@@ -30,11 +20,12 @@ class AuthException implements Exception {
     return other is AuthException &&
         other.message == message &&
         other.statusCode == statusCode &&
-        other.code == code;
+        other.errorCode == errorCode;
   }
 
   @override
-  int get hashCode => message.hashCode ^ statusCode.hashCode ^ code.hashCode;
+  int get hashCode =>
+      message.hashCode ^ statusCode.hashCode ^ errorCode.hashCode;
 }
 
 class AuthPKCEGrantCodeExchangeError extends AuthException {
@@ -45,11 +36,8 @@ class AuthSessionMissingException extends AuthException {
   AuthSessionMissingException([String? message])
     : super(
         message ?? 'Auth session missing!',
-        statusCode: '400',
+        statusCode: 400,
       );
-  @override
-  String toString() =>
-      'AuthSessionMissingException(message: $message, statusCode: $statusCode)';
 }
 
 class AuthRetryableFetchException extends AuthException {
@@ -57,19 +45,10 @@ class AuthRetryableFetchException extends AuthException {
     String message = 'AuthRetryableFetchException',
     super.statusCode,
   }) : super(message);
-
-  @override
-  String toString() =>
-      'AuthRetryableFetchException(message: $message, statusCode: $statusCode)';
 }
 
 class AuthApiException extends AuthException {
-  const AuthApiException(super.message, {super.statusCode, super.code});
-
-  @override
-  String toString() =>
-      'AuthApiException(message: $message, statusCode: $statusCode, code: '
-      '$code)';
+  const AuthApiException(super.message, {super.statusCode, super.errorCode});
 }
 
 class AuthUnknownException extends AuthException {
@@ -82,14 +61,14 @@ class AuthUnknownException extends AuthException {
   }) : super(
          message,
          statusCode: originalError is http.Response
-             ? originalError.statusCode.toString()
+             ? originalError.statusCode
              : null,
        );
 
   @override
   String toString() =>
-      'AuthUnknownException(message: $message, originalError: $originalError, '
-      'statusCode: $statusCode)';
+      '$runtimeType(message: $message, statusCode: $statusCode, '
+      'errorCode: $errorCode, originalError: $originalError)';
 }
 
 class AuthWeakPasswordException extends AuthException {
@@ -99,23 +78,18 @@ class AuthWeakPasswordException extends AuthException {
     required String message,
     required super.statusCode,
     required this.reasons,
-  }) : super(message, code: ErrorCode.weakPassword.code);
+  }) : super(message, errorCode: ErrorCode.weakPassword.code);
 
   @override
   String toString() =>
-      'AuthWeakPasswordException(message: $message, statusCode: $statusCode, '
-      'reasons: $reasons)';
+      '$runtimeType(message: $message, statusCode: $statusCode, '
+      'errorCode: $errorCode, reasons: $reasons)';
 }
 
 class AuthInvalidJwtException extends AuthException {
   AuthInvalidJwtException(super.message)
     : super(
-        statusCode: '400',
-        code: 'invalid_jwt',
+        statusCode: 400,
+        errorCode: 'invalid_jwt',
       );
-
-  @override
-  String toString() =>
-      'AuthInvalidJwtException(message: $message, statusCode: $statusCode, '
-      'code: $code)';
 }
