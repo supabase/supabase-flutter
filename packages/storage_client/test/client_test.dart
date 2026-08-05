@@ -15,10 +15,11 @@ final newBucketName = 'my-new-bucket-$timestamp';
 
 final uploadPath = 'testpath/file-${DateTime.now().toIso8601String()}.jpg';
 
-// These tests run against the buckets seeded by supabase/seed.sql and create
-// additional buckets as they go, so they are order-dependent and not idempotent
-// (for example "List buckets" expects exactly the four seeded buckets). They
-// assume a freshly started stack; in CI each job starts Supabase from scratch.
+// These tests run against the buckets and objects seeded by supabase/seed.sql
+// and create additional buckets as they go, so they are order-dependent: later
+// tests reuse the buckets earlier ones created. The buckets they create are
+// removed before and after the suite, so a run can be repeated against the same
+// stack.
 void main() {
   late SupabaseStorageClient storage;
 
@@ -32,6 +33,12 @@ void main() {
     }
     return name;
   }
+
+  // Buckets an interrupted run left behind would make creating them again fail
+  // and would show up in the bucket listing, so they are removed up front.
+  setUpAll(_removeTemporaryBuckets);
+
+  tearDownAll(_removeTemporaryBuckets);
 
   setUp(() async {
     // init SupabaseClient with test url & test key
@@ -51,7 +58,7 @@ void main() {
 
   test('List buckets', () async {
     final response = await storage.listBuckets();
-    expect(response.length, 4);
+    expect(response.map((bucket) => bucket.name), containsAll(_seededBuckets));
   });
 
   test('Get bucket by id', () async {
@@ -979,4 +986,37 @@ void main() {
       expect(sentSortBy(), {'column': 'created_at', 'order': 'desc'});
     });
   });
+}
+
+/// Buckets that supabase/seed.sql provides, which the suite must leave alone.
+const _seededBuckets = ['bucket2', 'bucket3', 'bucket4', 'bucket5'];
+
+/// Names the suite gives to the buckets it creates itself.
+const _temporaryBucketPrefixes = [
+  'my-new-bucket-',
+  'my-new-public-bucket',
+  'my-private-bucket',
+  'my-download-bucket',
+  'with-limit-',
+  'reserved-',
+];
+
+/// Removes every bucket the suite creates, so it leaves the stack with only the
+/// seeded buckets and can run again without tripping over its own leftovers.
+Future<void> _removeTemporaryBuckets() async {
+  final storage = SupabaseStorageClient(localStackStorageUrl, {
+    'Authorization': 'Bearer $localStackServiceRoleKey',
+  });
+  for (final bucket in await storage.listBuckets()) {
+    final isTemporary = _temporaryBucketPrefixes.any(bucket.name.startsWith);
+    if (!isTemporary || _seededBuckets.contains(bucket.name)) {
+      continue;
+    }
+    try {
+      await storage.emptyBucket(bucket.name);
+      await storage.deleteBucket(bucket.name);
+    } on StorageException catch (_) {
+      // Another suite may have removed it in the meantime.
+    }
+  }
 }
