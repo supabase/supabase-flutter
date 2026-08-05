@@ -70,7 +70,9 @@ void main() {
       createdTitle,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
-    await _pumpUntil(tester, find.text(createdTitle));
+    // Waits for the tile instead of the title text, which also matches the text
+    // field of the dialog that is still animating away.
+    await _pumpUntil(tester, _tile(createdTitle));
 
     // Complete it by ticking the checkbox in its tile (update).
     await tester.tap(_inTile(createdTitle, find.byType(Checkbox)));
@@ -93,20 +95,21 @@ void main() {
       renamedTitle,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await _pumpUntil(tester, find.text(renamedTitle));
-    expect(find.text(createdTitle), findsNothing);
+    await _pumpUntil(tester, _tile(renamedTitle));
+    expect(_tile(createdTitle), findsNothing);
 
     // Delete it (delete).
     await tester.tap(_inTile(renamedTitle, find.byIcon(Icons.delete)));
-    await _pumpUntilGone(tester, find.text(renamedTitle));
+    await _pumpUntilGone(tester, _tile(renamedTitle));
   });
 }
 
+/// Finds the [ListTile] of the task called [title].
+Finder _tile(String title) => find.widgetWithText(ListTile, title);
+
 /// Finds [target] within the [ListTile] that contains [title].
-Finder _inTile(String title, Finder target) => find.descendant(
-  of: find.ancestor(of: find.text(title), matching: find.byType(ListTile)),
-  matching: target,
-);
+Finder _inTile(String title, Finder target) =>
+    find.descendant(of: _tile(title), matching: target);
 
 /// Pumps frames until [finder] matches at least one widget or [timeout] elapses.
 ///
