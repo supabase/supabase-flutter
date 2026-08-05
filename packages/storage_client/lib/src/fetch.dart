@@ -29,26 +29,36 @@ class Fetch {
     Uri? url,
     FetchOptions? options,
   ) {
-    if (error is http.Response) {
-      try {
-        final data = json.decode(error.body) as Map<String, dynamic>;
-
-        final exception = StorageException.fromJson(data, error.statusCode);
-        _log.fine('StorageException for $url', exception, stack);
-        return exception;
-      } on FormatException catch (_) {
-        _log.fine('StorageException for $url', error.body, stack);
-        return StorageException(
-          error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
-          statusCode: error.statusCode,
-        );
-      }
-    } else {
+    if (error is! http.Response) {
       // No response was received, so there is neither a status nor a service
       // error code to report. The error's own toString names its type.
       _log.fine('StorageException for $url', error, stack);
       return StorageException(error.toString());
     }
+
+    // A proxy or gateway in front of storage can answer with anything, so a
+    // body that is not a JSON object is surfaced as-is instead of being cast.
+    Map<String, dynamic>? data;
+    try {
+      final decoded = json.decode(error.body);
+      if (decoded is Map<String, dynamic>) {
+        data = decoded;
+      }
+    } on FormatException catch (_) {
+      // Not JSON at all.
+    }
+
+    if (data == null) {
+      _log.fine('StorageException for $url', error.body, stack);
+      return StorageException(
+        error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
+        statusCode: error.statusCode,
+      );
+    }
+
+    final exception = StorageException.fromJson(data, error.statusCode);
+    _log.fine('StorageException for $url', exception, stack);
+    return exception;
   }
 
   Future<dynamic> _handleRequest(
