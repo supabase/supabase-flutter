@@ -1,11 +1,12 @@
 /// Base class for the exceptions thrown by the Supabase client packages.
 ///
-/// Every service exception carries a human readable [message], the HTTP
-/// [statusCode] of the response that caused it when there was one, and the
-/// service specific [errorCode] when the service reported one.
+/// Subclasses carry a human readable [message], the HTTP [statusCode] of the
+/// response that caused the failure when there was one, and the service
+/// specific [errorCode] when the service reported one.
 ///
-/// Catch this to handle a failure from any service without knowing which one
-/// produced it:
+/// The auth, postgrest, storage and functions exceptions extend this, so one
+/// catch handles a failure from any of them without knowing which one produced
+/// it:
 ///
 /// ```dart
 /// try {
@@ -14,6 +15,9 @@
 ///   print('${error.statusCode}: ${error.message}');
 /// }
 /// ```
+///
+/// `RealtimeSubscribeException` and `IcebergException` are not part of this
+/// hierarchy; they keep shapes of their own.
 abstract class SupabaseException implements Exception {
   /// Human readable error message associated with the error.
   final String message;
