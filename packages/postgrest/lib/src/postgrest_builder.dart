@@ -539,8 +539,16 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     }
     PostgrestApiException error;
     if (response.request!.method != HttpMethod.head.value) {
-      try {
-        final errorJson = jsonDecode(response.body) as Map<String, dynamic>;
+      // A proxy or gateway in front of PostgREST can answer with anything, so
+      // an error body that is not a JSON object is surfaced as-is.
+      final errorJson = tryDecodeJsonObject(response.body);
+      if (errorJson == null) {
+        error = PostgrestApiException(
+          message: response.body,
+          statusCode: response.statusCode,
+          details: response.reasonPhrase,
+        );
+      } else {
         error = PostgrestApiException.fromJson(
           errorJson,
           message: response.body,
@@ -551,12 +559,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         if (_maybeSingle) {
           return _handleMaybeSingleError(response, error);
         }
-      } catch (_) {
-        error = PostgrestApiException(
-          message: response.body,
-          statusCode: response.statusCode,
-          details: response.reasonPhrase,
-        );
       }
     } else {
       error = PostgrestApiException(

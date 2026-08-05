@@ -16,6 +16,7 @@ resolution: workspace
 
 dependencies:
   crypto: ^3.0.7
+  http: ^1.6.0
   meta: ^1.16.0
 
 dev_dependencies:

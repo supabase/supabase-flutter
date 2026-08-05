@@ -148,9 +148,10 @@ class IcebergRestCatalog {
 
     final http.StreamedResponse streamedResponse;
     try {
-      streamedResponse = _httpClient != null
-          ? await _httpClient.send(request)
-          : await request.send();
+      streamedResponse = await sendRequest(
+        request,
+        httpClient: _httpClient,
+      );
     } catch (error) {
       throw IcebergNetworkException(
         'Network request failed: $error',
@@ -164,8 +165,7 @@ class IcebergRestCatalog {
       return _IcebergResponse(304, response.headers, null);
     }
 
-    final contentType = response.headers['content-type'] ?? '';
-    final isJson = contentType.contains('application/json');
+    final isJson = responseMediaType(response.headers) == 'application/json';
     final decoded = isJson && response.body.isNotEmpty
         ? json.decode(response.body)
         : response.body;

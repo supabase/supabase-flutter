@@ -37,17 +37,7 @@ class Fetch {
       return StorageException(error.toString());
     }
 
-    // A proxy or gateway in front of storage can answer with anything, so a
-    // body that is not a JSON object is surfaced as-is instead of being cast.
-    Map<String, dynamic>? data;
-    try {
-      final decoded = json.decode(error.body);
-      if (decoded is Map<String, dynamic>) {
-        data = decoded;
-      }
-    } on FormatException catch (_) {
-      // Not JSON at all.
-    }
+    final data = tryDecodeJsonObject(error.body);
 
     if (data == null) {
       _log.fine('StorageException for $url', error.body, stackTrace);
@@ -70,12 +60,7 @@ class Fetch {
   ) async {
     final headers = {...?options?.headers};
     if (method != HttpMethod.get) {
-      final hasContentType = headers.keys.any(
-        (key) => key.toLowerCase() == 'content-type',
-      );
-      if (!hasContentType) {
-        headers['Content-Type'] = 'application/json';
-      }
+      setDefaultContentType(headers, 'application/json');
     }
 
     final request = http.Request(method.value, Uri.parse(url))
@@ -85,12 +70,10 @@ class Fetch {
     }
 
     _log.finest('Request: ${method.value} $url $headers');
-    final http.StreamedResponse streamedResponse;
-    if (httpClient != null) {
-      streamedResponse = await httpClient!.send(request);
-    } else {
-      streamedResponse = await request.send();
-    }
+    final streamedResponse = await sendRequest(
+      request,
+      httpClient: httpClient,
+    );
     return _handleResponse(streamedResponse, options);
   }
 
@@ -191,12 +174,7 @@ class Fetch {
         );
 
         // Create a fresh request for each retry attempt
-        final request = createRequest();
-
-        if (httpClient != null) {
-          return httpClient!.send(request);
-        }
-        return request.send();
+        return sendRequest(createRequest(), httpClient: httpClient);
       },
       retryIf: (error) =>
           retryController?.cancelled != true &&
@@ -257,12 +235,10 @@ class Fetch {
       ..headers.addAll({...?options?.headers});
 
     _log.finest('Request: GET (stream) $url ${request.headers}');
-    final http.StreamedResponse streamedResponse;
-    if (httpClient != null) {
-      streamedResponse = await httpClient!.send(request);
-    } else {
-      streamedResponse = await request.send();
-    }
+    final streamedResponse = await sendRequest(
+      request,
+      httpClient: httpClient,
+    );
 
     if (!isSuccessStatusCode(streamedResponse.statusCode)) {
       final response = await http.Response.fromStream(streamedResponse);

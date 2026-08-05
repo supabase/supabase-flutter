@@ -151,13 +151,12 @@ class FunctionsClient {
         'x-region': effectiveRegion,
     };
 
-    if (body != null &&
-        !finalHeaders.keys.any((k) => k.toLowerCase() == 'content-type')) {
-      finalHeaders['Content-Type'] = switch (body) {
+    if (body != null) {
+      setDefaultContentType(finalHeaders, switch (body) {
         Uint8List() => 'application/octet-stream',
         String() => 'text/plain',
         _ => 'application/json',
-      };
+      });
     }
     final http.BaseRequest request;
     if (files != null) {
@@ -203,19 +202,13 @@ class FunctionsClient {
 
     final http.StreamedResponse response;
     try {
-      response = await (_httpClient?.send(request) ?? request.send());
+      response = await sendRequest(request, httpClient: _httpClient);
     } on http.RequestAbortedException {
       rethrow;
     } catch (error) {
       throw FunctionsFetchException(details: error);
     }
-    final responseType =
-        (response.headers['Content-Type'] ??
-                response.headers['content-type'] ??
-                'text/plain')
-            .split(';')[0]
-            .trim()
-            .toLowerCase();
+    final responseType = responseMediaType(response.headers) ?? 'text/plain';
 
     final isRelayError = response.headers['x-relay-error'] == 'true';
     final isSuccessStatus =
