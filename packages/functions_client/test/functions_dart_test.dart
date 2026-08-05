@@ -142,7 +142,7 @@ void main() {
           'uppercase-json',
         );
         expect(response.data, {'key': 'Hello World'});
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
       },
     );
 
@@ -153,7 +153,7 @@ void main() {
         null,
       );
       expect(response.data, {'key': 'Hello World'});
-      expect(response.status, 200);
+      expect(response.statusCode, 200);
     });
 
     test('function call with query parameters', () async {
@@ -166,7 +166,7 @@ void main() {
 
       expect(request.url.queryParameters, {'key': 'value'});
       expect(response.data, {'key': 'Hello World'});
-      expect(response.status, 200);
+      expect(response.statusCode, 200);
     });
 
     test('function call with files', () async {
@@ -187,7 +187,7 @@ void main() {
       expect(response.data, [
         {'name': fileName, 'content': fileContent},
       ]);
-      expect(response.status, 200);
+      expect(response.statusCode, 200);
     });
 
     test('dispose isolate', () async {
@@ -575,7 +575,7 @@ void main() {
           abortSignal: abortSignal.future,
         );
 
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
         expect(response.data, {'key': 'Hello World'});
       });
     });
@@ -586,7 +586,7 @@ void main() {
 
         expect(response.data, isA<Uint8List>());
         expect(response.data, equals(Uint8List.fromList([1, 2, 3, 4, 5])));
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
       });
 
       test('handles text/plain response', () async {
@@ -594,14 +594,14 @@ void main() {
 
         expect(response.data, isA<String>());
         expect(response.data, 'Hello World');
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
       });
 
       test('handles empty JSON response', () async {
         final response = await functionsCustomHttpClient.invoke('empty-json');
 
         expect(response.data, '');
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
       });
     });
 
