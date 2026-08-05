@@ -14,7 +14,7 @@ void main() {
   final resetHelper = ResetHelper();
   group("Default http client", () {
     setUpAll(() async {
-      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+      postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
 
       await resetHelper.initialize(postgrest);
     });
@@ -24,7 +24,7 @@ void main() {
     });
 
     setUp(() {
-      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+      postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
     });
 
     tearDown(() async {
@@ -93,13 +93,16 @@ void main() {
     });
 
     test('custom headers', () async {
-      final client = PostgrestClient(rootUrl, headers: {'apikey': 'foo'});
+      final client = PostgrestClient(
+        localStackRestUrl,
+        headers: {'apikey': 'foo'},
+      );
       expect(client.headers['apikey'], 'foo');
     });
 
     test('override X-Client-Info', () async {
       final client = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
       );
       expect(
@@ -109,7 +112,7 @@ void main() {
     });
 
     test('auth', () async {
-      postgrest = PostgrestClient(rootUrl).setAuth('foo');
+      postgrest = PostgrestClient(localStackRestUrl).setAuth('foo');
       expect(
         postgrest.headers['Authorization'],
         'Bearer foo',
@@ -118,7 +121,7 @@ void main() {
 
     test('set header on rpc', () async {
       final httpClient = CustomHttpClient();
-      final client = PostgrestClient(rootUrl, httpClient: httpClient);
+      final client = PostgrestClient(localStackRestUrl, httpClient: httpClient);
 
       await client
           .rpc('empty-succ')
@@ -137,7 +140,7 @@ void main() {
 
     test('set header on query builder', () async {
       final httpClient = CustomHttpClient();
-      final client = PostgrestClient(rootUrl, httpClient: httpClient);
+      final client = PostgrestClient(localStackRestUrl, httpClient: httpClient);
 
       await client
           .from('empty-succ')
@@ -156,7 +159,7 @@ void main() {
 
     test('switch schema', () async {
       final client = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         schema: 'personal',
         headers: apiHeaders,
       );
@@ -165,7 +168,7 @@ void main() {
     });
 
     test('query non-public schema dynamically', () async {
-      final client = PostgrestClient(rootUrl, headers: apiHeaders);
+      final client = PostgrestClient(localStackRestUrl, headers: apiHeaders);
       final personalData = await client
           .schema('personal')
           .from('users')
@@ -505,7 +508,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );

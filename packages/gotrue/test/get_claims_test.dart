@@ -12,7 +12,7 @@ void main() {
   final env = DotEnv();
   env.load();
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final gotrueUrl = env['GOTRUE_URL'] ?? localStackAuthUrl;
   final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
 
   group('getClaims', () {
@@ -22,7 +22,7 @@ void main() {
     setUp(() async {
       final response = await http.post(
         Uri.parse(
-          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+          resetAuthDataUrl,
         ),
         headers: {
           'x-forwarded-for': '127.0.0.1',

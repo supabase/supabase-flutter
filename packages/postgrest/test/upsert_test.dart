@@ -10,12 +10,12 @@ void main() {
 
   group('UPSERT & onConflict tests', () {
     setUpAll(() async {
-      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+      postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
       await resetHelper.initialize(postgrest);
     });
 
     setUp(() {
-      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+      postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
     });
 
     tearDown(() async {

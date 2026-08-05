@@ -14,7 +14,7 @@ void main() {
 
   env.load(); // Load env variables from .env file
 
-  final gotrueUrl = env['GOTRUE_URL'] ?? 'http://127.0.0.1:54421/auth/v1';
+  final gotrueUrl = env['GOTRUE_URL'] ?? localStackAuthUrl;
   final anonToken = env['GOTRUE_TOKEN'] ?? getAnonToken(env);
   late String newEmail;
   late String newPhone;
@@ -27,7 +27,7 @@ void main() {
     setUp(() async {
       final response = await http.post(
         Uri.parse(
-          'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+          resetAuthDataUrl,
         ),
         headers: {
           'x-forwarded-for': '127.0.0.1',
@@ -751,7 +751,7 @@ void main() {
       () async {
         await http.post(
           Uri.parse(
-            'http://127.0.0.1:54421/rest/v1/rpc/reset_and_init_auth_data',
+            resetAuthDataUrl,
           ),
           headers: {
             'x-forwarded-for': '127.0.0.1',
@@ -760,7 +760,7 @@ void main() {
           },
         );
         await http.delete(
-          Uri.parse('http://127.0.0.1:54424/api/v1/messages'),
+          Uri.parse('$localStackMailUrl/api/v1/messages'),
         );
 
         final pkceClient = GoTrueClient(
@@ -785,7 +785,7 @@ void main() {
         );
         expect(updateResponse.user?.newEmail, updatedEmail);
 
-        final code = await _pkceCodeFromEmailChange(updatedEmail);
+        final code = await _pkceCodeFromEmailChange(gotrueUrl, updatedEmail);
         final exchanged = await pkceClient.exchangeCodeForSession(code);
 
         expect(exchanged.session.user.email, updatedEmail);
@@ -858,14 +858,17 @@ void main() {
 /// Reads the email-change confirmation link that GoTrue delivered to
 /// [toEmail] via the local Mailpit server, follows it, and returns the PKCE
 /// `code` from the redirect so it can be passed to [exchangeCodeForSession].
-Future<String> _pkceCodeFromEmailChange(String toEmail) async {
+Future<String> _pkceCodeFromEmailChange(
+  String gotrueUrl,
+  String toEmail,
+) async {
   Map<String, dynamic>? message;
   for (var attempt = 0; attempt < 20 && message == null; attempt++) {
     final search =
         jsonDecode(
               (await http.get(
                 Uri.parse(
-                  'http://127.0.0.1:54424/api/v1/search?query=to:$toEmail',
+                  '$localStackMailUrl/api/v1/search?query=to:$toEmail',
                 ),
               )).body,
             )
@@ -876,7 +879,7 @@ Future<String> _pkceCodeFromEmailChange(String toEmail) async {
           jsonDecode(
                 (await http.get(
                   Uri.parse(
-                    'http://127.0.0.1:54424/api/v1/message/${messages.first['ID']}',
+                    '$localStackMailUrl/api/v1/message/${messages.first['ID']}',
                   ),
                 )).body,
               )
@@ -886,10 +889,12 @@ Future<String> _pkceCodeFromEmailChange(String toEmail) async {
     }
   }
 
-  final link = RegExp(r'http://127\.0\.0\.1:54421/auth/v1/verify\?\S+')
-      .firstMatch(message!['Text'] as String)!
-      .group(0)!
-      .replaceAll(RegExp(r'[)>].*$'), '');
+  // The link is followed by the text of the mail, so it ends at the first
+  // whitespace or wrapping bracket.
+  final link = RegExp(
+    '${RegExp.escape(gotrueUrl)}'
+    r'/verify\?[^\s)>]+',
+  ).firstMatch(message!['Text'] as String)!.group(0)!;
 
   final verifyClient = http.Client();
   try {
