@@ -139,7 +139,9 @@ String _screen() {
   final fields = find
       .byType(EditableText)
       .evaluate()
-      .map((element) => '"${(element.widget as EditableText).controller.text}"');
+      .map(
+        (element) => '"${(element.widget as EditableText).controller.text}"',
+      );
   return 'Labels: ${labels.join(' | ')}\nText fields: ${fields.join(' | ')}';
 }
 
