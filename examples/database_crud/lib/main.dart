@@ -411,40 +411,47 @@ class _TaskDialogState extends State<_TaskDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('New task'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _title,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Title'),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _projectId,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Project'),
-            items: [
-              for (final project in widget.projects)
-                DropdownMenuItem(
-                  value: project.id,
-                  child: Text(project.name),
-                ),
-            ],
-            onChanged: (value) => setState(() => _projectId = value!),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<Priority>(
-            initialValue: _priority,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Priority'),
-            items: [
-              for (final priority in Priority.values)
-                DropdownMenuItem(value: priority, child: Text(priority.label)),
-            ],
-            onChanged: (value) => setState(() => _priority = value!),
-          ),
-        ],
+      // Scrolls so the fields still fit, and the actions stay reachable, when
+      // the keyboard leaves the dialog little room on a phone.
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _title,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _projectId,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Project'),
+              items: [
+                for (final project in widget.projects)
+                  DropdownMenuItem(
+                    value: project.id,
+                    child: Text(project.name),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _projectId = value!),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<Priority>(
+              initialValue: _priority,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Priority'),
+              items: [
+                for (final priority in Priority.values)
+                  DropdownMenuItem(
+                    value: priority,
+                    child: Text(priority.label),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _priority = value!),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
