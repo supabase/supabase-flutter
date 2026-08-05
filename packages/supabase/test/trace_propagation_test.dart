@@ -4,8 +4,6 @@ import 'package:supabase/src/trace_http_client.dart';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
-import 'utils.dart';
-
 const _sampledTraceparent =
     '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
 const _unsampledTraceparent =
@@ -134,7 +132,6 @@ void main() {
       _supabaseUrl,
       'anon-key',
       tracePropagationOptions: optionsWith(() => context),
-      authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
       httpClient: MockClient((request) async {
         restRequest = request;
         return Response(
@@ -159,7 +156,6 @@ void main() {
     final supabase = SupabaseClient(
       _supabaseUrl,
       'anon-key',
-      authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
       httpClient: MockClient((request) async {
         restRequest = request;
         return Response(

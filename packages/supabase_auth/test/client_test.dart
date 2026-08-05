@@ -293,7 +293,7 @@ void main() {
       final newClient = AuthClient(
         url: authUrl,
         headers: {'apikey': anonToken},
-        flowType: AuthFlowType.implicit,
+        asyncStorage: TestAsyncStorage(),
       );
 
       expect(newClient.currentSession?.refreshToken ?? '', isEmpty);
@@ -327,7 +327,7 @@ void main() {
         final newClient = AuthClient(
           url: authUrl,
           headers: {'apikey': anonToken},
-          flowType: AuthFlowType.implicit,
+          asyncStorage: TestAsyncStorage(),
         );
 
         expect(newClient.currentSession, isNull);
@@ -371,7 +371,7 @@ void main() {
         final newClient = AuthClient(
           url: authUrl,
           headers: {'apikey': anonToken},
-          flowType: AuthFlowType.implicit,
+          asyncStorage: TestAsyncStorage(),
         );
 
         // Should fall back to _callRefreshToken and succeed.
@@ -423,7 +423,7 @@ void main() {
         final newClient = AuthClient(
           url: authUrl,
           headers: {'apikey': anonToken},
-          flowType: AuthFlowType.implicit,
+          asyncStorage: TestAsyncStorage(),
         );
 
         expect(newClient.currentSession, isNull);
@@ -673,7 +673,7 @@ void main() {
       client = AuthClient(
         url: authUrl,
         httpClient: CustomHttpClient(),
-        flowType: AuthFlowType.implicit,
+        asyncStorage: TestAsyncStorage(),
       );
     });
 
@@ -710,7 +710,7 @@ void main() {
       client = AuthClient(
         url: authUrl,
         httpClient: httpClient,
-        flowType: AuthFlowType.implicit,
+        asyncStorage: TestAsyncStorage(),
       );
     });
 
@@ -969,31 +969,30 @@ void main() {
     );
   });
 
-  group('PKCE constructor assertion', () {
-    test(
-      'throws AssertionError if asyncStorage is missing when using PKCE flow',
-      () {
-        expect(
-          () => AuthClient(
-            url: authUrl,
-            headers: {
-              'Authorization': 'Bearer $anonToken',
-              'apikey': anonToken,
-            },
-            // asyncStorage is missing/null, and flowType defaults to PKCE
+  group('Constructing a client without an asyncStorage', () {
+    test('asserts when the pkce flow is used', () {
+      expect(
+        () => AuthClient(url: authUrl, headers: {'apikey': anonToken}),
+        throwsA(
+          isA<AssertionError>().having(
+            (error) => error.message,
+            'message',
+            contains('You need to provide asyncStorage to perform pkce flow.'),
           ),
-          throwsA(
-            isA<AssertionError>().having(
-              (e) => e.message,
-              'message',
-              contains(
-                'You need to provide asyncStorage to perform pkce flow.',
-              ),
-            ),
-          ),
-        );
-      },
-    );
+        ),
+      );
+    });
+
+    test('is allowed when the implicit flow is used', () {
+      expect(
+        AuthClient(
+          url: authUrl,
+          headers: {'apikey': anonToken},
+          flowType: AuthFlowType.implicit,
+        ),
+        isNotNull,
+      );
+    });
   });
 }
 

@@ -8,8 +8,6 @@ import 'package:test/test.dart';
 
 import 'package:supabase_common/testing.dart';
 
-import 'utils.dart';
-
 late SupabaseClient _supabase;
 
 void main() {
@@ -543,11 +541,8 @@ void main() {
 const _streamTimeout = Duration(seconds: 10);
 const _warmUpPrefix = 'warm_up_';
 
-SupabaseClient _createClient() => SupabaseClient(
-  localStackUrl,
-  localStackServiceRoleKey,
-  authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
-);
+SupabaseClient _createClient() =>
+    SupabaseClient(localStackUrl, localStackServiceRoleKey);
 
 /// Listens to [stream] and asserts that it emits [expectedSnapshots] in order,
 /// where every snapshot is the result of [project] applied to the emitted rows.

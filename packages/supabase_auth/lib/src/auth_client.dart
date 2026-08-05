@@ -45,7 +45,8 @@ class _SessionState {
 /// [httpClient] custom http client.
 ///
 /// [asyncStorage] local storage to store pkce code verifiers. Required when
-/// using the pkce flow.
+/// using the pkce flow. Pass a [MemoryAuthAsyncStorage] when the verifiers
+/// do not need to outlive the process.
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 /// {@endtemplate}
@@ -159,7 +160,9 @@ class AuthClient {
     AuthFlowType flowType = AuthFlowType.pkce,
   }) : assert(
          flowType != AuthFlowType.pkce || asyncStorage != null,
-         'You need to provide asyncStorage to perform pkce flow.',
+         'You need to provide asyncStorage to perform pkce flow. Pass a '
+         'MemoryAuthAsyncStorage when the code verifiers do not need to '
+         'outlive the process.',
        ),
        _url = url ?? AuthConstants.defaultAuthUrl,
        _headers = {...AuthConstants.defaultHeaders, ...?headers},

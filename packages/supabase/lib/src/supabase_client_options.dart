@@ -34,6 +34,13 @@ class PostgrestClientOptions {
 
 class AuthClientOptions {
   final bool autoRefreshToken;
+
+  /// Storage for the code verifiers of the pkce flow.
+  ///
+  /// Defaults to a [MemoryAuthAsyncStorage], which only carries a flow that
+  /// starts and completes within the same process. Pass a persistent
+  /// implementation when the code is exchanged after a restart, which is what
+  /// `supabase_flutter` does with shared preferences.
   final AuthAsyncStorage? pkceAsyncStorage;
   final AuthFlowType authFlowType;
 
