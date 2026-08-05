@@ -4,7 +4,10 @@ name: Example integration tests
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, edited, labeled]
+    # No "edited": a bot rewriting the description would otherwise cancel and
+    # restart the whole matrix. Release pull requests are opened with their
+    # title, and any other one can opt in with the label.
+    types: [opened, reopened, synchronize, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
