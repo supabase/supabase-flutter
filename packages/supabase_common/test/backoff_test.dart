@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 /// Returns the extremes of the jitter range so a randomized delay can be
 /// checked without depending on a real random sequence.
 class _FixedRandom implements Random {
-  _FixedRandom(this.value);
+  const _FixedRandom(this.value);
 
   final double value;
 
