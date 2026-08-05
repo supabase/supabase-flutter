@@ -499,6 +499,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.eq
+      - SupabaseStreamFilterBuilder.eq
       - TableColumn.eq
       - ComparisonFilter
       - ComparisonFilter.column
@@ -509,6 +510,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.neq
+      - SupabaseStreamFilterBuilder.neq
       - TableColumn.neq
       - NeqFilter
       - NeqFilter.operator
@@ -516,6 +518,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gt
+      - SupabaseStreamFilterBuilder.gt
       - TableColumn.gt
       - GtFilter
       - GtFilter.operator
@@ -523,6 +526,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gte
+      - SupabaseStreamFilterBuilder.gte
       - TableColumn.gte
       - GteFilter
       - GteFilter.operator
@@ -530,6 +534,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lt
+      - SupabaseStreamFilterBuilder.lt
       - TableColumn.lt
       - LtFilter
       - LtFilter.operator
@@ -537,6 +542,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lte
+      - SupabaseStreamFilterBuilder.lte
       - TableColumn.lte
       - LteFilter
       - LteFilter.operator
@@ -544,6 +550,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.like
+      - SupabaseStreamFilterBuilder.like
       - TextTableColumnFilters
       - TextTableColumnFilters.like
       - PatternFilter
@@ -574,6 +581,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilike
+      - SupabaseStreamFilterBuilder.ilike
       - TextTableColumnFilters.ilike
       - IlikeFilter
       - IlikeFilter.operator
@@ -595,6 +603,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isFilter
+      - SupabaseStreamFilterBuilder.isFilter
       - TableColumn.isNull
       - TableColumn.isNotNull
       - IsNullFilter
@@ -605,6 +614,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isDistinct
+      - SupabaseStreamFilterBuilder.isDistinct
       - TableColumn.isDistinctFrom
       - IsDistinctFilter
       - IsDistinctFilter.column
@@ -614,6 +624,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.inFilter
+      - SupabaseStreamFilterBuilder.inFilter
       - TableColumn.inFilter
       - InListFilter
       - InListFilter.column
@@ -723,6 +734,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.matchRegex
+      - SupabaseStreamFilterBuilder.matchRegex
       - TextTableColumnFilters.matchRegex
       - MatchRegexFilter
       - MatchRegexFilter.operator
@@ -730,6 +742,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.imatchRegex
+      - SupabaseStreamFilterBuilder.imatchRegex
       - TextTableColumnFilters.imatchRegex
       - ImatchRegexFilter
       - ImatchRegexFilter.operator
@@ -749,12 +762,14 @@ features:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.order
+      - SupabaseStreamBuilder.order
       - PostgrestTypedTransformBuilder.order
       - SupabaseTypedStreamBuilder.order
   database.using_modifiers.limit:
     status: implemented
     symbols:
       - PostgrestTransformBuilder.limit
+      - SupabaseStreamBuilder.limit
       - PostgrestTypedTransformBuilder.limit
       - SupabaseTypedStreamBuilder.limit
   database.using_modifiers.range:
