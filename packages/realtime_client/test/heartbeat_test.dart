@@ -40,7 +40,7 @@ void main() {
   });
 
   test('emits sent when a heartbeat is pushed', () async {
-    client.connectionStatus = SocketStates.open;
+    client.connectionState = SocketState.open;
 
     await client.sendHeartbeat();
     await pumpEventQueue();
@@ -52,7 +52,7 @@ void main() {
   test(
     'emits timeout when the previous heartbeat was not acknowledged',
     () async {
-      client.connectionStatus = SocketStates.open;
+      client.connectionState = SocketState.open;
       client.pendingHeartbeatRef = 'stale-ref';
 
       await client.sendHeartbeat();

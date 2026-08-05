@@ -200,12 +200,12 @@ void main() {
 
     test('establishes websocket connection with endpoint', () async {
       final connectFuture = socket.connect();
-      expect(socket.connectionStatus, SocketStates.connecting);
+      expect(socket.connectionState, SocketState.connecting);
 
       final connection = socket.connection;
 
       await connectFuture;
-      expect(socket.connectionStatus, SocketStates.open);
+      expect(socket.connectionState, SocketState.open);
 
       expect(connection, isA<IOWebSocketChannel>());
       //! Not verifying connection url
@@ -297,7 +297,7 @@ void main() {
       const tReason = 'reason';
 
       await mockedSocket.connect();
-      mockedSocket.connectionStatus = SocketStates.open;
+      mockedSocket.connectionState = SocketState.open;
       await Future.delayed(const Duration(milliseconds: 200));
       await mockedSocket.disconnect(code: tCode, reason: tReason);
       await Future.delayed(const Duration(milliseconds: 200));
@@ -312,18 +312,18 @@ void main() {
 
     test('disconnecting a closed connections stays closed', () async {
       await socket.connect();
-      expect(socket.connectionStatus, SocketStates.open);
+      expect(socket.connectionState, SocketState.open);
       await mockServer.close();
       await Future.delayed(const Duration(milliseconds: 200));
-      expect(socket.connectionStatus, SocketStates.closed);
+      expect(socket.connectionState, SocketState.closed);
       expect(socket.connection, isNotNull);
 
       final disconnectFuture = socket.disconnect();
 
-      // `connectionStatus` stays `closed` during disconnect
-      expect(socket.connectionStatus, SocketStates.closed);
+      // `connectionState` stays `closed` during disconnect
+      expect(socket.connectionState, SocketState.closed);
       await disconnectFuture;
-      expect(socket.connectionStatus, SocketStates.closed);
+      expect(socket.connectionState, SocketState.closed);
       expect(socket.connection, isNull);
     });
 
@@ -361,7 +361,7 @@ void main() {
       // is marked closed and a reconnect is scheduled.
       await streamController.close();
       await Future.delayed(const Duration(milliseconds: 5));
-      expect(mockedSocket.connectionStatus, SocketStates.closed);
+      expect(mockedSocket.connectionState, SocketState.closed);
 
       // The user disconnects explicitly while the socket is already closed.
       await mockedSocket.disconnect();
@@ -415,12 +415,12 @@ void main() {
 
       await mockedSocket.connect();
       expect(connectCount, 1);
-      expect(mockedSocket.connectionStatus, SocketStates.open);
+      expect(mockedSocket.connectionState, SocketState.open);
 
       // Simulate the server dropping the connection.
       await firstController.close();
       await Future.delayed(const Duration(milliseconds: 5));
-      expect(mockedSocket.connectionStatus, SocketStates.closed);
+      expect(mockedSocket.connectionState, SocketState.closed);
 
       // A manual reconnect must open a fresh connection instead of being a
       // no-op because `connection` still references the dropped socket.
@@ -430,7 +430,7 @@ void main() {
         2,
         reason: 'manual connect() must reconnect after a drop',
       );
-      expect(mockedSocket.connectionStatus, SocketStates.open);
+      expect(mockedSocket.connectionState, SocketState.open);
 
       await mockedSocket.disconnect();
     });
@@ -486,21 +486,21 @@ void main() {
       // The retry counter must grow (1, 2, 3, ...) across reconnect attempts
       // instead of being reset to 1 on every `disconnect()` in `_reconnect`.
       expect(triesSeen.take(3), [1, 2, 3]);
-      expect(mockedSocket.connectionStatus, SocketStates.open);
+      expect(mockedSocket.connectionState, SocketState.open);
 
       await mockedSocket.disconnect();
     });
 
     test('disconnecting an open connection', () async {
       await socket.connect();
-      expect(socket.connectionStatus, SocketStates.open);
+      expect(socket.connectionState, SocketState.open);
 
       final disconnectFuture = socket.disconnect();
 
-      // `connectionStatus` stays `closed` during disconnect
-      expect(socket.connectionStatus, SocketStates.disconnecting);
+      // `connectionState` stays `closed` during disconnect
+      expect(socket.connectionState, SocketState.disconnecting);
       await disconnectFuture;
-      expect(socket.connectionStatus, SocketStates.disconnected);
+      expect(socket.connectionState, SocketState.disconnected);
       expect(socket.connection, isNull);
     });
 
@@ -528,10 +528,10 @@ void main() {
       when(() => mockedSink.close()).thenAnswer((_) => closeCompleter.future);
 
       await mockedSocket.connect();
-      expect(mockedSocket.connectionStatus, SocketStates.open);
+      expect(mockedSocket.connectionState, SocketState.open);
 
       await mockedSocket.disconnect();
-      expect(mockedSocket.connectionStatus, SocketStates.disconnected);
+      expect(mockedSocket.connectionState, SocketState.disconnected);
       expect(mockedSocket.connection, isNull);
       expect(closeCallbacks, 1);
       verify(() => mockedSink.close()).called(1);
@@ -813,7 +813,7 @@ void main() {
 
     test('sends data to connection when connected', () {
       unawaited(mockedSocket.connect());
-      mockedSocket.connectionStatus = SocketStates.open;
+      mockedSocket.connectionState = SocketState.open;
 
       final message = Message(
         topic: topic,
@@ -830,7 +830,7 @@ void main() {
 
     test('buffers data when not connected', () async {
       unawaited(mockedSocket.connect());
-      mockedSocket.connectionStatus = SocketStates.connecting;
+      mockedSocket.connectionState = SocketState.connecting;
 
       expect(mockedSocket.sendBuffer, isEmpty);
 
@@ -854,7 +854,7 @@ void main() {
 
     test('sends a broadcast with a binary payload as a binary frame', () {
       unawaited(mockedSocket.connect());
-      mockedSocket.connectionStatus = SocketStates.open;
+      mockedSocket.connectionState = SocketState.open;
 
       final binaryPayload = Uint8List.fromList([1, 2, 3]);
       final message = Message(
@@ -886,7 +886,7 @@ void main() {
         version: RealtimeProtocolVersion.v1,
       );
       unawaited(legacySocket.connect());
-      legacySocket.connectionStatus = SocketStates.open;
+      legacySocket.connectionState = SocketState.open;
 
       final legacyData = json.encode({
         'topic': topic,
@@ -921,7 +921,7 @@ void main() {
         encode: (_) => 'custom-frame',
       );
       unawaited(customSocket.connect());
-      customSocket.connectionStatus = SocketStates.open;
+      customSocket.connectionState = SocketState.open;
 
       customSocket.push(
         Message(topic: topic, payload: payload, event: event, ref: ref),
@@ -1193,7 +1193,7 @@ void main() {
       verify(() => erroredChannel.rejoin()).called(1);
       verifyNever(() => healthyChannel.rejoin());
       expect(opens, 1);
-      expect(socket.connectionStatus, SocketStates.open);
+      expect(socket.connectionState, SocketState.open);
 
       await socket.disconnect();
       await streamController.close();
@@ -1295,7 +1295,7 @@ void main() {
     //! Unimplemented Test: closes socket when heartbeat is not ack'd within heartbeat window
 
     test('pushes heartbeat data when connected', () async {
-      mockedSocket.connectionStatus = SocketStates.open;
+      mockedSocket.connectionState = SocketState.open;
 
       await mockedSocket.sendHeartbeat();
 
@@ -1303,7 +1303,7 @@ void main() {
     });
 
     test('no ops when not connected', () async {
-      mockedSocket.connectionStatus = SocketStates.connecting;
+      mockedSocket.connectionState = SocketState.connecting;
 
       await mockedSocket.sendHeartbeat();
       verifyNever(() => mockedSink.add(any()));
@@ -1344,13 +1344,13 @@ void main() {
         await connectFuture;
 
         // Should NOT have transitioned to open because disconnect nullified connection
-        expect(socket.connectionStatus, isNot(SocketStates.open));
+        expect(socket.connectionState, isNot(SocketState.open));
         expect(socket.connection, isNull);
       },
     );
 
     test(
-      'connect bails out when connectionStatus changes during await ready',
+      'connect bails out when connectionState changes during await ready',
       () async {
         final readyCompleter = Completer<void>();
         final mockedSocketChannel = MockIOWebSocketChannel();
@@ -1381,7 +1381,7 @@ void main() {
         await disconnectFuture;
         await connectFuture;
 
-        expect(socket.connectionStatus, isNot(SocketStates.open));
+        expect(socket.connectionState, isNot(SocketState.open));
       },
     );
 
@@ -1441,7 +1441,7 @@ void main() {
       readyCompleter2.complete();
       await socket.connect();
 
-      expect(socket.connectionStatus, SocketStates.open);
+      expect(socket.connectionState, SocketState.open);
       expect(socket.connection, mockedSocketChannel2);
 
       await socket.disconnect();

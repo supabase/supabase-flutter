@@ -153,7 +153,9 @@ class RealtimeClient {
 
   @Deprecated("No longer used. Will be removed in the next major version.")
   int longpollerTimeout = 20000;
-  SocketStates? connectionStatus;
+
+  /// The current state of the socket, or `null` before the first [connect].
+  SocketState? connectionState;
   Future<String?> Function()? customAccessToken;
 
   /// Initializes the Socket
@@ -257,7 +259,7 @@ class RealtimeClient {
   @internal
   Future<void> connect() async {
     if (connection != null) {
-      if (connectionStatus != SocketStates.closed) {
+      if (connectionState != SocketState.closed) {
         return;
       }
       await disconnect();
@@ -266,7 +268,7 @@ class RealtimeClient {
     try {
       log('transport', 'connecting to $endPointURL', null);
       log('transport', 'connecting', null, Level.FINE);
-      connectionStatus = SocketStates.connecting;
+      connectionState = SocketState.connecting;
       final WebSocketChannel localConnection = transport(endPointURL, headers);
       connection = localConnection;
 
@@ -280,9 +282,9 @@ class RealtimeClient {
         // Don't schedule a reconnect and emit error if connection has been
         // closed by the user or [disconnect] waits for the connection to be
         // ready before closing it.
-        if (connectionStatus != SocketStates.disconnected &&
-            connectionStatus != SocketStates.disconnecting) {
-          connectionStatus = SocketStates.closed;
+        if (connectionState != SocketState.disconnected &&
+            connectionState != SocketState.disconnecting) {
+          connectionState = SocketState.closed;
           _onConnectionError(error);
           reconnectTimer.scheduleTimeout();
         }
@@ -291,11 +293,11 @@ class RealtimeClient {
 
       // Guard: bail out if disconnect() ran during the await
       if (connection != localConnection ||
-          connectionStatus != SocketStates.connecting) {
+          connectionState != SocketState.connecting) {
         return;
       }
 
-      connectionStatus = SocketStates.open;
+      connectionState = SocketState.open;
 
       _onConnectionOpen();
       _connectionSubscription = localConnection.stream.listen(
@@ -303,9 +305,9 @@ class RealtimeClient {
         onError: _onConnectionError,
         onDone: () {
           // communication has been closed
-          if (connectionStatus != SocketStates.disconnected &&
-              connectionStatus != SocketStates.disconnecting) {
-            connectionStatus = SocketStates.closed;
+          if (connectionState != SocketState.disconnected &&
+              connectionState != SocketState.disconnecting) {
+            connectionState = SocketState.closed;
           }
           _onConnectionClose();
         },
@@ -326,12 +328,12 @@ class RealtimeClient {
     _cancelPendingDisconnect();
     final connection = this.connection;
     if (connection != null) {
-      final oldState = connectionStatus;
+      final oldState = connectionState;
       final shouldCloseSink =
-          oldState == SocketStates.open || oldState == SocketStates.connecting;
+          oldState == SocketState.open || oldState == SocketState.connecting;
       if (shouldCloseSink) {
         // Don't set the state to `disconnecting` if the connection is already closed.
-        connectionStatus = SocketStates.disconnecting;
+        connectionState = SocketState.disconnecting;
         log('transport', 'disconnecting', {
           'code': code,
           'reason': reason,
@@ -350,7 +352,7 @@ class RealtimeClient {
           // avoid hanging the client. This is done by mimicking the onDone
           // callback of the connection stream. By canceling the subscription,
           // we avoid calling the onDone too.
-          connectionStatus = SocketStates.disconnected;
+          connectionState = SocketState.disconnected;
           _onConnectionClose();
         }
 
@@ -367,12 +369,12 @@ class RealtimeClient {
             onTimeout: onTimeout,
           );
         }
-        connectionStatus = SocketStates.disconnected;
+        connectionState = SocketState.disconnected;
         log('transport', 'disconnected', null, Level.FINE);
       }
 
       // Cancel any reconnect scheduled by `_onConnectionClose`. When the socket has
-      // already dropped (`connectionStatus == closed`) the block above is skipped, so
+      // already dropped (`connectionState == closed`) the block above is skipped, so
       // without this an armed backoff timer would fire after the user
       // explicitly disconnected and silently reopen the connection.
       reconnectTimer.cancel();
@@ -444,17 +446,8 @@ class RealtimeClient {
   Stream<RealtimeHeartbeatStatus> get onHeartbeat =>
       _heartbeatController.stream;
 
-  /// Returns the current state of the socket.
-  String get connectionState => switch (connectionStatus) {
-    SocketStates.connecting => 'connecting',
-    SocketStates.open => 'open',
-    SocketStates.disconnecting => 'disconnecting',
-    SocketStates.disconnected => 'disconnected',
-    SocketStates.closed || null => 'closed',
-  };
-
   /// Returns `true` is the connection is open.
-  bool get isConnected => connectionStatus == SocketStates.open;
+  bool get isConnected => connectionState == SocketState.open;
 
   /// Removes a subscription from the socket.
   @internal
@@ -684,9 +677,9 @@ class RealtimeClient {
     }
     log('transport', 'close', event, Level.FINE);
 
-    /// SocketStates.disconnected: by user with socket.disconnect()
-    /// SocketStates.closed: NOT by user, should try to reconnect
-    if (connectionStatus == SocketStates.closed) {
+    /// SocketState.disconnected: by user with socket.disconnect()
+    /// SocketState.closed: NOT by user, should try to reconnect
+    if (connectionState == SocketState.closed) {
       _triggerChanError(event);
       reconnectTimer.scheduleTimeout();
     }

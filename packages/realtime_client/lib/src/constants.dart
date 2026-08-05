@@ -26,7 +26,7 @@ enum RealtimeProtocolVersion {
   final String vsn;
 }
 
-enum SocketStates {
+enum SocketState {
   /// Client attempting to establish a connection
   connecting,
 

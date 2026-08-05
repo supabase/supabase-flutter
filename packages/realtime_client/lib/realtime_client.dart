@@ -6,7 +6,7 @@ export 'src/constants.dart'
         RealtimeConstants,
         RealtimeLogLevel,
         RealtimeProtocolVersion,
-        SocketStates;
+        SocketState;
 export 'src/realtime_channel.dart';
 export 'src/realtime_client.dart';
 export 'src/realtime_presence.dart';
