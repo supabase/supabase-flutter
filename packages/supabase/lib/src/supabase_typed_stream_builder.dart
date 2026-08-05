@@ -76,10 +76,14 @@ class SupabaseTypedStreamFilterBuilder<Row>
   ///
   /// Named [filter] instead of `where` because [Stream.where] already exists.
   ///
-  /// Only one filter can be applied to a stream, and only [ComparisonFilter]s
-  /// and [InListFilter] are supported: [TableColumn.eq], [TableColumn.neq],
-  /// [TableColumn.lt], [TableColumn.lte], [TableColumn.gt], [TableColumn.gte]
-  /// and [TableColumn.inFilter].
+  /// Can be called multiple times to combine filters with AND. Only
+  /// [ComparisonFilter]s, [InListFilter], [PatternFilter]s, [IsNullFilter] and
+  /// [IsDistinctFilter] are supported: [TableColumn.eq], [TableColumn.neq],
+  /// [TableColumn.lt], [TableColumn.lte], [TableColumn.gt], [TableColumn.gte],
+  /// [TableColumn.inFilter], [TableColumn.isNull],
+  /// [TableColumn.isDistinctFrom], [TextTableColumnFilters.like],
+  /// [TextTableColumnFilters.ilike], [TextTableColumnFilters.matchRegex] and
+  /// [TextTableColumnFilters.imatchRegex].
   ///
   /// ```dart
   /// supabase
@@ -87,7 +91,7 @@ class SupabaseTypedStreamFilterBuilder<Row>
   ///     .stream(primaryKey: [Books.id])
   ///     .filter(Books.title.eq('foo'));
   /// ```
-  SupabaseTypedStreamBuilder<Row> filter(ColumnFilter columnFilter) {
+  SupabaseTypedStreamFilterBuilder<Row> filter(ColumnFilter columnFilter) {
     switch (columnFilter) {
       case EqFilter():
         _streamFilterBuilder.eq(columnFilter.column, columnFilter.value);
@@ -103,18 +107,37 @@ class SupabaseTypedStreamFilterBuilder<Row>
         _streamFilterBuilder.gte(columnFilter.column, columnFilter.value);
       case InListFilter():
         _streamFilterBuilder.inFilter(columnFilter.column, columnFilter.values);
-      case IsNullFilter() ||
-          IsDistinctFilter() ||
-          ContainmentFilter() ||
+      case LikeFilter():
+        _streamFilterBuilder.like(columnFilter.column, columnFilter.pattern);
+      case IlikeFilter():
+        _streamFilterBuilder.ilike(columnFilter.column, columnFilter.pattern);
+      case MatchRegexFilter():
+        _streamFilterBuilder.matchRegex(
+          columnFilter.column,
+          columnFilter.pattern,
+        );
+      case ImatchRegexFilter():
+        _streamFilterBuilder.imatchRegex(
+          columnFilter.column,
+          columnFilter.pattern,
+        );
+      case IsNullFilter():
+        _streamFilterBuilder.isFilter(columnFilter.column, null);
+      case IsDistinctFilter():
+        _streamFilterBuilder.isDistinct(
+          columnFilter.column,
+          columnFilter.value,
+        );
+      case ContainmentFilter() ||
           RangeFilter() ||
-          PatternFilter() ||
           PatternListFilter() ||
           TextSearchFilter() ||
           NegatedFilter():
         throw ArgumentError.value(
           columnFilter,
           'columnFilter',
-          'Streams only support the eq, neq, lt, lte, gt, gte and inFilter '
+          'Streams only support the eq, neq, lt, lte, gt, gte, inFilter, like, '
+              'ilike, matchRegex, imatchRegex, isNull and isDistinctFrom '
               'filters.',
         );
     }

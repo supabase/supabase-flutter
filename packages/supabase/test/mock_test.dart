@@ -932,7 +932,7 @@ void main() {
       final stream = supabase.table(Todos.table).stream(primaryKey: [Todos.id]);
 
       expect(
-        () => stream.filter(Todos.task.like('%task%')),
+        () => stream.filter(Todos.task.textSearch('task')),
         throwsArgumentError,
       );
     });
