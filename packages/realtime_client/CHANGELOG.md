@@ -1,3 +1,11 @@
+## 2.13.0
+
+ - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
+ - **FIX**(realtime): forward all caller opts from track() to send() ([#1620](https://github.com/supabase/supabase-flutter/issues/1620)). ([64298be1](https://github.com/supabase/supabase-flutter/commit/64298be14e2294caa08be0d6e121e1c0997e95c3))
+ - **FIX**(realtime): UTF-8 encode broadcast header fields in serializer ([#1618](https://github.com/supabase/supabase-flutter/issues/1618)). ([86afeb2c](https://github.com/supabase/supabase-flutter/commit/86afeb2cae7d21350e7d5db750af4d2bbdcb5797))
+ - **FIX**(realtime_client): stop throwing internally when converting null cell values ([#1612](https://github.com/supabase/supabase-flutter/issues/1612)). ([42068e47](https://github.com/supabase/supabase-flutter/commit/42068e47191dd9594425cc7a8cf32b4aed37cb55))
+ - **FEAT**(realtime): block adding postgres_changes listener after subscribe ([#1617](https://github.com/supabase/supabase-flutter/issues/1617)). ([3592fda3](https://github.com/supabase/supabase-flutter/commit/3592fda32b61668f3b8c225f299bed1c227207c6))
+
 ## 2.12.0
 
  - **REFACTOR**: modernize dart syntax across client packages ([#1574](https://github.com/supabase/supabase-flutter/issues/1574)). ([b74fdfee](https://github.com/supabase/supabase-flutter/commit/b74fdfee05c90d40dd3f0676ca86bd92e6013c65))

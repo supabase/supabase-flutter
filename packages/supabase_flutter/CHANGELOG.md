@@ -1,3 +1,7 @@
+## 2.17.1
+
+ - Update a dependency to the latest release.
+
 ## 2.17.0
 
  - **REFACTOR**: extract shared code into supabase_common package ([#1573](https://github.com/supabase/supabase-flutter/issues/1573)). ([46601bbb](https://github.com/supabase/supabase-flutter/commit/46601bbb80ca2f52929f8e0c2a6e5456d3e32360))

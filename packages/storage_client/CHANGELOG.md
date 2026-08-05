@@ -1,3 +1,8 @@
+## 2.8.0
+
+ - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
+ - **FEAT**(storage): add purgeCache to invalidate CDN cache for a single object ([#1607](https://github.com/supabase/supabase-flutter/issues/1607)). ([4acd0a01](https://github.com/supabase/supabase-flutter/commit/4acd0a01eadc2671c3f9446f323cab84e943aaeb))
+
 ## 2.7.0
 
  - **REFACTOR**: modernize dart syntax across client packages ([#1574](https://github.com/supabase/supabase-flutter/issues/1574)). ([b74fdfee](https://github.com/supabase/supabase-flutter/commit/b74fdfee05c90d40dd3f0676ca86bd92e6013c65))
