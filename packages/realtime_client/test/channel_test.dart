@@ -719,7 +719,7 @@ void main() {
       expect(channel.subTopic, 'myTopic');
     });
 
-    test('send message via ws conn when subscribed to channel', () async {
+    test('send message via WebSocket when subscribed to channel', () async {
       final subscribed = Completer<void>();
       channel.subscribe((status, [error]) {
         if (status == RealtimeSubscribeStatus.subscribed) {

@@ -778,7 +778,7 @@ class RealtimeClient {
       pendingHeartbeatRef = null;
       log(
         'transport',
-        'heartbeat timeout. Attempting to re-establish conn',
+        'heartbeat timeout. Attempting to re-establish connection',
       );
       _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       unawaited(
