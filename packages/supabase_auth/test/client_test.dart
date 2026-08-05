@@ -985,12 +985,12 @@ void main() {
 
     test('is allowed when the implicit flow is used', () {
       expect(
-        AuthClient(
+        () => AuthClient(
           url: authUrl,
           headers: {'apikey': anonToken},
           flowType: AuthFlowType.implicit,
         ),
-        isNotNull,
+        returnsNormally,
       );
     });
   });
