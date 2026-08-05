@@ -158,7 +158,9 @@ jobs:
           set -euo pipefail
           udid=$(xcrun simctl list devices available -j \
             | jq -r '[.devices[][] | select(.name | test("iPhone"))][0].udid')
-          xcrun simctl boot "$udid" || true
+          # Boots and then waits for the boot to finish, so the tests cannot
+          # launch into a simulator that is still coming up.
+          xcrun simctl bootstatus "$udid" -b
           echo "IOS_DEVICE=$udid" >> "$GITHUB_ENV"
 
       - name: Wait for the Supabase endpoint
@@ -188,7 +190,7 @@ jobs:
               && flutter pub get)
           done
 
-      - name: Let the scaffolded macOS apps reach the network
+      - name: Prepare the scaffolded macOS apps
         if: matrix.target == 'macos'
         shell: bash
         run: |
@@ -203,6 +205,20 @@ jobs:
                 "examples/$example/macos/Runner/$config.entitlements"
             done
           done
+          # The passkeys plugin is only available from macOS 13.5, so the
+          # scaffolded 10.15 target fails to compile the plugin registrant.
+          sed -i '' 's/MACOSX_DEPLOYMENT_TARGET = [0-9.]*;/MACOSX_DEPLOYMENT_TARGET = 13.5;/g' \
+            examples/passkeys/macos/Runner.xcodeproj/project.pbxproj
+
+      - name: Prepare the scaffolded iOS apps
+        if: matrix.target == 'ios'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # As above, the passkeys plugin needs iOS 16 rather than the
+          # scaffolded 13.0.
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/g' \
+            examples/passkeys/ios/Runner.xcodeproj/project.pbxproj
 
       - name: Run integration tests
         if: matrix.target != 'android'
