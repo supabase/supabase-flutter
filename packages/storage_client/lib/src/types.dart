@@ -611,6 +611,13 @@ class StorageApiException extends StorageException with SupabaseApiException {
   /// API documents, since a proxy or gateway in front of it can answer with a
   /// shape of its own, so every field is read defensively. [statusCode] is used
   /// when the body reports none.
+  ///
+  /// [SupabaseException.errorCode] is read from the body's `code`, the
+  /// documented storage error code such as `NoSuchKey` or `AccessDenied`. The
+  /// body's `error` is the fallback for servers old enough not to send `code`,
+  /// and carries a plain sentence as often as an identifier.
+  ///
+  /// See https://supabase.com/docs/guides/storage/debugging/error-codes
   factory StorageApiException.fromJson(
     Map<String, dynamic> json,
     int statusCode,
@@ -618,7 +625,7 @@ class StorageApiException extends StorageException with SupabaseApiException {
     final message = json['message'];
     return StorageApiException(
       message is String ? message : json.toString(),
-      errorCode: json['error']?.toString(),
+      errorCode: (json['code'] ?? json['error'])?.toString(),
       statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
     );
   }
