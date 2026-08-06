@@ -10,8 +10,8 @@ export 'package:supabase_common/supabase_common.dart'
 
 /// Decodes a JWT token without performing validation
 ///
-/// Returns a [DecodedJwt] containing the header, payload, signature, and raw parts.
-/// Throws [AuthInvalidJwtException] if the JWT structure is invalid.
+/// Returns a [DecodedJwt] containing the header, payload, signature, and raw
+/// parts. Throws [AuthInvalidJwtException] if the JWT structure is invalid.
 DecodedJwt decodeJwt(String token) {
   final parts = token.split('.');
   if (parts.length != 3) {
@@ -52,7 +52,8 @@ DecodedJwt decodeJwt(String token) {
   }
 }
 
-/// Decodes only the payload of a JWT without validating the header or signature.
+/// Decodes only the payload of a JWT without validating the header or
+/// signature.
 ///
 /// Useful where just the claims are needed and the token may not carry a
 /// well-formed header or signature. Throws [AuthInvalidJwtException] if the

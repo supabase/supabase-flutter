@@ -112,8 +112,9 @@ enum OAuthClientGrantType { authorizationCode, refreshToken }
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 enum OAuthClientResponseType { code }
 
-/// OAuth client type indicating whether the client can keep credentials confidential.
-/// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+/// OAuth client type indicating whether the client can keep credentials
+/// confidential. Only relevant when the OAuth 2.1 server is enabled in Supabase
+/// Auth.
 enum OAuthClientType {
   public,
   confidential;
@@ -239,7 +240,8 @@ class CreateOAuthClientParams {
   /// Array of allowed redirect URIs
   final List<String> redirectUris;
 
-  /// Array of allowed grant types (optional, defaults to authorization_code and refresh_token)
+  /// Array of allowed grant types (optional, defaults to authorization_code and
+  /// refresh_token)
   final List<OAuthClientGrantType>? grantTypes;
 
   /// Array of allowed response types (optional, defaults to code)

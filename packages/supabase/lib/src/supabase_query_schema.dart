@@ -4,7 +4,8 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'counter.dart';
 
-/// Used to perform [rpc] and [from] operations with a different schema than in [SupabaseClient].
+/// Used to perform [rpc] and [from] operations with a different schema than in
+/// [SupabaseClient].
 class SupabaseQuerySchema {
   final Counter _counter;
   final String _restUrl;

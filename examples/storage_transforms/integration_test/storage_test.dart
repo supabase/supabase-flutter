@@ -16,10 +16,10 @@ const supabasePublishableKey = String.fromEnvironment(
 
 /// End-to-end tests that drive the Storage example against the local stack.
 ///
-/// The first test exercises the whole flow through the repository (upload, list,
-/// transformed download and delete), asserting on the returned bytes. The second
-/// drives the app widgets to confirm the gallery, detail view and delete button
-/// are wired to those calls.
+/// The first test exercises the whole flow through the repository (upload,
+/// list, transformed download and delete), asserting on the returned bytes. The
+/// second drives the app widgets to confirm the gallery, detail view and delete
+/// button are wired to those calls.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -130,7 +130,8 @@ Future<Size> _decodeSize(Uint8List bytes) async {
   return size;
 }
 
-/// Pumps frames until [finder] matches at least one widget or [timeout] elapses.
+/// Pumps frames until [finder] matches at least one widget or [timeout]
+/// elapses.
 ///
 /// Storage calls go over the network, so the UI can't be settled with
 /// `pumpAndSettle`; this polls the widget tree instead.

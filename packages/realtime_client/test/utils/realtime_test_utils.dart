@@ -104,9 +104,9 @@ Future<bool> _isRealtimeHttpReachable() async {
 /// delivered reliably.
 ///
 /// On first use the Realtime server creates a replication slot asynchronously,
-/// and any change made before the slot exists is missed. This repeatedly inserts
-/// a sentinel row until a change event is observed, which proves the pipeline is
-/// live, then cleans up the inserted rows.
+/// and any change made before the slot exists is missed. This repeatedly
+/// inserts a sentinel row until a change event is observed, which proves the
+/// pipeline is live, then cleans up the inserted rows.
 Future<void> primePostgresChanges({
   Duration timeout = const Duration(seconds: 90),
 }) async {

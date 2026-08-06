@@ -4,9 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
 
-/// All Storage access for the example lives here, so the UI stays thin and every
-/// `supabase.storage` call is easy to read and to exercise from an integration
-/// test.
+/// All Storage access for the example lives here, so the UI stays thin and
+/// every `supabase.storage` call is easy to read and to exercise from an
+/// integration test.
 class StorageRepository {
   StorageRepository(this._client);
 
@@ -35,8 +35,8 @@ class StorageRepository {
 
   /// Lists the images in the bucket, newest first.
   ///
-  /// `list()` also returns folder placeholders, which have no `id`, so those are
-  /// filtered out before mapping to [StoredImage].
+  /// `list()` also returns folder placeholders, which have no `id`, so those
+  /// are filtered out before mapping to [StoredImage].
   Future<List<StoredImage>> listImages() async {
     final files = await _files.list(
       searchOptions: const SearchOptions(

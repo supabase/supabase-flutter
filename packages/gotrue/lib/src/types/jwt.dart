@@ -152,8 +152,9 @@ class GetClaimsResponse {
 
 /// Options for getClaims method
 class GetClaimsOptions {
-  /// If set to `true`, the `exp` claim will not be validated against the current time.
-  /// This allows you to extract claims from expired JWTs without getting an error.
+  /// If set to `true`, the `exp` claim will not be validated against the
+  /// current time. This allows you to extract claims from expired JWTs without
+  /// getting an error.
   final bool allowExpired;
 
   const GetClaimsOptions({
@@ -260,10 +261,10 @@ class JWK {
   /// Builds the RSA public key for verifying RS256 JWTs from this JWK's
   /// modulus (`n`) and exponent (`e`).
   ///
-  /// The key is assembled as a PKCS#1 `RSAPublicKey` DER structure and handed to
-  /// [RSAPublicKey.bytes]. This avoids `JWTKey.fromJWK`, which is only available
-  /// in dart_jsonwebtoken 3.x and would force a dependency bump that is
-  /// incompatible with the minimum supported Flutter version.
+  /// The key is assembled as a PKCS#1 `RSAPublicKey` DER structure and handed
+  /// to [RSAPublicKey.bytes]. This avoids `JWTKey.fromJWK`, which is only
+  /// available in dart_jsonwebtoken 3.x and would force a dependency bump that
+  /// is incompatible with the minimum supported Flutter version.
   // TODO: replace this manual DER assembly with `JWTKey.fromJWK` once the
   // minimum Flutter is >= 3.29.0 (Dart 3.7.0), whose flutter_test bundles
   // clock 1.1.2 and so allows dart_jsonwebtoken 3.x. fromJWK also adds EC

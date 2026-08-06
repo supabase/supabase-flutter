@@ -1,8 +1,9 @@
 // Regression test for https://github.com/supabase/supabase-flutter/issues/1337
 //
-// OAuthProvider was a plain Dart enum, making OAuthProvider('custom:my-provider')
-// a compile-time error. It has been converted to a final class so arbitrary
-// provider strings are supported, as the docs show.
+// OAuthProvider was a plain Dart enum, making
+// OAuthProvider('custom:my-provider') a compile-time error. It has been
+// converted to a final class so arbitrary provider strings are supported, as
+// the docs show.
 
 import 'dart:io';
 

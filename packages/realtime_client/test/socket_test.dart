@@ -366,7 +366,8 @@ void main() {
       // The user disconnects explicitly while the socket is already closed.
       await mockedSocket.disconnect();
 
-      // Wait past the reconnect delay; the scheduled reconnect must be canceled.
+      // Wait past the reconnect delay; the scheduled reconnect must be
+      // canceled.
       await Future.delayed(const Duration(milliseconds: 60));
       expect(
         connectCount,
@@ -1046,7 +1047,8 @@ void main() {
     final pushPayload = {'access_token': token};
 
     test(
-      "sets access token, updates channels' join payload, and pushes token to channels",
+      "sets access token, updates channels' join payload, and pushes token to "
+      "channels",
       () async {
         final mockedChannel1 = MockChannel();
         when(() => mockedChannel1.joinedOnce).thenReturn(true);
@@ -1090,7 +1092,8 @@ void main() {
     );
 
     test(
-      "sets access token, updates channels' join payload, and pushes token to channels if is not a jwt",
+      "sets access token, updates channels' join payload, and pushes token to "
+      "channels if is not a jwt",
       () async {
         final mockedChannel1 = MockChannel();
         final mockedChannel2 = MockChannel();
@@ -1292,7 +1295,8 @@ void main() {
       unawaited(mockedSocket.connect());
     });
 
-    //! Unimplemented Test: closes socket when heartbeat is not ack'd within heartbeat window
+    //! Unimplemented Test: closes socket when heartbeat is not ack'd within
+    //! heartbeat window
 
     test('pushes heartbeat data when connected', () async {
       mockedSocket.connectionState = SocketState.open;
@@ -1312,7 +1316,8 @@ void main() {
 
   group('connect/disconnect race condition', () {
     test(
-      'connect does not crash if disconnect nullifies connection during await ready',
+      'connect does not crash if disconnect nullifies connection during await '
+      'ready',
       () async {
         final readyCompleter = Completer<void>();
         final mockedSocketChannel = MockIOWebSocketChannel();
@@ -1338,12 +1343,14 @@ void main() {
         // Start disconnect (also suspends on ready since state is connecting)
         final disconnectFuture = socket.disconnect();
 
-        // Now complete the ready future — both connect and disconnect can proceed
+        // Now complete the ready future — both connect and disconnect can
+        // proceed
         readyCompleter.complete();
         await disconnectFuture;
         await connectFuture;
 
-        // Should NOT have transitioned to open because disconnect nullified connection
+        // Should NOT have transitioned to open because disconnect nullified
+        // connection
         expect(socket.connectionState, isNot(SocketState.open));
         expect(socket.connection, isNull);
       },

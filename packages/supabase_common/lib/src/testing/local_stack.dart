@@ -62,14 +62,27 @@ const localStackDatabasePassword = 'postgres';
 /// the JWKS the key is published as.
 @visibleForTesting
 const localStackAnonKey =
-    'eyJhbGciOiJSUzI1NiIsImtpZCI6IjNkZjU5YWIxLWI4ZWMtNDlkMy05YzkyLThiOWQ0MmNhYzFmZSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjIwOTY4OTUxOTF9.Boe4zFpmRmJRM9b6USbJkZZzg66cXTHWYHm9uGScxnVi-xCXi6jAjy_GGsyKGOgwD110lNzNcdAQtwWjBOz-iBcVfcLpOJjgtFNg80ZK7toO2V0BwhWhAMdic1XnFI3_gxe9iq--iMuNuAebP1uIxGqn-nJ2kdua1cv3g9BZ5UtG9U-I22b4lPTQhdMU7skUsFLxcIpDOb1tS7RafWL3XcobNpd5OnZV_z88fus73DDP9oFKzBsyXARNg3H89IBBd5G9JHpeO4eQdGTPPY4xkGp_zBUnyMJJWTdgXqFjbFHpGpTdD1lSb3TbyeRheAq7IqaAvdqXyaTZVhH7LrZmbw';
+    'eyJhbGciOiJSUzI1NiIsImtpZCI6IjNkZjU5YWIxLWI4ZWMtNDlkMy05YzkyLThiOWQ0MmNhYz'
+    'FmZSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJ'
+    'leHAiOjIwOTY4OTUxOTF9.Boe4zFpmRmJRM9b6USbJkZZzg66cXTHWYHm9uGScxnVi-xCXi6jA'
+    'jy_GGsyKGOgwD110lNzNcdAQtwWjBOz-iBcVfcLpOJjgtFNg80ZK7toO2V0BwhWhAMdic1XnFI'
+    '3_gxe9iq--iMuNuAebP1uIxGqn-nJ2kdua1cv3g9BZ5UtG9U-I22b4lPTQhdMU7skUsFLxcIpD'
+    'Ob1tS7RafWL3XcobNpd5OnZV_z88fus73DDP9oFKzBsyXARNg3H89IBBd5G9JHpeO4eQdGTPPY'
+    '4xkGp_zBUnyMJJWTdgXqFjbFHpGpTdD1lSb3TbyeRheAq7IqaAvdqXyaTZVhH7LrZmbw';
 
 /// Service role API key of the local stack, which bypasses row level security.
 ///
 /// Signed like [localStackAnonKey].
 @visibleForTesting
 const localStackServiceRoleKey =
-    'eyJhbGciOiJSUzI1NiIsImtpZCI6IjNkZjU5YWIxLWI4ZWMtNDlkMy05YzkyLThiOWQ0MmNhYzFmZSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MjA5Njg5NTE5Mn0.jO5vwkRNFZTiVHNjFzaypvWV4aJkKm6TvFsdl0W5x9g7LttQMWMopC7HanUpeFLmg4E9gMb-v1e6f6oZ9e0PHYpsRwEdSOxKfYwKhzFI9DsDGLrX4ueArZuKgaV_bulWpwGKI3xwLugeuCp6N0hYFkXvMmUjaKx9nClWckJ33cchSpgjVQ5YxL8PGrUj2Sjhw-5IyGiwrdPfWjTQmpWnCjePoVrRf2jEMF_VGoxDAEqt72w_HGOrdXRFU5BW9-LkvpfzkrTENrj555JtYP4mkZgvUlrkXFRSh010o3n2UehN5WonfDRzwOeTC56QEbPVS6ubvWGR9luykdMNlXawZA';
+    'eyJhbGciOiJSUzI1NiIsImtpZCI6IjNkZjU5YWIxLWI4ZWMtNDlkMy05YzkyLThiOWQ0MmNhYz'
+    'FmZSIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2V'
+    'fcm9sZSIsImV4cCI6MjA5Njg5NTE5Mn0.jO5vwkRNFZTiVHNjFzaypvWV4aJkKm6TvFsdl0W5x'
+    '9g7LttQMWMopC7HanUpeFLmg4E9gMb-v1e6f6oZ9e0PHYpsRwEdSOxKfYwKhzFI9DsDGLrX4ue'
+    'ArZuKgaV_bulWpwGKI3xwLugeuCp6N0hYFkXvMmUjaKx9nClWckJ33cchSpgjVQ5YxL8PGrUj2'
+    'Sjhw-5IyGiwrdPfWjTQmpWnCjePoVrRf2jEMF_VGoxDAEqt72w_HGOrdXRFU5BW9-LkvpfzkrT'
+    'ENrj555JtYP4mkZgvUlrkXFRSh010o3n2UehN5WonfDRzwOeTC56QEbPVS6ubvWGR9luykdMNl'
+    'XawZA';
 
 /// Secret the local stack signs and verifies HS256 tokens with.
 @visibleForTesting

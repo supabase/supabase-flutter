@@ -5,7 +5,8 @@ import 'package:meta/meta.dart';
 typedef TimerCallback = void Function();
 typedef TimerCalculation = int Function(int tries);
 
-// Need to limit doubling to avoid overflow, this limit gives 1 million times the first delay
+// Need to limit doubling to avoid overflow, this limit gives 1 million times
+// the first delay
 const maxShift = 20;
 
 /// Creates a timer that accepts a `timerCalc` function to perform
@@ -16,7 +17,10 @@ const maxShift = 20;
 ///   return [1000, 5000, 10000][tries - 1] ?? 10000;
 /// }
 ///
-/// let reconnectTimer = new RetryTimer(() => this.connect(), calculateRetryDuration)
+/// final reconnectTimer = RetryTimer(
+///   () => connect(),
+///   calculateRetryDuration,
+/// );
 ///
 /// reconnectTimer.scheduleTimeout() // fires after 1000
 /// reconnectTimer.scheduleTimeout() // fires after 5000

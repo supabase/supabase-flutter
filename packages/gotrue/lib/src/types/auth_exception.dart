@@ -68,7 +68,8 @@ class AuthApiException extends AuthException {
 
   @override
   String toString() =>
-      'AuthApiException(message: $message, statusCode: $statusCode, code: $code)';
+      'AuthApiException(message: $message, statusCode: $statusCode, code: '
+      '$code)';
 }
 
 class AuthUnknownException extends AuthException {
@@ -87,7 +88,8 @@ class AuthUnknownException extends AuthException {
 
   @override
   String toString() =>
-      'AuthUnknownException(message: $message, originalError: $originalError, statusCode: $statusCode)';
+      'AuthUnknownException(message: $message, originalError: $originalError, '
+      'statusCode: $statusCode)';
 }
 
 class AuthWeakPasswordException extends AuthException {
@@ -101,7 +103,8 @@ class AuthWeakPasswordException extends AuthException {
 
   @override
   String toString() =>
-      'AuthWeakPasswordException(message: $message, statusCode: $statusCode, reasons: $reasons)';
+      'AuthWeakPasswordException(message: $message, statusCode: $statusCode, '
+      'reasons: $reasons)';
 }
 
 class AuthInvalidJwtException extends AuthException {
@@ -113,5 +116,6 @@ class AuthInvalidJwtException extends AuthException {
 
   @override
   String toString() =>
-      'AuthInvalidJwtException(message: $message, statusCode: $statusCode, code: $code)';
+      'AuthInvalidJwtException(message: $message, statusCode: $statusCode, '
+      'code: $code)';
 }

@@ -10,14 +10,17 @@ class UserAttributes {
   /// The user's password.
   String? password;
 
-  /// The nonce sent for reauthentication if the user's password is to be updated.
+  /// The nonce sent for reauthentication if the user's password is to be
+  /// updated.
   ///
   /// Call reauthenticate() to obtain the nonce first.
   String? nonce;
 
-  /// A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+  /// A custom data object to store the user's metadata. This maps to the
+  /// `auth.users.user_metadata` column.
   ///
-  /// The `data` should be a JSON object that includes user-specific info, such as their first and last name.
+  /// The `data` should be a JSON object that includes user-specific info, such
+  /// as their first and last name.
   Object? data;
 
   /// The user's current password.
@@ -75,22 +78,26 @@ class UserAttributes {
 }
 
 class AdminUserAttributes extends UserAttributes {
-  /// A custom data object to store the user's metadata. This maps to the `auth.users.user_metadata` column.
+  /// A custom data object to store the user's metadata. This maps to the
+  /// `auth.users.user_metadata` column.
   ///
   /// Only a service role can modify.
   ///
-  /// The `user_metadata` should be a JSON object that includes user-specific info, such as their first and last name.
+  /// The `user_metadata` should be a JSON object that includes user-specific
+  /// info, such as their first and last name.
   ///
-  /// Note: When using the GoTrueAdminApi and wanting to modify a user's metadata,
-  /// this attribute is used instead of UserAttributes data.
+  /// Note: When using the GoTrueAdminApi and wanting to modify a user's
+  /// metadata, this attribute is used instead of UserAttributes data.
   final Map<String, dynamic>? userMetadata;
 
-  /// A custom data object to store the user's application specific metadata. This maps to the `auth.users.app_metadata` column.
+  /// A custom data object to store the user's application specific metadata.
+  /// This maps to the `auth.users.app_metadata` column.
   ///
   /// Only a service role can modify.
   ///
-  /// The `app_metadata` should be a JSON object that includes app-specific info, such as identity providers, roles, and other
-  /// access control information.
+  /// The `app_metadata` should be a JSON object that includes app-specific
+  /// info, such as identity providers, roles, and other access control
+  /// information.
   final Map<String, dynamic>? appMetadata;
 
   /// Confirms the user's email address if set to true.
@@ -105,8 +112,9 @@ class AdminUserAttributes extends UserAttributes {
 
   /// Determines how long a user is banned for.
   ///
-  /// The format for the ban duration follows a strict sequence of decimal numbers with a unit suffix.
-  /// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+  /// The format for the ban duration follows a strict sequence of decimal
+  /// numbers with a unit suffix. Valid time units are "ns", "us" (or "µs"),
+  /// "ms", "s", "m", "h".
   ///
   /// For example, some possible durations include: '300ms', '2h45m'.
   ///

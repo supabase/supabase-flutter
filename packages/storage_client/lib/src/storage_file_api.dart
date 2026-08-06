@@ -71,9 +71,11 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the storage client.
+  /// [retryAttempts] overrides the retryAttempts parameter set across the
+  /// storage client.
   ///
-  /// You can pass a [retryController] and call `cancel()` to cancel the retry attempts.
+  /// You can pass a [retryController] and call `cancel()` to cancel the retry
+  /// attempts.
   Future<String> upload(
     String path,
     File file, {
@@ -105,9 +107,11 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the storage client.
+  /// [retryAttempts] overrides the retryAttempts parameter set across the
+  /// storage client.
   ///
-  /// You can pass a [retryController] and call `cancel()` to cancel the retry attempts.
+  /// You can pass a [retryController] and call `cancel()` to cancel the retry
+  /// attempts.
   Future<String> uploadBinary(
     String path,
     Uint8List data, {
@@ -131,7 +135,9 @@ class StorageFileApi {
 
   /// Upload a file with a token generated from `createUploadSignedUrl`.
   ///
-  /// [path] The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+  /// [path] The file path, including the file name. Should be of the format
+  /// `folder/subfolder/filename.png`. The bucket must already exist before
+  /// attempting to upload.
   ///
   /// [token] The token generated from `createUploadSignedUrl`
   ///
@@ -164,7 +170,9 @@ class StorageFileApi {
 
   /// Upload a binary file with a token generated from `createUploadSignedUrl`.
   ///
-  /// [path] The file path, including the file name. Should be of the format `folder/subfolder/filename.png`. The bucket must already exist before attempting to upload.
+  /// [path] The file path, including the file name. Should be of the format
+  /// `folder/subfolder/filename.png`. The bucket must already exist before
+  /// attempting to upload.
   ///
   /// [token] The token generated from `createUploadSignedUrl`
   ///
@@ -197,10 +205,11 @@ class StorageFileApi {
 
   /// Creates a signed upload URL.
   ///
-  /// Signed upload URLs can be used upload files to the bucket without further authentication.
-  /// They are valid for one minute.
+  /// Signed upload URLs can be used upload files to the bucket without further
+  /// authentication. They are valid for one minute.
   ///
-  /// [path] The file path, including the current file name. For example `folder/image.png`.
+  /// [path] The file path, including the current file name. For example
+  /// `folder/image.png`.
   ///
   /// When [upsert] is `true` the signed URL allows overwriting an existing
   /// file at [path]. It defaults to `false`.
@@ -243,9 +252,11 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the storage client.
+  /// [retryAttempts] overrides the retryAttempts parameter set across the
+  /// storage client.
   ///
-  /// You can pass a [retryController] and call `cancel()` to cancel the retry attempts.
+  /// You can pass a [retryController] and call `cancel()` to cancel the retry
+  /// attempts.
   Future<String> update(
     String path,
     File file, {
@@ -278,9 +289,11 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the storage client.
+  /// [retryAttempts] overrides the retryAttempts parameter set across the
+  /// storage client.
   ///
-  /// You can pass a [retryController] and call `cancel()` to cancel the retry attempts.
+  /// You can pass a [retryController] and call `cancel()` to cancel the retry
+  /// attempts.
   Future<String> updateBinary(
     String path,
     Uint8List data, {
@@ -309,7 +322,8 @@ class StorageFileApi {
   /// [toPath] is the new file path, including the new file name. For example
   /// `folder/image-new.png`.
   ///
-  /// When copying to a different bucket, you have to specify the [destinationBucket].
+  /// When copying to a different bucket, you have to specify the
+  /// [destinationBucket].
   Future<String> move(
     String fromPath,
     String toPath, {
@@ -337,7 +351,8 @@ class StorageFileApi {
   /// [toPath] is the new file path, including the new file name. For example
   /// `folder/image-copy.png`.
   ///
-  /// When copying to a different bucket, you have to specify the [destinationBucket].
+  /// When copying to a different bucket, you have to specify the
+  /// [destinationBucket].
   Future<String> copy(
     String fromPath,
     String toPath, {
@@ -410,10 +425,12 @@ class StorageFileApi {
   /// Create signed URLs to download files without requiring permissions.
   ///
   /// Items for paths that do not exist are silently omitted. Use
-  /// [createSignedUrlsResult] to distinguish missing paths from successful ones.
+  /// [createSignedUrlsResult] to distinguish missing paths from successful
+  /// ones.
   ///
   /// [paths] is the file paths to be downloaded, including the current file
-  /// names. For example: `createSignedUrls(['folder/image.png', 'folder2/image2.png'])`.
+  /// names. For example: `createSignedUrls(['folder/image.png',
+  /// 'folder2/image2.png'])`.
   ///
   /// [expiresIn] is the number of seconds until the signed URLs expire. For
   /// example, `60` for URLs which are valid for one minute.
@@ -440,11 +457,13 @@ class StorageFileApi {
   /// URLs can be valid for a set number of seconds.
   ///
   /// Returns one [SignedUrlResult] per requested path. Each result is either a
-  /// [SignedUrlSuccess] (with a ready-to-use signed URL) or a [SignedUrlFailure]
-  /// (when the server could not sign that path, e.g. the file does not exist).
+  /// [SignedUrlSuccess] (with a ready-to-use signed URL) or a
+  /// [SignedUrlFailure] (when the server could not sign that path, e.g. the
+  /// file does not exist).
   ///
   /// [paths] is the file paths to be downloaded, including the current file
-  /// names. For example: `createSignedUrlsResult(['folder/image.png', 'folder2/image2.png'])`.
+  /// names. For example: `createSignedUrlsResult(['folder/image.png',
+  /// 'folder2/image2.png'])`.
   ///
   /// [expiresIn] is the number of seconds until the signed URLs expire. For
   /// example, `60` for URLs which are valid for one minute.
@@ -496,7 +515,8 @@ class StorageFileApi {
   /// [path] is the file path to be downloaded, including the path and file
   /// name. For example `download('folder/image.png')`.
   ///
-  /// [transform] download a transformed variant of the image with the provided options
+  /// [transform] download a transformed variant of the image with the provided
+  /// options
   ///
   /// [queryParams] additional query parameters to be added to the URL
   ///

@@ -129,7 +129,8 @@ void main() {
       );
 
       expect(response.session, isNotNull);
-      // The returned token must be the freshly refreshed one, not our near-expired JWT.
+      // The returned token must be the freshly refreshed one, not our
+      // near-expired JWT.
       expect(response.session?.accessToken, isNot(equals(accessToken)));
       expect(mockClient.userCallCount, 0); // /user was NOT called
     });

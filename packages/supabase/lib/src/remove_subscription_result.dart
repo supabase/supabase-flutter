@@ -8,5 +8,6 @@ class RemoveSubscriptionResult {
 
   @override
   String toString() =>
-      'RemoveSubscriptionResult(openSubscriptions: $openSubscriptions, error: $error)';
+      'RemoveSubscriptionResult(openSubscriptions: $openSubscriptions, error: '
+      '$error)';
 }

@@ -60,7 +60,7 @@ class Task {
   final Priority priority;
   final DateTime createdAt;
 
-  /// Name of the task's project, populated from the embedded `projects` row when
-  /// the task is fetched with a join.
+  /// Name of the task's project, populated from the embedded `projects` row
+  /// when the task is fetched with a join.
   final String? projectName;
 }

@@ -22,7 +22,9 @@ void main() {
   group('Standard Header', () {
     late String supabaseUrl;
     const supabaseKey =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53emxkenlsb2pyemdqemloZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQxMzI2ODAsImV4cCI6MTk5OTcwODY4MH0.MU-LVeAPic93VLcRsHktxzYtBKBUMWAQb8E-0AQETPs';
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6I'
+        'm53emxkenlsb2pyemdqemloZHJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODQxMzI2ODA'
+        'sImV4cCI6MTk5OTcwODY4MH0.MU-LVeAPic93VLcRsHktxzYtBKBUMWAQb8E-0AQETPs';
     late SupabaseClient supabase;
     late HttpServer mockServer;
 
@@ -285,7 +287,8 @@ void main() {
         () => supabase.auth.currentUser,
         throwsA(
           AuthException(
-            'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
+            'Supabase Client is configured with the accessToken option, '
+            'accessing supabase.auth is not possible.',
           ),
         ),
       );
@@ -386,7 +389,8 @@ void main() {
 
     group('Error Handling', () {
       test(
-        'should throw AuthException when accessing auth with custom access token',
+        'should throw AuthException when accessing auth with custom access '
+        'token',
         () {
           final customTokenClient = SupabaseClient(
             supabaseUrl,
@@ -404,7 +408,8 @@ void main() {
 
     group('Shared YAJsonIsolate', () {
       test(
-        'does not dispose an injected YAJsonIsolate so the caller retains ownership',
+        'does not dispose an injected YAJsonIsolate so the caller retains '
+        'ownership',
         () async {
           final isolate = YAJsonIsolate();
           await isolate.initialize();

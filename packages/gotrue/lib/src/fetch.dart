@@ -55,11 +55,13 @@ class GotrueFetch {
 
     final dynamic data;
 
-    // Catch this case as trying to decode it will throw a misleading [FormatException]
+    // Catch this case as trying to decode it will throw a misleading
+    // [FormatException]
     if (response.body.isEmpty) {
       throw AuthUnknownException(
         message:
-            'Received an empty response with status code ${response.statusCode}',
+            'Received an empty response with status code '
+            '${response.statusCode}',
         originalError: response,
       );
     }

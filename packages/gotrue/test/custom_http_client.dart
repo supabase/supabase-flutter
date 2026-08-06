@@ -78,8 +78,9 @@ class RetryTestHttpClient extends BaseClient {
     final jwt = JWT(
       {
         'exp': (DateTime.now().millisecondsSinceEpoch / 1000).round() + 60,
-        'retry_count':
-            retryCount, // Add retryCount so that tokens issued on different retries are different.
+        // Add retryCount so that tokens issued on different retries are
+        // different.
+        'retry_count': retryCount,
       },
       subject: userId1,
     );

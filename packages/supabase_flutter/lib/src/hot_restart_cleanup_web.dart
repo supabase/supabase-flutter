@@ -9,7 +9,8 @@ external JSFunction? supabaseFlutterClientToDispose;
 /// Store a function to properly dispose the previous [SupabaseClient] in
 /// the js context.
 ///
-/// WebSocket connections and [BroadcastChannel] are not closed when Flutter is hot-restarted on web.
+/// WebSocket connections and [BroadcastChannel] are not closed when Flutter is
+/// hot-restarted on web.
 ///
 /// This causes old dart code that is still associated with those
 /// connections to be still running and causes unexpected behavior like type

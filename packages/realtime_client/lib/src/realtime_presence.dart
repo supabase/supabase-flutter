@@ -73,7 +73,8 @@ class RealtimePresence {
   ///
   /// `channel` - The RealtimeChannel
   ///
-  /// `opts` - The options, for example `PresenceOpts(events: PresenceEvents(state: 'state', diff: 'diff'))`
+  /// `opts` - The options, for example `PresenceOpts(events:
+  /// PresenceEvents(state: 'state', diff: 'diff'))`
   RealtimePresence(this.channel, [PresenceOpts? opts]) {
     final events =
         opts?.events ??

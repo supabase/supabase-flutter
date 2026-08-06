@@ -170,8 +170,8 @@ class _PasswordFormState extends State<_PasswordForm> {
     ),
   );
 
-  /// Sends the reset email, then reveals the fields to finish the reset with the
-  /// code from that email.
+  /// Sends the reset email, then reveals the fields to finish the reset with
+  /// the code from that email.
   Future<void> _startReset() => _run(() async {
     await _auth.sendPasswordReset(
       _email.text.trim(),
@@ -250,8 +250,8 @@ class _PasswordFormState extends State<_PasswordForm> {
   }
 }
 
-/// Passwordless sign in with `signInWithOtp` (email) then `verifyOTP`. The email
-/// carries both a magic link and the code entered here.
+/// Passwordless sign in with `signInWithOtp` (email) then `verifyOTP`. The
+/// email carries both a magic link and the code entered here.
 class _EmailOtpForm extends StatefulWidget {
   const _EmailOtpForm();
 
@@ -518,8 +518,8 @@ class _AnonymousFormState extends State<_AnonymousForm> {
   }
 }
 
-/// The account screen: shows who is signed in, lets an anonymous user upgrade to
-/// a permanent account, manages MFA factors and signs out.
+/// The account screen: shows who is signed in, lets an anonymous user upgrade
+/// to a permanent account, manages MFA factors and signs out.
 class _SignedInView extends StatelessWidget {
   const _SignedInView({required this.user});
 

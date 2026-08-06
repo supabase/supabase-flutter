@@ -1,11 +1,14 @@
 part of 'postgrest_builder.dart';
 
-/// Needed as a wrapper around [PostgrestBuilder] to allow for the different return type of [withConverter] than in [ResponsePostgrestBuilder.withConverter].
+/// Needed as a wrapper around [PostgrestBuilder] to allow for the different
+/// return type of [withConverter] than in
+/// [ResponsePostgrestBuilder.withConverter].
 class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
   RawPostgrestBuilder(PostgrestBuilder<T, S, R> builder)
     : super._(config: builder._config, converter: builder._converter);
 
-  /// Very similar to [_copyWith], but allows changing the generics, therefore [_converter] is omitted
+  /// Very similar to [_copyWith], but allows changing the generics, therefore
+  /// [_converter] is omitted
   RawPostgrestBuilder<O, P, Q> _copyWithType<O, P, Q>({
     Uri? url,
     // ignore: avoid-unnecessary-nullable-parameters
@@ -43,7 +46,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     );
   }
 
-  /// Converts any response that comes from the server into a type-safe response.
+  /// Converts any response that comes from the server into a type-safe
+  /// response.
   ///
   /// ```dart
   /// List<User> users = await postgrest

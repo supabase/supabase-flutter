@@ -1,4 +1,5 @@
-/// Simplifies JSON parsing in isolates by keeping one isolate running per instance.
+/// Simplifies JSON parsing in isolates by keeping one isolate running per
+/// instance.
 library;
 
 export 'src/_isolates_io.dart'

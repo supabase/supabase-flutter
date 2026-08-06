@@ -156,7 +156,8 @@ class Fetch {
   ) async {
     final headers = options?.headers ?? {};
 
-    // Create a factory function that generates a fresh MultipartRequest for each attempt
+    // Create a factory function that generates a fresh MultipartRequest for
+    // each attempt
     http.MultipartRequest createRequest() {
       final request = http.MultipartRequest(method, Uri.parse(url))
         ..headers.addAll(headers)

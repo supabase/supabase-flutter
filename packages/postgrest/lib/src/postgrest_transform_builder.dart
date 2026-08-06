@@ -33,10 +33,15 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// supabase.from('users').insert().select('id, messages');
   /// ```
   /// ```dart
-  /// supabase.from('users').insert().select('id, messages').count(CountOption.exact);
+  /// supabase
+  ///     .from('users')
+  ///     .insert()
+  ///     .select('id, messages')
+  ///     .count(CountOption.exact);
   /// ```
   ///
-  /// By appending [count] the return type is [PostgrestResponse]. Otherwise it's the data directly without the wrapper.
+  /// By appending [count] the return type is [PostgrestResponse]. Otherwise
+  /// it's the data directly without the wrapper.
   PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
@@ -108,8 +113,9 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final key = referencedTable == null ? 'order' : '$referencedTable.order';
     final existingOrder = _url.queryParameters[key];
     final value =
-        '${existingOrder == null ? '' : '$existingOrder,'}'
-        '$column.${ascending ? 'asc' : 'desc'}.${nullsFirst ? 'nullsfirst' : 'nullslast'}';
+        '${existingOrder == null ? '' : '$existingOrder,'}$column.'
+        '${ascending ? 'asc' : 'desc'}.'
+        '${nullsFirst ? 'nullsfirst' : 'nullslast'}';
     final url = overrideSearchParams(key, value);
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
@@ -171,7 +177,8 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Retrieves only one row from the result.
   ///
-  /// Result must be one row (e.g. using `limit`), otherwise this will result in an error.
+  /// Result must be one row (e.g. using `limit`), otherwise this will result in
+  /// an error.
   /// ```dart
   /// final data = await supabase
   ///     .from('users')
@@ -271,7 +278,8 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// query. The value for count respects any filters (e.g. eq, gt), but ignores
   /// modifiers (e.g. limit, range).
   ///
-  /// This changes the return type from the data only to a [PostgrestResponse] with the data and the count.
+  /// This changes the return type from the data only to a [PostgrestResponse]
+  /// with the data and the count.
   ///
   /// ```dart
   /// final res = await postgrest
@@ -322,11 +330,15 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Sets the maximum number of rows that can be affected by the query.
   ///
-  /// Only available with PATCH and DELETE operations. Requires PostgREST v13 or higher.
-  /// When the limit is exceeded, the query will fail with an error.
+  /// Only available with PATCH and DELETE operations. Requires PostgREST v13 or
+  /// higher. When the limit is exceeded, the query will fail with an error.
   ///
   /// ```dart
-  /// supabase.from('users').update({'active': false}).eq('status', 'inactive').maxAffected(5);
+  /// supabase
+  ///     .from('users')
+  ///     .update({'active': false})
+  ///     .eq('status', 'inactive')
+  ///     .maxAffected(5);
   /// ```
   ///
   /// ```dart
@@ -363,11 +375,14 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///
   /// https://supabase.com/docs/guides/api/rest/debugging-performance#enabling-explain
   ///
-  /// [analyze] If `true`, the query will be executed and the actual run time will be displayed.
+  /// [analyze] If `true`, the query will be executed and the actual run time
+  /// will be displayed.
   ///
-  /// [verbose] If `true`, the query identifier will be displayed and the result will include the output columns of the query.
+  /// [verbose] If `true`, the query identifier will be displayed and the result
+  /// will include the output columns of the query.
   ///
-  /// [settings] If `true`, include information on configuration parameters that affect query planning.
+  /// [settings] If `true`, include information on configuration parameters that
+  /// affect query planning.
   ///
   /// [buffers] If `true`, include information on buffer usage.
   ///
@@ -392,7 +407,8 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       if (wal) 'wal',
     ].join('|');
 
-    // An Accept header can carry multiple media types but postgrest-js always sends one
+    // An Accept header can carry multiple media types but postgrest-js always
+    // sends one
     final forMediatype = _headers['Accept'] ?? 'application/json';
     final newHeaders = {..._headers};
     newHeaders['Accept'] =

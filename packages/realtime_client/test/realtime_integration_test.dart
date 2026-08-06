@@ -258,7 +258,8 @@ void main() {
           expect(insert.newRecord['task'], 'write tests');
 
           await database.execute(
-            "UPDATE public.todos SET is_complete = true WHERE task = 'write tests'",
+            "UPDATE public.todos SET is_complete = true WHERE task = 'write "
+            "tests'",
           );
           final update = await updates.future.timeout(
             const Duration(seconds: 20),
@@ -299,7 +300,8 @@ void main() {
           await Future<void>.delayed(const Duration(seconds: 2));
 
           await database.execute(
-            "INSERT INTO public.todos (task, is_complete) VALUES ('ignored', false)",
+            "INSERT INTO public.todos (task, is_complete) VALUES ('ignored', "
+            "false)",
           );
 
           await Future<void>.delayed(const Duration(seconds: 3));
@@ -310,7 +312,8 @@ void main() {
           );
 
           await database.execute(
-            "INSERT INTO public.todos (task, is_complete) VALUES ('matched', true)",
+            "INSERT INTO public.todos (task, is_complete) VALUES ('matched', "
+            "true)",
           );
 
           final payload = await matched.future.timeout(

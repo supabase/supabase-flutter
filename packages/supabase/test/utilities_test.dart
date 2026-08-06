@@ -47,7 +47,8 @@ void main() {
     });
 
     test(
-      'should include structured platform metadata in X-Client-Info when not on web',
+      'should include structured platform metadata in X-Client-Info when not '
+      'on web',
       () {
         if (!kIsWeb) {
           final clientInfo = Constants.defaultHeaders['X-Client-Info']!;

@@ -2,8 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
 
-/// All database access for the CRUD example lives here, so the UI stays thin and
-/// every `supabase.from(...)` call is easy to read and to exercise from an
+/// All database access for the CRUD example lives here, so the UI stays thin
+/// and every `supabase.from(...)` call is easy to read and to exercise from an
 /// integration test.
 class TasksRepository {
   TasksRepository(this._client);
