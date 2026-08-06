@@ -123,13 +123,13 @@ doing arithmetic on them no longer requires parsing them yourself.
 | --- | --- | --- | --- |
 | `Session` | `expiresAt` | `int?` (Unix seconds) | `DateTime?` |
 | `User` | `createdAt` | `String` | `DateTime` |
-| `User` | `confirmationSentAt`, `recoverySentAt`, `emailChangeSentAt`, `invitedAt`, `confirmedAt`, `emailConfirmedAt`, `phoneConfirmedAt`, `lastSignInAt`, `updatedAt` | `String?` | `DateTime?` |
+| `User` | `confirmationSentAt`, `recoverySentAt`, `emailChangeSentAt`, `invitedAt`, `emailConfirmedAt`, `phoneConfirmedAt`, `lastSignInAt`, `updatedAt` | `String?` | `DateTime?` |
 | `UserIdentity` | `createdAt`, `lastSignInAt`, `updatedAt` | `String?` | `DateTime?` |
 | `OAuthClient` | `createdAt`, `updatedAt` | `String` | `DateTime` |
 | `Bucket` | `createdAt`, `updatedAt` | `String` | `DateTime` |
-| `FileObject` | `createdAt`, `updatedAt`, `lastAccessedAt` | `String?` | `DateTime?` |
+| `FileObject` | `createdAt`, `updatedAt` | `String?` | `DateTime?` |
 | `FileObjectV2` | `createdAt` | `String` | `DateTime` |
-| `FileObjectV2` | `updatedAt`, `lastAccessedAt`, `lastModified` | `String?` | `DateTime?` |
+| `FileObjectV2` | `updatedAt`, `lastModified` | `String?` | `DateTime?` |
 | `PaginatedFile` | `createdAt`, `updatedAt` | `String?` | `DateTime?` |
 
 ```dart
