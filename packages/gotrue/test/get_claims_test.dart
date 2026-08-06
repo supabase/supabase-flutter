@@ -237,13 +237,13 @@ void main() {
     test(
       'getClaims() with RS256 JWT on first call should not crash (SDK-627)',
       () async {
-        // This test reproduces the bug reported in SDK-627 A JWT with RS256
-        // algorithm and kid in header Header:
-        // {"alg":"RS256","typ":"JWT","kid":"test-key-id"} Payload:
-        // {"sub":"1234567890","aud":"authenticated","exp":9999999999,
-        // "iat":1516239022,"email":"test@example.com","role":"authenticated"}
-        // Signature: dummy base64url encoded signature (not cryptographically
-        // valid, but structurally valid)
+        // This test reproduces the bug reported in SDK-627: a JWT signed with
+        // RS256 that carries a `kid` in its header.
+        //
+        // The header declares `alg` RS256, `typ` JWT and `kid` test-key-id,
+        // while the payload carries the usual `sub`, `aud`, `exp`, `iat`,
+        // `email` and `role` claims. The signature is base64url encoded and
+        // structurally valid, but not cryptographically valid.
         const rs256Jwt =
             'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.ey'
             'JzdWIiOiIxMjM0NTY3ODkwIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImV4cCI6OTk5'

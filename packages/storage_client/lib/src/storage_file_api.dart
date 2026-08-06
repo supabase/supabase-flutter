@@ -205,8 +205,8 @@ class StorageFileApi {
 
   /// Creates a signed upload URL.
   ///
-  /// Signed upload URLs can be used upload files to the bucket without further
-  /// authentication. They are valid for one minute.
+  /// Signed upload URLs can be used to upload files to the bucket without
+  /// further authentication. They are valid for one minute.
   ///
   /// [path] The file path, including the current file name. For example
   /// `folder/image.png`.
@@ -515,7 +515,7 @@ class StorageFileApi {
   /// [path] is the file path to be downloaded, including the path and file
   /// name. For example `download('folder/image.png')`.
   ///
-  /// [transform] download a transformed variant of the image with the provided
+  /// [transform] downloads a transformed variant of the image with the provided
   /// options
   ///
   /// [queryParams] additional query parameters to be added to the URL
@@ -578,7 +578,7 @@ class StorageFileApi {
   /// [path] is the file path to be downloaded, including the path and file
   /// name. For example `downloadStream('folder/image.png')`.
   ///
-  /// [transform] download a transformed variant of the image with the provided
+  /// [transform] downloads a transformed variant of the image with the provided
   /// options.
   ///
   /// [queryParams] additional query parameters to be added to the URL.

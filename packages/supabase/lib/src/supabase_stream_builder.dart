@@ -212,8 +212,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         .subscribe((status, [error]) {
           switch (status) {
             case RealtimeSubscribeStatus.subscribed:
-              // Reload all data after a reconnect from postgrest First data
-              // from postgrest gets loaded before the realtime connect
+              // Reload all data from PostgREST after a realtime reconnect, so
+              // that changes missed while the socket was down are picked up.
+              // The first subscribe is skipped because the initial load is
+              // already started below, right after subscribing.
               if (_wasSubscribed) {
                 unawaited(_getPostgrestData());
               }

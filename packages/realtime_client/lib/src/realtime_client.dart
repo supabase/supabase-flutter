@@ -162,7 +162,7 @@ class RealtimeClient {
   /// Initializes the Socket
   ///
   /// [endPoint] The string WebSocket endpoint, ie, "ws://example.com/socket",
-  /// "wss://example.com", "/socket" (inherited host & protocol
+  /// "wss://example.com", or "/socket" (which inherits the host and protocol).
   ///
   /// [transport] The Websocket Transport, for example WebSocket.
   ///
@@ -196,7 +196,8 @@ class RealtimeClient {
   /// codec for [version].
   ///
   /// [reconnectAfterMs] The optional function that returns the millisec
-  /// reconnect interval. Defaults to stepped backoff off.
+  /// reconnect interval. Defaults to the stepped backoff of
+  /// [RetryTimer.createRetryFunction].
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
   ///

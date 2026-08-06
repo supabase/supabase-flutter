@@ -888,7 +888,7 @@ class RealtimeChannel {
   /// Unsubscribes from server events, and instructs channel to terminate on
   /// server. Triggers onClose() hooks.
   ///
-  /// To receive leave acknowledgements, use the a `receive` hook to bind to the
+  /// To receive leave acknowledgements, use a `receive` hook to bind to the
   /// server ack,
   /// ```dart
   /// channel.unsubscribe().receive("ok", (_){print("left!");} );

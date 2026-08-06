@@ -339,7 +339,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   /// The return value of this method is not the auth result, and whether the
   /// OAuth sign-in has succeeded or not should be observed by setting a
-  /// listener on [auth.onAuthStateChanged].
+  /// listener on [auth.onAuthStateChange].
   ///
   /// To obtain the OAuth URL without launching a browser, use
   /// [getOAuthSignInUrl] instead.

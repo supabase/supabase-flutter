@@ -60,7 +60,7 @@ enum PostgresChangeEvent {
     'UPDATE' => PostgresChangeEvent.update,
     'DELETE' => PostgresChangeEvent.delete,
     _ => throw ArgumentError(
-      'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to '
+      'Only "INSERT", "UPDATE", or "DELETE" can be passed to the '
       '`fromString()` method.',
     ),
   };
@@ -147,7 +147,7 @@ enum PresenceEvent {
       }
     }
     throw ArgumentError(
-      'Only "sync", "join", or "leave" can be can be passed to `fromString()` '
+      'Only "sync", "join", or "leave" can be passed to the `fromString()` '
       'method.',
     );
   }

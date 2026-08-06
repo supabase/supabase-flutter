@@ -84,7 +84,7 @@ class Session {
     }
   }
 
-  /// Returns 'true` if the token is expired or will expire in the next 10
+  /// Returns `true` if the token is expired or will expire in the next 10
   /// seconds.
   ///
   /// The 10 second buffer is to account for latency issues.
