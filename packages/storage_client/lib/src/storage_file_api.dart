@@ -419,40 +419,6 @@ class StorageFileApi {
     );
   }
 
-  // TODO(v3): Remove this deprecated overload and rename createSignedUrlsResult
-  // to createSignedUrls. Dart lacks overloading so the preferred API had to be
-  // given a temporary name. https://linear.app/supabase/issue/SDK-1002
-  /// Create signed URLs to download files without requiring permissions.
-  ///
-  /// Items for paths that do not exist are silently omitted. Use
-  /// [createSignedUrlsResult] to distinguish missing paths from successful
-  /// ones.
-  ///
-  /// [paths] is the file paths to be downloaded, including the current file
-  /// names. For example: `createSignedUrls(['folder/image.png',
-  /// 'folder2/image2.png'])`.
-  ///
-  /// [expiresIn] is the number of seconds until the signed URLs expire. For
-  /// example, `60` for URLs which are valid for one minute.
-  @Deprecated('Use createSignedUrlsResult to handle missing paths correctly.')
-  Future<List<SignedUrl>> createSignedUrls(
-    List<String> paths,
-    int expiresIn, {
-    DownloadBehavior? download,
-    String? cacheNonce,
-  }) async {
-    final results = await createSignedUrlsResult(
-      paths,
-      expiresIn,
-      download: download,
-      cacheNonce: cacheNonce,
-    );
-    return results
-        .whereType<SignedUrlSuccess>()
-        .map((r) => SignedUrl(path: r.path, signedUrl: r.signedUrl))
-        .toList();
-  }
-
   /// Create signed URLs to download files without requiring permissions. These
   /// URLs can be valid for a set number of seconds.
   ///
@@ -462,7 +428,7 @@ class StorageFileApi {
   /// file does not exist).
   ///
   /// [paths] is the file paths to be downloaded, including the current file
-  /// names. For example: `createSignedUrlsResult(['folder/image.png',
+  /// names. For example: `createSignedUrls(['folder/image.png',
   /// 'folder2/image2.png'])`.
   ///
   /// [expiresIn] is the number of seconds until the signed URLs expire. For
@@ -475,7 +441,7 @@ class StorageFileApi {
   ///
   /// [cacheNonce] appends a `cacheNonce` query parameter to each URL to bypass
   /// CDN caching for a specific file version.
-  Future<List<SignedUrlResult>> createSignedUrlsResult(
+  Future<List<SignedUrlResult>> createSignedUrls(
     List<String> paths,
     int expiresIn, {
     DownloadBehavior? download,

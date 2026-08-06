@@ -153,9 +153,6 @@ class RealtimeClient {
   final _heartbeatController =
       StreamController<RealtimeHeartbeatStatus>.broadcast();
 
-  @Deprecated("No longer used. Will be removed in the next major version.")
-  int longpollerTimeout = 20000;
-
   /// The current state of the socket, or `null` before the first [connect].
   SocketState? connectionState;
   Future<String?> Function()? customAccessToken;
@@ -218,12 +215,11 @@ class RealtimeClient {
     TimerCalculation? reconnectAfterMs,
     Map<String, String>? headers,
     this.params = const {},
-    this.longpollerTimeout = 20000,
     RealtimeLogLevel? logLevel,
     this.httpClient,
     this.customAccessToken,
     this.version = RealtimeProtocolVersion.v2,
-  }) : endPoint = Uri.parse('$endPoint/${Transports.websocket}')
+  }) : endPoint = Uri.parse('$endPoint/websocket')
            .replace(
              queryParameters: logLevel == null
                  ? null

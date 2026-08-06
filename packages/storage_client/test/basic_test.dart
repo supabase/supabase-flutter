@@ -34,7 +34,6 @@ Map<String, dynamic> get testFileObjectJson => {
   'owner': 'owner_id',
   'updated_at': null,
   'created_at': null,
-  'last_accessed_at': null,
   'buckets': testBucketJson,
 };
 
@@ -329,7 +328,7 @@ void main() {
     );
 
     test(
-      'createSignedUrlsResult returns success and failure for mixed paths',
+      'createSignedUrls returns success and failure for mixed paths',
       () async {
         customHttpClient.response = [
           {
@@ -343,7 +342,7 @@ void main() {
           },
         ];
 
-        final results = await client.from('public').createSignedUrlsResult([
+        final results = await client.from('public').createSignedUrls([
           'exists.txt',
           'missing.txt',
         ], 60);
@@ -364,34 +363,6 @@ void main() {
         expect(failure.error, 'not_found');
       },
     );
-
-    // ignore: deprecated_member_use_from_same_package
-    test('createSignedUrls (deprecated) omits missing paths', () async {
-      customHttpClient.response = [
-        {
-          'path': 'exists.txt',
-          'signedURL': '/storage/v1/object/sign/public/exists.txt?token=abc',
-        },
-        {
-          'path': 'missing.txt',
-          'signedURL': null,
-          'error': 'not_found',
-        },
-      ];
-
-      // ignore: deprecated_member_use_from_same_package
-      final urls = await client.from('public').createSignedUrls([
-        'exists.txt',
-        'missing.txt',
-      ], 60);
-
-      expect(urls.length, 1);
-      expect(urls[0].path, 'exists.txt');
-      expect(
-        urls[0].signedUrl,
-        endsWith('/storage/v1/object/sign/public/exists.txt?token=abc'),
-      );
-    });
 
     test('createSignedUploadUrl omits x-upsert by default', () async {
       customHttpClient.response = {
@@ -673,7 +644,7 @@ void main() {
       expect(response, endsWith('?token=abc&download=report.pdf'));
     });
 
-    test('createSignedUrlsResult appends download to each URL', () async {
+    test('createSignedUrls appends download to each URL', () async {
       customHttpClient.response = [
         {
           'path': 'exists.txt',
@@ -683,7 +654,7 @@ void main() {
 
       final results = await client
           .from('public')
-          .createSignedUrlsResult(
+          .createSignedUrls(
             ['exists.txt'],
             60,
             download: DownloadBehavior.withOriginalName,
@@ -733,7 +704,7 @@ void main() {
       expect(response, endsWith('?token=abc&cacheNonce=v2'));
     });
 
-    test('createSignedUrlsResult appends cacheNonce to each URL', () async {
+    test('createSignedUrls appends cacheNonce to each URL', () async {
       customHttpClient.response = [
         {
           'path': 'exists.txt',
@@ -743,7 +714,7 @@ void main() {
 
       final results = await client
           .from('public')
-          .createSignedUrlsResult(['exists.txt'], 60, cacheNonce: 'v2');
+          .createSignedUrls(['exists.txt'], 60, cacheNonce: 'v2');
 
       final success = results.single as SignedUrlSuccess;
       expect(success.signedUrl, endsWith('?token=abc&cacheNonce=v2'));

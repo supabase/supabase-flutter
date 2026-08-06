@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'package:gotrue/src/types/user.dart';
 import 'package:test/test.dart';
 
@@ -68,8 +66,6 @@ void main() {
           'email': 'test@example.com',
           'phone': '+1234567890',
           'created_at': '2023-01-01T00:00:00Z',
-          // ignore: deprecated_member_use
-          'confirmed_at': '2023-01-01T04:00:00Z',
           'email_confirmed_at': '2023-01-01T05:00:00Z',
           'phone_confirmed_at': '2023-01-01T06:00:00Z',
           'last_sign_in_at': '2023-01-01T07:00:00Z',
@@ -100,8 +96,6 @@ void main() {
         expect(user.email, equals('test@example.com'));
         expect(user.phone, equals('+1234567890'));
         expect(user.createdAt, equals('2023-01-01T00:00:00Z'));
-        // ignore: deprecated_member_use
-        expect(user.confirmedAt, equals('2023-01-01T04:00:00Z'));
         expect(user.emailConfirmedAt, equals('2023-01-01T05:00:00Z'));
         expect(user.phoneConfirmedAt, equals('2023-01-01T06:00:00Z'));
         expect(user.lastSignInAt, equals('2023-01-01T07:00:00Z'));
@@ -275,7 +269,6 @@ void main() {
           email: 'test@example.com',
           phone: '+1234567890',
           createdAt: '2023-01-01T00:00:00Z',
-          confirmedAt: '2023-01-01T04:00:00Z',
           emailConfirmedAt: '2023-01-01T05:00:00Z',
           phoneConfirmedAt: '2023-01-01T06:00:00Z',
           lastSignInAt: '2023-01-01T07:00:00Z',
@@ -299,8 +292,6 @@ void main() {
         expect(json['email'], equals('test@example.com'));
         expect(json['phone'], equals('+1234567890'));
         expect(json['created_at'], equals('2023-01-01T00:00:00Z'));
-        // ignore: deprecated_member_use
-        expect(json['confirmed_at'], equals('2023-01-01T04:00:00Z'));
         expect(json['email_confirmed_at'], equals('2023-01-01T05:00:00Z'));
         expect(json['phone_confirmed_at'], equals('2023-01-01T06:00:00Z'));
         expect(json['last_sign_in_at'], equals('2023-01-01T07:00:00Z'));

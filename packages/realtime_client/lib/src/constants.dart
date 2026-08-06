@@ -83,8 +83,4 @@ enum ChannelEvent {
   };
 }
 
-class Transports {
-  static const String websocket = 'websocket';
-}
-
 enum RealtimeLogLevel { info, debug, warn, error }

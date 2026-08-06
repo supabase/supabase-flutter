@@ -43,9 +43,6 @@ enum AuthChangeEvent {
   signedOut('SIGNED_OUT'),
   tokenRefreshed('TOKEN_REFRESHED'),
   userUpdated('USER_UPDATED'),
-
-  @Deprecated('Was never in use and might be removed in the future.')
-  userDeleted(''),
   mfaChallengeVerified('MFA_CHALLENGE_VERIFIED');
 
   final String jsName;

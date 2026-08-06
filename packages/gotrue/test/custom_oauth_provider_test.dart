@@ -19,11 +19,6 @@ void main() {
       expect(provider.name, 'custom:my-provider');
     });
 
-    test('snakeCase of a custom provider returns its raw value', () {
-      final provider = OAuthProvider('custom:my-provider');
-      expect(provider.snakeCase, 'custom:my-provider');
-    });
-
     test(
       'getOAuthSignInUrl builds correct URL for a custom provider',
       () async {
@@ -47,11 +42,8 @@ void main() {
 
     test('built-in providers still work as static constants', () {
       expect(OAuthProvider.google.name, 'google');
-      expect(OAuthProvider.google.snakeCase, 'google');
       expect(OAuthProvider.linkedinOidc.name, 'linkedin_oidc');
-      expect(OAuthProvider.linkedinOidc.snakeCase, 'linkedin_oidc');
       expect(OAuthProvider.slackOidc.name, 'slack_oidc');
-      expect(OAuthProvider.slackOidc.snakeCase, 'slack_oidc');
     });
 
     test('equality is value-based on name', () {

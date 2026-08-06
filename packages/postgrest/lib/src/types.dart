@@ -104,16 +104,6 @@ enum ExplainFormat {
   json,
 }
 
-// coverage:ignore-[start]
-/// Controls whether the affected row's representation is returned in the
-/// response.
-@Deprecated('Not used anywhere. Will be removed in the next major version.')
-enum ReturningOption {
-  minimal,
-  representation,
-}
-// coverage:ignore-[end]
-
 /// The type of tsquery conversion to use on [query].
 enum TextSearchType {
   /// Uses PostgreSQL's plainto_tsquery function.
