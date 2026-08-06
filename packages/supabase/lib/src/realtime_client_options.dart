@@ -4,9 +4,8 @@ import 'package:realtime_client/realtime_client.dart';
 /// Options to pass to the RealtimeClient.
 /// {@endtemplate}
 class RealtimeClientOptions {
-  /// How many events the RealtimeClient can push in a second
-  ///
-  /// Defaults to 10 events per second
+  /// No longer has any effect. Client side rate limiting has been removed,
+  /// so this value is ignored.
   @Deprecated(
     'Client side rate limit has been removed. This option will be ignored.',
   )

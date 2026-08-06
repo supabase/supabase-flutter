@@ -387,8 +387,9 @@ class IcebergRestCatalog {
 
   /// Loads a table's metadata.
   ///
-  /// When [options] carries an `ifNoneMatch` ETag and the server answers 304,
-  /// this returns `null`.
+  /// Use [loadTableResult] instead if you need a conditional request via
+  /// `ifNoneMatch`, or the full load result including server configuration
+  /// and vended storage credentials.
   Future<TableMetadata> loadTable(TableIdentifier id) async {
     final result = await loadTableResult(id);
     return result!.metadata;

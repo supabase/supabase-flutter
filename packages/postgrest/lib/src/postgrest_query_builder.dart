@@ -3,12 +3,13 @@ part of 'postgrest_builder.dart';
 /// {@template postgrest_query_builder}
 /// The query builder class provides a convenient interface to creating request queries.
 ///
-/// Allows the user to stack the filter functions before they call any of
+/// Call one of
 /// * select() - "get"
 /// * insert() - "post"
 /// * update() - "patch"
 /// * delete() - "delete"
-/// Once any of these are called the filters are passed down to the Request.
+/// first. Each of these returns a filter builder that allows the user to
+/// stack filter functions before the request is sent.
 /// {@endtemplate}
 class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// {@macro postgrest_query_builder}

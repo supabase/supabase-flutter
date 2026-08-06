@@ -144,7 +144,7 @@ String? _emptyPreferAsNull(String? prefer) =>
 ///
 /// [T] for the overall return type, so `PostgrestResponse<S>` or [S]
 ///
-/// When using [_converter], [S] is the input and [R] is the output
+/// When using [_converter], [R] is the input and [S] is the output
 /// Otherwise [S] and [R] are the same
 @immutable
 class PostgrestBuilder<T, S, R> implements Future<T> {

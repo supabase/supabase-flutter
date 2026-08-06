@@ -19,14 +19,16 @@ import 'trace_http_client.dart';
 /// Pass the `publishable` (anon) key for client-side usage or the `secret`
 /// key for trusted server-side environments.
 ///
-/// You can access none public schema by passing different [schema].
+/// You can access a schema other than the default `public` schema by setting
+/// the `schema` field of [postgrestOptions].
 ///
 /// Default headers can be overridden by specifying [headers].
 ///
 /// Custom http client can be used by passing [httpClient] parameter.
 ///
-/// [storageRetryAttempts] specifies how many retry attempts there should be to
-///  upload a file to Supabase storage when failed due to network interruption.
+/// Set the `retryAttempts` field of [storageOptions] to specify how many
+/// retry attempts there should be to upload a file to Supabase storage when
+/// failed due to network interruption.
 ///
 /// [realtimeClientOptions] specifies different options you can pass to `RealtimeClient`.
 ///
@@ -40,8 +42,9 @@ import 'trace_http_client.dart';
 /// Pass an instance of `YAJsonIsolate` to [isolate] to use your own persisted
 /// isolate instance. A new instance will be created if [isolate] is omitted.
 ///
-/// Pass an instance of [gotrueAsyncStorage] and set the [authFlowType] to
-/// `AuthFlowType.pkce`in order to perform auth actions with pkce flow.
+/// Pass an instance of `GotrueAsyncStorage` to the `pkceAsyncStorage` field of
+/// [authOptions] and set its `authFlowType` field to `AuthFlowType.pkce` in
+/// order to perform auth actions with pkce flow.
 /// {@endtemplate}
 class SupabaseClient {
   final String _supabaseKey;
@@ -262,7 +265,7 @@ class SupabaseClient {
 
   /// Unsubscribes and removes Realtime channel from Realtime client.
   ///
-  /// [channel] - The name of the Realtime channel.
+  /// [channel] - The Realtime channel to remove.
   Future<String> removeChannel(RealtimeChannel channel) {
     return realtime.removeChannel(channel);
   }

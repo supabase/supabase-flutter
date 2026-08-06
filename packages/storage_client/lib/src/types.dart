@@ -258,7 +258,7 @@ class FileOptions {
   /// Used as Content-Type
   /// Gets parsed with [MediaType.parse(mime)]
   ///
-  /// Throws a FormatError if the media type is invalid.
+  /// Throws a FormatException if the media type is invalid.
   final String? contentType;
 
   /// The metadata option is an object that allows you to store additional

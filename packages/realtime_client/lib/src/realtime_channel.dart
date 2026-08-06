@@ -880,9 +880,11 @@ class RealtimeChannel {
   /// Unsubscribes from server events, and instructs channel to terminate on server.
   /// Triggers onClose() hooks.
   ///
-  /// To receive leave acknowledgements, use the a `receive` hook to bind to the server ack,
+  /// Returns a [Future] that resolves to `'ok'`, `'timed out'`, or `'error'`
+  /// depending on the outcome of the leave request.
   /// ```dart
-  /// channel.unsubscribe().receive("ok", (_){print("left!");} );
+  /// final status = await channel.unsubscribe();
+  /// print(status); // 'ok'
   /// ```
   Future<String> unsubscribe([Duration? timeout]) {
     _state = ChannelState.leaving;

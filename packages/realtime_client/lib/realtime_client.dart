@@ -1,4 +1,5 @@
-/// Listens to changes in a PostgreSQL database via websockets using Supabase Realtime.
+/// Client library for Supabase Realtime: subscribe to PostgreSQL database
+/// changes, broadcast messages, and presence over a websocket connection.
 library;
 
 export 'src/constants.dart'

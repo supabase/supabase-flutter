@@ -39,9 +39,9 @@ class AuthMFAEnrollResponse {
 }
 
 class TOTPEnrollment {
-  ///Contains a QR code encoding the authenticator URI.
+  ///A `data:image/svg+xml;utf-8,` URL containing a QR code that encodes the authenticator URI.
   ///
-  ///You can convert it to a URL by prepending `data:image/svg+xml;utf-8,` to the value. Avoid logging this value to the console.
+  ///Ready to use directly as an image source. Avoid logging this value to the console.
   final String qrCode;
 
   ///The TOTP secret (also encoded in the QR code).

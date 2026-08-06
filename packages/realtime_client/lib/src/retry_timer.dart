@@ -13,15 +13,16 @@ const maxShift = 20;
 ///
 /// ```dart
 /// int calculateRetryDuration(int tries) {
-///   return [1000, 5000, 10000][tries - 1] ?? 10000;
+///   const delays = [1000, 5000, 10000];
+///   return tries <= delays.length ? delays[tries - 1] : 10000;
 /// }
 ///
-/// let reconnectTimer = new RetryTimer(() => this.connect(), calculateRetryDuration)
+/// final reconnectTimer = RetryTimer(connect, calculateRetryDuration);
 ///
-/// reconnectTimer.scheduleTimeout() // fires after 1000
-/// reconnectTimer.scheduleTimeout() // fires after 5000
-/// reconnectTimer.reset()
-/// reconnectTimer.scheduleTimeout() // fires after 1000
+/// reconnectTimer.scheduleTimeout(); // fires after 1000
+/// reconnectTimer.scheduleTimeout(); // fires after 5000
+/// reconnectTimer.reset();
+/// reconnectTimer.scheduleTimeout(); // fires after 1000
 ///
 /// ```
 class RetryTimer {

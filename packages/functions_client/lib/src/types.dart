@@ -14,7 +14,7 @@ enum HttpMethod {
 class FunctionResponse {
   /// The data returned by the function. Type depends on the header `Content-Type`:
   /// - 'text/plain': [String]
-  /// - 'octet/stream': [Uint8List]
+  /// - 'application/octet-stream': [Uint8List]
   /// - 'application/json': dynamic ([jsonDecode] is used)
   /// - 'text/event-stream': [ByteStream]
   final dynamic data;

@@ -30,7 +30,12 @@ class PostgrestRpcBuilder
          ),
        );
 
-  /// {@macro postgrest_rpc}
+  /// Performs a stored procedure call.
+  ///
+  /// [params] is an optional object to pass as arguments to the function call.
+  ///
+  /// When [get] is set to `true`, the function will be called with read-only
+  /// access mode.
   PostgrestFilterBuilder<T> rpc<T>([
     Object? params,
     bool get = false,

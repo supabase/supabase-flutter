@@ -50,33 +50,39 @@ class Supabase {
 
   /// Initialize the current supabase instance
   ///
-  /// This must be called only once. If called more than once, an
-  /// [AssertionError] is thrown
+  /// This should only be called once. If called again while an instance is
+  /// already initialized, initialization is skipped and the existing
+  /// instance is returned.
   ///
   /// [url] and [publishableKey] can be found on your Supabase dashboard.
-  /// Use the `publishable` (anon) key here — never the secret key in a
+  /// Use the `publishable` (anon) key here, never the secret key in a
   /// Flutter app.
-  ///
-  /// You can access none public schema by passing different [schema].
   ///
   /// Default headers can be overridden by specifying [headers].
   ///
-  /// Pass [localStorage] to override the default local storage option used to
-  /// persist auth.
-  ///
   /// Custom http client can be used by passing [httpClient] parameter.
   ///
-  /// [storageRetryAttempts] specifies how many retry attempts there should be
-  /// to upload a file to Supabase storage when failed due to network
-  /// interruption.
+  /// [realtimeClientOptions], [postgrestOptions], and [storageOptions]
+  /// configure their respective underlying clients, for example
+  /// `storageOptions.retryAttempts` controls how many retry attempts there
+  /// should be to upload a file to Supabase storage when it fails due to a
+  /// network interruption.
   ///
-  /// Set [authFlowType] to [AuthFlowType.implicit] to use the old implicit flow for authentication
+  /// [authOptions] configures authentication behavior. Pass a custom
+  /// [FlutterAuthClientOptions.localStorage] there to override the default
+  /// local storage option used to persist auth.
+  ///
+  /// Set [AuthClientOptions.authFlowType] on [authOptions] to
+  /// [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
-  /// PKCE flow uses shared preferences for storing the code verifier by default.
-  /// Pass a custom storage to [pkceAsyncStorage] to override the behavior.
+  /// PKCE flow uses shared preferences for storing the code verifier by
+  /// default. Pass a custom storage to [AuthClientOptions.pkceAsyncStorage]
+  /// on [authOptions] to override the behavior.
   ///
-  /// If [debug] is set to `true`, debug logs will be printed in debug console. Default is `kDebugMode`.
+  /// If [debug] is set to `true`, debug logs will be printed in debug
+  /// console. Defaults to `kDebugMode`, and is always disabled while running
+  /// in a Flutter test.
   static Future<Supabase> initialize({
     required String url,
     String? publishableKey,
