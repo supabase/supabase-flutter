@@ -60,7 +60,7 @@ void main() {
     final response = await postgrest
         .from('users')
         .select('messages(*)')
-        .order('channel_id', referencedTable: 'messages');
+        .order('channel_id', referencedTable: 'messages', ascending: false);
     expect(
       response[0]['messages']!.length,
       3,
@@ -80,7 +80,7 @@ void main() {
         .from('users')
         .select('username, messages(*)')
         .order('username', ascending: true)
-        .order('channel_id', referencedTable: 'messages');
+        .order('channel_id', referencedTable: 'messages', ascending: false);
     expect(
       response[0]['username'],
       'awailas',

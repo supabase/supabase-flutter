@@ -73,14 +73,13 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Orders the result with the specified [column].
   ///
-  /// [ascending] defaults to `false`, so results come back in **descending**
-  /// order unless `ascending: true` is passed. Note that this is the opposite
-  /// of SQL's `ORDER BY` and of `postgrest-js`, where ascending is the default.
+  /// [ascending] defaults to `true`, matching SQL's `ORDER BY`, so results come
+  /// back in ascending order unless `ascending: false` is passed.
   ///
   /// [nullsFirst] defaults to `false`, so `null`s appear last.
   ///
   /// ```dart
-  /// // Descending — the default.
+  /// // Ascending is the default.
   /// final data = await supabase
   ///     .from('users')
   ///     .select()
@@ -88,11 +87,11 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```
   ///
   /// ```dart
-  /// // Ascending has to be requested explicitly.
+  /// // Descending has to be requested explicitly.
   /// final data = await supabase
   ///     .from('users')
   ///     .select()
-  ///     .order('username', ascending: true);
+  ///     .order('username', ascending: false);
   /// ```
   ///
   /// If [column] is a referenced table column, [referencedTable] has to be set
@@ -106,7 +105,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```
   PostgrestTransformBuilder<T> order(
     String column, {
-    bool ascending = false,
+    bool ascending = true,
     bool nullsFirst = false,
     String? referencedTable,
   }) {

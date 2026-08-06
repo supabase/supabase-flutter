@@ -26,7 +26,7 @@ class TasksRepository {
   /// * [search] matches the title case-insensitively (`ilike`).
   /// * [onlyIncomplete] hides finished tasks (`eq`).
   ///
-  /// Results are ordered by priority (highest first) then creation time.
+  /// Results are ordered by priority (highest first) then newest first.
   Future<List<Task>> fetchTasks({
     String? projectId,
     String? search,
@@ -47,7 +47,7 @@ class TasksRepository {
 
     final rows = await query
         .order('priority', ascending: false)
-        .order('created_at');
+        .order('created_at', ascending: false);
     return rows.map(Task.fromJson).toList();
   }
 

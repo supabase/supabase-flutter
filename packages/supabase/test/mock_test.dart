@@ -74,6 +74,16 @@ void main() {
           ..headers.contentType = ContentType.json
           ..write(jsonString);
         await request.response.close();
+      } else if (url == '/rest/v1/todos?select=%2A&order=id.asc.nullslast') {
+        final jsonString = jsonEncode([
+          {'id': 1, 'task': 'task 1', 'status': true},
+          {'id': 2, 'task': 'task 2', 'status': false},
+        ]);
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonString);
+        await request.response.close();
       } else if (url == '/rest/v1/todos?select=%2A&order=id.desc.nullslast') {
         final jsonString = jsonEncode([
           {'id': 2, 'task': 'task 2', 'status': false},
@@ -573,11 +583,41 @@ void main() {
         );
       });
 
-      test('with order', () {
+      test('order defaults to ascending', () {
         final stream = supabase
             .from('todos')
             .stream(primaryKey: ['id'])
             .order('id');
+        expect(
+          stream,
+          emitsInOrder([
+            containsAllInOrder([
+              {'id': 1, 'task': 'task 1', 'status': true},
+              {'id': 2, 'task': 'task 2', 'status': false},
+            ]),
+            containsAllInOrder([
+              {'id': 1, 'task': 'task 1', 'status': true},
+              {'id': 2, 'task': 'task 2', 'status': false},
+              {'id': 3, 'task': 'task 3', 'status': true},
+            ]),
+            containsAllInOrder([
+              {'id': 1, 'task': 'task 1', 'status': true},
+              {'id': 2, 'task': 'task 2 updated', 'status': false},
+              {'id': 3, 'task': 'task 3', 'status': true},
+            ]),
+            containsAllInOrder([
+              {'id': 1, 'task': 'task 1', 'status': true},
+              {'id': 3, 'task': 'task 3', 'status': true},
+            ]),
+          ]),
+        );
+      });
+
+      test('with descending order', () {
+        final stream = supabase
+            .from('todos')
+            .stream(primaryKey: ['id'])
+            .order('id', ascending: false);
         expect(
           stream,
           emitsInOrder([
@@ -607,7 +647,7 @@ void main() {
         final stream = supabase
             .from('todos')
             .stream(primaryKey: ['id'])
-            .order('id')
+            .order('id', ascending: false)
             .limit(2);
         expect(
           stream,
