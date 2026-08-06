@@ -825,6 +825,15 @@ void main() {
           autoRefreshToken: false,
         );
 
+        // Collected from before the sign in so the event emitted by the
+        // exchange is identified by its position, rather than by whatever the
+        // stream replays to a late subscriber.
+        final events = <AuthChangeEvent>[];
+        final subscription = pkceClient.onAuthStateChange.listen(
+          (state) => events.add(state.event),
+          onError: (_) {},
+        );
+
         await pkceClient.signInWithPassword(
           email: email1,
           password: password,
@@ -837,19 +846,23 @@ void main() {
         expect(updateResponse.user?.newEmail, updatedEmail);
 
         final code = await _pkceCodeFromEmailChange(gotrueUrl, updatedEmail);
-
-        final emittedEvent = pkceClient.onAuthStateChange
-            .firstWhere(
-              (state) => state.event != AuthChangeEvent.initialSession,
-            )
-            .then((state) => state.event);
-
         final exchanged = await pkceClient.exchangeCodeForSession(code);
 
         expect(exchanged.session.user.email, updatedEmail);
         expect(exchanged.session.accessToken, isNotEmpty);
         expect(exchanged.redirectType, AuthChangeEvent.userUpdated.name);
-        expect(await emittedEvent, AuthChangeEvent.userUpdated);
+
+        await pumpEventQueue();
+        expect(events, [
+          // signInWithPassword
+          AuthChangeEvent.signedIn,
+          // updateUser requested the change
+          AuthChangeEvent.userUpdated,
+          // exchangeCodeForSession confirmed it
+          AuthChangeEvent.userUpdated,
+        ]);
+
+        await subscription.cancel();
       },
     );
   });
