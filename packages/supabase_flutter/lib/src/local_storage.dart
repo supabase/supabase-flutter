@@ -18,7 +18,8 @@ const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 ///
 ///   * [SupabaseAuth], the instance used to manage authentication
 ///   * [EmptyLocalStorage], used to disable session persistence
-///   * [SharedPreferencesLocalStorage], that implements SharedPreferences as storage method
+///   * [SharedPreferencesLocalStorage], that implements SharedPreferences as
+///     storage method
 abstract class LocalStorage {
   const LocalStorage();
 

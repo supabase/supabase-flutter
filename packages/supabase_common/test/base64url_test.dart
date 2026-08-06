@@ -60,7 +60,8 @@ void main() {
       test('decodes JWT payload', () {
         // Standard JWT payload with sub, name, iat
         const jwtPayload =
-            'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ';
+            'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2Mj'
+            'M5MDIyfQ';
         final decoded = Base64Url.decodeToString(jwtPayload);
         final json = jsonDecode(decoded);
         expect(json['sub'], '1234567890');

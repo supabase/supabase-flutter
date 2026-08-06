@@ -39,17 +39,19 @@ class _SessionState {
 ///
 /// [url] URL of gotrue instance
 ///
-/// [autoRefreshToken] whether to refresh the token automatically or not. Defaults to true.
+/// [autoRefreshToken] whether to refresh the token automatically or not.
+/// Defaults to true.
 ///
 /// [httpClient] custom http client.
 ///
-/// [asyncStorage] local storage to store pkce code verifiers. Required when using the pkce flow.
+/// [asyncStorage] local storage to store pkce code verifiers. Required when
+/// using the pkce flow.
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 /// {@endtemplate}
 class GoTrueClient {
-  /// Namespace for the GoTrue API methods.
-  /// These can be used for example to get a user from a JWT in a server environment or reset a user's password.
+  /// Namespace for the GoTrue API methods. These can be used for example to get
+  /// a user from a JWT in a server environment or reset a user's password.
   late final GoTrueAdminApi admin;
 
   /// Namespace for the GoTrue MFA API methods.
@@ -107,10 +109,10 @@ class GoTrueClient {
   /// crash the app.
   ///
   /// When the user is signed out because the session could not be recovered
-  /// (e.g. an invalid or expired refresh token), an
-  /// [AuthChangeEvent.signedOut] event is emitted with [AuthState.signOutReason]
-  /// set to the matching [SignOutReason], so you can tell it apart from an
-  /// explicit [signOut] without relying on the `onError` handler.
+  /// (e.g. an invalid or expired refresh token), an [AuthChangeEvent.signedOut]
+  /// event is emitted with [AuthState.signOutReason] set to the matching
+  /// [SignOutReason], so you can tell it apart from an explicit [signOut]
+  /// without relying on the `onError` handler.
   ///
   /// ```dart
   /// supabase.auth.onAuthStateChange.listen(
@@ -140,7 +142,8 @@ class GoTrueClient {
 
   final _log = Logger('supabase.auth');
 
-  /// Proxy to the web BroadcastChannel API. Should be null on non-web platforms.
+  /// Proxy to the web BroadcastChannel API. Should be null on non-web
+  /// platforms.
   BroadcastChannel? _broadcastChannel;
 
   StreamSubscription<dynamic>? _broadcastChannelSubscription;
@@ -162,7 +165,10 @@ class GoTrueClient {
 
     final gotrueUrl = url ?? Constants.defaultGotrueUrl;
     _log.config(
-      'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: $_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: ${Constants.autoRefreshTickDuration}, tickThreshold: ${Constants.autoRefreshTickThreshold}',
+      'Initialize GoTrueClient v$version with url: $_url, autoRefreshToken: '
+      '$_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: '
+      '${Constants.autoRefreshTickDuration}, tickThreshold: '
+      '${Constants.autoRefreshTickThreshold}',
     );
     _log.finest('Initialize with headers: $_headers');
     admin = GoTrueAdminApi(
@@ -267,10 +273,12 @@ class GoTrueClient {
   /// Creates a new user.
   ///
   /// Be aware that if a user account exists in the system you may get back an
-  /// error message that attempts to hide this information from the user.
-  /// This method has support for PKCE via email signups. The PKCE flow cannot be used when autoconfirm is enabled.
+  /// error message that attempts to hide this information from the user. This
+  /// method has support for PKCE via email signups. The PKCE flow cannot be
+  /// used when autoconfirm is enabled.
   ///
-  /// Returns a logged-in session if the server has "autoconfirm" ON, but only a user if the server has "autoconfirm" OFF
+  /// Returns a logged-in session if the server has "autoconfirm" ON, but only a
+  /// user if the server has "autoconfirm" OFF
   ///
   /// [email] is the user's email address
   ///
@@ -388,7 +396,8 @@ class GoTrueClient {
       );
     } else {
       throw AuthException(
-        'You must provide either an email, phone number, a third-party provider or OpenID Connect.',
+        'You must provide either an email, phone number, a third-party '
+        'provider or OpenID Connect.',
       );
     }
 
@@ -488,8 +497,8 @@ class GoTrueClient {
     return generatePKCEChallenge(codeVerifier);
   }
 
-  /// Allows signing in with an ID token issued by supported providers.
-  /// Common supported providers include Apple, Google, Facebook, Kakao, and Keycloak.
+  /// Allows signing in with an ID token issued by supported providers. Common
+  /// supported providers include Apple, Google, Facebook, Kakao, and Keycloak.
   /// The [idToken] is verified for validity and a new session is established.
   ///
   /// If the ID token contains an `at_hash` claim, then [accessToken] must be
@@ -585,19 +594,26 @@ class GoTrueClient {
 
   /// Log in a user using magiclink or a one-time password (OTP).
   ///
-  /// If the `{{ .ConfirmationURL }}` variable is specified in the email template, a magiclink will be sent.
+  /// If the `{{ .ConfirmationURL }}` variable is specified in the email
+  /// template, a magiclink will be sent.
   ///
-  /// If the `{{ .Token }}` variable is specified in the email template, an OTP will be sent.
+  /// If the `{{ .Token }}` variable is specified in the email template, an OTP
+  /// will be sent.
   ///
-  /// If you're using phone sign-ins, only an OTP will be sent. You won't be able to send a magiclink for phone sign-ins.
+  /// If you're using phone sign-ins, only an OTP will be sent. You won't be
+  /// able to send a magiclink for phone sign-ins.
   ///
-  /// If [shouldCreateUser] is set to false, this method will not create a new user. Defaults to true.
+  /// If [shouldCreateUser] is set to false, this method will not create a new
+  /// user. Defaults to true.
   ///
-  /// [emailRedirectTo] can be used to specify the redirect URL embedded in the email link
+  /// [emailRedirectTo] can be used to specify the redirect URL embedded in the
+  /// email link
   ///
-  /// [data] can be used to set the user's metadata, which maps to the `auth.users.user_metadata` column.
+  /// [data] can be used to set the user's metadata, which maps to the
+  /// `auth.users.user_metadata` column.
   ///
-  /// [captchaToken] Verification token received when the user completes the captcha on the site.
+  /// [captchaToken] Verification token received when the user completes the
+  /// captcha on the site.
   ///
   /// [channel] Messaging channel to use (e.g. whatsapp or sms)
   Future<void> signInWithOtp({
@@ -647,7 +663,8 @@ class GoTrueClient {
       return;
     }
     throw AuthException(
-      'You must provide either an email, phone number, a third-party provider or OpenID Connect.',
+      'You must provide either an email, phone number, a third-party provider '
+      'or OpenID Connect.',
     );
   }
 
@@ -686,7 +703,8 @@ class GoTrueClient {
       // For recovery with tokenHash, email/phone should not be provided
       assert(
         email == null && phone == null,
-        'For recovery type with tokenHash, only tokenHash and type should be provided.',
+        'For recovery type with tokenHash, only tokenHash and type should be '
+        'provided.',
       );
     }
 
@@ -770,9 +788,10 @@ class GoTrueClient {
     return res['url'] as String;
   }
 
-  /// Returns a new session, regardless of expiry status.
-  /// Takes in an optional [refreshToken]. If not provided, then refreshSession() will attempt to retrieve it from the current session.
-  /// If no refresh token is available (neither provided nor in current session), an error will be thrown.
+  /// Returns a new session, regardless of expiry status. Takes in an optional
+  /// [refreshToken]. If not provided, then refreshSession() will attempt to
+  /// retrieve it from the current session. If no refresh token is available
+  /// (neither provided nor in current session), an error will be thrown.
   Future<AuthResponse> refreshSession([String? refreshToken]) async {
     _log.info('Refresh session');
 
@@ -808,7 +827,8 @@ class GoTrueClient {
     );
   }
 
-  /// Resends an existing signup confirmation email, email change email, SMS OTP or phone change OTP.
+  /// Resends an existing signup confirmation email, email change email, SMS OTP
+  /// or phone change OTP.
   ///
   /// For [type] of [OtpType.signup] or [OtpType.emailChange] [email] must be
   /// provided, and for [type] or [OtpType.sms] or [OtpType.phoneChange],
@@ -930,7 +950,8 @@ class GoTrueClient {
   /// Sets the session data from [refreshToken] and returns the current session.
   ///
   /// If [accessToken] is provided and not yet expired, the session is restored
-  /// directly from the supplied tokens, skipping the `/token` refresh round-trip.
+  /// directly from the supplied tokens, skipping the `/token` refresh
+  /// round-trip.
   Future<AuthResponse> setSession(
     String refreshToken, {
     String? accessToken,
@@ -1071,7 +1092,8 @@ class GoTrueClient {
   ///
   /// [scope] determines which sessions should be logged out.
   ///
-  /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event is fired!
+  /// If using [SignOutScope.others] scope, no [AuthChangeEvent.signedOut] event
+  /// is fired!
   Future<void> signOut({SignOutScope scope = SignOutScope.local}) =>
       _signOut(scope: scope, reason: SignOutReason.userInitiated);
 
@@ -1097,9 +1119,10 @@ class GoTrueClient {
       try {
         await admin.signOut(accessToken, scope: scope);
       } on AuthException catch (error) {
-        // ignore 401s since an invalid or expired JWT should sign out the current session
-        // ignore 403s since user might not exist anymore
-        // ignore 404s since user might not exist anymore
+        // Ignore 401s since an invalid or expired JWT should sign out the
+        // current session.
+        // Ignore 403s since the user might not exist anymore.
+        // Ignore 404s since the user might not exist anymore.
         if (error.statusCode != '401' &&
             error.statusCode != '403' &&
             error.statusCode != '404') {
@@ -1221,7 +1244,8 @@ class GoTrueClient {
 
   /// Unlinks an identity from a user by deleting it.
   ///
-  /// The user will no longer be able to sign in with that identity once it's unlinked.
+  /// The user will no longer be able to sign in with that identity once it's
+  /// unlinked.
   Future<void> unlinkIdentity(UserIdentity identity) async {
     await _fetch.request(
       '$_url/user/identities/${identity.identityId}',
@@ -1326,8 +1350,9 @@ class GoTrueClient {
     }
   }
 
-  /// Starts an auto-refresh process in the background. Close to the time of expiration a process is started to
-  /// refresh the session. If refreshing fails it will be retried for as long as necessary.
+  /// Starts an auto-refresh process in the background. Close to the time of
+  /// expiration a process is started to refresh the session. If refreshing
+  /// fails it will be retried for as long as necessary.
   void startAutoRefresh() async {
     stopAutoRefresh();
 
@@ -1582,9 +1607,10 @@ class GoTrueClient {
   /// and notifies subscribers.
   ///
   /// Returns the refreshed [AuthResponse] or throws the underlying error. This
-  /// is the single place that emits refresh outcomes: [AuthChangeEvent.tokenRefreshed]
-  /// on success, [AuthChangeEvent.signedOut] when the refresh token is invalid,
-  /// or a stream error ([notifyException]) for a retryable/unexpected failure.
+  /// is the single place that emits refresh outcomes:
+  /// [AuthChangeEvent.tokenRefreshed] on success, [AuthChangeEvent.signedOut]
+  /// when the refresh token is invalid, or a stream error ([notifyException])
+  /// for a retryable/unexpected failure.
   Future<AuthResponse> _doRefresh(String refreshToken) async {
     final versionBeforeRefresh = _sessionVersion;
     _log.fine('Refresh access token');
@@ -1615,8 +1641,8 @@ class GoTrueClient {
           existingSession != null &&
           !existingSession.isExpired) {
         _log.fine(
-          'Refresh token already used but current session is still '
-          'valid, returning it instead of signing out',
+          'Refresh token already used but current session is still valid, '
+          'returning it instead of signing out',
         );
         return AuthResponse(session: existingSession);
       }
@@ -1702,7 +1728,8 @@ class GoTrueClient {
       return cachedJwk;
     }
 
-    // jwk isn't cached in memory so we need to fetch it from the well-known endpoint
+    // jwk isn't cached in memory so we need to fetch it from the well-known
+    // endpoint
     final jwksResponse = await _fetch.request(
       '$_url/.well-known/jwks.json',
       RequestMethodType.get,
@@ -1729,7 +1756,8 @@ class GoTrueClient {
   /// sends a request to the Auth server for each JWT.
   ///
   /// If the project is not using an asymmetric JWT signing key (like ECC or
-  /// RSA) it always sends a request to the Auth server (similar to [getUser]) to verify the JWT.
+  /// RSA) it always sends a request to the Auth server (similar to [getUser])
+  /// to verify the JWT.
   ///
   /// For JWTs signed with an RSA-based asymmetric algorithm (e.g. RS256), the
   /// JWKS is fetched from the server on the first call and cached for
@@ -1740,7 +1768,8 @@ class GoTrueClient {
   /// [options] Various additional options that allow you to customize the
   ///           behavior of this method.
   ///
-  /// Returns a [GetClaimsResponse] containing the JWT claims, or throws an [AuthException] on error.
+  /// Returns a [GetClaimsResponse] containing the JWT claims, or throws an
+  /// [AuthException] on error.
   Future<GetClaimsResponse> getClaims([
     String? jwt,
     GetClaimsOptions? options,

@@ -19,7 +19,10 @@ import 'package:supabase_common/supabase_common.dart';
 ///   Vector(key: 'doc-1', data: [0.1, 0.2, 0.3], metadata: {'title': 'Intro'}),
 /// ]);
 ///
-/// final result = await index.queryVectors(queryVector: [0.1, 0.2, 0.3], topK: 5);
+/// final result = await index.queryVectors(
+///   queryVector: [0.1, 0.2, 0.3],
+///   topK: 5,
+/// );
 /// ```
 ///
 /// This API is part of a public alpha and may not be available to every

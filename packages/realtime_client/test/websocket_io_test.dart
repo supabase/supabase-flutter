@@ -35,10 +35,8 @@ Future<ServerSocket> _startUnresponsiveServer() async {
             .bytes,
       );
       socket.write(
-        'HTTP/1.1 101 Switching Protocols\r\n'
-        'Upgrade: websocket\r\n'
-        'Connection: Upgrade\r\n'
-        'Sec-WebSocket-Accept: $accept\r\n\r\n',
+        'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: '
+        'Upgrade\r\nSec-WebSocket-Accept: $accept\r\n\r\n',
       );
       // From here on, deliberately ignore everything (including ping frames).
       subscription.onData((_) {});
@@ -61,8 +59,8 @@ void main() {
       );
       await channel.ready;
 
-      // Without a transport level ping interval this would never complete, since
-      // the dead peer sends neither data nor a close frame.
+      // Without a transport level ping interval this would never complete,
+      // since the dead peer sends neither data nor a close frame.
       await channel.stream.drain().timeout(const Duration(seconds: 5));
     },
   );

@@ -55,7 +55,8 @@ void main() {
         final localStorage = await createFreshLocalStorage();
         await localStorage.persistSession(testSessionValue);
 
-        // Verify the session was stored by checking through localStorage's own methods
+        // Verify the session was stored by checking through localStorage's own
+        // methods
         final hasToken = await localStorage.hasAccessToken();
         expect(hasToken, isTrue);
 

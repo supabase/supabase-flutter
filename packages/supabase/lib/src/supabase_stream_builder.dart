@@ -24,7 +24,8 @@ class RealtimeSubscribeException implements Exception {
 
   @override
   String toString() {
-    return 'RealtimeSubscribeException(status: ${status.name}, details: $details)';
+    return 'RealtimeSubscribeException(status: ${status.name}, details: '
+        '$details)';
   }
 }
 
@@ -91,7 +92,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// When `ascending` value is true, the result will be in ascending order.
   ///
   /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).order('username', ascending: false);
+  /// supabase
+  ///     .from('users')
+  ///     .stream(primaryKey: ['id'])
+  ///     .order('username', ascending: false);
   /// ```
   SupabaseStreamBuilder order(String column, {bool ascending = false}) {
     _orderBy = (column: column, ascending: ascending);
@@ -130,7 +134,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     );
   }
 
-  /// Sets up the stream controller and calls the method to get data as necessary
+  /// Sets up the stream controller and calls the method to get data as
+  /// necessary
   void _setupStream() {
     _streamController ??= ReplaySubject(
       onListen: () {
@@ -207,8 +212,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         .subscribe((status, [error]) {
           switch (status) {
             case RealtimeSubscribeStatus.subscribed:
-              // Reload all data after a reconnect from postgrest
-              // First data from postgrest gets loaded before the realtime connect
+              // Reload all data from PostgREST after a realtime reconnect, so
+              // that changes missed while the socket was down are picked up.
+              // The first subscribe is skipped because the initial load is
+              // already started below, right after subscribing.
               if (_wasSubscribed) {
                 unawaited(_getPostgrestData());
               }

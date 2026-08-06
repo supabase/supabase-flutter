@@ -19,7 +19,8 @@ class FunctionsClient {
   final String? _region;
   final _log = Logger("supabase.functions");
 
-  /// In case you don't provide your own isolate, call [dispose] when you're done
+  /// In case you don't provide your own isolate, call [dispose] when you're
+  /// done
   FunctionsClient(
     String url,
     Map<String, String> headers, {
@@ -33,7 +34,8 @@ class FunctionsClient {
        _httpClient = httpClient,
        _region = region {
     _log.config(
-      "Initialize FunctionsClient v$version with url '$url' and region '$region'",
+      "Initialize FunctionsClient v$version with url '$url' and region "
+      "'$region'",
     );
     _log.finest("Initialize with headers: $headers");
   }
@@ -63,9 +65,9 @@ class FunctionsClient {
   ///
   /// [files] to send in a `MultipartRequest`. [body] is used for the fields.
   ///
-  /// [region] optionally specify the region to invoke the function in.
-  /// When specified and not equal to `'any'`, adds both the `x-region`
-  /// header and the `forceFunctionRegion` query parameter.
+  /// [region] optionally specify the region to invoke the function in. When
+  /// specified and not equal to `'any'`, adds both the `x-region` header and
+  /// the `forceFunctionRegion` query parameter.
   ///
   /// [abortSignal] cancels the in-flight request when the provided [Future]
   /// completes. It must not complete with an error. On abort, a
@@ -106,8 +108,8 @@ class FunctionsClient {
   ///       print(val);
   ///     });
   /// ```
-  /// To stream SSE on the web, you can use a custom HTTP client that is
-  /// able to handle SSE such as [fetch_client](https://pub.dev/packages/fetch_client).
+  /// To stream SSE on the web, you can use a custom HTTP client that is able to
+  /// handle SSE such as [fetch_client](https://pub.dev/packages/fetch_client).
   /// ```dart
   /// final fetchClient = FetchClient(mode: RequestMode.cors);
   /// await Supabase.initialize(

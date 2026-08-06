@@ -30,12 +30,14 @@ import 'trace_http_client.dart';
 /// retry attempts there should be to upload a file to Supabase storage when
 /// failed due to network interruption.
 ///
-/// [realtimeClientOptions] specifies different options you can pass to `RealtimeClient`.
+/// [realtimeClientOptions] specifies different options you can pass to
+/// `RealtimeClient`.
 ///
-/// [accessToken] Optional function for using a third-party authentication system with Supabase.
-/// The function should return an access token or ID token (JWT) by obtaining
-/// it from the third-party auth client library. Note that this function may be
-/// called concurrently and many times. Use memoization and locking techniques
+/// [accessToken] Optional function for using a third-party authentication
+/// system with Supabase. The function should return an access token or ID token
+/// (JWT) by obtaining it from the third-party auth client library. Note that
+/// this function may be called concurrently and many times. Use memoization and
+/// locking techniques
 /// if this is not supported by the client libraries. When set, the `auth`
 /// namespace of the Supabase client cannot be used.
 ///
@@ -67,7 +69,8 @@ class SupabaseClient {
   /// Supabase Functions allows you to deploy and invoke edge functions.
   late final FunctionsClient functions;
 
-  /// Supabase Storage allows you to manage user-generated content, such as photos or videos.
+  /// Supabase Storage allows you to manage user-generated content, such as
+  /// photos or videos.
   late final SupabaseStorageClient storage;
   late final RealtimeClient realtime;
   late final PostgrestClient rest;
@@ -76,7 +79,8 @@ class SupabaseClient {
   final bool _hasCustomIsolate;
   final Future<String?> Function()? accessToken;
 
-  /// Increment ID of the stream to create different realtime topic for each stream
+  /// Increment ID of the stream to create different realtime topic for each
+  /// stream
   final _incrementId = Counter();
 
   final _log = Logger('supabase.supabase');
@@ -84,7 +88,8 @@ class SupabaseClient {
   /// Getter for the HTTP headers
   Map<String, String> get headers => Map.unmodifiable(_headers);
 
-  /// To apply the new headers in existing realtime channels, manually unsubscribe and resubscribe these channels.
+  /// To apply the new headers in existing realtime channels, manually
+  /// unsubscribe and resubscribe these channels.
   set headers(Map<String, String> newHeaders) {
     _headers.clear();
     _headers.addAll({
@@ -204,7 +209,8 @@ class SupabaseClient {
       return _authInstance!;
     }
     throw AuthException(
-      'Supabase Client is configured with the accessToken option, accessing supabase.auth is not possible.',
+      'Supabase Client is configured with the accessToken option, accessing '
+      'supabase.auth is not possible.',
     );
   }
 

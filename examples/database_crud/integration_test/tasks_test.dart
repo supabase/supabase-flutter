@@ -70,11 +70,11 @@ void main() {
       createdTitle,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
-    // Searches for the new task rather than looking for it in the full list: the
-    // dialog leaves the keyboard up, and on a phone that leaves room for only a
-    // couple of tiles, so it would otherwise end up below the fold. Waits for the
-    // tile rather than the title text, which also matches the text field of the
-    // dialog that is still animating away.
+    // Searches for the new task rather than looking for it in the full list:
+    // the dialog leaves the keyboard up, and on a phone that leaves room for
+    // only a couple of tiles, so it would otherwise end up below the fold.
+    // Waits for the tile rather than the title text, which also matches the
+    // text field of the dialog that is still animating away.
     await _searchFor(tester, createdTitle);
     await _pumpUntil(tester, _tile(createdTitle));
 
@@ -122,7 +122,8 @@ Finder _inTile(String title, Finder target) =>
 Future<void> _searchFor(WidgetTester tester, String query) =>
     tester.enterText(find.widgetWithText(TextField, 'Search title'), query);
 
-/// Pumps frames until [finder] matches at least one widget or [timeout] elapses.
+/// Pumps frames until [finder] matches at least one widget or [timeout]
+/// elapses.
 ///
 /// Reads and writes go over the network, so the UI can't be settled with
 /// `pumpAndSettle`; this polls the widget tree instead.
@@ -157,9 +158,8 @@ String _screen() {
       .byType(Checkbox)
       .evaluate()
       .map((element) => '${(element.widget as Checkbox).value}');
-  return 'Labels: ${labels.join(' | ')}\n'
-      'Text fields: ${fields.join(' | ')}\n'
-      'Checkboxes: ${boxes.join(' | ')}';
+  return 'Labels: ${labels.join(' | ')}\nText fields: '
+      '${fields.join(' | ')}\nCheckboxes: ${boxes.join(' | ')}';
 }
 
 /// The inverse of [_pumpUntil]: pumps until [finder] matches nothing.

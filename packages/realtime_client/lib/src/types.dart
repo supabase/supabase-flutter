@@ -60,7 +60,8 @@ enum PostgresChangeEvent {
     'UPDATE' => PostgresChangeEvent.update,
     'DELETE' => PostgresChangeEvent.delete,
     _ => throw ArgumentError(
-      'Only "INSERT", "UPDATE", or "DELETE" can be can be passed to `fromString()` method.',
+      'Only "INSERT", "UPDATE", or "DELETE" can be passed to the '
+      '`fromString()` method.',
     ),
   };
 }
@@ -111,7 +112,8 @@ enum ChannelResponse {
   ok,
   timedOut,
   @Deprecated(
-    'Client side rate limiting has been removed, and this enum value will never be returned.',
+    'Client side rate limiting has been removed, and this enum value will '
+    'never be returned.',
   )
   rateLimited,
   error,
@@ -145,7 +147,8 @@ enum PresenceEvent {
       }
     }
     throw ArgumentError(
-      'Only "sync", "join", or "leave" can be can be passed to `fromString()` method.',
+      'Only "sync", "join", or "leave" can be passed to the `fromString()` '
+      'method.',
     );
   }
 }
@@ -176,13 +179,17 @@ class ReplayOption {
 }
 
 class RealtimeChannelConfig {
-  /// [ack] option instructs server to acknowledge that broadcast message was received
+  /// [ack] option instructs server to acknowledge that broadcast message was
+  /// received
   final bool ack;
 
   /// [self] option enables client to receive message it broadcasted
   final bool self;
 
-  /// [replay] enables **private** channels to access messages that were sent earlier. Only messages published via [Broadcast From the Database](https://supabase.com/docs/guides/realtime/broadcast#trigger-broadcast-messages-from-your-database) are available for replay.
+  /// [replay] enables **private** channels to access messages that were sent
+  /// earlier. Only messages published via [Broadcast From the
+  /// Database](https://supabase.com/docs/guides/realtime/broadcast#trigger-broadcast-messages-from-your-database)
+  /// are available for replay.
   final ReplayOption? replay;
 
   /// [key] option is used to track presence payload across clients
@@ -191,7 +198,8 @@ class RealtimeChannelConfig {
   /// Enables presence even without presence bindings
   final bool enabled;
 
-  /// Defines if the channel is private or not and if RLS policies will be used to check data
+  /// Defines if the channel is private or not and if RLS policies will be used
+  /// to check data
   final bool private;
 
   /// [replicationReady] instructs the server to emit a `system` event once the
@@ -278,7 +286,8 @@ class RealtimeSystemPayload {
 
   @override
   String toString() =>
-      'RealtimeSystemPayload(extension: $extension, status: $status, message: $message, channel: $channel)';
+      'RealtimeSystemPayload(extension: $extension, status: $status, message: '
+      '$message, channel: $channel)';
 }
 
 /// Data class that contains the Postgres change event payload.
@@ -300,7 +309,8 @@ class PostgresChangePayload {
     required this.errors,
   });
 
-  /// Creates a PostgresChangePayload instance from the enriched postgres change payload
+  /// Creates a PostgresChangePayload instance from the enriched postgres change
+  /// payload
   factory PostgresChangePayload.fromPayload(Map<String, dynamic> payload) {
     final commitTimestampStr = payload['commit_timestamp'] as String?;
     DateTime commitTimestamp;
@@ -330,7 +340,10 @@ class PostgresChangePayload {
 
   @override
   String toString() {
-    return 'PostgresChangePayload(schema: $schema, table: $table, commitTimestamp: $commitTimestamp, eventType: ${eventType.name}, newRow: $newRecord, oldRow: $oldRecord, errors: $errors)';
+    return 'PostgresChangePayload(schema: $schema, table: $table, '
+        'commitTimestamp: $commitTimestamp, eventType: ${eventType.name}, '
+        'newRow: '
+        '$newRecord, oldRow: $oldRecord, errors: $errors)';
   }
 
   @override
@@ -359,46 +372,57 @@ class PostgresChangePayload {
   }
 }
 
-/// Specifies the type of filter to be applied on realtime Postgres Change listener.
+/// Specifies the type of filter to be applied on realtime Postgres Change
+/// listener.
 ///
 /// These mirror the PostgREST operator surface that the Realtime server
 /// evaluates for Postgres Changes. Any operator can be negated with the `not.`
 /// prefix via [PostgresChangeFilter.negate].
 enum PostgresChangeFilterType {
-  /// Listens to changes where a column's value in a table equals a client-specified value.
+  /// Listens to changes where a column's value in a table equals a
+  /// client-specified value.
   eq,
 
-  /// Listens to changes where a column's value in a table does not equal a value specified.
+  /// Listens to changes where a column's value in a table does not equal a
+  /// value specified.
   neq,
 
-  /// Listen to changes where a column's value in a table is less than a value specified.
+  /// Listen to changes where a column's value in a table is less than a value
+  /// specified.
   lt,
 
-  /// Listens to changes where a column's value in a table is less than or equal to a value specified.
+  /// Listens to changes where a column's value in a table is less than or equal
+  /// to a value specified.
   lte,
 
-  /// Listens to changes where a column's value in a table is greater than a value specified.
+  /// Listens to changes where a column's value in a table is greater than a
+  /// value specified.
   gt,
 
-  /// Listens to changes where a column's value in a table is greater than or equal to a value specified.
+  /// Listens to changes where a column's value in a table is greater than or
+  /// equal to a value specified.
   gte,
 
-  /// Listen to changes when a column's value in a table equals any of the values specified.
+  /// Listen to changes when a column's value in a table equals any of the
+  /// values specified.
   inFilter,
 
-  /// Listens to changes where a column matches a case-sensitive pattern (`LIKE`).
+  /// Listens to changes where a column matches a case-sensitive pattern
+  /// (`LIKE`).
   ///
   /// Use `%` and `_` as wildcards, e.g. `title=like.%foo%`.
   like,
 
-  /// Listens to changes where a column matches a case-insensitive pattern (`ILIKE`).
+  /// Listens to changes where a column matches a case-insensitive pattern
+  /// (`ILIKE`).
   ilike,
 
   /// Listens to changes where a column `IS` a given value (`null`, `true`,
   /// `false` or `unknown`), e.g. `deleted_at=is.null`.
   isFilter,
 
-  /// Listens to changes where a column matches a POSIX regular expression (`~`).
+  /// Listens to changes where a column matches a POSIX regular expression
+  /// (`~`).
   match,
 
   /// Listens to changes where a column matches a case-insensitive POSIX regular
@@ -544,7 +568,8 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
 
   @override
   String toString() =>
-      'PresenceJoinPayload(key: $key, newPresences: $newPresences, currentPresences: $currentPresences)';
+      'PresenceJoinPayload(key: $key, newPresences: $newPresences, '
+      'currentPresences: $currentPresences)';
 }
 
 /// Payload for [PresenceEvent.leave] callback.
@@ -578,7 +603,8 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
 
   @override
   String toString() =>
-      'PresenceLeavePayload(key: $key, leftPresences: $leftPresences, currentPresences: $currentPresences)';
+      'PresenceLeavePayload(key: $key, leftPresences: $leftPresences, '
+      'currentPresences: $currentPresences)';
 }
 
 /// A single client connected through presence.

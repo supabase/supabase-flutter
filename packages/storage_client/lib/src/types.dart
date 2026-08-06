@@ -175,10 +175,12 @@ class FileObjectV2 {
 /// authorization token to download objects, but still require a valid token for
 /// all other operations. By default, buckets are private.
 ///
-/// [fileSizeLimit] specifies the file size limit that this bucket can accept during upload.
-/// It should be in a format such as `20GB`, `20MB`, `30KB`, or `3B`
+/// [fileSizeLimit] specifies the file size limit that this bucket can accept
+/// during upload. It should be in a format such as `20GB`, `20MB`, `30KB`, or
+/// `3B`
 ///
-/// [allowedMimeTypes] specifies the allowed mime types that this bucket can accept during upload
+/// [allowedMimeTypes] specifies the allowed mime types that this bucket can
+/// accept during upload
 class BucketOptions {
   final bool public;
   final String? fileSizeLimit;
@@ -503,7 +505,8 @@ class PaginatedListResult {
 }
 
 class SignedUrl {
-  /// The file path, including the current file name. For example `folder/image.png`.
+  /// The file path, including the current file name. For example
+  /// `folder/image.png`.
   final String path;
 
   /// Full signed URL of the files.
@@ -559,7 +562,8 @@ sealed class SignedUrlResult {
   const SignedUrlResult({required this.path});
 }
 
-/// A successful [SignedUrlResult]: the file was found and a signed URL was generated.
+/// A successful [SignedUrlResult]: the file was found and a signed URL was
+/// generated.
 final class SignedUrlSuccess extends SignedUrlResult {
   /// The signed URL ready for use.
   final String signedUrl;
@@ -569,7 +573,8 @@ final class SignedUrlSuccess extends SignedUrlResult {
   String toString() => 'SignedUrlSuccess(path: $path, signedUrl: $signedUrl)';
 }
 
-/// A failed [SignedUrlResult]: the path could not be signed (e.g. the file does not exist).
+/// A failed [SignedUrlResult]: the path could not be signed (e.g. the file does
+/// not exist).
 final class SignedUrlFailure extends SignedUrlResult {
   /// The reason the URL could not be created.
   final String error;
@@ -608,7 +613,8 @@ class StorageException implements Exception {
 
   @override
   String toString() {
-    return 'StorageException(message: $message, statusCode: $statusCode, error: $error)';
+    return 'StorageException(message: $message, statusCode: $statusCode, '
+        'error: $error)';
   }
 }
 
@@ -627,10 +633,12 @@ class StorageRetryController {
 }
 
 /// {@template resize_mode}
-/// Specifies how image cropping should be handled when performing image transformations.
+/// Specifies how image cropping should be handled when performing image
+/// transformations.
 /// {@endtemplate}
 enum ResizeMode {
-  /// Resizes the image while keeping the aspect ratio to fill a given size and crops projecting parts.
+  /// Resizes the image while keeping the aspect ratio to fill a given size and
+  /// crops projecting parts.
   cover,
 
   /// Resizes the image while keeping the aspect ratio to fit a given size.
@@ -659,13 +667,14 @@ class TransformOptions {
   /// [ResizeMode.cover] will be used if no value is specified.
   final ResizeMode? resize;
 
-  /// Set the quality of the returned image, this is percentage based, default 80
+  /// Set the quality of the returned image, this is percentage based, default
+  /// 80
   final int? quality;
 
   ///  Specify the format of the image requested.
   ///
-  ///  When using 'origin' we force the format to be the same as the original image,
-  ///  bypassing automatic browser optimization such as webp conversion
+  /// When using 'origin' we force the format to be the same as the original
+  /// image, bypassing automatic browser optimization such as webp conversion
   final RequestImageFormat? format;
 
   /// {@macro transform_options}

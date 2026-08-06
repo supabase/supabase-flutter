@@ -1,5 +1,5 @@
-/// The sign in methods the example offers on its signed-out screen. Each maps to
-/// one or two calls on [AuthRepository]; the label is what the method picker
+/// The sign in methods the example offers on its signed-out screen. Each maps
+/// to one or two calls on [AuthRepository]; the label is what the method picker
 /// shows.
 enum AuthMethod {
   password('Email & password'),

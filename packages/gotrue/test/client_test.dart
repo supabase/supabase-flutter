@@ -69,14 +69,29 @@ void main() {
 
     test('basic json parsing', () async {
       const body =
-          '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNjExODk1MzExLCJzdWIiOiI0Njg3YjkzNi02ZDE5LTRkNmUtOGIyYi1kYmU0N2I1ZjYzOWMiLCJlbWFpbCI6InRlc3Q5QGdtYWlsLmNvbSIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIn0sInVzZXJfbWV0YWRhdGEiOm51bGwsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.GyIokEvKGp0M8PYU8IiIpvzeTAXspoCtR5aj-jCnWys","token_type":"bearer","expires_in":3600,"refresh_token":"gnqAPZwZDj_XCYMF7U2Xtg","user":{"id":"4687b936-6d19-4d6e-8b2b-dbe47b5f639c","aud":"authenticated","role":"authenticated","email":"test9@gmail.com","confirmed_at":"2021-01-29T03:41:51.026791085Z","last_sign_in_at":"2021-01-29T03:41:51.032154484Z","app_metadata":{"provider":"email"},"user_metadata":null,"created_at":"2021-01-29T03:41:51.022787Z","updated_at":"2021-01-29T03:41:51.033826Z"}}';
+          '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdX'
+          'RoZW50aWNhdGVkIiwiZXhwIjoxNjExODk1MzExLCJzdWIiOiI0Njg3YjkzNi02ZDE5LT'
+          'RkNmUtOGIyYi1kYmU0N2I1ZjYzOWMiLCJlbWFpbCI6InRlc3Q5QGdtYWlsLmNvbSIsIm'
+          'FwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIn0sInVzZXJfbWV0YWRhdGEiOm'
+          '51bGwsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.GyIokEvKGp0M8PYU8IiIpvzeTAXspo'
+          'CtR5aj-jCnWys","token_type":"bearer","expires_in":3600,"refresh_toke'
+          'n":"gnqAPZwZDj_XCYMF7U2Xtg","user":{"id":"4687b936-6d19-4d6e-8b2b-db'
+          'e47b5f639c","aud":"authenticated","role":"authenticated","email":"te'
+          'st9@gmail.com","confirmed_at":"2021-01-29T03:41:51.026791085Z","last'
+          '_sign_in_at":"2021-01-29T03:41:51.032154484Z","app_metadata":{"provi'
+          'der":"email"},"user_metadata":null,"created_at":"2021-01-29T03:41:51'
+          '.022787Z","updated_at":"2021-01-29T03:41:51.033826Z"}}';
       final bodyJson = json.decode(body);
       final session = Session.fromJson(bodyJson as Map<String, dynamic>);
 
       expect(session, isNotNull);
       expect(
         session!.accessToken,
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNjExODk1MzExLCJzdWIiOiI0Njg3YjkzNi02ZDE5LTRkNmUtOGIyYi1kYmU0N2I1ZjYzOWMiLCJlbWFpbCI6InRlc3Q5QGdtYWlsLmNvbSIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIn0sInVzZXJfbWV0YWRhdGEiOm51bGwsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.GyIokEvKGp0M8PYU8IiIpvzeTAXspoCtR5aj-jCnWys',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZ'
+        'XhwIjoxNjExODk1MzExLCJzdWIiOiI0Njg3YjkzNi02ZDE5LTRkNmUtOGIyYi1kYmU0N2I'
+        '1ZjYzOWMiLCJlbWFpbCI6InRlc3Q5QGdtYWlsLmNvbSIsImFwcF9tZXRhZGF0YSI6eyJwc'
+        'm92aWRlciI6ImVtYWlsIn0sInVzZXJfbWV0YWRhdGEiOm51bGwsInJvbGUiOiJhdXRoZW5'
+        '0aWNhdGVkIn0.GyIokEvKGp0M8PYU8IiIpvzeTAXspoCtR5aj-jCnWys',
       );
     });
 
@@ -133,7 +148,8 @@ void main() {
 
     test('Parsing an error URL should throw', () async {
       const errorMessage =
-          'Unverified email with spotify. A confirmation email has been sent to your spotify email';
+          'Unverified email with spotify. A confirmation email has been sent '
+          'to your spotify email';
 
       final urlWithoutAccessToken = Uri.parse(
         'http://my-callback-url.com/#error=unauthorized_client&error_code=401&error_description=${Uri.encodeComponent(errorMessage)}',
@@ -274,7 +290,8 @@ void main() {
     });
 
     test(
-      'Set session with an empty refresh token throws AuthSessionMissingException',
+      'Set session with an empty refresh token throws '
+      'AuthSessionMissingException',
       () async {
         await expectLater(
           client.setSession(''),
@@ -284,7 +301,8 @@ void main() {
     );
 
     test(
-      'Set session with both access token and refresh token skips network refresh',
+      'Set session with both access token and refresh token skips network '
+      'refresh',
       () async {
         await client.signInWithPassword(email: email1, password: password);
 
@@ -333,9 +351,8 @@ void main() {
         // Payload: {"sub":"user","exp":1}  (epoch second 1 = Jan 1, 1970)
         // Signature: 3 zero bytes as valid base64url ("AAAA")
         const expiredAccessToken =
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
-            '.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxfQ'
-            '.AAAA';
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjoxf'
+            'Q.AAAA';
 
         final newClient = GoTrueClient(
           url: gotrueUrl,
@@ -541,9 +558,26 @@ void main() {
         httpClient: httpClient,
       );
       final session =
-          '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"},"expiresAt":1680341705}';
+          '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OD'
+          'AzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZC'
+          'IsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcH'
+          'BfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbC'
+          'JdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYW'
+          'wiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MT'
+          'Y4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZj'
+          'IyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expi'
+          'res_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"'
+          'bearer","provider_token":null,"provider_refresh_token":null,"user":{'
+          '"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provide'
+          'r":"email","providers":["email"]},"user_metadata":{"Hello":"World"},'
+          '"aud":"","email":"fake1680338105@email.com","phone":"","created_at":'
+          '"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_a'
+          't":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_'
+          'sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":'
+          '"2023-04-01T08:35:05.226938Z"},"expiresAt":1680341705}';
 
-      ///These 3 are bundled and in sum 1 refresh token requests is made, because the first 3 fail in [RetryTestHttpClient]
+      // These 3 are bundled and in sum 1 refresh token requests is made,
+      // because the first 3 fail in [RetryTestHttpClient]
       final responses = await Future.wait([
         bundledClient.recoverSession(session),
         bundledClient.recoverSession(session),
@@ -645,7 +679,23 @@ void main() {
     test('Session recovery succeeds after retries', () async {
       try {
         await client.recoverSession(
-          '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2ODAzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZCIsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTY4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZjIyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expires_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@email.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"},"expiresAt":1680341705}',
+          '{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OD'
+          'AzNDE3MDUsInN1YiI6IjRkMjU4M2RhLThkZTQtNDlkMy05Y2QxLTM3YTlhNzRmNTViZC'
+          'IsImVtYWlsIjoiZmFrZTE2ODAzMzgxMDVAZW1haWwuY29tIiwicGhvbmUiOiIiLCJhcH'
+          'BfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbC'
+          'JdfSwidXNlcl9tZXRhZGF0YSI6eyJIZWxsbyI6IldvcmxkIn0sInJvbGUiOiIiLCJhYW'
+          'wiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MT'
+          'Y4MDMzODEwNX1dLCJzZXNzaW9uX2lkIjoiYzhiOTg2Y2UtZWJkZC00ZGUxLWI4MjAtZj'
+          'IyOWYyNjg1OGIwIn0.0x1rFlPKbIU1rZPY1SH_FNSZaXerfkFA1Y-EOlhuzUs","expi'
+          'res_in":3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"'
+          'bearer","provider_token":null,"provider_refresh_token":null,"user":{'
+          '"id":"4d2583da-8de4-49d3-9cd1-37a9a74f55bd","app_metadata":{"provide'
+          'r":"email","providers":["email"]},"user_metadata":{"Hello":"World"},'
+          '"aud":"","email":"fake1680338105@email.com","phone":"","created_at":'
+          '"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_a'
+          't":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_'
+          'sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":'
+          '"2023-04-01T08:35:05.226938Z"},"expiresAt":1680341705}',
         );
       } on ClientException {
         // the method should throw
@@ -684,7 +734,8 @@ void main() {
 
     test('Parsing an error URL should throw', () async {
       const errorMessage =
-          'Unverified email with spotify. A confirmation email has been sent to your spotify email';
+          'Unverified email with spotify. A confirmation email has been sent '
+          'to your spotify email';
 
       // Supabase Auth returns a URL with `#` even when using pkce flow.
       final urlWithoutAccessToken = Uri.parse(
@@ -725,9 +776,9 @@ void main() {
         );
 
         final url = Uri.parse(
-          'http://my-callback-url.com/#access_token=my-access-token'
-          '&expires_in=3600&refresh_token=my-refresh-token'
-          '&token_type=bearer&type=email_change',
+          'http://my-callback-url.com/#access_token=my-access-token&expires_in='
+          '3600&refresh_token=my-refresh-token&token_type=bearer&type=email_cha'
+          'nge',
         );
 
         final emittedEvent = pkceClient.onAuthStateChange
@@ -808,7 +859,8 @@ void main() {
       );
     });
 
-    // Regression test for https://github.com/supabase/supabase-flutter/issues/1158
+    // Regression test for
+    // https://github.com/supabase/supabase-flutter/issues/1158
     //
     // On cold start both `recoverSession` and the auto-refresh tick (fired when
     // the app resumes) can try to refresh the same persisted, expired session.
@@ -817,41 +869,45 @@ void main() {
     // the server respond with `refresh_token_already_used`, signing the user
     // out. `recoverSession` must instead detect the already valid in-memory
     // session and return it.
-    test('does not reuse a stale refresh token after another refresh', () async {
-      final expiredSessionString = getSessionData(
-        DateTime.now().subtract(const Duration(hours: 1)),
-      ).sessionString;
+    test(
+      'does not reuse a stale refresh token after another refresh',
+      () async {
+        final expiredSessionString = getSessionData(
+          DateTime.now().subtract(const Duration(hours: 1)),
+        ).sessionString;
 
-      // First recovery refreshes the expired session, advancing the in-memory
-      // session onto a brand new refresh token.
-      final first = await client.recoverSession(expiredSessionString);
-      expect(first.session, isNotNull);
-      expect(first.session!.isExpired, isFalse);
-      expect(httpClient.refreshCount, 1);
+        // First recovery refreshes the expired session, advancing the in-memory
+        // session onto a brand new refresh token.
+        final first = await client.recoverSession(expiredSessionString);
+        expect(first.session, isNotNull);
+        expect(first.session!.isExpired, isFalse);
+        expect(httpClient.refreshCount, 1);
 
-      var signedOut = false;
-      final subscription = client.onAuthStateChange.listen(
-        (state) {
-          if (state.event == AuthChangeEvent.signedOut) signedOut = true;
-        },
-        onError: (_) {},
-      );
+        var signedOut = false;
+        final subscription = client.onAuthStateChange.listen(
+          (state) {
+            if (state.event == AuthChangeEvent.signedOut) signedOut = true;
+          },
+          onError: (_) {},
+        );
 
-      // Second recovery uses the same (now stale) persisted session, as happens
-      // when a second code path recovers the session it read before the first
-      // refresh completed. It must not resend the already-used refresh token.
-      final second = await client.recoverSession(expiredSessionString);
-      expect(second.session, isNotNull);
-      expect(second.session!.isExpired, isFalse);
+        // Second recovery uses the same (now stale) persisted session, as
+        // happens when a second code path recovers the session it read before
+        // the first refresh completed. It must not resend the already-used
+        // refresh token.
+        final second = await client.recoverSession(expiredSessionString);
+        expect(second.session, isNotNull);
+        expect(second.session!.isExpired, isFalse);
 
-      // No second refresh request was made and the user stays signed in.
-      expect(httpClient.refreshCount, 1);
-      await pumpEventQueue();
-      expect(signedOut, isFalse);
-      expect(client.currentSession, isNotNull);
+        // No second refresh request was made and the user stays signed in.
+        expect(httpClient.refreshCount, 1);
+        await pumpEventQueue();
+        expect(signedOut, isFalse);
+        expect(client.currentSession, isNotNull);
 
-      await subscription.cancel();
-    });
+        await subscription.cancel();
+      },
+    );
   });
 }
 

@@ -1,7 +1,8 @@
 part of 'postgrest_builder.dart';
 
 /// {@template postgrest_query_builder}
-/// The query builder class provides a convenient interface to creating request queries.
+/// The query builder class provides a convenient interface to creating request
+/// queries.
 ///
 /// Call one of
 /// * select() - "get"
@@ -54,7 +55,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```dart
   /// supabase.from('users').select('id, messages').count(CountOption.exact);
   /// ```
-  /// By appending [count] the return type is [PostgrestResponse]. Otherwise it's the data directly without the wrapper.
+  /// By appending [count] the return type is [PostgrestResponse]. Otherwise
+  /// it's the data directly without the wrapper.
   PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
@@ -82,11 +84,13 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///
   /// By default no data is returned. Use a trailing [select] to return data.
   ///
-  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
-  /// to be either `NULL` or the default value of these columns.
-  /// Fields missing in all rows always use the default value of these columns.
+  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the
+  /// values of fields missing in a proper subset of rows to be either `NULL` or
+  /// the default value of these columns. Fields missing in all rows always use
+  /// the default value of these columns.
   ///
-  /// For single row insertions, missing fields will be set to default values when applicable.
+  /// For single row insertions, missing fields will be set to default values
+  /// when applicable.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -130,16 +134,19 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Perform an UPSERT on the table or view.
   ///
-  /// By specifying the [onConflict] parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
-  /// [ignoreDuplicates] Specifies if duplicate rows should be ignored and not inserted.
+  /// By specifying the [onConflict] parameter, you can make UPSERT work on a
+  /// column(s) that has a UNIQUE constraint. [ignoreDuplicates] Specifies if
+  /// duplicate rows should be ignored and not inserted.
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
   ///
-  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
-  /// to be either `NULL` or the default value of these columns.
-  /// Fields missing in all rows always use the default value of these columns.
+  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the
+  /// values of fields missing in a proper subset of rows to be either `NULL` or
+  /// the default value of these columns. Fields missing in all rows always use
+  /// the default value of these columns.
   ///
-  /// For single row insertions, missing fields will be set to default values when applicable.
+  /// For single row insertions, missing fields will be set to default values
+  /// when applicable.
   ///
   /// Default (not returning data):
   /// ```dart

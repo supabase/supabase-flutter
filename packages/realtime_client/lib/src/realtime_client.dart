@@ -53,7 +53,8 @@ class RealtimeCloseEvent {
   }
 }
 
-/// The lifecycle status of a heartbeat reported to [RealtimeClient.onHeartbeat].
+/// The lifecycle status of a heartbeat reported to
+/// [RealtimeClient.onHeartbeat].
 enum RealtimeHeartbeatStatus {
   sent,
   ok,
@@ -64,9 +65,9 @@ enum RealtimeHeartbeatStatus {
 /// Manages a persistent WebSocket connection to the Supabase Realtime server.
 ///
 /// [RealtimeClient] is the central hub for all real-time communication. It owns
-/// the WebSocket lifecycle — opening, closing, and reconnecting with exponential
-/// backoff — and multiplexes multiple [RealtimeChannel] subscriptions over a
-/// single connection.
+/// the WebSocket lifecycle — opening, closing, and reconnecting with
+/// exponential backoff — and multiplexes multiple [RealtimeChannel]
+/// subscriptions over a single connection.
 ///
 /// **Responsibilities:**
 /// - Establishes and maintains the WebSocket connection to [endPoint].
@@ -161,7 +162,8 @@ class RealtimeClient {
 
   /// Initializes the Socket
   ///
-  /// [endPoint] The string WebSocket endpoint, ie, "ws://example.com/socket", "wss://example.com", "/socket" (inherited host & protocol
+  /// [endPoint] The string WebSocket endpoint, ie, "ws://example.com/socket",
+  /// "wss://example.com", or "/socket" (which inherits the host and protocol).
   ///
   /// [transport] The Websocket Transport, for example WebSocket.
   ///
@@ -182,7 +184,11 @@ class RealtimeClient {
   /// reused. Pass [Duration.zero] to disconnect immediately. Defaults to twice
   /// the heartbeat interval.
   ///
-  /// [logger] The optional function for specialized logging, ie: logger: (kind, message, data) => { console.log(`$kind: $message`, data) }
+  /// [logger] The optional function for specialized logging, ie:
+  ///
+  /// ```dart
+  /// logger: (kind, message, data) => print('$kind: $message $data')
+  /// ```
   ///
   /// [encode] Overrides how outgoing messages are serialized, for example to
   /// use a faster JSON implementation. Defaults to the codec for [version].
@@ -190,7 +196,9 @@ class RealtimeClient {
   /// [decode] Overrides how incoming frames are deserialized. Defaults to the
   /// codec for [version].
   ///
-  /// [reconnectAfterMs] The optional function that returns the millisec reconnect interval. Defaults to stepped backoff off.
+  /// [reconnectAfterMs] The optional function that returns the millisec
+  /// reconnect interval. Defaults to the stepped backoff of
+  /// [RetryTimer.createRetryFunction].
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
   ///
@@ -238,7 +246,8 @@ class RealtimeClient {
                ? _decodeLegacy
                : _serializer.decode) {
     _log.config(
-      'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: ${logLevel?.name}',
+      'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, '
+      'heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: ${logLevel?.name}',
     );
     _log.finest('Initialize with headers: $headers, params: $params');
     final customJWT = this.headers['Authorization']?.split(' ').last;
@@ -333,7 +342,8 @@ class RealtimeClient {
       final shouldCloseSink =
           oldState == SocketState.open || oldState == SocketState.connecting;
       if (shouldCloseSink) {
-        // Don't set the state to `disconnecting` if the connection is already closed.
+        // Don't set the state to `disconnecting` if the connection is already
+        // closed.
         connectionState = SocketState.disconnecting;
         log('transport', 'disconnecting', {
           'code': code,
@@ -359,8 +369,9 @@ class RealtimeClient {
 
         if (code != null) {
           // Add a timeout to close the sink to avoid hanging in case something
-          // is wrong with the connection.
-          // The Dart SDK has a timeout of 5 seconds for closing the IO WebSocket connection, so we set a timeout of 6 seconds here to avoid hanging indefinitely.
+          // is wrong with the connection. The Dart SDK has a timeout of 5
+          // seconds for closing the IO WebSocket connection, so we set a
+          // timeout of 6 seconds here to avoid hanging indefinitely.
           await connection.sink
               .close(code, reason ?? '')
               .timeout(connectionCloseTimeout, onTimeout: onTimeout);
@@ -374,10 +385,10 @@ class RealtimeClient {
         log('transport', 'disconnected', null, Level.FINE);
       }
 
-      // Cancel any reconnect scheduled by `_onConnectionClose`. When the socket has
-      // already dropped (`connectionState == closed`) the block above is skipped, so
-      // without this an armed backoff timer would fire after the user
-      // explicitly disconnected and silently reopen the connection.
+      // Cancel any reconnect scheduled by `_onConnectionClose`. When the socket
+      // has already dropped (`connectionState == closed`) the block above is
+      // skipped, so without this an armed backoff timer would fire after the
+      // user explicitly disconnected and silently reopen the connection.
       reconnectTimer.cancel();
 
       this.connection = null;
@@ -514,7 +525,8 @@ class RealtimeClient {
 
   /// Push out a message if the socket is connected.
   ///
-  /// If the socket is not connected, the message gets enqueued within a local buffer, and sent out when a connection is next established.
+  /// If the socket is not connected, the message gets enqueued within a local
+  /// buffer, and sent out when a connection is next established.
   // ignore: function-always-returns-null
   String? push(Message message) {
     void callback() {
@@ -603,7 +615,8 @@ class RealtimeClient {
     return ref.toString();
   }
 
-  /// Sets the JWT access token used for channel subscription authorization and Realtime RLS.
+  /// Sets the JWT access token used for channel subscription authorization and
+  /// Realtime RLS.
   ///
   /// `token` A JWT strings.
   Future<void> setAuth(String? token) async {

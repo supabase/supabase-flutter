@@ -43,7 +43,8 @@ class Supabase {
   static Supabase get instance {
     assert(
       _instance._isInitialized,
-      'You must initialize the supabase instance before calling Supabase.instance',
+      'You must initialize the supabase instance before calling '
+      'Supabase.instance',
     );
     return _instance;
   }
@@ -87,7 +88,8 @@ class Supabase {
     required String url,
     String? publishableKey,
     @Deprecated(
-      'Use publishableKey instead. anonKey will be removed in a future major version.',
+      'Use publishableKey instead. anonKey will be removed in a future major '
+      'version.',
     )
     String? anonKey,
     Map<String, String>? headers,
@@ -118,7 +120,8 @@ class Supabase {
       _instance._logSubscription = Logger('supabase').onRecord.listen((record) {
         if (record.level >= Level.INFO) {
           debugPrint(
-            '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}',
+            '${record.loggerName}: ${record.level.name}: ${record.message} '
+            '${record.error ?? ""}',
           );
         }
       });
@@ -159,7 +162,8 @@ class Supabase {
       _instance._supabaseAuth = supabaseAuth;
       await supabaseAuth.initialize(options: authOptions);
 
-      // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
+      // Wrap `recoverSession()` in a `CancelableOperation` so that it can be
+      // canceled in dispose
       // if still in progress
       _instance._restoreSessionCancellableOperation =
           CancelableOperation.fromFuture(supabaseAuth.recoverSession());
@@ -187,7 +191,8 @@ class Supabase {
 
   bool _debugEnable = false;
 
-  /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
+  /// Wraps the `recoverSession()` call so that it can be terminated when
+  /// `dispose()` is called
   ///
   /// Only set when [Supabase.initialize] is called without a custom
   /// `accessToken`, since session recovery is skipped for third-party auth.

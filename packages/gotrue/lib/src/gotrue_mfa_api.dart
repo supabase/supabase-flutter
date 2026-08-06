@@ -10,7 +10,8 @@ class GoTrueMFAApi {
 
   /// Unenroll removes a MFA factor.
   ///
-  /// A user has to have an `aal2` authenticator level in order to unenroll a `verified` factor.
+  /// A user has to have an `aal2` authenticator level in order to unenroll a
+  /// `verified` factor.
   Future<AuthMFAUnenrollResponse> unenroll(String factorId) async {
     final session = _client.currentSession;
 
@@ -26,15 +27,18 @@ class GoTrueMFAApi {
     return AuthMFAUnenrollResponse.fromJson(data);
   }
 
-  /// Starts the enrollment process for a new Multi-Factor Authentication (MFA) factor.
-  /// This method creates a new `unverified` factor.
+  /// Starts the enrollment process for a new Multi-Factor Authentication (MFA)
+  /// factor. This method creates a new `unverified` factor.
   ///
-  /// For TOTP: To verify a factor, present the QR code or secret to the user and ask them to add it to their authenticator app.
-  /// For Phone: The user will receive an SMS with a verification code.
+  /// For TOTP: To verify a factor, present the QR code or secret to the user
+  /// and ask them to add it to their authenticator app. For Phone: The user
+  /// will receive an SMS with a verification code.
   ///
-  /// The user has to enter the code from their authenticator app or SMS to verify it.
+  /// The user has to enter the code from their authenticator app or SMS to
+  /// verify it.
   ///
-  /// Upon verifying a factor, all other sessions are logged out and the current session's authenticator level is promoted to `aal2`.
+  /// Upon verifying a factor, all other sessions are logged out and the current
+  /// session's authenticator level is promoted to `aal2`.
   ///
   /// [factorType] : Type of factor being enrolled.
   ///
@@ -69,7 +73,8 @@ class GoTrueMFAApi {
       body['phone'] = phone;
     } else {
       throw ArgumentError(
-        'Invalid arguments, unsupported factor type for enroll: ${factorType.name}.',
+        'Invalid arguments, unsupported factor type for enroll: '
+        '${factorType.name}.',
       );
     }
 
@@ -94,7 +99,8 @@ class GoTrueMFAApi {
 
   /// Verifies a code against a [challengeId].
   ///
-  /// The verification [code] is provided by the user by entering a code seen in their authenticator app.
+  /// The verification [code] is provided by the user by entering a code seen in
+  /// their authenticator app.
   Future<AuthMFAVerifyResponse> verify({
     required String factorId,
     required String challengeId,
@@ -129,12 +135,14 @@ class GoTrueMFAApi {
     return response;
   }
 
-  /// Prepares a challenge used to verify that a user has access to a MFA factor.
+  /// Prepares a challenge used to verify that a user has access to a MFA
+  /// factor.
   ///
-  /// [factorId] System assigned identifier for authenticator device as returned by enroll
+  /// [factorId] System assigned identifier for authenticator device as returned
+  /// by enroll
   ///
-  /// [channel] Messaging channel to use for phone factors (e.g. whatsapp or sms).
-  /// Defaults to the server's behavior (sms) when omitted.
+  /// [channel] Messaging channel to use for phone factors (e.g. whatsapp or
+  /// sms). Defaults to the server's behavior (sms) when omitted.
   Future<AuthMFAChallengeResponse> challenge({
     required String factorId,
     OtpChannel? channel,
@@ -154,9 +162,11 @@ class GoTrueMFAApi {
     return AuthMFAChallengeResponse.fromJson(data);
   }
 
-  /// Helper method which creates a challenge and immediately uses the given code to verify against it thereafter.
+  /// Helper method which creates a challenge and immediately uses the given
+  /// code to verify against it thereafter.
   ///
-  /// The verification code is provided by the user by entering a code seen in their authenticator app.
+  /// The verification code is provided by the user by entering a code seen in
+  /// their authenticator app.
   Future<AuthMFAVerifyResponse> challengeAndVerify({
     required String factorId,
     required String code,
@@ -208,7 +218,8 @@ class GoTrueMFAApi {
 
   /// Returns the Authenticator Assurance Level (AAL) for the active session.
   ///
-  /// You can use this to check whether the current user needs to be shown a screen to verify their MFA factors.
+  /// You can use this to check whether the current user needs to be shown a
+  /// screen to verify their MFA factors.
   AuthMFAGetAuthenticatorAssuranceLevelResponse
   getAuthenticatorAssuranceLevel() {
     final session = _client.currentSession;

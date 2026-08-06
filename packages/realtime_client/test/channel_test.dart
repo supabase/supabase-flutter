@@ -155,8 +155,8 @@ void main() {
         status,
         RealtimeSubscribeStatus.subscribed,
         reason:
-            "If the catch is missing the 'ok' callback aborts at setAuth "
-            "and the subscribed status is never emitted.",
+            "If the catch is missing the 'ok' callback aborts at setAuth and "
+            "the subscribed status is never emitted.",
       );
     });
 
@@ -190,8 +190,8 @@ void main() {
         status,
         isNull,
         reason:
-            'A non-InvalidJWTToken FormatException should propagate out of '
-            'the callback before subscribed is emitted.',
+            'A non-InvalidJWTToken FormatException should propagate out of the '
+            'callback before subscribed is emitted.',
       );
     });
   });
@@ -767,7 +767,8 @@ void main() {
     });
 
     test(
-      'send message via http request to Broadcast endpoint when not subscribed to channel',
+      'send message via http request to Broadcast endpoint when not subscribed '
+      'to channel',
       () async {
         final requestFuture = mockServer.first;
         final sendFuture = channel.send(
@@ -886,7 +887,8 @@ void main() {
     });
 
     test(
-      'should enable presence when config.presence.enabled is true even without bindings',
+      'should enable presence when config.presence.enabled is true even '
+      'without bindings',
       () {
         channel = RealtimeChannel(
           'topic',
@@ -916,7 +918,8 @@ void main() {
     });
 
     test(
-      'should enable presence when both bindings exist and config.presence.enabled is true',
+      'should enable presence when both bindings exist and '
+      'config.presence.enabled is true',
       () {
         channel = RealtimeChannel(
           'topic',
@@ -933,7 +936,8 @@ void main() {
     );
 
     test(
-      'should not enable presence when neither bindings exist nor config.presence.enabled is true',
+      'should not enable presence when neither bindings exist nor '
+      'config.presence.enabled is true',
       () {
         channel = RealtimeChannel(
           'topic',
@@ -983,7 +987,8 @@ void main() {
     });
 
     test(
-      'should resubscribe when presence callback added to subscribed channel without initial presence',
+      'should resubscribe when presence callback added to subscribed channel '
+      'without initial presence',
       () {
         channel = RealtimeChannel(
           'topic',
@@ -1002,7 +1007,8 @@ void main() {
     );
 
     test(
-      'should not resubscribe when presence callback added to channel with existing presence',
+      'should not resubscribe when presence callback added to channel with '
+      'existing presence',
       () {
         channel = RealtimeChannel(
           'topic',
@@ -1047,7 +1053,8 @@ void main() {
     );
 
     test(
-      'should not resubscribe when presence callback added to unsubscribed channel',
+      'should not resubscribe when presence callback added to unsubscribed '
+      'channel',
       () {
         channel = RealtimeChannel(
           'topic',
@@ -1064,7 +1071,8 @@ void main() {
     );
 
     test(
-      'should receive presence events after resubscription triggered by adding callback',
+      'should receive presence events after resubscription triggered by adding '
+      'callback',
       () {
         channel = RealtimeChannel(
           'topic',

@@ -18,7 +18,8 @@ class Constants {
   /// Current session will be checked for refresh at this interval.
   static const autoRefreshTickDuration = Duration(seconds: 10);
 
-  /// A token refresh will be attempted this many ticks before the current session expires.
+  /// A token refresh will be attempted this many ticks before the current
+  /// session expires.
   static const autoRefreshTickThreshold = 3;
 
   /// The name of the header that contains API version.
@@ -112,6 +113,8 @@ enum SignOutScope {
   /// Only this session will be signed out.
   local,
 
-  /// All other sessions except the current one will be signed out. When using others, there is no [AuthChangeEvent.signedOut] event fired on the current session!
+  /// All other sessions except the current one will be signed out. When using
+  /// others, there is no [AuthChangeEvent.signedOut] event fired on the current
+  /// session!
   others,
 }

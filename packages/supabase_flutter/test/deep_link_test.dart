@@ -47,7 +47,8 @@ void main() {
     });
 
     test(
-      'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
+      'Having `code` as the query parameter triggers `getSessionFromUrl` call '
+      'on initialize',
       () async {
         // Wait for the initial app link to be handled, as this is an async
         // process when mocking the event channel.
@@ -69,9 +70,9 @@ void main() {
         mockMethodChannel: false,
         mockEventChannel: true,
         initialLink:
-            'com.supabase://callback/#access_token=my-access-token'
-            '&expires_in=3600&refresh_token=my-refresh-token'
-            '&token_type=bearer&type=email_change',
+            'com.supabase://callback/#access_token=my-access-token&expires_in=3'
+            '600&refresh_token=my-refresh-token&token_type=bearer&type=email_ch'
+            'ange',
       );
       await Supabase.initialize(
         url: supabaseUrl,
@@ -261,8 +262,7 @@ void main() {
         mockMethodChannel: false,
         mockEventChannel: true,
         initialLink:
-            'com.supabase://callback/?error=access_denied'
-            '&error_code=403',
+            'com.supabase://callback/?error=access_denied&error_code=403',
       );
       await Supabase.initialize(
         url: supabaseUrl,

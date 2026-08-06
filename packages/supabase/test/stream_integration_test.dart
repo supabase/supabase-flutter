@@ -595,9 +595,9 @@ Future<void> _expectSnapshots({
 
 /// Waits until every channel of [_supabase] has joined.
 ///
-/// The first emitted snapshot comes from PostgREST, which is fetched in parallel
-/// with the realtime subscription, so it does not imply that changes are being
-/// streamed yet.
+/// The first emitted snapshot comes from PostgREST, which is fetched in
+/// parallel with the realtime subscription, so it does not imply that changes
+/// are being streamed yet.
 Future<void> _waitUntilJoined() async {
   for (var attempt = 0; attempt < 200; attempt++) {
     final channels = _supabase.getChannels();

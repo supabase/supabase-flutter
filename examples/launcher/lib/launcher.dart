@@ -7,8 +7,8 @@ const _ok = 0;
 const _failure = 1;
 
 const _noTerminalMessage =
-    'The launcher needs an interactive terminal to pick an example. '
-    'Run it directly in your terminal.';
+    'The launcher needs an interactive terminal to pick an example. Run it '
+    'directly in your terminal.';
 
 final _logger = Logger();
 
@@ -90,8 +90,8 @@ Future<int> run(List<String> args) async {
     _logger
       ..info('')
       ..info(
-        '${styleBold.wrap('Running')} ${cyan.wrap(selected.name)} '
-        'against ${cyan.wrap(url)}',
+        '${styleBold.wrap('Running')} ${cyan.wrap(selected.name)} against '
+        '${cyan.wrap(url)}',
       );
 
     // Serve on a fixed origin so it matches the WebAuthn rp_origins configured
@@ -119,7 +119,8 @@ Future<int> run(List<String> args) async {
     );
 
     // Forward Ctrl-C to flutter so it shuts down and control returns here,
-    // letting the cleanup below stop Supabase, rather than killing the launcher.
+    // letting the cleanup below stop Supabase, rather than killing the
+    // launcher.
     final sigint = ProcessSignal.sigint.watch().listen(
       (_) => process.kill(ProcessSignal.sigint),
     );

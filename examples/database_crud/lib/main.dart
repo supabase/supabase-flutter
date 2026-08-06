@@ -58,8 +58,8 @@ class _TasksPageState extends State<TasksPage> {
   bool _mutating = false;
   Timer? _debounce;
 
-  /// Bumped on every task reload so a slower earlier request can't overwrite the
-  /// results of a later one.
+  /// Bumped on every task reload so a slower earlier request can't overwrite
+  /// the results of a later one.
   int _requestId = 0;
 
   @override
@@ -87,8 +87,8 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   /// Reloads the task list for the current filters. Leaves the previous list on
-  /// screen while it runs, so changing a filter or toggling a task doesn't flash
-  /// a spinner over the whole list.
+  /// screen while it runs, so changing a filter or toggling a task doesn't
+  /// flash a spinner over the whole list.
   Future<void> _loadTasks() async {
     final requestId = ++_requestId;
     // Ignore a response if a newer reload started or the widget went away while

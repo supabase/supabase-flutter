@@ -86,7 +86,8 @@ class Session {
     }
   }
 
-  /// Returns 'true` if the token is expired or will expire in the next 30 seconds.
+  /// Returns `true` if the token is expired or will expire in the next 30
+  /// seconds.
   ///
   /// The 30 second buffer is to account for latency issues.
   bool get isExpired {
@@ -130,7 +131,9 @@ class Session {
 
   @override
   String toString() {
-    return 'Session(providerToken: $providerToken, providerRefreshToken: $providerRefreshToken, expiresIn: $expiresIn, tokenType: $tokenType, user: $user, accessToken: $accessToken, refreshToken: $refreshToken)';
+    return 'Session(providerToken: $providerToken, providerRefreshToken: '
+        '$providerRefreshToken, expiresIn: $expiresIn, tokenType: $tokenType, '
+        'user: $user, accessToken: $accessToken, refreshToken: $refreshToken)';
   }
 
   @override

@@ -110,7 +110,8 @@ void main() {
     test('getClaims() throws with expired JWT', () async {
       // This is an expired JWT token (exp is in the past)
       const expiredJwt =
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNTE2MjM5MDIyfQ.4Adcj0vVzr2Nzz_KKAKrVZsLZyTBGv9-Ey8SN0p7Kzs';
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXh'
+          'wIjoxNTE2MjM5MDIyfQ.4Adcj0vVzr2Nzz_KKAKrVZsLZyTBGv9-Ey8SN0p7Kzs';
 
       expect(
         () => client.getClaims(expiredJwt),
@@ -121,11 +122,12 @@ void main() {
     test('getClaims() with allowExpired option allows expired JWT', () async {
       // This is an expired JWT token (exp is in the past)
       const expiredJwt =
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNTE2MjM5MDIyfQ.4Adcj0vVzr2Nzz_KKAKrVZsLZyTBGv9-Ey8SN0p7Kzs';
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXh'
+          'wIjoxNTE2MjM5MDIyfQ.4Adcj0vVzr2Nzz_KKAKrVZsLZyTBGv9-Ey8SN0p7Kzs';
 
-      // With allowExpired, we should be able to decode the JWT
-      // Note: This will still fail at getUser() because the token is invalid on the server
-      // but the expiration check should pass
+      // With allowExpired, we should be able to decode the JWT Note: This will
+      // still fail at getUser() because the token is invalid on the server but
+      // the expiration check should pass
       try {
         await client.getClaims(
           expiredJwt,
@@ -235,13 +237,19 @@ void main() {
     test(
       'getClaims() with RS256 JWT on first call should not crash (SDK-627)',
       () async {
-        // This test reproduces the bug reported in SDK-627
-        // A JWT with RS256 algorithm and kid in header
-        // Header: {"alg":"RS256","typ":"JWT","kid":"test-key-id"}
-        // Payload: {"sub":"1234567890","aud":"authenticated","exp":9999999999,"iat":1516239022,"email":"test@example.com","role":"authenticated"}
-        // Signature: dummy base64url encoded signature (not cryptographically valid, but structurally valid)
+        // This test reproduces the bug reported in SDK-627: a JWT signed with
+        // RS256 that carries a `kid` in its header.
+        //
+        // The header declares `alg` RS256, `typ` JWT and `kid` test-key-id,
+        // while the payload carries the usual `sub`, `aud`, `exp`, `iat`,
+        // `email` and `role` claims. The signature is base64url encoded and
+        // structurally valid, but not cryptographically valid.
         const rs256Jwt =
-            'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImV4cCI6OTk5OTk5OTk5OSwiaWF0IjoxNTE2MjM5MDIyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.SW52YWxpZFNpZ25hdHVyZURhdGFIZXJlVGhhdElzTm90UmVhbEJ1dFZhbGlkQmFzZTY0VXJs';
+            'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2V5LWlkIn0.ey'
+            'JzdWIiOiIxMjM0NTY3ODkwIiwiYXVkIjoiYXV0aGVudGljYXRlZCIsImV4cCI6OTk5'
+            'OTk5OTk5OSwiaWF0IjoxNTE2MjM5MDIyLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb2'
+            '0iLCJyb2xlIjoiYXV0aGVudGljYXRlZCJ9.SW52YWxpZFNpZ25hdHVyZURhdGFIZXJ'
+            'lVGhhdElzTm90UmVhbEJ1dFZhbGlkQmFzZTY0VXJs';
 
         // Before the fix, this would crash with:
         // "Null check operator used on a null value"
@@ -252,7 +260,8 @@ void main() {
         // but NOT crash with null error
         try {
           await client.getClaims(rs256Jwt);
-          // If we get here, the server responded successfully (unlikely in test env)
+          // If we get here, the server responded successfully (unlikely in test
+          // env)
         } catch (error) {
           // The important part is that it should NOT crash with null error
           // It may fail with network error, invalid signature, etc.
@@ -269,7 +278,9 @@ void main() {
     test('decodeJwt() successfully decodes valid JWT', () {
       // A sample JWT with known values
       final jwt =
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2lkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjk5OTk5OTk5OTl9.XyI0rWcOYLpz3R8G8qHWmg7U-tWMHJqzN_e1oDQKzgc';
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2lkIn0.eyJzdWIi'
+          'OiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJl'
+          'eHAiOjk5OTk5OTk5OTl9.XyI0rWcOYLpz3R8G8qHWmg7U-tWMHJqzN_e1oDQKzgc';
 
       final decoded = decodeJwt(jwt);
 
@@ -312,7 +323,9 @@ void main() {
 
     test('decodeJwtPayload() successfully decodes valid JWT', () {
       final jwt =
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2lkIn0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjk5OTk5OTk5OTl9.XyI0rWcOYLpz3R8G8qHWmg7U-tWMHJqzN_e1oDQKzgc';
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2lkIn0.eyJzdWIi'
+          'OiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJl'
+          'eHAiOjk5OTk5OTk5OTl9.XyI0rWcOYLpz3R8G8qHWmg7U-tWMHJqzN_e1oDQKzgc';
 
       final payload = decodeJwtPayload(jwt);
 

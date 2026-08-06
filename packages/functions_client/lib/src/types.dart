@@ -12,7 +12,8 @@ enum HttpMethod {
 }
 
 class FunctionResponse {
-  /// The data returned by the function. Type depends on the header `Content-Type`:
+  /// The data returned by the function. Type depends on the header
+  /// `Content-Type`:
   /// - 'text/plain': [String]
   /// - 'application/octet-stream': [Uint8List]
   /// - 'application/json': dynamic ([jsonDecode] is used)
@@ -39,7 +40,8 @@ class FunctionException implements Exception {
 
   @override
   String toString() =>
-      '$runtimeType(status: $status, details: $details, reasonPhrase: $reasonPhrase)';
+      '$runtimeType(status: $status, details: $details, reasonPhrase: '
+      '$reasonPhrase)';
 }
 
 /// Thrown when the request to the Edge Function could not be sent, for example

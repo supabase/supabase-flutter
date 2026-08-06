@@ -44,11 +44,14 @@ String buildClientInfoHeader(
   if (platformInfo == null) {
     return '$clientName/$version';
   }
+  final rawPlatformVersion = platformInfo.platformVersion;
+  final platformVersion = rawPlatformVersion == null
+      ? null
+      : Uri.encodeFull(rawPlatformVersion).replaceAll('%20', ' ');
   return [
     '$clientName/$version',
     if (platformInfo.platform != null) 'platform=${platformInfo.platform}',
-    if (platformInfo.platformVersion != null)
-      'platform-version=${Uri.encodeFull(platformInfo.platformVersion!).replaceAll("%20", " ")}',
+    if (platformVersion != null) 'platform-version=$platformVersion',
     'runtime=dart',
     if (platformInfo.runtimeVersion != null)
       'runtime-version=${platformInfo.runtimeVersion}',

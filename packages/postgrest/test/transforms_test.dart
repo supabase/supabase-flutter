@@ -409,7 +409,8 @@ void main() {
     });
 
     test(
-      'maybeSingle followed by another transformer preserves the maybeSingle status',
+      'maybeSingle followed by another transformer preserves the maybeSingle '
+      'status',
       () async {
         await expectLater(
           () => postgrest.from('channels').select().maybeSingle().limit(2),
@@ -550,7 +551,8 @@ void main() {
     });
 
     test(
-      'maxAffected works with select operations (sets headers but likely ineffective)',
+      'maxAffected works with select operations (sets headers but likely '
+      'ineffective)',
       () async {
         try {
           await postgrestCustomHttpClient.from('users').select().maxAffected(2);

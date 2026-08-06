@@ -16,6 +16,7 @@ linter:
     discarded_futures: true
     use_enums: true
     unnecessary_breaks: true
+    lines_longer_than_80_chars: true
 
 formatter:
   trailing_commas: preserve

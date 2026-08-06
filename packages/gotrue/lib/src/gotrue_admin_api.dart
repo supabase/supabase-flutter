@@ -79,7 +79,8 @@ class GoTrueAdminApi {
 
   /// Creates a new user.
   ///
-  /// This function should only be called on a server. Never expose your `secret` key on the client.
+  /// This function should only be called on a server. Never expose your
+  /// `secret` key on the client.
   ///
   /// Requires either an email or phone
   Future<UserResponse> createUser(AdminUserAttributes attributes) async {
@@ -103,7 +104,8 @@ class GoTrueAdminApi {
   /// record and any associated data while marking the user as deleted. It
   /// defaults to `false`, which permanently removes the user.
   ///
-  /// This function should only be called on a server. Never expose your `secret` key on the client.
+  /// This function should only be called on a server. Never expose your
+  /// `secret` key on the client.
   Future<void> deleteUser(String id, {bool shouldSoftDelete = false}) async {
     validateUuid(id);
     final options = GotrueRequestOptions(
@@ -119,9 +121,11 @@ class GoTrueAdminApi {
 
   /// Get a list of users.
   ///
-  /// This function should only be called on a server. Never expose your `secret` key on the client.
+  /// This function should only be called on a server. Never expose your
+  /// `secret` key on the client.
   ///
-  /// The result is paginated. Use the [page] and [perPage] parameters to paginate the result.
+  /// The result is paginated. Use the [page] and [perPage] parameters to
+  /// paginate the result.
   Future<List<User>> listUsers({int? page, int? perPage}) async {
     final options = GotrueRequestOptions(
       headers: _headers,

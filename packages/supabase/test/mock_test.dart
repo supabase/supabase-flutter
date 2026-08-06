@@ -19,7 +19,8 @@ void main() {
   bool hasListener = false;
   StreamSubscription<dynamic>? listener;
 
-  /// `testFilter` is used to test incoming realtime filter. The value should match the realtime filter set by the library.
+  /// `testFilter` is used to test incoming realtime filter. The value should
+  /// match the realtime filter set by the library.
   Future<void> handleRequests(
     HttpServer server, {
     String? expectedFilter,
@@ -112,9 +113,9 @@ void main() {
             /// Protocol 2.0.0 text frames are positional arrays:
             /// [join_ref, ref, topic, event, payload].
             ///
-            /// `filter` might be there or not depending on whether is a filter set
-            /// to the realtime subscription, so include the filter if the request
-            /// includes a filter.
+            /// `filter` might be there or not depending on whether is a filter
+            /// set to the realtime subscription, so include the filter if the
+            /// request includes a filter.
             final requestJson = jsonDecode(message as String) as List;
             final ref = requestJson[1];
             final topic = requestJson[2];
@@ -376,7 +377,8 @@ void main() {
     await supabase.dispose();
     await customHeadersClient.dispose();
 
-    //Manually disconnect the socket channel to avoid automatic retrying to reconnect. This caused failing in later executed tests.
+    // Manually disconnect the socket channel to avoid automatic retrying to
+    // reconnect. This caused failing in later executed tests.
     await supabase.removeAllChannels();
     await customHeadersClient.removeAllChannels();
 
@@ -441,7 +443,8 @@ void main() {
         stream.listen(expectAsync1((event) {}, count: 5));
         stream.listen(expectAsync1((event) {}, count: 5));
 
-        // All realtime events are done emitting, so should receive the current data
+        // All realtime events are done emitting, so should receive the current
+        // data
       });
 
       test("Create two stream to same table", () async {
@@ -452,15 +455,19 @@ void main() {
         stream2.listen(expectAsync1((event) {}, count: 5));
       });
 
-      test("stream should emit the last emitted data when listened to", () async {
-        final stream = supabase.from('todos').stream(primaryKey: ['id']);
-        stream.listen(expectAsync1((event) {}, count: 5));
+      test(
+        "stream should emit the last emitted data when listened to",
+        () async {
+          final stream = supabase.from('todos').stream(primaryKey: ['id']);
+          stream.listen(expectAsync1((event) {}, count: 5));
 
-        await Future.delayed(Duration(seconds: 3));
+          await Future.delayed(Duration(seconds: 3));
 
-        // All realtime events are done emitting, so should receive the current data
-        stream.listen(expectAsync1((event) {}, count: 1));
-      });
+          // All realtime events are done emitting, so should receive the
+          // current data
+          stream.listen(expectAsync1((event) {}, count: 1));
+        },
+      );
       test('emits data', () {
         final stream = supabase.from('todos').stream(primaryKey: ['id']);
         expect(
@@ -540,7 +547,8 @@ void main() {
 
         await Future.delayed(Duration(seconds: 3));
 
-        // All realtime events are done emitting, so should receive the current data
+        // All realtime events are done emitting, so should receive the current
+        // data
         stream.listen(expectAsync1((event) {}, count: 1));
       });
 
@@ -645,7 +653,8 @@ void main() {
     });
 
     group('realtime', () {
-      /// Constructing Supabase query within a realtime callback caused exception
+      /// Constructing Supabase query within a realtime callback caused
+      /// exception
       /// https://github.com/supabase-community/supabase-flutter/issues/81
       test('Calling Postgrest within realtime callback', () async {
         supabase

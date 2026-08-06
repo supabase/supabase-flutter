@@ -85,7 +85,8 @@ void main() {
       'error response with a streaming content type exposes the body',
       () async {
         // The error body must be drained and decoded into `details` rather than
-        // handed back as an unconsumed stream (which also leaks the connection).
+        // handed back as an unconsumed stream (which also leaks the
+        // connection).
         await expectLater(
           functionsCustomHttpClient.invoke('error-sse'),
           throwsA(
@@ -392,7 +393,8 @@ void main() {
 
     group('Region support', () {
       test(
-        'region parameter adds x-region header and forceFunctionRegion query param',
+        'region parameter adds x-region header and forceFunctionRegion query '
+        'param',
         () async {
           await functionsCustomHttpClient.invoke(
             'function',

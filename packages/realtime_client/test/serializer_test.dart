@@ -258,7 +258,8 @@ void main() {
       final userEventBytes = utf8.encode(userEvent);
       final metadataBytes = utf8.encode(jsonEncode({'label': 'naïve'}));
 
-      // Length prefixes must be UTF-8 byte lengths, not UTF-16 code-unit counts.
+      // Length prefixes must be UTF-8 byte lengths, not UTF-16 code-unit
+      // counts.
       expect(bytes[1], joinRefBytes.length);
       expect(bytes[2], refBytes.length);
       expect(bytes[3], topicBytes.length);
