@@ -119,12 +119,6 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     return this;
   }
 
-  @Deprecated('Directly listen without execute instead. Deprecated in 1.0.0')
-  Stream<SupabaseStreamEvent> execute() {
-    _setupStream();
-    return _streamController!.stream;
-  }
-
   @override
   StreamSubscription<SupabaseStreamEvent> listen(
     void Function(SupabaseStreamEvent event)? onData, {

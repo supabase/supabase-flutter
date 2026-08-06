@@ -86,12 +86,7 @@ class Supabase {
   /// running in a Flutter test unless [debug] is explicitly set to `true`.
   static Future<Supabase> initialize({
     required String url,
-    String? publishableKey,
-    @Deprecated(
-      'Use publishableKey instead. anonKey will be removed in a future major '
-      'version.',
-    )
-    String? anonKey,
+    required String publishableKey,
     Map<String, String>? headers,
     Client? httpClient,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
@@ -103,12 +98,6 @@ class Supabase {
     Future<String?> Function()? accessToken,
     bool? debug,
   }) async {
-    assert(
-      publishableKey != null || anonKey != null,
-      'Either publishableKey or anonKey must be provided.',
-    );
-    final effectiveKey = publishableKey ?? anonKey!;
-
     if (_instance._isInitialized) {
       _log.info('Supabase is already initialized. Skipping reinitialization.');
       return _instance;
@@ -146,7 +135,7 @@ class Supabase {
     }
     _instance._init(
       url,
-      effectiveKey,
+      publishableKey,
       httpClient: httpClient,
       customHeaders: headers,
       realtimeClientOptions: realtimeClientOptions,

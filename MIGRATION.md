@@ -146,10 +146,105 @@ upgrading and leave this change out of the upgrade itself.
 
 `nullsFirst` is unchanged and still defaults to `false`.
 
+### Every deprecated API is gone
+
+v3 drops the whole deprecated surface that accumulated over v1 and v2. Where an entry has a
+replacement, that replacement has been available for at least one minor version. The rest were
+already inert: unused types, options the client ignored, or values the server never sent.
+
+| Removed | Replacement | Package |
+| --- | --- | --- |
+| `AuthChangeEvent.userDeleted` | none, it was never emitted | `gotrue` |
+| `OAuthProvider.snakeCase` | `OAuthProvider.name` | `gotrue` |
+| `User.confirmedAt` | `User.emailConfirmedAt` | `gotrue` |
+| `ReturningOption` | none, it was unused | `postgrest` |
+| `PostgrestClient.auth()` | `PostgrestClient.setAuth()` | `postgrest` |
+| `RealtimeClient.longpollerTimeout` | none, there is no longpoll transport | `realtime_client` |
+| `ChannelResponse.rateLimited` | none, it was never returned | `realtime_client` |
+| `FileObject.lastAccessedAt`, `FileObjectV2.lastAccessedAt` | none, the server does not populate it | `storage_client` |
+| `AuthUser` | `User` | `supabase` |
+| `RealtimeClientOptions.eventsPerSecond` | none, it was already ignored | `supabase` |
+| `RemoveSubscriptionResult` | none | `supabase` |
+| `SupabaseRealtimeError` | none | `supabase` |
+| `SupabaseEventTypes` and `SupabaseEventTypesName` | none, it was unused | `supabase` |
+| `SupabaseStreamBuilder.execute()` | listen to the builder directly | `supabase` |
+
+Both `lastAccessedAt` fields were also required constructor parameters, so any code that builds a
+`FileObject` or `FileObjectV2` by hand drops that argument.
+
+Two of these need more than a rename.
+
+`User.confirmedAt` mirrored `emailConfirmedAt` and is no longer parsed from or written to JSON, so
+`toJson()` output no longer contains a `confirmed_at` key:
+
+```dart
+// Before
+final confirmed = user.confirmedAt != null;
+
+// After
+final confirmed = user.emailConfirmedAt != null;
+```
+
+`SupabaseStreamBuilder` has been a `Stream` since 1.0.0, so `execute()` only returned the builder's
+own stream:
+
+```dart
+// Before
+supabase.from('users').stream(primaryKey: ['id']).execute().listen(handle);
+
+// After
+supabase.from('users').stream(primaryKey: ['id']).listen(handle);
+```
+
+### `publishableKey` is required on `Supabase.initialize`
+
+The deprecated `anonKey` parameter is removed and `publishableKey` is now required. A legacy anon
+key is still a valid value, it just goes under the new name.
+
+```dart
+// Before
+await Supabase.initialize(url: url, anonKey: anonKey);
+
+// After
+await Supabase.initialize(url: url, publishableKey: anonKey);
+```
+
+### `createSignedUrls` reports per-path failures
+
+The old `createSignedUrls` returned `List<SignedUrl>` and silently dropped paths the server could
+not sign, so there was no way to tell a missing file from a successful one. It is removed, and
+`createSignedUrlsResult` takes over the name. Each entry in the returned list is either a
+`SignedUrlSuccess` or a `SignedUrlFailure`.
+
+```dart
+// Before
+final urls = await supabase.storage
+    .from('avatars')
+    .createSignedUrls(['a.png', 'b.png'], 60);
+for (final url in urls) {
+  print(url.signedUrl);
+}
+
+// After
+final results = await supabase.storage
+    .from('avatars')
+    .createSignedUrls(['a.png', 'b.png'], 60);
+for (final result in results) {
+  switch (result) {
+    case SignedUrlSuccess(:final signedUrl):
+      print(signedUrl);
+    case SignedUrlFailure(:final path, :final error):
+      print('could not sign $path: $error');
+  }
+}
+```
+
+If you were already on `createSignedUrlsResult`, drop the `Result` suffix from the call.
+
 ### Confirming an email or phone change emits `userUpdated`
 
 Confirming an email or phone change used to emit `AuthChangeEvent.signedIn`, which made it
-indistinguishable from an actual sign in. It now emits `AuthChangeEvent.userUpdated`, the same event
+indistinguishable from an actual sign-in. It now emits `AuthChangeEvent.userUpdated`, the same event
 that `updateUser()` emits when the change is requested. This applies to every way the change can be
 confirmed:
 
@@ -167,14 +262,14 @@ or fetches on `signedIn` and expects the email-change confirmation to reach it:
 // Before
 supabase.auth.onAuthStateChange.listen((data) {
   if (data.event == AuthChangeEvent.signedIn) {
-    // Ran both on sign in and after an email change was confirmed.
+    // Ran both on sign-in and after an email change was confirmed.
   }
 });
 
 // After
 supabase.auth.onAuthStateChange.listen((data) {
   if (data.event == AuthChangeEvent.signedIn) {
-    // Only runs on an actual sign in.
+    // Only runs on an actual sign-in.
   } else if (data.event == AuthChangeEvent.userUpdated) {
     // Runs when the user record changed, including a confirmed email change.
   }

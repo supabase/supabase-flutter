@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -799,15 +797,6 @@ void main() {
 
       final stream = supabase.from('todos').stream(primaryKey: ['id']);
 
-      expect(stream, emits(isList));
-    });
-  });
-
-  group('Deprecated execute method', () {
-    test('should work with deprecated execute method', () {
-      unawaited(handleRequests(mockServer));
-      final streamBuilder = supabase.from('todos').stream(primaryKey: ['id']);
-      final stream = streamBuilder.execute();
       expect(stream, emits(isList));
     });
   });

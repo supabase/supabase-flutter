@@ -84,15 +84,6 @@ final class OAuthProvider {
     zoom,
   ];
 
-  /// The API wire value for this provider.
-  ///
-  /// Returns [name] as-is without any case conversion. The getter name is
-  /// misleading for custom providers whose names may not be snake_case.
-  /// Use [name] directly instead.
-  @Deprecated('Use name instead.')
-  // ignore: match-getter-setter-field-names
-  String get snakeCase => name;
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) || (other is OAuthProvider && other.name == name);

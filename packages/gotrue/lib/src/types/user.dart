@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'package:collection/collection.dart';
 import 'package:gotrue/src/types/mfa.dart';
 
@@ -17,8 +15,6 @@ class User {
   final String? email;
   final String? phone;
   final String createdAt;
-  @Deprecated('Use emailConfirmedAt instead')
-  final String? confirmedAt;
   final String? emailConfirmedAt;
   final String? phoneConfirmedAt;
   final String? lastSignInAt;
@@ -42,7 +38,6 @@ class User {
     this.email,
     this.phone,
     required this.createdAt,
-    @Deprecated('Use emailConfirmedAt instead') this.confirmedAt,
     this.emailConfirmedAt,
     this.phoneConfirmedAt,
     this.lastSignInAt,
@@ -74,7 +69,6 @@ class User {
       email: json['email'],
       phone: json['phone'],
       createdAt: json['created_at'] ?? '',
-      confirmedAt: json['confirmed_at'],
       emailConfirmedAt: json['email_confirmed_at'],
       phoneConfirmedAt: json['phone_confirmed_at'],
       lastSignInAt: json['last_sign_in_at'],
@@ -107,7 +101,6 @@ class User {
       'email': email,
       'phone': phone,
       'created_at': createdAt,
-      'confirmed_at': confirmedAt,
       'email_confirmed_at': emailConfirmedAt,
       'phone_confirmed_at': phoneConfirmedAt,
       'last_sign_in_at': lastSignInAt,
@@ -126,9 +119,9 @@ class User {
         'recoverySentAt: $recoverySentAt, emailChangeSentAt: '
         '$emailChangeSentAt, newEmail: $newEmail, invitedAt: $invitedAt, '
         'actionLink: $actionLink, email: $email, phone: $phone, createdAt: '
-        '$createdAt, confirmedAt: $confirmedAt, emailConfirmedAt: '
-        '$emailConfirmedAt, phoneConfirmedAt: $phoneConfirmedAt, lastSignInAt: '
-        '$lastSignInAt, role: $role, updatedAt: $updatedAt, identities: '
+        '$createdAt, emailConfirmedAt: $emailConfirmedAt, phoneConfirmedAt: '
+        '$phoneConfirmedAt, lastSignInAt: $lastSignInAt, role: $role, '
+        'updatedAt: $updatedAt, identities: '
         '$identities, factors: $factors, isAnonymous: $isAnonymous)';
   }
 
@@ -151,7 +144,6 @@ class User {
         other.email == email &&
         other.phone == phone &&
         other.createdAt == createdAt &&
-        other.confirmedAt == confirmedAt &&
         other.emailConfirmedAt == emailConfirmedAt &&
         other.phoneConfirmedAt == phoneConfirmedAt &&
         other.lastSignInAt == lastSignInAt &&
@@ -177,7 +169,6 @@ class User {
         email.hashCode ^
         phone.hashCode ^
         createdAt.hashCode ^
-        confirmedAt.hashCode ^
         emailConfirmedAt.hashCode ^
         phoneConfirmedAt.hashCode ^
         lastSignInAt.hashCode ^
