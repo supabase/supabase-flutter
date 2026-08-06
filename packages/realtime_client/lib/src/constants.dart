@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import 'package:realtime_client/src/version.dart';
 import 'package:supabase_common/supabase_common.dart';
 
@@ -43,9 +44,11 @@ enum SocketState {
   disconnected,
 }
 
-enum ChannelStates { closed, errored, joined, joining, leaving }
+@internal
+enum ChannelState { closed, errored, joined, joining, leaving }
 
-enum ChannelEvents {
+@internal
+enum ChannelEvent {
   close,
   error,
   join,
@@ -55,30 +58,28 @@ enum ChannelEvents {
   accessToken,
   broadcast,
   presence,
-  postgresChanges,
-}
+  postgresChanges;
 
-extension ChannelEventsExtended on ChannelEvents {
-  static ChannelEvents fromType(String type) {
-    for (ChannelEvents enumVariant in ChannelEvents.values) {
-      if (enumVariant.name == type || enumVariant.eventName() == type) {
-        return enumVariant;
+  static ChannelEvent fromType(String type) {
+    for (final event in ChannelEvent.values) {
+      if (event.name == type || event.eventName() == type) {
+        return event;
       }
     }
     throw 'No type $type exists';
   }
 
   String eventName() => switch (this) {
-    ChannelEvents.accessToken => 'access_token',
-    ChannelEvents.postgresChanges => 'postgres_changes',
-    ChannelEvents.broadcast => 'broadcast',
-    ChannelEvents.presence => 'presence',
-    ChannelEvents.close ||
-    ChannelEvents.error ||
-    ChannelEvents.join ||
-    ChannelEvents.reply ||
-    ChannelEvents.leave ||
-    ChannelEvents.heartbeat => 'phx_$name',
+    ChannelEvent.accessToken => 'access_token',
+    ChannelEvent.postgresChanges => 'postgres_changes',
+    ChannelEvent.broadcast => 'broadcast',
+    ChannelEvent.presence => 'presence',
+    ChannelEvent.close ||
+    ChannelEvent.error ||
+    ChannelEvent.join ||
+    ChannelEvent.reply ||
+    ChannelEvent.leave ||
+    ChannelEvent.heartbeat => 'phx_$name',
   };
 }
 

@@ -755,7 +755,7 @@ void main() {
       // Once subscribed, broadcasts are pushed over the websocket instead of
       // falling back to the REST endpoint.
       final sendResult = await channel.send(
-        type: RealtimeListenTypes.broadcast,
+        type: RealtimeListenType.broadcast,
         payload: {'myKey': 'myValue'},
       );
       expect(sendResult, ChannelResponse.ok);
@@ -771,7 +771,7 @@ void main() {
       () async {
         final requestFuture = mockServer.first;
         final sendFuture = channel.send(
-          type: RealtimeListenTypes.broadcast,
+          type: RealtimeListenType.broadcast,
           payload: {'myKey': 'myValue'},
         );
 
@@ -1383,7 +1383,7 @@ class _OptsCapturingChannel extends RealtimeChannel {
 
   @override
   Future<ChannelResponse> send({
-    required RealtimeListenTypes type,
+    required RealtimeListenType type,
     String? event,
     required Map<String, dynamic> payload,
     Map<String, dynamic> opts = const {},

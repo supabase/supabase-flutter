@@ -101,58 +101,58 @@ void main() {
       expect(AuthChangeEvent.userDeleted.jsName, equals(''));
     });
 
-    group('AuthChangeEventExtended', () {
+    group('AuthChangeEvent', () {
       test('fromString returns correct event for valid names', () {
         expect(
-          AuthChangeEventExtended.fromString('initialSession'),
+          AuthChangeEvent.fromString('initialSession'),
           equals(AuthChangeEvent.initialSession),
         );
         expect(
-          AuthChangeEventExtended.fromString('passwordRecovery'),
+          AuthChangeEvent.fromString('passwordRecovery'),
           equals(AuthChangeEvent.passwordRecovery),
         );
         expect(
-          AuthChangeEventExtended.fromString('signedIn'),
+          AuthChangeEvent.fromString('signedIn'),
           equals(AuthChangeEvent.signedIn),
         );
         expect(
-          AuthChangeEventExtended.fromString('signedOut'),
+          AuthChangeEvent.fromString('signedOut'),
           equals(AuthChangeEvent.signedOut),
         );
         expect(
-          AuthChangeEventExtended.fromString('tokenRefreshed'),
+          AuthChangeEvent.fromString('tokenRefreshed'),
           equals(AuthChangeEvent.tokenRefreshed),
         );
         expect(
-          AuthChangeEventExtended.fromString('userUpdated'),
+          AuthChangeEvent.fromString('userUpdated'),
           equals(AuthChangeEvent.userUpdated),
         );
         // ignore: deprecated_member_use
         expect(
-          AuthChangeEventExtended.fromString('userDeleted'),
+          AuthChangeEvent.fromString('userDeleted'),
           equals(AuthChangeEvent.userDeleted),
         );
         expect(
-          AuthChangeEventExtended.fromString('mfaChallengeVerified'),
+          AuthChangeEvent.fromString('mfaChallengeVerified'),
           equals(AuthChangeEvent.mfaChallengeVerified),
         );
       });
 
       test('fromString returns null for invalid names', () {
-        expect(AuthChangeEventExtended.fromString('invalid'), isNull);
-        expect(AuthChangeEventExtended.fromString('SIGNED_IN'), isNull);
-        expect(AuthChangeEventExtended.fromString('signed_in'), isNull);
-        expect(AuthChangeEventExtended.fromString(''), isNull);
+        expect(AuthChangeEvent.fromString('invalid'), isNull);
+        expect(AuthChangeEvent.fromString('SIGNED_IN'), isNull);
+        expect(AuthChangeEvent.fromString('signed_in'), isNull);
+        expect(AuthChangeEvent.fromString(''), isNull);
       });
 
       test('fromString returns null for null input', () {
-        expect(AuthChangeEventExtended.fromString(null), isNull);
+        expect(AuthChangeEvent.fromString(null), isNull);
       });
 
       test('fromString uses enum name, not jsName', () {
-        expect(AuthChangeEventExtended.fromString('SIGNED_IN'), isNull);
+        expect(AuthChangeEvent.fromString('SIGNED_IN'), isNull);
         expect(
-          AuthChangeEventExtended.fromString('signedIn'),
+          AuthChangeEvent.fromString('signedIn'),
           equals(AuthChangeEvent.signedIn),
         );
       });
@@ -177,56 +177,56 @@ void main() {
       expect(GenerateLinkType.values, contains(GenerateLinkType.unknown));
     });
 
-    group('GenerateLinkTypeExtended', () {
+    group('GenerateLinkType', () {
       test('fromString returns correct type for valid snake_case names', () {
         expect(
-          GenerateLinkTypeExtended.fromString('signup'),
+          GenerateLinkType.fromString('signup'),
           equals(GenerateLinkType.signup),
         );
         expect(
-          GenerateLinkTypeExtended.fromString('invite'),
+          GenerateLinkType.fromString('invite'),
           equals(GenerateLinkType.invite),
         );
         expect(
-          GenerateLinkTypeExtended.fromString('magiclink'),
+          GenerateLinkType.fromString('magiclink'),
           equals(GenerateLinkType.magiclink),
         );
         expect(
-          GenerateLinkTypeExtended.fromString('recovery'),
+          GenerateLinkType.fromString('recovery'),
           equals(GenerateLinkType.recovery),
         );
         expect(
-          GenerateLinkTypeExtended.fromString('email_change_current'),
+          GenerateLinkType.fromString('email_change_current'),
           equals(GenerateLinkType.emailChangeCurrent),
         );
         expect(
-          GenerateLinkTypeExtended.fromString('email_change_new'),
+          GenerateLinkType.fromString('email_change_new'),
           equals(GenerateLinkType.emailChangeNew),
         );
       });
 
       test('fromString returns unknown for invalid names', () {
         expect(
-          GenerateLinkTypeExtended.fromString('invalid'),
+          GenerateLinkType.fromString('invalid'),
           equals(GenerateLinkType.unknown),
         );
         expect(
-          GenerateLinkTypeExtended.fromString('emailChangeCurrent'),
+          GenerateLinkType.fromString('emailChangeCurrent'),
           equals(GenerateLinkType.unknown),
         );
         expect(
-          GenerateLinkTypeExtended.fromString('SIGNUP'),
+          GenerateLinkType.fromString('SIGNUP'),
           equals(GenerateLinkType.unknown),
         );
         expect(
-          GenerateLinkTypeExtended.fromString(''),
+          GenerateLinkType.fromString(''),
           equals(GenerateLinkType.unknown),
         );
       });
 
       test('fromString returns unknown for null input', () {
         expect(
-          GenerateLinkTypeExtended.fromString(null),
+          GenerateLinkType.fromString(null),
           equals(GenerateLinkType.unknown),
         );
       });
@@ -234,7 +234,7 @@ void main() {
       test('all enum values have corresponding snake_case representation', () {
         for (final type in GenerateLinkType.values) {
           if (type != GenerateLinkType.unknown) {
-            final result = GenerateLinkTypeExtended.fromString(type.snakeCase);
+            final result = GenerateLinkType.fromString(type.snakeCase);
             expect(result, equals(type), reason: 'Failed for ${type.name}');
           }
         }

@@ -3,7 +3,7 @@ import 'package:realtime_client/src/constants.dart';
 
 class Message {
   final String topic;
-  final ChannelEvents event;
+  final ChannelEvent event;
   final dynamic payload;
   final String? ref;
   final String? joinRef;
@@ -45,7 +45,7 @@ class Message {
     }
     return {
       'topic': topic,
-      'event': event != ChannelEvents.heartbeat
+      'event': event != ChannelEvent.heartbeat
           ? event.eventName()
           : 'heartbeat',
       'payload': processedPayload,

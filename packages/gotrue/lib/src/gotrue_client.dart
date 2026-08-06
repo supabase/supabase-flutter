@@ -432,7 +432,7 @@ class GoTrueClient {
     }
     final codeVerifier = codeVerifierRawString.split('/').first;
     final eventName = codeVerifierRawString.split('/').last;
-    final redirectType = AuthChangeEventExtended.fromString(eventName);
+    final redirectType = AuthChangeEvent.fromString(eventName);
 
     final Map<String, dynamic> response = await _fetch.request(
       '$_url/token',

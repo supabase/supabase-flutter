@@ -69,11 +69,11 @@ enum AccessDelegation {
 }
 
 /// Which snapshots the server should include when loading a table.
-enum LoadTableSnapshots {
+enum TableSnapshotScope {
   all('all'),
   refs('refs');
 
-  const LoadTableSnapshots(this.value);
+  const TableSnapshotScope(this.value);
 
   final String value;
 }
@@ -730,7 +730,7 @@ class LoadTableOptions {
   final String? ifNoneMatch;
 
   /// Which snapshots the server should include in the returned metadata.
-  final LoadTableSnapshots? snapshots;
+  final TableSnapshotScope? snapshots;
 
   const LoadTableOptions({this.ifNoneMatch, this.snapshots});
 }

@@ -779,7 +779,7 @@ void main() {
 
   group('push', () {
     const topic = 'topic';
-    const event = ChannelEvents.join;
+    const event = ChannelEvent.join;
     const payload = 'payload';
     const ref = 'ref';
     // Protocol 2.0.0 text frames are positional arrays:
@@ -859,7 +859,7 @@ void main() {
       final binaryPayload = Uint8List.fromList([1, 2, 3]);
       final message = Message(
         topic: 'realtime:room',
-        event: ChannelEvents.broadcast,
+        event: ChannelEvent.broadcast,
         payload: {
           'type': 'broadcast',
           'event': 'file',
@@ -1052,14 +1052,14 @@ void main() {
         when(() => mockedChannel1.joinedOnce).thenReturn(true);
         when(() => mockedChannel1.isJoined).thenReturn(true);
         when(
-          () => mockedChannel1.push(ChannelEvents.accessToken, pushPayload),
+          () => mockedChannel1.push(ChannelEvent.accessToken, pushPayload),
         ).thenReturn(MockPush());
 
         final mockedChannel2 = MockChannel();
         when(() => mockedChannel2.joinedOnce).thenReturn(true);
         when(() => mockedChannel2.isJoined).thenReturn(true);
         when(
-          () => mockedChannel2.push(ChannelEvents.accessToken, pushPayload),
+          () => mockedChannel2.push(ChannelEvent.accessToken, pushPayload),
         ).thenReturn(MockPush());
 
         const tTopic1 = 'topic-1';
@@ -1081,10 +1081,10 @@ void main() {
         verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
         verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
         verify(
-          () => channel1.push(ChannelEvents.accessToken, pushPayload),
+          () => channel1.push(ChannelEvent.accessToken, pushPayload),
         ).called(1);
         verify(
-          () => channel2.push(ChannelEvents.accessToken, pushPayload),
+          () => channel2.push(ChannelEvent.accessToken, pushPayload),
         ).called(1);
       },
     );
@@ -1099,19 +1099,19 @@ void main() {
         when(() => mockedChannel1.joinedOnce).thenReturn(true);
         when(() => mockedChannel1.isJoined).thenReturn(true);
         when(
-          () => mockedChannel1.push(ChannelEvents.accessToken, any()),
+          () => mockedChannel1.push(ChannelEvent.accessToken, any()),
         ).thenReturn(MockPush());
 
         when(() => mockedChannel2.joinedOnce).thenReturn(false);
         when(() => mockedChannel2.isJoined).thenReturn(false);
         when(
-          () => mockedChannel2.push(ChannelEvents.accessToken, any()),
+          () => mockedChannel2.push(ChannelEvent.accessToken, any()),
         ).thenReturn(MockPush());
 
         when(() => mockedChannel3.joinedOnce).thenReturn(true);
         when(() => mockedChannel3.isJoined).thenReturn(true);
         when(
-          () => mockedChannel3.push(ChannelEvents.accessToken, any()),
+          () => mockedChannel3.push(ChannelEvent.accessToken, any()),
         ).thenReturn(MockPush());
 
         const tTopic1 = 'test-topic1';
@@ -1151,13 +1151,13 @@ void main() {
         ).called(1);
 
         verify(
-          () => channel1.push(ChannelEvents.accessToken, expectedPushPayload),
+          () => channel1.push(ChannelEvent.accessToken, expectedPushPayload),
         ).called(1);
         verifyNever(
-          () => channel2.push(ChannelEvents.accessToken, expectedPushPayload),
+          () => channel2.push(ChannelEvent.accessToken, expectedPushPayload),
         );
         verify(
-          () => channel3.push(ChannelEvents.accessToken, expectedPushPayload),
+          () => channel3.push(ChannelEvent.accessToken, expectedPushPayload),
         ).called(1);
       },
     );
@@ -1229,7 +1229,7 @@ void main() {
           final raw = invocation.positionalArguments.first as String;
           capturedMessages.add(raw);
           final frame = json.decode(raw) as List;
-          if (frame[3] == ChannelEvents.join.eventName() &&
+          if (frame[3] == ChannelEvent.join.eventName() &&
               !joinSent.isCompleted) {
             joinSent.complete(frame[4] as Map);
           }

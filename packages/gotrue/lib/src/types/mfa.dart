@@ -351,22 +351,25 @@ class Factor {
   }
 }
 
-enum AuthenticatorAssuranceLevels {
-  // The user's identity has been verified only with a conventional login (email+password, OTP, magic link, social login, etc.).
+enum AuthenticatorAssuranceLevel {
+  /// The user's identity has been verified only with a conventional login
+  /// (email+password, OTP, magic link, social login, etc.).
   aal1,
 
-  // The user's identity has been verified both with a conventional login and at least one MFA factor.
+  /// The user's identity has been verified both with a conventional login and
+  /// at least one MFA factor.
   aal2,
 }
 
 class AuthMFAGetAuthenticatorAssuranceLevelResponse {
   /// Current AAL level of the session.
-  final AuthenticatorAssuranceLevels? currentLevel;
+  final AuthenticatorAssuranceLevel? currentLevel;
 
-  /// Next possible AAL level for the session. If the next level is higher than the current one, the user should go through MFA.
+  /// Next possible AAL level for the session. If the next level is higher than
+  /// the current one, the user should go through MFA.
   ///
   /// see [GoTrueMFAApi.challenge]
-  final AuthenticatorAssuranceLevels? nextLevel;
+  final AuthenticatorAssuranceLevel? nextLevel;
 
   /// A list of all authentication methods attached to this session.
   ///

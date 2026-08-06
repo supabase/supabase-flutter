@@ -221,7 +221,7 @@ class GoTrueMFAApi {
     }
     final payload = decodeJwtPayload(session.accessToken).claims;
 
-    final currentLevel = AuthenticatorAssuranceLevels.values.firstWhereOrNull(
+    final currentLevel = AuthenticatorAssuranceLevel.values.firstWhereOrNull(
       (level) => level.name == payload['aal'],
     );
 
@@ -231,7 +231,7 @@ class GoTrueMFAApi {
           (factor) => factor.status == FactorStatus.verified,
         ) ??
         false) {
-      nextLevel = AuthenticatorAssuranceLevels.aal2;
+      nextLevel = AuthenticatorAssuranceLevel.aal2;
     }
 
     final amr = (payload['amr'] as List? ?? [])
