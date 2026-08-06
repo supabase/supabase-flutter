@@ -46,5 +46,16 @@ void main() {
       expect(payload.commitTimestamp, DateTime.utc(1970));
       expect(payload.commitTimestamp.isUtc, isTrue);
     });
+
+    test('falls back to the UTC epoch when the timestamp is not a string', () {
+      // Casting this to String? raised a TypeError, which the FormatException
+      // fallback around the parse does not catch.
+      final payload = PostgresChangePayload.fromPayload(
+        payloadWith(1663764570),
+      );
+
+      expect(payload.commitTimestamp, DateTime.utc(1970));
+      expect(payload.commitTimestamp.isUtc, isTrue);
+    });
   });
 }

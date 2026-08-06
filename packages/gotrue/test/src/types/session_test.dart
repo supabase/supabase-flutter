@@ -145,16 +145,18 @@ void main() {
       });
 
       test('serializes expiresAt as Unix seconds', () {
-        final exp = 1700000000;
+        final expiresAtSeconds = 1700000000;
         final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
-        final payload = base64Encode(utf8.encode('{"exp":$exp}'));
+        final payload = base64Encode(
+          utf8.encode('{"exp":$expiresAtSeconds}'),
+        );
         final session = Session(
           accessToken: '$header.$payload.signature',
           tokenType: 'bearer',
           user: mockUser,
         );
 
-        expect(session.toJson()['expires_at'], equals(exp));
+        expect(session.toJson()['expires_at'], equals(expiresAtSeconds));
       });
 
       test('serializes expires_at as null when the JWT has no expiry', () {

@@ -148,7 +148,7 @@ final createdAt = user.createdAt;
 If you need the previous representation, ask for it explicitly:
 
 ```dart
-final iso = user.createdAt.toIso8601String();
+final isoString = user.createdAt.toIso8601String();
 final unixSeconds = session.expiresAt!.millisecondsSinceEpoch ~/ 1000;
 ```
 
