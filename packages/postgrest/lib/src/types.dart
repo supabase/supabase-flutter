@@ -44,7 +44,8 @@ class PostgrestException implements Exception {
 
   @override
   String toString() {
-    return 'PostgrestException(message: $message, code: $code, details: $details, hint: $hint)';
+    return 'PostgrestException(message: $message, code: $code, details: '
+        '$details, hint: $hint)';
   }
 }
 
@@ -89,7 +90,8 @@ enum CountOption {
   /// Exact but slow count algorithm. Performs a `COUNT(*)` under the hood.
   exact,
 
-  /// Approximated but fast count algorithm. Uses the Postgres statistics under the hood.
+  /// Approximated but fast count algorithm. Uses the Postgres statistics under
+  /// the hood.
   planned,
 
   /// Uses exact count for low numbers and planned count for high numbers.
@@ -119,7 +121,8 @@ enum TextSearchType {
   /// Uses PostgreSQL's phraseto_tsquery function.
   phrase,
 
-  /// Uses PostgreSQL's websearch_to_tsquery function.
-  /// This function will never raise syntax errors, which makes it possible to use raw user-supplied input for search, and can be used with advanced operators.
+  /// Uses PostgreSQL's websearch_to_tsquery function. This function will never
+  /// raise syntax errors, which makes it possible to use raw user-supplied
+  /// input for search, and can be used with advanced operators.
   websearch,
 }

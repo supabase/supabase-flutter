@@ -290,8 +290,8 @@ void main() {
 
       expect(
         url,
-        '$localStackStorageUrl/render/image/public/'
-        '$newBucketName/$uploadPath?width=200&height=300&quality=60',
+        '$localStackStorageUrl/render/image/public/$newBucketName/$uploadPath?w'
+        'idth=200&height=300&quality=60',
       );
     });
 
@@ -728,7 +728,8 @@ void main() {
     });
 
     test(
-      'setHeader on StorageFileApi does not affect other StorageFileApi instances',
+      'setHeader on StorageFileApi does not affect other StorageFileApi '
+      'instances',
       () async {
         customHttpClient.response = [];
         customHttpClient.statusCode = 200;
@@ -836,12 +837,12 @@ void main() {
   });
 
   group('object keys with reserved URL characters', () {
-    // The SDK percent-encodes each object key segment (see _getFinalPath). These
-    // tests confirm the round-trip against a real server: the storage server
-    // percent-decodes the path back to the literal key, so upload and download
-    // address the same object. Without encoding a `?` or `#` in the key would be
-    // parsed as the start of the query string or fragment and the SDK would
-    // silently address the wrong object.
+    // The SDK percent-encodes each object key segment (see _getFinalPath).
+    // These tests confirm the round-trip against a real server: the storage
+    // server percent-decodes the path back to the literal key, so upload and
+    // download address the same object. Without encoding a `?` or `#` in the
+    // key would be parsed as the start of the query string or fragment and the
+    // SDK would silently address the wrong object.
     late String bucket;
 
     setUp(() async {

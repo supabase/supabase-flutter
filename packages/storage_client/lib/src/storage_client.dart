@@ -14,7 +14,8 @@ class SupabaseStorageClient extends StorageBucketApi {
   final Client? _httpClient;
   final _log = Logger('supabase.storage');
 
-  /// To create a [SupabaseStorageClient], you need to provide an [url] and [headers].
+  /// To create a [SupabaseStorageClient], you need to provide an [url] and
+  /// [headers].
   ///
   /// ```dart
   /// SupabaseStorageClient(STORAGE_URL, {'apikey': 'foo'});
@@ -60,15 +61,17 @@ class SupabaseStorageClient extends StorageBucketApi {
          httpClient: httpClient,
        ) {
     _log.config(
-      'Initialize SupabaseStorageClient v$version with url: $url, retryAttempts: $_defaultRetryAttempts',
+      'Initialize SupabaseStorageClient v$version with url: $url, '
+      'retryAttempts: $_defaultRetryAttempts',
     );
     _log.finest('Initialize with headers: $headers');
   }
 
   /// Transforms legacy storage URLs to use the dedicated storage host.
   ///
-  /// If legacy URI is used, replace with new storage host (disables request buffering to allow > 50GB uploads).
-  /// "project-ref.supabase.co/storage/v1" becomes "project-ref.storage.supabase.co/v1"
+  /// If legacy URI is used, replace with new storage host (disables request
+  /// buffering to allow > 50GB uploads). "project-ref.supabase.co/storage/v1"
+  /// becomes "project-ref.storage.supabase.co/v1"
   static String _transformStorageUrl(String url) {
     final uri = Uri.parse(url);
     final hostname = uri.host;

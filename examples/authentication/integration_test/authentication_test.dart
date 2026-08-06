@@ -30,7 +30,8 @@ const _skipOnWeb = kIsWeb;
 /// Supabase stack, one sign in method per test:
 ///
 /// * email & password (sign up, sign out, sign in)
-/// * a full password reset (the recovery code is read back from the mail server)
+/// * a full password reset (the recovery code is read back from the mail
+///   server)
 /// * passwordless email OTP (the code is read back from the local mail server)
 /// * phone SMS OTP (using the configured test OTP)
 /// * anonymous sign in and upgrading it to a permanent account
@@ -389,7 +390,8 @@ List<int> _base32Decode(String input) {
   return output;
 }
 
-/// Pumps frames until [finder] matches at least one widget or [timeout] elapses.
+/// Pumps frames until [finder] matches at least one widget or [timeout]
+/// elapses.
 ///
 /// Auth calls go over the network, so the UI can't be settled with
 /// `pumpAndSettle`; this polls the widget tree instead.

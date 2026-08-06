@@ -11,9 +11,11 @@ import 'utils.dart';
 /// HTTP client that simulates server-side refresh token consumption.
 ///
 /// - First use of a refresh token succeeds and returns new tokens
-/// - Second use of the SAME refresh token returns 400 "refresh_token_already_used"
+/// - Second use of the SAME refresh token returns 400
+///   "refresh_token_already_used"
 ///
-/// This simulates real GoTrue server behavior where refresh tokens are single-use.
+/// This simulates real GoTrue server behavior where refresh tokens are
+/// single-use.
 class RefreshTokenTrackingHttpClient extends BaseClient {
   final Set<String> _usedRefreshTokens = {};
   final List<String> requestLog = [];
@@ -162,7 +164,14 @@ String createExpiredSessionForUser1() {
     ),
   );
   final accessToken = 'any.$accessTokenMid.any';
-  return '{"access_token":"$accessToken","expires_in":-3600,"refresh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provider_refresh_token":null,"user":{"id":"$userId1","app_metadata":{"provider":"email","providers":["email"]},"user_metadata":{},"aud":"","email":"test@example.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}}';
+  return '{"access_token":"$accessToken","expires_in":-3600,"refresh_token":"-y'
+      'eS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token":null,"provi'
+      'der_refresh_token":null,"user":{"id":"$userId1","app_metadata":{"provide'
+      'r":"email","providers":["email"]},"user_metadata":{},"aud":"","email":"t'
+      'est@example.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","'
+      'confirmed_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z"'
+      ',"phone_confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755'
+      '878Z","role":"","updated_at":"2023-04-01T08:35:05.226938Z"}}';
 }
 
 void main() {
@@ -205,7 +214,8 @@ void main() {
     );
 
     test(
-      'FIXED: sequential recoverSession calls with same user return current session',
+      'FIXED: sequential recoverSession calls with same user return current '
+      'session',
       () async {
         final httpClient = RefreshTokenTrackingHttpClient();
         final client = GoTrueClient(
@@ -233,12 +243,14 @@ void main() {
         expect(result2.session, isNotNull);
         // Should return the CURRENT valid session
         expect(result2.session?.refreshToken, newRefreshToken);
-        // Should NOT have made another HTTP request (early return in recoverSession)
+        // Should NOT have made another HTTP request (early return in
+        // recoverSession)
         expect(
           httpClient.requestCount,
           1,
           reason:
-              'Should not make request if session already refreshed for same user',
+              'Should not make request if session already refreshed for same '
+              'user',
         );
       },
     );
@@ -267,7 +279,8 @@ void main() {
         // Give time for the request to start
         await Future.delayed(Duration(milliseconds: 10));
 
-        // Now start auto-refresh tick (simulates didChangeAppLifecycleState(resumed))
+        // Now start auto-refresh tick (simulates
+        // didChangeAppLifecycleState(resumed))
         client.startAutoRefresh();
 
         // Release the held request
@@ -327,7 +340,8 @@ void main() {
     );
 
     test(
-      'FIXED: "refresh_token_already_used" error is handled gracefully when session is valid',
+      'FIXED: "refresh_token_already_used" error is handled gracefully when '
+      'session is valid',
       () async {
         final httpClient = RefreshTokenTrackingHttpClient();
 
@@ -356,8 +370,9 @@ void main() {
         expect(client.currentSession?.isExpired, isFalse);
 
         // 4. Manually mark the current token as "already used" on the server
-        // This simulates a race condition where another request (e.g., auto-refresh)
-        // already consumed the token before our next refresh attempt
+        // This simulates a race condition where another request (e.g.,
+        // auto-refresh) already consumed the token before our next refresh
+        // attempt
         httpClient.markTokenAsUsed(newToken!);
 
         // 5. Attempt refresh - this will get "already_used" error from server
@@ -365,7 +380,8 @@ void main() {
         final response = await client.refreshSession();
         expect(response.session, isNotNull);
 
-        // Session should still be valid (the error handler returned current session)
+        // Session should still be valid (the error handler returned current
+        // session)
         expect(client.currentSession, isNotNull);
         expect(client.currentSession?.isExpired, isFalse);
       },
@@ -399,7 +415,8 @@ void main() {
           onError: (_) {}, // Ignore stream errors
         );
 
-        // Second call with stale token (same user) - should return current session
+        // Second call with stale token (same user) - should return current
+        // session
         final result2 = await client.recoverSession(expiredSession);
 
         // Should succeed
@@ -423,7 +440,8 @@ void main() {
     );
 
     test(
-      'FIXED: concurrent recoverSession and autoRefreshTick both succeed with same result',
+      'FIXED: concurrent recoverSession and autoRefreshTick both succeed with '
+      'same result',
       () async {
         final httpClient = RefreshTokenTrackingHttpClient(
           responseDelay: Duration(milliseconds: 50),
@@ -468,7 +486,8 @@ void main() {
     );
 
     test(
-      'FIXED: recoverSession returns current session for same user when already valid',
+      'FIXED: recoverSession returns current session for same user when '
+      'already valid',
       () async {
         final httpClient = RefreshTokenTrackingHttpClient();
         final client = GoTrueClient(
@@ -494,7 +513,8 @@ void main() {
           httpClient.requestCount,
           1,
           reason:
-              'Should not attempt refresh when current session is valid for same user',
+              'Should not attempt refresh when current session is valid for '
+              'same user',
         );
       },
     );
@@ -580,7 +600,8 @@ void main() {
       'recoverSession stays in the stack trace when the refresh fails',
       () async {
         final httpClient = RefreshTokenTrackingHttpClient();
-        // Force the refresh to fail by pre-consuming the persisted refresh token.
+        // Force the refresh to fail by pre-consuming the persisted refresh
+        // token.
         httpClient.markTokenAsUsed('-yeS4omysFs9tpUYBws9Rg');
         final client = GoTrueClient(
           url: gotrueUrl,
@@ -606,31 +627,34 @@ void main() {
       },
     );
 
-    test('recoverSession emits a single error for an expired session', () async {
-      final client = GoTrueClient(
-        url: gotrueUrl,
-        asyncStorage: TestAsyncStorage(),
-        autoRefreshToken: false,
-        httpClient: RefreshTokenTrackingHttpClient(),
-      );
+    test(
+      'recoverSession emits a single error for an expired session',
+      () async {
+        final client = GoTrueClient(
+          url: gotrueUrl,
+          asyncStorage: TestAsyncStorage(),
+          autoRefreshToken: false,
+          httpClient: RefreshTokenTrackingHttpClient(),
+        );
 
-      var errorCount = 0;
-      final subscription = client.onAuthStateChange.listen(
-        (_) {},
-        onError: (_) => errorCount++,
-      );
+        var errorCount = 0;
+        final subscription = client.onAuthStateChange.listen(
+          (_) {},
+          onError: (_) => errorCount++,
+        );
 
-      await expectLater(
-        client.recoverSession(createExpiredSessionForUser1()),
-        throwsA(isA<AuthException>()),
-      );
-      await pumpEventQueue();
+        await expectLater(
+          client.recoverSession(createExpiredSessionForUser1()),
+          throwsA(isA<AuthException>()),
+        );
+        await pumpEventQueue();
 
-      // The error must reach the stream exactly once, not be re-notified by the
-      // surrounding catch on top of the explicit notification.
-      expect(errorCount, 1);
+        // The error must reach the stream exactly once, not be re-notified by
+        // the surrounding catch on top of the explicit notification.
+        expect(errorCount, 1);
 
-      await subscription.cancel();
-    });
+        await subscription.cancel();
+      },
+    );
   });
 }

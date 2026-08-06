@@ -4,7 +4,8 @@ class AuthMFAEnrollResponse {
   /// ID of the factor that was just enrolled (in an unverified state).
   final String id;
 
-  /// Type of MFA factor. Supports both `[FactorType.totp]` and `[FactorType.phone]`.
+  /// Type of MFA factor. Supports both `[FactorType.totp]` and
+  /// `[FactorType.phone]`.
   final FactorType type;
 
   /// TOTP enrollment information (only present when type is totp).
@@ -39,17 +40,20 @@ class AuthMFAEnrollResponse {
 }
 
 class TOTPEnrollment {
-  ///Contains a QR code encoding the authenticator URI.
+  /// Contains a QR code encoding the authenticator URI.
   ///
-  ///You can convert it to a URL by prepending `data:image/svg+xml;utf-8,` to the value. Avoid logging this value to the console.
+  /// You can convert it to a URL by prepending `data:image/svg+xml;utf-8,` to
+  /// the value. Avoid logging this value to the console.
   final String qrCode;
 
-  ///The TOTP secret (also encoded in the QR code).
+  /// The TOTP secret (also encoded in the QR code).
   ///
-  ///Show this secret in a password-style field to the user, in case they are unable to scan the QR code. Avoid logging this value to the console.
+  /// Show this secret in a password-style field to the user, in case they are
+  /// unable to scan the QR code. Avoid logging this value to the console.
   final String secret;
 
-  ///The authenticator URI encoded within the QR code, should you need to use it. Avoid logging this value to the console.
+  /// The authenticator URI encoded within the QR code, should you need to use
+  /// it. Avoid logging this value to the console.
   final String uri;
 
   const TOTPEnrollment({
@@ -255,7 +259,8 @@ class Factor {
   /// ID of the factor.
   final String id;
 
-  /// Friendly name of the factor, useful to disambiguate between multiple factors.
+  /// Friendly name of the factor, useful to disambiguate between multiple
+  /// factors.
   final String? friendlyName;
 
   /// Type of factor. Supports `totp`, `phone` and `webauthn`.
@@ -347,7 +352,9 @@ class Factor {
 
   @override
   String toString() {
-    return 'Factor(id: $id, friendlyName: $friendlyName, factorType: ${factorType.name}, status: ${status.name}, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Factor(id: $id, friendlyName: $friendlyName, factorType: '
+        '${factorType.name}, status: ${status.name}, createdAt: $createdAt, '
+        'updatedAt: $updatedAt)';
   }
 }
 
@@ -373,7 +380,8 @@ class AuthMFAGetAuthenticatorAssuranceLevelResponse {
 
   /// A list of all authentication methods attached to this session.
   ///
-  /// Use the information here to detect the last time a user verified a factor, for example if implementing a step-up scenario.
+  /// Use the information here to detect the last time a user verified a factor,
+  /// for example if implementing a step-up scenario.
   final List<AMREntry> currentAuthenticationMethods;
 
   const AuthMFAGetAuthenticatorAssuranceLevelResponse({

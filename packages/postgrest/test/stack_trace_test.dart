@@ -119,7 +119,8 @@ void main() {
           capturedTrace?.toString(),
           contains('singleArgCallerFunction'),
           reason:
-              'Outer catch should include the caller frame even with a single-arg onError',
+              'Outer catch should include the caller frame even with a '
+              'single-arg onError',
         );
       },
     );

@@ -49,7 +49,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
-  /// Finds all rows whose value on the stated [column] exactly matches the specified [value].
+  /// Finds all rows whose value on the stated [column] exactly matches the
+  /// specified [value].
   ///
   /// ```dart
   /// await supabase
@@ -69,7 +70,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
-  /// Finds all rows whose value on the stated [column] doesn't match the specified [value].
+  /// Finds all rows whose value on the stated [column] doesn't match the
+  /// specified [value].
   ///
   /// ```dart
   /// await supabase
@@ -87,7 +89,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
-  /// Finds all rows whose value on the stated [column] is greater than the specified [value].
+  /// Finds all rows whose value on the stated [column] is greater than the
+  /// specified [value].
   ///
   /// ```dart
   /// await supabase
@@ -99,7 +102,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'gt.$value'));
   }
 
-  /// Finds all rows whose value on the stated [column] is greater than or equal to the specified [value].
+  /// Finds all rows whose value on the stated [column] is greater than or equal
+  /// to the specified [value].
   ///
   /// ```dart
   /// await supabase
@@ -111,7 +115,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'gte.$value'));
   }
 
-  /// Finds all rows whose value on the stated [column] is less than the specified [value].
+  /// Finds all rows whose value on the stated [column] is less than the
+  /// specified [value].
   ///
   /// ```dart
   /// await supabase
@@ -123,7 +128,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'lt.$value'));
   }
 
-  /// Finds all rows whose value on the stated [column] is less than or equal to the specified [value].
+  /// Finds all rows whose value on the stated [column] is less than or equal to
+  /// the specified [value].
   ///
   /// ```dart
   /// await supabase
@@ -135,7 +141,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'lte.$value'));
   }
 
-  /// Finds all rows whose value in the stated [column] matches the supplied [pattern] (case sensitive).
+  /// Finds all rows whose value in the stated [column] matches the supplied
+  /// [pattern] (case sensitive).
   ///
   /// ```dart
   /// await supabase
@@ -175,7 +182,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     );
   }
 
-  /// Finds all rows whose value in the stated [column] matches the supplied [pattern] (case insensitive).
+  /// Finds all rows whose value in the stated [column] matches the supplied
+  /// [pattern] (case insensitive).
   ///
   /// ```dart
   /// await supabase
@@ -187,7 +195,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'ilike.$pattern'));
   }
 
-  /// Match only rows where [column] matches all of [patterns] case-insensitively.
+  /// Match only rows where [column] matches all of [patterns]
+  /// case-insensitively.
   ///
   /// ```dart
   /// await supabase
@@ -201,7 +210,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     );
   }
 
-  /// Match only rows where [column] matches any of [patterns] case-insensitively.
+  /// Match only rows where [column] matches any of [patterns]
+  /// case-insensitively.
   ///
   /// ```dart
   /// await supabase
@@ -217,7 +227,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
 
   /// A check for exact equality (null, true, false)
   ///
-  /// Finds all rows whose value on the stated [column] exactly match the specified [value].
+  /// Finds all rows whose value on the stated [column] exactly match the
+  /// specified [value].
   /// ```dart
   /// await supabase
   ///     .from('users')
@@ -228,7 +239,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'is.$value'));
   }
 
-  /// Finds all rows whose value on the stated [column] is found on the specified [values].
+  /// Finds all rows whose value on the stated [column] is found on the
+  /// specified [values].
   ///
   /// ```dart
   /// await supabase
@@ -242,7 +254,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     );
   }
 
-  /// Finds all rows whose json, array, or range value on the stated [column] contains the values specified in [value].
+  /// Finds all rows whose json, array, or range value on the stated [column]
+  /// contains the values specified in [value].
   ///
   /// Pass an array or use brackets in a string for an inclusive range and
   /// use parenthesis in a string for an exclusive range:
@@ -283,7 +296,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
-  /// Finds all rows whose json, array, or range value on the stated [column] is contained by the specified [value].
+  /// Finds all rows whose json, array, or range value on the stated [column] is
+  /// contained by the specified [value].
   ///
   /// Pass an array or use brackets in a string for an inclusive range and
   /// use parenthesis in a string for an exclusive range
@@ -324,7 +338,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
-  /// Finds all rows whose range value on the stated [column] is strictly to the left of the specified [range].
+  /// Finds all rows whose range value on the stated [column] is strictly to the
+  /// left of the specified [range].
   ///
   /// ```dart
   /// await supabase
@@ -336,7 +351,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'sl.$range'));
   }
 
-  /// Finds all rows whose range value on the stated [column] is strictly to the right of the specified [range].
+  /// Finds all rows whose range value on the stated [column] is strictly to the
+  /// right of the specified [range].
   ///
   /// ```dart
   /// await supabase
@@ -348,7 +364,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'sr.$range'));
   }
 
-  /// Finds all rows whose range value on the stated [column] does not extend to the left of the specified [range].
+  /// Finds all rows whose range value on the stated [column] does not extend to
+  /// the left of the specified [range].
   ///
   /// ```dart
   /// await supabase
@@ -360,7 +377,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'nxl.$range'));
   }
 
-  /// Finds all rows whose range value on the stated [column] does not extend to the right of the specified [range].
+  /// Finds all rows whose range value on the stated [column] does not extend to
+  /// the right of the specified [range].
   ///
   /// ```dart
   /// await supabase
@@ -372,7 +390,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'nxr.$range'));
   }
 
-  /// Finds all rows whose range value on the stated [column] is adjacent to the specified [range].
+  /// Finds all rows whose range value on the stated [column] is adjacent to the
+  /// specified [range].
   ///
   /// ```dart
   /// await supabase
@@ -384,7 +403,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'adj.$range'));
   }
 
-  /// Finds all rows whose array or range value on the stated [column] overlaps (has a value in common) with the specified [value].
+  /// Finds all rows whose array or range value on the stated [column] overlaps
+  /// (has a value in common) with the specified [value].
   ///
   /// ```dart
   /// await supabase
@@ -405,7 +425,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
-  /// Finds all rows whose text or tsvector value on the stated [column] matches the tsquery in [query].
+  /// Finds all rows whose text or tsvector value on the stated [column] matches
+  /// the tsquery in [query].
   ///
   /// ```dart
   /// await supabase
@@ -484,7 +505,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(url);
   }
 
-  /// Finds all rows whose value in the stated [column] matches the supplied [pattern] using PostgreSQL regular expression (case sensitive).
+  /// Finds all rows whose value in the stated [column] matches the supplied
+  /// [pattern] using PostgreSQL regular expression (case sensitive).
   ///
   /// ```dart
   /// await supabase
@@ -496,7 +518,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'match.$pattern'));
   }
 
-  /// Finds all rows whose value in the stated [column] matches the supplied [pattern] using PostgreSQL regular expression (case insensitive).
+  /// Finds all rows whose value in the stated [column] matches the supplied
+  /// [pattern] using PostgreSQL regular expression (case insensitive).
   ///
   /// ```dart
   /// await supabase
@@ -508,7 +531,8 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     return copyWithUrl(appendSearchParams(column, 'imatch.$pattern'));
   }
 
-  /// Finds all rows whose value on the stated [column] is not equal to the specified [value], treating `NULL` as a comparable value.
+  /// Finds all rows whose value on the stated [column] is not equal to the
+  /// specified [value], treating `NULL` as a comparable value.
   ///
   /// This is different from [neq] which treats `NULL` specially.
   ///

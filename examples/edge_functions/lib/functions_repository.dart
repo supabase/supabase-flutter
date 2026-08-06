@@ -2,9 +2,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
 
-/// All Edge Function access for the example lives here, so the UI stays thin and
-/// every `supabase.functions.invoke(...)` call is easy to read and to exercise
-/// from an integration test.
+/// All Edge Function access for the example lives here, so the UI stays thin
+/// and every `supabase.functions.invoke(...)` call is easy to read and to
+/// exercise from an integration test.
 class FunctionsRepository {
   FunctionsRepository(this._client);
 
@@ -17,7 +17,8 @@ class FunctionsRepository {
   ///
   /// The custom `x-greeting-source` header is echoed back in the response, so
   /// the example can show that headers set here reach the function. A JSON body
-  /// comes back decoded as a `Map`, which [Greeting.fromJson] turns into a model.
+  /// comes back decoded as a `Map`, which [Greeting.fromJson] turns into a
+  /// model.
   Future<Greeting> greet({required String name, bool excited = false}) async {
     final response = await _functions.invoke(
       'greet',
@@ -42,7 +43,8 @@ class FunctionsRepository {
   /// responds with.
   ///
   /// A `String` body is sent as `text/plain`, and the function replies with
-  /// `text/plain` too, so `response.data` is a `String` rather than decoded JSON.
+  /// `text/plain` too, so `response.data` is a `String` rather than decoded
+  /// JSON.
   Future<String> shout(String text) async {
     final response = await _functions.invoke('shout', body: text);
     return response.data as String;
@@ -50,9 +52,9 @@ class FunctionsRepository {
 
   /// Invokes the `word-count` function, which validates its input.
   ///
-  /// When [text] is empty the function replies with a 400 and a JSON error body,
-  /// which surfaces here as a [FunctionException] whose `details` hold that body.
-  /// The caller is expected to handle that exception.
+  /// When [text] is empty the function replies with a 400 and a JSON error
+  /// body, which surfaces here as a [FunctionException] whose `details` hold
+  /// that body. The caller is expected to handle that exception.
   Future<WordCount> countWords(String text) async {
     final response = await _functions.invoke(
       'word-count',

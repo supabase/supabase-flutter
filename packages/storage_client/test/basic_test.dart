@@ -765,7 +765,8 @@ void main() {
         '$supabaseUrl/storage/v1',
         {'Authorization': 'Bearer $supabaseKey'},
         retryAttempts: 5,
-        // `RetryHttpClient` will throw `SocketException` for the first two tries
+        // `RetryHttpClient` will throw `SocketException` for the first two
+        // tries
         httpClient: RetryHttpClient(),
       );
     });

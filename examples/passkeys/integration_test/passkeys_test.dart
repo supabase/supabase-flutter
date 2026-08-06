@@ -13,10 +13,11 @@ const supabasePublishableKey = String.fromEnvironment(
 /// Supabase stack.
 ///
 /// It covers everything around the WebAuthn ceremony: creating an account,
-/// landing on the passkey management screen, signing out, a failed sign in and a
-/// successful password sign in. The ceremony itself (`registerPasskey` /
-/// `signInWithPasskey`) drives a platform authenticator prompt (Face ID, Windows
-/// Hello, a security key, ...) that can't be automated headlessly, so it is
+/// landing on the passkey management screen, signing out, a failed sign in and
+/// a successful password sign in. The ceremony itself (`registerPasskey` /
+/// `signInWithPasskey`) drives an authenticator prompt, whether from a platform
+/// authenticator such as Face ID or Windows Hello or from a roaming one such as
+/// a security key. That prompt can't be automated headlessly, so it is
 /// exercised manually per the README rather than here.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -93,7 +94,8 @@ void main() {
   });
 }
 
-/// Pumps frames until [finder] matches at least one widget or [timeout] elapses.
+/// Pumps frames until [finder] matches at least one widget or [timeout]
+/// elapses.
 ///
 /// Auth calls go over the network, so the UI can't be settled with
 /// `pumpAndSettle`; this polls the widget tree instead.

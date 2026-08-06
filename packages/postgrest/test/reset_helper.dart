@@ -32,7 +32,8 @@ class ResetHelper {
 
       final insertedUsers = await _postgrest.from('users').select();
 
-      // Somehow the order of the users is sometimes not correct. Adding the delay should solve this.
+      // Somehow the order of the users is sometimes not correct. Adding the
+      // delay should solve this.
       if (!DeepCollectionEquality().equals(insertedUsers, _users)) {
         return await reset(delay + 500);
       }

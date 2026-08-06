@@ -472,7 +472,8 @@ void main() {
 
     test('.retry(requestTimeout:) overrides the timeout per request', () async {
       // The client has no timeout, but the per-request override adds one that
-      // is shorter than every attempt, so each attempt times out and is retried.
+      // is shorter than every attempt, so each attempt times out and is
+      // retried.
       final mock = _MockRetryClient([_ok(), _ok()]);
       final client = PostgrestClient(
         'http://localhost:3000',

@@ -75,12 +75,13 @@ class GenerateLinkResponse {
 }
 
 class GenerateLinkProperties {
-  /// The email link to send to the user.
-  /// The action_link follows the following format: auth/v1/verify?type={verification_type}&token={hashed_token}&redirect_to={redirect_to}
+  /// The email link to send to the user. The action_link follows the following
+  /// format:
+  /// auth/v1/verify?type={verification_type}&token={hashed_token}&redirect_to={redirect_to}
   final String actionLink;
 
-  /// The raw email OTP.
-  /// You should send this in the email if you want your users to verify using an OTP instead of the action link.
+  /// The raw email OTP. You should send this in the email if you want your
+  /// users to verify using an OTP instead of the action link.
   final String emailOtp;
 
   /// The hashed token appended to the action link.

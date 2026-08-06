@@ -1,5 +1,5 @@
-/// A chat message stored in the `messages` table. New rows are streamed to every
-/// client in the room through realtime Postgres Changes.
+/// A chat message stored in the `messages` table. New rows are streamed to
+/// every client in the room through realtime Postgres Changes.
 class Message {
   const Message({
     required this.id,

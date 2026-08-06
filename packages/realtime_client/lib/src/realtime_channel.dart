@@ -34,7 +34,8 @@ class RealtimeChannel {
   @internal
   final RealtimeClient socket;
 
-  /// Defines if the channel is private or not and if RLS policies will be used to check data
+  /// Defines if the channel is private or not and if RLS policies will be used
+  /// to check data
   late final bool _private;
 
   RealtimeChannel(
@@ -137,7 +138,8 @@ class RealtimeChannel {
   ///
   /// Pass a [callback] to react to different status changes.
   ///
-  /// [timeout] parameter can be used to override the default timeout set on [RealtimeClient].
+  /// [timeout] parameter can be used to override the default timeout set on
+  /// [RealtimeClient].
   RealtimeChannel subscribe([
     void Function(RealtimeSubscribeStatus status, Object? error)? callback,
     Duration? timeout,
@@ -146,7 +148,8 @@ class RealtimeChannel {
       unawaited(socket.connect());
     }
     if (joinedOnce == true) {
-      throw "tried to subscribe multiple times. 'subscribe' can only be called a single time per channel instance";
+      throw "tried to subscribe multiple times. 'subscribe' can only be "
+          "called a single time per channel instance";
     }
     final broadcast = params['config']['broadcast'];
     final presenceConfig = params['config']['presence'];
@@ -274,10 +277,10 @@ class RealtimeChannel {
       final filter = clientPostgresBinding.filter['filter'];
       final serverPostgresFilter = serverPostgresFilters[i];
 
-      // NOTE: `select` is intentionally not part of this equality check (mirroring
-      // supabase-js), so a server that echoes `select` back in a slightly
-      // different shape does not force a spurious unsubscribe. The client
-      // binding keeps its own `select` regardless.
+      // NOTE: `select` is intentionally not part of this equality check
+      // (mirroring supabase-js), so a server that echoes `select` back in a
+      // slightly different shape does not force a spurious unsubscribe. The
+      // client binding keeps its own `select` regardless.
       if (serverPostgresFilter != null &&
           serverPostgresFilter['event'] == event &&
           serverPostgresFilter['schema'] == schema &&
@@ -294,7 +297,8 @@ class RealtimeChannel {
           callback(
             RealtimeSubscribeStatus.channelError,
             Exception(
-              'mismatch between server and client bindings for postgres changes',
+              'mismatch between server and client bindings for postgres '
+              'changes',
             ),
           );
         }
@@ -356,7 +360,8 @@ class RealtimeChannel {
     );
   }
 
-  /// Registers a callback that will be executed when the channel encounters an error.
+  /// Registers a callback that will be executed when the channel encounters an
+  /// error.
   void _onError(Function callback) {
     onEvents(
       ChannelEvent.error.eventName(),
@@ -367,22 +372,25 @@ class RealtimeChannel {
 
   /// Sets up a listener on your Supabase database.
   ///
-  /// [event] determines whether you listen to `insert`, `update`, `delete`, or all of the events.
+  /// [event] determines whether you listen to `insert`, `update`, `delete`, or
+  /// all of the events.
   ///
   /// [schema] is the schema of the database on which to set up the listener.
-  /// The listener will return all changes from every listenable schema if omitted.
+  /// The listener will return all changes from every listenable schema if
+  /// omitted.
   ///
-  /// [table] is the table of the database on which to setup the listener.
-  /// The listener will return all changes from every listenable table if omitted.
+  /// [table] is the table of the database on which to setup the listener. The
+  /// listener will return all changes from every listenable table if omitted.
   ///
-  /// [filter] can be used to further control which rows to listen to within the given [schema] and [table].
+  /// [filter] can be used to further control which rows to listen to within the
+  /// given [schema] and [table].
   ///
   /// [filters] combines multiple [PostgresChangeFilter]s with an `AND`. Provide
   /// either [filter] or [filters], not both.
   ///
-  /// [select] restricts the change payload to a subset of columns instead of the
-  /// full row (reducing payload size). The listed columns must be selectable by
-  /// the subscribing role.
+  /// [select] restricts the change payload to a subset of columns instead of
+  /// the full row (reducing payload size). The listed columns must be
+  /// selectable by the subscribing role.
   ///
   /// ```dart
   /// supabase.channel('my_channel').onPostgresChanges(
@@ -637,7 +645,8 @@ class RealtimeChannel {
     Duration? timeout,
   ]) {
     if (!joinedOnce) {
-      throw "tried to push '${event.eventName()}' to '$topic' before joining. Use channel.subscribe() before pushing events";
+      throw "tried to push '${event.eventName()}' to '$topic' before joining. "
+          "Use channel.subscribe() before pushing events";
     }
     final pushEvent = Push(this, event, payload, timeout ?? _timeout);
     if (canPush) {
@@ -652,8 +661,9 @@ class RealtimeChannel {
 
   /// Sends a broadcast message explicitly via REST API.
   ///
-  /// This method always uses the REST API endpoint regardless of WebSocket connection state.
-  /// Useful when you want to guarantee REST delivery or when gradually migrating from implicit REST fallback.
+  /// This method always uses the REST API endpoint regardless of WebSocket
+  /// connection state. Useful when you want to guarantee REST delivery or when
+  /// gradually migrating from implicit REST fallback.
   ///
   /// [payload] must be either a `Map<String, dynamic>`, which is JSON-encoded,
   /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
@@ -700,10 +710,8 @@ class RealtimeChannel {
     };
 
     final url = Uri.parse(
-      '$broadcastEndpointURL'
-      '/${Uri.encodeComponent(subTopic)}'
-      '/events/${Uri.encodeComponent(event)}'
-      '${_private ? '?private=true' : ''}',
+      '$broadcastEndpointURL/${Uri.encodeComponent(subTopic)}/events/'
+      '${Uri.encodeComponent(event)}${_private ? '?private=true' : ''}',
     );
 
     final body = isBinary ? _asBytes(payload) : json.encode(payload);
@@ -725,8 +733,8 @@ class RealtimeChannel {
     if (response.statusCode == 404) {
       throw Exception(
         'httpSend() requires Realtime server v2.97.0 or newer; the endpoint '
-        'returned 404. Update your Supabase CLI to a recent version, or upgrade '
-        'the Realtime server in your self-hosted setup.',
+        'returned 404. Update your Supabase CLI to a recent version, or '
+        'upgrade the Realtime server in your self-hosted setup.',
       );
     }
 
@@ -793,9 +801,9 @@ class RealtimeChannel {
     if (!canPush && type == RealtimeListenType.broadcast) {
       socket.log(
         'channel',
-        'send() is automatically falling back to REST API. '
-            'This behavior will be deprecated in the future. '
-            'Please use httpSend() explicitly for REST delivery.',
+        'send() is automatically falling back to REST API. This behavior will '
+            'be deprecated in the future. Please use httpSend() explicitly '
+            'for REST delivery.',
       );
 
       try {
@@ -877,10 +885,11 @@ class RealtimeChannel {
 
   /// Leaves the channel
   ///
-  /// Unsubscribes from server events, and instructs channel to terminate on server.
-  /// Triggers onClose() hooks.
+  /// Unsubscribes from server events, and instructs channel to terminate on
+  /// server. Triggers onClose() hooks.
   ///
-  /// To receive leave acknowledgements, use the a `receive` hook to bind to the server ack,
+  /// To receive leave acknowledgements, use a `receive` hook to bind to the
+  /// server ack,
   /// ```dart
   /// channel.unsubscribe().receive("ok", (_){print("left!");} );
   /// ```
@@ -929,8 +938,8 @@ class RealtimeChannel {
 
   /// Overridable message hook
   ///
-  /// Receives all events for specialized message handling before dispatching to the channel callbacks.
-  /// Must return the payload, modified or unmodified.
+  /// Receives all events for specialized message handling before dispatching to
+  /// the channel callbacks. Must return the payload, modified or unmodified.
   @internal
   dynamic onMessage(String event, dynamic payload, [String? ref]) {
     return payload;
@@ -987,7 +996,8 @@ class RealtimeChannel {
 
     var handledPayload = onMessage(typeLower, payload, ref);
     if (payload != null && handledPayload == null) {
-      throw 'channel onMessage callbacks must return the payload, modified or unmodified';
+      throw 'channel onMessage callbacks must return the payload, modified or '
+          'unmodified';
     }
 
     if (['insert', 'update', 'delete'].contains(typeLower)) {

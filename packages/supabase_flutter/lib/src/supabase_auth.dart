@@ -28,8 +28,9 @@ import 'clear_auth_url_parameters_stub.dart'
 /// - Observes deep links (universal links / custom URL schemes) and exchanges
 ///   auth codes or tokens found in those links for a valid session, supporting
 ///   both PKCE and Implicit OAuth flows.
-/// - Forwards Flutter `AppLifecycleState` changes (via `WidgetsBindingObserver`)
-///   to the auth client so that token refresh resumes correctly after the app
+/// - Forwards Flutter `AppLifecycleState` changes (via
+///   `WidgetsBindingObserver`) to the auth client so that token refresh
+///   resumes correctly after the app
 ///   returns to the foreground.
 /// - Emits an [AuthChangeEvent.initialSession] event at startup so that
 ///   listeners receive a consistent first event regardless of whether a stored
@@ -79,7 +80,8 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// - Obtains session from local storage and sets it as the current session
   /// - Starts a deep link observer
-  /// - Emits an initial session if there were no session stored in local storage
+  /// - Emits an initial session if there were no session stored in local
+  ///   storage
   ///
   /// Errors emitted by the auth state change stream (e.g. during token refresh
   /// or network failures) are logged by the underlying auth client and do not
@@ -336,8 +338,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// ```
   ///
   /// The return value of this method is not the auth result, and whether the
-  /// OAuth sign-in has succeeded or not should be observed by setting a listener
-  /// on [auth.onAuthStateChanged].
+  /// OAuth sign-in has succeeded or not should be observed by setting a
+  /// listener on [auth.onAuthStateChange].
   ///
   /// To obtain the OAuth URL without launching a browser, use
   /// [getOAuthSignInUrl] instead.
@@ -402,8 +404,9 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// If you have built an organization-specific login page, you can use the
   /// organization's SSO Identity Provider UUID directly instead.
   ///
-  /// Returns true if the URL was launched successfully, otherwise either returns
-  /// false or throws a [PlatformException] depending on the launchUrl failure.
+  /// Returns true if the URL was launched successfully, otherwise either
+  /// returns false or throws a [PlatformException] depending on the launchUrl
+  /// failure.
   ///
   /// ```dart
   /// await supabase.auth.signInWithSSO(

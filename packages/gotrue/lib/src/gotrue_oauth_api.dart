@@ -194,14 +194,19 @@ class OAuthConsentResponse {
 ///
 /// ```dart
 /// // 1. Extract the authorization_id from the incoming redirect URL.
-/// final authorizationId = Uri.parse(currentUrl).queryParameters['authorization_id']!;
+/// final authorizationId =
+///     Uri.parse(currentUrl).queryParameters['authorization_id']!;
 ///
 /// // 2. Show the consent screen.
-/// final details = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
+/// final details = await supabase.auth.oauth.getAuthorizationDetails(
+///   authorizationId,
+/// );
 /// print('App "${details.client.clientName}" requests: ${details.scope}');
 ///
 /// // 3. Act on the user's decision.
-/// final consent = await supabase.auth.oauth.approveAuthorization(authorizationId);
+/// final consent = await supabase.auth.oauth.approveAuthorization(
+///   authorizationId,
+/// );
 /// // Redirect the user to consent.redirectUrl.
 /// ```
 ///

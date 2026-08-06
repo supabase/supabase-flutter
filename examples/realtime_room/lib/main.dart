@@ -38,8 +38,8 @@ class RealtimeRoomApp extends StatelessWidget {
   }
 }
 
-/// Asks for a display name before joining the room. Open the example in a second
-/// window with a different name to see the realtime features in action.
+/// Asks for a display name before joining the room. Open the example in a
+/// second window with a different name to see the realtime features in action.
 class JoinPage extends StatefulWidget {
   const JoinPage({super.key});
 
@@ -193,8 +193,8 @@ class _RoomPageState extends State<RoomPage> {
     setState(() => _messages.removeWhere((message) => message.id == id));
   }
 
-  /// Shows `<name> is typing` for a short while, resetting the timer each time a
-  /// fresh ping arrives from that user.
+  /// Shows `<name> is typing` for a short while, resetting the timer each time
+  /// a fresh ping arrives from that user.
   void _showTyping(String name) {
     _typingTimers[name]?.cancel();
     setState(() => _typingUsers.add(name));
@@ -203,8 +203,8 @@ class _RoomPageState extends State<RoomPage> {
     });
   }
 
-  /// Throttles typing pings so a burst of keystrokes sends at most one broadcast
-  /// per second.
+  /// Throttles typing pings so a burst of keystrokes sends at most one
+  /// broadcast per second.
   void _onInputChanged(String _) {
     if (_typingThrottle?.isActive ?? false) return;
     _typingThrottle = Timer(const Duration(seconds: 1), () {});
@@ -230,8 +230,8 @@ class _RoomPageState extends State<RoomPage> {
     }
   }
 
-  /// Deletes a message and reports any failure, like [_send]. The row leaves the
-  /// list through the Postgres Changes delete stream, so there's nothing to
+  /// Deletes a message and reports any failure, like [_send]. The row leaves
+  /// the list through the Postgres Changes delete stream, so there's nothing to
   /// remove here on success.
   Future<void> _delete(String id) async {
     try {

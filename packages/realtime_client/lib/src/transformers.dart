@@ -1,5 +1,6 @@
 // Adapted from epgsql (src/epgsql_binary.erl), this module licensed under
-// 3-clause BSD found here: https://raw.githubusercontent.com/epgsql/epgsql/devel/LICENSE
+// 3-clause BSD found here:
+// https://raw.githubusercontent.com/epgsql/epgsql/devel/LICENSE
 
 import 'dart:convert';
 
@@ -53,15 +54,19 @@ class PostgresColumn {
   });
 }
 
-/// Takes an array of columns and an object of string values then converts each string value
-/// to its mapped type.
+/// Takes an array of columns and an object of string values then converts each
+/// string value to its mapped type.
 ///
 /// `columns` All of the columns
 /// `record` The map of string values
 /// `skipTypes` The array of types that should not be converted
 ///
 /// ```dart
-/// convertChangeData([{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}], {'first_name': 'Paul', 'age':'33'}, {})
+/// convertChangeData(
+///   [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}],
+///   {'first_name': 'Paul', 'age':'33'},
+///   {},
+/// )
 /// => { 'first_name': 'Paul', 'age': 33 }
 /// ```
 Map<String, dynamic> convertChangeData(
@@ -94,9 +99,19 @@ Map<String, dynamic> convertChangeData(
 /// `skipTypes` An array of types that should not be converted
 ///
 /// ```dart
-/// convertColumn('age', [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}], ['Paul', '33'], [])
+/// convertColumn(
+///   'age',
+///   [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}],
+///   ['Paul', '33'],
+///   [],
+/// )
 /// => 33
-/// convertColumn('age', [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}], ['Paul', '33'], ['int4'])
+/// convertColumn(
+///   'age',
+///   [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}],
+///   ['Paul', '33'],
+///   ['int4'],
+/// )
 /// => "33"
 /// ```
 dynamic convertColumn(
@@ -231,7 +246,8 @@ dynamic toJson(dynamic value) {
 /// Converts a Postgres Array into a native Dart array
 ///
 ///``` dart
-/// @example toArray('{"[2021-01-01,2021-12-31)","(2021-01-01,2021-12-32]"}', 'daterange')
+/// @example toArray('{"[2021-01-01,2021-12-31)","(2021-01-01,2021-12-32]"}',
+/// 'daterange')
 /// //=> ['[2021-01-01,2021-12-31)', '(2021-01-01,2021-12-32]']
 /// @example toArray([1,2,3,4], 'int4')
 /// //=> [1,2,3,4]
@@ -265,8 +281,8 @@ dynamic toArray(dynamic value, String type) {
   return value;
 }
 
-/// Fixes timestamp to be ISO-8601. Swaps the space between the date and time for a 'T'
-/// See https://github.com/supabase/supabase/issues/18
+/// Fixes timestamp to be ISO-8601. Swaps the space between the date and time
+/// for a 'T' See https://github.com/supabase/supabase/issues/18
 ///
 ///```dart
 /// @example toTimestampString('2019-09-10 00:00:00')

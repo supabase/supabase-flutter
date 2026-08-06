@@ -205,7 +205,8 @@ void main() {
       _,
     ) async {
       // A client pointed at a closed port can never connect, so the request
-      // fails before any response, surfacing as a fetch exception with status 0.
+      // fails before any response, surfacing as a fetch exception with status
+      // 0.
       final unreachable = FunctionsClient(
         'http://127.0.0.1:1/functions/v1',
         const {'apikey': supabasePublishableKey},
