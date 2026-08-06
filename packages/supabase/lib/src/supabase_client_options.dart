@@ -45,10 +45,19 @@ class AuthClientOptions {
   final AuthAsyncStorage? pkceAsyncStorage;
   final AuthFlowType authFlowType;
 
+  /// Whether to append the reserved `sb_flow_id` query parameter to the
+  /// redirect URL of pkce flows, so a callback can be matched to the flow that
+  /// started it.
+  ///
+  /// Check your redirect URL allow list first, see
+  /// [AuthClient.appendPkceFlowIdToRedirects].
+  final bool appendPkceFlowIdToRedirects;
+
   const AuthClientOptions({
     this.autoRefreshToken = true,
     this.pkceAsyncStorage,
     this.authFlowType = AuthFlowType.pkce,
+    this.appendPkceFlowIdToRedirects = false,
   });
 }
 
