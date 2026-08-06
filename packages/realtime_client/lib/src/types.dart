@@ -66,7 +66,8 @@ enum PostgresChangeEvent {
 }
 
 class ChannelFilter {
-  /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`, `DELETE`
+  /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`,
+  /// `DELETE`
   ///
   /// For [RealtimeListenType.presence] it's one of: `sync`, `join`, `leave`
   ///
@@ -75,10 +76,12 @@ class ChannelFilter {
   final String? schema;
   final String? table;
 
-  /// For [RealtimeListenType.postgresChanges] it's of the format `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt, gte, in, like, ilike, is, match, imatch, isdistinct`.
+  /// For [RealtimeListenType.postgresChanges] it's of the format
+  /// `column=filter.value` with `filter` being one of `eq, neq, lt, lte, gt,
+  /// gte, in, like, ilike, is, match, imatch, isdistinct`.
   ///
-  /// Multiple conditions can be combined with commas; they are applied as an `AND`.
-  /// Any operator can be negated with the `not.` prefix.
+  /// Multiple conditions can be combined with commas; they are applied as an
+  /// `AND`. Any operator can be negated with the `not.` prefix.
   final String? filter;
 
   /// For [RealtimeListenType.postgresChanges], restricts the change payload to
