@@ -44,11 +44,30 @@ void main() {
         equals('7263e727-435b-4d38-a5ff-a14c954b8680'),
       );
       expect(actual.client.clientName, equals('OAuth test client'));
+      expect(actual.user, isA<OAuthAuthorizingUser>());
       expect(actual.user.id, equals('1bee2038-51fe-4f93-8fbb-442df18657ff'));
       expect(actual.user.email, equals('translator.user@mail.com'));
     });
 
-    test('throws ArgumentError when user information is missing', () {
+    test('throws FormatException when the user is not an object', () {
+      final json = {
+        'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
+        'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'user': 'translator.user@mail.com',
+        'scope': 'email',
+      };
+
+      expect(
+        () => OAuthAuthorizationDetailsResponse.fromJson(json),
+        throwsFormatException,
+      );
+    });
+
+    test('throws FormatException when user information is missing', () {
       final json = {
         'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
         'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',

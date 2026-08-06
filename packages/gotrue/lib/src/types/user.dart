@@ -1,25 +1,26 @@
 import 'package:collection/collection.dart';
 import 'package:gotrue/src/types/mfa.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class User {
   final String id;
   final Map<String, dynamic> appMetadata;
   final Map<String, dynamic>? userMetadata;
   final String aud;
-  final String? confirmationSentAt;
-  final String? recoverySentAt;
-  final String? emailChangeSentAt;
+  final DateTime? confirmationSentAt;
+  final DateTime? recoverySentAt;
+  final DateTime? emailChangeSentAt;
   final String? newEmail;
-  final String? invitedAt;
+  final DateTime? invitedAt;
   final String? actionLink;
   final String? email;
   final String? phone;
-  final String createdAt;
-  final String? emailConfirmedAt;
-  final String? phoneConfirmedAt;
-  final String? lastSignInAt;
+  final DateTime createdAt;
+  final DateTime? emailConfirmedAt;
+  final DateTime? phoneConfirmedAt;
+  final DateTime? lastSignInAt;
   final String? role;
-  final String? updatedAt;
+  final DateTime? updatedAt;
   final List<UserIdentity>? identities;
   final List<Factor>? factors;
   final bool isAnonymous;
@@ -60,20 +61,20 @@ class User {
       appMetadata: json['app_metadata'] as Map<String, dynamic>? ?? {},
       userMetadata: json['user_metadata'] as Map<String, dynamic>?,
       aud: json['aud'] ?? '',
-      confirmationSentAt: json['confirmation_sent_at'],
-      recoverySentAt: json['recovery_sent_at'],
-      emailChangeSentAt: json['email_change_sent_at'],
+      confirmationSentAt: tryParseIso8601(json, 'confirmation_sent_at'),
+      recoverySentAt: tryParseIso8601(json, 'recovery_sent_at'),
+      emailChangeSentAt: tryParseIso8601(json, 'email_change_sent_at'),
       newEmail: json['new_email'],
-      invitedAt: json['invited_at'],
+      invitedAt: tryParseIso8601(json, 'invited_at'),
       actionLink: json['action_link'],
       email: json['email'],
       phone: json['phone'],
-      createdAt: json['created_at'] ?? '',
-      emailConfirmedAt: json['email_confirmed_at'],
-      phoneConfirmedAt: json['phone_confirmed_at'],
-      lastSignInAt: json['last_sign_in_at'],
+      createdAt: parseIso8601(json, 'created_at'),
+      emailConfirmedAt: tryParseIso8601(json, 'email_confirmed_at'),
+      phoneConfirmedAt: tryParseIso8601(json, 'phone_confirmed_at'),
+      lastSignInAt: tryParseIso8601(json, 'last_sign_in_at'),
       role: json['role'],
-      updatedAt: json['updated_at'],
+      updatedAt: tryParseIso8601(json, 'updated_at'),
       identities: json['identities'] != null
           ? List<UserIdentity>.from(
               json['identities']?.map((x) => UserIdentity.fromMap(x)),
@@ -92,20 +93,20 @@ class User {
       'app_metadata': appMetadata,
       'user_metadata': userMetadata,
       'aud': aud,
-      'confirmation_sent_at': confirmationSentAt,
-      'recovery_sent_at': recoverySentAt,
-      'email_change_sent_at': emailChangeSentAt,
+      'confirmation_sent_at': confirmationSentAt?.toIso8601String(),
+      'recovery_sent_at': recoverySentAt?.toIso8601String(),
+      'email_change_sent_at': emailChangeSentAt?.toIso8601String(),
       'new_email': newEmail,
-      'invited_at': invitedAt,
+      'invited_at': invitedAt?.toIso8601String(),
       'action_link': actionLink,
       'email': email,
       'phone': phone,
-      'created_at': createdAt,
-      'email_confirmed_at': emailConfirmedAt,
-      'phone_confirmed_at': phoneConfirmedAt,
-      'last_sign_in_at': lastSignInAt,
+      'created_at': createdAt.toIso8601String(),
+      'email_confirmed_at': emailConfirmedAt?.toIso8601String(),
+      'phone_confirmed_at': phoneConfirmedAt?.toIso8601String(),
+      'last_sign_in_at': lastSignInAt?.toIso8601String(),
       'role': role,
-      'updated_at': updatedAt,
+      'updated_at': updatedAt?.toIso8601String(),
       'identities': identities?.map((identity) => identity.toJson()).toList(),
       'factors': factors?.map((factor) => factor.toJson()).toList(),
       'is_anonymous': isAnonymous,
@@ -156,9 +157,11 @@ class User {
 
   @override
   int get hashCode {
+    final collectionHash = const DeepCollectionEquality().hash;
+
     return id.hashCode ^
-        appMetadata.hashCode ^
-        userMetadata.hashCode ^
+        collectionHash(appMetadata) ^
+        collectionHash(userMetadata) ^
         aud.hashCode ^
         confirmationSentAt.hashCode ^
         recoverySentAt.hashCode ^
@@ -174,8 +177,8 @@ class User {
         lastSignInAt.hashCode ^
         role.hashCode ^
         updatedAt.hashCode ^
-        identities.hashCode ^
-        factors.hashCode ^
+        collectionHash(identities) ^
+        collectionHash(factors) ^
         isAnonymous.hashCode;
   }
 }
@@ -186,9 +189,9 @@ class UserIdentity {
   final Map<String, dynamic>? identityData;
   final String identityId;
   final String provider;
-  final String? createdAt;
-  final String? lastSignInAt;
-  final String? updatedAt;
+  final DateTime? createdAt;
+  final DateTime? lastSignInAt;
+  final DateTime? updatedAt;
 
   const UserIdentity({
     required this.id,
@@ -207,9 +210,9 @@ class UserIdentity {
     Map<String, dynamic>? identityData,
     String? identityId,
     String? provider,
-    String? createdAt,
-    String? lastSignInAt,
-    String? updatedAt,
+    DateTime? createdAt,
+    DateTime? lastSignInAt,
+    DateTime? updatedAt,
   }) {
     return UserIdentity(
       id: id ?? this.id,
@@ -230,9 +233,9 @@ class UserIdentity {
       identityData: (map['identity_data'] as Map?)?.cast(),
       identityId: (map['identity_id'] ?? '') as String,
       provider: map['provider'] as String,
-      createdAt: map['created_at'] as String?,
-      lastSignInAt: map['last_sign_in_at'] as String?,
-      updatedAt: map['updated_at'] as String?,
+      createdAt: tryParseIso8601(map, 'created_at'),
+      lastSignInAt: tryParseIso8601(map, 'last_sign_in_at'),
+      updatedAt: tryParseIso8601(map, 'updated_at'),
     );
   }
 
@@ -243,9 +246,9 @@ class UserIdentity {
       'identity_data': identityData,
       'identity_id': identityId,
       'provider': provider,
-      'created_at': createdAt,
-      'last_sign_in_at': lastSignInAt,
-      'updated_at': updatedAt,
+      'created_at': createdAt?.toIso8601String(),
+      'last_sign_in_at': lastSignInAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
@@ -277,7 +280,7 @@ class UserIdentity {
   int get hashCode {
     return id.hashCode ^
         userId.hashCode ^
-        identityData.hashCode ^
+        const DeepCollectionEquality().hash(identityData) ^
         identityId.hashCode ^
         provider.hashCode ^
         createdAt.hashCode ^

@@ -34,6 +34,29 @@ class OAuthAuthorizedClient {
   }
 }
 
+/// The signed-in user a pending OAuth authorization request belongs to.
+///
+/// The OAuth 2.1 server only returns the identity needed to render a consent
+/// screen, so this is a smaller shape than [User].
+///
+/// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+class OAuthAuthorizingUser {
+  /// Unique identifier of the user.
+  final String id;
+
+  /// Email address of the user.
+  final String email;
+
+  const OAuthAuthorizingUser({required this.id, required this.email});
+
+  factory OAuthAuthorizingUser.fromJson(Map<String, dynamic> json) {
+    return OAuthAuthorizingUser(
+      id: json['id'] as String,
+      email: json['email'] as String,
+    );
+  }
+}
+
 /// An OAuth grant representing a user's authorization of an OAuth client.
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
@@ -57,7 +80,7 @@ class OAuthGrant {
     return OAuthGrant(
       client: OAuthAuthorizedClient.fromJson(json['client']),
       scopes: (json['scopes'] as List?)?.cast() ?? const [],
-      grantedAt: DateTime.parse(json['granted_at'] as String),
+      grantedAt: parseIso8601(json, 'granted_at'),
     );
   }
 }
@@ -99,8 +122,8 @@ class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
   /// The OAuth client requesting authorization.
   final OAuthAuthorizedClient client;
 
-  /// The OAuth User requesting authorization.
-  final User user;
+  /// The user the authorization request belongs to.
+  final OAuthAuthorizingUser user;
 
   /// The scopes requested by the OAuth client, if any.
   final String? scope;
@@ -119,9 +142,8 @@ class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
   factory OAuthAuthorizationDetailsResponse.fromJson(
     Map<String, dynamic> json,
   ) {
-    final user = json['user'] == null ? null : User.fromJson(json['user']);
-
-    if (user == null) {
+    final user = json['user'];
+    if (user is! Map<String, dynamic>) {
       throw FormatException(
         'The provided JSON should contain a parseable user object',
         json.toString(),
@@ -131,7 +153,7 @@ class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
     return OAuthAuthorizationDetailsResponse(
       authorizationId: json['authorization_id'] as String,
       client: OAuthAuthorizedClient.fromJson(json['client']),
-      user: user,
+      user: OAuthAuthorizingUser.fromJson(user),
       scope: json['scope'] as String?,
       redirectUri: json['redirect_uri'] as String,
     );

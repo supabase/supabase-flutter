@@ -113,6 +113,74 @@ await catalog.loadTableResult(
 );
 ```
 
+### Timestamps are `DateTime` instead of `String` or `int`
+
+Every timestamp the SDK returns is now a `DateTime` in UTC, parsed once when the response is
+decoded, instead of a raw ISO 8601 `String` or a Unix timestamp `int`. Comparing, formatting and
+doing arithmetic on them no longer requires parsing them yourself.
+
+| Type | Fields | Before | After |
+| --- | --- | --- | --- |
+| `Session` | `expiresAt` | `int?` (Unix seconds) | `DateTime?` |
+| `User` | `createdAt` | `String` | `DateTime` |
+| `User` | `confirmationSentAt`, `recoverySentAt`, `emailChangeSentAt`, `invitedAt`, `confirmedAt`, `emailConfirmedAt`, `phoneConfirmedAt`, `lastSignInAt`, `updatedAt` | `String?` | `DateTime?` |
+| `UserIdentity` | `createdAt`, `lastSignInAt`, `updatedAt` | `String?` | `DateTime?` |
+| `OAuthClient` | `createdAt`, `updatedAt` | `String` | `DateTime` |
+| `Bucket` | `createdAt`, `updatedAt` | `String` | `DateTime` |
+| `FileObject` | `createdAt`, `updatedAt`, `lastAccessedAt` | `String?` | `DateTime?` |
+| `FileObjectV2` | `createdAt` | `String` | `DateTime` |
+| `FileObjectV2` | `updatedAt`, `lastAccessedAt`, `lastModified` | `String?` | `DateTime?` |
+| `PaginatedFile` | `createdAt`, `updatedAt` | `String?` | `DateTime?` |
+
+```dart
+// Before
+final expiresAt = supabase.auth.currentSession?.expiresAt;
+final expiry = expiresAt == null
+    ? null
+    : DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000);
+final createdAt = DateTime.parse(user.createdAt);
+
+// After
+final expiry = supabase.auth.currentSession?.expiresAt;
+final createdAt = user.createdAt;
+```
+
+If you need the previous representation, ask for it explicitly:
+
+```dart
+final iso = user.createdAt.toIso8601String();
+final unixSeconds = session.expiresAt!.millisecondsSinceEpoch ~/ 1000;
+```
+
+The wire format is unchanged: `toJson()` still writes ISO 8601 strings for the `User`, `Bucket` and
+`FileObject` timestamps and Unix seconds for `Session.expires_at`, so persisted sessions written by
+v2 are still readable by v3.
+
+Two behavioural details are worth checking:
+
+- The `DateTime` values are in UTC. `DateTime` equality takes the time zone flag into account, so
+  compare against `DateTime.utc(...)` rather than `DateTime(...)`, or call `toLocal()` first.
+- A timestamp the server is documented to always send is now parsed strictly. `User.createdAt`
+  used to fall back to an empty string when the field was missing and now throws a
+  `FormatException`, which surfaces a malformed payload instead of passing an unusable value on.
+
+### `OAuthAuthorizationDetailsResponse.user` is an `OAuthAuthorizingUser`
+
+The OAuth 2.1 server returns only an id and an email for the user a pending authorization request
+belongs to, so `OAuthAuthorizationDetailsResponse.user` was a `User` with every other field
+defaulted. It is now an `OAuthAuthorizingUser`, which carries exactly the two fields the server
+sends, matching what the other Supabase client libraries expose.
+
+```dart
+// Before
+final User user = details.user;
+
+// After
+final OAuthAuthorizingUser user = details.user;
+```
+
+`id` and `email` keep their names, so code that only reads those needs no change.
+
 ### `order()` now sorts ascending by default
 
 `PostgrestTransformBuilder.order()` and `SupabaseStreamBuilder.order()` defaulted `ascending` to

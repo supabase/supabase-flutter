@@ -5,8 +5,8 @@ class Bucket {
   final String id;
   final String name;
   final String owner;
-  final String createdAt;
-  final String updatedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
   final bool public;
   final int? fileSizeLimit;
   final List<String>? allowedMimeTypes;
@@ -28,8 +28,8 @@ class Bucket {
       id: json['id'] as String,
       name: json['name'] as String,
       owner: json['owner'] as String? ?? '',
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
+      createdAt: parseIso8601(json, 'created_at'),
+      updatedAt: parseIso8601(json, 'updated_at'),
       public: json['public'] as bool,
       fileSizeLimit: json['file_size_limit'] as int?,
       allowedMimeTypes: allowedMimeTypes is List
@@ -65,8 +65,8 @@ class AnalyticsBucket {
     return AnalyticsBucket(
       id: json['id'] as String,
       name: json['name'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseIso8601(json, 'created_at'),
+      updatedAt: parseIso8601(json, 'updated_at'),
     );
   }
 }
@@ -76,8 +76,8 @@ class FileObject {
   final String? bucketId;
   final String? owner;
   final String? id;
-  final String? updatedAt;
-  final String? createdAt;
+  final DateTime? updatedAt;
+  final DateTime? createdAt;
   final Map<String, dynamic>? metadata;
   final Bucket? buckets;
 
@@ -104,8 +104,8 @@ class FileObject {
       name: json['name'] as String,
       bucketId: json['bucket_id'] as String?,
       owner: json['owner'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      createdAt: json['created_at'] as String?,
+      updatedAt: tryParseIso8601(json, 'updated_at'),
+      createdAt: tryParseIso8601(json, 'created_at'),
       metadata: json['metadata'] as Map<String, dynamic>?,
       buckets: bucketsJson is Map<String, dynamic>
           ? Bucket.fromJson(bucketsJson)
@@ -119,13 +119,13 @@ class FileObjectV2 {
   final String version;
   final String name;
   final String bucketId;
-  final String? updatedAt;
-  final String createdAt;
+  final DateTime? updatedAt;
+  final DateTime createdAt;
   final int? size;
   final String? cacheControl;
   final String? contentType;
   final String? etag;
-  final String? lastModified;
+  final DateTime? lastModified;
   final Map<String, dynamic>? metadata;
 
   const FileObjectV2({
@@ -149,13 +149,13 @@ class FileObjectV2 {
       version: json['version'] as String,
       name: json['name'] as String,
       bucketId: json['bucket_id'] as String,
-      updatedAt: json['updated_at'] as String?,
-      createdAt: json['created_at'] as String,
+      updatedAt: tryParseIso8601(json, 'updated_at'),
+      createdAt: parseIso8601(json, 'created_at'),
       size: json['size'] as int?,
       cacheControl: json['cache_control'] as String?,
       contentType: json['content_type'] as String?,
       etag: json['etag'] as String?,
-      lastModified: json['last_modified'] as String?,
+      lastModified: tryParseIso8601(json, 'last_modified'),
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }
@@ -405,10 +405,10 @@ class PaginatedFile {
   final String? id;
 
   /// The last update timestamp.
-  final String? updatedAt;
+  final DateTime? updatedAt;
 
   /// The creation timestamp.
-  final String? createdAt;
+  final DateTime? createdAt;
 
   /// The file metadata, including size and mimetype. `null` when not yet set.
   final Map<String, dynamic>? metadata;
@@ -427,8 +427,8 @@ class PaginatedFile {
       name: json['name'] as String,
       key: json['key'] as String?,
       id: json['id'] as String?,
-      updatedAt: json['updated_at'] as String?,
-      createdAt: json['created_at'] as String?,
+      updatedAt: tryParseIso8601(json, 'updated_at'),
+      createdAt: tryParseIso8601(json, 'created_at'),
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }

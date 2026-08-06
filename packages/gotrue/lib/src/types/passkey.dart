@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// A passkey (WebAuthn credential) registered to a user.
 @experimental
@@ -27,19 +28,11 @@ class Passkey {
   });
 
   factory Passkey.fromJson(Map<String, dynamic> json) {
-    final createdAt = json['created_at'];
-    if (createdAt is! String) {
-      throw FormatException(
-        'Expected created_at to be a string, got ${createdAt.runtimeType}',
-        json.toString(),
-      );
-    }
-    final lastUsedAt = json['last_used_at'] as String?;
     return Passkey(
       id: json['id'] as String,
       friendlyName: json['friendly_name'] as String?,
-      createdAt: DateTime.parse(createdAt),
-      lastUsedAt: lastUsedAt != null ? DateTime.parse(lastUsedAt) : null,
+      createdAt: parseIso8601(json, 'created_at'),
+      lastUsedAt: tryParseIso8601(json, 'last_used_at'),
     );
   }
 
@@ -102,7 +95,7 @@ class PasskeyRegistrationOptionsResponse {
     return PasskeyRegistrationOptionsResponse(
       challengeId: json['challenge_id'] as String,
       options: Map.from(json['options'] as Map),
-      expiresAt: _parseExpiresAt(json),
+      expiresAt: parseUnixSeconds(json, 'expires_at'),
     );
   }
 }
@@ -137,18 +130,7 @@ class PasskeyAuthenticationOptionsResponse {
     return PasskeyAuthenticationOptionsResponse(
       challengeId: json['challenge_id'] as String,
       options: Map.from(json['options'] as Map),
-      expiresAt: _parseExpiresAt(json),
+      expiresAt: parseUnixSeconds(json, 'expires_at'),
     );
   }
-}
-
-DateTime _parseExpiresAt(Map<String, dynamic> json) {
-  final expiresAtValue = json['expires_at'];
-  if (expiresAtValue is! num) {
-    throw FormatException(
-      'Expected expires_at to be a number, got ${expiresAtValue.runtimeType}',
-      json.toString(),
-    );
-  }
-  return DateTime.fromMillisecondsSinceEpoch(expiresAtValue.toInt() * 1000);
 }

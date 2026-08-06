@@ -15,8 +15,8 @@ Map<String, dynamic> get testBucketJson => {
   'id': 'test_bucket',
   'name': 'test_bucket',
   'owner': 'owner_id',
-  'created_at': '',
-  'updated_at': '',
+  'created_at': '2024-01-01T00:00:00.000Z',
+  'updated_at': '2024-01-02T00:00:00.000Z',
   'public': false,
 };
 

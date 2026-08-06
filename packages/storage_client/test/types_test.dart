@@ -17,6 +17,8 @@ void main() {
 
       expect(bucket.id, 'avatars');
       expect(bucket.owner, 'owner-id');
+      expect(bucket.createdAt, DateTime.utc(2021, 1, 1));
+      expect(bucket.updatedAt, DateTime.utc(2021, 1, 2));
       expect(bucket.public, isTrue);
       expect(bucket.fileSizeLimit, 1024);
       expect(bucket.allowedMimeTypes, ['image/png', 'image/jpeg']);
@@ -34,6 +36,19 @@ void main() {
       expect(bucket.owner, '');
       expect(bucket.fileSizeLimit, isNull);
       expect(bucket.allowedMimeTypes, isNull);
+    });
+
+    test('throws when created_at is not a valid timestamp', () {
+      expect(
+        () => Bucket.fromJson({
+          'id': 'avatars',
+          'name': 'avatars',
+          'created_at': '',
+          'updated_at': '2021-01-02T00:00:00Z',
+          'public': false,
+        }),
+        throwsFormatException,
+      );
     });
 
     test('treats a non-list allowed_mime_types as null', () {
@@ -78,6 +93,18 @@ void main() {
       expect(file.buckets, isNull);
     });
 
+    test('parses the timestamps and leaves absent ones null', () {
+      final file = FileObject.fromJson({
+        'name': 'photo.png',
+        'created_at': '2021-01-01T00:00:00Z',
+        'updated_at': '2021-01-02T00:00:00+02:00',
+      });
+
+      expect(file.createdAt, DateTime.utc(2021, 1, 1));
+      expect(file.updatedAt, DateTime.utc(2021, 1, 1, 22));
+      expect(FileObject.fromJson({'name': 'photo.png'}).createdAt, isNull);
+    });
+
     test('throws a FormatException when the JSON is not an object', () {
       expect(
         () => FileObject.fromJson(['not', 'a', 'map']),
@@ -104,7 +131,9 @@ void main() {
       expect(file.version, 'v1');
       expect(file.size, 42);
       expect(file.contentType, 'image/png');
+      expect(file.createdAt, DateTime.utc(2021, 1, 1));
       expect(file.updatedAt, isNull);
+      expect(file.lastModified, isNull);
     });
   });
 

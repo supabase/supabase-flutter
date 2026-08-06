@@ -165,10 +165,10 @@ class OAuthClient {
   final String? scope;
 
   /// Timestamp when the client was created
-  final String createdAt;
+  final DateTime createdAt;
 
   /// Timestamp when the client was last updated
-  final String updatedAt;
+  final DateTime updatedAt;
 
   const OAuthClient({
     required this.clientId,
@@ -213,8 +213,8 @@ class OAuthClient {
           )
           .toList(),
       scope: json['scope'] as String?,
-      createdAt: json['created_at'] as String,
-      updatedAt: json['updated_at'] as String,
+      createdAt: parseIso8601(json, 'created_at'),
+      updatedAt: parseIso8601(json, 'updated_at'),
     );
   }
 }

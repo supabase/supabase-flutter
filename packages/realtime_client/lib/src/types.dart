@@ -307,10 +307,10 @@ class PostgresChangePayload {
     DateTime commitTimestamp;
     try {
       commitTimestamp = commitTimestampStr != null
-          ? DateTime.parse(commitTimestampStr)
-          : DateTime.fromMillisecondsSinceEpoch(0);
+          ? DateTime.parse(commitTimestampStr).toUtc()
+          : DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     } on FormatException {
-      commitTimestamp = DateTime.fromMillisecondsSinceEpoch(0);
+      commitTimestamp = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     }
 
     final newData = payload['new'];

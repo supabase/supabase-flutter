@@ -57,7 +57,7 @@ void main() {
       expect(response.options['challenge'], isNotEmpty);
       expect(
         response.expiresAt,
-        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000),
+        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000, isUtc: true),
       );
     });
 
@@ -114,7 +114,7 @@ void main() {
       expect(response.options['user']['name'], 'user@example.com');
       expect(
         response.expiresAt,
-        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000),
+        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000, isUtc: true),
       );
     });
 

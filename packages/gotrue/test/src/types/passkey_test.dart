@@ -75,7 +75,7 @@ void main() {
       expect(response.options['rp'], {'id': 'example.com'});
       expect(
         response.expiresAt,
-        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000),
+        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000, isUtc: true),
       );
     });
 
@@ -106,7 +106,7 @@ void main() {
       expect(response.options['rpId'], 'example.com');
       expect(
         response.expiresAt,
-        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000),
+        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000, isUtc: true),
       );
     });
 

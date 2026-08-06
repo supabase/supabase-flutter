@@ -47,7 +47,7 @@ void main() {
         expect(user.appMetadata, equals(<String, dynamic>{}));
         expect(user.userMetadata, equals(<String, dynamic>{}));
         expect(user.aud, equals('authenticated'));
-        expect(user.createdAt, equals('2023-01-01T00:00:00Z'));
+        expect(user.createdAt, equals(DateTime.utc(2023, 1, 1)));
         expect(user.isAnonymous, isFalse);
       });
 
@@ -87,20 +87,20 @@ void main() {
           equals(<String, dynamic>{'name': 'John Doe'}),
         );
         expect(user.aud, equals('authenticated'));
-        expect(user.confirmationSentAt, equals('2023-01-01T00:00:00Z'));
-        expect(user.recoverySentAt, equals('2023-01-01T01:00:00Z'));
-        expect(user.emailChangeSentAt, equals('2023-01-01T02:00:00Z'));
+        expect(user.confirmationSentAt, equals(DateTime.utc(2023, 1, 1)));
+        expect(user.recoverySentAt, equals(DateTime.utc(2023, 1, 1, 1)));
+        expect(user.emailChangeSentAt, equals(DateTime.utc(2023, 1, 1, 2)));
         expect(user.newEmail, equals('new@example.com'));
-        expect(user.invitedAt, equals('2023-01-01T03:00:00Z'));
+        expect(user.invitedAt, equals(DateTime.utc(2023, 1, 1, 3)));
         expect(user.actionLink, equals('https://example.com/action'));
         expect(user.email, equals('test@example.com'));
         expect(user.phone, equals('+1234567890'));
-        expect(user.createdAt, equals('2023-01-01T00:00:00Z'));
-        expect(user.emailConfirmedAt, equals('2023-01-01T05:00:00Z'));
-        expect(user.phoneConfirmedAt, equals('2023-01-01T06:00:00Z'));
-        expect(user.lastSignInAt, equals('2023-01-01T07:00:00Z'));
+        expect(user.createdAt, equals(DateTime.utc(2023, 1, 1)));
+        expect(user.emailConfirmedAt, equals(DateTime.utc(2023, 1, 1, 5)));
+        expect(user.phoneConfirmedAt, equals(DateTime.utc(2023, 1, 1, 6)));
+        expect(user.lastSignInAt, equals(DateTime.utc(2023, 1, 1, 7)));
         expect(user.role, equals('authenticated'));
-        expect(user.updatedAt, equals('2023-01-01T08:00:00Z'));
+        expect(user.updatedAt, equals(DateTime.utc(2023, 1, 1, 8)));
         expect(user.isAnonymous, isTrue);
       });
 
@@ -148,7 +148,7 @@ void main() {
         expect(user!.appMetadata, equals({}));
       });
 
-      test('handles empty string defaults for id, aud, and createdAt', () {
+      test('returns null when id is null, before parsing any timestamp', () {
         final json = <String, dynamic>{
           'id': null,
           'app_metadata': <String, dynamic>{},
@@ -160,6 +160,44 @@ void main() {
         final user = User.fromJson(json);
 
         expect(user, isNull);
+      });
+
+      test('throws when created_at is missing', () {
+        final json = <String, dynamic>{
+          'id': '123',
+          'app_metadata': <String, dynamic>{},
+          'user_metadata': <String, dynamic>{},
+          'aud': 'authenticated',
+        };
+
+        expect(() => User.fromJson(json), throwsFormatException);
+      });
+
+      test('throws when created_at is not a valid timestamp', () {
+        final json = <String, dynamic>{
+          'id': '123',
+          'app_metadata': <String, dynamic>{},
+          'user_metadata': <String, dynamic>{},
+          'aud': 'authenticated',
+          'created_at': 'not a timestamp',
+        };
+
+        expect(() => User.fromJson(json), throwsFormatException);
+      });
+
+      test('normalizes timestamps with an offset to UTC', () {
+        final json = <String, dynamic>{
+          'id': '123',
+          'app_metadata': <String, dynamic>{},
+          'user_metadata': <String, dynamic>{},
+          'aud': 'authenticated',
+          'created_at': '2023-01-01T02:00:00+02:00',
+        };
+
+        final user = User.fromJson(json);
+
+        expect(user!.createdAt, equals(DateTime.utc(2023, 1, 1)));
+        expect(user.createdAt.isUtc, isTrue);
       });
 
       test('creates user with identities', () {
@@ -255,25 +293,25 @@ void main() {
 
     group('toJson', () {
       test('serializes user correctly', () {
-        const user = User(
+        final user = User(
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
-          confirmationSentAt: '2023-01-01T00:00:00Z',
-          recoverySentAt: '2023-01-01T01:00:00Z',
-          emailChangeSentAt: '2023-01-01T02:00:00Z',
+          confirmationSentAt: DateTime.utc(2023, 1, 1),
+          recoverySentAt: DateTime.utc(2023, 1, 1, 1),
+          emailChangeSentAt: DateTime.utc(2023, 1, 1, 2),
           newEmail: 'new@example.com',
-          invitedAt: '2023-01-01T03:00:00Z',
+          invitedAt: DateTime.utc(2023, 1, 1, 3),
           actionLink: 'https://example.com/action',
           email: 'test@example.com',
           phone: '+1234567890',
-          createdAt: '2023-01-01T00:00:00Z',
-          emailConfirmedAt: '2023-01-01T05:00:00Z',
-          phoneConfirmedAt: '2023-01-01T06:00:00Z',
-          lastSignInAt: '2023-01-01T07:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          emailConfirmedAt: DateTime.utc(2023, 1, 1, 5),
+          phoneConfirmedAt: DateTime.utc(2023, 1, 1, 6),
+          lastSignInAt: DateTime.utc(2023, 1, 1, 7),
           role: 'authenticated',
-          updatedAt: '2023-01-01T08:00:00Z',
+          updatedAt: DateTime.utc(2023, 1, 1, 8),
           isAnonymous: true,
         );
 
@@ -283,40 +321,46 @@ void main() {
         expect(json['app_metadata'], equals({'provider': 'email'}));
         expect(json['user_metadata'], equals({'name': 'John Doe'}));
         expect(json['aud'], equals('authenticated'));
-        expect(json['confirmation_sent_at'], equals('2023-01-01T00:00:00Z'));
-        expect(json['recovery_sent_at'], equals('2023-01-01T01:00:00Z'));
-        expect(json['email_change_sent_at'], equals('2023-01-01T02:00:00Z'));
+        expect(
+          json['confirmation_sent_at'],
+          equals('2023-01-01T00:00:00.000Z'),
+        );
+        expect(json['recovery_sent_at'], equals('2023-01-01T01:00:00.000Z'));
+        expect(
+          json['email_change_sent_at'],
+          equals('2023-01-01T02:00:00.000Z'),
+        );
         expect(json['new_email'], equals('new@example.com'));
-        expect(json['invited_at'], equals('2023-01-01T03:00:00Z'));
+        expect(json['invited_at'], equals('2023-01-01T03:00:00.000Z'));
         expect(json['action_link'], equals('https://example.com/action'));
         expect(json['email'], equals('test@example.com'));
         expect(json['phone'], equals('+1234567890'));
-        expect(json['created_at'], equals('2023-01-01T00:00:00Z'));
-        expect(json['email_confirmed_at'], equals('2023-01-01T05:00:00Z'));
-        expect(json['phone_confirmed_at'], equals('2023-01-01T06:00:00Z'));
-        expect(json['last_sign_in_at'], equals('2023-01-01T07:00:00Z'));
+        expect(json['created_at'], equals('2023-01-01T00:00:00.000Z'));
+        expect(json['email_confirmed_at'], equals('2023-01-01T05:00:00.000Z'));
+        expect(json['phone_confirmed_at'], equals('2023-01-01T06:00:00.000Z'));
+        expect(json['last_sign_in_at'], equals('2023-01-01T07:00:00.000Z'));
         expect(json['role'], equals('authenticated'));
-        expect(json['updated_at'], equals('2023-01-01T08:00:00Z'));
+        expect(json['updated_at'], equals('2023-01-01T08:00:00.000Z'));
         expect(json['is_anonymous'], equals(true));
       });
 
       test('serializes identities correctly', () {
-        const identity = UserIdentity(
+        final identity = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{'email': 'test@example.com'},
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
-        const user = User(
+        final user = User(
           id: '123',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
           identities: [identity],
         );
 
@@ -328,12 +372,12 @@ void main() {
       });
 
       test('handles null identities and factors', () {
-        const user = User(
+        final user = User(
           id: '123',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
           identities: null,
           factors: null,
         );
@@ -347,13 +391,13 @@ void main() {
 
     group('toString', () {
       test('includes all user properties', () {
-        const user = User(
+        final user = User(
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
           email: 'test@example.com',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
           isAnonymous: true,
         );
 
@@ -368,23 +412,23 @@ void main() {
 
     group('equality and hashCode', () {
       test('returns true for identical users', () {
-        const user1 = User(
+        final user1 = User(
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
           email: 'test@example.com',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
           isAnonymous: false,
         );
 
-        const user2 = User(
+        final user2 = User(
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
           email: 'test@example.com',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
           isAnonymous: false,
         );
 
@@ -393,47 +437,47 @@ void main() {
       });
 
       test('returns false for users with different ids', () {
-        const user1 = User(
+        final user1 = User(
           id: '123',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
         );
 
-        const user2 = User(
+        final user2 = User(
           id: '456',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
         );
 
         expect(user1, isNot(equals(user2)));
       });
 
       test('returns false for users with different metadata', () {
-        const user1 = User(
+        final user1 = User(
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: {},
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
         );
 
-        const user2 = User(
+        final user2 = User(
           id: '123',
           appMetadata: {'provider': 'oauth'},
           userMetadata: {},
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
         );
 
         expect(user1, isNot(equals(user2)));
       });
 
       test('handles deep collection equality correctly', () {
-        const user1 = User(
+        final user1 = User(
           id: '123',
           appMetadata: {
             'nested': <String, dynamic>{'key': 'value'},
@@ -442,10 +486,10 @@ void main() {
             'list': [1, 2, 3],
           },
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
         );
 
-        const user2 = User(
+        final user2 = User(
           id: '123',
           appMetadata: {
             'nested': <String, dynamic>{'key': 'value'},
@@ -454,7 +498,7 @@ void main() {
             'list': [1, 2, 3],
           },
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
         );
 
         expect(user1, equals(user2));
@@ -463,14 +507,14 @@ void main() {
 
     group('roundtrip serialization', () {
       test('preserves all data through JSON roundtrip', () {
-        const original = User(
+        final original = User(
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
           aud: 'authenticated',
           email: 'test@example.com',
           phone: '+1234567890',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
           isAnonymous: true,
         );
 
@@ -481,7 +525,7 @@ void main() {
       });
 
       test('preserves complex nested data', () {
-        const original = User(
+        final original = User(
           id: '123',
           appMetadata: {
             'provider': 'oauth',
@@ -493,7 +537,7 @@ void main() {
             'preferences': ['dark_mode', 'notifications'],
           },
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
         );
 
         final json = original.toJson();
@@ -528,9 +572,9 @@ void main() {
         );
         expect(identity.identityId, equals('identity-1'));
         expect(identity.provider, equals('email'));
-        expect(identity.createdAt, equals('2023-01-01T00:00:00Z'));
-        expect(identity.lastSignInAt, equals('2023-01-01T00:00:00Z'));
-        expect(identity.updatedAt, equals('2023-01-01T08:00:00Z'));
+        expect(identity.createdAt, equals(DateTime.utc(2023, 1, 1)));
+        expect(identity.lastSignInAt, equals(DateTime.utc(2023, 1, 1)));
+        expect(identity.updatedAt, equals(DateTime.utc(2023, 1, 1, 8)));
       });
 
       test('handles missing identity_id with empty string default', () {
@@ -583,15 +627,15 @@ void main() {
 
     group('toJson', () {
       test('serializes identity correctly', () {
-        const identity = UserIdentity(
+        final identity = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{'email': 'test@example.com'},
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
-          updatedAt: '2023-01-01T08:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
+          updatedAt: DateTime.utc(2023, 1, 1, 8),
         );
 
         final json = identity.toJson();
@@ -604,27 +648,27 @@ void main() {
         );
         expect(json['identity_id'], equals('identity-1'));
         expect(json['provider'], equals('email'));
-        expect(json['created_at'], equals('2023-01-01T00:00:00Z'));
-        expect(json['last_sign_in_at'], equals('2023-01-01T00:00:00Z'));
-        expect(json['updated_at'], equals('2023-01-01T08:00:00Z'));
+        expect(json['created_at'], equals('2023-01-01T00:00:00.000Z'));
+        expect(json['last_sign_in_at'], equals('2023-01-01T00:00:00.000Z'));
+        expect(json['updated_at'], equals('2023-01-01T08:00:00.000Z'));
       });
     });
 
     group('copyWith', () {
       test('creates copy with updated fields', () {
-        const original = UserIdentity(
+        final original = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{'email': 'old@example.com'},
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
         final copy = original.copyWith(
           identityData: <String, dynamic>{'email': 'new@example.com'},
-          lastSignInAt: '2023-01-02T00:00:00Z',
+          lastSignInAt: DateTime.utc(2023, 1, 2),
         );
 
         expect(copy.id, equals(original.id));
@@ -636,18 +680,18 @@ void main() {
         expect(copy.identityId, equals(original.identityId));
         expect(copy.provider, equals(original.provider));
         expect(copy.createdAt, equals(original.createdAt));
-        expect(copy.lastSignInAt, equals('2023-01-02T00:00:00Z'));
+        expect(copy.lastSignInAt, equals(DateTime.utc(2023, 1, 2)));
       });
 
       test('preserves original values when no updates provided', () {
-        const original = UserIdentity(
+        final original = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{'email': 'test@example.com'},
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
         final copy = original.copyWith();
@@ -665,14 +709,14 @@ void main() {
 
     group('toString', () {
       test('includes all identity properties', () {
-        const identity = UserIdentity(
+        final identity = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{'email': 'test@example.com'},
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
         final string = identity.toString();
@@ -686,24 +730,24 @@ void main() {
 
     group('equality and hashCode', () {
       test('returns true for identical identities', () {
-        const identity1 = UserIdentity(
+        final identity1 = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{'email': 'test@example.com'},
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
-        const identity2 = UserIdentity(
+        final identity2 = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{'email': 'test@example.com'},
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
         expect(identity1, equals(identity2));
@@ -711,31 +755,31 @@ void main() {
       });
 
       test('returns false for identities with different providers', () {
-        const identity1 = UserIdentity(
+        final identity1 = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{'email': 'test@example.com'},
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
-        const identity2 = UserIdentity(
+        final identity2 = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{'email': 'test@example.com'},
           identityId: 'identity-1',
           provider: 'google',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
         expect(identity1, isNot(equals(identity2)));
       });
 
       test('handles deep map equality correctly', () {
-        const identity1 = UserIdentity(
+        final identity1 = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{
@@ -743,11 +787,11 @@ void main() {
           },
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
-        const identity2 = UserIdentity(
+        final identity2 = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{
@@ -755,8 +799,8 @@ void main() {
           },
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
         );
 
         expect(identity1, equals(identity2));
@@ -765,7 +809,7 @@ void main() {
 
     group('roundtrip serialization', () {
       test('preserves all data through JSON roundtrip', () {
-        const original = UserIdentity(
+        final original = UserIdentity(
           id: 'identity-1',
           userId: '123',
           identityData: <String, dynamic>{
@@ -774,9 +818,9 @@ void main() {
           },
           identityId: 'identity-1',
           provider: 'email',
-          createdAt: '2023-01-01T00:00:00Z',
-          lastSignInAt: '2023-01-01T00:00:00Z',
-          updatedAt: '2023-01-01T08:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
+          lastSignInAt: DateTime.utc(2023, 1, 1),
+          updatedAt: DateTime.utc(2023, 1, 1, 8),
         );
 
         final json = original.toJson();
