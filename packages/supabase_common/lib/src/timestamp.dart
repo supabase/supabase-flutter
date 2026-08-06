@@ -2,7 +2,9 @@
 /// [DateTime].
 ///
 /// Throws a [FormatException] when the value is missing, is not a string, or
-/// is not a valid ISO 8601 timestamp.
+/// is not a valid ISO 8601 timestamp. Unlike [DateTime.parse], a date whose
+/// month or day is out of range is rejected rather than carried over into the
+/// next month or year.
 DateTime parseIso8601(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is! String) {
@@ -12,13 +14,33 @@ DateTime parseIso8601(Map<String, dynamic> json, String key) {
     );
   }
   final parsed = DateTime.tryParse(value);
-  if (parsed == null) {
+  if (parsed == null || !_hasValidCalendarDate(value)) {
     throw FormatException(
       'Invalid date format for $key: $value',
       json.toString(),
     );
   }
   return parsed.toUtc();
+}
+
+final _calendarDatePattern = RegExp(
+  r'^(?:(\d{4})-(\d{2})-(\d{2})|(\d{4})(\d{2})(\d{2}))',
+);
+
+/// Whether the calendar date at the start of [value] is a real date.
+///
+/// [DateTime.tryParse] carries out-of-range components over into the next
+/// larger one instead of rejecting them, so `2020-01-42` parses as 2020-02-11
+/// and `2019-02-29` as 2019-03-01. A timestamp that does not name a real date
+/// is a malformed payload rather than a timestamp days later.
+bool _hasValidCalendarDate(String value) {
+  final match = _calendarDatePattern.firstMatch(value);
+  if (match == null) return true;
+  final year = int.parse(match[1] ?? match[4]!);
+  final month = int.parse(match[2] ?? match[5]!);
+  final day = int.parse(match[3] ?? match[6]!);
+  final carried = DateTime.utc(year, month, day);
+  return carried.month == month && carried.day == day;
 }
 
 /// Same as [parseIso8601], but returns `null` when the value under [key] is

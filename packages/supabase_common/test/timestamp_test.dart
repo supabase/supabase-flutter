@@ -62,6 +62,63 @@ void main() {
         ),
       );
     });
+
+    test('throws instead of carrying an out-of-range day into a real one', () {
+      // DateTime.parse would return 2020-02-11 for this.
+      expect(
+        () => parseIso8601({'created_at': '2020-01-42'}, 'created_at'),
+        throwsFormatException,
+      );
+      expect(
+        () =>
+            parseIso8601({'created_at': '2025-02-30T10:00:00Z'}, 'created_at'),
+        throwsFormatException,
+      );
+      expect(
+        () =>
+            parseIso8601({'created_at': '2019-02-29T10:00:00Z'}, 'created_at'),
+        throwsFormatException,
+      );
+      expect(
+        () => parseIso8601({'created_at': '2020-01-00'}, 'created_at'),
+        throwsFormatException,
+      );
+    });
+
+    test(
+      'throws instead of carrying an out-of-range month into a real one',
+      () {
+        expect(
+          () => parseIso8601({'created_at': '2023-13-01'}, 'created_at'),
+          throwsFormatException,
+        );
+        expect(
+          () => parseIso8601({'created_at': '2023-00-01'}, 'created_at'),
+          throwsFormatException,
+        );
+      },
+    );
+
+    test('accepts a leap day in a leap year', () {
+      expect(
+        parseIso8601({'created_at': '2020-02-29T10:00:00Z'}, 'created_at'),
+        DateTime.utc(2020, 2, 29, 10),
+      );
+    });
+
+    test('accepts the basic format the ISO 8601 parser allows', () {
+      expect(
+        parseIso8601({'created_at': '20230401T090000Z'}, 'created_at'),
+        DateTime.utc(2023, 4, 1, 9),
+      );
+    });
+
+    test('rejects an out-of-range day in the basic format', () {
+      expect(
+        () => parseIso8601({'created_at': '20230442T090000Z'}, 'created_at'),
+        throwsFormatException,
+      );
+    });
   });
 
   group('tryParseIso8601', () {

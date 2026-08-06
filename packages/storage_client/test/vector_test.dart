@@ -86,6 +86,19 @@ void main() {
       expect(result.nextToken, 'cursor-1');
     });
 
+    test('getBucket leaves a non-numeric creationTime null', () async {
+      mockClient.response = {
+        'vectorBucket': {
+          'vectorBucketName': 'embeddings',
+          'creationTime': '2023-11-14T22:13:20Z',
+        },
+      };
+
+      final bucket = await vectors.getBucket('embeddings');
+
+      expect(bucket.creationTime, isNull);
+    });
+
     test('deleteBucket posts the bucket name', () async {
       await vectors.deleteBucket('embeddings');
 
@@ -146,6 +159,33 @@ void main() {
       expect(index.dimension, 1536);
       expect(index.distanceMetric, DistanceMetric.euclidean);
       expect(index.nonFilterableMetadataKeys, ['raw_text']);
+    });
+
+    test('getIndex parses creationTime as UTC', () async {
+      mockClient.response = {
+        'index': {
+          'indexName': 'documents',
+          'creationTime': 1700000000,
+        },
+      };
+
+      final index = await vectors.from('embeddings').getIndex('documents');
+
+      expect(index.creationTime, DateTime.utc(2023, 11, 14, 22, 13, 20));
+      expect(index.creationTime!.isUtc, isTrue);
+    });
+
+    test('getIndex leaves a non-numeric creationTime null', () async {
+      mockClient.response = {
+        'index': {
+          'indexName': 'documents',
+          'creationTime': '2023-11-14T22:13:20Z',
+        },
+      };
+
+      final index = await vectors.from('embeddings').getIndex('documents');
+
+      expect(index.creationTime, isNull);
     });
 
     test('getIndex leaves unknown enum values null', () async {
