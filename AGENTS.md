@@ -211,5 +211,7 @@ await Supabase.initialize(
 - Run `melos analyze` and `melos format` before committing
 - Ensure tests pass for modified packages
 - Update package changelogs if making notable changes
+- Any change that breaks the public API adds its own section to `MIGRATION.md`
+  in the same pull request, under the major version it will ship in
 - Line length limit is 80 characters
 - Use `dart format` for consistent formatting
