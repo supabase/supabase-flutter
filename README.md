@@ -18,6 +18,8 @@
     <a href="https://supabase.com/docs/guides/with-flutter">Guides</a>
     ·
     <a href="https://supabase.com/docs/reference/dart/introduction">Reference Docs</a>
+    ·
+    <a href="https://github.com/supabase/supabase-flutter/blob/main/MIGRATION.md">Migration Guides</a>
   </p>
 </p>
 
