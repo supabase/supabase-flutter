@@ -82,8 +82,8 @@ class Supabase {
   /// on [authOptions] to override the behavior.
   ///
   /// If [debug] is set to `true`, debug logs will be printed in debug
-  /// console. Defaults to `kDebugMode`, and is always disabled while running
-  /// in a Flutter test.
+  /// console. Defaults to `kDebugMode`, and is disabled by default while
+  /// running in a Flutter test unless [debug] is explicitly set to `true`.
   static Future<Supabase> initialize({
     required String url,
     String? publishableKey,

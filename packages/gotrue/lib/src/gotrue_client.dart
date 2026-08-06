@@ -1756,12 +1756,13 @@ class GoTrueClient {
   /// sends a request to the Auth server for each JWT.
   ///
   /// If the project is not using an asymmetric JWT signing key (like ECC or
-  /// RSA) it always sends a request to the Auth server (similar to [getUser])
-  /// to verify the JWT.
+  /// RSA), or the JWT header does not carry a `kid`, it always sends a
+  /// request to the Auth server (similar to [getUser]) to verify the JWT.
   ///
-  /// For JWTs signed with an RSA-based asymmetric algorithm (e.g. RS256), the
-  /// JWKS is fetched from the server on the first call and cached for
-  /// subsequent calls. The cache is refreshed automatically after 10 minutes.
+  /// For JWTs signed with an RSA-based asymmetric algorithm (e.g. RS256) that
+  /// carry a `kid`, the JWKS is fetched from the server on the first call and
+  /// cached for subsequent calls. The cache is refreshed automatically after
+  /// 10 minutes.
   ///
   /// [jwt] An optional specific JWT you wish to verify, not the one you
   ///       can obtain from [currentSession].

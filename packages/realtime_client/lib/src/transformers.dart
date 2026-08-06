@@ -63,7 +63,7 @@ class PostgresColumn {
 ///
 /// ```dart
 /// convertChangeData(
-///   [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}],
+///   [{'name': 'first_name', 'type': 'text'}, {'name': 'age', 'type': 'int4'}],
 ///   {'first_name': 'Paul', 'age':'33'},
 /// )
 /// => { 'first_name': 'Paul', 'age': 33 }
@@ -100,14 +100,14 @@ Map<String, dynamic> convertChangeData(
 /// ```dart
 /// convertColumn(
 ///   'age',
-///   [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}],
+///   [{'name': 'first_name', 'type': 'text'}, {'name': 'age', 'type': 'int4'}],
 ///   {'first_name': 'Paul', 'age': '33'},
 ///   [],
 /// )
 /// => 33
 /// convertColumn(
 ///   'age',
-///   [{name: 'first_name', type: 'text'}, {name: 'age', type: 'int4'}],
+///   [{'name': 'first_name', 'type': 'text'}, {'name': 'age', 'type': 'int4'}],
 ///   {'first_name': 'Paul', 'age': '33'},
 ///   ['int4'],
 /// )

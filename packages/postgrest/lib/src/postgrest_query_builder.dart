@@ -7,8 +7,10 @@ part of 'postgrest_builder.dart';
 /// Call one of
 /// * select() - "get"
 /// * insert() - "post"
+/// * upsert() - "post"
 /// * update() - "patch"
 /// * delete() - "delete"
+/// * count() - "head"
 /// first. Each of these returns a filter builder that allows the user to
 /// stack filter functions before the request is sent.
 /// {@endtemplate}
