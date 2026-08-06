@@ -195,11 +195,28 @@ void main() {
       );
     });
 
-    test('unixSecondsFromDateTime truncates sub-second precision', () {
+    test('unixSecondsFromDateTime floors sub-second precision', () {
       expect(
         unixSecondsFromDateTime(DateTime.utc(2025, 1, 1, 0, 0, 0, 999)),
         1735689600,
       );
+    });
+
+    test('unixSecondsFromDateTime floors before the epoch too', () {
+      // Truncating towards zero would give 0 and -1 here, seconds that do not
+      // contain these instants.
+      expect(
+        unixSecondsFromDateTime(DateTime.utc(1969, 12, 31, 23, 59, 59, 500)),
+        -1,
+      );
+      expect(
+        unixSecondsFromDateTime(DateTime.utc(1969, 12, 31, 23, 59, 58, 500)),
+        -2,
+      );
+    });
+
+    test('round trip an instant before the epoch', () {
+      expect(unixSecondsFromDateTime(dateTimeFromUnixSeconds(-2)), -2);
     });
   });
 }

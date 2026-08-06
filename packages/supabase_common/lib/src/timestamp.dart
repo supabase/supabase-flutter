@@ -80,7 +80,11 @@ DateTime dateTimeFromUnixSeconds(num seconds) {
   );
 }
 
-/// The number of whole seconds between [dateTime] and the Unix epoch.
+/// The Unix timestamp of [dateTime] in whole seconds.
+///
+/// Sub-second precision is floored rather than truncated towards zero, so the
+/// result stays the second that contains [dateTime] for instants before the
+/// Unix epoch too.
 int unixSecondsFromDateTime(DateTime dateTime) {
-  return dateTime.millisecondsSinceEpoch ~/ 1000;
+  return (dateTime.millisecondsSinceEpoch / 1000).floor();
 }

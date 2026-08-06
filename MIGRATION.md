@@ -152,17 +152,21 @@ final iso = user.createdAt.toIso8601String();
 final unixSeconds = session.expiresAt!.millisecondsSinceEpoch ~/ 1000;
 ```
 
-The wire format is unchanged: `toJson()` still writes ISO 8601 strings for the `User`, `Bucket` and
-`FileObject` timestamps and Unix seconds for `Session.expires_at`, so persisted sessions written by
-v2 are still readable by v3.
+The wire format is unchanged. Of the types above only `Session`, `User` and `UserIdentity` have a
+`toJson()`, and those still write ISO 8601 strings for the `User` and `UserIdentity` timestamps and
+Unix seconds for `Session.expires_at`, so sessions persisted by v2 are still readable by v3. The
+storage types have no `toJson()`, in v2 or v3.
 
-Two behavioural details are worth checking:
+Three behavioural details are worth checking:
 
 - The `DateTime` values are in UTC. `DateTime` equality takes the time zone flag into account, so
   compare against `DateTime.utc(...)` rather than `DateTime(...)`, or call `toLocal()` first.
 - A timestamp the server is documented to always send is now parsed strictly. `User.createdAt`
   used to fall back to an empty string when the field was missing and now throws a
   `FormatException`, which surfaces a malformed payload instead of passing an unusable value on.
+- A timestamp naming a date that does not exist is rejected rather than rolled forward.
+  `DateTime.parse` reads `2019-02-29` as 1 March 2019; parsing now throws a `FormatException`
+  instead.
 
 ### `OAuthAuthorizationDetailsResponse.user` is an `OAuthAuthorizingUser`
 

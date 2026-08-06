@@ -67,6 +67,42 @@ void main() {
       );
     });
 
+    test('throws FormatException when the user id is not a string', () {
+      final json = {
+        'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
+        'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'user': {'id': 42, 'email': 'translator.user@mail.com'},
+        'scope': 'email',
+      };
+
+      expect(
+        () => OAuthAuthorizationDetailsResponse.fromJson(json),
+        throwsFormatException,
+      );
+    });
+
+    test('throws FormatException when the user email is missing', () {
+      final json = {
+        'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
+        'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'user': {'id': '1bee2038-51fe-4f93-8fbb-442df18657ff'},
+        'scope': 'email',
+      };
+
+      expect(
+        () => OAuthAuthorizationDetailsResponse.fromJson(json),
+        throwsFormatException,
+      );
+    });
+
     test('throws FormatException when user information is missing', () {
       final json = {
         'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',

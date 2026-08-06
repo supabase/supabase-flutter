@@ -50,10 +50,16 @@ class OAuthAuthorizingUser {
   const OAuthAuthorizingUser({required this.id, required this.email});
 
   factory OAuthAuthorizingUser.fromJson(Map<String, dynamic> json) {
-    return OAuthAuthorizingUser(
-      id: json['id'] as String,
-      email: json['email'] as String,
-    );
+    final id = json['id'];
+    final email = json['email'];
+    if (id is! String || email is! String) {
+      throw FormatException(
+        'Expected the user id and email to be strings, got '
+        '${id.runtimeType} and ${email.runtimeType}',
+        json.toString(),
+      );
+    }
+    return OAuthAuthorizingUser(id: id, email: email);
   }
 }
 
