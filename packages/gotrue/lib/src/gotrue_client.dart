@@ -469,11 +469,9 @@ class GoTrueClient {
 
     final session = authSessionUrlResponse.session;
     _saveSession(session);
-    notifyAllSubscribers(switch (redirectType) {
-      AuthChangeEvent.passwordRecovery => AuthChangeEvent.passwordRecovery,
-      AuthChangeEvent.userUpdated => AuthChangeEvent.userUpdated,
-      _ => AuthChangeEvent.signedIn,
-    });
+    // The event name stored with the code verifier is the event to emit, so a
+    // code that was issued without one is a plain sign in.
+    notifyAllSubscribers(redirectType ?? AuthChangeEvent.signedIn);
 
     return authSessionUrlResponse;
   }
@@ -748,7 +746,11 @@ class GoTrueClient {
         OtpType.recovery => AuthChangeEvent.passwordRecovery,
         OtpType.emailChange ||
         OtpType.phoneChange => AuthChangeEvent.userUpdated,
-        _ => AuthChangeEvent.signedIn,
+        OtpType.sms ||
+        OtpType.signup ||
+        OtpType.invite ||
+        OtpType.magiclink ||
+        OtpType.email => AuthChangeEvent.signedIn,
       });
     }
 
