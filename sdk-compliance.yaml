@@ -1393,6 +1393,8 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.subscribe
+      - RealtimeClient.connection
+      - RealtimeClient.onConnectionMessage
   realtime.client.disconnect:
     status: implemented
     symbols:
@@ -1403,6 +1405,7 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.connectionState
+      - SocketState
   realtime.client.get_channels:
     status: implemented
     symbols:
