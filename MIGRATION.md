@@ -112,3 +112,36 @@ await catalog.loadTableResult(
   const LoadTableOptions(snapshots: TableSnapshotScope.refs),
 );
 ```
+
+### `order()` now sorts ascending by default
+
+`PostgrestTransformBuilder.order()` and `SupabaseStreamBuilder.order()` defaulted `ascending` to
+`false`, so a call that left the parameter out sorted descending. That was the opposite of SQL's
+`ORDER BY` and of the other Supabase client libraries. Both now default to `true`.
+
+Like the `connectionState` change above, this one does not produce a compile error. The call still
+compiles and still returns the same rows, only in the reverse order, so it is worth checking every
+`.order()` call that does not pass `ascending` explicitly, in both `select()` queries and
+`stream()`.
+
+```dart
+// Before: newest first
+final messages = await supabase.from('messages').select().order('created_at');
+
+// After: oldest first
+final messages = await supabase.from('messages').select().order('created_at');
+```
+
+To keep the previous behaviour, ask for descending order explicitly:
+
+```dart
+final messages = await supabase
+    .from('messages')
+    .select()
+    .order('created_at', ascending: false);
+```
+
+`ascending: false` already means descending on v2, so you can add it to your current code before
+upgrading and leave this change out of the upgrade itself.
+
+`nullsFirst` is unchanged and still defaults to `false`.

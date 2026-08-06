@@ -25,13 +25,33 @@ void main() {
     await resetHelper.reset();
   });
 
-  test('order', () async {
+  test('order defaults to ascending', () async {
     final response = await postgrest.from('users').select().order('username');
     expect(
-      response[1]['username'],
-      'kiwicopple',
+      response.map((row) => row['username']),
+      [
+        'awailas',
+        'dragarcia',
+        'kiwicopple',
+        'supabot',
+      ],
     );
-    expect(response[3]['username'], 'awailas');
+  });
+
+  test('order descending', () async {
+    final response = await postgrest
+        .from('users')
+        .select()
+        .order('username', ascending: false);
+    expect(
+      response.map((row) => row['username']),
+      [
+        'supabot',
+        'kiwicopple',
+        'dragarcia',
+        'awailas',
+      ],
+    );
   });
 
   test('order on multiple columns', () async {
@@ -39,7 +59,7 @@ void main() {
         .from('users')
         .select()
         .order('status', ascending: true)
-        .order('username');
+        .order('username', ascending: false);
     expect(
       response.map((row) => row['status']),
       [
@@ -66,7 +86,7 @@ void main() {
         .select()
         .gt('username', 'b')
         .lt('username', 'r')
-        .order('username');
+        .order('username', ascending: false);
     expect(
       response.map((row) => row['username']),
       [
@@ -92,7 +112,11 @@ void main() {
         ''',
         )
         .eq("username", "supabot")
-        .order("created_at", referencedTable: "messages.reactions")
+        .order(
+          "created_at",
+          referencedTable: "messages.reactions",
+          ascending: false,
+        )
         .single();
 
     final messages = data['messages'] as List;

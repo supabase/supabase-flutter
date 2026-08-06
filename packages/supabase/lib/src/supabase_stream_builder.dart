@@ -89,15 +89,22 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Orders the result with the specified [column].
   ///
-  /// When `ascending` value is true, the result will be in ascending order.
+  /// [ascending] defaults to `true`, matching SQL's `ORDER BY`, so results come
+  /// back in ascending order unless `ascending: false` is passed.
   ///
   /// ```dart
+  /// // Ascending is the default.
+  /// supabase.from('users').stream(primaryKey: ['id']).order('username');
+  /// ```
+  ///
+  /// ```dart
+  /// // Descending has to be requested explicitly.
   /// supabase
   ///     .from('users')
   ///     .stream(primaryKey: ['id'])
   ///     .order('username', ascending: false);
   /// ```
-  SupabaseStreamBuilder order(String column, {bool ascending = false}) {
+  SupabaseStreamBuilder order(String column, {bool ascending = true}) {
     _orderBy = (column: column, ascending: ascending);
     return this;
   }
