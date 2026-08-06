@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
@@ -80,8 +78,6 @@ class FileObject {
   final String? id;
   final String? updatedAt;
   final String? createdAt;
-  @Deprecated("")
-  final String? lastAccessedAt;
   final Map<String, dynamic>? metadata;
   final Bucket? buckets;
 
@@ -92,7 +88,6 @@ class FileObject {
     required this.id,
     required this.updatedAt,
     required this.createdAt,
-    required this.lastAccessedAt,
     required this.metadata,
     required this.buckets,
   });
@@ -111,7 +106,6 @@ class FileObject {
       owner: json['owner'] as String?,
       updatedAt: json['updated_at'] as String?,
       createdAt: json['created_at'] as String?,
-      lastAccessedAt: json['last_accessed_at'] as String?,
       metadata: json['metadata'] as Map<String, dynamic>?,
       buckets: bucketsJson is Map<String, dynamic>
           ? Bucket.fromJson(bucketsJson)
@@ -127,8 +121,6 @@ class FileObjectV2 {
   final String bucketId;
   final String? updatedAt;
   final String createdAt;
-  @Deprecated("")
-  final String? lastAccessedAt;
   final int? size;
   final String? cacheControl;
   final String? contentType;
@@ -143,7 +135,6 @@ class FileObjectV2 {
     required this.bucketId,
     required this.updatedAt,
     required this.createdAt,
-    required this.lastAccessedAt,
     required this.size,
     required this.cacheControl,
     required this.contentType,
@@ -160,7 +151,6 @@ class FileObjectV2 {
       bucketId: json['bucket_id'] as String,
       updatedAt: json['updated_at'] as String?,
       createdAt: json['created_at'] as String,
-      lastAccessedAt: json['last_accessed_at'] as String?,
       size: json['size'] as int?,
       cacheControl: json['cache_control'] as String?,
       contentType: json['content_type'] as String?,
@@ -543,7 +533,7 @@ class SignedUrl {
   }
 }
 
-/// Represents a per-item result from [StorageFileApi.createSignedUrlsResult].
+/// Represents a per-item result from [StorageFileApi.createSignedUrls].
 ///
 /// Use exhaustive pattern matching to handle both outcomes:
 /// ```dart

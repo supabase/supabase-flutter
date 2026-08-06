@@ -4,13 +4,6 @@ import 'package:realtime_client/realtime_client.dart';
 /// Options to pass to the RealtimeClient.
 /// {@endtemplate}
 class RealtimeClientOptions {
-  /// No longer has any effect. Client side rate limiting has been removed,
-  /// so this value is ignored.
-  @Deprecated(
-    'Client side rate limit has been removed. This option will be ignored.',
-  )
-  final int? eventsPerSecond;
-
   /// Level of realtime server logs to be logged
   final RealtimeLogLevel? logLevel;
 
@@ -35,7 +28,6 @@ class RealtimeClientOptions {
 
   /// {@macro realtime_client_options}
   const RealtimeClientOptions({
-    this.eventsPerSecond,
     this.logLevel,
     this.timeout,
     this.connectionCloseTimeout,

@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/version.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -60,7 +58,7 @@ void main() {
 
   group('AuthChangeEvent', () {
     test('has correct enum values', () {
-      expect(AuthChangeEvent.values, hasLength(8));
+      expect(AuthChangeEvent.values, hasLength(7));
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.initialSession));
       expect(
         AuthChangeEvent.values,
@@ -70,8 +68,6 @@ void main() {
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.signedOut));
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.tokenRefreshed));
       expect(AuthChangeEvent.values, contains(AuthChangeEvent.userUpdated));
-      // ignore: deprecated_member_use
-      expect(AuthChangeEvent.values, contains(AuthChangeEvent.userDeleted));
       expect(
         AuthChangeEvent.values,
         contains(AuthChangeEvent.mfaChallengeVerified),
@@ -88,17 +84,10 @@ void main() {
       expect(AuthChangeEvent.signedOut.jsName, equals('SIGNED_OUT'));
       expect(AuthChangeEvent.tokenRefreshed.jsName, equals('TOKEN_REFRESHED'));
       expect(AuthChangeEvent.userUpdated.jsName, equals('USER_UPDATED'));
-      // ignore: deprecated_member_use
-      expect(AuthChangeEvent.userDeleted.jsName, equals(''));
       expect(
         AuthChangeEvent.mfaChallengeVerified.jsName,
         equals('MFA_CHALLENGE_VERIFIED'),
       );
-    });
-
-    test('userDeleted is deprecated', () {
-      // ignore: deprecated_member_use
-      expect(AuthChangeEvent.userDeleted.jsName, equals(''));
     });
 
     group('AuthChangeEvent', () {
@@ -126,11 +115,6 @@ void main() {
         expect(
           AuthChangeEvent.fromString('userUpdated'),
           equals(AuthChangeEvent.userUpdated),
-        );
-        // ignore: deprecated_member_use
-        expect(
-          AuthChangeEvent.fromString('userDeleted'),
-          equals(AuthChangeEvent.userDeleted),
         );
         expect(
           AuthChangeEvent.fromString('mfaChallengeVerified'),

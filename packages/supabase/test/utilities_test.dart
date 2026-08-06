@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'dart:async';
 import 'dart:io';
 
@@ -7,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:supabase/src/auth_http_client.dart';
 import 'package:supabase/src/constants.dart';
 import 'package:supabase/src/counter.dart';
-import 'package:supabase/src/supabase_event_types.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
@@ -177,17 +174,6 @@ void main() {
       await authClient.send(request);
 
       expect(request.headers['apikey'], 'existing-key');
-    });
-  });
-
-  group('SupabaseEventTypes', () {
-    test('should return correct name for each event type', () {
-      expect(SupabaseEventTypes.insert.name(), 'INSERT');
-      expect(SupabaseEventTypes.update.name(), 'UPDATE');
-      expect(SupabaseEventTypes.delete.name(), 'DELETE');
-      expect(SupabaseEventTypes.all.name(), '*');
-      expect(SupabaseEventTypes.broadcast.name(), 'BROADCAST');
-      expect(SupabaseEventTypes.presence.name(), 'PRESENCE');
     });
   });
 }
