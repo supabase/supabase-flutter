@@ -124,6 +124,7 @@ void main() {
 
       test('fromString returns null for invalid names', () {
         expect(AuthChangeEvent.fromString('invalid'), isNull);
+        expect(AuthChangeEvent.fromString('userDeleted'), isNull);
         expect(AuthChangeEvent.fromString('SIGNED_IN'), isNull);
         expect(AuthChangeEvent.fromString('signed_in'), isNull);
         expect(AuthChangeEvent.fromString(''), isNull);

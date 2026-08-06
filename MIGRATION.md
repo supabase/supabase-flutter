@@ -148,8 +148,9 @@ upgrading and leave this change out of the upgrade itself.
 
 ### Every deprecated API is gone
 
-v3 drops the whole deprecated surface that accumulated over v1 and v2. Each entry below has had a
-replacement available for at least one minor version.
+v3 drops the whole deprecated surface that accumulated over v1 and v2. Where an entry has a
+replacement, that replacement has been available for at least one minor version. The rest were
+already inert: unused types, options the client ignored, or values the server never sent.
 
 | Removed | Replacement | Package |
 | --- | --- | --- |
