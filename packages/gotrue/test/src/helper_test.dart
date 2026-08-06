@@ -146,10 +146,17 @@ void main() {
         );
       });
 
-      test('rejects UUID with uppercase characters', () {
+      test('accepts UUID with uppercase characters', () {
         expect(
           () => validateUuid('550E8400-E29B-41D4-A716-446655440000'),
-          throwsArgumentError,
+          returnsNormally,
+        );
+      });
+
+      test('accepts UUID with mixed case characters', () {
+        expect(
+          () => validateUuid('550e8400-E29B-41d4-A716-446655440000'),
+          returnsNormally,
         );
       });
 
@@ -305,12 +312,14 @@ void main() {
         );
       });
 
-      test('only matches lowercase hexadecimal characters', () {
-        // Note: The uuidRegex specifically checks for lowercase hex characters
-        // while validateUuid accepts both cases
+      test('matches hexadecimal characters regardless of case', () {
         expect(
           uuidRegex.hasMatch('550E8400-E29B-41D4-A716-446655440000'),
-          isFalse,
+          isTrue,
+        );
+        expect(
+          uuidRegex.hasMatch('550e8400-E29B-41d4-A716-446655440000'),
+          isTrue,
         );
         expect(
           uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000'),
