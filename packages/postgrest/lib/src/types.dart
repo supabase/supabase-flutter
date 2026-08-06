@@ -105,7 +105,8 @@ enum ExplainFormat {
 }
 
 // coverage:ignore-[start]
-/// Controls whether the affected row's representation is returned in the response.
+/// Controls whether the affected row's representation is returned in the
+/// response.
 @Deprecated('Not used anywhere. Will be removed in the next major version.')
 enum ReturningOption {
   minimal,
