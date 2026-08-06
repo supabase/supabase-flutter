@@ -58,16 +58,16 @@ class FunctionsClient {
   ///
   /// [headers] to send with the request
   ///
-  /// [body] of the request when [files] is null and can be of type String
-  /// or an Object that is encodable to JSON with `jsonEncode`.
+  /// [body] of the request when [files] is null and can be of type String,
+  /// [Uint8List], or an Object that is encodable to JSON with `jsonEncode`.
   /// If [files] is not null, [body] represents the fields of the
   /// [MultipartRequest] and must be of type `Map<String, String>`.
   ///
   /// [files] to send in a `MultipartRequest`. [body] is used for the fields.
   ///
   /// [region] optionally specify the region to invoke the function in. When
-  /// specified, adds both `x-region` header and `forceFunctionRegion` query
-  /// parameter.
+  /// specified and not equal to `'any'`, adds both the `x-region` header and
+  /// the `forceFunctionRegion` query parameter.
   ///
   /// [abortSignal] cancels the in-flight request when the provided [Future]
   /// completes. It must not complete with an error. On abort, a

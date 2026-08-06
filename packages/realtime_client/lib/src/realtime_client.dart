@@ -131,7 +131,8 @@ class RealtimeClient {
   /// Used to keep track of whether the client is connected to the server.
   String? pendingHeartbeatRef;
 
-  /// Unique reference ID for every heartbeat.
+  /// Counter used by [makeRef] to generate a unique reference ID for every
+  /// pushed message, including heartbeats.
   int ref = 0;
   late RetryTimer reconnectTimer;
   void Function(String? kind, String? message, dynamic data)? logger;
@@ -453,7 +454,8 @@ class RealtimeClient {
     stateChangeCallbacks['message']!.add(callback);
   }
 
-  /// Emits a status whenever a heartbeat is sent, acknowledged, or times out.
+  /// Emits a status whenever a heartbeat is sent, acknowledged, errors, or
+  /// times out.
   Stream<RealtimeHeartbeatStatus> get onHeartbeat =>
       _heartbeatController.stream;
 

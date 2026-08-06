@@ -64,13 +64,13 @@ class StorageBucketApi {
   ///
   /// [bucketOptions] is a parameter to optionally make the bucket public.
   ///
-  /// It returns the newly created bucket it. To get the bucket reference, use
-  /// [getBucket]:
+  /// It returns the ID of the newly created bucket. To get the bucket
+  /// reference, use [getBucket]:
   ///
   /// ```dart
   /// void bucket() async {
   ///   final newBucketId = await createBucket('images');
-  ///   final bucket = await Bucket(newBucketId);
+  ///   final bucket = await getBucket(newBucketId);
   ///   print('${bucket.id}');
   /// }
   /// ```

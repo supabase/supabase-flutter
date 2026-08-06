@@ -43,7 +43,7 @@ class YAJsonIsolate {
 
   /// Dispose the isolate
   ///
-  /// This exists the isolate
+  /// This exits the isolate
   Future<void> dispose() async {
     await _createdIsolate.future;
     _sendPort.send(null);

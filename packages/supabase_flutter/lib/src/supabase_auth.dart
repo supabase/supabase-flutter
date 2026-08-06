@@ -51,8 +51,10 @@ import 'clear_auth_url_parameters_stub.dart'
 ///    stops deep link monitoring.
 ///
 /// **Platform notes:**
-/// - Deep link handling is skipped on web (`kIsWeb`) because the browser
-///   handles URL-based redirects directly.
+/// - On web (`kIsWeb`), the continuous deep link stream is not listened to;
+///   only the URL the app was loaded with is inspected once at startup,
+///   since browser navigation triggers a full page load rather than a
+///   stream event.
 class SupabaseAuth with WidgetsBindingObserver {
   static WidgetsBinding get _widgetsBindingInstance => WidgetsBinding.instance;
 
@@ -339,7 +341,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   /// The return value of this method is not the auth result, and whether the
   /// OAuth sign-in has succeeded or not should be observed by setting a
-  /// listener on [auth.onAuthStateChange].
+  /// listener on [GoTrueClient.onAuthStateChange].
   ///
   /// To obtain the OAuth URL without launching a browser, use
   /// [getOAuthSignInUrl] instead.

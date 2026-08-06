@@ -69,7 +69,9 @@ class Session {
   }
 
   /// The Unix timestamp, in **seconds**, of when the token will expire.
-  /// Returned when a login is confirmed.
+  ///
+  /// Derived from the `exp` claim of [accessToken], not read from the login
+  /// response's JSON body.
   ///
   /// To convert this to a [DateTime], multiply by 1000 since
   /// [DateTime.fromMillisecondsSinceEpoch] expects milliseconds:
@@ -84,10 +86,10 @@ class Session {
     }
   }
 
-  /// Returns `true` if the token is expired or will expire in the next 10
+  /// Returns `true` if the token is expired or will expire in the next 30
   /// seconds.
   ///
-  /// The 10 second buffer is to account for latency issues.
+  /// The 30 second buffer is to account for latency issues.
   bool get isExpired {
     if (expiresAt == null) return false;
     return DateTime.now()

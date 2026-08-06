@@ -345,7 +345,7 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   /// await supabase
   ///     .from('users')
   ///     .select()
-  ///     .sl('age_range', '[2,25)');
+  ///     .rangeLt('age_range', '[2,25)');
   /// ```
   PostgrestFilterBuilder<T> rangeLt(String column, String range) {
     return copyWithUrl(appendSearchParams(column, 'sl.$range'));
