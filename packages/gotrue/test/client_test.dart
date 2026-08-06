@@ -793,7 +793,7 @@ void main() {
         expect(response.session.user.email, 'new@email.com');
         expect(response.redirectType, 'email_change');
         expect(pkceClient.currentUser?.email, 'new@email.com');
-        expect(await emittedEvent, AuthChangeEvent.signedIn);
+        expect(await emittedEvent, AuthChangeEvent.userUpdated);
       },
     );
 
@@ -837,10 +837,19 @@ void main() {
         expect(updateResponse.user?.newEmail, updatedEmail);
 
         final code = await _pkceCodeFromEmailChange(gotrueUrl, updatedEmail);
+
+        final emittedEvent = pkceClient.onAuthStateChange
+            .firstWhere(
+              (state) => state.event != AuthChangeEvent.initialSession,
+            )
+            .then((state) => state.event);
+
         final exchanged = await pkceClient.exchangeCodeForSession(code);
 
         expect(exchanged.session.user.email, updatedEmail);
         expect(exchanged.session.accessToken, isNotEmpty);
+        expect(exchanged.redirectType, AuthChangeEvent.userUpdated.name);
+        expect(await emittedEvent, AuthChangeEvent.userUpdated);
       },
     );
   });
