@@ -15,14 +15,19 @@ void main() {
   testWidgets('Signing out triggers AuthChangeEvent.signedOut event', (
     tester,
   ) async {
-    // Initialize the Supabase singleton
-    await Supabase.initialize(
-      url: supabaseUrl,
-      publishableKey: supabaseKey,
-      debug: false,
-      authOptions: FlutterAuthClientOptions(
-        localStorage: const MockLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+    // Initialize the Supabase singleton. `runAsync` is required because the
+    // client spawns the JSON isolate, and the fake clock of `testWidgets`
+    // would never let `Isolate.spawn` complete, which in turn would make
+    // `dispose()` below wait forever.
+    await tester.runAsync(
+      () => Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        debug: false,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: const MockLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       ),
     );
     Supabase.instance.client.auth.stopAutoRefresh();
@@ -30,5 +35,9 @@ void main() {
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
     expect(find.text('You have signed out'), findsOneWidget);
+
+    // Tear the singleton down so the `AppLifecycleListener` it owns is
+    // disposed and leak tracking passes.
+    await tester.runAsync(() => Supabase.instance.dispose());
   });
 }

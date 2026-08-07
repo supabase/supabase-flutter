@@ -143,6 +143,23 @@ void main() {
         );
       });
 
+      test('dispose drops the reference to the client', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+        );
+
+        // Captured while still initialized, because `Supabase.instance`
+        // itself refuses to hand out a disposed instance.
+        final supabase = Supabase.instance;
+        await supabase.dispose();
+
+        // The singleton is static, so holding on to the client here would
+        // keep it and everything it owns alive for the rest of the process.
+        expect(() => supabase.client, throwsA(isA<AssertionError>()));
+      });
+
       test('handles multiple initializations correctly', () async {
         await Supabase.initialize(
           url: supabaseUrl,

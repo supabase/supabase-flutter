@@ -171,10 +171,19 @@ class Supabase {
   /// Whether the Supabase instance has been initialized. Useful for debugging.
   bool get isInitialized => _isInitialized;
 
+  SupabaseClient? _client;
+
   /// The supabase client for this instance
   ///
   /// Throws an error if [Supabase.initialize] was not called.
-  late SupabaseClient client;
+  SupabaseClient get client {
+    assert(
+      _client != null,
+      'You must initialize the supabase instance before calling '
+      'Supabase.instance.client',
+    );
+    return _client!;
+  }
 
   SupabaseAuth? _supabaseAuth;
 
@@ -207,8 +216,19 @@ class Supabase {
     await _restoreSessionCancellableOperation?.cancel();
     await _logSubscription?.cancel();
     await client.dispose();
-    _instance._supabaseAuth?.dispose();
+    _supabaseAuth?.dispose();
     _lifecycleListener?.dispose();
+
+    // Drop every reference the singleton holds. Without this the disposed
+    // client and its whole graph (auth, realtime, http clients) stay reachable
+    // from a static field for the rest of the process.
+    _restoreSessionCancellableOperation = null;
+    _logSubscription = null;
+    _client = null;
+    _supabaseAuth = null;
+    _lifecycleListener = null;
+    _pendingLifecycleOperation = Future.value();
+
     _isInitialized = false;
   }
 
@@ -228,7 +248,7 @@ class Supabase {
       ...Constants.defaultHeaders,
       ...?customHeaders,
     };
-    client = SupabaseClient(
+    final client = _client = SupabaseClient(
       supabaseUrl,
       supabaseKey,
       httpClient: httpClient,

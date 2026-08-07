@@ -17,5 +17,23 @@ void main() {
       final isolate = YAJsonIsolate(debugName: 'my-isolate');
       expect(isolate.debugName, 'my-isolate');
     });
+
+    test('dispose completes when the isolate was never used', () async {
+      final isolate = YAJsonIsolate();
+      await expectLater(
+        isolate.dispose().timeout(const Duration(seconds: 5)),
+        completes,
+      );
+    });
+
+    test('dispose completes when called twice', () async {
+      final isolate = YAJsonIsolate();
+      await isolate.decode('{}');
+      await isolate.dispose();
+      await expectLater(
+        isolate.dispose().timeout(const Duration(seconds: 5)),
+        completes,
+      );
+    });
   });
 }

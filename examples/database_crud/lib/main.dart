@@ -158,27 +158,9 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   Future<void> _rename(Task task) async {
-    final controller = TextEditingController(text: task.title);
     final title = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rename task'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Title'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (context) => _RenameDialog(initialTitle: task.title),
     );
     if (title == null || title.isEmpty) return;
     await _mutate(() => _repository.renameTask(id: task.id, title: title));
@@ -372,6 +354,52 @@ class _TaskFormResult {
   final String projectId;
   final String title;
   final Priority priority;
+}
+
+/// Asks for a new title for an existing task.
+///
+/// Owns its [TextEditingController] so that it is disposed together with the
+/// dialog. Creating the controller in the caller instead would either leak it
+/// or dispose it while the route is still animating out.
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.initialTitle});
+
+  final String initialTitle;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final _title = TextEditingController(text: widget.initialTitle);
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Rename task'),
+      content: TextField(
+        controller: _title,
+        autofocus: true,
+        decoration: const InputDecoration(labelText: 'Title'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _title.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
 }
 
 class _TaskDialog extends StatefulWidget {

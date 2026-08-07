@@ -20,6 +20,7 @@ class YAJsonIsolate {
   final _createdIsolate = Completer<void>();
   late final _events = StreamQueue(_receivePort);
   bool _hasStartedInitialize = false;
+  bool _isDisposed = false;
 
   /// Initialize the isolate
   ///
@@ -43,8 +44,20 @@ class YAJsonIsolate {
 
   /// Dispose the isolate
   ///
-  /// This exits the isolate
+  /// This exits the isolate. Safe to call more than once, and safe to call on
+  /// an instance that was never used.
   Future<void> dispose() async {
+    if (_isDisposed) return;
+    _isDisposed = true;
+
+    if (!_hasStartedInitialize) {
+      // No isolate was ever spawned, so there is nothing to shut down and
+      // [_createdIsolate] would never complete. The receive port is open from
+      // construction though, and keeps this object alive until it is closed.
+      _receivePort.close();
+      return;
+    }
+
     await _createdIsolate.future;
     _sendPort.send(null);
     _receivePort.close();
