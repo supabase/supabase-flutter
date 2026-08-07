@@ -613,6 +613,32 @@ void main() {
       final foundChannel = mockedSocket.channels[0];
       expect(foundChannel, channel2);
     });
+
+    test('keeps the other channels when none of them have joined', () {
+      // Channels that have never subscribed all share the empty join ref, so
+      // matching on it removed every one of them at once.
+      final socket = RealtimeClient(socketEndpoint);
+      final channel1 = socket.channel('topic-1');
+      socket.channel('topic-2');
+      socket.channel('topic-3');
+
+      socket.remove(channel1);
+
+      expect(
+        socket.channels.map((channel) => channel.topic),
+        ['realtime:topic-2', 'realtime:topic-3'],
+      );
+    });
+
+    test('removes only the given channel when topics are duplicated', () {
+      final socket = RealtimeClient(socketEndpoint);
+      final channel1 = socket.channel('topic');
+      final channel2 = socket.channel('topic');
+
+      socket.remove(channel1);
+
+      expect(socket.channels, [channel2]);
+    });
   });
 
   group('deferred disconnect', () {
