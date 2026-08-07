@@ -4,12 +4,17 @@ library;
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
+/// Every disposal in this group is bounded, so a regression that makes
+/// `dispose()` wait forever fails the test instead of hanging the suite.
+Future<void> dispose(YAJsonIsolate isolate) =>
+    isolate.dispose().timeout(const Duration(seconds: 5));
+
 void main() {
   group('io implementation', () {
     test('throws when initialize is called twice', () async {
       final isolate = YAJsonIsolate();
       await isolate.initialize();
-      addTearDown(isolate.dispose);
+      addTearDown(() => dispose(isolate));
       expect(isolate.initialize(), throwsA(isA<AssertionError>()));
     });
 
@@ -20,20 +25,14 @@ void main() {
 
     test('dispose completes when the isolate was never used', () async {
       final isolate = YAJsonIsolate();
-      await expectLater(
-        isolate.dispose().timeout(const Duration(seconds: 5)),
-        completes,
-      );
+      await expectLater(dispose(isolate), completes);
     });
 
     test('dispose completes when called twice', () async {
       final isolate = YAJsonIsolate();
       await isolate.decode('{}');
-      await isolate.dispose();
-      await expectLater(
-        isolate.dispose().timeout(const Duration(seconds: 5)),
-        completes,
-      );
+      await dispose(isolate);
+      await expectLater(dispose(isolate), completes);
     });
 
     test('concurrent dispose calls all await the same shutdown', () async {
@@ -42,19 +41,16 @@ void main() {
 
       // Started before either is awaited, so a second call must not report
       // the isolate as gone while the first is still shutting it down.
-      final first = isolate.dispose();
-      final second = isolate.dispose();
+      final first = dispose(isolate);
+      final second = dispose(isolate);
 
-      await expectLater(
-        Future.wait([first, second]).timeout(const Duration(seconds: 5)),
-        completes,
-      );
+      await expectLater(Future.wait([first, second]), completes);
     });
 
     test('using the isolate after dispose throws', () async {
       final isolate = YAJsonIsolate();
       await isolate.decode('{}');
-      await isolate.dispose();
+      await dispose(isolate);
 
       // Without this the calls below would spawn a replacement isolate onto a
       // closed receive port and then wait for a reply that never arrives.
@@ -65,7 +61,7 @@ void main() {
 
     test('a never used isolate also rejects work after dispose', () async {
       final isolate = YAJsonIsolate();
-      await isolate.dispose();
+      await dispose(isolate);
 
       expect(isolate.decode('{}'), throwsStateError);
     });
