@@ -1875,16 +1875,12 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.reconnectAfterMs
-    supporting_symbols:
-      - RealtimeClient.reconnectTimer
   realtime.configuration.heartbeat_interval:
     status: implemented
     symbols:
       - RealtimeClient.heartbeatIntervalMs
     supporting_symbols:
       - Constants.defaultHeartbeatIntervalMs
-      - RealtimeClient.heartbeatTimer
-      - RealtimeClient.pendingHeartbeatRef
   realtime.configuration.access_token_callback:
     status: implemented
     note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
@@ -2366,8 +2362,6 @@ supporting_symbols:
   - RawPostgrestBuilder.withConverter
   - RealtimeChannel
   - RealtimeChannel.RealtimeChannel
-  - RealtimeChannel.canPush
-  - RealtimeChannel.trigger
   - RealtimeChannelConfig
   - RealtimeChannelConfig.RealtimeChannelConfig
   - RealtimeChannelConfig.enabled
@@ -2376,12 +2370,7 @@ supporting_symbols:
   - RealtimeClient.RealtimeClient
   - RealtimeClient.endPoint
   - RealtimeClient.endPointURL
-  - RealtimeClient.makeRef
   - RealtimeClient.params
-  - RealtimeClient.push
-  - RealtimeClient.ref
-  - RealtimeClient.sendBuffer
-  - RealtimeClient.stateChangeCallbacks
   - RealtimeClient.timeout
   - RealtimeClient.version
   - RealtimeClientOptions

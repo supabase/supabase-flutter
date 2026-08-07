@@ -634,6 +634,7 @@ class RealtimeChannel {
   }
 
   /// Returns `true` if the socket is connected and the channel has been joined.
+  @internal
   bool get canPush {
     return socket.isConnected && isJoined;
   }
@@ -981,6 +982,7 @@ class RealtimeChannel {
     joinPush.resend(timeout ?? _timeout);
   }
 
+  @internal
   void trigger(String type, [dynamic payload, String? ref]) {
     final typeLower = type.toLowerCase();
 

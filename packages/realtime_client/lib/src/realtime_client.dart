@@ -112,6 +112,7 @@ class RealtimeClient {
   final Client? httpClient;
   final _log = Logger('supabase.realtime');
   int heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs;
+  @internal
   Timer? heartbeatTimer;
 
   /// Delay before the socket is disconnected once the last channel has been
@@ -129,11 +130,14 @@ class RealtimeClient {
   /// reference ID of the most recently sent heartbeat.
   ///
   /// Used to keep track of whether the client is connected to the server.
+  @internal
   String? pendingHeartbeatRef;
 
   /// Counter used by [makeRef] to generate a unique reference ID for every
   /// pushed message, including heartbeats.
+  @internal
   int ref = 0;
+  @internal
   late RetryTimer reconnectTimer;
   void Function(String? kind, String? message, dynamic data)? logger;
   static final Serializer _serializer = Serializer();
@@ -142,7 +146,9 @@ class RealtimeClient {
   late TimerCalculation reconnectAfterMs;
   WebSocketChannel? connection;
   StreamSubscription<dynamic>? _connectionSubscription;
+  @internal
   List<dynamic> sendBuffer = [];
+  @internal
   Map<String, List<Function>> stateChangeCallbacks = {
     'open': [],
     'close': [],
@@ -528,6 +534,7 @@ class RealtimeClient {
   /// If the socket is not connected, the message gets enqueued within a local
   /// buffer, and sent out when a connection is next established.
   // ignore: function-always-returns-null
+  @internal
   String? push(Message message) {
     void callback() {
       connection?.sink.add(encode(message.toJson()));
@@ -605,6 +612,7 @@ class RealtimeClient {
   }
 
   /// Return the next message ref, accounting for overflows
+  @internal
   String makeRef() {
     final int newRef = ref + 1;
     if (newRef < 0) {
