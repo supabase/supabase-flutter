@@ -3,6 +3,7 @@ import 'package:gotrue/src/version.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+@internal
 class Constants {
   static const String defaultGotrueUrl = 'http://localhost:9999';
   static final Map<String, String> defaultHeaders = {

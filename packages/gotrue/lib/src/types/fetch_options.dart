@@ -1,7 +1,9 @@
 import 'package:supabase_common/supabase_common.dart';
+import 'package:meta/meta.dart';
 
 export 'package:supabase_common/supabase_common.dart' show FetchOptions;
 
+@internal
 class GotrueRequestOptions extends FetchOptions {
   final String? jwt;
   final String? redirectTo;

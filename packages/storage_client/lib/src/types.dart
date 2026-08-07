@@ -677,6 +677,7 @@ class TransformOptions {
   });
 }
 
+@internal
 extension ToQueryParams on TransformOptions {
   Map<String, String> get toQueryParams {
     return {

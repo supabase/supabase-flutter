@@ -2,9 +2,11 @@ import 'fetch.dart';
 import 'helper.dart';
 import 'types/fetch_options.dart';
 import 'types/types.dart';
+import 'package:meta/meta.dart';
 
 /// Response type for OAuth client operations.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+@internal
 class OAuthClientResponse {
   final OAuthClient? client;
 
@@ -19,6 +21,7 @@ class OAuthClientResponse {
 
 /// Response type for listing OAuth clients.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+@internal
 class OAuthClientListResponse {
   final List<OAuthClient> clients;
   final String? aud;
