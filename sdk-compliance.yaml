@@ -1009,7 +1009,6 @@ features:
       - StorageBucketApi.deleteAnalyticsBucket
   storage.analytics.create_namespace:
     status: implemented
-    note: "Mechanical split of the previously bundled iceberg_namespace entry — symbols below cover the whole namespace surface (create, createIfNotExists, drop, list, load metadata, exists check, update properties) and have not been divided per-operation yet."
     symbols:
       - IcebergRestCatalog.createNamespace
       - IcebergRestCatalog.createNamespaceIfNotExists
@@ -1035,7 +1034,6 @@ features:
       - UpdateNamespacePropertiesResult.updated
   storage.analytics.list_namespaces:
     status: implemented
-    note: "Mechanical split of the previously bundled iceberg_namespace entry — symbols below cover the whole namespace surface (create, createIfNotExists, drop, list, load metadata, exists check, update properties) and have not been divided per-operation yet."
     symbols:
       - IcebergRestCatalog.createNamespace
       - IcebergRestCatalog.createNamespaceIfNotExists
@@ -1061,7 +1059,6 @@ features:
       - UpdateNamespacePropertiesResult.updated
   storage.analytics.delete_namespace:
     status: implemented
-    note: "Mechanical split of the previously bundled iceberg_namespace entry — symbols below cover the whole namespace surface (create, createIfNotExists, drop, list, load metadata, exists check, update properties) and have not been divided per-operation yet."
     symbols:
       - IcebergRestCatalog.createNamespace
       - IcebergRestCatalog.createNamespaceIfNotExists
@@ -1087,7 +1084,6 @@ features:
       - UpdateNamespacePropertiesResult.updated
   storage.analytics.create_table:
     status: implemented
-    note: "Mechanical split of the previously bundled iceberg_table entry — symbols below cover the whole table surface (create, list, load, update, rename, drop) and have not been divided per-operation yet. Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch."
     symbols:
       - AccessDelegation
       - AccessDelegation.AccessDelegation
@@ -1421,7 +1417,6 @@ features:
       - UpgradeFormatVersionUpdate.toJson
   storage.analytics.list_tables:
     status: implemented
-    note: "Mechanical split of the previously bundled iceberg_table entry — symbols below cover the whole table surface (create, list, load, update, rename, drop) and have not been divided per-operation yet. Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch."
     symbols:
       - AccessDelegation
       - AccessDelegation.AccessDelegation
@@ -1755,7 +1750,6 @@ features:
       - UpgradeFormatVersionUpdate.toJson
   storage.analytics.load_table:
     status: implemented
-    note: "Mechanical split of the previously bundled iceberg_table entry — symbols below cover the whole table surface (create, list, load, update, rename, drop) and have not been divided per-operation yet. Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch."
     symbols:
       - AccessDelegation
       - AccessDelegation.AccessDelegation
@@ -2089,7 +2083,7 @@ features:
       - UpgradeFormatVersionUpdate.toJson
   storage.analytics.update_table:
     status: implemented
-    note: "Mechanical split of the previously bundled iceberg_table entry — symbols below cover the whole table surface (create, list, load, update, rename, drop) and have not been divided per-operation yet. Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch."
+    note: "Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch."
     symbols:
       - AccessDelegation
       - AccessDelegation.AccessDelegation
@@ -2423,7 +2417,6 @@ features:
       - UpgradeFormatVersionUpdate.toJson
   storage.analytics.rename_table:
     status: implemented
-    note: "Mechanical split of the previously bundled iceberg_table entry — symbols below cover the whole table surface (create, list, load, update, rename, drop) and have not been divided per-operation yet. Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch."
     symbols:
       - AccessDelegation
       - AccessDelegation.AccessDelegation
@@ -2757,7 +2750,6 @@ features:
       - UpgradeFormatVersionUpdate.toJson
   storage.analytics.delete_table:
     status: implemented
-    note: "Mechanical split of the previously bundled iceberg_table entry — symbols below cover the whole table surface (create, list, load, update, rename, drop) and have not been divided per-operation yet. Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch."
     symbols:
       - AccessDelegation
       - AccessDelegation.AccessDelegation
