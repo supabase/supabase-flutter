@@ -766,6 +766,18 @@ features:
       - PaginatedSearchOptions.sortBy
       - PaginatedSearchOptions.toMap
       - PaginatedSearchOptions.withDelimiter
+      - SearchOptions
+      - SearchOptions.SearchOptions
+      - SearchOptions.limit
+      - SearchOptions.offset
+      - SearchOptions.search
+      - SearchOptions.sortBy
+      - SearchOptions.toMap
+      - SortBy
+      - SortBy.SortBy
+      - SortBy.column
+      - SortBy.order
+      - SortBy.toMap
   storage.file_buckets.move:
     status: implemented
     symbols:
