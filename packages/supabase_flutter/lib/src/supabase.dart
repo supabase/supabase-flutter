@@ -171,10 +171,22 @@ class Supabase {
   /// Whether the Supabase instance has been initialized. Useful for debugging.
   bool get isInitialized => _isInitialized;
 
+  SupabaseClient? _client;
+
   /// The supabase client for this instance
   ///
-  /// Throws an error if [Supabase.initialize] was not called.
-  late SupabaseClient client;
+  /// Throws a [StateError] if [Supabase.initialize] was not called, or if the
+  /// instance has since been disposed.
+  SupabaseClient get client {
+    final currentClient = _client;
+    if (currentClient == null) {
+      throw StateError(
+        'You must initialize the supabase instance before calling '
+        'Supabase.instance.client',
+      );
+    }
+    return currentClient;
+  }
 
   SupabaseAuth? _supabaseAuth;
 
@@ -202,14 +214,56 @@ class Supabase {
   StreamSubscription<dynamic>? _logSubscription;
 
   /// Dispose the instance to free up resources.
+  ///
+  /// Calling this on an instance that is not initialized does nothing, so it
+  /// is safe to call more than once.
   Future<void> dispose() async {
-    _targetLifecycleState = null;
-    await _restoreSessionCancellableOperation?.cancel();
-    await _logSubscription?.cancel();
-    await client.dispose();
-    _instance._supabaseAuth?.dispose();
-    _lifecycleListener?.dispose();
+    final currentClient = _client;
+    if (currentClient == null) return;
+
+    final supabaseAuth = _supabaseAuth;
+    final lifecycleListener = _lifecycleListener;
+    final restoreSession = _restoreSessionCancellableOperation;
+    final logSubscription = _logSubscription;
+    final pendingLifecycleOperation = _pendingLifecycleOperation;
+
+    _client = null;
+    _supabaseAuth = null;
+    _restoreSessionCancellableOperation = null;
+    _lifecycleListener = null;
+    _logSubscription = null;
     _isInitialized = false;
+
+    _targetLifecycleState = null;
+    lifecycleListener?.dispose();
+
+    await _disposeAll([
+      () => restoreSession?.cancel(),
+      () => logSubscription?.cancel(),
+      () => pendingLifecycleOperation,
+      currentClient.dispose,
+      () => supabaseAuth?.dispose(),
+    ]);
+  }
+
+  /// Runs every step, then rethrows the first error any of them threw.
+  static Future<void> _disposeAll(List<FutureOr<void> Function()> steps) async {
+    Object? firstError;
+    StackTrace? firstStackTrace;
+
+    for (final step in steps) {
+      try {
+        await step();
+      } catch (error, stackTrace) {
+        _log.warning('Error while disposing Supabase', error, stackTrace);
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
+    }
+
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError, firstStackTrace!);
+    }
   }
 
   void _init(
@@ -228,7 +282,7 @@ class Supabase {
       ...Constants.defaultHeaders,
       ...?customHeaders,
     };
-    client = SupabaseClient(
+    final newClient = _client = SupabaseClient(
       supabaseUrl,
       supabaseKey,
       httpClient: httpClient,
@@ -245,7 +299,7 @@ class Supabase {
     // flutter web hot-restart.
     if (kDebugMode) {
       disposePreviousClient();
-      markClientToDispose(client);
+      markClientToDispose(newClient);
     }
 
     _setupLifecycleListener();

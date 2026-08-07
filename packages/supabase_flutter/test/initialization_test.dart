@@ -143,6 +143,32 @@ void main() {
         );
       });
 
+      test('dispose drops the reference to the client', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+        );
+
+        final supabase = Supabase.instance;
+        await supabase.dispose();
+
+        expect(() => supabase.client, throwsStateError);
+      });
+
+      test('dispose can be called more than once', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+        );
+
+        final supabase = Supabase.instance;
+        await supabase.dispose();
+
+        await expectLater(supabase.dispose(), completes);
+      });
+
       test('handles multiple initializations correctly', () async {
         await Supabase.initialize(
           url: supabaseUrl,

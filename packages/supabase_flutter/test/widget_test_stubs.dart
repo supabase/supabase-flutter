@@ -19,6 +19,7 @@ class MockWidget extends StatefulWidget {
 
 class _MockWidgetState extends State<MockWidget> {
   bool isSignedIn = true;
+  StreamSubscription<AuthState>? _authSubscription;
 
   @override
   Widget build(BuildContext context) {
@@ -37,13 +38,21 @@ class _MockWidgetState extends State<MockWidget> {
   @override
   void initState() {
     super.initState();
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
       if (data.event == AuthChangeEvent.signedOut) {
         setState(() {
           isSignedIn = false;
         });
       }
     });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_authSubscription?.cancel());
+    super.dispose();
   }
 }
 

@@ -159,6 +159,52 @@ class _SignInViewState extends State<SignInView> {
   }
 }
 
+/// Asks for a new friendly name for an existing passkey.
+///
+/// Owns its [TextEditingController] so that it is disposed together with the
+/// dialog. Creating the controller in the caller instead would either leak it
+/// or dispose it while the route is still animating out.
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.initialName});
+
+  final String initialName;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final _name = TextEditingController(text: widget.initialName);
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Rename passkey'),
+      content: TextField(
+        controller: _name,
+        autofocus: true,
+        decoration: const InputDecoration(labelText: 'Friendly name'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _name.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
 /// Lists, registers, renames and deletes passkeys for the signed in user.
 class SignedInView extends StatefulWidget {
   const SignedInView({super.key});
@@ -201,27 +247,10 @@ class _SignedInViewState extends State<SignedInView> {
   }
 
   Future<void> _rename(Passkey passkey) async {
-    final controller = TextEditingController(text: passkey.friendlyName);
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rename passkey'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Friendly name'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (context) =>
+          _RenameDialog(initialName: passkey.friendlyName ?? ''),
     );
     if (name == null || name.isEmpty) return;
     try {
