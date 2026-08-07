@@ -1066,26 +1066,13 @@ features:
       - IcebergRestCatalog.loadTable
       - IcebergRestCatalog.loadTableResult
     supporting_symbols:
-      - AccessDelegation
-      - AccessDelegation.AccessDelegation
-      - AccessDelegation.value
       - LoadTableOptions
       - LoadTableOptions.LoadTableOptions
       - LoadTableOptions.ifNoneMatch
       - LoadTableOptions.snapshots
-      - LoadTableResult
-      - LoadTableResult.LoadTableResult
-      - LoadTableResult.config
-      - LoadTableResult.etag
-      - LoadTableResult.fromJson
-      - LoadTableResult.metadata
-      - LoadTableResult.metadataLocation
-      - LoadTableResult.storageCredentials
-      - StorageCredential
-      - StorageCredential.StorageCredential
-      - StorageCredential.config
-      - StorageCredential.fromJson
-      - StorageCredential.prefix
+      - TableSnapshotScope
+      - TableSnapshotScope.TableSnapshotScope
+      - TableSnapshotScope.value
   storage.analytics.update_table:
     status: implemented
     note: Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch.
@@ -1463,11 +1450,16 @@ features:
       - TracePropagationOptions.enabled
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
-# Public API accounted for by the matrix but not attributable to one capability:
-# the Iceberg schema and type model, the exception hierarchy, and the catalog
-# operations the canonical matrix has no feature id for yet (registerTable,
-# tableExists, loadNamespaceMetadata, namespaceExists, updateNamespaceProperties).
+
+# Public API the matrix accounts for but that no single capability owns: types
+# reachable from several features' entry points (the Iceberg schema and type
+# model), types reachable from none because they are thrown rather than passed
+# (the exception hierarchy), and the catalog operations the canonical matrix has
+# no feature id for yet. See supabase/sdk#76 for the last group.
 supporting_symbols:
+  - AccessDelegation
+  - AccessDelegation.AccessDelegation
+  - AccessDelegation.value
   - IcebergAuthenticationTimeoutException
   - IcebergAuthenticationTimeoutException.IcebergAuthenticationTimeoutException
   - IcebergCommitStateUnknownException
@@ -1509,6 +1501,14 @@ supporting_symbols:
   - ListType.elementRequired
   - ListType.fromJson
   - ListType.toJson
+  - LoadTableResult
+  - LoadTableResult.LoadTableResult
+  - LoadTableResult.config
+  - LoadTableResult.etag
+  - LoadTableResult.fromJson
+  - LoadTableResult.metadata
+  - LoadTableResult.metadataLocation
+  - LoadTableResult.storageCredentials
   - MapType
   - MapType.MapType
   - MapType.fromJson
@@ -1588,6 +1588,11 @@ supporting_symbols:
   - SortOrder.fromJson
   - SortOrder.orderId
   - SortOrder.toJson
+  - StorageCredential
+  - StorageCredential.StorageCredential
+  - StorageCredential.config
+  - StorageCredential.fromJson
+  - StorageCredential.prefix
   - StructType
   - StructType.StructType
   - StructType.fields
@@ -1638,9 +1643,6 @@ supporting_symbols:
   - TableSchema.identifierFieldIds
   - TableSchema.schemaId
   - TableSchema.toJson
-  - TableSnapshotScope
-  - TableSnapshotScope.TableSnapshotScope
-  - TableSnapshotScope.value
   - UpdateNamespacePropertiesResult
   - UpdateNamespacePropertiesResult.UpdateNamespacePropertiesResult
   - UpdateNamespacePropertiesResult.fromJson
