@@ -16,5 +16,5 @@ void removePersistedSession(String persistSessionKey) =>
     _localStorage.removeItem(persistSessionKey);
 
 @internal
-void persistSession(String persistSessionKey, persistSessionString) =>
+void persistSession(String persistSessionKey, String persistSessionString) =>
     _localStorage.setItem(persistSessionKey, persistSessionString);
