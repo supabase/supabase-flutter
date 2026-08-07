@@ -35,6 +35,36 @@ class UserResponse {
   UserResponse.fromJson(Map<String, dynamic> json) : user = User.fromJson(json);
 }
 
+/// Response of [GoTrueAdminApi.listUsers], a page of users together with the
+/// pagination metadata the server reports for it.
+class ListUsersResponse {
+  /// The users on the requested page.
+  final List<User> users;
+
+  /// Total number of users across all pages, from the `X-Total-Count`
+  /// response header.
+  final int? total;
+
+  /// The page to request next, or `null` when the requested page was the last
+  /// one. Read from the `next` link of the `Link` response header.
+  final int? nextPage;
+
+  /// The number of the last page. Read from the `last` link of the `Link`
+  /// response header.
+  final int? lastPage;
+
+  /// The audience the users belong to.
+  final String? aud;
+
+  const ListUsersResponse({
+    required this.users,
+    this.total,
+    this.nextPage,
+    this.lastPage,
+    this.aud,
+  });
+}
+
 class ResendResponse {
   /// Only set for phone resend
   String? messageId;

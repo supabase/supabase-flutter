@@ -146,6 +146,41 @@ upgrading and leave this change out of the upgrade itself.
 
 `nullsFirst` is unchanged and still defaults to `false`.
 
+### `admin.listUsers()` returns pagination metadata
+
+`listUsers()` accepted `page` and `perPage` but returned a bare `List<User>`, so the pagination
+metadata the server reports went unused and there was no way to tell how many users or pages exist
+short of requesting pages until a short one came back. It now returns a `ListUsersResponse` that
+carries the page of users plus that metadata.
+
+```dart
+// Before
+final List<User> users = await supabase.auth.admin.listUsers(perPage: 50);
+for (final user in users) {
+  print(user.email);
+}
+
+// After
+final response = await supabase.auth.admin.listUsers(perPage: 50);
+for (final user in response.users) {
+  print(user.email);
+}
+```
+
+`total` comes from the `X-Total-Count` response header, `nextPage` and `lastPage` from the `Link`
+header, and `aud` from the body. `nextPage` is `null` on the last page, so you can walk every page
+without guessing where it ends:
+
+```dart
+var response = await supabase.auth.admin.listUsers(perPage: 50);
+while (response.nextPage != null) {
+  response = await supabase.auth.admin.listUsers(
+    page: response.nextPage,
+    perPage: 50,
+  );
+}
+```
+
 ### Every deprecated API is gone
 
 v3 drops the whole deprecated surface that accumulated over v1 and v2. Where an entry has a

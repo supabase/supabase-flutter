@@ -44,6 +44,31 @@ void main() {
         expect(foundUserResponse.user?.email, email1);
       },
     );
+
+    test('listUsers() returns the pagination metadata of the page', () async {
+      final firstPage = await client.admin.listUsers(perPage: 1);
+      expect(firstPage.users, hasLength(1));
+      expect(firstPage.aud, 'authenticated');
+      expect(firstPage.total, greaterThan(1));
+      expect(firstPage.lastPage, firstPage.total);
+      expect(firstPage.nextPage, 2);
+
+      final secondPage = await client.admin.listUsers(
+        page: firstPage.nextPage,
+        perPage: 1,
+      );
+      expect(
+        secondPage.users.single.id,
+        isNot(firstPage.users.single.id),
+        reason: 'the next page holds different users',
+      );
+
+      final lastPage = await client.admin.listUsers(
+        page: firstPage.lastPage,
+        perPage: 1,
+      );
+      expect(lastPage.nextPage, isNull);
+    });
   });
 
   group('User updates', () {
@@ -121,9 +146,9 @@ void main() {
 
   group('User deletion', () {
     test('deleteUser() deletes an user', () async {
-      final userLengthBefore = (await client.admin.listUsers()).length;
+      final userLengthBefore = (await client.admin.listUsers()).users.length;
       await client.admin.deleteUser(userId1);
-      final userLengthAfter = (await client.admin.listUsers()).length;
+      final userLengthAfter = (await client.admin.listUsers()).users.length;
       expect(userLengthBefore - 1, userLengthAfter);
     });
 
@@ -142,7 +167,7 @@ void main() {
       );
       await client.admin.deleteUser(hardDeleted.user!.id);
 
-      final ids = (await client.admin.listUsers()).map((user) => user.id);
+      final ids = (await client.admin.listUsers()).users.map((user) => user.id);
       expect(
         ids,
         contains(softDeleted.user!.id),
