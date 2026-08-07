@@ -2,23 +2,24 @@
 /// [DateTime].
 ///
 /// Throws a [FormatException] when the value is missing, is not a string, or
-/// is not a valid ISO 8601 timestamp. Unlike [DateTime.parse], a date whose
-/// month or day is out of range is rejected rather than carried over into the
-/// next month or year.
+/// is not a valid ISO 8601 timestamp. For the `YYYY-MM-DD` and `YYYYMMDD`
+/// forms the servers send, a month or day that is out of range is rejected
+/// rather than carried over into the next month or year the way
+/// [DateTime.parse] carries it.
+///
+/// The exception names the key and the offending value but does not carry
+/// [json] itself, which holds the caller's payload and so may contain personal
+/// data the caller would not expect in an error or a log.
 DateTime parseIso8601(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is! String) {
     throw FormatException(
       'Expected $key to be a string, got ${value.runtimeType}',
-      json.toString(),
     );
   }
   final parsed = DateTime.tryParse(value);
   if (parsed == null || !_hasValidCalendarDate(value)) {
-    throw FormatException(
-      'Invalid date format for $key: $value',
-      json.toString(),
-    );
+    throw FormatException('Invalid date format for $key: $value');
   }
   return parsed.toUtc();
 }
@@ -33,6 +34,11 @@ final _calendarDatePattern = RegExp(
 /// larger one instead of rejecting them, so `2020-01-42` parses as 2020-02-11
 /// and `2019-02-29` as 2019-03-01. A timestamp that does not name a real date
 /// is a malformed payload rather than a timestamp days later.
+///
+/// Only the `YYYY-MM-DD` and `YYYYMMDD` forms are checked. Anything else
+/// [DateTime.tryParse] accepts, such as the expanded year form
+/// `+002023-01-42`, keeps its carrying behaviour; no Supabase service sends
+/// those.
 bool _hasValidCalendarDate(String value) {
   final match = _calendarDatePattern.firstMatch(value);
   if (match == null) return true;
@@ -54,12 +60,12 @@ DateTime? tryParseIso8601(Map<String, dynamic> json, String key) {
 /// [DateTime].
 ///
 /// Throws a [FormatException] when the value is missing or is not a number.
+/// As in [parseIso8601], the exception does not carry [json] itself.
 DateTime parseUnixSeconds(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is! num) {
     throw FormatException(
       'Expected $key to be a number, got ${value.runtimeType}',
-      json.toString(),
     );
   }
   return dateTimeFromUnixSeconds(value);

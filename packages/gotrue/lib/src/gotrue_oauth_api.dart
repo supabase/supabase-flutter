@@ -56,7 +56,6 @@ class OAuthAuthorizingUser {
       throw FormatException(
         'Expected the user id and email to be strings, got '
         '${id.runtimeType} and ${email.runtimeType}',
-        json.toString(),
       );
     }
     return OAuthAuthorizingUser(id: id, email: email);
@@ -151,8 +150,8 @@ class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
     final user = json['user'];
     if (user is! Map<String, dynamic>) {
       throw FormatException(
-        'The provided JSON should contain a parseable user object',
-        json.toString(),
+        'Expected the authorization details to contain a user object, got '
+        '${user.runtimeType}',
       );
     }
 

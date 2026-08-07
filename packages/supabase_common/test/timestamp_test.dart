@@ -63,6 +63,25 @@ void main() {
       );
     });
 
+    test('does not carry the payload into the exception', () {
+      // The payload can hold personal data, and these exceptions get logged.
+      expect(
+        () => parseIso8601({
+          'email': 'jane.doe@example.com',
+          'created_at': 'yesterday',
+        }, 'created_at'),
+        throwsA(
+          isA<FormatException>()
+              .having((exception) => exception.source, 'source', isNull)
+              .having(
+                (exception) => exception.toString(),
+                'toString',
+                isNot(contains('jane.doe@example.com')),
+              ),
+        ),
+      );
+    });
+
     test('throws instead of carrying an out-of-range day into a real one', () {
       // DateTime.parse would return 2020-02-11 for this.
       expect(
