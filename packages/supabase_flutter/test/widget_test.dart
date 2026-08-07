@@ -18,7 +18,7 @@ void main() {
     // Initialize the Supabase singleton. `runAsync` is required because the
     // client spawns the JSON isolate, and the fake clock of `testWidgets`
     // would never let `Isolate.spawn` complete, which in turn would make
-    // `dispose()` below wait forever.
+    // `dispose()` wait forever.
     await tester.runAsync(
       () => Supabase.initialize(
         url: supabaseUrl,
@@ -30,14 +30,14 @@ void main() {
         ),
       ),
     );
+    // Registered before the assertions below, so a failing one cannot leave
+    // the singleton and its `AppLifecycleListener` alive for later tests.
+    addTearDown(() => tester.runAsync(() => Supabase.instance.dispose()));
+
     Supabase.instance.client.auth.stopAutoRefresh();
     await tester.pumpWidget(const MaterialApp(home: MockWidget()));
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
     expect(find.text('You have signed out'), findsOneWidget);
-
-    // Tear the singleton down so the `AppLifecycleListener` it owns is
-    // disposed and leak tracking passes.
-    await tester.runAsync(() => Supabase.instance.dispose());
   });
 }

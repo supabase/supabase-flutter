@@ -20,12 +20,21 @@ class YAJsonIsolate {
   final _createdIsolate = Completer<void>();
   late final _events = StreamQueue(_receivePort);
   bool _hasStartedInitialize = false;
-  bool _isDisposed = false;
+  Future<void>? _disposal;
+
+  bool get _isDisposed => _disposal != null;
+
+  void _throwIfDisposed() {
+    if (_isDisposed) {
+      throw StateError('This YAJsonIsolate has already been disposed.');
+    }
+  }
 
   /// Initialize the isolate
   ///
   /// This method is called automatically when the first method is called. Manually initializing before first json de/encode can improve performance.
   Future<void> initialize() async {
+    _throwIfDisposed();
     assert(
       _hasStartedInitialize == false,
       'initialize() can only be called once per isolate.',
@@ -45,11 +54,12 @@ class YAJsonIsolate {
   /// Dispose the isolate
   ///
   /// This exits the isolate. Safe to call more than once, and safe to call on
-  /// an instance that was never used.
-  Future<void> dispose() async {
-    if (_isDisposed) return;
-    _isDisposed = true;
+  /// an instance that was never used. Concurrent calls all await the same
+  /// shutdown, so awaiting any of them means the isolate is gone. Using the
+  /// instance afterwards throws a [StateError].
+  Future<void> dispose() => _disposal ??= _dispose();
 
+  Future<void> _dispose() async {
     if (!_hasStartedInitialize) {
       // No isolate was ever spawned, so there is nothing to shut down and
       // [_createdIsolate] would never complete. The receive port is open from
@@ -65,6 +75,7 @@ class YAJsonIsolate {
   }
 
   Future<dynamic> decode(String json) async {
+    _throwIfDisposed();
     if (!_createdIsolate.isCompleted) {
       if (!_hasStartedInitialize) await initialize();
       await _createdIsolate.future;
@@ -74,6 +85,7 @@ class YAJsonIsolate {
   }
 
   Future<String> encode(Object? json) async {
+    _throwIfDisposed();
     if (!_createdIsolate.isCompleted) {
       if (!_hasStartedInitialize) await initialize();
       await _createdIsolate.future;

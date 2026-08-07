@@ -197,7 +197,7 @@ class _RenameDialogState extends State<_RenameDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop(context, _name.text),
+          onPressed: () => Navigator.pop(context, _name.text.trim()),
           child: const Text('Save'),
         ),
       ],

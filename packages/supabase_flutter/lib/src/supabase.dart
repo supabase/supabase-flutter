@@ -175,14 +175,17 @@ class Supabase {
 
   /// The supabase client for this instance
   ///
-  /// Throws an error if [Supabase.initialize] was not called.
+  /// Throws a [StateError] if [Supabase.initialize] was not called, or if the
+  /// instance has since been disposed.
   SupabaseClient get client {
-    assert(
-      _client != null,
-      'You must initialize the supabase instance before calling '
-      'Supabase.instance.client',
-    );
-    return _client!;
+    final currentClient = _client;
+    if (currentClient == null) {
+      throw StateError(
+        'You must initialize the supabase instance before calling '
+        'Supabase.instance.client',
+      );
+    }
+    return currentClient;
   }
 
   SupabaseAuth? _supabaseAuth;
@@ -211,25 +214,37 @@ class Supabase {
   StreamSubscription<dynamic>? _logSubscription;
 
   /// Dispose the instance to free up resources.
+  ///
+  /// Calling this on an instance that is not initialized does nothing, so it
+  /// is safe to call more than once.
   Future<void> dispose() async {
-    _targetLifecycleState = null;
-    await _restoreSessionCancellableOperation?.cancel();
-    await _logSubscription?.cancel();
-    await client.dispose();
-    _supabaseAuth?.dispose();
-    _lifecycleListener?.dispose();
+    final currentClient = _client;
+    if (currentClient == null) return;
 
-    // Drop every reference the singleton holds. Without this the disposed
-    // client and its whole graph (auth, realtime, http clients) stay reachable
-    // from a static field for the rest of the process.
-    _restoreSessionCancellableOperation = null;
-    _logSubscription = null;
+    // Drop every reference the singleton holds before tearing anything down.
+    // Without this the disposed client and its whole graph (auth, realtime,
+    // http clients) stay reachable from a static field for the rest of the
+    // process, and doing it up front means a teardown step that throws cannot
+    // leave the singleton pinning a half-disposed client.
+    final supabaseAuth = _supabaseAuth;
+    final lifecycleListener = _lifecycleListener;
+    final restoreSession = _restoreSessionCancellableOperation;
+    final logSubscription = _logSubscription;
+
     _client = null;
     _supabaseAuth = null;
     _lifecycleListener = null;
+    _restoreSessionCancellableOperation = null;
+    _logSubscription = null;
+    _targetLifecycleState = null;
     _pendingLifecycleOperation = Future.value();
-
     _isInitialized = false;
+
+    await restoreSession?.cancel();
+    await logSubscription?.cancel();
+    await currentClient.dispose();
+    supabaseAuth?.dispose();
+    lifecycleListener?.dispose();
   }
 
   void _init(
@@ -248,7 +263,7 @@ class Supabase {
       ...Constants.defaultHeaders,
       ...?customHeaders,
     };
-    final client = _client = SupabaseClient(
+    final newClient = _client = SupabaseClient(
       supabaseUrl,
       supabaseKey,
       httpClient: httpClient,
@@ -265,7 +280,7 @@ class Supabase {
     // flutter web hot-restart.
     if (kDebugMode) {
       disposePreviousClient();
-      markClientToDispose(client);
+      markClientToDispose(newClient);
     }
 
     _setupLifecycleListener();

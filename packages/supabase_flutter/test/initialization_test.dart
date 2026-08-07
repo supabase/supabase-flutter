@@ -157,7 +157,20 @@ void main() {
 
         // The singleton is static, so holding on to the client here would
         // keep it and everything it owns alive for the rest of the process.
-        expect(() => supabase.client, throwsA(isA<AssertionError>()));
+        expect(() => supabase.client, throwsStateError);
+      });
+
+      test('dispose can be called more than once', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+        );
+
+        final supabase = Supabase.instance;
+        await supabase.dispose();
+
+        await expectLater(supabase.dispose(), completes);
       });
 
       test('handles multiple initializations correctly', () async {
