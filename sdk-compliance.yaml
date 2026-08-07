@@ -723,24 +723,20 @@ features:
       - StorageFileApi.downloadStream
   storage.file_buckets.list_files:
     status: implemented
+    note: "Cursor-based pagination is exposed as listPaginated (paired with descriptive Dart type names) rather than the supabase-js listV2 name."
     symbols:
       - StorageFileApi.list
       - StorageFileApi.listPaginated
-      - PaginatedSearchOptions
-      - PaginatedSearchOptions.PaginatedSearchOptions
-      - PaginatedSearchOptions.cursor
-      - PaginatedSearchOptions.limit
-      - PaginatedSearchOptions.prefix
-      - PaginatedSearchOptions.sortBy
-      - PaginatedSearchOptions.toMap
-      - PaginatedSearchOptions.withDelimiter
-      - PaginatedListResult
-      - PaginatedListResult.PaginatedListResult
-      - PaginatedListResult.folders
-      - PaginatedListResult.fromJson
-      - PaginatedListResult.hasNext
-      - PaginatedListResult.nextCursor
-      - PaginatedListResult.objects
+    supporting_symbols:
+      - FileSort
+      - FileSort.FileSort
+      - FileSort.column
+      - FileSort.order
+      - FileSort.toMap
+      - FileSortColumn
+      - FileSortOrder
+      - FileSortOrder.FileSortOrder
+      - FileSortOrder.value
       - PaginatedFile
       - PaginatedFile.PaginatedFile
       - PaginatedFile.createdAt
@@ -755,16 +751,21 @@ features:
       - PaginatedFolder.fromJson
       - PaginatedFolder.key
       - PaginatedFolder.name
-      - FileSort
-      - FileSort.FileSort
-      - FileSort.column
-      - FileSort.order
-      - FileSort.toMap
-      - FileSortColumn
-      - FileSortOrder
-      - FileSortOrder.FileSortOrder
-      - FileSortOrder.value
-    note: Exposed as listPaginated (paired with descriptive Dart type names) rather than the supabase-js listV2 name.
+      - PaginatedListResult
+      - PaginatedListResult.PaginatedListResult
+      - PaginatedListResult.folders
+      - PaginatedListResult.fromJson
+      - PaginatedListResult.hasNext
+      - PaginatedListResult.nextCursor
+      - PaginatedListResult.objects
+      - PaginatedSearchOptions
+      - PaginatedSearchOptions.PaginatedSearchOptions
+      - PaginatedSearchOptions.cursor
+      - PaginatedSearchOptions.limit
+      - PaginatedSearchOptions.prefix
+      - PaginatedSearchOptions.sortBy
+      - PaginatedSearchOptions.toMap
+      - PaginatedSearchOptions.withDelimiter
   storage.file_buckets.move:
     status: implemented
     symbols:
