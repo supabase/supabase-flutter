@@ -230,6 +230,7 @@ class Supabase {
     final lifecycleListener = _lifecycleListener;
     final restoreSession = _restoreSessionCancellableOperation;
     final logSubscription = _logSubscription;
+    final pendingLifecycleOperation = _pendingLifecycleOperation;
 
     _client = null;
     _supabaseAuth = null;
@@ -240,8 +241,7 @@ class Supabase {
     _isInitialized = false;
 
     // Stop listening before anything is awaited, so no lifecycle event can be
-    // queued while the client is being torn down. Operations queued earlier
-    // see the cleared [_targetLifecycleState] and abort as stale.
+    // queued while the client is being torn down.
     _targetLifecycleState = null;
     lifecycleListener?.dispose();
 
@@ -251,6 +251,11 @@ class Supabase {
     await _disposeAll([
       () => restoreSession?.cancel(),
       () => logSubscription?.cancel(),
+      // A lifecycle operation that already passed its stale check can be
+      // half way through `realtime.connect()`. Clearing the target state
+      // stops it rejoining channels but not the connect itself, so wait for
+      // it rather than let it race the disconnect below.
+      () => pendingLifecycleOperation,
       currentClient.dispose,
       () => supabaseAuth?.dispose(),
     ]);
