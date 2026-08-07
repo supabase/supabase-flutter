@@ -41,10 +41,14 @@ void main() {
 
       // Started before either is awaited, so a second call must not report
       // the isolate as gone while the first is still shutting it down.
-      final first = dispose(isolate);
-      final second = dispose(isolate);
+      final first = isolate.dispose();
+      final second = isolate.dispose();
+      expect(identical(first, second), isTrue);
 
-      await expectLater(Future.wait([first, second]), completes);
+      await expectLater(
+        Future.wait([first, second]).timeout(const Duration(seconds: 5)),
+        completes,
+      );
     });
 
     test('using the isolate after dispose throws', () async {

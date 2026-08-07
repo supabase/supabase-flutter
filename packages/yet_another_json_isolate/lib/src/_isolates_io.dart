@@ -32,7 +32,9 @@ class YAJsonIsolate {
 
   /// Initialize the isolate
   ///
-  /// This method is called automatically when the first method is called. Manually initializing before first json de/encode can improve performance.
+  /// This method is called automatically when the first method is called.
+  /// Manually initializing before the first JSON decode or encode can improve
+  /// performance.
   Future<void> initialize() async {
     _throwIfDisposed();
     assert(

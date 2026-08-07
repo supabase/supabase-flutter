@@ -236,15 +236,44 @@ class Supabase {
     _lifecycleListener = null;
     _restoreSessionCancellableOperation = null;
     _logSubscription = null;
-    _targetLifecycleState = null;
     _pendingLifecycleOperation = Future.value();
     _isInitialized = false;
 
-    await restoreSession?.cancel();
-    await logSubscription?.cancel();
-    await currentClient.dispose();
-    supabaseAuth?.dispose();
+    // Stop listening before anything is awaited, so no lifecycle event can be
+    // queued while the client is being torn down. Operations queued earlier
+    // see the cleared [_targetLifecycleState] and abort as stale.
+    _targetLifecycleState = null;
     lifecycleListener?.dispose();
+
+    // Every step runs even if an earlier one throws, otherwise a failure part
+    // way through would leave the rest of the graph alive. The first error is
+    // rethrown once everything has been attempted.
+    await _disposeAll([
+      () => restoreSession?.cancel(),
+      () => logSubscription?.cancel(),
+      currentClient.dispose,
+      () => supabaseAuth?.dispose(),
+    ]);
+  }
+
+  /// Runs every step, then rethrows the first error any of them threw.
+  static Future<void> _disposeAll(List<FutureOr<void> Function()> steps) async {
+    Object? firstError;
+    StackTrace? firstStackTrace;
+
+    for (final step in steps) {
+      try {
+        await step();
+      } catch (error, stackTrace) {
+        _log.warning('Error while disposing Supabase', error, stackTrace);
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
+    }
+
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError, firstStackTrace!);
+    }
   }
 
   void _init(
