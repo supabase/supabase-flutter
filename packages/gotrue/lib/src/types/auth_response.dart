@@ -53,15 +53,16 @@ class ListUsersResponse {
   /// response header.
   final int? lastPage;
 
-  /// The audience the users belong to.
-  final String? aud;
+  /// The audience the users belong to, from the `aud` field of the response
+  /// body.
+  final String? audience;
 
   const ListUsersResponse({
     required this.users,
     this.total,
     this.nextPage,
     this.lastPage,
-    this.aud,
+    this.audience,
   });
 }
 

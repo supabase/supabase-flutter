@@ -7,11 +7,15 @@ import 'package:test/test.dart';
 /// Serves a fixed list-users response with the pagination headers the GoTrue
 /// server sends alongside it.
 class ListUsersMockClient extends BaseClient {
-  ListUsersMockClient({this.link, this.totalCount, this.aud = 'authenticated'});
+  ListUsersMockClient({
+    this.link,
+    this.totalCount,
+    this.audience = 'authenticated',
+  });
 
   final String? link;
   final String? totalCount;
-  final String? aud;
+  final String? audience;
 
   Uri? lastRequestUrl;
 
@@ -26,7 +30,7 @@ class ListUsersMockClient extends BaseClient {
             'users': [
               {'id': '2fa5b8b0-4f1a-4a5c-9d47-1cf3dbb9f7e1'},
             ],
-            'aud': ?aud,
+            'aud': ?audience,
           }),
         ),
       ),
@@ -63,7 +67,7 @@ void main() {
     expect(response.total, 5);
     expect(response.nextPage, 3);
     expect(response.lastPage, 5);
-    expect(response.aud, 'authenticated');
+    expect(response.audience, 'authenticated');
     expect(mockClient.lastRequestUrl?.queryParameters, {
       'page': '2',
       'per_page': '1',
@@ -86,14 +90,14 @@ void main() {
 
   test('listUsers() leaves the metadata null when omitted', () async {
     final response = await clientWith(
-      ListUsersMockClient(aud: null),
+      ListUsersMockClient(audience: null),
     ).admin.listUsers();
 
     expect(response.users, hasLength(1));
     expect(response.total, isNull);
     expect(response.nextPage, isNull);
     expect(response.lastPage, isNull);
-    expect(response.aud, isNull);
+    expect(response.audience, isNull);
   });
 
   test('listUsers() ignores links it cannot read a page number from', () async {

@@ -168,8 +168,8 @@ for (final user in response.users) {
 ```
 
 `total` comes from the `X-Total-Count` response header, `nextPage` and `lastPage` from the `Link`
-header, and `aud` from the body. `nextPage` is `null` on the last page, so you can walk every page
-without guessing where it ends:
+header, and `audience` from the `aud` field of the body. `nextPage` is `null` on the last page, so
+you can walk every page without guessing where it ends:
 
 ```dart
 var response = await supabase.auth.admin.listUsers(perPage: 50);

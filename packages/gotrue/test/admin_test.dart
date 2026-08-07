@@ -48,7 +48,7 @@ void main() {
     test('listUsers() returns the pagination metadata of the page', () async {
       final firstPage = await client.admin.listUsers(perPage: 1);
       expect(firstPage.users, hasLength(1));
-      expect(firstPage.aud, 'authenticated');
+      expect(firstPage.audience, 'authenticated');
       expect(firstPage.total, greaterThan(1));
       expect(firstPage.lastPage, firstPage.total);
       expect(firstPage.nextPage, 2);

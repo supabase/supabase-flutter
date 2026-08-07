@@ -176,7 +176,7 @@ class GoTrueAdminApi {
       total: int.tryParse(headers['x-total-count'] ?? ''),
       nextPage: links['next'],
       lastPage: links['last'],
-      aud: body['aud'] as String?,
+      audience: body['aud'] as String?,
     );
   }
 

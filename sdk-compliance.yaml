@@ -260,7 +260,7 @@ features:
       - GoTrueAdminApi.listUsers
       - ListUsersResponse
       - ListUsersResponse.ListUsersResponse
-      - ListUsersResponse.aud
+      - ListUsersResponse.audience
       - ListUsersResponse.lastPage
       - ListUsersResponse.nextPage
       - ListUsersResponse.total
