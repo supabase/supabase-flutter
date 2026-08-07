@@ -1,4 +1,5 @@
 import 'package:gotrue/gotrue.dart';
+import 'package:gotrue/src/constants.dart' show Constants;
 import 'package:test/test.dart';
 
 import 'mocks/otp_mock_client.dart';
@@ -122,6 +123,59 @@ void main() {
       // Verify session was set
       expect(client.currentSession, isNotNull);
       expect(client.currentUser, isNotNull);
+    });
+
+    test('verifyOTP() emits signedIn for a sign in type', () async {
+      final emittedEvent = _nextEvent(client);
+
+      await client.verifyOTP(
+        email: testEmail,
+        token: '123456',
+        type: OtpType.email,
+      );
+
+      expect(await emittedEvent, AuthChangeEvent.signedIn);
+    });
+
+    test('verifyOTP() emits passwordRecovery for the recovery type', () async {
+      final emittedEvent = _nextEvent(client);
+
+      await client.verifyOTP(
+        email: testEmail,
+        token: '123456',
+        type: OtpType.recovery,
+      );
+
+      expect(await emittedEvent, AuthChangeEvent.passwordRecovery);
+    });
+
+    // Regression test for
+    // https://github.com/supabase/supabase-flutter/issues/1398
+    //
+    // Confirming an email change is not a sign in, so it has to be
+    // distinguishable from one.
+    test('verifyOTP() emits userUpdated for an email change', () async {
+      final emittedEvent = _nextEvent(client);
+
+      await client.verifyOTP(
+        email: testEmail,
+        token: '123456',
+        type: OtpType.emailChange,
+      );
+
+      expect(await emittedEvent, AuthChangeEvent.userUpdated);
+    });
+
+    test('verifyOTP() emits userUpdated for a phone change', () async {
+      final emittedEvent = _nextEvent(client);
+
+      await client.verifyOTP(
+        phone: testPhone,
+        token: '123456',
+        type: OtpType.phoneChange,
+      );
+
+      expect(await emittedEvent, AuthChangeEvent.userUpdated);
     });
 
     test('verifyOTP() with tokenHash', () async {
@@ -347,6 +401,33 @@ void main() {
 
         expect(mockClient.lastUpdateUserBody?['code_challenge'], isNotNull);
         expect(mockClient.lastUpdateUserBody?['code_challenge_method'], 's256');
+      },
+    );
+
+    // Regression test for
+    // https://github.com/supabase/supabase-flutter/issues/1398
+    //
+    // The event name is persisted alongside the code verifier so that
+    // exchangeCodeForSession knows the code came from an email change and can
+    // emit userUpdated instead of signedIn.
+    test(
+      'updateUser() with email stores the userUpdated event name',
+      () async {
+        await client.verifyOTP(
+          phone: testPhone,
+          token: '123456',
+          type: OtpType.sms,
+        );
+
+        await client.updateUser(UserAttributes(email: testEmail));
+
+        final storedVerifier = await asyncStorage.getItem(
+          key: '${Constants.defaultStorageKey}-code-verifier',
+        );
+        expect(
+          storedVerifier?.split('/').last,
+          AuthChangeEvent.userUpdated.name,
+        );
       },
     );
 
@@ -786,3 +867,9 @@ void main() {
     );
   });
 }
+
+/// The first auth event of [client] that isn't the initial session.
+Future<AuthChangeEvent> _nextEvent(GoTrueClient client) => client
+    .onAuthStateChange
+    .firstWhere((state) => state.event != AuthChangeEvent.initialSession)
+    .then((state) => state.event);

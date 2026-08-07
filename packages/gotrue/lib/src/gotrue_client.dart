@@ -427,6 +427,11 @@ class GoTrueClient {
   }
 
   /// Verifies the PKCE code verifier and retrieves a session.
+  ///
+  /// Emits [AuthChangeEvent.signedIn], unless the code was issued by
+  /// [resetPasswordForEmail], which emits [AuthChangeEvent.passwordRecovery],
+  /// or by an email change through [updateUser], which emits
+  /// [AuthChangeEvent.userUpdated].
   Future<AuthSessionUrlResponse> exchangeCodeForSession(String authCode) async {
     assert(
       _asyncStorage != null,
@@ -464,11 +469,9 @@ class GoTrueClient {
 
     final session = authSessionUrlResponse.session;
     _saveSession(session);
-    if (redirectType == AuthChangeEvent.passwordRecovery) {
-      notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
-    } else {
-      notifyAllSubscribers(AuthChangeEvent.signedIn);
-    }
+    // The event name stored with the code verifier is the event to emit, so a
+    // code that was issued without one is a plain sign in.
+    notifyAllSubscribers(redirectType ?? AuthChangeEvent.signedIn);
 
     return authSessionUrlResponse;
   }
@@ -675,6 +678,11 @@ class GoTrueClient {
   /// [token] is the token that user was sent to their mobile phone
   ///
   /// [tokenHash] is the token used in an email link
+  ///
+  /// Once a session is issued, [AuthChangeEvent.signedIn] is emitted, except
+  /// for [OtpType.recovery], which emits [AuthChangeEvent.passwordRecovery],
+  /// and [OtpType.emailChange] and [OtpType.phoneChange], which emit
+  /// [AuthChangeEvent.userUpdated].
   Future<AuthResponse> verifyOTP({
     String? email,
     String? phone,
@@ -734,11 +742,16 @@ class GoTrueClient {
     final session = authResponse.session;
     if (session != null) {
       _saveSession(session);
-      notifyAllSubscribers(
-        type == OtpType.recovery
-            ? AuthChangeEvent.passwordRecovery
-            : AuthChangeEvent.signedIn,
-      );
+      notifyAllSubscribers(switch (type) {
+        OtpType.recovery => AuthChangeEvent.passwordRecovery,
+        OtpType.emailChange ||
+        OtpType.phoneChange => AuthChangeEvent.userUpdated,
+        OtpType.sms ||
+        OtpType.signup ||
+        OtpType.invite ||
+        OtpType.magiclink ||
+        OtpType.email => AuthChangeEvent.signedIn,
+      });
     }
 
     return authResponse;
@@ -918,7 +931,9 @@ class GoTrueClient {
     }
 
     final codeChallenge = attributes.email != null
-        ? await _generatePKCECodeChallenge()
+        ? await _generatePKCECodeChallenge(
+            storageEventName: AuthChangeEvent.userUpdated.name,
+          )
         : null;
 
     final body = {
@@ -1003,6 +1018,11 @@ class GoTrueClient {
   }
 
   /// Gets the session data from a magic link or oauth2 callback URL
+  ///
+  /// When the session is stored, [AuthChangeEvent.signedIn] is emitted, except
+  /// for a password recovery link, which emits
+  /// [AuthChangeEvent.passwordRecovery], and an email change confirmation link,
+  /// which emits [AuthChangeEvent.userUpdated].
   Future<AuthSessionUrlResponse> getSessionFromUrl(
     Uri originUrl, {
     bool storeSession = true,
@@ -1078,11 +1098,11 @@ class GoTrueClient {
 
     if (storeSession == true) {
       _saveSession(session);
-      if (redirectType == 'recovery') {
-        notifyAllSubscribers(AuthChangeEvent.passwordRecovery);
-      } else {
-        notifyAllSubscribers(AuthChangeEvent.signedIn);
-      }
+      notifyAllSubscribers(switch (redirectType) {
+        'recovery' => AuthChangeEvent.passwordRecovery,
+        'email_change' => AuthChangeEvent.userUpdated,
+        _ => AuthChangeEvent.signedIn,
+      });
     }
 
     return AuthSessionUrlResponse(session: session, redirectType: redirectType);

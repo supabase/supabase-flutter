@@ -276,3 +276,40 @@ for (final result in results) {
 
 If you were already on `createSignedUrlsResult`, drop the `Result` suffix from the call.
 
+### Confirming an email or phone change emits `userUpdated`
+
+Confirming an email or phone change used to emit `AuthChangeEvent.signedIn`, which made it
+indistinguishable from an actual sign-in. It now emits `AuthChangeEvent.userUpdated`, the same event
+that `updateUser()` emits when the change is requested. This applies to every way the change can be
+confirmed:
+
+| Confirmation | Before | After |
+| --- | --- | --- |
+| `verifyOTP()` with `OtpType.emailChange` or `OtpType.phoneChange` | `signedIn` | `userUpdated` |
+| `getSessionFromUrl()` with an implicit `type=email_change` link | `signedIn` | `userUpdated` |
+| `exchangeCodeForSession()` for a PKCE code from an email change | `signedIn` | `userUpdated` |
+
+The session is still saved and `currentSession` still updates, only the event differs. Because this
+is a runtime change and not a compile error, check any `onAuthStateChange` listener that navigates
+or fetches on `signedIn` and expects the email-change confirmation to reach it:
+
+```dart
+// Before
+supabase.auth.onAuthStateChange.listen((data) {
+  if (data.event == AuthChangeEvent.signedIn) {
+    // Ran both on sign-in and after an email change was confirmed.
+  }
+});
+
+// After
+supabase.auth.onAuthStateChange.listen((data) {
+  if (data.event == AuthChangeEvent.signedIn) {
+    // Only runs on an actual sign-in.
+  } else if (data.event == AuthChangeEvent.userUpdated) {
+    // Runs when the user record changed, including a confirmed email change.
+  }
+});
+```
+
+For the PKCE case, `AuthSessionUrlResponse.redirectType` is `'userUpdated'` instead of `null`, so
+you can also branch on the response of `exchangeCodeForSession()` directly.
