@@ -1200,6 +1200,40 @@ features:
     status: implemented
     symbols:
       - IcebergRestCatalog.dropTable
+  storage.analytics.load_namespace_metadata:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.loadNamespaceMetadata
+  storage.analytics.namespace_exists:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.namespaceExists
+  storage.analytics.update_namespace_properties:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.updateNamespaceProperties
+    supporting_symbols:
+      - UpdateNamespacePropertiesResult
+      - UpdateNamespacePropertiesResult.UpdateNamespacePropertiesResult
+      - UpdateNamespacePropertiesResult.fromJson
+      - UpdateNamespacePropertiesResult.missing
+      - UpdateNamespacePropertiesResult.removed
+      - UpdateNamespacePropertiesResult.updated
+  storage.analytics.register_table:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.registerTable
+    supporting_symbols:
+      - RegisterTableRequest
+      - RegisterTableRequest.RegisterTableRequest
+      - RegisterTableRequest.metadataLocation
+      - RegisterTableRequest.name
+      - RegisterTableRequest.overwrite
+      - RegisterTableRequest.toJson
+  storage.analytics.table_exists:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.tableExists
 
   # realtime — channel
   realtime.channel.subscribe:
@@ -1451,11 +1485,10 @@ features:
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
 
-# Public API the matrix accounts for but that no single capability owns: types
-# reachable from several features' entry points (the Iceberg schema and type
-# model), types reachable from none because they are thrown rather than passed
-# (the exception hierarchy), and the catalog operations the canonical matrix has
-# no feature id for yet. See supabase/sdk#76 for the last group.
+# Public API the matrix accounts for but that no single capability owns: the
+# Iceberg schema and type model, reachable from several features' entry points,
+# and the exception hierarchy, reachable from none because it is thrown rather
+# than passed. Every catalog operation now has a feature id of its own.
 supporting_symbols:
   - AccessDelegation
   - AccessDelegation.AccessDelegation
@@ -1481,11 +1514,6 @@ supporting_symbols:
   - IcebergNotFoundException.IcebergNotFoundException
   - IcebergRestCatalog
   - IcebergRestCatalog.IcebergRestCatalog
-  - IcebergRestCatalog.loadNamespaceMetadata
-  - IcebergRestCatalog.namespaceExists
-  - IcebergRestCatalog.registerTable
-  - IcebergRestCatalog.tableExists
-  - IcebergRestCatalog.updateNamespaceProperties
   - IcebergServerException
   - IcebergServerException.IcebergServerException
   - IcebergType
@@ -1540,12 +1568,6 @@ supporting_symbols:
   - PrimitiveType.PrimitiveType
   - PrimitiveType.name
   - PrimitiveType.toJson
-  - RegisterTableRequest
-  - RegisterTableRequest.RegisterTableRequest
-  - RegisterTableRequest.metadataLocation
-  - RegisterTableRequest.name
-  - RegisterTableRequest.overwrite
-  - RegisterTableRequest.toJson
   - Snapshot
   - Snapshot.Snapshot
   - Snapshot.fromJson
@@ -1643,9 +1665,3 @@ supporting_symbols:
   - TableSchema.identifierFieldIds
   - TableSchema.schemaId
   - TableSchema.toJson
-  - UpdateNamespacePropertiesResult
-  - UpdateNamespacePropertiesResult.UpdateNamespacePropertiesResult
-  - UpdateNamespacePropertiesResult.fromJson
-  - UpdateNamespacePropertiesResult.missing
-  - UpdateNamespacePropertiesResult.removed
-  - UpdateNamespacePropertiesResult.updated
