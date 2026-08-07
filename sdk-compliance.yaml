@@ -74,7 +74,7 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.reauthenticate
-  auth.sign_in.reset_password:
+  auth.sign_in.send_password_reset_email:
     status: implemented
     symbols:
       - GoTrueClient.resetPasswordForEmail
@@ -255,8 +255,16 @@ features:
     symbols:
       - GoTrueAdminApi.deleteUser
   auth.admin.list_users:
-    status: partially_implemented
-    note: "Returns the user list only; pagination metadata (total, nextPage, lastPage, aud) is not returned."
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.listUsers
+      - ListUsersResponse
+      - ListUsersResponse.ListUsersResponse
+      - ListUsersResponse.audience
+      - ListUsersResponse.lastPage
+      - ListUsersResponse.nextPage
+      - ListUsersResponse.total
+      - ListUsersResponse.users
   auth.admin.invite_user:
     status: implemented
     symbols:
@@ -715,28 +723,20 @@ features:
       - StorageFileApi.downloadStream
   storage.file_buckets.list_files:
     status: implemented
+    note: "Cursor-based pagination is exposed as listPaginated (paired with descriptive Dart type names) rather than the supabase-js listV2 name."
     symbols:
       - StorageFileApi.list
-  storage.file_buckets.list_files_paginated:
-    status: implemented
-    note: "Exposed as listPaginated (paired with descriptive Dart type names) rather than the supabase-js listV2 name."
-    symbols:
       - StorageFileApi.listPaginated
-      - PaginatedSearchOptions
-      - PaginatedSearchOptions.PaginatedSearchOptions
-      - PaginatedSearchOptions.cursor
-      - PaginatedSearchOptions.limit
-      - PaginatedSearchOptions.prefix
-      - PaginatedSearchOptions.sortBy
-      - PaginatedSearchOptions.toMap
-      - PaginatedSearchOptions.withDelimiter
-      - PaginatedListResult
-      - PaginatedListResult.PaginatedListResult
-      - PaginatedListResult.folders
-      - PaginatedListResult.fromJson
-      - PaginatedListResult.hasNext
-      - PaginatedListResult.nextCursor
-      - PaginatedListResult.objects
+    supporting_symbols:
+      - FileSort
+      - FileSort.FileSort
+      - FileSort.column
+      - FileSort.order
+      - FileSort.toMap
+      - FileSortColumn
+      - FileSortOrder
+      - FileSortOrder.FileSortOrder
+      - FileSortOrder.value
       - PaginatedFile
       - PaginatedFile.PaginatedFile
       - PaginatedFile.createdAt
@@ -751,15 +751,21 @@ features:
       - PaginatedFolder.fromJson
       - PaginatedFolder.key
       - PaginatedFolder.name
-      - FileSort
-      - FileSort.FileSort
-      - FileSort.column
-      - FileSort.order
-      - FileSort.toMap
-      - FileSortColumn
-      - FileSortOrder
-      - FileSortOrder.FileSortOrder
-      - FileSortOrder.value
+      - PaginatedListResult
+      - PaginatedListResult.PaginatedListResult
+      - PaginatedListResult.folders
+      - PaginatedListResult.fromJson
+      - PaginatedListResult.hasNext
+      - PaginatedListResult.nextCursor
+      - PaginatedListResult.objects
+      - PaginatedSearchOptions
+      - PaginatedSearchOptions.PaginatedSearchOptions
+      - PaginatedSearchOptions.cursor
+      - PaginatedSearchOptions.limit
+      - PaginatedSearchOptions.prefix
+      - PaginatedSearchOptions.sortBy
+      - PaginatedSearchOptions.toMap
+      - PaginatedSearchOptions.withDelimiter
   storage.file_buckets.move:
     status: implemented
     symbols:
@@ -1002,16 +1008,16 @@ features:
     status: implemented
     symbols:
       - StorageBucketApi.deleteAnalyticsBucket
-  storage.analytics.iceberg_namespace:
+  storage.analytics.create_namespace:
     status: implemented
     symbols:
       - IcebergRestCatalog.createNamespace
       - IcebergRestCatalog.createNamespaceIfNotExists
-      - IcebergRestCatalog.dropNamespace
+  storage.analytics.list_namespaces:
+    status: implemented
+    symbols:
       - IcebergRestCatalog.listNamespaces
-      - IcebergRestCatalog.loadNamespaceMetadata
-      - IcebergRestCatalog.namespaceExists
-      - IcebergRestCatalog.updateNamespaceProperties
+    supporting_symbols:
       - ListNamespacesOptions
       - ListNamespacesOptions.ListNamespacesOptions
       - ListNamespacesOptions.pageSize
@@ -1021,23 +1027,59 @@ features:
       - ListNamespacesResult.ListNamespacesResult
       - ListNamespacesResult.namespaces
       - ListNamespacesResult.nextPageToken
-      - UpdateNamespacePropertiesResult
-      - UpdateNamespacePropertiesResult.UpdateNamespacePropertiesResult
-      - UpdateNamespacePropertiesResult.fromJson
-      - UpdateNamespacePropertiesResult.missing
-      - UpdateNamespacePropertiesResult.removed
-      - UpdateNamespacePropertiesResult.updated
-  storage.analytics.iceberg_table:
+  storage.analytics.delete_namespace:
     status: implemented
-    note: >-
-      Data definition table updates (schema, partition spec, sort order,
-      properties, location) are modelled as typed TableUpdate subclasses;
-      snapshot, statistics and encryption key updates are sent through the
-      TableUpdate.raw escape hatch.
     symbols:
-      - AccessDelegation
-      - AccessDelegation.AccessDelegation
-      - AccessDelegation.value
+      - IcebergRestCatalog.dropNamespace
+  storage.analytics.create_table:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.createTable
+      - IcebergRestCatalog.createTableIfNotExists
+      - IcebergRestCatalog.createTableResult
+    supporting_symbols:
+      - CreateTableRequest
+      - CreateTableRequest.CreateTableRequest
+      - CreateTableRequest.location
+      - CreateTableRequest.name
+      - CreateTableRequest.partitionSpec
+      - CreateTableRequest.properties
+      - CreateTableRequest.schema
+      - CreateTableRequest.stageCreate
+      - CreateTableRequest.toJson
+      - CreateTableRequest.writeOrder
+  storage.analytics.list_tables:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.listTables
+    supporting_symbols:
+      - ListTablesOptions
+      - ListTablesOptions.ListTablesOptions
+      - ListTablesOptions.pageSize
+      - ListTablesOptions.pageToken
+      - ListTablesResult
+      - ListTablesResult.ListTablesResult
+      - ListTablesResult.identifiers
+      - ListTablesResult.nextPageToken
+  storage.analytics.load_table:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.loadTable
+      - IcebergRestCatalog.loadTableResult
+    supporting_symbols:
+      - LoadTableOptions
+      - LoadTableOptions.LoadTableOptions
+      - LoadTableOptions.ifNoneMatch
+      - LoadTableOptions.snapshots
+      - TableSnapshotScope
+      - TableSnapshotScope.TableSnapshotScope
+      - TableSnapshotScope.value
+  storage.analytics.update_table:
+    status: implemented
+    note: Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch.
+    symbols:
+      - IcebergRestCatalog.updateTable
+    supporting_symbols:
       - AddPartitionSpecUpdate
       - AddPartitionSpecUpdate.AddPartitionSpecUpdate
       - AddPartitionSpecUpdate.spec
@@ -1090,125 +1132,11 @@ features:
       - CommitTableResult.CommitTableResult
       - CommitTableResult.metadata
       - CommitTableResult.metadataLocation
-      - CreateTableRequest
-      - CreateTableRequest.CreateTableRequest
-      - CreateTableRequest.location
-      - CreateTableRequest.name
-      - CreateTableRequest.partitionSpec
-      - CreateTableRequest.properties
-      - CreateTableRequest.schema
-      - CreateTableRequest.stageCreate
-      - CreateTableRequest.toJson
-      - CreateTableRequest.writeOrder
-      - IcebergAuthenticationTimeoutException
-      - IcebergAuthenticationTimeoutException.IcebergAuthenticationTimeoutException
-      - IcebergCommitStateUnknownException
-      - IcebergCommitStateUnknownException.IcebergCommitStateUnknownException
-      - IcebergConflictException
-      - IcebergConflictException.IcebergConflictException
-      - IcebergException
-      - IcebergException.IcebergException
-      - IcebergException.code
-      - IcebergException.details
-      - IcebergException.fromResponse
-      - IcebergException.message
-      - IcebergException.statusCode
-      - IcebergException.toString
-      - IcebergException.type
-      - IcebergNetworkException
-      - IcebergNetworkException.IcebergNetworkException
-      - IcebergNotFoundException
-      - IcebergNotFoundException.IcebergNotFoundException
-      - IcebergRestCatalog
-      - IcebergRestCatalog.IcebergRestCatalog
-      - IcebergRestCatalog.createTable
-      - IcebergRestCatalog.createTableIfNotExists
-      - IcebergRestCatalog.createTableResult
-      - IcebergRestCatalog.dropTable
-      - IcebergRestCatalog.listTables
-      - IcebergRestCatalog.loadTable
-      - IcebergRestCatalog.loadTableResult
-      - IcebergRestCatalog.registerTable
-      - IcebergRestCatalog.renameTable
-      - IcebergRestCatalog.tableExists
-      - IcebergRestCatalog.updateTable
-      - IcebergServerException
-      - IcebergServerException.IcebergServerException
-      - IcebergType
-      - IcebergType.IcebergType
-      - IcebergType.fromJson
-      - IcebergType.toJson
-      - IcebergUnknownException
-      - IcebergUnknownException.IcebergUnknownException
-      - ListTablesOptions
-      - ListTablesOptions.ListTablesOptions
-      - ListTablesOptions.pageSize
-      - ListTablesOptions.pageToken
-      - ListTablesResult
-      - ListTablesResult.ListTablesResult
-      - ListTablesResult.identifiers
-      - ListTablesResult.nextPageToken
-      - ListType
-      - ListType.ListType
-      - ListType.element
-      - ListType.elementId
-      - ListType.elementRequired
-      - ListType.fromJson
-      - ListType.toJson
-      - LoadTableOptions
-      - LoadTableOptions.LoadTableOptions
-      - LoadTableOptions.ifNoneMatch
-      - LoadTableOptions.snapshots
-      - LoadTableResult
-      - LoadTableResult.LoadTableResult
-      - LoadTableResult.config
-      - LoadTableResult.etag
-      - LoadTableResult.fromJson
-      - LoadTableResult.metadata
-      - LoadTableResult.metadataLocation
-      - LoadTableResult.storageCredentials
-      - MapType
-      - MapType.MapType
-      - MapType.fromJson
-      - MapType.key
-      - MapType.keyId
-      - MapType.toJson
-      - MapType.value
-      - MapType.valueId
-      - MapType.valueRequired
-      - NullOrder
-      - NullOrder.NullOrder
-      - NullOrder.fromValue
-      - NullOrder.value
-      - PartitionField
-      - PartitionField.PartitionField
-      - PartitionField.fieldId
-      - PartitionField.fromJson
-      - PartitionField.name
-      - PartitionField.sourceId
-      - PartitionField.toJson
-      - PartitionField.transform
-      - PartitionSpec
-      - PartitionSpec.PartitionSpec
-      - PartitionSpec.fields
-      - PartitionSpec.fromJson
-      - PartitionSpec.specId
-      - PartitionSpec.toJson
-      - PrimitiveType
-      - PrimitiveType.PrimitiveType
-      - PrimitiveType.name
-      - PrimitiveType.toJson
       - RawTableUpdate
       - RawTableUpdate.RawTableUpdate
       - RawTableUpdate.action
       - RawTableUpdate.body
       - RawTableUpdate.toJson
-      - RegisterTableRequest
-      - RegisterTableRequest.RegisterTableRequest
-      - RegisterTableRequest.metadataLocation
-      - RegisterTableRequest.name
-      - RegisterTableRequest.overwrite
-      - RegisterTableRequest.toJson
       - RemovePartitionSpecsUpdate
       - RemovePartitionSpecsUpdate.RemovePartitionSpecsUpdate
       - RemovePartitionSpecsUpdate.specIds
@@ -1254,109 +1182,9 @@ features:
       - SetSnapshotReferenceUpdate.reference
       - SetSnapshotReferenceUpdate.referenceName
       - SetSnapshotReferenceUpdate.toJson
-      - Snapshot
-      - Snapshot.Snapshot
-      - Snapshot.fromJson
-      - Snapshot.manifestList
-      - Snapshot.parentSnapshotId
-      - Snapshot.schemaId
-      - Snapshot.sequenceNumber
-      - Snapshot.snapshotId
-      - Snapshot.summary
-      - Snapshot.timestampMs
-      - Snapshot.toJson
-      - SnapshotReference
-      - SnapshotReference.SnapshotReference
-      - SnapshotReference.fromJson
-      - SnapshotReference.maxReferenceAgeMs
-      - SnapshotReference.maxSnapshotAgeMs
-      - SnapshotReference.minSnapshotsToKeep
-      - SnapshotReference.snapshotId
-      - SnapshotReference.toJson
-      - SnapshotReference.type
-      - SnapshotReferenceType
-      - SnapshotReferenceType.SnapshotReferenceType
-      - SnapshotReferenceType.fromValue
-      - SnapshotReferenceType.value
-      - SortDirection
-      - SortDirection.SortDirection
-      - SortDirection.fromValue
-      - SortDirection.value
-      - SortField
-      - SortField.SortField
-      - SortField.direction
-      - SortField.fromJson
-      - SortField.nullOrder
-      - SortField.sourceId
-      - SortField.toJson
-      - SortField.transform
-      - SortOrder
-      - SortOrder.SortOrder
-      - SortOrder.fields
-      - SortOrder.fromJson
-      - SortOrder.orderId
-      - SortOrder.toJson
-      - StorageCredential
-      - StorageCredential.StorageCredential
-      - StorageCredential.config
-      - StorageCredential.fromJson
-      - StorageCredential.prefix
-      - StructType
-      - StructType.StructType
-      - StructType.fields
-      - StructType.fromJson
-      - StructType.toJson
-      - SupabaseStorageClient.analyticsCatalog
-      - TableField
-      - TableField.TableField
-      - TableField.doc
-      - TableField.fromJson
-      - TableField.id
-      - TableField.initialDefault
-      - TableField.name
-      - TableField.required
-      - TableField.toJson
-      - TableField.type
-      - TableField.writeDefault
-      - TableIdentifier
-      - TableIdentifier.TableIdentifier
-      - TableIdentifier.fromJson
-      - TableIdentifier.name
-      - TableIdentifier.namespace
-      - TableIdentifier.toJson
-      - TableMetadata
-      - TableMetadata.TableMetadata
-      - TableMetadata.currentSchema
-      - TableMetadata.currentSchemaId
-      - TableMetadata.currentSnapshotId
-      - TableMetadata.defaultSortOrderId
-      - TableMetadata.defaultSpecId
-      - TableMetadata.formatVersion
-      - TableMetadata.fromJson
-      - TableMetadata.lastColumnId
-      - TableMetadata.lastUpdatedMs
-      - TableMetadata.location
-      - TableMetadata.metadataLocation
-      - TableMetadata.partitionSpecs
-      - TableMetadata.properties
-      - TableMetadata.refs
-      - TableMetadata.schemas
-      - TableMetadata.snapshots
-      - TableMetadata.sortOrders
-      - TableMetadata.tableUuid
       - TableRequirement
       - TableRequirement.TableRequirement
       - TableRequirement.toJson
-      - TableSchema
-      - TableSchema.TableSchema
-      - TableSchema.fields
-      - TableSchema.fromJson
-      - TableSchema.identifierFieldIds
-      - TableSchema.schemaId
-      - TableSchema.toJson
-      - TableSnapshotScope
-      - TableSnapshotScope.TableSnapshotScope
-      - TableSnapshotScope.value
       - TableUpdate
       - TableUpdate.TableUpdate
       - TableUpdate.raw
@@ -1365,6 +1193,48 @@ features:
       - UpgradeFormatVersionUpdate.UpgradeFormatVersionUpdate
       - UpgradeFormatVersionUpdate.formatVersion
       - UpgradeFormatVersionUpdate.toJson
+  storage.analytics.rename_table:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.renameTable
+  storage.analytics.delete_table:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.dropTable
+  storage.analytics.load_namespace_metadata:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.loadNamespaceMetadata
+  storage.analytics.namespace_exists:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.namespaceExists
+  storage.analytics.update_namespace_properties:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.updateNamespaceProperties
+    supporting_symbols:
+      - UpdateNamespacePropertiesResult
+      - UpdateNamespacePropertiesResult.UpdateNamespacePropertiesResult
+      - UpdateNamespacePropertiesResult.fromJson
+      - UpdateNamespacePropertiesResult.missing
+      - UpdateNamespacePropertiesResult.removed
+      - UpdateNamespacePropertiesResult.updated
+  storage.analytics.register_table:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.registerTable
+    supporting_symbols:
+      - RegisterTableRequest
+      - RegisterTableRequest.RegisterTableRequest
+      - RegisterTableRequest.metadataLocation
+      - RegisterTableRequest.name
+      - RegisterTableRequest.overwrite
+      - RegisterTableRequest.toJson
+  storage.analytics.table_exists:
+    status: implemented
+    symbols:
+      - IcebergRestCatalog.tableExists
 
   # realtime — channel
   realtime.channel.subscribe:
@@ -1375,7 +1245,7 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.unsubscribe
-  realtime.channel.send:
+  realtime.channel.broadcast:
     status: implemented
     symbols:
       - RealtimeChannel.sendBroadcastMessage
@@ -1615,3 +1485,184 @@ features:
       - TracePropagationOptions.enabled
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
+
+# Public API the matrix accounts for but that no single capability owns: the
+# Iceberg schema and type model, reachable from several features' entry points,
+# and the exception hierarchy, reachable from none because it is thrown rather
+# than passed. Every catalog operation now has a feature id of its own.
+supporting_symbols:
+  - AccessDelegation
+  - AccessDelegation.AccessDelegation
+  - AccessDelegation.value
+  - IcebergAuthenticationTimeoutException
+  - IcebergAuthenticationTimeoutException.IcebergAuthenticationTimeoutException
+  - IcebergCommitStateUnknownException
+  - IcebergCommitStateUnknownException.IcebergCommitStateUnknownException
+  - IcebergConflictException
+  - IcebergConflictException.IcebergConflictException
+  - IcebergException
+  - IcebergException.IcebergException
+  - IcebergException.code
+  - IcebergException.details
+  - IcebergException.fromResponse
+  - IcebergException.message
+  - IcebergException.statusCode
+  - IcebergException.toString
+  - IcebergException.type
+  - IcebergNetworkException
+  - IcebergNetworkException.IcebergNetworkException
+  - IcebergNotFoundException
+  - IcebergNotFoundException.IcebergNotFoundException
+  - IcebergRestCatalog
+  - IcebergRestCatalog.IcebergRestCatalog
+  - IcebergServerException
+  - IcebergServerException.IcebergServerException
+  - IcebergType
+  - IcebergType.IcebergType
+  - IcebergType.fromJson
+  - IcebergType.toJson
+  - IcebergUnknownException
+  - IcebergUnknownException.IcebergUnknownException
+  - ListType
+  - ListType.ListType
+  - ListType.element
+  - ListType.elementId
+  - ListType.elementRequired
+  - ListType.fromJson
+  - ListType.toJson
+  - LoadTableResult
+  - LoadTableResult.LoadTableResult
+  - LoadTableResult.config
+  - LoadTableResult.etag
+  - LoadTableResult.fromJson
+  - LoadTableResult.metadata
+  - LoadTableResult.metadataLocation
+  - LoadTableResult.storageCredentials
+  - MapType
+  - MapType.MapType
+  - MapType.fromJson
+  - MapType.key
+  - MapType.keyId
+  - MapType.toJson
+  - MapType.value
+  - MapType.valueId
+  - MapType.valueRequired
+  - NullOrder
+  - NullOrder.NullOrder
+  - NullOrder.fromValue
+  - NullOrder.value
+  - PartitionField
+  - PartitionField.PartitionField
+  - PartitionField.fieldId
+  - PartitionField.fromJson
+  - PartitionField.name
+  - PartitionField.sourceId
+  - PartitionField.toJson
+  - PartitionField.transform
+  - PartitionSpec
+  - PartitionSpec.PartitionSpec
+  - PartitionSpec.fields
+  - PartitionSpec.fromJson
+  - PartitionSpec.specId
+  - PartitionSpec.toJson
+  - PrimitiveType
+  - PrimitiveType.PrimitiveType
+  - PrimitiveType.name
+  - PrimitiveType.toJson
+  - Snapshot
+  - Snapshot.Snapshot
+  - Snapshot.fromJson
+  - Snapshot.manifestList
+  - Snapshot.parentSnapshotId
+  - Snapshot.schemaId
+  - Snapshot.sequenceNumber
+  - Snapshot.snapshotId
+  - Snapshot.summary
+  - Snapshot.timestampMs
+  - Snapshot.toJson
+  - SnapshotReference
+  - SnapshotReference.SnapshotReference
+  - SnapshotReference.fromJson
+  - SnapshotReference.maxReferenceAgeMs
+  - SnapshotReference.maxSnapshotAgeMs
+  - SnapshotReference.minSnapshotsToKeep
+  - SnapshotReference.snapshotId
+  - SnapshotReference.toJson
+  - SnapshotReference.type
+  - SnapshotReferenceType
+  - SnapshotReferenceType.SnapshotReferenceType
+  - SnapshotReferenceType.fromValue
+  - SnapshotReferenceType.value
+  - SortDirection
+  - SortDirection.SortDirection
+  - SortDirection.fromValue
+  - SortDirection.value
+  - SortField
+  - SortField.SortField
+  - SortField.direction
+  - SortField.fromJson
+  - SortField.nullOrder
+  - SortField.sourceId
+  - SortField.toJson
+  - SortField.transform
+  - SortOrder
+  - SortOrder.SortOrder
+  - SortOrder.fields
+  - SortOrder.fromJson
+  - SortOrder.orderId
+  - SortOrder.toJson
+  - StorageCredential
+  - StorageCredential.StorageCredential
+  - StorageCredential.config
+  - StorageCredential.fromJson
+  - StorageCredential.prefix
+  - StructType
+  - StructType.StructType
+  - StructType.fields
+  - StructType.fromJson
+  - StructType.toJson
+  - SupabaseStorageClient.analyticsCatalog
+  - TableField
+  - TableField.TableField
+  - TableField.doc
+  - TableField.fromJson
+  - TableField.id
+  - TableField.initialDefault
+  - TableField.name
+  - TableField.required
+  - TableField.toJson
+  - TableField.type
+  - TableField.writeDefault
+  - TableIdentifier
+  - TableIdentifier.TableIdentifier
+  - TableIdentifier.fromJson
+  - TableIdentifier.name
+  - TableIdentifier.namespace
+  - TableIdentifier.toJson
+  - TableMetadata
+  - TableMetadata.TableMetadata
+  - TableMetadata.currentSchema
+  - TableMetadata.currentSchemaId
+  - TableMetadata.currentSnapshotId
+  - TableMetadata.defaultSortOrderId
+  - TableMetadata.defaultSpecId
+  - TableMetadata.formatVersion
+  - TableMetadata.fromJson
+  - TableMetadata.lastColumnId
+  - TableMetadata.lastUpdatedMs
+  - TableMetadata.location
+  - TableMetadata.metadataLocation
+  - TableMetadata.partitionSpecs
+  - TableMetadata.properties
+  - TableMetadata.refs
+  - TableMetadata.schemas
+  - TableMetadata.snapshots
+  - TableMetadata.sortOrders
+  - TableMetadata.tableUuid
+  - TableSchema
+  - TableSchema.TableSchema
+  - TableSchema.fields
+  - TableSchema.fromJson
+  - TableSchema.identifierFieldIds
+  - TableSchema.schemaId
+  - TableSchema.toJson
