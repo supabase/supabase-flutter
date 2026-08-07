@@ -7,6 +7,7 @@ import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/error_code.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
+import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 enum RequestMethodType { get, post, put, patch, delete }
@@ -119,6 +120,20 @@ class GotrueFetch {
     RequestMethodType method, {
     GotrueRequestOptions? options,
   }) async {
+    final result = await requestWithResponse(url, method, options: options);
+    return result.body;
+  }
+
+  /// Performs the request and returns the resolved [body] alongside the raw
+  /// [response], for callers that need to read response headers.
+  ///
+  /// Use [request] unless you need the headers.
+  @internal
+  Future<({dynamic body, Response response})> requestWithResponse(
+    String url,
+    RequestMethodType method, {
+    GotrueRequestOptions? options,
+  }) async {
     // Copy the maps before mutating them. Callers pass the client's shared
     // header/query maps by reference, so writing `Authorization`, the API
     // version or `redirect_to` directly would leak into every later request.
@@ -140,15 +155,33 @@ class GotrueFetch {
     Uri uri = Uri.parse(url);
     uri = uri.replace(queryParameters: {...uri.queryParameters, ...qs});
 
-    return await _handleRequest(
+    final response = await _handleRequest(
       method: method,
       uri: uri,
       options: options,
       headers: headers,
     );
+
+    return (body: _resolveBody(response, options), response: response);
   }
 
-  Future<dynamic> _handleRequest({
+  dynamic _resolveBody(Response response, GotrueRequestOptions? options) {
+    if (options?.noResolveJson == true) {
+      return response.body;
+    }
+
+    try {
+      final bodyString = utf8.decode(response.bodyBytes);
+      if (bodyString.isEmpty) {
+        return <String, dynamic>{};
+      }
+      return json.decode(bodyString);
+    } catch (error) {
+      throw _handleError(error);
+    }
+  }
+
+  Future<Response> _handleRequest({
     required RequestMethodType method,
     required Uri uri,
     required GotrueRequestOptions? options,
@@ -196,18 +229,6 @@ class GotrueFetch {
       throw _handleError(response);
     }
 
-    if (options?.noResolveJson == true) {
-      return response.body;
-    }
-
-    try {
-      final bodyString = utf8.decode(response.bodyBytes);
-      if (bodyString.isEmpty) {
-        return <String, dynamic>{};
-      }
-      return json.decode(bodyString);
-    } catch (error) {
-      throw _handleError(error);
-    }
+    return response;
   }
 }

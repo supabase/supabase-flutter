@@ -255,8 +255,16 @@ features:
     symbols:
       - GoTrueAdminApi.deleteUser
   auth.admin.list_users:
-    status: partially_implemented
-    note: "Returns the user list only; pagination metadata (total, nextPage, lastPage, aud) is not returned."
+    status: implemented
+    symbols:
+      - GoTrueAdminApi.listUsers
+      - ListUsersResponse
+      - ListUsersResponse.ListUsersResponse
+      - ListUsersResponse.audience
+      - ListUsersResponse.lastPage
+      - ListUsersResponse.nextPage
+      - ListUsersResponse.total
+      - ListUsersResponse.users
   auth.admin.invite_user:
     status: implemented
     symbols:

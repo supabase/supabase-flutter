@@ -10,6 +10,31 @@ import 'gotrue_admin_custom_providers_api.dart';
 import 'gotrue_admin_mfa_api.dart';
 import 'gotrue_admin_oauth_api.dart';
 
+final _linkHeaderPattern = RegExp(r'<([^>]+)>\s*;\s*rel="([^"]+)"');
+
+/// Reads the page number of every link in a `Link` response header, keyed by
+/// its `rel` value.
+///
+/// The header holds one link per relation, for example
+/// `</admin/users?page=2>; rel="next", </admin/users?page=3>; rel="last"`.
+///
+/// Links that do not parse or carry no page number are skipped, so a header the
+/// client cannot read costs the metadata rather than throwing over a request
+/// that otherwise succeeded.
+Map<String, int> _parsePaginationLinks(String? header) {
+  if (header == null) return const {};
+
+  final pages = <String, int>{};
+  for (final match in _linkHeaderPattern.allMatches(header)) {
+    final page = Uri.tryParse(match.group(1)!)?.queryParameters['page'];
+    final pageNumber = int.tryParse(page ?? '');
+    if (pageNumber != null) {
+      pages[match.group(2)!] = pageNumber;
+    }
+  }
+  return pages;
+}
+
 class GoTrueAdminApi {
   final String _url;
   final Map<String, String> _headers;
@@ -125,8 +150,15 @@ class GoTrueAdminApi {
   /// `secret` key on the client.
   ///
   /// The result is paginated. Use the [page] and [perPage] parameters to
-  /// paginate the result.
-  Future<List<User>> listUsers({int? page, int? perPage}) async {
+  /// paginate the result, and [ListUsersResponse.nextPage] to walk the pages:
+  ///
+  /// ```dart
+  /// var response = await admin.listUsers(perPage: 50);
+  /// while (response.nextPage != null) {
+  ///   response = await admin.listUsers(page: response.nextPage, perPage: 50);
+  /// }
+  /// ```
+  Future<ListUsersResponse> listUsers({int? page, int? perPage}) async {
     final options = GotrueRequestOptions(
       headers: _headers,
       query: {
@@ -134,12 +166,22 @@ class GoTrueAdminApi {
         'per_page': ?perPage?.toString(),
       },
     );
-    final response = await _fetch.request(
+    final result = await _fetch.requestWithResponse(
       '$_url/admin/users',
       RequestMethodType.get,
       options: options,
     );
-    return (response['users'] as List).map((e) => User.fromJson(e)!).toList();
+    final body = result.body;
+    final headers = result.response.headers;
+    final links = _parsePaginationLinks(headers['link']);
+
+    return ListUsersResponse(
+      users: (body['users'] as List).map((e) => User.fromJson(e)!).toList(),
+      total: int.tryParse(headers['x-total-count'] ?? ''),
+      nextPage: links['next'],
+      lastPage: links['last'],
+      audience: body['aud'] as String?,
+    );
   }
 
   /// Sends an invite link to an email address.
