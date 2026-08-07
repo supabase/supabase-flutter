@@ -4,10 +4,12 @@ import 'dart:js_interop';
 
 import 'package:gotrue/src/types/types.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:web/web.dart' as web;
 
 final _log = Logger('supabase.auth');
 
+@internal
 BroadcastChannel getBroadcastChannel(String broadcastKey) {
   final broadcast = web.BroadcastChannel(broadcastKey);
   final controller = StreamController<Map<String, dynamic>>();
