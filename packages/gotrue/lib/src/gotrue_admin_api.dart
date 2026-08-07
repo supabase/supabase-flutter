@@ -17,12 +17,16 @@ final _linkHeaderPattern = RegExp(r'<([^>]+)>\s*;\s*rel="([^"]+)"');
 ///
 /// The header holds one link per relation, for example
 /// `</admin/users?page=2>; rel="next", </admin/users?page=3>; rel="last"`.
+///
+/// Links that do not parse or carry no page number are skipped, so a header the
+/// client cannot read costs the metadata rather than throwing over a request
+/// that otherwise succeeded.
 Map<String, int> _parsePaginationLinks(String? header) {
   if (header == null) return const {};
 
   final pages = <String, int>{};
   for (final match in _linkHeaderPattern.allMatches(header)) {
-    final page = Uri.parse(match.group(1)!).queryParameters['page'];
+    final page = Uri.tryParse(match.group(1)!)?.queryParameters['page'];
     final pageNumber = int.tryParse(page ?? '');
     if (pageNumber != null) {
       pages[match.group(2)!] = pageNumber;

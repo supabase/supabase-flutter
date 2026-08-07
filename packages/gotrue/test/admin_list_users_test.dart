@@ -111,4 +111,23 @@ void main() {
     expect(response.nextPage, isNull);
     expect(response.total, isNull);
   });
+
+  test('listUsers() ignores a link holding an unparseable URI', () async {
+    // A malformed URI must cost the metadata, not fail the whole call with a
+    // FormatException from outside the AuthException hierarchy.
+    final mockClient = ListUsersMockClient(
+      link:
+          '<http://host:notaport/admin/users?page=2>; rel="next", '
+          '</admin/users?page=5>; rel="last"',
+    );
+
+    final response = await clientWith(mockClient).admin.listUsers();
+
+    expect(response.nextPage, isNull);
+    expect(
+      response.lastPage,
+      5,
+      reason: 'a readable link is still used alongside a malformed one',
+    );
+  });
 }
