@@ -459,9 +459,13 @@ class RealtimeClient {
   bool get isConnected => connectionState == SocketState.open;
 
   /// Removes a subscription from the socket.
+  ///
+  /// Matches on identity rather than on [RealtimeChannel.joinRef], which is
+  /// the empty string until a channel is subscribed and is therefore shared
+  /// by every channel that has not joined yet.
   @internal
   void remove(RealtimeChannel channel) {
-    channels = channels.where((c) => c.joinRef != channel.joinRef).toList();
+    channels = channels.where((c) => !identical(c, channel)).toList();
     if (channels.isEmpty) {
       log('transport', 'no channels remaining, scheduling disconnect');
       _schedulePendingDisconnect();
