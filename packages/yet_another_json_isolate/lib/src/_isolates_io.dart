@@ -63,9 +63,6 @@ class YAJsonIsolate {
 
   Future<void> _dispose() async {
     if (!_hasStartedInitialize) {
-      // No isolate was ever spawned, so there is nothing to shut down and
-      // [_createdIsolate] would never complete. The receive port is open from
-      // construction though, and keeps this object alive until it is closed.
       _receivePort.close();
       return;
     }

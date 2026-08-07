@@ -39,8 +39,6 @@ void main() {
       final isolate = YAJsonIsolate();
       await isolate.decode('{}');
 
-      // Started before either is awaited, so a second call must not report
-      // the isolate as gone while the first is still shutting it down.
       final first = isolate.dispose();
       final second = isolate.dispose();
       expect(identical(first, second), isTrue);
@@ -56,8 +54,6 @@ void main() {
       await isolate.decode('{}');
       await dispose(isolate);
 
-      // Without this the calls below would spawn a replacement isolate onto a
-      // closed receive port and then wait for a reply that never arrives.
       expect(isolate.decode('{}'), throwsStateError);
       expect(isolate.encode({}), throwsStateError);
       expect(isolate.initialize(), throwsStateError);

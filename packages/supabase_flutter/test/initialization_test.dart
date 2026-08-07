@@ -150,13 +150,9 @@ void main() {
           debug: false,
         );
 
-        // Captured while still initialized, because `Supabase.instance`
-        // itself refuses to hand out a disposed instance.
         final supabase = Supabase.instance;
         await supabase.dispose();
 
-        // The singleton is static, so holding on to the client here would
-        // keep it and everything it owns alive for the rest of the process.
         expect(() => supabase.client, throwsStateError);
       });
 

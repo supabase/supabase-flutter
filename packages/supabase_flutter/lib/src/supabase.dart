@@ -221,11 +221,6 @@ class Supabase {
     final currentClient = _client;
     if (currentClient == null) return;
 
-    // Drop every reference the singleton holds before tearing anything down.
-    // Without this the disposed client and its whole graph (auth, realtime,
-    // http clients) stay reachable from a static field for the rest of the
-    // process, and doing it up front means a teardown step that throws cannot
-    // leave the singleton pinning a half-disposed client.
     final supabaseAuth = _supabaseAuth;
     final lifecycleListener = _lifecycleListener;
     final restoreSession = _restoreSessionCancellableOperation;
@@ -234,27 +229,17 @@ class Supabase {
 
     _client = null;
     _supabaseAuth = null;
-    _lifecycleListener = null;
     _restoreSessionCancellableOperation = null;
+    _lifecycleListener = null;
     _logSubscription = null;
-    _pendingLifecycleOperation = Future.value();
     _isInitialized = false;
 
-    // Stop listening before anything is awaited, so no lifecycle event can be
-    // queued while the client is being torn down.
     _targetLifecycleState = null;
     lifecycleListener?.dispose();
 
-    // Every step runs even if an earlier one throws, otherwise a failure part
-    // way through would leave the rest of the graph alive. The first error is
-    // rethrown once everything has been attempted.
     await _disposeAll([
       () => restoreSession?.cancel(),
       () => logSubscription?.cancel(),
-      // A lifecycle operation that already passed its stale check can be
-      // half way through `realtime.connect()`. Clearing the target state
-      // stops it rejoining channels but not the connect itself, so wait for
-      // it rather than let it race the disconnect below.
       () => pendingLifecycleOperation,
       currentClient.dispose,
       () => supabaseAuth?.dispose(),
