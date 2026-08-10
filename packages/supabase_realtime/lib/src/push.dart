@@ -38,7 +38,7 @@ class Push {
     this._channel,
     this._event, [
     this.payload = const {},
-    this._timeout = Constants.defaultTimeout,
+    this._timeout = RealtimeConstants.defaultTimeout,
   ]);
 
   String get ref => _ref;

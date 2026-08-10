@@ -111,7 +111,7 @@ class RealtimeClient {
   final WebSocketTransport transport;
   final Client? httpClient;
   final _log = Logger('supabase.realtime');
-  Duration heartbeatInterval = Constants.defaultHeartbeatInterval;
+  Duration heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval;
   @internal
   Timer? heartbeatTimer;
 
@@ -211,9 +211,10 @@ class RealtimeClient {
   RealtimeClient(
     String endpoint, {
     WebSocketTransport? transport,
-    this.timeout = Constants.defaultTimeout,
-    this.connectionCloseTimeout = Constants.defaultConnectionCloseTimeout,
-    this.heartbeatInterval = Constants.defaultHeartbeatInterval,
+    this.timeout = RealtimeConstants.defaultTimeout,
+    this.connectionCloseTimeout =
+        RealtimeConstants.defaultConnectionCloseTimeout,
+    this.heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval,
     Duration? disconnectOnEmptyChannelsAfter,
     this.logger,
     RealtimeEncode? encode,
@@ -233,7 +234,7 @@ class RealtimeClient {
            )
            .toString(),
        headers = {
-         ...Constants.defaultHeaders,
+         ...RealtimeConstants.defaultHeaders,
          ...?headers,
        },
        transport = transport ?? createWebSocketClient,
@@ -638,7 +639,7 @@ class RealtimeClient {
       if (tokenToSend != null) {
         channel.updateJoinPayload({
           'access_token': tokenToSend,
-          'version': Constants.defaultHeaders['X-Client-Info'],
+          'version': RealtimeConstants.defaultHeaders['X-Client-Info'],
         });
       }
       if (channel.joinedOnce && channel.isJoined) {
@@ -796,7 +797,7 @@ class RealtimeClient {
       _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       unawaited(
         connection?.sink.close(
-          Constants.webSocketCloseNormal,
+          RealtimeConstants.webSocketCloseNormal,
           'heartbeat timeout',
         ),
       );

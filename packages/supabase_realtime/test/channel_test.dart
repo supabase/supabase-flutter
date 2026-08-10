@@ -4,7 +4,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:supabase_realtime/supabase_realtime.dart';
-import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/push.dart';
 import 'package:supabase_realtime/src/types.dart';
 import 'package:test/test.dart';
@@ -115,7 +114,7 @@ void main() {
       const newTimeout = Duration(milliseconds: 2000);
       final joinPush = channel.joinPush;
 
-      expect(joinPush.timeout, Constants.defaultTimeout);
+      expect(joinPush.timeout, RealtimeConstants.defaultTimeout);
 
       channel.subscribe((_, [_]) {}, newTimeout);
 

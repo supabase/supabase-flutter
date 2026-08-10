@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:supabase_realtime/supabase_realtime.dart';
-import 'package:supabase_realtime/src/constants.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -313,7 +312,7 @@ void main() {
 
       await Future.delayed(Duration(milliseconds: 200));
       await webSocket?.close(
-        Constants.webSocketCloseNormal,
+        RealtimeConstants.webSocketCloseNormal,
         "heartbeat timeout",
       );
     });
