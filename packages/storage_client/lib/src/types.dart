@@ -675,10 +675,9 @@ class TransformOptions {
     this.quality,
     this.format,
   });
-}
 
-@internal
-extension ToQueryParams on TransformOptions {
+  /// The transformation options as `transform` query parameters.
+  @internal
   Map<String, String> get toQueryParams {
     return {
       if (width != null) 'width': '$width',
