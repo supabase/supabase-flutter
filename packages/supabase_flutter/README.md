@@ -504,7 +504,7 @@ https://supabase.io/docs/guides/auth#third-party-logins
 
 ## <a id="custom-localstorage"></a>Custom LocalStorage
 
-By default, `supabase_flutter` uses the `SharedPreferencesAsync` API of [`shared_preferences`](https://pub.dev/packages/shared_preferences) to persist the user session. If your own code still uses the legacy `SharedPreferences` API, [migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache): on some platforms a write through one API drops values written through the other, which can make the session go missing.
+By default, `supabase_flutter` uses the `SharedPreferencesAsync` API of [`shared_preferences`](https://pub.dev/packages/shared_preferences) to persist the user session. If your own code still uses the legacy `SharedPreferences` API, [migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache): on Windows and Linux both APIs rewrite the same file from their own cache, so a write through one drops what the other wrote, and a mixed setup can lose your preferences as well as the session.
 
 However, you can use any other methods by creating a `LocalStorage` implementation. For example, we can use [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to store the user session in a secure storage.
 

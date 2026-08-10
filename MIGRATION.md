@@ -341,12 +341,21 @@ moves an existing session over to `SharedPreferencesAsync` the first time it run
 legacy entry, so your users stay signed in. No code change is needed for this, and there is nothing
 to migrate if you already pass your own `LocalStorage`.
 
-What this does mean is that the SDK no longer holds up its end of a mixed setup. On some platforms
-a write through one API drops values written through the other, which is what made sessions go
-missing in v2, so if your own code still calls `SharedPreferences.getInstance()`, this is the moment
-to
+What this does mean is that the SDK no longer holds up its end of a mixed setup, and mixing is
+worse than it first looks. How the two APIs relate depends on the platform:
+
+| Platform | Relationship between the two APIs |
+| --- | --- |
+| Windows, Linux | One `shared_preferences.json`, rewritten in full from each API's own cache, so a write through either one can drop what the other wrote |
+| Android | Separate stores, `SharedPreferences` against DataStore, so a value written through one is invisible to the other |
+| iOS, macOS, web | One store, but the legacy API prefixes its keys with `flutter.`, so a value written through one is invisible to the other |
+
+Only the first row loses data, and it loses it in both directions. That is what made sessions go
+missing in v2, and from v3 on the same collision runs the other way: a session write by the SDK can
+drop preferences your own code wrote through the legacy API. So if your code still calls
+`SharedPreferences.getInstance()`, this is the moment to
 [migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache)
-as well.
+as well. The snippet below is the way out if you cannot do that yet.
 
 If you would rather keep the session in the legacy store for now, pass a `LocalStorage` that reads
 and writes it:
