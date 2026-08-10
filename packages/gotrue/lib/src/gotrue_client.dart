@@ -249,7 +249,7 @@ class GoTrueClient {
   }) async {
     final response = await _fetch.request(
       '$_url/signup',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _headers,
         body: {
@@ -310,7 +310,7 @@ class GoTrueClient {
 
       response = await _fetch.request(
         '$_url/signup',
-        RequestMethodType.post,
+        HttpMethod.post,
         options: GotrueRequestOptions(
           headers: _headers,
           redirectTo: emailRedirectTo,
@@ -336,7 +336,7 @@ class GoTrueClient {
       response =
           await _fetch.request(
                 '$_url/signup',
-                RequestMethodType.post,
+                HttpMethod.post,
                 options: fetchOptions,
               )
               as Map<String, dynamic>;
@@ -369,7 +369,7 @@ class GoTrueClient {
     if (email != null) {
       response = await _fetch.request(
         '$_url/token',
-        RequestMethodType.post,
+        HttpMethod.post,
         options: GotrueRequestOptions(
           headers: _headers,
           body: {
@@ -383,7 +383,7 @@ class GoTrueClient {
     } else if (phone != null) {
       response = await _fetch.request(
         '$_url/token',
-        RequestMethodType.post,
+        HttpMethod.post,
         options: GotrueRequestOptions(
           headers: _headers,
           body: {
@@ -450,7 +450,7 @@ class GoTrueClient {
 
     final Map<String, dynamic> response = await _fetch.request(
       '$_url/token',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _headers,
         body: {'auth_code': authCode, 'code_verifier': codeVerifier},
@@ -521,7 +521,7 @@ class GoTrueClient {
   }) async {
     final response = await _fetch.request(
       '$_url/token',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _headers,
         body: {
@@ -569,7 +569,7 @@ class GoTrueClient {
   }) async {
     final response = await _fetch.request(
       '$_url/token',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _headers,
         body: {
@@ -632,7 +632,7 @@ class GoTrueClient {
       final codeChallenge = await _generatePKCECodeChallenge();
       await _fetch.request(
         '$_url/otp',
-        RequestMethodType.post,
+        HttpMethod.post,
         options: GotrueRequestOptions(
           headers: _headers,
           redirectTo: emailRedirectTo,
@@ -660,7 +660,7 @@ class GoTrueClient {
 
       await _fetch.request(
         '$_url/otp',
-        RequestMethodType.post,
+        HttpMethod.post,
         options: fetchOptions,
       );
       return;
@@ -729,7 +729,7 @@ class GoTrueClient {
     final fetchOptions = GotrueRequestOptions(headers: _headers, body: body);
     final response = await _fetch.request(
       '$_url/verify',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: fetchOptions,
     );
 
@@ -782,7 +782,7 @@ class GoTrueClient {
 
     final res = await _fetch.request(
       '$_url/sso',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         body: {
           'provider_id': ?providerId,
@@ -835,7 +835,7 @@ class GoTrueClient {
 
     await _fetch.request(
       '$_url/reauthenticate',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: options,
     );
   }
@@ -893,7 +893,7 @@ class GoTrueClient {
 
     final response = await _fetch.request(
       '$_url/resend',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: options,
     );
 
@@ -914,7 +914,7 @@ class GoTrueClient {
     );
     final response = await _fetch.request(
       '$_url/user',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: options,
     );
     return UserResponse.fromJson(response);
@@ -951,7 +951,7 @@ class GoTrueClient {
     );
     final response = await _fetch.request(
       '$_url/user',
-      RequestMethodType.put,
+      HttpMethod.put,
       options: options,
     );
     final userResponse = UserResponse.fromJson(response);
@@ -1176,7 +1176,7 @@ class GoTrueClient {
     );
     await _fetch.request(
       '$_url/recover',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: fetchOptions,
     );
   }
@@ -1208,7 +1208,7 @@ class GoTrueClient {
   }) async {
     final response = await _fetch.request(
       '$_url/token',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _headers,
         jwt: _currentSession?.accessToken,
@@ -1253,7 +1253,7 @@ class GoTrueClient {
     );
     final res = await _fetch.request(
       urlResponse.url,
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _headers,
         jwt: _currentSession?.accessToken,
@@ -1269,7 +1269,7 @@ class GoTrueClient {
   Future<void> unlinkIdentity(UserIdentity identity) async {
     await _fetch.request(
       '$_url/user/identities/${identity.identityId}',
-      RequestMethodType.delete,
+      HttpMethod.delete,
       options: GotrueRequestOptions(
         headers: headers,
         jwt: _currentSession?.accessToken,
@@ -1446,7 +1446,7 @@ class GoTrueClient {
         );
         final response = await _fetch.request(
           '$_url/token',
-          RequestMethodType.post,
+          HttpMethod.post,
           options: options,
         );
         final authResponse = AuthResponse.fromJson(response);
@@ -1752,7 +1752,7 @@ class GoTrueClient {
     // endpoint
     final jwksResponse = await _fetch.request(
       '$_url/.well-known/jwks.json',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(headers: _headers),
     );
 

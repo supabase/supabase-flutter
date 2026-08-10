@@ -2,6 +2,7 @@ import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
 import 'package:http/http.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
@@ -197,7 +198,7 @@ void main() {
       );
 
       await expectLater(
-        GotrueFetch(client).request(_mockUrl, RequestMethodType.get),
+        GotrueFetch(client).request(_mockUrl, HttpMethod.get),
         throwsA(isA<AuthUnknownException>()),
       );
     });
@@ -210,7 +211,7 @@ Future<void> _expectRetryableFetch(
   required String statusCode,
 }) async {
   await expectLater(
-    GotrueFetch(client).request(_mockUrl, RequestMethodType.get),
+    GotrueFetch(client).request(_mockUrl, HttpMethod.get),
     throwsA(
       isA<AuthRetryableFetchException>()
           .having((e) => e.message, 'message', message)
@@ -222,7 +223,7 @@ Future<void> _expectRetryableFetch(
 Future<void> _testFetchRequest(Client client) async {
   final GotrueFetch fetch = GotrueFetch(client);
   await expectLater(
-    fetch.request(_mockUrl, RequestMethodType.get),
+    fetch.request(_mockUrl, HttpMethod.get),
     throwsA(
       isA<AuthException>()
           .having((e) => e.code, 'code', 'weak_password')

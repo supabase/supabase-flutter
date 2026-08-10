@@ -69,7 +69,7 @@ class GoTruePasskeyApi {
 
     final data = await _fetch.request(
       '${_client._url}/passkeys/registration/options',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
         body: {},
@@ -123,7 +123,7 @@ class GoTruePasskeyApi {
 
     final data = await _fetch.request(
       '${_client._url}/passkeys/registration/verify',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
         body: {
@@ -148,7 +148,7 @@ class GoTruePasskeyApi {
   }) async {
     final data = await _fetch.request(
       '${_client._url}/passkeys/authentication/options',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
         body: {
@@ -176,7 +176,7 @@ class GoTruePasskeyApi {
   }) async {
     final data = await _fetch.request(
       '${_client._url}/passkeys/authentication/verify',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
         body: {
@@ -202,7 +202,7 @@ class GoTruePasskeyApi {
 
     final data = await _fetch.request(
       '${_client._url}/passkeys',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _client._headers,
         jwt: session?.accessToken,
@@ -227,7 +227,7 @@ class GoTruePasskeyApi {
 
     final data = await _fetch.request(
       '${_client._url}/passkeys/$passkeyId',
-      RequestMethodType.patch,
+      HttpMethod.patch,
       options: GotrueRequestOptions(
         headers: _client._headers,
         body: {'friendly_name': friendlyName},
@@ -247,7 +247,7 @@ class GoTruePasskeyApi {
 
     await _fetch.request(
       '${_client._url}/passkeys/$passkeyId',
-      RequestMethodType.delete,
+      HttpMethod.delete,
       options: GotrueRequestOptions(
         headers: _client._headers,
         jwt: session?.accessToken,

@@ -1,7 +1,7 @@
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 import 'fetch.dart';
-import 'helper.dart';
 import 'types/fetch_options.dart';
 import 'types/passkey.dart';
 
@@ -32,7 +32,7 @@ class GoTrueAdminPasskeyApi {
 
     final data = await _fetch.request(
       '$_url/admin/users/$userId/passkeys',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _headers,
       ),
@@ -57,7 +57,7 @@ class GoTrueAdminPasskeyApi {
 
     await _fetch.request(
       '$_url/admin/users/$userId/passkeys/$passkeyId',
-      RequestMethodType.delete,
+      HttpMethod.delete,
       options: GotrueRequestOptions(
         headers: _headers,
       ),

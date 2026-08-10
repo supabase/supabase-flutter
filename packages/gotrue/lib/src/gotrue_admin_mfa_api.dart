@@ -1,5 +1,6 @@
+import 'package:supabase_common/supabase_common.dart';
+
 import 'fetch.dart';
-import 'helper.dart';
 import 'types/fetch_options.dart';
 import 'types/mfa.dart';
 
@@ -23,7 +24,7 @@ class GoTrueAdminMFAApi {
 
     final data = await _fetch.request(
       '$_url/admin/users/$userId/factors',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _headers,
       ),
@@ -43,7 +44,7 @@ class GoTrueAdminMFAApi {
 
     final data = await _fetch.request(
       '$_url/admin/users/$userId/factors/$factorId',
-      RequestMethodType.delete,
+      HttpMethod.delete,
       options: GotrueRequestOptions(
         headers: _headers,
       ),
