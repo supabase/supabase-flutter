@@ -3,7 +3,7 @@ import 'package:supabase_common/supabase_common.dart';
 import 'package:meta/meta.dart';
 
 @internal
-class Constants {
+class FunctionsConstants {
   static final defaultHeaders = {
     'X-Client-Info': buildClientInfoHeader('functions-dart', version),
   };

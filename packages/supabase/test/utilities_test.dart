@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:supabase/src/auth_http_client.dart';
-import 'package:supabase/src/constants.dart';
+import 'package:supabase/src/supabase_constants.dart';
 import 'package:supabase/src/counter.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
@@ -35,10 +35,10 @@ void main() {
     });
   });
 
-  group('Constants', () {
+  group('SupabaseConstants', () {
     test('should have default headers with X-Client-Info', () {
       expect(
-        Constants.defaultHeaders,
+        SupabaseConstants.defaultHeaders,
         containsPair('X-Client-Info', startsWith('supabase-dart/')),
       );
     });
@@ -48,7 +48,7 @@ void main() {
       'on web',
       () {
         if (!kIsWeb) {
-          final clientInfo = Constants.defaultHeaders['X-Client-Info']!;
+          final clientInfo = SupabaseConstants.defaultHeaders['X-Client-Info']!;
           expect(clientInfo, contains('; platform='));
           expect(clientInfo, contains('; platform-version='));
           expect(clientInfo, contains('; runtime=dart'));

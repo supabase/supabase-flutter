@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:supabase_auth/src/constants.dart';
+import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/types/session.dart';
 import 'package:supabase_auth/src/types/user.dart';
 import 'package:test/test.dart';
@@ -297,7 +297,7 @@ void main() {
       });
 
       test('uses correct expiry margin from constants', () {
-        final marginalTime = DateTime.now().add(Constants.expiryMargin);
+        final marginalTime = DateTime.now().add(AuthConstants.expiryMargin);
         final expiresAt = (marginalTime.millisecondsSinceEpoch / 1000).floor();
         final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
         final payload = base64Encode(utf8.encode('{"exp":$expiresAt}'));

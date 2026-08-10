@@ -5,7 +5,7 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:supabase_auth/src/constants.dart';
+import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/fetch.dart';
 import 'package:supabase_auth/src/helper.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';
@@ -157,19 +157,19 @@ class AuthClient {
     Client? httpClient,
     AuthAsyncStorage? asyncStorage,
     AuthFlowType flowType = AuthFlowType.pkce,
-  }) : _url = url ?? Constants.defaultAuthUrl,
-       _headers = {...Constants.defaultHeaders, ...?headers},
+  }) : _url = url ?? AuthConstants.defaultAuthUrl,
+       _headers = {...AuthConstants.defaultHeaders, ...?headers},
        _httpClient = httpClient,
        _asyncStorage = asyncStorage,
        _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
 
-    final authUrl = url ?? Constants.defaultAuthUrl;
+    final authUrl = url ?? AuthConstants.defaultAuthUrl;
     _log.config(
       'Initialize AuthClient v$version with url: $_url, autoRefreshToken: '
       '$_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: '
-      '${Constants.autoRefreshTickDuration}, tickThreshold: '
-      '${Constants.autoRefreshTickThreshold}',
+      '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
+      '${AuthConstants.autoRefreshTickThreshold}',
     );
     _log.finest('Initialize with headers: $_headers');
     admin = AuthAdminApi(
@@ -441,7 +441,7 @@ class AuthClient {
     );
 
     final codeVerifierRawString = await _asyncStorage!.getItem(
-      key: '${Constants.defaultStorageKey}-code-verifier',
+      key: '${AuthConstants.defaultStorageKey}-code-verifier',
     );
     if (codeVerifierRawString == null) {
       throw AuthException('Code verifier could not be found in local storage.');
@@ -461,7 +461,7 @@ class AuthClient {
     );
 
     await _asyncStorage.removeItem(
-      key: '${Constants.defaultStorageKey}-code-verifier',
+      key: '${AuthConstants.defaultStorageKey}-code-verifier',
     );
 
     final authSessionUrlResponse = AuthSessionUrlResponse(
@@ -494,7 +494,7 @@ class AuthClient {
     );
     final codeVerifier = generatePKCEVerifier();
     await _asyncStorage!.setItem(
-      key: '${Constants.defaultStorageKey}-code-verifier',
+      key: '${AuthConstants.defaultStorageKey}-code-verifier',
       value: storageEventName == null
           ? codeVerifier
           : '$codeVerifier/$storageEventName',
@@ -996,7 +996,7 @@ class AuthClient {
     final expiresAt = decoded.payload.expiresAt;
     final hasExpired =
         expiresAt == null ||
-        expiresAt <= timeNow + Constants.expiryMargin.inSeconds;
+        expiresAt <= timeNow + AuthConstants.expiryMargin.inSeconds;
 
     if (hasExpired) {
       return await _callRefreshToken(refreshToken);
@@ -1143,7 +1143,7 @@ class AuthClient {
     if (scope != SignOutScope.others) {
       _removeSession();
       await _asyncStorage?.removeItem(
-        key: '${Constants.defaultStorageKey}-code-verifier',
+        key: '${AuthConstants.defaultStorageKey}-code-verifier',
       );
       notifyAllSubscribers(
         AuthChangeEvent.signedOut,
@@ -1397,7 +1397,7 @@ class AuthClient {
 
     _log.fine('Starting auto refresh');
     _autoRefreshTicker = Timer.periodic(
-      Constants.autoRefreshTickDuration,
+      AuthConstants.autoRefreshTickDuration,
       (Timer t) => _autoRefreshTokenTick(),
     );
 
@@ -1431,13 +1431,13 @@ class AuthClient {
 
       final expiresInTicks =
           (expiresAt.difference(now).inMilliseconds /
-                  Constants.autoRefreshTickDuration.inMilliseconds)
+                  AuthConstants.autoRefreshTickDuration.inMilliseconds)
               .floor();
 
       _log.finer('Access token expires in $expiresInTicks ticks');
 
       // Only tick if the next tick comes after the retry threshold
-      if (expiresInTicks <= Constants.autoRefreshTickThreshold) {
+      if (expiresInTicks <= AuthConstants.autoRefreshTickThreshold) {
         await _callRefreshToken(refreshToken);
       }
     } catch (error) {
@@ -1478,7 +1478,7 @@ class AuthClient {
             (DateTime.now().millisecondsSinceEpoch +
                     nextBackOff.inMilliseconds -
                     startedAt.millisecondsSinceEpoch) <
-                Constants.autoRefreshTickDuration.inMilliseconds;
+                AuthConstants.autoRefreshTickDuration.inMilliseconds;
       },
       maxDelay: Duration(seconds: 10),
       randomizationFactor: 0,
@@ -1759,7 +1759,7 @@ class AuthClient {
     // jwks exists and it isn't stale
     if (cachedJwk != null &&
         _jwksCachedAt != null &&
-        _jwksCachedAt!.add(Constants.jwksTtl).isAfter(now)) {
+        _jwksCachedAt!.add(AuthConstants.jwksTtl).isAfter(now)) {
       return cachedJwk;
     }
 

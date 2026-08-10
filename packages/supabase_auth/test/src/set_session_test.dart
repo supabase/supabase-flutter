@@ -116,7 +116,7 @@ void main() {
     test('access token with exp within the 30-second expiry margin is treated '
         'as expired and falls back to the refresh-token path', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      // exp is 20 s in the future, inside the 30 s Constants.expiryMargin.
+      // exp is 20 s in the future, inside the 30 s AuthConstants.expiryMargin.
       final accessToken = _makeRawJwt({
         'exp': timeNow + 20,
         'iat': timeNow - 3580,
