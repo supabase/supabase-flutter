@@ -134,7 +134,7 @@ String? _emptyPreferAsNull(String? prefer) =>
 /// When using [_converter], [R] is the input and [S] is the output
 /// Otherwise [S] and [R] are the same
 @immutable
-class PostgrestBuilder<T, S, R> implements Future<T> {
+interface class PostgrestBuilder<T, S, R> implements Future<T> {
   final _RequestConfig _config;
   final PostgrestConverter<S, R>? _converter;
   final _log = Logger('supabase.postgrest');

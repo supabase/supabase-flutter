@@ -595,23 +595,14 @@ void main() {
       final mockedChannel2 = MockChannel();
       when(() => mockedChannel2.joinRef).thenReturn('2');
 
-      const tTopic1 = 'topic-1';
-      const tTopic2 = 'topic-2';
+      final mockedSocket = RealtimeClient(socketEndpoint);
+      mockedSocket.channels.addAll([mockedChannel1, mockedChannel2]);
 
-      final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-      mockedSocket.mockedChannelLooker.addAll({
-        tTopic1: mockedChannel1,
-        tTopic2: mockedChannel2,
-      });
-
-      final channel1 = mockedSocket.channel(tTopic1);
-      final channel2 = mockedSocket.channel(tTopic2);
-
-      mockedSocket.remove(channel1);
+      mockedSocket.remove(mockedChannel1);
       expect(mockedSocket.channels, hasLength(1));
 
       final foundChannel = mockedSocket.channels[0];
-      expect(foundChannel, channel2);
+      expect(foundChannel, mockedChannel2);
     });
 
     test('keeps the other channels when none of them have joined', () {
@@ -1090,29 +1081,24 @@ void main() {
           () => mockedChannel2.push(ChannelEvent.accessToken, pushPayload),
         ).thenReturn(MockPush());
 
-        const tTopic1 = 'topic-1';
-        const tTopic2 = 'topic-2';
-
-        final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-        mockedSocket.mockedChannelLooker.addAll({
-          tTopic1: mockedChannel1,
-          tTopic2: mockedChannel2,
-        });
-
-        final channel1 = mockedSocket.channel(tTopic1);
-        final channel2 = mockedSocket.channel(tTopic2);
+        final mockedSocket = RealtimeClient(socketEndpoint);
+        mockedSocket.channels.addAll([mockedChannel1, mockedChannel2]);
 
         await mockedSocket.setAuth(token);
 
         expect(mockedSocket.accessToken, token);
 
-        verify(() => channel1.updateJoinPayload(updateJoinPayload)).called(1);
-        verify(() => channel2.updateJoinPayload(updateJoinPayload)).called(1);
         verify(
-          () => channel1.push(ChannelEvent.accessToken, pushPayload),
+          () => mockedChannel1.updateJoinPayload(updateJoinPayload),
         ).called(1);
         verify(
-          () => channel2.push(ChannelEvent.accessToken, pushPayload),
+          () => mockedChannel2.updateJoinPayload(updateJoinPayload),
+        ).called(1);
+        verify(
+          () => mockedChannel1.push(ChannelEvent.accessToken, pushPayload),
+        ).called(1);
+        verify(
+          () => mockedChannel2.push(ChannelEvent.accessToken, pushPayload),
         ).called(1);
       },
     );
@@ -1143,20 +1129,12 @@ void main() {
           () => mockedChannel3.push(ChannelEvent.accessToken, any()),
         ).thenReturn(MockPush());
 
-        const tTopic1 = 'test-topic1';
-        const tTopic2 = 'test-topic2';
-        const tTopic3 = 'test-topic3';
-
-        final mockedSocket = SocketWithMockedChannel(socketEndpoint);
-        mockedSocket.mockedChannelLooker.addAll({
-          tTopic1: mockedChannel1,
-          tTopic2: mockedChannel2,
-          tTopic3: mockedChannel3,
-        });
-
-        final channel1 = mockedSocket.channel(tTopic1);
-        final channel2 = mockedSocket.channel(tTopic2);
-        final channel3 = mockedSocket.channel(tTopic3);
+        final mockedSocket = RealtimeClient(socketEndpoint);
+        mockedSocket.channels.addAll([
+          mockedChannel1,
+          mockedChannel2,
+          mockedChannel3,
+        ]);
 
         const authToken = 'sb-key';
         final expectedPushPayload = {'access_token': authToken};
@@ -1170,23 +1148,32 @@ void main() {
         expect(mockedSocket.accessToken, authToken);
 
         verify(
-          () => channel1.updateJoinPayload(expectedUpdateJoinPayload),
+          () => mockedChannel1.updateJoinPayload(expectedUpdateJoinPayload),
         ).called(1);
         verify(
-          () => channel2.updateJoinPayload(expectedUpdateJoinPayload),
+          () => mockedChannel2.updateJoinPayload(expectedUpdateJoinPayload),
         ).called(1);
         verify(
-          () => channel3.updateJoinPayload(expectedUpdateJoinPayload),
+          () => mockedChannel3.updateJoinPayload(expectedUpdateJoinPayload),
         ).called(1);
 
         verify(
-          () => channel1.push(ChannelEvent.accessToken, expectedPushPayload),
+          () => mockedChannel1.push(
+            ChannelEvent.accessToken,
+            expectedPushPayload,
+          ),
         ).called(1);
         verifyNever(
-          () => channel2.push(ChannelEvent.accessToken, expectedPushPayload),
+          () => mockedChannel2.push(
+            ChannelEvent.accessToken,
+            expectedPushPayload,
+          ),
         );
         verify(
-          () => channel3.push(ChannelEvent.accessToken, expectedPushPayload),
+          () => mockedChannel3.push(
+            ChannelEvent.accessToken,
+            expectedPushPayload,
+          ),
         ).called(1);
       },
     );

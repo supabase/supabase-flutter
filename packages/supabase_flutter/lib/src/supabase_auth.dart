@@ -57,7 +57,7 @@ import 'clear_auth_url_parameters_stub.dart'
 ///   since browser navigation triggers a full page load rather than a
 ///   stream event.
 @internal
-class SupabaseAuth with WidgetsBindingObserver {
+final class SupabaseAuth with WidgetsBindingObserver {
   static WidgetsBinding get _widgetsBindingInstance => WidgetsBinding.instance;
 
   late LocalStorage _localStorage;

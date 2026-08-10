@@ -49,7 +49,7 @@ class _SessionState {
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
 /// {@endtemplate}
-class GoTrueClient {
+interface class GoTrueClient {
   /// Namespace for the GoTrue API methods. These can be used for example to get
   /// a user from a JWT in a server environment or reset a user's password.
   late final GoTrueAdminApi admin;

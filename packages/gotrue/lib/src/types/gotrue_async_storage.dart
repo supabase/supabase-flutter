@@ -1,5 +1,5 @@
 /// Interface to provide async storage to store pkce tokens.
-abstract class GotrueAsyncStorage {
+abstract interface class GotrueAsyncStorage {
   const GotrueAsyncStorage();
 
   /// Retrieves an item asynchronously from the storage with the key.

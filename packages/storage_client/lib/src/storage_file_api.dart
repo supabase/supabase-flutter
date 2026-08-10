@@ -6,7 +6,7 @@ import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
-class StorageFileApi {
+interface class StorageFileApi {
   final String url;
   Map<String, String> _headers;
   final String? bucketId;

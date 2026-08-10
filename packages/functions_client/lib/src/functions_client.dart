@@ -10,7 +10,7 @@ import 'package:logging/logging.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
-class FunctionsClient {
+interface class FunctionsClient {
   final String _url;
   final Map<String, String> _headers;
   final http.Client? _httpClient;

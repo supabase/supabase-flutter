@@ -326,3 +326,69 @@ unaffected. For `functions.invoke`, two things changed:
   (3 to 5). This one is not a compile error, so replace any persisted `index` with `name`.
 
 The enum also exposes `value`, the uppercase wire form, in place of `method.name.toUpperCase()`.
+
+### Core types declare their subtyping intent with class modifiers
+
+The core public types now carry Dart 3 class modifiers that state whether they are meant to be
+extended, implemented, or neither. Nothing about their behaviour changed, but subtyping them in a
+way the modifier disallows is now a compile error.
+
+The clients and the request builders are `interface class`, so they can still be implemented (this
+is what `mockito` and `mocktail` need) but no longer extended:
+
+| Type | Modifier |
+| --- | --- |
+| `SupabaseClient` | `interface class` |
+| `GoTrueClient` | `interface class` |
+| `PostgrestClient` | `interface class` |
+| `PostgrestBuilder` | `interface class` |
+| `RealtimeClient` | `interface class` |
+| `FunctionsClient` | `interface class` |
+| `SupabaseStorageClient` | `interface class` |
+| `StorageFileApi` | `interface class` |
+
+If you were extending one of these to change its behaviour, wrap it instead:
+
+```dart
+// Before
+class LoggingSupabaseClient extends SupabaseClient {
+  LoggingSupabaseClient(super.url, super.key);
+}
+
+// After
+class LoggingSupabaseClient {
+  LoggingSupabaseClient(this._inner);
+
+  final SupabaseClient _inner;
+
+  SupabaseQueryBuilder from(String table) {
+    print('from($table)');
+    return _inner.from(table);
+  }
+}
+```
+
+Mocks are unaffected, because `implements` is still allowed:
+
+```dart
+// Still compiles
+class MockSupabaseClient extends Mock implements SupabaseClient {}
+```
+
+The two storage abstractions you are meant to plug your own implementation into are
+`abstract interface class`, so they must be implemented rather than extended. Both declare only
+abstract members, so this is a one-word change at the use site:
+
+```dart
+// Before
+class MyLocalStorage extends LocalStorage { /* ... */ }
+class MyPkceStorage extends GotrueAsyncStorage { /* ... */ }
+
+// After
+class MyLocalStorage implements LocalStorage { /* ... */ }
+class MyPkceStorage implements GotrueAsyncStorage { /* ... */ }
+```
+
+Finally, `AuthState` is a `final class`. It is a plain value carrying an `AuthChangeEvent` and a
+`Session`, and `AuthChangeEvent` is already an enum, so switching over auth state changes is
+unchanged.

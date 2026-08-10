@@ -57,7 +57,7 @@ class _MockWidgetState extends State<MockWidget> {
 }
 
 /// Local storage that returns an expired session
-class MockExpiredStorage extends LocalStorage {
+class MockExpiredStorage implements LocalStorage {
   const MockExpiredStorage();
   @override
   Future<void> initialize() async {}
@@ -76,7 +76,7 @@ class MockExpiredStorage extends LocalStorage {
   Future<void> removePersistedSession() async {}
 }
 
-class MockLocalStorage extends LocalStorage {
+class MockLocalStorage implements LocalStorage {
   const MockLocalStorage();
   @override
   Future<void> initialize() async {}
@@ -95,7 +95,7 @@ class MockLocalStorage extends LocalStorage {
   Future<void> removePersistedSession() async {}
 }
 
-class MockEmptyLocalStorage extends LocalStorage {
+class MockEmptyLocalStorage implements LocalStorage {
   const MockEmptyLocalStorage();
   @override
   Future<void> initialize() async {}
@@ -184,7 +184,7 @@ class GetUserHttpClient extends BaseClient {
   }
 }
 
-class MockAsyncStorage extends GotrueAsyncStorage {
+class MockAsyncStorage implements GotrueAsyncStorage {
   final Map<String, String> _map = {};
 
   @override

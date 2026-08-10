@@ -2,7 +2,7 @@ import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/types/session.dart';
 import 'package:gotrue/src/types/sign_out_reason.dart';
 
-class AuthState {
+final class AuthState {
   final AuthChangeEvent event;
   final Session? session;
 

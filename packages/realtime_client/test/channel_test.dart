@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:mocktail/mocktail.dart';
 import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
 import 'package:realtime_client/src/push.dart';
 import 'package:realtime_client/src/types.dart';
 import 'package:test/test.dart';
+
+const _expiredToken = 'expired-token';
 
 void main() {
   late RealtimeClient socket;
@@ -132,15 +135,13 @@ void main() {
     // https://github.com/supabase/supabase-flutter/issues/1363.
     test("swallows FormatException with 'InvalidJWTToken' from setAuth and "
         "still emits 'subscribed' status", () async {
-      final throwingSocket = _SetAuthThrowingSocket(
-        '/socket',
-        thrown: const FormatException(
+      final throwingSocket = _setAuthThrowingSocket(
+        const FormatException(
           'InvalidJWTToken: Invalid value for JWT claim "exp" with value 0',
         ),
       );
-      throwingSocket.accessToken = 'expired-token';
 
-      final localChannel = throwingSocket.channel('topic');
+      final localChannel = RealtimeChannel('topic', throwingSocket);
 
       RealtimeSubscribeStatus? status;
       localChannel.subscribe((s, _) => status = s);
@@ -150,7 +151,7 @@ void main() {
       await Future<void>.value();
       await Future<void>.value();
 
-      expect(throwingSocket.setAuthCalls, 1);
+      verify(() => throwingSocket.setAuth(_expiredToken)).called(1);
       expect(
         status,
         RealtimeSubscribeStatus.subscribed,
@@ -162,13 +163,11 @@ void main() {
 
     test("non-InvalidJWTToken FormatExceptions from setAuth still abort the "
         "rejoin handler", () async {
-      final throwingSocket = _SetAuthThrowingSocket(
-        '/socket',
-        thrown: const FormatException('some other parsing failure'),
+      final throwingSocket = _setAuthThrowingSocket(
+        const FormatException('some other parsing failure'),
       );
-      throwingSocket.accessToken = 'some-token';
 
-      final localChannel = throwingSocket.channel('topic');
+      final localChannel = RealtimeChannel('topic', throwingSocket);
 
       RealtimeSubscribeStatus? status;
       // Use runZonedGuarded so the rethrown async error does not pollute
@@ -185,7 +184,7 @@ void main() {
         },
       );
 
-      expect(throwingSocket.setAuthCalls, 1);
+      verify(() => throwingSocket.setAuth(_expiredToken)).called(1);
       expect(
         status,
         isNull,
@@ -1365,23 +1364,21 @@ void main() {
   });
 }
 
-class _SetAuthThrowingSocket extends RealtimeClient {
-  _SetAuthThrowingSocket(super.endPoint, {required this.thrown});
+class _MockSocket extends Mock implements RealtimeClient {}
 
-  final FormatException thrown;
-  int setAuthCalls = 0;
-
-  @override
-  Future<void> connect() async {
-    // No-op: avoid opening a real WebSocket so async transport failures
-    // don't leak into the test runner zone.
-  }
-
-  @override
-  Future<void> setAuth(String? token) async {
-    setAuthCalls++;
-    throw thrown;
-  }
+/// A socket whose [RealtimeClient.setAuth] throws [thrown]. It reports itself
+/// as already connected so no real WebSocket is opened and async transport
+/// failures don't leak into the test runner zone.
+_MockSocket _setAuthThrowingSocket(FormatException thrown) {
+  final socket = _MockSocket();
+  when(() => socket.endPoint).thenReturn('/socket');
+  when(() => socket.timeout).thenReturn(Constants.defaultTimeout);
+  when(() => socket.reconnectAfterMs).thenReturn((_) => 0);
+  when(() => socket.isConnected).thenReturn(true);
+  when(() => socket.accessToken).thenReturn(_expiredToken);
+  when(() => socket.makeRef()).thenReturn('1');
+  when(() => socket.setAuth(any())).thenThrow(thrown);
+  return socket;
 }
 
 class _OptsCapturingChannel extends RealtimeChannel {

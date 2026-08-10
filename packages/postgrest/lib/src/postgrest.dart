@@ -7,7 +7,7 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 /// A PostgREST api client written in Dartlang. The goal of this library is to
 /// make an "ORM-like" restful interface.
-class PostgrestClient {
+interface class PostgrestClient {
   /// HTTP status codes that trigger an automatic retry by default.
   static const Set<int> defaultRetryableStatusCodes = {503, 520};
 

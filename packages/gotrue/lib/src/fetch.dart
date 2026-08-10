@@ -11,7 +11,7 @@ import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 @internal
-class GotrueFetch {
+final class GotrueFetch {
   final Client? httpClient;
 
   const GotrueFetch([this.httpClient]);

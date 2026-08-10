@@ -9,7 +9,7 @@ import 'package:storage_client/src/storage_file_api.dart';
 import 'package:storage_client/src/vector_client.dart';
 import 'package:storage_client/src/version.dart';
 
-class SupabaseStorageClient extends StorageBucketApi {
+interface class SupabaseStorageClient extends StorageBucketApi {
   final int _defaultRetryAttempts;
   final Client? _httpClient;
   final _log = Logger('supabase.storage');

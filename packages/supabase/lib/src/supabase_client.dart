@@ -48,7 +48,7 @@ import 'trace_http_client.dart';
 /// [authOptions] and set its `authFlowType` field to `AuthFlowType.pkce` in
 /// order to perform auth actions with pkce flow.
 /// {@endtemplate}
-class SupabaseClient {
+interface class SupabaseClient {
   final String _supabaseKey;
   final PostgrestClientOptions _postgrestOptions;
   final FunctionsClientOptions _functionsOptions;

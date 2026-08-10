@@ -20,7 +20,7 @@ const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
 ///   * [EmptyLocalStorage], used to disable session persistence
 ///   * [SharedPreferencesLocalStorage], that implements SharedPreferences as
 ///     storage method
-abstract class LocalStorage {
+abstract interface class LocalStorage {
   const LocalStorage();
 
   /// Initialize the storage to persist session.
@@ -116,7 +116,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
 }
 
 /// local storage to store pkce flow code verifier.
-class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
+class SharedPreferencesGotrueAsyncStorage implements GotrueAsyncStorage {
   SharedPreferencesGotrueAsyncStorage() {
     unawaited(_initialize());
   }

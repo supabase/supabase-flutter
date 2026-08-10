@@ -97,7 +97,7 @@ enum RealtimeHeartbeatStatus {
 /// **Platform notes:**
 /// - Works on all Dart platforms (Flutter mobile/desktop, web, server).
 /// - On web, the underlying [WebSocketChannel] uses the browser WebSocket API.
-class RealtimeClient {
+interface class RealtimeClient {
   String? accessToken;
   List<RealtimeChannel> channels = [];
   final String endPoint;

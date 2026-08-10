@@ -81,7 +81,7 @@ const sessionDataUserId = '4d2583da-8de4-49d3-9cd1-37a9a74f55bd';
   return (accessToken: accessToken, sessionString: sessionString);
 }
 
-class TestAsyncStorage extends GotrueAsyncStorage {
+class TestAsyncStorage implements GotrueAsyncStorage {
   final Map<String, String> _map = {};
   @override
   Future<String?> getItem({required String key}) async {
