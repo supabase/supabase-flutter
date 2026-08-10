@@ -241,18 +241,18 @@ class RealtimeChannel {
     void Function(RealtimeSubscribeStatus status, Object? error)? callback,
   ) async {
     final serverPostgresFilters = response['postgres_changes'];
-    if (socket.accessToken != null) {
+    final accessToken = socket.accessToken;
+    if (accessToken != null) {
       try {
-        // ignore: avoid-passing-self-as-argument
-        await socket.setAuth(socket.accessToken);
-      } on FormatException catch (e) {
+        await socket.setAuth(accessToken);
+      } on FormatException catch (error) {
         // The cached access token may have expired by the time the
         // channel rejoins (e.g. after the device wakes from a long
         // sleep). Auth state listeners will re-call setAuth with a
         // fresh token shortly after, so swallow this specific error
         // to avoid surfacing it as an uncaught exception. The same
         // filter is applied in `SupabaseClient._handleTokenChanged`.
-        if (!e.message.contains('InvalidJWTToken')) {
+        if (!error.message.contains('InvalidJWTToken')) {
           rethrow;
         }
       }
