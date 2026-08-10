@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -55,6 +56,7 @@ import 'clear_auth_url_parameters_stub.dart'
 ///   only the URL the app was loaded with is inspected once at startup,
 ///   since browser navigation triggers a full page load rather than a
 ///   stream event.
+@internal
 class SupabaseAuth with WidgetsBindingObserver {
   static WidgetsBinding get _widgetsBindingInstance => WidgetsBinding.instance;
 

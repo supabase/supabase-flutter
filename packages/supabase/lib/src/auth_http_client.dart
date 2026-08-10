@@ -1,6 +1,8 @@
 import 'package:http/http.dart';
 import 'package:supabase/src/api_key.dart';
+import 'package:meta/meta.dart';
 
+@internal
 class AuthHttpClient extends BaseClient {
   final Client _inner;
 

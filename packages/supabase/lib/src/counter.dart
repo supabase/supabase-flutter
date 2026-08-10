@@ -1,3 +1,6 @@
+import 'package:meta/meta.dart';
+
+@internal
 class Counter {
   int _value = 0;
 

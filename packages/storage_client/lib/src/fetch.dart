@@ -12,6 +12,7 @@ import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
+@internal
 class Fetch {
   final Client? httpClient;
   final _log = Logger('supabase.storage');
