@@ -326,3 +326,68 @@ unaffected. For `functions.invoke`, two things changed:
   (3 to 5). This one is not a compile error, so replace any persisted `index` with `name`.
 
 The enum also exposes `value`, the uppercase wire form, in place of `method.name.toUpperCase()`.
+
+### The session is persisted with `SharedPreferencesAsync`
+
+`SharedPreferencesLocalStorage` and `SharedPreferencesGotrueAsyncStorage`, the storage
+implementations `Supabase.initialize` uses by default, wrote through the legacy
+[`SharedPreferences`](https://pub.dev/packages/shared_preferences#sharedpreferences-vs-sharedpreferencesasync-vs-sharedpreferenceswithcache)
+API. They now use `SharedPreferencesAsync`. On web the session still goes into
+`window.localStorage` under the same key as before, so nothing changes there.
+
+The two APIs do not share a store on every platform, and on the ones where they do the legacy API
+prefixes its keys, so a session written by v2 is invisible to the new one. `initialize()` therefore
+moves an existing session over to `SharedPreferencesAsync` the first time it runs and deletes the
+legacy entry, so your users stay signed in. No code change is needed for this, and there is nothing
+to migrate if you already pass your own `LocalStorage`.
+
+What this does mean is that the SDK no longer holds up its end of a mixed setup. On some platforms
+a write through one API drops values written through the other, which is what made sessions go
+missing in v2, so if your own code still calls `SharedPreferences.getInstance()`, this is the moment
+to
+[migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache)
+as well.
+
+If you would rather keep the session in the legacy store for now, pass a `LocalStorage` that reads
+and writes it:
+
+```dart
+class LegacySharedPreferencesLocalStorage extends LocalStorage {
+  LegacySharedPreferencesLocalStorage({required this.persistSessionKey});
+
+  final String persistSessionKey;
+
+  late final SharedPreferences _preferences;
+
+  @override
+  Future<void> initialize() async {
+    _preferences = await SharedPreferences.getInstance();
+  }
+
+  @override
+  Future<bool> hasAccessToken() async =>
+      _preferences.containsKey(persistSessionKey);
+
+  @override
+  Future<String?> accessToken() async =>
+      _preferences.getString(persistSessionKey);
+
+  @override
+  Future<void> removePersistedSession() =>
+      _preferences.remove(persistSessionKey);
+
+  @override
+  Future<void> persistSession(String persistSessionString) =>
+      _preferences.setString(persistSessionKey, persistSessionString);
+}
+
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  authOptions: FlutterAuthClientOptions(
+    localStorage: LegacySharedPreferencesLocalStorage(
+      persistSessionKey: 'sb-${Uri.parse(url).host.split('.').first}-auth-token',
+    ),
+  ),
+);
+```

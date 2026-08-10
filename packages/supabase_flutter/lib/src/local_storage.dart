@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -61,10 +59,14 @@ class EmptyLocalStorage extends LocalStorage {
   Future<void> persistSession(persistSessionString) async {}
 }
 
-/// A [LocalStorage] implementation that implements SharedPreferences as the
-/// storage method.
+/// A [LocalStorage] implementation that implements [SharedPreferencesAsync] as
+/// the storage method.
+///
+/// A session persisted by supabase_flutter v2, which used the legacy
+/// [SharedPreferences] API, is moved over to [SharedPreferencesAsync] on
+/// [initialize].
 class SharedPreferencesLocalStorage extends LocalStorage {
-  late final SharedPreferences _preferences;
+  late final SharedPreferencesAsync _preferences;
 
   SharedPreferencesLocalStorage({required this.persistSessionKey});
 
@@ -76,8 +78,32 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   Future<void> initialize() async {
     if (!_useWebLocalStorage) {
       WidgetsFlutterBinding.ensureInitialized();
-      _preferences = await SharedPreferences.getInstance();
+      _preferences = SharedPreferencesAsync();
+      await _migrateLegacySession();
     }
+  }
+
+  /// Moves a session written by the legacy [SharedPreferences] API over to
+  /// [SharedPreferencesAsync].
+  ///
+  /// The two APIs do not share a store on every platform, and on the platforms
+  /// where they do the legacy one prefixes its keys, so a session written by
+  /// supabase_flutter v2 is invisible to [SharedPreferencesAsync].
+  Future<void> _migrateLegacySession() async {
+    if (await _preferences.containsKey(persistSessionKey)) {
+      return;
+    }
+    final legacyPreferences = await SharedPreferences.getInstance();
+    final session = legacyPreferences.getString(persistSessionKey);
+    if (session == null) {
+      return;
+    }
+    // The legacy entry has to go before the new one is written: on some
+    // platforms both APIs write the same file from their own in-memory cache,
+    // so a legacy write that happens afterwards would drop the new entry
+    // again.
+    await legacyPreferences.remove(persistSessionKey);
+    await _preferences.setString(persistSessionKey, session);
   }
 
   @override
@@ -117,39 +143,24 @@ class SharedPreferencesLocalStorage extends LocalStorage {
 
 /// local storage to store pkce flow code verifier.
 class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
-  SharedPreferencesGotrueAsyncStorage() {
-    unawaited(_initialize());
-  }
+  SharedPreferencesGotrueAsyncStorage();
 
-  final Completer<void> _initializationCompleter = Completer();
+  /// Created on first use, since the plugin it talks to is only registered
+  /// once the bindings are initialized.
+  late final SharedPreferencesAsync _preferences = _createPreferences();
 
-  late final SharedPreferences _preferences;
-
-  Future<void> _initialize() async {
-    try {
-      WidgetsFlutterBinding.ensureInitialized();
-      _preferences = await SharedPreferences.getInstance();
-      _initializationCompleter.complete();
-    } catch (error, stackTrace) {
-      _initializationCompleter.completeError(error, stackTrace);
-    }
+  static SharedPreferencesAsync _createPreferences() {
+    WidgetsFlutterBinding.ensureInitialized();
+    return SharedPreferencesAsync();
   }
 
   @override
-  Future<String?> getItem({required String key}) async {
-    await _initializationCompleter.future;
-    return _preferences.getString(key);
-  }
+  Future<String?> getItem({required String key}) => _preferences.getString(key);
 
   @override
-  Future<void> removeItem({required String key}) async {
-    await _initializationCompleter.future;
-    await _preferences.remove(key);
-  }
+  Future<void> removeItem({required String key}) => _preferences.remove(key);
 
   @override
-  Future<void> setItem({required String key, required String value}) async {
-    await _initializationCompleter.future;
-    await _preferences.setString(key, value);
-  }
+  Future<void> setItem({required String key, required String value}) =>
+      _preferences.setString(key, value);
 }
