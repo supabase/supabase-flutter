@@ -81,5 +81,54 @@ void main() {
 
       expect(await newLocalStorage.hasAccessToken(), isFalse);
     });
+
+    test(
+      'does not restore a signed-out session when both stores had one',
+      () async {
+        mockSharedPreferences(
+          legacyValues: {persistSessionKey: '{"key": "legacy"}'},
+        );
+        await SharedPreferencesAsync().setString(
+          persistSessionKey,
+          testSessionValue,
+        );
+        final localStorage = SharedPreferencesLocalStorage(
+          persistSessionKey: persistSessionKey,
+        );
+        await localStorage.initialize();
+        await localStorage.removePersistedSession();
+
+        // A restart of the app, which runs the migration again.
+        final newLocalStorage = SharedPreferencesLocalStorage(
+          persistSessionKey: persistSessionKey,
+        );
+        await newLocalStorage.initialize();
+
+        expect(await newLocalStorage.hasAccessToken(), isFalse);
+      },
+    );
+
+    test('runs once, so a resurrected legacy entry is ignored', () async {
+      mockSharedPreferences(
+        legacyValues: {persistSessionKey: testSessionValue},
+      );
+      final localStorage = SharedPreferencesLocalStorage(
+        persistSessionKey: persistSessionKey,
+      );
+      await localStorage.initialize();
+      await localStorage.removePersistedSession();
+
+      // Stands in for the platforms where a write through either API can bring
+      // a deleted entry of the other one back.
+      final legacyPreferences = await SharedPreferences.getInstance();
+      await legacyPreferences.setString(persistSessionKey, testSessionValue);
+
+      final newLocalStorage = SharedPreferencesLocalStorage(
+        persistSessionKey: persistSessionKey,
+      );
+      await newLocalStorage.initialize();
+
+      expect(await newLocalStorage.hasAccessToken(), isFalse);
+    });
   });
 }

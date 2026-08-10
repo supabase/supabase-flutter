@@ -83,27 +83,37 @@ class SharedPreferencesLocalStorage extends LocalStorage {
     }
   }
 
+  /// Records that [_migrateLegacySession] has run, so that it runs once.
+  String get _legacyMigrationKey => '$persistSessionKey-legacy-migrated';
+
   /// Moves a session written by the legacy [SharedPreferences] API over to
   /// [SharedPreferencesAsync].
   ///
   /// The two APIs do not share a store on every platform, and on the platforms
   /// where they do the legacy one prefixes its keys, so a session written by
   /// supabase_flutter v2 is invisible to [SharedPreferencesAsync].
+  ///
+  /// Deleting the legacy entry is not enough to make this a one-time move. On
+  /// the platforms where both APIs rewrite one file from their own cache, a
+  /// later write through either API can bring the deleted entry back, and a
+  /// resurrected session would sign a user in again after they signed out.
+  /// [_legacyMigrationKey] is what makes the move happen once, and the delete
+  /// is only there to keep a stale token from lying around.
   Future<void> _migrateLegacySession() async {
-    if (await _preferences.containsKey(persistSessionKey)) {
+    if (await _preferences.containsKey(_legacyMigrationKey)) {
       return;
     }
     final legacyPreferences = await SharedPreferences.getInstance();
-    final session = legacyPreferences.getString(persistSessionKey);
-    if (session == null) {
-      return;
-    }
-    // The legacy entry has to go before the new one is written: on some
-    // platforms both APIs write the same file from their own in-memory cache,
-    // so a legacy write that happens afterwards would drop the new entry
-    // again.
+    // The instance is shared with the app, which may have loaded it before the
+    // session was last written.
+    await legacyPreferences.reload();
+    final legacySession = legacyPreferences.getString(persistSessionKey);
     await legacyPreferences.remove(persistSessionKey);
-    await _preferences.setString(persistSessionKey, session);
+    if (legacySession != null &&
+        !await _preferences.containsKey(persistSessionKey)) {
+      await _preferences.setString(persistSessionKey, legacySession);
+    }
+    await _preferences.setBool(_legacyMigrationKey, true);
   }
 
   @override

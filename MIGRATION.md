@@ -386,7 +386,8 @@ await Supabase.initialize(
   publishableKey: publishableKey,
   authOptions: FlutterAuthClientOptions(
     localStorage: LegacySharedPreferencesLocalStorage(
-      persistSessionKey: 'sb-${Uri.parse(url).host.split('.').first}-auth-token',
+      persistSessionKey:
+          'sb-${Uri.parse(url).host.split('.').first}-auth-token',
     ),
   ),
 );
