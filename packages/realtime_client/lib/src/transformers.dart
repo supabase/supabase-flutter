@@ -334,8 +334,7 @@ Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
 Map<String, Map<String, dynamic>> getPayloadRecords(
   Map<String, dynamic> payload,
 ) {
-  // ignore: avoid-inferrable-type-arguments
-  final records = <String, Map<String, dynamic>>{
+  final Map<String, Map<String, dynamic>> records = {
     'new': {},
     'old': {},
   };

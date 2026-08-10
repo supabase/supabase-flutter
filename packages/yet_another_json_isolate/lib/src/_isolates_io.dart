@@ -124,33 +124,29 @@ class YAJsonIsolate {
   }
 }
 
-void _compute(SendPort p) async {
+List<dynamic> _computeResponse(dynamic input, {required bool isEncoding}) {
+  try {
+    return _buildSuccessResponse(
+      isEncoding ? jsonEncode(input) : jsonDecode(input),
+    );
+  } catch (error, stackTrace) {
+    return _buildErrorResponse(error, stackTrace);
+  }
+}
+
+void _compute(SendPort sendPort) async {
   final commandPort = ReceivePort();
-  p.send(commandPort.sendPort);
+  sendPort.send(commandPort.sendPort);
 
   await for (final event in commandPort) {
-    // [event] is a list of [input,method]
+    // [event] is a list of [input, isEncoding]
     if (event is List) {
       final input = event.first;
 
       /// `true` for encoding and `false` for decoding
-      final bool method = event.last;
-      // ignore: avoid-unnecessary-local-late
-      late final List<dynamic> computationResult;
+      final bool isEncoding = event.last;
 
-      try {
-        final dynamic res;
-        if (method == true) {
-          res = jsonEncode(input);
-        } else {
-          res = jsonDecode(input);
-        }
-        computationResult = _buildSuccessResponse(res);
-      } catch (e, s) {
-        computationResult = _buildErrorResponse(e, s);
-      }
-
-      p.send(computationResult);
+      sendPort.send(_computeResponse(input, isEncoding: isEncoding));
     } else if (event == null) {
       break;
     }
