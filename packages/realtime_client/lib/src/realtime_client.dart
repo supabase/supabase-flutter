@@ -527,8 +527,7 @@ class RealtimeClient {
   ///
   /// If the socket is not connected, the message gets enqueued within a local
   /// buffer, and sent out when a connection is next established.
-  // ignore: function-always-returns-null
-  String? push(Message message) {
+  void push(Message message) {
     void callback() {
       connection?.sink.add(encode(message.toJson()));
     }
@@ -544,7 +543,6 @@ class RealtimeClient {
     } else {
       sendBuffer.add(callback);
     }
-    return null;
   }
 
   void onConnectionMessage(Object rawMessage) {

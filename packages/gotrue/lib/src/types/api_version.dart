@@ -1,5 +1,6 @@
 import 'package:gotrue/src/constants.dart';
 import 'package:http/http.dart';
+import 'package:meta/meta.dart';
 
 // Parses the API version which is 2YYY-MM-DD. */
 const String _apiVersionRegex =
@@ -8,6 +9,7 @@ const String _apiVersionRegex =
 /// Represents the API versions supported by the package.
 
 /// Represents the API version specified by a [name] in the format YYYY-MM-DD.
+@internal
 class ApiVersion {
   const ApiVersion({
     required this.name,

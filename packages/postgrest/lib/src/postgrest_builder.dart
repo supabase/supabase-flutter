@@ -53,15 +53,13 @@ class _RetryConfig {
   final Duration Function(int attempt) delay;
 
   _RetryConfig copyWith({
-    // retry() always passes enabled, but keep the standard copyWith shape.
-    // ignore: avoid-unnecessary-nullable-parameters
-    bool? enabled,
+    required bool enabled,
     int? count,
     Set<int>? statusCodes,
     Duration Function(int attempt)? delay,
   }) {
     return _RetryConfig(
-      enabled: enabled ?? this.enabled,
+      enabled: enabled,
       count: count ?? this.count,
       statusCodes: statusCodes ?? this.statusCodes,
       delay: delay ?? this.delay,

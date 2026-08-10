@@ -10,8 +10,10 @@ import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+@internal
 enum RequestMethodType { get, post, put, patch, delete }
 
+@internal
 class GotrueFetch {
   final Client? httpClient;
 
