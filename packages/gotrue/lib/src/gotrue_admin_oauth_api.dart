@@ -1,8 +1,9 @@
+import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
+
 import 'fetch.dart';
-import 'helper.dart';
 import 'types/fetch_options.dart';
 import 'types/types.dart';
-import 'package:meta/meta.dart';
 
 /// Response type for OAuth client operations.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
@@ -76,7 +77,7 @@ class GoTrueAdminOAuthApi {
   }) async {
     final data = await _fetch.request(
       '$_url/admin/oauth/clients',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _headers,
         query: {
@@ -99,7 +100,7 @@ class GoTrueAdminOAuthApi {
   ) async {
     final data = await _fetch.request(
       '$_url/admin/oauth/clients',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _headers,
         body: params.toJson(),
@@ -119,7 +120,7 @@ class GoTrueAdminOAuthApi {
 
     final data = await _fetch.request(
       '$_url/admin/oauth/clients/$clientId',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _headers,
       ),
@@ -141,7 +142,7 @@ class GoTrueAdminOAuthApi {
 
     final data = await _fetch.request(
       '$_url/admin/oauth/clients/$clientId',
-      RequestMethodType.put,
+      HttpMethod.put,
       options: GotrueRequestOptions(
         headers: _headers,
         body: params.toJson(),
@@ -161,7 +162,7 @@ class GoTrueAdminOAuthApi {
 
     final data = await _fetch.request(
       '$_url/admin/oauth/clients/$clientId',
-      RequestMethodType.delete,
+      HttpMethod.delete,
       options: GotrueRequestOptions(
         headers: _headers,
       ),
@@ -180,7 +181,7 @@ class GoTrueAdminOAuthApi {
 
     final data = await _fetch.request(
       '$_url/admin/oauth/clients/$clientId/regenerate_secret',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _headers,
       ),

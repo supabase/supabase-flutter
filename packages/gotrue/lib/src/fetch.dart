@@ -11,9 +11,6 @@ import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 @internal
-enum RequestMethodType { get, post, put, patch, delete }
-
-@internal
 class GotrueFetch {
   final Client? httpClient;
 
@@ -146,7 +143,7 @@ class GotrueFetch {
 
   Future<dynamic> request(
     String url,
-    RequestMethodType method, {
+    HttpMethod method, {
     GotrueRequestOptions? options,
   }) async {
     final result = await requestWithResponse(url, method, options: options);
@@ -160,7 +157,7 @@ class GotrueFetch {
   @internal
   Future<({dynamic body, Response response})> requestWithResponse(
     String url,
-    RequestMethodType method, {
+    HttpMethod method, {
     GotrueRequestOptions? options,
   }) async {
     // Copy the maps before mutating them. Callers pass the client's shared
@@ -211,39 +208,37 @@ class GotrueFetch {
   }
 
   Future<Response> _handleRequest({
-    required RequestMethodType method,
+    required HttpMethod method,
     required Uri uri,
     required GotrueRequestOptions? options,
     required Map<String, String> headers,
   }) async {
     final bodyStr = json.encode(options?.body ?? {});
 
-    if (method != RequestMethodType.get) {
+    if (method != HttpMethod.get && method != HttpMethod.head) {
       headers['Content-Type'] = 'application/json';
     }
     Response response;
     try {
       response = await switch (method) {
-        RequestMethodType.get => (httpClient?.get ?? get)(
-          uri,
-          headers: headers,
-        ),
-        RequestMethodType.post => (httpClient?.post ?? post)(
-          uri,
-          headers: headers,
-          body: bodyStr,
-        ),
-        RequestMethodType.put => (httpClient?.put ?? put)(
+        HttpMethod.get => (httpClient?.get ?? get)(uri, headers: headers),
+        HttpMethod.head => (httpClient?.head ?? head)(uri, headers: headers),
+        HttpMethod.post => (httpClient?.post ?? post)(
           uri,
           headers: headers,
           body: bodyStr,
         ),
-        RequestMethodType.patch => (httpClient?.patch ?? patch)(
+        HttpMethod.put => (httpClient?.put ?? put)(
           uri,
           headers: headers,
           body: bodyStr,
         ),
-        RequestMethodType.delete => (httpClient?.delete ?? delete)(
+        HttpMethod.patch => (httpClient?.patch ?? patch)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+        HttpMethod.delete => (httpClient?.delete ?? delete)(
           uri,
           headers: headers,
           body: bodyStr,
