@@ -313,3 +313,16 @@ supabase.auth.onAuthStateChange.listen((data) {
 
 For the PKCE case, `AuthSessionUrlResponse.redirectType` is `'userUpdated'` instead of `null`, so
 you can also branch on the response of `exchangeCodeForSession()` directly.
+
+### `HttpMethod` is one shared enum
+
+`functions_client` and `postgrest` each declared their own `HttpMethod`. There is now one, shaped
+like postgrest's and re-exported from both, so imports are unchanged and postgrest callers are
+unaffected. For `functions.invoke`, two things changed:
+
+- `head` was added, so an exhaustive `switch` over `HttpMethod` no longer compiles until you handle
+  it.
+- The values were reordered, so `index` shifted for `post` (1 to 2), `put` (2 to 3) and `delete`
+  (3 to 5). This one is not a compile error, so replace any persisted `index` with `name`.
+
+The enum also exposes `value`, the uppercase wire form, in place of `method.name.toUpperCase()`.
