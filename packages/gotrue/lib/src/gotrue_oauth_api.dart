@@ -239,7 +239,7 @@ class GoTrueOAuthApi {
 
     final data = await _fetch.request(
       '${_client._url}/oauth/authorizations/$authorizationId',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _client._headers,
         jwt: session?.accessToken,
@@ -262,7 +262,7 @@ class GoTrueOAuthApi {
 
     final data = await _fetch.request(
       '${_client._url}/oauth/authorizations/$authorizationId/consent',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
         jwt: session?.accessToken,
@@ -288,7 +288,7 @@ class GoTrueOAuthApi {
 
     final data = await _fetch.request(
       '${_client._url}/oauth/authorizations/$authorizationId/consent',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _client._headers,
         jwt: session?.accessToken,
@@ -309,7 +309,7 @@ class GoTrueOAuthApi {
 
     final data = await _fetch.request(
       '${_client._url}/user/oauth/grants',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _client._headers,
         jwt: session?.accessToken,
@@ -328,7 +328,7 @@ class GoTrueOAuthApi {
 
     await _fetch.request(
       '${_client._url}/user/oauth/grants',
-      RequestMethodType.delete,
+      HttpMethod.delete,
       options: GotrueRequestOptions(
         headers: _client._headers,
         jwt: session?.accessToken,

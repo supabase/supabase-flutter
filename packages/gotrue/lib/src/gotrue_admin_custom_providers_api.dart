@@ -1,3 +1,5 @@
+import 'package:supabase_common/supabase_common.dart';
+
 import 'fetch.dart';
 import 'types/custom_oauth_provider.dart';
 import 'types/fetch_options.dart';
@@ -29,7 +31,7 @@ class GoTrueAdminCustomProvidersApi {
   }) async {
     final data = await _fetch.request(
       '$_url/admin/custom-providers',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _headers,
         query: {
@@ -60,7 +62,7 @@ class GoTrueAdminCustomProvidersApi {
   ) async {
     final data = await _fetch.request(
       '$_url/admin/custom-providers',
-      RequestMethodType.post,
+      HttpMethod.post,
       options: GotrueRequestOptions(
         headers: _headers,
         body: params.toJson(),
@@ -77,7 +79,7 @@ class GoTrueAdminCustomProvidersApi {
   Future<CustomOAuthProvider> getProvider(String identifier) async {
     final data = await _fetch.request(
       '$_url/admin/custom-providers/$identifier',
-      RequestMethodType.get,
+      HttpMethod.get,
       options: GotrueRequestOptions(
         headers: _headers,
       ),
@@ -101,7 +103,7 @@ class GoTrueAdminCustomProvidersApi {
   ) async {
     final data = await _fetch.request(
       '$_url/admin/custom-providers/$identifier',
-      RequestMethodType.put,
+      HttpMethod.put,
       options: GotrueRequestOptions(
         headers: _headers,
         body: params.toJson(),
@@ -118,7 +120,7 @@ class GoTrueAdminCustomProvidersApi {
   Future<void> deleteProvider(String identifier) async {
     await _fetch.request(
       '$_url/admin/custom-providers/$identifier',
-      RequestMethodType.delete,
+      HttpMethod.delete,
       options: GotrueRequestOptions(
         headers: _headers,
         noResolveJson: true,
