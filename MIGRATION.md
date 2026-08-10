@@ -359,8 +359,8 @@ as well. The snippet below is the way out if you cannot do that yet.
 
 If you would rather keep the session in the legacy store for now, pass a `LocalStorage` that reads
 and writes it. Supplying your own storage is also where the session key comes in: `initialize()`
-derives `sb-<project-ref>-auth-token` from your project URL for the default storage, so you only
-name the key when you construct a `LocalStorage` yourself.
+derives it from your project URL for the default storage, so you only name the key when you
+construct a `LocalStorage` yourself, and `defaultPersistSessionKey` hands you the same one.
 
 ```dart
 class LegacySharedPreferencesLocalStorage extends LocalStorage {
@@ -397,8 +397,7 @@ await Supabase.initialize(
   publishableKey: publishableKey,
   authOptions: FlutterAuthClientOptions(
     localStorage: LegacySharedPreferencesLocalStorage(
-      persistSessionKey:
-          'sb-${Uri.parse(url).host.split('.').first}-auth-token',
+      persistSessionKey: defaultPersistSessionKey(url),
     ),
   ),
 );
@@ -437,7 +436,7 @@ await Supabase.initialize(
   publishableKey: publishableKey,
   authOptions: FlutterAuthClientOptions(
     localStorage: MySecureStorage(
-      persistSessionKey: 'sb-${Uri.parse(url).host.split('.').first}-auth-token',
+      persistSessionKey: defaultPersistSessionKey(url),
     ),
   ),
 );

@@ -127,8 +127,7 @@ class Supabase {
       authOptions = authOptions.copyWith(
         localStorage: authOptions.persistSession
             ? SharedPreferencesLocalStorage(
-                persistSessionKey:
-                    "sb-${Uri.parse(url).host.split(".").first}-auth-token",
+                persistSessionKey: defaultPersistSessionKey(url),
               )
             : const EmptyLocalStorage(),
       );

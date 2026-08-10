@@ -508,7 +508,7 @@ By default, `supabase_flutter` uses the `SharedPreferencesAsync` API of [`shared
 
 However, you can use any other methods by creating a `LocalStorage` implementation. For example, we can use [`flutter_secure_storage`](https://pub.dev/packages/flutter_secure_storage) plugin to store the user session in a secure storage.
 
-The key the session is stored under, `sb-<project-ref>-auth-token`, is derived from your project URL by `Supabase.initialize`. You only pass it yourself when you construct a `LocalStorage`, as below.
+The key the session is stored under is derived from your project URL by `Supabase.initialize`. You only pass it yourself when you construct a `LocalStorage`, as below, and `defaultPersistSessionKey` gives you the same key the default storage uses.
 
 ```dart
 // Define the custom LocalStorage implementation
@@ -548,7 +548,7 @@ Supabase.initialize(
   ...
   authOptions: FlutterAuthClientOptions(
     localStorage: MySecureStorage(
-      persistSessionKey: "sb-${Uri.parse(supabaseUrl).host.split(".").first}-auth-token",
+      persistSessionKey: defaultPersistSessionKey(supabaseUrl),
     ),
   ),
 );
