@@ -401,3 +401,50 @@ await Supabase.initialize(
   ),
 );
 ```
+
+### `supabasePersistSessionKey` is gone
+
+The constant existed for the v1 to v2 migration from Hive, which v3 no longer carries, and the SDK
+itself never read it. The session is stored under the key you pass to `LocalStorage`, which for the
+default storage is `sb-<project-ref>-auth-token`.
+
+The `LocalStorage` examples in the README used the constant as their storage key, so if you copied
+one of those, take the key as a parameter instead:
+
+```dart
+// Before
+class MySecureStorage extends LocalStorage {
+  @override
+  Future<String?> accessToken() => storage.read(key: supabasePersistSessionKey);
+  // ...
+}
+
+// After
+class MySecureStorage extends LocalStorage {
+  MySecureStorage({required this.persistSessionKey});
+
+  final String persistSessionKey;
+
+  @override
+  Future<String?> accessToken() => storage.read(key: persistSessionKey);
+  // ...
+}
+
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  authOptions: FlutterAuthClientOptions(
+    localStorage: MySecureStorage(
+      persistSessionKey: 'sb-${Uri.parse(url).host.split('.').first}-auth-token',
+    ),
+  ),
+);
+```
+
+Passing the key you already store under keeps your users signed in; switching to a different key
+signs them out once. To keep the old value, pass `'SUPABASE_PERSIST_SESSION_KEY'`, which is what the
+constant held.
+
+The `MigrationLocalStorage` and `HiveLocalStorage` snippets that migrated a v1 session out of
+[hive](https://pub.dev/packages/hive) are gone from the README along with it. If you are still on
+v1, upgrade to v2 first and let it migrate the session, then move to v3.

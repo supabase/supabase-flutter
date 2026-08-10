@@ -511,6 +511,9 @@ However, you can use any other methods by creating a `LocalStorage` implementati
 ```dart
 // Define the custom LocalStorage implementation
 class MySecureStorage extends LocalStorage {
+  MySecureStorage({required this.persistSessionKey});
+
+  final String persistSessionKey;
 
   final storage = FlutterSecureStorage();
 
@@ -519,22 +522,22 @@ class MySecureStorage extends LocalStorage {
 
   @override
   Future<String?> accessToken() async {
-    return storage.read(key: supabasePersistSessionKey);
+    return storage.read(key: persistSessionKey);
   }
 
   @override
   Future<bool> hasAccessToken() async {
-    return storage.containsKey(key: supabasePersistSessionKey);
+    return storage.containsKey(key: persistSessionKey);
   }
 
   @override
   Future<void> persistSession(String persistSessionString) async {
-    return storage.write(key: supabasePersistSessionKey, value: persistSessionString);
+    return storage.write(key: persistSessionKey, value: persistSessionString);
   }
 
   @override
   Future<void> removePersistedSession() async {
-    return storage.delete(key: supabasePersistSessionKey);
+    return storage.delete(key: persistSessionKey);
   }
 }
 
@@ -542,7 +545,9 @@ class MySecureStorage extends LocalStorage {
 Supabase.initialize(
   ...
   authOptions: FlutterAuthClientOptions(
-    localStorage: MySecureStorage(),
+    localStorage: MySecureStorage(
+      persistSessionKey: "sb-${Uri.parse(supabaseUrl).host.split(".").first}-auth-token",
+    ),
   ),
 );
 ```
@@ -554,160 +559,6 @@ Supabase.initialize(
   // ...
   authOptions: FlutterAuthClientOptions(
     localStorage: const EmptyLocalStorage(),
-  ),
-);
-```
-
-### Persisting the user session from supabase_flutter v1
-
-supabase_flutter v1 used hive to persist the user session. In the current version of supabase_flutter it uses shared_preferences. If you are updating your app from v1 to v2, you can use the following custom `LocalStorage` implementation to automatically migrate the user session from [hive](https://pub.dev/packages/hive) to [shared_preferences](https://pub.dev/packages/shared_preferences).
-
-```dart
-const _hiveBoxName = 'supabase_authentication';
-
-class MigrationLocalStorage extends LocalStorage {
-  final SharedPreferencesLocalStorage sharedPreferencesLocalStorage;
-  late final HiveLocalStorage hiveLocalStorage;
-
-  MigrationLocalStorage({required String persistSessionKey})
-      : sharedPreferencesLocalStorage =
-            SharedPreferencesLocalStorage(persistSessionKey: persistSessionKey);
-
-  @override
-  Future<void> initialize() async {
-    await Hive.initFlutter('auth');
-    hiveLocalStorage = const HiveLocalStorage();
-    await sharedPreferencesLocalStorage.initialize();
-    try {
-      await migrate();
-    } on TimeoutException {
-      // Ignore TimeoutException thrown by Hive methods
-      // https://github.com/supabase/supabase-flutter/issues/794
-    }
-  }
-
-  @visibleForTesting
-  Future<void> migrate() async {
-    // Migrate from Hive to SharedPreferences
-    if (await Hive.boxExists(_hiveBoxName)) {
-      await hiveLocalStorage.initialize();
-
-      final hasHive = await hiveLocalStorage.hasAccessToken();
-      if (hasHive) {
-        final accessToken = await hiveLocalStorage.accessToken();
-        final session =
-            Session.fromJson(jsonDecode(accessToken!)['currentSession']);
-        if (session == null) {
-          return;
-        }
-        await sharedPreferencesLocalStorage
-            .persistSession(jsonEncode(session.toJson()));
-        await hiveLocalStorage.removePersistedSession();
-      }
-      if (Hive.box(_hiveBoxName).isEmpty) {
-        final boxPath = Hive.box(_hiveBoxName).path;
-        await Hive.deleteBoxFromDisk(_hiveBoxName);
-
-        //Delete `auth` folder if it's empty
-        if (!kIsWeb && boxPath != null) {
-          final boxDir = File(boxPath).parent;
-          final dirIsEmpty = await boxDir.list().length == 0;
-          if (dirIsEmpty) {
-            await boxDir.delete();
-          }
-        }
-      }
-    }
-  }
-
-  @override
-  Future<String?> accessToken() {
-    return sharedPreferencesLocalStorage.accessToken();
-  }
-
-  @override
-  Future<bool> hasAccessToken() {
-    return sharedPreferencesLocalStorage.hasAccessToken();
-  }
-
-  @override
-  Future<void> persistSession(String persistSessionString) {
-    return sharedPreferencesLocalStorage.persistSession(persistSessionString);
-  }
-
-  @override
-  Future<void> removePersistedSession() {
-    return sharedPreferencesLocalStorage.removePersistedSession();
-  }
-}
-
-/// A [LocalStorage] implementation that implements Hive as the
-/// storage method.
-class HiveLocalStorage extends LocalStorage {
-  /// Creates a LocalStorage instance that implements the Hive Database
-  const HiveLocalStorage();
-
-  /// The encryption key used by Hive. If null, the box is not encrypted
-  ///
-  /// This value should not be redefined in runtime, otherwise the user may
-  /// not be fetched correctly
-  ///
-  /// See also:
-  ///
-  ///   * <https://docs.hivedb.dev/#/advanced/encrypted_box?id=encrypted-box>
-  static String? encryptionKey;
-
-  @override
-  Future<void> initialize() async {
-    HiveCipher? encryptionCipher;
-    if (encryptionKey != null) {
-      encryptionCipher = HiveAesCipher(base64Url.decode(encryptionKey!));
-    }
-    await Hive.initFlutter('auth');
-    await Hive.openBox(_hiveBoxName, encryptionCipher: encryptionCipher)
-        .timeout(const Duration(seconds: 1));
-  }
-
-  @override
-  Future<bool> hasAccessToken() {
-    return Future.value(
-      Hive.box(_hiveBoxName).containsKey(
-        supabasePersistSessionKey,
-      ),
-    );
-  }
-
-  @override
-  Future<String?> accessToken() {
-    return Future.value(
-      Hive.box(_hiveBoxName).get(supabasePersistSessionKey) as String?,
-    );
-  }
-
-  @override
-  Future<void> removePersistedSession() {
-    return Hive.box(_hiveBoxName).delete(supabasePersistSessionKey);
-  }
-
-  @override
-  Future<void> persistSession(String persistSessionString) {
-    // Flush after X amount of writes
-    return Hive.box(_hiveBoxName)
-        .put(supabasePersistSessionKey, persistSessionString);
-  }
-}
-```
-
-You can then initialize Supabase with `MigrationLocalStorage` and it will automatically migrate the session from Hive to SharedPreferences.
-
-```dart
-Supabase.initialize(
-  // ...
-  authOptions: FlutterAuthClientOptions(
-    localStorage: const MigrationLocalStorage(
-      persistSessionKey:
-              "sb-${Uri.parse(url).host.split(".").first}-auth-token",
-    ),
   ),
 );
 ```
@@ -746,8 +597,8 @@ supabaseLogger.onRecord.listen((record) {
 
 ## Migrating Guide
 
-You can find the migration guide to migrate from v1 to v2 here:
-https://supabase.com/docs/reference/dart/upgrade-guide
+The breaking changes of each major version, and what to do about them, are documented in
+[MIGRATION.md](https://github.com/supabase/supabase-flutter/blob/main/MIGRATION.md).
 
 ## Contributing
 

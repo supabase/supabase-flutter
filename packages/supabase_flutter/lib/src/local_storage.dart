@@ -7,17 +7,14 @@ import './local_storage_stub.dart'
     if (dart.library.js_interop) './local_storage_web.dart'
     as web;
 
-/// Only used for migration from Hive to SharedPreferences. Not actually in use.
-const supabasePersistSessionKey = 'SUPABASE_PERSIST_SESSION_KEY';
-
 /// LocalStorage is used to persist the user session in the device.
 ///
 /// See also:
 ///
 ///   * [SupabaseAuth], the instance used to manage authentication
 ///   * [EmptyLocalStorage], used to disable session persistence
-///   * [SharedPreferencesLocalStorage], that implements SharedPreferences as
-///     storage method
+///   * [SharedPreferencesLocalStorage], that implements SharedPreferencesAsync
+///     as storage method
 abstract class LocalStorage {
   const LocalStorage();
 

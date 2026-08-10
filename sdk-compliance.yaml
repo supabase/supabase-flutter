@@ -2022,7 +2022,6 @@ features:
       - GoTrueClient.setInitialSession
     supporting_symbols:
       - SharedPreferencesLocalStorage.persistSessionKey
-      - supabasePersistSessionKey
   client.request_configuration.custom_http_client:
     status: implemented
     symbols:
