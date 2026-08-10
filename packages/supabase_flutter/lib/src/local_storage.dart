@@ -99,6 +99,11 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   /// resurrected session would sign a user in again after they signed out.
   /// [_legacyMigrationKey] is what makes the move happen once, and the delete
   /// is only there to keep a stale token from lying around.
+  ///
+  /// An entry that comes back afterwards is left where it is. It is never read
+  /// again, and deleting it would mean a legacy write on every launch: that
+  /// write rewrites the whole store even when the key is absent, which on those
+  /// same platforms is what drops values the other API wrote.
   Future<void> _migrateLegacySession() async {
     if (await _preferences.containsKey(_legacyMigrationKey)) {
       return;
