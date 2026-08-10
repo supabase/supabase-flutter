@@ -66,6 +66,7 @@ enum PostgresChangeEvent {
   };
 }
 
+@internal
 class ChannelFilter {
   /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`,
   /// `DELETE`

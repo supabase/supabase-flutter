@@ -9,6 +9,7 @@ typedef TimerCalculation = int Function(int tries);
 
 // Need to limit doubling to avoid overflow, this limit gives 1 million times
 // the first delay
+@internal
 const maxShift = 20;
 
 /// Creates a timer that accepts a `timerCalc` function to perform

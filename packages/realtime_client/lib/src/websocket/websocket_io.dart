@@ -1,5 +1,6 @@
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:meta/meta.dart';
 
 /// Interval for the native WebSocket to send protocol-level ping frames.
 ///
@@ -10,6 +11,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// app-level heartbeat cadence of 25 seconds.
 const _defaultWebSocketPingInterval = Duration(seconds: 25);
 
+@internal
 WebSocketChannel createWebSocketClient(
   String url,
   Map<String, String> headers, {
