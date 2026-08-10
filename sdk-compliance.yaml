@@ -1930,8 +1930,9 @@ features:
       - FunctionsClient.setAuth
   functions.invocation.method_override:
     status: implemented
+    note: "The HttpMethod enum is shared with postgrest, so it also offers head, which supabase-js does not expose for function invocation."
     symbols:
-      - HttpMethod
+      - FunctionsClient.invoke
   functions.invocation.streaming_response:
     status: implemented
     symbols:
@@ -2204,7 +2205,6 @@ supporting_symbols:
   - GoTruePasskeyApi.list
   - GoTruePasskeyApi.update
   - Headers
-  - HttpMethod.value
   - IcebergAuthenticationTimeoutException
   - IcebergAuthenticationTimeoutException.IcebergAuthenticationTimeoutException
   - IcebergCommitStateUnknownException
