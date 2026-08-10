@@ -154,7 +154,7 @@ void main() {
       const testKey = 'test_key';
       const testValue = 'test_value';
 
-      setUp(() async {
+      setUp(() {
         // Set up fake shared preferences
         mockSharedPreferences();
         asyncStorage = SharedPreferencesGotrueAsyncStorage();
