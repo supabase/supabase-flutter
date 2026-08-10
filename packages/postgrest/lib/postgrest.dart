@@ -5,3 +5,4 @@ export 'src/postgrest.dart';
 export 'src/postgrest_builder.dart';
 export 'src/types.dart';
 export 'package:http/http.dart' show RequestAbortedException;
+export 'package:supabase_common/supabase_common.dart' show HttpMethod;

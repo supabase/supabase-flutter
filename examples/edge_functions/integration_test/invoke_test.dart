@@ -57,7 +57,12 @@ void main() {
     });
 
     testWidgets('every HTTP method reaches the function', (_) async {
-      for (final method in HttpMethod.values) {
+      // HEAD responses carry no body, so the echo function cannot report back
+      // which method it saw.
+      final methods = HttpMethod.values.where(
+        (method) => method != HttpMethod.head,
+      );
+      for (final method in methods) {
         final response = await functions.invoke(
           'echo',
           method: method,
@@ -66,7 +71,7 @@ void main() {
               ? null
               : {'value': 1},
         );
-        expect(response.data['method'], method.name.toUpperCase());
+        expect(response.data['method'], method.value);
       }
     });
 

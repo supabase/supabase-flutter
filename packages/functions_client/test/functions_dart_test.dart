@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:functions_client/src/functions_client.dart';
 import 'package:functions_client/src/types.dart';
 import 'package:http/http.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 

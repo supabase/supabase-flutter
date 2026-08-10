@@ -8,6 +8,7 @@ library;
 export 'src/base64url.dart';
 export 'src/client_info.dart';
 export 'src/fetch_options.dart';
+export 'src/http_method.dart';
 export 'src/http_status.dart';
 export 'src/pkce.dart';
 export 'src/platform/platform_info.dart';
