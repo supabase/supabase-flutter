@@ -1411,9 +1411,7 @@ class GoTrueClient {
       }
 
       final expiresInTicks =
-          (DateTime.fromMillisecondsSinceEpoch(
-                    expiresAt * 1000,
-                  ).difference(now).inMilliseconds /
+          (expiresAt.difference(now).inMilliseconds /
                   Constants.autoRefreshTickDuration.inMilliseconds)
               .floor();
 

@@ -415,6 +415,11 @@ features:
       - OAuthAuthorizedClient.clientId
       - OAuthAuthorizedClient.clientName
       - OAuthAuthorizedClient.fromJson
+      - OAuthAuthorizingUser
+      - OAuthAuthorizingUser.OAuthAuthorizingUser
+      - OAuthAuthorizingUser.email
+      - OAuthAuthorizingUser.fromJson
+      - OAuthAuthorizingUser.id
   auth.oauth_server.approve_authorization:
     status: implemented
     symbols:
@@ -2081,8 +2086,6 @@ supporting_symbols:
   - AdminUserAttributes.phoneConfirm
   - AdminUserAttributes.toJson
   - AdminUserAttributes.userMetadata
-  - ApiVersions
-  - ApiVersions.v20240101
   - AuthApiException
   - AuthApiException.AuthApiException
   - AuthApiException.toString

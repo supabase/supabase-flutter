@@ -38,7 +38,7 @@ void main() {
       expect(entry.method, AMRMethod.passkey);
       expect(
         entry.timestamp,
-        DateTime.fromMillisecondsSinceEpoch(1735689600 * 1000),
+        DateTime.fromMillisecondsSinceEpoch(1735689600 * 1000, isUtc: true),
       );
     });
 

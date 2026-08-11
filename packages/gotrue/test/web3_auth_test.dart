@@ -115,7 +115,7 @@ void main() {
         httpClient: Web3ErrorMockClient(
           statusCode: 403,
           errorResponse: const {
-            'error_code': 'validation_failed',
+            'code': 'validation_failed',
             'message': 'Message is expired',
           },
         ),

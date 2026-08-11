@@ -5,12 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class StoredImage {
   const StoredImage({required this.path, this.createdAt});
 
-  factory StoredImage.fromFileObject(FileObject file) => StoredImage(
-    path: file.name,
-    createdAt: file.createdAt == null
-        ? null
-        : DateTime.tryParse(file.createdAt!),
-  );
+  factory StoredImage.fromFileObject(FileObject file) =>
+      StoredImage(path: file.name, createdAt: file.createdAt);
 
   /// Path within the bucket, which is also the object's file name here.
   final String path;

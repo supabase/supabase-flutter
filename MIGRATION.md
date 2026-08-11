@@ -113,6 +113,78 @@ await catalog.loadTableResult(
 );
 ```
 
+### Timestamps are `DateTime` instead of `String` or `int`
+
+Every timestamp the SDK returns is now a `DateTime` in UTC, parsed once when the response is
+decoded, instead of a raw ISO 8601 `String` or a Unix timestamp `int`. Comparing, formatting and
+doing arithmetic on them no longer requires parsing them yourself.
+
+| Type | Fields | Before | After |
+| --- | --- | --- | --- |
+| `Session` | `expiresAt` | `int?` (Unix seconds) | `DateTime?` |
+| `User` | `createdAt` | `String` | `DateTime` |
+| `User` | `confirmationSentAt`, `recoverySentAt`, `emailChangeSentAt`, `invitedAt`, `emailConfirmedAt`, `phoneConfirmedAt`, `lastSignInAt`, `updatedAt` | `String?` | `DateTime?` |
+| `UserIdentity` | `createdAt`, `lastSignInAt`, `updatedAt` | `String?` | `DateTime?` |
+| `OAuthClient` | `createdAt`, `updatedAt` | `String` | `DateTime` |
+| `Bucket` | `createdAt`, `updatedAt` | `String` | `DateTime` |
+| `FileObject` | `createdAt`, `updatedAt` | `String?` | `DateTime?` |
+| `FileObjectV2` | `createdAt` | `String` | `DateTime` |
+| `FileObjectV2` | `updatedAt`, `lastModified` | `String?` | `DateTime?` |
+| `PaginatedFile` | `createdAt`, `updatedAt` | `String?` | `DateTime?` |
+
+```dart
+// Before
+final expiresAt = supabase.auth.currentSession?.expiresAt;
+final expiry = expiresAt == null
+    ? null
+    : DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000);
+final createdAt = DateTime.parse(user.createdAt);
+
+// After
+final expiry = supabase.auth.currentSession?.expiresAt;
+final createdAt = user.createdAt;
+```
+
+If you need the previous representation, ask for it explicitly:
+
+```dart
+final isoString = user.createdAt.toIso8601String();
+final unixSeconds = session.expiresAt!.millisecondsSinceEpoch ~/ 1000;
+```
+
+The wire format is unchanged. Of the types above only `Session`, `User` and `UserIdentity` have a
+`toJson()`, and those still write ISO 8601 strings for the `User` and `UserIdentity` timestamps and
+Unix seconds for `Session.expires_at`, so sessions persisted by v2 are still readable by v3. The
+storage types have no `toJson()`, in v2 or v3.
+
+Three behavioural details are worth checking:
+
+- The `DateTime` values are in UTC. `DateTime` equality takes the time zone flag into account, so
+  compare against `DateTime.utc(...)` rather than `DateTime(...)`, or call `toLocal()` first.
+- A timestamp the server is documented to always send is now parsed strictly. `User.createdAt`
+  used to fall back to an empty string when the field was missing and now throws a
+  `FormatException`, which surfaces a malformed payload instead of passing an unusable value on.
+- A timestamp naming a date that does not exist is rejected rather than rolled forward.
+  `DateTime.parse` reads `2019-02-29` as 1 March 2019; parsing now throws a `FormatException`
+  instead.
+
+### `OAuthAuthorizationDetailsResponse.user` is an `OAuthAuthorizingUser`
+
+The OAuth 2.1 server returns only an id and an email for the user a pending authorization request
+belongs to, so `OAuthAuthorizationDetailsResponse.user` was a `User` with every other field
+defaulted. It is now an `OAuthAuthorizingUser`, which carries exactly the two fields the server
+sends, matching what the other Supabase client libraries expose.
+
+```dart
+// Before
+final User user = details.user;
+
+// After
+final OAuthAuthorizingUser user = details.user;
+```
+
+`id` and `email` keep their names, so code that only reads those needs no change.
+
 ### `order()` now sorts ascending by default
 
 `PostgrestTransformBuilder.order()` and `SupabaseStreamBuilder.order()` defaulted `ascending` to
@@ -326,6 +398,26 @@ unaffected. For `functions.invoke`, two things changed:
   (3 to 5). This one is not a compile error, so replace any persisted `index` with `name`.
 
 The enum also exposes `value`, the uppercase wire form, in place of `method.name.toUpperCase()`.
+
+### Auth requires a GoTrue server on API version `2024-01-01` or newer
+
+The auth client used to read the `x-supabase-api-version` response header and decide how to parse
+errors from it: the `code` field on servers reporting `2024-01-01` or newer, and the older
+`error_code` field on anything else. It also reconstructed `AuthWeakPasswordException` by inspecting
+a bare `weak_password` body, for servers so old they sent no error code at all.
+
+Both fallbacks are gone. Error codes are now always read from `code`, and `AuthWeakPasswordException`
+is only thrown when the server names it. The client still sends
+`x-supabase-api-version: 2024-01-01` on every request, but no longer looks at what comes back.
+
+Hosted Supabase projects have been past this version for a long time, so this only affects
+self-hosted setups pinned to a GoTrue older than `2024-01-01`. Against one of those, an auth failure
+still throws `AuthApiException` with the right message and status code, but `code` is `null` and a
+weak password surfaces as a plain `AuthApiException` rather than `AuthWeakPasswordException`. Upgrade
+the server to restore both.
+
+The `ApiVersions` class, and its `ApiVersions.v20240101` field, are removed along with it. Nothing
+replaces them; they only existed to drive the comparison above.
 
 ### The session is persisted with `SharedPreferencesAsync`
 

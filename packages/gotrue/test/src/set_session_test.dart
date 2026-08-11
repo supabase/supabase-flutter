@@ -204,7 +204,10 @@ void main() {
       );
 
       // expiresAt is re-derived from the JWT's own exp, not from expiresIn.
-      expect(response.session?.expiresAt, equals(exp));
+      expect(
+        response.session?.expiresAt,
+        equals(DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true)),
+      );
     });
 
     test(
