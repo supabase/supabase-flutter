@@ -358,7 +358,9 @@ drop preferences your own code wrote through the legacy API. So if your code sti
 as well. The snippet below is the way out if you cannot do that yet.
 
 If you would rather keep the session in the legacy store for now, pass a `LocalStorage` that reads
-and writes it:
+and writes it. Supplying your own storage is also where the session key comes in: `initialize()`
+derives it from your project URL for the default storage, so you only name the key when you
+construct a `LocalStorage` yourself, and `defaultPersistSessionKey` hands you the same one.
 
 ```dart
 class LegacySharedPreferencesLocalStorage extends LocalStorage {
@@ -395,9 +397,55 @@ await Supabase.initialize(
   publishableKey: publishableKey,
   authOptions: FlutterAuthClientOptions(
     localStorage: LegacySharedPreferencesLocalStorage(
-      persistSessionKey:
-          'sb-${Uri.parse(url).host.split('.').first}-auth-token',
+      persistSessionKey: defaultPersistSessionKey(url),
     ),
   ),
 );
 ```
+
+### `supabasePersistSessionKey` is gone
+
+The constant existed for the v1 to v2 migration from Hive, which v3 no longer carries, and the SDK
+itself never read it. The session is stored under the key you pass to `LocalStorage`, which for the
+default storage is `sb-<project-ref>-auth-token`.
+
+The `LocalStorage` examples in the README used the constant as their storage key, so if you copied
+one of those, take the key as a parameter instead:
+
+```dart
+// Before
+class MySecureStorage extends LocalStorage {
+  @override
+  Future<String?> accessToken() => storage.read(key: supabasePersistSessionKey);
+  // ...
+}
+
+// After
+class MySecureStorage extends LocalStorage {
+  MySecureStorage({required this.persistSessionKey});
+
+  final String persistSessionKey;
+
+  @override
+  Future<String?> accessToken() => storage.read(key: persistSessionKey);
+  // ...
+}
+
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  authOptions: FlutterAuthClientOptions(
+    localStorage: MySecureStorage(
+      persistSessionKey: defaultPersistSessionKey(url),
+    ),
+  ),
+);
+```
+
+Passing the key you already store under keeps your users signed in; switching to a different key
+signs them out once. To keep the old value, pass `'SUPABASE_PERSIST_SESSION_KEY'`, which is what the
+constant held.
+
+The `MigrationLocalStorage` and `HiveLocalStorage` snippets that migrated a v1 session out of
+[hive](https://pub.dev/packages/hive) are gone from the README along with it. If you are still on
+v1, upgrade to v2 first and let it migrate the session, then move to v3.

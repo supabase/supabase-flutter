@@ -2,6 +2,8 @@
 library;
 
 export 'package:supabase/supabase.dart';
+export 'package:supabase_common/supabase_common.dart'
+    show defaultPersistSessionKey;
 export 'package:url_launcher/url_launcher.dart' show LaunchMode;
 
 export 'src/flutter_go_true_client_options.dart';
