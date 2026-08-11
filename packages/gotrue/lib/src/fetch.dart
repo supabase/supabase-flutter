@@ -139,10 +139,10 @@ class GotrueFetch {
     // version or `redirect_to` directly would leak into every later request.
     final headers = {...?options?.headers};
 
-    // Set the API version header if not already set
-    if (!headers.containsKey(Constants.apiVersionHeaderName)) {
-      headers[Constants.apiVersionHeaderName] = Constants.apiVersion;
-    }
+    // Pin the API version rather than letting a caller override it. This client
+    // only understands the error shape of [Constants.apiVersion], so asking the
+    // server for an older one would produce responses it cannot parse.
+    headers[Constants.apiVersionHeaderName] = Constants.apiVersion;
 
     if (options?.jwt != null) {
       headers['Authorization'] = 'Bearer ${options!.jwt}';

@@ -1,11 +1,29 @@
+import 'dart:convert';
+
 import 'package:gotrue/gotrue.dart';
 import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/fetch.dart';
+import 'package:gotrue/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 import 'custom_http_client.dart';
+
+/// Records the headers of the last request so they can be asserted on.
+class RequestCapturingHttpClient extends BaseClient {
+  Map<String, String>? lastHeaders;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    lastHeaders = request.headers;
+    return StreamedResponse(
+      Stream.value(utf8.encode('{}')),
+      200,
+      request: request,
+    );
+  }
+}
 
 const String _mockUrl = 'http://localhost';
 void main() {
@@ -64,6 +82,36 @@ void main() {
         statusCode: 400,
       );
       await _testFetchRequest(client);
+    });
+  });
+
+  group('GotrueFetch API version header', () {
+    test('sends the supported API version', () async {
+      final client = RequestCapturingHttpClient();
+
+      await GotrueFetch(client).request(_mockUrl, HttpMethod.get);
+
+      expect(
+        client.lastHeaders?[Constants.apiVersionHeaderName],
+        Constants.apiVersion,
+      );
+    });
+
+    test('overrides a caller supplied API version', () async {
+      final client = RequestCapturingHttpClient();
+
+      await GotrueFetch(client).request(
+        _mockUrl,
+        HttpMethod.get,
+        options: GotrueRequestOptions(
+          headers: {Constants.apiVersionHeaderName: '2023-01-01'},
+        ),
+      );
+
+      expect(
+        client.lastHeaders?[Constants.apiVersionHeaderName],
+        Constants.apiVersion,
+      );
     });
   });
 
@@ -229,9 +277,10 @@ Future<void> _testFetchRequest(Client client) async {
   await expectLater(
     fetch.request(_mockUrl, HttpMethod.get),
     throwsA(
-      isA<AuthException>()
+      isA<AuthWeakPasswordException>()
           .having((e) => e.code, 'code', 'weak_password')
-          .having((e) => e.message, 'message', 'error_message'),
+          .having((e) => e.message, 'message', 'error_message')
+          .having((e) => e.reasons, 'reasons', ['characters']),
     ),
   );
 }
