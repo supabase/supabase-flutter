@@ -2,6 +2,8 @@
 // prefixed with `custom:`). Distinct from the OAuth 2.1 server client types
 // in types.dart.
 
+import 'package:supabase_common/supabase_common.dart';
+
 /// Type of a custom OAuth/OIDC provider managed through the admin API.
 enum CustomProviderType {
   oauth2,
@@ -208,8 +210,8 @@ class CustomOAuthProvider {
           : OIDCDiscoveryDocument.fromJson(
               discoveryDocument as Map<String, dynamic>,
             ),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseIso8601(json, 'created_at'),
+      updatedAt: parseIso8601(json, 'updated_at'),
     );
   }
 }

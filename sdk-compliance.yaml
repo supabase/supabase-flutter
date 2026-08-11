@@ -415,6 +415,11 @@ features:
       - OAuthAuthorizedClient.clientId
       - OAuthAuthorizedClient.clientName
       - OAuthAuthorizedClient.fromJson
+      - OAuthAuthorizingUser
+      - OAuthAuthorizingUser.OAuthAuthorizingUser
+      - OAuthAuthorizingUser.email
+      - OAuthAuthorizingUser.fromJson
+      - OAuthAuthorizingUser.id
   auth.oauth_server.approve_authorization:
     status: implemented
     symbols:

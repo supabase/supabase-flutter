@@ -245,7 +245,10 @@ void main() {
       expect(data?.user.id, isA<String>());
 
       final payload = decodeJwt(data!.accessToken).payload;
-      expect(payload.exp, data.expiresAt);
+      expect(
+        data.expiresAt,
+        DateTime.fromMillisecondsSinceEpoch(payload.exp! * 1000, isUtc: true),
+      );
     });
 
     test('Get user', () async {
@@ -269,7 +272,10 @@ void main() {
       expect(data?.user.id, isA<String>());
 
       final payload = decodeJwt(data!.accessToken).payload;
-      expect(payload.exp, data.expiresAt);
+      expect(
+        data.expiresAt,
+        DateTime.fromMillisecondsSinceEpoch(payload.exp! * 1000, isUtc: true),
+      );
     });
 
     test('Set session', () async {

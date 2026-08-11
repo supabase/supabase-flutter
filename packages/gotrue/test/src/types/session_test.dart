@@ -10,12 +10,12 @@ void main() {
     late User mockUser;
 
     setUp(() {
-      mockUser = const User(
+      mockUser = User(
         id: '123',
         appMetadata: {},
         userMetadata: <String, dynamic>{},
         aud: 'authenticated',
-        createdAt: '2023-01-01T00:00:00Z',
+        createdAt: DateTime.utc(2023, 1, 1),
       );
     });
 
@@ -144,7 +144,22 @@ void main() {
         expect(json['expires_at'], isNotNull);
       });
 
-      test('includes computed expiresAt field', () {
+      test('serializes expiresAt as Unix seconds', () {
+        final expiresAtSeconds = 1700000000;
+        final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
+        final payload = base64Encode(
+          utf8.encode('{"exp":$expiresAtSeconds}'),
+        );
+        final session = Session(
+          accessToken: '$header.$payload.signature',
+          tokenType: 'bearer',
+          user: mockUser,
+        );
+
+        expect(session.toJson()['expires_at'], equals(expiresAtSeconds));
+      });
+
+      test('serializes expires_at as null when the JWT has no expiry', () {
         final session = Session(
           accessToken: 'test-access-token',
           tokenType: 'bearer',
@@ -154,7 +169,7 @@ void main() {
         final json = session.toJson();
 
         expect(json, contains('expires_at'));
-        expect(json['expires_at'], equals(session.expiresAt));
+        expect(json['expires_at'], isNull);
       });
     });
 
@@ -169,7 +184,7 @@ void main() {
         expect(session.expiresAt, isNull);
       });
 
-      test('returns exp claim from valid JWT', () {
+      test('returns the exp claim of the JWT as a UTC DateTime', () {
         final now = DateTime.now();
         final exp = (now.millisecondsSinceEpoch / 1000).floor() + 3600;
         final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
@@ -182,7 +197,11 @@ void main() {
           user: mockUser,
         );
 
-        expect(session.expiresAt, equals(exp));
+        expect(
+          session.expiresAt,
+          equals(DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true)),
+        );
+        expect(session.expiresAt!.isUtc, isTrue);
       });
 
       test('handles malformed JWT gracefully', () {
@@ -294,12 +313,12 @@ void main() {
           user: mockUser,
         );
 
-        final newUser = const User(
+        final newUser = User(
           id: '456',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
-          createdAt: '2023-01-02T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 2),
         );
 
         final copy = original.copyWith(user: newUser);
@@ -319,12 +338,12 @@ void main() {
           user: mockUser,
         );
 
-        final newUser = const User(
+        final newUser = User(
           id: '456',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
           aud: 'authenticated',
-          createdAt: '2023-01-02T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 2),
         );
 
         final copy = original.copyWith(
@@ -441,20 +460,20 @@ void main() {
       });
 
       test('returns false for sessions with different users', () {
-        final user1 = const User(
+        final user1 = User(
           id: '123',
           appMetadata: {},
           userMetadata: {},
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
         );
 
-        final user2 = const User(
+        final user2 = User(
           id: '456',
           appMetadata: {},
           userMetadata: {},
           aud: 'authenticated',
-          createdAt: '2023-01-01T00:00:00Z',
+          createdAt: DateTime.utc(2023, 1, 1),
         );
 
         final session1 = Session(
