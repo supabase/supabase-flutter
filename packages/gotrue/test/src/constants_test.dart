@@ -39,20 +39,9 @@ void main() {
     test('has correct API version header name', () {
       expect(Constants.apiVersionHeaderName, equals('x-supabase-api-version'));
     });
-  });
 
-  group('ApiVersions', () {
-    test('v20240101 has correct name', () {
-      expect(ApiVersions.v20240101.name, equals('2024-01-01'));
-    });
-
-    test('v20240101 has correct timestamp', () {
-      final expectedTimestamp = DateTime.parse('2024-01-01T00:00:00.0Z');
-      expect(ApiVersions.v20240101.timestamp, equals(expectedTimestamp));
-    });
-
-    test('v20240101 timestamp is in the past', () {
-      expect(ApiVersions.v20240101.timestamp.isBefore(DateTime.now()), isTrue);
+    test('has correct API version', () {
+      expect(Constants.apiVersion, equals('2024-01-01'));
     });
   });
 

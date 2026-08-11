@@ -2081,8 +2081,6 @@ supporting_symbols:
   - AdminUserAttributes.phoneConfirm
   - AdminUserAttributes.toJson
   - AdminUserAttributes.userMetadata
-  - ApiVersions
-  - ApiVersions.v20240101
   - AuthApiException
   - AuthApiException.AuthApiException
   - AuthApiException.toString

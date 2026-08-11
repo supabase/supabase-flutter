@@ -326,3 +326,23 @@ unaffected. For `functions.invoke`, two things changed:
   (3 to 5). This one is not a compile error, so replace any persisted `index` with `name`.
 
 The enum also exposes `value`, the uppercase wire form, in place of `method.name.toUpperCase()`.
+
+### Auth requires a GoTrue server on API version `2024-01-01` or newer
+
+The auth client used to read the `x-supabase-api-version` response header and decide how to parse
+errors from it: the `code` field on servers reporting `2024-01-01` or newer, and the older
+`error_code` field on anything else. It also reconstructed `AuthWeakPasswordException` by inspecting
+a bare `weak_password` body, for servers so old they sent no error code at all.
+
+Both fallbacks are gone. Error codes are now always read from `code`, and `AuthWeakPasswordException`
+is only thrown when the server names it. The client still sends
+`x-supabase-api-version: 2024-01-01` on every request, but no longer looks at what comes back.
+
+Hosted Supabase projects have been past this version for a long time, so this only affects
+self-hosted setups pinned to a GoTrue older than `2024-01-01`. Against one of those, an auth failure
+still throws `AuthApiException` with the right message and status code, but `code` is `null` and a
+weak password surfaces as a plain `AuthApiException` rather than `AuthWeakPasswordException`. Upgrade
+the server to restore both.
+
+The `ApiVersions` class, and its `ApiVersions.v20240101` field, are removed along with it. Nothing
+replaces them; they only existed to drive the comparison above.
