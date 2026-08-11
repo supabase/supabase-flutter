@@ -9,7 +9,6 @@ import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/logger.dart';
-import 'package:supabase_realtime/src/message.dart';
 import 'package:supabase_realtime/src/retry_timer.dart';
 import 'package:supabase_realtime/src/serializer.dart';
 import 'package:supabase_realtime/src/websocket/websocket.dart';
@@ -23,11 +22,19 @@ typedef WebSocketTransport =
 
 /// Serializes an outgoing message into the `String` or binary frame written to
 /// the WebSocket.
-typedef RealtimeEncode = Object Function(Map<String, dynamic> payload);
+///
+/// The serialization can run on a background isolate: frames are written to
+/// the socket in the order the messages were pushed, even when a later encode
+/// completes first.
+typedef RealtimeEncode = Future<Object> Function(RealtimeMessage message);
 
 /// Deserializes a raw incoming WebSocket frame (`String` or binary) into a
-/// message map.
-typedef RealtimeDecode = Map<String, dynamic> Function(Object payload);
+/// message.
+///
+/// The deserialization can run on a background isolate: messages are
+/// dispatched to the channels in the order the frames were received, even when
+/// a later decode completes first.
+typedef RealtimeDecode = Future<RealtimeMessage> Function(Object frame);
 
 /// Event details for when the connection closed.
 class RealtimeCloseEvent {
@@ -169,8 +176,21 @@ class RealtimeClient {
   @internal
   late RetryTimer reconnectTimer;
   static final Serializer _serializer = Serializer();
-  final RealtimeEncode encode;
-  final RealtimeDecode decode;
+
+  /// Serializes outgoing messages, or `null` to use the built-in codec for
+  /// [version].
+  final RealtimeEncode? encode;
+
+  /// Deserializes incoming frames, or `null` to use the built-in codec for
+  /// [version].
+  final RealtimeDecode? decode;
+
+  /// Codec used while [encode] and [decode] are `null`.
+  ///
+  /// It is synchronous, so a client that does not override the codec writes
+  /// and dispatches without a microtask hop.
+  final Object Function(RealtimeMessage) _builtInEncode;
+  final RealtimeMessage Function(Object) _builtInDecode;
   late TimerCalculation reconnectAfter;
   WebSocketChannel? connection;
   StreamSubscription<dynamic>? _connectionSubscription;
@@ -179,10 +199,22 @@ class RealtimeClient {
 
   final _statusController =
       StreamController<RealtimeConnectionStatusChange>.broadcast();
-  final _messageController = StreamController<Map<String, dynamic>>.broadcast();
+  final _messageController = StreamController<RealtimeMessage>.broadcast();
 
   final _heartbeatController =
       StreamController<RealtimeHeartbeatStatus>.broadcast();
+
+  /// The most recent write that is waiting on an asynchronous [encode], or
+  /// `null` when every pushed message has reached the socket.
+  ///
+  /// Encoding starts as soon as the message is pushed, only the write to the
+  /// sink is chained, so that a slow encode does not hold back the ones after
+  /// it any longer than the ordering requires.
+  Future<void>? _pendingWrite;
+
+  /// The most recent dispatch that is waiting on an asynchronous [decode], or
+  /// `null` when every received frame has been dispatched.
+  Future<void>? _pendingDispatch;
 
   /// The current state of the socket, or `null` before the first [connect].
   SocketState? connectionState;
@@ -213,7 +245,7 @@ class RealtimeClient {
   /// the heartbeat interval.
   ///
   /// [encode] Overrides how outgoing messages are serialized, for example to
-  /// use a faster JSON implementation. Defaults to the codec for [version].
+  /// serialize on a background isolate. Defaults to the codec for [version].
   ///
   /// [decode] Overrides how incoming frames are deserialized. Defaults to the
   /// codec for [version].
@@ -235,8 +267,8 @@ class RealtimeClient {
         RealtimeConstants.defaultConnectionCloseTimeout,
     this.heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval,
     Duration? disconnectOnEmptyChannelsAfter,
-    RealtimeEncode? encode,
-    RealtimeDecode? decode,
+    this.encode,
+    this.decode,
     TimerCalculation? reconnectAfter,
     Map<String, String>? headers,
     this.parameters = const {},
@@ -256,16 +288,12 @@ class RealtimeClient {
          ...?headers,
        },
        transport = transport ?? createWebSocketClient,
-       encode =
-           encode ??
-           (version == RealtimeProtocolVersion.v1
-               ? _encodeLegacy
-               : _serializer.encode),
-       decode =
-           decode ??
-           (version == RealtimeProtocolVersion.v1
-               ? _decodeLegacy
-               : _serializer.decode) {
+       _builtInEncode = version == RealtimeProtocolVersion.v1
+           ? _encodeLegacy
+           : _serializer.encode,
+       _builtInDecode = version == RealtimeProtocolVersion.v1
+           ? _decodeLegacy
+           : _serializer.decode {
     realtimeLogger.config(
       'Initialize RealtimeClient with endpoint: '
       '${Uri.parse(this.endpoint).redacted}, timeout: $timeout, '
@@ -453,7 +481,7 @@ class RealtimeClient {
       _statusController.stream;
 
   /// Emits every decoded message received over the WebSocket.
-  Stream<Map<String, dynamic>> get onMessage => _messageController.stream;
+  Stream<RealtimeMessage> get onMessage => _messageController.stream;
 
   /// Emits a status whenever a heartbeat is sent, acknowledged, errors, or
   /// times out.
@@ -534,36 +562,151 @@ class RealtimeClient {
   /// If the socket is not connected, the message gets enqueued within a local
   /// buffer, and sent out when a connection is next established.
   @internal
-  void push(Message message) {
-    void callback() {
-      connection?.sink.add(encode(message.toJson()));
-    }
-
+  void push(RealtimeMessage message) {
     realtimeLogger.finest(
-      'Push ${message.topic} ${message.event.name} (${message.ref}): '
+      'Push ${message.topic} ${message.event} (${message.ref}): '
       '${redactedPayload(message.payload)}',
     );
 
     if (isConnected) {
-      callback();
+      _write(message);
     } else {
-      sendBuffer.add(callback);
+      sendBuffer.add(() => _write(message));
     }
   }
 
-  void onConnectionMessage(Object rawMessage) {
-    final Map<String, dynamic> message;
+  /// Encodes [message] and writes it to the socket.
+  ///
+  /// The built-in codec writes straight to the sink. A custom [encode] is
+  /// awaited first, and its write is chained onto [_pendingWrite] so that a
+  /// fast encode never overtakes a slow one that was pushed before it.
+  void _write(RealtimeMessage message) {
+    final encode = this.encode;
+    if (encode == null) {
+      connection?.sink.add(_builtInEncode(message));
+      return;
+    }
+
+    final Future<Object> encoded;
     try {
-      message = decode(rawMessage);
+      encoded = encode(message);
+    } catch (error) {
+      realtimeLogger.warning('Failed to encode message', error);
+      return;
+    }
+
+    final write = _writeWhenReady(_pendingWrite, encoded);
+    _pendingWrite = write;
+    unawaited(
+      write.whenComplete(() {
+        if (identical(_pendingWrite, write)) {
+          _pendingWrite = null;
+        }
+      }),
+    );
+  }
+
+  /// Awaits [encoded] and every write pushed before it, then writes the frame.
+  ///
+  /// Never completes with an error, so that a failed encode does not stall the
+  /// writes chained after it.
+  Future<void> _writeWhenReady(
+    Future<void>? previousWrite,
+    Future<Object> encoded,
+  ) async {
+    Object? frame;
+    try {
+      frame = await encoded;
+    } catch (error) {
+      realtimeLogger.warning('Failed to encode message', error);
+    }
+
+    // Awaited even when the encode failed, otherwise the next write would
+    // chain onto this one alone and could overtake `previousWrite`.
+    await previousWrite;
+    if (frame == null) {
+      return;
+    }
+
+    try {
+      connection?.sink.add(frame);
+    } catch (error) {
+      realtimeLogger.warning('Failed to write message', error);
+    }
+  }
+
+  /// Decodes [rawMessage] and dispatches it to the channels it belongs to.
+  ///
+  /// The built-in codec dispatches straight away. A custom [decode] is awaited
+  /// first, and its dispatch is chained onto [_pendingDispatch] so that a fast
+  /// decode never overtakes a slow one that was received before it.
+  void onConnectionMessage(Object rawMessage) {
+    final decode = this.decode;
+    if (decode == null) {
+      final RealtimeMessage message;
+      try {
+        message = _builtInDecode(rawMessage);
+      } catch (error) {
+        realtimeLogger.warning('Failed to decode message', error);
+        return;
+      }
+      _dispatch(message);
+      return;
+    }
+
+    final Future<RealtimeMessage> decoded;
+    try {
+      decoded = decode(rawMessage);
     } catch (error) {
       realtimeLogger.warning('Failed to decode message', error);
       return;
     }
 
-    final topic = message['topic'] as String;
-    final event = message['event'] as String;
-    final payload = message['payload'];
-    final messageRef = message['ref'] as String?;
+    final dispatch = _dispatchWhenReady(_pendingDispatch, decoded);
+    _pendingDispatch = dispatch;
+    unawaited(
+      dispatch.whenComplete(() {
+        if (identical(_pendingDispatch, dispatch)) {
+          _pendingDispatch = null;
+        }
+      }),
+    );
+  }
+
+  /// Awaits [decoded] and every message received before it, then dispatches it.
+  ///
+  /// Never completes with an error, so that a failed decode does not stall the
+  /// messages chained after it.
+  Future<void> _dispatchWhenReady(
+    Future<void>? previousDispatch,
+    Future<RealtimeMessage> decoded,
+  ) async {
+    RealtimeMessage? message;
+    try {
+      message = await decoded;
+    } catch (error) {
+      realtimeLogger.warning('Failed to decode message', error);
+    }
+
+    // Awaited even when the decode failed, otherwise the next message would
+    // chain onto this one alone and could overtake `previousDispatch`.
+    await previousDispatch;
+    if (message == null) {
+      return;
+    }
+
+    try {
+      _dispatch(message);
+    } catch (error) {
+      realtimeLogger.warning('Failed to dispatch message', error);
+    }
+  }
+
+  void _dispatch(RealtimeMessage message) {
+    final topic = message.topic;
+    final event = message.event;
+    final payload = message.payload;
+    final messageRef = message.ref;
     if (messageRef != null && messageRef == pendingHeartbeatRef) {
       pendingHeartbeatRef = null;
       final heartbeatStatus = payload is Map ? payload['status'] : null;
@@ -593,11 +736,14 @@ class RealtimeClient {
     _messageController.add(message);
   }
 
-  static Object _encodeLegacy(Map<String, dynamic> message) =>
-      jsonEncode(message);
+  static Object _encodeLegacy(RealtimeMessage message) =>
+      jsonEncode(message.toJson(RealtimeProtocolVersion.v1));
 
-  static Map<String, dynamic> _decodeLegacy(Object rawMessage) =>
-      Map.from(jsonDecode(rawMessage as String) as Map);
+  static RealtimeMessage _decodeLegacy(Object frame) =>
+      RealtimeMessage.fromJson(
+        jsonDecode(frame as String),
+        RealtimeProtocolVersion.v1,
+      );
 
   /// Returns the URL of the websocket.
   String get endpointUrl {
@@ -806,7 +952,7 @@ class RealtimeClient {
     }
     pendingHeartbeatRef = makeRef();
     push(
-      Message(
+      RealtimeMessage.outgoing(
         topic: 'phoenix',
         event: ChannelEvent.heartbeat,
         payload: {},

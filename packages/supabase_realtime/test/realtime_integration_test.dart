@@ -2,6 +2,8 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:postgres/postgres.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
@@ -324,6 +326,91 @@ void main() {
       });
     });
   }
+
+  group('asynchronous codec', () {
+    late RealtimeClient client;
+
+    setUp(() {
+      client = RealtimeClient(
+        localStackRealtimeUrl,
+        parameters: {'apikey': generateRealtimeToken()},
+        heartbeatInterval: const Duration(seconds: 5),
+        encode: _encodeOnBackgroundIsolate,
+        decode: _decodeOnBackgroundIsolate,
+      );
+    });
+
+    tearDown(() async {
+      await client.removeAllChannels();
+      await client.disconnect();
+    });
+
+    test('round trips broadcasts in order', () async {
+      final channel = client.channel(
+        'async-codec',
+        const RealtimeChannelConfig(self: true),
+      );
+
+      final received = <int>[];
+      final allReceived = Completer<void>();
+      channel.onBroadcast(event: 'tick').listen((payload) {
+        received.add(payload['payload']['index'] as int);
+        if (received.length == _asyncCodecMessageCount &&
+            !allReceived.isCompleted) {
+          allReceived.complete();
+        }
+      });
+      await _subscribe(channel);
+
+      for (var index = 0; index < _asyncCodecMessageCount; index++) {
+        await channel.sendBroadcastMessage(
+          event: 'tick',
+          payload: {
+            'payload': {'index': index},
+          },
+        );
+      }
+
+      await allReceived.future.timeout(const Duration(seconds: 20));
+      expect(
+        received,
+        List.generate(_asyncCodecMessageCount, (index) => index),
+      );
+    });
+  });
+}
+
+/// Number of broadcasts the asynchronous codec test sends.
+const _asyncCodecMessageCount = 10;
+
+/// Encodes a protocol `2.0.0` text frame on a background isolate.
+Future<Object> _encodeOnBackgroundIsolate(RealtimeMessage message) async {
+  final json = message.toJson();
+  await _delayInReverseOrder(message.payload);
+  return Isolate.run(() => jsonEncode(json));
+}
+
+/// Decodes a protocol `2.0.0` text frame on a background isolate.
+Future<RealtimeMessage> _decodeOnBackgroundIsolate(Object frame) async {
+  final json = await Isolate.run(() => jsonDecode(frame as String));
+  final message = RealtimeMessage.fromJson(json);
+  await _delayInReverseOrder(message.payload);
+  return message;
+}
+
+/// Holds back a broadcast for longer the earlier its index is.
+///
+/// The codec calls then complete in the opposite order of the messages, so the
+/// client has to restore the push order before writing to the socket and the
+/// receive order before dispatching to the channel.
+Future<void> _delayInReverseOrder(Object? payload) async {
+  final index = payload is Map ? (payload['payload']?['index'] as int?) : null;
+  if (index == null) {
+    return;
+  }
+  await Future<void>.delayed(
+    Duration(milliseconds: 20 * (_asyncCodecMessageCount - index)),
+  );
 }
 
 /// Subscribes to [channel] and resolves with the terminal subscribe status.

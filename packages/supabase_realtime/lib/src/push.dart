@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
-import 'package:supabase_realtime/src/message.dart';
 import 'package:supabase_realtime/src/types.dart';
 import 'package:meta/meta.dart';
 
@@ -62,7 +61,7 @@ class Push {
     startTimeout();
     sent = true;
     _channel.socket.push(
-      Message(
+      RealtimeMessage.outgoing(
         topic: _channel.topic,
         event: _event,
         payload: payload,

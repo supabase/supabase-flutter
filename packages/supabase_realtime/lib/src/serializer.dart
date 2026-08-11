@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:meta/meta.dart';
+import 'package:supabase_realtime/src/realtime_message.dart';
 
 /// Encodes and decodes Realtime protocol `2.0.0` frames.
 ///
@@ -40,44 +42,24 @@ class Serializer {
   const Serializer({List<String>? allowedMetadataKeys})
     : allowedMetadataKeys = allowedMetadataKeys ?? const [];
 
-  /// Encodes a message map into the string or binary representation that is
+  /// Encodes a message into the string or binary representation that is
   /// written to the WebSocket.
-  ///
-  /// [message] is expected to hold `join_ref`, `ref`, `topic`, `event` and
-  /// `payload` keys, matching the output of `Message.toJson()`.
-  Object encode(Map<String, dynamic> message) {
-    final payload = message['payload'];
-    if (message['event'] == broadcastEvent &&
+  Object encode(RealtimeMessage message) {
+    final payload = message.payload;
+    if (message.event == broadcastEvent &&
         payload is Map &&
         payload['event'] is String &&
         _isBinary(payload['payload'])) {
       return _encodeBinaryUserBroadcastPush(message, payload);
     }
 
-    return jsonEncode([
-      message['join_ref'],
-      message['ref'],
-      message['topic'],
-      message['event'],
-      payload,
-    ]);
+    return jsonEncode(message.toJson());
   }
 
-  /// Decodes a raw WebSocket frame into a message map with `join_ref`, `ref`,
-  /// `topic`, `event` and `payload` keys.
-  Map<String, dynamic> decode(Object rawPayload) {
+  /// Decodes a raw WebSocket frame into a message.
+  RealtimeMessage decode(Object rawPayload) {
     if (rawPayload is String) {
-      final decoded = jsonDecode(rawPayload);
-      if (decoded is! List || decoded.length < 5) {
-        throw FormatException('Invalid 2.0.0 text frame', rawPayload);
-      }
-      return {
-        'join_ref': decoded[0],
-        'ref': decoded[1],
-        'topic': decoded[2],
-        'event': decoded[3],
-        'payload': decoded[4],
-      };
+      return RealtimeMessage.fromJson(jsonDecode(rawPayload));
     }
 
     final bytes = _asBytes(rawPayload);
@@ -85,11 +67,11 @@ class Serializer {
       return _binaryDecode(bytes);
     }
 
-    return {};
+    throw FormatException('Unsupported 2.0.0 frame', rawPayload);
   }
 
   Uint8List _encodeBinaryUserBroadcastPush(
-    Map<String, dynamic> message,
+    RealtimeMessage message,
     Map<dynamic, dynamic> payload,
   ) {
     final encodedPayload = _asBytes(payload['payload'])!;
@@ -103,9 +85,9 @@ class Serializer {
     // and the decode side uses utf8.decode, so measuring with String.length
     // (UTF-16 code units) and writing one byte per unit would corrupt any
     // multi-byte character (e.g. accents or emoji) and desynchronize the frame.
-    final topic = utf8.encode((message['topic'] ?? '') as String);
-    final ref = utf8.encode((message['ref'] ?? '') as String);
-    final joinRef = utf8.encode((message['join_ref'] ?? '') as String);
+    final topic = utf8.encode(message.topic);
+    final ref = utf8.encode(message.ref ?? '');
+    final joinRef = utf8.encode(message.joinRef ?? '');
     final userEvent = utf8.encode(payload['event'] as String);
     final metadata = utf8.encode(metadataString);
 
@@ -142,16 +124,16 @@ class Serializer {
     return frame;
   }
 
-  Map<String, dynamic> _binaryDecode(Uint8List buffer) {
+  RealtimeMessage _binaryDecode(Uint8List buffer) {
     final view = ByteData.sublistView(buffer);
     final kind = view.getUint8(0);
     return switch (kind) {
       kindUserBroadcast => _decodeUserBroadcast(buffer, view),
-      _ => {},
+      _ => throw FormatException('Unknown 2.0.0 binary frame kind $kind'),
     };
   }
 
-  Map<String, dynamic> _decodeUserBroadcast(Uint8List buffer, ByteData view) {
+  RealtimeMessage _decodeUserBroadcast(Uint8List buffer, ByteData view) {
     final topicSize = view.getUint8(1);
     final userEventSize = view.getUint8(2);
     final metadataSize = view.getUint8(3);
@@ -187,13 +169,11 @@ class Serializer {
       data['meta'] = jsonDecode(metadata);
     }
 
-    return {
-      'join_ref': null,
-      'ref': null,
-      'topic': topic,
-      'event': broadcastEvent,
-      'payload': data,
-    };
+    return RealtimeMessage(
+      topic: topic,
+      event: broadcastEvent,
+      payload: data,
+    );
   }
 
   void _checkLength(String field, int length) {
