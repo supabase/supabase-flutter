@@ -10,7 +10,21 @@ import 'custom_http_client.dart';
 const String _mockUrl = 'http://localhost';
 void main() {
   group('GotrueFetch', () {
-    test('without API version and error code', () async {
+    test('reads the error code without an API version header', () async {
+      final client = MockedHttpClient(
+        {
+          'code': 'weak_password',
+          'message': 'error_message',
+          'weak_password': {
+            'reasons': ['characters'],
+          },
+        },
+        statusCode: 400,
+      );
+      await _testFetchRequest(client);
+    });
+
+    test('ignores the legacy error_code field', () async {
       final client = MockedHttpClient(
         {
           'code': 400,
@@ -19,42 +33,21 @@ void main() {
         },
         statusCode: 400,
       );
-      await _testFetchRequest(client);
+      await _expectUncodedApiException(client);
     });
 
-    test(
-      'without API version and weak password error code with payload',
-      () async {
-        final client = MockedHttpClient(
-          {
-            'code': 400,
-            'msg': 'error_message',
-            'error_code': 'weak_password',
-            'weak_password': {
-              'reasons': ['characters'],
-            },
+    test('ignores a weak_password payload without an error code', () async {
+      final client = MockedHttpClient(
+        {
+          'msg': 'error_message',
+          'weak_password': {
+            'reasons': ['characters'],
           },
-          statusCode: 400,
-        );
-        await _testFetchRequest(client);
-      },
-    );
-
-    test(
-      'without API version, no error code and weak_password payload',
-      () async {
-        final client = MockedHttpClient(
-          {
-            'msg': 'error_message',
-            'weak_password': {
-              'reasons': ['characters'],
-            },
-          },
-          statusCode: 400,
-        );
-        await _testFetchRequest(client);
-      },
-    );
+        },
+        statusCode: 400,
+      );
+      await _expectUncodedApiException(client);
+    });
 
     test('with API version 2024-01-01 and error code', () async {
       final client = MockedHttpClient(
@@ -216,6 +209,17 @@ Future<void> _expectRetryableFetch(
       isA<AuthRetryableFetchException>()
           .having((e) => e.message, 'message', message)
           .having((e) => e.statusCode, 'statusCode', statusCode),
+    ),
+  );
+}
+
+Future<void> _expectUncodedApiException(Client client) async {
+  await expectLater(
+    GotrueFetch(client).request(_mockUrl, HttpMethod.get),
+    throwsA(
+      isA<AuthApiException>()
+          .having((e) => e.code, 'code', isNull)
+          .having((e) => e.message, 'message', 'error_message'),
     ),
   );
 }

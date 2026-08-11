@@ -1,8 +1,6 @@
 import 'dart:convert';
 
-import 'package:collection/collection.dart';
 import 'package:gotrue/src/constants.dart';
-import 'package:gotrue/src/types/api_version.dart';
 import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/error_code.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
@@ -28,9 +26,9 @@ class GotrueFetch {
     return error.toString();
   }
 
-  String? _getErrorCode(dynamic error, String key) {
+  String? _getErrorCode(dynamic error) {
     if (error is Map) {
-      final dynamic errorCode = error[key];
+      final dynamic errorCode = error['code'];
       if (errorCode is String) {
         return errorCode;
       }
@@ -100,33 +98,9 @@ class GotrueFetch {
       );
     }
 
-    String? errorCode;
+    final errorCode = _getErrorCode(data);
 
-    final responseApiVersion = ApiVersion.fromResponse(response);
-
-    if (responseApiVersion?.isSameOrAfter(ApiVersions.v20240101) ?? false) {
-      errorCode = _getErrorCode(data, 'code');
-    } else {
-      errorCode = _getErrorCode(data, 'error_code');
-    }
-
-    if (errorCode == null) {
-      // Legacy support for weak password errors, when there were no error codes
-      // Check if weak password reasons only contain strings
-      if (data is Map &&
-          data['weak_password'] is Map &&
-          data['weak_password']['reasons'] is List &&
-          (data['weak_password']['reasons'] as List).isNotEmpty &&
-          (data['weak_password']['reasons'] as List)
-              .whereNot((element) => element is String)
-              .isEmpty) {
-        throw AuthWeakPasswordException(
-          message: _getErrorMessage(data),
-          statusCode: response.statusCode.toString(),
-          reasons: List<String>.from(data['weak_password']['reasons']),
-        );
-      }
-    } else if (errorCode == ErrorCode.weakPassword.code) {
+    if (errorCode == ErrorCode.weakPassword.code) {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
         statusCode: response.statusCode.toString(),
@@ -167,7 +141,7 @@ class GotrueFetch {
 
     // Set the API version header if not already set
     if (!headers.containsKey(Constants.apiVersionHeaderName)) {
-      headers[Constants.apiVersionHeaderName] = ApiVersions.v20240101.name;
+      headers[Constants.apiVersionHeaderName] = Constants.apiVersion;
     }
 
     if (options?.jwt != null) {

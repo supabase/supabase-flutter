@@ -71,7 +71,6 @@ class RefreshTokenTrackingHttpClient extends BaseClient {
           utf8.encode(
             jsonEncode({
               'code': 'refresh_token_already_used',
-              'error_code': 'refresh_token_already_used',
               'msg': 'Invalid Refresh Token: Already Used',
             }),
           ),
@@ -142,7 +141,6 @@ class InvalidRefreshTokenHttpClient extends BaseClient {
         utf8.encode(
           jsonEncode({
             'code': 'refresh_token_not_found',
-            'error_code': 'refresh_token_not_found',
             'msg': 'Invalid Refresh Token: Refresh Token Not Found',
           }),
         ),
