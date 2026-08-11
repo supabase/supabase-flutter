@@ -11,11 +11,14 @@ void main() {
     // SharedPreferencesLocalStorage Tests
     group('SharedPreferencesLocalStorage', () {
       const testSessionValue = '{"key": "value"}';
+      var testCount = 0;
 
       Future<SharedPreferencesLocalStorage> createFreshLocalStorage() async {
-        // Use a unique key for each test to ensure complete isolation
-        final uniqueKey =
-            'test_persist_key_${DateTime.now().microsecondsSinceEpoch}';
+        // A key per test, counted rather than timestamped: on web the storage
+        // goes to the window's own localStorage, which outlives the test, and
+        // `microsecondsSinceEpoch` is only millisecond-resolution there, so two
+        // tests in the same millisecond used to share a key.
+        final uniqueKey = 'test_persist_key_${testCount++}';
 
         // Set up fresh shared preferences for each test
         mockSharedPreferences();
@@ -24,6 +27,8 @@ void main() {
           persistSessionKey: uniqueKey,
         );
         await localStorage.initialize();
+        // The web store can hold a value from an earlier run under this key.
+        await localStorage.removePersistedSession();
         return localStorage;
       }
 

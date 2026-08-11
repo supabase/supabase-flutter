@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import './local_storage_stub.dart'
     if (dart.library.js_interop) './local_storage_web.dart'
     as web;
+
+final _log = Logger('supabase.supabase_flutter');
 
 /// LocalStorage is used to persist the user session in the device.
 ///
@@ -101,21 +104,39 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   /// again, and deleting it would mean a legacy write on every launch: that
   /// write rewrites the whole store even when the key is absent, which on those
   /// same platforms is what drops values the other API wrote.
+  ///
+  /// A failure to read the legacy store costs the user a sign-in, so it is
+  /// logged rather than thrown: throwing here would take `Supabase.initialize`
+  /// with it and leave the app unable to start over a session it may not even
+  /// have.
   Future<void> _migrateLegacySession() async {
-    if (await _preferences.containsKey(_legacyMigrationKey)) {
+    final stored = await _preferences.getAll(
+      allowList: {persistSessionKey, _legacyMigrationKey},
+    );
+    if (stored.containsKey(_legacyMigrationKey)) {
       return;
     }
-    final legacyPreferences = await SharedPreferences.getInstance();
-    // The instance is shared with the app, which may have loaded it before the
-    // session was last written.
-    await legacyPreferences.reload();
-    final legacySession = legacyPreferences.getString(persistSessionKey);
-    await legacyPreferences.remove(persistSessionKey);
-    if (legacySession != null &&
-        !await _preferences.containsKey(persistSessionKey)) {
-      await _preferences.setString(persistSessionKey, legacySession);
+    try {
+      final legacyPreferences = await SharedPreferences.getInstance();
+      final legacySession = legacyPreferences.getString(persistSessionKey);
+      // The new store is written first, so that an interruption before the
+      // legacy entry is gone leaves the session in one store or the other
+      // rather than in neither.
+      if (legacySession != null && !stored.containsKey(persistSessionKey)) {
+        await _preferences.setString(persistSessionKey, legacySession);
+      }
+      await _preferences.setBool(_legacyMigrationKey, true);
+      if (legacySession != null) {
+        // Picks up what was just written through the other API. Without it the
+        // legacy cache is a pre-migration snapshot, and on the platforms where
+        // the two share a file the next legacy write by the app would rewrite
+        // the file from that snapshot, taking the migrated session with it.
+        await legacyPreferences.reload();
+        await legacyPreferences.remove(persistSessionKey);
+      }
+    } catch (error, stackTrace) {
+      _log.warning('Could not migrate the session', error, stackTrace);
     }
-    await _preferences.setBool(_legacyMigrationKey, true);
   }
 
   @override
@@ -155,19 +176,41 @@ class SharedPreferencesLocalStorage extends LocalStorage {
 
 /// local storage to store pkce flow code verifier.
 class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
-  SharedPreferencesGotrueAsyncStorage();
+  SharedPreferencesGotrueAsyncStorage() {
+    WidgetsFlutterBinding.ensureInitialized();
+  }
 
   /// Created on first use, since the plugin it talks to is only registered
   /// once the bindings are initialized.
-  late final SharedPreferencesAsync _preferences = _createPreferences();
-
-  static SharedPreferencesAsync _createPreferences() {
-    WidgetsFlutterBinding.ensureInitialized();
-    return SharedPreferencesAsync();
-  }
+  late final SharedPreferencesAsync _preferences = SharedPreferencesAsync();
 
   @override
-  Future<String?> getItem({required String key}) => _preferences.getString(key);
+  Future<String?> getItem({required String key}) async {
+    return await _preferences.getString(key) ?? await _legacyItem(key);
+  }
+
+  /// Moves a value written by the legacy [SharedPreferences] API over to
+  /// [SharedPreferencesAsync].
+  ///
+  /// A code verifier outlives the launch that wrote it: a magic link or a
+  /// password reset can be opened long after the app updated, and the flow it
+  /// belongs to cannot be completed without the verifier that started it.
+  Future<String?> _legacyItem(String key) async {
+    try {
+      final legacyPreferences = await SharedPreferences.getInstance();
+      final value = legacyPreferences.getString(key);
+      if (value == null) {
+        return null;
+      }
+      await _preferences.setString(key, value);
+      await legacyPreferences.reload();
+      await legacyPreferences.remove(key);
+      return value;
+    } catch (error, stackTrace) {
+      _log.warning('Could not read the legacy store', error, stackTrace);
+      return null;
+    }
+  }
 
   @override
   Future<void> removeItem({required String key}) => _preferences.remove(key);

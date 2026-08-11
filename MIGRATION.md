@@ -403,6 +403,26 @@ await Supabase.initialize(
 );
 ```
 
+Widget tests that call `Supabase.initialize` need one more line of setup.
+`SharedPreferences.setMockInitialValues()` only stands in for the legacy API, so on its own the new
+storage throws `StateError: The SharedPreferencesAsyncPlatform instance must be set.` Register an
+in-memory async store next to it:
+
+```dart
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+
+setUp(() {
+  SharedPreferences.setMockInitialValues({});
+  SharedPreferencesAsyncPlatform.instance =
+      InMemorySharedPreferencesAsync.empty();
+});
+```
+
+`shared_preferences_platform_interface` needs to be a `dev_dependency` for that import. Passing
+`FlutterAuthClientOptions(localStorage: const EmptyLocalStorage())` instead skips storage in tests
+altogether.
+
 ### `supabasePersistSessionKey` is gone
 
 The constant existed for the v1 to v2 migration from Hive, which v3 no longer carries, and the SDK
