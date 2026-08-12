@@ -124,8 +124,8 @@ jobs:
           - { id: linux, os: ubuntu-latest, target: linux }
           - { id: web, os: ubuntu-latest, target: web }
           - { id: android, os: ubuntu-latest, target: android }
-          - { id: macos, os: macos-latest, target: macos }
-          - { id: ios, os: macos-latest, target: ios }
+          - { id: macos, os: blacksmith-6vcpu-macos-latest, target: macos }
+          - { id: ios, os: blacksmith-6vcpu-macos-latest, target: ios }
           - { id: windows, os: windows-latest, target: windows }
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

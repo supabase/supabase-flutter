@@ -1,0 +1,5 @@
+self-hosted-runner:
+  # Blacksmith provides these labels through its GitHub App, so actionlint
+  # cannot discover them on its own.
+  labels:
+    - blacksmith-6vcpu-macos-latest
