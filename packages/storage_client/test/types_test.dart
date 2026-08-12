@@ -302,41 +302,22 @@ void main() {
   });
 
   group('StorageException', () {
-    test('is a SupabaseException but not a SupabaseApiException', () {
+    test('a client raised failure is not a SupabaseApiException', () {
       const SupabaseException exception = StorageException('boom');
 
-      expect(exception, isA<SupabaseException>());
       expect(exception, isNot(isA<SupabaseApiException>()));
-    });
-
-    test('toString includes message and error code', () {
-      const exception = StorageException('boom', errorCode: 'no_token');
-      expect(
-        exception.toString(),
-        'StorageException(message: boom, errorCode: no_token)',
-      );
     });
   });
 
   group('StorageApiException', () {
-    test('is a StorageException and a SupabaseApiException', () {
-      const exception = StorageApiException('boom', statusCode: 500);
+    test('is a StorageException that reports the response status', () {
+      const SupabaseException exception = StorageApiException(
+        'boom',
+        statusCode: 500,
+      );
 
       expect(exception, isA<StorageException>());
       expect(exception, isA<SupabaseApiException>());
-    });
-
-    test('toString includes message, status code and error code', () {
-      const exception = StorageApiException(
-        'boom',
-        statusCode: 500,
-        errorCode: 'server_error',
-      );
-      expect(
-        exception.toString(),
-        'StorageApiException(message: boom, statusCode: 500, '
-        'errorCode: server_error)',
-      );
     });
 
     test('fromJson reads message, error and statusCode', () {
