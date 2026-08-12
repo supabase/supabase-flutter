@@ -4,7 +4,7 @@ This document describes the breaking changes you need to be aware of when upgrad
 versions of the Supabase Flutter SDK, together with the steps required to migrate your code.
 
 All packages in this repository are released together for a major version, so a single section
-covers `supabase_flutter`, `supabase`, `gotrue`, `postgrest`, `realtime_client`, `storage_client`
+covers `supabase_flutter`, `supabase`, `supabase_auth`, `postgrest`, `realtime_client`, `storage_client`
 and `functions_client`. Every symbol mentioned here is re-exported from `supabase_flutter`, so the
 snippets apply whether you depend on the individual package or on the Flutter one.
 
@@ -13,6 +13,70 @@ snippets apply whether you depend on the individual package or on the Flutter on
 > [!NOTE]
 > v3 has not been released yet. This section is updated as breaking changes land on `main`, so
 > treat it as the running list rather than the final one.
+
+### The `gotrue` package is now `supabase_auth`
+
+The service this package talks to has been called Supabase Auth for years, and `gotrue` is a name
+users no longer recognize. The package is published as `supabase_auth` from v3 onwards, and the
+`gotrue` package is discontinued on pub.dev. The other clients already made this move:
+`supabase-py` ships `supabase_auth` and `supabase-js` ships `@supabase/auth-js`.
+
+If you depend on `supabase_flutter` or `supabase` you do not need to change your dependencies,
+both pull in `supabase_auth` for you and re-export it. You do need to rename the types below.
+
+If you depend on the auth client directly, rename the dependency and the import:
+
+```yaml
+# Before
+dependencies:
+  gotrue: ^2.27.1
+
+# After
+dependencies:
+  supabase_auth: ^3.0.0
+```
+
+```dart
+// Before
+import 'package:gotrue/gotrue.dart';
+
+// After
+import 'package:supabase_auth/supabase_auth.dart';
+```
+
+The types that carried the old name in their own name are renamed to the `Auth` prefix the rest of
+the package already uses, matching the names `auth-js` prefers:
+
+| Before | After |
+| --- | --- |
+| `GoTrueClient` | `AuthClient` |
+| `GoTrueAdminApi` | `AuthAdminApi` |
+| `GoTrueAdminCustomProvidersApi` | `AuthAdminCustomProvidersApi` |
+| `GoTrueAdminMFAApi` | `AuthAdminMFAApi` |
+| `GoTrueAdminOAuthApi` | `AuthAdminOAuthApi` |
+| `GoTrueAdminPasskeyApi` | `AuthAdminPasskeyApi` |
+| `GoTrueMFAApi` | `AuthMFAApi` |
+| `GoTrueOAuthApi` | `AuthOAuthApi` |
+| `GoTruePasskeyApi` | `AuthPasskeyApi` |
+| `GotrueAsyncStorage` | `AuthAsyncStorage` |
+| `SharedPreferencesGotrueAsyncStorage` | `SharedPreferencesAuthAsyncStorage` |
+
+```dart
+// Before
+final GoTrueClient auth = supabase.auth;
+
+// After
+final AuthClient auth = supabase.auth;
+```
+
+Two extensions `supabase_flutter` adds to the auth client follow the same rename:
+`GoTrueClientSignInProvider` becomes `AuthClientSignInProvider` and `GoTrueClientPasskey` becomes
+`AuthClientPasskey`. You only name these if you were referring to the extension explicitly, for
+example to hide it in an import.
+
+Nothing about the wire format changes. The `X-Client-Info` header still identifies this client as
+`gotrue-dart`, matching what `auth-js` sends, and the `gotrue_meta_security` field in captcha
+payloads is unchanged.
 
 ### `RealtimeClient.connectionState` is now typed
 
@@ -121,7 +185,7 @@ ones below are the renames you can actually hit.
 | --- | --- | --- |
 | `SocketStates` | `SocketState` | `realtime_client` |
 | `PostgresTypes` | `PostgresType` | `realtime_client` |
-| `AuthenticatorAssuranceLevels` | `AuthenticatorAssuranceLevel` | `gotrue` |
+| `AuthenticatorAssuranceLevels` | `AuthenticatorAssuranceLevel` | `supabase_auth` |
 | `LoadTableSnapshots` | `TableSnapshotScope` | `storage_client` |
 
 No enum values changed, so the only work is renaming the type where you name it explicitly.
@@ -301,9 +365,9 @@ already inert: unused types, options the client ignored, or values the server ne
 
 | Removed | Replacement | Package |
 | --- | --- | --- |
-| `AuthChangeEvent.userDeleted` | none, it was never emitted | `gotrue` |
-| `OAuthProvider.snakeCase` | `OAuthProvider.name` | `gotrue` |
-| `User.confirmedAt` | `User.emailConfirmedAt` | `gotrue` |
+| `AuthChangeEvent.userDeleted` | none, it was never emitted | `supabase_auth` |
+| `OAuthProvider.snakeCase` | `OAuthProvider.name` | `supabase_auth` |
+| `User.confirmedAt` | `User.emailConfirmedAt` | `supabase_auth` |
 | `ReturningOption` | none, it was unused | `postgrest` |
 | `PostgrestClient.auth()` | `PostgrestClient.setAuth()` | `postgrest` |
 | `RealtimeClient.longpollerTimeout` | none, there is no longpoll transport | `realtime_client` |
@@ -461,7 +525,7 @@ replaces them; they only existed to drive the comparison above.
 
 ### The session is persisted with `SharedPreferencesAsync`
 
-`SharedPreferencesLocalStorage` and `SharedPreferencesGotrueAsyncStorage`, the storage
+`SharedPreferencesLocalStorage` and `SharedPreferencesAuthAsyncStorage`, the storage
 implementations `Supabase.initialize` uses by default, wrote through the legacy
 [`SharedPreferences`](https://pub.dev/packages/shared_preferences#sharedpreferences-vs-sharedpreferencesasync-vs-sharedpreferenceswithcache)
 API. They now use `SharedPreferencesAsync`. On web the session still goes into

@@ -184,7 +184,7 @@ class GetUserHttpClient extends BaseClient {
   }
 }
 
-class MockAsyncStorage extends GotrueAsyncStorage {
+class MockAsyncStorage extends AuthAsyncStorage {
   final Map<String, String> _map = {};
 
   @override

@@ -1,4 +1,4 @@
-// This file intentionally builds on gotrue's experimental passkey API.
+// This file intentionally builds on supabase_auth's experimental passkey API.
 // ignore_for_file: experimental_member_use
 
 import 'package:meta/meta.dart';
@@ -8,7 +8,7 @@ import 'package:supabase_flutter/src/passkey/passkey_options_mapper.dart';
 
 /// Passkey (WebAuthn) convenience methods that perform the full ceremony,
 /// including the platform prompt (FaceID/TouchID/security key), on top of the
-/// server side exposed by [GoTrueClient.passkey].
+/// server side exposed by [AuthClient.passkey].
 ///
 /// Passkeys are a BETA feature and must be enabled for your project in the
 /// Supabase Dashboard under Authentication > Configuration > Passkeys.
@@ -28,7 +28,7 @@ import 'package:supabase_flutter/src/passkey/passkey_options_mapper.dart';
 /// plugin's `PasskeyAuthCancelledException`) when the platform ceremony fails,
 /// and throw [AuthException] when the Supabase server rejects the credential.
 @experimental
-extension GoTrueClientPasskey on GoTrueClient {
+extension AuthClientPasskey on AuthClient {
   /// Registers a new passkey for the signed in user.
   ///
   /// Starts the registration with the Supabase server, calls [authenticator] to
@@ -36,7 +36,7 @@ extension GoTrueClientPasskey on GoTrueClient {
   ///
   /// [friendlyName] is the account label the authenticator shows for the
   /// passkey when the server does not provide one. See
-  /// [GoTruePasskeyApi.startRegistration].
+  /// [AuthPasskeyApi.startRegistration].
   ///
   /// Requires a signed in (non-anonymous) user. Returns the newly registered
   /// [Passkey].

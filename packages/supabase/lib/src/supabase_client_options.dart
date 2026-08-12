@@ -34,7 +34,7 @@ class PostgrestClientOptions {
 
 class AuthClientOptions {
   final bool autoRefreshToken;
-  final GotrueAsyncStorage? pkceAsyncStorage;
+  final AuthAsyncStorage? pkceAsyncStorage;
   final AuthFlowType authFlowType;
 
   const AuthClientOptions({

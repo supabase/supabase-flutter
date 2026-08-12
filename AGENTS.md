@@ -12,7 +12,7 @@ The repository follows a layered dependency structure:
 
 - **supabase_flutter**: Flutter-specific wrapper with platform integrations (deep links, local storage, app lifecycle)
 - **supabase**: Core Dart client that orchestrates all service clients
-- **gotrue**: Authentication client (sessions, JWT, OAuth)
+- **supabase_auth**: Authentication client (sessions, JWT, OAuth)
 - **postgrest**: Database query client with ORM-style API
 - **realtime_client**: WebSocket client for real-time subscriptions
 - **storage_client**: File storage client with retry logic
@@ -52,9 +52,9 @@ melos format
 
 ### Testing
 
-Most packages have unit tests. The `postgrest`, `gotrue`, `realtime_client`, and `storage_client` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
+Most packages have unit tests. The `postgrest`, `supabase_auth`, `realtime_client`, and `storage_client` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
-**For packages requiring a backend (postgrest, gotrue, realtime_client, storage_client):**
+**For packages requiring a backend (postgrest, supabase_auth, realtime_client, storage_client):**
 
 ```bash
 # 1. Start the local Supabase stack from the repository root
@@ -129,7 +129,7 @@ melos version
 
 ### Authentication Flow
 
-- **GoTrueClient** manages sessions, tokens, and JWT validation
+- **AuthClient** manages sessions, tokens, and JWT validation
 - Emits auth state changes via `Stream<AuthState>`
 - **supabase_flutter** adds session persistence via `SharedPreferencesAsync` (mobile) or browser localStorage (web)
 - Deep link handling for OAuth callbacks (detects `?code=` for PKCE or `#access_token=` for implicit flow)
@@ -155,7 +155,7 @@ Example: `supabase.from('users').select('id, name').eq('id', 1).limit(10)`
 ### Error Handling
 
 Each package has its own exception hierarchy:
-- **gotrue**: `AuthException` (base), with specialized subclasses like `AuthApiException`, `AuthRetryableFetchException`
+- **supabase_auth**: `AuthException` (base), with specialized subclasses like `AuthApiException`, `AuthRetryableFetchException`
 - **postgrest**: HTTP-based error responses
 - **realtime**: `RealtimeSubscribeException` with status tracking
 - **storage**: Retry logic with exponential backoff (up to 8 attempts)

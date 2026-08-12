@@ -84,16 +84,16 @@ void main() {
       });
     });
 
-    // SharedPreferencesGotrueAsyncStorage Tests
-    group('SharedPreferencesGotrueAsyncStorage', () {
-      late SharedPreferencesGotrueAsyncStorage asyncStorage;
+    // SharedPreferencesAuthAsyncStorage Tests
+    group('SharedPreferencesAuthAsyncStorage', () {
+      late SharedPreferencesAuthAsyncStorage asyncStorage;
       const testKey = 'test_key';
       const testValue = 'test_value';
 
       setUp(() {
         // Set up fake shared preferences
         mockSharedPreferences();
-        asyncStorage = SharedPreferencesGotrueAsyncStorage();
+        asyncStorage = SharedPreferencesAuthAsyncStorage();
       });
 
       test('setItem stores value for key', () async {

@@ -7,7 +7,7 @@ environment:
 
 workspace:
   - packages/functions_client
-  - packages/gotrue
+  - packages/supabase_auth
   - packages/postgrest
   - packages/realtime_client
   - packages/storage_client
