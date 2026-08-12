@@ -329,7 +329,7 @@ void main() {
       await expectLater(
         () => postgrest.from('missing_table').select(),
         throwsA(
-          isA<PostgrestException>().having(
+          isA<PostgrestApiException>().having(
             (e) => e.errorCode,
             'errorCode',
             'PGRST205',
@@ -526,7 +526,7 @@ void main() {
       await expectLater(
         () => postgrestCustomHttpClient.from('users').select(),
         throwsA(
-          isA<PostgrestException>().having(
+          isA<PostgrestApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             420,
@@ -552,7 +552,7 @@ void main() {
             .select()
             .withConverter((data) => data),
         throwsA(
-          isA<PostgrestException>().having(
+          isA<PostgrestApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             420,
@@ -567,7 +567,7 @@ void main() {
           params: {'name_param': 'supabot'},
         ),
         throwsA(
-          isA<PostgrestException>().having(
+          isA<PostgrestApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             420,
@@ -585,7 +585,7 @@ void main() {
           get: true,
         ),
         throwsA(
-          isA<PostgrestException>().having(
+          isA<PostgrestApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             420,
@@ -600,7 +600,7 @@ void main() {
       await expectLater(
         () => postgrestCustomHttpClient.from('non-json-succ').select(),
         throwsA(
-          isA<PostgrestException>()
+          isA<PostgrestApiException>()
               .having((e) => e.statusCode, 'statusCode', 200)
               .having(
                 (e) => e.message,
@@ -618,7 +618,7 @@ void main() {
             .select()
             .maybeSingle(),
         throwsA(
-          isA<PostgrestException>().having(
+          isA<PostgrestApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             200,

@@ -28,9 +28,8 @@ class FunctionResponse {
 /// is available in [details].
 ///
 /// A plain [FunctionException] is a failure the client raised on its own, such
-/// as a request that never reached the function. A failure that came back over
-/// HTTP is a [FunctionsApiException] and also carries the response's status
-/// code.
+/// as a request that never reached the function. A failure the function
+/// answered with is a [FunctionsApiException].
 class FunctionException extends SupabaseException {
   final dynamic details;
 
@@ -44,10 +43,9 @@ class FunctionException extends SupabaseException {
 }
 
 /// Thrown when the request to the Edge Function could not be sent, for example
-/// because of a network or transport failure, before any response was received.
+/// because of a network or transport failure.
 ///
-/// The originating error is available in [details]. There is no status code,
-/// since no response reached the client.
+/// The originating error is available in [details].
 class FunctionsFetchException extends FunctionException {
   const FunctionsFetchException({
     super.details,
@@ -57,7 +55,7 @@ class FunctionsFetchException extends FunctionException {
        );
 }
 
-/// Thrown when invoking an Edge Function returned an error response.
+/// Thrown when the Edge Function responded with a non-2xx status code.
 ///
 /// The response body is available in [details].
 class FunctionsApiException extends FunctionException
@@ -66,10 +64,12 @@ class FunctionsApiException extends FunctionException
   final int statusCode;
 
   const FunctionsApiException({
-    required super.message,
     required this.statusCode,
     super.details,
-  });
+    String? message,
+  }) : super(
+         message: message ?? 'Edge Function returned a non-2xx status code',
+       );
 
   @override
   String toString() =>
@@ -79,21 +79,12 @@ class FunctionsApiException extends FunctionException
 
 /// Thrown when the Supabase relay returns an error while invoking the Edge
 /// Function, indicated by the `x-relay-error` response header.
+///
+/// The function itself may never have run.
 class FunctionsRelayException extends FunctionsApiException {
   const FunctionsRelayException({
     required super.statusCode,
     super.details,
     String? message,
   }) : super(message: message ?? 'Relay error invoking the Edge Function');
-}
-
-/// Thrown when the Edge Function itself responds with a non-2xx status code.
-class FunctionsHttpException extends FunctionsApiException {
-  const FunctionsHttpException({
-    required super.statusCode,
-    super.details,
-    String? message,
-  }) : super(
-         message: message ?? 'Edge Function returned a non-2xx status code',
-       );
 }

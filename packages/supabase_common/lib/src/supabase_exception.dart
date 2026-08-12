@@ -1,17 +1,10 @@
 /// Base class for the exceptions thrown by the Supabase client packages.
 ///
 /// A plain [SupabaseException] is a failure the client raised on its own,
-/// without or before a request: a missing session, an unparsable JWT, a
-/// redirect url without an access token. It carries a human readable [message]
-/// and, when the client can name the failure, an [errorCode].
+/// without or before a request, such as a missing session or an unparsable
+/// JWT. A failure a service reported is a [SupabaseApiException].
 ///
-/// A failure reported by a Supabase service is a [SupabaseApiException] and
-/// additionally carries the response's HTTP [SupabaseApiException.statusCode],
-/// so the layer an exception came from is visible from its type alone.
-///
-/// The auth, postgrest, storage and functions exceptions all extend this, so
-/// one catch handles a failure from any of them without knowing which one
-/// produced it:
+/// The auth, postgrest, storage and functions exceptions all extend this:
 ///
 /// ```dart
 /// try {
@@ -22,7 +15,7 @@
 /// ```
 ///
 /// `RealtimeSubscribeException` and `IcebergException` are not part of this
-/// hierarchy; they keep shapes of their own.
+/// hierarchy.
 abstract class SupabaseException implements Exception {
   /// Human readable error message associated with the error.
   final String message;
@@ -39,11 +32,9 @@ abstract class SupabaseException implements Exception {
   String toString() => '$runtimeType(message: $message, errorCode: $errorCode)';
 }
 
-/// Mixed into the exceptions that report a response from a Supabase service,
-/// as opposed to a failure the client raised on its own.
+/// Mixed into the exceptions that report a response from a Supabase service.
 ///
-/// Catch it to handle any failure that a service answered with, whichever
-/// service that was:
+/// Catch it to handle a failure any service answered with:
 ///
 /// ```dart
 /// try {

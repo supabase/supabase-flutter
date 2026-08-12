@@ -468,7 +468,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             // success status. Surface the raw body as a structured error
             // instead of crashing with an opaque type error or silently
             // returning null.
-            throw PostgrestException(
+            throw PostgrestApiException(
               message: response.body,
               statusCode: response.statusCode,
               details: response.reasonPhrase,
@@ -480,7 +480,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       // Workaround for https://github.com/supabase/supabase-flutter/issues/560
       if (_maybeSingle && method == HttpMethod.get && body is List) {
         if (body.length > 1) {
-          final exception = PostgrestException(
+          final exception = PostgrestApiException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
             statusCode: 406,
             details:
@@ -535,11 +535,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
       return converted as T;
     }
-    PostgrestException error;
+    PostgrestApiException error;
     if (response.request!.method != HttpMethod.head.value) {
       try {
         final errorJson = jsonDecode(response.body) as Map<String, dynamic>;
-        error = PostgrestException.fromJson(
+        error = PostgrestApiException.fromJson(
           errorJson,
           message: response.body,
           statusCode: response.statusCode,
@@ -550,14 +550,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           return _handleMaybeSingleError(response, error);
         }
       } catch (_) {
-        error = PostgrestException(
+        error = PostgrestApiException(
           message: response.body,
           statusCode: response.statusCode,
           details: response.reasonPhrase,
         );
       }
     } else {
-      error = PostgrestException(
+      error = PostgrestApiException(
         statusCode: response.statusCode,
         message: response.body,
         details: 'Error in Postgrest response for method HEAD',
@@ -576,7 +576,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// return PostgrestResponse with null data
   T _handleMaybeSingleError(
     http.Response response,
-    PostgrestException error,
+    PostgrestApiException error,
   ) {
     if (error.details is String &&
         (error.details as String).contains('Results contain 0 rows')) {

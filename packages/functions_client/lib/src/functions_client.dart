@@ -267,7 +267,7 @@ class FunctionsClient {
         message: response.reasonPhrase,
       );
     }
-    throw FunctionsHttpException(
+    throw FunctionsApiException(
       statusCode: response.statusCode,
       details: data,
       message: response.reasonPhrase,

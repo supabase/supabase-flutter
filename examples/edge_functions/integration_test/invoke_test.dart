@@ -179,7 +179,7 @@ void main() {
       await expectLater(
         functions.invoke('echo', queryParameters: {'status': '422'}),
         throwsA(
-          isA<FunctionsHttpException>()
+          isA<FunctionsApiException>()
               .having((error) => error.statusCode, 'statusCode', 422)
               .having(
                 (error) => (error.details as Map)['error'],
@@ -199,7 +199,7 @@ void main() {
           queryParameters: {'status': '500', 'format': 'text'},
         ),
         throwsA(
-          isA<FunctionsHttpException>()
+          isA<FunctionsApiException>()
               .having((error) => error.statusCode, 'statusCode', 500)
               .having((error) => error.details, 'details', 'boom'),
         ),

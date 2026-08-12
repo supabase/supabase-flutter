@@ -7,22 +7,20 @@ typedef PostgrestMap = Map<String, dynamic>;
 typedef PostgrestListResponse = PostgrestResponse<PostgrestList>;
 typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 
-/// A Postgrest response exception
-///
-/// Every Postgrest failure is a response, so this is always a
-/// [SupabaseApiException].
+/// Thrown when PostgREST answered with an error.
 ///
 /// [errorCode] holds the code reported by PostgREST or PostgreSQL, for example
 /// `PGRST116` or the SQLSTATE `23505`. It is unrelated to [statusCode], which
 /// is the HTTP status of the response.
-class PostgrestException extends SupabaseException with SupabaseApiException {
+class PostgrestApiException extends SupabaseException
+    with SupabaseApiException {
   @override
   final int statusCode;
 
   final Object? details;
   final String? hint;
 
-  const PostgrestException({
+  const PostgrestApiException({
     required String message,
     required this.statusCode,
     super.errorCode,
@@ -30,13 +28,13 @@ class PostgrestException extends SupabaseException with SupabaseApiException {
     this.hint,
   }) : super(message);
 
-  factory PostgrestException.fromJson(
+  factory PostgrestApiException.fromJson(
     Map<String, dynamic> json, {
     required int statusCode,
     String? message,
     String? details,
   }) {
-    return PostgrestException(
+    return PostgrestApiException(
       message: (json['message'] ?? message) as String,
       statusCode: statusCode,
       errorCode: json['code'] as String?,
@@ -57,7 +55,7 @@ class PostgrestException extends SupabaseException with SupabaseApiException {
 
   @override
   String toString() {
-    return 'PostgrestException(message: $message, statusCode: $statusCode, '
+    return 'PostgrestApiException(message: $message, statusCode: $statusCode, '
         'errorCode: $errorCode, details: $details, hint: $hint)';
   }
 }

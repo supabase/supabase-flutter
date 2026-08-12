@@ -28,7 +28,7 @@ void main() {
       await expectLater(
         functionsCustomHttpClient.invoke('error-function'),
         throwsA(
-          isA<FunctionsHttpException>().having(
+          isA<FunctionsApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             420,
@@ -37,11 +37,11 @@ void main() {
       );
     });
 
-    test('a non-2xx response throws a FunctionsHttpException', () async {
+    test('a non-2xx response throws a FunctionsApiException', () async {
       await expectLater(
         functionsCustomHttpClient.invoke('error-function'),
         throwsA(
-          isA<FunctionsHttpException>()
+          isA<FunctionsApiException>()
               .having((e) => e.statusCode, 'statusCode', 420)
               .having((e) => e.message, 'message', 'Enhance Your Calm')
               .having((e) => e.details, 'details', {'key': 'Hello World'}),

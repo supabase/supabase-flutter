@@ -1924,8 +1924,8 @@ features:
       - FunctionsFetchException.FunctionsFetchException
       - FunctionsRelayException
       - FunctionsRelayException.FunctionsRelayException
-      - FunctionsHttpException
-      - FunctionsHttpException.FunctionsHttpException
+      - FunctionsApiException
+      - FunctionsApiException.FunctionsApiException
     supporting_symbols:
       - FunctionResponse
       - FunctionResponse.FunctionResponse
@@ -2177,8 +2177,6 @@ supporting_symbols:
   - FunctionException.FunctionException
   - FunctionException.details
   - FunctionException.toString
-  - FunctionsApiException
-  - FunctionsApiException.FunctionsApiException
   - FunctionsApiException.statusCode
   - FunctionsApiException.toString
   - FunctionsClient
@@ -2321,6 +2319,14 @@ supporting_symbols:
   - PostgrestBuilder.overrideSearchParams
   - PostgrestBuilder.then
   - PostgrestBuilder.whenComplete
+  - PostgrestApiException
+  - PostgrestApiException.PostgrestApiException
+  - PostgrestApiException.details
+  - PostgrestApiException.fromJson
+  - PostgrestApiException.hint
+  - PostgrestApiException.statusCode
+  - PostgrestApiException.toJson
+  - PostgrestApiException.toString
   - PostgrestClient
   - PostgrestClient.PostgrestClient
   - PostgrestClient.dispose
@@ -2328,14 +2334,6 @@ supporting_symbols:
   - PostgrestClientOptions
   - PostgrestClientOptions.PostgrestClientOptions
   - PostgrestConverter
-  - PostgrestException
-  - PostgrestException.PostgrestException
-  - PostgrestException.details
-  - PostgrestException.fromJson
-  - PostgrestException.hint
-  - PostgrestException.statusCode
-  - PostgrestException.toJson
-  - PostgrestException.toString
   - PostgrestFilterBuilder
   - PostgrestFilterBuilder.PostgrestFilterBuilder
   - PostgrestFilterBuilder.copyWithUrl

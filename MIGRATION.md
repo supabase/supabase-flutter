@@ -604,9 +604,11 @@ The renames:
 | `StorageException.statusCode` (`String?`) | `StorageApiException.statusCode` (`int`) |
 | `StorageException.error` | `errorCode` |
 | `StorageException.fromJson(json, '404')` | `StorageApiException.fromJson(json, 404)` |
-| `PostgrestException.code` | `errorCode`, with the HTTP status in `statusCode` |
-| `PostgrestException.fromJson(json, code: 409)` | `PostgrestException.fromJson(json, statusCode: 409)` |
+| `PostgrestException` | `PostgrestApiException` |
+| `PostgrestException.code` | `PostgrestApiException.errorCode`, with the HTTP status in `statusCode` |
+| `PostgrestException.fromJson(json, code: 409)` | `PostgrestApiException.fromJson(json, statusCode: 409)` |
 | `PostgrestException.toJson()` key `code` | keys `statusCode` and `errorCode` |
+| `FunctionsHttpException` | `FunctionsApiException` |
 | `FunctionException.status` (`int`) | `FunctionsApiException.statusCode` |
 | `FunctionException.reasonPhrase` | folded into `message` |
 | `FunctionsFetchException.status == 0` | no status at all, no response reached the client |

@@ -589,7 +589,7 @@ class SignedUploadURLResponse extends SignedUrl {
 ///
 /// A plain [StorageException] is a failure the client raised on its own, such
 /// as a request that never reached storage. A failure storage reported is a
-/// [StorageApiException] and also carries the response's status code.
+/// [StorageApiException].
 class StorageException extends SupabaseException {
   const StorageException(super.message, {super.errorCode});
 }

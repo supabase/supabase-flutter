@@ -5,9 +5,8 @@ import 'package:supabase_common/supabase_common.dart';
 /// Thrown when an auth operation fails.
 ///
 /// A plain [AuthException] is a failure the client raised on its own, such as a
-/// missing session, and carries only a [message] and, when the client can name
-/// the failure, an [errorCode]. A failure the auth service reported is an
-/// [AuthApiException] and also carries the response's status code.
+/// missing session. A failure the auth service reported is an
+/// [AuthApiException].
 ///
 /// Find the full list of error codes in our documentation.
 /// https://supabase.com/docs/guides/auth/debugging/error-codes
@@ -40,12 +39,10 @@ class AuthSessionMissingException extends AuthException {
       );
 }
 
-/// Thrown when a request to the auth service failed in a way that is worth
-/// retrying.
+/// Thrown when a request never reached the auth service, for example on a
+/// network failure, and is worth retrying.
 ///
-/// This is the transport case: the request never reached the service, so there
-/// is no status code to report. A 5xx the service answered with is an
-/// [AuthRetryableApiException], which carries one. Catch this type to cover
+/// A retryable 5xx is an [AuthRetryableApiException]. Catch this type to cover
 /// both.
 class AuthRetryableFetchException extends AuthException {
   AuthRetryableFetchException({
