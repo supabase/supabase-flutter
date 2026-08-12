@@ -1608,8 +1608,11 @@ features:
     symbols:
       - StorageException
     supporting_symbols:
+      - StorageApiException
+      - StorageApiException.StorageApiException
+      - StorageApiException.fromJson
+      - StorageApiException.statusCode
       - StorageException.StorageException
-      - StorageException.fromJson
 
   # realtime — channel
   realtime.channel.subscribe:
@@ -2084,7 +2087,10 @@ supporting_symbols:
   - AdminUserAttributes.toJson
   - AdminUserAttributes.userMetadata
   - AuthApiException
+  - AuthApiException.==
   - AuthApiException.AuthApiException
+  - AuthApiException.hashCode
+  - AuthApiException.statusCode
   - AuthClientOptions
   - AuthClientOptions.AuthClientOptions
   - AuthException
@@ -2101,12 +2107,19 @@ supporting_symbols:
   - AuthResponse.session
   - AuthResponse.user
   - AuthRetryableFetchException
+  - AuthRetryableFetchException.==
   - AuthRetryableFetchException.AuthRetryableFetchException
+  - AuthRetryableFetchException.hashCode
+  - AuthRetryableFetchException.statusCode
+  - AuthRetryableFetchException.toString
   - AuthSessionMissingException
   - AuthSessionMissingException.AuthSessionMissingException
   - AuthUnknownException
+  - AuthUnknownException.==
   - AuthUnknownException.AuthUnknownException
+  - AuthUnknownException.hashCode
   - AuthUnknownException.originalError
+  - AuthUnknownException.statusCode
   - AuthUnknownException.toString
   - AuthWeakPasswordException
   - AuthWeakPasswordException.AuthWeakPasswordException
@@ -2166,6 +2179,10 @@ supporting_symbols:
   - FunctionException.FunctionException
   - FunctionException.details
   - FunctionException.toString
+  - FunctionsApiException
+  - FunctionsApiException.FunctionsApiException
+  - FunctionsApiException.statusCode
+  - FunctionsApiException.toString
   - FunctionsClient
   - FunctionsClient.FunctionsClient
   - FunctionsClient.dispose
@@ -2318,6 +2335,7 @@ supporting_symbols:
   - PostgrestException.details
   - PostgrestException.fromJson
   - PostgrestException.hint
+  - PostgrestException.statusCode
   - PostgrestException.toJson
   - PostgrestException.toString
   - PostgrestFilterBuilder
