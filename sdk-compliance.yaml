@@ -1942,6 +1942,8 @@ features:
     symbols:
       - RealtimeClient.encode
       - RealtimeClient.decode
+      - RealtimeClientOptions.encode
+      - RealtimeClientOptions.decode
     supporting_symbols:
       - RealtimeDecode
       - RealtimeEncode

@@ -173,6 +173,29 @@ void main() {
       );
     });
 
+    test('codec overrides are handed to the realtime client', () async {
+      Future<Object> encode(RealtimeMessage message) => Future.value('');
+      Future<RealtimeMessage> decode(Object frame) =>
+          Future.value(const RealtimeMessage(topic: '', event: ''));
+
+      supabase = SupabaseClient(
+        supabaseUrl,
+        supabaseKey,
+        realtimeClientOptions: RealtimeClientOptions(
+          encode: encode,
+          decode: decode,
+        ),
+      );
+
+      expect(supabase.realtime.encode, same(encode));
+      expect(supabase.realtime.decode, same(decode));
+    });
+
+    test('the realtime client uses the built-in codec by default', () async {
+      expect(supabase.realtime.encode, isNull);
+      expect(supabase.realtime.decode, isNull);
+    });
+
     test('realtime access token is set properly', () async {
       final request = await getRealtimeRequest(
         server: mockServer,

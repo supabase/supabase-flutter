@@ -504,6 +504,21 @@ final client = RealtimeClient(
 `toJson` and `RealtimeMessage.fromJson` default to protocol `2.0.0`; pass
 `RealtimeProtocolVersion.v1` to either when the client runs on the legacy protocol.
 
+`RealtimeClientOptions` takes the same two callbacks, so a codec can be set on `SupabaseClient` and
+on `Supabase.initialize` without constructing a `RealtimeClient` yourself:
+
+```dart
+await Supabase.initialize(
+  url: url,
+  anonKey: anonKey,
+  realtimeClientOptions: RealtimeClientOptions(
+    encode: (message) => isolate.encode(message.toJson()),
+    decode: (frame) async =>
+        RealtimeMessage.fromJson(await isolate.decode(frame as String)),
+  ),
+);
+```
+
 `encode` and `decode` are now `null` unless you pass one, and the built-in codec is used while they
 are. That codec is synchronous, so a client that does not override it still writes and dispatches
 without a microtask hop. Reading the codec back off the client changed accordingly:
