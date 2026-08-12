@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
-import 'package:supabase/src/supabase_constants.dart';
-import 'package:supabase/src/version.dart';
-import 'package:supabase/supabase.dart';
+import 'package:supabase_dart/src/supabase_constants.dart';
+import 'package:supabase_dart/src/version.dart';
+import 'package:supabase_dart/supabase_dart.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'api_key.dart';

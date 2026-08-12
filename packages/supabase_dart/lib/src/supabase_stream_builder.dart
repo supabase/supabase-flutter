@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
-import 'package:supabase/supabase.dart';
+import 'package:supabase_dart/supabase_dart.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 part 'supabase_stream_filter_builder.dart';

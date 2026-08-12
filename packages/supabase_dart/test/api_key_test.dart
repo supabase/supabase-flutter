@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:logging/logging.dart';
-import 'package:supabase/src/api_key.dart';
-import 'package:supabase/src/auth_http_client.dart';
+import 'package:supabase_dart/src/api_key.dart';
+import 'package:supabase_dart/src/auth_http_client.dart';
 import 'package:test/test.dart';
 
 void main() {

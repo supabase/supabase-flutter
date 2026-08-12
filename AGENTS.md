@@ -11,7 +11,7 @@ This is a monorepo for the Supabase Flutter SDK, managed by [Melos](https://melo
 The repository follows a layered dependency structure:
 
 - **supabase_flutter**: Flutter-specific wrapper with platform integrations (deep links, local storage, app lifecycle)
-- **supabase**: Core Dart client that orchestrates all service clients
+- **supabase_dart**: Core Dart client that orchestrates all service clients
 - **supabase_auth**: Authentication client (sessions, JWT, OAuth)
 - **postgrest**: Database query client with ORM-style API
 - **supabase_realtime**: WebSocket client for real-time subscriptions

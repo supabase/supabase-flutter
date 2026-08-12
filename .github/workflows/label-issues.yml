@@ -36,5 +36,6 @@ jobs:
           "supabase_functions": "functions",
           "auth_ui": "auth-ui",
           "supabase": "supabase",
+          "supabase_dart": "supabase",
           "supabase_flutter": "supabase_flutter"
         }

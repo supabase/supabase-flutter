@@ -1,5 +1,5 @@
 import 'package:http/http.dart';
-import 'package:supabase/src/api_key.dart';
+import 'package:supabase_dart/src/api_key.dart';
 import 'package:meta/meta.dart';
 
 @internal

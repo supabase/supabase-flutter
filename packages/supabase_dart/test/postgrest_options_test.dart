@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart';
-import 'package:supabase/supabase.dart';
+import 'package:supabase_dart/supabase_dart.dart';
 import 'package:test/test.dart';
 
 abstract class _CountingClient extends BaseClient {

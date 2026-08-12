@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:supabase/src/auth_http_client.dart';
-import 'package:supabase/src/supabase_constants.dart';
-import 'package:supabase/src/counter.dart';
+import 'package:supabase_dart/src/auth_http_client.dart';
+import 'package:supabase_dart/src/supabase_constants.dart';
+import 'package:supabase_dart/src/counter.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 

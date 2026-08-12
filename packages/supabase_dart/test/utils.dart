@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:supabase/supabase.dart';
+import 'package:supabase_dart/supabase_dart.dart';
 
 /// Construct session data for a given expiration date
 ({String accessToken, String sessionString}) getSessionData(DateTime dateTime) {

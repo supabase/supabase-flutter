@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:supabase/supabase.dart';
+import 'package:supabase_dart/supabase_dart.dart';
 import 'package:test/test.dart';
 import 'package:web_socket_channel/io.dart';
 

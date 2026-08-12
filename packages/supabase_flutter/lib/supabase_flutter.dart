@@ -1,7 +1,7 @@
 /// Flutter integration for Supabase.
 library;
 
-export 'package:supabase/supabase.dart';
+export 'package:supabase_dart/supabase_dart.dart';
 export 'package:supabase_common/supabase_common.dart'
     show defaultPersistSessionKey;
 export 'package:url_launcher/url_launcher.dart' show LaunchMode;

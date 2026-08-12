@@ -4,7 +4,7 @@
     <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
   </a>
 
-  <h1 align="center">supabase</h1>
+  <h1 align="center">supabase_dart</h1>
 
   <p align="center">
     Dart client library for <a href="https://supabase.com">Supabase</a>, for use in non-Flutter Dart environments.
@@ -19,7 +19,7 @@
 
 <div align="center">
 
-[![pub package](https://img.shields.io/pub/v/supabase.svg)](https://pub.dev/packages/supabase)
+[![pub package](https://img.shields.io/pub/v/supabase_dart.svg)](https://pub.dev/packages/supabase_dart)
 [![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
 
 </div>
@@ -28,7 +28,9 @@
 >
 > This is a Dart library for Supabase for use cases such as server-side Dart like [Dart Edge](https://supabase.com/docs/guides/functions/dart-edge), or non-Flutter Dart environments.
 >
-> If you are developing a Flutter application, use [supabase_flutter](https://pub.dev/packages/supabase_flutter) instead. `supabase` package is for non-Flutter Dart environments.
+> If you are developing a Flutter application, use [supabase_flutter](https://pub.dev/packages/supabase_flutter) instead. `supabase_dart` package is for non-Flutter Dart environments.
+>
+> This package was published as `supabase` up to and including v2. That package is discontinued in favour of `supabase_dart`.
 
 ## What is Supabase
 

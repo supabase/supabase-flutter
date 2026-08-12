@@ -1,7 +1,7 @@
 import 'package:http/http.dart';
 import 'package:http/testing.dart';
-import 'package:supabase/src/trace_http_client.dart';
-import 'package:supabase/supabase.dart';
+import 'package:supabase_dart/src/trace_http_client.dart';
+import 'package:supabase_dart/supabase_dart.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';

@@ -3,7 +3,7 @@ library;
 
 import 'dart:async';
 
-import 'package:supabase/supabase.dart';
+import 'package:supabase_dart/supabase_dart.dart';
 import 'package:test/test.dart';
 
 import 'package:supabase_common/testing.dart';

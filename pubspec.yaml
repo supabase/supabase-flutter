@@ -12,8 +12,8 @@ workspace:
   - packages/postgrest
   - packages/supabase_realtime
   - packages/supabase_storage
-  - packages/supabase
-  - packages/supabase/example
+  - packages/supabase_dart
+  - packages/supabase_dart/example
   - packages/supabase_flutter
   - packages/supabase_flutter/example
   - packages/supabase_common

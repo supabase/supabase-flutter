@@ -22,7 +22,7 @@ body:
       description: Select the library that you think is affected by the bug
       options:
         - supabase_flutter
-        - supabase
+        - supabase_dart
         - supabase_auth
         - postgrest
         - supabase_realtime

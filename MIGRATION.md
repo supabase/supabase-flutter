@@ -4,7 +4,7 @@ This document describes the breaking changes you need to be aware of when upgrad
 versions of the Supabase Flutter SDK, together with the steps required to migrate your code.
 
 All packages in this repository are released together for a major version, so a single section
-covers `supabase_flutter`, `supabase`, `supabase_auth`, `postgrest`, `supabase_realtime`,
+covers `supabase_flutter`, `supabase_dart`, `supabase_auth`, `postgrest`, `supabase_realtime`,
 `supabase_storage`, `iceberg` and `supabase_functions`. Every symbol mentioned here is re-exported from
 `supabase_flutter`, so the snippets apply whether you depend on the individual package or on the
 Flutter one.
@@ -21,7 +21,7 @@ The service this package talks to has been called Supabase Auth for years, and `
 users no longer recognize. The package is published as `supabase_auth` from v3 onwards, and the
 `gotrue` package is discontinued on pub.dev when v3 ships.
 
-If you depend on `supabase_flutter` or `supabase` you do not need to change your dependencies,
+If you depend on `supabase_flutter` or `supabase_dart` you do not need to change your dependencies,
 both pull in `supabase_auth` for you and re-export it. You do need to rename the types below.
 
 If you depend on the auth client directly, rename the dependency and the import:
@@ -121,7 +121,7 @@ The URL the server receives is unchanged, only the Dart type differs.
 named. The package is published as `supabase_functions` from v3 onwards, and the `functions_client`
 package is discontinued on pub.dev when v3 ships.
 
-If you depend on `supabase_flutter` or `supabase` you do not need to change anything, both pull in
+If you depend on `supabase_flutter` or `supabase_dart` you do not need to change anything, both pull in
 `supabase_functions` for you and re-export it.
 
 If you depend on the functions client directly, rename the dependency and the import:
@@ -154,7 +154,7 @@ the wire format changes either: the `X-Client-Info` header still identifies this
 named. The package is published as `supabase_realtime` from v3 onwards, and the `realtime_client`
 package is discontinued on pub.dev when v3 ships.
 
-If you depend on `supabase_flutter` or `supabase` you do not need to change anything, both pull in
+If you depend on `supabase_flutter` or `supabase_dart` you do not need to change anything, both pull in
 `supabase_realtime` for you and re-export it.
 
 If you depend on the realtime client directly, rename the dependency and the import:
@@ -186,7 +186,7 @@ their names, and the `X-Client-Info` header still identifies this client as `rea
 named. The package is published as `supabase_storage` from v3 onwards, and the `storage_client`
 package is discontinued on pub.dev when v3 ships.
 
-If you depend on `supabase_flutter` or `supabase` you do not need to change anything, both pull in
+If you depend on `supabase_flutter` or `supabase_dart` you do not need to change anything, both pull in
 `supabase_storage` for you and re-export it.
 
 If you depend on the storage client directly, rename the dependency and the import:
@@ -211,6 +211,40 @@ import 'package:supabase_storage/supabase_storage.dart';
 
 The rename does not touch any type names. `SupabaseStorageClient`, `StorageFileApi` and the rest
 keep their names, and the `X-Client-Info` header still identifies this client as `storage-dart`.
+
+### The `supabase` package is now `supabase_dart`
+
+The pure Dart client reads like the umbrella name for the whole SDK, which led people to add
+`supabase` to Flutter projects instead of `supabase_flutter`. It is published as `supabase_dart`
+from v3 onwards, and the `supabase` package is discontinued on pub.dev.
+
+If you depend on `supabase_flutter` there is nothing to do: it depends on `supabase_dart` for you
+and re-exports the same symbols.
+
+If you depend on the Dart client directly, rename the dependency:
+
+```yaml
+# Before
+dependencies:
+  supabase: ^2.16.0
+
+# After
+dependencies:
+  supabase_dart: ^3.0.0
+```
+
+The library entrypoint is renamed to match, so update the import:
+
+```dart
+// Before
+import 'package:supabase/supabase.dart';
+
+// After
+import 'package:supabase_dart/supabase_dart.dart';
+```
+
+Nothing inside the package is renamed, so `SupabaseClient` and everything it exposes keeps its
+name.
 
 ### `RealtimeClient.connectionState` is now typed
 
@@ -672,12 +706,12 @@ already inert: unused types, options the client ignored, or values the server ne
 | `RealtimeClient.longpollerTimeout` | none, there is no longpoll transport | `supabase_realtime` |
 | `ChannelResponse.rateLimited` | none, it was never returned | `supabase_realtime` |
 | `FileObject.lastAccessedAt`, `FileObjectV2.lastAccessedAt` | none, the server does not populate it | `supabase_storage` |
-| `AuthUser` | `User` | `supabase` |
-| `RealtimeClientOptions.eventsPerSecond` | none, it was already ignored | `supabase` |
-| `RemoveSubscriptionResult` | none | `supabase` |
-| `SupabaseRealtimeError` | none | `supabase` |
-| `SupabaseEventTypes` and `SupabaseEventTypesName` | none, it was unused | `supabase` |
-| `SupabaseStreamBuilder.execute()` | listen to the builder directly | `supabase` |
+| `AuthUser` | `User` | `supabase_dart` |
+| `RealtimeClientOptions.eventsPerSecond` | none, it was already ignored | `supabase_dart` |
+| `RemoveSubscriptionResult` | none | `supabase_dart` |
+| `SupabaseRealtimeError` | none | `supabase_dart` |
+| `SupabaseEventTypes` and `SupabaseEventTypesName` | none, it was unused | `supabase_dart` |
+| `SupabaseStreamBuilder.execute()` | listen to the builder directly | `supabase_dart` |
 
 Both `lastAccessedAt` fields were also required constructor parameters, so any code that builds a
 `FileObject` or `FileObjectV2` by hand drops that argument.

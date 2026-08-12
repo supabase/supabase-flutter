@@ -1,4 +1,4 @@
-import 'package:supabase/supabase.dart';
+import 'package:supabase_dart/supabase_dart.dart';
 
 class PostgrestClientOptions {
   final String schema;
