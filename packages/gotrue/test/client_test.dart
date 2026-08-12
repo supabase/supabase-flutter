@@ -157,7 +157,7 @@ void main() {
       await expectLater(
         client.getSessionFromUrl(urlWithoutAccessToken),
         throwsA(
-          isA<AuthException>()
+          isA<AuthApiException>()
               .having((e) => e.message, 'message', errorMessage)
               .having((e) => e.statusCode, 'statusCode', 401)
               .having((e) => e.errorCode, 'errorCode', 'unauthorized_client'),

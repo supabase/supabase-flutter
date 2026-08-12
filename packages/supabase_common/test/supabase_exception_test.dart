@@ -2,7 +2,18 @@ import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 class TestException extends SupabaseException {
-  const TestException(super.message, {super.statusCode, super.errorCode});
+  const TestException(super.message, {super.errorCode});
+}
+
+class TestApiException extends SupabaseException with SupabaseApiException {
+  @override
+  final int statusCode;
+
+  const TestApiException(
+    super.message, {
+    required this.statusCode,
+    super.errorCode,
+  });
 }
 
 class DetailedException extends SupabaseException {
@@ -20,25 +31,25 @@ void main() {
       expect(const TestException('boom'), isA<Exception>());
     });
 
-    test('defaults the status and error code to null', () {
+    test('defaults the error code to null', () {
       const exception = TestException('boom');
 
       expect(exception.message, 'boom');
-      expect(exception.statusCode, isNull);
       expect(exception.errorCode, isNull);
     });
 
+    test('is not a SupabaseApiException', () {
+      const SupabaseException exception = TestException('boom');
+
+      expect(exception, isNot(isA<SupabaseApiException>()));
+    });
+
     test('toString names the concrete subtype and lists all fields', () {
-      const exception = TestException(
-        'boom',
-        statusCode: 500,
-        errorCode: 'server_error',
-      );
+      const exception = TestException('boom', errorCode: 'server_error');
 
       expect(
         exception.toString(),
-        'TestException(message: boom, statusCode: 500, '
-        'errorCode: server_error)',
+        'TestException(message: boom, errorCode: server_error)',
       );
     });
 
@@ -48,6 +59,41 @@ void main() {
       expect(
         exception.toString(),
         'DetailedException(message: boom, details: stack)',
+      );
+    });
+  });
+
+  group('SupabaseApiException', () {
+    test('is a SupabaseException', () {
+      expect(
+        const TestApiException('boom', statusCode: 500),
+        isA<SupabaseException>(),
+      );
+    });
+
+    test('carries the status code alongside the shared fields', () {
+      const exception = TestApiException(
+        'boom',
+        statusCode: 500,
+        errorCode: 'server_error',
+      );
+
+      expect(exception.message, 'boom');
+      expect(exception.statusCode, 500);
+      expect(exception.errorCode, 'server_error');
+    });
+
+    test('toString names the concrete subtype and lists all fields', () {
+      const exception = TestApiException(
+        'boom',
+        statusCode: 500,
+        errorCode: 'server_error',
+      );
+
+      expect(
+        exception.toString(),
+        'TestApiException(message: boom, statusCode: 500, '
+        'errorCode: server_error)',
       );
     });
   });

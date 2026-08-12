@@ -51,13 +51,13 @@ class Fetch {
 
     if (data == null) {
       _log.fine('StorageException for $url', error.body, stack);
-      return StorageException(
+      return StorageApiException(
         error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
         statusCode: error.statusCode,
       );
     }
 
-    final exception = StorageException.fromJson(data, error.statusCode);
+    final exception = StorageApiException.fromJson(data, error.statusCode);
     _log.fine('StorageException for $url', exception, stack);
     return exception;
   }

@@ -227,7 +227,7 @@ void main() {
             .from(newBucketName)
             .uploadToSignedUrl(response.path, response.token, file),
         throwsA(
-          isA<StorageException>()
+          isA<StorageApiException>()
               .having((e) => e.errorCode, 'errorCode', 'Duplicate')
               .having(
                 (e) => e.message,
@@ -566,7 +566,7 @@ void main() {
       await expectLater(
         client.from('bucket2').download(uploadPath),
         throwsA(
-          isA<StorageException>().having(
+          isA<StorageApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             404,
@@ -591,7 +591,7 @@ void main() {
       await expectLater(
         client.from('bucket2').download('$uploadPath 3'),
         throwsA(
-          isA<StorageException>().having(
+          isA<StorageApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             404,
@@ -609,7 +609,7 @@ void main() {
       await expectLater(
         client.from(newBucketName).download(uploadPath),
         throwsA(
-          isA<StorageException>().having(
+          isA<StorageApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             404,
@@ -897,7 +897,7 @@ void main() {
                 file,
                 fileOptions: const FileOptions(upsert: true),
               ),
-          throwsA(isA<StorageException>()),
+          throwsA(isA<StorageApiException>()),
         );
       });
     }
@@ -1010,7 +1010,7 @@ Future<void> _removeTemporaryBuckets() async {
     try {
       await storage.emptyBucket(bucket.name);
       await storage.deleteBucket(bucket.name);
-    } on StorageException catch (error) {
+    } on StorageApiException catch (error) {
       // A test of this suite may have removed it itself. Anything else, like a
       // bucket that stays behind because it could not be emptied, has to
       // surface instead of leaving the next run to fail on it.

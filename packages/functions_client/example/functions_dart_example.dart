@@ -20,7 +20,9 @@ Future<void> main() async {
     );
     print('status: ${response.statusCode}');
     print('data: ${response.data}');
-  } on FunctionException catch (error) {
+  } on FunctionsApiException catch (error) {
     print('Function error: ${error.statusCode} ${error.details}');
+  } on FunctionException catch (error) {
+    print('Function error: ${error.message} ${error.details}');
   }
 }

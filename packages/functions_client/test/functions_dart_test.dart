@@ -64,14 +64,16 @@ void main() {
       await expectLater(
         functionsCustomHttpClient.invoke('network-error'),
         throwsA(
-          isA<FunctionsFetchException>()
-              .having((e) => e.statusCode, 'statusCode', isNull)
-              .having(
-                (e) => e.message,
-                'message',
-                'Failed to send a request to the Edge Function',
-              )
-              .having((e) => e.details, 'details', isA<ClientException>()),
+          allOf(
+            isA<FunctionsFetchException>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  'Failed to send a request to the Edge Function',
+                )
+                .having((e) => e.details, 'details', isA<ClientException>()),
+            isNot(isA<SupabaseApiException>()),
+          ),
         ),
       );
     });
@@ -96,7 +98,7 @@ void main() {
         await expectLater(
           functionsCustomHttpClient.invoke('error-sse'),
           throwsA(
-            isA<FunctionException>()
+            isA<FunctionsApiException>()
                 .having((e) => e.statusCode, 'statusCode', 500)
                 .having((e) => e.details, 'details', 'error: boom'),
           ),
@@ -110,7 +112,7 @@ void main() {
         await expectLater(
           functionsCustomHttpClient.invoke('invalid-json-error'),
           throwsA(
-            isA<FunctionException>()
+            isA<FunctionsApiException>()
                 .having((e) => e.statusCode, 'statusCode', 500)
                 .having(
                   (e) => e.details,
@@ -610,7 +612,7 @@ void main() {
         await expectLater(
           functionsCustomHttpClient.invoke('error-function'),
           throwsA(
-            isA<FunctionException>()
+            isA<FunctionsApiException>()
                 .having((e) => e.statusCode, 'statusCode', 420)
                 .having((e) => e.details, 'details', isNotNull)
                 .having((e) => e.message, 'message', 'Enhance Your Calm')

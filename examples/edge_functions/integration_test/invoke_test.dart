@@ -220,10 +220,9 @@ void main() {
       await expectLater(
         unreachable.invoke('echo'),
         throwsA(
-          isA<FunctionsFetchException>().having(
-            (error) => error.statusCode,
-            'statusCode',
-            isNull,
+          allOf(
+            isA<FunctionsFetchException>(),
+            isNot(isA<SupabaseApiException>()),
           ),
         ),
       );

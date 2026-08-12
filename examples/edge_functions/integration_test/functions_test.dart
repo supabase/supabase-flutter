@@ -63,7 +63,7 @@ void main() {
     await expectLater(
       repository.countWords(''),
       throwsA(
-        isA<FunctionException>()
+        isA<FunctionsApiException>()
             .having((error) => error.statusCode, 'statusCode', 400)
             .having(
               (error) => (error.details as Map)['error'],

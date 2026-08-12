@@ -322,7 +322,16 @@ void main() {
 
         await expectLater(
           client.from('public').createSignedUrl('missing.txt', 60),
-          throwsA(isA<StorageException>()),
+          throwsA(
+            allOf(
+              isA<StorageException>().having(
+                (e) => e.message,
+                'message',
+                'No signed URL returned by API',
+              ),
+              isNot(isA<SupabaseApiException>()),
+            ),
+          ),
         );
       },
     );
@@ -540,7 +549,7 @@ void main() {
             .downloadStream('missing.txt')
             .drain<void>(),
         throwsA(
-          isA<StorageException>().having(
+          isA<StorageApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             404,
@@ -827,7 +836,7 @@ void main() {
       await expectLater(
         client.listBuckets(),
         throwsA(
-          isA<StorageException>().having(
+          isA<StorageApiException>().having(
             (e) => e.statusCode,
             'statusCode',
             420,

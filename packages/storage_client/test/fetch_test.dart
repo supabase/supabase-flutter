@@ -139,7 +139,7 @@ void main() {
         expect(
           client.from('bucket').list(),
           throwsA(
-            isA<StorageException>()
+            isA<StorageApiException>()
                 .having((e) => e.statusCode, 'statusCode', 502)
                 .having(
                   (e) => e.message,

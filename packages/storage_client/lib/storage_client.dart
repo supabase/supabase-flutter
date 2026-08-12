@@ -1,7 +1,8 @@
 /// Dart client library for Supabase Storage.
 library;
 
-export 'package:supabase_common/supabase_common.dart' show SupabaseException;
+export 'package:supabase_common/supabase_common.dart'
+    show SupabaseApiException, SupabaseException;
 
 export 'src/iceberg/iceberg_error.dart';
 export 'src/iceberg/iceberg_rest_catalog.dart';

@@ -1040,15 +1040,20 @@ class GoTrueClient {
     final errorCode = url.queryParameters['error_code'];
     final error = url.queryParameters['error'];
     if (error != null || errorDescription != null || errorCode != null) {
+      final message =
+          errorDescription ?? 'Error in URL with unspecified error_description';
       // `error_code` carries either a numeric HTTP status (older links) or a
       // code such as `otp_expired`. Only the numeric form is a status, so fall
       // back to the `error` parameter for the code in that case.
       final statusCode = int.tryParse(errorCode ?? '');
-      throw AuthException(
-        errorDescription ?? 'Error in URL with unspecified error_description',
-        statusCode: statusCode,
-        errorCode: statusCode == null ? (errorCode ?? error) : error,
-      );
+      if (statusCode != null) {
+        throw AuthApiException(
+          message,
+          statusCode: statusCode,
+          errorCode: error,
+        );
+      }
+      throw AuthException(message, errorCode: errorCode ?? error);
     }
 
     final authCode = url.queryParameters['code'];
@@ -1142,7 +1147,7 @@ class GoTrueClient {
     if (accessToken != null) {
       try {
         await admin.signOut(accessToken, scope: scope);
-      } on AuthException catch (error) {
+      } on AuthApiException catch (error) {
         // Ignore 401s since an invalid or expired JWT should sign out the
         // current session.
         // Ignore 403s since the user might not exist anymore.

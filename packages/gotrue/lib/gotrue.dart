@@ -1,7 +1,8 @@
 /// A dart client library for the GoTrue API (Supabase Auth).
 library;
 
-export 'package:supabase_common/supabase_common.dart' show SupabaseException;
+export 'package:supabase_common/supabase_common.dart'
+    show SupabaseApiException, SupabaseException;
 
 export 'src/constants.dart' hide Constants;
 export 'src/gotrue_admin_api.dart';

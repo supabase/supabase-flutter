@@ -9,16 +9,22 @@ typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 
 /// A Postgrest response exception
 ///
+/// Every Postgrest failure is a response, so this is always a
+/// [SupabaseApiException].
+///
 /// [errorCode] holds the code reported by PostgREST or PostgreSQL, for example
 /// `PGRST116` or the SQLSTATE `23505`. It is unrelated to [statusCode], which
 /// is the HTTP status of the response.
-class PostgrestException extends SupabaseException {
+class PostgrestException extends SupabaseException with SupabaseApiException {
+  @override
+  final int statusCode;
+
   final Object? details;
   final String? hint;
 
   const PostgrestException({
     required String message,
-    super.statusCode,
+    required this.statusCode,
     super.errorCode,
     this.details,
     this.hint,
@@ -26,8 +32,8 @@ class PostgrestException extends SupabaseException {
 
   factory PostgrestException.fromJson(
     Map<String, dynamic> json, {
+    required int statusCode,
     String? message,
-    int? statusCode,
     String? details,
   }) {
     return PostgrestException(

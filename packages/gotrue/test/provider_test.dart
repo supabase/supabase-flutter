@@ -181,7 +181,7 @@ void main() {
           await client.getSessionFromUrl(Uri.parse(url));
         },
         throwsA(
-          isA<AuthException>()
+          isA<AuthApiException>()
               .having((e) => e.errorCode, 'errorCode', 'access_denied')
               .having((e) => e.statusCode, 'statusCode', 403)
               .having(
@@ -204,9 +204,14 @@ void main() {
           await client.getSessionFromUrl(Uri.parse(url));
         },
         throwsA(
-          isA<AuthException>()
-              .having((e) => e.errorCode, 'errorCode', 'otp_expired')
-              .having((e) => e.statusCode, 'statusCode', isNull),
+          allOf(
+            isA<AuthException>().having(
+              (e) => e.errorCode,
+              'errorCode',
+              'otp_expired',
+            ),
+            isNot(isA<SupabaseApiException>()),
+          ),
         ),
       );
     });

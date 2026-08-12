@@ -2,7 +2,7 @@
 library;
 
 export 'package:supabase_common/supabase_common.dart'
-    show HttpMethod, SupabaseException;
+    show HttpMethod, SupabaseApiException, SupabaseException;
 
 export 'src/postgrest.dart';
 export 'src/postgrest_builder.dart';
