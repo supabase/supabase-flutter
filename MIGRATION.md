@@ -695,5 +695,56 @@ Four changes go beyond a rename:
 
 `AuthUnknownException` also no longer reports a status of its own. It derived one from
 `originalError`, which it still exposes, so read it from there when that is an `http.Response`.
-`RealtimeSubscribeException` and `IcebergException` are not part of this hierarchy and are
-unchanged.
+`RealtimeSubscribeException` is not part of this hierarchy: it reports a channel subscription
+outcome rather than a request failure, and carries a `RealtimeSubscribeStatus` instead of a message.
+
+### The Iceberg exceptions join the same hierarchy
+
+`IcebergException` used `0` as the status code when a request never reached the catalog, so callers
+had to know that `statusCode == 0` meant "no response" rather than a real status. The sealed
+hierarchy now splits the same way as the other packages:
+
+| | |
+| --- | --- |
+| `IcebergNetworkException` | the request never reached the catalog, so there is no status code |
+| `IcebergApiException` | the catalog answered, so `statusCode` is a real, non-nullable status |
+
+`IcebergApiException` is the sealed base for the response backed subtypes, which are unchanged:
+`IcebergNotFoundException`, `IcebergConflictException`,
+`IcebergAuthenticationTimeoutException`, `IcebergCommitStateUnknownException`,
+`IcebergServerException` and `IcebergUnknownException`.
+
+| Before | After |
+| --- | --- |
+| `IcebergException.type` | `errorCode`, from `SupabaseException` |
+| `IcebergException.statusCode` | `IcebergApiException.statusCode`; gone from the network case |
+| `IcebergException.statusCode == 0` | catch `IcebergNetworkException`, or check `is SupabaseApiException` |
+| `IcebergException.fromResponse` | `IcebergApiException.fromResponse` |
+
+`message`, `code` and `details` keep their names. `code` is still the Iceberg numeric error code,
+which is unrelated to `errorCode`, the string error type such as `NoSuchTableException`.
+
+```dart
+// Before
+try {
+  await catalog.loadTable(id);
+} on IcebergException catch (error) {
+  if (error.statusCode == 0) {
+    // the request never went out
+  }
+  print(error.type);
+}
+
+// After
+try {
+  await catalog.loadTable(id);
+} on IcebergNetworkException catch (error) {
+  // the request never went out
+  print(error.details);
+} on IcebergApiException catch (error) {
+  print('${error.statusCode}: ${error.errorCode}');
+}
+```
+
+Exhaustive switches over the sealed hierarchy still compile with the same set of cases, since the
+new base is sealed and every concrete subtype is unchanged.

@@ -2206,6 +2206,11 @@ supporting_symbols:
   - GoTruePasskeyApi.list
   - GoTruePasskeyApi.update
   - Headers
+  - IcebergApiException
+  - IcebergApiException.IcebergApiException
+  - IcebergApiException.fromResponse
+  - IcebergApiException.statusCode
+  - IcebergApiException.toString
   - IcebergAuthenticationTimeoutException
   - IcebergAuthenticationTimeoutException.IcebergAuthenticationTimeoutException
   - IcebergCommitStateUnknownException
@@ -2216,11 +2221,6 @@ supporting_symbols:
   - IcebergException.IcebergException
   - IcebergException.code
   - IcebergException.details
-  - IcebergException.fromResponse
-  - IcebergException.message
-  - IcebergException.statusCode
-  - IcebergException.toString
-  - IcebergException.type
   - IcebergNetworkException
   - IcebergNetworkException.IcebergNetworkException
   - IcebergNotFoundException
