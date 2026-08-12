@@ -318,7 +318,7 @@ jobs:
           melos bootstrap
 
       - name: Install DCM
-        uses: CQLabs/setup-dcm@8697ae0790c0852e964a6ef1d768d62a6675481a # v2.0.1
+        uses: CQLabs/setup-dcm@87040f30822ed86d362425d3dfadc9866baaa03f # v2.0.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
