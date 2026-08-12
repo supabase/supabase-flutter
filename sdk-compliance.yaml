@@ -1627,7 +1627,6 @@ features:
       - RealtimeChannel.unsubscribe
   realtime.channel.broadcast:
     status: implemented
-    note: "sendBroadcastMessage only sends over the WebSocket and throws when the channel was never subscribed; it does not fall back to the REST endpoint the way supabase-js send() still does. Use httpSend for REST delivery."
     symbols:
       - RealtimeChannel.sendBroadcastMessage
     supporting_symbols:
