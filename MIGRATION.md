@@ -561,3 +561,97 @@ constant held.
 The `MigrationLocalStorage` and `HiveLocalStorage` snippets that migrated a v1 session out of
 [hive](https://pub.dev/packages/hive) are gone from the README along with it. If you are still on
 v1, upgrade to v2 first and let it migrate the session, then move to v3.
+
+### Service exceptions share one base
+
+`AuthException`, `PostgrestException`, `StorageException` and `FunctionException` each reimplemented
+the same message plus status shape under different field names and types. They now extend a shared
+`SupabaseException`, and the ones reporting a response from a service also mix in
+`SupabaseApiException`:
+
+```dart
+abstract class SupabaseException implements Exception {
+  final String message;
+  final String? errorCode;
+}
+
+mixin SupabaseApiException on SupabaseException {
+  int get statusCode;
+}
+```
+
+So `statusCode` is a non-nullable `int` that exists exactly when a service answered, and a failure
+the client raised on its own carries only a message and, where the client can name it, an
+`errorCode`. Both types are re-exported from every package, so one catch handles a failure from any
+service:
+
+```dart
+try {
+  await supabase.from('countries').select();
+} on SupabaseApiException catch (error) {
+  print('${error.statusCode}: ${error.message}');
+} on SupabaseException catch (error) {
+  print(error.message);
+}
+```
+
+The renames:
+
+| Before | After |
+| --- | --- |
+| `AuthException.statusCode` (`String?`) | `AuthApiException.statusCode` (`int`) |
+| `AuthException.code` | `AuthException.errorCode` |
+| `StorageException.statusCode` (`String?`) | `StorageApiException.statusCode` (`int`) |
+| `StorageException.error` | `errorCode` |
+| `StorageException.fromJson(json, '404')` | `StorageApiException.fromJson(json, 404)` |
+| `PostgrestException.code` | `errorCode`, with the HTTP status in `statusCode` |
+| `PostgrestException.fromJson(json, code: 409)` | `PostgrestException.fromJson(json, statusCode: 409)` |
+| `PostgrestException.toJson()` key `code` | keys `statusCode` and `errorCode` |
+| `FunctionException.status` (`int`) | `FunctionsApiException.statusCode` |
+| `FunctionException.reasonPhrase` | folded into `message` |
+| `FunctionsFetchException.status == 0` | no status at all, no response reached the client |
+| `FunctionResponse.status` | `FunctionResponse.statusCode` |
+
+Reading a status off a per-service base no longer compiles, since the base no longer has one.
+Narrow the catch to the API type:
+
+```dart
+// Before
+try {
+  await supabase.auth.signInWithPassword(email: email, password: password);
+} on AuthException catch (error) {
+  if (error.statusCode == '429') {
+    // ...
+  }
+}
+
+// After
+try {
+  await supabase.auth.signInWithPassword(email: email, password: password);
+} on AuthApiException catch (error) {
+  if (error.statusCode == 429) {
+    // ...
+  }
+}
+```
+
+Four changes go beyond a rename:
+
+- `PostgrestException.code` no longer doubles as the status. It held the PostgREST or PostgreSQL
+  code, except when the error body was not JSON, where it held the HTTP status instead. `errorCode`
+  is now only ever the former and `statusCode` only ever the latter, so a duplicate key violation
+  reads as `statusCode: 409, errorCode: '23505'`.
+- `AuthSessionMissingException` and `AuthInvalidJwtException` report no status. The `400` they used
+  to carry was invented by the client, which raises both without making a request. They report
+  `errorCode` values of `session_missing` and `invalid_jwt` instead.
+- `AuthRetryableFetchException` covers only the transport case now, where the request never reached
+  the service. A retryable 5xx the service answered is an `AuthRetryableApiException`, which carries
+  the status. Catching `AuthRetryableFetchException` still gets both.
+- `FunctionException` gained a message. It had only `status`, `details` and `reasonPhrase`. The
+  response's reason phrase becomes the message, falling back to a per-subtype default when the
+  response carries none, as over HTTP/2. The response body is still in `details`.
+
+`AuthUnknownException` also no longer reports a status of its own. It derived one from
+`originalError`, which it still exposes, so read it from there when that is an `http.Response`.
+`RealtimeSubscribeException` and `IcebergException` are not part of this hierarchy and are
+unchanged.
