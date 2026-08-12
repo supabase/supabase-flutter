@@ -70,6 +70,46 @@ final WebSocketChannel? socket = client.connection;
 client.onConnectionMessage(rawMessage);
 ```
 
+### Broadcasts no longer fall back to the REST API
+
+`sendBroadcastMessage()` used to silently post to the REST broadcast endpoint whenever the channel
+could not push over the WebSocket, logging a warning that the fallback would go away. It has gone
+away: the message is only ever sent over the WebSocket, and calling it on a channel that was never
+subscribed throws instead.
+
+The fallback made delivery depend on socket timing, so the same call could take two different
+transports with two different sets of failure modes. `httpSend()` is the explicit REST path, and it
+works without subscribing at all.
+
+```dart
+// Before
+final channel = supabase.channel('room');
+// Delivered over REST because the channel was never subscribed.
+await channel.sendBroadcastMessage(
+  event: 'cursor-pos',
+  payload: {'x': 12, 'y': 34},
+);
+
+// After, over REST
+final channel = supabase.channel('room');
+await channel.httpSend(
+  event: 'cursor-pos',
+  payload: {'x': 12, 'y': 34},
+);
+
+// After, over the WebSocket
+final channel = supabase.channel('room')..subscribe();
+await channel.sendBroadcastMessage(
+  event: 'cursor-pos',
+  payload: {'x': 12, 'y': 34},
+);
+```
+
+Messages sent between `subscribe()` and the channel actually joining are still buffered and
+flushed once the join succeeds, so only channels that were never subscribed throw.
+
+`httpSend()` requires a Realtime server running v2.97.0 or newer.
+
 ### Plural enum names singularized
 
 A Dart enum type names one value rather than the set, so its name should be singular. Five enums
