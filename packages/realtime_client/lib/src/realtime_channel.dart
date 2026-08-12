@@ -794,7 +794,7 @@ class RealtimeChannel {
     String? event,
     required Map<String, dynamic> payload,
     Map<String, dynamic> opts = const {},
-  }) async {
+  }) {
     final completer = Completer<ChannelResponse>();
 
     payload['type'] = type.toType();
@@ -802,11 +802,16 @@ class RealtimeChannel {
       payload['event'] = event;
     }
 
-    final push = this.push(
-      ChannelEvent.fromType(payload['type']),
-      payload,
-      opts['timeout'] ?? _timeout,
-    );
+    final Push push;
+    try {
+      push = this.push(
+        ChannelEvent.fromType(payload['type']),
+        payload,
+        opts['timeout'] ?? _timeout,
+      );
+    } catch (error, stackTrace) {
+      return Future.error(error, stackTrace);
+    }
 
     if (payload['type'] == 'broadcast' &&
         (params['config']?['broadcast']?['ack'] == null ||
