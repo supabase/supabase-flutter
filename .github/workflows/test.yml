@@ -237,12 +237,19 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         flutter-version: ['3.35.x', 'latest']
+        include:
+          - os: ubuntu-latest
+            runner: ubuntu-latest
+          - os: macos-latest
+            runner: blacksmith-6vcpu-macos-latest
+          - os: windows-latest
+            runner: windows-latest
 
     defaults:
       run:
         working-directory: packages/supabase_flutter
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Checkout repository

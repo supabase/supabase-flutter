@@ -71,23 +71,29 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
+            runner: ubuntu-latest
             target: web
           - os: ubuntu-latest
+            runner: ubuntu-latest
             target: linux
           - os: ubuntu-latest
+            runner: ubuntu-latest
             target: apk
           - os: macos-latest
+            runner: blacksmith-6vcpu-macos-latest
             target: macos
           - os: macos-latest
+            runner: blacksmith-6vcpu-macos-latest
             target: ios
           - os: windows-latest
+            runner: windows-latest
             target: windows
 
     defaults:
       run:
         working-directory: packages/supabase_flutter
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
 
     env:
       PUB_CACHE: ${{ github.workspace }}/.pub-cache
