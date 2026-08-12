@@ -28,7 +28,10 @@ class ListUsersMockClient extends BaseClient {
         utf8.encode(
           jsonEncode({
             'users': [
-              {'id': '2fa5b8b0-4f1a-4a5c-9d47-1cf3dbb9f7e1'},
+              {
+                'id': '2fa5b8b0-4f1a-4a5c-9d47-1cf3dbb9f7e1',
+                'created_at': '2024-01-01T00:00:00Z',
+              },
             ],
             'aud': ?audience,
           }),

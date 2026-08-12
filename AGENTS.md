@@ -131,7 +131,7 @@ melos version
 
 - **GoTrueClient** manages sessions, tokens, and JWT validation
 - Emits auth state changes via `Stream<AuthState>`
-- **supabase_flutter** adds session persistence via `SharedPreferences` (mobile) or browser localStorage (web)
+- **supabase_flutter** adds session persistence via `SharedPreferencesAsync` (mobile) or browser localStorage (web)
 - Deep link handling for OAuth callbacks (detects `?code=` for PKCE or `#access_token=` for implicit flow)
 - Auth tokens are automatically injected into all HTTP requests via `AuthHttpClient`
 - Realtime client receives token updates when auth state changes
@@ -169,7 +169,7 @@ import './local_storage_stub.dart'
 ```
 
 This enables:
-- Native mobile (iOS/Android): SharedPreferences for persistence
+- Native mobile (iOS/Android): SharedPreferencesAsync for persistence
 - Web: Browser localStorage
 - Single codebase for all platforms
 

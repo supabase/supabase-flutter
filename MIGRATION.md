@@ -418,3 +418,146 @@ the server to restore both.
 
 The `ApiVersions` class, and its `ApiVersions.v20240101` field, are removed along with it. Nothing
 replaces them; they only existed to drive the comparison above.
+
+### The session is persisted with `SharedPreferencesAsync`
+
+`SharedPreferencesLocalStorage` and `SharedPreferencesGotrueAsyncStorage`, the storage
+implementations `Supabase.initialize` uses by default, wrote through the legacy
+[`SharedPreferences`](https://pub.dev/packages/shared_preferences#sharedpreferences-vs-sharedpreferencesasync-vs-sharedpreferenceswithcache)
+API. They now use `SharedPreferencesAsync`. On web the session still goes into
+`window.localStorage` under the same key as before, so nothing changes there.
+
+The two APIs do not share a store on every platform, and on the ones where they do the legacy API
+prefixes its keys, so a session written by v2 is invisible to the new one. `initialize()` therefore
+moves an existing session over to `SharedPreferencesAsync` the first time it runs and deletes the
+legacy entry, so your users stay signed in. No code change is needed for this, and there is nothing
+to migrate if you already pass your own `LocalStorage`.
+
+What this does mean is that the SDK no longer holds up its end of a mixed setup, and mixing is
+worse than it first looks. How the two APIs relate depends on the platform:
+
+| Platform | Relationship between the two APIs |
+| --- | --- |
+| Windows, Linux | One `shared_preferences.json`, rewritten in full from each API's own cache, so a write through either one can drop what the other wrote |
+| Android | Separate stores, `SharedPreferences` against DataStore, so a value written through one is invisible to the other |
+| iOS, macOS, web | One store, but the legacy API prefixes its keys with `flutter.`, so a value written through one is invisible to the other |
+
+Only the first row loses data, and it loses it in both directions. That is what made sessions go
+missing in v2, and from v3 on the same collision runs the other way: a session write by the SDK can
+drop preferences your own code wrote through the legacy API. So if your code still calls
+`SharedPreferences.getInstance()`, this is the moment to
+[migrate it to `SharedPreferencesAsync`](https://pub.dev/packages/shared_preferences#migrating-from-sharedpreferences-to-sharedpreferencesasync-or-sharedpreferenceswithcache)
+as well. The snippet below is the way out if you cannot do that yet.
+
+If you would rather keep the session in the legacy store for now, pass a `LocalStorage` that reads
+and writes it. Supplying your own storage is also where the session key comes in: `initialize()`
+derives it from your project URL for the default storage, so you only name the key when you
+construct a `LocalStorage` yourself, and `defaultPersistSessionKey` hands you the same one.
+
+```dart
+class LegacySharedPreferencesLocalStorage extends LocalStorage {
+  LegacySharedPreferencesLocalStorage({required this.persistSessionKey});
+
+  final String persistSessionKey;
+
+  late final SharedPreferences _preferences;
+
+  @override
+  Future<void> initialize() async {
+    _preferences = await SharedPreferences.getInstance();
+  }
+
+  @override
+  Future<bool> hasAccessToken() async =>
+      _preferences.containsKey(persistSessionKey);
+
+  @override
+  Future<String?> accessToken() async =>
+      _preferences.getString(persistSessionKey);
+
+  @override
+  Future<void> removePersistedSession() =>
+      _preferences.remove(persistSessionKey);
+
+  @override
+  Future<void> persistSession(String persistSessionString) =>
+      _preferences.setString(persistSessionKey, persistSessionString);
+}
+
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  authOptions: FlutterAuthClientOptions(
+    localStorage: LegacySharedPreferencesLocalStorage(
+      persistSessionKey: defaultPersistSessionKey(url),
+    ),
+  ),
+);
+```
+
+Widget tests that call `Supabase.initialize` need one more line of setup.
+`SharedPreferences.setMockInitialValues()` only stands in for the legacy API, so on its own the new
+storage throws `StateError: The SharedPreferencesAsyncPlatform instance must be set.` Register an
+in-memory async store next to it:
+
+```dart
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+
+setUp(() {
+  SharedPreferences.setMockInitialValues({});
+  SharedPreferencesAsyncPlatform.instance =
+      InMemorySharedPreferencesAsync.empty();
+});
+```
+
+`shared_preferences_platform_interface` needs to be a `dev_dependency` for that import. Passing
+`FlutterAuthClientOptions(localStorage: const EmptyLocalStorage())` instead skips storage in tests
+altogether.
+
+### `supabasePersistSessionKey` is gone
+
+The constant existed for the v1 to v2 migration from Hive, which v3 no longer carries, and the SDK
+itself never read it. The session is stored under the key you pass to `LocalStorage`, which for the
+default storage is `sb-<project-ref>-auth-token`.
+
+The `LocalStorage` examples in the README used the constant as their storage key, so if you copied
+one of those, take the key as a parameter instead:
+
+```dart
+// Before
+class MySecureStorage extends LocalStorage {
+  @override
+  Future<String?> accessToken() => storage.read(key: supabasePersistSessionKey);
+  // ...
+}
+
+// After
+class MySecureStorage extends LocalStorage {
+  MySecureStorage({required this.persistSessionKey});
+
+  final String persistSessionKey;
+
+  @override
+  Future<String?> accessToken() => storage.read(key: persistSessionKey);
+  // ...
+}
+
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  authOptions: FlutterAuthClientOptions(
+    localStorage: MySecureStorage(
+      persistSessionKey: defaultPersistSessionKey(url),
+    ),
+  ),
+);
+```
+
+Passing the key you already store under keeps your users signed in; switching to a different key
+signs them out once. To keep the old value, pass `'SUPABASE_PERSIST_SESSION_KEY'`, which is what the
+constant held.
+
+The `MigrationLocalStorage` and `HiveLocalStorage` snippets that migrated a v1 session out of
+[hive](https://pub.dev/packages/hive) are gone from the README along with it. If you are still on
+v1, upgrade to v2 first and let it migrate the session, then move to v3.

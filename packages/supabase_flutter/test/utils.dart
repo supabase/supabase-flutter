@@ -1,5 +1,19 @@
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+
+/// Replaces both shared_preferences APIs with empty in-memory stores.
+///
+/// [legacyValues] seeds the store of the legacy [SharedPreferences] API, which
+/// `SharedPreferencesLocalStorage` migrates a v2 session from.
+void mockSharedPreferences({Map<String, Object> legacyValues = const {}}) {
+  SharedPreferences.setMockInitialValues(legacyValues);
+  SharedPreferencesAsyncPlatform.instance =
+      InMemorySharedPreferencesAsync.empty();
+}
+
 /// Construct session data for a given expiration date
 ({String accessToken, String sessionString}) getSessionData(
   DateTime accessTokenExpireDateTime,

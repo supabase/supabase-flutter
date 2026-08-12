@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'utils.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
@@ -185,7 +186,7 @@ void main() {
     test(
       'persists the session to the default storage when persistSession is true',
       () async {
-        SharedPreferences.setMockInitialValues({});
+        mockSharedPreferences();
         final pkceHttpClient = PkceHttpClient();
 
         mockAppLink(
@@ -212,15 +213,15 @@ void main() {
             .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
             .timeout(const Duration(seconds: 5));
 
-        final preferences = await SharedPreferences.getInstance();
-        expect(preferences.getString(persistSessionKey), isNotNull);
+        final preferences = SharedPreferencesAsync();
+        expect(await preferences.getString(persistSessionKey), isNotNull);
       },
     );
 
     test(
       'does not persist the session when persistSession is false',
       () async {
-        SharedPreferences.setMockInitialValues({});
+        mockSharedPreferences();
         final pkceHttpClient = PkceHttpClient();
 
         mockAppLink(
@@ -248,8 +249,8 @@ void main() {
             .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
             .timeout(const Duration(seconds: 5));
 
-        final preferences = await SharedPreferences.getInstance();
-        expect(preferences.getString(persistSessionKey), isNull);
+        final preferences = SharedPreferencesAsync();
+        expect(await preferences.getString(persistSessionKey), isNull);
       },
     );
   });

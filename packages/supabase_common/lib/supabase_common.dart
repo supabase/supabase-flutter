@@ -10,6 +10,7 @@ export 'src/client_info.dart';
 export 'src/fetch_options.dart';
 export 'src/http_method.dart';
 export 'src/http_status.dart';
+export 'src/persist_session_key.dart';
 export 'src/pkce.dart';
 export 'src/platform/platform_info.dart';
 export 'src/replay_subject.dart';
