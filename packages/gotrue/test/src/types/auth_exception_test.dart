@@ -203,9 +203,10 @@ void main() {
       expect(exception.message, equals('Network timeout'));
     });
 
-    test('reports no status code, since it covers transport failures too', () {
+    test('reports no status code, since the request never reached the '
+        'service', () {
       final SupabaseException exception = AuthRetryableFetchException(
-        message: 'Service Unavailable',
+        message: 'Connection closed before full header was received',
       );
 
       expect(exception, isNot(isA<SupabaseApiException>()));
@@ -229,6 +230,78 @@ void main() {
         AuthRetryableFetchException(message: 'Retry error'),
         isNot(equals(AuthRetryableFetchException(message: 'Other error'))),
       );
+    });
+  });
+
+  group('AuthRetryableApiException', () {
+    test('is caught as an AuthRetryableFetchException', () {
+      final exception = AuthRetryableApiException(
+        message: 'Service Unavailable',
+        statusCode: 503,
+      );
+
+      expect(exception, isA<AuthRetryableFetchException>());
+      expect(exception, isA<AuthException>());
+    });
+
+    test('is a SupabaseApiException carrying the status', () {
+      final exception = AuthRetryableApiException(
+        message: 'Service Unavailable',
+        statusCode: 503,
+      );
+
+      expect(exception, isA<SupabaseApiException>());
+      expect(exception.statusCode, equals(503));
+      expect(exception.message, equals('Service Unavailable'));
+    });
+
+    test('has correct toString format', () {
+      final exception = AuthRetryableApiException(
+        message: 'Error sending confirmation email',
+        statusCode: 500,
+      );
+
+      expect(
+        exception.toString(),
+        equals(
+          'AuthRetryableApiException('
+          'message: Error sending confirmation email, statusCode: 500, '
+          'errorCode: null)',
+        ),
+      );
+    });
+
+    test('compares the status code', () {
+      final exception = AuthRetryableApiException(
+        message: 'Bad Gateway',
+        statusCode: 502,
+      );
+
+      expect(
+        exception,
+        equals(
+          AuthRetryableApiException(message: 'Bad Gateway', statusCode: 502),
+        ),
+      );
+      expect(
+        exception,
+        isNot(
+          equals(
+            AuthRetryableApiException(message: 'Bad Gateway', statusCode: 503),
+          ),
+        ),
+      );
+    });
+
+    test('is not equal to the transport failure it extends', () {
+      final api = AuthRetryableApiException(
+        message: 'Bad Gateway',
+        statusCode: 502,
+      );
+      final transport = AuthRetryableFetchException(message: 'Bad Gateway');
+
+      expect(api, isNot(equals(transport)));
+      expect(transport, isNot(equals(api)));
     });
   });
 
@@ -452,6 +525,7 @@ void main() {
         AuthSessionMissingException(),
         AuthInvalidJwtException('invalid jwt'),
         AuthRetryableFetchException(),
+        AuthRetryableApiException(message: 'retryable', statusCode: 503),
         const AuthApiException('api error', statusCode: 500),
         AuthUnknownException(
           message: 'unknown error',
@@ -471,18 +545,19 @@ void main() {
     });
 
     test('only the response backed exceptions are SupabaseApiException', () {
-      expect(
+      final List<SupabaseException> serviceAnswered = [
         const AuthApiException('api error', statusCode: 500),
-        isA<SupabaseApiException>(),
-      );
-      expect(
+        AuthRetryableApiException(message: 'retryable', statusCode: 503),
         AuthWeakPasswordException(
           message: 'weak password',
           statusCode: 422,
           reasons: ['too_short'],
         ),
-        isA<SupabaseApiException>(),
-      );
+      ];
+
+      for (final exception in serviceAnswered) {
+        expect(exception, isA<SupabaseApiException>());
+      }
 
       final List<SupabaseException> clientOnly = [
         const AuthException('base error'),

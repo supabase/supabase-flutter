@@ -693,10 +693,10 @@ void main() {
       await expectLater(
         client.signInWithOtp(phone: testPhone),
         throwsA(
-          isA<AuthRetryableFetchException>().having(
-            (e) => e.message,
-            'message',
-            'HTTP 500',
+          isA<AuthRetryableApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            500,
           ),
         ),
       );

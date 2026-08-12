@@ -41,16 +41,38 @@ class AuthSessionMissingException extends AuthException {
 }
 
 /// Thrown when a request to the auth service failed in a way that is worth
-/// retrying, either because it never reached the service or because the service
-/// answered with a 5xx status.
+/// retrying.
 ///
-/// Since it covers both, it reports no status code. When the service did
-/// answer, [message] carries what it said: its own error message, or the
-/// response's reason phrase, or `HTTP <status>` when the response had neither.
+/// This is the transport case: the request never reached the service, so there
+/// is no status code to report. A 5xx the service answered with is an
+/// [AuthRetryableApiException], which carries one. Catch this type to cover
+/// both.
 class AuthRetryableFetchException extends AuthException {
   AuthRetryableFetchException({
     String message = 'AuthRetryableFetchException',
   }) : super(message);
+}
+
+/// Thrown when the auth service answered with a 5xx status, which is worth
+/// retrying.
+class AuthRetryableApiException extends AuthRetryableFetchException
+    with SupabaseApiException {
+  @override
+  final int statusCode;
+
+  AuthRetryableApiException({
+    required super.message,
+    required this.statusCode,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      other is AuthRetryableApiException &&
+      super == other &&
+      other.statusCode == statusCode;
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, statusCode);
 }
 
 /// Thrown when the auth service answered with an error.

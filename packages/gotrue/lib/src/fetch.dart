@@ -64,8 +64,9 @@ class GotrueFetch {
     // [FormatException]
     if (response.body.isEmpty) {
       if (isRetryable) {
-        throw AuthRetryableFetchException(
+        throw AuthRetryableApiException(
           message: _getStatusMessage(response),
+          statusCode: response.statusCode,
         );
       }
       throw AuthUnknownException(
@@ -79,8 +80,9 @@ class GotrueFetch {
       data = jsonDecode(response.body);
     } catch (error) {
       if (isRetryable) {
-        throw AuthRetryableFetchException(
+        throw AuthRetryableApiException(
           message: _getStatusMessage(response),
+          statusCode: response.statusCode,
         );
       }
       throw AuthUnknownException(
@@ -90,7 +92,10 @@ class GotrueFetch {
     }
 
     if (isRetryable) {
-      throw AuthRetryableFetchException(message: _getErrorMessage(data));
+      throw AuthRetryableApiException(
+        message: _getErrorMessage(data),
+        statusCode: response.statusCode,
+      );
     }
 
     final errorCode = _getErrorCode(data);

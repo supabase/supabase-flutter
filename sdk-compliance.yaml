@@ -2106,6 +2106,11 @@ supporting_symbols:
   - AuthResponse.fromJson
   - AuthResponse.session
   - AuthResponse.user
+  - AuthRetryableApiException
+  - AuthRetryableApiException.==
+  - AuthRetryableApiException.AuthRetryableApiException
+  - AuthRetryableApiException.hashCode
+  - AuthRetryableApiException.statusCode
   - AuthRetryableFetchException
   - AuthRetryableFetchException.AuthRetryableFetchException
   - AuthSessionMissingException
