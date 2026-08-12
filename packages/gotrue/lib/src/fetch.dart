@@ -66,7 +66,6 @@ class GotrueFetch {
       if (isRetryable) {
         throw AuthRetryableFetchException(
           message: _getStatusMessage(response),
-          statusCode: response.statusCode,
         );
       }
       throw AuthUnknownException(
@@ -82,7 +81,6 @@ class GotrueFetch {
       if (isRetryable) {
         throw AuthRetryableFetchException(
           message: _getStatusMessage(response),
-          statusCode: response.statusCode,
         );
       }
       throw AuthUnknownException(
@@ -92,10 +90,7 @@ class GotrueFetch {
     }
 
     if (isRetryable) {
-      throw AuthRetryableFetchException(
-        message: _getErrorMessage(data),
-        statusCode: response.statusCode,
-      );
+      throw AuthRetryableFetchException(message: _getErrorMessage(data));
     }
 
     final errorCode = _getErrorCode(data);

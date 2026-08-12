@@ -131,7 +131,6 @@ void main() {
       await _expectRetryableFetch(
         client,
         message: 'Error sending confirmation email',
-        statusCode: 500,
       );
     });
 
@@ -151,7 +150,6 @@ void main() {
         await _expectRetryableFetch(
           client,
           message: 'Error sending confirmation email',
-          statusCode: 500,
         );
       },
     );
@@ -166,7 +164,6 @@ void main() {
       await _expectRetryableFetch(
         client,
         message: 'Bad Gateway',
-        statusCode: 502,
       );
     });
 
@@ -181,7 +178,6 @@ void main() {
         await _expectRetryableFetch(
           client,
           message: 'HTTP 502',
-          statusCode: 502,
         );
       },
     );
@@ -198,7 +194,6 @@ void main() {
         await _expectRetryableFetch(
           client,
           message: 'HTTP 502',
-          statusCode: 502,
         );
       },
     );
@@ -213,7 +208,6 @@ void main() {
       await _expectRetryableFetch(
         client,
         message: 'Service Unavailable',
-        statusCode: 503,
       );
     });
 
@@ -226,7 +220,6 @@ void main() {
         await _expectRetryableFetch(
           client,
           message: 'HTTP 503',
-          statusCode: 503,
         );
       },
     );
@@ -249,14 +242,15 @@ void main() {
 Future<void> _expectRetryableFetch(
   Client client, {
   required String message,
-  required int statusCode,
 }) async {
   await expectLater(
     GotrueFetch(client).request(_mockUrl, HttpMethod.get),
     throwsA(
-      isA<AuthRetryableFetchException>()
-          .having((e) => e.message, 'message', message)
-          .having((e) => e.statusCode, 'statusCode', statusCode),
+      isA<AuthRetryableFetchException>().having(
+        (e) => e.message,
+        'message',
+        message,
+      ),
     ),
   );
 }

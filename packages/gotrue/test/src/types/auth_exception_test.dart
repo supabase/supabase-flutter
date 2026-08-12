@@ -193,45 +193,41 @@ void main() {
       final exception = AuthRetryableFetchException();
 
       expect(exception.message, equals('AuthRetryableFetchException'));
-      expect(exception.statusCode, isNull);
     });
 
-    test('uses custom message and statusCode when provided', () {
+    test('uses custom message when provided', () {
       final exception = AuthRetryableFetchException(
         message: 'Network timeout',
-        statusCode: 408,
       );
 
       expect(exception.message, equals('Network timeout'));
-      expect(exception.statusCode, equals(408));
+    });
+
+    test('reports no status code, since it covers transport failures too', () {
+      final SupabaseException exception = AuthRetryableFetchException(
+        message: 'Service Unavailable',
+      );
+
+      expect(exception, isNot(isA<SupabaseApiException>()));
     });
 
     test('has correct toString format', () {
-      final exception = AuthRetryableFetchException(
-        message: 'Retry error',
-        statusCode: 500,
-      );
+      final exception = AuthRetryableFetchException(message: 'Retry error');
 
       final string = exception.toString();
 
       expect(string, contains('AuthRetryableFetchException('));
       expect(string, contains('message: Retry error'));
-      expect(string, contains('statusCode: 500'));
     });
 
-    test('compares the status code', () {
-      final withStatus = AuthRetryableFetchException(
-        message: 'Retry error',
-        statusCode: 500,
-      );
-      final withoutStatus = AuthRetryableFetchException(message: 'Retry error');
-
-      expect(withStatus, isNot(equals(withoutStatus)));
+    test('compares the message', () {
       expect(
-        withStatus,
-        equals(
-          AuthRetryableFetchException(message: 'Retry error', statusCode: 500),
-        ),
+        AuthRetryableFetchException(message: 'Retry error'),
+        equals(AuthRetryableFetchException(message: 'Retry error')),
+      );
+      expect(
+        AuthRetryableFetchException(message: 'Retry error'),
+        isNot(equals(AuthRetryableFetchException(message: 'Other error'))),
       );
     });
   });
@@ -306,10 +302,9 @@ void main() {
 
       expect(exception.message, equals('Unknown error'));
       expect(exception.originalError, equals('Original error string'));
-      expect(exception.statusCode, isNull);
     });
 
-    test('extracts status code from http.Response original error', () {
+    test('keeps the response as the original error, status included', () {
       final response = http.Response('Error body', 500);
       final exception = AuthUnknownException(
         message: 'Unknown error',
@@ -318,7 +313,17 @@ void main() {
 
       expect(exception.message, equals('Unknown error'));
       expect(exception.originalError, equals(response));
-      expect(exception.statusCode, equals(500));
+      final originalError = exception.originalError as http.Response;
+      expect(originalError.statusCode, equals(500));
+    });
+
+    test('reports no status code of its own', () {
+      final SupabaseException exception = AuthUnknownException(
+        message: 'Unknown error',
+        originalError: http.Response('Error body', 500),
+      );
+
+      expect(exception, isNot(isA<SupabaseApiException>()));
     });
 
     test('handles non-http.Response objects', () {
@@ -330,7 +335,6 @@ void main() {
 
       expect(exception.message, equals('Unknown error'));
       expect(exception.originalError, equals(originalError));
-      expect(exception.statusCode, isNull);
     });
 
     test('has correct toString format', () {
@@ -345,7 +349,7 @@ void main() {
       expect(string, contains('AuthUnknownException('));
       expect(string, contains('message: Unknown error'));
       expect(string, contains('originalError:'));
-      expect(string, contains('statusCode: 404'));
+      expect(string, isNot(contains('statusCode:')));
     });
   });
 
@@ -502,11 +506,9 @@ void main() {
     test('handles network timeout scenario', () {
       final exception = AuthRetryableFetchException(
         message: 'Request timeout',
-        statusCode: 408,
       );
 
       expect(exception.message, equals('Request timeout'));
-      expect(exception.statusCode, equals(408));
     });
 
     test('handles validation error scenario', () {
@@ -558,7 +560,6 @@ void main() {
       );
 
       expect(exception.message, equals('An unexpected error occurred'));
-      expect(exception.statusCode, equals(500));
       expect(exception.originalError, equals(response));
     });
 

@@ -43,31 +43,14 @@ class AuthSessionMissingException extends AuthException {
 /// Thrown when a request to the auth service failed in a way that is worth
 /// retrying, either because it never reached the service or because the service
 /// answered with a 5xx status.
+///
+/// Since it covers both, it reports no status code. When the service did
+/// answer, [message] carries what it said: its own error message, or the
+/// response's reason phrase, or `HTTP <status>` when the response had neither.
 class AuthRetryableFetchException extends AuthException {
-  /// HTTP status code of the response that caused the error.
-  ///
-  /// `null` when the request failed before a response was received, for
-  /// example on a network failure.
-  final int? statusCode;
-
   AuthRetryableFetchException({
     String message = 'AuthRetryableFetchException',
-    this.statusCode,
   }) : super(message);
-
-  @override
-  String toString() =>
-      '$runtimeType(message: $message, statusCode: $statusCode, '
-      'errorCode: $errorCode)';
-
-  @override
-  bool operator ==(Object other) =>
-      other is AuthRetryableFetchException &&
-      super == other &&
-      other.statusCode == statusCode;
-
-  @override
-  int get hashCode => Object.hash(super.hashCode, statusCode);
 }
 
 /// Thrown when the auth service answered with an error.
@@ -91,36 +74,24 @@ class AuthApiException extends AuthException with SupabaseApiException {
   int get hashCode => Object.hash(super.hashCode, statusCode);
 }
 
+/// Thrown when a response could not be interpreted as an auth error, either
+/// because it carried no body or because the body was not JSON.
+///
+/// It reports no status code of its own; read it from [originalError] when that
+/// is a response.
 class AuthUnknownException extends AuthException {
   /// May contain a non 2xx [http.Response] object or the original thrown error.
   final Object originalError;
 
-  /// HTTP status code of the response that caused the error.
-  ///
-  /// `null` when [originalError] is not a response.
-  final int? statusCode;
-
   AuthUnknownException({
     required String message,
     required this.originalError,
-  }) : statusCode = originalError is http.Response
-           ? originalError.statusCode
-           : null,
-       super(message);
+  }) : super(message);
 
   @override
   String toString() =>
-      '$runtimeType(message: $message, statusCode: $statusCode, '
-      'errorCode: $errorCode, originalError: $originalError)';
-
-  @override
-  bool operator ==(Object other) =>
-      other is AuthUnknownException &&
-      super == other &&
-      other.statusCode == statusCode;
-
-  @override
-  int get hashCode => Object.hash(super.hashCode, statusCode);
+      '$runtimeType(message: $message, errorCode: $errorCode, '
+      'originalError: $originalError)';
 }
 
 class AuthWeakPasswordException extends AuthApiException {

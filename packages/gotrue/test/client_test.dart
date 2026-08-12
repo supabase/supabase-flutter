@@ -657,11 +657,14 @@ void main() {
         client.signInWithPassword(email: email1, password: password),
         throwsA(
           isA<AuthUnknownException>()
-              .having((e) => e.statusCode, 'statusCode', 420)
               .having(
                 (e) => e.originalError,
                 'originalError',
-                isA<http.Response>(),
+                isA<http.Response>().having(
+                  (response) => response.statusCode,
+                  'statusCode',
+                  420,
+                ),
               )
               .having(
                 (e) => e.message,

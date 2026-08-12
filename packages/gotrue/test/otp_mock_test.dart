@@ -694,9 +694,9 @@ void main() {
         client.signInWithOtp(phone: testPhone),
         throwsA(
           isA<AuthRetryableFetchException>().having(
-            (e) => e.statusCode,
-            'statusCode',
-            500,
+            (e) => e.message,
+            'message',
+            'HTTP 500',
           ),
         ),
       );
