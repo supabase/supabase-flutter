@@ -1,3 +1,5 @@
+include: package:supabase_lints/analysis_options.yaml
+
 analyzer:
   exclude:
     - build/**
@@ -7,4 +9,3 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
-include: package:supabase_lints/analysis_options.yaml
