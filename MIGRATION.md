@@ -110,6 +110,115 @@ flushed once the join succeeds, so only channels that were never subscribed thro
 
 `httpSend()` requires a Realtime server running v2.97.0 or newer.
 
+### Realtime listener callbacks are now streams
+
+Every recurring-event listener in `realtime_client` is now a Dart `Stream` instead of a callback,
+following the shape `RealtimeClient.onHeartbeat` already had. Streams compose (`map`, `where`,
+`firstWhere`, `timeout`), support multiple listeners, and removing a listener is a
+`StreamSubscription.cancel()`, which the callback API had no public equivalent for.
+
+On `RealtimeClient`, the connection listeners are broadcast stream getters instead of
+callback-registration methods:
+
+```dart
+// Before
+client.onOpen(() => print('open'));
+client.onClose((event) => print('closed: $event'));
+client.onError((error) => print('error: $error'));
+client.onMessage((message) => print('message: $message'));
+
+// After
+client.onOpen.listen((_) => print('open'));
+client.onClose.listen((event) => print('closed: $event'));
+client.onError.listen((error) => print('error: $error'));
+client.onMessage.listen((message) => print('message: $message'));
+```
+
+On `RealtimeChannel`, `onPostgresChanges` and `onBroadcast` no longer take a `callback` parameter
+and return a typed stream instead of the channel, so they can no longer be chained. Repeated calls
+with the same arguments return the same stream. For `postgres_changes` the stream still has to be
+created before `subscribe()`, because the requested changes are part of the join payload, but it
+can be listened to at any point:
+
+```dart
+// Before
+supabase
+    .channel('room')
+    .onPostgresChanges(
+      event: PostgresChangeEvent.insert,
+      schema: 'public',
+      table: 'messages',
+      callback: (payload) => print(payload),
+    )
+    .onBroadcast(
+      event: 'cursor-pos',
+      callback: (payload) => print(payload),
+    )
+    .subscribe();
+
+// After
+final channel = supabase.channel('room');
+channel
+    .onPostgresChanges(
+      event: PostgresChangeEvent.insert,
+      schema: 'public',
+      table: 'messages',
+    )
+    .listen(print);
+channel.onBroadcast(event: 'cursor-pos').listen(print);
+channel.subscribe();
+```
+
+The presence and system listeners are stream getters, and `onSystemEvents` emits a typed
+`RealtimeSystemPayload` instead of a raw payload:
+
+```dart
+// Before
+channel.onPresenceSync((payload) { /* ... */ });
+channel.onPresenceJoin((payload) { /* ... */ });
+channel.onPresenceLeave((payload) { /* ... */ });
+channel.onSystemEvents((payload) {
+  final system = RealtimeSystemPayload.fromJson(
+    Map<String, dynamic>.from(payload as Map),
+  );
+});
+
+// After
+channel.onPresenceSync.listen((payload) { /* ... */ });
+channel.onPresenceJoin.listen((payload) { /* ... */ });
+channel.onPresenceLeave.listen((payload) { /* ... */ });
+channel.onSystemEvents.listen((system) { /* ... */ });
+```
+
+`subscribe()` no longer takes a status callback. Status changes are emitted on the new
+`RealtimeChannel.onStatusChange` stream as `RealtimeSubscribeStatusChange` values, which carry the
+`RealtimeSubscribeStatus` and, for `channelError`, the error that caused it. The optional timeout
+moved up to be the first positional parameter:
+
+```dart
+// Before
+channel.subscribe((status, [error]) {
+  if (status == RealtimeSubscribeStatus.subscribed) {
+    // ...
+  } else if (status == RealtimeSubscribeStatus.channelError) {
+    print('error: $error');
+  }
+}, const Duration(seconds: 10));
+
+// After
+channel.onStatusChange.listen((change) {
+  if (change.status == RealtimeSubscribeStatus.subscribed) {
+    // ...
+  } else if (change.status == RealtimeSubscribeStatus.channelError) {
+    print('error: ${change.error}');
+  }
+});
+channel.subscribe(const Duration(seconds: 10));
+```
+
+All channel streams complete when the channel closes, so `await for` loops and `onDone` handlers
+end on their own once the channel is gone.
+
 ### Plural enum names singularized
 
 A Dart enum type names one value rather than the set, so its name should be singular. Five enums

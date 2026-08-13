@@ -612,6 +612,15 @@ class RealtimeChannel {
     T? Function(dynamic payload) transform,
   ) {
     final controller = StreamController<T>.broadcast();
+
+    // Once a subscribed channel has closed it cannot be joined again, and the
+    // one-shot cleanup that completes the event streams has already run, so
+    // hand out an already-closed stream instead of one that never completes.
+    if (joinedOnce && isClosed) {
+      unawaited(controller.close());
+      return controller.stream;
+    }
+
     onEvents(type, filter, (payload, [ref]) {
       final value = transform(payload);
       if (value != null && !controller.isClosed) {

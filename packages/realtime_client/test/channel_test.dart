@@ -532,6 +532,20 @@ void main() {
       expect(identical(first, other), isFalse);
     });
 
+    test(
+      'streams created after the channel closed complete immediately',
+      () async {
+        channel.subscribe();
+        channel.trigger('phx_close');
+        // Wait for the deferred controller cleanup to run.
+        await Future<void>.delayed(Duration.zero);
+        expect(channel.isClosed, isTrue);
+
+        await expectLater(channel.onBroadcast(event: 'cursor'), emitsDone);
+        await expectLater(channel.onPresenceSync, emitsDone);
+      },
+    );
+
     test('reused streams deliver events to every listener', () async {
       var firstEvents = 0;
       var secondEvents = 0;
