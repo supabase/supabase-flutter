@@ -221,7 +221,7 @@ end on their own once the channel is gone.
 
 ### `RealtimePresence` is internal
 
-`RealtimePresence` and its helper types (`PresenceOpts`, `PresenceEvents`, `PresenceChooser`,
+`RealtimePresence` and its helper types (`PresenceOptions`, `PresenceEvents`, `PresenceChooser`,
 `PresenceOnJoinCallback`, `PresenceOnLeaveCallback`) are now `@internal`, along with the
 `RealtimeChannel.presence` field. They were presence bookkeeping that leaked into the public API,
 and registering a callback through `channel.presence.onJoin(...)` silently disabled the channel's

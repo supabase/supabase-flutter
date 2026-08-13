@@ -49,10 +49,10 @@ typedef PresenceOnLeaveCallback =
     void Function(String? key, dynamic currentPresences, dynamic newPresences);
 
 @internal
-class PresenceOpts {
+class PresenceOptions {
   final PresenceEvents events;
 
-  const PresenceOpts({required this.events});
+  const PresenceOptions({required this.events});
 }
 
 @internal
@@ -90,11 +90,11 @@ class RealtimePresence {
   ///
   /// `channel` - The RealtimeChannel
   ///
-  /// `opts` - The options, for example `PresenceOpts(events:
+  /// `options` - The options, for example `PresenceOptions(events:
   /// PresenceEvents(state: 'state', diff: 'diff'))`
-  RealtimePresence(this.channel, [PresenceOpts? opts]) {
+  RealtimePresence(this.channel, [PresenceOptions? options]) {
     final events =
-        opts?.events ??
+        options?.events ??
         PresenceEvents(state: 'presence_state', diff: 'presence_diff');
 
     channel.onEvents(events.state, ChannelFilter(), (newState, [_]) {
