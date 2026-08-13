@@ -700,16 +700,16 @@ outcome rather than a request failure, and carries a `RealtimeSubscribeStatus` i
 
 ### The Iceberg exceptions join the same hierarchy
 
-`IcebergException` used `0` as the status code when a request never reached the catalog, so callers
+`IcebergException` used `0` as the status code when no response was received, so callers
 had to know that `statusCode == 0` meant "no response" rather than a real status. The sealed
 hierarchy now splits the same way as the other packages:
 
 | | |
 | --- | --- |
-| `IcebergNetworkException` | the request never reached the catalog, so there is no status code |
+| `IcebergNetworkException` | no response was received from the catalog, so there is no status code and the outcome of the request is unknown |
 | `IcebergApiException` | the catalog answered, so `statusCode` is a real, non-nullable status |
 
-`IcebergApiException` is the sealed base for the response backed subtypes, which are unchanged:
+`IcebergApiException` is the sealed base for the response-backed subtypes, which are unchanged:
 `IcebergNotFoundException`, `IcebergConflictException`,
 `IcebergAuthenticationTimeoutException`, `IcebergCommitStateUnknownException`,
 `IcebergServerException` and `IcebergUnknownException`.
@@ -730,7 +730,7 @@ try {
   await catalog.loadTable(id);
 } on IcebergException catch (error) {
   if (error.statusCode == 0) {
-    // the request never went out
+    // no response was received
   }
   print(error.type);
 }
@@ -739,7 +739,7 @@ try {
 try {
   await catalog.loadTable(id);
 } on IcebergNetworkException catch (error) {
-  // the request never went out
+  // no response was received, so the outcome of the request is unknown
   print(error.details);
 } on IcebergApiException catch (error) {
   print('${error.statusCode}: ${error.errorCode}');

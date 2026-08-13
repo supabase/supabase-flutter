@@ -601,7 +601,7 @@ void main() {
       expect(exception, isA<IcebergCommitStateUnknownException>());
     });
 
-    test('only the response backed exceptions are SupabaseApiException', () {
+    test('only the response-backed exceptions are SupabaseApiException', () {
       final List<SupabaseException> serviceAnswered = [
         IcebergApiException.fromResponse(404, null),
         IcebergApiException.fromResponse(409, null),

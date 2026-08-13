@@ -4,7 +4,7 @@ import 'package:supabase_common/supabase_common.dart';
 /// Catalog API returns an error response or a request fails at the network
 /// level.
 ///
-/// A request that never reached the catalog is an [IcebergNetworkException].
+/// A request that never received a response is an [IcebergNetworkException].
 /// Anything the catalog answered with is an [IcebergApiException] and carries
 /// the response's status code.
 ///
@@ -36,6 +36,9 @@ sealed class IcebergException extends SupabaseException {
 }
 
 /// A request failed at the network level, before any response was received.
+///
+/// The request may still have reached the catalog, so the outcome of a
+/// non-idempotent operation is unknown.
 final class IcebergNetworkException extends IcebergException {
   const IcebergNetworkException(super.message, {super.details});
 }
