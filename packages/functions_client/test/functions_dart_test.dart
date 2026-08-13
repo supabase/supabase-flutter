@@ -251,8 +251,32 @@ void main() {
 
         request as Request;
         expect(request.body, 'ExampleText');
-        expect(request.headers["Content-Type"], contains("text/plain"));
+        expect(
+          request.headers["Content-Type"],
+          equals("text/plain; charset=utf-8"),
+        );
       });
+
+      test(
+        'string body is encoded with the charset the caller asked for',
+        () async {
+          await functionsCustomHttpClient.invoke(
+            'function',
+            headers: {'Content-Type': 'text/plain; charset=iso-8859-1'},
+            body: 'Ærlig',
+          );
+
+          final request = customHttpClient.receivedRequests.last;
+          expect(request, isA<Request>());
+
+          request as Request;
+          expect(request.bodyBytes, latin1.encode('Ærlig'));
+          expect(
+            request.headers["Content-Type"],
+            equals("text/plain; charset=iso-8859-1"),
+          );
+        },
+      );
 
       test('list is properly encoded', () async {
         await functionsCustomHttpClient.invoke('function', body: [1, 2, 3]);

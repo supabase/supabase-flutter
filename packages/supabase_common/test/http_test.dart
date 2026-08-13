@@ -19,12 +19,12 @@ class _RecordingClient extends BaseClient {
 }
 
 void main() {
-  group('sendRequest', () {
+  group('sendWith', () {
     test('sends over the given client', () async {
       final httpClient = _RecordingClient();
       final request = Request('GET', Uri.parse('http://localhost/things'));
 
-      final response = await sendRequest(request, httpClient: httpClient);
+      final response = await request.sendWith(httpClient);
 
       expect(httpClient.sentRequest, same(request));
       expect(
@@ -34,49 +34,29 @@ void main() {
     });
   });
 
-  group('headerValue', () {
+  group('header', () {
     test('matches the name case insensitively', () {
       const headers = {'Content-Type': 'application/json'};
 
-      expect(headerValue(headers, 'content-type'), 'application/json');
-      expect(headerValue(headers, 'CONTENT-TYPE'), 'application/json');
+      expect(headers.header('content-type'), 'application/json');
+      expect(headers.header('CONTENT-TYPE'), 'application/json');
     });
 
     test('returns null when the header is absent', () {
-      expect(headerValue(const {}, 'content-type'), isNull);
+      expect(const <String, String>{}.header('content-type'), isNull);
     });
   });
 
-  group('setDefaultContentType', () {
-    test('sets the content type when there is none', () {
-      final headers = <String, String>{};
-
-      setDefaultContentType(headers, 'application/json');
-
-      expect(headers, {'Content-Type': 'application/json'});
-    });
-
-    test('keeps a content type set under any casing', () {
-      final headers = {'content-type': 'text/csv'};
-
-      setDefaultContentType(headers, 'application/json');
-
-      expect(headers, {'content-type': 'text/csv'});
-    });
-  });
-
-  group('responseMediaType', () {
+  group('mediaType', () {
     test('drops parameters and lowercases the type', () {
       expect(
-        responseMediaType(const {
-          'content-type': 'Application/JSON; charset=utf-8',
-        }),
+        const {'content-type': 'Application/JSON; charset=utf-8'}.mediaType,
         'application/json',
       );
     });
 
     test('returns null when there is no content type', () {
-      expect(responseMediaType(const {}), isNull);
+      expect(const <String, String>{}.mediaType, isNull);
     });
   });
 

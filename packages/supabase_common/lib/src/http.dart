@@ -2,47 +2,50 @@ import 'dart:convert';
 
 import 'package:http/http.dart';
 
-/// Sends [request] over [httpClient], or over a one-off client when no client
-/// was provided.
-///
-/// Every Supabase client takes an optional [Client] so callers can plug in
-/// their own transport, and falls back to the default one otherwise.
-Future<StreamedResponse> sendRequest(
-  BaseRequest request, {
-  Client? httpClient,
-}) => httpClient?.send(request) ?? request.send();
+/// Sending a request over a caller-provided transport.
+extension SendWith on BaseRequest {
+  /// Sends this request over [httpClient], or over a one-off [Client] when
+  /// [httpClient] is `null`.
+  ///
+  /// Every Supabase client takes an optional [Client] so callers can plug in
+  /// their own transport, and falls back to the default one otherwise.
+  Future<StreamedResponse> sendWith(Client? httpClient) =>
+      httpClient?.send(this) ?? send();
+}
 
-/// The value of the [name] header, matched case insensitively.
+/// Reading the headers of a response.
 ///
-/// HTTP header names are case insensitive, and while `package:http` lowercases
-/// the names of received headers, headers assembled by the client packages can
-/// use any casing.
-String? headerValue(Map<String, String> headers, String name) {
-  final lowerCaseName = name.toLowerCase();
-  for (final entry in headers.entries) {
-    if (entry.key.toLowerCase() == lowerCaseName) {
-      return entry.value;
+/// [BaseRequest.headers] already compares its keys case insensitively, so
+/// nothing here is needed on the request side. [BaseResponse.headers] is a
+/// plain map.
+extension ResponseHeaders on Map<String, String> {
+  /// The value of the [name] header, matched case insensitively.
+  ///
+  /// HTTP header names are case insensitive, and while the `package:http`
+  /// clients lowercase the names of the headers they receive, a client written
+  /// against [BaseClient] can hand back any casing.
+  String? header(String name) {
+    final lowerCaseName = name.toLowerCase();
+    for (final MapEntry(:key, :value) in entries) {
+      if (key.toLowerCase() == lowerCaseName) {
+        return value;
+      }
     }
+    return null;
   }
-  return null;
-}
 
-/// Sets `Content-Type` to [value] unless [headers] already carries one.
-///
-/// Requests whose body the caller controls must not have an explicitly passed
-/// content type overwritten.
-void setDefaultContentType(Map<String, String> headers, String value) {
-  if (headerValue(headers, 'content-type') == null) {
-    headers['Content-Type'] = value;
-  }
+  /// The media type, lowercased and without any parameters, so
+  /// `Content-Type: application/json; charset=utf-8` becomes
+  /// `application/json`.
+  ///
+  /// Returns `null` when there is no content type.
+  ///
+  /// `MediaType.parse` from `package:http_parser` is not used because it throws
+  /// on a malformed value, and a proxy or gateway in front of a service can
+  /// answer with anything at all.
+  String? get mediaType =>
+      header('content-type')?.split(';').first.trim().toLowerCase();
 }
-
-/// The media type of a response, lowercased and without any parameters, so
-/// `Content-Type: application/json; charset=utf-8` becomes `application/json`.
-///
-/// Returns `null` when the response carries no content type.
-String? responseMediaType(Map<String, String> headers) =>
-    headerValue(headers, 'content-type')?.split(';').first.trim().toLowerCase();
 
 /// Decodes [body] as a JSON object, or returns `null` when it is empty, is not
 /// valid JSON, or is valid JSON that is not an object.
@@ -51,9 +54,6 @@ String? responseMediaType(Map<String, String> headers) =>
 /// failure in a JSON object, but a proxy or gateway in front of it can return
 /// anything at all, so decoding must not throw.
 Map<String, dynamic>? tryDecodeJsonObject(String body) {
-  if (body.isEmpty) {
-    return null;
-  }
   try {
     final decoded = json.decode(body);
     return decoded is Map<String, dynamic> ? decoded : null;

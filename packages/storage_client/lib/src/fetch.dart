@@ -58,22 +58,17 @@ class Fetch {
     Map<String, dynamic>? body,
     FetchOptions? options,
   ) async {
-    final headers = {...?options?.headers};
-    if (method != HttpMethod.get) {
-      setDefaultContentType(headers, 'application/json');
-    }
-
     final request = http.Request(method.value, Uri.parse(url))
-      ..headers.addAll(headers);
+      ..headers.addAll({...?options?.headers});
+    if (method != HttpMethod.get) {
+      request.headers.putIfAbsent('Content-Type', () => 'application/json');
+    }
     if (body != null) {
       request.body = json.encode(body);
     }
 
-    _log.finest('Request: ${method.value} $url $headers');
-    final streamedResponse = await sendRequest(
-      request,
-      httpClient: httpClient,
-    );
+    _log.finest('Request: ${method.value} $url ${request.headers}');
+    final streamedResponse = await request.sendWith(httpClient);
     return _handleResponse(streamedResponse, options);
   }
 
@@ -174,7 +169,7 @@ class Fetch {
         );
 
         // Create a fresh request for each retry attempt
-        return sendRequest(createRequest(), httpClient: httpClient);
+        return createRequest().sendWith(httpClient);
       },
       retryIf: (error) =>
           retryController?.cancelled != true &&
@@ -235,10 +230,7 @@ class Fetch {
       ..headers.addAll({...?options?.headers});
 
     _log.finest('Request: GET (stream) $url ${request.headers}');
-    final streamedResponse = await sendRequest(
-      request,
-      httpClient: httpClient,
-    );
+    final streamedResponse = await request.sendWith(httpClient);
 
     if (!isSuccessStatusCode(streamedResponse.statusCode)) {
       final response = await http.Response.fromStream(streamedResponse);
