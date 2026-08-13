@@ -56,6 +56,12 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   /// StreamController for `stream()` method.
   ReplaySubject<SupabaseStreamEvent>? _streamController;
 
+  /// Subscription on the channel's postgres changes stream.
+  StreamSubscription<PostgresChangePayload>? _changesSubscription;
+
+  /// Subscription on the channel's subscription status stream.
+  StreamSubscription<RealtimeSubscribeStatusChange>? _statusSubscription;
+
   /// Contains the combined data of postgrest and realtime to emit as stream.
   SupabaseStreamEvent _streamData = [];
 
@@ -144,6 +150,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       },
       onCancel: () {
         _log.fine('stream controller for table: $_table got closed');
+        unawaited(_changesSubscription?.cancel());
+        unawaited(_statusSubscription?.cancel());
+        _changesSubscription = null;
+        _statusSubscription = null;
         unawaited(_channel?.unsubscribe());
         unawaited(_streamController?.close());
         _streamController = null;
@@ -170,64 +180,65 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
       ),
     );
 
-    _channel!
+    _changesSubscription = _channel!
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: _schema,
           table: _table,
           filters: realtimeFilters,
-          callback: (payload) {
-            switch (payload.eventType) {
-              case PostgresChangeEvent.insert:
-                final newRecord = payload.newRecord;
-                _streamData.add(newRecord);
-                _addStream();
-              case PostgresChangeEvent.update:
-                final updatedIndex = _streamData.indexWhere(
-                  (element) =>
-                      _isTargetRecord(record: element, payload: payload),
-                );
-
-                final updatedRecord = payload.newRecord;
-                if (updatedIndex >= 0) {
-                  _streamData[updatedIndex] = updatedRecord;
-                } else {
-                  _streamData.add(updatedRecord);
-                }
-                _addStream();
-              case PostgresChangeEvent.delete:
-                final deletedIndex = _streamData.indexWhere(
-                  (element) =>
-                      _isTargetRecord(record: element, payload: payload),
-                );
-                if (deletedIndex >= 0) {
-                  /// Delete the data from in memory cache if it was found
-                  _streamData.removeAt(deletedIndex);
-                  _addStream();
-                }
-              case PostgresChangeEvent.all:
-                break;
-            }
-          },
         )
-        .subscribe((status, [error]) {
-          switch (status) {
-            case RealtimeSubscribeStatus.subscribed:
-              // Reload all data from PostgREST after a realtime reconnect, so
-              // that changes missed while the socket was down are picked up.
-              // The first subscribe is skipped because the initial load is
-              // already started below, right after subscribing.
-              if (_wasSubscribed) {
-                unawaited(_getPostgrestData());
+        .listen((payload) {
+          switch (payload.eventType) {
+            case PostgresChangeEvent.insert:
+              final newRecord = payload.newRecord;
+              _streamData.add(newRecord);
+              _addStream();
+            case PostgresChangeEvent.update:
+              final updatedIndex = _streamData.indexWhere(
+                (element) => _isTargetRecord(record: element, payload: payload),
+              );
+
+              final updatedRecord = payload.newRecord;
+              if (updatedIndex >= 0) {
+                _streamData[updatedIndex] = updatedRecord;
+              } else {
+                _streamData.add(updatedRecord);
               }
-              _wasSubscribed = true;
-            case RealtimeSubscribeStatus.closed:
-              unawaited(_streamController?.close());
-            case RealtimeSubscribeStatus.timedOut:
-            case RealtimeSubscribeStatus.channelError:
-              _addException(RealtimeSubscribeException(status, error));
+              _addStream();
+            case PostgresChangeEvent.delete:
+              final deletedIndex = _streamData.indexWhere(
+                (element) => _isTargetRecord(record: element, payload: payload),
+              );
+              if (deletedIndex >= 0) {
+                /// Delete the data from in memory cache if it was found
+                _streamData.removeAt(deletedIndex);
+                _addStream();
+              }
+            case PostgresChangeEvent.all:
+              break;
           }
         });
+    _statusSubscription = _channel!.onStatusChange.listen((change) {
+      switch (change.status) {
+        case RealtimeSubscribeStatus.subscribed:
+          // Reload all data from PostgREST after a realtime reconnect, so
+          // that changes missed while the socket was down are picked up.
+          // The first subscribe is skipped because the initial load is
+          // already started below, right after subscribing.
+          if (_wasSubscribed) {
+            unawaited(_getPostgrestData());
+          }
+          _wasSubscribed = true;
+        case RealtimeSubscribeStatus.closed:
+          unawaited(_streamController?.close());
+        case RealtimeSubscribeStatus.timedOut:
+        case RealtimeSubscribeStatus.channelError:
+          _addException(
+            RealtimeSubscribeException(change.status, change.error),
+          );
+      }
+    });
+    _channel!.subscribe();
     unawaited(_getPostgrestData());
   }
 

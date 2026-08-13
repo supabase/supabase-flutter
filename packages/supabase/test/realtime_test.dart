@@ -50,16 +50,12 @@ void main() {
     /// expectation:
     /// - error
     test('subscribe on existing subscription fail', () {
-      channel
-          .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: 'public',
-            table: 'countries',
-            callback: (payload) {},
-          )
-          .subscribe(
-            (event, [errorMessage]) {},
-          );
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'countries',
+      );
+      channel.subscribe();
       expect(
         () => channel.subscribe(),
         throwsA(isA<String>()),

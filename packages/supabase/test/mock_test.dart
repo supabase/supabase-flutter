@@ -695,17 +695,17 @@ void main() {
       /// exception
       /// https://github.com/supabase-community/supabase-flutter/issues/81
       test('Calling Postgrest within realtime callback', () async {
-        supabase
-            .channel('todos')
+        final channel = supabase.channel('todos');
+        channel
             .onPostgresChanges(
               event: PostgresChangeEvent.all,
               schema: 'public',
               table: 'todos',
-              callback: (payload) {
-                unawaited(supabase.from('todos'));
-              },
             )
-            .subscribe();
+            .listen((payload) {
+              unawaited(supabase.from('todos'));
+            });
+        channel.subscribe();
 
         await Future.delayed(const Duration(milliseconds: 700));
 

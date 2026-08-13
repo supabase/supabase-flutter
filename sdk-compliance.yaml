@@ -1625,7 +1625,13 @@ features:
     symbols:
       - RealtimeChannel.subscribe
     supporting_symbols:
+      - RealtimeChannel.onStatusChange
       - RealtimeSubscribeStatus
+      - RealtimeSubscribeStatusChange
+      - RealtimeSubscribeStatusChange.RealtimeSubscribeStatusChange
+      - RealtimeSubscribeStatusChange.error
+      - RealtimeSubscribeStatusChange.status
+      - RealtimeSubscribeStatusChange.toString
   realtime.channel.unsubscribe:
     status: implemented
     symbols:

@@ -148,13 +148,11 @@ class RealtimeClient {
   StreamSubscription<dynamic>? _connectionSubscription;
   @internal
   List<dynamic> sendBuffer = [];
-  @internal
-  Map<String, List<Function>> stateChangeCallbacks = {
-    'open': [],
-    'close': [],
-    'error': [],
-    'message': [],
-  };
+
+  final _openController = StreamController<void>.broadcast();
+  final _closeController = StreamController<RealtimeCloseEvent?>.broadcast();
+  final _errorController = StreamController<Object>.broadcast();
+  final _messageController = StreamController<Map<String, dynamic>>.broadcast();
 
   final _heartbeatController =
       StreamController<RealtimeHeartbeatStatus>.broadcast();
@@ -432,29 +430,26 @@ class RealtimeClient {
     logger?.call(kind, message, data);
   }
 
-  /// Registers callbacks for connection state change events
+  /// Emits whenever the WebSocket connection is opened.
   ///
-  /// Examples
-  /// socket.onOpen(() {print("Socket opened.");});
+  /// ```dart
+  /// final subscription = client.onOpen.listen((_) {
+  ///   print('Socket opened.');
+  /// });
+  /// ```
+  Stream<void> get onOpen => _openController.stream;
+
+  /// Emits whenever the WebSocket connection is closed.
   ///
-  void onOpen(void Function() callback) {
-    stateChangeCallbacks['open']!.add(callback);
-  }
+  /// The emitted [RealtimeCloseEvent] carries the close code and reason sent
+  /// by the server, or `null` when the connection closed without one.
+  Stream<RealtimeCloseEvent?> get onClose => _closeController.stream;
 
-  /// Registers a callbacks for connection state change events.
-  void onClose(void Function(dynamic) callback) {
-    stateChangeCallbacks['close']!.add(callback);
-  }
+  /// Emits whenever the WebSocket connection reports an error.
+  Stream<Object> get onError => _errorController.stream;
 
-  /// Registers a callbacks for connection state change events.
-  void onError(void Function(dynamic) callback) {
-    stateChangeCallbacks['error']!.add(callback);
-  }
-
-  /// Calls a function any time a message is received.
-  void onMessage(void Function(dynamic) callback) {
-    stateChangeCallbacks['message']!.add(callback);
-  }
+  /// Emits every decoded message received over the WebSocket.
+  Stream<Map<String, dynamic>> get onMessage => _messageController.stream;
 
   /// Emits a status whenever a heartbeat is sent, acknowledged, errors, or
   /// times out.
@@ -591,9 +586,7 @@ class RealtimeClient {
             messageRef,
           ),
         );
-    for (final callback in stateChangeCallbacks['message']!) {
-      callback(message);
-    }
+    _messageController.add(message);
   }
 
   static Object _encodeLegacy(Map<String, dynamic> message) =>
@@ -681,9 +674,7 @@ class RealtimeClient {
       log('transport', 'error while rejoining channels', error, Level.WARNING);
     }
 
-    for (final callback in stateChangeCallbacks['open']!) {
-      callback();
-    }
+    _openController.add(null);
   }
 
   /// communication has been closed
@@ -705,17 +696,13 @@ class RealtimeClient {
       reconnectTimer.scheduleTimeout();
     }
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
-    for (final callback in stateChangeCallbacks['close']!) {
-      callback(event);
-    }
+    _closeController.add(event);
   }
 
   void _onConnectionError(dynamic error) {
     log('transport', error.toString());
     _triggerChanError(error);
-    for (final callback in stateChangeCallbacks['error']!) {
-      callback(error);
-    }
+    _errorController.add(error as Object);
   }
 
   void _triggerChanError([dynamic error]) {
