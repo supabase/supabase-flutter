@@ -577,7 +577,7 @@ class RealtimeChannel {
       'system',
       ChannelFilter(),
       (payload) => payload is Map
-          ? RealtimeSystemPayload.fromJson(Map<String, dynamic>.from(payload))
+          ? RealtimeSystemPayload.fromJson(Map.from(payload))
           : null,
     );
   }
