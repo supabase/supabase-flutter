@@ -219,6 +219,32 @@ channel.subscribe(const Duration(seconds: 10));
 All channel streams complete when the channel closes, so `await for` loops and `onDone` handlers
 end on their own once the channel is gone.
 
+### `RealtimePresence` is internal
+
+`RealtimePresence` and its helper types (`PresenceOpts`, `PresenceEvents`, `PresenceChooser`,
+`PresenceOnJoinCallback`, `PresenceOnLeaveCallback`) are now `@internal`, along with the
+`RealtimeChannel.presence` field. They were presence bookkeeping that leaked into the public API,
+and registering a callback through `channel.presence.onJoin(...)` silently disabled the channel's
+own presence events, because the channel's forwarders occupied the same single callback slot.
+
+Everything the class offered is available on the channel:
+
+```dart
+// Before
+channel.presence.onJoin((key, current, joined) { /* ... */ });
+channel.presence.onLeave((key, current, left) { /* ... */ });
+channel.presence.onSync(() { /* ... */ });
+final state = channel.presence.state;
+
+// After
+channel.onPresenceJoin.listen((payload) { /* ... */ });
+channel.onPresenceLeave.listen((payload) { /* ... */ });
+channel.onPresenceSync.listen((payload) { /* ... */ });
+final state = channel.presenceState();
+```
+
+The `Presence` payload class is unchanged and stays public.
+
 ### Plural enum names singularized
 
 A Dart enum type names one value rather than the set, so its name should be singular. Five enums
