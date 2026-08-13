@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
-import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
@@ -152,8 +151,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   Duration? get _requestTimeout => _config.requestTimeout;
   Future<void>? get _abortSignal => _config.abortSignal;
 
-  static Duration _defaultRetryDelay(int attempt) =>
-      Duration(seconds: math.min(math.pow(2, attempt).toInt(), 30));
+  static Duration _defaultRetryDelay(int attempt) => exponentialBackoff(
+    attempt,
+    initialDelay: const Duration(seconds: 1),
+    maxDelay: const Duration(seconds: 30),
+  );
 
   PostgrestBuilder({
     required Uri url,

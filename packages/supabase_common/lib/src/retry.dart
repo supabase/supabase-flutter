@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:math';
+
+import 'package:supabase_common/src/backoff.dart';
 
 /// Options for retrying a function.
 ///
@@ -31,11 +32,12 @@ class RetryOptions {
     if (attempt <= 0) {
       return Duration.zero;
     }
-    final randomization =
-        randomizationFactor * (Random().nextDouble() * 2 - 1) + 1;
-    final exponent = min(attempt, 31);
-    final delay = delayFactor * pow(2.0, exponent) * randomization;
-    return delay < maxDelay ? delay : maxDelay;
+    return exponentialBackoff(
+      attempt,
+      initialDelay: delayFactor,
+      maxDelay: maxDelay,
+      randomizationFactor: randomizationFactor,
+    );
   }
 
   /// Calls [fn], retrying so long as [retryIf] returns `true` for the thrown

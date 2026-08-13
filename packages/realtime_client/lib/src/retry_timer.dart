@@ -1,16 +1,12 @@
 import 'dart:async';
 
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 @internal
 typedef TimerCallback = void Function();
 @internal
 typedef TimerCalculation = int Function(int tries);
-
-// Need to limit doubling to avoid overflow, this limit gives 1 million times
-// the first delay
-@internal
-const maxShift = 20;
 
 /// Creates a timer that accepts a `timerCalc` function to perform
 /// calculated timeout retries, such as exponential backoff.
@@ -62,15 +58,17 @@ class RetryTimer {
     });
   }
 
-  // Generate an exponential backoff function with first and max delays
+  /// Generates an exponential backoff function with first and max delays, both
+  /// in milliseconds.
   static TimerCalculation createRetryFunction({
     int firstDelay = 1000,
     int maxDelay = 10000,
   }) {
-    return (int tries) {
-      final shiftAmount = (tries - 1) > maxShift ? maxShift : tries - 1;
-      final delay = firstDelay << shiftAmount;
-      return delay > maxDelay ? maxDelay : delay;
-    };
+    return (int tries) => exponentialBackoff(
+      // `tries` counts the attempt this delay precedes, so the first one is 1.
+      tries - 1,
+      initialDelay: Duration(milliseconds: firstDelay),
+      maxDelay: Duration(milliseconds: maxDelay),
+    ).inMilliseconds;
   }
 }
