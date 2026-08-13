@@ -513,7 +513,8 @@ void main() {
         );
         expect(
           response.url,
-          '$authUrl/authorize?provider=google&redirect_to=https%3A%2F%2Fsupabase.com',
+          '$authUrl/authorize?provider=google'
+          '&redirect_to=https%3A%2F%2Fsupabase.com',
         );
         expect(response.provider, OAuthProvider.google);
       });

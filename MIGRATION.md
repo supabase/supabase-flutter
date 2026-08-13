@@ -18,8 +18,7 @@ snippets apply whether you depend on the individual package or on the Flutter on
 
 The service this package talks to has been called Supabase Auth for years, and `gotrue` is a name
 users no longer recognize. The package is published as `supabase_auth` from v3 onwards, and the
-`gotrue` package is discontinued on pub.dev. The other clients already made this move:
-`supabase-py` ships `supabase_auth` and `supabase-js` ships `@supabase/auth-js`.
+`gotrue` package is discontinued on pub.dev when v3 ships.
 
 If you depend on `supabase_flutter` or `supabase` you do not need to change your dependencies,
 both pull in `supabase_auth` for you and re-export it. You do need to rename the types below.
@@ -45,7 +44,7 @@ import 'package:supabase_auth/supabase_auth.dart';
 ```
 
 The types that carried the old name in their own name are renamed to the `Auth` prefix the rest of
-the package already uses, matching the names `auth-js` prefers:
+the package already uses:
 
 | Before | After |
 | --- | --- |
@@ -75,8 +74,7 @@ Two extensions `supabase_flutter` adds to the auth client follow the same rename
 example to hide it in an import.
 
 Nothing about the wire format changes. The `X-Client-Info` header still identifies this client as
-`gotrue-dart`, matching what `auth-js` sends, and the `gotrue_meta_security` field in captcha
-payloads is unchanged.
+`gotrue-dart`, and the `gotrue_meta_security` field in captcha payloads is unchanged.
 
 ### `RealtimeClient.connectionState` is now typed
 
@@ -177,7 +175,7 @@ flushed once the join succeeds, so only channels that were never subscribed thro
 ### Plural enum names singularized
 
 A Dart enum type names one value rather than the set, so its name should be singular. Five enums
-were ports of the `realtime-js` and `gotrue-js` names instead, and one more turned up in storage.
+carried plural names instead, and one more turned up in storage.
 Three of them were never reachable from outside the package and are now marked `@internal`; the
 ones below are the renames you can actually hit.
 
