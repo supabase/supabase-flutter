@@ -43,7 +43,9 @@ Future<void> main() async {
 
   // on connect and subscribe
   await socket.connect();
-  channel.onStatusChange.listen((change) => print('STATUS ${change.status}'));
+  channel.onStatusChange.listen(
+    (change) => print('STATUS ${change.status.name}'),
+  );
   channel.subscribe();
 
   // delay 20s to receive events from server
