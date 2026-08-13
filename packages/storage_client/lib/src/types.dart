@@ -585,27 +585,34 @@ class SignedUploadURLResponse extends SignedUrl {
   });
 }
 
-class StorageException implements Exception {
-  final String message;
-  final String? error;
-  final String? statusCode;
+/// Thrown when a storage operation fails.
+///
+/// A plain [StorageException] is a failure the client raised on its own, such
+/// as a request that never reached storage. A failure storage reported is a
+/// [StorageApiException].
+class StorageException extends SupabaseException {
+  const StorageException(super.message, {super.errorCode});
+}
 
-  const StorageException(this.message, {this.error, this.statusCode});
-
-  factory StorageException.fromJson(
-    Map<String, dynamic> json, [
-    String? statusCode,
-  ]) => StorageException(
-    json['message'] as String? ?? json.toString(),
-    error: json['error'] as String?,
-    statusCode: json['statusCode']?.toString() ?? statusCode,
-  );
-
+/// Thrown when storage answered with an error.
+class StorageApiException extends StorageException with SupabaseApiException {
   @override
-  String toString() {
-    return 'StorageException(message: $message, statusCode: $statusCode, '
-        'error: $error)';
-  }
+  final int statusCode;
+
+  const StorageApiException(
+    super.message, {
+    required this.statusCode,
+    super.errorCode,
+  });
+
+  factory StorageApiException.fromJson(
+    Map<String, dynamic> json,
+    int statusCode,
+  ) => StorageApiException(
+    json['message'] as String? ?? json.toString(),
+    errorCode: json['error'] as String?,
+    statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
+  );
 }
 
 class StorageRetryController {

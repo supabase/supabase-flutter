@@ -1,4 +1,5 @@
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -301,35 +302,49 @@ void main() {
   });
 
   group('StorageException', () {
-    test('toString includes message, status code and error', () {
-      const exception = StorageException(
+    test('a client raised failure is not a SupabaseApiException', () {
+      const SupabaseException exception = StorageException('boom');
+
+      expect(exception, isNot(isA<SupabaseApiException>()));
+    });
+  });
+
+  group('StorageApiException', () {
+    test('is a StorageException that reports the response status', () {
+      const SupabaseException exception = StorageApiException(
         'boom',
-        statusCode: '500',
-        error: 'server_error',
+        statusCode: 500,
       );
-      expect(
-        exception.toString(),
-        'StorageException(message: boom, statusCode: 500, error: server_error)',
-      );
+
+      expect(exception, isA<StorageException>());
+      expect(exception, isA<SupabaseApiException>());
     });
 
     test('fromJson reads message, error and statusCode', () {
-      final exception = StorageException.fromJson({
+      final exception = StorageApiException.fromJson({
         'message': 'not found',
         'error': 'NotFound',
         'statusCode': 404,
-      });
+      }, 400);
       expect(exception.message, 'not found');
-      expect(exception.error, 'NotFound');
-      expect(exception.statusCode, '404');
+      expect(exception.errorCode, 'NotFound');
+      expect(exception.statusCode, 404);
+    });
+
+    test('fromJson reads a stringified statusCode', () {
+      final exception = StorageApiException.fromJson({
+        'message': 'not found',
+        'statusCode': '404',
+      }, 400);
+      expect(exception.statusCode, 404);
     });
 
     test(
-      'fromJson falls back to the fallback status code and stringified body',
+      'fromJson falls back to the response status code and stringified body',
       () {
-        final exception = StorageException.fromJson({'foo': 'bar'}, '400');
+        final exception = StorageApiException.fromJson({'foo': 'bar'}, 400);
         expect(exception.message, "{foo: bar}");
-        expect(exception.statusCode, '400');
+        expect(exception.statusCode, 400);
       },
     );
   });

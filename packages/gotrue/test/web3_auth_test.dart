@@ -103,7 +103,7 @@ void main() {
           isA<AuthApiException>().having(
             (e) => e.statusCode,
             'statusCode',
-            '403',
+            403,
           ),
         ),
       );
@@ -132,8 +132,8 @@ void main() {
         ),
         throwsA(
           isA<AuthApiException>().having(
-            (e) => e.code,
-            'code',
+            (e) => e.errorCode,
+            'errorCode',
             'validation_failed',
           ),
         ),

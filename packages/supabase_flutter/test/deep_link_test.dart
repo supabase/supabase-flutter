@@ -256,10 +256,10 @@ void main() {
   });
 
   group('Deep Link with error query parameter', () {
-    late final Completer<AuthException> errorCompleter;
+    late final Completer<AuthApiException> errorCompleter;
 
     setUp(() async {
-      errorCompleter = Completer<AuthException>();
+      errorCompleter = Completer<AuthApiException>();
 
       mockAppLink(
         mockMethodChannel: false,
@@ -281,7 +281,7 @@ void main() {
       Supabase.instance.client.auth.onAuthStateChange.listen(
         (_) {},
         onError: (error) {
-          if (error is AuthException && !errorCompleter.isCompleted) {
+          if (error is AuthApiException && !errorCompleter.isCompleted) {
             errorCompleter.complete(error);
           }
         },
@@ -289,12 +289,12 @@ void main() {
     });
 
     test('Error query parameter triggers `getSessionFromUrl` and surfaces an '
-        'AuthException', () async {
+        'AuthApiException', () async {
       final exception = await errorCompleter.future.timeout(
         const Duration(seconds: 5),
       );
-      expect(exception.code, 'access_denied');
-      expect(exception.statusCode, '403');
+      expect(exception.errorCode, 'access_denied');
+      expect(exception.statusCode, 403);
     });
   });
 }

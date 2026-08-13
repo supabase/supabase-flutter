@@ -40,7 +40,7 @@ void main() {
   group('request', () {
     testWidgets('POST sends a JSON body that comes back decoded', (_) async {
       final response = await functions.invoke('echo', body: {'hello': 'world'});
-      expect(response.status, 200);
+      expect(response.statusCode, 200);
       expect(response.data['method'], 'POST');
       expect(response.data['body'], {'hello': 'world'});
     });
@@ -168,7 +168,7 @@ void main() {
         'echo',
         queryParameters: {'status': '201'},
       );
-      expect(response.status, 201);
+      expect(response.statusCode, 201);
     });
   });
 
@@ -179,8 +179,8 @@ void main() {
       await expectLater(
         functions.invoke('echo', queryParameters: {'status': '422'}),
         throwsA(
-          isA<FunctionsHttpException>()
-              .having((error) => error.status, 'status', 422)
+          isA<FunctionsApiException>()
+              .having((error) => error.statusCode, 'statusCode', 422)
               .having(
                 (error) => (error.details as Map)['error'],
                 'details.error',
@@ -199,8 +199,8 @@ void main() {
           queryParameters: {'status': '500', 'format': 'text'},
         ),
         throwsA(
-          isA<FunctionsHttpException>()
-              .having((error) => error.status, 'status', 500)
+          isA<FunctionsApiException>()
+              .having((error) => error.statusCode, 'statusCode', 500)
               .having((error) => error.details, 'details', 'boom'),
         ),
       );
@@ -210,8 +210,8 @@ void main() {
       _,
     ) async {
       // A client pointed at a closed port can never connect, so the request
-      // fails before any response, surfacing as a fetch exception with status
-      // 0.
+      // fails before any response, surfacing as a fetch exception without a
+      // status code.
       final unreachable = FunctionsClient(
         'http://127.0.0.1:1/functions/v1',
         const {'apikey': supabasePublishableKey},
@@ -220,10 +220,9 @@ void main() {
       await expectLater(
         unreachable.invoke('echo'),
         throwsA(
-          isA<FunctionsFetchException>().having(
-            (error) => error.status,
-            'status',
-            0,
+          allOf(
+            isA<FunctionsFetchException>(),
+            isNot(isA<SupabaseApiException>()),
           ),
         ),
       );

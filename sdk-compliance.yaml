@@ -1604,15 +1604,15 @@ features:
   # storage — errors
   storage.errors.error_codes:
     status: implemented
+    note: "The error code is read from the inherited SupabaseException.errorCode, which is declared in the shared internal package and so is not registrable on its own."
     symbols:
-      - StorageException.error
-    supporting_symbols:
       - StorageException
+    supporting_symbols:
+      - StorageApiException
+      - StorageApiException.StorageApiException
+      - StorageApiException.fromJson
+      - StorageApiException.statusCode
       - StorageException.StorageException
-      - StorageException.fromJson
-      - StorageException.message
-      - StorageException.statusCode
-      - StorageException.toString
 
   # realtime — channel
   realtime.channel.subscribe:
@@ -1917,16 +1917,16 @@ features:
   functions.invocation.invoke:
     status: implemented
     symbols:
+      - FunctionResponse.statusCode
       - FunctionsFetchException
       - FunctionsFetchException.FunctionsFetchException
       - FunctionsRelayException
       - FunctionsRelayException.FunctionsRelayException
-      - FunctionsHttpException
-      - FunctionsHttpException.FunctionsHttpException
+      - FunctionsApiException
+      - FunctionsApiException.FunctionsApiException
     supporting_symbols:
       - FunctionResponse
       - FunctionResponse.FunctionResponse
-      - FunctionResponse.status
   functions.invocation.set_auth_token:
     status: implemented
     symbols:
@@ -2085,21 +2085,18 @@ supporting_symbols:
   - AdminUserAttributes.toJson
   - AdminUserAttributes.userMetadata
   - AuthApiException
+  - AuthApiException.==
   - AuthApiException.AuthApiException
-  - AuthApiException.toString
+  - AuthApiException.hashCode
+  - AuthApiException.statusCode
   - AuthClientOptions
   - AuthClientOptions.AuthClientOptions
   - AuthException
   - AuthException.==
   - AuthException.AuthException
-  - AuthException.code
   - AuthException.hashCode
-  - AuthException.message
-  - AuthException.statusCode
-  - AuthException.toString
   - AuthInvalidJwtException
   - AuthInvalidJwtException.AuthInvalidJwtException
-  - AuthInvalidJwtException.toString
   - AuthPKCEGrantCodeExchangeError
   - AuthPKCEGrantCodeExchangeError.AuthPKCEGrantCodeExchangeError
   - AuthResponse
@@ -2107,12 +2104,15 @@ supporting_symbols:
   - AuthResponse.fromJson
   - AuthResponse.session
   - AuthResponse.user
+  - AuthRetryableApiException
+  - AuthRetryableApiException.==
+  - AuthRetryableApiException.AuthRetryableApiException
+  - AuthRetryableApiException.hashCode
+  - AuthRetryableApiException.statusCode
   - AuthRetryableFetchException
   - AuthRetryableFetchException.AuthRetryableFetchException
-  - AuthRetryableFetchException.toString
   - AuthSessionMissingException
   - AuthSessionMissingException.AuthSessionMissingException
-  - AuthSessionMissingException.toString
   - AuthUnknownException
   - AuthUnknownException.AuthUnknownException
   - AuthUnknownException.originalError
@@ -2174,9 +2174,9 @@ supporting_symbols:
   - FunctionException
   - FunctionException.FunctionException
   - FunctionException.details
-  - FunctionException.reasonPhrase
-  - FunctionException.status
   - FunctionException.toString
+  - FunctionsApiException.statusCode
+  - FunctionsApiException.toString
   - FunctionsClient
   - FunctionsClient.FunctionsClient
   - FunctionsClient.dispose
@@ -2317,6 +2317,14 @@ supporting_symbols:
   - PostgrestBuilder.overrideSearchParams
   - PostgrestBuilder.then
   - PostgrestBuilder.whenComplete
+  - PostgrestApiException
+  - PostgrestApiException.PostgrestApiException
+  - PostgrestApiException.details
+  - PostgrestApiException.fromJson
+  - PostgrestApiException.hint
+  - PostgrestApiException.statusCode
+  - PostgrestApiException.toJson
+  - PostgrestApiException.toString
   - PostgrestClient
   - PostgrestClient.PostgrestClient
   - PostgrestClient.dispose
@@ -2324,15 +2332,6 @@ supporting_symbols:
   - PostgrestClientOptions
   - PostgrestClientOptions.PostgrestClientOptions
   - PostgrestConverter
-  - PostgrestException
-  - PostgrestException.PostgrestException
-  - PostgrestException.code
-  - PostgrestException.details
-  - PostgrestException.fromJson
-  - PostgrestException.hint
-  - PostgrestException.message
-  - PostgrestException.toJson
-  - PostgrestException.toString
   - PostgrestFilterBuilder
   - PostgrestFilterBuilder.PostgrestFilterBuilder
   - PostgrestFilterBuilder.copyWithUrl

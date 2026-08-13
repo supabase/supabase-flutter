@@ -181,14 +181,37 @@ void main() {
           await client.getSessionFromUrl(Uri.parse(url));
         },
         throwsA(
-          isA<AuthException>()
-              .having((e) => e.code, 'code', 'access_denied')
-              .having((e) => e.statusCode, 'statusCode', '403')
+          isA<AuthApiException>()
+              .having((e) => e.errorCode, 'errorCode', 'access_denied')
+              .having((e) => e.statusCode, 'statusCode', 403)
               .having(
                 (e) => e.message,
                 'message',
                 'Error in URL with unspecified error_description',
               ),
+        ),
+      );
+    });
+
+    test('parse provider callback url with a named error code', () async {
+      await expectLater(
+        () async {
+          // Newer links report a code such as `otp_expired` in `error_code`
+          // rather than a numeric status.
+          const url =
+              'http://my-callback-url.com?error=access_denied'
+              '&error_code=otp_expired';
+          await client.getSessionFromUrl(Uri.parse(url));
+        },
+        throwsA(
+          allOf(
+            isA<AuthException>().having(
+              (e) => e.errorCode,
+              'errorCode',
+              'otp_expired',
+            ),
+            isNot(isA<SupabaseApiException>()),
+          ),
         ),
       );
     });

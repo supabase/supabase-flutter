@@ -28,22 +28,22 @@ void main() {
       await expectLater(
         functionsCustomHttpClient.invoke('error-function'),
         throwsA(
-          isA<FunctionsHttpException>().having((e) => e.status, 'status', 420),
+          isA<FunctionsApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
         ),
       );
     });
 
-    test('a non-2xx response throws a FunctionsHttpException', () async {
+    test('a non-2xx response throws a FunctionsApiException', () async {
       await expectLater(
         functionsCustomHttpClient.invoke('error-function'),
         throwsA(
-          isA<FunctionsHttpException>()
-              .having((e) => e.status, 'status', 420)
-              .having(
-                (e) => e.reasonPhrase,
-                'reasonPhrase',
-                'Enhance Your Calm',
-              )
+          isA<FunctionsApiException>()
+              .having((e) => e.statusCode, 'statusCode', 420)
+              .having((e) => e.message, 'message', 'Enhance Your Calm')
               .having((e) => e.details, 'details', {'key': 'Hello World'}),
         ),
       );
@@ -54,7 +54,7 @@ void main() {
         functionsCustomHttpClient.invoke('relay-error'),
         throwsA(
           isA<FunctionsRelayException>()
-              .having((e) => e.status, 'status', 500)
+              .having((e) => e.statusCode, 'statusCode', 500)
               .having((e) => e.details, 'details', {'error': 'relay down'}),
         ),
       );
@@ -64,9 +64,16 @@ void main() {
       await expectLater(
         functionsCustomHttpClient.invoke('network-error'),
         throwsA(
-          isA<FunctionsFetchException>()
-              .having((e) => e.status, 'status', 0)
-              .having((e) => e.details, 'details', isA<ClientException>()),
+          allOf(
+            isA<FunctionsFetchException>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  'Failed to send a request to the Edge Function',
+                )
+                .having((e) => e.details, 'details', isA<ClientException>()),
+            isNot(isA<SupabaseApiException>()),
+          ),
         ),
       );
     });
@@ -91,8 +98,8 @@ void main() {
         await expectLater(
           functionsCustomHttpClient.invoke('error-sse'),
           throwsA(
-            isA<FunctionException>()
-                .having((e) => e.status, 'status', 500)
+            isA<FunctionsApiException>()
+                .having((e) => e.statusCode, 'statusCode', 500)
                 .having((e) => e.details, 'details', 'error: boom'),
           ),
         );
@@ -105,8 +112,8 @@ void main() {
         await expectLater(
           functionsCustomHttpClient.invoke('invalid-json-error'),
           throwsA(
-            isA<FunctionException>()
-                .having((e) => e.status, 'status', 500)
+            isA<FunctionsApiException>()
+                .having((e) => e.statusCode, 'statusCode', 500)
                 .having(
                   (e) => e.details,
                   'details',
@@ -137,7 +144,7 @@ void main() {
           'uppercase-json',
         );
         expect(response.data, {'key': 'Hello World'});
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
       },
     );
 
@@ -148,7 +155,7 @@ void main() {
         null,
       );
       expect(response.data, {'key': 'Hello World'});
-      expect(response.status, 200);
+      expect(response.statusCode, 200);
     });
 
     test('function call with query parameters', () async {
@@ -161,7 +168,7 @@ void main() {
 
       expect(request.url.queryParameters, {'key': 'value'});
       expect(response.data, {'key': 'Hello World'});
-      expect(response.status, 200);
+      expect(response.statusCode, 200);
     });
 
     test('function call with files', () async {
@@ -182,7 +189,7 @@ void main() {
       expect(response.data, [
         {'name': fileName, 'content': fileContent},
       ]);
-      expect(response.status, 200);
+      expect(response.statusCode, 200);
     });
 
     test('dispose isolate', () async {
@@ -570,7 +577,7 @@ void main() {
           abortSignal: abortSignal.future,
         );
 
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
         expect(response.data, {'key': 'Hello World'});
       });
     });
@@ -581,7 +588,7 @@ void main() {
 
         expect(response.data, isA<Uint8List>());
         expect(response.data, equals(Uint8List.fromList([1, 2, 3, 4, 5])));
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
       });
 
       test('handles text/plain response', () async {
@@ -589,14 +596,14 @@ void main() {
 
         expect(response.data, isA<String>());
         expect(response.data, 'Hello World');
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
       });
 
       test('handles empty JSON response', () async {
         final response = await functionsCustomHttpClient.invoke('empty-json');
 
         expect(response.data, '');
-        expect(response.status, 200);
+        expect(response.statusCode, 200);
       });
     });
 
@@ -605,10 +612,10 @@ void main() {
         await expectLater(
           functionsCustomHttpClient.invoke('error-function'),
           throwsA(
-            isA<FunctionException>()
-                .having((e) => e.status, 'status', 420)
+            isA<FunctionsApiException>()
+                .having((e) => e.statusCode, 'statusCode', 420)
                 .having((e) => e.details, 'details', isNotNull)
-                .having((e) => e.reasonPhrase, 'reasonPhrase', isNotNull)
+                .having((e) => e.message, 'message', 'Enhance Your Calm')
                 .having((e) => e.toString(), 'toString()', contains('420')),
           ),
         );
