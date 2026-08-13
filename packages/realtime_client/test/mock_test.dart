@@ -188,22 +188,16 @@ void main() {
     });
 
     test('.on()', () {
-      final streamController = StreamController<PostgresChangePayload>();
-
-      client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
-          .subscribe();
+      final channel = client.channel('public:todos');
+      final changes = channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+      );
+      channel.subscribe();
 
       expect(
-        streamController.stream,
+        changes,
         emitsInOrder([
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -237,27 +231,21 @@ void main() {
     });
 
     test('.on() with filter', () {
-      final streamController = StreamController<PostgresChangePayload>();
-
-      client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'id',
-              value: 2,
-            ),
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
-          .subscribe();
+      final channel = client.channel('public:todos');
+      final changes = channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id',
+          value: 2,
+        ),
+      );
+      channel.subscribe();
 
       expect(
-        streamController.stream,
+        changes,
         emitsInOrder([
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -282,34 +270,32 @@ void main() {
     });
 
     test("correct CHANNEL_ERROR data on heartbeat timeout", () async {
-      final subscribeCallback = expectAsync2((
-        RealtimeSubscribeStatus event,
-        error,
+      final statusListener = expectAsync1((
+        RealtimeSubscribeStatusChange change,
       ) {
-        if (event == RealtimeSubscribeStatus.channelError) {
-          expect(error, isA<RealtimeCloseEvent>());
-          error as RealtimeCloseEvent;
+        if (change.status == RealtimeSubscribeStatus.channelError) {
+          expect(change.error, isA<RealtimeCloseEvent>());
+          final error = change.error as RealtimeCloseEvent;
           expect(error.reason, "heartbeat timeout");
         } else {
-          expect(event, RealtimeSubscribeStatus.closed);
+          expect(change.status, RealtimeSubscribeStatus.closed);
         }
       }, count: 2);
 
-      final channel = client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'id',
-              value: 2,
-            ),
-            callback: (payload) {},
-          );
+      final channel = client.channel('public:todos');
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id',
+          value: 2,
+        ),
+      );
 
-      channel.subscribe(subscribeCallback);
+      channel.onStatusChange.listen(statusListener);
+      channel.subscribe();
 
       await Future.delayed(Duration(milliseconds: 200));
       await webSocket?.close(Constants.wsCloseNormal, "heartbeat timeout");
@@ -451,22 +437,16 @@ void main() {
     });
 
     test('.on()', () {
-      final streamController = StreamController<PostgresChangePayload>();
-
-      client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
-          .subscribe();
+      final channel = client.channel('public:todos');
+      final changes = channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+      );
+      channel.subscribe();
 
       expect(
-        streamController.stream,
+        changes,
         emitsInOrder([
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -500,27 +480,21 @@ void main() {
     });
 
     test('.on() with filter', () {
-      final streamController = StreamController<PostgresChangePayload>();
-
-      client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'id',
-              value: 2,
-            ),
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
-          .subscribe();
+      final channel = client.channel('public:todos');
+      final changes = channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id',
+          value: 2,
+        ),
+      );
+      channel.subscribe();
 
       expect(
-        streamController.stream,
+        changes,
         emitsInOrder([
           PostgresChangePayload.fromPayload({
             'schema': 'public',

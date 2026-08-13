@@ -147,6 +147,22 @@ enum PresenceEvent {
 
 enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
 
+/// A subscription status change emitted by [RealtimeChannel.onStatusChange].
+class RealtimeSubscribeStatusChange {
+  /// The new status of the channel subscription.
+  final RealtimeSubscribeStatus status;
+
+  /// The error that caused a [RealtimeSubscribeStatus.channelError] status,
+  /// `null` for other statuses.
+  final Object? error;
+
+  const RealtimeSubscribeStatusChange(this.status, [this.error]);
+
+  @override
+  String toString() =>
+      'RealtimeSubscribeStatusChange(status: ${status.name}, error: $error)';
+}
+
 /// Configuration for broadcast replay feature.
 /// Allows replaying broadcast messages from a specific timestamp.
 class ReplayOption {
@@ -497,7 +513,7 @@ class PostgresChangeFilter {
   }
 }
 
-/// Base class for the payload in `.onPresence()` callback functions.
+/// Base class for the payloads emitted by the presence streams.
 abstract class RealtimePresencePayload {
   /// Name of the presence event.
   final PresenceEvent event;

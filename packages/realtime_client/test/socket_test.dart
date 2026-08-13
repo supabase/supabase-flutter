@@ -84,12 +84,6 @@ void main() {
       expect(socket.sendBuffer, isEmpty);
       expect(socket.ref, 0);
       expect(socket.endPoint, 'wss://example.com/socket/websocket');
-      expect(socket.stateChangeCallbacks, {
-        'open': [],
-        'close': [],
-        'error': [],
-        'message': [],
-      });
       expect(socket.timeout, const Duration(milliseconds: 10000));
       expect(socket.heartbeatIntervalMs, Constants.defaultHeartbeatIntervalMs);
       expect(
@@ -121,12 +115,6 @@ void main() {
       expect(socket.sendBuffer, isEmpty);
       expect(socket.ref, 0);
       expect(socket.endPoint, 'wss://example.com/socket/websocket');
-      expect(socket.stateChangeCallbacks, {
-        'open': [],
-        'close': [],
-        'error': [],
-        'message': [],
-      });
       expect(socket.timeout, const Duration(milliseconds: 40000));
       expect(socket.heartbeatIntervalMs, 60000);
       expect(
@@ -211,17 +199,17 @@ void main() {
       //! Not verifying connection url
     });
 
-    test('sets callbacks for connection', () async {
+    test('emits connection state events on the streams', () async {
       int opens = 0;
-      socket.onOpen(() {
+      socket.onOpen.listen((_) {
         opens += 1;
       });
       int closes = 0;
-      socket.onClose((_) {
+      socket.onClose.listen((_) {
         closes += 1;
       });
       late dynamic lastMessage;
-      socket.onMessage((message) {
+      socket.onMessage.listen((message) {
         lastMessage = message;
       });
 
@@ -239,16 +227,13 @@ void main() {
       expect(closes, 1);
     });
 
-    test('sets callback for errors', () {
-      dynamic lastError;
-      final RealtimeClient erroneousSocket = RealtimeClient('badurl')
-        ..onError((error) {
-          lastError = error;
-        });
+    test('emits errors on the onError stream', () async {
+      final RealtimeClient erroneousSocket = RealtimeClient('badurl');
+      final errorFuture = erroneousSocket.onError.first;
 
       unawaited(erroneousSocket.connect());
 
-      expect(lastError, isA<WebSocketException>());
+      expect(await errorFuture, isA<WebSocketException>());
     });
 
     test('is idempotent', () {
@@ -518,8 +503,8 @@ void main() {
         socketEndpoint,
         transport: (url, headers) => mockedSocketChannel,
       );
-      var closeCallbacks = 0;
-      mockedSocket.onClose((_) => closeCallbacks += 1);
+      var closeEvents = 0;
+      mockedSocket.onClose.listen((_) => closeEvents += 1);
 
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
@@ -532,9 +517,11 @@ void main() {
       expect(mockedSocket.connectionState, SocketState.open);
 
       await mockedSocket.disconnect();
+      // Wait for the async stream delivery of the close event.
+      await Future<void>.delayed(Duration.zero);
       expect(mockedSocket.connectionState, SocketState.disconnected);
       expect(mockedSocket.connection, isNull);
-      expect(closeCallbacks, 1);
+      expect(closeEvents, 1);
       verify(() => mockedSink.close()).called(1);
 
       await streamController.close();
@@ -969,15 +956,14 @@ void main() {
       );
     });
 
-    test('dispatches a received binary broadcast to onBroadcast', () {
+    test('dispatches a received binary broadcast to onBroadcast', () async {
       final socket = RealtimeClient(socketEndpoint);
       final channel = socket.channel('room');
 
       Map<String, dynamic>? received;
-      channel.onBroadcast(
-        event: 'cursor',
-        callback: (payload) => received = payload,
-      );
+      channel.onBroadcast(event: 'cursor').listen((payload) {
+        received = payload;
+      });
 
       final topic = utf8.encode('realtime:room');
       final event = utf8.encode('cursor');
@@ -994,6 +980,8 @@ void main() {
       ]);
 
       socket.onConnectionMessage(frame);
+      // Wait for the async stream delivery of the broadcast event.
+      await Future<void>.delayed(Duration.zero);
 
       expect(received, {
         'type': 'broadcast',
@@ -1004,7 +992,7 @@ void main() {
 
     test(
       'decodes a legacy object frame and dispatches it when version is v1',
-      () {
+      () async {
         final socket = RealtimeClient(
           socketEndpoint,
           version: RealtimeProtocolVersion.v1,
@@ -1012,10 +1000,9 @@ void main() {
         final channel = socket.channel('room');
 
         Map<String, dynamic>? received;
-        channel.onBroadcast(
-          event: 'cursor',
-          callback: (payload) => received = payload,
-        );
+        channel.onBroadcast(event: 'cursor').listen((payload) {
+          received = payload;
+        });
 
         socket.onConnectionMessage(
           json.encode({
@@ -1029,6 +1016,8 @@ void main() {
             'ref': null,
           }),
         );
+        // Wait for the async stream delivery of the broadcast event.
+        await Future<void>.delayed(Duration.zero);
 
         expect(received, {
           'type': 'broadcast',
@@ -1204,7 +1193,7 @@ void main() {
         transport: (url, headers) => mockedSocketChannel,
       );
       var opens = 0;
-      socket.onOpen(() => opens += 1);
+      socket.onOpen.listen((_) => opens += 1);
 
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
@@ -1221,6 +1210,8 @@ void main() {
 
       verify(() => erroredChannel.rejoin()).called(1);
       verifyNever(() => healthyChannel.rejoin());
+      // Wait for the async stream delivery of the open event.
+      await Future<void>.delayed(Duration.zero);
       expect(opens, 1);
       expect(socket.connectionState, SocketState.open);
 
