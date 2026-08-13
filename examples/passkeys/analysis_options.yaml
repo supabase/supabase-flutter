@@ -4,3 +4,11 @@ analyzer:
   errors:
     # The passkey API is intentionally marked @experimental upstream.
     experimental_member_use: ignore
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**

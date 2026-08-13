@@ -1,4 +1,3 @@
-import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:storage_client/src/constants.dart';
@@ -11,7 +10,6 @@ import 'package:storage_client/src/version.dart';
 
 class SupabaseStorageClient extends StorageBucketApi {
   final int _defaultRetryAttempts;
-  final Client? _httpClient;
   final _log = Logger('supabase.storage');
 
   /// To create a [SupabaseStorageClient], you need to provide an [url] and
@@ -46,7 +44,7 @@ class SupabaseStorageClient extends StorageBucketApi {
   SupabaseStorageClient(
     String url,
     Map<String, String> headers, {
-    Client? httpClient,
+    super.httpClient,
     int retryAttempts = 0,
     bool useNewHostname = false,
   }) : assert(
@@ -54,11 +52,9 @@ class SupabaseStorageClient extends StorageBucketApi {
          'retryAttempts has to be greater than or equal to 0',
        ),
        _defaultRetryAttempts = retryAttempts,
-       _httpClient = httpClient,
        super(
          useNewHostname ? _transformStorageUrl(url) : url,
          {...Constants.defaultHeaders, ...headers},
-         httpClient: httpClient,
        ) {
     _log.config(
       'Initialize SupabaseStorageClient v$version with url: $url, '
@@ -132,7 +128,7 @@ class SupabaseStorageClient extends StorageBucketApi {
       headers: headers,
       warehouse: bucketId,
       accessDelegation: accessDelegation,
-      httpClient: _httpClient,
+      httpClient: storageFetch.httpClient,
     );
   }
 
