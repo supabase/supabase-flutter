@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart';
 import 'package:storage_client/storage_client.dart';
@@ -526,7 +527,7 @@ void main() {
   });
 
   group('errors and serialization', () {
-    test('IcebergException carries type and code', () async {
+    test('IcebergApiException carries the error code and code', () async {
       mockClient.handler = (request) => _json(
         {
           'error': {
@@ -542,9 +543,13 @@ void main() {
       await expectLater(
         catalog.listNamespaces(),
         throwsA(
-          isA<IcebergException>()
+          isA<IcebergApiException>()
               .having((error) => error.statusCode, 'statusCode', 400)
-              .having((error) => error.type, 'type', 'BadRequestException')
+              .having(
+                (error) => error.errorCode,
+                'errorCode',
+                'BadRequestException',
+              )
               .having((error) => error.code, 'code', 400),
         ),
       );
@@ -589,11 +594,45 @@ void main() {
     });
 
     test('commit state unknown is its own subtype regardless of status', () {
-      final exception = IcebergException.fromResponse(500, {
+      final exception = IcebergApiException.fromResponse(500, {
         'error': {'message': 'unknown', 'type': 'CommitStateUnknownException'},
       });
 
       expect(exception, isA<IcebergCommitStateUnknownException>());
+    });
+
+    test('only the response-backed exceptions are SupabaseApiException', () {
+      final List<SupabaseException> serviceAnswered = [
+        IcebergApiException.fromResponse(404, null),
+        IcebergApiException.fromResponse(409, null),
+        IcebergApiException.fromResponse(419, null),
+        IcebergApiException.fromResponse(503, null),
+        IcebergApiException.fromResponse(400, null),
+      ];
+
+      for (final exception in serviceAnswered) {
+        expect(exception, isA<SupabaseApiException>());
+      }
+
+      const SupabaseException network = IcebergNetworkException('no route');
+
+      expect(network, isNot(isA<SupabaseApiException>()));
+    });
+
+    test('a network failure keeps the originating error in details', () async {
+      mockClient.handler = (request) =>
+          throw const SocketException('no route to host');
+
+      await expectLater(
+        catalog.listNamespaces(),
+        throwsA(
+          isA<IcebergNetworkException>().having(
+            (error) => error.details,
+            'details',
+            isA<SocketException>(),
+          ),
+        ),
+      );
     });
 
     test('TableUpdate raw escape hatch serializes the action', () {

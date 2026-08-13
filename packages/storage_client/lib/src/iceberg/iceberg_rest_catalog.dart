@@ -171,7 +171,7 @@ class IcebergRestCatalog {
         : response.body;
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw IcebergException.fromResponse(response.statusCode, decoded);
+      throw IcebergApiException.fromResponse(response.statusCode, decoded);
     }
 
     return _IcebergResponse(response.statusCode, response.headers, decoded);
