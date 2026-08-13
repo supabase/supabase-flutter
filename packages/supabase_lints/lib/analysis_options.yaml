@@ -7,6 +7,21 @@
 include: package:lints/recommended.yaml
 
 analyzer:
+  # These exclusions are repeated verbatim in every package's own
+  # analysis_options.yaml. The duplication is deliberate: flutter_tools rewrites
+  # each project's file to re-add them on every `flutter pub get`, because its
+  # AnalysisOptionsMigration does not resolve `include:` and so cannot see that
+  # they are already inherited from here. Committing the duplicates keeps the
+  # working tree clean. Drop them once the upstream issue is fixed:
+  # https://github.com/flutter/flutter/issues/191056
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
   language:
     strict-raw-types: true
 

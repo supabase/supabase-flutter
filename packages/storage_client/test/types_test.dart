@@ -1,4 +1,5 @@
 import 'package:storage_client/src/types.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -17,6 +18,8 @@ void main() {
 
       expect(bucket.id, 'avatars');
       expect(bucket.owner, 'owner-id');
+      expect(bucket.createdAt, DateTime.utc(2021, 1, 1));
+      expect(bucket.updatedAt, DateTime.utc(2021, 1, 2));
       expect(bucket.public, isTrue);
       expect(bucket.fileSizeLimit, 1024);
       expect(bucket.allowedMimeTypes, ['image/png', 'image/jpeg']);
@@ -34,6 +37,19 @@ void main() {
       expect(bucket.owner, '');
       expect(bucket.fileSizeLimit, isNull);
       expect(bucket.allowedMimeTypes, isNull);
+    });
+
+    test('throws when created_at is not a valid timestamp', () {
+      expect(
+        () => Bucket.fromJson({
+          'id': 'avatars',
+          'name': 'avatars',
+          'created_at': '',
+          'updated_at': '2021-01-02T00:00:00Z',
+          'public': false,
+        }),
+        throwsFormatException,
+      );
     });
 
     test('treats a non-list allowed_mime_types as null', () {
@@ -78,6 +94,18 @@ void main() {
       expect(file.buckets, isNull);
     });
 
+    test('parses the timestamps and leaves absent ones null', () {
+      final file = FileObject.fromJson({
+        'name': 'photo.png',
+        'created_at': '2021-01-01T00:00:00Z',
+        'updated_at': '2021-01-02T00:00:00+02:00',
+      });
+
+      expect(file.createdAt, DateTime.utc(2021, 1, 1));
+      expect(file.updatedAt, DateTime.utc(2021, 1, 1, 22));
+      expect(FileObject.fromJson({'name': 'photo.png'}).createdAt, isNull);
+    });
+
     test('throws a FormatException when the JSON is not an object', () {
       expect(
         () => FileObject.fromJson(['not', 'a', 'map']),
@@ -104,7 +132,9 @@ void main() {
       expect(file.version, 'v1');
       expect(file.size, 42);
       expect(file.contentType, 'image/png');
+      expect(file.createdAt, DateTime.utc(2021, 1, 1));
       expect(file.updatedAt, isNull);
+      expect(file.lastModified, isNull);
     });
   });
 
@@ -272,35 +302,49 @@ void main() {
   });
 
   group('StorageException', () {
-    test('toString includes message, status code and error', () {
-      const exception = StorageException(
+    test('a client raised failure is not a SupabaseApiException', () {
+      const SupabaseException exception = StorageException('boom');
+
+      expect(exception, isNot(isA<SupabaseApiException>()));
+    });
+  });
+
+  group('StorageApiException', () {
+    test('is a StorageException that reports the response status', () {
+      const SupabaseException exception = StorageApiException(
         'boom',
-        statusCode: '500',
-        error: 'server_error',
+        statusCode: 500,
       );
-      expect(
-        exception.toString(),
-        'StorageException(message: boom, statusCode: 500, error: server_error)',
-      );
+
+      expect(exception, isA<StorageException>());
+      expect(exception, isA<SupabaseApiException>());
     });
 
     test('fromJson reads message, error and statusCode', () {
-      final exception = StorageException.fromJson({
+      final exception = StorageApiException.fromJson({
         'message': 'not found',
         'error': 'NotFound',
         'statusCode': 404,
-      });
+      }, 400);
       expect(exception.message, 'not found');
-      expect(exception.error, 'NotFound');
-      expect(exception.statusCode, '404');
+      expect(exception.errorCode, 'NotFound');
+      expect(exception.statusCode, 404);
+    });
+
+    test('fromJson reads a stringified statusCode', () {
+      final exception = StorageApiException.fromJson({
+        'message': 'not found',
+        'statusCode': '404',
+      }, 400);
+      expect(exception.statusCode, 404);
     });
 
     test(
-      'fromJson falls back to the fallback status code and stringified body',
+      'fromJson falls back to the response status code and stringified body',
       () {
-        final exception = StorageException.fromJson({'foo': 'bar'}, '400');
+        final exception = StorageApiException.fromJson({'foo': 'bar'}, 400);
         expect(exception.message, "{foo: bar}");
-        expect(exception.statusCode, '400');
+        expect(exception.statusCode, 400);
       },
     );
   });

@@ -74,7 +74,11 @@ void main() {
       await expectLater(
         () => postgrest.from('imported_data').upsert(duplicateData).select(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '23505'),
+          isA<PostgrestApiException>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            '23505',
+          ),
         ),
       );
 

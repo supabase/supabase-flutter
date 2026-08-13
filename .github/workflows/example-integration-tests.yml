@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
@@ -80,7 +80,7 @@ jobs:
             > endpoint/endpoint.json
 
       - name: Publish Supabase endpoint
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: supabase-endpoint
           path: endpoint/endpoint.json
@@ -124,8 +124,8 @@ jobs:
           - { id: linux, os: ubuntu-latest, target: linux }
           - { id: web, os: ubuntu-latest, target: web }
           - { id: android, os: ubuntu-latest, target: android }
-          - { id: macos, os: macos-latest, target: macos }
-          - { id: ios, os: macos-latest, target: ios }
+          - { id: macos, os: blacksmith-6vcpu-macos-latest, target: macos }
+          - { id: ios, os: blacksmith-6vcpu-macos-latest, target: ios }
           - { id: windows, os: windows-latest, target: windows }
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -234,7 +234,7 @@ jobs:
 
       - name: Run integration tests (Android emulator)
         if: matrix.target == 'android'
-        uses: reactivecircus/android-emulator-runner@c9c93e6ba9c4194322e114c40970d5983d9a07cc # v2.38.0
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
           arch: x86_64
@@ -257,7 +257,7 @@ jobs:
 
       - name: Upload completion marker
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: done-${{ matrix.id }}
           path: done/${{ matrix.id }}

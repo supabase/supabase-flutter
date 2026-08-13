@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
+@internal
 typedef TimerCallback = void Function();
+@internal
 typedef TimerCalculation = int Function(int tries);
 
 // Need to limit doubling to avoid overflow, this limit gives 1 million times
 // the first delay
+@internal
 const maxShift = 20;
 
 /// Creates a timer that accepts a `timerCalc` function to perform
@@ -26,6 +29,7 @@ const maxShift = 20;
 /// reconnectTimer.scheduleTimeout(); // fires after 1000
 ///
 /// ```
+@internal
 class RetryTimer {
   final TimerCallback callback;
   final TimerCalculation timerCalc;

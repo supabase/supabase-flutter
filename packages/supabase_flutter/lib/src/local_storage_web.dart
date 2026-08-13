@@ -1,15 +1,20 @@
 import 'package:web/web.dart';
+import 'package:meta/meta.dart';
 
 final _localStorage = window.localStorage;
 
+@internal
 bool hasAccessToken(String persistSessionKey) =>
     _localStorage.getItem(persistSessionKey) != null;
 
+@internal
 String? accessToken(String persistSessionKey) =>
     _localStorage.getItem(persistSessionKey);
 
+@internal
 void removePersistedSession(String persistSessionKey) =>
     _localStorage.removeItem(persistSessionKey);
 
-void persistSession(String persistSessionKey, persistSessionString) =>
+@internal
+void persistSession(String persistSessionKey, String persistSessionString) =>
     _localStorage.setItem(persistSessionKey, persistSessionString);

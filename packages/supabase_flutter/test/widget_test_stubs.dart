@@ -122,36 +122,27 @@ void mockAppLink({
 
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // ignore: invalid_null_aware_operator
-  TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-      .setMockMethodCallHandler(
-        channel,
-        (call) async => mockMethodChannel ? initialLink : null,
-      );
+  final binaryMessenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
 
-  // Mock event channel using method channel, to keep supporting older versions
-  // of flutter_test in which setMockStreamHandler is not yet available.
+  binaryMessenger.setMockMethodCallHandler(
+    channel,
+    (call) async => mockMethodChannel ? initialLink : null,
+  );
+
   if (mockEventChannel) {
-    // ignore: invalid_null_aware_operator
-    TestDefaultBinaryMessengerBinding.instance?.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          eventChannel,
-          // ignore: function-always-returns-null
-          (MethodCall methodCall) async {
-            await TestDefaultBinaryMessengerBinding
-                .instance
-                // ignore: invalid_null_aware_operator
-                ?.defaultBinaryMessenger
-                .handlePlatformMessage(
-                  eventChannel.name,
-                  const StandardMethodCodec().encodeSuccessEnvelope(
-                    initialLink,
-                  ),
-                  (ByteData? data) {},
-                );
-            return null;
-          },
-        );
+    Future<void> handleEventChannelCall(MethodCall methodCall) async {
+      await binaryMessenger.handlePlatformMessage(
+        eventChannel.name,
+        const StandardMethodCodec().encodeSuccessEnvelope(initialLink),
+        (ByteData? data) {},
+      );
+    }
+
+    binaryMessenger.setMockMethodCallHandler(
+      eventChannel,
+      handleEventChannelCall,
+    );
   }
 }
 

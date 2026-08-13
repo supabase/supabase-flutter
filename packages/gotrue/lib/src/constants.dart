@@ -1,8 +1,8 @@
-import 'package:gotrue/src/types/api_version.dart';
 import 'package:gotrue/src/version.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+@internal
 class Constants {
   static const String defaultGotrueUrl = 'http://localhost:9999';
   static final Map<String, String> defaultHeaders = {
@@ -25,15 +25,11 @@ class Constants {
   /// The name of the header that contains API version.
   static const apiVersionHeaderName = 'x-supabase-api-version';
 
+  /// The API version this client speaks, sent on every request.
+  static const apiVersion = '2024-01-01';
+
   /// The TTL for the JWKS cache.
   static const jwksTtl = Duration(minutes: 10);
-}
-
-class ApiVersions {
-  static final v20240101 = ApiVersion(
-    name: '2024-01-01',
-    timestamp: DateTime.parse('2024-01-01T00:00:00.0Z'),
-  );
 }
 
 enum AuthChangeEvent {

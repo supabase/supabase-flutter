@@ -34,20 +34,59 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.signInWithOtp
+    supporting_symbols:
+      - OtpChannel
   auth.sign_in.sign_in_with_oauth:
     status: implemented
     symbols:
+      - GoTrueClient.getOAuthSignInUrl
+      - GoTrueClientSignInProvider.signInWithOAuth
       - OAuthProvider
       - OAuthProvider.OAuthProvider
+    supporting_symbols:
+      - OAuthProvider.==
+      - OAuthProvider.apple
+      - OAuthProvider.azure
+      - OAuthProvider.bitbucket
+      - OAuthProvider.discord
+      - OAuthProvider.facebook
+      - OAuthProvider.figma
+      - OAuthProvider.github
+      - OAuthProvider.gitlab
+      - OAuthProvider.google
+      - OAuthProvider.hashCode
+      - OAuthProvider.kakao
+      - OAuthProvider.keycloak
+      - OAuthProvider.linkedin
+      - OAuthProvider.linkedinOidc
+      - OAuthProvider.name
+      - OAuthProvider.notion
+      - OAuthProvider.slack
+      - OAuthProvider.slackOidc
+      - OAuthProvider.spotify
+      - OAuthProvider.toString
+      - OAuthProvider.twitch
+      - OAuthProvider.twitter
+      - OAuthProvider.values
+      - OAuthProvider.workos
+      - OAuthProvider.x
+      - OAuthProvider.zoom
+      - OAuthResponse
+      - OAuthResponse.OAuthResponse
+      - OAuthResponse.provider
+      - OAuthResponse.url
   auth.sign_in.sign_in_with_id_token:
     status: implemented
     symbols:
       - GoTrueClient.signInWithIdToken
+    supporting_symbols:
+      - GoTrueClientSignInProvider.generateRawNonce
   auth.sign_in.sign_in_with_sso:
     status: implemented
     note: "Split across two methods: getSSOSignInUrl returns Future<String> (the URL) rather than the structured {url} response used by JS, and supabase_flutter's signInWithSSO launches that URL in the browser and returns Future<bool>."
     symbols:
       - GoTrueClient.getSSOSignInUrl
+      - GoTrueClientSignInProvider.signInWithSSO
   auth.sign_in.sign_in_with_web3:
     status: implemented
     note: "Callers sign the SIWE/SIWS message with their own wallet library and pass the message and signature; the SDK does not auto-detect browser wallets or build the message, since window.ethereum/window.solana have no Flutter equivalent."
@@ -62,6 +101,8 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.verifyOTP
+    supporting_symbols:
+      - OtpType
   auth.sign_in.exchange_code_for_session:
     status: implemented
     symbols:
@@ -70,6 +111,10 @@ features:
     status: implemented
     symbols:
       - GoTrueClient.resend
+    supporting_symbols:
+      - ResendResponse
+      - ResendResponse.ResendResponse
+      - ResendResponse.messageId
   auth.sign_in.reauthenticate:
     status: implemented
     symbols:
@@ -83,6 +128,7 @@ features:
   auth.session.get_session:
     status: implemented
     symbols:
+      - GoTrueClient.currentSession
       - GoTrueClient.getSession
   auth.session.set_session:
     status: implemented
@@ -95,28 +141,111 @@ features:
   auth.session.get_user:
     status: implemented
     symbols:
+      - GoTrueClient.currentUser
       - GoTrueClient.getUser
   auth.session.update_user:
     status: implemented
     symbols:
+      - GoTrueClient.updateUser
       - UserAttributes.currentPassword
+    supporting_symbols:
+      - UserAttributes
+      - UserAttributes.==
+      - UserAttributes.UserAttributes
+      - UserAttributes.data
+      - UserAttributes.email
+      - UserAttributes.hashCode
+      - UserAttributes.nonce
+      - UserAttributes.password
+      - UserAttributes.phone
+      - UserAttributes.toJson
   auth.session.get_claims:
     status: implemented
     symbols:
       - GoTrueClient.getClaims
+    supporting_symbols:
+      - DecodedJwt
+      - DecodedJwt.DecodedJwt
+      - DecodedJwt.header
+      - DecodedJwt.payload
+      - DecodedJwt.raw
+      - DecodedJwt.signature
+      - GetClaimsOptions
+      - GetClaimsOptions.GetClaimsOptions
+      - GetClaimsOptions.allowExpired
+      - GetClaimsResponse
+      - GetClaimsResponse.GetClaimsResponse
+      - GetClaimsResponse.claims
+      - GetClaimsResponse.header
+      - GetClaimsResponse.signature
+      - JWK
+      - JWK.JWK
+      - JWK.[]
+      - JWK.alg
+      - JWK.fromJson
+      - JWK.keyOps
+      - JWK.kid
+      - JWK.kty
+      - JWK.publicKey
+      - JWK.toJson
+      - JWKSet
+      - JWKSet.JWKSet
+      - JWKSet.fromJson
+      - JWKSet.keys
+      - JWKSet.toJson
+      - JwtHeader
+      - JwtHeader.JwtHeader
+      - JwtHeader.alg
+      - JwtHeader.fromJson
+      - JwtHeader.kid
+      - JwtHeader.toJson
+      - JwtHeader.typ
+      - JwtPayload
+      - JwtPayload.JwtPayload
+      - JwtPayload.aud
+      - JwtPayload.claims
+      - JwtPayload.exp
+      - JwtPayload.fromJson
+      - JwtPayload.iat
+      - JwtPayload.iss
+      - JwtPayload.jti
+      - JwtPayload.nbf
+      - JwtPayload.sub
+      - JwtPayload.toJson
+      - JwtRawParts
+      - JwtRawParts.JwtRawParts
+      - JwtRawParts.header
+      - JwtRawParts.payload
+      - JwtRawParts.signature
+      - decodeJwt
+      - validateExp
   auth.session.sign_out:
     status: implemented
     symbols:
       - GoTrueClient.signOut
+    supporting_symbols:
+      - SignOutScope
   auth.session.auto_refresh:
     status: implemented
     symbols:
       - GoTrueClient.startAutoRefresh
       - GoTrueClient.stopAutoRefresh
+    supporting_symbols:
+      - AuthClientOptions.autoRefreshToken
   auth.session.subscribe_auth_events:
     status: implemented
     symbols:
       - GoTrueClient.onAuthStateChange
+    supporting_symbols:
+      - AuthChangeEvent
+      - AuthChangeEvent.AuthChangeEvent
+      - AuthChangeEvent.jsName
+      - AuthState
+      - AuthState.AuthState
+      - AuthState.event
+      - AuthState.fromBroadcast
+      - AuthState.session
+      - AuthState.toString
   auth.session.sign_out_reason:
     status: implemented
     symbols:
@@ -130,6 +259,7 @@ features:
     symbols:
       - GoTrueClient.getLinkIdentityUrl
       - GoTrueClient.linkIdentityWithIdToken
+      - GoTrueClientSignInProvider.linkIdentity
   auth.identities.list_identities:
     status: implemented
     symbols:
@@ -144,14 +274,47 @@ features:
     status: implemented
     symbols:
       - GoTrueMFAApi.enroll
+    supporting_symbols:
+      - AuthMFAEnrollResponse
+      - AuthMFAEnrollResponse.AuthMFAEnrollResponse
+      - AuthMFAEnrollResponse.fromJson
+      - AuthMFAEnrollResponse.id
+      - AuthMFAEnrollResponse.phone
+      - AuthMFAEnrollResponse.totp
+      - AuthMFAEnrollResponse.type
+      - PhoneEnrollment
+      - PhoneEnrollment.PhoneEnrollment
+      - PhoneEnrollment.fromJson
+      - PhoneEnrollment.phone
+      - TOTPEnrollment
+      - TOTPEnrollment.TOTPEnrollment
+      - TOTPEnrollment.fromJson
+      - TOTPEnrollment.qrCode
+      - TOTPEnrollment.secret
+      - TOTPEnrollment.uri
   auth.mfa.challenge:
     status: implemented
     symbols:
       - GoTrueMFAApi.challenge
+    supporting_symbols:
+      - AuthMFAChallengeResponse
+      - AuthMFAChallengeResponse.AuthMFAChallengeResponse
+      - AuthMFAChallengeResponse.expiresAt
+      - AuthMFAChallengeResponse.fromJson
+      - AuthMFAChallengeResponse.id
   auth.mfa.verify:
     status: implemented
     symbols:
       - GoTrueMFAApi.verify
+    supporting_symbols:
+      - AuthMFAVerifyResponse
+      - AuthMFAVerifyResponse.AuthMFAVerifyResponse
+      - AuthMFAVerifyResponse.accessToken
+      - AuthMFAVerifyResponse.expiresIn
+      - AuthMFAVerifyResponse.fromJson
+      - AuthMFAVerifyResponse.refreshToken
+      - AuthMFAVerifyResponse.tokenType
+      - AuthMFAVerifyResponse.user
   auth.mfa.challenge_and_verify:
     status: implemented
     symbols:
@@ -160,25 +323,69 @@ features:
     status: implemented
     symbols:
       - GoTrueMFAApi.unenroll
+    supporting_symbols:
+      - AuthMFAUnenrollResponse
+      - AuthMFAUnenrollResponse.AuthMFAUnenrollResponse
+      - AuthMFAUnenrollResponse.fromJson
+      - AuthMFAUnenrollResponse.id
   auth.mfa.list_factors:
     status: implemented
     symbols:
       - GoTrueMFAApi.listFactors
+    supporting_symbols:
+      - AuthMFAListFactorsResponse
+      - AuthMFAListFactorsResponse.AuthMFAListFactorsResponse
+      - AuthMFAListFactorsResponse.all
+      - AuthMFAListFactorsResponse.phone
+      - AuthMFAListFactorsResponse.totp
+      - AuthMFAListFactorsResponse.webauthn
   auth.mfa.get_authenticator_assurance_level:
     status: implemented
     symbols:
       - AuthenticatorAssuranceLevel
       - GoTrueMFAApi.getAuthenticatorAssuranceLevel
+    supporting_symbols:
+      - AMREntry
+      - AMREntry.AMREntry
+      - AMREntry.fromJson
+      - AMREntry.method
+      - AMREntry.timestamp
+      - AMRMethod
+      - AMRMethod.AMRMethod
+      - AMRMethod.code
+      - AuthMFAGetAuthenticatorAssuranceLevelResponse
+      - AuthMFAGetAuthenticatorAssuranceLevelResponse.AuthMFAGetAuthenticatorAssuranceLevelResponse
+      - AuthMFAGetAuthenticatorAssuranceLevelResponse.currentAuthenticationMethods
+      - AuthMFAGetAuthenticatorAssuranceLevelResponse.currentLevel
+      - AuthMFAGetAuthenticatorAssuranceLevelResponse.nextLevel
 
   # auth — passkeys (experimental)
   auth.passkey.register_passkey:
     status: implemented
     symbols:
       - GoTrueClientPasskey.registerPasskey
+      - GoTruePasskeyApi.startRegistration
+      - GoTruePasskeyApi.verifyRegistration
+    supporting_symbols:
+      - PasskeyRegistrationOptionsResponse
+      - PasskeyRegistrationOptionsResponse.PasskeyRegistrationOptionsResponse
+      - PasskeyRegistrationOptionsResponse.challengeId
+      - PasskeyRegistrationOptionsResponse.expiresAt
+      - PasskeyRegistrationOptionsResponse.fromJson
+      - PasskeyRegistrationOptionsResponse.options
   auth.passkey.sign_in_with_passkey:
     status: implemented
     symbols:
       - GoTrueClientPasskey.signInWithPasskey
+      - GoTruePasskeyApi.startAuthentication
+      - GoTruePasskeyApi.verifyAuthentication
+    supporting_symbols:
+      - PasskeyAuthenticationOptionsResponse
+      - PasskeyAuthenticationOptionsResponse.PasskeyAuthenticationOptionsResponse
+      - PasskeyAuthenticationOptionsResponse.challengeId
+      - PasskeyAuthenticationOptionsResponse.expiresAt
+      - PasskeyAuthenticationOptionsResponse.fromJson
+      - PasskeyAuthenticationOptionsResponse.options
 
   # auth — OAuth server (Supabase acting as an OAuth provider)
   auth.oauth_server.get_authorization_details:
@@ -208,6 +415,11 @@ features:
       - OAuthAuthorizedClient.clientId
       - OAuthAuthorizedClient.clientName
       - OAuthAuthorizedClient.fromJson
+      - OAuthAuthorizingUser
+      - OAuthAuthorizingUser.OAuthAuthorizingUser
+      - OAuthAuthorizingUser.email
+      - OAuthAuthorizingUser.fromJson
+      - OAuthAuthorizingUser.id
   auth.oauth_server.approve_authorization:
     status: implemented
     symbols:
@@ -273,6 +485,19 @@ features:
     status: implemented
     symbols:
       - GoTrueAdminApi.generateLink
+    supporting_symbols:
+      - GenerateLinkProperties
+      - GenerateLinkProperties.actionLink
+      - GenerateLinkProperties.emailOtp
+      - GenerateLinkProperties.fromJson
+      - GenerateLinkProperties.hashedToken
+      - GenerateLinkProperties.redirectTo
+      - GenerateLinkProperties.verificationType
+      - GenerateLinkResponse
+      - GenerateLinkResponse.fromJson
+      - GenerateLinkResponse.properties
+      - GenerateLinkResponse.user
+      - GenerateLinkType
   auth.admin.sign_out:
     status: implemented
     symbols:
@@ -281,10 +506,21 @@ features:
     status: implemented
     symbols:
       - GoTrueAdminMFAApi.listFactors
+    supporting_symbols:
+      - AuthMFAAdminListFactorsResponse
+      - AuthMFAAdminListFactorsResponse.AuthMFAAdminListFactorsResponse
+      - AuthMFAAdminListFactorsResponse.factors
+      - AuthMFAAdminListFactorsResponse.fromJson
+      - GoTrueAdminApi.mfa
   auth.admin.delete_mfa_factor:
     status: implemented
     symbols:
       - GoTrueAdminMFAApi.deleteFactor
+    supporting_symbols:
+      - AuthMFAAdminDeleteFactorResponse
+      - AuthMFAAdminDeleteFactorResponse.AuthMFAAdminDeleteFactorResponse
+      - AuthMFAAdminDeleteFactorResponse.fromJson
+      - AuthMFAAdminDeleteFactorResponse.id
   auth.admin.create_provider:
     status: implemented
     symbols:
@@ -399,6 +635,16 @@ features:
     status: implemented
     symbols:
       - GoTrueAdminOAuthApi.createClient
+    supporting_symbols:
+      - CreateOAuthClientParams
+      - CreateOAuthClientParams.CreateOAuthClientParams
+      - CreateOAuthClientParams.clientName
+      - CreateOAuthClientParams.clientUri
+      - CreateOAuthClientParams.grantTypes
+      - CreateOAuthClientParams.redirectUris
+      - CreateOAuthClientParams.responseTypes
+      - CreateOAuthClientParams.scope
+      - CreateOAuthClientParams.toJson
   auth.oauth_admin.get_client:
     status: implemented
     symbols:
@@ -407,6 +653,16 @@ features:
     status: implemented
     symbols:
       - GoTrueAdminOAuthApi.updateClient
+    supporting_symbols:
+      - UpdateOAuthClientParams
+      - UpdateOAuthClientParams.UpdateOAuthClientParams
+      - UpdateOAuthClientParams.clientName
+      - UpdateOAuthClientParams.clientUri
+      - UpdateOAuthClientParams.grantTypes
+      - UpdateOAuthClientParams.redirectUris
+      - UpdateOAuthClientParams.responseTypes
+      - UpdateOAuthClientParams.scope
+      - UpdateOAuthClientParams.toJson
   auth.oauth_admin.delete_client:
     status: implemented
     symbols:
@@ -415,6 +671,8 @@ features:
     status: implemented
     symbols:
       - GoTrueAdminOAuthApi.listClients
+    supporting_symbols:
+      - GoTrueAdminApi.oauth
   auth.oauth_admin.regenerate_client_secret:
     status: implemented
     symbols:
@@ -425,6 +683,8 @@ features:
     status: implemented
     symbols:
       - GoTrueAdminPasskeyApi.listPasskeys
+    supporting_symbols:
+      - GoTrueAdminApi.passkey
   auth.passkey_admin.delete_passkey:
     status: implemented
     symbols:
@@ -435,6 +695,7 @@ features:
     status: implemented
     symbols:
       - PostgrestClient.from
+      - SupabaseClient.from
   database.query.select:
     status: implemented
     symbols:
@@ -444,10 +705,24 @@ features:
     note: "head and count are applied via type-safe chaining (.head()/.count()) rather than inline call options, which is the idiomatic Dart builder pattern; inline options cannot preserve the distinct return types."
     symbols:
       - PostgrestClient.rpc
+      - SupabaseClient.rpc
+    supporting_symbols:
+      - PostgrestQueryBuilder.count
+      - PostgrestRpcBuilder.rpc
+      - PostgrestTransformBuilder.count
+      - PostgrestTransformBuilder.head
   database.query.schema_selection:
     status: implemented
     symbols:
       - PostgrestClient.schema
+      - SupabaseClient.schema
+    supporting_symbols:
+      - PostgrestClientOptions.schema
+      - SupabaseQuerySchema
+      - SupabaseQuerySchema.SupabaseQuerySchema
+      - SupabaseQuerySchema.from
+      - SupabaseQuerySchema.rpc
+      - SupabaseQuerySchema.schema
 
   # database — mutate
   database.mutate.insert:
@@ -595,6 +870,8 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.textSearch
+    supporting_symbols:
+      - TextSearchType
   database.using_filters.regex:
     status: implemented
     symbols:
@@ -653,6 +930,7 @@ features:
     status: implemented
     symbols:
       - ExplainFormat
+      - PostgrestTransformBuilder.explain
   database.using_modifiers.dry_run:
     status: implemented
     symbols:
@@ -678,11 +956,17 @@ features:
       - PostgrestClientOptions.retryableStatusCodes
       - PostgrestBuilder.retry
       - PostgrestClient.defaultRetryableStatusCodes
+    supporting_symbols:
+      - PostgrestFilterBuilder.retry
+      - PostgrestQueryBuilder.retry
+      - PostgrestTransformBuilder.retry
   database.configuration.request_timeout:
     status: implemented
     symbols:
       - PostgrestClient.requestTimeout
       - PostgrestClientOptions.requestTimeout
+    supporting_symbols:
+      - PostgrestBuilder.timeout
 
   # storage — file buckets
   storage.file_buckets.access_bucket:
@@ -694,6 +978,14 @@ features:
     symbols:
       - StorageFileApi.upload
       - StorageFileApi.uploadBinary
+    supporting_symbols:
+      - File
+      - FileOptions
+      - FileOptions.FileOptions
+      - FileOptions.cacheControl
+      - FileOptions.contentType
+      - FileOptions.headers
+      - FileOptions.upsert
   storage.file_buckets.upload_with_metadata:
     status: implemented
     symbols:
@@ -716,6 +1008,15 @@ features:
     status: implemented
     symbols:
       - TransformOptions
+    supporting_symbols:
+      - RequestImageFormat
+      - ResizeMode
+      - TransformOptions.TransformOptions
+      - TransformOptions.format
+      - TransformOptions.height
+      - TransformOptions.quality
+      - TransformOptions.resize
+      - TransformOptions.width
   storage.file_buckets.download_as_stream:
     status: implemented
     note: "Exposed as a dedicated downloadStream method returning a lazy Stream<Uint8List> rather than an asStream() builder off download(); the request is sent on listen and a non-success status surfaces as a StorageException on the stream."
@@ -728,6 +1029,17 @@ features:
       - StorageFileApi.list
       - StorageFileApi.listPaginated
     supporting_symbols:
+      - FileObject
+      - FileObject.FileObject
+      - FileObject.bucketId
+      - FileObject.buckets
+      - FileObject.createdAt
+      - FileObject.fromJson
+      - FileObject.id
+      - FileObject.metadata
+      - FileObject.name
+      - FileObject.owner
+      - FileObject.updatedAt
       - FileSort
       - FileSort.FileSort
       - FileSort.column
@@ -812,14 +1124,39 @@ features:
       - DownloadBehavior
       - DownloadBehavior.named
       - DownloadBehavior.withOriginalName
+      - StorageFileApi.createSignedUrl
   storage.file_buckets.create_signed_urls:
     status: implemented
     symbols:
       - StorageFileApi.createSignedUrls
+    supporting_symbols:
+      - SignedUrl
+      - SignedUrl.==
+      - SignedUrl.SignedUrl
+      - SignedUrl.copyWith
+      - SignedUrl.hashCode
+      - SignedUrl.path
+      - SignedUrl.signedUrl
+      - SignedUrl.toString
+      - SignedUrlFailure
+      - SignedUrlFailure.SignedUrlFailure
+      - SignedUrlFailure.error
+      - SignedUrlFailure.toString
+      - SignedUrlResult
+      - SignedUrlResult.SignedUrlResult
+      - SignedUrlResult.path
+      - SignedUrlSuccess
+      - SignedUrlSuccess.SignedUrlSuccess
+      - SignedUrlSuccess.signedUrl
+      - SignedUrlSuccess.toString
   storage.file_buckets.create_signed_upload_url:
     status: implemented
     symbols:
       - StorageFileApi.createSignedUploadUrl
+    supporting_symbols:
+      - SignedUploadURLResponse
+      - SignedUploadURLResponse.SignedUploadURLResponse
+      - SignedUploadURLResponse.token
   storage.file_buckets.get_public_url:
     status: implemented
     symbols:
@@ -836,6 +1173,22 @@ features:
     status: implemented
     symbols:
       - StorageFileApi.info
+    supporting_symbols:
+      - FileObjectV2
+      - FileObjectV2.FileObjectV2
+      - FileObjectV2.bucketId
+      - FileObjectV2.cacheControl
+      - FileObjectV2.contentType
+      - FileObjectV2.createdAt
+      - FileObjectV2.etag
+      - FileObjectV2.fromJson
+      - FileObjectV2.id
+      - FileObjectV2.lastModified
+      - FileObjectV2.metadata
+      - FileObjectV2.name
+      - FileObjectV2.size
+      - FileObjectV2.updatedAt
+      - FileObjectV2.version
   storage.file_buckets.create_file_bucket:
     status: implemented
     symbols:
@@ -1248,11 +1601,26 @@ features:
     symbols:
       - IcebergRestCatalog.tableExists
 
+  # storage — errors
+  storage.errors.error_codes:
+    status: implemented
+    note: "The error code is read from the inherited SupabaseException.errorCode, which is declared in the shared internal package and so is not registrable on its own."
+    symbols:
+      - StorageException
+    supporting_symbols:
+      - StorageApiException
+      - StorageApiException.StorageApiException
+      - StorageApiException.fromJson
+      - StorageApiException.statusCode
+      - StorageException.StorageException
+
   # realtime — channel
   realtime.channel.subscribe:
     status: implemented
     symbols:
       - RealtimeChannel.subscribe
+    supporting_symbols:
+      - RealtimeSubscribeStatus
   realtime.channel.unsubscribe:
     status: implemented
     symbols:
@@ -1261,10 +1629,10 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.sendBroadcastMessage
+    supporting_symbols:
+      - ChannelResponse
   realtime.channel.broadcast_http:
     status: implemented
-    note: "httpSend posts to the legacy /api/broadcast endpoint with a messages array and returns Future<void>, not the newer per-channel endpoint returning {success}."
-
     symbols:
       - RealtimeChannel.httpSend
   # realtime — client
@@ -1272,35 +1640,56 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.channel
+      - SupabaseClient.channel
   realtime.client.connect:
     status: implemented
     symbols:
       - RealtimeChannel.subscribe
       - RealtimeClient.connection
       - RealtimeClient.onConnectionMessage
+    supporting_symbols:
+      - RealtimeClient.onError
+      - RealtimeClient.onMessage
+      - RealtimeClient.onOpen
   realtime.client.disconnect:
     status: implemented
     symbols:
       - Constants.defaultConnectionCloseTimeout
       - RealtimeClient.connectionCloseTimeout
+      - RealtimeClient.disconnect
       - RealtimeClientOptions.connectionCloseTimeout
+    supporting_symbols:
+      - Constants.wsCloseNormal
+      - RealtimeClient.onClose
+      - RealtimeCloseEvent
+      - RealtimeCloseEvent.RealtimeCloseEvent
+      - RealtimeCloseEvent.code
+      - RealtimeCloseEvent.reason
+      - RealtimeCloseEvent.toString
   realtime.client.connection_state:
     status: implemented
     symbols:
       - RealtimeClient.connectionState
       - SocketState
+    supporting_symbols:
+      - RealtimeClient.isConnected
   realtime.client.get_channels:
     status: implemented
     symbols:
       - RealtimeClient.getChannels
+      - SupabaseClient.getChannels
+    supporting_symbols:
+      - RealtimeClient.channels
   realtime.client.remove_channel:
     status: implemented
     symbols:
       - RealtimeClient.removeChannel
+      - SupabaseClient.removeChannel
   realtime.client.remove_all_channels:
     status: implemented
     symbols:
       - RealtimeClient.removeAllChannels
+      - SupabaseClient.removeAllChannels
   realtime.client.listen_heartbeats:
     status: implemented
     symbols:
@@ -1310,6 +1699,8 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.setAuth
+    supporting_symbols:
+      - RealtimeClient.accessToken
 
   # realtime — subscriptions
   realtime.subscriptions.broadcast:
@@ -1319,8 +1710,9 @@ features:
   realtime.subscriptions.postgres_changes:
     status: implemented
     symbols:
-      - ChannelFilter.select
       - PostgresType
+      - RealtimeChannel.onPostgresChanges
+      - RealtimeChannel.onSystemEvents
       - RealtimeChannelConfig.replicationReady
       - RealtimeSystemPayload
       - RealtimeSystemPayload.RealtimeSystemPayload
@@ -1330,17 +1722,81 @@ features:
       - RealtimeSystemPayload.message
       - RealtimeSystemPayload.status
       - RealtimeSystemPayload.toString
+    supporting_symbols:
+      - PostgresChangeEvent
+      - PostgresChangePayload
+      - PostgresChangePayload.==
+      - PostgresChangePayload.PostgresChangePayload
+      - PostgresChangePayload.commitTimestamp
+      - PostgresChangePayload.errors
+      - PostgresChangePayload.eventType
+      - PostgresChangePayload.fromPayload
+      - PostgresChangePayload.hashCode
+      - PostgresChangePayload.newRecord
+      - PostgresChangePayload.oldRecord
+      - PostgresChangePayload.schema
+      - PostgresChangePayload.table
+      - PostgresChangePayload.toString
+      - PostgresColumn
+      - PostgresColumn.PostgresColumn
+      - PostgresColumn.flags
+      - PostgresColumn.name
+      - PostgresColumn.type
+      - PostgresColumn.typeModifier
   realtime.subscriptions.postgres_changes_filter:
     status: implemented
     symbols:
       - PostgresChangeFilter.negate
       - PostgresChangeFilterType.token
+    supporting_symbols:
+      - PostgresChangeFilter
+      - PostgresChangeFilter.PostgresChangeFilter
+      - PostgresChangeFilter.column
+      - PostgresChangeFilter.toString
+      - PostgresChangeFilter.type
+      - PostgresChangeFilter.value
+      - PostgresChangeFilterType
   realtime.subscriptions.subscribe_presence:
     status: implemented
     symbols:
       - RealtimeChannel.onPresenceSync
       - RealtimeChannel.onPresenceJoin
       - RealtimeChannel.onPresenceLeave
+    supporting_symbols:
+      - PresenceChooser
+      - PresenceEvent
+      - PresenceEvents
+      - PresenceEvents.PresenceEvents
+      - PresenceEvents.diff
+      - PresenceEvents.state
+      - PresenceOnJoinCallback
+      - PresenceOnLeaveCallback
+      - PresenceOpts
+      - PresenceOpts.PresenceOpts
+      - PresenceOpts.events
+      - RealtimePresenceJoinPayload
+      - RealtimePresenceJoinPayload.RealtimePresenceJoinPayload
+      - RealtimePresenceJoinPayload.currentPresences
+      - RealtimePresenceJoinPayload.fromJson
+      - RealtimePresenceJoinPayload.key
+      - RealtimePresenceJoinPayload.newPresences
+      - RealtimePresenceJoinPayload.toString
+      - RealtimePresenceLeavePayload
+      - RealtimePresenceLeavePayload.RealtimePresenceLeavePayload
+      - RealtimePresenceLeavePayload.currentPresences
+      - RealtimePresenceLeavePayload.fromJson
+      - RealtimePresenceLeavePayload.key
+      - RealtimePresenceLeavePayload.leftPresences
+      - RealtimePresenceLeavePayload.toString
+      - RealtimePresencePayload
+      - RealtimePresencePayload.RealtimePresencePayload
+      - RealtimePresencePayload.event
+      - RealtimePresencePayload.fromJson
+      - RealtimePresencePayload.toString
+      - RealtimePresenceSyncPayload
+      - RealtimePresenceSyncPayload.RealtimePresenceSyncPayload
+      - RealtimePresenceSyncPayload.fromJson
+      - RealtimePresenceSyncPayload.toString
   realtime.subscriptions.private_channel:
     status: implemented
     symbols:
@@ -1357,6 +1813,12 @@ features:
     status: implemented
     symbols:
       - RealtimeChannelConfig.replay
+    supporting_symbols:
+      - ReplayOption
+      - ReplayOption.ReplayOption
+      - ReplayOption.limit
+      - ReplayOption.since
+      - ReplayOption.toMap
 
   # realtime — presence
   realtime.presence.track:
@@ -1371,6 +1833,34 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.presenceState
+    supporting_symbols:
+      - Presence
+      - Presence.Presence
+      - Presence.deepClone
+      - Presence.fromJson
+      - Presence.payload
+      - Presence.presenceRef
+      - Presence.toString
+      - RealtimeChannel.presence
+      - RealtimePresence
+      - RealtimePresence.RealtimePresence
+      - RealtimePresence.caller
+      - RealtimePresence.channel
+      - RealtimePresence.inPendingSyncState
+      - RealtimePresence.joinRef
+      - RealtimePresence.list
+      - RealtimePresence.onJoin
+      - RealtimePresence.onLeave
+      - RealtimePresence.onSync
+      - RealtimePresence.pendingDiffs
+      - RealtimePresence.state
+      - RealtimePresence.syncDiff
+      - RealtimePresence.syncState
+      - SinglePresenceState
+      - SinglePresenceState.SinglePresenceState
+      - SinglePresenceState.key
+      - SinglePresenceState.presences
+      - SinglePresenceState.toString
   realtime.presence.presence_key:
     status: implemented
     symbols:
@@ -1381,6 +1871,9 @@ features:
     status: implemented
     symbols:
       - RealtimeClientOptions.transport
+    supporting_symbols:
+      - RealtimeClient.transport
+      - WebSocketTransport
   realtime.configuration.reconnect_backoff:
     status: implemented
     symbols:
@@ -1389,6 +1882,8 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.heartbeatIntervalMs
+    supporting_symbols:
+      - Constants.defaultHeartbeatIntervalMs
   realtime.configuration.access_token_callback:
     status: implemented
     note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
@@ -1398,11 +1893,21 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.logger
+    supporting_symbols:
+      - RealtimeClient.log
+      - RealtimeClientOptions.logLevel
+      - RealtimeLogLevel
   realtime.configuration.binary_protocol:
     status: implemented
     symbols:
       - RealtimeClient.encode
       - RealtimeClient.decode
+    supporting_symbols:
+      - RealtimeDecode
+      - RealtimeEncode
+      - RealtimeProtocolVersion
+      - RealtimeProtocolVersion.RealtimeProtocolVersion
+      - RealtimeProtocolVersion.vsn
   realtime.configuration.deferred_disconnect:
     status: implemented
     symbols:
@@ -1412,20 +1917,25 @@ features:
   functions.invocation.invoke:
     status: implemented
     symbols:
+      - FunctionResponse.statusCode
       - FunctionsFetchException
       - FunctionsFetchException.FunctionsFetchException
       - FunctionsRelayException
       - FunctionsRelayException.FunctionsRelayException
-      - FunctionsHttpException
-      - FunctionsHttpException.FunctionsHttpException
+      - FunctionsApiException
+      - FunctionsApiException.FunctionsApiException
+    supporting_symbols:
+      - FunctionResponse
+      - FunctionResponse.FunctionResponse
   functions.invocation.set_auth_token:
     status: implemented
     symbols:
       - FunctionsClient.setAuth
   functions.invocation.method_override:
     status: implemented
+    note: "The HttpMethod enum is shared with postgrest, so it also offers head, which supabase-js does not expose for function invocation."
     symbols:
-      - HttpMethod
+      - FunctionsClient.invoke
   functions.invocation.streaming_response:
     status: implemented
     symbols:
@@ -1464,15 +1974,58 @@ features:
     symbols:
       - FlutterAuthClientOptions.detectSessionInUri
       - FlutterAuthClientOptions.detectSessionInUriPredicate
+      - GoTrueClient.getSessionFromUrl
+    supporting_symbols:
+      - AuthSessionUrlResponse
+      - AuthSessionUrlResponse.AuthSessionUrlResponse
+      - AuthSessionUrlResponse.redirectType
+      - AuthSessionUrlResponse.session
   client.session_management.custom_storage:
     status: implemented
     symbols:
       - GotrueAsyncStorage
       - LocalStorage
+    supporting_symbols:
+      - AuthClientOptions.pkceAsyncStorage
+      - EmptyLocalStorage
+      - EmptyLocalStorage.EmptyLocalStorage
+      - EmptyLocalStorage.accessToken
+      - EmptyLocalStorage.hasAccessToken
+      - EmptyLocalStorage.initialize
+      - EmptyLocalStorage.persistSession
+      - EmptyLocalStorage.removePersistedSession
+      - FlutterAuthClientOptions.localStorage
+      - GotrueAsyncStorage.GotrueAsyncStorage
+      - GotrueAsyncStorage.getItem
+      - GotrueAsyncStorage.removeItem
+      - GotrueAsyncStorage.setItem
+      - LocalStorage.LocalStorage
+      - LocalStorage.accessToken
+      - LocalStorage.hasAccessToken
+      - LocalStorage.initialize
+      - LocalStorage.persistSession
+      - LocalStorage.removePersistedSession
+      - SharedPreferencesGotrueAsyncStorage
+      - SharedPreferencesGotrueAsyncStorage.SharedPreferencesGotrueAsyncStorage
+      - SharedPreferencesGotrueAsyncStorage.getItem
+      - SharedPreferencesGotrueAsyncStorage.removeItem
+      - SharedPreferencesGotrueAsyncStorage.setItem
+      - SharedPreferencesLocalStorage
+      - SharedPreferencesLocalStorage.SharedPreferencesLocalStorage
+      - SharedPreferencesLocalStorage.accessToken
+      - SharedPreferencesLocalStorage.hasAccessToken
+      - SharedPreferencesLocalStorage.initialize
+      - SharedPreferencesLocalStorage.persistSession
+      - SharedPreferencesLocalStorage.removePersistedSession
   client.session_management.persist_session:
     status: implemented
     symbols:
       - FlutterAuthClientOptions.persistSession
+      - GoTrueClient.recoverSession
+      - GoTrueClient.setInitialSession
+    supporting_symbols:
+      - SharedPreferencesLocalStorage.persistSessionKey
+      - defaultPersistSessionKey
   client.request_configuration.custom_http_client:
     status: implemented
     symbols:
@@ -1482,6 +2035,22 @@ features:
     status: implemented
     symbols:
       - SupabaseClient.headers
+    supporting_symbols:
+      - Constants.defaultHeaders
+      - FunctionsClient.headers
+      - GoTrueClient.headers
+      - PostgrestBuilder.setHeader
+      - PostgrestClient.headers
+      - PostgrestFilterBuilder.setHeader
+      - PostgrestQueryBuilder.setHeader
+      - PostgrestTransformBuilder.setHeader
+      - RawPostgrestBuilder.setHeader
+      - RealtimeClient.headers
+      - ResponsePostgrestBuilder.setHeader
+      - StorageBucketApi.headers
+      - StorageFileApi.headers
+      - StorageFileApi.setHeader
+      - SupabaseStorageClient.setHeader
   client.observability.trace_propagation:
     status: implemented
     note: "Opt-in W3C trace context propagation (traceparent/tracestate/baggage) to Supabase hosts only, with sampling-decision respect. The active context is supplied through a traceContextProvider callback, the idiomatic Dart equivalent of supabase-js's automatic extraction from the OpenTelemetry global API, since Dart has no ubiquitous ambient trace context."
@@ -1498,14 +2067,145 @@ features:
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
 
-# Public API the matrix accounts for but that no single capability owns: the
-# Iceberg schema and type model, reachable from several features' entry points,
-# and the exception hierarchy, reachable from none because it is thrown rather
-# than passed. Every catalog operation now has a feature id of its own.
+# Public API the matrix accounts for but that no single capability owns: shared
+# domain models, the exception hierarchies, the client and sub-API handles that
+# gate whole areas, and surface the canonical registry has no id for.
 supporting_symbols:
   - AccessDelegation
   - AccessDelegation.AccessDelegation
   - AccessDelegation.value
+  - AdminUserAttributes
+  - AdminUserAttributes.==
+  - AdminUserAttributes.AdminUserAttributes
+  - AdminUserAttributes.appMetadata
+  - AdminUserAttributes.banDuration
+  - AdminUserAttributes.emailConfirm
+  - AdminUserAttributes.hashCode
+  - AdminUserAttributes.phoneConfirm
+  - AdminUserAttributes.toJson
+  - AdminUserAttributes.userMetadata
+  - AuthApiException
+  - AuthApiException.==
+  - AuthApiException.AuthApiException
+  - AuthApiException.hashCode
+  - AuthApiException.statusCode
+  - AuthClientOptions
+  - AuthClientOptions.AuthClientOptions
+  - AuthException
+  - AuthException.==
+  - AuthException.AuthException
+  - AuthException.hashCode
+  - AuthInvalidJwtException
+  - AuthInvalidJwtException.AuthInvalidJwtException
+  - AuthPKCEGrantCodeExchangeError
+  - AuthPKCEGrantCodeExchangeError.AuthPKCEGrantCodeExchangeError
+  - AuthResponse
+  - AuthResponse.AuthResponse
+  - AuthResponse.fromJson
+  - AuthResponse.session
+  - AuthResponse.user
+  - AuthRetryableApiException
+  - AuthRetryableApiException.==
+  - AuthRetryableApiException.AuthRetryableApiException
+  - AuthRetryableApiException.hashCode
+  - AuthRetryableApiException.statusCode
+  - AuthRetryableFetchException
+  - AuthRetryableFetchException.AuthRetryableFetchException
+  - AuthSessionMissingException
+  - AuthSessionMissingException.AuthSessionMissingException
+  - AuthUnknownException
+  - AuthUnknownException.AuthUnknownException
+  - AuthUnknownException.originalError
+  - AuthUnknownException.toString
+  - AuthWeakPasswordException
+  - AuthWeakPasswordException.AuthWeakPasswordException
+  - AuthWeakPasswordException.reasons
+  - AuthWeakPasswordException.toString
+  - Binding
+  - Binding.Binding
+  - Binding.callback
+  - Binding.copyWith
+  - Binding.filter
+  - Binding.id
+  - Binding.type
+  - BindingCallback
+  - BroadcastChannel
+  - Bucket
+  - Bucket.Bucket
+  - Bucket.allowedMimeTypes
+  - Bucket.createdAt
+  - Bucket.fileSizeLimit
+  - Bucket.fromJson
+  - Bucket.id
+  - Bucket.name
+  - Bucket.owner
+  - Bucket.public
+  - Bucket.updatedAt
+  - BucketOptions
+  - BucketOptions.BucketOptions
+  - BucketOptions.allowedMimeTypes
+  - BucketOptions.fileSizeLimit
+  - BucketOptions.public
+  - Constants
+  - Constants.defaultTimeout
+  - CountOption
+  - ErrorCode
+  - ErrorCode.ErrorCode
+  - ErrorCode.code
+  - ErrorCode.fromCode
+  - Factor
+  - Factor.==
+  - Factor.Factor
+  - Factor.createdAt
+  - Factor.factorType
+  - Factor.friendlyName
+  - Factor.fromJson
+  - Factor.hashCode
+  - Factor.id
+  - Factor.status
+  - Factor.toJson
+  - Factor.toString
+  - Factor.updatedAt
+  - FactorStatus
+  - FactorType
+  - FlutterAuthClientOptions
+  - FlutterAuthClientOptions.FlutterAuthClientOptions
+  - FlutterAuthClientOptions.copyWith
+  - FunctionException
+  - FunctionException.FunctionException
+  - FunctionException.details
+  - FunctionException.toString
+  - FunctionsApiException.statusCode
+  - FunctionsApiException.toString
+  - FunctionsClient
+  - FunctionsClient.FunctionsClient
+  - FunctionsClient.dispose
+  - FunctionsClientOptions
+  - FunctionsClientOptions.FunctionsClientOptions
+  - GoTrueAdminApi
+  - GoTrueAdminApi.GoTrueAdminApi
+  - GoTrueAdminMFAApi
+  - GoTrueAdminMFAApi.GoTrueAdminMFAApi
+  - GoTrueAdminOAuthApi
+  - GoTrueAdminOAuthApi.GoTrueAdminOAuthApi
+  - GoTrueAdminPasskeyApi
+  - GoTrueAdminPasskeyApi.GoTrueAdminPasskeyApi
+  - GoTrueClient
+  - GoTrueClient.GoTrueClient
+  - GoTrueClient.admin
+  - GoTrueClient.dispose
+  - GoTrueClient.mfa
+  - GoTrueClient.passkey
+  - GoTrueClientPasskey
+  - GoTrueClientSignInProvider
+  - GoTrueMFAApi
+  - GoTrueMFAApi.GoTrueMFAApi
+  - GoTruePasskeyApi
+  - GoTruePasskeyApi.GoTruePasskeyApi
+  - GoTruePasskeyApi.delete
+  - GoTruePasskeyApi.list
+  - GoTruePasskeyApi.update
+  - Headers
   - IcebergAuthenticationTimeoutException
   - IcebergAuthenticationTimeoutException.IcebergAuthenticationTimeoutException
   - IcebergCommitStateUnknownException
@@ -1563,6 +2263,28 @@ supporting_symbols:
   - NullOrder.NullOrder
   - NullOrder.fromValue
   - NullOrder.value
+  - OAuthClient
+  - OAuthClient.OAuthClient
+  - OAuthClient.clientId
+  - OAuthClient.clientName
+  - OAuthClient.clientSecret
+  - OAuthClient.clientType
+  - OAuthClient.clientUri
+  - OAuthClient.createdAt
+  - OAuthClient.fromJson
+  - OAuthClient.grantTypes
+  - OAuthClient.redirectUris
+  - OAuthClient.registrationType
+  - OAuthClient.responseTypes
+  - OAuthClient.scope
+  - OAuthClient.tokenEndpointAuthMethod
+  - OAuthClient.updatedAt
+  - OAuthClientGrantType
+  - OAuthClientRegistrationType
+  - OAuthClientRegistrationType.fromString
+  - OAuthClientResponseType
+  - OAuthClientType
+  - OAuthClientType.fromString
   - PartitionField
   - PartitionField.PartitionField
   - PartitionField.fieldId
@@ -1577,10 +2299,109 @@ supporting_symbols:
   - PartitionSpec.fromJson
   - PartitionSpec.specId
   - PartitionSpec.toJson
+  - Passkey
+  - Passkey.==
+  - Passkey.Passkey
+  - Passkey.createdAt
+  - Passkey.friendlyName
+  - Passkey.fromJson
+  - Passkey.hashCode
+  - Passkey.id
+  - Passkey.lastUsedAt
+  - Passkey.toJson
+  - PostgrestBuilder
+  - PostgrestBuilder.PostgrestBuilder
+  - PostgrestBuilder.appendSearchParams
+  - PostgrestBuilder.asStream
+  - PostgrestBuilder.catchError
+  - PostgrestBuilder.overrideSearchParams
+  - PostgrestBuilder.then
+  - PostgrestBuilder.whenComplete
+  - PostgrestApiException
+  - PostgrestApiException.PostgrestApiException
+  - PostgrestApiException.details
+  - PostgrestApiException.fromJson
+  - PostgrestApiException.hint
+  - PostgrestApiException.statusCode
+  - PostgrestApiException.toJson
+  - PostgrestApiException.toString
+  - PostgrestClient
+  - PostgrestClient.PostgrestClient
+  - PostgrestClient.dispose
+  - PostgrestClient.url
+  - PostgrestClientOptions
+  - PostgrestClientOptions.PostgrestClientOptions
+  - PostgrestConverter
+  - PostgrestFilterBuilder
+  - PostgrestFilterBuilder.PostgrestFilterBuilder
+  - PostgrestFilterBuilder.copyWithUrl
+  - PostgrestList
+  - PostgrestListResponse
+  - PostgrestMap
+  - PostgrestMapResponse
+  - PostgrestQueryBuilder
+  - PostgrestQueryBuilder.PostgrestQueryBuilder
+  - PostgrestResponse
+  - PostgrestResponse.PostgrestResponse
+  - PostgrestResponse.count
+  - PostgrestResponse.data
+  - PostgrestResponse.fromJson
+  - PostgrestResponse.toJson
+  - PostgrestResponse.toString
+  - PostgrestRpcBuilder
+  - PostgrestRpcBuilder.PostgrestRpcBuilder
+  - PostgrestTransformBuilder
+  - PostgrestTransformBuilder.PostgrestTransformBuilder
+  - PostgrestTransformBuilder.copyWithUrl
   - PrimitiveType
   - PrimitiveType.PrimitiveType
   - PrimitiveType.name
   - PrimitiveType.toJson
+  - RawPostgrestBuilder
+  - RawPostgrestBuilder.RawPostgrestBuilder
+  - RawPostgrestBuilder.withConverter
+  - RealtimeChannel
+  - RealtimeChannel.RealtimeChannel
+  - RealtimeChannelConfig
+  - RealtimeChannelConfig.RealtimeChannelConfig
+  - RealtimeChannelConfig.enabled
+  - RealtimeChannelConfig.toMap
+  - RealtimeClient
+  - RealtimeClient.RealtimeClient
+  - RealtimeClient.endPoint
+  - RealtimeClient.endPointURL
+  - RealtimeClient.params
+  - RealtimeClient.timeout
+  - RealtimeClient.version
+  - RealtimeClientOptions
+  - RealtimeClientOptions.RealtimeClientOptions
+  - RealtimeClientOptions.timeout
+  - RealtimeConstants
+  - RealtimeSubscribeException
+  - RealtimeSubscribeException.RealtimeSubscribeException
+  - RealtimeSubscribeException.details
+  - RealtimeSubscribeException.status
+  - RealtimeSubscribeException.toString
+  - ResponsePostgrestBuilder
+  - ResponsePostgrestBuilder.ResponsePostgrestBuilder
+  - ResponsePostgrestBuilder.withConverter
+  - Session
+  - Session.==
+  - Session.Session
+  - Session.accessToken
+  - Session.copyWith
+  - Session.expiresAt
+  - Session.expiresIn
+  - Session.fromJson
+  - Session.hashCode
+  - Session.isExpired
+  - Session.providerRefreshToken
+  - Session.providerToken
+  - Session.refreshToken
+  - Session.toJson
+  - Session.toString
+  - Session.tokenType
+  - Session.user
   - Snapshot
   - Snapshot.Snapshot
   - Snapshot.fromJson
@@ -1623,17 +2444,60 @@ supporting_symbols:
   - SortOrder.fromJson
   - SortOrder.orderId
   - SortOrder.toJson
+  - StorageBucketApi
+  - StorageBucketApi.StorageBucketApi
+  - StorageBucketApi.url
+  - StorageClientOptions
+  - StorageClientOptions.StorageClientOptions
+  - StorageClientOptions.retryAttempts
+  - StorageClientOptions.useNewHostname
   - StorageCredential
   - StorageCredential.StorageCredential
   - StorageCredential.config
   - StorageCredential.fromJson
   - StorageCredential.prefix
+  - StorageFileApi
+  - StorageFileApi.StorageFileApi
+  - StorageFileApi.bucketId
+  - StorageFileApi.url
+  - StorageRetryController
+  - StorageRetryController.StorageRetryController
+  - StorageRetryController.cancel
+  - StorageRetryController.cancelled
   - StructType
   - StructType.StructType
   - StructType.fields
   - StructType.fromJson
   - StructType.toJson
+  - Supabase
+  - Supabase.client
+  - Supabase.dispose
+  - Supabase.initialize
+  - Supabase.instance
+  - Supabase.isInitialized
+  - SupabaseClient
+  - SupabaseClient.SupabaseClient
+  - SupabaseClient.auth
+  - SupabaseClient.dispose
+  - SupabaseClient.functions
+  - SupabaseClient.realtime
+  - SupabaseClient.rest
+  - SupabaseClient.storage
+  - SupabaseQueryBuilder
+  - SupabaseQueryBuilder.SupabaseQueryBuilder
+  - SupabaseQueryBuilder.stream
+  - SupabaseStorageClient
+  - SupabaseStorageClient.SupabaseStorageClient
   - SupabaseStorageClient.analyticsCatalog
+  - SupabaseStreamBuilder
+  - SupabaseStreamBuilder.SupabaseStreamBuilder
+  - SupabaseStreamBuilder.asyncExpand
+  - SupabaseStreamBuilder.asyncMap
+  - SupabaseStreamBuilder.isBroadcast
+  - SupabaseStreamBuilder.listen
+  - SupabaseStreamEvent
+  - SupabaseStreamFilterBuilder
+  - SupabaseStreamFilterBuilder.SupabaseStreamFilterBuilder
   - TableField
   - TableField.TableField
   - TableField.doc
@@ -1678,3 +2542,57 @@ supporting_symbols:
   - TableSchema.identifierFieldIds
   - TableSchema.schemaId
   - TableSchema.toJson
+  - User
+  - User.==
+  - User.User
+  - User.actionLink
+  - User.appMetadata
+  - User.aud
+  - User.confirmationSentAt
+  - User.createdAt
+  - User.email
+  - User.emailChangeSentAt
+  - User.emailConfirmedAt
+  - User.factors
+  - User.fromJson
+  - User.hashCode
+  - User.id
+  - User.identities
+  - User.invitedAt
+  - User.isAnonymous
+  - User.lastSignInAt
+  - User.newEmail
+  - User.phone
+  - User.phoneConfirmedAt
+  - User.recoverySentAt
+  - User.role
+  - User.toJson
+  - User.toString
+  - User.updatedAt
+  - User.userMetadata
+  - UserIdentity
+  - UserIdentity.==
+  - UserIdentity.UserIdentity
+  - UserIdentity.copyWith
+  - UserIdentity.createdAt
+  - UserIdentity.fromMap
+  - UserIdentity.hashCode
+  - UserIdentity.id
+  - UserIdentity.identityData
+  - UserIdentity.identityId
+  - UserIdentity.lastSignInAt
+  - UserIdentity.provider
+  - UserIdentity.toJson
+  - UserIdentity.toString
+  - UserIdentity.updatedAt
+  - UserIdentity.userId
+  - UserResponse
+  - UserResponse.fromJson
+  - UserResponse.user
+  - YAJsonIsolate
+  - YAJsonIsolate.YAJsonIsolate
+  - YAJsonIsolate.debugName
+  - YAJsonIsolate.decode
+  - YAJsonIsolate.dispose
+  - YAJsonIsolate.encode
+  - YAJsonIsolate.initialize

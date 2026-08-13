@@ -241,18 +241,18 @@ class RealtimeChannel {
     void Function(RealtimeSubscribeStatus status, Object? error)? callback,
   ) async {
     final serverPostgresFilters = response['postgres_changes'];
-    if (socket.accessToken != null) {
+    final accessToken = socket.accessToken;
+    if (accessToken != null) {
       try {
-        // ignore: avoid-passing-self-as-argument
-        await socket.setAuth(socket.accessToken);
-      } on FormatException catch (e) {
+        await socket.setAuth(accessToken);
+      } on FormatException catch (error) {
         // The cached access token may have expired by the time the
         // channel rejoins (e.g. after the device wakes from a long
         // sleep). Auth state listeners will re-call setAuth with a
         // fresh token shortly after, so swallow this specific error
         // to avoid surfacing it as an uncaught exception. The same
         // filter is applied in `SupabaseClient._handleTokenChanged`.
-        if (!e.message.contains('InvalidJWTToken')) {
+        if (!error.message.contains('InvalidJWTToken')) {
           rethrow;
         }
       }
@@ -634,6 +634,7 @@ class RealtimeChannel {
   }
 
   /// Returns `true` if the socket is connected and the channel has been joined.
+  @internal
   bool get canPush {
     return socket.isConnected && isJoined;
   }
@@ -662,8 +663,8 @@ class RealtimeChannel {
   /// Sends a broadcast message explicitly via REST API.
   ///
   /// This method always uses the REST API endpoint regardless of WebSocket
-  /// connection state. Useful when you want to guarantee REST delivery or when
-  /// gradually migrating from implicit REST fallback.
+  /// connection state, so it is the way to broadcast without subscribing to
+  /// the channel first.
   ///
   /// [payload] must be either a `Map<String, dynamic>`, which is JSON-encoded,
   /// or binary data ([TypedData] such as [Uint8List], or [ByteBuffer]), which
@@ -759,7 +760,10 @@ class RealtimeChannel {
     return typed.buffer.asUint8List(typed.offsetInBytes, typed.lengthInBytes);
   }
 
-  /// Sends a realtime broadcast message.
+  /// Sends a realtime broadcast message over the WebSocket.
+  ///
+  /// The channel has to be subscribed first, otherwise this throws. Use
+  /// [httpSend] to broadcast over the REST API without subscribing.
   ///
   /// With protocol `2.0.0` the message is sent as a positional JSON text frame.
   ///
@@ -790,7 +794,7 @@ class RealtimeChannel {
     String? event,
     required Map<String, dynamic> payload,
     Map<String, dynamic> opts = const {},
-  }) async {
+  }) {
     final completer = Completer<ChannelResponse>();
 
     payload['type'] = type.toType();
@@ -798,59 +802,41 @@ class RealtimeChannel {
       payload['event'] = event;
     }
 
-    if (!canPush && type == RealtimeListenType.broadcast) {
-      socket.log(
-        'channel',
-        'send() is automatically falling back to REST API. This behavior will '
-            'be deprecated in the future. Please use httpSend() explicitly '
-            'for REST delivery.',
-      );
-
-      try {
-        final response = await (socket.httpClient?.post ?? post)(
-          Uri.parse(broadcastEndpointURL),
-          headers: _broadcastHeaders,
-          body: json.encode(_broadcastBody(event, payload)),
-        );
-        if (200 <= response.statusCode && response.statusCode < 300) {
-          completer.complete(ChannelResponse.ok);
-        } else {
-          completer.complete(ChannelResponse.error);
-        }
-      } catch (e) {
-        completer.complete(ChannelResponse.error);
-      }
-    } else {
-      final push = this.push(
+    final Push push;
+    try {
+      push = this.push(
         ChannelEvent.fromType(payload['type']),
         payload,
         opts['timeout'] ?? _timeout,
       );
-
-      if (payload['type'] == 'broadcast' &&
-          (params['config']?['broadcast']?['ack'] == null ||
-              params['config']?['broadcast']?['ack'] == false)) {
-        if (!completer.isCompleted) {
-          completer.complete(ChannelResponse.ok);
-        }
-      }
-
-      push.receive('ok', (_) {
-        if (!completer.isCompleted) {
-          completer.complete(ChannelResponse.ok);
-        }
-      });
-      push.receive('error', (_) {
-        if (!completer.isCompleted) {
-          completer.complete(ChannelResponse.error);
-        }
-      });
-      push.receive('timeout', (_) {
-        if (!completer.isCompleted) {
-          completer.complete(ChannelResponse.timedOut);
-        }
-      });
+    } catch (error, stackTrace) {
+      return Future.error(error, stackTrace);
     }
+
+    if (payload['type'] == 'broadcast' &&
+        (params['config']?['broadcast']?['ack'] == null ||
+            params['config']?['broadcast']?['ack'] == false)) {
+      if (!completer.isCompleted) {
+        completer.complete(ChannelResponse.ok);
+      }
+    }
+
+    push.receive('ok', (_) {
+      if (!completer.isCompleted) {
+        completer.complete(ChannelResponse.ok);
+      }
+    });
+    push.receive('error', (_) {
+      if (!completer.isCompleted) {
+        completer.complete(ChannelResponse.error);
+      }
+    });
+    push.receive('timeout', (_) {
+      if (!completer.isCompleted) {
+        completer.complete(ChannelResponse.timedOut);
+      }
+    });
+
     return completer.future;
   }
 
@@ -861,22 +847,6 @@ class RealtimeChannel {
     if (socket.accessToken != null)
       'Authorization': 'Bearer ${socket.accessToken}',
   };
-
-  Map<String, dynamic> _broadcastBody(
-    String? event,
-    Map<String, dynamic> payload,
-  ) {
-    return {
-      'messages': [
-        {
-          'topic': subTopic,
-          'event': event,
-          'payload': payload,
-          'private': _private,
-        },
-      ],
-    };
-  }
 
   @internal
   void updateJoinPayload(Map<String, dynamic> payload) {
@@ -981,6 +951,7 @@ class RealtimeChannel {
     joinPush.resend(timeout ?? _timeout);
   }
 
+  @internal
   void trigger(String type, [dynamic payload, String? ref]) {
     final typeLower = type.toLowerCase();
 

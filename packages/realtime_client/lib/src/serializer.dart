@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:meta/meta.dart';
 
 /// Encodes and decodes Realtime protocol `2.0.0` frames.
 ///
@@ -12,6 +13,7 @@ import 'dart:typed_data';
 /// WebSocket frames so that raw bytes can be forwarded without JSON encoding.
 /// Incoming binary broadcast frames are decoded back into the same map shape as
 /// their JSON counterparts.
+@internal
 class Serializer {
   static const int headerLength = 1;
   static const int userBroadcastPushMetaLength = 6;

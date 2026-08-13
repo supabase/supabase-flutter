@@ -1,4 +1,5 @@
 import 'package:gotrue/gotrue.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class AuthMFAEnrollResponse {
   /// ID of the factor that was just enrolled (in an unverified state).
@@ -107,17 +108,9 @@ class AuthMFAChallengeResponse {
   const AuthMFAChallengeResponse({required this.id, required this.expiresAt});
 
   factory AuthMFAChallengeResponse.fromJson(Map<String, dynamic> json) {
-    final expiresAtValue = json['expires_at'];
-    if (expiresAtValue is! num) {
-      throw FormatException(
-        'Expected expires_at to be a number, got ${expiresAtValue.runtimeType}',
-        json.toString(),
-      );
-    }
-    final expiresAt = expiresAtValue.toInt();
     return AuthMFAChallengeResponse(
       id: json['id'] as String,
-      expiresAt: DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000),
+      expiresAt: parseUnixSeconds(json, 'expires_at'),
     );
   }
 }
@@ -283,24 +276,6 @@ class Factor {
   });
 
   factory Factor.fromJson(Map<String, dynamic> json) {
-    DateTime parseDateTime(String key) {
-      final value = json[key];
-      if (value is! String) {
-        throw FormatException(
-          'Expected $key to be a string, got ${value.runtimeType}',
-          json.toString(),
-        );
-      }
-      try {
-        return DateTime.parse(value);
-      } on FormatException {
-        throw FormatException(
-          'Invalid date format for $key: $value',
-          json.toString(),
-        );
-      }
-    }
-
     return Factor(
       id: json['id'] as String,
       friendlyName: json['friendly_name'] as String?,
@@ -312,8 +287,8 @@ class Factor {
         (e) => e.name == json['status'],
         orElse: () => FactorStatus.unknown,
       ),
-      createdAt: parseDateTime('created_at'),
-      updatedAt: parseDateTime('updated_at'),
+      createdAt: parseIso8601(json, 'created_at'),
+      updatedAt: parseIso8601(json, 'updated_at'),
     );
   }
 
@@ -431,20 +406,12 @@ class AMREntry {
   const AMREntry({required this.method, required this.timestamp});
 
   factory AMREntry.fromJson(Map<String, dynamic> json) {
-    final timestampValue = json['timestamp'];
-    if (timestampValue is! num) {
-      throw FormatException(
-        'Expected timestamp to be a number, got ${timestampValue.runtimeType}',
-        json.toString(),
-      );
-    }
-    final timestamp = timestampValue.toInt();
     return AMREntry(
       method: AMRMethod.values.firstWhere(
         (e) => e.code == json['method'],
         orElse: () => AMRMethod.unknown,
       ),
-      timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
+      timestamp: parseUnixSeconds(json, 'timestamp'),
     );
   }
 }

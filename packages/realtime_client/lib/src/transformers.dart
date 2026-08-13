@@ -3,6 +3,7 @@
 // https://raw.githubusercontent.com/epgsql/epgsql/devel/LICENSE
 
 import 'dart:convert';
+import 'package:meta/meta.dart';
 
 import 'package:collection/collection.dart' show IterableExtension;
 
@@ -68,6 +69,7 @@ class PostgresColumn {
 /// )
 /// => { 'first_name': 'Paul', 'age': 33 }
 /// ```
+@internal
 Map<String, dynamic> convertChangeData(
   List<Map<String, dynamic>> columns,
   Map<String, dynamic> record, {
@@ -113,6 +115,7 @@ Map<String, dynamic> convertChangeData(
 /// )
 /// => "33"
 /// ```
+@internal
 dynamic convertColumn(
   String columnName,
   List<PostgresColumn> columns,
@@ -142,6 +145,7 @@ dynamic convertColumn(
 /// @example convertCell('_int4', '{1,2,3,4}')
 /// => [1,2,3,4]
 /// ```
+@internal
 dynamic convertCell(String type, dynamic value) {
   if (value == null) {
     return null;
@@ -193,10 +197,12 @@ dynamic convertCell(String type, dynamic value) {
   }
 }
 
+@internal
 dynamic noop(dynamic value) {
   return value;
 }
 
+@internal
 bool? toBoolean(dynamic value) {
   switch (value) {
     case 't':
@@ -211,6 +217,7 @@ bool? toBoolean(dynamic value) {
   }
 }
 
+@internal
 double? toDouble(dynamic value) {
   if (value is double) {
     return value;
@@ -221,6 +228,7 @@ double? toDouble(dynamic value) {
   return double.tryParse(value.toString());
 }
 
+@internal
 int? toInt(dynamic value) {
   if (value is int) {
     return value;
@@ -231,6 +239,7 @@ int? toInt(dynamic value) {
   return int.tryParse(value.toString());
 }
 
+@internal
 dynamic toJson(dynamic value) {
   if (value is String) {
     try {
@@ -251,6 +260,7 @@ dynamic toJson(dynamic value) {
 /// @example toArray([1,2,3,4], 'int4')
 /// //=> [1,2,3,4]
 ///  ```
+@internal
 dynamic toArray(dynamic value, String type) {
   if (value is! String) {
     return value;
@@ -287,6 +297,7 @@ dynamic toArray(dynamic value, String type) {
 /// @example toTimestampString('2019-09-10 00:00:00')
 /// => '2019-09-10T00:00:00'
 /// ```
+@internal
 String? toTimestampString(String? value) {
   if (value != null) {
     return value.replaceAll(' ', 'T');
@@ -294,6 +305,7 @@ String? toTimestampString(String? value) {
   return null;
 }
 
+@internal
 Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
   final postgresChanges = payload['data'] ?? payload;
   final schema = postgresChanges['schema'];
@@ -318,11 +330,11 @@ Map<String, dynamic> getEnrichedPayload(Map<String, dynamic> payload) {
   };
 }
 
+@internal
 Map<String, Map<String, dynamic>> getPayloadRecords(
   Map<String, dynamic> payload,
 ) {
-  // ignore: avoid-inferrable-type-arguments
-  final records = <String, Map<String, dynamic>>{
+  final Map<String, Map<String, dynamic>> records = {
     'new': {},
     'old': {},
   };
@@ -345,6 +357,7 @@ Map<String, Map<String, dynamic>> getPayloadRecords(
 }
 
 /// Converts a WebSocket URL to an HTTP URL.
+@internal
 String httpEndpointURL(String socketUrl) {
   var url = socketUrl;
 

@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:meta/meta.dart';
 
 @JS()
+@internal
 external JSFunction? supabaseFlutterClientToDispose;
 
 /// Store a function to properly dispose the previous [SupabaseClient] in
@@ -16,6 +18,7 @@ external JSFunction? supabaseFlutterClientToDispose;
 /// connections to be still running and causes unexpected behavior like type
 /// errors and the fact that the events of the old connection may still be
 /// logged.
+@internal
 void markClientToDispose(SupabaseClient client) {
   void dispose() {
     unawaited(
@@ -34,6 +37,7 @@ void markClientToDispose(SupabaseClient client) {
 ///
 /// This is done by calling the function stored by
 /// [markClientToDispose] from the js context
+@internal
 void disposePreviousClient() {
   if (supabaseFlutterClientToDispose != null) {
     supabaseFlutterClientToDispose!.callAsFunction();

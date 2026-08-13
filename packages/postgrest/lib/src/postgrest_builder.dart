@@ -18,17 +18,6 @@ part 'postgrest_transform_builder.dart';
 part 'raw_postgrest_builder.dart';
 part 'response_postgrest_builder.dart';
 
-enum HttpMethod {
-  get,
-  head,
-  post,
-  put,
-  patch,
-  delete;
-
-  String get value => name.toUpperCase();
-}
-
 typedef _Nullable<T> = T?;
 
 /// Bundles the automatic retry configuration so it can be carried through the
@@ -53,15 +42,13 @@ class _RetryConfig {
   final Duration Function(int attempt) delay;
 
   _RetryConfig copyWith({
-    // retry() always passes enabled, but keep the standard copyWith shape.
-    // ignore: avoid-unnecessary-nullable-parameters
-    bool? enabled,
+    required bool enabled,
     int? count,
     Set<int>? statusCodes,
     Duration Function(int attempt)? delay,
   }) {
     return _RetryConfig(
-      enabled: enabled ?? this.enabled,
+      enabled: enabled,
       count: count ?? this.count,
       statusCodes: statusCodes ?? this.statusCodes,
       delay: delay ?? this.delay,
@@ -481,9 +468,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             // success status. Surface the raw body as a structured error
             // instead of crashing with an opaque type error or silently
             // returning null.
-            throw PostgrestException(
+            throw PostgrestApiException(
               message: response.body,
-              code: '${response.statusCode}',
+              statusCode: response.statusCode,
               details: response.reasonPhrase,
             );
           }
@@ -493,9 +480,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       // Workaround for https://github.com/supabase/supabase-flutter/issues/560
       if (_maybeSingle && method == HttpMethod.get && body is List) {
         if (body.length > 1) {
-          final exception = PostgrestException(
+          final exception = PostgrestApiException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
-            code: '406',
+            statusCode: 406,
             details:
                 'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
             hint: null,
@@ -548,14 +535,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
       return converted as T;
     }
-    PostgrestException error;
+    PostgrestApiException error;
     if (response.request!.method != HttpMethod.head.value) {
       try {
         final errorJson = jsonDecode(response.body) as Map<String, dynamic>;
-        error = PostgrestException.fromJson(
+        error = PostgrestApiException.fromJson(
           errorJson,
           message: response.body,
-          code: response.statusCode,
+          statusCode: response.statusCode,
           details: response.reasonPhrase,
         );
 
@@ -563,15 +550,15 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           return _handleMaybeSingleError(response, error);
         }
       } catch (_) {
-        error = PostgrestException(
+        error = PostgrestApiException(
           message: response.body,
-          code: '${response.statusCode}',
+          statusCode: response.statusCode,
           details: response.reasonPhrase,
         );
       }
     } else {
-      error = PostgrestException(
-        code: '${response.statusCode}',
+      error = PostgrestApiException(
+        statusCode: response.statusCode,
         message: response.body,
         details: 'Error in Postgrest response for method HEAD',
         hint: response.reasonPhrase,
@@ -589,7 +576,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// return PostgrestResponse with null data
   T _handleMaybeSingleError(
     http.Response response,
-    PostgrestException error,
+    PostgrestApiException error,
   ) {
     if (error.details is String &&
         (error.details as String).contains('Results contain 0 rows')) {

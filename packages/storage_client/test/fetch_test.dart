@@ -34,6 +34,20 @@ class FinalizingRetryHttpClient extends BaseClient {
   }
 }
 
+/// Client that answers with a JSON body that is not an object, which a proxy or
+/// gateway in front of storage can do.
+class NonObjectErrorHttpClient extends BaseClient {
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    await request.finalize().drain<void>();
+    return StreamedResponse(
+      Stream.value(utf8.encode('["upstream connect error"]')),
+      502,
+      request: request,
+    );
+  }
+}
+
 void main() {
   group('multipart uploads', () {
     test(
@@ -108,6 +122,33 @@ void main() {
         final requestPath = mockClient.receivedRequests.single.url.path;
         expect(requestPath, endsWith('/bucket/folder/image.png'));
         expect(requestPath, isNot(contains('//')));
+      },
+    );
+  });
+
+  group('error responses', () {
+    test(
+      'a JSON body that is not an object surfaces as a StorageException',
+      () {
+        final client = SupabaseStorageClient(
+          storageUrl,
+          headers,
+          httpClient: NonObjectErrorHttpClient(),
+        );
+
+        expect(
+          client.from('bucket').list(),
+          throwsA(
+            isA<StorageApiException>()
+                .having((e) => e.statusCode, 'statusCode', 502)
+                .having(
+                  (e) => e.message,
+                  'message',
+                  '["upstream connect error"]',
+                )
+                .having((e) => e.errorCode, 'errorCode', isNull),
+          ),
+        );
       },
     );
   });

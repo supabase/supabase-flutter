@@ -592,8 +592,8 @@ class StorageFileApi {
         options: options,
       );
       return true;
-    } on StorageException catch (e) {
-      if (e.statusCode == '400' || e.statusCode == '404') {
+    } on StorageApiException catch (e) {
+      if (e.statusCode == 400 || e.statusCode == 404) {
         return false;
       }
       rethrow;

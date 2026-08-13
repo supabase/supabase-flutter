@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'utils.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
@@ -14,7 +14,7 @@ void main() {
   test(
     'dispose() does not throw when initialized with a custom access token',
     () async {
-      SharedPreferences.setMockInitialValues({});
+      mockSharedPreferences();
       mockAppLink();
 
       await Supabase.initialize(

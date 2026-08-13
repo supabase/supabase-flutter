@@ -493,7 +493,7 @@ class _TaskDialogState extends State<_TaskDialog> {
 }
 
 void _showError(Object error) {
-  final message = error is PostgrestException
+  final message = error is PostgrestApiException
       ? error.message
       : error.toString();
   messengerKey.currentState?.showSnackBar(

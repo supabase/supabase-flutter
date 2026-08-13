@@ -169,7 +169,7 @@ class FunctionsClient {
 
       request =
           http.AbortableMultipartRequest(
-              method.name.toUpperCase(),
+              method.value,
               uri,
               abortTrigger: abortSignal,
             )
@@ -177,7 +177,7 @@ class FunctionsClient {
             ..files.addAll(files);
     } else {
       final bodyRequest = http.AbortableRequest(
-        method.name.toUpperCase(),
+        method.value,
         uri,
         abortTrigger: abortSignal,
       );
@@ -256,19 +256,21 @@ class FunctionsClient {
     }
 
     if (isSuccessStatus) {
-      return FunctionResponse(data: data, status: response.statusCode);
+      return FunctionResponse(data: data, statusCode: response.statusCode);
     }
+    // The reason phrase is the only message the response itself carries; when
+    // it is absent, as it is over HTTP/2, each exception uses its own default.
     if (isRelayError) {
       throw FunctionsRelayException(
-        status: response.statusCode,
+        statusCode: response.statusCode,
         details: data,
-        reasonPhrase: response.reasonPhrase,
+        message: response.reasonPhrase,
       );
     }
-    throw FunctionsHttpException(
-      status: response.statusCode,
+    throw FunctionsApiException(
+      statusCode: response.statusCode,
       details: data,
-      reasonPhrase: response.reasonPhrase,
+      message: response.reasonPhrase,
     );
   }
 

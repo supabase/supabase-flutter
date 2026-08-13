@@ -1,3 +1,5 @@
+import 'package:supabase_common/supabase_common.dart';
+
 typedef Headers = Map<String, String>;
 typedef PostgrestConverter<S, T> = S Function(T data);
 typedef PostgrestList = List<PostgrestMap>;
@@ -5,29 +7,37 @@ typedef PostgrestMap = Map<String, dynamic>;
 typedef PostgrestListResponse = PostgrestResponse<PostgrestList>;
 typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 
-/// A Postgrest response exception
-class PostgrestException implements Exception {
-  final String message;
-  final String? code;
+/// Thrown when PostgREST answered with an error.
+///
+/// [errorCode] holds the code reported by PostgREST or PostgreSQL, for example
+/// `PGRST116` or the SQLSTATE `23505`. It is unrelated to [statusCode], which
+/// is the HTTP status of the response.
+class PostgrestApiException extends SupabaseException
+    with SupabaseApiException {
+  @override
+  final int statusCode;
+
   final Object? details;
   final String? hint;
 
-  const PostgrestException({
-    required this.message,
-    this.code,
+  const PostgrestApiException({
+    required String message,
+    required this.statusCode,
+    super.errorCode,
     this.details,
     this.hint,
-  });
+  }) : super(message);
 
-  factory PostgrestException.fromJson(
+  factory PostgrestApiException.fromJson(
     Map<String, dynamic> json, {
+    required int statusCode,
     String? message,
-    int? code,
     String? details,
   }) {
-    return PostgrestException(
+    return PostgrestApiException(
       message: (json['message'] ?? message) as String,
-      code: (json['code'] ?? '$code') as String?,
+      statusCode: statusCode,
+      errorCode: json['code'] as String?,
       details: (json['details'] ?? details),
       hint: json['hint'] as String?,
     );
@@ -36,7 +46,8 @@ class PostgrestException implements Exception {
   Map<String, dynamic> toJson() {
     return {
       'message': message,
-      'code': code,
+      'statusCode': statusCode,
+      'errorCode': errorCode,
       'details': details,
       'hint': hint,
     };
@@ -44,8 +55,8 @@ class PostgrestException implements Exception {
 
   @override
   String toString() {
-    return 'PostgrestException(message: $message, code: $code, details: '
-        '$details, hint: $hint)';
+    return 'PostgrestApiException(message: $message, statusCode: $statusCode, '
+        'errorCode: $errorCode, details: $details, hint: $hint)';
   }
 }
 

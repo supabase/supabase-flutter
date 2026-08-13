@@ -44,11 +44,66 @@ void main() {
         equals('7263e727-435b-4d38-a5ff-a14c954b8680'),
       );
       expect(actual.client.clientName, equals('OAuth test client'));
+      expect(actual.user, isA<OAuthAuthorizingUser>());
       expect(actual.user.id, equals('1bee2038-51fe-4f93-8fbb-442df18657ff'));
       expect(actual.user.email, equals('translator.user@mail.com'));
     });
 
-    test('throws ArgumentError when user information is missing', () {
+    test('throws FormatException when the user is not an object', () {
+      final json = {
+        'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
+        'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'user': 'translator.user@mail.com',
+        'scope': 'email',
+      };
+
+      expect(
+        () => OAuthAuthorizationDetailsResponse.fromJson(json),
+        throwsFormatException,
+      );
+    });
+
+    test('throws FormatException when the user id is not a string', () {
+      final json = {
+        'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
+        'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'user': {'id': 42, 'email': 'translator.user@mail.com'},
+        'scope': 'email',
+      };
+
+      expect(
+        () => OAuthAuthorizationDetailsResponse.fromJson(json),
+        throwsFormatException,
+      );
+    });
+
+    test('throws FormatException when the user email is missing', () {
+      final json = {
+        'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
+        'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
+        'client': {
+          'id': '7263e727-435b-4d38-a5ff-a14c954b8680',
+          'name': 'OAuth test client',
+        },
+        'user': {'id': '1bee2038-51fe-4f93-8fbb-442df18657ff'},
+        'scope': 'email',
+      };
+
+      expect(
+        () => OAuthAuthorizationDetailsResponse.fromJson(json),
+        throwsFormatException,
+      );
+    });
+
+    test('throws FormatException when user information is missing', () {
       final json = {
         'authorization_id': '6abuj667j4nmdotzu3w2ro5r33xezvae',
         'redirect_uri': 'http://localhost:50200/onboarding/auth/consent',
@@ -209,8 +264,8 @@ void main() {
         () async => sut.oauth.approveAuthorization(authorizationId),
         throwsA(
           isAnAuthApiException(
-            statusCode: equals('404'),
-            code: equals('oauth_authorization_not_found'),
+            statusCode: equals(404),
+            errorCode: equals('oauth_authorization_not_found'),
           ),
         ),
       );
@@ -379,7 +434,7 @@ class GotrueOauthApiFixture {
   }
 }
 
-Matcher isAnAuthApiException({Matcher? statusCode, Matcher? code}) =>
+Matcher isAnAuthApiException({Matcher? statusCode, Matcher? errorCode}) =>
     isA<AuthApiException>()
         .having((e) => e.statusCode, 'statusCode', statusCode)
-        .having((e) => e.code, 'code', code);
+        .having((e) => e.errorCode, 'errorCode', errorCode);

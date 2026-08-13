@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// Supported data types for vector components.
 ///
@@ -47,12 +48,11 @@ List<double>? _parseFloat32(Object? data) {
   return float32.map((value) => (value as num).toDouble()).toList();
 }
 
+/// Parses a Unix timestamp in seconds, returning `null` for anything the S3
+/// Vectors API sends that is not a number.
 DateTime? _parseUnixSeconds(Object? value) {
   if (value is! num) return null;
-  return DateTime.fromMillisecondsSinceEpoch(
-    (value * 1000).round(),
-    isUtc: true,
-  );
+  return dateTimeFromUnixSeconds(value);
 }
 
 /// Encryption settings attached to a vector bucket.

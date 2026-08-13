@@ -15,8 +15,8 @@ Map<String, dynamic> get testBucketJson => {
   'id': 'test_bucket',
   'name': 'test_bucket',
   'owner': 'owner_id',
-  'created_at': '',
-  'updated_at': '',
+  'created_at': '2024-01-01T00:00:00.000Z',
+  'updated_at': '2024-01-02T00:00:00.000Z',
   'public': false,
 };
 
@@ -322,7 +322,16 @@ void main() {
 
         await expectLater(
           client.from('public').createSignedUrl('missing.txt', 60),
-          throwsA(isA<StorageException>()),
+          throwsA(
+            allOf(
+              isA<StorageException>().having(
+                (e) => e.message,
+                'message',
+                'No signed URL returned by API',
+              ),
+              isNot(isA<SupabaseApiException>()),
+            ),
+          ),
         );
       },
     );
@@ -540,10 +549,10 @@ void main() {
             .downloadStream('missing.txt')
             .drain<void>(),
         throwsA(
-          isA<StorageException>().having(
+          isA<StorageApiException>().having(
             (e) => e.statusCode,
             'statusCode',
-            '404',
+            404,
           ),
         ),
       );
@@ -827,10 +836,10 @@ void main() {
       await expectLater(
         client.listBuckets(),
         throwsA(
-          isA<StorageException>().having(
+          isA<StorageApiException>().having(
             (e) => e.statusCode,
             'statusCode',
-            '420',
+            420,
           ),
         ),
       );

@@ -122,8 +122,8 @@ void main() {
           client.signUp(email: newEmail, password: '123'),
           throwsA(
             isA<AuthWeakPasswordException>().having(
-              (e) => e.code,
-              'code',
+              (e) => e.errorCode,
+              'errorCode',
               ErrorCode.weakPassword.code,
             ),
           ),
@@ -157,10 +157,10 @@ void main() {
       await expectLater(
         client.getSessionFromUrl(urlWithoutAccessToken),
         throwsA(
-          isA<AuthException>()
+          isA<AuthApiException>()
               .having((e) => e.message, 'message', errorMessage)
-              .having((e) => e.statusCode, 'statusCode', '401')
-              .having((e) => e.code, 'code', 'unauthorized_client'),
+              .having((e) => e.statusCode, 'statusCode', 401)
+              .having((e) => e.errorCode, 'errorCode', 'unauthorized_client'),
         ),
       );
     });
@@ -245,7 +245,10 @@ void main() {
       expect(data?.user.id, isA<String>());
 
       final payload = decodeJwt(data!.accessToken).payload;
-      expect(payload.exp, data.expiresAt);
+      expect(
+        data.expiresAt,
+        DateTime.fromMillisecondsSinceEpoch(payload.exp! * 1000, isUtc: true),
+      );
     });
 
     test('Get user', () async {
@@ -269,7 +272,10 @@ void main() {
       expect(data?.user.id, isA<String>());
 
       final payload = decodeJwt(data!.accessToken).payload;
-      expect(payload.exp, data.expiresAt);
+      expect(
+        data.expiresAt,
+        DateTime.fromMillisecondsSinceEpoch(payload.exp! * 1000, isUtc: true),
+      );
     });
 
     test('Set session', () async {
@@ -449,8 +455,8 @@ void main() {
         client.updateUser(UserAttributes(password: password)),
         throwsA(
           isA<AuthException>().having(
-            (e) => e.code,
-            'code',
+            (e) => e.errorCode,
+            'errorCode',
             ErrorCode.samePassword.code,
           ),
         ),
@@ -651,11 +657,14 @@ void main() {
         client.signInWithPassword(email: email1, password: password),
         throwsA(
           isA<AuthUnknownException>()
-              .having((e) => e.statusCode, 'statusCode', '420')
               .having(
                 (e) => e.originalError,
                 'originalError',
-                isA<http.Response>(),
+                isA<http.Response>().having(
+                  (response) => response.statusCode,
+                  'statusCode',
+                  420,
+                ),
               )
               .having(
                 (e) => e.message,

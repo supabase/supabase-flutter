@@ -1,6 +1,8 @@
 import 'package:functions_client/src/version.dart';
 import 'package:supabase_common/supabase_common.dart';
+import 'package:meta/meta.dart';
 
+@internal
 class Constants {
   static final defaultHeaders = {
     'X-Client-Info': buildClientInfoHeader('functions-dart', version),

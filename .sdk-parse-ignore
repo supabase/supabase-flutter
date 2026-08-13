@@ -19,5 +19,13 @@ packages/supabase_common/
 packages/supabase_typegen/
 
 # The examples are standalone demo apps, not part of the published SDK, so their
-# public classes are not capability-matrix symbols.
+# public classes are not capability-matrix symbols. Each package also ships its
+# own example app, which the extractor treats as a package of its own because it
+# has a pubspec.yaml.
 examples/
+packages/*/example/
+
+# version.dart is rewritten wholesale by the release tooling
+# (`echo "const version = '$version';" > $d/lib/src/version.dart`), so it cannot
+# carry an @internal annotation.
+packages/*/lib/src/version.dart

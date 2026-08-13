@@ -66,6 +66,7 @@ enum PostgresChangeEvent {
   };
 }
 
+@internal
 class ChannelFilter {
   /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`,
   /// `DELETE`
@@ -303,14 +304,14 @@ class PostgresChangePayload {
   /// Creates a PostgresChangePayload instance from the enriched postgres change
   /// payload
   factory PostgresChangePayload.fromPayload(Map<String, dynamic> payload) {
-    final commitTimestampStr = payload['commit_timestamp'] as String?;
+    final commitTimestampValue = payload['commit_timestamp'];
     DateTime commitTimestamp;
     try {
-      commitTimestamp = commitTimestampStr != null
-          ? DateTime.parse(commitTimestampStr)
-          : DateTime.fromMillisecondsSinceEpoch(0);
+      commitTimestamp = commitTimestampValue is String
+          ? DateTime.parse(commitTimestampValue).toUtc()
+          : DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     } on FormatException {
-      commitTimestamp = DateTime.fromMillisecondsSinceEpoch(0);
+      commitTimestamp = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     }
 
     final newData = payload['new'];

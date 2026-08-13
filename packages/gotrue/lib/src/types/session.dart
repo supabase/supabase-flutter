@@ -2,6 +2,7 @@ import 'package:gotrue/src/constants.dart';
 import 'package:gotrue/src/helper.dart';
 import 'package:gotrue/src/types/user.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class Session {
   final String? providerToken;
@@ -56,10 +57,13 @@ class Session {
   }
 
   Map<String, dynamic> toJson() {
+    final expiresAt = this.expiresAt;
     return {
       'access_token': accessToken,
       'expires_in': expiresIn,
-      'expires_at': expiresAt,
+      'expires_at': expiresAt == null
+          ? null
+          : unixSecondsFromDateTime(expiresAt),
       'refresh_token': refreshToken,
       'token_type': tokenType,
       'provider_token': providerToken,
@@ -68,19 +72,19 @@ class Session {
     };
   }
 
-  /// The Unix timestamp, in **seconds**, of when the token will expire.
+  /// The point in time, in UTC, when [accessToken] expires.
   ///
   /// Derived from the `exp` claim of [accessToken], not read from the login
-  /// response's JSON body.
-  ///
-  /// To convert this to a [DateTime], multiply by 1000 since
-  /// [DateTime.fromMillisecondsSinceEpoch] expects milliseconds:
-  /// `DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000)`.
-  late int? expiresAt = _expiresAt;
+  /// response's JSON body. `null` when [accessToken] carries no expiry or
+  /// cannot be decoded.
+  late DateTime? expiresAt = _expiresAt;
 
-  int? get _expiresAt {
+  DateTime? get _expiresAt {
     try {
-      return decodeJwtPayload(accessToken).exp;
+      final expiresAtSeconds = decodeJwtPayload(accessToken).exp;
+      return expiresAtSeconds == null
+          ? null
+          : dateTimeFromUnixSeconds(expiresAtSeconds);
     } catch (_) {
       return null;
     }
@@ -91,22 +95,18 @@ class Session {
   ///
   /// The 30 second buffer is to account for latency issues.
   bool get isExpired {
+    final expiresAt = this.expiresAt;
     if (expiresAt == null) return false;
-    return DateTime.now()
-        .add(Constants.expiryMargin)
-        .isAfter(
-          DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
-        );
+    return DateTime.now().add(Constants.expiryMargin).isAfter(expiresAt);
   }
 
   /// Returns `true` if the token is expired right now, without applying the
   /// [Constants.expiryMargin] buffer used by [isExpired].
   @internal
   bool get isExpiredWithoutMargin {
+    final expiresAt = this.expiresAt;
     if (expiresAt == null) return false;
-    return DateTime.now().isAfter(
-      DateTime.fromMillisecondsSinceEpoch(expiresAt! * 1000),
-    );
+    return DateTime.now().isAfter(expiresAt);
   }
 
   Session copyWith({

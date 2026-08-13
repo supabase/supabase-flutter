@@ -103,7 +103,7 @@ void main() {
           isA<AuthApiException>().having(
             (e) => e.statusCode,
             'statusCode',
-            '403',
+            403,
           ),
         ),
       );
@@ -115,7 +115,7 @@ void main() {
         httpClient: Web3ErrorMockClient(
           statusCode: 403,
           errorResponse: const {
-            'error_code': 'validation_failed',
+            'code': 'validation_failed',
             'message': 'Message is expired',
           },
         ),
@@ -132,8 +132,8 @@ void main() {
         ),
         throwsA(
           isA<AuthApiException>().having(
-            (e) => e.code,
-            'code',
+            (e) => e.errorCode,
+            'errorCode',
             'validation_failed',
           ),
         ),

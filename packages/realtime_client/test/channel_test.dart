@@ -766,31 +766,50 @@ void main() {
       expect(message[4], containsPair('myKey', 'myValue'));
     });
 
-    test(
-      'send message via http request to Broadcast endpoint when not subscribed '
-      'to channel',
-      () async {
-        final requestFuture = mockServer.first;
-        final sendFuture = channel.send(
+    test('buffers the message while the channel is still joining', () async {
+      channel.subscribe();
+      unawaited(
+        channel.send(
           type: RealtimeListenType.broadcast,
           payload: {'myKey': 'myValue'},
-        );
+        ),
+      );
 
-        final request = await requestFuture;
-        expect(request.uri.toString(), '/realtime/v1/api/broadcast');
-        expect(request.headers.value('apikey'), 'supabaseKey');
+      final serverSocket = await mockServer.first.then(
+        WebSocketTransformer.upgrade,
+      );
+      final broadcast = Completer<List<dynamic>>();
+      serverSocket.listen((frame) {
+        final message = jsonDecode(frame as String) as List;
+        switch (message[3]) {
+          case 'phx_join':
+            serverSocket.add(
+              jsonEncode([
+                message[0],
+                message[1],
+                message[2],
+                'phx_reply',
+                {'status': 'ok', 'response': <String, dynamic>{}},
+              ]),
+            );
+          case 'broadcast':
+            broadcast.complete(message);
+        }
+      });
 
-        final body = json.decode(await utf8.decodeStream(request));
-        final message = body['messages'].first;
-        expect(message['payload'], containsPair('myKey', 'myValue'));
-        expect(message, containsPair('topic', 'myTopic'));
-        expect(message['private'], isTrue);
+      final message = await broadcast.future;
+      expect(message[4], containsPair('myKey', 'myValue'));
+    });
 
-        await request.response.close();
-
-        expect(await sendFuture, ChannelResponse.ok);
-      },
-    );
+    test('throws instead of falling back to REST when not subscribed', () {
+      return expectLater(
+        channel.send(
+          type: RealtimeListenType.broadcast,
+          payload: {'myKey': 'myValue'},
+        ),
+        throwsA(contains('before joining')),
+      );
+    });
   });
 
   group('presence', () {

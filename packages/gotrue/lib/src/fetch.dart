@@ -1,8 +1,6 @@
 import 'dart:convert';
 
-import 'package:collection/collection.dart';
 import 'package:gotrue/src/constants.dart';
-import 'package:gotrue/src/types/api_version.dart';
 import 'package:gotrue/src/types/auth_exception.dart';
 import 'package:gotrue/src/types/error_code.dart';
 import 'package:gotrue/src/types/fetch_options.dart';
@@ -10,8 +8,7 @@ import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
-enum RequestMethodType { get, post, put, patch, delete }
-
+@internal
 class GotrueFetch {
   final Client? httpClient;
 
@@ -29,14 +26,26 @@ class GotrueFetch {
     return error.toString();
   }
 
-  String? _getErrorCode(dynamic error, String key) {
+  String? _getErrorCode(dynamic error) {
     if (error is Map) {
-      final dynamic errorCode = error[key];
+      final dynamic errorCode = error['code'];
       if (errorCode is String) {
         return errorCode;
       }
     }
     return null;
+  }
+
+  /// Message to use when a response body carries no usable error description.
+  ///
+  /// Falls back to the reason phrase, which HTTP/2 responses don't have, and
+  /// then to a message synthesized from the status code.
+  String _getStatusMessage(Response response) {
+    final reasonPhrase = response.reasonPhrase;
+    if (reasonPhrase != null && reasonPhrase.isNotEmpty) {
+      return reasonPhrase;
+    }
+    return 'HTTP ${response.statusCode}';
   }
 
   AuthException _handleError(dynamic error) {
@@ -47,18 +56,19 @@ class GotrueFetch {
 
     // If the status is 500 or above, it's likely a server error,
     // and can be retried.
-    if (response.statusCode >= 500) {
-      throw AuthRetryableFetchException(
-        message: response.body,
-        statusCode: response.statusCode.toString(),
-      );
-    }
+    final isRetryable = response.statusCode >= 500;
 
     final dynamic data;
 
     // Catch this case as trying to decode it will throw a misleading
     // [FormatException]
     if (response.body.isEmpty) {
+      if (isRetryable) {
+        throw AuthRetryableApiException(
+          message: _getStatusMessage(response),
+          statusCode: response.statusCode,
+        );
+      }
       throw AuthUnknownException(
         message:
             'Received an empty response with status code '
@@ -69,55 +79,45 @@ class GotrueFetch {
     try {
       data = jsonDecode(response.body);
     } catch (error) {
+      if (isRetryable) {
+        throw AuthRetryableApiException(
+          message: _getStatusMessage(response),
+          statusCode: response.statusCode,
+        );
+      }
       throw AuthUnknownException(
         message: 'Failed to decode error response',
         originalError: error,
       );
     }
-    String? errorCode;
 
-    final responseApiVersion = ApiVersion.fromResponse(response);
-
-    if (responseApiVersion?.isSameOrAfter(ApiVersions.v20240101) ?? false) {
-      errorCode = _getErrorCode(data, 'code');
-    } else {
-      errorCode = _getErrorCode(data, 'error_code');
+    if (isRetryable) {
+      throw AuthRetryableApiException(
+        message: _getErrorMessage(data),
+        statusCode: response.statusCode,
+      );
     }
 
-    if (errorCode == null) {
-      // Legacy support for weak password errors, when there were no error codes
-      // Check if weak password reasons only contain strings
-      if (data is Map &&
-          data['weak_password'] is Map &&
-          data['weak_password']['reasons'] is List &&
-          (data['weak_password']['reasons'] as List).isNotEmpty &&
-          (data['weak_password']['reasons'] as List)
-              .whereNot((element) => element is String)
-              .isEmpty) {
-        throw AuthWeakPasswordException(
-          message: _getErrorMessage(data),
-          statusCode: response.statusCode.toString(),
-          reasons: List<String>.from(data['weak_password']['reasons']),
-        );
-      }
-    } else if (errorCode == ErrorCode.weakPassword.code) {
+    final errorCode = _getErrorCode(data);
+
+    if (errorCode == ErrorCode.weakPassword.code) {
       throw AuthWeakPasswordException(
         message: _getErrorMessage(data),
-        statusCode: response.statusCode.toString(),
+        statusCode: response.statusCode,
         reasons: List<String>.from(data['weak_password']?['reasons'] ?? []),
       );
     }
 
     throw AuthApiException(
       _getErrorMessage(data),
-      statusCode: response.statusCode.toString(),
-      code: errorCode,
+      statusCode: response.statusCode,
+      errorCode: errorCode,
     );
   }
 
   Future<dynamic> request(
     String url,
-    RequestMethodType method, {
+    HttpMethod method, {
     GotrueRequestOptions? options,
   }) async {
     final result = await requestWithResponse(url, method, options: options);
@@ -131,7 +131,7 @@ class GotrueFetch {
   @internal
   Future<({dynamic body, Response response})> requestWithResponse(
     String url,
-    RequestMethodType method, {
+    HttpMethod method, {
     GotrueRequestOptions? options,
   }) async {
     // Copy the maps before mutating them. Callers pass the client's shared
@@ -139,10 +139,10 @@ class GotrueFetch {
     // version or `redirect_to` directly would leak into every later request.
     final headers = {...?options?.headers};
 
-    // Set the API version header if not already set
-    if (!headers.containsKey(Constants.apiVersionHeaderName)) {
-      headers[Constants.apiVersionHeaderName] = ApiVersions.v20240101.name;
-    }
+    // Pin the API version rather than letting a caller override it. This client
+    // only understands the error shape of [Constants.apiVersion], so asking the
+    // server for an older one would produce responses it cannot parse.
+    headers[Constants.apiVersionHeaderName] = Constants.apiVersion;
 
     if (options?.jwt != null) {
       headers['Authorization'] = 'Bearer ${options!.jwt}';
@@ -182,39 +182,37 @@ class GotrueFetch {
   }
 
   Future<Response> _handleRequest({
-    required RequestMethodType method,
+    required HttpMethod method,
     required Uri uri,
     required GotrueRequestOptions? options,
     required Map<String, String> headers,
   }) async {
     final bodyStr = json.encode(options?.body ?? {});
 
-    if (method != RequestMethodType.get) {
+    if (method != HttpMethod.get && method != HttpMethod.head) {
       headers['Content-Type'] = 'application/json';
     }
     Response response;
     try {
       response = await switch (method) {
-        RequestMethodType.get => (httpClient?.get ?? get)(
-          uri,
-          headers: headers,
-        ),
-        RequestMethodType.post => (httpClient?.post ?? post)(
-          uri,
-          headers: headers,
-          body: bodyStr,
-        ),
-        RequestMethodType.put => (httpClient?.put ?? put)(
+        HttpMethod.get => (httpClient?.get ?? get)(uri, headers: headers),
+        HttpMethod.head => (httpClient?.head ?? head)(uri, headers: headers),
+        HttpMethod.post => (httpClient?.post ?? post)(
           uri,
           headers: headers,
           body: bodyStr,
         ),
-        RequestMethodType.patch => (httpClient?.patch ?? patch)(
+        HttpMethod.put => (httpClient?.put ?? put)(
           uri,
           headers: headers,
           body: bodyStr,
         ),
-        RequestMethodType.delete => (httpClient?.delete ?? delete)(
+        HttpMethod.patch => (httpClient?.patch ?? patch)(
+          uri,
+          headers: headers,
+          body: bodyStr,
+        ),
+        HttpMethod.delete => (httpClient?.delete ?? delete)(
           uri,
           headers: headers,
           body: bodyStr,

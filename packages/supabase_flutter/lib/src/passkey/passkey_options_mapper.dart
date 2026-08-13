@@ -1,4 +1,5 @@
 import 'package:passkeys_platform_interface/types/types.dart';
+import 'package:meta/meta.dart';
 
 /// Converts the WebAuthn registration options returned by the Supabase passkey
 /// API into a [RegisterRequestType] understood by the `passkeys` plugin.
@@ -9,6 +10,7 @@ import 'package:passkeys_platform_interface/types/types.dart';
 /// are stripping base64url padding from the challenge and credential ids (the
 /// plugin rejects padded values) and ensuring every excluded credential carries
 /// a `transports` list (the plugin requires it).
+@internal
 RegisterRequestType passkeyRegisterRequestFromOptions(
   Map<String, dynamic> options,
 ) {
@@ -35,6 +37,7 @@ RegisterRequestType passkeyRegisterRequestFromOptions(
 /// format, matching [AuthenticateRequestType.fromJson]. As with registration,
 /// the challenge and credential ids are stripped of base64url padding and every
 /// allowed credential is given a `transports` list.
+@internal
 AuthenticateRequestType passkeyAuthenticateRequestFromOptions(
   Map<String, dynamic> options,
 ) {

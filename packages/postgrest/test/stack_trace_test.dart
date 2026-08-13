@@ -32,31 +32,34 @@ PostgrestClient _buildClient(_MockClient mock) =>
 
 void main() {
   group('stack trace', () {
-    test('includes caller frame when PostgrestException is thrown', () async {
-      final client = _buildClient(_MockClient(_errorStatus(400)));
+    test(
+      'includes caller frame when PostgrestApiException is thrown',
+      () async {
+        final client = _buildClient(_MockClient(_errorStatus(400)));
 
-      StackTrace? capturedTrace;
+        StackTrace? capturedTrace;
 
-      Future<void> theCallerFunction() async {
-        try {
-          await client.from('users').select();
-        } catch (_, trace) {
-          capturedTrace = trace;
-          rethrow;
+        Future<void> theCallerFunction() async {
+          try {
+            await client.from('users').select();
+          } catch (_, trace) {
+            capturedTrace = trace;
+            rethrow;
+          }
         }
-      }
 
-      await expectLater(
-        theCallerFunction(),
-        throwsA(isA<PostgrestException>()),
-      );
+        await expectLater(
+          theCallerFunction(),
+          throwsA(isA<PostgrestApiException>()),
+        );
 
-      expect(
-        capturedTrace?.toString(),
-        contains('theCallerFunction'),
-        reason: 'Stack trace should include the caller frame',
-      );
-    });
+        expect(
+          capturedTrace?.toString(),
+          contains('theCallerFunction'),
+          reason: 'Stack trace should include the caller frame',
+        );
+      },
+    );
 
     test('includes caller frame when using .then() with onError', () async {
       final client = _buildClient(_MockClient(_errorStatus(400)));
@@ -78,7 +81,7 @@ void main() {
 
       await expectLater(
         anotherCallerFunction(),
-        throwsA(isA<PostgrestException>()),
+        throwsA(isA<PostgrestApiException>()),
       );
 
       expect(
@@ -112,7 +115,7 @@ void main() {
 
         await expectLater(
           singleArgCallerFunction(),
-          throwsA(isA<PostgrestException>()),
+          throwsA(isA<PostgrestApiException>()),
         );
 
         expect(
@@ -125,38 +128,41 @@ void main() {
       },
     );
 
-    test('includes caller frame for non-PostgrestException errors', () async {
-      final client = PostgrestClient(
-        'http://localhost:3000',
-        httpClient: _MockClient(
-          (_) async => throw const SocketException('refused'),
-        ),
-        retryEnabled: false,
-      );
+    test(
+      'includes caller frame for non-PostgrestApiException errors',
+      () async {
+        final client = PostgrestClient(
+          'http://localhost:3000',
+          httpClient: _MockClient(
+            (_) async => throw const SocketException('refused'),
+          ),
+          retryEnabled: false,
+        );
 
-      StackTrace? capturedTrace;
+        StackTrace? capturedTrace;
 
-      Future<void> networkErrorFunction() async {
-        try {
-          await client.from('users').select();
-        } catch (_, trace) {
-          capturedTrace = trace;
-          rethrow;
+        Future<void> networkErrorFunction() async {
+          try {
+            await client.from('users').select();
+          } catch (_, trace) {
+            capturedTrace = trace;
+            rethrow;
+          }
         }
-      }
 
-      await expectLater(
-        networkErrorFunction(),
-        throwsA(isA<SocketException>()),
-      );
+        await expectLater(
+          networkErrorFunction(),
+          throwsA(isA<SocketException>()),
+        );
 
-      expect(
-        capturedTrace?.toString(),
-        contains('networkErrorFunction'),
-        reason:
-            'Stack trace should include the caller frame for network errors',
-      );
-    });
+        expect(
+          capturedTrace?.toString(),
+          contains('networkErrorFunction'),
+          reason:
+              'Stack trace should include the caller frame for network errors',
+        );
+      },
+    );
 
     test(
       'includes caller frame when error passes through whenComplete',
@@ -180,7 +186,7 @@ void main() {
 
         await expectLater(
           whenCompleteFunction(),
-          throwsA(isA<PostgrestException>()),
+          throwsA(isA<PostgrestApiException>()),
         );
 
         expect(actionCalled, isTrue);

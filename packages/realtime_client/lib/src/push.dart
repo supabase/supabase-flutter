@@ -4,12 +4,15 @@ import 'package:realtime_client/realtime_client.dart';
 import 'package:realtime_client/src/constants.dart';
 import 'package:realtime_client/src/message.dart';
 import 'package:realtime_client/src/types.dart';
+import 'package:meta/meta.dart';
 
+@internal
 typedef Callback = void Function(dynamic response);
 
 /// {@template push}
 /// Initializes the Push
 /// {@endtemplate}
+@internal
 class Push {
   bool sent = false;
   Timer? _timeoutTimer;
@@ -139,6 +142,7 @@ class Push {
   }
 }
 
+@internal
 class Hook {
   final String status;
   final Callback callback;

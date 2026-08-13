@@ -57,7 +57,7 @@ void main() {
       expect(response.options['challenge'], isNotEmpty);
       expect(
         response.expiresAt,
-        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000),
+        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000, isUtc: true),
       );
     });
 
@@ -114,7 +114,7 @@ void main() {
       expect(response.options['user']['name'], 'user@example.com');
       expect(
         response.expiresAt,
-        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000),
+        DateTime.fromMillisecondsSinceEpoch(1735689900 * 1000, isUtc: true),
       );
     });
 
@@ -338,8 +338,8 @@ void main() {
         disabledClient.passkey.startAuthentication(),
         throwsA(
           isA<AuthApiException>()
-              .having((e) => e.code, 'code', 'passkey_disabled')
-              .having((e) => e.statusCode, 'statusCode', '404'),
+              .having((e) => e.errorCode, 'errorCode', 'passkey_disabled')
+              .having((e) => e.statusCode, 'statusCode', 404),
         ),
       );
     });
