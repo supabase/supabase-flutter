@@ -699,10 +699,10 @@ class RealtimeClient {
     _closeController.add(event);
   }
 
-  void _onConnectionError(dynamic error) {
+  void _onConnectionError(Object error) {
     log('transport', error.toString());
     _triggerChanError(error);
-    _errorController.add(error as Object);
+    _errorController.add(error);
   }
 
   void _triggerChanError([dynamic error]) {

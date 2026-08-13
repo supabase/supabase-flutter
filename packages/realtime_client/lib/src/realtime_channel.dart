@@ -50,6 +50,14 @@ class RealtimeChannel {
   Stream<RealtimePresenceLeavePayload>? _presenceLeaveStream;
   Stream<RealtimeSystemPayload>? _systemEventsStream;
 
+  /// Streams handed out by [onPostgresChanges], keyed by the encoded filter,
+  /// so that repeated calls with the same arguments reuse one binding.
+  final Map<String, Stream<PostgresChangePayload>> _postgresChangeStreams = {};
+
+  /// Streams handed out by [onBroadcast], keyed by the event name, so that
+  /// repeated calls with the same event reuse one binding.
+  final Map<String, Stream<Map<String, dynamic>>> _broadcastStreams = {};
+
   RealtimeChannel(
     this.topic,
     this.socket, {
@@ -418,6 +426,7 @@ class RealtimeChannel {
   /// Returns a broadcast stream of the matching changes. The stream has to be
   /// created before calling [subscribe], because the requested changes are
   /// part of the subscription setup, but it can be listened to at any point.
+  /// Repeated calls with the same arguments return the same stream.
   ///
   /// ```dart
   /// final channel = supabase.channel('my_channel');
@@ -456,16 +465,21 @@ class RealtimeChannel {
     ];
     final filterString = allFilters.isEmpty ? null : allFilters.join(',');
 
-    return _eventStream(
-      'postgres_changes',
-      ChannelFilter(
-        event: event.toRealtimeEvent(),
-        schema: schema,
-        table: table,
-        filter: filterString,
-        select: select,
+    final channelFilter = ChannelFilter(
+      event: event.toRealtimeEvent(),
+      schema: schema,
+      table: table,
+      filter: filterString,
+      select: select,
+    );
+
+    return _postgresChangeStreams.putIfAbsent(
+      jsonEncode(channelFilter.toMap()),
+      () => _eventStream(
+        'postgres_changes',
+        channelFilter,
+        (payload) => PostgresChangePayload.fromPayload(payload),
       ),
-      (payload) => PostgresChangePayload.fromPayload(payload),
     );
   }
 
@@ -473,7 +487,8 @@ class RealtimeChannel {
   ///
   /// [event] is the broadcast event name to which you want to listen.
   ///
-  /// Returns a broadcast stream of the matching messages.
+  /// Returns a broadcast stream of the matching messages. Repeated calls with
+  /// the same [event] return the same stream.
   ///
   /// ```dart
   /// final channel = supabase.channel('my_channel');
@@ -483,10 +498,13 @@ class RealtimeChannel {
   /// channel.subscribe();
   /// ```
   Stream<Map<String, dynamic>> onBroadcast({required String event}) {
-    return _eventStream(
-      'broadcast',
-      ChannelFilter(event: event),
-      (payload) => Map<String, dynamic>.from(payload),
+    return _broadcastStreams.putIfAbsent(
+      event,
+      () => _eventStream(
+        'broadcast',
+        ChannelFilter(event: event),
+        (payload) => Map<String, dynamic>.from(payload),
+      ),
     );
   }
 

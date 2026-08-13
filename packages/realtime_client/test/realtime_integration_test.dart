@@ -331,7 +331,8 @@ Future<RealtimeSubscribeStatus> _subscribe(RealtimeChannel channel) {
     if (change.status == RealtimeSubscribeStatus.subscribed) {
       completer.complete(change.status);
     } else if (change.status == RealtimeSubscribeStatus.channelError ||
-        change.status == RealtimeSubscribeStatus.timedOut) {
+        change.status == RealtimeSubscribeStatus.timedOut ||
+        change.status == RealtimeSubscribeStatus.closed) {
       completer.completeError(
         StateError(
           'Failed to subscribe: ${change.status.name} (${change.error})',

@@ -120,6 +120,11 @@ class RoomChannel {
         );
       } else if (change.error != null && !ready.isCompleted) {
         ready.completeError(change.error!);
+      } else if (change.status == RealtimeSubscribeStatus.closed &&
+          !ready.isCompleted) {
+        ready.completeError(
+          StateError('channel closed before the subscription completed'),
+        );
       }
     });
 

@@ -432,8 +432,7 @@ myChannel.onPresenceLeave.listen((payload) {
 myChannel.onStatusChange.listen((change) async {
   if (change.status == RealtimeSubscribeStatus.subscribed) {
     // Send the current user's state upon subscribing
-    final status = await myChannel
-        .track({'online_at': DateTime.now().toIso8601String()});
+    await myChannel.track({'online_at': DateTime.now().toIso8601String()});
   }
 });
 

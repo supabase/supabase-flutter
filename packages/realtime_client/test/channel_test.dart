@@ -493,6 +493,63 @@ void main() {
     });
   });
 
+  group('event stream reuse', () {
+    setUp(() {
+      socket = RealtimeClient('wss://example.com/socket');
+      channel = socket.channel('topic');
+    });
+
+    test(
+      'returns the same stream for identical postgres_changes arguments',
+      () {
+        final first = channel.onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'todos',
+        );
+        final second = channel.onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'todos',
+        );
+        final other = channel.onPostgresChanges(
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: 'todos',
+        );
+
+        expect(identical(first, second), isTrue);
+        expect(identical(first, other), isFalse);
+      },
+    );
+
+    test('returns the same stream for the same broadcast event', () {
+      final first = channel.onBroadcast(event: 'cursor');
+      final second = channel.onBroadcast(event: 'cursor');
+      final other = channel.onBroadcast(event: 'position');
+
+      expect(identical(first, second), isTrue);
+      expect(identical(first, other), isFalse);
+    });
+
+    test('reused streams deliver events to every listener', () async {
+      var firstEvents = 0;
+      var secondEvents = 0;
+      channel.onBroadcast(event: 'cursor').listen((_) => firstEvents++);
+      channel.onBroadcast(event: 'cursor').listen((_) => secondEvents++);
+      channel.subscribe();
+
+      channel.trigger('broadcast', {
+        'event': 'cursor',
+        'payload': {'x': 1},
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(firstEvents, 1);
+      expect(secondEvents, 1);
+    });
+  });
+
   group('blocking listeners after subscribe', () {
     setUp(() {
       socket = RealtimeClient('wss://example.com/socket');
