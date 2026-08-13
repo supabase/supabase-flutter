@@ -1633,8 +1633,6 @@ features:
       - ChannelResponse
   realtime.channel.broadcast_http:
     status: implemented
-    note: "httpSend posts to the legacy /api/broadcast endpoint with a messages array and returns Future<void>, not the newer per-channel endpoint returning {success}."
-
     symbols:
       - RealtimeChannel.httpSend
   # realtime — client
