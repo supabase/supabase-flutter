@@ -358,13 +358,13 @@ extension AuthClientSignInProvider on AuthClient {
     LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
     Map<String, String>? queryParams,
   }) async {
-    final res = await getOAuthSignInUrl(
+    final response = await getOAuthSignInUrl(
       provider: provider,
       redirectTo: redirectTo,
       scopes: scopes,
       queryParams: queryParams,
     );
-    return _launchAuthUrl(res.url, provider, authScreenLaunchMode);
+    return _launchAuthUrl(response.url, provider, authScreenLaunchMode);
   }
 
   /// Launches the [url] for an OAuth or identity-linking flow, forcing an
@@ -451,12 +451,12 @@ extension AuthClientSignInProvider on AuthClient {
     LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
     Map<String, String>? queryParams,
   }) async {
-    final res = await getLinkIdentityUrl(
+    final response = await getLinkIdentityUrl(
       provider,
       redirectTo: redirectTo,
       scopes: scopes,
       queryParams: queryParams,
     );
-    return _launchAuthUrl(res.url, provider, authScreenLaunchMode);
+    return _launchAuthUrl(response.url, provider, authScreenLaunchMode);
   }
 }

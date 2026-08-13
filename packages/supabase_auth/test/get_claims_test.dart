@@ -356,19 +356,19 @@ void main() {
 
     test('validateExp() throws on expired token', () {
       final pastTime = DateTime.now().subtract(Duration(hours: 1));
-      final exp = pastTime.millisecondsSinceEpoch ~/ 1000;
+      final expiresAt = pastTime.millisecondsSinceEpoch ~/ 1000;
 
       expect(
-        () => validateExp(exp),
+        () => validateExp(expiresAt),
         throwsA(isA<AuthException>()),
       );
     });
 
     test('validateExp() succeeds on valid token', () {
       final futureTime = DateTime.now().add(Duration(hours: 1));
-      final exp = futureTime.millisecondsSinceEpoch ~/ 1000;
+      final expiresAt = futureTime.millisecondsSinceEpoch ~/ 1000;
 
-      expect(() => validateExp(exp), returnsNormally);
+      expect(() => validateExp(expiresAt), returnsNormally);
     });
 
     test('validateExp() throws on null exp', () {

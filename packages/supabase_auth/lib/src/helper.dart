@@ -44,11 +44,11 @@ DecodedJwt decodeJwt(String token) {
         signature: rawSignature,
       ),
     );
-  } catch (e) {
-    if (e is AuthInvalidJwtException) {
+  } catch (error) {
+    if (error is AuthInvalidJwtException) {
       rethrow;
     }
-    throw AuthInvalidJwtException('Failed to decode JWT: $e');
+    throw AuthInvalidJwtException('Failed to decode JWT: $error');
   }
 }
 
@@ -68,11 +68,11 @@ JwtPayload decodeJwtPayload(String token) {
   try {
     final payloadJson = Base64Url.decodeToString(parts[1]);
     return JwtPayload.fromJson(json.decode(payloadJson));
-  } catch (e) {
-    if (e is AuthInvalidJwtException) {
+  } catch (error) {
+    if (error is AuthInvalidJwtException) {
       rethrow;
     }
-    throw AuthInvalidJwtException('Failed to decode JWT: $e');
+    throw AuthInvalidJwtException('Failed to decode JWT: $error');
   }
 }
 

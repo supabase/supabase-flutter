@@ -182,42 +182,44 @@ void main() {
 
   group('OAuth server', () {
     test('get authorization details', () async {
-      final sut = await fixture.build();
+      final client = await fixture.build();
       final clientParameters = CreateOAuthClientParams(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
         responseTypes: [OAuthClientResponseType.code],
         scope: 'email',
       );
-      final client = await fixture.sutCreatesOAuthClient(clientParameters);
-      final auth = await fixture.sutLogsIn(password: password, email: email1);
-      final authorizationId = await fixture.sutAuthorizesClient(client);
+      final oauthClient = await fixture.createOAuthClient(clientParameters);
+      final auth = await fixture.logIn(password: password, email: email1);
+      final authorizationId = await fixture.authorizeClient(oauthClient);
 
-      final response = await sut.oauth.getAuthorizationDetails(authorizationId);
+      final response = await client.oauth.getAuthorizationDetails(
+        authorizationId,
+      );
 
       expect(response, isA<OAuthAuthorizationDetailsResponse>());
       final details = response as OAuthAuthorizationDetailsResponse;
       expect(details.authorizationId, equals(authorizationId));
       expect(details.scope, equals(clientParameters.scope));
       expect(details.redirectUri, equals(clientParameters.redirectUris.first));
-      expect(details.client.clientId, equals(client.clientId));
-      expect(details.client.clientName, equals(client.clientName));
+      expect(details.client.clientId, equals(oauthClient.clientId));
+      expect(details.client.clientName, equals(oauthClient.clientName));
       expect(details.user.id, equals(auth.user?.id));
       expect(details.user.email, equals(email1));
     });
 
     test('approve authorization request', () async {
-      final sut = await fixture.build();
+      final client = await fixture.build();
       final clientParameters = CreateOAuthClientParams(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
       );
-      final client = await fixture.sutCreatesOAuthClient(clientParameters);
-      final authorizationId = await fixture.sutAuthorizesClient(client);
-      await fixture.sutLogsIn(password: password, email: email1);
+      final oauthClient = await fixture.createOAuthClient(clientParameters);
+      final authorizationId = await fixture.authorizeClient(oauthClient);
+      await fixture.logIn(password: password, email: email1);
 
-      await sut.oauth.getAuthorizationDetails(authorizationId);
-      final response = await sut.oauth.approveAuthorization(authorizationId);
+      await client.oauth.getAuthorizationDetails(authorizationId);
+      final response = await client.oauth.approveAuthorization(authorizationId);
 
       expect(
         response.redirectUrl,
@@ -227,17 +229,17 @@ void main() {
     });
 
     test('denies authorization request', () async {
-      final sut = await fixture.build();
+      final client = await fixture.build();
       final clientParameters = CreateOAuthClientParams(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
       );
-      final client = await fixture.sutCreatesOAuthClient(clientParameters);
-      final authorizationId = await fixture.sutAuthorizesClient(client);
-      await fixture.sutLogsIn(password: password, email: email1);
+      final oauthClient = await fixture.createOAuthClient(clientParameters);
+      final authorizationId = await fixture.authorizeClient(oauthClient);
+      await fixture.logIn(password: password, email: email1);
 
-      await sut.oauth.getAuthorizationDetails(authorizationId);
-      final response = await sut.oauth.denyAuthorization(authorizationId);
+      await client.oauth.getAuthorizationDetails(authorizationId);
+      final response = await client.oauth.denyAuthorization(authorizationId);
 
       expect(
         response.redirectUrl,
@@ -251,17 +253,17 @@ void main() {
     });
 
     test('approving authorization without getting details throws', () async {
-      final sut = await fixture.build();
+      final client = await fixture.build();
       final clientParameters = CreateOAuthClientParams(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
       );
-      final client = await fixture.sutCreatesOAuthClient(clientParameters);
-      final authorizationId = await fixture.sutAuthorizesClient(client);
-      await fixture.sutLogsIn(password: password, email: email1);
+      final oauthClient = await fixture.createOAuthClient(clientParameters);
+      final authorizationId = await fixture.authorizeClient(oauthClient);
+      await fixture.logIn(password: password, email: email1);
 
       await expectLater(
-        () async => sut.oauth.approveAuthorization(authorizationId),
+        () async => client.oauth.approveAuthorization(authorizationId),
         throwsA(
           isAnAuthApiException(
             statusCode: equals(404),
@@ -272,69 +274,71 @@ void main() {
     });
 
     test('lists grants after approving an authorization', () async {
-      final sut = await fixture.build();
+      final client = await fixture.build();
       final clientParameters = CreateOAuthClientParams(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
         responseTypes: [OAuthClientResponseType.code],
         scope: 'email',
       );
-      final client = await fixture.sutCreatesOAuthClient(clientParameters);
-      await fixture.sutLogsIn(password: password, email: email1);
-      final authorizationId = await fixture.sutAuthorizesClient(client);
-      await sut.oauth.getAuthorizationDetails(authorizationId);
-      await sut.oauth.approveAuthorization(authorizationId);
+      final oauthClient = await fixture.createOAuthClient(clientParameters);
+      await fixture.logIn(password: password, email: email1);
+      final authorizationId = await fixture.authorizeClient(oauthClient);
+      await client.oauth.getAuthorizationDetails(authorizationId);
+      await client.oauth.approveAuthorization(authorizationId);
 
-      final grants = await sut.oauth.listGrants();
+      final grants = await client.oauth.listGrants();
 
       expect(grants, hasLength(1));
-      expect(grants.first.client.clientId, equals(client.clientId));
+      expect(grants.first.client.clientId, equals(oauthClient.clientId));
       expect(grants.first.scopes, contains('email'));
     });
 
     test('revokes a grant', () async {
-      final sut = await fixture.build();
+      final client = await fixture.build();
       final clientParameters = CreateOAuthClientParams(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
         responseTypes: [OAuthClientResponseType.code],
         scope: 'email',
       );
-      final client = await fixture.sutCreatesOAuthClient(clientParameters);
-      await fixture.sutLogsIn(password: password, email: email1);
-      final authorizationId = await fixture.sutAuthorizesClient(client);
-      await sut.oauth.getAuthorizationDetails(authorizationId);
-      await sut.oauth.approveAuthorization(authorizationId);
-      expect(await sut.oauth.listGrants(), hasLength(1));
+      final oauthClient = await fixture.createOAuthClient(clientParameters);
+      await fixture.logIn(password: password, email: email1);
+      final authorizationId = await fixture.authorizeClient(oauthClient);
+      await client.oauth.getAuthorizationDetails(authorizationId);
+      await client.oauth.approveAuthorization(authorizationId);
+      expect(await client.oauth.listGrants(), hasLength(1));
 
-      await sut.oauth.revokeGrant(client.clientId);
+      await client.oauth.revokeGrant(oauthClient.clientId);
 
-      expect(await sut.oauth.listGrants(), isEmpty);
+      expect(await client.oauth.listGrants(), isEmpty);
     });
 
     test(
       'getting details for a new authorization after the client was already '
       'approved does not throw',
       () async {
-        final sut = await fixture.build();
+        final client = await fixture.build();
         final clientParameters = CreateOAuthClientParams(
           clientName: 'Test OAuth Client',
           redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
           responseTypes: [OAuthClientResponseType.code],
           scope: 'email',
         );
-        final client = await fixture.sutCreatesOAuthClient(clientParameters);
-        await fixture.sutLogsIn(password: password, email: email1);
+        final oauthClient = await fixture.createOAuthClient(clientParameters);
+        await fixture.logIn(password: password, email: email1);
 
         // First authorization: fetch details and approve to record consent.
-        final firstAuthorizationId = await fixture.sutAuthorizesClient(client);
-        await sut.oauth.getAuthorizationDetails(firstAuthorizationId);
-        await sut.oauth.approveAuthorization(firstAuthorizationId);
+        final firstAuthorizationId = await fixture.authorizeClient(oauthClient);
+        await client.oauth.getAuthorizationDetails(firstAuthorizationId);
+        await client.oauth.approveAuthorization(firstAuthorizationId);
 
         // Second authorization for the same client, by the same user.
-        final secondAuthorizationId = await fixture.sutAuthorizesClient(client);
+        final secondAuthorizationId = await fixture.authorizeClient(
+          oauthClient,
+        );
 
-        final response = await sut.oauth.getAuthorizationDetails(
+        final response = await client.oauth.getAuthorizationDetails(
           secondAuthorizationId,
         );
 
@@ -372,13 +376,13 @@ class AuthOauthApiFixture {
   late final String _authUrl;
   late final String _serviceRoleToken;
 
-  Future<OAuthClient> sutCreatesOAuthClient(CreateOAuthClientParams request) {
+  Future<OAuthClient> createOAuthClient(CreateOAuthClientParams request) {
     return _client.admin.oauth
         .createClient(request)
         .then((response) => response.client!);
   }
 
-  Future<String> sutAuthorizesClient(OAuthClient client) async {
+  Future<String> authorizeClient(OAuthClient client) async {
     // Don't follow redirects: the authorize endpoint returns a 302 to the
     // consent page with authorization_id as a query parameter.
     final httpClient = http.Client();
@@ -406,7 +410,7 @@ class AuthOauthApiFixture {
     return Uri.parse(location).queryParameters['authorization_id']!;
   }
 
-  Future<AuthResponse> sutLogsIn({
+  Future<AuthResponse> logIn({
     required String email,
     required String password,
   }) {

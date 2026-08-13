@@ -80,7 +80,7 @@ class YAJsonIsolate {
       await _createdIsolate.future;
     }
     _sendPort.send([json, false]);
-    return _handleRes(await _events.next);
+    return _handleResponse(await _events.next);
   }
 
   Future<String> encode(Object? json) async {
@@ -90,10 +90,10 @@ class YAJsonIsolate {
       await _createdIsolate.future;
     }
     _sendPort.send([json, true]);
-    return _handleRes(await _events.next);
+    return _handleResponse(await _events.next);
   }
 
-  Future<R> _handleRes<R>(List<dynamic> response) async {
+  Future<R> _handleResponse<R>(List<dynamic> response) async {
     final int type = response.length;
     assert(1 <= type && type <= 3);
 
@@ -168,8 +168,8 @@ List<R> _buildSuccessResponse<R>(R result) {
 /// We wrap a caught error in a 3 element [List]. Where the last element is
 /// always null. We do this so we have a way to know if an error was one we
 /// caught or one thrown by the library code.
-List<dynamic> _buildErrorResponse(Object error, StackTrace stack) {
+List<dynamic> _buildErrorResponse(Object error, StackTrace stackTrace) {
   return List<dynamic>.filled(3, null)
     ..[0] = error
-    ..[1] = stack;
+    ..[1] = stackTrace;
 }

@@ -45,9 +45,9 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   PostgrestTransformBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
-    final re = RegExp(r'\s');
+    final whitespaceRegularExpression = RegExp(r'\s');
     final cleanedColumns = columns.split('').map((c) {
-      if (re.hasMatch(c) && !quoted) {
+      if (whitespaceRegularExpression.hasMatch(c) && !quoted) {
         return '';
       }
       if (c == '"') {
@@ -281,12 +281,12 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// with the data and the count.
   ///
   /// ```dart
-  /// final res = await postgrest
+  /// final response = await postgrest
   ///    .from('users')
   ///    .select()
   ///    .count(CountOption.exact);
-  /// final users = res.data;
-  /// int count = res.count;
+  /// final users = response.data;
+  /// int count = response.count;
   /// ```
   ResponsePostgrestBuilder<PostgrestResponse<T>, T, T> count([
     CountOption count = CountOption.exact,

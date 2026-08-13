@@ -423,8 +423,8 @@ class SupabaseClient {
         event == AuthChangeEvent.signedIn) {
       try {
         await realtime.setAuth(token);
-      } on FormatException catch (e) {
-        if (e.message.contains('InvalidJWTToken')) {
+      } on FormatException catch (error) {
+        if (error.message.contains('InvalidJWTToken')) {
           // The exception is thrown by RealtimeClient when the token is
           // expired for example on app launch after the app has been closed
           // for a while.

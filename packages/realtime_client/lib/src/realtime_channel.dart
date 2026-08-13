@@ -265,10 +265,10 @@ class RealtimeChannel {
       return;
     }
     final clientPostgresBindings = _bindings['postgres_changes'];
-    final bindingsLen = clientPostgresBindings?.length ?? 0;
+    final bindingsLength = clientPostgresBindings?.length ?? 0;
     final newPostgresBindings = <Binding>[];
 
-    for (var i = 0; i < bindingsLen; i++) {
+    for (var i = 0; i < bindingsLength; i++) {
       final clientPostgresBinding = clientPostgresBindings![i];
 
       final event = clientPostgresBinding.filter['event'];
@@ -332,7 +332,7 @@ class RealtimeChannel {
         'event': 'track',
         'payload': payload,
       },
-      opts: {
+      options: {
         'timeout': _timeout,
         ...opts,
       },
@@ -347,7 +347,7 @@ class RealtimeChannel {
       payload: {
         'event': 'untrack',
       },
-      opts: opts,
+      options: opts,
     );
   }
 
@@ -686,8 +686,8 @@ class RealtimeChannel {
   ///     event: 'cursor-pos',
   ///     payload: {'x': 123, 'y': 456},
   ///   );
-  /// } catch (e) {
-  ///   print('Failed to send message: $e');
+  /// } catch (error) {
+  ///   print('Failed to send message: $error');
   /// }
   /// ```
   Future<void> httpSend({
@@ -793,7 +793,7 @@ class RealtimeChannel {
     required RealtimeListenType type,
     String? event,
     required Map<String, dynamic> payload,
-    Map<String, dynamic> opts = const {},
+    Map<String, dynamic> options = const {},
   }) {
     final completer = Completer<ChannelResponse>();
 
@@ -807,7 +807,7 @@ class RealtimeChannel {
       push = this.push(
         ChannelEvent.fromType(payload['type']),
         payload,
-        opts['timeout'] ?? _timeout,
+        options['timeout'] ?? _timeout,
       );
     } catch (error, stackTrace) {
       return Future.error(error, stackTrace);
@@ -1032,14 +1032,17 @@ class RealtimeChannel {
   @internal
   bool get isLeaving => _state == ChannelState.leaving;
 
-  static bool _isEqual(Map<String, Object?> obj1, Map<String, Object?> obj2) {
-    if (obj1.keys.length != obj2.keys.length) {
+  static bool _isEqual(
+    Map<String, Object?> first,
+    Map<String, Object?> second,
+  ) {
+    if (first.keys.length != second.keys.length) {
       return false;
     }
 
     const equality = DeepCollectionEquality();
-    for (final k in obj1.keys) {
-      if (!equality.equals(obj1[k], obj2[k])) {
+    for (final k in first.keys) {
+      if (!equality.equals(first[k], second[k])) {
         return false;
       }
     }

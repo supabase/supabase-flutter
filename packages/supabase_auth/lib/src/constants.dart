@@ -45,9 +45,9 @@ enum AuthChangeEvent {
   const AuthChangeEvent(this.jsName);
 
   @internal
-  static AuthChangeEvent? fromString(String? val) {
+  static AuthChangeEvent? fromString(String? value) {
     for (final event in AuthChangeEvent.values) {
-      if (event.name == val) {
+      if (event.name == value) {
         return event;
       }
     }
@@ -65,9 +65,9 @@ enum GenerateLinkType {
   unknown;
 
   @internal
-  static GenerateLinkType fromString(String? val) {
+  static GenerateLinkType fromString(String? value) {
     for (final type in GenerateLinkType.values) {
-      if (type.snakeCase == val) {
+      if (type.snakeCase == value) {
         return type;
       }
     }

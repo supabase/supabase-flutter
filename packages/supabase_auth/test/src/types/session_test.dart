@@ -114,9 +114,9 @@ void main() {
     group('toJson', () {
       test('serializes session correctly', () {
         final now = DateTime.now();
-        final exp = (now.millisecondsSinceEpoch / 1000).floor() + 3600;
+        final expiresAt = (now.millisecondsSinceEpoch / 1000).floor() + 3600;
         final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
-        final payload = base64Encode(utf8.encode('{"exp":$exp}'));
+        final payload = base64Encode(utf8.encode('{"exp":$expiresAt}'));
         final jwt = '$header.$payload.signature';
 
         final session = Session(
@@ -186,9 +186,9 @@ void main() {
 
       test('returns the exp claim of the JWT as a UTC DateTime', () {
         final now = DateTime.now();
-        final exp = (now.millisecondsSinceEpoch / 1000).floor() + 3600;
+        final expiresAt = (now.millisecondsSinceEpoch / 1000).floor() + 3600;
         final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
-        final payload = base64Encode(utf8.encode('{"exp":$exp}'));
+        final payload = base64Encode(utf8.encode('{"exp":$expiresAt}'));
         final jwt = '$header.$payload.signature';
 
         final session = Session(
@@ -199,7 +199,9 @@ void main() {
 
         expect(
           session.expiresAt,
-          equals(DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true)),
+          equals(
+            DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000, isUtc: true),
+          ),
         );
         expect(session.expiresAt!.isUtc, isTrue);
       });
@@ -228,9 +230,9 @@ void main() {
 
       test('returns true when token is expired', () {
         final pastTime = DateTime.now().subtract(const Duration(hours: 1));
-        final exp = (pastTime.millisecondsSinceEpoch / 1000).floor();
+        final expiresAt = (pastTime.millisecondsSinceEpoch / 1000).floor();
         final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
-        final payload = base64Encode(utf8.encode('{"exp":$exp}'));
+        final payload = base64Encode(utf8.encode('{"exp":$expiresAt}'));
         final jwt = '$header.$payload.signature';
 
         final session = Session(
@@ -244,9 +246,9 @@ void main() {
 
       test('returns true when token expires within margin', () {
         final futureTime = DateTime.now().add(const Duration(seconds: 20));
-        final exp = (futureTime.millisecondsSinceEpoch / 1000).floor();
+        final expiresAt = (futureTime.millisecondsSinceEpoch / 1000).floor();
         final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
-        final payload = base64Encode(utf8.encode('{"exp":$exp}'));
+        final payload = base64Encode(utf8.encode('{"exp":$expiresAt}'));
         final jwt = '$header.$payload.signature';
 
         final session = Session(
@@ -260,9 +262,9 @@ void main() {
 
       test('returns false when token is not expired', () {
         final futureTime = DateTime.now().add(const Duration(hours: 1));
-        final exp = (futureTime.millisecondsSinceEpoch / 1000).floor();
+        final expiresAt = (futureTime.millisecondsSinceEpoch / 1000).floor();
         final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
-        final payload = base64Encode(utf8.encode('{"exp":$exp}'));
+        final payload = base64Encode(utf8.encode('{"exp":$expiresAt}'));
         final jwt = '$header.$payload.signature';
 
         final session = Session(
@@ -276,9 +278,9 @@ void main() {
 
       test('uses correct expiry margin from constants', () {
         final marginalTime = DateTime.now().add(Constants.expiryMargin);
-        final exp = (marginalTime.millisecondsSinceEpoch / 1000).floor();
+        final expiresAt = (marginalTime.millisecondsSinceEpoch / 1000).floor();
         final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
-        final payload = base64Encode(utf8.encode('{"exp":$exp}'));
+        final payload = base64Encode(utf8.encode('{"exp":$expiresAt}'));
         final jwt = '$header.$payload.signature';
 
         final session = Session(

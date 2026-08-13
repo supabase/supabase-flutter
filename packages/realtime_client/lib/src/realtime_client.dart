@@ -324,9 +324,9 @@ class RealtimeClient {
           _onConnectionClose();
         },
       );
-    } catch (e) {
+    } catch (error) {
       /// General error handling
-      _onConnectionError(e);
+      _onConnectionError(error);
     }
   }
 
@@ -606,7 +606,7 @@ class RealtimeClient {
   String get endPointURL {
     final queryParameters = Map<String, String>.from(params);
     queryParameters['vsn'] = version.vsn;
-    return _appendParams(endPoint, queryParameters);
+    return _appendParameters(endPoint, queryParameters);
   }
 
   /// Return the next message ref, accounting for overflows
@@ -677,8 +677,8 @@ class RealtimeClient {
           channel.rejoin();
         }
       }
-    } catch (e) {
-      log('transport', 'error while rejoining channels', e, Level.WARNING);
+    } catch (error) {
+      log('transport', 'error while rejoining channels', error, Level.WARNING);
     }
 
     for (final callback in stateChangeCallbacks['open']!) {
@@ -724,7 +724,7 @@ class RealtimeClient {
     }
   }
 
-  String _appendParams(String url, Map<String, String> queryParameters) {
+  String _appendParameters(String url, Map<String, String> queryParameters) {
     if (queryParameters.keys.isEmpty) {
       return url;
     }
