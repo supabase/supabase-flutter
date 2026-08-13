@@ -132,7 +132,8 @@ Future<void> primePostgresChanges({
     if (change.status == RealtimeSubscribeStatus.subscribed) {
       subscribed.complete();
     } else if (change.status == RealtimeSubscribeStatus.channelError ||
-        change.status == RealtimeSubscribeStatus.timedOut) {
+        change.status == RealtimeSubscribeStatus.timedOut ||
+        change.status == RealtimeSubscribeStatus.closed) {
       subscribed.completeError(
         StateError('warmup subscribe failed: ${change.status.name}'),
         StackTrace.current,
@@ -195,7 +196,8 @@ Future<void> waitForRealtimeServer({
       if (change.status == RealtimeSubscribeStatus.subscribed) {
         completer.complete(true);
       } else if (change.status == RealtimeSubscribeStatus.channelError ||
-          change.status == RealtimeSubscribeStatus.timedOut) {
+          change.status == RealtimeSubscribeStatus.timedOut ||
+          change.status == RealtimeSubscribeStatus.closed) {
         completer.complete(false);
       }
     });
