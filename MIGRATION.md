@@ -219,6 +219,14 @@ channel.subscribe(const Duration(seconds: 10));
 All channel streams complete when the channel closes, so `await for` loops and `onDone` handlers
 end on their own once the channel is gone.
 
+### `Binding` and `BindingCallback` are internal
+
+`Binding` and `BindingCallback` were the raw registration primitives underneath the channel
+listeners, exported by accident: their only consumers, `RealtimeChannel.onEvents` and
+`RealtimeChannel.off`, have always been internal. They are no longer exported. Use the typed
+channel streams (`onPostgresChanges`, `onBroadcast`, `onPresenceSync`, `onPresenceJoin`,
+`onPresenceLeave`, `onSystemEvents`) instead.
+
 ### Plural enum names singularized
 
 A Dart enum type names one value rather than the set, so its name should be singular. Five enums

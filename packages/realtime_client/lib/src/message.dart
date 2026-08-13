@@ -1,6 +1,6 @@
-import 'package:realtime_client/realtime_client.dart';
-import 'package:realtime_client/src/constants.dart';
 import 'package:meta/meta.dart';
+import 'package:realtime_client/src/constants.dart';
+import 'package:realtime_client/src/types.dart';
 
 @internal
 class Message {
