@@ -21,6 +21,7 @@ jobs:
       label_mappings: |
         {
           "gotrue": "auth",
+          "supabase_auth": "auth",
           "auth": "auth",
           "storage": "storage",
           "storage_client": "storage",

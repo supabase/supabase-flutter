@@ -590,7 +590,7 @@ supabaseLogger.onRecord.listen((record) {
 - `supabase_flutter`: `Logger('supabase.supabase_flutter')`
 - `supabase`: `Logger('supabase.supabase')`
 - `postgrest`: `Logger('supabase.postgrest')`
-- `gotrue`: `Logger('supabase.auth')`
+- `supabase_auth`: `Logger('supabase.auth')`
 - `realtime_client`: `Logger('supabase.realtime')`
 - `storage_client`: `Logger('supabase.storage')`
 - `functions_client`: `Logger('supabase.functions')`

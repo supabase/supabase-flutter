@@ -48,7 +48,7 @@ To install on a locally developed app:
 
 ## Testing
 
-The tests for the packages `postgrest`, `gotrue`, `realtime_client` and `storage_client` run against a
+The tests for the packages `postgrest`, `supabase_auth`, `realtime_client` and `storage_client` run against a
 local Supabase stack. To run these tests locally you need `docker` and the
 [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 

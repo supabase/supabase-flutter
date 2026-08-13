@@ -8,7 +8,7 @@ import 'package:logging/logging.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/src/constants.dart';
-import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
+import 'package:supabase_flutter/src/flutter_auth_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
@@ -120,7 +120,7 @@ class Supabase {
 
     if (authOptions.pkceAsyncStorage == null) {
       authOptions = authOptions.copyWith(
-        pkceAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
+        pkceAsyncStorage: SharedPreferencesAuthAsyncStorage(),
       );
     }
     if (authOptions.localStorage == null) {

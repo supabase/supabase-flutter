@@ -44,7 +44,7 @@ import 'trace_http_client.dart';
 /// Pass an instance of `YAJsonIsolate` to [isolate] to use your own persisted
 /// isolate instance. A new instance will be created if [isolate] is omitted.
 ///
-/// Pass an instance of `GotrueAsyncStorage` to the `pkceAsyncStorage` field of
+/// Pass an instance of `AuthAsyncStorage` to the `pkceAsyncStorage` field of
 /// [authOptions] and set its `authFlowType` field to `AuthFlowType.pkce` in
 /// order to perform auth actions with pkce flow.
 /// {@endtemplate}
@@ -62,9 +62,9 @@ class SupabaseClient {
   final Client? _httpClient;
   late final Client _authHttpClient;
   late final Client _functionsHttpClient;
-  late final Client _gotrueHttpClient;
+  late final Client _authApiHttpClient;
 
-  GoTrueClient? _authInstance;
+  AuthClient? _authInstance;
 
   /// Supabase Functions allows you to deploy and invoke edge functions.
   late final FunctionsClient functions;
@@ -167,10 +167,10 @@ class SupabaseClient {
             supabaseUrl,
           )
         : baseHttpClient;
-    _gotrueHttpClient = tracedHttpClient;
+    _authApiHttpClient = tracedHttpClient;
     _authInstance = _initSupabaseAuthClient(
       autoRefreshToken: authOptions.autoRefreshToken,
-      gotrueAsyncStorage: authOptions.pkceAsyncStorage,
+      authAsyncStorage: authOptions.pkceAsyncStorage,
       authFlowType: authOptions.authFlowType,
     );
     _authHttpClient = AuthHttpClient(
@@ -204,7 +204,7 @@ class SupabaseClient {
     }
   }
 
-  GoTrueClient get auth {
+  AuthClient get auth {
     if (accessToken == null) {
       return _authInstance!;
     }
@@ -317,21 +317,21 @@ class SupabaseClient {
     _authInstance?.dispose();
   }
 
-  GoTrueClient _initSupabaseAuthClient({
+  AuthClient _initSupabaseAuthClient({
     required bool autoRefreshToken,
-    required GotrueAsyncStorage? gotrueAsyncStorage,
+    required AuthAsyncStorage? authAsyncStorage,
     required AuthFlowType authFlowType,
   }) {
     final authHeaders = {...headers};
     authHeaders['apikey'] = _supabaseKey;
     authHeaders['Authorization'] = 'Bearer $_supabaseKey';
 
-    return GoTrueClient(
+    return AuthClient(
       url: _authUrl,
       headers: authHeaders,
       autoRefreshToken: autoRefreshToken,
-      httpClient: _gotrueHttpClient,
-      asyncStorage: gotrueAsyncStorage,
+      httpClient: _authApiHttpClient,
+      asyncStorage: authAsyncStorage,
       flowType: authFlowType,
     );
   }

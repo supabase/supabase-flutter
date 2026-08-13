@@ -19,7 +19,7 @@ import 'clear_auth_url_parameters_stub.dart'
 /// Integrates Supabase Auth with the Flutter application lifecycle.
 ///
 /// [SupabaseAuth] acts as the bridge between the Flutter widget tree and the
-/// underlying [GoTrueClient]. It is an internal singleton managed by [Supabase]
+/// underlying [AuthClient]. It is an internal singleton managed by [Supabase]
 /// and should not be instantiated directly by application code — use
 /// `Supabase.instance.client.auth` for auth operations.
 ///
@@ -38,7 +38,7 @@ import 'clear_auth_url_parameters_stub.dart'
 ///   session exists.
 ///
 /// **Key collaborators:**
-/// - [GoTrueClient] (`Supabase.instance.client.auth`) — the underlying auth
+/// - [AuthClient] (`Supabase.instance.client.auth`) — the underlying auth
 ///   client that [SupabaseAuth] coordinates with.
 /// - [LocalStorage] — pluggable storage backend for session persistence.
 /// - `AppLinks` — provides the incoming deep link stream and the initial link
@@ -102,7 +102,7 @@ class SupabaseAuth with WidgetsBindingObserver {
         unawaited(_onAuthStateChange(data.event, data.session));
       },
       onError: (error, stackTrace) {
-        // Errors are already logged by GoTrueClient.notifyException before
+        // Errors are already logged by AuthClient.notifyException before
         // being added to the stream. The empty handler prevents them from
         // being rethrown as unhandled zone errors.
       },
@@ -330,7 +330,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 }
 
-extension GoTrueClientSignInProvider on GoTrueClient {
+extension AuthClientSignInProvider on AuthClient {
   /// Signs the user in using a third party providers.
   ///
   /// ```dart
@@ -343,7 +343,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   ///
   /// The return value of this method is not the auth result, and whether the
   /// OAuth sign-in has succeeded or not should be observed by setting a
-  /// listener on [GoTrueClient.onAuthStateChange].
+  /// listener on [AuthClient.onAuthStateChange].
   ///
   /// To obtain the OAuth URL without launching a browser, use
   /// [getOAuthSignInUrl] instead.

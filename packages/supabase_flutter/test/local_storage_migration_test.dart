@@ -162,13 +162,13 @@ void main() {
     });
   });
 
-  group('SharedPreferencesGotrueAsyncStorage migration from v2', () {
+  group('SharedPreferencesAuthAsyncStorage migration from v2', () {
     const codeVerifierKey = 'supabase.auth.token-code-verifier';
     const codeVerifier = 'raw-code-verifier';
 
     test('moves a code verifier written by the legacy API over', () async {
       mockSharedPreferences(legacyValues: {codeVerifierKey: codeVerifier});
-      final storage = SharedPreferencesGotrueAsyncStorage();
+      final storage = SharedPreferencesAuthAsyncStorage();
 
       expect(await storage.getItem(key: codeVerifierKey), codeVerifier);
       expect(
@@ -181,7 +181,7 @@ void main() {
 
     test('does not resurrect a verifier that was used up', () async {
       mockSharedPreferences(legacyValues: {codeVerifierKey: codeVerifier});
-      final storage = SharedPreferencesGotrueAsyncStorage();
+      final storage = SharedPreferencesAuthAsyncStorage();
       expect(await storage.getItem(key: codeVerifierKey), codeVerifier);
 
       await storage.removeItem(key: codeVerifierKey);
@@ -192,7 +192,7 @@ void main() {
     test('returns null when the legacy store cannot be read', () async {
       mockSharedPreferences();
       SharedPreferencesStorePlatform.instance = _ThrowingLegacyStore();
-      final storage = SharedPreferencesGotrueAsyncStorage();
+      final storage = SharedPreferencesAuthAsyncStorage();
 
       expect(await storage.getItem(key: codeVerifierKey), isNull);
     });

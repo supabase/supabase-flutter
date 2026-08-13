@@ -175,8 +175,8 @@ class SharedPreferencesLocalStorage extends LocalStorage {
 }
 
 /// local storage to store pkce flow code verifier.
-class SharedPreferencesGotrueAsyncStorage extends GotrueAsyncStorage {
-  SharedPreferencesGotrueAsyncStorage() {
+class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
+  SharedPreferencesAuthAsyncStorage() {
     WidgetsFlutterBinding.ensureInitialized();
   }
 

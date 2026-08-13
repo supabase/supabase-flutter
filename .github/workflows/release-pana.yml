@@ -26,11 +26,11 @@ jobs:
       matrix:
         package:
           - functions_client
-          - gotrue
           - postgrest
           - realtime_client
           - storage_client
           - supabase
+          - supabase_auth
           - supabase_common
           - supabase_flutter
           - supabase_typegen

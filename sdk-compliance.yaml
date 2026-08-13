@@ -14,7 +14,7 @@
 #                           implementation would add no real capability. A note
 #                           explains why.
 #
-# Verified against the source in this repository (packages/gotrue, postgrest,
+# Verified against the source in this repository (packages/supabase_auth, postgrest,
 # storage_client, realtime_client, functions_client, supabase, supabase_flutter).
 # Unlisted features default to not_implemented.
 
@@ -25,22 +25,22 @@ features:
   auth.sign_in.sign_up:
     status: implemented
     symbols:
-      - GoTrueClient.signUp
+      - AuthClient.signUp
   auth.sign_in.sign_in_with_password:
     status: implemented
     symbols:
-      - GoTrueClient.signInWithPassword
+      - AuthClient.signInWithPassword
   auth.sign_in.sign_in_with_otp:
     status: implemented
     symbols:
-      - GoTrueClient.signInWithOtp
+      - AuthClient.signInWithOtp
     supporting_symbols:
       - OtpChannel
   auth.sign_in.sign_in_with_oauth:
     status: implemented
     symbols:
-      - GoTrueClient.getOAuthSignInUrl
-      - GoTrueClientSignInProvider.signInWithOAuth
+      - AuthClient.getOAuthSignInUrl
+      - AuthClientSignInProvider.signInWithOAuth
       - OAuthProvider
       - OAuthProvider.OAuthProvider
     supporting_symbols:
@@ -78,39 +78,39 @@ features:
   auth.sign_in.sign_in_with_id_token:
     status: implemented
     symbols:
-      - GoTrueClient.signInWithIdToken
+      - AuthClient.signInWithIdToken
     supporting_symbols:
-      - GoTrueClientSignInProvider.generateRawNonce
+      - AuthClientSignInProvider.generateRawNonce
   auth.sign_in.sign_in_with_sso:
     status: implemented
     note: "Split across two methods: getSSOSignInUrl returns Future<String> (the URL) rather than the structured {url} response used by JS, and supabase_flutter's signInWithSSO launches that URL in the browser and returns Future<bool>."
     symbols:
-      - GoTrueClient.getSSOSignInUrl
-      - GoTrueClientSignInProvider.signInWithSSO
+      - AuthClient.getSSOSignInUrl
+      - AuthClientSignInProvider.signInWithSSO
   auth.sign_in.sign_in_with_web3:
     status: implemented
     note: "Callers sign the SIWE/SIWS message with their own wallet library and pass the message and signature; the SDK does not auto-detect browser wallets or build the message, since window.ethereum/window.solana have no Flutter equivalent."
     symbols:
-      - GoTrueClient.signInWithWeb3
+      - AuthClient.signInWithWeb3
       - Web3Chain
   auth.sign_in.sign_in_anonymously:
     status: implemented
     symbols:
-      - GoTrueClient.signInAnonymously
+      - AuthClient.signInAnonymously
   auth.sign_in.verify_otp:
     status: implemented
     symbols:
-      - GoTrueClient.verifyOTP
+      - AuthClient.verifyOTP
     supporting_symbols:
       - OtpType
   auth.sign_in.exchange_code_for_session:
     status: implemented
     symbols:
-      - GoTrueClient.exchangeCodeForSession
+      - AuthClient.exchangeCodeForSession
   auth.sign_in.resend_confirmation:
     status: implemented
     symbols:
-      - GoTrueClient.resend
+      - AuthClient.resend
     supporting_symbols:
       - ResendResponse
       - ResendResponse.ResendResponse
@@ -118,35 +118,35 @@ features:
   auth.sign_in.reauthenticate:
     status: implemented
     symbols:
-      - GoTrueClient.reauthenticate
+      - AuthClient.reauthenticate
   auth.sign_in.send_password_reset_email:
     status: implemented
     symbols:
-      - GoTrueClient.resetPasswordForEmail
+      - AuthClient.resetPasswordForEmail
 
   # auth — session & user
   auth.session.get_session:
     status: implemented
     symbols:
-      - GoTrueClient.currentSession
-      - GoTrueClient.getSession
+      - AuthClient.currentSession
+      - AuthClient.getSession
   auth.session.set_session:
     status: implemented
     symbols:
-      - GoTrueClient.setSession
+      - AuthClient.setSession
   auth.session.refresh_session:
     status: implemented
     symbols:
-      - GoTrueClient.refreshSession
+      - AuthClient.refreshSession
   auth.session.get_user:
     status: implemented
     symbols:
-      - GoTrueClient.currentUser
-      - GoTrueClient.getUser
+      - AuthClient.currentUser
+      - AuthClient.getUser
   auth.session.update_user:
     status: implemented
     symbols:
-      - GoTrueClient.updateUser
+      - AuthClient.updateUser
       - UserAttributes.currentPassword
     supporting_symbols:
       - UserAttributes
@@ -162,7 +162,7 @@ features:
   auth.session.get_claims:
     status: implemented
     symbols:
-      - GoTrueClient.getClaims
+      - AuthClient.getClaims
     supporting_symbols:
       - DecodedJwt
       - DecodedJwt.DecodedJwt
@@ -222,20 +222,20 @@ features:
   auth.session.sign_out:
     status: implemented
     symbols:
-      - GoTrueClient.signOut
+      - AuthClient.signOut
     supporting_symbols:
       - SignOutScope
   auth.session.auto_refresh:
     status: implemented
     symbols:
-      - GoTrueClient.startAutoRefresh
-      - GoTrueClient.stopAutoRefresh
+      - AuthClient.startAutoRefresh
+      - AuthClient.stopAutoRefresh
     supporting_symbols:
       - AuthClientOptions.autoRefreshToken
   auth.session.subscribe_auth_events:
     status: implemented
     symbols:
-      - GoTrueClient.onAuthStateChange
+      - AuthClient.onAuthStateChange
     supporting_symbols:
       - AuthChangeEvent
       - AuthChangeEvent.AuthChangeEvent
@@ -257,23 +257,23 @@ features:
     status: implemented
     note: "Split into getLinkIdentityUrl (OAuth) and linkIdentityWithIdToken (ID token) rather than a single overloaded method."
     symbols:
-      - GoTrueClient.getLinkIdentityUrl
-      - GoTrueClient.linkIdentityWithIdToken
-      - GoTrueClientSignInProvider.linkIdentity
+      - AuthClient.getLinkIdentityUrl
+      - AuthClient.linkIdentityWithIdToken
+      - AuthClientSignInProvider.linkIdentity
   auth.identities.list_identities:
     status: implemented
     symbols:
-      - GoTrueClient.getUserIdentities
+      - AuthClient.getUserIdentities
   auth.identities.unlink_identity:
     status: implemented
     symbols:
-      - GoTrueClient.unlinkIdentity
+      - AuthClient.unlinkIdentity
 
   # auth — MFA
   auth.mfa.enroll:
     status: implemented
     symbols:
-      - GoTrueMFAApi.enroll
+      - AuthMFAApi.enroll
     supporting_symbols:
       - AuthMFAEnrollResponse
       - AuthMFAEnrollResponse.AuthMFAEnrollResponse
@@ -295,7 +295,7 @@ features:
   auth.mfa.challenge:
     status: implemented
     symbols:
-      - GoTrueMFAApi.challenge
+      - AuthMFAApi.challenge
     supporting_symbols:
       - AuthMFAChallengeResponse
       - AuthMFAChallengeResponse.AuthMFAChallengeResponse
@@ -305,7 +305,7 @@ features:
   auth.mfa.verify:
     status: implemented
     symbols:
-      - GoTrueMFAApi.verify
+      - AuthMFAApi.verify
     supporting_symbols:
       - AuthMFAVerifyResponse
       - AuthMFAVerifyResponse.AuthMFAVerifyResponse
@@ -318,11 +318,11 @@ features:
   auth.mfa.challenge_and_verify:
     status: implemented
     symbols:
-      - GoTrueMFAApi.challengeAndVerify
+      - AuthMFAApi.challengeAndVerify
   auth.mfa.unenroll:
     status: implemented
     symbols:
-      - GoTrueMFAApi.unenroll
+      - AuthMFAApi.unenroll
     supporting_symbols:
       - AuthMFAUnenrollResponse
       - AuthMFAUnenrollResponse.AuthMFAUnenrollResponse
@@ -331,7 +331,7 @@ features:
   auth.mfa.list_factors:
     status: implemented
     symbols:
-      - GoTrueMFAApi.listFactors
+      - AuthMFAApi.listFactors
     supporting_symbols:
       - AuthMFAListFactorsResponse
       - AuthMFAListFactorsResponse.AuthMFAListFactorsResponse
@@ -343,7 +343,7 @@ features:
     status: implemented
     symbols:
       - AuthenticatorAssuranceLevel
-      - GoTrueMFAApi.getAuthenticatorAssuranceLevel
+      - AuthMFAApi.getAuthenticatorAssuranceLevel
     supporting_symbols:
       - AMREntry
       - AMREntry.AMREntry
@@ -363,9 +363,9 @@ features:
   auth.passkey.register_passkey:
     status: implemented
     symbols:
-      - GoTrueClientPasskey.registerPasskey
-      - GoTruePasskeyApi.startRegistration
-      - GoTruePasskeyApi.verifyRegistration
+      - AuthClientPasskey.registerPasskey
+      - AuthPasskeyApi.startRegistration
+      - AuthPasskeyApi.verifyRegistration
     supporting_symbols:
       - PasskeyRegistrationOptionsResponse
       - PasskeyRegistrationOptionsResponse.PasskeyRegistrationOptionsResponse
@@ -376,9 +376,9 @@ features:
   auth.passkey.sign_in_with_passkey:
     status: implemented
     symbols:
-      - GoTrueClientPasskey.signInWithPasskey
-      - GoTruePasskeyApi.startAuthentication
-      - GoTruePasskeyApi.verifyAuthentication
+      - AuthClientPasskey.signInWithPasskey
+      - AuthPasskeyApi.startAuthentication
+      - AuthPasskeyApi.verifyAuthentication
     supporting_symbols:
       - PasskeyAuthenticationOptionsResponse
       - PasskeyAuthenticationOptionsResponse.PasskeyAuthenticationOptionsResponse
@@ -391,10 +391,10 @@ features:
   auth.oauth_server.get_authorization_details:
     status: implemented
     symbols:
-      - GoTrueClient.oauth
-      - GoTrueOAuthApi
-      - GoTrueOAuthApi.GoTrueOAuthApi
-      - GoTrueOAuthApi.getAuthorizationDetails
+      - AuthClient.oauth
+      - AuthOAuthApi
+      - AuthOAuthApi.AuthOAuthApi
+      - AuthOAuthApi.getAuthorizationDetails
       - OAuthAuthorizationResponse
       - OAuthAuthorizationResponse.OAuthAuthorizationResponse
       - OAuthAuthorizationResponse.fromJson
@@ -423,7 +423,7 @@ features:
   auth.oauth_server.approve_authorization:
     status: implemented
     symbols:
-      - GoTrueOAuthApi.approveAuthorization
+      - AuthOAuthApi.approveAuthorization
       - OAuthConsentResponse
       - OAuthConsentResponse.OAuthConsentResponse
       - OAuthConsentResponse.fromJson
@@ -431,11 +431,11 @@ features:
   auth.oauth_server.deny_authorization:
     status: implemented
     symbols:
-      - GoTrueOAuthApi.denyAuthorization
+      - AuthOAuthApi.denyAuthorization
   auth.oauth_server.list_grants:
     status: implemented
     symbols:
-      - GoTrueOAuthApi.listGrants
+      - AuthOAuthApi.listGrants
       - OAuthGrant
       - OAuthGrant.OAuthGrant
       - OAuthGrant.client
@@ -447,29 +447,29 @@ features:
   auth.oauth_server.revoke_grant:
     status: implemented
     symbols:
-      - GoTrueOAuthApi.revokeGrant
+      - AuthOAuthApi.revokeGrant
 
   # auth — admin
   auth.admin.create_user:
     status: implemented
     symbols:
-      - GoTrueAdminApi.createUser
+      - AuthAdminApi.createUser
   auth.admin.get_user:
     status: implemented
     symbols:
-      - GoTrueAdminApi.getUserById
+      - AuthAdminApi.getUserById
   auth.admin.update_user:
     status: implemented
     symbols:
-      - GoTrueAdminApi.updateUserById
+      - AuthAdminApi.updateUserById
   auth.admin.delete_user:
     status: implemented
     symbols:
-      - GoTrueAdminApi.deleteUser
+      - AuthAdminApi.deleteUser
   auth.admin.list_users:
     status: implemented
     symbols:
-      - GoTrueAdminApi.listUsers
+      - AuthAdminApi.listUsers
       - ListUsersResponse
       - ListUsersResponse.ListUsersResponse
       - ListUsersResponse.audience
@@ -480,11 +480,11 @@ features:
   auth.admin.invite_user:
     status: implemented
     symbols:
-      - GoTrueAdminApi.inviteUserByEmail
+      - AuthAdminApi.inviteUserByEmail
   auth.admin.generate_link:
     status: implemented
     symbols:
-      - GoTrueAdminApi.generateLink
+      - AuthAdminApi.generateLink
     supporting_symbols:
       - GenerateLinkProperties
       - GenerateLinkProperties.actionLink
@@ -501,21 +501,21 @@ features:
   auth.admin.sign_out:
     status: implemented
     symbols:
-      - GoTrueAdminApi.signOut
+      - AuthAdminApi.signOut
   auth.admin.list_mfa_factors:
     status: implemented
     symbols:
-      - GoTrueAdminMFAApi.listFactors
+      - AuthAdminMFAApi.listFactors
     supporting_symbols:
       - AuthMFAAdminListFactorsResponse
       - AuthMFAAdminListFactorsResponse.AuthMFAAdminListFactorsResponse
       - AuthMFAAdminListFactorsResponse.factors
       - AuthMFAAdminListFactorsResponse.fromJson
-      - GoTrueAdminApi.mfa
+      - AuthAdminApi.mfa
   auth.admin.delete_mfa_factor:
     status: implemented
     symbols:
-      - GoTrueAdminMFAApi.deleteFactor
+      - AuthAdminMFAApi.deleteFactor
     supporting_symbols:
       - AuthMFAAdminDeleteFactorResponse
       - AuthMFAAdminDeleteFactorResponse.AuthMFAAdminDeleteFactorResponse
@@ -524,10 +524,10 @@ features:
   auth.admin.create_provider:
     status: implemented
     symbols:
-      - GoTrueAdminApi.customProviders
-      - GoTrueAdminCustomProvidersApi
-      - GoTrueAdminCustomProvidersApi.GoTrueAdminCustomProvidersApi
-      - GoTrueAdminCustomProvidersApi.createProvider
+      - AuthAdminApi.customProviders
+      - AuthAdminCustomProvidersApi
+      - AuthAdminCustomProvidersApi.AuthAdminCustomProvidersApi
+      - AuthAdminCustomProvidersApi.createProvider
       - CustomProviderType
       - CustomProviderType.fromString
       - CreateCustomProviderParams
@@ -595,11 +595,11 @@ features:
   auth.admin.get_provider:
     status: implemented
     symbols:
-      - GoTrueAdminCustomProvidersApi.getProvider
+      - AuthAdminCustomProvidersApi.getProvider
   auth.admin.update_provider:
     status: implemented
     symbols:
-      - GoTrueAdminCustomProvidersApi.updateProvider
+      - AuthAdminCustomProvidersApi.updateProvider
       - UpdateCustomProviderParams
       - UpdateCustomProviderParams.UpdateCustomProviderParams
       - UpdateCustomProviderParams.acceptableClientIds
@@ -624,17 +624,17 @@ features:
   auth.admin.delete_provider:
     status: implemented
     symbols:
-      - GoTrueAdminCustomProvidersApi.deleteProvider
+      - AuthAdminCustomProvidersApi.deleteProvider
   auth.admin.list_providers:
     status: implemented
     symbols:
-      - GoTrueAdminCustomProvidersApi.listProviders
+      - AuthAdminCustomProvidersApi.listProviders
 
   # auth — admin OAuth clients
   auth.oauth_admin.create_client:
     status: implemented
     symbols:
-      - GoTrueAdminOAuthApi.createClient
+      - AuthAdminOAuthApi.createClient
     supporting_symbols:
       - CreateOAuthClientParams
       - CreateOAuthClientParams.CreateOAuthClientParams
@@ -648,11 +648,11 @@ features:
   auth.oauth_admin.get_client:
     status: implemented
     symbols:
-      - GoTrueAdminOAuthApi.getClient
+      - AuthAdminOAuthApi.getClient
   auth.oauth_admin.update_client:
     status: implemented
     symbols:
-      - GoTrueAdminOAuthApi.updateClient
+      - AuthAdminOAuthApi.updateClient
     supporting_symbols:
       - UpdateOAuthClientParams
       - UpdateOAuthClientParams.UpdateOAuthClientParams
@@ -666,29 +666,29 @@ features:
   auth.oauth_admin.delete_client:
     status: implemented
     symbols:
-      - GoTrueAdminOAuthApi.deleteClient
+      - AuthAdminOAuthApi.deleteClient
   auth.oauth_admin.list_clients:
     status: implemented
     symbols:
-      - GoTrueAdminOAuthApi.listClients
+      - AuthAdminOAuthApi.listClients
     supporting_symbols:
-      - GoTrueAdminApi.oauth
+      - AuthAdminApi.oauth
   auth.oauth_admin.regenerate_client_secret:
     status: implemented
     symbols:
-      - GoTrueAdminOAuthApi.regenerateClientSecret
+      - AuthAdminOAuthApi.regenerateClientSecret
 
   # auth — admin passkeys (experimental)
   auth.passkey_admin.list_passkeys:
     status: implemented
     symbols:
-      - GoTrueAdminPasskeyApi.listPasskeys
+      - AuthAdminPasskeyApi.listPasskeys
     supporting_symbols:
-      - GoTrueAdminApi.passkey
+      - AuthAdminApi.passkey
   auth.passkey_admin.delete_passkey:
     status: implemented
     symbols:
-      - GoTrueAdminPasskeyApi.deletePasskey
+      - AuthAdminPasskeyApi.deletePasskey
 
   # database — query
   database.query.from_table:
@@ -1974,7 +1974,7 @@ features:
     symbols:
       - FlutterAuthClientOptions.detectSessionInUri
       - FlutterAuthClientOptions.detectSessionInUriPredicate
-      - GoTrueClient.getSessionFromUrl
+      - AuthClient.getSessionFromUrl
     supporting_symbols:
       - AuthSessionUrlResponse
       - AuthSessionUrlResponse.AuthSessionUrlResponse
@@ -1983,7 +1983,7 @@ features:
   client.session_management.custom_storage:
     status: implemented
     symbols:
-      - GotrueAsyncStorage
+      - AuthAsyncStorage
       - LocalStorage
     supporting_symbols:
       - AuthClientOptions.pkceAsyncStorage
@@ -1995,21 +1995,21 @@ features:
       - EmptyLocalStorage.persistSession
       - EmptyLocalStorage.removePersistedSession
       - FlutterAuthClientOptions.localStorage
-      - GotrueAsyncStorage.GotrueAsyncStorage
-      - GotrueAsyncStorage.getItem
-      - GotrueAsyncStorage.removeItem
-      - GotrueAsyncStorage.setItem
+      - AuthAsyncStorage.AuthAsyncStorage
+      - AuthAsyncStorage.getItem
+      - AuthAsyncStorage.removeItem
+      - AuthAsyncStorage.setItem
       - LocalStorage.LocalStorage
       - LocalStorage.accessToken
       - LocalStorage.hasAccessToken
       - LocalStorage.initialize
       - LocalStorage.persistSession
       - LocalStorage.removePersistedSession
-      - SharedPreferencesGotrueAsyncStorage
-      - SharedPreferencesGotrueAsyncStorage.SharedPreferencesGotrueAsyncStorage
-      - SharedPreferencesGotrueAsyncStorage.getItem
-      - SharedPreferencesGotrueAsyncStorage.removeItem
-      - SharedPreferencesGotrueAsyncStorage.setItem
+      - SharedPreferencesAuthAsyncStorage
+      - SharedPreferencesAuthAsyncStorage.SharedPreferencesAuthAsyncStorage
+      - SharedPreferencesAuthAsyncStorage.getItem
+      - SharedPreferencesAuthAsyncStorage.removeItem
+      - SharedPreferencesAuthAsyncStorage.setItem
       - SharedPreferencesLocalStorage
       - SharedPreferencesLocalStorage.SharedPreferencesLocalStorage
       - SharedPreferencesLocalStorage.accessToken
@@ -2021,8 +2021,8 @@ features:
     status: implemented
     symbols:
       - FlutterAuthClientOptions.persistSession
-      - GoTrueClient.recoverSession
-      - GoTrueClient.setInitialSession
+      - AuthClient.recoverSession
+      - AuthClient.setInitialSession
     supporting_symbols:
       - SharedPreferencesLocalStorage.persistSessionKey
       - defaultPersistSessionKey
@@ -2038,7 +2038,7 @@ features:
     supporting_symbols:
       - Constants.defaultHeaders
       - FunctionsClient.headers
-      - GoTrueClient.headers
+      - AuthClient.headers
       - PostgrestBuilder.setHeader
       - PostgrestClient.headers
       - PostgrestFilterBuilder.setHeader
@@ -2182,29 +2182,29 @@ supporting_symbols:
   - FunctionsClient.dispose
   - FunctionsClientOptions
   - FunctionsClientOptions.FunctionsClientOptions
-  - GoTrueAdminApi
-  - GoTrueAdminApi.GoTrueAdminApi
-  - GoTrueAdminMFAApi
-  - GoTrueAdminMFAApi.GoTrueAdminMFAApi
-  - GoTrueAdminOAuthApi
-  - GoTrueAdminOAuthApi.GoTrueAdminOAuthApi
-  - GoTrueAdminPasskeyApi
-  - GoTrueAdminPasskeyApi.GoTrueAdminPasskeyApi
-  - GoTrueClient
-  - GoTrueClient.GoTrueClient
-  - GoTrueClient.admin
-  - GoTrueClient.dispose
-  - GoTrueClient.mfa
-  - GoTrueClient.passkey
-  - GoTrueClientPasskey
-  - GoTrueClientSignInProvider
-  - GoTrueMFAApi
-  - GoTrueMFAApi.GoTrueMFAApi
-  - GoTruePasskeyApi
-  - GoTruePasskeyApi.GoTruePasskeyApi
-  - GoTruePasskeyApi.delete
-  - GoTruePasskeyApi.list
-  - GoTruePasskeyApi.update
+  - AuthAdminApi
+  - AuthAdminApi.AuthAdminApi
+  - AuthAdminMFAApi
+  - AuthAdminMFAApi.AuthAdminMFAApi
+  - AuthAdminOAuthApi
+  - AuthAdminOAuthApi.AuthAdminOAuthApi
+  - AuthAdminPasskeyApi
+  - AuthAdminPasskeyApi.AuthAdminPasskeyApi
+  - AuthClient
+  - AuthClient.AuthClient
+  - AuthClient.admin
+  - AuthClient.dispose
+  - AuthClient.mfa
+  - AuthClient.passkey
+  - AuthClientPasskey
+  - AuthClientSignInProvider
+  - AuthMFAApi
+  - AuthMFAApi.AuthMFAApi
+  - AuthPasskeyApi
+  - AuthPasskeyApi.AuthPasskeyApi
+  - AuthPasskeyApi.delete
+  - AuthPasskeyApi.list
+  - AuthPasskeyApi.update
   - Headers
   - IcebergApiException
   - IcebergApiException.IcebergApiException
