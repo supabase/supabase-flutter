@@ -37,7 +37,7 @@ class FunctionsClient {
       "Initialize FunctionsClient v$version with url '$url' and region "
       "'$region'",
     );
-    _log.finest("Initialize with headers: $headers");
+    _log.finest("Initialize with headers: ${headers.redacted}");
   }
 
   /// Getter for the headers

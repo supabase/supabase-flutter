@@ -7,6 +7,7 @@ import 'package:storage_client/src/storage_bucket_api.dart';
 import 'package:storage_client/src/storage_file_api.dart';
 import 'package:storage_client/src/vector_client.dart';
 import 'package:storage_client/src/version.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 class SupabaseStorageClient extends StorageBucketApi {
   final int _defaultRetryAttempts;
@@ -60,7 +61,7 @@ class SupabaseStorageClient extends StorageBucketApi {
       'Initialize SupabaseStorageClient v$version with url: $url, '
       'retryAttempts: $_defaultRetryAttempts',
     );
-    _log.finest('Initialize with headers: $headers');
+    _log.finest('Initialize with headers: ${headers.redacted}');
   }
 
   /// Transforms legacy storage URLs to use the dedicated storage host.

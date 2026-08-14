@@ -149,7 +149,7 @@ void main() {
       },
     );
 
-    test('the request log redacts credential headers', () async {
+    test('the logs redact credential headers', () async {
       final messages = <String>[];
       final previousLevel = Logger.root.level;
       Logger.root.level = Level.ALL;
@@ -172,14 +172,26 @@ void main() {
       );
       await client.invoke('function');
 
+      // No log at all, whether from the constructor or the request, may carry
+      // the values.
+      expect(messages, isNotEmpty);
+      for (final message in messages) {
+        expect(message, isNot(contains('super-secret-token')));
+        expect(message, isNot(contains('the-anon-key')));
+      }
+
+      final initializeLog = messages.singleWhere(
+        (message) => message.startsWith('Initialize with headers:'),
+      );
+      expect(initializeLog, contains('<redacted>'));
+
       final requestLog = messages.singleWhere(
         (message) => message.startsWith('Request:'),
       );
-      expect(requestLog, isNot(contains('super-secret-token')));
-      expect(requestLog, isNot(contains('the-anon-key')));
       expect(requestLog, contains('<redacted>'));
-      // The names, and any header that is not a credential, stay readable.
+      // Every name, and any header that is not a credential, stays readable.
       expect(requestLog, contains('Authorization'));
+      expect(requestLog, contains('apikey'));
       expect(requestLog, contains('eu-west-2'));
     });
 
