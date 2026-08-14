@@ -257,11 +257,11 @@ class AuthAdminApi {
   }
 
   /// Gets the user by their id.
-  Future<UserResponse> getUserById(String uid) async {
-    validateUuid(uid);
+  Future<UserResponse> getUserById(String userId) async {
+    validateUuid(userId);
     final options = AuthRequestOptions(headers: _headers);
     final response = await _fetch.request(
-      '$_url/admin/users/$uid',
+      '$_url/admin/users/$userId',
       HttpMethod.get,
       options: options,
     );
@@ -270,14 +270,14 @@ class AuthAdminApi {
 
   /// Updates the user data.
   Future<UserResponse> updateUserById(
-    String uid, {
+    String userId, {
     required AdminUserAttributes attributes,
   }) async {
-    validateUuid(uid);
+    validateUuid(userId);
     final body = attributes.toJson();
     final options = AuthRequestOptions(headers: _headers, body: body);
     final response = await _fetch.request(
-      '$_url/admin/users/$uid',
+      '$_url/admin/users/$userId',
       HttpMethod.put,
       options: options,
     );

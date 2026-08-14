@@ -150,7 +150,7 @@ class SupabaseStorageClient extends StorageBucketApi {
     storageFetch,
   );
 
-  void setAuth(String jwt) {
+  void setAccessToken(String jwt) {
     headers['Authorization'] = 'Bearer $jwt';
   }
 

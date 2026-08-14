@@ -58,14 +58,14 @@ class AuthAdminCustomProvidersApi {
   /// This function should only be called on a server. Never expose your
   /// `service_role` key in the browser.
   Future<CustomOAuthProvider> createProvider(
-    CreateCustomProviderParams params,
+    CreateCustomProviderOptions options,
   ) async {
     final data = await _fetch.request(
       '$_url/admin/custom-providers',
       HttpMethod.post,
       options: AuthRequestOptions(
         headers: _headers,
-        body: params.toJson(),
+        body: options.toJson(),
       ),
     );
 
@@ -99,14 +99,14 @@ class AuthAdminCustomProvidersApi {
   /// `service_role` key in the browser.
   Future<CustomOAuthProvider> updateProvider(
     String identifier,
-    UpdateCustomProviderParams params,
+    UpdateCustomProviderOptions options,
   ) async {
     final data = await _fetch.request(
       '$_url/admin/custom-providers/$identifier',
       HttpMethod.put,
       options: AuthRequestOptions(
         headers: _headers,
-        body: params.toJson(),
+        body: options.toJson(),
       ),
     );
 

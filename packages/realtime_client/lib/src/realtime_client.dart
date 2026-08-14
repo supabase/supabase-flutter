@@ -70,7 +70,7 @@ enum RealtimeHeartbeatStatus {
 /// subscriptions over a single connection.
 ///
 /// **Responsibilities:**
-/// - Establishes and maintains the WebSocket connection to [endPoint].
+/// - Establishes and maintains the WebSocket connection to [endpoint].
 /// - Sends periodic heartbeat messages to detect stale connections and
 ///   reconnects automatically when a heartbeat goes unanswered.
 /// - Encodes outgoing messages and decodes incoming messages (JSON by default).
@@ -100,10 +100,10 @@ enum RealtimeHeartbeatStatus {
 class RealtimeClient {
   String? accessToken;
   List<RealtimeChannel> channels = [];
-  final String endPoint;
+  final String endpoint;
 
   final Map<String, String> headers;
-  final Map<String, dynamic> params;
+  final Map<String, dynamic> parameters;
 
   final RealtimeProtocolVersion version;
   final Duration connectionCloseTimeout;
@@ -111,7 +111,7 @@ class RealtimeClient {
   final WebSocketTransport transport;
   final Client? httpClient;
   final _log = Logger('supabase.realtime');
-  int heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs;
+  Duration heartbeatInterval = Constants.defaultHeartbeatInterval;
   @internal
   Timer? heartbeatTimer;
 
@@ -143,7 +143,7 @@ class RealtimeClient {
   static final Serializer _serializer = Serializer();
   final RealtimeEncode encode;
   final RealtimeDecode decode;
-  late TimerCalculation reconnectAfterMs;
+  late TimerCalculation reconnectAfter;
   WebSocketChannel? connection;
   StreamSubscription<dynamic>? _connectionSubscription;
   @internal
@@ -165,7 +165,7 @@ class RealtimeClient {
 
   /// Initializes the Socket
   ///
-  /// [endPoint] The string WebSocket endpoint, ie, "ws://example.com/socket",
+  /// [endpoint] The string WebSocket endpoint, ie, "ws://example.com/socket",
   /// "wss://example.com", or "/socket" (which inherits the host and protocol).
   ///
   /// [transport] The Websocket Transport, for example WebSocket.
@@ -175,11 +175,11 @@ class RealtimeClient {
   /// [connectionCloseTimeout] The timeout to wait for the connection to close
   /// before dismissing the result. Defaults to 6 seconds.
   ///
-  /// [params] The optional params to pass when connecting.
+  /// [parameters] The optional parameters to pass when connecting.
   ///
   /// [headers] The optional headers to pass when connecting.
   ///
-  /// [heartbeatIntervalMs] The millisec interval to send a heartbeat message.
+  /// [heartbeatInterval] The interval at which to send a heartbeat message.
   ///
   /// [disconnectOnEmptyChannelsAfter] The delay before disconnecting the socket
   /// once the last channel is removed. If a new channel is created before the
@@ -199,8 +199,8 @@ class RealtimeClient {
   /// [decode] Overrides how incoming frames are deserialized. Defaults to the
   /// codec for [version].
   ///
-  /// [reconnectAfterMs] The optional function that returns the millisec
-  /// reconnect interval. Defaults to the stepped backoff of
+  /// [reconnectAfter] The optional function that returns the reconnect
+  /// interval. Defaults to the stepped backoff of
   /// [RetryTimer.createRetryFunction].
   ///
   /// [logLevel] Specifies the log level for the connection on the server.
@@ -209,23 +209,23 @@ class RealtimeClient {
   /// [RealtimeProtocolVersion.v2]; pass [RealtimeProtocolVersion.v1] for the
   /// legacy object-shaped JSON frames.
   RealtimeClient(
-    String endPoint, {
+    String endpoint, {
     WebSocketTransport? transport,
     this.timeout = Constants.defaultTimeout,
     this.connectionCloseTimeout = Constants.defaultConnectionCloseTimeout,
-    this.heartbeatIntervalMs = Constants.defaultHeartbeatIntervalMs,
+    this.heartbeatInterval = Constants.defaultHeartbeatInterval,
     Duration? disconnectOnEmptyChannelsAfter,
     this.logger,
     RealtimeEncode? encode,
     RealtimeDecode? decode,
-    TimerCalculation? reconnectAfterMs,
+    TimerCalculation? reconnectAfter,
     Map<String, String>? headers,
-    this.params = const {},
+    this.parameters = const {},
     RealtimeLogLevel? logLevel,
     this.httpClient,
     this.customAccessToken,
     this.version = RealtimeProtocolVersion.v2,
-  }) : endPoint = Uri.parse('$endPoint/websocket')
+  }) : endpoint = Uri.parse('$endpoint/websocket')
            .replace(
              queryParameters: logLevel == null
                  ? null
@@ -248,22 +248,21 @@ class RealtimeClient {
                ? _decodeLegacy
                : _serializer.decode) {
     _log.config(
-      'Initialize RealtimeClient with endpoint: $endPoint, timeout: $timeout, '
-      'heartbeatIntervalMs: $heartbeatIntervalMs, logLevel: ${logLevel?.name}',
+      'Initialize RealtimeClient with endpoint: $endpoint, timeout: $timeout, '
+      'heartbeatInterval: $heartbeatInterval, '
+      'logLevel: ${logLevel?.name}',
     );
-    _log.finest('Initialize with headers: $headers, params: $params');
+    _log.finest('Initialize with headers: $headers, parameters: $parameters');
     final customJWT = this.headers['Authorization']?.split(' ').last;
-    accessToken = customJWT ?? params['apikey'];
+    accessToken = customJWT ?? parameters['apikey'];
 
     this.disconnectOnEmptyChannelsAfter =
-        disconnectOnEmptyChannelsAfter ??
-        Duration(milliseconds: 2 * heartbeatIntervalMs);
+        disconnectOnEmptyChannelsAfter ?? (heartbeatInterval * 2);
 
-    this.reconnectAfterMs =
-        reconnectAfterMs ?? RetryTimer.createRetryFunction();
+    this.reconnectAfter = reconnectAfter ?? RetryTimer.createRetryFunction();
     reconnectTimer = RetryTimer(
       () => unawaited(_reconnect()),
-      this.reconnectAfterMs,
+      this.reconnectAfter,
     );
   }
 
@@ -278,10 +277,10 @@ class RealtimeClient {
     }
 
     try {
-      log('transport', 'connecting to $endPointURL', null);
+      log('transport', 'connecting to $endpointUrl', null);
       log('transport', 'connecting', null, Level.FINE);
       connectionState = SocketState.connecting;
-      final WebSocketChannel localConnection = transport(endPointURL, headers);
+      final WebSocketChannel localConnection = transport(endpointUrl, headers);
       connection = localConnection;
 
       try {
@@ -482,7 +481,7 @@ class RealtimeClient {
     String topic, [
     RealtimeChannelConfig config = const RealtimeChannelConfig(),
   ]) {
-    final newChannel = RealtimeChannel('realtime:$topic', this, params: config);
+    final newChannel = RealtimeChannel('realtime:$topic', this, config: config);
     _cancelPendingDisconnect();
     channels.add(newChannel);
     return newChannel;
@@ -603,10 +602,10 @@ class RealtimeClient {
       Map.from(jsonDecode(rawMessage as String) as Map);
 
   /// Returns the URL of the websocket.
-  String get endPointURL {
-    final queryParameters = Map<String, String>.from(params);
-    queryParameters['vsn'] = version.vsn;
-    return _appendParameters(endPoint, queryParameters);
+  String get endpointUrl {
+    final queryParameters = Map<String, String>.from(parameters);
+    queryParameters['vsn'] = version.wireVersion;
+    return _appendParameters(endpoint, queryParameters);
   }
 
   /// Return the next message ref, accounting for overflows
@@ -625,7 +624,7 @@ class RealtimeClient {
   /// Realtime RLS.
   ///
   /// `token` A JWT strings.
-  Future<void> setAuth(String? token) async {
+  Future<void> setAccessToken(String? token) async {
     final tokenToSend =
         token ?? (await customAccessToken?.call()) ?? accessToken;
 
@@ -661,13 +660,13 @@ class RealtimeClient {
   }
 
   void _onConnectionOpen() {
-    log('transport', 'connected to $endPointURL');
+    log('transport', 'connected to $endpointUrl');
     log('transport', 'connected', null, Level.FINE);
     unawaited(_resolveAccessTokenAndFlush());
     reconnectTimer.reset();
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
     heartbeatTimer = Timer.periodic(
-      Duration(milliseconds: heartbeatIntervalMs),
+      heartbeatInterval,
       (Timer t) => unawaited(sendHeartbeat()),
     );
 
@@ -729,15 +728,15 @@ class RealtimeClient {
       return url;
     }
 
-    var endpoint = Uri.parse(url);
-    endpoint = endpoint.replace(
+    var uri = Uri.parse(url);
+    uri = uri.replace(
       queryParameters: {
-        ...endpoint.queryParameters,
+        ...uri.queryParameters,
         ...queryParameters,
       },
     );
 
-    return endpoint.toString();
+    return uri.toString();
   }
 
   void _flushSendBuffer() {
@@ -761,7 +760,7 @@ class RealtimeClient {
   Future<void> _resolveAccessTokenAndFlush() async {
     try {
       if (customAccessToken != null) {
-        await setAuth(null);
+        await setAccessToken(null);
         if (accessToken != null) {
           for (final channel in channels) {
             channel.updateJoinPayload({'access_token': accessToken!});
@@ -796,7 +795,10 @@ class RealtimeClient {
       );
       _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       unawaited(
-        connection?.sink.close(Constants.wsCloseNormal, 'heartbeat timeout'),
+        connection?.sink.close(
+          Constants.webSocketCloseNormal,
+          'heartbeat timeout',
+        ),
       );
       return;
     }
@@ -810,6 +812,6 @@ class RealtimeClient {
       ),
     );
     _heartbeatController.add(RealtimeHeartbeatStatus.sent);
-    await setAuth(accessToken);
+    await setAccessToken(accessToken);
   }
 }

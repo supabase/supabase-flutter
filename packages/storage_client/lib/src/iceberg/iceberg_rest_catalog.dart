@@ -397,7 +397,7 @@ class IcebergRestCatalog {
   ]) async {
     final prefix = await _resolvePrefix();
     final query = <String, String>{
-      if (options?.snapshots != null) 'snapshots': options!.snapshots!.value,
+      if (options?.snapshots != null) 'snapshots': options!.snapshots!.name,
     };
     final response = await _request(
       HttpMethod.get,

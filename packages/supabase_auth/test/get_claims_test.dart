@@ -60,12 +60,12 @@ void main() {
       final claimsResponse = await client.getClaims();
       final claims = claimsResponse.claims;
 
-      expect(claims.sub, isNotNull);
+      expect(claims.subject, isNotNull);
       expect(claims.claims['email'], newEmail);
       expect(claims.claims['role'], isNotNull);
-      expect(claimsResponse.claims.aud, isNotNull);
-      expect(claims.exp, isNotNull);
-      expect(claims.iat, isNotNull);
+      expect(claimsResponse.claims.audience, isNotNull);
+      expect(claims.expiresAt, isNotNull);
+      expect(claims.issuedAt, isNotNull);
     });
 
     test('getClaims() with explicit JWT parameter', () async {
@@ -82,7 +82,7 @@ void main() {
       final claimsResponse = await client.getClaims(accessToken);
       final claims = claimsResponse.claims;
 
-      expect(claims.sub, isNotNull);
+      expect(claims.subject, isNotNull);
       expect(claims.claims['email'], newEmail);
     });
 
@@ -187,10 +187,10 @@ void main() {
       final claims = claimsResponse.claims;
 
       // Check for standard JWT claims
-      expect(claims.sub, isNotNull); // Subject
-      expect(claims.aud, isNotNull); // Audience
-      expect(claims.exp, isNotNull); // Expiration
-      expect(claims.iat, isNotNull); // Issued at
+      expect(claims.subject, isNotNull); // Subject
+      expect(claims.audience, isNotNull); // Audience
+      expect(claims.expiresAt, isNotNull); // Expiration
+      expect(claims.issuedAt, isNotNull); // Issued at
       expect(claims.claims['role'], isNotNull); // Role
 
       // Check for Supabase-specific claims
@@ -284,14 +284,14 @@ void main() {
 
       final decoded = decodeJwt(jwt);
 
-      expect(decoded.header.alg, 'HS256');
-      expect(decoded.header.typ, 'JWT');
-      expect(decoded.header.kid, 'test-kid');
+      expect(decoded.header.algorithm, 'HS256');
+      expect(decoded.header.type, 'JWT');
+      expect(decoded.header.keyId, 'test-kid');
 
-      expect(decoded.payload.sub, '1234567890');
+      expect(decoded.payload.subject, '1234567890');
       expect(decoded.payload.claims['name'], 'John Doe');
-      expect(decoded.payload.iat, 1516239022);
-      expect(decoded.payload.exp, 9999999999);
+      expect(decoded.payload.issuedAt, 1516239022);
+      expect(decoded.payload.expiresAt, 9999999999);
     });
 
     test('decodeJwt() throws on invalid JWT structure', () {
@@ -329,10 +329,10 @@ void main() {
 
       final payload = decodeJwtPayload(jwt);
 
-      expect(payload.sub, '1234567890');
+      expect(payload.subject, '1234567890');
       expect(payload.claims['name'], 'John Doe');
-      expect(payload.iat, 1516239022);
-      expect(payload.exp, 9999999999);
+      expect(payload.issuedAt, 1516239022);
+      expect(payload.expiresAt, 9999999999);
     });
 
     test('decodeJwtPayload() decodes payload despite a non-JSON header', () {
@@ -343,8 +343,8 @@ void main() {
 
       final payload = decodeJwtPayload(jwt);
 
-      expect(payload.exp, 9999999999);
-      expect(payload.sub, '1234567890');
+      expect(payload.expiresAt, 9999999999);
+      expect(payload.subject, '1234567890');
     });
 
     test('decodeJwtPayload() throws on wrong number of parts', () {
@@ -354,26 +354,26 @@ void main() {
       );
     });
 
-    test('validateExp() throws on expired token', () {
+    test('validateExpiration() throws on expired token', () {
       final pastTime = DateTime.now().subtract(Duration(hours: 1));
       final expiresAt = pastTime.millisecondsSinceEpoch ~/ 1000;
 
       expect(
-        () => validateExp(expiresAt),
+        () => validateExpiration(expiresAt),
         throwsA(isA<AuthException>()),
       );
     });
 
-    test('validateExp() succeeds on valid token', () {
+    test('validateExpiration() succeeds on valid token', () {
       final futureTime = DateTime.now().add(Duration(hours: 1));
       final expiresAt = futureTime.millisecondsSinceEpoch ~/ 1000;
 
-      expect(() => validateExp(expiresAt), returnsNormally);
+      expect(() => validateExpiration(expiresAt), returnsNormally);
     });
 
-    test('validateExp() throws on null exp', () {
+    test('validateExpiration() throws on null exp', () {
       expect(
-        () => validateExp(null),
+        () => validateExpiration(null),
         throwsA(isA<AuthException>()),
       );
     });

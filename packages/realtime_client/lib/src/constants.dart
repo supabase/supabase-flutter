@@ -5,8 +5,8 @@ import 'package:supabase_common/supabase_common.dart';
 class Constants {
   static const Duration defaultTimeout = Duration(milliseconds: 10000);
   static const Duration defaultConnectionCloseTimeout = Duration(seconds: 6);
-  static const int defaultHeartbeatIntervalMs = 25000;
-  static const int wsCloseNormal = 1000;
+  static const Duration defaultHeartbeatInterval = Duration(seconds: 25);
+  static const int webSocketCloseNormal = 1000;
   static final Map<String, String> defaultHeaders = {
     'X-Client-Info': buildClientInfoHeader('realtime-dart', version),
   };
@@ -21,10 +21,10 @@ enum RealtimeProtocolVersion {
   /// Positional JSON array text frames plus binary frames.
   v2('2.0.0');
 
-  const RealtimeProtocolVersion(this.vsn);
+  const RealtimeProtocolVersion(this.wireVersion);
 
   /// The value sent as the `vsn` connection parameter.
-  final String vsn;
+  final String wireVersion;
 }
 
 enum SocketState {
@@ -60,7 +60,7 @@ enum ChannelEvent {
   presence,
   postgresChanges;
 
-  static ChannelEvent fromType(String type) {
+  static ChannelEvent fromValue(String type) {
     for (final event in ChannelEvent.values) {
       if (event.name == type || event.eventName() == type) {
         return event;

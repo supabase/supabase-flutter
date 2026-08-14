@@ -289,51 +289,75 @@ void main() {
     group('uuidRegex', () {
       test('matches valid UUIDs', () {
         expect(
-          uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000'),
+          uuidRegex.hasMatch(
+            '550e8400-e29b-41d4-a716-446655440000',
+          ),
           isTrue,
         );
         expect(
-          uuidRegex.hasMatch('6ba7b810-9dad-11d1-80b4-00c04fd430c8'),
+          uuidRegex.hasMatch(
+            '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
+          ),
           isTrue,
         );
         expect(
-          uuidRegex.hasMatch('00000000-0000-0000-0000-000000000000'),
+          uuidRegex.hasMatch(
+            '00000000-0000-0000-0000-000000000000',
+          ),
           isTrue,
         );
       });
 
       test('does not match invalid UUIDs', () {
         expect(uuidRegex.hasMatch('invalid-uuid'), isFalse);
-        expect(uuidRegex.hasMatch('550e8400-e29b-41d4-a716'), isFalse);
-        expect(uuidRegex.hasMatch('550e8400e29b41d4a716446655440000'), isFalse);
         expect(
-          uuidRegex.hasMatch('550e8400-e29b-41d4-a716-44665544000g'),
+          uuidRegex.hasMatch('550e8400-e29b-41d4-a716'),
+          isFalse,
+        );
+        expect(
+          uuidRegex.hasMatch('550e8400e29b41d4a716446655440000'),
+          isFalse,
+        );
+        expect(
+          uuidRegex.hasMatch(
+            '550e8400-e29b-41d4-a716-44665544000g',
+          ),
           isFalse,
         );
       });
 
       test('matches hexadecimal characters regardless of case', () {
         expect(
-          uuidRegex.hasMatch('550E8400-E29B-41D4-A716-446655440000'),
+          uuidRegex.hasMatch(
+            '550E8400-E29B-41D4-A716-446655440000',
+          ),
           isTrue,
         );
         expect(
-          uuidRegex.hasMatch('550e8400-E29B-41d4-A716-446655440000'),
+          uuidRegex.hasMatch(
+            '550e8400-E29B-41d4-A716-446655440000',
+          ),
           isTrue,
         );
         expect(
-          uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000'),
+          uuidRegex.hasMatch(
+            '550e8400-e29b-41d4-a716-446655440000',
+          ),
           isTrue,
         );
       });
 
       test('matches exact pattern without partial matches', () {
         expect(
-          uuidRegex.hasMatch('prefix-550e8400-e29b-41d4-a716-446655440000'),
+          uuidRegex.hasMatch(
+            'prefix-550e8400-e29b-41d4-a716-446655440000',
+          ),
           isFalse,
         );
         expect(
-          uuidRegex.hasMatch('550e8400-e29b-41d4-a716-446655440000-suffix'),
+          uuidRegex.hasMatch(
+            '550e8400-e29b-41d4-a716-446655440000-suffix',
+          ),
           isFalse,
         );
       });

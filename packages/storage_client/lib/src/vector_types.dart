@@ -62,14 +62,14 @@ class VectorBucketEncryption {
   final String? kmsKeyArn;
 
   /// The server-side encryption type applied to the bucket.
-  final String? sseType;
+  final String? serverSideEncryptionType;
 
-  const VectorBucketEncryption({this.kmsKeyArn, this.sseType});
+  const VectorBucketEncryption({this.kmsKeyArn, this.serverSideEncryptionType});
 
   factory VectorBucketEncryption.fromJson(Map<String, dynamic> json) {
     return VectorBucketEncryption(
       kmsKeyArn: json['kmsKeyArn'] as String?,
-      sseType: json['sseType'] as String?,
+      serverSideEncryptionType: json['sseType'] as String?,
     );
   }
 }

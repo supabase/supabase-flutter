@@ -9,7 +9,7 @@ enum CustomProviderType {
   oauth2,
   oidc;
 
-  static CustomProviderType fromString(String value) {
+  static CustomProviderType fromValue(String value) {
     return CustomProviderType.values.firstWhere((e) => e.name == value);
   }
 }
@@ -32,7 +32,7 @@ class OIDCDiscoveryDocument {
   final String jwksUri;
 
   /// URL of the userinfo endpoint
-  final String? userinfoEndpoint;
+  final String? userInfoEndpoint;
 
   /// URL of the revocation endpoint
   final String? revocationEndpoint;
@@ -47,19 +47,19 @@ class OIDCDiscoveryDocument {
   final List<String>? supportedSubjectTypes;
 
   /// List of supported ID token signing algorithms
-  final List<String>? supportedIdTokenSigningAlgs;
+  final List<String>? supportedIdTokenSigningAlgorithms;
 
   const OIDCDiscoveryDocument({
     required this.issuer,
     required this.authorizationEndpoint,
     required this.tokenEndpoint,
     required this.jwksUri,
-    this.userinfoEndpoint,
+    this.userInfoEndpoint,
     this.revocationEndpoint,
     this.supportedScopes,
     this.supportedResponseTypes,
     this.supportedSubjectTypes,
-    this.supportedIdTokenSigningAlgs,
+    this.supportedIdTokenSigningAlgorithms,
   });
 
   factory OIDCDiscoveryDocument.fromJson(Map<String, dynamic> json) {
@@ -68,13 +68,13 @@ class OIDCDiscoveryDocument {
       authorizationEndpoint: json['authorization_endpoint'] as String,
       tokenEndpoint: json['token_endpoint'] as String,
       jwksUri: json['jwks_uri'] as String,
-      userinfoEndpoint: json['userinfo_endpoint'] as String?,
+      userInfoEndpoint: json['userinfo_endpoint'] as String?,
       revocationEndpoint: json['revocation_endpoint'] as String?,
       supportedScopes: (json['supported_scopes'] as List?)?.cast(),
       supportedResponseTypes: (json['supported_response_types'] as List?)
           ?.cast(),
       supportedSubjectTypes: (json['supported_subject_types'] as List?)?.cast(),
-      supportedIdTokenSigningAlgs:
+      supportedIdTokenSigningAlgorithms:
           (json['supported_id_token_signing_algs'] as List?)?.cast(),
     );
   }
@@ -116,7 +116,7 @@ class CustomOAuthProvider {
   final Map<String, dynamic>? attributeMapping;
 
   /// Additional parameters sent with the authorization request
-  final Map<String, String>? authorizationParams;
+  final Map<String, String>? authorizationParameters;
 
   /// Whether the provider is enabled
   final bool? enabled;
@@ -140,7 +140,7 @@ class CustomOAuthProvider {
   final String? tokenUrl;
 
   /// OAuth2 userinfo URL
-  final String? userinfoUrl;
+  final String? userInfoUrl;
 
   /// JWKS URI for token verification
   final String? jwksUri;
@@ -165,7 +165,7 @@ class CustomOAuthProvider {
     this.customClaimsAllowlist,
     this.pkceEnabled,
     this.attributeMapping,
-    this.authorizationParams,
+    this.authorizationParameters,
     this.enabled,
     this.emailOptional,
     this.issuer,
@@ -173,7 +173,7 @@ class CustomOAuthProvider {
     this.skipNonceCheck,
     this.authorizationUrl,
     this.tokenUrl,
-    this.userinfoUrl,
+    this.userInfoUrl,
     this.jwksUri,
     this.discoveryDocument,
     required this.createdAt,
@@ -184,7 +184,7 @@ class CustomOAuthProvider {
     final discoveryDocument = json['discovery_document'];
     return CustomOAuthProvider(
       id: json['id'] as String,
-      providerType: CustomProviderType.fromString(
+      providerType: CustomProviderType.fromValue(
         json['provider_type'] as String,
       ),
       identifier: json['identifier'] as String,
@@ -195,7 +195,7 @@ class CustomOAuthProvider {
       customClaimsAllowlist: (json['custom_claims_allowlist'] as List?)?.cast(),
       pkceEnabled: json['pkce_enabled'] as bool?,
       attributeMapping: json['attribute_mapping'] as Map<String, dynamic>?,
-      authorizationParams: (json['authorization_params'] as Map?)?.cast(),
+      authorizationParameters: (json['authorization_params'] as Map?)?.cast(),
       enabled: json['enabled'] as bool?,
       emailOptional: json['email_optional'] as bool?,
       issuer: json['issuer'] as String?,
@@ -203,7 +203,7 @@ class CustomOAuthProvider {
       skipNonceCheck: json['skip_nonce_check'] as bool?,
       authorizationUrl: json['authorization_url'] as String?,
       tokenUrl: json['token_url'] as String?,
-      userinfoUrl: json['userinfo_url'] as String?,
+      userInfoUrl: json['userinfo_url'] as String?,
       jwksUri: json['jwks_uri'] as String?,
       discoveryDocument: discoveryDocument == null
           ? null
@@ -217,7 +217,7 @@ class CustomOAuthProvider {
 }
 
 /// Parameters for creating a new custom provider.
-class CreateCustomProviderParams {
+class CreateCustomProviderOptions {
   /// Provider type
   final CustomProviderType providerType;
 
@@ -252,7 +252,7 @@ class CreateCustomProviderParams {
   final Map<String, dynamic>? attributeMapping;
 
   /// Additional parameters sent with the authorization request
-  final Map<String, String>? authorizationParams;
+  final Map<String, String>? authorizationParameters;
 
   /// Whether the provider is enabled
   final bool? enabled;
@@ -276,12 +276,12 @@ class CreateCustomProviderParams {
   final String? tokenUrl;
 
   /// OAuth2 userinfo URL
-  final String? userinfoUrl;
+  final String? userInfoUrl;
 
   /// JWKS URI for token verification
   final String? jwksUri;
 
-  const CreateCustomProviderParams({
+  const CreateCustomProviderOptions({
     required this.providerType,
     required this.identifier,
     required this.name,
@@ -292,7 +292,7 @@ class CreateCustomProviderParams {
     this.customClaimsAllowlist,
     this.pkceEnabled,
     this.attributeMapping,
-    this.authorizationParams,
+    this.authorizationParameters,
     this.enabled,
     this.emailOptional,
     this.issuer,
@@ -300,7 +300,7 @@ class CreateCustomProviderParams {
     this.skipNonceCheck,
     this.authorizationUrl,
     this.tokenUrl,
-    this.userinfoUrl,
+    this.userInfoUrl,
     this.jwksUri,
   });
 
@@ -316,7 +316,7 @@ class CreateCustomProviderParams {
       'custom_claims_allowlist': ?customClaimsAllowlist,
       'pkce_enabled': ?pkceEnabled,
       'attribute_mapping': ?attributeMapping,
-      'authorization_params': ?authorizationParams,
+      'authorization_params': ?authorizationParameters,
       'enabled': ?enabled,
       'email_optional': ?emailOptional,
       'issuer': ?issuer,
@@ -324,7 +324,7 @@ class CreateCustomProviderParams {
       'skip_nonce_check': ?skipNonceCheck,
       'authorization_url': ?authorizationUrl,
       'token_url': ?tokenUrl,
-      'userinfo_url': ?userinfoUrl,
+      'userinfo_url': ?userInfoUrl,
       'jwks_uri': ?jwksUri,
     };
   }
@@ -334,7 +334,7 @@ class CreateCustomProviderParams {
 ///
 /// All fields are optional. Only provided fields will be updated.
 /// `providerType` and `identifier` are immutable and cannot be changed.
-class UpdateCustomProviderParams {
+class UpdateCustomProviderOptions {
   /// Human-readable name
   final String? name;
 
@@ -363,7 +363,7 @@ class UpdateCustomProviderParams {
   final Map<String, dynamic>? attributeMapping;
 
   /// Additional parameters sent with the authorization request
-  final Map<String, String>? authorizationParams;
+  final Map<String, String>? authorizationParameters;
 
   /// Whether the provider is enabled
   final bool? enabled;
@@ -387,12 +387,12 @@ class UpdateCustomProviderParams {
   final String? tokenUrl;
 
   /// OAuth2 userinfo URL
-  final String? userinfoUrl;
+  final String? userInfoUrl;
 
   /// JWKS URI for token verification
   final String? jwksUri;
 
-  const UpdateCustomProviderParams({
+  const UpdateCustomProviderOptions({
     this.name,
     this.clientId,
     this.clientSecret,
@@ -401,7 +401,7 @@ class UpdateCustomProviderParams {
     this.customClaimsAllowlist,
     this.pkceEnabled,
     this.attributeMapping,
-    this.authorizationParams,
+    this.authorizationParameters,
     this.enabled,
     this.emailOptional,
     this.issuer,
@@ -409,7 +409,7 @@ class UpdateCustomProviderParams {
     this.skipNonceCheck,
     this.authorizationUrl,
     this.tokenUrl,
-    this.userinfoUrl,
+    this.userInfoUrl,
     this.jwksUri,
   });
 
@@ -423,7 +423,7 @@ class UpdateCustomProviderParams {
       'custom_claims_allowlist': ?customClaimsAllowlist,
       'pkce_enabled': ?pkceEnabled,
       'attribute_mapping': ?attributeMapping,
-      'authorization_params': ?authorizationParams,
+      'authorization_params': ?authorizationParameters,
       'enabled': ?enabled,
       'email_optional': ?emailOptional,
       'issuer': ?issuer,
@@ -431,7 +431,7 @@ class UpdateCustomProviderParams {
       'skip_nonce_check': ?skipNonceCheck,
       'authorization_url': ?authorizationUrl,
       'token_url': ?tokenUrl,
-      'userinfo_url': ?userinfoUrl,
+      'userinfo_url': ?userInfoUrl,
       'jwks_uri': ?jwksUri,
     };
   }

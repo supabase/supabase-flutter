@@ -46,7 +46,7 @@ void main() {
         expect(user!.id, equals('123'));
         expect(user.appMetadata, equals(<String, dynamic>{}));
         expect(user.userMetadata, equals(<String, dynamic>{}));
-        expect(user.aud, equals('authenticated'));
+        expect(user.audience, equals('authenticated'));
         expect(user.createdAt, equals(DateTime.utc(2023, 1, 1)));
         expect(user.isAnonymous, isFalse);
       });
@@ -86,7 +86,7 @@ void main() {
           user.userMetadata,
           equals(<String, dynamic>{'name': 'John Doe'}),
         );
-        expect(user.aud, equals('authenticated'));
+        expect(user.audience, equals('authenticated'));
         expect(user.confirmationSentAt, equals(DateTime.utc(2023, 1, 1)));
         expect(user.recoverySentAt, equals(DateTime.utc(2023, 1, 1, 1)));
         expect(user.emailChangeSentAt, equals(DateTime.utc(2023, 1, 1, 2)));
@@ -297,7 +297,7 @@ void main() {
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
-          aud: 'authenticated',
+          audience: 'authenticated',
           confirmationSentAt: DateTime.utc(2023, 1, 1),
           recoverySentAt: DateTime.utc(2023, 1, 1, 1),
           emailChangeSentAt: DateTime.utc(2023, 1, 1, 2),
@@ -359,7 +359,7 @@ void main() {
           id: '123',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
           identities: [identity],
         );
@@ -376,7 +376,7 @@ void main() {
           id: '123',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
           identities: null,
           factors: null,
@@ -395,7 +395,7 @@ void main() {
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
-          aud: 'authenticated',
+          audience: 'authenticated',
           email: 'test@example.com',
           createdAt: DateTime.utc(2023, 1, 1),
           isAnonymous: true,
@@ -416,7 +416,7 @@ void main() {
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
-          aud: 'authenticated',
+          audience: 'authenticated',
           email: 'test@example.com',
           createdAt: DateTime.utc(2023, 1, 1),
           isAnonymous: false,
@@ -426,7 +426,7 @@ void main() {
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
-          aud: 'authenticated',
+          audience: 'authenticated',
           email: 'test@example.com',
           createdAt: DateTime.utc(2023, 1, 1),
           isAnonymous: false,
@@ -441,7 +441,7 @@ void main() {
           id: '123',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
@@ -449,7 +449,7 @@ void main() {
           id: '456',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
@@ -461,7 +461,7 @@ void main() {
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: {},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
@@ -469,7 +469,7 @@ void main() {
           id: '123',
           appMetadata: {'provider': 'oauth'},
           userMetadata: {},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
@@ -485,7 +485,7 @@ void main() {
           userMetadata: <String, dynamic>{
             'list': [1, 2, 3],
           },
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
@@ -497,7 +497,7 @@ void main() {
           userMetadata: <String, dynamic>{
             'list': [1, 2, 3],
           },
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
@@ -511,7 +511,7 @@ void main() {
           id: '123',
           appMetadata: {'provider': 'email'},
           userMetadata: <String, dynamic>{'name': 'John Doe'},
-          aud: 'authenticated',
+          audience: 'authenticated',
           email: 'test@example.com',
           phone: '+1234567890',
           createdAt: DateTime.utc(2023, 1, 1),
@@ -536,7 +536,7 @@ void main() {
             'profile': <String, dynamic>{'name': 'John', 'age': 30},
             'preferences': ['dark_mode', 'notifications'],
           },
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 

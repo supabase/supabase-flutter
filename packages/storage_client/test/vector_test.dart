@@ -61,7 +61,7 @@ void main() {
         bucket.creationTime,
         DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true),
       );
-      expect(bucket.encryption?.sseType, 'AES256');
+      expect(bucket.encryption?.serverSideEncryptionType, 'AES256');
     });
 
     test('listBuckets sends filters and parses buckets and cursor', () async {

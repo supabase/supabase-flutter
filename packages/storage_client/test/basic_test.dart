@@ -493,7 +493,7 @@ void main() {
 
       final response = await client
           .from('public_bucket')
-          .download('b.txt', queryParams: {'version': '1'});
+          .download('b.txt', queryParameters: {'version': '1'});
       expect(response, isA<Uint8List>());
       expect(String.fromCharCodes(response), 'Updated content');
 

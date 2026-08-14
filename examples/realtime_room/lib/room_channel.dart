@@ -31,7 +31,10 @@ class RoomChannel {
          // the replication backing Postgres Changes is live. Without it, a row
          // inserted right after joining can be missed, because replication is
          // set up asynchronously after the join is confirmed.
-         opts: const RealtimeChannelConfig(self: true, replicationReady: true),
+         options: const RealtimeChannelConfig(
+           self: true,
+           replicationReady: true,
+         ),
        );
 
   final SupabaseClient _client;

@@ -6,7 +6,7 @@ class User {
   final String id;
   final Map<String, dynamic> appMetadata;
   final Map<String, dynamic>? userMetadata;
-  final String aud;
+  final String audience;
   final DateTime? confirmationSentAt;
   final DateTime? recoverySentAt;
   final DateTime? emailChangeSentAt;
@@ -29,7 +29,7 @@ class User {
     required this.id,
     required this.appMetadata,
     required this.userMetadata,
-    required this.aud,
+    required this.audience,
     this.confirmationSentAt,
     this.recoverySentAt,
     this.emailChangeSentAt,
@@ -60,7 +60,7 @@ class User {
       id: json['id'] ?? '',
       appMetadata: json['app_metadata'] as Map<String, dynamic>? ?? {},
       userMetadata: json['user_metadata'] as Map<String, dynamic>?,
-      aud: json['aud'] ?? '',
+      audience: json['aud'] ?? '',
       confirmationSentAt: tryParseIso8601(json, 'confirmation_sent_at'),
       recoverySentAt: tryParseIso8601(json, 'recovery_sent_at'),
       emailChangeSentAt: tryParseIso8601(json, 'email_change_sent_at'),
@@ -92,7 +92,7 @@ class User {
       'id': id,
       'app_metadata': appMetadata,
       'user_metadata': userMetadata,
-      'aud': aud,
+      'aud': audience,
       'confirmation_sent_at': confirmationSentAt?.toIso8601String(),
       'recovery_sent_at': recoverySentAt?.toIso8601String(),
       'email_change_sent_at': emailChangeSentAt?.toIso8601String(),
@@ -116,7 +116,8 @@ class User {
   @override
   String toString() {
     return 'User(id: $id, appMetadata: $appMetadata, userMetadata: '
-        '$userMetadata, aud: $aud, confirmationSentAt: $confirmationSentAt, '
+        '$userMetadata, audience: $audience, confirmationSentAt: '
+        '$confirmationSentAt, '
         'recoverySentAt: $recoverySentAt, emailChangeSentAt: '
         '$emailChangeSentAt, newEmail: $newEmail, invitedAt: $invitedAt, '
         'actionLink: $actionLink, email: $email, phone: $phone, createdAt: '
@@ -135,7 +136,7 @@ class User {
         other.id == id &&
         collectionEquals(other.appMetadata, appMetadata) &&
         collectionEquals(other.userMetadata, userMetadata) &&
-        other.aud == aud &&
+        other.audience == audience &&
         other.confirmationSentAt == confirmationSentAt &&
         other.recoverySentAt == recoverySentAt &&
         other.emailChangeSentAt == emailChangeSentAt &&
@@ -162,7 +163,7 @@ class User {
     return id.hashCode ^
         collectionHash(appMetadata) ^
         collectionHash(userMetadata) ^
-        aud.hashCode ^
+        audience.hashCode ^
         confirmationSentAt.hashCode ^
         recoverySentAt.hashCode ^
         emailChangeSentAt.hashCode ^

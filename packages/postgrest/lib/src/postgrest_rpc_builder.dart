@@ -55,7 +55,7 @@ class PostgrestRpcBuilder
           final formattedValue = value is List
               ? '{${_cleanFilterArray(value)}}'
               : value;
-          newUrl = appendSearchParams(
+          newUrl = appendSearchParameters(
             key.toString(),
             '$formattedValue',
             newUrl,

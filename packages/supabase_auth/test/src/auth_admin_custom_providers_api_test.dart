@@ -22,11 +22,11 @@ void main() {
     return 'custom:flutter-test-$timestamp';
   }
 
-  CreateCustomProviderParams oauth2Parameters(
+  CreateCustomProviderOptions oauth2Parameters(
     String identifier, {
     List<String>? customClaimsAllowlist,
   }) {
-    return CreateCustomProviderParams(
+    return CreateCustomProviderOptions(
       providerType: CustomProviderType.oauth2,
       identifier: identifier,
       name: 'Flutter Test Provider',
@@ -34,7 +34,7 @@ void main() {
       clientSecret: 'test-client-secret',
       authorizationUrl: 'https://example.com/authorize',
       tokenUrl: 'https://example.com/token',
-      userinfoUrl: 'https://example.com/userinfo',
+      userInfoUrl: 'https://example.com/userinfo',
       customClaimsAllowlist: customClaimsAllowlist,
     );
   }
@@ -163,7 +163,7 @@ void main() {
 
         final updated = await client.admin.customProviders.updateProvider(
           identifier,
-          const UpdateCustomProviderParams(
+          const UpdateCustomProviderOptions(
             name: 'Updated Provider Name',
             customClaimsAllowlist: ['groups'],
           ),

@@ -24,13 +24,13 @@ class RealtimeChannel {
   List<Push> _pushBuffer = [];
   late RealtimePresence presence;
   @internal
-  late final String broadcastEndpointURL;
+  late final String broadcastEndpointUrl;
   @internal
   final String subTopic;
   @internal
   final String topic;
   @internal
-  Map<String, dynamic> params;
+  Map<String, dynamic> parameters;
   @internal
   final RealtimeClient socket;
 
@@ -41,25 +41,25 @@ class RealtimeChannel {
   RealtimeChannel(
     this.topic,
     this.socket, {
-    RealtimeChannelConfig params = const RealtimeChannelConfig(),
+    RealtimeChannelConfig config = const RealtimeChannelConfig(),
   }) : _timeout = socket.timeout,
-       params = params.toMap(),
+       parameters = config.toMap(),
        subTopic = topic.replaceFirst(
          RegExp(r"^realtime:", caseSensitive: false),
          "",
        ) {
-    broadcastEndpointURL = '${httpEndpointURL(socket.endPoint)}/api/broadcast';
-    _private = params.private;
+    broadcastEndpointUrl = '${httpEndpointUrl(socket.endpoint)}/api/broadcast';
+    _private = config.private;
 
     joinPush = Push(
       this,
       ChannelEvent.join,
-      this.params,
+      parameters,
       _timeout,
     );
     _rejoinTimer = RetryTimer(
       () => rejoinUntilConnected(),
-      socket.reconnectAfterMs,
+      socket.reconnectAfter,
     );
     joinPush.receive('ok', (_) {
       _state = ChannelState.joined;
@@ -115,19 +115,20 @@ class RealtimeChannel {
 
   bool _shouldEnablePresence() {
     return (_bindings['presence']?.isNotEmpty == true) ||
-        (params['config']['presence']['enabled'] == true);
+        (parameters['config']['presence']['enabled'] == true);
   }
 
   void _handlePresenceUpdate() {
     if (joinedOnce && isJoined) {
-      final currentPresenceEnabled = params['config']['presence']['enabled'];
+      final currentPresenceEnabled =
+          parameters['config']['presence']['enabled'];
       final shouldEnablePresence = _shouldEnablePresence();
 
       if (!currentPresenceEnabled && shouldEnablePresence) {
-        final config = Map<String, dynamic>.from(params['config']);
+        final config = Map<String, dynamic>.from(parameters['config']);
         config['presence'] = Map<String, dynamic>.from(config['presence']);
         config['presence']['enabled'] = true;
-        params['config'] = config;
+        parameters['config'] = config;
         updateJoinPayload({'config': config});
         rejoin();
       }
@@ -151,9 +152,9 @@ class RealtimeChannel {
       throw "tried to subscribe multiple times. 'subscribe' can only be "
           "called a single time per channel instance";
     }
-    final broadcast = params['config']['broadcast'];
-    final presenceConfig = params['config']['presence'];
-    final isPrivate = params['config']['private'];
+    final broadcast = parameters['config']['broadcast'];
+    final presenceConfig = parameters['config']['presence'];
+    final isPrivate = parameters['config']['private'];
 
     _onError((e) {
       if (callback != null) callback(RealtimeSubscribeStatus.channelError, e);
@@ -244,11 +245,11 @@ class RealtimeChannel {
     final accessToken = socket.accessToken;
     if (accessToken != null) {
       try {
-        await socket.setAuth(accessToken);
+        await socket.setAccessToken(accessToken);
       } on FormatException catch (error) {
         // The cached access token may have expired by the time the
         // channel rejoins (e.g. after the device wakes from a long
-        // sleep). Auth state listeners will re-call setAuth with a
+        // sleep). Auth state listeners will re-call setAccessToken with a
         // fresh token shortly after, so swallow this specific error
         // to avoid surfacing it as an uncaught exception. The same
         // filter is applied in `SupabaseClient._handleTokenChanged`.
@@ -324,7 +325,7 @@ class RealtimeChannel {
 
   Future<ChannelResponse> track(
     Map<String, dynamic> payload, [
-    Map<String, dynamic> opts = const {},
+    Map<String, dynamic> options = const {},
   ]) {
     return send(
       type: RealtimeListenType.presence,
@@ -334,20 +335,20 @@ class RealtimeChannel {
       },
       options: {
         'timeout': _timeout,
-        ...opts,
+        ...options,
       },
     );
   }
 
   Future<ChannelResponse> untrack([
-    Map<String, dynamic> opts = const {},
+    Map<String, dynamic> options = const {},
   ]) {
     return send(
       type: RealtimeListenType.presence,
       payload: {
         'event': 'untrack',
       },
-      options: opts,
+      options: options,
     );
   }
 
@@ -567,7 +568,7 @@ class RealtimeChannel {
   /// ```dart
   /// final channel = supabase.channel(
   ///   'room1',
-  ///   opts: const RealtimeChannelConfig(replicationReady: true),
+  ///   options: const RealtimeChannelConfig(replicationReady: true),
   /// );
   /// channel
   ///     .onPostgresChanges(
@@ -711,7 +712,7 @@ class RealtimeChannel {
     };
 
     final url = Uri.parse(
-      '$broadcastEndpointURL/${Uri.encodeComponent(subTopic)}/events/'
+      '$broadcastEndpointUrl/${Uri.encodeComponent(subTopic)}/events/'
       '${Uri.encodeComponent(event)}${_private ? '?private=true' : ''}',
     );
 
@@ -805,7 +806,7 @@ class RealtimeChannel {
     final Push push;
     try {
       push = this.push(
-        ChannelEvent.fromType(payload['type']),
+        ChannelEvent.fromValue(payload['type']),
         payload,
         options['timeout'] ?? _timeout,
       );
@@ -814,8 +815,8 @@ class RealtimeChannel {
     }
 
     if (payload['type'] == 'broadcast' &&
-        (params['config']?['broadcast']?['ack'] == null ||
-            params['config']?['broadcast']?['ack'] == false)) {
+        (parameters['config']?['broadcast']?['ack'] == null ||
+            parameters['config']?['broadcast']?['ack'] == false)) {
       if (!completer.isCompleted) {
         completer.complete(ChannelResponse.ok);
       }
@@ -842,7 +843,8 @@ class RealtimeChannel {
 
   Map<String, String> get _broadcastHeaders => {
     'Content-Type': 'application/json',
-    if (socket.params['apikey'] != null) 'apikey': socket.params['apikey']!,
+    if (socket.parameters['apikey'] != null)
+      'apikey': socket.parameters['apikey']!,
     ...socket.headers,
     if (socket.accessToken != null)
       'Authorization': 'Bearer ${socket.accessToken}',

@@ -420,8 +420,8 @@ void main() {
     });
 
     group('Headers', () {
-      test('setAuth updates authorization header', () async {
-        functionsCustomHttpClient.setAuth('new-token');
+      test('setAccessToken updates authorization header', () async {
+        functionsCustomHttpClient.setAccessToken('new-token');
 
         await functionsCustomHttpClient.invoke('function');
 
@@ -430,7 +430,7 @@ void main() {
       });
 
       test('headers getter returns current headers', () {
-        functionsCustomHttpClient.setAuth('test-token');
+        functionsCustomHttpClient.setAccessToken('test-token');
 
         final headers = functionsCustomHttpClient.headers;
         expect(headers['Authorization'], 'Bearer test-token');

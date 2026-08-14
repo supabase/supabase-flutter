@@ -341,7 +341,7 @@ void main() {
         CreateTableRequest(
           name: 'events',
           schema: schema(),
-          partitionSpec: const PartitionSpec(
+          partitionSpecification: const PartitionSpecification(
             fields: [
               PartitionField(
                 sourceId: 1,
@@ -686,7 +686,10 @@ void main() {
       expect(snapshot.snapshotId, 42);
       expect(snapshot.parentSnapshotId, 41);
       expect(snapshot.sequenceNumber, 3);
-      expect(snapshot.timestampMs, 1700000000000);
+      expect(
+        snapshot.timestamp,
+        DateTime.fromMillisecondsSinceEpoch(1700000000000, isUtc: true),
+      );
       expect(snapshot.manifestList, 's3://bucket/manifest-list.avro');
       expect(snapshot.summary['operation'], 'append');
       expect(snapshot.schemaId, 0);

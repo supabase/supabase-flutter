@@ -86,8 +86,8 @@ class PostgrestClient {
   /// Authenticates the request with JWT.
   ///
   /// Passing `null` clears the `Authorization` header.
-  PostgrestClient setAuth(String? token) {
-    _log.finest("setAuth with: $token");
+  PostgrestClient setAccessToken(String? token) {
+    _log.finest("setAccessToken with: $token");
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     } else {

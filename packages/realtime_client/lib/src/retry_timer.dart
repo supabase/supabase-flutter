@@ -6,15 +6,21 @@ import 'package:supabase_common/supabase_common.dart';
 @internal
 typedef TimerCallback = void Function();
 @internal
-typedef TimerCalculation = int Function(int tries);
+typedef TimerCalculation = Duration Function(int tries);
 
 /// Creates a timer that accepts a `timerCalculation` function to perform
 /// calculated timeout retries, such as exponential backoff.
 ///
 /// ```dart
-/// int calculateRetryDuration(int tries) {
-///   const delays = [1000, 5000, 10000];
-///   return tries <= delays.length ? delays[tries - 1] : 10000;
+/// Duration calculateRetryDuration(int tries) {
+///   const delays = [
+///     Duration(seconds: 1),
+///     Duration(seconds: 5),
+///     Duration(seconds: 10),
+///   ];
+///   return tries <= delays.length
+///       ? delays[tries - 1]
+///       : const Duration(seconds: 10);
 /// }
 ///
 /// final reconnectTimer = RetryTimer(connect, calculateRetryDuration);
@@ -52,23 +58,22 @@ class RetryTimer {
   void scheduleTimeout() {
     if (_timer != null) _timer!.cancel();
 
-    _timer = Timer(Duration(milliseconds: timerCalculation(_tries + 1)), () {
+    _timer = Timer(timerCalculation(_tries + 1), () {
       _tries = _tries + 1;
       callback();
     });
   }
 
-  /// Generates an exponential backoff function with first and max delays, both
-  /// in milliseconds.
+  /// Generates an exponential backoff function with first and max delays.
   static TimerCalculation createRetryFunction({
-    int firstDelay = 1000,
-    int maxDelay = 10000,
+    Duration firstDelay = const Duration(seconds: 1),
+    Duration maxDelay = const Duration(seconds: 10),
   }) {
     return (int tries) => exponentialBackoff(
       // `tries` counts the attempt this delay precedes, so the first one is 1.
       tries - 1,
-      initialDelay: Duration(milliseconds: firstDelay),
-      maxDelay: Duration(milliseconds: maxDelay),
-    ).inMilliseconds;
+      initialDelay: firstDelay,
+      maxDelay: maxDelay,
+    );
   }
 }

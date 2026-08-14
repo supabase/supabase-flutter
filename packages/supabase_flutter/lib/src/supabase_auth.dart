@@ -356,13 +356,13 @@ extension AuthClientSignInProvider on AuthClient {
     String? redirectTo,
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
-    Map<String, String>? queryParams,
+    Map<String, String>? queryParameters,
   }) async {
     final response = await getOAuthSignInUrl(
       provider: provider,
       redirectTo: redirectTo,
       scopes: scopes,
-      queryParams: queryParams,
+      queryParameters: queryParameters,
     );
     return _launchAuthUrl(response.url, provider, authScreenLaunchMode);
   }
@@ -449,13 +449,13 @@ extension AuthClientSignInProvider on AuthClient {
     String? redirectTo,
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
-    Map<String, String>? queryParams,
+    Map<String, String>? queryParameters,
   }) async {
     final response = await getLinkIdentityUrl(
       provider,
       redirectTo: redirectTo,
       scopes: scopes,
-      queryParams: queryParams,
+      queryParameters: queryParameters,
     );
     return _launchAuthUrl(response.url, provider, authScreenLaunchMode);
   }

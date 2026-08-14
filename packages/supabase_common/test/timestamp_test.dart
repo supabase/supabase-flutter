@@ -206,6 +206,101 @@ void main() {
     });
   });
 
+  group('parseUnixMilliseconds', () {
+    test('parses whole milliseconds as UTC', () {
+      final parsed = parseUnixMilliseconds(
+        {'timestamp-ms': 1700000000000},
+        'timestamp-ms',
+      );
+
+      expect(parsed.isUtc, isTrue);
+      expect(
+        parsed,
+        DateTime.fromMillisecondsSinceEpoch(1700000000000, isUtc: true),
+      );
+    });
+
+    test('throws when the value is not a number', () {
+      expect(
+        () => parseUnixMilliseconds({'timestamp-ms': 'nope'}, 'timestamp-ms'),
+        throwsA(
+          isA<FormatException>().having(
+            (exception) => exception.message,
+            'message',
+            'Expected timestamp-ms to be a number, got String',
+          ),
+        ),
+      );
+    });
+
+    test('throws when the value is absent', () {
+      expect(
+        () => parseUnixMilliseconds({}, 'timestamp-ms'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+  });
+
+  group('tryParseUnixMilliseconds', () {
+    test('returns null when the value is null or absent', () {
+      expect(
+        tryParseUnixMilliseconds({'last-updated-ms': null}, 'last-updated-ms'),
+        isNull,
+      );
+      expect(tryParseUnixMilliseconds({}, 'last-updated-ms'), isNull);
+    });
+
+    test('parses a present value', () {
+      expect(
+        tryParseUnixMilliseconds(
+          {'last-updated-ms': 1700000000000},
+          'last-updated-ms',
+        ),
+        DateTime.fromMillisecondsSinceEpoch(1700000000000, isUtc: true),
+      );
+    });
+  });
+
+  group('parseMillisecondsDuration', () {
+    test('parses milliseconds as a Duration', () {
+      expect(
+        parseMillisecondsDuration({
+          'max-ref-age-ms': 86400000,
+        }, 'max-ref-age-ms'),
+        const Duration(days: 1),
+      );
+    });
+
+    test('throws when the value is not a number', () {
+      expect(
+        () =>
+            parseMillisecondsDuration({'max-ref-age-ms': []}, 'max-ref-age-ms'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+  });
+
+  group('tryParseMillisecondsDuration', () {
+    test('returns null when the value is null or absent', () {
+      expect(
+        tryParseMillisecondsDuration({
+          'max-ref-age-ms': null,
+        }, 'max-ref-age-ms'),
+        isNull,
+      );
+      expect(tryParseMillisecondsDuration({}, 'max-ref-age-ms'), isNull);
+    });
+
+    test('parses a present value', () {
+      expect(
+        tryParseMillisecondsDuration({
+          'max-ref-age-ms': 1500,
+        }, 'max-ref-age-ms'),
+        const Duration(milliseconds: 1500),
+      );
+    });
+  });
+
   group('dateTimeFromUnixSeconds and unixSecondsFromDateTime', () {
     test('round trip whole seconds', () {
       expect(

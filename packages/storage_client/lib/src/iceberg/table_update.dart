@@ -70,27 +70,27 @@ class SetCurrentSchemaUpdate extends TableUpdate {
   };
 }
 
-class AddPartitionSpecUpdate extends TableUpdate {
-  final PartitionSpec spec;
+class AddPartitionSpecificationUpdate extends TableUpdate {
+  final PartitionSpecification specification;
 
-  const AddPartitionSpecUpdate(this.spec);
+  const AddPartitionSpecificationUpdate(this.specification);
 
   @override
   Map<String, dynamic> toJson() => {
     'action': 'add-spec',
-    'spec': spec.toJson(),
+    'spec': specification.toJson(),
   };
 }
 
-class SetDefaultSpecUpdate extends TableUpdate {
-  final int specId;
+class SetDefaultSpecificationUpdate extends TableUpdate {
+  final int specificationId;
 
-  const SetDefaultSpecUpdate(this.specId);
+  const SetDefaultSpecificationUpdate(this.specificationId);
 
   @override
   Map<String, dynamic> toJson() => {
     'action': 'set-default-spec',
-    'spec-id': specId,
+    'spec-id': specificationId,
   };
 }
 
@@ -154,15 +154,15 @@ class RemovePropertiesUpdate extends TableUpdate {
   };
 }
 
-class RemovePartitionSpecsUpdate extends TableUpdate {
-  final List<int> specIds;
+class RemovePartitionSpecificationsUpdate extends TableUpdate {
+  final List<int> specificationIds;
 
-  const RemovePartitionSpecsUpdate(this.specIds);
+  const RemovePartitionSpecificationsUpdate(this.specificationIds);
 
   @override
   Map<String, dynamic> toJson() => {
     'action': 'remove-partition-specs',
-    'spec-ids': specIds,
+    'spec-ids': specificationIds,
   };
 }
 

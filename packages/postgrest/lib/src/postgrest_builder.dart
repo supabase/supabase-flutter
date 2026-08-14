@@ -603,7 +603,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// Uses lists to allow multiple values for the same key
   ///
   /// [url] may be used to update based on a different url than the current one
-  Uri appendSearchParams(String key, String value, [Uri? url]) {
+  Uri appendSearchParameters(String key, String value, [Uri? url]) {
     final searchParameters = Map<String, dynamic>.of(
       (url ?? _url).queryParametersAll,
     );
@@ -614,7 +614,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// Get new Uri with overridden query parameters
   ///
   /// [url] may be used to update based on a different url than the current one
-  Uri overrideSearchParams(String key, String value, [Uri? url]) {
+  Uri overrideSearchParameters(String key, String value, [Uri? url]) {
     final searchParameters = Map<String, dynamic>.of(
       (url ?? _url).queryParametersAll,
     );
