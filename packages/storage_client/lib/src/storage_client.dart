@@ -42,6 +42,7 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// only if your project has the dedicated storage host enabled; otherwise
   /// every storage request will fail with an `Invalid Storage request` error.
   /// Defaults to `false` (opt-in).
+  // ignore: use_super_parameters
   SupabaseStorageClient(
     String url,
     Map<String, String> headers, {

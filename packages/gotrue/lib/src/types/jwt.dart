@@ -79,9 +79,9 @@ class JwtPayload {
       iss: json['iss'] as String?,
       sub: json['sub'] as String?,
       aud: json['aud'],
-      exp: json['exp'] as int?,
-      nbf: json['nbf'] as int?,
-      iat: json['iat'] as int?,
+      exp: (json['exp'] as num?)?.toInt(),
+      nbf: (json['nbf'] as num?)?.toInt(),
+      iat: (json['iat'] as num?)?.toInt(),
       jti: json['jti'] as String?,
       claims: Map<String, dynamic>.of(json),
     );

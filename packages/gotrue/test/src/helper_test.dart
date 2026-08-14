@@ -1,4 +1,5 @@
 import 'package:gotrue/src/helper.dart';
+import 'package:gotrue/src/types/jwt.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -328,6 +329,21 @@ void main() {
           isFalse,
         );
       });
+    });
+  });
+
+  group('JwtPayload', () {
+    test('fromJson accepts double exp, nbf, and iat', () {
+      final payload = JwtPayload.fromJson({
+        'sub': '1234567890',
+        'exp': 1700000000.0,
+        'nbf': 1600000000.0,
+        'iat': 1650000000.0,
+      });
+
+      expect(payload.exp, equals(1700000000));
+      expect(payload.nbf, equals(1600000000));
+      expect(payload.iat, equals(1650000000));
     });
   });
 }
