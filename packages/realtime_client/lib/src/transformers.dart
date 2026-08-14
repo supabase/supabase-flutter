@@ -233,10 +233,29 @@ int? toInt(dynamic value) {
   if (value is int) {
     return value;
   }
+  if (value is double) {
+    return _wholeDoubleToInt(value);
+  }
   if (value == null) {
     return null;
   }
-  return int.tryParse(value.toString());
+  final stringValue = value.toString();
+  final parsedInt = int.tryParse(stringValue);
+  if (parsedInt != null) {
+    return parsedInt;
+  }
+  final parsedDouble = double.tryParse(stringValue);
+  if (parsedDouble == null) {
+    return null;
+  }
+  return _wholeDoubleToInt(parsedDouble);
+}
+
+int? _wholeDoubleToInt(double value) {
+  if (!value.isFinite || value.truncateToDouble() != value) {
+    return null;
+  }
+  return value.toInt();
 }
 
 @internal

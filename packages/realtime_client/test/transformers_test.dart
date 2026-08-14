@@ -23,6 +23,14 @@ void main() {
   test('transformers toInt', () {
     expect(toInt(10), equals(10));
     expect(toInt('10'), equals(10));
+    expect(toInt(10.0), equals(10));
+    expect(toInt('10.0'), equals(10));
+    expect(toInt('1e3'), equals(1000));
+    expect(toInt(10.5), isNull);
+    expect(toInt('10.5'), isNull);
+    expect(toInt(double.nan), isNull);
+    expect(toInt(double.infinity), isNull);
+    expect(toInt('NaN'), isNull);
     expect(toInt(null), isNull);
     expect(toInt(''), isNull);
     expect(toInt('not a number'), isNull);
