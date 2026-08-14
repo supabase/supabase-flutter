@@ -67,7 +67,7 @@ class Fetch {
       request.body = json.encode(body);
     }
 
-    _log.finest('Request: ${method.value} $url ${request.headers}');
+    _log.finest('Request: ${method.value} $url ${request.headers.redacted}');
     final streamedResponse = await request.sendWith(httpClient);
     return _handleResponse(streamedResponse, options);
   }
@@ -165,7 +165,8 @@ class Fetch {
       () async {
         attempts++;
         _log.finest(
-          'Request: attempt: $attempts ${method.value} $url $headers',
+          'Request: attempt: $attempts ${method.value} $url '
+          '${headers.redacted}',
         );
 
         // Create a fresh request for each retry attempt
@@ -229,7 +230,7 @@ class Fetch {
     final request = http.Request(HttpMethod.get.value, Uri.parse(url))
       ..headers.addAll({...?options?.headers});
 
-    _log.finest('Request: GET (stream) $url ${request.headers}');
+    _log.finest('Request: GET (stream) $url ${request.headers.redacted}');
     final streamedResponse = await request.sendWith(httpClient);
 
     if (!isSuccessStatusCode(streamedResponse.statusCode)) {

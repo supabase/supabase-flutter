@@ -201,7 +201,9 @@ class FunctionsClient {
       request = bodyRequest;
     }
 
-    _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
+    _log.finest(
+      'Request: ${request.method} ${request.url} ${request.headers.redacted}',
+    );
 
     final http.StreamedResponse response;
     try {

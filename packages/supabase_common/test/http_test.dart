@@ -47,6 +47,35 @@ void main() {
     });
   });
 
+  group('redacted', () {
+    test('replaces credential values but keeps the names', () {
+      const headers = {
+        'Authorization': 'Bearer the-access-token',
+        'apikey': 'the-anon-key',
+        'X-Api-Key': 'another-key',
+        'Cookie': 'session=abc',
+        'Content-Type': 'application/json',
+        'x-region': 'eu-west-2',
+      };
+
+      expect(headers.redacted, {
+        'Authorization': '<redacted>',
+        'apikey': '<redacted>',
+        'X-Api-Key': '<redacted>',
+        'Cookie': '<redacted>',
+        'Content-Type': 'application/json',
+        'x-region': 'eu-west-2',
+      });
+    });
+
+    test('leaves the headers themselves untouched', () {
+      final headers = {'Authorization': 'Bearer the-access-token'};
+
+      expect(headers.redacted, {'Authorization': '<redacted>'});
+      expect(headers, {'Authorization': 'Bearer the-access-token'});
+    });
+  });
+
   group('mediaType', () {
     test('drops parameters and lowercases the type', () {
       expect(

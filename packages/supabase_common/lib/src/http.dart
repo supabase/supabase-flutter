@@ -13,12 +13,12 @@ extension SendWith on BaseRequest {
       httpClient?.send(this) ?? send();
 }
 
-/// Reading the headers of a response.
+/// Reading and logging a map of HTTP headers.
 ///
 /// [BaseRequest.headers] already compares its keys case insensitively, so
-/// nothing here is needed on the request side. [BaseResponse.headers] is a
-/// plain map.
-extension ResponseHeaders on Map<String, String> {
+/// [header] and [mediaType] are only needed for [BaseResponse.headers], which
+/// is a plain map.
+extension HeaderMap on Map<String, String> {
   /// The value of the [name] header, matched case insensitively.
   ///
   /// HTTP header names are case insensitive, and while the `package:http`
@@ -45,7 +45,31 @@ extension ResponseHeaders on Map<String, String> {
   /// answer with anything at all.
   String? get mediaType =>
       header('content-type')?.split(';').first.trim().toLowerCase();
+
+  /// The headers with every credential-bearing value replaced by `<redacted>`.
+  ///
+  /// Request headers carry the caller's API key and access token, so logging
+  /// them as they are would export those credentials to whatever the logger
+  /// writes to. The names are kept, since knowing which headers were sent is
+  /// the useful part when reading a log.
+  Map<String, String> get redacted => {
+    for (final MapEntry(:key, :value) in entries)
+      key: _credentialHeaders.contains(key.toLowerCase())
+          ? '<redacted>'
+          : value,
+  };
 }
+
+/// The headers whose value authenticates the request, and so must not be
+/// logged.
+const _credentialHeaders = {
+  'apikey',
+  'authorization',
+  'cookie',
+  'proxy-authorization',
+  'set-cookie',
+  'x-api-key',
+};
 
 /// Decodes [body] as a JSON object, or returns `null` when it is empty, is not
 /// valid JSON, or is valid JSON that is not an object.

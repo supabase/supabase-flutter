@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:functions_client/src/functions_client.dart';
 import 'package:functions_client/src/types.dart';
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -147,6 +148,40 @@ void main() {
         expect(response.statusCode, 200);
       },
     );
+
+    test('the request log redacts credential headers', () async {
+      final messages = <String>[];
+      final previousLevel = Logger.root.level;
+      Logger.root.level = Level.ALL;
+      final subscription = Logger.root.onRecord.listen(
+        (record) => messages.add(record.message),
+      );
+      addTearDown(() async {
+        await subscription.cancel();
+        Logger.root.level = previousLevel;
+      });
+
+      final client = FunctionsClient(
+        "",
+        {
+          'Authorization': 'Bearer super-secret-token',
+          'apikey': 'the-anon-key',
+          'x-region': 'eu-west-2',
+        },
+        httpClient: CustomHttpClient(),
+      );
+      await client.invoke('function');
+
+      final requestLog = messages.singleWhere(
+        (message) => message.startsWith('Request:'),
+      );
+      expect(requestLog, isNot(contains('super-secret-token')));
+      expect(requestLog, isNot(contains('the-anon-key')));
+      expect(requestLog, contains('<redacted>'));
+      // The names, and any header that is not a credential, stay readable.
+      expect(requestLog, contains('Authorization'));
+      expect(requestLog, contains('eu-west-2'));
+    });
 
     test('function call', () async {
       final response = await functionsCustomHttpClient.invoke('function');
