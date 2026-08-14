@@ -1,6 +1,6 @@
 import 'package:meta/meta.dart';
-import 'package:storage_client/src/fetch.dart';
-import 'package:storage_client/src/vector_types.dart';
+import 'package:supabase_storage/src/fetch.dart';
+import 'package:supabase_storage/src/vector_types.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 /// Client for the Storage Vectors API, reachable through

@@ -52,7 +52,7 @@ insert into public.addresses (username, location)
 values ('supabot', 'SRID=4326;POINT(-71.10044 42.373695)');
 
 -- ---------------------------------------------------------------------------
--- storage_client dummy data (ported from infra/storage_client/postgres/dummy-data.sql)
+-- supabase_storage dummy data (ported from infra/storage_client/postgres/dummy-data.sql)
 -- The storage tests authenticate with the service_role key, which bypasses RLS,
 -- so the previous per-user policies are no longer needed; only the buckets and
 -- objects the tests read are seeded. The owners are seeded as auth users so the

@@ -26,7 +26,7 @@ body:
         - supabase_auth
         - postgrest
         - supabase_realtime
-        - storage_client
+        - supabase_storage
         - supabase_functions
         - yet_another_json_isolate
         - unsure/all/other
@@ -58,10 +58,10 @@ body:
         Output of `flutter doctor -v`, plus the versions of the affected packages.
 
         On Linux/macOS:
-        `dart pub deps | grep -E "supabase|postgrest|storage_client"`
+        `dart pub deps | grep -E "supabase|postgrest"`
 
         On Windows:
-        `dart pub deps | findstr "supabase postgrest storage_client"`
+        `dart pub deps | findstr "supabase postgrest"`
       render: shell
       placeholder: Flutter, Dart and package versions
     validations:

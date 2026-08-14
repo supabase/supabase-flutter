@@ -1,12 +1,12 @@
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
-import 'package:storage_client/src/constants.dart';
-import 'package:storage_client/src/iceberg/iceberg_rest_catalog.dart';
-import 'package:storage_client/src/iceberg/iceberg_types.dart';
-import 'package:storage_client/src/storage_bucket_api.dart';
-import 'package:storage_client/src/storage_file_api.dart';
-import 'package:storage_client/src/vector_client.dart';
-import 'package:storage_client/src/version.dart';
+import 'package:supabase_storage/src/constants.dart';
+import 'package:supabase_storage/src/iceberg/iceberg_rest_catalog.dart';
+import 'package:supabase_storage/src/iceberg/iceberg_types.dart';
+import 'package:supabase_storage/src/storage_bucket_api.dart';
+import 'package:supabase_storage/src/storage_file_api.dart';
+import 'package:supabase_storage/src/vector_client.dart';
+import 'package:supabase_storage/src/version.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class SupabaseStorageClient extends StorageBucketApi {

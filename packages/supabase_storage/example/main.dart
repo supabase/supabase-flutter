@@ -3,7 +3,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:storage_client/storage_client.dart';
+import 'package:supabase_storage/supabase_storage.dart';
 
 Future<void> main() async {
   const supabaseUrl = '';

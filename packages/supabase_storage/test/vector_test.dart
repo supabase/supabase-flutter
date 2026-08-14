@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart';
-import 'package:storage_client/storage_client.dart';
+import 'package:supabase_storage/supabase_storage.dart';
 import 'package:test/test.dart';
 
 import 'custom_http_client.dart';

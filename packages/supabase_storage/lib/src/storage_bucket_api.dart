@@ -1,7 +1,7 @@
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
-import 'package:storage_client/src/fetch.dart';
-import 'package:storage_client/src/types.dart';
+import 'package:supabase_storage/src/fetch.dart';
+import 'package:supabase_storage/src/types.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class StorageBucketApi {

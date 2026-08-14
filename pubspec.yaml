@@ -10,7 +10,7 @@ workspace:
   - packages/supabase_auth
   - packages/postgrest
   - packages/supabase_realtime
-  - packages/storage_client
+  - packages/supabase_storage
   - packages/supabase
   - packages/supabase/example
   - packages/supabase_flutter

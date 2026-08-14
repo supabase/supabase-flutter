@@ -7,7 +7,7 @@
 > do not depend on it directly.
 
 Shared internal utilities used across the Supabase Dart and Flutter client
-packages (`supabase_auth`, `postgrest`, `supabase_realtime`, `storage_client`,
+packages (`supabase_auth`, `postgrest`, `supabase_realtime`, `supabase_storage`,
 `supabase_functions`, `supabase`, `supabase_flutter`).
 
 This package holds code that would otherwise be duplicated across those

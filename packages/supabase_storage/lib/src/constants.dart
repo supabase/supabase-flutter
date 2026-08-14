@@ -1,4 +1,4 @@
-import 'package:storage_client/src/version.dart';
+import 'package:supabase_storage/src/version.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:meta/meta.dart';
 

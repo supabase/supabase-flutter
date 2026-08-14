@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart';
-import 'package:storage_client/storage_client.dart';
+import 'package:supabase_storage/supabase_storage.dart';
 import 'package:test/test.dart';
 
 const String supabaseUrl = 'SUPABASE_TEST_URL';

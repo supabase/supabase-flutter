@@ -5,7 +5,7 @@ versions of the Supabase Flutter SDK, together with the steps required to migrat
 
 All packages in this repository are released together for a major version, so a single section
 covers `supabase_flutter`, `supabase`, `supabase_auth`, `postgrest`, `supabase_realtime`,
-`storage_client` and `supabase_functions`. Every symbol mentioned here is re-exported from
+`supabase_storage` and `supabase_functions`. Every symbol mentioned here is re-exported from
 `supabase_flutter`, so the snippets apply whether you depend on the individual package or on the
 Flutter one.
 
@@ -180,6 +180,38 @@ import 'package:supabase_realtime/supabase_realtime.dart';
 The rename does not touch any type names. `RealtimeClient`, `RealtimeChannel` and the rest keep
 their names, and the `X-Client-Info` header still identifies this client as `realtime-dart`.
 
+### The `storage_client` package is now `supabase_storage`
+
+`storage_client` says nothing about Supabase and does not match how the rest of the packages are
+named. The package is published as `supabase_storage` from v3 onwards, and the `storage_client`
+package is discontinued on pub.dev when v3 ships.
+
+If you depend on `supabase_flutter` or `supabase` you do not need to change anything, both pull in
+`supabase_storage` for you and re-export it.
+
+If you depend on the storage client directly, rename the dependency and the import:
+
+```yaml
+# Before
+dependencies:
+  storage_client: ^2.8.0
+
+# After
+dependencies:
+  supabase_storage: ^3.0.0
+```
+
+```dart
+// Before
+import 'package:storage_client/storage_client.dart';
+
+// After
+import 'package:supabase_storage/supabase_storage.dart';
+```
+
+The rename does not touch any type names. `SupabaseStorageClient`, `StorageFileApi` and the rest
+keep their names, and the `X-Client-Info` header still identifies this client as `storage-dart`.
+
 ### `RealtimeClient.connectionState` is now typed
 
 `RealtimeClient` used to expose the socket state twice: a typed `connState` field and a stringly
@@ -288,7 +320,7 @@ ones below are the renames you can actually hit.
 | `SocketStates` | `SocketState` | `supabase_realtime` |
 | `PostgresTypes` | `PostgresType` | `supabase_realtime` |
 | `AuthenticatorAssuranceLevels` | `AuthenticatorAssuranceLevel` | `supabase_auth` |
-| `LoadTableSnapshots` | `TableSnapshotScope` | `storage_client` |
+| `LoadTableSnapshots` | `TableSnapshotScope` | `supabase_storage` |
 
 No enum values changed, so the only work is renaming the type where you name it explicitly.
 
@@ -474,7 +506,7 @@ already inert: unused types, options the client ignored, or values the server ne
 | `PostgrestClient.auth()` | `PostgrestClient.setAuth()` | `postgrest` |
 | `RealtimeClient.longpollerTimeout` | none, there is no longpoll transport | `supabase_realtime` |
 | `ChannelResponse.rateLimited` | none, it was never returned | `supabase_realtime` |
-| `FileObject.lastAccessedAt`, `FileObjectV2.lastAccessedAt` | none, the server does not populate it | `storage_client` |
+| `FileObject.lastAccessedAt`, `FileObjectV2.lastAccessedAt` | none, the server does not populate it | `supabase_storage` |
 | `AuthUser` | `User` | `supabase` |
 | `RealtimeClientOptions.eventsPerSecond` | none, it was already ignored | `supabase` |
 | `RemoveSubscriptionResult` | none | `supabase` |

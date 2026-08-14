@@ -1,4 +1,4 @@
-import 'package:storage_client/src/iceberg/iceberg_types.dart';
+import 'package:supabase_storage/src/iceberg/iceberg_types.dart';
 
 /// A single change applied to a table as part of a commit. The common data
 /// definition updates are modelled as dedicated subclasses. Updates that are
