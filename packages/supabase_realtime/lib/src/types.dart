@@ -3,8 +3,10 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 
+@internal
 typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
 
+@internal
 class Binding {
   String type;
   Map<String, dynamic> filter;

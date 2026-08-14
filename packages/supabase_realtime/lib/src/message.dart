@@ -1,6 +1,6 @@
-import 'package:supabase_realtime/supabase_realtime.dart';
-import 'package:supabase_realtime/src/constants.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_realtime/src/constants.dart';
+import 'package:supabase_realtime/src/types.dart';
 
 @internal
 class Message {
