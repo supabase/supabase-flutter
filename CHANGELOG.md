@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-08-14
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.27.2`](#gotrue---v2272)
+ - [`supabase` - `v2.16.1`](#supabase---v2161)
+ - [`supabase_flutter` - `v2.17.2`](#supabase_flutter---v2172)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase` - `v2.16.1`
+ - `supabase_flutter` - `v2.17.2`
+
+---
+
+#### `gotrue` - `v2.27.2`
+
+ - **FIX**(gotrue): parse expires_in as num in Session.fromJson ([#1719](https://github.com/supabase/supabase-flutter/issues/1719)). ([6c8047ee](https://github.com/supabase/supabase-flutter/commit/6c8047eefb82c76936a14eebe281276526e3037c))
+
+
 ## 2026-08-05
 
 ### Changes

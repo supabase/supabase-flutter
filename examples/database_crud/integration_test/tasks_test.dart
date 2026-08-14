@@ -70,7 +70,13 @@ void main() {
       createdTitle,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
-    await _pumpUntil(tester, find.text(createdTitle));
+    // Searches for the new task rather than looking for it in the full list: the
+    // dialog leaves the keyboard up, and on a phone that leaves room for only a
+    // couple of tiles, so it would otherwise end up below the fold. Waits for the
+    // tile rather than the title text, which also matches the text field of the
+    // dialog that is still animating away.
+    await _searchFor(tester, createdTitle);
+    await _pumpUntil(tester, _tile(createdTitle));
 
     // Complete it by ticking the checkbox in its tile (update).
     await tester.tap(_inTile(createdTitle, find.byType(Checkbox)));
@@ -93,20 +99,28 @@ void main() {
       renamedTitle,
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
-    await _pumpUntil(tester, find.text(renamedTitle));
-    expect(find.text(createdTitle), findsNothing);
+    // The row stops matching the search for the old title, which is the filter
+    // still in the field, so it leaves the list.
+    await _pumpUntilGone(tester, _tile(createdTitle));
+    await _searchFor(tester, renamedTitle);
+    await _pumpUntil(tester, _tile(renamedTitle));
 
     // Delete it (delete).
     await tester.tap(_inTile(renamedTitle, find.byIcon(Icons.delete)));
-    await _pumpUntilGone(tester, find.text(renamedTitle));
+    await _pumpUntilGone(tester, _tile(renamedTitle));
   });
 }
 
+/// Finds the [ListTile] of the task called [title].
+Finder _tile(String title) => find.widgetWithText(ListTile, title);
+
 /// Finds [target] within the [ListTile] that contains [title].
-Finder _inTile(String title, Finder target) => find.descendant(
-  of: find.ancestor(of: find.text(title), matching: find.byType(ListTile)),
-  matching: target,
-);
+Finder _inTile(String title, Finder target) =>
+    find.descendant(of: _tile(title), matching: target);
+
+/// Filters the list down to [query] through the search field.
+Future<void> _searchFor(WidgetTester tester, String query) =>
+    tester.enterText(find.widgetWithText(TextField, 'Search title'), query);
 
 /// Pumps frames until [finder] matches at least one widget or [timeout] elapses.
 ///
@@ -122,7 +136,30 @@ Future<void> _pumpUntil(
     await tester.pump(const Duration(milliseconds: 100));
     if (finder.evaluate().isNotEmpty) return;
   }
-  fail('Timed out waiting for: $finder');
+  fail('Timed out waiting for: $finder\n${_screen()}');
+}
+
+/// What is on screen, so a timeout says whether the app got somewhere else
+/// rather than only which finder came up empty.
+String _screen() {
+  final labels = find
+      .byType(Text)
+      .evaluate()
+      .map((element) => (element.widget as Text).data)
+      .whereType<String>();
+  final fields = find
+      .byType(EditableText)
+      .evaluate()
+      .map(
+        (element) => '"${(element.widget as EditableText).controller.text}"',
+      );
+  final boxes = find
+      .byType(Checkbox)
+      .evaluate()
+      .map((element) => '${(element.widget as Checkbox).value}');
+  return 'Labels: ${labels.join(' | ')}\n'
+      'Text fields: ${fields.join(' | ')}\n'
+      'Checkboxes: ${boxes.join(' | ')}';
 }
 
 /// The inverse of [_pumpUntil]: pumps until [finder] matches nothing.
@@ -136,5 +173,5 @@ Future<void> _pumpUntilGone(
     await tester.pump(const Duration(milliseconds: 100));
     if (finder.evaluate().isEmpty) return;
   }
-  fail('Timed out waiting for it to disappear: $finder');
+  fail('Timed out waiting for it to disappear: $finder\n${_screen()}');
 }

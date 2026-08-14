@@ -1,3 +1,7 @@
+## 2.27.2
+
+ - **FIX**(gotrue): parse expires_in as num in Session.fromJson ([#1719](https://github.com/supabase/supabase-flutter/issues/1719)). ([6c8047ee](https://github.com/supabase/supabase-flutter/commit/6c8047eefb82c76936a14eebe281276526e3037c))
+
 ## 2.27.1
 
  - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))

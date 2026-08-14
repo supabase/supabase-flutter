@@ -1,3 +1,7 @@
+## 2.16.1
+
+ - Update a dependency to the latest release.
+
 ## 2.16.0
 
  - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
