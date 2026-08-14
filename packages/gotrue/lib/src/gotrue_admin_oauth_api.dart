@@ -40,9 +40,9 @@ class OAuthClientListResponse {
           .map((e) => OAuthClient.fromJson(e as Map<String, dynamic>))
           .toList(),
       aud: json['aud'] as String?,
-      nextPage: json['nextPage'] as int?,
-      lastPage: json['lastPage'] as int?,
-      total: json['total'] as int? ?? 0,
+      nextPage: (json['nextPage'] as num?)?.toInt(),
+      lastPage: (json['lastPage'] as num?)?.toInt(),
+      total: (json['total'] as num?)?.toInt() ?? 0,
     );
   }
 }
