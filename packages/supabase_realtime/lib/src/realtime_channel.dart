@@ -8,6 +8,7 @@ import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/push.dart';
+import 'package:supabase_realtime/src/realtime_presence.dart';
 import 'package:supabase_realtime/src/retry_timer.dart';
 import 'package:supabase_realtime/src/transformers.dart';
 import 'package:supabase_realtime/src/types.dart';
@@ -22,6 +23,7 @@ class RealtimeChannel {
   late Push joinPush;
   late RetryTimer _rejoinTimer;
   List<Push> _pushBuffer = [];
+  @internal
   late RealtimePresence presence;
   @internal
   late final String broadcastEndpointUrl;

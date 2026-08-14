@@ -7,6 +7,6 @@ export 'src/constants.dart'
 export 'src/realtime_channel.dart';
 export 'src/realtime_client.dart';
 export 'src/realtime_constants.dart';
-export 'src/realtime_presence.dart';
+export 'src/realtime_presence.dart' show Presence;
 export 'src/transformers.dart' show PostgresColumn, PostgresType;
 export 'src/types.dart' hide ChannelFilter, RealtimeListenType;
