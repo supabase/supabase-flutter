@@ -104,8 +104,8 @@ class FunctionsClient {
   /// final response = await supabase.functions.invoke('sse-function');
   /// response.data
   ///     .transform(const Utf8Decoder())
-  ///     .listen((val) {
-  ///       print(val);
+  ///     .listen((value) {
+  ///       print(value);
   ///     });
   /// ```
   /// To stream SSE on the web, you can use a custom HTTP client that is able to
@@ -132,15 +132,15 @@ class FunctionsClient {
     final effectiveRegion = region ?? _region;
 
     // Merge query parameters with forceFunctionRegion if region is specified
-    final effectiveQueryParams = <String, dynamic>{
+    final effectiveQueryParameters = <String, dynamic>{
       ...?queryParameters,
       if (effectiveRegion != null && effectiveRegion != 'any')
         'forceFunctionRegion': effectiveRegion,
     };
 
     final uri = Uri.parse('$_url/$functionName').replace(
-      queryParameters: effectiveQueryParams.isNotEmpty
-          ? effectiveQueryParams
+      queryParameters: effectiveQueryParameters.isNotEmpty
+          ? effectiveQueryParameters
           : null,
     );
 
@@ -189,8 +189,8 @@ class FunctionsClient {
       } else if (body is Uint8List) {
         bodyRequest.bodyBytes = body;
       } else {
-        final bodyStr = await _isolate.encode(body);
-        bodyRequest.body = bodyStr;
+        final bodyString = await _isolate.encode(body);
+        bodyRequest.body = bodyString;
       }
       request = bodyRequest;
     }

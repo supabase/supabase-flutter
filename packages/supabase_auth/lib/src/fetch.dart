@@ -148,12 +148,14 @@ class AuthFetch {
       headers['Authorization'] = 'Bearer ${options!.jwt}';
     }
 
-    final qs = {...?options?.query};
+    final queryParameters = {...?options?.query};
     if (options?.redirectTo != null) {
-      qs['redirect_to'] = options!.redirectTo!;
+      queryParameters['redirect_to'] = options!.redirectTo!;
     }
     Uri uri = Uri.parse(url);
-    uri = uri.replace(queryParameters: {...uri.queryParameters, ...qs});
+    uri = uri.replace(
+      queryParameters: {...uri.queryParameters, ...queryParameters},
+    );
 
     final response = await _handleRequest(
       method: method,
@@ -187,7 +189,7 @@ class AuthFetch {
     required AuthRequestOptions? options,
     required Map<String, String> headers,
   }) async {
-    final bodyStr = json.encode(options?.body ?? {});
+    final bodyString = json.encode(options?.body ?? {});
 
     if (method != HttpMethod.get && method != HttpMethod.head) {
       headers['Content-Type'] = 'application/json';
@@ -200,27 +202,27 @@ class AuthFetch {
         HttpMethod.post => (httpClient?.post ?? post)(
           uri,
           headers: headers,
-          body: bodyStr,
+          body: bodyString,
         ),
         HttpMethod.put => (httpClient?.put ?? put)(
           uri,
           headers: headers,
-          body: bodyStr,
+          body: bodyString,
         ),
         HttpMethod.patch => (httpClient?.patch ?? patch)(
           uri,
           headers: headers,
-          body: bodyStr,
+          body: bodyString,
         ),
         HttpMethod.delete => (httpClient?.delete ?? delete)(
           uri,
           headers: headers,
-          body: bodyStr,
+          body: bodyString,
         ),
       };
-    } catch (e) {
+    } catch (error) {
       // fetch failed, likely due to a network or CORS error
-      throw AuthRetryableFetchException(message: e.toString());
+      throw AuthRetryableFetchException(message: error.toString());
     }
 
     if (!isSuccessStatusCode(response.statusCode)) {

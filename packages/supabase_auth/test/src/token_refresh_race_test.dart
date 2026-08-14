@@ -35,9 +35,9 @@ String _makeRawJwt(Map<String, dynamic> payload) {
 }
 
 String _freshAccessToken({String sub = 'mock-user-id'}) {
-  final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
-  final iat = exp - 3600;
-  return _makeRawJwt({'exp': exp, 'iat': iat, 'sub': sub});
+  final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
+  final issuedAt = expiresAt - 3600;
+  return _makeRawJwt({'exp': expiresAt, 'iat': issuedAt, 'sub': sub});
 }
 
 String _tokenResponseJson({

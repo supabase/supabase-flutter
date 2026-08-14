@@ -62,9 +62,9 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
-    final re = RegExp(r'\s');
+    final whitespaceRegularExpression = RegExp(r'\s');
     final cleanedColumns = columns.split('').map((c) {
-      if (re.hasMatch(c) && !quoted) {
+      if (whitespaceRegularExpression.hasMatch(c) && !quoted) {
         return '';
       }
       if (c == '"') {

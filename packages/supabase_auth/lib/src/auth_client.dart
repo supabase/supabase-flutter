@@ -423,7 +423,7 @@ class AuthClient {
       url: '$_url/authorize',
       redirectTo: redirectTo,
       scopes: scopes,
-      queryParams: queryParams,
+      queryParameters: queryParams,
     );
   }
 
@@ -781,7 +781,7 @@ class AuthClient {
 
     final codeChallenge = await _generatePKCECodeChallenge();
 
-    final res = await _fetch.request(
+    final response = await _fetch.request(
       '$_url/sso',
       HttpMethod.post,
       options: AuthRequestOptions(
@@ -799,7 +799,7 @@ class AuthClient {
       ),
     );
 
-    return res['url'] as String;
+    return response['url'] as String;
   }
 
   /// Returns a new session, regardless of expiry status. Takes in an optional
@@ -988,9 +988,10 @@ class AuthClient {
 
     // Throws AuthInvalidJwtException if the token is malformed.
     final decoded = decodeJwt(accessToken);
-    final exp = decoded.payload.exp;
+    final expiresAt = decoded.payload.exp;
     final hasExpired =
-        exp == null || exp <= timeNow + Constants.expiryMargin.inSeconds;
+        expiresAt == null ||
+        expiresAt <= timeNow + Constants.expiryMargin.inSeconds;
 
     if (hasExpired) {
       return await _callRefreshToken(refreshToken);
@@ -1002,13 +1003,13 @@ class AuthClient {
       throw AuthSessionMissingException();
     }
 
-    final iat = decoded.payload.iat;
+    final issuedAt = decoded.payload.iat;
     final session = Session(
       accessToken: accessToken,
       refreshToken: refreshToken,
       user: user,
       tokenType: 'bearer',
-      expiresIn: (iat != null) ? exp - iat : null,
+      expiresIn: (issuedAt != null) ? expiresAt - issuedAt : null,
     );
 
     _saveSession(session);
@@ -1193,8 +1194,8 @@ class AuthClient {
 
   /// Gets all the identities linked to a user.
   Future<List<UserIdentity>> getUserIdentities() async {
-    final res = await getUser();
-    return res.user?.identities ?? [];
+    final response = await getUser();
+    return response.user?.identities ?? [];
   }
 
   /// Link an identity to the current user using an ID token.
@@ -1258,10 +1259,10 @@ class AuthClient {
       url: '$_url/user/identities/authorize',
       redirectTo: redirectTo,
       scopes: scopes,
-      queryParams: queryParams,
+      queryParameters: queryParams,
       skipBrowserRedirect: true,
     );
-    final res = await _fetch.request(
+    final response = await _fetch.request(
       urlResponse.url,
       HttpMethod.get,
       options: AuthRequestOptions(
@@ -1269,7 +1270,7 @@ class AuthClient {
         jwt: _currentSession?.accessToken,
       ),
     );
-    return OAuthResponse(provider: provider, url: res['url']);
+    return OAuthResponse(provider: provider, url: response['url']);
   }
 
   /// Unlinks an identity from a user by deleting it.
@@ -1487,15 +1488,15 @@ class AuthClient {
     required String url,
     required String? scopes,
     required String? redirectTo,
-    required Map<String, String>? queryParams,
+    required Map<String, String>? queryParameters,
     bool skipBrowserRedirect = false,
   }) async {
     final codeChallenge = await _generatePKCECodeChallenge();
-    final urlParams = {
+    final urlParameters = {
       'provider': provider.name,
       'scopes': ?scopes,
       'redirect_to': ?redirectTo,
-      ...?queryParams,
+      ...?queryParameters,
       if (codeChallenge != null) ...{
         'flow_type': _flowType.name,
         'code_challenge': codeChallenge,
@@ -1503,7 +1504,7 @@ class AuthClient {
       },
       if (skipBrowserRedirect) 'skip_http_redirect': 'true',
     };
-    final oauthUrl = '$url?${Uri(queryParameters: urlParams).query}';
+    final oauthUrl = '$url?${Uri(queryParameters: urlParameters).query}';
     return OAuthResponse(provider: provider, url: oauthUrl);
   }
 
@@ -1620,8 +1621,10 @@ class AuthClient {
             (response) {
               if (!completer.isCompleted) completer.complete(response);
             },
-            onError: (Object error, StackTrace stack) {
-              if (!completer.isCompleted) completer.completeError(error, stack);
+            onError: (Object error, StackTrace stackTrace) {
+              if (!completer.isCompleted) {
+                completer.completeError(error, stackTrace);
+              }
             },
           )
           .whenComplete(() => _pendingRefreshes.remove(refreshToken)),
@@ -1842,8 +1845,8 @@ class AuthClient {
         header: decoded.header,
         signature: decoded.signature,
       );
-    } catch (e) {
-      throw AuthInvalidJwtException('Invalid JWT signature: $e');
+    } catch (error) {
+      throw AuthInvalidJwtException('Invalid JWT signature: $error');
     }
   }
 }

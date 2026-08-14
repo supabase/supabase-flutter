@@ -26,14 +26,14 @@ class Fetch {
 
   StorageException _handleError(
     dynamic error,
-    StackTrace stack,
+    StackTrace stackTrace,
     Uri? url,
     FetchOptions? options,
   ) {
     if (error is! http.Response) {
       // No response was received, so there is neither a status nor a service
       // error code to report. The error's own toString names its type.
-      _log.fine('StorageException for $url', error, stack);
+      _log.fine('StorageException for $url', error, stackTrace);
       return StorageException(error.toString());
     }
 
@@ -50,7 +50,7 @@ class Fetch {
     }
 
     if (data == null) {
-      _log.fine('StorageException for $url', error.body, stack);
+      _log.fine('StorageException for $url', error.body, stackTrace);
       return StorageApiException(
         error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
         statusCode: error.statusCode,
@@ -58,7 +58,7 @@ class Fetch {
     }
 
     final exception = StorageApiException.fromJson(data, error.statusCode);
-    _log.fine('StorageException for $url', exception, stack);
+    _log.fine('StorageException for $url', exception, stackTrace);
     return exception;
   }
 

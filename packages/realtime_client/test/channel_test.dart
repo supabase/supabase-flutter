@@ -855,24 +855,24 @@ void main() {
     });
   });
 
-  group('track opts forwarding', () {
-    late _OptsCapturingChannel capturingChannel;
+  group('track options forwarding', () {
+    late _OptionsCapturingChannel capturingChannel;
 
     setUp(() {
       socket = RealtimeClient('', timeout: const Duration(milliseconds: 1234));
-      capturingChannel = _OptsCapturingChannel('topic', socket);
+      capturingChannel = _OptionsCapturingChannel('topic', socket);
     });
 
-    test('track forwards a custom non-timeout opt to send', () async {
+    test('track forwards a custom non-timeout option to send', () async {
       await capturingChannel.track({'id': 123}, {'ack': true});
 
-      expect(capturingChannel.capturedOpts, containsPair('ack', true));
+      expect(capturingChannel.capturedOptions, containsPair('ack', true));
     });
 
-    test('track forwards a custom timeout opt to send', () async {
+    test('track forwards a custom timeout option to send', () async {
       await capturingChannel.track({'id': 123}, {'timeout': 2500});
 
-      expect(capturingChannel.capturedOpts, containsPair('timeout', 2500));
+      expect(capturingChannel.capturedOptions, containsPair('timeout', 2500));
     });
 
     test(
@@ -881,17 +881,17 @@ void main() {
         await capturingChannel.track({'id': 123});
 
         expect(
-          capturingChannel.capturedOpts,
+          capturingChannel.capturedOptions,
           containsPair('timeout', const Duration(milliseconds: 1234)),
         );
       },
     );
 
-    test('track keeps custom opts alongside the default timeout', () async {
+    test('track keeps custom options alongside the default timeout', () async {
       await capturingChannel.track({'id': 123}, {'ack': true});
 
       expect(
-        capturingChannel.capturedOpts,
+        capturingChannel.capturedOptions,
         allOf(
           containsPair('ack', true),
           containsPair('timeout', const Duration(milliseconds: 1234)),
@@ -1403,19 +1403,19 @@ class _SetAuthThrowingSocket extends RealtimeClient {
   }
 }
 
-class _OptsCapturingChannel extends RealtimeChannel {
-  _OptsCapturingChannel(super.topic, super.socket);
+class _OptionsCapturingChannel extends RealtimeChannel {
+  _OptionsCapturingChannel(super.topic, super.socket);
 
-  Map<String, dynamic>? capturedOpts;
+  Map<String, dynamic>? capturedOptions;
 
   @override
   Future<ChannelResponse> send({
     required RealtimeListenType type,
     String? event,
     required Map<String, dynamic> payload,
-    Map<String, dynamic> opts = const {},
+    Map<String, dynamic> options = const {},
   }) async {
-    capturedOpts = opts;
+    capturedOptions = options;
     return ChannelResponse.ok;
   }
 }

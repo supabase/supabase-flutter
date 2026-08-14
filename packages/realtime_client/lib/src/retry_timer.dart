@@ -8,7 +8,7 @@ typedef TimerCallback = void Function();
 @internal
 typedef TimerCalculation = int Function(int tries);
 
-/// Creates a timer that accepts a `timerCalc` function to perform
+/// Creates a timer that accepts a `timerCalculation` function to perform
 /// calculated timeout retries, such as exponential backoff.
 ///
 /// ```dart
@@ -28,12 +28,12 @@ typedef TimerCalculation = int Function(int tries);
 @internal
 class RetryTimer {
   final TimerCallback callback;
-  final TimerCalculation timerCalc;
+  final TimerCalculation timerCalculation;
 
   Timer? _timer;
   int _tries = 0;
 
-  RetryTimer(this.callback, this.timerCalc);
+  RetryTimer(this.callback, this.timerCalculation);
 
   /// Cancels any previous timer and reset tries
   void reset() {
@@ -52,7 +52,7 @@ class RetryTimer {
   void scheduleTimeout() {
     if (_timer != null) _timer!.cancel();
 
-    _timer = Timer(Duration(milliseconds: timerCalc(_tries + 1)), () {
+    _timer = Timer(Duration(milliseconds: timerCalculation(_tries + 1)), () {
       _tries = _tries + 1;
       callback();
     });

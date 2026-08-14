@@ -184,12 +184,12 @@ class RealtimePresence {
         final newPresenceRefs = (newPresences as List)
             .map((m) => m.presenceRef as String)
             .toList();
-        final curPresenceRefs = currentPresences
+        final currentPresenceRefs = currentPresences
             .map((m) => m.presenceRef)
             .toList();
         final joinedPresences =
             newPresences
-                    .where((m) => !curPresenceRefs.contains(m.presenceRef))
+                    .where((m) => !currentPresenceRefs.contains(m.presenceRef))
                     .toList()
                 as List<Presence>;
         final leftPresences = currentPresences
@@ -240,11 +240,11 @@ class RealtimePresence {
         final joinedPresenceRefs = state[key]!
             .map((m) => m.presenceRef)
             .toList();
-        final curPresences = currentPresences
+        final remainingPresences = currentPresences
             .where((m) => !joinedPresenceRefs.contains(m.presenceRef))
             .toList();
 
-        state[key]!.insertAll(0, curPresences);
+        state[key]!.insertAll(0, remainingPresences);
       }
 
       onJoin!(key, currentPresences, newPresences);
@@ -287,8 +287,13 @@ class RealtimePresence {
     return _map(presences, (key, presence) => chooser!(key, presence));
   }
 
-  static List<T> _map<T>(Map<String, dynamic> obj, PresenceChooser<T> func) {
-    return obj.keys.map((key) => func(key, obj[key])).toList();
+  static List<T> _map<T>(
+    Map<String, dynamic> presencesByKey,
+    PresenceChooser<T> func,
+  ) {
+    return presencesByKey.keys
+        .map((key) => func(key, presencesByKey[key]))
+        .toList();
   }
 
   /// Remove 'metas' key
@@ -336,10 +341,10 @@ class RealtimePresence {
   }
 
   static Map<String, List<Presence>> _cloneDeep(
-    Map<String, List<Presence>> obj,
+    Map<String, List<Presence>> presencesByKey,
   ) {
     return Map.fromEntries(
-      obj.entries.map(
+      presencesByKey.entries.map(
         (entry) => MapEntry(
           entry.key,
           entry.value.map((presence) => presence.deepClone()).toList(),

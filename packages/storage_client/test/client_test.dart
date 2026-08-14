@@ -636,8 +636,8 @@ void main() {
           ),
         );
 
-    final objectInfo = await storage.from(newBucketName).info(path);
-    expect(objectInfo.metadata, metadata);
+    final objectMetadata = await storage.from(newBucketName).info(path);
+    expect(objectMetadata.metadata, metadata);
   });
 
   test('check if object exists', () async {

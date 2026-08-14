@@ -545,7 +545,7 @@ void main() {
 
   group('channel', () {
     const tTopic = 'topic';
-    const tParams = RealtimeChannelConfig();
+    const channelConfig = RealtimeChannelConfig();
     late RealtimeClient socket;
     setUp(() {
       socket = RealtimeClient(socketEndpoint);
@@ -558,7 +558,7 @@ void main() {
     test('returns channel with given topic and params', () {
       final channel = socket.channel(
         tTopic,
-        tParams,
+        channelConfig,
       );
 
       expect(channel.socket, socket);
@@ -577,7 +577,7 @@ void main() {
 
       final channel = socket.channel(
         tTopic,
-        tParams,
+        channelConfig,
       );
 
       expect(socket.channels, hasLength(1));

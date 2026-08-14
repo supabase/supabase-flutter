@@ -17,8 +17,8 @@ class Push {
   bool sent = false;
   Timer? _timeoutTimer;
   String _ref = '';
-  Map<String, dynamic>? _receivedResp;
-  final List<Hook> _recHooks = [];
+  Map<String, dynamic>? _receivedResponse;
+  final List<Hook> _receiveHooks = [];
   String? _refEvent;
 
   /// The channel
@@ -50,7 +50,7 @@ class Push {
     _cancelRefEvent();
     _ref = '';
     _refEvent = null;
-    _receivedResp = null;
+    _receivedResponse = null;
     sent = false;
     send();
   }
@@ -78,10 +78,10 @@ class Push {
 
   Push receive(String status, Callback callback) {
     if (_hasReceived(status)) {
-      callback(_receivedResp?['response']);
+      callback(_receivedResponse?['response']);
     }
 
-    _recHooks.add(Hook(status, callback));
+    _receiveHooks.add(Hook(status, callback));
     return this;
   }
 
@@ -95,7 +95,7 @@ class Push {
     _channel.onEvents(_refEvent!, ChannelFilter(), (dynamic response, [_]) {
       _cancelRefEvent();
       _cancelTimeout();
-      _receivedResp = response;
+      _receivedResponse = response;
       _matchReceive(response['status'] as String, response['response']);
     });
 
@@ -132,13 +132,13 @@ class Push {
     String status,
     dynamic response,
   ) {
-    _recHooks.where((h) => h.status == status).forEach((h) {
+    _receiveHooks.where((h) => h.status == status).forEach((h) {
       h.callback(response);
     });
   }
 
   bool _hasReceived(String status) {
-    return _receivedResp is Map && _receivedResp?['status'] == status;
+    return _receivedResponse is Map && _receivedResponse?['status'] == status;
   }
 }
 

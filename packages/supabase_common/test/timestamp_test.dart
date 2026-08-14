@@ -32,7 +32,7 @@ void main() {
 
     test('throws when the value is missing', () {
       expect(
-        () => parseIso8601(<String, dynamic>{}, 'created_at'),
+        () => parseIso8601({}, 'created_at'),
         throwsA(
           isA<FormatException>().having(
             (exception) => exception.message,
@@ -146,7 +146,7 @@ void main() {
     });
 
     test('returns null when the value is absent', () {
-      expect(tryParseIso8601(<String, dynamic>{}, 'created_at'), isNull);
+      expect(tryParseIso8601({}, 'created_at'), isNull);
     });
 
     test('parses a present value', () {

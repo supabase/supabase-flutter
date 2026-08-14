@@ -98,7 +98,7 @@ class _LoginFormState extends State<_LoginForm> {
         email: _emailController.text,
         password: _passwordController.text,
       );
-    } catch (e) {
+    } catch (_) {
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('Login failed'),
@@ -123,7 +123,7 @@ class _LoginFormState extends State<_LoginForm> {
         email: _emailController.text,
         password: _passwordController.text,
       );
-    } catch (e) {
+    } catch (_) {
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('Signup failed'),
@@ -211,7 +211,7 @@ class _ProfileFormState extends State<_ProfileForm> {
           _websiteController.text = data['website'];
         });
       }
-    } catch (e) {
+    } catch (_) {
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('Error occurred while getting profile'),
@@ -243,7 +243,7 @@ class _ProfileFormState extends State<_ProfileForm> {
           content: Text('Saved profile'),
         ),
       );
-    } catch (e) {
+    } catch (_) {
       scaffoldMessenger.showSnackBar(
         const SnackBar(
           content: Text('Error saving profile'),

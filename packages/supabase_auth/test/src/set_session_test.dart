@@ -41,11 +41,11 @@ class _SetSessionMockClient extends BaseClient {
 
     if (request.url.path.contains('/token')) {
       // Refresh-token fallback response with a freshly minted access token.
-      final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
-      final iat = exp - 3600;
+      final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
+      final issuedAt = expiresAt - 3600;
       final freshAccessToken = _makeRawJwt({
-        'exp': exp,
-        'iat': iat,
+        'exp': expiresAt,
+        'iat': issuedAt,
         'sub': 'mock-user-id',
       });
       return StreamedResponse(
@@ -98,10 +98,10 @@ void main() {
   group('setSession — validation edge cases', () {
     test('empty refresh token with a non-null access token throws before '
         'inspecting the access token', () async {
-      final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
+      final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       final accessToken = _makeRawJwt({
-        'exp': exp,
-        'iat': exp - 3600,
+        'exp': expiresAt,
+        'iat': expiresAt - 3600,
         'sub': 'mock-user-id',
       });
 
@@ -158,11 +158,11 @@ void main() {
     test(
       'expiresIn equals exp minus iat when both claims are present',
       () async {
-        final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
-        final exp = iat + 3600;
+        final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
+        final expiresAt = issuedAt + 3600;
         final accessToken = _makeRawJwt({
-          'exp': exp,
-          'iat': iat,
+          'exp': expiresAt,
+          'iat': issuedAt,
           'sub': 'mock-user-id',
         });
 
@@ -172,14 +172,17 @@ void main() {
         );
 
         // expiresIn should be the total token lifetime (exp - iat = 3600).
-        expect(response.session?.expiresIn, equals(exp - iat));
+        expect(response.session?.expiresIn, equals(expiresAt - issuedAt));
       },
     );
 
     test('expiresIn is null when iat claim is absent', () async {
-      final exp = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
+      final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       // JWT without iat.
-      final accessToken = _makeRawJwt({'exp': exp, 'sub': 'mock-user-id'});
+      final accessToken = _makeRawJwt({
+        'exp': expiresAt,
+        'sub': 'mock-user-id',
+      });
 
       final response = await client.setSession(
         'some-refresh-token',
@@ -190,11 +193,11 @@ void main() {
     });
 
     test('expiresAt matches the exp claim in the JWT', () async {
-      final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
-      final exp = iat + 3600;
+      final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
+      final expiresAt = issuedAt + 3600;
       final accessToken = _makeRawJwt({
-        'exp': exp,
-        'iat': iat,
+        'exp': expiresAt,
+        'iat': issuedAt,
         'sub': 'mock-user-id',
       });
 
@@ -206,19 +209,21 @@ void main() {
       // expiresAt is re-derived from the JWT's own exp, not from expiresIn.
       expect(
         response.session?.expiresAt,
-        equals(DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true)),
+        equals(
+          DateTime.fromMillisecondsSinceEpoch(expiresAt * 1000, isUtc: true),
+        ),
       );
     });
 
     test(
       'returned session preserves the supplied access and refresh tokens',
       () async {
-        final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
-        final exp = iat + 3600;
+        final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
+        final expiresAt = issuedAt + 3600;
         const refreshToken = 'my-refresh-token';
         final accessToken = _makeRawJwt({
-          'exp': exp,
-          'iat': iat,
+          'exp': expiresAt,
+          'iat': issuedAt,
           'sub': 'mock-user-id',
         });
 
@@ -236,11 +241,11 @@ void main() {
 
   group('setSession — auth state events', () {
     test('fast path emits signedIn (not tokenRefreshed)', () async {
-      final iat = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
-      final exp = iat + 3600;
+      final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
+      final expiresAt = issuedAt + 3600;
       final accessToken = _makeRawJwt({
-        'exp': exp,
-        'iat': iat,
+        'exp': expiresAt,
+        'iat': issuedAt,
         'sub': 'mock-user-id',
       });
 

@@ -132,9 +132,9 @@ enum PresenceEvent {
   leave;
 
   @internal
-  static PresenceEvent fromString(String val) {
+  static PresenceEvent fromString(String value) {
     for (final event in PresenceEvent.values) {
-      if (event.name == val) {
+      if (event.name == value) {
         return event;
       }
     }

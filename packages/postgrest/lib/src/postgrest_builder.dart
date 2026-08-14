@@ -279,8 +279,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///   .from('table')
   ///   .select()
   ///   .abortSignal(abortSignal.future);
-  /// } on RequestAbortedException catch (e) {
-  ///  print('Request was aborted: $e');
+  /// } on RequestAbortedException catch (error) {
+  ///  print('Request was aborted: $error');
   /// }
   /// ```
   ///
@@ -292,8 +292,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///   .from('table')
   ///   .select()
   ///   .abortSignal(Future.delayed(Duration(seconds: 5)));
-  /// } on RequestAbortedException catch (e) {
-  ///  print('Request was aborted: $e');
+  /// } on RequestAbortedException catch (error) {
+  ///  print('Request was aborted: $error');
   /// }
   /// ```
   PostgrestBuilder<T, S, R> abortSignal(Future<void> abortSignal) {
@@ -338,7 +338,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (method != HttpMethod.get && method != HttpMethod.head) {
       execHeaders['Content-Type'] = 'application/json';
     }
-    final bodyStr = jsonEncode(_body);
+    final bodyString = jsonEncode(_body);
     _log.finest("Request: ${method.value} $_url");
 
     final requestTimeout = _requestTimeout;
@@ -375,7 +375,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       request.headers.addAll(execHeaders);
       switch (method) {
         case HttpMethod.post || HttpMethod.put || HttpMethod.patch:
-          request.body = bodyStr;
+          request.body = bodyString;
         case HttpMethod.get || HttpMethod.head || HttpMethod.delete:
           break;
       }
@@ -597,30 +597,30 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     throw error;
   }
 
-  /// Get new Uri with updated queryParams
+  /// Get new Uri with updated query parameters
   /// Uses lists to allow multiple values for the same key
   ///
   /// [url] may be used to update based on a different url than the current one
   Uri appendSearchParams(String key, String value, [Uri? url]) {
-    final searchParams = Map<String, dynamic>.of(
+    final searchParameters = Map<String, dynamic>.of(
       (url ?? _url).queryParametersAll,
     );
-    searchParams[key] = [...?searchParams[key], value];
-    return (url ?? _url).replace(queryParameters: searchParams);
+    searchParameters[key] = [...?searchParameters[key], value];
+    return (url ?? _url).replace(queryParameters: searchParameters);
   }
 
-  /// Get new Uri with overridden queryParams
+  /// Get new Uri with overridden query parameters
   ///
   /// [url] may be used to update based on a different url than the current one
   Uri overrideSearchParams(String key, String value, [Uri? url]) {
-    final searchParams = Map<String, dynamic>.of(
+    final searchParameters = Map<String, dynamic>.of(
       (url ?? _url).queryParametersAll,
     );
-    searchParams[key] = value;
-    return (url ?? _url).replace(queryParameters: searchParams);
+    searchParameters[key] = value;
+    return (url ?? _url).replace(queryParameters: searchParameters);
   }
 
-  /// Convert list filter to query params string
+  /// Convert list filter to query parameters string
   String _cleanFilterArray(List<dynamic> filter) {
     if (filter.every((element) => element is num)) {
       return filter.map((s) => '$s').join(',');
@@ -644,8 +644,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       then((value) {
             controller.add(value);
           })
-          .catchError((Object error, StackTrace stack) {
-            controller.addError(error, stack);
+          .catchError((Object error, StackTrace stackTrace) {
+            controller.addError(error, stackTrace);
           })
           .whenComplete(() {
             unawaited(controller.close());
@@ -682,22 +682,22 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     // frames are still on the stack and appear in error traces.
     final callerTrace = StackTrace.current;
 
-    StackTrace enrichStack(StackTrace stack) =>
-        StackTrace.fromString('$stack\n<async call site>\n$callerTrace');
+    StackTrace enrichStack(StackTrace stackTrace) =>
+        StackTrace.fromString('$stackTrace\n<async call site>\n$callerTrace');
 
     if (onError == null) {
       return _execute().then(
         onValue,
-        onError: (Object error, StackTrace stack) {
-          Error.throwWithStackTrace(error, enrichStack(stack));
+        onError: (Object error, StackTrace stackTrace) {
+          Error.throwWithStackTrace(error, enrichStack(stackTrace));
         },
       );
     }
 
     return _execute().then(
       onValue,
-      onError: (Object error, StackTrace stack) async {
-        final enrichedStack = enrichStack(stack);
+      onError: (Object error, StackTrace stackTrace) async {
+        final enrichedStack = enrichStack(stackTrace);
         final FutureOr<U> result;
         if (onError is Function(Object, StackTrace)) {
           result = onError(error, enrichedStack);
