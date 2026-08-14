@@ -593,7 +593,7 @@ supabaseLogger.onRecord.listen((record) {
 - `supabase_auth`: `Logger('supabase.auth')`
 - `realtime_client`: `Logger('supabase.realtime')`
 - `storage_client`: `Logger('supabase.storage')`
-- `functions_client`: `Logger('supabase.functions')`
+- `supabase_functions`: `Logger('supabase.functions')`
 
 ---
 

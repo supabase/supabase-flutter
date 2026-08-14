@@ -1,6 +1,6 @@
 // ignore_for_file: avoid_print
 
-import 'package:functions_client/functions_client.dart';
+import 'package:supabase_functions/supabase_functions.dart';
 
 /// Example to use with Supabase Edge Functions https://supabase.com/
 Future<void> main() async {

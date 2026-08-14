@@ -16,7 +16,7 @@ The repository follows a layered dependency structure:
 - **postgrest**: Database query client with ORM-style API
 - **realtime_client**: WebSocket client for real-time subscriptions
 - **storage_client**: File storage client with retry logic
-- **functions_client**: Edge functions invocation client
+- **supabase_functions**: Edge functions invocation client
 - **yet_another_json_isolate**: JSON parsing in separate isolate for performance
 
 Key architectural patterns:

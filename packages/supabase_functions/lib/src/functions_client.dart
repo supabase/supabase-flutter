@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:functions_client/src/constants.dart';
-import 'package:functions_client/src/types.dart';
-import 'package:functions_client/src/version.dart';
+import 'package:supabase_functions/src/constants.dart';
+import 'package:supabase_functions/src/types.dart';
+import 'package:supabase_functions/src/version.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show MultipartRequest;
 import 'package:logging/logging.dart';
