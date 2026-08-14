@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:functions_client/src/functions_client.dart';
 import 'package:functions_client/src/types.dart';
 import 'package:http/http.dart';
+import 'package:logging/logging.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -148,6 +149,52 @@ void main() {
       },
     );
 
+    test('the logs redact credential headers', () async {
+      final messages = <String>[];
+      final previousLevel = Logger.root.level;
+      Logger.root.level = Level.ALL;
+      final subscription = Logger.root.onRecord.listen(
+        (record) => messages.add(record.message),
+      );
+      addTearDown(() async {
+        await subscription.cancel();
+        Logger.root.level = previousLevel;
+      });
+
+      final client = FunctionsClient(
+        "",
+        {
+          'Authorization': 'Bearer super-secret-token',
+          'apikey': 'the-anon-key',
+          'x-region': 'eu-west-2',
+        },
+        httpClient: CustomHttpClient(),
+      );
+      await client.invoke('function');
+
+      // No log at all, whether from the constructor or the request, may carry
+      // the values.
+      expect(messages, isNotEmpty);
+      for (final message in messages) {
+        expect(message, isNot(contains('super-secret-token')));
+        expect(message, isNot(contains('the-anon-key')));
+      }
+
+      final initializeLog = messages.singleWhere(
+        (message) => message.startsWith('Initialize with headers:'),
+      );
+      expect(initializeLog, contains('<redacted>'));
+
+      final requestLog = messages.singleWhere(
+        (message) => message.startsWith('Request:'),
+      );
+      expect(requestLog, contains('<redacted>'));
+      // Every name, and any header that is not a credential, stays readable.
+      expect(requestLog, contains('Authorization'));
+      expect(requestLog, contains('apikey'));
+      expect(requestLog, contains('eu-west-2'));
+    });
+
     test('function call', () async {
       final response = await functionsCustomHttpClient.invoke('function');
       expect(
@@ -251,8 +298,32 @@ void main() {
 
         request as Request;
         expect(request.body, 'ExampleText');
-        expect(request.headers["Content-Type"], contains("text/plain"));
+        expect(
+          request.headers["Content-Type"],
+          equals("text/plain; charset=utf-8"),
+        );
       });
+
+      test(
+        'string body is encoded with the charset the caller asked for',
+        () async {
+          await functionsCustomHttpClient.invoke(
+            'function',
+            headers: {'Content-Type': 'text/plain; charset=iso-8859-1'},
+            body: 'Ærlig',
+          );
+
+          final request = customHttpClient.receivedRequests.last;
+          expect(request, isA<Request>());
+
+          request as Request;
+          expect(request.bodyBytes, latin1.encode('Ærlig'));
+          expect(
+            request.headers["Content-Type"],
+            equals("text/plain; charset=iso-8859-1"),
+          );
+        },
+      );
 
       test('list is properly encoded', () async {
         await functionsCustomHttpClient.invoke('function', body: [1, 2, 3]);

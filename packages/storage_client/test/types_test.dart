@@ -339,6 +339,17 @@ void main() {
       expect(exception.statusCode, 404);
     });
 
+    test('fromJson tolerates unexpected field types', () {
+      final exception = StorageApiException.fromJson({
+        'message': {'nested': 'object'},
+        'error': 502,
+      }, 502);
+
+      expect(exception.message, '{message: {nested: object}, error: 502}');
+      expect(exception.errorCode, '502');
+      expect(exception.statusCode, 502);
+    });
+
     test(
       'fromJson falls back to the response status code and stringified body',
       () {

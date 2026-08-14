@@ -37,7 +37,7 @@ class FunctionsClient {
       "Initialize FunctionsClient v$version with url '$url' and region "
       "'$region'",
     );
-    _log.finest("Initialize with headers: $headers");
+    _log.finest("Initialize with headers: ${headers.redacted}");
   }
 
   /// Getter for the headers
@@ -151,14 +151,6 @@ class FunctionsClient {
         'x-region': effectiveRegion,
     };
 
-    if (body != null &&
-        !finalHeaders.keys.any((k) => k.toLowerCase() == 'content-type')) {
-      finalHeaders['Content-Type'] = switch (body) {
-        Uint8List() => 'application/octet-stream',
-        String() => 'text/plain',
-        _ => 'application/json',
-      };
-    }
     final http.BaseRequest request;
     if (files != null) {
       assert(
@@ -167,12 +159,15 @@ class FunctionsClient {
       );
       final fields = (body as Map?)?.cast<String, String>();
 
+      // No content type is set here: a multipart request generates its own
+      // boundary while it is being finalized and sets the header itself.
       request =
           http.AbortableMultipartRequest(
               method.value,
               uri,
               abortTrigger: abortSignal,
             )
+            ..headers.addAll(finalHeaders)
             ..fields.addAll(fields ?? {})
             ..files.addAll(files);
     } else {
@@ -180,42 +175,45 @@ class FunctionsClient {
         method.value,
         uri,
         abortTrigger: abortSignal,
-      );
+      )..headers.addAll(finalHeaders);
 
-      if (body == null) {
-        // No body to set
-      } else if (body is String) {
-        bodyRequest.body = body;
-      } else if (body is Uint8List) {
-        bodyRequest.bodyBytes = body;
-      } else {
-        final bodyString = await _isolate.encode(body);
-        bodyRequest.body = bodyString;
+      if (body != null) {
+        // The content type is set before the body, so that a body given as a
+        // string is encoded with the charset the caller asked for, and so that
+        // the charset `Request.body` fills in for itself is kept.
+        bodyRequest.headers.putIfAbsent(
+          'Content-Type',
+          () => switch (body) {
+            Uint8List() => 'application/octet-stream',
+            String() => 'text/plain',
+            _ => 'application/json',
+          },
+        );
+
+        if (body is String) {
+          bodyRequest.body = body;
+        } else if (body is Uint8List) {
+          bodyRequest.bodyBytes = body;
+        } else {
+          bodyRequest.body = await _isolate.encode(body);
+        }
       }
       request = bodyRequest;
     }
 
-    finalHeaders.forEach((key, value) {
-      request.headers[key] = value;
-    });
-
-    _log.finest('Request: ${request.method} ${request.url} ${request.headers}');
+    _log.finest(
+      'Request: ${request.method} ${request.url} ${request.headers.redacted}',
+    );
 
     final http.StreamedResponse response;
     try {
-      response = await (_httpClient?.send(request) ?? request.send());
+      response = await request.sendWith(_httpClient);
     } on http.RequestAbortedException {
       rethrow;
     } catch (error) {
       throw FunctionsFetchException(details: error);
     }
-    final responseType =
-        (response.headers['Content-Type'] ??
-                response.headers['content-type'] ??
-                'text/plain')
-            .split(';')[0]
-            .trim()
-            .toLowerCase();
+    final responseType = response.headers.mediaType ?? 'text/plain';
 
     final isRelayError = response.headers['x-relay-error'] == 'true';
     final isSuccessStatus =

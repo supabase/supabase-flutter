@@ -28,18 +28,27 @@ class PostgrestApiException extends SupabaseException
     this.hint,
   }) : super(message);
 
+  /// Builds an exception from an error response body.
+  ///
+  /// A JSON object is no guarantee that its fields carry the types PostgREST
+  /// documents, since a proxy or gateway in front of it can answer with a shape
+  /// of its own, so every field is read defensively. [message] is used when the
+  /// body reports none.
   factory PostgrestApiException.fromJson(
     Map<String, dynamic> json, {
     required int statusCode,
     String? message,
     String? details,
   }) {
+    final reportedMessage = json['message'];
     return PostgrestApiException(
-      message: (json['message'] ?? message) as String,
+      message: reportedMessage is String
+          ? reportedMessage
+          : (message ?? json.toString()),
       statusCode: statusCode,
-      errorCode: json['code'] as String?,
+      errorCode: json['code']?.toString(),
       details: (json['details'] ?? details),
-      hint: json['hint'] as String?,
+      hint: json['hint']?.toString(),
     );
   }
 

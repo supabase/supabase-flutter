@@ -611,6 +611,19 @@ void main() {
       );
     });
 
+    test('a JSON error body with unexpected field types still throws '
+        'a PostgrestApiException', () async {
+      await expectLater(
+        () => postgrestCustomHttpClient.from('gateway-json-error').select(),
+        throwsA(
+          isA<PostgrestApiException>()
+              .having((e) => e.statusCode, 'statusCode', 502)
+              .having((e) => e.message, 'message', 'Bad gateway')
+              .having((e) => e.errorCode, 'errorCode', '502'),
+        ),
+      );
+    });
+
     test('non-JSON body on 2xx response with maybeSingle throws', () async {
       await expectLater(
         () => postgrestCustomHttpClient
