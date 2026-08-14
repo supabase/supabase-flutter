@@ -350,6 +350,34 @@ void main() {
       expect(exception.statusCode, 502);
     });
 
+    test('fromJson reads the service error code apart from statusCode', () {
+      final exception = StorageApiException.fromJson({
+        'message': 'Object not found',
+        'statusCode': '404',
+        'error': 'not_found',
+        'code': 'NoSuchKey',
+      }, 404);
+      expect(exception.errorCode, 'NoSuchKey');
+      expect(exception.statusCode, 404);
+    });
+
+    test('fromJson falls back to error when the body carries no code', () {
+      final exception = StorageApiException.fromJson({
+        'message': 'Object not found',
+        'statusCode': '404',
+        'error': 'not_found',
+      }, 404);
+      expect(exception.errorCode, 'not_found');
+    });
+
+    test('fromJson leaves the error code null when the body has neither', () {
+      final exception = StorageApiException.fromJson({
+        'message': 'not found',
+        'statusCode': '404',
+      }, 404);
+      expect(exception.errorCode, isNull);
+    });
+
     test(
       'fromJson falls back to the response status code and stringified body',
       () {

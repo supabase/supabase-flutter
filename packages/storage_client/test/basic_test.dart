@@ -558,6 +558,49 @@ void main() {
       );
     });
 
+    test('surfaces the service error code from the response body', () async {
+      addTearDown(() => customHttpClient.statusCode = 201);
+      customHttpClient.statusCode = 404;
+      // Mirrors a real storage payload, which sends statusCode, error and code.
+      customHttpClient.response = {
+        'statusCode': '404',
+        'error': 'not_found',
+        'code': 'NoSuchKey',
+        'message': 'Object not found',
+      };
+
+      await expectLater(
+        client.from('public_bucket').download('missing.txt'),
+        throwsA(
+          isA<StorageApiException>()
+              .having((e) => e.errorCode, 'errorCode', 'NoSuchKey')
+              .having((e) => e.statusCode, 'statusCode', 404)
+              .having((e) => e.message, 'message', 'Object not found'),
+        ),
+      );
+    });
+
+    test('falls back to error when the response body has no code', () async {
+      addTearDown(() => customHttpClient.statusCode = 201);
+      customHttpClient.statusCode = 404;
+      customHttpClient.response = {
+        'statusCode': '404',
+        'error': 'not_found',
+        'message': 'Object not found',
+      };
+
+      await expectLater(
+        client.from('public_bucket').download('missing.txt'),
+        throwsA(
+          isA<StorageException>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            'not_found',
+          ),
+        ),
+      );
+    });
+
     test('should get public URL of a path', () {
       final response = client.from('files').getPublicUrl('b.txt');
       expect(response, '$objectUrl/public/files/b.txt');
