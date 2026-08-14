@@ -768,7 +768,7 @@ class AuthClient {
   ///
   /// If you have built an organization-specific login page, you can use the
   /// organization's SSO Identity Provider UUID directly instead.
-  Future<String> getSSOSignInUrl({
+  Future<Uri> getSSOSignInUrl({
     String? providerId,
     String? domain,
     String? redirectTo,
@@ -799,7 +799,7 @@ class AuthClient {
       ),
     );
 
-    return response['url'] as String;
+    return Uri.parse(response['url'] as String);
   }
 
   /// Returns a new session, regardless of expiry status. Takes in an optional

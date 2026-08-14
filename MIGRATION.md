@@ -76,6 +76,20 @@ example to hide it in an import.
 Nothing about the wire format changes. The `X-Client-Info` header still identifies this client as
 `gotrue-dart`, and the `gotrue_meta_security` field in captcha payloads is unchanged.
 
+### `AuthClient.getSSOSignInUrl` returns a `Uri`
+
+`getSSOSignInUrl()` now returns a `Future<Uri>` rather than a `Future<String>`.
+
+```dart
+// Before
+final String ssoUrl = await supabase.auth.getSSOSignInUrl(domain: 'company.com');
+
+// After
+final Uri ssoUrl = await supabase.auth.getSSOSignInUrl(domain: 'company.com');
+```
+
+If you need the URL string, use `ssoUrl.toString()`.
+
 ### `RealtimeClient.connectionState` is now typed
 
 `RealtimeClient` used to expose the socket state twice: a typed `connState` field and a stringly

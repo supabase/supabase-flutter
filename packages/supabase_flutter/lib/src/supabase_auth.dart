@@ -431,7 +431,7 @@ extension AuthClientSignInProvider on AuthClient {
       captchaToken: captchaToken,
     );
     return await launchUrl(
-      Uri.parse(ssoUrl),
+      ssoUrl,
       mode: launchMode,
       webOnlyWindowName: '_self',
     );

@@ -83,7 +83,7 @@ features:
       - AuthClientSignInProvider.generateRawNonce
   auth.sign_in.sign_in_with_sso:
     status: implemented
-    note: "Split across two methods: getSSOSignInUrl returns Future<String> (the URL) rather than the structured {url} response used by JS, and supabase_flutter's signInWithSSO launches that URL in the browser and returns Future<bool>."
+    note: "Split across two methods: getSSOSignInUrl returns Future<Uri> (the URL) rather than the structured {url} response used by JS, and supabase_flutter's signInWithSSO launches that URL in the browser and returns Future<bool>."
     symbols:
       - AuthClient.getSSOSignInUrl
       - AuthClientSignInProvider.signInWithSSO
