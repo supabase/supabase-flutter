@@ -90,6 +90,24 @@ void main() {
       );
     });
 
+    test('exhaustive switch over FunctionException subtypes', () {
+      String describeError(FunctionException exception) {
+        return switch (exception) {
+          FunctionsFetchException(:final message) => 'fetch: $message',
+          FunctionsRelayException(:final statusCode) => 'relay: $statusCode',
+          FunctionsApiException(:final statusCode) => 'api: $statusCode',
+        };
+      }
+
+      const fetchError = FunctionsFetchException(message: 'Connection failed');
+      const relayError = FunctionsRelayException(statusCode: 500);
+      const apiError = FunctionsApiException(statusCode: 400);
+
+      expect(describeError(fetchError), 'fetch: Connection failed');
+      expect(describeError(relayError), 'relay: 500');
+      expect(describeError(apiError), 'api: 400');
+    });
+
     test(
       'error response with a streaming content type exposes the body',
       () async {

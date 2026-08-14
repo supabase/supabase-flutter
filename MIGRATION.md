@@ -831,6 +831,32 @@ Four changes go beyond a rename:
 `RealtimeSubscribeException` is not part of this hierarchy: it reports a channel subscription
 outcome rather than a request failure, and carries a `RealtimeSubscribeStatus` instead of a message.
 
+### `FunctionException` is sealed
+
+`FunctionException` is now a `sealed class`, so a switch over it is exhaustive at compile time and
+adding a failure mode in a later version is a compile error rather than a case that silently falls
+through:
+
+```dart
+try {
+  await supabase.functions.invoke('hello');
+} on FunctionException catch (error) {
+  final message = switch (error) {
+    FunctionsFetchException() => 'The request never reached the function',
+    FunctionsRelayException() => 'The relay reported an error',
+    FunctionsApiException() => 'The function returned ${error.statusCode}',
+  };
+}
+```
+
+`FunctionsRelayException` extends `FunctionsApiException`, so it has to come first for its case to
+be reachable. Only `FunctionsFetchException` and `FunctionsApiException` are needed for the switch
+to be exhaustive.
+
+`sealed` implies `abstract`, so a bare `FunctionException` can no longer be constructed, and code
+outside `supabase_functions` can no longer extend or implement it. Name one of the three subtypes
+instead, which is what the client throws in every case.
+
 ### The Iceberg exceptions join the same hierarchy
 
 `IcebergException` used `0` as the status code when no response was received, so callers
