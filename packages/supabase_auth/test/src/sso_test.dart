@@ -39,7 +39,8 @@ void main() {
       final mockClient = _CapturingMockHttpClient(
         responseBody: {
           'url':
-              'https://idp.example.com/sso/saml/login?id=test-id&code_challenge=xyz',
+              'https://idp.example.com/sso/saml/login?id=test-id'
+              '&code_challenge=xyz',
         },
       );
 
@@ -59,7 +60,8 @@ void main() {
         uri,
         equals(
           Uri.parse(
-            'https://idp.example.com/sso/saml/login?id=test-id&code_challenge=xyz',
+            'https://idp.example.com/sso/saml/login?id=test-id'
+            '&code_challenge=xyz',
           ),
         ),
       );
@@ -78,7 +80,8 @@ void main() {
         final mockClient = _CapturingMockHttpClient(
           responseBody: {
             'url':
-                'https://idp.example.com/sso/oidc/auth?domain=company.com&redirect_to=my-app%3A%2F%2Fcallback',
+                'https://idp.example.com/sso/oidc/auth?domain=company.com'
+                '&redirect_to=my-app%3A%2F%2Fcallback',
           },
         );
 
