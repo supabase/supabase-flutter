@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:realtime_client/realtime_client.dart';
-import 'package:realtime_client/src/constants.dart';
+import 'package:supabase_realtime/supabase_realtime.dart';
+import 'package:supabase_realtime/src/constants.dart';
 import 'package:test/test.dart';
 
 void main() {

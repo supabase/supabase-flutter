@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:realtime_client/realtime_client.dart';
-import 'package:realtime_client/src/constants.dart';
-import 'package:realtime_client/src/push.dart';
-import 'package:realtime_client/src/types.dart';
+import 'package:supabase_realtime/supabase_realtime.dart';
+import 'package:supabase_realtime/src/constants.dart';
+import 'package:supabase_realtime/src/push.dart';
+import 'package:supabase_realtime/src/types.dart';
 import 'package:test/test.dart';
 
 void main() {

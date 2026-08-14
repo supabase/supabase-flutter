@@ -26,13 +26,13 @@ jobs:
       matrix:
         package:
           - postgrest
-          - realtime_client
           - storage_client
           - supabase
           - supabase_auth
           - supabase_common
           - supabase_flutter
           - supabase_functions
+          - supabase_realtime
           - supabase_typegen
           - yet_another_json_isolate
     steps:

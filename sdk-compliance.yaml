@@ -14,8 +14,9 @@
 #                           implementation would add no real capability. A note
 #                           explains why.
 #
-# Verified against the source in this repository (packages/supabase_auth, postgrest,
-# storage_client, realtime_client, supabase_functions, supabase, supabase_flutter).
+# Verified against the source in this repository (packages/supabase_auth,
+# postgrest, storage_client, supabase_realtime, supabase_functions, supabase,
+# supabase_flutter).
 # Unlisted features default to not_implemented.
 
 sdk: flutter

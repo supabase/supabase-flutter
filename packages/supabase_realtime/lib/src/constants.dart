@@ -1,5 +1,5 @@
 import 'package:meta/meta.dart';
-import 'package:realtime_client/src/version.dart';
+import 'package:supabase_realtime/src/version.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class Constants {

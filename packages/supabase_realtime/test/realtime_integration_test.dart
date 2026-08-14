@@ -4,7 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:postgres/postgres.dart';
-import 'package:realtime_client/realtime_client.dart';
+import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:test/test.dart';
 
 import 'utils/realtime_test_utils.dart';

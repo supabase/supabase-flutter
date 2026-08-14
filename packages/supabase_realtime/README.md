@@ -4,7 +4,7 @@
     <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
   </a>
 
-  <h1 align="center">realtime_client</h1>
+  <h1 align="center">supabase_realtime</h1>
 
   <p align="center">
     Dart client library for <a href="https://supabase.com/docs/guides/realtime">Supabase Realtime</a>, to listen to changes in a PostgreSQL database over websockets.
@@ -19,10 +19,14 @@
 
 <div align="center">
 
-[![pub package](https://img.shields.io/pub/v/realtime_client.svg)](https://pub.dev/packages/realtime_client)
+[![pub package](https://img.shields.io/pub/v/supabase_realtime.svg)](https://pub.dev/packages/supabase_realtime)
 [![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
 
 </div>
+
+> **Note**
+>
+> This package was published as `realtime_client` up to and including v2. That package is discontinued in favour of `supabase_realtime`.
 
 ## Docs
 

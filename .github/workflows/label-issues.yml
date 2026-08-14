@@ -27,6 +27,7 @@ jobs:
           "storage_client": "storage",
           "realtime": "realtime",
           "realtime_client": "realtime",
+          "supabase_realtime": "realtime",
           "postgrest": "postgrest",
           "functions": "functions",
           "functions_client": "functions",

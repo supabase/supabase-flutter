@@ -6,7 +6,7 @@ library;
 export 'package:supabase_functions/supabase_functions.dart';
 export 'package:supabase_auth/supabase_auth.dart';
 export 'package:postgrest/postgrest.dart';
-export 'package:realtime_client/realtime_client.dart';
+export 'package:supabase_realtime/supabase_realtime.dart';
 export 'package:storage_client/storage_client.dart';
 
 export 'src/realtime_client_options.dart';

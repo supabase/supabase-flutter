@@ -1,4 +1,4 @@
-import 'package:realtime_client/realtime_client.dart';
+import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:test/test.dart';
 
 void main() {
