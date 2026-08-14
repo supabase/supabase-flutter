@@ -47,7 +47,7 @@ class Session {
     }
     return Session(
       accessToken: json['access_token'] as String,
-      expiresIn: json['expires_in'] as int?,
+      expiresIn: (json['expires_in'] as num?)?.toInt(),
       refreshToken: json['refresh_token'] as String?,
       tokenType: json['token_type'] as String,
       providerToken: json['provider_token'] as String?,

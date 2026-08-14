@@ -79,9 +79,9 @@ class JwtPayload {
       issuer: json['iss'] as String?,
       subject: json['sub'] as String?,
       audience: json['aud'],
-      expiresAt: json['exp'] as int?,
-      notBefore: json['nbf'] as int?,
-      issuedAt: json['iat'] as int?,
+      expiresAt: (json['exp'] as num?)?.toInt(),
+      notBefore: (json['nbf'] as num?)?.toInt(),
+      issuedAt: (json['iat'] as num?)?.toInt(),
       jwtId: json['jti'] as String?,
       claims: Map<String, dynamic>.of(json),
     );
