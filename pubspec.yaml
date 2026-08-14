@@ -7,6 +7,7 @@ environment:
 
 workspace:
   - packages/supabase_functions
+  - packages/iceberg
   - packages/supabase_auth
   - packages/postgrest
   - packages/supabase_realtime

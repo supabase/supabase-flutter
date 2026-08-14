@@ -5,7 +5,7 @@ versions of the Supabase Flutter SDK, together with the steps required to migrat
 
 All packages in this repository are released together for a major version, so a single section
 covers `supabase_flutter`, `supabase`, `supabase_auth`, `postgrest`, `supabase_realtime`,
-`supabase_storage` and `supabase_functions`. Every symbol mentioned here is re-exported from
+`supabase_storage`, `iceberg` and `supabase_functions`. Every symbol mentioned here is re-exported from
 `supabase_flutter`, so the snippets apply whether you depend on the individual package or on the
 Flutter one.
 
@@ -972,6 +972,25 @@ try {
 
 Exhaustive switches over the sealed hierarchy still compile with the same set of cases, since the
 new base is sealed and every concrete subtype is unchanged.
+
+### The Iceberg catalog moved to its own package
+
+`IcebergRestCatalog`, the exceptions above and the table and namespace types now live in
+`iceberg`, mirroring the split between `storage-js` and `iceberg-js`. `supabase_storage`
+depends on it and re-exports the whole surface, so importing
+`package:supabase_storage/supabase_storage.dart` or `package:supabase_flutter/supabase_flutter.dart`
+keeps working unchanged, and `storage.analyticsCatalog()` is still how you get a catalog for an
+analytics bucket.
+
+Depend on `iceberg` directly to talk to an Iceberg REST Catalog without the rest of Storage:
+
+```dart
+final catalog = IcebergRestCatalog(
+  baseUrl: 'https://example.com/iceberg',
+  headers: {'Authorization': 'Bearer $token'},
+  warehouse: 'my-warehouse',
+);
+```
 
 ### Abbreviations in the public API are spelled out
 

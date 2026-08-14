@@ -1,13 +1,12 @@
+import 'package:iceberg/iceberg.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_storage/src/storage_constants.dart';
-import 'package:supabase_storage/src/iceberg/iceberg_rest_catalog.dart';
-import 'package:supabase_storage/src/iceberg/iceberg_types.dart';
 import 'package:supabase_storage/src/storage_bucket_api.dart';
 import 'package:supabase_storage/src/storage_file_api.dart';
 import 'package:supabase_storage/src/vector_client.dart';
 import 'package:supabase_storage/src/version.dart';
-import 'package:supabase_common/supabase_common.dart';
 
 class SupabaseStorageClient extends StorageBucketApi {
   final int _defaultRetryAttempts;
