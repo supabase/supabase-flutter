@@ -244,15 +244,28 @@ int? toInt(dynamic value) {
   if (parsedInt != null) {
     return parsedInt;
   }
-  final parsedDouble = double.tryParse(stringValue);
-  if (parsedDouble == null) {
+  final match = _integerWithZeroFraction.firstMatch(stringValue);
+  if (match == null) {
     return null;
   }
-  return _wholeDoubleToInt(parsedDouble);
+  return int.tryParse(match.group(1)!);
 }
+
+/// Matches an integer with a decimal fraction of only zeros, such as `10.0`
+/// or `-3.000`. Parsing the integer part directly keeps values above 2^53
+/// exact, which a round trip through [double] would not.
+final _integerWithZeroFraction = RegExp(r'^([+-]?\d+)\.0+$');
+
+/// The lowest and highest [double] values enclosing the native 64-bit
+/// integer range, -2^63 and 2^63. Both are exactly representable as doubles.
+const _minIntAsDouble = -9223372036854775808.0;
+const _maxIntExclusiveAsDouble = 9223372036854775808.0;
 
 int? _wholeDoubleToInt(double value) {
   if (!value.isFinite || value.truncateToDouble() != value) {
+    return null;
+  }
+  if (value < _minIntAsDouble || value >= _maxIntExclusiveAsDouble) {
     return null;
   }
   return value.toInt();
