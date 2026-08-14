@@ -636,7 +636,7 @@ void main() {
           ),
         );
 
-    final objectMetadata = await storage.from(newBucketName).info(path);
+    final objectMetadata = await storage.from(newBucketName).getMetadata(path);
     expect(objectMetadata.metadata, metadata);
   });
 

@@ -33,21 +33,20 @@ class Constants {
 }
 
 enum AuthChangeEvent {
-  initialSession('INITIAL_SESSION'),
-  passwordRecovery('PASSWORD_RECOVERY'),
-  signedIn('SIGNED_IN'),
-  signedOut('SIGNED_OUT'),
-  tokenRefreshed('TOKEN_REFRESHED'),
-  userUpdated('USER_UPDATED'),
-  mfaChallengeVerified('MFA_CHALLENGE_VERIFIED');
+  initialSession,
+  passwordRecovery,
+  signedIn,
+  signedOut,
+  tokenRefreshed,
+  userUpdated,
+  mfaChallengeVerified;
 
-  final String jsName;
-  const AuthChangeEvent(this.jsName);
+  String get value => snakeCase.toUpperCase();
 
   @internal
-  static AuthChangeEvent? fromString(String? value) {
+  static AuthChangeEvent? fromValue(String? value) {
     for (final event in AuthChangeEvent.values) {
-      if (event.name == value) {
+      if (event.value == value || event.name == value) {
         return event;
       }
     }
@@ -65,7 +64,7 @@ enum GenerateLinkType {
   unknown;
 
   @internal
-  static GenerateLinkType fromString(String? value) {
+  static GenerateLinkType fromValue(String? value) {
     for (final type in GenerateLinkType.values) {
       if (type.snakeCase == value) {
         return type;

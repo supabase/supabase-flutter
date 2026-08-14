@@ -81,7 +81,7 @@ class Session {
 
   DateTime? get _expiresAt {
     try {
-      final expiresAtSeconds = decodeJwtPayload(accessToken).exp;
+      final expiresAtSeconds = decodeJwtPayload(accessToken).expiresAt;
       return expiresAtSeconds == null
           ? null
           : dateTimeFromUnixSeconds(expiresAtSeconds);

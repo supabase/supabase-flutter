@@ -388,7 +388,7 @@ void main() {
     );
   });
 
-  group('TransformOptions.toQueryParams', () {
+  group('TransformOptions.toQueryParameters', () {
     test('omits null values and snake-cases the resize mode', () {
       const options = TransformOptions(
         width: 100,
@@ -398,7 +398,7 @@ void main() {
         format: RequestImageFormat.origin,
       );
 
-      expect(options.toQueryParams, {
+      expect(options.toQueryParameters, {
         'width': '100',
         'height': '200',
         'resize': 'cover',
@@ -409,7 +409,7 @@ void main() {
 
     test('is empty when nothing is set', () {
       const options = TransformOptions();
-      expect(options.toQueryParams, isEmpty);
+      expect(options.toQueryParameters, isEmpty);
     });
   });
 

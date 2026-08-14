@@ -78,12 +78,12 @@ void main() {
     test('sets defaults', () async {
       final socket = RealtimeClient(
         'wss://example.com/socket',
-        params: {'apikey': '123'},
+        parameters: {'apikey': '123'},
       );
       expect(socket.channels, isEmpty);
       expect(socket.sendBuffer, isEmpty);
       expect(socket.ref, 0);
-      expect(socket.endPoint, 'wss://example.com/socket/websocket');
+      expect(socket.endpoint, 'wss://example.com/socket/websocket');
       expect(socket.stateChangeCallbacks, {
         'open': [],
         'close': [],
@@ -91,7 +91,7 @@ void main() {
         'message': [],
       });
       expect(socket.timeout, const Duration(milliseconds: 10000));
-      expect(socket.heartbeatIntervalMs, Constants.defaultHeartbeatIntervalMs);
+      expect(socket.heartbeatInterval, Constants.defaultHeartbeatInterval);
       expect(
         socket.logger
             is void Function(
@@ -112,7 +112,7 @@ void main() {
       final socket = RealtimeClient(
         'wss://example.com/socket',
         timeout: const Duration(milliseconds: 40000),
-        heartbeatIntervalMs: 60000,
+        heartbeatInterval: const Duration(seconds: 60),
         // ignore: avoid_print
         logger: (kind, message, data) => print('[$kind] $message $data'),
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
@@ -120,7 +120,7 @@ void main() {
       expect(socket.channels, isEmpty);
       expect(socket.sendBuffer, isEmpty);
       expect(socket.ref, 0);
-      expect(socket.endPoint, 'wss://example.com/socket/websocket');
+      expect(socket.endpoint, 'wss://example.com/socket/websocket');
       expect(socket.stateChangeCallbacks, {
         'open': [],
         'close': [],
@@ -128,7 +128,7 @@ void main() {
         'message': [],
       });
       expect(socket.timeout, const Duration(milliseconds: 40000));
-      expect(socket.heartbeatIntervalMs, 60000);
+      expect(socket.heartbeatInterval, const Duration(seconds: 60));
       expect(
         socket.logger
             is void Function(
@@ -146,7 +146,7 @@ void main() {
     test('returns endpoint for given full url', () {
       final socket = RealtimeClient('wss://example.org/chat');
       expect(
-        socket.endPointURL,
+        socket.endpointUrl,
         'wss://example.org/chat/websocket?vsn=2.0.0',
       );
     });
@@ -154,10 +154,10 @@ void main() {
     test('returns endpoint with parameters', () {
       final socket = RealtimeClient(
         'ws://example.org/chat',
-        params: {'foo': 'bar'},
+        parameters: {'foo': 'bar'},
       );
       expect(
-        socket.endPointURL,
+        socket.endpointUrl,
         'ws://example.org/chat/websocket?foo=bar&vsn=2.0.0',
       );
     });
@@ -165,12 +165,12 @@ void main() {
     test('returns endpoint with apikey', () {
       final socket = RealtimeClient(
         'ws://example.org/chat',
-        params: {
+        parameters: {
           'apikey': '123456789',
         },
       );
       expect(
-        socket.endPointURL,
+        socket.endpointUrl,
         'ws://example.org/chat/websocket?apikey=123456789&vsn=2.0.0',
       );
     });
@@ -181,7 +181,7 @@ void main() {
         version: RealtimeProtocolVersion.v1,
       );
       expect(
-        socket.endPointURL,
+        socket.endpointUrl,
         'wss://example.org/chat/websocket?vsn=1.0.0',
       );
     });
@@ -347,7 +347,7 @@ void main() {
         socketEndpoint,
         // Reconnect almost immediately so the test doesn't wait for the
         // default backoff.
-        reconnectAfterMs: (tries) => 20,
+        reconnectAfter: (tries) => const Duration(milliseconds: 20),
         transport: (url, headers) {
           connectCount++;
           return mockedSocketChannel;
@@ -407,7 +407,7 @@ void main() {
         socketEndpoint,
         // Large delay so the automatic reconnect stays dormant during the
         // test and the manual reconnect below is what reopens the socket.
-        reconnectAfterMs: (tries) => 100000,
+        reconnectAfter: (tries) => const Duration(seconds: 100),
         transport: (url, headers) {
           connectCount++;
           return connectCount == 1 ? firstChannel : secondChannel;
@@ -467,9 +467,9 @@ void main() {
 
       final mockedSocket = RealtimeClient(
         socketEndpoint,
-        reconnectAfterMs: (tries) {
+        reconnectAfter: (tries) {
           triesSeen.add(tries);
-          return 10;
+          return const Duration(milliseconds: 10);
         },
         transport: (url, headers) {
           attempt++;
@@ -555,7 +555,7 @@ void main() {
       await socket.disconnect();
     });
 
-    test('returns channel with given topic and params', () {
+    test('returns channel with given topic and parameters', () {
       final channel = socket.channel(
         tTopic,
         channelConfig,
@@ -563,7 +563,7 @@ void main() {
 
       expect(channel.socket, socket);
       expect(channel.topic, 'realtime:topic');
-      expect(channel.params, {
+      expect(channel.parameters, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
           'presence': {'key': '', 'enabled': false},
@@ -646,12 +646,12 @@ void main() {
       final socket = RealtimeClient(socketEndpoint);
       expect(
         socket.disconnectOnEmptyChannelsAfter,
-        Duration(milliseconds: 2 * Constants.defaultHeartbeatIntervalMs),
+        Constants.defaultHeartbeatInterval * 2,
       );
 
       final customSocket = RealtimeClient(
         socketEndpoint,
-        heartbeatIntervalMs: 5000,
+        heartbeatInterval: const Duration(seconds: 5),
       );
       expect(
         customSocket.disconnectOnEmptyChannelsAfter,
@@ -1064,7 +1064,7 @@ void main() {
     });
   });
 
-  group('setAuth', () {
+  group('setAccessToken', () {
     final token = generateJwt();
     final updateJoinPayload = {
       'access_token': token,
@@ -1102,7 +1102,7 @@ void main() {
         final channel1 = mockedSocket.channel(tTopic1);
         final channel2 = mockedSocket.channel(tTopic2);
 
-        await mockedSocket.setAuth(token);
+        await mockedSocket.setAccessToken(token);
 
         expect(mockedSocket.accessToken, token);
 
@@ -1165,7 +1165,7 @@ void main() {
           'version': Constants.defaultHeaders['X-Client-Info'],
         };
 
-        await mockedSocket.setAuth(authToken);
+        await mockedSocket.setAccessToken(authToken);
 
         expect(mockedSocket.accessToken, authToken);
 

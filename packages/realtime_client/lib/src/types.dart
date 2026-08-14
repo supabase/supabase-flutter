@@ -55,13 +55,13 @@ enum PostgresChangeEvent {
   }
 
   @internal
-  static PostgresChangeEvent fromString(String event) => switch (event) {
+  static PostgresChangeEvent fromValue(String event) => switch (event) {
     'INSERT' => PostgresChangeEvent.insert,
     'UPDATE' => PostgresChangeEvent.update,
     'DELETE' => PostgresChangeEvent.delete,
     _ => throw ArgumentError(
       'Only "INSERT", "UPDATE", or "DELETE" can be passed to the '
-      '`fromString()` method.',
+      '`fromValue()` method.',
     ),
   };
 }
@@ -132,14 +132,14 @@ enum PresenceEvent {
   leave;
 
   @internal
-  static PresenceEvent fromString(String value) {
+  static PresenceEvent fromValue(String value) {
     for (final event in PresenceEvent.values) {
       if (event.name == value) {
         return event;
       }
     }
     throw ArgumentError(
-      'Only "sync", "join", or "leave" can be passed to the `fromString()` '
+      'Only "sync", "join", or "leave" can be passed to the `fromValue()` '
       'method.',
     );
   }
@@ -321,7 +321,7 @@ class PostgresChangePayload {
       schema: payload['schema'] as String,
       table: payload['table'] as String,
       commitTimestamp: commitTimestamp,
-      eventType: PostgresChangeEvent.fromString(
+      eventType: PostgresChangeEvent.fromValue(
         payload['eventType'] as String,
       ),
       newRecord: newData is Map ? Map.from(newData) : {},
@@ -507,7 +507,7 @@ abstract class RealtimePresencePayload {
   });
 
   RealtimePresencePayload.fromJson(Map<String, dynamic> json)
-    : event = PresenceEvent.fromString(json['event']);
+    : event = PresenceEvent.fromValue(json['event']);
 
   @override
   String toString() => 'PresencePayload(event: ${event.name})';
@@ -521,7 +521,7 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
 
   factory RealtimePresenceSyncPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceSyncPayload(
-      event: PresenceEvent.fromString(json['event']),
+      event: PresenceEvent.fromValue(json['event']),
     );
   }
 
@@ -551,7 +551,7 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
 
   factory RealtimePresenceJoinPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceJoinPayload(
-      event: PresenceEvent.fromString(json['event']),
+      event: PresenceEvent.fromValue(json['event']),
       key: json['key'] as String,
       newPresences: (json['newPresences'] as List).cast(),
       currentPresences: (json['currentPresences'] as List).cast(),
@@ -586,7 +586,7 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
 
   factory RealtimePresenceLeavePayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceLeavePayload(
-      event: PresenceEvent.fromString(json['event']),
+      event: PresenceEvent.fromValue(json['event']),
       key: json['key'] as String,
       leftPresences: (json['leftPresences'] as List).cast(),
       currentPresences: (json['currentPresences'] as List).cast(),

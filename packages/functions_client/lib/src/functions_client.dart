@@ -48,7 +48,7 @@ class FunctionsClient {
   /// Updates the authorization header
   ///
   /// [token] - the new jwt token sent in the authorization header
-  void setAuth(String token) {
+  void setAccessToken(String token) {
     _headers['Authorization'] = 'Bearer $token';
   }
 

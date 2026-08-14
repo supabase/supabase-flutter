@@ -73,7 +73,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       return c;
     }).join();
 
-    final url = overrideSearchParams('select', cleanedColumns);
+    final url = overrideSearchParameters('select', cleanedColumns);
     return PostgrestFilterBuilder(
       _copyWithType(
         url: url,
@@ -274,7 +274,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final columns = [for (final element in newValues) ...element.keys];
     if (newValues.isNotEmpty) {
       final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
-      return appendSearchParams("columns", uniqueColumns);
+      return appendSearchParameters("columns", uniqueColumns);
     }
     return _url;
   }

@@ -14,7 +14,7 @@ void main() {
         id: '123',
         appMetadata: {},
         userMetadata: <String, dynamic>{},
-        aud: 'authenticated',
+        audience: 'authenticated',
         createdAt: DateTime.utc(2023, 1, 1),
       );
     });
@@ -319,7 +319,7 @@ void main() {
           id: '456',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 2),
         );
 
@@ -344,7 +344,7 @@ void main() {
           id: '456',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 2),
         );
 
@@ -466,7 +466,7 @@ void main() {
           id: '123',
           appMetadata: {},
           userMetadata: {},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
@@ -474,7 +474,7 @@ void main() {
           id: '456',
           appMetadata: {},
           userMetadata: {},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 

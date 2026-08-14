@@ -79,12 +79,12 @@ JwtPayload decodeJwtPayload(String token) {
 /// Validates the expiration time of a JWT
 ///
 /// Throws [AuthException] if the exp claim is missing or the JWT has expired.
-void validateExp(int? exp) {
-  if (exp == null) {
+void validateExpiration(int? expiresAt) {
+  if (expiresAt == null) {
     throw AuthException('Missing exp claim');
   }
   final timeNow = DateTime.now().millisecondsSinceEpoch / 1000;
-  if (exp <= timeNow) {
+  if (expiresAt <= timeNow) {
     throw AuthException('JWT has expired');
   }
 }

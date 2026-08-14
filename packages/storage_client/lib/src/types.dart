@@ -701,7 +701,7 @@ class TransformOptions {
 
   /// The transformation options as `transform` query parameters.
   @internal
-  Map<String, String> get toQueryParams {
+  Map<String, String> get toQueryParameters {
     return {
       if (width != null) 'width': '$width',
       if (height != null) 'height': '$height',

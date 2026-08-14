@@ -61,8 +61,8 @@ RealtimeClient createRealtimeClient(
   return RealtimeClient(
     localStackRealtimeUrl,
     version: version,
-    params: {'apikey': apikey},
-    heartbeatIntervalMs: 5000,
+    parameters: {'apikey': apikey},
+    heartbeatInterval: const Duration(seconds: 5),
   );
 }
 

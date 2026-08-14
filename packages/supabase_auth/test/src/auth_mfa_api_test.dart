@@ -233,9 +233,12 @@ void main() {
       expect(response.currentLevel, AuthenticatorAssuranceLevel.aal2);
       expect(response.nextLevel, AuthenticatorAssuranceLevel.aal2);
       final passwordEntry = response.currentAuthenticationMethods
-          .firstWhereOrNull((element) => element.method == AMRMethod.password);
+          .firstWhereOrNull(
+            (element) =>
+                element.method == AuthenticationMethodReference.password,
+          );
       final totpEntry = response.currentAuthenticationMethods.firstWhereOrNull(
-        (element) => element.method == AMRMethod.totp,
+        (element) => element.method == AuthenticationMethodReference.totp,
       );
       expect(passwordEntry, isNotNull);
       expect(totpEntry, isNotNull);

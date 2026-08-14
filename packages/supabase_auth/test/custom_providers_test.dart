@@ -2,9 +2,9 @@ import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('CreateCustomProviderParams serialization', () {
+  group('CreateCustomProviderOptions serialization', () {
     test('serializes required fields', () {
-      final parameters = CreateCustomProviderParams(
+      final parameters = CreateCustomProviderOptions(
         providerType: CustomProviderType.oauth2,
         identifier: 'custom:mycompany',
         name: 'My Company',
@@ -22,7 +22,7 @@ void main() {
     });
 
     test('omits custom_claims_allowlist when not provided', () {
-      final parameters = CreateCustomProviderParams(
+      final parameters = CreateCustomProviderOptions(
         providerType: CustomProviderType.oidc,
         identifier: 'custom:mycompany',
         name: 'My Company',
@@ -37,7 +37,7 @@ void main() {
     });
 
     test('serializes custom_claims_allowlist when provided', () {
-      final parameters = CreateCustomProviderParams(
+      final parameters = CreateCustomProviderOptions(
         providerType: CustomProviderType.oidc,
         identifier: 'custom:mycompany',
         name: 'My Company',
@@ -53,7 +53,7 @@ void main() {
     });
 
     test('serializes an empty custom_claims_allowlist', () {
-      final parameters = CreateCustomProviderParams(
+      final parameters = CreateCustomProviderOptions(
         providerType: CustomProviderType.oidc,
         identifier: 'custom:mycompany',
         name: 'My Company',
@@ -66,9 +66,9 @@ void main() {
     });
   });
 
-  group('UpdateCustomProviderParams serialization', () {
+  group('UpdateCustomProviderOptions serialization', () {
     test('omits custom_claims_allowlist when not provided', () {
-      const parameters = UpdateCustomProviderParams(name: 'New name');
+      const parameters = UpdateCustomProviderOptions(name: 'New name');
 
       final json = parameters.toJson();
       expect(json.containsKey('custom_claims_allowlist'), isFalse);
@@ -76,7 +76,7 @@ void main() {
     });
 
     test('serializes custom_claims_allowlist when provided', () {
-      const parameters = UpdateCustomProviderParams(
+      const parameters = UpdateCustomProviderOptions(
         customClaimsAllowlist: ['groups'],
       );
 

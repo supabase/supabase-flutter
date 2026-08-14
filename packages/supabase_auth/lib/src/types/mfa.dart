@@ -358,7 +358,7 @@ class AuthMFAGetAuthenticatorAssuranceLevelResponse {
   ///
   /// Use the information here to detect the last time a user verified a factor,
   /// for example if implementing a step-up scenario.
-  final List<AMREntry> currentAuthenticationMethods;
+  final List<AuthenticationMethodReferenceEntry> currentAuthenticationMethods;
 
   const AuthMFAGetAuthenticatorAssuranceLevelResponse({
     required this.currentLevel,
@@ -367,12 +367,12 @@ class AuthMFAGetAuthenticatorAssuranceLevelResponse {
   });
 }
 
-enum AMRMethod {
+enum AuthenticationMethodReference {
   password('password'),
   otp('otp'),
   oauth('oauth'),
   totp('totp'),
-  magiclink('magiclink'),
+  magicLink('magiclink'),
   recovery('recovery'),
   invite('invite'),
   ssoSaml('sso/saml'),
@@ -385,8 +385,8 @@ enum AMRMethod {
   passkey('passkey'),
   unknown('unknown');
 
-  final String code;
-  const AMRMethod(this.code);
+  final String value;
+  const AuthenticationMethodReference(this.value);
 }
 
 /// An authentication method reference (AMR) entry.
@@ -396,20 +396,25 @@ enum AMRMethod {
 ///
 /// see [AuthMFAApi.getAuthenticatorAssuranceLevel].
 ///
-class AMREntry {
+class AuthenticationMethodReferenceEntry {
   /// authentication method name
-  final AMRMethod method;
+  final AuthenticationMethodReference method;
 
   /// Timestamp when the method was successfully used.
   final DateTime timestamp;
 
-  const AMREntry({required this.method, required this.timestamp});
+  const AuthenticationMethodReferenceEntry({
+    required this.method,
+    required this.timestamp,
+  });
 
-  factory AMREntry.fromJson(Map<String, dynamic> json) {
-    return AMREntry(
-      method: AMRMethod.values.firstWhere(
-        (e) => e.code == json['method'],
-        orElse: () => AMRMethod.unknown,
+  factory AuthenticationMethodReferenceEntry.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return AuthenticationMethodReferenceEntry(
+      method: AuthenticationMethodReference.values.firstWhere(
+        (e) => e.value == json['method'],
+        orElse: () => AuthenticationMethodReference.unknown,
       ),
       timestamp: parseUnixSeconds(json, 'timestamp'),
     );

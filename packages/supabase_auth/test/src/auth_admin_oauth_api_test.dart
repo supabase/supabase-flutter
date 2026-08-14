@@ -38,7 +38,7 @@ void main() {
 
   group('OAuth client management', () {
     test('create OAuth client', () async {
-      final parameters = CreateOAuthClientParams(
+      final parameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client',
         redirectUris: ['https://example.com/callback'],
         clientUri: 'https://example.com',
@@ -55,7 +55,7 @@ void main() {
 
     test('list OAuth clients', () async {
       // First create a client
-      final parameters = CreateOAuthClientParams(
+      final parameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client for List',
         redirectUris: ['https://example.com/callback'],
       );
@@ -68,7 +68,7 @@ void main() {
 
     test('get OAuth client by ID', () async {
       // First create a client
-      final parameters = CreateOAuthClientParams(
+      final parameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client for Get',
         redirectUris: ['https://example.com/callback'],
       );
@@ -83,7 +83,7 @@ void main() {
 
     test('update OAuth client', () async {
       // First create a client
-      final createParameters = CreateOAuthClientParams(
+      final createParameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client for Update',
         redirectUris: ['https://example.com/callback'],
       );
@@ -93,7 +93,7 @@ void main() {
       final clientId = createResponse.client!.clientId;
 
       // Update the client
-      final updateParameters = UpdateOAuthClientParams(
+      final updateParameters = UpdateOAuthClientOptions(
         clientName: 'Updated OAuth Client Name',
       );
       final updateResponse = await client.admin.oauth.updateClient(
@@ -111,7 +111,7 @@ void main() {
 
     test('regenerate OAuth client secret', () async {
       // First create a client
-      final parameters = CreateOAuthClientParams(
+      final parameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client for Regenerate',
         redirectUris: ['https://example.com/callback'],
       );
@@ -129,7 +129,7 @@ void main() {
 
     test('delete OAuth client', () async {
       // First create a client
-      final parameters = CreateOAuthClientParams(
+      final parameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client for Delete',
         redirectUris: ['https://example.com/callback'],
       );
@@ -166,7 +166,7 @@ void main() {
     });
 
     test('updateClient() validates ids', () {
-      final parameters = UpdateOAuthClientParams(clientName: 'Updated Name');
+      final parameters = UpdateOAuthClientOptions(clientName: 'Updated Name');
       expect(
         () => client.admin.oauth.updateClient('invalid-id', parameters),
         throwsA(isA<ArgumentError>()),
