@@ -230,13 +230,48 @@ double? toDouble(dynamic value) {
 
 @internal
 int? toInt(dynamic value) {
+  // On the web an integral number satisfies both `is int` and `is double`,
+  // so check `double` first to keep the whole-number and range validation
+  // in effect on every platform.
+  if (value is double) {
+    return _wholeDoubleToInt(value);
+  }
   if (value is int) {
     return value;
   }
   if (value == null) {
     return null;
   }
-  return int.tryParse(value.toString());
+  final stringValue = value.toString();
+  final parsedInt = int.tryParse(stringValue);
+  if (parsedInt != null) {
+    return parsedInt;
+  }
+  final match = _integerWithZeroFraction.firstMatch(stringValue);
+  if (match == null) {
+    return null;
+  }
+  return int.tryParse(match.group(1)!);
+}
+
+/// Matches an integer with a decimal fraction of only zeros, such as `10.0`
+/// or `-3.000`. Parsing the integer part directly keeps values above 2^53
+/// exact, which a round trip through [double] would not.
+final _integerWithZeroFraction = RegExp(r'^([+-]?\d+)\.0+$');
+
+/// The lowest and highest [double] values enclosing the native 64-bit
+/// integer range, -2^63 and 2^63. Both are exactly representable as doubles.
+const _minIntAsDouble = -9223372036854775808.0;
+const _maxIntExclusiveAsDouble = 9223372036854775808.0;
+
+int? _wholeDoubleToInt(double value) {
+  if (!value.isFinite || value.truncateToDouble() != value) {
+    return null;
+  }
+  if (value < _minIntAsDouble || value >= _maxIntExclusiveAsDouble) {
+    return null;
+  }
+  return value.toInt();
 }
 
 @internal

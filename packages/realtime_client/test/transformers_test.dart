@@ -23,6 +23,22 @@ void main() {
   test('transformers toInt', () {
     expect(toInt(10), equals(10));
     expect(toInt('10'), equals(10));
+    expect(toInt(10.0), equals(10));
+    expect(toInt('10.0'), equals(10));
+    expect(toInt('-3.000'), equals(-3));
+    // Above 2^53, where a round trip through double would lose precision.
+    expect(toInt('9007199254740993.0'), equals(9007199254740993));
+    // Outside the 64-bit integer range.
+    expect(toInt('9223372036854775808.0'), isNull);
+    expect(toInt(1e19), isNull);
+    expect(toInt(-1e19), isNull);
+    expect(toInt('1e3'), isNull);
+    expect(toInt(10.5), isNull);
+    expect(toInt('10.5'), isNull);
+    expect(toInt(double.nan), isNull);
+    expect(toInt(double.infinity), isNull);
+    expect(toInt(double.negativeInfinity), isNull);
+    expect(toInt('NaN'), isNull);
     expect(toInt(null), isNull);
     expect(toInt(''), isNull);
     expect(toInt('not a number'), isNull);
