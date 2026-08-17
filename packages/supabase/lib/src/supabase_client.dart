@@ -44,9 +44,11 @@ import 'trace_http_client.dart';
 /// Pass an instance of `YAJsonIsolate` to [isolate] to use your own persisted
 /// isolate instance. A new instance will be created if [isolate] is omitted.
 ///
-/// The pkce flow is used by default. It stores its code verifiers in the
-/// `pkceAsyncStorage` field of [authOptions], which falls back to an in-memory
-/// storage when none is given.
+/// The pkce flow is used by default and keeps its code verifiers in the
+/// `AuthAsyncStorage` passed to the `pkceAsyncStorage` field of [authOptions].
+/// Pass a `MemoryAuthAsyncStorage` when the flow starts and completes within
+/// the same process, or a persistent implementation when the code is exchanged
+/// after a restart.
 /// {@endtemplate}
 class SupabaseClient {
   final String _supabaseKey;
@@ -331,9 +333,7 @@ class SupabaseClient {
       headers: authHeaders,
       autoRefreshToken: autoRefreshToken,
       httpClient: _authApiHttpClient,
-      asyncStorage:
-          authAsyncStorage ??
-          (authFlowType == AuthFlowType.pkce ? MemoryAuthAsyncStorage() : null),
+      asyncStorage: authAsyncStorage,
       flowType: authFlowType,
     );
   }
