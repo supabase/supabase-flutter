@@ -438,7 +438,7 @@ channel streams (`onPostgresChanges`, `onBroadcast`, `onPresenceSync`, `onPresen
 
 ### `RealtimePresence` is internal
 
-`RealtimePresence` and its helper types (`PresenceOptions`, `PresenceEvents`, `PresenceChooser`,
+`RealtimePresence` and its helper types (`PresenceOpts`, `PresenceEvents`, `PresenceChooser`,
 `PresenceOnJoinCallback`, `PresenceOnLeaveCallback`) are now `@internal`, along with the
 `RealtimeChannel.presence` field. They were presence bookkeeping that leaked into the public API,
 and registering a callback through `channel.presence.onJoin(...)` silently disabled the channel's
@@ -451,13 +451,24 @@ Everything the class offered is available on the channel:
 channel.presence.onJoin((key, current, joined) { /* ... */ });
 channel.presence.onLeave((key, current, left) { /* ... */ });
 channel.presence.onSync(() { /* ... */ });
-final state = channel.presence.state;
+final Map<String, List<Presence>> state = channel.presence.state;
 
 // After
 channel.onPresenceJoin.listen((payload) { /* ... */ });
 channel.onPresenceLeave.listen((payload) { /* ... */ });
 channel.onPresenceSync.listen((payload) { /* ... */ });
-final state = channel.presenceState();
+final List<SinglePresenceState> state = channel.presenceState();
+```
+
+`presenceState()` is not a drop-in replacement for `presence.state`: it returns a
+`List<SinglePresenceState>` rather than a map, so a presence key is read from
+`SinglePresenceState.key` and its payloads from `SinglePresenceState.presences`. When code depended
+on the map, rebuild it from the list:
+
+```dart
+final byKey = {
+  for (final state in channel.presenceState()) state.key: state.presences,
+};
 ```
 
 The `Presence` payload class is unchanged and stays public.
