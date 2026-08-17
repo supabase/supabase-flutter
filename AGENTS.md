@@ -15,7 +15,7 @@ The repository follows a layered dependency structure:
 - **supabase_auth**: Authentication client (sessions, JWT, OAuth)
 - **postgrest**: Database query client with ORM-style API
 - **supabase_realtime**: WebSocket client for real-time subscriptions
-- **storage_client**: File storage client with retry logic
+- **supabase_storage**: File storage client with retry logic
 - **supabase_functions**: Edge functions invocation client
 - **yet_another_json_isolate**: JSON parsing in separate isolate for performance
 
@@ -52,9 +52,9 @@ melos format
 
 ### Testing
 
-Most packages have unit tests. The `postgrest`, `supabase_auth`, `supabase_realtime`, and `storage_client` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
+Most packages have unit tests. The `postgrest`, `supabase_auth`, `supabase_realtime`, and `supabase_storage` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
-**For packages requiring a backend (postgrest, supabase_auth, supabase_realtime, storage_client):**
+**For packages requiring a backend (postgrest, supabase_auth, supabase_realtime, supabase_storage):**
 
 ```bash
 # 1. Start the local Supabase stack from the repository root

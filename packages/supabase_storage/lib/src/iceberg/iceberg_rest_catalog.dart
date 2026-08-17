@@ -3,10 +3,10 @@ import 'dart:math';
 
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
-import 'package:storage_client/src/iceberg/iceberg_error.dart';
-import 'package:storage_client/src/iceberg/iceberg_types.dart';
-import 'package:storage_client/src/iceberg/table_requirement.dart';
-import 'package:storage_client/src/iceberg/table_update.dart';
+import 'package:supabase_storage/src/iceberg/iceberg_error.dart';
+import 'package:supabase_storage/src/iceberg/iceberg_types.dart';
+import 'package:supabase_storage/src/iceberg/table_requirement.dart';
+import 'package:supabase_storage/src/iceberg/table_update.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class _IcebergResponse {

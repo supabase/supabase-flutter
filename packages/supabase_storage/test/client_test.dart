@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import "package:path/path.dart" show join;
-import 'package:storage_client/storage_client.dart';
+import 'package:supabase_storage/supabase_storage.dart';
 import 'package:supabase_common/testing.dart';
 import 'package:test/test.dart';
 

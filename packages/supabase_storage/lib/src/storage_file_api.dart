@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:storage_client/src/fetch.dart';
-import 'package:storage_client/src/types.dart';
+import 'package:supabase_storage/src/fetch.dart';
+import 'package:supabase_storage/src/types.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';

@@ -25,6 +25,7 @@ jobs:
           "auth": "auth",
           "storage": "storage",
           "storage_client": "storage",
+          "supabase_storage": "storage",
           "realtime": "realtime",
           "realtime_client": "realtime",
           "supabase_realtime": "realtime",

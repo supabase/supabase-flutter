@@ -64,7 +64,7 @@ jobs:
           echo "Affected packages:"
           echo "$CHANGED"
 
-          DART_PACKAGES="postgrest storage_client supabase supabase_auth supabase_common supabase_functions supabase_realtime supabase_typegen yet_another_json_isolate"
+          DART_PACKAGES="postgrest supabase supabase_auth supabase_common supabase_functions supabase_realtime supabase_storage supabase_typegen yet_another_json_isolate"
 
           entries=()
           for package in $DART_PACKAGES; do
@@ -72,11 +72,11 @@ jobs:
               continue
             fi
             case "$package" in
-              postgrest|storage_client|supabase|supabase_auth|supabase_realtime) backend=true ;;
+              postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage) backend=true ;;
               *) backend=false ;;
             esac
             case "$package" in
-              postgrest|storage_client|supabase|supabase_auth|supabase_realtime) concurrency="1" ;;
+              postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage) concurrency="1" ;;
               *) concurrency="0" ;;
             esac
             entries+=("{\"name\":\"$package\",\"backend\":$backend,\"concurrency\":\"$concurrency\"}")
@@ -344,7 +344,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
-          carryforward: 'postgrest,storage_client,supabase,supabase_auth,supabase_common,supabase_functions,supabase_realtime,supabase_typegen,yet_another_json_isolate,supabase_flutter'
+          carryforward: 'postgrest,supabase,supabase_auth,supabase_common,supabase_functions,supabase_realtime,supabase_storage,supabase_typegen,yet_another_json_isolate,supabase_flutter'
           fail-on-error: false
 
   test-result:

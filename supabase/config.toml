@@ -132,7 +132,7 @@ file_size_limit = "50MiB"
 [storage.s3_protocol]
 enabled = true
 
-# Image transformation API is exercised by the storage_client transform tests.
+# Image transformation API is exercised by the supabase_storage transform tests.
 [storage.image_transformation]
 enabled = true
 

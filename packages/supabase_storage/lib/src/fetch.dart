@@ -7,7 +7,7 @@ import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
-import 'package:storage_client/src/types.dart';
+import 'package:supabase_storage/src/types.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';

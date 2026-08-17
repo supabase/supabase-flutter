@@ -4,7 +4,7 @@
     <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
   </a>
 
-  <h1 align="center">storage_client</h1>
+  <h1 align="center">supabase_storage</h1>
 
   <p align="center">
     Dart client library to interact with <a href="https://supabase.com/docs/guides/storage">Supabase Storage</a>.
@@ -19,10 +19,14 @@
 
 <div align="center">
 
-[![pub package](https://img.shields.io/pub/v/storage_client.svg)](https://pub.dev/packages/storage_client)
+[![pub package](https://img.shields.io/pub/v/supabase_storage.svg)](https://pub.dev/packages/supabase_storage)
 [![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
 
 </div>
+
+> **Note**
+>
+> This package was published as `storage_client` up to and including v2. That package is discontinued in favour of `supabase_storage`.
 
 ## Docs
 
