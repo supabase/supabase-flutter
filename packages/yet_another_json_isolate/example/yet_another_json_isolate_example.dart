@@ -8,7 +8,7 @@ void main() async {
   final json = await isolate.decode('{"a": 1, "b": 2}');
   print(json);
 
-  final str = await isolate.encode(json);
-  print(str);
+  final jsonString = await isolate.encode(json);
+  print(jsonString);
   await isolate.dispose();
 }

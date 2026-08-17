@@ -146,10 +146,10 @@ void main() {
       subject.onPause = () {};
       subject.onResume = () {};
 
-      final sub = subject.stream.listen((_) {});
+      final subscription = subject.stream.listen((_) {});
       await Future<void>.delayed(Duration.zero);
       expect(listened, isTrue);
-      await sub.cancel();
+      await subscription.cancel();
       await Future<void>.delayed(Duration.zero);
       expect(cancelled, isTrue);
       await subject.close();
@@ -170,10 +170,10 @@ void main() {
         onListen: () => listened = true,
         onCancel: () => cancelled = true,
       );
-      final sub = subject.stream.listen((_) {});
+      final subscription = subject.stream.listen((_) {});
       await Future<void>.delayed(Duration.zero);
       expect(listened, isTrue);
-      await sub.cancel();
+      await subscription.cancel();
       await Future<void>.delayed(Duration.zero);
       expect(cancelled, isTrue);
       await subject.close();
@@ -182,12 +182,12 @@ void main() {
     test('forwards an added stream', () async {
       final subject = ReplaySubject<int>();
       final events = <int>[];
-      final sub = subject.stream.listen(events.add);
+      final subscription = subject.stream.listen(events.add);
       await subject.addStream(Stream.fromIterable([1, 2, 3]));
       await Future<void>.delayed(Duration.zero);
       expect(events, [1, 2, 3]);
       expect(subject.isClosed, isFalse);
-      await sub.cancel();
+      await subscription.cancel();
       await subject.close();
     });
   });

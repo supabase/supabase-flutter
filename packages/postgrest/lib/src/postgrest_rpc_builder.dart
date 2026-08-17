@@ -30,7 +30,12 @@ class PostgrestRpcBuilder
          ),
        );
 
-  /// {@macro postgrest_rpc}
+  /// Performs a database function call.
+  ///
+  /// [params] is an optional object to pass as arguments to the function call.
+  ///
+  /// When [get] is set to `true`, [params] must be a [Map], and the function
+  /// is called with read-only access mode.
   PostgrestFilterBuilder<T> rpc<T>([
     Object? params,
     bool get = false,
@@ -50,7 +55,7 @@ class PostgrestRpcBuilder
           final formattedValue = value is List
               ? '{${_cleanFilterArray(value)}}'
               : value;
-          newUrl = appendSearchParams(
+          newUrl = appendSearchParameters(
             key.toString(),
             '$formattedValue',
             newUrl,

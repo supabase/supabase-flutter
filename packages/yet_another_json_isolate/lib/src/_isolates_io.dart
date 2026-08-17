@@ -20,11 +20,23 @@ class YAJsonIsolate {
   final _createdIsolate = Completer<void>();
   late final _events = StreamQueue(_receivePort);
   bool _hasStartedInitialize = false;
+  Future<void>? _disposal;
+
+  bool get _isDisposed => _disposal != null;
+
+  void _throwIfDisposed() {
+    if (_isDisposed) {
+      throw StateError('This YAJsonIsolate has already been disposed.');
+    }
+  }
 
   /// Initialize the isolate
   ///
-  /// This method is called automatically when the first method is called. Manually initializing before first json de/encode can improve performance.
+  /// This method is called automatically when the first method is called.
+  /// Manually initializing before the first JSON decode or encode can improve
+  /// performance.
   Future<void> initialize() async {
+    _throwIfDisposed();
     assert(
       _hasStartedInitialize == false,
       'initialize() can only be called once per isolate.',
@@ -43,8 +55,18 @@ class YAJsonIsolate {
 
   /// Dispose the isolate
   ///
-  /// This exists the isolate
-  Future<void> dispose() async {
+  /// This exits the isolate. Safe to call more than once, and safe to call on
+  /// an instance that was never used. Concurrent calls all await the same
+  /// shutdown, so awaiting any of them means the isolate is gone. Using the
+  /// instance afterwards throws a [StateError].
+  Future<void> dispose() => _disposal ??= _dispose();
+
+  Future<void> _dispose() async {
+    if (!_hasStartedInitialize) {
+      _receivePort.close();
+      return;
+    }
+
     await _createdIsolate.future;
     _sendPort.send(null);
     _receivePort.close();
@@ -52,24 +74,26 @@ class YAJsonIsolate {
   }
 
   Future<dynamic> decode(String json) async {
+    _throwIfDisposed();
     if (!_createdIsolate.isCompleted) {
       if (!_hasStartedInitialize) await initialize();
       await _createdIsolate.future;
     }
     _sendPort.send([json, false]);
-    return _handleRes(await _events.next);
+    return _handleResponse(await _events.next);
   }
 
   Future<String> encode(Object? json) async {
+    _throwIfDisposed();
     if (!_createdIsolate.isCompleted) {
       if (!_hasStartedInitialize) await initialize();
       await _createdIsolate.future;
     }
     _sendPort.send([json, true]);
-    return _handleRes(await _events.next);
+    return _handleResponse(await _events.next);
   }
 
-  Future<R> _handleRes<R>(List<dynamic> response) async {
+  Future<R> _handleResponse<R>(List<dynamic> response) async {
     final int type = response.length;
     assert(1 <= type && type <= 3);
 
@@ -100,33 +124,29 @@ class YAJsonIsolate {
   }
 }
 
-void _compute(SendPort p) async {
+List<dynamic> _computeResponse(dynamic input, {required bool isEncoding}) {
+  try {
+    return _buildSuccessResponse(
+      isEncoding ? jsonEncode(input) : jsonDecode(input),
+    );
+  } catch (error, stackTrace) {
+    return _buildErrorResponse(error, stackTrace);
+  }
+}
+
+void _compute(SendPort sendPort) async {
   final commandPort = ReceivePort();
-  p.send(commandPort.sendPort);
+  sendPort.send(commandPort.sendPort);
 
   await for (final event in commandPort) {
-    // [event] is a list of [input,method]
+    // [event] is a list of [input, isEncoding]
     if (event is List) {
       final input = event.first;
 
       /// `true` for encoding and `false` for decoding
-      final bool method = event.last;
-      // ignore: avoid-unnecessary-local-late
-      late final List<dynamic> computationResult;
+      final bool isEncoding = event.last;
 
-      try {
-        final dynamic res;
-        if (method == true) {
-          res = jsonEncode(input);
-        } else {
-          res = jsonDecode(input);
-        }
-        computationResult = _buildSuccessResponse(res);
-      } catch (e, s) {
-        computationResult = _buildErrorResponse(e, s);
-      }
-
-      p.send(computationResult);
+      sendPort.send(_computeResponse(input, isEncoding: isEncoding));
     } else if (event == null) {
       break;
     }
@@ -148,8 +168,8 @@ List<R> _buildSuccessResponse<R>(R result) {
 /// We wrap a caught error in a 3 element [List]. Where the last element is
 /// always null. We do this so we have a way to know if an error was one we
 /// caught or one thrown by the library code.
-List<dynamic> _buildErrorResponse(Object error, StackTrace stack) {
+List<dynamic> _buildErrorResponse(Object error, StackTrace stackTrace) {
   return List<dynamic>.filled(3, null)
     ..[0] = error
-    ..[1] = stack;
+    ..[1] = stackTrace;
 }

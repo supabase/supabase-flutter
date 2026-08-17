@@ -21,14 +21,19 @@ jobs:
       label_mappings: |
         {
           "gotrue": "auth",
+          "supabase_auth": "auth",
           "auth": "auth",
           "storage": "storage",
           "storage_client": "storage",
+          "supabase_storage": "storage",
+          "iceberg": "storage",
           "realtime": "realtime",
           "realtime_client": "realtime",
+          "supabase_realtime": "realtime",
           "postgrest": "postgrest",
           "functions": "functions",
           "functions_client": "functions",
+          "supabase_functions": "functions",
           "auth_ui": "auth-ui",
           "supabase": "supabase",
           "supabase_flutter": "supabase_flutter"

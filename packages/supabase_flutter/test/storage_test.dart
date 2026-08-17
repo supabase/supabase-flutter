@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'utils.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -9,19 +11,24 @@ void main() {
     // SharedPreferencesLocalStorage Tests
     group('SharedPreferencesLocalStorage', () {
       const testSessionValue = '{"key": "value"}';
+      var testCount = 0;
 
       Future<SharedPreferencesLocalStorage> createFreshLocalStorage() async {
-        // Use a unique key for each test to ensure complete isolation
-        final uniqueKey =
-            'test_persist_key_${DateTime.now().microsecondsSinceEpoch}';
+        // A key per test, counted rather than timestamped: on web the storage
+        // goes to the window's own localStorage, which outlives the test, and
+        // `microsecondsSinceEpoch` is only millisecond-resolution there, so two
+        // tests in the same millisecond used to share a key.
+        final uniqueKey = 'test_persist_key_${testCount++}';
 
         // Set up fresh shared preferences for each test
-        SharedPreferences.setMockInitialValues({});
+        mockSharedPreferences();
 
         final localStorage = SharedPreferencesLocalStorage(
           persistSessionKey: uniqueKey,
         );
         await localStorage.initialize();
+        // The web store can hold a value from an earlier run under this key.
+        await localStorage.removePersistedSession();
         return localStorage;
       }
 
@@ -55,7 +62,8 @@ void main() {
         final localStorage = await createFreshLocalStorage();
         await localStorage.persistSession(testSessionValue);
 
-        // Verify the session was stored by checking through localStorage's own methods
+        // Verify the session was stored by checking through localStorage's own
+        // methods
         final hasToken = await localStorage.hasAccessToken();
         expect(hasToken, isTrue);
 
@@ -76,24 +84,21 @@ void main() {
       });
     });
 
-    // SharedPreferencesGotrueAsyncStorage Tests
-    group('SharedPreferencesGotrueAsyncStorage', () {
-      late SharedPreferencesGotrueAsyncStorage asyncStorage;
+    // SharedPreferencesAuthAsyncStorage Tests
+    group('SharedPreferencesAuthAsyncStorage', () {
+      late SharedPreferencesAuthAsyncStorage asyncStorage;
       const testKey = 'test_key';
       const testValue = 'test_value';
 
-      setUp(() async {
+      setUp(() {
         // Set up fake shared preferences
-        SharedPreferences.setMockInitialValues({});
-        asyncStorage = SharedPreferencesGotrueAsyncStorage();
-        // Allow for initialization to complete
-        await Future.delayed(const Duration(milliseconds: 100));
+        mockSharedPreferences();
+        asyncStorage = SharedPreferencesAuthAsyncStorage();
       });
 
       test('setItem stores value for key', () async {
         await asyncStorage.setItem(key: testKey, value: testValue);
-        final preferences = await SharedPreferences.getInstance();
-        final storedValue = preferences.getString(testKey);
+        final storedValue = await SharedPreferencesAsync().getString(testKey);
         expect(storedValue, testValue);
       });
 

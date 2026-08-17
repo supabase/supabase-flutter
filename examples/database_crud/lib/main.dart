@@ -58,8 +58,8 @@ class _TasksPageState extends State<TasksPage> {
   bool _mutating = false;
   Timer? _debounce;
 
-  /// Bumped on every task reload so a slower earlier request can't overwrite the
-  /// results of a later one.
+  /// Bumped on every task reload so a slower earlier request can't overwrite
+  /// the results of a later one.
   int _requestId = 0;
 
   @override
@@ -87,8 +87,8 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   /// Reloads the task list for the current filters. Leaves the previous list on
-  /// screen while it runs, so changing a filter or toggling a task doesn't flash
-  /// a spinner over the whole list.
+  /// screen while it runs, so changing a filter or toggling a task doesn't
+  /// flash a spinner over the whole list.
   Future<void> _loadTasks() async {
     final requestId = ++_requestId;
     // Ignore a response if a newer reload started or the widget went away while
@@ -158,27 +158,9 @@ class _TasksPageState extends State<TasksPage> {
   }
 
   Future<void> _rename(Task task) async {
-    final controller = TextEditingController(text: task.title);
     final title = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rename task'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Title'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (context) => _RenameDialog(initialTitle: task.title),
     );
     if (title == null || title.isEmpty) return;
     await _mutate(() => _repository.renameTask(id: task.id, title: title));
@@ -374,6 +356,52 @@ class _TaskFormResult {
   final Priority priority;
 }
 
+/// Asks for a new title for an existing task.
+///
+/// Owns its [TextEditingController] so that it is disposed together with the
+/// dialog. Creating the controller in the caller instead would either leak it
+/// or dispose it while the route is still animating out.
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.initialTitle});
+
+  final String initialTitle;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final _title = TextEditingController(text: widget.initialTitle);
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Rename task'),
+      content: TextField(
+        controller: _title,
+        autofocus: true,
+        decoration: const InputDecoration(labelText: 'Title'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _title.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
 class _TaskDialog extends StatefulWidget {
   const _TaskDialog({required this.projects});
 
@@ -411,40 +439,47 @@ class _TaskDialogState extends State<_TaskDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('New task'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _title,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Title'),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _projectId,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Project'),
-            items: [
-              for (final project in widget.projects)
-                DropdownMenuItem(
-                  value: project.id,
-                  child: Text(project.name),
-                ),
-            ],
-            onChanged: (value) => setState(() => _projectId = value!),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<Priority>(
-            initialValue: _priority,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Priority'),
-            items: [
-              for (final priority in Priority.values)
-                DropdownMenuItem(value: priority, child: Text(priority.label)),
-            ],
-            onChanged: (value) => setState(() => _priority = value!),
-          ),
-        ],
+      // Scrolls so the fields still fit, and the actions stay reachable, when
+      // the keyboard leaves the dialog little room on a phone.
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _title,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _projectId,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Project'),
+              items: [
+                for (final project in widget.projects)
+                  DropdownMenuItem(
+                    value: project.id,
+                    child: Text(project.name),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _projectId = value!),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<Priority>(
+              initialValue: _priority,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Priority'),
+              items: [
+                for (final priority in Priority.values)
+                  DropdownMenuItem(
+                    value: priority,
+                    child: Text(priority.label),
+                  ),
+              ],
+              onChanged: (value) => setState(() => _priority = value!),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -458,7 +493,7 @@ class _TaskDialogState extends State<_TaskDialog> {
 }
 
 void _showError(Object error) {
-  final message = error is PostgrestException
+  final message = error is PostgrestApiException
       ? error.message
       : error.toString();
   messengerKey.currentState?.showSnackBar(

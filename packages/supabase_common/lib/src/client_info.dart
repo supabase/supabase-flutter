@@ -33,9 +33,9 @@ String normalizePlatformName(String operatingSystem) =>
 /// Builds the value of the `X-Client-Info` header.
 ///
 /// When [platformInfo] is `null` the minimal `'$clientName/$version'` form is
-/// returned. Otherwise a `; `-joined list is returned, appending `platform`,
-/// `platform-version`, `runtime` and `runtime-version` segments for the
-/// non-null fields.
+/// returned. Otherwise a `; `-joined list is returned, always including a
+/// `runtime=dart` segment and appending `platform`, `platform-version` and
+/// `runtime-version` segments for the non-null fields.
 String buildClientInfoHeader(
   String clientName,
   String version, {
@@ -44,11 +44,14 @@ String buildClientInfoHeader(
   if (platformInfo == null) {
     return '$clientName/$version';
   }
+  final rawPlatformVersion = platformInfo.platformVersion;
+  final platformVersion = rawPlatformVersion == null
+      ? null
+      : Uri.encodeFull(rawPlatformVersion).replaceAll('%20', ' ');
   return [
     '$clientName/$version',
     if (platformInfo.platform != null) 'platform=${platformInfo.platform}',
-    if (platformInfo.platformVersion != null)
-      'platform-version=${Uri.encodeFull(platformInfo.platformVersion!).replaceAll("%20", " ")}',
+    if (platformVersion != null) 'platform-version=$platformVersion',
     'runtime=dart',
     if (platformInfo.runtimeVersion != null)
       'runtime-version=${platformInfo.runtimeVersion}',

@@ -1,6 +1,6 @@
-/// Simplifies JSON parsing in isolates by keeping one isolate running per instance.
+/// Simplifies JSON parsing in isolates by keeping one isolate running per
+/// instance.
 library;
 
 export 'src/_isolates_io.dart'
-    if (dart.library.js_interop) 'src/_isolates_web.dart' // After Dart 3.3
-    if (dart.library.js) 'src/_isolates_web.dart'; // Before Dart 3.3 (for backwards compatibility)
+    if (dart.library.js_interop) 'src/_isolates_web.dart';

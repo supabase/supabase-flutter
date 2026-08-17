@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,7 +19,7 @@ import 'clear_auth_url_parameters_stub.dart'
 /// Integrates Supabase Auth with the Flutter application lifecycle.
 ///
 /// [SupabaseAuth] acts as the bridge between the Flutter widget tree and the
-/// underlying [GoTrueClient]. It is an internal singleton managed by [Supabase]
+/// underlying [AuthClient]. It is an internal singleton managed by [Supabase]
 /// and should not be instantiated directly by application code — use
 /// `Supabase.instance.client.auth` for auth operations.
 ///
@@ -28,15 +29,16 @@ import 'clear_auth_url_parameters_stub.dart'
 /// - Observes deep links (universal links / custom URL schemes) and exchanges
 ///   auth codes or tokens found in those links for a valid session, supporting
 ///   both PKCE and Implicit OAuth flows.
-/// - Forwards Flutter `AppLifecycleState` changes (via `WidgetsBindingObserver`)
-///   to the auth client so that token refresh resumes correctly after the app
+/// - Forwards Flutter `AppLifecycleState` changes (via
+///   `WidgetsBindingObserver`) to the auth client so that token refresh
+///   resumes correctly after the app
 ///   returns to the foreground.
 /// - Emits an [AuthChangeEvent.initialSession] event at startup so that
 ///   listeners receive a consistent first event regardless of whether a stored
 ///   session exists.
 ///
 /// **Key collaborators:**
-/// - [GoTrueClient] (`Supabase.instance.client.auth`) — the underlying auth
+/// - [AuthClient] (`Supabase.instance.client.auth`) — the underlying auth
 ///   client that [SupabaseAuth] coordinates with.
 /// - [LocalStorage] — pluggable storage backend for session persistence.
 /// - `AppLinks` — provides the incoming deep link stream and the initial link
@@ -50,8 +52,11 @@ import 'clear_auth_url_parameters_stub.dart'
 ///    stops deep link monitoring.
 ///
 /// **Platform notes:**
-/// - Deep link handling is skipped on web (`kIsWeb`) because the browser
-///   handles URL-based redirects directly.
+/// - On web (`kIsWeb`), the continuous deep link stream is not listened to;
+///   only the URL the app was loaded with is inspected once at startup,
+///   since browser navigation triggers a full page load rather than a
+///   stream event.
+@internal
 class SupabaseAuth with WidgetsBindingObserver {
   static WidgetsBinding get _widgetsBindingInstance => WidgetsBinding.instance;
 
@@ -79,7 +84,8 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// - Obtains session from local storage and sets it as the current session
   /// - Starts a deep link observer
-  /// - Emits an initial session if there were no session stored in local storage
+  /// - Emits an initial session if there were no session stored in local
+  ///   storage
   ///
   /// Errors emitted by the auth state change stream (e.g. during token refresh
   /// or network failures) are logged by the underlying auth client and do not
@@ -96,7 +102,7 @@ class SupabaseAuth with WidgetsBindingObserver {
         unawaited(_onAuthStateChange(data.event, data.session));
       },
       onError: (error, stackTrace) {
-        // Errors are already logged by GoTrueClient.notifyException before
+        // Errors are already logged by AuthClient.notifyException before
         // being added to the stream. The empty handler prevents them from
         // being rethrown as unhandled zone errors.
       },
@@ -324,7 +330,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 }
 
-extension GoTrueClientSignInProvider on GoTrueClient {
+extension AuthClientSignInProvider on AuthClient {
   /// Signs the user in using a third party providers.
   ///
   /// ```dart
@@ -336,8 +342,8 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// ```
   ///
   /// The return value of this method is not the auth result, and whether the
-  /// OAuth sign-in has succeeded or not should be observed by setting a listener
-  /// on [auth.onAuthStateChanged].
+  /// OAuth sign-in has succeeded or not should be observed by setting a
+  /// listener on [AuthClient.onAuthStateChange].
   ///
   /// To obtain the OAuth URL without launching a browser, use
   /// [getOAuthSignInUrl] instead.
@@ -350,26 +356,24 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     String? redirectTo,
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
-    Map<String, String>? queryParams,
+    Map<String, String>? queryParameters,
   }) async {
-    final res = await getOAuthSignInUrl(
+    final response = await getOAuthSignInUrl(
       provider: provider,
       redirectTo: redirectTo,
       scopes: scopes,
-      queryParams: queryParams,
+      queryParameters: queryParameters,
     );
-    return _launchAuthUrl(res.url, provider, authScreenLaunchMode);
+    return _launchAuthUrl(response.url, provider, authScreenLaunchMode);
   }
 
   /// Launches the [url] for an OAuth or identity-linking flow, forcing an
   /// external browser for Google on Android.
   Future<bool> _launchAuthUrl(
-    String url,
+    Uri url,
     OAuthProvider provider,
     LaunchMode authScreenLaunchMode,
   ) {
-    final uri = Uri.parse(url);
-
     LaunchMode launchMode = authScreenLaunchMode;
 
     // `defaultTargetPlatform` reports the host OS even on web, so guard with
@@ -383,7 +387,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     }
 
     return launchUrl(
-      uri,
+      url,
       mode: launchMode,
       webOnlyWindowName: '_self',
     );
@@ -402,8 +406,9 @@ extension GoTrueClientSignInProvider on GoTrueClient {
   /// If you have built an organization-specific login page, you can use the
   /// organization's SSO Identity Provider UUID directly instead.
   ///
-  /// Returns true if the URL was launched successfully, otherwise either returns
-  /// false or throws a [PlatformException] depending on the launchUrl failure.
+  /// Returns true if the URL was launched successfully, otherwise either
+  /// returns false or throws a [PlatformException] depending on the launchUrl
+  /// failure.
   ///
   /// ```dart
   /// await supabase.auth.signInWithSSO(
@@ -424,7 +429,7 @@ extension GoTrueClientSignInProvider on GoTrueClient {
       captchaToken: captchaToken,
     );
     return await launchUrl(
-      Uri.parse(ssoUrl),
+      ssoUrl,
       mode: launchMode,
       webOnlyWindowName: '_self',
     );
@@ -442,14 +447,14 @@ extension GoTrueClientSignInProvider on GoTrueClient {
     String? redirectTo,
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
-    Map<String, String>? queryParams,
+    Map<String, String>? queryParameters,
   }) async {
-    final res = await getLinkIdentityUrl(
+    final response = await getLinkIdentityUrl(
       provider,
       redirectTo: redirectTo,
       scopes: scopes,
-      queryParams: queryParams,
+      queryParameters: queryParameters,
     );
-    return _launchAuthUrl(res.url, provider, authScreenLaunchMode);
+    return _launchAuthUrl(response.url, provider, authScreenLaunchMode);
   }
 }

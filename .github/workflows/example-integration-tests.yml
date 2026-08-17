@@ -1,8 +1,13 @@
+# Runs on release pull requests, and on any pull request labelled
+# "integration tests" so the suite can be exercised on demand.
 name: Example integration tests
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, edited]
+    # No "edited": a bot rewriting the description would otherwise cancel and
+    # restart the whole matrix. Release pull requests are opened with their
+    # title, and any other one can opt in with the label.
+    types: [opened, reopened, synchronize, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,7 +23,9 @@ env:
 jobs:
   backend:
     name: Host shared Supabase
-    if: startsWith(github.event.pull_request.title, 'chore(release)')
+    if: >-
+      startsWith(github.event.pull_request.title, 'chore(release)')
+      || contains(github.event.pull_request.labels.*.name, 'integration tests')
     timeout-minutes: 60
     runs-on: ubuntu-latest
     env:
@@ -26,10 +33,10 @@ jobs:
       TARGET_IDS: linux web android macos ios windows
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
@@ -73,7 +80,7 @@ jobs:
             > endpoint/endpoint.json
 
       - name: Publish Supabase endpoint
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: supabase-endpoint
           path: endpoint/endpoint.json
@@ -105,7 +112,9 @@ jobs:
 
   test:
     name: ${{ matrix.id }}
-    if: startsWith(github.event.pull_request.title, 'chore(release)')
+    if: >-
+      startsWith(github.event.pull_request.title, 'chore(release)')
+      || contains(github.event.pull_request.labels.*.name, 'integration tests')
     timeout-minutes: 45
     runs-on: ${{ matrix.os }}
     strategy:
@@ -115,14 +124,14 @@ jobs:
           - { id: linux, os: ubuntu-latest, target: linux }
           - { id: web, os: ubuntu-latest, target: web }
           - { id: android, os: ubuntu-latest, target: android }
-          - { id: macos, os: macos-latest, target: macos }
-          - { id: ios, os: macos-latest, target: ios }
+          - { id: macos, os: blacksmith-6vcpu-macos-latest, target: macos }
+          - { id: ios, os: blacksmith-6vcpu-macos-latest, target: ios }
           - { id: windows, os: windows-latest, target: windows }
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -136,13 +145,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build libgtk-3-dev xvfb
 
+      - name: Enable KVM
+        if: matrix.target == 'android'
+        run: |
+          # Without access to /dev/kvm the emulator falls back to software
+          # emulation, which takes minutes to boot and then stops responding.
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
       - name: Boot iOS simulator
         if: matrix.target == 'ios'
         run: |
           set -euo pipefail
           udid=$(xcrun simctl list devices available -j \
             | jq -r '[.devices[][] | select(.name | test("iPhone"))][0].udid')
-          xcrun simctl boot "$udid" || true
+          # Erases first: the tests hang waiting for the app's VM service on a
+          # simulator carrying state from the runner image. Then boots and waits
+          # for the boot to finish, so the tests cannot launch into a simulator
+          # that is still coming up.
+          xcrun simctl shutdown all || true
+          xcrun simctl erase "$udid"
+          xcrun simctl bootstatus "$udid" -b
           echo "IOS_DEVICE=$udid" >> "$GITHUB_ENV"
 
       - name: Wait for the Supabase endpoint
@@ -172,6 +197,36 @@ jobs:
               && flutter pub get)
           done
 
+      - name: Prepare the scaffolded macOS apps
+        if: matrix.target == 'macos'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The scaffolding only grants the sandbox the network server
+          # entitlement, so without the client one every request to Supabase
+          # fails with "Operation not permitted".
+          for example in database_crud passkeys; do
+            for config in DebugProfile Release; do
+              /usr/libexec/PlistBuddy \
+                -c 'Add :com.apple.security.network.client bool true' \
+                "examples/$example/macos/Runner/$config.entitlements"
+            done
+          done
+          # The passkeys plugin is only available from macOS 13.5, so the
+          # scaffolded 10.15 target fails to compile the plugin registrant.
+          sed -i '' 's/MACOSX_DEPLOYMENT_TARGET = [0-9.]*;/MACOSX_DEPLOYMENT_TARGET = 13.5;/g' \
+            examples/passkeys/macos/Runner.xcodeproj/project.pbxproj
+
+      - name: Prepare the scaffolded iOS apps
+        if: matrix.target == 'ios'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # As above, the passkeys plugin needs iOS 16 rather than the
+          # scaffolded 13.0.
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*;/IPHONEOS_DEPLOYMENT_TARGET = 16.0;/g' \
+            examples/passkeys/ios/Runner.xcodeproj/project.pbxproj
+
       - name: Run integration tests
         if: matrix.target != 'android'
         shell: bash
@@ -179,12 +234,19 @@ jobs:
 
       - name: Run integration tests (Android emulator)
         if: matrix.target == 'android'
-        uses: reactivecircus/android-emulator-runner@c9c93e6ba9c4194322e114c40970d5983d9a07cc # v2.38.0
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 34
           arch: x86_64
           target: google_apis
           script: dart .github/scripts/run_example_integration_tests.dart android
+
+      - name: Dump the simulator log
+        if: always() && matrix.target == 'ios'
+        continue-on-error: true
+        run: |
+          xcrun simctl spawn "$IOS_DEVICE" log show --last 20m --style compact \
+            --predicate 'processImagePath ENDSWITH "Runner"' | tail -n 300
 
       - name: Signal completion
         if: always()
@@ -195,7 +257,7 @@ jobs:
 
       - name: Upload completion marker
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: done-${{ matrix.id }}
           path: done/${{ matrix.id }}

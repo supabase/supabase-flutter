@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+    groups:
+      # CodeQL fails unless init and analyze run the exact same version, so
+      # they have to be bumped together in a single pull request.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"

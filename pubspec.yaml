@@ -6,11 +6,12 @@ environment:
   sdk: '>=3.9.0 <4.0.0'
 
 workspace:
-  - packages/functions_client
-  - packages/gotrue
+  - packages/supabase_functions
+  - packages/iceberg
+  - packages/supabase_auth
   - packages/postgrest
-  - packages/realtime_client
-  - packages/storage_client
+  - packages/supabase_realtime
+  - packages/supabase_storage
   - packages/supabase
   - packages/supabase/example
   - packages/supabase_flutter

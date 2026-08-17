@@ -3,6 +3,75 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-08-05
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - There are no breaking changes in this release.
+
+Packages with other changes:
+
+ - [`gotrue` - `v2.27.1`](#gotrue---v2271)
+ - [`postgrest` - `v2.9.1`](#postgrest---v291)
+ - [`realtime_client` - `v2.13.0`](#realtime_client---v2130)
+ - [`storage_client` - `v2.8.0`](#storage_client---v280)
+ - [`supabase` - `v2.16.0`](#supabase---v2160)
+ - [`supabase_common` - `v0.1.2`](#supabase_common---v012)
+ - [`supabase_typegen` - `v0.1.1`](#supabase_typegen---v011)
+ - [`supabase_flutter` - `v2.17.1`](#supabase_flutter---v2171)
+ - [`functions_client` - `v2.7.1`](#functions_client---v271)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_flutter` - `v2.17.1`
+ - `functions_client` - `v2.7.1`
+
+---
+
+#### `gotrue` - `v2.27.1`
+
+ - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
+
+#### `postgrest` - `v2.9.1`
+
+ - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
+ - **DOCS**(postgrest): document that order() defaults to descending ([#1637](https://github.com/supabase/supabase-flutter/issues/1637)). ([dc93d761](https://github.com/supabase/supabase-flutter/commit/dc93d7618328ba51e897dd2c4dc571668b2eb6b5))
+
+#### `realtime_client` - `v2.13.0`
+
+ - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
+ - **FIX**(realtime): forward all caller opts from track() to send() ([#1620](https://github.com/supabase/supabase-flutter/issues/1620)). ([64298be1](https://github.com/supabase/supabase-flutter/commit/64298be14e2294caa08be0d6e121e1c0997e95c3))
+ - **FIX**(realtime): UTF-8 encode broadcast header fields in serializer ([#1618](https://github.com/supabase/supabase-flutter/issues/1618)). ([86afeb2c](https://github.com/supabase/supabase-flutter/commit/86afeb2cae7d21350e7d5db750af4d2bbdcb5797))
+ - **FIX**(realtime_client): stop throwing internally when converting null cell values ([#1612](https://github.com/supabase/supabase-flutter/issues/1612)). ([42068e47](https://github.com/supabase/supabase-flutter/commit/42068e47191dd9594425cc7a8cf32b4aed37cb55))
+ - **FEAT**(realtime): block adding postgres_changes listener after subscribe ([#1617](https://github.com/supabase/supabase-flutter/issues/1617)). ([3592fda3](https://github.com/supabase/supabase-flutter/commit/3592fda32b61668f3b8c225f299bed1c227207c6))
+
+#### `storage_client` - `v2.8.0`
+
+ - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
+ - **FEAT**(storage): add purgeCache to invalidate CDN cache for a single object ([#1607](https://github.com/supabase/supabase-flutter/issues/1607)). ([4acd0a01](https://github.com/supabase/supabase-flutter/commit/4acd0a01eadc2671c3f9446f323cab84e943aaeb))
+
+#### `supabase` - `v2.16.0`
+
+ - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
+ - **REFACTOR**(supabase): rename stream regex filters and cover stream filters with tests ([#1639](https://github.com/supabase/supabase-flutter/issues/1639)). ([b9c31bb2](https://github.com/supabase/supabase-flutter/commit/b9c31bb24e0f7efb6ec5ea127498dd197680bb8a))
+ - **FIX**(functions): never send new-format API key as Bearer; warn on unrecognized sb_ key subtype ([#1615](https://github.com/supabase/supabase-flutter/issues/1615)). ([1e5a379b](https://github.com/supabase/supabase-flutter/commit/1e5a379b0091f62adaf27bb09c3e7c5192aa0150))
+ - **FEAT**: support more realtime filters and multiple filters for stream ([#1610](https://github.com/supabase/supabase-flutter/issues/1610)). ([54470639](https://github.com/supabase/supabase-flutter/commit/5447063948f57308848391a8928951b4b1f21ae7))
+
+#### `supabase_common` - `v0.1.2`
+
+ - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
+
+#### `supabase_typegen` - `v0.1.1`
+
+ - **FEAT**(typegen): add supabase_typegen skeleton package ([#1636](https://github.com/supabase/supabase-flutter/issues/1636)). ([91f26da0](https://github.com/supabase/supabase-flutter/commit/91f26da084369e88ad378127632d9326cef863a0))
+
+
 ## 2026-07-15
 
 ### Changes

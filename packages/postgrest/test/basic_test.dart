@@ -14,7 +14,7 @@ void main() {
   final resetHelper = ResetHelper();
   group("Default http client", () {
     setUpAll(() async {
-      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+      postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
 
       await resetHelper.initialize(postgrest);
     });
@@ -24,7 +24,7 @@ void main() {
     });
 
     setUp(() {
-      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+      postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
     });
 
     tearDown(() async {
@@ -93,13 +93,16 @@ void main() {
     });
 
     test('custom headers', () async {
-      final client = PostgrestClient(rootUrl, headers: {'apikey': 'foo'});
+      final client = PostgrestClient(
+        localStackRestUrl,
+        headers: {'apikey': 'foo'},
+      );
       expect(client.headers['apikey'], 'foo');
     });
 
     test('override X-Client-Info', () async {
       final client = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
       );
       expect(
@@ -109,7 +112,7 @@ void main() {
     });
 
     test('auth', () async {
-      postgrest = PostgrestClient(rootUrl).setAuth('foo');
+      postgrest = PostgrestClient(localStackRestUrl).setAccessToken('foo');
       expect(
         postgrest.headers['Authorization'],
         'Bearer foo',
@@ -118,7 +121,7 @@ void main() {
 
     test('set header on rpc', () async {
       final httpClient = CustomHttpClient();
-      final client = PostgrestClient(rootUrl, httpClient: httpClient);
+      final client = PostgrestClient(localStackRestUrl, httpClient: httpClient);
 
       await client
           .rpc('empty-succ')
@@ -137,7 +140,7 @@ void main() {
 
     test('set header on query builder', () async {
       final httpClient = CustomHttpClient();
-      final client = PostgrestClient(rootUrl, httpClient: httpClient);
+      final client = PostgrestClient(localStackRestUrl, httpClient: httpClient);
 
       await client
           .from('empty-succ')
@@ -156,7 +159,7 @@ void main() {
 
     test('switch schema', () async {
       final client = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         schema: 'personal',
         headers: apiHeaders,
       );
@@ -165,7 +168,7 @@ void main() {
     });
 
     test('query non-public schema dynamically', () async {
-      final client = PostgrestClient(rootUrl, headers: apiHeaders);
+      final client = PostgrestClient(localStackRestUrl, headers: apiHeaders);
       final personalData = await client
           .schema('personal')
           .from('users')
@@ -326,7 +329,11 @@ void main() {
       await expectLater(
         () => postgrest.from('missing_table').select(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', 'PGRST205'),
+          isA<PostgrestApiException>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            'PGRST205',
+          ),
         ),
       );
     });
@@ -505,7 +512,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );
@@ -518,7 +525,13 @@ void main() {
     test('basic select table', () async {
       await expectLater(
         () => postgrestCustomHttpClient.from('users').select(),
-        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
+        ),
       );
     });
     test(
@@ -538,7 +551,13 @@ void main() {
             .from('users')
             .select()
             .withConverter((data) => data),
-        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
+        ),
       );
     });
     test('basic stored procedure call', () async {
@@ -547,7 +566,13 @@ void main() {
           'get_status',
           params: {'name_param': 'supabot'},
         ),
-        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
+        ),
       );
       expect(customHttpClient.lastRequest?.method, "POST");
     });
@@ -559,7 +584,13 @@ void main() {
           params: {'name_param': 'supabot'},
           get: true,
         ),
-        throwsA(isA<PostgrestException>().having((e) => e.code, 'code', '420')),
+        throwsA(
+          isA<PostgrestApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            420,
+          ),
+        ),
       );
       expect(customHttpClient.lastRequest?.method, "GET");
       expect(customHttpClient.lastBody, isEmpty);
@@ -569,13 +600,26 @@ void main() {
       await expectLater(
         () => postgrestCustomHttpClient.from('non-json-succ').select(),
         throwsA(
-          isA<PostgrestException>()
-              .having((e) => e.code, 'code', '200')
+          isA<PostgrestApiException>()
+              .having((e) => e.statusCode, 'statusCode', 200)
               .having(
                 (e) => e.message,
                 'message',
                 '<html><body>502 Bad Gateway</body></html>',
               ),
+        ),
+      );
+    });
+
+    test('a JSON error body with unexpected field types still throws '
+        'a PostgrestApiException', () async {
+      await expectLater(
+        () => postgrestCustomHttpClient.from('gateway-json-error').select(),
+        throwsA(
+          isA<PostgrestApiException>()
+              .having((e) => e.statusCode, 'statusCode', 502)
+              .having((e) => e.message, 'message', 'Bad gateway')
+              .having((e) => e.errorCode, 'errorCode', '502'),
         ),
       );
     });
@@ -587,7 +631,11 @@ void main() {
             .select()
             .maybeSingle(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '200'),
+          isA<PostgrestApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            200,
+          ),
         ),
       );
     });

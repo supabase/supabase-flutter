@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'utils.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
@@ -17,7 +17,7 @@ void main() {
 
   group('Supabase initialization', () {
     setUp(() {
-      SharedPreferences.setMockInitialValues({});
+      mockSharedPreferences();
       mockAppLink();
     });
 
@@ -141,6 +141,32 @@ void main() {
           publishableKey: supabaseKey,
           debug: false,
         );
+      });
+
+      test('dispose drops the reference to the client', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+        );
+
+        final supabase = Supabase.instance;
+        await supabase.dispose();
+
+        expect(() => supabase.client, throwsStateError);
+      });
+
+      test('dispose can be called more than once', () async {
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          debug: false,
+        );
+
+        final supabase = Supabase.instance;
+        await supabase.dispose();
+
+        await expectLater(supabase.dispose(), completes);
       });
 
       test('handles multiple initializations correctly', () async {

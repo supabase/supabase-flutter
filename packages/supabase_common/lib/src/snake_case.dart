@@ -5,10 +5,10 @@ extension ToSnakeCase on Enum {
     final A = 'A'.codeUnitAt(0), Z = 'Z'.codeUnitAt(0);
     final result = StringBuffer()..write(name[0].toLowerCase());
     for (var i = 1; i < name.length; i++) {
-      final char = name.codeUnitAt(i);
-      if (A <= char && char <= Z) {
-        final pChar = name.codeUnitAt(i - 1);
-        if (a <= pChar && pChar <= z) {
+      final character = name.codeUnitAt(i);
+      if (A <= character && character <= Z) {
+        final previousCharacter = name.codeUnitAt(i - 1);
+        if (a <= previousCharacter && previousCharacter <= z) {
           result.write('_');
         }
       }

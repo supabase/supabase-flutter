@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:math';
+
+import 'package:supabase_common/src/backoff.dart';
 
 /// Options for retrying a function.
 ///
@@ -31,17 +32,18 @@ class RetryOptions {
     if (attempt <= 0) {
       return Duration.zero;
     }
-    final randomization =
-        randomizationFactor * (Random().nextDouble() * 2 - 1) + 1;
-    final exponent = min(attempt, 31);
-    final delay = delayFactor * pow(2.0, exponent) * randomization;
-    return delay < maxDelay ? delay : maxDelay;
+    return exponentialBackoff(
+      attempt,
+      initialDelay: delayFactor,
+      maxDelay: maxDelay,
+      randomizationFactor: randomizationFactor,
+    );
   }
 
-  /// Calls [fn], retrying so long as [retryIf] returns `true` for the thrown
-  /// [Exception], up to [maxAttempts] times.
+  /// Calls [action], retrying so long as [retryIf] returns `true` for the
+  /// thrown [Exception], up to [maxAttempts] times.
   Future<T> retry<T>(
-    FutureOr<T> Function() fn, {
+    FutureOr<T> Function() action, {
     FutureOr<bool> Function(Exception)? retryIf,
     FutureOr<void> Function(Exception)? onRetry,
   }) async {
@@ -49,7 +51,7 @@ class RetryOptions {
     while (true) {
       attempt++;
       try {
-        return await fn();
+        return await action();
       } on Exception catch (error) {
         if (attempt >= maxAttempts ||
             (retryIf != null && !(await retryIf(error)))) {
@@ -64,10 +66,10 @@ class RetryOptions {
   }
 }
 
-/// Calls [fn], retrying so long as [retryIf] returns `true` for the thrown
+/// Calls [action], retrying so long as [retryIf] returns `true` for the thrown
 /// [Exception], up to [maxAttempts] times.
 Future<T> retry<T>(
-  FutureOr<T> Function() fn, {
+  FutureOr<T> Function() action, {
   Duration delayFactor = const Duration(milliseconds: 200),
   double randomizationFactor = 0.25,
   Duration maxDelay = const Duration(seconds: 30),
@@ -79,4 +81,4 @@ Future<T> retry<T>(
   randomizationFactor: randomizationFactor,
   maxDelay: maxDelay,
   maxAttempts: maxAttempts,
-).retry(fn, retryIf: retryIf, onRetry: onRetry);
+).retry(action, retryIf: retryIf, onRetry: onRetry);

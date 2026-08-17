@@ -1,3 +1,10 @@
+## 2.16.0
+
+ - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
+ - **REFACTOR**(supabase): rename stream regex filters and cover stream filters with tests ([#1639](https://github.com/supabase/supabase-flutter/issues/1639)). ([b9c31bb2](https://github.com/supabase/supabase-flutter/commit/b9c31bb24e0f7efb6ec5ea127498dd197680bb8a))
+ - **FIX**(functions): never send new-format API key as Bearer; warn on unrecognized sb_ key subtype ([#1615](https://github.com/supabase/supabase-flutter/issues/1615)). ([1e5a379b](https://github.com/supabase/supabase-flutter/commit/1e5a379b0091f62adaf27bb09c3e7c5192aa0150))
+ - **FEAT**: support more realtime filters and multiple filters for stream ([#1610](https://github.com/supabase/supabase-flutter/issues/1610)). ([54470639](https://github.com/supabase/supabase-flutter/commit/5447063948f57308848391a8928951b4b1f21ae7))
+
 ## 2.15.0
 
  - **REFACTOR**(supabase): convert private stream-builder holders to records ([#1575](https://github.com/supabase/supabase-flutter/issues/1575)). ([58c2dad4](https://github.com/supabase/supabase-flutter/commit/58c2dad4968d6be36c92ffaa983127827ac97c73))

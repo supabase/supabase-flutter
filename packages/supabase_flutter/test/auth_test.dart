@@ -75,8 +75,9 @@ void main() {
             ),
           );
 
-          // Trigger an error on the auth state change stream via notifyException.
-          // This should not throw or cause an unhandled zone error.
+          // Trigger an error on the auth state change stream via
+          // notifyException. This should not throw or cause an unhandled zone
+          // error.
           final auth = Supabase.instance.client.auth;
           // ignore: invalid_use_of_internal_member
           auth.notifyException(
@@ -87,7 +88,8 @@ void main() {
           // Allow the stream listener to process the error.
           await Future.delayed(Duration.zero);
 
-          // If we reach here the error was not rethrown as an unhandled exception.
+          // If we reach here the error was not rethrown as an unhandled
+          // exception.
         },
       );
     });

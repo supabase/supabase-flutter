@@ -23,7 +23,7 @@ jobs:
       flutter: ${{ steps.detect.outputs.flutter }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -64,7 +64,7 @@ jobs:
           echo "Affected packages:"
           echo "$CHANGED"
 
-          DART_PACKAGES="functions_client gotrue postgrest realtime_client storage_client supabase supabase_common supabase_typegen yet_another_json_isolate"
+          DART_PACKAGES="iceberg postgrest supabase supabase_auth supabase_common supabase_functions supabase_realtime supabase_storage supabase_typegen yet_another_json_isolate"
 
           entries=()
           for package in $DART_PACKAGES; do
@@ -72,11 +72,11 @@ jobs:
               continue
             fi
             case "$package" in
-              gotrue|postgrest|realtime_client|storage_client|supabase) backend=true ;;
+              postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage) backend=true ;;
               *) backend=false ;;
             esac
             case "$package" in
-              gotrue|postgrest|realtime_client|storage_client|supabase) concurrency="1" ;;
+              postgrest|supabase|supabase_auth|supabase_realtime|supabase_storage) concurrency="1" ;;
               *) concurrency="0" ;;
             esac
             entries+=("{\"name\":\"$package\",\"backend\":$backend,\"concurrency\":\"$concurrency\"}")
@@ -115,7 +115,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -143,7 +143,7 @@ jobs:
 
       - name: Setup Supabase CLI
         if: ${{ matrix.package.backend }}
-        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2.1.1
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
           version: 2.109.1
 
@@ -157,7 +157,7 @@ jobs:
 
       - name: Cache Supabase Docker images
         if: ${{ matrix.package.backend }}
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: supabase-images
         with:
           path: /tmp/supabase-images
@@ -204,7 +204,7 @@ jobs:
 
       - name: Upload coverage to Coveralls
         if: ${{ matrix.channel == 'stable' }}
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -237,16 +237,23 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         flutter-version: ['3.35.x', 'latest']
+        include:
+          - os: ubuntu-latest
+            runner: ubuntu-latest
+          - os: macos-latest
+            runner: blacksmith-6vcpu-macos-latest
+          - os: windows-latest
+            runner: windows-latest
 
     defaults:
       run:
         working-directory: packages/supabase_flutter
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -283,7 +290,7 @@ jobs:
 
       - name: Upload coverage to Coveralls
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.flutter-version == 'latest' }}
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -304,7 +311,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -318,7 +325,7 @@ jobs:
           melos bootstrap
 
       - name: Install DCM
-        uses: CQLabs/setup-dcm@8697ae0790c0852e964a6ef1d768d62a6675481a # v2.0.1
+        uses: CQLabs/setup-dcm@87040f30822ed86d362425d3dfadc9866baaa03f # v2.0.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -332,12 +339,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Close parallel coverage build
-        uses: coverallsapp/github-action@5cbfd81b66ca5d10c19b062c04de0199c215fb6e # v2.3.7
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
-          carryforward: 'functions_client,gotrue,postgrest,realtime_client,storage_client,supabase,supabase_common,supabase_typegen,yet_another_json_isolate,supabase_flutter'
+          carryforward: 'iceberg,postgrest,supabase,supabase_auth,supabase_common,supabase_functions,supabase_realtime,supabase_storage,supabase_typegen,yet_another_json_isolate,supabase_flutter'
           fail-on-error: false
 
   test-result:

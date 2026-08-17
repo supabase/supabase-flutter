@@ -78,12 +78,12 @@ void main() {
     });
 
     test('emits exception when no auto refresh', () async {
-      // Give it a delay to wait for recoverSession to throw
-      await Future.delayed(const Duration(milliseconds: 100));
-
+      // The session recovery emits a `signedOut` event before the failure
+      // reaches the stream, and the subject replays only the latest event,
+      // so skip past any data events until the error arrives.
       await expectLater(
         Supabase.instance.client.auth.onAuthStateChange,
-        emitsError(isA<AuthException>()),
+        emitsThrough(emitsError(isA<AuthException>())),
       );
     });
   });

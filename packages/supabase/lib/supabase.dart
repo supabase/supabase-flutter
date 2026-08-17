@@ -3,21 +3,17 @@
 /// to build secure and scalable products.
 library;
 
-export 'package:functions_client/functions_client.dart';
-export 'package:gotrue/gotrue.dart';
-export 'package:postgrest/postgrest.dart' hide HttpMethod;
-export 'package:realtime_client/realtime_client.dart';
-export 'package:storage_client/storage_client.dart';
+export 'package:supabase_functions/supabase_functions.dart';
+export 'package:supabase_auth/supabase_auth.dart';
+export 'package:postgrest/postgrest.dart';
+export 'package:supabase_realtime/supabase_realtime.dart';
+export 'package:supabase_storage/supabase_storage.dart';
 
-export 'src/auth_user.dart';
 export 'src/realtime_client_options.dart';
-export 'src/remove_subscription_result.dart';
 export 'src/supabase_client.dart';
 export 'src/supabase_client_options.dart';
-export 'src/supabase_event_types.dart';
 export 'src/supabase_query_builder.dart';
 export 'src/supabase_query_schema.dart';
-export 'src/supabase_realtime_error.dart';
 export 'src/supabase_stream_builder.dart';
 export 'src/supabase_typed_query_builder.dart';
 export 'src/supabase_typed_stream_builder.dart';

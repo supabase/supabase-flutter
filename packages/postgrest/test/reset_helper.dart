@@ -32,34 +32,35 @@ class ResetHelper {
 
       final insertedUsers = await _postgrest.from('users').select();
 
-      // Somehow the order of the users is sometimes not correct. Adding the delay should solve this.
+      // Somehow the order of the users is sometimes not correct. Adding the
+      // delay should solve this.
       if (!DeepCollectionEquality().equals(insertedUsers, _users)) {
         return await reset(delay + 500);
       }
-    } on PostgrestException catch (exception) {
+    } on PostgrestApiException catch (exception) {
       throw 'users table was not properly reset. $exception';
     }
 
     try {
       await _postgrest.from('channels').insert(_channels);
-    } on PostgrestException catch (exception) {
+    } on PostgrestApiException catch (exception) {
       throw 'channels table was not properly reset. $exception';
     }
     try {
       await _postgrest.from('messages').insert(_messages);
-    } on PostgrestException catch (exception) {
+    } on PostgrestApiException catch (exception) {
       throw 'messages table was not properly reset. $exception';
     }
 
     try {
       await _postgrest.from('reactions').insert(_reactions);
-    } on PostgrestException catch (exception) {
+    } on PostgrestApiException catch (exception) {
       throw 'reactions table was not properly reset. $exception';
     }
 
     try {
       await _postgrest.from('addresses').insert(_addresses);
-    } on PostgrestException catch (exception) {
+    } on PostgrestApiException catch (exception) {
       throw 'reactions table was not properly reset. $exception';
     }
   }

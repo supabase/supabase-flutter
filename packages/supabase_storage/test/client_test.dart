@@ -1,0 +1,1025 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
+import 'package:mime/mime.dart';
+import "package:path/path.dart" show join;
+import 'package:supabase_storage/supabase_storage.dart';
+import 'package:supabase_common/testing.dart';
+import 'package:test/test.dart';
+
+import 'custom_http_client.dart';
+
+/// Prefix of every bucket this suite creates, so the clean up can tell them
+/// apart from the seeded buckets and from those of any other suite.
+const _bucketNamespace = 'client-test-';
+
+final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round();
+final newBucketName = '${_bucketNamespace}bucket-$timestamp';
+
+final uploadPath = 'testpath/file-${DateTime.now().toIso8601String()}.jpg';
+
+// These tests run against the buckets and objects seeded by supabase/seed.sql
+// and create additional buckets as they go, so they are order-dependent: later
+// tests reuse the buckets earlier ones created. The buckets they create are
+// removed before and after the suite, so a run can be repeated against the same
+// stack.
+void main() {
+  late SupabaseStorageClient storage;
+
+  late File file;
+
+  Future<String> findOrCreateBucket(String name, [bool isPublic = true]) async {
+    try {
+      await storage.getBucket(name);
+    } catch (error) {
+      await storage.createBucket(name, BucketOptions(public: isPublic));
+    }
+    return name;
+  }
+
+  // Buckets an interrupted run left behind would make creating them again fail
+  // and would show up in the bucket listing, so they are removed up front.
+  setUpAll(_removeTemporaryBuckets);
+
+  tearDownAll(_removeTemporaryBuckets);
+
+  setUp(() async {
+    // init SupabaseClient with test url & test key
+    storage = SupabaseStorageClient(localStackStorageUrl, {
+      'Authorization': 'Bearer $localStackServiceRoleKey',
+    });
+
+    file = File(
+      join(Directory.current.path, 'test', 'fixtures', 'upload', 'sadcat.jpg'),
+    );
+  });
+
+  test('List files', () async {
+    final response = await storage.from('bucket2').list(path: 'public');
+    expect(response.length, 2);
+  });
+
+  test('List buckets', () async {
+    final response = await storage.listBuckets();
+    expect(response.map((bucket) => bucket.name), containsAll(_seededBuckets));
+  });
+
+  test('Get bucket by id', () async {
+    final response = await storage.getBucket('bucket2');
+    expect(response.name, 'bucket2');
+  });
+
+  test('Get bucket with wrong id', () async {
+    await expectLater(
+      storage.getBucket('not-exist-id'),
+      throwsA(isNotNull),
+    );
+  });
+
+  test('Create new bucket', () async {
+    final response = await storage.createBucket(newBucketName);
+    expect(response, newBucketName);
+  });
+  test('createSignedUrls completes successfully', () async {
+    await storage.from(newBucketName).upload(uploadPath, file);
+    expect(
+      storage.from(newBucketName).createSignedUrls([uploadPath], 2000),
+      completes,
+    );
+  });
+
+  test('Create new public bucket', () async {
+    const newPublicBucketName = '${_bucketNamespace}public-bucket';
+    await storage.createBucket(
+      newPublicBucketName,
+      const BucketOptions(public: true),
+    );
+    final response = await storage.getBucket(newPublicBucketName);
+    expect(response.public, isTrue);
+    expect(response.name, newPublicBucketName);
+  });
+
+  test('update bucket', () async {
+    final newBucketName = '${_bucketNamespace}bucket-${DateTime.now()}';
+    await storage.createBucket(newBucketName);
+
+    final updateResult = await storage.updateBucket(
+      newBucketName,
+      const BucketOptions(
+        public: true,
+        fileSizeLimit: '20mb', // 20 mb
+        allowedMimeTypes: ['image/jpeg'],
+      ),
+    );
+    expect(updateResult, 'Successfully updated');
+
+    final bucket = await storage.getBucket(newBucketName);
+    expect(bucket.public, isTrue);
+    expect(bucket.fileSizeLimit, 20000000);
+    expect(bucket.allowedMimeTypes, hasLength(1));
+    expect(bucket.allowedMimeTypes!.first, 'image/jpeg');
+  });
+
+  test('partially update bucket', () async {
+    final newBucketName = '${_bucketNamespace}bucket-${DateTime.now()}';
+    await storage.createBucket(
+      newBucketName,
+      const BucketOptions(
+        public: true,
+        fileSizeLimit: '20mb', // 20 mb
+        allowedMimeTypes: ['image/jpeg'],
+      ),
+    );
+    final updateResult = await storage.updateBucket(
+      newBucketName,
+      const BucketOptions(public: false),
+    );
+    expect(updateResult, 'Successfully updated');
+    final bucket = await storage.getBucket(newBucketName);
+    expect(bucket.public, isFalse);
+    expect(bucket.fileSizeLimit, 20000000);
+    expect(bucket.allowedMimeTypes, hasLength(1));
+    expect(bucket.allowedMimeTypes!.first, 'image/jpeg');
+  });
+
+  test('Empty bucket', () async {
+    final response = await storage.emptyBucket(newBucketName);
+    expect(
+      response,
+      'Empty bucket has been queued. Completion may take up to an hour.',
+    );
+  });
+
+  test('Delete bucket', () async {
+    final response = await storage.deleteBucket(newBucketName);
+    expect(response, 'Successfully deleted');
+  });
+
+  group('Signed upload URL', () {
+    setUpAll(() async {
+      await findOrCreateBucket(newBucketName);
+    });
+
+    tearDown(() async {
+      await storage.emptyBucket(newBucketName);
+    });
+
+    tearDownAll(() async {
+      await storage.deleteBucket(newBucketName);
+    });
+
+    test('sign url for upload', () async {
+      final response = await storage
+          .from(newBucketName)
+          .createSignedUploadUrl(uploadPath);
+
+      expect(response.path, uploadPath);
+      expect(response.token, isNotEmpty);
+      expect(
+        response.signedUrl,
+        contains(
+          '$localStackStorageUrl/object/upload/sign/$newBucketName/$uploadPath',
+        ),
+      );
+    });
+
+    test('can upload with a signed url', () async {
+      final response = await storage
+          .from(newBucketName)
+          .createSignedUploadUrl(uploadPath);
+
+      final uploadResponse = await storage
+          .from(newBucketName)
+          .uploadToSignedUrl(response.path, response.token, file);
+
+      expect(uploadResponse.path, uploadPath);
+      expect(uploadResponse.fullPath, '$newBucketName/$uploadPath');
+    });
+
+    test('can upload a binary file with a signed url', () async {
+      final response = await storage
+          .from(newBucketName)
+          .createSignedUploadUrl(uploadPath);
+
+      final uploadResponse = await storage
+          .from(newBucketName)
+          .uploadBinaryToSignedUrl(
+            response.path,
+            response.token,
+            file.readAsBytesSync(),
+          );
+
+      expect(uploadResponse.path, uploadPath);
+    });
+
+    test('cannot upload to a signed url twice', () async {
+      final response = await storage
+          .from(newBucketName)
+          .createSignedUploadUrl(uploadPath);
+
+      final uploadResponse = await storage
+          .from(newBucketName)
+          .uploadToSignedUrl(response.path, response.token, file);
+
+      expect(uploadResponse.path, uploadPath);
+      await expectLater(
+        storage
+            .from(newBucketName)
+            .uploadToSignedUrl(response.path, response.token, file),
+        throwsA(
+          isA<StorageApiException>()
+              .having((e) => e.errorCode, 'errorCode', 'Duplicate')
+              .having(
+                (e) => e.message,
+                'message',
+                'The resource already exists',
+              )
+              .having((e) => e.statusCode, 'statusCode', 409),
+        ),
+      );
+    });
+
+    test('an upsert signed url can overwrite an existing file', () async {
+      await storage.from(newBucketName).upload(uploadPath, file);
+
+      final response = await storage
+          .from(newBucketName)
+          .createSignedUploadUrl(uploadPath, upsert: true);
+
+      final uploadResponse = await storage
+          .from(newBucketName)
+          .uploadToSignedUrl(response.path, response.token, file);
+
+      expect(uploadResponse.path, uploadPath);
+    });
+  });
+
+  group('Transformations', () {
+    setUpAll(() async {
+      await findOrCreateBucket(newBucketName);
+      await storage.from(newBucketName).upload(uploadPath, file);
+    });
+
+    test('sign url with transform options', () async {
+      final url = await storage
+          .from(newBucketName)
+          .createSignedUrl(
+            uploadPath,
+            2000,
+            transform: TransformOptions(
+              width: 100,
+              height: 100,
+            ),
+          );
+
+      expect(
+        url,
+        contains(
+          '$localStackStorageUrl/render/image/sign/$newBucketName/$uploadPath',
+        ),
+      );
+    });
+
+    test('gets public url with transformation options', () async {
+      final url = storage
+          .from(newBucketName)
+          .getPublicUrl(
+            uploadPath,
+            transform: TransformOptions(width: 200, height: 300, quality: 60),
+          );
+
+      expect(
+        url,
+        '$localStackStorageUrl/render/image/public/$newBucketName/$uploadPath?w'
+        'idth=200&height=300&quality=60',
+      );
+    });
+
+    test('will download a public transformed file', () async {
+      final bytes = await storage
+          .from(newBucketName)
+          .download(
+            uploadPath,
+            transform: TransformOptions(
+              width: 200,
+              height: 200,
+            ),
+          );
+
+      final downloadedFile = await File(
+        '${Directory.current.path}/public-image.jpg',
+      ).create();
+      try {
+        await downloadedFile.writeAsBytes(bytes);
+        final size = await downloadedFile.length();
+        final type = lookupMimeType(downloadedFile.path);
+        expect(size, isPositive);
+        expect(type, 'image/jpeg');
+      } finally {
+        await downloadedFile.delete();
+      }
+    });
+
+    test('will download an authenticated transformed file', () async {
+      const privateBucketName = '${_bucketNamespace}private-bucket';
+      await findOrCreateBucket(privateBucketName);
+
+      await storage.from(privateBucketName).upload(uploadPath, file);
+
+      final bytes = await storage
+          .from(privateBucketName)
+          .download(
+            uploadPath,
+            transform: TransformOptions(width: 200, height: 200),
+          );
+
+      final downloadedFile = await File(
+        '${Directory.current.path}/private-image.jpg',
+      ).create();
+      try {
+        await downloadedFile.writeAsBytes(bytes);
+        final size = await downloadedFile.length();
+        final type = lookupMimeType(
+          downloadedFile.path,
+          headerBytes: downloadedFile.readAsBytesSync(),
+        );
+
+        expect(size, isPositive);
+        expect(type, 'image/jpeg');
+      } finally {
+        await downloadedFile.delete();
+      }
+    });
+
+    test('will return the image as webp when the browser support it', () async {
+      final client = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
+        'Accept': 'image/webp',
+      });
+
+      final bytes = await client
+          .from(newBucketName)
+          .download(
+            uploadPath,
+            transform: TransformOptions(
+              width: 200,
+              height: 200,
+            ),
+          );
+      final downloadedFile = await File(
+        '${Directory.current.path}/webpimage',
+      ).create();
+      try {
+        await downloadedFile.writeAsBytes(bytes);
+        final size = await downloadedFile.length();
+        final type = lookupMimeType(
+          downloadedFile.path,
+          headerBytes: downloadedFile.readAsBytesSync(),
+        );
+
+        expect(size, isPositive);
+        expect(type, 'image/webp');
+      } finally {
+        await downloadedFile.delete();
+      }
+    });
+
+    test(
+      'will return the original image format when format is origin',
+      () async {
+        final client = SupabaseStorageClient(localStackStorageUrl, {
+          'Authorization': 'Bearer $localStackServiceRoleKey',
+          'Accept': 'image/webp',
+        });
+
+        final bytes = await client
+            .from(newBucketName)
+            .download(
+              uploadPath,
+              transform: TransformOptions(
+                width: 200,
+                height: 200,
+                format: RequestImageFormat.origin,
+              ),
+            );
+        final downloadedFile = await File(
+          '${Directory.current.path}/jpegimage',
+        ).create();
+        try {
+          await downloadedFile.writeAsBytes(bytes);
+          final size = await downloadedFile.length();
+          final type = lookupMimeType(
+            downloadedFile.path,
+            headerBytes: downloadedFile.readAsBytesSync(),
+          );
+
+          expect(size, isPositive);
+          expect(type, 'image/jpeg');
+        } finally {
+          await downloadedFile.delete();
+        }
+      },
+    );
+  });
+
+  group('download option', () {
+    const downloadBucket = '${_bucketNamespace}download-bucket';
+
+    setUp(() async {
+      await findOrCreateBucket(downloadBucket, true);
+      await storage
+          .from(downloadBucket)
+          .upload(
+            uploadPath,
+            file,
+            fileOptions: const FileOptions(upsert: true),
+          );
+    });
+
+    test(
+      'public url download serves a Content-Disposition attachment',
+      () async {
+        final url = storage
+            .from(downloadBucket)
+            .getPublicUrl(
+              uploadPath,
+              download: DownloadBehavior.named('renamed.jpg'),
+            );
+
+        final response = await http.get(Uri.parse(url));
+        expect(response.statusCode, 200);
+        final disposition = response.headers['content-disposition'];
+        expect(disposition, contains('attachment'));
+        expect(disposition, contains('renamed.jpg'));
+      },
+    );
+
+    test(
+      'signed url download serves a Content-Disposition attachment',
+      () async {
+        final url = await storage
+            .from(downloadBucket)
+            .createSignedUrl(
+              uploadPath,
+              2000,
+              download: DownloadBehavior.withOriginalName,
+            );
+
+        final response = await http.get(Uri.parse(url));
+        expect(response.statusCode, 200);
+        expect(response.headers['content-disposition'], contains('attachment'));
+      },
+    );
+  });
+
+  group('bucket limits', () {
+    test('can upload a file within the file size limit', () async {
+      final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
+      await storage.createBucket(
+        bucketName,
+        const BucketOptions(
+          public: true,
+          fileSizeLimit: '1mb', // 1mb
+        ),
+      );
+
+      final response = await storage.from(bucketName).upload(uploadPath, file);
+      expect(response.id, isNotNull);
+      expect(response.path, uploadPath);
+      expect(response.fullPath, '$bucketName/$uploadPath');
+    });
+
+    test('cannot upload a file that exceed the file size limit', () async {
+      final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
+      await storage.createBucket(
+        bucketName,
+        const BucketOptions(
+          public: true,
+          fileSizeLimit: '1kb',
+        ),
+      );
+
+      final uploadFuture = storage.from(bucketName).upload(uploadPath, file);
+      await expectLater(uploadFuture, throwsException);
+    });
+
+    test('can upload a file with a valid mime type', () async {
+      final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
+      await storage.createBucket(
+        bucketName,
+        BucketOptions(
+          public: true,
+          allowedMimeTypes: ['image/png'],
+        ),
+      );
+
+      final response = await storage
+          .from(bucketName)
+          .upload(
+            uploadPath,
+            file,
+            fileOptions: FileOptions(
+              contentType: 'image/png',
+            ),
+          );
+      expect(response.path, uploadPath);
+    });
+
+    test('cannot upload a file an invalid mime type', () async {
+      final bucketName = '${_bucketNamespace}with-limit-${DateTime.now()}';
+      await storage.createBucket(
+        bucketName,
+        const BucketOptions(
+          public: true,
+          allowedMimeTypes: ['image/png'],
+        ),
+      );
+
+      final uploadFuture = storage
+          .from(bucketName)
+          .upload(
+            uploadPath,
+            file,
+            fileOptions: FileOptions(
+              contentType: 'image/jpeg',
+            ),
+          );
+      await expectLater(uploadFuture, throwsException);
+    });
+  });
+
+  group('file operations', () {
+    test('copy completes successfully', () async {
+      final client = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
+      });
+
+      expect(
+        client.from(newBucketName).copy(uploadPath, "$uploadPath 2"),
+        completes,
+      );
+    });
+
+    test('copy to different bucket', () async {
+      final client = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
+      });
+
+      await expectLater(
+        client.from('bucket2').download(uploadPath),
+        throwsA(
+          isA<StorageApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            404,
+          ),
+        ),
+      );
+      await client
+          .from(newBucketName)
+          .copy(uploadPath, uploadPath, destinationBucket: 'bucket2');
+      try {
+        await client.from('bucket2').download(uploadPath);
+      } catch (error) {
+        fail('File that was copied was not found');
+      }
+    });
+
+    test('move to different bucket', () async {
+      final client = SupabaseStorageClient(localStackStorageUrl, {
+        'Authorization': 'Bearer $localStackServiceRoleKey',
+      });
+
+      await expectLater(
+        client.from('bucket2').download('$uploadPath 3'),
+        throwsA(
+          isA<StorageApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            404,
+          ),
+        ),
+      );
+      await client
+          .from(newBucketName)
+          .move(uploadPath, '$uploadPath 3', destinationBucket: 'bucket2');
+      try {
+        await client.from('bucket2').download('$uploadPath 3');
+      } catch (error) {
+        fail('File that was moved was not found');
+      }
+      await expectLater(
+        client.from(newBucketName).download(uploadPath),
+        throwsA(
+          isA<StorageApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            404,
+          ),
+        ),
+      );
+    });
+  });
+
+  test('upload with custom metadata', () async {
+    final metadata = {
+      'custom': 'metadata',
+      'second': 'second',
+      'third': 'third',
+    };
+    final path = "$uploadPath-metadata";
+    await storage
+        .from(newBucketName)
+        .upload(
+          path,
+          file,
+          fileOptions: FileOptions(
+            metadata: metadata,
+          ),
+        );
+
+    final objectMetadata = await storage.from(newBucketName).getMetadata(path);
+    expect(objectMetadata.metadata, metadata);
+  });
+
+  test('check if object exists', () async {
+    await storage.from(newBucketName).upload('$uploadPath-exists', file);
+    final exists = await storage
+        .from(newBucketName)
+        .exists('$uploadPath-exists');
+    expect(exists, isTrue);
+
+    final missing = await storage.from(newBucketName).exists('not-exist');
+    expect(missing, isFalse);
+  });
+
+  group('setHeader', () {
+    late CustomHttpClient customHttpClient;
+    late SupabaseStorageClient client;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      client = SupabaseStorageClient(
+        localStackStorageUrl,
+        {'Authorization': 'Bearer $localStackServiceRoleKey'},
+        httpClient: customHttpClient,
+      );
+    });
+
+    test('sets custom header on storage client', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('x-custom-header', 'custom-value');
+      await client.listBuckets();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['x-custom-header'],
+        'custom-value',
+      );
+    });
+
+    test('returns this for method chaining', () {
+      final result = client.setHeader('x-header-a', 'value-a');
+      expect(identical(result, client), isTrue);
+    });
+
+    test('supports chaining multiple setHeader calls', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      client
+          .setHeader('x-header-a', 'value-a')
+          .setHeader('x-header-b', 'value-b');
+      await client.listBuckets();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      final headers = customHttpClient.receivedRequests.first.headers;
+      expect(headers['x-header-a'], 'value-a');
+      expect(headers['x-header-b'], 'value-b');
+    });
+
+    test('headers set on client are included in file operations', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('x-custom-header', 'custom-value');
+      await client.from('test-bucket').list();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['x-custom-header'],
+        'custom-value',
+      );
+    });
+
+    test('setHeader on StorageFileApi sets header for that instance', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      final fileApi = client.from('test-bucket');
+      fileApi.setHeader('x-file-header', 'file-value');
+      await fileApi.list();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['x-file-header'],
+        'file-value',
+      );
+    });
+
+    test(
+      'setHeader on StorageFileApi does not affect other StorageFileApi '
+      'instances',
+      () async {
+        customHttpClient.response = [];
+        customHttpClient.statusCode = 200;
+
+        final fileApi1 = client.from('bucket1');
+        final fileApi2 = client.from('bucket2');
+
+        fileApi1.setHeader('x-header', 'value1');
+
+        await fileApi1.list();
+        await fileApi2.list();
+
+        expect(customHttpClient.receivedRequests.length, 2);
+        expect(
+          customHttpClient.receivedRequests[0].headers['x-header'],
+          'value1',
+        );
+        // fileApi2 should not have the header set on fileApi1
+        expect(
+          customHttpClient.receivedRequests[1].headers['x-header'],
+          isNull,
+        );
+      },
+    );
+
+    test('setHeader on StorageFileApi returns this for chaining', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      final fileApi = client.from('test-bucket');
+      final result = fileApi.setHeader('x-header', 'value');
+
+      expect(identical(result, fileApi), isTrue);
+    });
+
+    test('setHeader can override existing headers', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('Authorization', 'Bearer new-token');
+      await client.listBuckets();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['Authorization'],
+        'Bearer new-token',
+      );
+    });
+  });
+
+  group('Content-Type header handling', () {
+    late CustomHttpClient customHttpClient;
+    late SupabaseStorageClient client;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      client = SupabaseStorageClient(
+        localStackStorageUrl,
+        {'Authorization': 'Bearer $localStackServiceRoleKey'},
+        httpClient: customHttpClient,
+      );
+    });
+
+    test('defaults to application/json for non-GET requests', () async {
+      customHttpClient.response = {'message': 'Emptied'};
+      customHttpClient.statusCode = 200;
+
+      await client.emptyBucket('bucket1');
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['content-type'],
+        contains('application/json'),
+      );
+    });
+
+    test('preserves custom Content-Type set via setHeader', () async {
+      customHttpClient.response = {'message': 'Emptied'};
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('Content-Type', 'application/octet-stream');
+      await client.emptyBucket('bucket1');
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['content-type'],
+        startsWith('application/octet-stream'),
+      );
+    });
+
+    test(
+      'does not mutate the stored headers map after a non-GET request',
+      () async {
+        customHttpClient.response = [];
+        customHttpClient.statusCode = 200;
+
+        final fileApi = client.from('test-bucket');
+        final headersBefore = Map<String, String>.of(fileApi.headers);
+
+        await fileApi.list();
+
+        expect(fileApi.headers, equals(headersBefore));
+      },
+    );
+  });
+
+  group('object keys with reserved URL characters', () {
+    // The SDK percent-encodes each object key segment (see _getFinalPath).
+    // These tests confirm the round-trip against a real server: the storage
+    // server percent-decodes the path back to the literal key, so upload and
+    // download address the same object. Without encoding a `?` or `#` in the
+    // key would be parsed as the start of the query string or fragment and the
+    // SDK would silently address the wrong object.
+    late String bucket;
+
+    setUp(() async {
+      bucket = await findOrCreateBucket(
+        '${_bucketNamespace}reserved-${DateTime.now().millisecondsSinceEpoch}',
+      );
+    });
+
+    // Valid storage keys that contain characters which are reserved in a URL
+    // and therefore must be percent-encoded to address the correct object.
+    final keys = [
+      'folder/report?v=2 final.pdf',
+      'folder/a+b,c@d=e.txt',
+      'folder/amp&and;semi.txt',
+      'folder/2026-06-30T11:23:31.jpg',
+    ];
+
+    for (final key in keys) {
+      test('uploads and downloads "$key" as the same object', () async {
+        await storage
+            .from(bucket)
+            .upload(
+              key,
+              file,
+              fileOptions: const FileOptions(upsert: true),
+            );
+
+        final downloaded = await storage.from(bucket).download(key);
+        expect(downloaded, isNotEmpty);
+
+        final folder = key.substring(0, key.indexOf('/'));
+        final name = key.substring(key.indexOf('/') + 1);
+        final listed = await storage.from(bucket).list(path: folder);
+        expect(
+          listed.map((object) => object.name),
+          contains(name),
+          reason: 'server must store the decoded key, not the encoded form',
+        );
+      });
+    }
+
+    // `#` and `%` are rejected by the storage server's key validation
+    // regardless of encoding, so the SDK surfaces a StorageException rather
+    // than silently addressing the wrong object.
+    for (final invalidKey in ['folder/a#b.txt', 'folder/100%done.txt']) {
+      test('rejects "$invalidKey" with an InvalidKey error', () async {
+        await expectLater(
+          storage
+              .from(bucket)
+              .upload(
+                invalidKey,
+                file,
+                fileOptions: const FileOptions(upsert: true),
+              ),
+          throwsA(isA<StorageApiException>()),
+        );
+      });
+    }
+  });
+
+  group('list sortBy defaults', () {
+    late CustomHttpClient customHttpClient;
+    late SupabaseStorageClient client;
+
+    setUp(() {
+      customHttpClient = CustomHttpClient();
+      client = SupabaseStorageClient(
+        localStackStorageUrl,
+        {'Authorization': 'Bearer $localStackServiceRoleKey'},
+        httpClient: customHttpClient,
+      );
+    });
+
+    Map<String, dynamic> sentSortBy() {
+      final request = customHttpClient.receivedRequests.first as http.Request;
+      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      return body['sortBy'] as Map<String, dynamic>;
+    }
+
+    test('fills in order when only column is provided', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client
+          .from('test-bucket')
+          .list(
+            searchOptions: const SearchOptions(
+              sortBy: SortBy(column: 'updated_at'),
+            ),
+          );
+
+      expect(sentSortBy(), {'column': 'updated_at', 'order': 'asc'});
+    });
+
+    test('fills in column when only order is provided', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client
+          .from('test-bucket')
+          .list(
+            searchOptions: const SearchOptions(
+              sortBy: SortBy(order: 'desc'),
+            ),
+          );
+
+      expect(sentSortBy(), {'column': 'name', 'order': 'desc'});
+    });
+
+    test('uses defaults when no options are provided', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client.from('test-bucket').list();
+
+      expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
+    });
+
+    test('fills in fields passed explicitly as null', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client
+          .from('test-bucket')
+          .list(
+            searchOptions: const SearchOptions(
+              sortBy: SortBy(column: null, order: null),
+            ),
+          );
+
+      expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
+    });
+
+    test('preserves a complete sortBy', () async {
+      customHttpClient.response = [];
+      customHttpClient.statusCode = 200;
+
+      await client
+          .from('test-bucket')
+          .list(
+            searchOptions: const SearchOptions(
+              sortBy: SortBy(column: 'created_at', order: 'desc'),
+            ),
+          );
+
+      expect(sentSortBy(), {'column': 'created_at', 'order': 'desc'});
+    });
+  });
+}
+
+/// Buckets that supabase/seed.sql provides, which the suite must leave alone.
+const _seededBuckets = ['bucket2', 'bucket3', 'bucket4', 'bucket5'];
+
+/// Removes every bucket of [_bucketNamespace], so the suite leaves the stack
+/// with only the seeded buckets and can run again without tripping over its own
+/// leftovers.
+Future<void> _removeTemporaryBuckets() async {
+  final storage = SupabaseStorageClient(localStackStorageUrl, {
+    'Authorization': 'Bearer $localStackServiceRoleKey',
+  });
+  for (final bucket in await storage.listBuckets()) {
+    if (!bucket.name.startsWith(_bucketNamespace)) {
+      continue;
+    }
+    try {
+      await storage.emptyBucket(bucket.name);
+      await storage.deleteBucket(bucket.name);
+    } on StorageApiException catch (error) {
+      // A test of this suite may have removed it itself. Anything else, like a
+      // bucket that stays behind because it could not be emptied, has to
+      // surface instead of leaving the next run to fail on it.
+      if (error.statusCode != 404) {
+        rethrow;
+      }
+    }
+  }
+}

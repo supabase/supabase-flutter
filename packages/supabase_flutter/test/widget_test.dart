@@ -15,16 +15,19 @@ void main() {
   testWidgets('Signing out triggers AuthChangeEvent.signedOut event', (
     tester,
   ) async {
-    // Initialize the Supabase singleton
-    await Supabase.initialize(
-      url: supabaseUrl,
-      publishableKey: supabaseKey,
-      debug: false,
-      authOptions: FlutterAuthClientOptions(
-        localStorage: const MockLocalStorage(),
-        pkceAsyncStorage: MockAsyncStorage(),
+    await tester.runAsync(
+      () => Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseKey,
+        debug: false,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: const MockLocalStorage(),
+          pkceAsyncStorage: MockAsyncStorage(),
+        ),
       ),
     );
+    addTearDown(() => tester.runAsync(() => Supabase.instance.dispose()));
+
     Supabase.instance.client.auth.stopAutoRefresh();
     await tester.pumpWidget(const MaterialApp(home: MockWidget()));
     await tester.tap(find.text('Sign out'));

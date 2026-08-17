@@ -1,8 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Every `supabase.auth.*` call for the example lives here, so the UI stays thin
-/// and each authentication flow is easy to read and to drive from an integration
-/// test. The methods are grouped by the sign in method they belong to.
+/// Every `supabase.auth.*` call for the example lives here, so the UI stays
+/// thin and each authentication flow is easy to read and to drive from an
+/// integration test. The methods are grouped by the sign in method they belong
+/// to.
 class AuthRepository {
   AuthRepository(this._client);
 
