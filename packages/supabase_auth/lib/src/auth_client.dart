@@ -803,7 +803,7 @@ class AuthClient {
       ),
     );
 
-    return Uri.parse(response['url'] as String);
+    return Uri.parse(_urlFromResponse(response));
   }
 
   /// Returns a new session, regardless of expiry status. Takes in an optional
@@ -1274,7 +1274,7 @@ class AuthClient {
         jwt: _currentSession?.accessToken,
       ),
     );
-    return OAuthResponse(provider: provider, url: response['url']);
+    return OAuthResponse(provider: provider, url: _urlFromResponse(response));
   }
 
   /// Unlinks an identity from a user by deleting it.
@@ -1509,6 +1509,20 @@ class AuthClient {
     };
     final oauthUrl = '$url?${Uri(queryParameters: urlParameters).query}';
     return OAuthResponse(provider: provider, url: oauthUrl);
+  }
+
+  /// Reads the `url` field out of a response that is expected to carry one.
+  ///
+  /// The decoded body is untyped, so without this check a server that omits
+  /// `url` or sends the wrong type for it surfaces as a [TypeError] from
+  /// whichever line happens to consume the value first. Fail at the response
+  /// boundary instead, with an exception from this package's own hierarchy.
+  String _urlFromResponse(dynamic response) {
+    final url = response is Map ? response['url'] : null;
+    if (url is! String) {
+      throw AuthException('No url detected.');
+    }
+    return url;
   }
 
   /// set currentSession and currentUser
