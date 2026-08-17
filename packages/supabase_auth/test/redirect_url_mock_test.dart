@@ -48,6 +48,13 @@ void main() {
       );
     });
 
+    test('fails getSSOSignInUrl when the body is null', () async {
+      await expectLater(
+        createClient(null).getSSOSignInUrl(domain: 'a.com'),
+        missingUrl,
+      );
+    });
+
     test('fails getLinkIdentityUrl when the field is absent', () async {
       await expectLater(
         createClient({'id': 'not-a-url'}).getLinkIdentityUrl(
@@ -69,6 +76,13 @@ void main() {
         createClient(['https://idp.example.com']).getLinkIdentityUrl(
           OAuthProvider.google,
         ),
+        missingUrl,
+      );
+    });
+
+    test('fails getLinkIdentityUrl when the body is null', () async {
+      await expectLater(
+        createClient(null).getLinkIdentityUrl(OAuthProvider.google),
         missingUrl,
       );
     });
