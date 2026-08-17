@@ -189,11 +189,12 @@ void main() {
           .from(newBucketName)
           .createSignedUploadUrl(uploadPath);
 
-      final uploadedPath = await storage
+      final uploadResponse = await storage
           .from(newBucketName)
           .uploadToSignedUrl(response.path, response.token, file);
 
-      expect(uploadedPath, uploadPath);
+      expect(uploadResponse.path, uploadPath);
+      expect(uploadResponse.fullPath, '$newBucketName/$uploadPath');
     });
 
     test('can upload a binary file with a signed url', () async {
@@ -201,7 +202,7 @@ void main() {
           .from(newBucketName)
           .createSignedUploadUrl(uploadPath);
 
-      final uploadedPath = await storage
+      final uploadResponse = await storage
           .from(newBucketName)
           .uploadBinaryToSignedUrl(
             response.path,
@@ -209,7 +210,7 @@ void main() {
             file.readAsBytesSync(),
           );
 
-      expect(uploadedPath, uploadPath);
+      expect(uploadResponse.path, uploadPath);
     });
 
     test('cannot upload to a signed url twice', () async {
@@ -217,11 +218,11 @@ void main() {
           .from(newBucketName)
           .createSignedUploadUrl(uploadPath);
 
-      final uploadedPath = await storage
+      final uploadResponse = await storage
           .from(newBucketName)
           .uploadToSignedUrl(response.path, response.token, file);
 
-      expect(uploadedPath, uploadPath);
+      expect(uploadResponse.path, uploadPath);
       await expectLater(
         storage
             .from(newBucketName)
@@ -246,11 +247,11 @@ void main() {
           .from(newBucketName)
           .createSignedUploadUrl(uploadPath, upsert: true);
 
-      final uploadedPath = await storage
+      final uploadResponse = await storage
           .from(newBucketName)
           .uploadToSignedUrl(response.path, response.token, file);
 
-      expect(uploadedPath, uploadPath);
+      expect(uploadResponse.path, uploadPath);
     });
   });
 
@@ -484,7 +485,9 @@ void main() {
       );
 
       final response = await storage.from(bucketName).upload(uploadPath, file);
-      expect(response, isA<String>());
+      expect(response.id, isNotNull);
+      expect(response.path, uploadPath);
+      expect(response.fullPath, '$bucketName/$uploadPath');
     });
 
     test('cannot upload a file that exceed the file size limit', () async {
@@ -520,7 +523,7 @@ void main() {
               contentType: 'image/png',
             ),
           );
-      expect(response, isA<String>());
+      expect(response.path, uploadPath);
     });
 
     test('cannot upload a file an invalid mime type', () async {

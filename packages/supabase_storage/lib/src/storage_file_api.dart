@@ -54,6 +54,15 @@ class StorageFileApi {
 
   FetchOptions get _fetchOptions => FetchOptions(headers);
 
+  UploadResponse _uploadResponse(String cleanPath, dynamic response) {
+    final data = response as Map;
+    return UploadResponse(
+      id: data['Id'] as String?,
+      path: cleanPath,
+      fullPath: data['Key'] as String,
+    );
+  }
+
   void _assertValidRetryAttempts(int? retryAttempts) {
     assert(
       retryAttempts == null || retryAttempts >= 0,
@@ -76,7 +85,10 @@ class StorageFileApi {
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
-  Future<String> upload(
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> upload(
     String path,
     File file, {
     FileOptions fileOptions = const FileOptions(),
@@ -84,7 +96,8 @@ class StorageFileApi {
     StorageRetryController? retryController,
   }) async {
     _assertValidRetryAttempts(retryAttempts);
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.postFile(
       '$url/object/$finalPath',
       file,
@@ -94,7 +107,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return (response as Map)['Key'] as String;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Uploads a binary file to an existing bucket. Can be used on the web.
@@ -112,7 +125,10 @@ class StorageFileApi {
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
-  Future<String> uploadBinary(
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> uploadBinary(
     String path,
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
@@ -120,7 +136,8 @@ class StorageFileApi {
     StorageRetryController? retryController,
   }) async {
     _assertValidRetryAttempts(retryAttempts);
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.postBinaryFile(
       '$url/object/$finalPath',
       data,
@@ -130,7 +147,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return (response as Map)['Key'] as String;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Upload a file with a token generated from `createUploadSignedUrl`.
@@ -142,7 +159,11 @@ class StorageFileApi {
   /// [token] The token generated from `createUploadSignedUrl`
   ///
   /// [file] The body of the file to be stored in the bucket.
-  Future<String> uploadToSignedUrl(
+  ///
+  /// Returns an [UploadResponse] with the path and full path of the stored
+  /// object. [UploadResponse.id] is `null`, because the server does not
+  /// report it for uploads through a signed URL.
+  Future<UploadResponse> uploadToSignedUrl(
     String path,
     String token,
     File file, [
@@ -157,7 +178,7 @@ class StorageFileApi {
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
     requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
-    await _storageFetch.putFile(
+    final response = await _storageFetch.putFile(
       requestUrl.toString(),
       file,
       fileOptions,
@@ -165,7 +186,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return cleanPath;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Upload a binary file with a token generated from `createUploadSignedUrl`.
@@ -177,7 +198,11 @@ class StorageFileApi {
   /// [token] The token generated from `createUploadSignedUrl`
   ///
   /// [data] The body of the binary file to be stored in the bucket.
-  Future<String> uploadBinaryToSignedUrl(
+  ///
+  /// Returns an [UploadResponse] with the path and full path of the stored
+  /// object. [UploadResponse.id] is `null`, because the server does not
+  /// report it for uploads through a signed URL.
+  Future<UploadResponse> uploadBinaryToSignedUrl(
     String path,
     String token,
     Uint8List data, [
@@ -188,11 +213,11 @@ class StorageFileApi {
     _assertValidRetryAttempts(retryAttempts);
 
     final cleanPath = _removeEmptyFolders(path);
-    final path0 = _getFinalPath(cleanPath);
-    var requestUrl = Uri.parse('$url/object/upload/sign/$path0');
+    final finalPath = _getFinalPath(cleanPath);
+    var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
     requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
-    await _storageFetch.putBinaryFile(
+    final response = await _storageFetch.putBinaryFile(
       requestUrl.toString(),
       data,
       fileOptions,
@@ -200,7 +225,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return cleanPath;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Creates a signed upload URL.
@@ -257,7 +282,10 @@ class StorageFileApi {
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
-  Future<String> update(
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> update(
     String path,
     File file, {
     FileOptions fileOptions = const FileOptions(),
@@ -265,7 +293,8 @@ class StorageFileApi {
     StorageRetryController? retryController,
   }) async {
     _assertValidRetryAttempts(retryAttempts);
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.putFile(
       '$url/object/$finalPath',
       file,
@@ -275,7 +304,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return (response as Map<String, dynamic>)['Key'] as String;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Replaces an existing file at the specified path with a new one. Can be
@@ -294,7 +323,10 @@ class StorageFileApi {
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
-  Future<String> updateBinary(
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> updateBinary(
     String path,
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
@@ -302,7 +334,8 @@ class StorageFileApi {
     StorageRetryController? retryController,
   }) async {
     _assertValidRetryAttempts(retryAttempts);
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.putBinaryFile(
       '$url/object/$finalPath',
       data,
@@ -312,7 +345,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return (response as Map)['Key'] as String;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Moves an existing file.

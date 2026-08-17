@@ -987,6 +987,12 @@ features:
       - FileOptions.contentType
       - FileOptions.headers
       - FileOptions.upsert
+      - UploadResponse
+      - UploadResponse.UploadResponse
+      - UploadResponse.id
+      - UploadResponse.path
+      - UploadResponse.fullPath
+      - UploadResponse.toString
   storage.file_buckets.upload_with_metadata:
     status: implemented
     symbols:

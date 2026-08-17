@@ -65,7 +65,7 @@ void main() {
             .from('bucket')
             .uploadBinary('folder/file.png', Uint8List.fromList([1, 2, 3]));
 
-        expect(result, 'public/a.txt');
+        expect(result.fullPath, 'public/a.txt');
         expect(retryClient.attempts, 2);
       },
     );
@@ -74,7 +74,7 @@ void main() {
       'detects content type from the path of a binary signed url upload',
       () async {
         final mockClient = CustomHttpClient();
-        mockClient.response = <String, dynamic>{};
+        mockClient.response = {'Key': 'bucket/folder/image.png'};
         mockClient.statusCode = 200;
         final client = SupabaseStorageClient(
           storageUrl,
@@ -101,7 +101,7 @@ void main() {
       'removes leading, trailing and duplicate slashes from the path',
       () async {
         final mockClient = CustomHttpClient();
-        mockClient.response = <String, dynamic>{};
+        mockClient.response = {'Key': 'bucket/folder/image.png'};
         mockClient.statusCode = 200;
         final client = SupabaseStorageClient(
           storageUrl,
@@ -109,7 +109,7 @@ void main() {
           httpClient: mockClient,
         );
 
-        final cleanPath = await client
+        final response = await client
             .from('bucket')
             .uploadBinaryToSignedUrl(
               '/folder//image.png/',
@@ -117,7 +117,8 @@ void main() {
               Uint8List.fromList([1]),
             );
 
-        expect(cleanPath, 'folder/image.png');
+        expect(response.path, 'folder/image.png');
+        expect(response.fullPath, 'bucket/folder/image.png');
 
         final requestPath = mockClient.receivedRequests.single.url.path;
         expect(requestPath, endsWith('/bucket/folder/image.png'));

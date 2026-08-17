@@ -574,6 +574,32 @@ final class SignedUrlFailure extends SignedUrlResult {
   String toString() => 'SignedUrlFailure(path: $path, error: $error)';
 }
 
+/// Response of an upload or update operation, describing where the object was
+/// stored.
+class UploadResponse {
+  /// The identifier of the stored object.
+  ///
+  /// `null` when the server does not report one, which is the case for uploads
+  /// through a signed URL.
+  final String? id;
+
+  /// The path of the object within the bucket, without the bucket id.
+  final String path;
+
+  /// The path of the object prefixed with the bucket id.
+  final String fullPath;
+
+  const UploadResponse({
+    this.id,
+    required this.path,
+    required this.fullPath,
+  });
+
+  @override
+  String toString() =>
+      'UploadResponse(id: $id, path: $path, fullPath: $fullPath)';
+}
+
 class SignedUploadURLResponse extends SignedUrl {
   /// Token to be used when uploading files with the `uploadToSignedUrl` method.
   final String token;
