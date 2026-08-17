@@ -27,10 +27,14 @@ class FunctionResponse {
 /// The response body, or the originating error when no response was received,
 /// is available in [details].
 ///
-/// A plain [FunctionException] is a failure the client raised on its own, such
-/// as a request that never reached the function. A failure the function
-/// answered with is a [FunctionsApiException].
-class FunctionException extends SupabaseException {
+/// Use pattern matching over the specific subtypes:
+/// - [FunctionsFetchException]: The request could not be sent (e.g. network
+///   failure).
+/// - [FunctionsApiException]: The Edge Function answered with a non-2xx status
+///   code.
+/// - [FunctionsRelayException]: The Supabase relay returned an error
+///   (`x-relay-error`).
+sealed class FunctionException extends SupabaseException {
   final dynamic details;
 
   const FunctionException({
