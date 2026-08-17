@@ -768,6 +768,10 @@ class AuthClient {
   ///
   /// If you have built an organization-specific login page, you can use the
   /// organization's SSO Identity Provider UUID directly instead.
+  ///
+  /// Returns the identity provider's authorization [Uri]. Open it in a browser
+  /// to continue the flow, or call `signInWithSSO` from `supabase_flutter` to
+  /// have the browser launched for you.
   Future<Uri> getSSOSignInUrl({
     String? providerId,
     String? domain,
