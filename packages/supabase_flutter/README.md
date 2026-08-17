@@ -381,11 +381,12 @@ myChannel
       event: PostgresChangeEvent.all,
       schema: 'public',
       table: 'countries',
-      callback: (payload) {
-        // Do something fun or interesting when there is an change on the database
-      },
     )
-    .subscribe();
+    .listen((payload) {
+      // Do something fun or interesting when there is a change on the database
+    });
+
+myChannel.subscribe();
 ```
 
 #### <a id="broadcast"></a>[Broadcast](https://supabase.com/docs/guides/realtime#broadcast)
@@ -395,14 +396,12 @@ Broadcast lets you send and receive low latency messages between connected clien
 ```dart
 final myChannel = supabase.channel('my_channel');
 
-// Subscribe to `cursor-pos` broadcast event
-final myChannel = supabase.channel('my_channel');
+// Listen to `cursor-pos` broadcast events
+myChannel.onBroadcast(event: 'cursor-pos').listen((payload) {
+  // Do something fun or interesting with the received message
+});
 
-myChannel
-    .onBroadcast(event: 'cursor-pos', callback: (payload) {}
-        // Do something fun or interesting when there is an change on the database
-        )
-    .subscribe();
+myChannel.subscribe();
 
 // Send a broadcast message to other connected clients
 await myChannel.sendBroadcastMessage(
@@ -418,31 +417,26 @@ Presence let's you easily create "I'm online" feature.
 ```dart
 final myChannel = supabase.channel('my_channel');
 
-// Subscribe to presence events
-myChannel
-    .onPresence(
-        event: PresenceEvent.sync,
-        callback: (payload) {
-          final onlineUsers = myChannel.presenceState();
-          // handle sync event
-        })
-    .onPresence(
-        event: PresenceEvent.join,
-        callback: (payload) {
-          // New users have joined
-        })
-    .onPresence(
-        event: PresenceEvent.leave,
-        callback: (payload) {
-          // Users have left
-        })
-    .subscribe(((status, [_]) async {
-  if (status == RealtimeSubscribeStatus.subscribed) {
+// Listen to presence events
+myChannel.onPresenceSync.listen((payload) {
+  final onlineUsers = myChannel.presenceState();
+  // handle sync event
+});
+myChannel.onPresenceJoin.listen((payload) {
+  // New users have joined
+});
+myChannel.onPresenceLeave.listen((payload) {
+  // Users have left
+});
+
+myChannel.onStatusChange.listen((change) async {
+  if (change.status == RealtimeSubscribeStatus.subscribed) {
     // Send the current user's state upon subscribing
-    final status = await myChannel
-        .track({'online_at': DateTime.now().toIso8601String()});
+    await myChannel.track({'online_at': DateTime.now().toIso8601String()});
   }
-}));
+});
+
+myChannel.subscribe();
 ```
 
 ### <a id="storage"></a>[Storage](https://supabase.com/docs/guides/storage)

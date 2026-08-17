@@ -62,6 +62,35 @@ enum RealtimeHeartbeatStatus {
   timeout,
 }
 
+/// The status of the WebSocket connection reported by
+/// [RealtimeClient.onStatusChange].
+enum RealtimeConnectionStatus {
+  /// The connection is open and messages can be sent and received.
+  open,
+
+  /// The connection is closed, either because [RealtimeClient.disconnect] was
+  /// called or because it dropped, in which case the client reconnects with
+  /// backoff. [RealtimeClient.connectionState] tells the two apart.
+  closed,
+}
+
+/// A connection status change emitted by [RealtimeClient.onStatusChange].
+class RealtimeConnectionStatusChange {
+  /// The new status of the WebSocket connection.
+  final RealtimeConnectionStatus status;
+
+  /// The close code and reason sent by the server, `null` for
+  /// [RealtimeConnectionStatus.open] and for a close without one.
+  final RealtimeCloseEvent? closeEvent;
+
+  const RealtimeConnectionStatusChange(this.status, [this.closeEvent]);
+
+  @override
+  String toString() =>
+      'RealtimeConnectionStatusChange(status: ${status.name}, '
+      'closeEvent: $closeEvent)';
+}
+
 /// Manages a persistent WebSocket connection to the Supabase Realtime server.
 ///
 /// [RealtimeClient] is the central hub for all real-time communication. It owns
@@ -148,13 +177,10 @@ class RealtimeClient {
   StreamSubscription<dynamic>? _connectionSubscription;
   @internal
   List<dynamic> sendBuffer = [];
-  @internal
-  Map<String, List<Function>> stateChangeCallbacks = {
-    'open': [],
-    'close': [],
-    'error': [],
-    'message': [],
-  };
+
+  final _statusController =
+      StreamController<RealtimeConnectionStatusChange>.broadcast();
+  final _messageController = StreamController<Map<String, dynamic>>.broadcast();
 
   final _heartbeatController =
       StreamController<RealtimeHeartbeatStatus>.broadcast();
@@ -432,29 +458,27 @@ class RealtimeClient {
     logger?.call(kind, message, data);
   }
 
-  /// Registers callbacks for connection state change events
+  /// Emits whenever the WebSocket connection opens or closes.
   ///
-  /// Examples
-  /// socket.onOpen(() {print("Socket opened.");});
+  /// Connection errors are emitted as stream errors, so they are observed with
+  /// the `onError` handler of [Stream.listen] rather than as status changes:
   ///
-  void onOpen(void Function() callback) {
-    stateChangeCallbacks['open']!.add(callback);
-  }
+  /// ```dart
+  /// final subscription = client.onStatusChange.listen(
+  ///   (change) => print('Socket ${change.status.name}.'),
+  ///   onError: (error) => print('Socket error: $error'),
+  /// );
+  /// ```
+  ///
+  /// The connection level statuses and errors are informational: a dropped
+  /// connection and its cause also reach every channel through
+  /// [RealtimeChannel.onStatusChange], which is what a subscription should
+  /// react to.
+  Stream<RealtimeConnectionStatusChange> get onStatusChange =>
+      _statusController.stream;
 
-  /// Registers a callbacks for connection state change events.
-  void onClose(void Function(dynamic) callback) {
-    stateChangeCallbacks['close']!.add(callback);
-  }
-
-  /// Registers a callbacks for connection state change events.
-  void onError(void Function(dynamic) callback) {
-    stateChangeCallbacks['error']!.add(callback);
-  }
-
-  /// Calls a function any time a message is received.
-  void onMessage(void Function(dynamic) callback) {
-    stateChangeCallbacks['message']!.add(callback);
-  }
+  /// Emits every decoded message received over the WebSocket.
+  Stream<Map<String, dynamic>> get onMessage => _messageController.stream;
 
   /// Emits a status whenever a heartbeat is sent, acknowledged, errors, or
   /// times out.
@@ -591,9 +615,7 @@ class RealtimeClient {
             messageRef,
           ),
         );
-    for (final callback in stateChangeCallbacks['message']!) {
-      callback(message);
-    }
+    _messageController.add(message);
   }
 
   static Object _encodeLegacy(Map<String, dynamic> message) =>
@@ -681,9 +703,9 @@ class RealtimeClient {
       log('transport', 'error while rejoining channels', error, Level.WARNING);
     }
 
-    for (final callback in stateChangeCallbacks['open']!) {
-      callback();
-    }
+    _statusController.add(
+      const RealtimeConnectionStatusChange(RealtimeConnectionStatus.open),
+    );
   }
 
   /// communication has been closed
@@ -705,17 +727,15 @@ class RealtimeClient {
       reconnectTimer.scheduleTimeout();
     }
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
-    for (final callback in stateChangeCallbacks['close']!) {
-      callback(event);
-    }
+    _statusController.add(
+      RealtimeConnectionStatusChange(RealtimeConnectionStatus.closed, event),
+    );
   }
 
-  void _onConnectionError(dynamic error) {
+  void _onConnectionError(Object error) {
     log('transport', error.toString());
     _triggerChanError(error);
-    for (final callback in stateChangeCallbacks['error']!) {
-      callback(error);
-    }
+    _statusController.addError(error);
   }
 
   void _triggerChanError([dynamic error]) {

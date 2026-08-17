@@ -36,8 +36,11 @@ void main() {
 
       test('connects and reports the open state', () async {
         final opened = Completer<void>();
-        client.onOpen(() {
-          if (!opened.isCompleted) opened.complete();
+        client.onStatusChange.listen((change) {
+          if (change.status == RealtimeConnectionStatus.open &&
+              !opened.isCompleted) {
+            opened.complete();
+          }
         });
         await client.connect();
         await opened.future.timeout(const Duration(seconds: 10));
@@ -93,12 +96,9 @@ void main() {
           const RealtimeChannelConfig(self: true),
         );
         final received = Completer<Map<String, dynamic>>();
-        channel.onBroadcast(
-          event: 'ping',
-          callback: (payload) {
-            if (!received.isCompleted) received.complete(payload);
-          },
-        );
+        channel.onBroadcast(event: 'ping').listen((payload) {
+          if (!received.isCompleted) received.complete(payload);
+        });
         await _subscribe(channel);
         await channel.sendBroadcastMessage(
           event: 'ping',
@@ -125,12 +125,9 @@ void main() {
 
         final received = Completer<Map<String, dynamic>>();
         final receiverChannel = receiver.channel(topic);
-        receiverChannel.onBroadcast(
-          event: 'cursor',
-          callback: (payload) {
-            if (!received.isCompleted) received.complete(payload);
-          },
-        );
+        receiverChannel.onBroadcast(event: 'cursor').listen((payload) {
+          if (!received.isCompleted) received.complete(payload);
+        });
         await _subscribe(receiverChannel);
 
         final senderChannel = sender.channel(topic);
@@ -155,14 +152,14 @@ void main() {
         );
 
         final synced = Completer<void>();
-        channel.onPresenceSync((_) {
+        channel.onPresenceSync.listen((_) {
           if (channel.presenceState().isNotEmpty && !synced.isCompleted) {
             synced.complete();
           }
         });
 
         final joined = Completer<RealtimePresenceJoinPayload>();
-        channel.onPresenceJoin((payload) {
+        channel.onPresenceJoin.listen((payload) {
           if (!joined.isCompleted) joined.complete(payload);
         });
 
@@ -192,7 +189,7 @@ void main() {
         );
 
         final left = Completer<RealtimePresenceLeavePayload>();
-        channel.onPresenceLeave((payload) {
+        channel.onPresenceLeave.listen((payload) {
           if (!left.isCompleted) left.complete(payload);
         });
 
@@ -227,23 +224,24 @@ void main() {
           final deletes = Completer<PostgresChangePayload>();
 
           final channel = client.channel('db-changes-${version.wireVersion}');
-          channel.onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            callback: (payload) {
-              switch (payload.eventType) {
-                case PostgresChangeEvent.insert:
-                  if (!inserts.isCompleted) inserts.complete(payload);
-                case PostgresChangeEvent.update:
-                  if (!updates.isCompleted) updates.complete(payload);
-                case PostgresChangeEvent.delete:
-                  if (!deletes.isCompleted) deletes.complete(payload);
-                case PostgresChangeEvent.all:
-                  break;
-              }
-            },
-          );
+          channel
+              .onPostgresChanges(
+                event: PostgresChangeEvent.all,
+                schema: 'public',
+                table: 'todos',
+              )
+              .listen((payload) {
+                switch (payload.eventType) {
+                  case PostgresChangeEvent.insert:
+                    if (!inserts.isCompleted) inserts.complete(payload);
+                  case PostgresChangeEvent.update:
+                    if (!updates.isCompleted) updates.complete(payload);
+                  case PostgresChangeEvent.delete:
+                    if (!deletes.isCompleted) deletes.complete(payload);
+                  case PostgresChangeEvent.all:
+                    break;
+                }
+              });
 
           await _subscribe(channel);
           await Future<void>.delayed(const Duration(seconds: 2));
@@ -282,19 +280,20 @@ void main() {
           final matched = Completer<PostgresChangePayload>();
 
           final channel = client.channel('db-filter-${version.wireVersion}');
-          channel.onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: 'public',
-            table: 'todos',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'is_complete',
-              value: true,
-            ),
-            callback: (payload) {
-              if (!matched.isCompleted) matched.complete(payload);
-            },
-          );
+          channel
+              .onPostgresChanges(
+                event: PostgresChangeEvent.insert,
+                schema: 'public',
+                table: 'todos',
+                filter: PostgresChangeFilter(
+                  type: PostgresChangeFilterType.eq,
+                  column: 'is_complete',
+                  value: true,
+                ),
+              )
+              .listen((payload) {
+                if (!matched.isCompleted) matched.complete(payload);
+              });
 
           await _subscribe(channel);
           await Future<void>.delayed(const Duration(seconds: 2));
@@ -330,18 +329,22 @@ void main() {
 /// Subscribes to [channel] and resolves with the terminal subscribe status.
 Future<RealtimeSubscribeStatus> _subscribe(RealtimeChannel channel) {
   final completer = Completer<RealtimeSubscribeStatus>();
-  channel.subscribe((status, error) {
+  channel.onStatusChange.listen((change) {
     if (completer.isCompleted) return;
-    if (status == RealtimeSubscribeStatus.subscribed) {
-      completer.complete(status);
-    } else if (status == RealtimeSubscribeStatus.channelError ||
-        status == RealtimeSubscribeStatus.timedOut) {
+    if (change.status == RealtimeSubscribeStatus.subscribed) {
+      completer.complete(change.status);
+    } else if (change.status == RealtimeSubscribeStatus.channelError ||
+        change.status == RealtimeSubscribeStatus.timedOut ||
+        change.status == RealtimeSubscribeStatus.closed) {
       completer.completeError(
-        StateError('Failed to subscribe: ${status.name} ($error)'),
+        StateError(
+          'Failed to subscribe: ${change.status.name} (${change.error})',
+        ),
         StackTrace.current,
       );
     }
   });
+  channel.subscribe();
   return completer.future.timeout(const Duration(seconds: 15));
 }
 

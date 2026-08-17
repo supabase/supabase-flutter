@@ -84,12 +84,6 @@ void main() {
       expect(socket.sendBuffer, isEmpty);
       expect(socket.ref, 0);
       expect(socket.endpoint, 'wss://example.com/socket/websocket');
-      expect(socket.stateChangeCallbacks, {
-        'open': [],
-        'close': [],
-        'error': [],
-        'message': [],
-      });
       expect(socket.timeout, const Duration(milliseconds: 10000));
       expect(
         socket.heartbeatInterval,
@@ -124,12 +118,6 @@ void main() {
       expect(socket.sendBuffer, isEmpty);
       expect(socket.ref, 0);
       expect(socket.endpoint, 'wss://example.com/socket/websocket');
-      expect(socket.stateChangeCallbacks, {
-        'open': [],
-        'close': [],
-        'error': [],
-        'message': [],
-      });
       expect(socket.timeout, const Duration(milliseconds: 40000));
       expect(socket.heartbeatInterval, const Duration(seconds: 60));
       expect(
@@ -214,23 +202,19 @@ void main() {
       //! Not verifying connection url
     });
 
-    test('sets callbacks for connection', () async {
-      int opens = 0;
-      socket.onOpen(() {
-        opens += 1;
-      });
-      int closes = 0;
-      socket.onClose((_) {
-        closes += 1;
+    test('emits connection state events on the streams', () async {
+      final statuses = <RealtimeConnectionStatus>[];
+      socket.onStatusChange.listen((change) {
+        statuses.add(change.status);
       });
       late dynamic lastMessage;
-      socket.onMessage((message) {
+      socket.onMessage.listen((message) {
         lastMessage = message;
       });
 
       await socket.connect();
       await Future.delayed(const Duration(milliseconds: 200));
-      expect(opens, 1);
+      expect(statuses, [RealtimeConnectionStatus.open]);
 
       await socket.sendHeartbeat();
       // need to wait for event to trigger
@@ -239,19 +223,51 @@ void main() {
 
       await socket.disconnect();
       await Future.delayed(const Duration(seconds: 1));
-      expect(closes, 1);
+      expect(statuses, [
+        RealtimeConnectionStatus.open,
+        RealtimeConnectionStatus.closed,
+      ]);
     });
 
-    test('sets callback for errors', () {
-      dynamic lastError;
-      final RealtimeClient erroneousSocket = RealtimeClient('badurl')
-        ..onError((error) {
-          lastError = error;
-        });
+    test('emits errors on the onStatusChange stream', () async {
+      final RealtimeClient erroneousSocket = RealtimeClient('badurl');
+      final errorFuture = erroneousSocket.onStatusChange.first;
 
       unawaited(erroneousSocket.connect());
 
-      expect(lastError, isA<WebSocketException>());
+      await expectLater(errorFuture, throwsA(isA<WebSocketException>()));
+    });
+
+    test('reports the close code and reason with the closed status', () async {
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+      final streamController = StreamController<dynamic>();
+      final mockedSocket = RealtimeClient(
+        socketEndpoint,
+        reconnectAfter: (tries) => const Duration(seconds: 100),
+        transport: (url, headers) => mockedSocketChannel,
+      );
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(
+        () => mockedSocketChannel.stream,
+      ).thenAnswer((_) => streamController.stream);
+      when(() => mockedSocketChannel.closeCode).thenReturn(1011);
+      when(() => mockedSocketChannel.closeReason).thenReturn('server error');
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+
+      final closed = mockedSocket.onStatusChange.firstWhere(
+        (change) => change.status == RealtimeConnectionStatus.closed,
+      );
+
+      await mockedSocket.connect();
+      await streamController.close();
+
+      final change = await closed;
+      expect(change.closeEvent?.code, 1011);
+      expect(change.closeEvent?.reason, 'server error');
+
+      await mockedSocket.disconnect();
     });
 
     test('is idempotent', () {
@@ -521,8 +537,10 @@ void main() {
         socketEndpoint,
         transport: (url, headers) => mockedSocketChannel,
       );
-      var closeCallbacks = 0;
-      mockedSocket.onClose((_) => closeCallbacks += 1);
+      var closeEvents = 0;
+      mockedSocket.onStatusChange
+          .where((change) => change.status == RealtimeConnectionStatus.closed)
+          .listen((_) => closeEvents += 1);
 
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
@@ -535,9 +553,11 @@ void main() {
       expect(mockedSocket.connectionState, SocketState.open);
 
       await mockedSocket.disconnect();
+      // Wait for the async stream delivery of the close event.
+      await Future<void>.delayed(Duration.zero);
       expect(mockedSocket.connectionState, SocketState.disconnected);
       expect(mockedSocket.connection, isNull);
-      expect(closeCallbacks, 1);
+      expect(closeEvents, 1);
       verify(() => mockedSink.close()).called(1);
 
       await streamController.close();
@@ -972,15 +992,14 @@ void main() {
       );
     });
 
-    test('dispatches a received binary broadcast to onBroadcast', () {
+    test('dispatches a received binary broadcast to onBroadcast', () async {
       final socket = RealtimeClient(socketEndpoint);
       final channel = socket.channel('room');
 
       Map<String, dynamic>? received;
-      channel.onBroadcast(
-        event: 'cursor',
-        callback: (payload) => received = payload,
-      );
+      channel.onBroadcast(event: 'cursor').listen((payload) {
+        received = payload;
+      });
 
       final topic = utf8.encode('realtime:room');
       final event = utf8.encode('cursor');
@@ -997,6 +1016,8 @@ void main() {
       ]);
 
       socket.onConnectionMessage(frame);
+      // Wait for the async stream delivery of the broadcast event.
+      await Future<void>.delayed(Duration.zero);
 
       expect(received, {
         'type': 'broadcast',
@@ -1007,7 +1028,7 @@ void main() {
 
     test(
       'decodes a legacy object frame and dispatches it when version is v1',
-      () {
+      () async {
         final socket = RealtimeClient(
           socketEndpoint,
           version: RealtimeProtocolVersion.v1,
@@ -1015,10 +1036,9 @@ void main() {
         final channel = socket.channel('room');
 
         Map<String, dynamic>? received;
-        channel.onBroadcast(
-          event: 'cursor',
-          callback: (payload) => received = payload,
-        );
+        channel.onBroadcast(event: 'cursor').listen((payload) {
+          received = payload;
+        });
 
         socket.onConnectionMessage(
           json.encode({
@@ -1032,6 +1052,8 @@ void main() {
             'ref': null,
           }),
         );
+        // Wait for the async stream delivery of the broadcast event.
+        await Future<void>.delayed(Duration.zero);
 
         expect(received, {
           'type': 'broadcast',
@@ -1207,7 +1229,9 @@ void main() {
         transport: (url, headers) => mockedSocketChannel,
       );
       var opens = 0;
-      socket.onOpen(() => opens += 1);
+      socket.onStatusChange
+          .where((change) => change.status == RealtimeConnectionStatus.open)
+          .listen((_) => opens += 1);
 
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
@@ -1224,6 +1248,8 @@ void main() {
 
       verify(() => erroredChannel.rejoin()).called(1);
       verifyNever(() => healthyChannel.rejoin());
+      // Wait for the async stream delivery of the open event.
+      await Future<void>.delayed(Duration.zero);
       expect(opens, 1);
       expect(socket.connectionState, SocketState.open);
 

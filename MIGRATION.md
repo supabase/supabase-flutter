@@ -308,6 +308,171 @@ flushed once the join succeeds, so only channels that were never subscribed thro
 
 `httpSend()` requires a Realtime server running v2.97.0 or newer.
 
+### Realtime listener callbacks are now streams
+
+Every recurring-event listener in `realtime_client` is now a Dart `Stream` instead of a callback,
+following the shape `RealtimeClient.onHeartbeat` already had. Streams compose (`map`, `where`,
+`firstWhere`, `timeout`), support multiple listeners, and removing a listener is a
+`StreamSubscription.cancel()`, which the callback API had no public equivalent for.
+
+On `RealtimeClient`, the four connection callbacks are replaced by two broadcast streams:
+`onStatusChange` for the connection lifecycle and `onMessage` for every decoded frame. Connection
+errors are emitted as stream errors on `onStatusChange`, so they arrive through the `onError`
+handler of `listen`:
+
+```dart
+// Before
+client.onOpen(() => print('open'));
+client.onClose((event) => print('closed: $event'));
+client.onError((error) => print('error: $error'));
+client.onMessage((message) => print('message: $message'));
+
+// After
+client.onStatusChange.listen(
+  (change) => switch (change.status) {
+    RealtimeConnectionStatus.open => print('open'),
+    RealtimeConnectionStatus.closed => print('closed: ${change.closeEvent}'),
+  },
+  onError: (error) => print('error: $error'),
+);
+client.onMessage.listen((message) => print('message: $message'));
+```
+
+Four separate streams for one connection was a different shape than the channel, where all of
+open, closed and error already arrive on a single `RealtimeChannel.onStatusChange`. Since a stream
+needs `listen` and a cancelled subscription to clean up, one status stream is also less
+bookkeeping than three.
+
+On `RealtimeChannel`, `onPostgresChanges` and `onBroadcast` no longer take a `callback` parameter
+and return a typed stream instead of the channel, so they can no longer be chained. Repeated calls
+with the same arguments return the same stream. For `postgres_changes` the stream still has to be
+created before `subscribe()`, because the requested changes are part of the join payload, but it
+can be listened to at any point:
+
+```dart
+// Before
+supabase
+    .channel('room')
+    .onPostgresChanges(
+      event: PostgresChangeEvent.insert,
+      schema: 'public',
+      table: 'messages',
+      callback: (payload) => print(payload),
+    )
+    .onBroadcast(
+      event: 'cursor-pos',
+      callback: (payload) => print(payload),
+    )
+    .subscribe();
+
+// After
+final channel = supabase.channel('room');
+channel
+    .onPostgresChanges(
+      event: PostgresChangeEvent.insert,
+      schema: 'public',
+      table: 'messages',
+    )
+    .listen(print);
+channel.onBroadcast(event: 'cursor-pos').listen(print);
+channel.subscribe();
+```
+
+The presence and system listeners are stream getters, and `onSystemEvents` emits a typed
+`RealtimeSystemPayload` instead of a raw payload:
+
+```dart
+// Before
+channel.onPresenceSync((payload) { /* ... */ });
+channel.onPresenceJoin((payload) { /* ... */ });
+channel.onPresenceLeave((payload) { /* ... */ });
+channel.onSystemEvents((payload) {
+  final system = RealtimeSystemPayload.fromJson(
+    Map<String, dynamic>.from(payload as Map),
+  );
+});
+
+// After
+channel.onPresenceSync.listen((payload) { /* ... */ });
+channel.onPresenceJoin.listen((payload) { /* ... */ });
+channel.onPresenceLeave.listen((payload) { /* ... */ });
+channel.onSystemEvents.listen((system) { /* ... */ });
+```
+
+`subscribe()` no longer takes a status callback. Status changes are emitted on the new
+`RealtimeChannel.onStatusChange` stream as `RealtimeSubscribeStatusChange` values, which carry the
+`RealtimeSubscribeStatus` and, for `channelError`, the error that caused it. The optional timeout
+moved up to be the first positional parameter:
+
+```dart
+// Before
+channel.subscribe((status, [error]) {
+  if (status == RealtimeSubscribeStatus.subscribed) {
+    // ...
+  } else if (status == RealtimeSubscribeStatus.channelError) {
+    print('error: $error');
+  }
+}, const Duration(seconds: 10));
+
+// After
+channel.onStatusChange.listen((change) {
+  if (change.status == RealtimeSubscribeStatus.subscribed) {
+    // ...
+  } else if (change.status == RealtimeSubscribeStatus.channelError) {
+    print('error: ${change.error}');
+  }
+});
+channel.subscribe(const Duration(seconds: 10));
+```
+
+All channel streams complete when the channel closes, so `await for` loops and `onDone` handlers
+end on their own once the channel is gone.
+
+### `Binding` and `BindingCallback` are internal
+
+`Binding` and `BindingCallback` were the raw registration primitives underneath the channel
+listeners, exported by accident: their only consumers, `RealtimeChannel.onEvents` and
+`RealtimeChannel.off`, have always been internal. They are no longer exported. Use the typed
+channel streams (`onPostgresChanges`, `onBroadcast`, `onPresenceSync`, `onPresenceJoin`,
+`onPresenceLeave`, `onSystemEvents`) instead.
+
+### `RealtimePresence` is internal
+
+`RealtimePresence` and its helper types (`PresenceOpts`, `PresenceEvents`, `PresenceChooser`,
+`PresenceOnJoinCallback`, `PresenceOnLeaveCallback`) are now `@internal`, along with the
+`RealtimeChannel.presence` field. They were presence bookkeeping that leaked into the public API,
+and registering a callback through `channel.presence.onJoin(...)` silently disabled the channel's
+own presence events, because the channel's forwarders occupied the same single callback slot.
+
+Everything the class offered is available on the channel:
+
+```dart
+// Before
+channel.presence.onJoin((key, current, joined) { /* ... */ });
+channel.presence.onLeave((key, current, left) { /* ... */ });
+channel.presence.onSync(() { /* ... */ });
+final Map<String, List<Presence>> state = channel.presence.state;
+
+// After
+channel.onPresenceJoin.listen((payload) { /* ... */ });
+channel.onPresenceLeave.listen((payload) { /* ... */ });
+channel.onPresenceSync.listen((payload) { /* ... */ });
+final List<SinglePresenceState> state = channel.presenceState();
+```
+
+`presenceState()` is not a drop-in replacement for `presence.state`: it returns a
+`List<SinglePresenceState>` rather than a map, so a presence key is read from
+`SinglePresenceState.key` and its payloads from `SinglePresenceState.presences`. When code depended
+on the map, rebuild it from the list:
+
+```dart
+final byKey = {
+  for (final state in channel.presenceState()) state.key: state.presences,
+};
+```
+
+The `Presence` payload class is unchanged and stays public.
+
 ### Plural enum names singularized
 
 A Dart enum type names one value rather than the set, so its name should be singular. Five enums

@@ -1625,7 +1625,13 @@ features:
     symbols:
       - RealtimeChannel.subscribe
     supporting_symbols:
+      - RealtimeChannel.onStatusChange
       - RealtimeSubscribeStatus
+      - RealtimeSubscribeStatusChange
+      - RealtimeSubscribeStatusChange.RealtimeSubscribeStatusChange
+      - RealtimeSubscribeStatusChange.error
+      - RealtimeSubscribeStatusChange.status
+      - RealtimeSubscribeStatusChange.toString
   realtime.channel.unsubscribe:
     status: implemented
     symbols:
@@ -1653,9 +1659,14 @@ features:
       - RealtimeClient.connection
       - RealtimeClient.onConnectionMessage
     supporting_symbols:
-      - RealtimeClient.onError
       - RealtimeClient.onMessage
-      - RealtimeClient.onOpen
+      - RealtimeClient.onStatusChange
+      - RealtimeConnectionStatus
+      - RealtimeConnectionStatusChange
+      - RealtimeConnectionStatusChange.RealtimeConnectionStatusChange
+      - RealtimeConnectionStatusChange.closeEvent
+      - RealtimeConnectionStatusChange.status
+      - RealtimeConnectionStatusChange.toString
   realtime.client.disconnect:
     status: implemented
     symbols:
@@ -1664,7 +1675,7 @@ features:
       - RealtimeClientOptions.connectionCloseTimeout
       - RealtimeConstants.defaultConnectionCloseTimeout
     supporting_symbols:
-      - RealtimeClient.onClose
+      - RealtimeConstants.webSocketCloseNormal
       - RealtimeCloseEvent
       - RealtimeCloseEvent.RealtimeCloseEvent
       - RealtimeCloseEvent.code
@@ -1767,17 +1778,7 @@ features:
       - RealtimeChannel.onPresenceJoin
       - RealtimeChannel.onPresenceLeave
     supporting_symbols:
-      - PresenceChooser
       - PresenceEvent
-      - PresenceEvents
-      - PresenceEvents.PresenceEvents
-      - PresenceEvents.diff
-      - PresenceEvents.state
-      - PresenceOnJoinCallback
-      - PresenceOnLeaveCallback
-      - PresenceOptions
-      - PresenceOptions.PresenceOptions
-      - PresenceOptions.events
       - RealtimePresenceJoinPayload
       - RealtimePresenceJoinPayload.RealtimePresenceJoinPayload
       - RealtimePresenceJoinPayload.currentPresences
@@ -1845,21 +1846,6 @@ features:
       - Presence.payload
       - Presence.presenceReference
       - Presence.toString
-      - RealtimeChannel.presence
-      - RealtimePresence
-      - RealtimePresence.RealtimePresence
-      - RealtimePresence.caller
-      - RealtimePresence.channel
-      - RealtimePresence.inPendingSyncState
-      - RealtimePresence.joinRef
-      - RealtimePresence.list
-      - RealtimePresence.onJoin
-      - RealtimePresence.onLeave
-      - RealtimePresence.onSync
-      - RealtimePresence.pendingDiffs
-      - RealtimePresence.state
-      - RealtimePresence.syncDiff
-      - RealtimePresence.syncState
       - SinglePresenceState
       - SinglePresenceState.SinglePresenceState
       - SinglePresenceState.key
@@ -2122,14 +2108,6 @@ supporting_symbols:
   - AuthWeakPasswordException.AuthWeakPasswordException
   - AuthWeakPasswordException.reasons
   - AuthWeakPasswordException.toString
-  - Binding
-  - Binding.Binding
-  - Binding.callback
-  - Binding.copyWith
-  - Binding.filter
-  - Binding.id
-  - Binding.type
-  - BindingCallback
   - BroadcastChannel
   - Bucket
   - Bucket.Bucket

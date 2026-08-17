@@ -1,4 +1,5 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/types.dart';
 
@@ -37,20 +38,25 @@ class Presence {
       'Presence(presenceReference: $presenceReference, payload: $payload)';
 }
 
+@internal
 typedef PresenceChooser<T> = T Function(String key, dynamic presence);
 
+@internal
 typedef PresenceOnJoinCallback =
     void Function(String? key, dynamic currentPresences, dynamic newPresences);
 
+@internal
 typedef PresenceOnLeaveCallback =
     void Function(String? key, dynamic currentPresences, dynamic newPresences);
 
+@internal
 class PresenceOptions {
   final PresenceEvents events;
 
   const PresenceOptions({required this.events});
 }
 
+@internal
 class PresenceEvents {
   final String state;
   final String diff;
@@ -58,6 +64,17 @@ class PresenceEvents {
   const PresenceEvents({required this.state, required this.diff});
 }
 
+/// Internal bookkeeping for the presence state of a [RealtimeChannel].
+///
+/// Not part of the public API: the [onJoin], [onLeave], and [onSync] setters
+/// hold a single callback slot each, and the [RealtimePresence] constructor
+/// installs the forwarders that feed the channel presence streams through
+/// them, so replacing a callback silently disables those streams.
+///
+/// To observe presence, listen to [RealtimeChannel.onPresenceSync],
+/// [RealtimeChannel.onPresenceJoin], and [RealtimeChannel.onPresenceLeave],
+/// and read the current state with [RealtimeChannel.presenceState].
+@internal
 class RealtimePresence {
   Map<String, List<Presence>> state = <String, List<Presence>>{};
   List<Map<String, dynamic>> pendingDiffs = [];

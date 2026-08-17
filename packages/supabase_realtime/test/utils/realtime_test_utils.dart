@@ -116,28 +116,31 @@ Future<void> primePostgresChanges({
   final received = Completer<void>();
 
   final channel = client.channel('postgres-changes-warmup');
-  channel.onPostgresChanges(
-    event: PostgresChangeEvent.insert,
-    schema: 'public',
-    table: 'todos',
-    callback: (_) {
-      if (!received.isCompleted) received.complete();
-    },
-  );
+  channel
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'todos',
+      )
+      .listen((_) {
+        if (!received.isCompleted) received.complete();
+      });
 
   final subscribed = Completer<void>();
-  channel.subscribe((status, error) {
+  channel.onStatusChange.listen((change) {
     if (subscribed.isCompleted) return;
-    if (status == RealtimeSubscribeStatus.subscribed) {
+    if (change.status == RealtimeSubscribeStatus.subscribed) {
       subscribed.complete();
-    } else if (status == RealtimeSubscribeStatus.channelError ||
-        status == RealtimeSubscribeStatus.timedOut) {
+    } else if (change.status == RealtimeSubscribeStatus.channelError ||
+        change.status == RealtimeSubscribeStatus.timedOut ||
+        change.status == RealtimeSubscribeStatus.closed) {
       subscribed.completeError(
-        StateError('warmup subscribe failed: ${status.name}'),
+        StateError('warmup subscribe failed: ${change.status.name}'),
         StackTrace.current,
       );
     }
   });
+  channel.subscribe();
 
   try {
     await subscribed.future.timeout(const Duration(seconds: 15));
@@ -182,21 +185,26 @@ Future<void> waitForRealtimeServer({
     httpReachable = await _isRealtimeHttpReachable();
 
     final client = createRealtimeClient(RealtimeProtocolVersion.v1);
-    client.onError((error) => lastError = error);
+    client.onStatusChange.listen(
+      (_) {},
+      onError: (Object error) => lastError = error,
+    );
 
     final completer = Completer<bool>();
     final channel = client.channel('readiness-check');
-    channel.subscribe((status, error) {
+    channel.onStatusChange.listen((change) {
       if (completer.isCompleted) return;
-      lastStatus = status.name;
-      if (error != null) lastError = error;
-      if (status == RealtimeSubscribeStatus.subscribed) {
+      lastStatus = change.status.name;
+      if (change.error != null) lastError = change.error;
+      if (change.status == RealtimeSubscribeStatus.subscribed) {
         completer.complete(true);
-      } else if (status == RealtimeSubscribeStatus.channelError ||
-          status == RealtimeSubscribeStatus.timedOut) {
+      } else if (change.status == RealtimeSubscribeStatus.channelError ||
+          change.status == RealtimeSubscribeStatus.timedOut ||
+          change.status == RealtimeSubscribeStatus.closed) {
         completer.complete(false);
       }
     });
+    channel.subscribe();
 
     var ready = false;
     try {
