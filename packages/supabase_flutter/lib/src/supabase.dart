@@ -7,7 +7,7 @@ import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
-import 'package:supabase_flutter/src/constants.dart';
+import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
 import 'package:supabase_flutter/src/flutter_auth_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
@@ -278,7 +278,7 @@ class Supabase {
     required Future<String?> Function()? accessToken,
   }) {
     final headers = {
-      ...Constants.defaultHeaders,
+      ...SupabaseFlutterConstants.defaultHeaders,
       ...?customHeaders,
     };
     final newClient = _client = SupabaseClient(

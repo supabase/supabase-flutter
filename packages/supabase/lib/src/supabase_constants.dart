@@ -3,7 +3,7 @@ import 'package:supabase_common/supabase_common.dart';
 import 'package:meta/meta.dart';
 
 @internal
-class Constants {
+class SupabaseConstants {
   static final Map<String, String> defaultHeaders = Map.unmodifiable({
     'X-Client-Info': buildClientInfoHeader(
       'supabase-dart',

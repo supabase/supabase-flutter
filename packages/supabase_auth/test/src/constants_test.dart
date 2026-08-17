@@ -1,47 +1,51 @@
+import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/constants.dart';
 import 'package:supabase_auth/src/version.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Constants', () {
+  group('AuthConstants', () {
     test('has correct default GoTrue URL', () {
-      expect(Constants.defaultAuthUrl, equals('http://localhost:9999'));
+      expect(AuthConstants.defaultAuthUrl, equals('http://localhost:9999'));
     });
 
     test('has correct default headers', () {
-      expect(Constants.defaultHeaders, isA<Map<String, String>>());
+      expect(AuthConstants.defaultHeaders, isA<Map<String, String>>());
       expect(
-        Constants.defaultHeaders['X-Client-Info'],
+        AuthConstants.defaultHeaders['X-Client-Info'],
         equals('gotrue-dart/$version'),
       );
     });
 
     test('has correct default storage key', () {
-      expect(Constants.defaultStorageKey, equals('supabase.auth.token'));
+      expect(AuthConstants.defaultStorageKey, equals('supabase.auth.token'));
     });
 
     test('has correct expiry margin duration', () {
-      expect(Constants.expiryMargin, equals(const Duration(seconds: 30)));
+      expect(AuthConstants.expiryMargin, equals(const Duration(seconds: 30)));
     });
 
     test('has correct auto refresh tick duration', () {
       expect(
-        Constants.autoRefreshTickDuration,
+        AuthConstants.autoRefreshTickDuration,
         equals(const Duration(seconds: 10)),
       );
     });
 
     test('has correct auto refresh tick threshold', () {
-      expect(Constants.autoRefreshTickThreshold, equals(3));
+      expect(AuthConstants.autoRefreshTickThreshold, equals(3));
     });
 
     test('has correct API version header name', () {
-      expect(Constants.apiVersionHeaderName, equals('x-supabase-api-version'));
+      expect(
+        AuthConstants.apiVersionHeaderName,
+        equals('x-supabase-api-version'),
+      );
     });
 
     test('has correct API version', () {
-      expect(Constants.apiVersion, equals('2024-01-01'));
+      expect(AuthConstants.apiVersion, equals('2024-01-01'));
     });
   });
 

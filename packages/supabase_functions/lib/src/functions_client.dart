@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:supabase_functions/src/constants.dart';
+import 'package:supabase_functions/src/functions_constants.dart';
 import 'package:supabase_functions/src/types.dart';
 import 'package:supabase_functions/src/version.dart';
 import 'package:http/http.dart' as http;
@@ -28,7 +28,7 @@ class FunctionsClient {
     YAJsonIsolate? isolate,
     String? region,
   }) : _url = url,
-       _headers = {...Constants.defaultHeaders, ...headers},
+       _headers = {...FunctionsConstants.defaultHeaders, ...headers},
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null,
        _httpClient = httpClient,

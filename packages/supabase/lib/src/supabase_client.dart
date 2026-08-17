@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
-import 'package:supabase/src/constants.dart';
+import 'package:supabase/src/supabase_constants.dart';
 import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -93,7 +93,7 @@ class SupabaseClient {
   set headers(Map<String, String> newHeaders) {
     _headers.clear();
     _headers.addAll({
-      ...Constants.defaultHeaders,
+      ...SupabaseConstants.defaultHeaders,
       ...newHeaders,
     });
 
@@ -113,7 +113,7 @@ class SupabaseClient {
       auth.headers
         ..clear()
         ..addAll({
-          ...Constants.defaultHeaders,
+          ...SupabaseConstants.defaultHeaders,
           ..._getAuthHeaders(),
           ...headers,
         });
@@ -153,7 +153,7 @@ class SupabaseClient {
        _functionsUrl = '$supabaseUrl/functions/v1',
        _postgrestOptions = postgrestOptions,
        _headers = {
-         ...Constants.defaultHeaders,
+         ...SupabaseConstants.defaultHeaders,
          ...?headers,
        },
        _httpClient = httpClient,

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/src/constants.dart';
+import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
 import 'package:supabase_flutter/src/version.dart';
 
 void main() {
@@ -10,10 +10,16 @@ void main() {
     });
   });
 
-  group('Constants', () {
+  group('SupabaseFlutterConstants', () {
     test('defaultHeaders contains expected keys', () {
-      expect(Constants.defaultHeaders, isA<Map<String, String>>());
-      expect(Constants.defaultHeaders.keys, contains('X-Client-Info'));
+      expect(
+        SupabaseFlutterConstants.defaultHeaders,
+        isA<Map<String, String>>(),
+      );
+      expect(
+        SupabaseFlutterConstants.defaultHeaders.keys,
+        contains('X-Client-Info'),
+      );
     });
   });
 }

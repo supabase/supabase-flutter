@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:supabase_auth/src/constants.dart';
+import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/fetch.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';
 import 'package:http/http.dart';
@@ -77,7 +77,7 @@ void main() {
           },
         },
         headers: {
-          Constants.apiVersionHeaderName: '2024-01-01',
+          AuthConstants.apiVersionHeaderName: '2024-01-01',
         },
         statusCode: 400,
       );
@@ -92,8 +92,8 @@ void main() {
       await AuthFetch(client).request(_mockUrl, HttpMethod.get);
 
       expect(
-        client.lastHeaders?[Constants.apiVersionHeaderName],
-        Constants.apiVersion,
+        client.lastHeaders?[AuthConstants.apiVersionHeaderName],
+        AuthConstants.apiVersion,
       );
     });
 
@@ -104,13 +104,13 @@ void main() {
         _mockUrl,
         HttpMethod.get,
         options: AuthRequestOptions(
-          headers: {Constants.apiVersionHeaderName: '2023-01-01'},
+          headers: {AuthConstants.apiVersionHeaderName: '2023-01-01'},
         ),
       );
 
       expect(
-        client.lastHeaders?[Constants.apiVersionHeaderName],
-        Constants.apiVersion,
+        client.lastHeaders?[AuthConstants.apiVersionHeaderName],
+        AuthConstants.apiVersion,
       );
     });
   });
@@ -123,7 +123,7 @@ void main() {
           'message': 'Error sending confirmation email',
         },
         headers: {
-          Constants.apiVersionHeaderName: '2024-01-01',
+          AuthConstants.apiVersionHeaderName: '2024-01-01',
         },
         statusCode: 500,
       );

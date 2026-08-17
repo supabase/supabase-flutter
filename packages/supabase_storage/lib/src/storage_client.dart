@@ -1,6 +1,6 @@
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
-import 'package:supabase_storage/src/constants.dart';
+import 'package:supabase_storage/src/storage_constants.dart';
 import 'package:supabase_storage/src/iceberg/iceberg_rest_catalog.dart';
 import 'package:supabase_storage/src/iceberg/iceberg_types.dart';
 import 'package:supabase_storage/src/storage_bucket_api.dart';
@@ -55,7 +55,7 @@ class SupabaseStorageClient extends StorageBucketApi {
        _defaultRetryAttempts = retryAttempts,
        super(
          useNewHostname ? _transformStorageUrl(url) : url,
-         {...Constants.defaultHeaders, ...headers},
+         {...StorageConstants.defaultHeaders, ...headers},
        ) {
     _log.config(
       'Initialize SupabaseStorageClient v$version with url: $url, '

@@ -1653,12 +1653,11 @@ features:
   realtime.client.disconnect:
     status: implemented
     symbols:
-      - Constants.defaultConnectionCloseTimeout
       - RealtimeClient.connectionCloseTimeout
       - RealtimeClient.disconnect
       - RealtimeClientOptions.connectionCloseTimeout
+      - RealtimeConstants.defaultConnectionCloseTimeout
     supporting_symbols:
-      - Constants.webSocketCloseNormal
       - RealtimeClient.onClose
       - RealtimeCloseEvent
       - RealtimeCloseEvent.RealtimeCloseEvent
@@ -1881,8 +1880,6 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.heartbeatInterval
-    supporting_symbols:
-      - Constants.defaultHeartbeatInterval
   realtime.configuration.access_token_callback:
     status: implemented
     note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
@@ -2035,7 +2032,6 @@ features:
     symbols:
       - SupabaseClient.headers
     supporting_symbols:
-      - Constants.defaultHeaders
       - FunctionsClient.headers
       - AuthClient.headers
       - PostgrestBuilder.setHeader
@@ -2145,8 +2141,6 @@ supporting_symbols:
   - BucketOptions.allowedMimeTypes
   - BucketOptions.fileSizeLimit
   - BucketOptions.public
-  - Constants
-  - Constants.defaultTimeout
   - CountOption
   - ErrorCode
   - ErrorCode.ErrorCode
@@ -2376,6 +2370,7 @@ supporting_symbols:
   - RealtimeClientOptions.RealtimeClientOptions
   - RealtimeClientOptions.timeout
   - RealtimeConstants
+  - RealtimeConstants.defaultTimeout
   - RealtimeSubscribeException
   - RealtimeSubscribeException.RealtimeSubscribeException
   - RealtimeSubscribeException.details

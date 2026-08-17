@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:supabase_auth/src/constants.dart';
+import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/error_code.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';
@@ -140,9 +140,10 @@ class AuthFetch {
     final headers = {...?options?.headers};
 
     // Pin the API version rather than letting a caller override it. This client
-    // only understands the error shape of [Constants.apiVersion], so asking the
-    // server for an older one would produce responses it cannot parse.
-    headers[Constants.apiVersionHeaderName] = Constants.apiVersion;
+    // only understands the error shape of [AuthConstants.apiVersion], so
+    // asking the server for an older one would produce responses it cannot
+    // parse.
+    headers[AuthConstants.apiVersionHeaderName] = AuthConstants.apiVersion;
 
     if (options?.jwt != null) {
       headers['Authorization'] = 'Bearer ${options!.jwt}';

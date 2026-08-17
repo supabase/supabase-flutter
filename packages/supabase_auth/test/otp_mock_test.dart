@@ -1,5 +1,5 @@
 import 'package:supabase_auth/supabase_auth.dart';
-import 'package:supabase_auth/src/constants.dart' show Constants;
+import 'package:supabase_auth/src/auth_constants.dart' show AuthConstants;
 import 'package:test/test.dart';
 
 import 'mocks/otp_mock_client.dart';
@@ -422,7 +422,7 @@ void main() {
         await client.updateUser(UserAttributes(email: testEmail));
 
         final storedVerifier = await asyncStorage.getItem(
-          key: '${Constants.defaultStorageKey}-code-verifier',
+          key: '${AuthConstants.defaultStorageKey}-code-verifier',
         );
         expect(
           storedVerifier?.split('/').last,

@@ -91,7 +91,10 @@ void main() {
         'message': [],
       });
       expect(socket.timeout, const Duration(milliseconds: 10000));
-      expect(socket.heartbeatInterval, Constants.defaultHeartbeatInterval);
+      expect(
+        socket.heartbeatInterval,
+        RealtimeConstants.defaultHeartbeatInterval,
+      );
       expect(
         socket.logger
             is void Function(
@@ -646,7 +649,7 @@ void main() {
       final socket = RealtimeClient(socketEndpoint);
       expect(
         socket.disconnectOnEmptyChannelsAfter,
-        Constants.defaultHeartbeatInterval * 2,
+        RealtimeConstants.defaultHeartbeatInterval * 2,
       );
 
       final customSocket = RealtimeClient(
@@ -1068,7 +1071,7 @@ void main() {
     final token = generateJwt();
     final updateJoinPayload = {
       'access_token': token,
-      'version': Constants.defaultHeaders['X-Client-Info'],
+      'version': RealtimeConstants.defaultHeaders['X-Client-Info'],
     };
     final pushPayload = {'access_token': token};
 
@@ -1162,7 +1165,7 @@ void main() {
         final expectedPushPayload = {'access_token': authToken};
         final expectedUpdateJoinPayload = {
           'access_token': authToken,
-          'version': Constants.defaultHeaders['X-Client-Info'],
+          'version': RealtimeConstants.defaultHeaders['X-Client-Info'],
         };
 
         await mockedSocket.setAccessToken(authToken);
