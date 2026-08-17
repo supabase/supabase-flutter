@@ -508,7 +508,7 @@ void main() {
         final response = await client.getOAuthSignInUrl(
           provider: OAuthProvider.google,
         );
-        expect(response.url, isA<String>());
+        expect(response.url, isA<Uri>());
         expect(response.provider, OAuthProvider.google);
       });
 
@@ -518,7 +518,7 @@ void main() {
           redirectTo: 'https://supabase.com',
         );
         expect(
-          response.url,
+          response.url.toString(),
           '$authUrl/authorize?provider=google'
           '&redirect_to=https%3A%2F%2Fsupabase.com',
         );
@@ -530,7 +530,10 @@ void main() {
           provider: OAuthProvider.google,
           redirectTo: 'https://localhost:9000/welcome',
         );
-        expect(response.url, isA<String>());
+        expect(
+          response.url.queryParameters['redirect_to'],
+          'https://localhost:9000/welcome',
+        );
         expect(response.provider, OAuthProvider.google);
       });
 
@@ -539,7 +542,7 @@ void main() {
           provider: OAuthProvider.google,
           scopes: 'repo',
         );
-        expect(response.url, isA<String>());
+        expect(response.url.queryParameters['scopes'], 'repo');
         expect(response.provider, OAuthProvider.google);
       });
 
@@ -549,7 +552,14 @@ void main() {
           redirectTo: 'https://localhost:9000/welcome',
           scopes: 'repo',
         );
-        expect(response.url, isA<String>());
+        expect(
+          response.url.queryParameters,
+          containsPair('scopes', 'repo'),
+        );
+        expect(
+          response.url.queryParameters,
+          containsPair('redirect_to', 'https://localhost:9000/welcome'),
+        );
         expect(response.provider, OAuthProvider.google);
       });
     });
@@ -646,8 +656,8 @@ void main() {
     test('Call getLinkIdentityUrl', () async {
       await client.signInWithPassword(email: email1, password: password);
       final response = await client.getLinkIdentityUrl(OAuthProvider.google);
-      expect(response.url, isA<String>());
-      final uri = Uri.parse(response.url);
+      expect(response.url, isA<Uri>());
+      final uri = response.url;
       expect(uri.host, 'accounts.google.com');
     });
   });
@@ -739,8 +749,7 @@ void main() {
         final response = await client.getOAuthSignInUrl(
           provider: OAuthProvider.google,
         );
-        final url = Uri.parse(response.url);
-        final queryParameters = url.queryParameters;
+        final queryParameters = response.url.queryParameters;
         expect(queryParameters['provider'], 'google');
         expect(queryParameters['flow_type'], 'pkce');
         expect(queryParameters['code_challenge_method'], 's256');

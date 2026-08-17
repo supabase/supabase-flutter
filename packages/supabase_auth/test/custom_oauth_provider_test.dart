@@ -33,9 +33,9 @@ void main() {
         final response = await client.getOAuthSignInUrl(provider: provider);
 
         expect(response.provider, provider);
-        expect(response.url, startsWith('$authUrl/authorize?'));
+        expect(response.url.toString(), startsWith('$authUrl/authorize?'));
 
-        final uri = Uri.parse(response.url);
+        final uri = response.url;
         expect(uri.queryParameters['provider'], 'custom:my-provider');
       },
     );

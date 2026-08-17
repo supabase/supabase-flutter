@@ -90,6 +90,30 @@ final Uri ssoUrl = await supabase.auth.getSSOSignInUrl(domain: 'company.com');
 
 If you need the URL string, use `ssoUrl.toString()`.
 
+### `OAuthResponse.url` is a `Uri`
+
+`OAuthResponse.url` is a `Uri` rather than a `String`, so `getOAuthSignInUrl()` and
+`getLinkIdentityUrl()` now hand back the same type `getSSOSignInUrl()` does.
+
+```dart
+// Before
+final response = await supabase.auth.getOAuthSignInUrl(
+  provider: OAuthProvider.google,
+);
+final String url = response.url;
+
+// After
+final response = await supabase.auth.getOAuthSignInUrl(
+  provider: OAuthProvider.google,
+);
+final Uri url = response.url;
+```
+
+If you need the URL string, use `response.url.toString()`. Callers that were parsing it
+themselves can drop the `Uri.parse()`.
+
+The URL the server receives is unchanged, only the Dart type differs.
+
 ### `RealtimeClient.connectionState` is now typed
 
 `RealtimeClient` used to expose the socket state twice: a typed `connState` field and a stringly

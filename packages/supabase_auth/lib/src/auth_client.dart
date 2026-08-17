@@ -417,14 +417,15 @@ class AuthClient {
     String? redirectTo,
     String? scopes,
     Map<String, String>? queryParameters,
-  }) {
-    return _getUrlForProvider(
+  }) async {
+    final url = await _getUrlForProvider(
       provider,
       url: '$_url/authorize',
       redirectTo: redirectTo,
       scopes: scopes,
       queryParameters: queryParameters,
     );
+    return OAuthResponse(provider: provider, url: url);
   }
 
   /// Verifies the PKCE code verifier and retrieves a session.
@@ -1258,7 +1259,7 @@ class AuthClient {
     String? scopes,
     Map<String, String>? queryParameters,
   }) async {
-    final urlResponse = await _getUrlForProvider(
+    final authorizeUrl = await _getUrlForProvider(
       provider,
       url: '$_url/user/identities/authorize',
       redirectTo: redirectTo,
@@ -1267,14 +1268,17 @@ class AuthClient {
       skipBrowserRedirect: true,
     );
     final response = await _fetch.request(
-      urlResponse.url,
+      authorizeUrl.toString(),
       HttpMethod.get,
       options: AuthRequestOptions(
         headers: _headers,
         jwt: _currentSession?.accessToken,
       ),
     );
-    return OAuthResponse(provider: provider, url: _urlFromResponse(response));
+    return OAuthResponse(
+      provider: provider,
+      url: Uri.parse(_urlFromResponse(response)),
+    );
   }
 
   /// Unlinks an identity from a user by deleting it.
@@ -1486,7 +1490,7 @@ class AuthClient {
   }
 
   /// Returns the OAuth sign in URL constructed from the [url] parameter.
-  Future<OAuthResponse> _getUrlForProvider(
+  Future<Uri> _getUrlForProvider(
     OAuthProvider provider, {
     required String url,
     required String? scopes,
@@ -1507,8 +1511,7 @@ class AuthClient {
       },
       if (skipBrowserRedirect) 'skip_http_redirect': 'true',
     };
-    final oauthUrl = '$url?${Uri(queryParameters: urlParameters).query}';
-    return OAuthResponse(provider: provider, url: oauthUrl);
+    return Uri.parse('$url?${Uri(queryParameters: urlParameters).query}');
   }
 
   /// Reads the `url` field out of a response that is expected to carry one.

@@ -370,12 +370,10 @@ extension AuthClientSignInProvider on AuthClient {
   /// Launches the [url] for an OAuth or identity-linking flow, forcing an
   /// external browser for Google on Android.
   Future<bool> _launchAuthUrl(
-    String url,
+    Uri url,
     OAuthProvider provider,
     LaunchMode authScreenLaunchMode,
   ) {
-    final uri = Uri.parse(url);
-
     LaunchMode launchMode = authScreenLaunchMode;
 
     // `defaultTargetPlatform` reports the host OS even on web, so guard with
@@ -389,7 +387,7 @@ extension AuthClientSignInProvider on AuthClient {
     }
 
     return launchUrl(
-      uri,
+      url,
       mode: launchMode,
       webOnlyWindowName: '_self',
     );

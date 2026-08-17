@@ -33,7 +33,7 @@ void main() {
       );
       final url = response.url;
       final provider = response.provider;
-      expect(url, startsWith('$authUrl/authorize?provider=google'));
+      expect(url.toString(), startsWith('$authUrl/authorize?provider=google'));
       expect(provider, OAuthProvider.google);
     });
 
@@ -46,7 +46,7 @@ void main() {
       final url = response.url;
       final provider = response.provider;
       expect(
-        url,
+        url.toString(),
         startsWith(
           '$authUrl/authorize?provider=github&scopes=repo&redirect_to=redirectToURL',
         ),
@@ -59,7 +59,7 @@ void main() {
         provider: OAuthProvider('custom:my-oidc-provider'),
       );
       expect(
-        response.url,
+        response.url.toString(),
         startsWith(
           '$authUrl/authorize?provider=custom%3Amy-oidc-provider',
         ),
@@ -74,9 +74,10 @@ void main() {
         redirectTo: 'https://localhost:9000/callback',
         scopes: 'openid profile email',
       );
-      expect(response.url, contains('provider=custom%3Amy-oidc-provider'));
-      expect(response.url, contains('redirect_to='));
-      expect(response.url, contains('scopes='));
+      final url = response.url.toString();
+      expect(url, contains('provider=custom%3Amy-oidc-provider'));
+      expect(url, contains('redirect_to='));
+      expect(url, contains('scopes='));
       expect(response.provider.name, 'custom:my-oidc-provider');
     });
   });

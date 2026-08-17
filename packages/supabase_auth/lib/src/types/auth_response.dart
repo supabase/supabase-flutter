@@ -19,7 +19,9 @@ class AuthResponse {
 /// Response of OAuth signin
 class OAuthResponse {
   final OAuthProvider provider;
-  final String url;
+
+  /// The provider's authorization URL to send the user to.
+  final Uri url;
 
   /// Instantiates an `OAuthResponse` object from json response.
   const OAuthResponse({
