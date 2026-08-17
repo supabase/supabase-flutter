@@ -7,7 +7,7 @@ export 'package:supabase_common/supabase_common.dart'
 export 'src/constants.dart' hide Constants;
 export 'src/auth_admin_api.dart';
 export 'src/auth_client.dart';
-export 'src/helper.dart' show decodeJwt, validateExp;
+export 'src/helper.dart' show decodeJwt, validateExpiration;
 export 'src/types/auth_exception.dart';
 export 'src/types/auth_response.dart';
 export 'src/types/auth_state.dart';

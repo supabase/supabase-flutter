@@ -6,33 +6,33 @@ import 'package:supabase_common/supabase_common.dart';
 /// JWT Header structure
 class JwtHeader {
   /// Algorithm used to sign the JWT (e.g., 'RS256', 'ES256', 'HS256')
-  final String alg;
+  final String algorithm;
 
   /// Key ID - identifies which key was used to sign the JWT
-  final String? kid;
+  final String? keyId;
 
   /// Token type - typically 'JWT'
-  final String? typ;
+  final String? type;
 
   const JwtHeader({
-    required this.alg,
-    this.kid,
-    this.typ,
+    required this.algorithm,
+    this.keyId,
+    this.type,
   });
 
   factory JwtHeader.fromJson(Map<String, dynamic> json) {
     return JwtHeader(
-      alg: json['alg'] as String,
-      kid: json['kid'] as String?,
-      typ: json['typ'] as String?,
+      algorithm: json['alg'] as String,
+      keyId: json['kid'] as String?,
+      type: json['typ'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'alg': alg,
-      'kid': ?kid,
-      'typ': ?typ,
+      'alg': algorithm,
+      'kid': ?keyId,
+      'typ': ?type,
     };
   }
 }
@@ -40,49 +40,49 @@ class JwtHeader {
 /// JWT Payload structure with standard claims
 class JwtPayload {
   /// Issuer - identifies principal that issued the JWT
-  final String? iss;
+  final String? issuer;
 
   /// Subject - identifies the subject of the JWT
-  final String? sub;
+  final String? subject;
 
   /// Audience - identifies recipients that the JWT is intended for
-  final dynamic aud;
+  final dynamic audience;
 
   /// Expiration time - timestamp after which the JWT must not be accepted
-  final int? exp;
+  final int? expiresAt;
 
   /// Not Before - timestamp before which the JWT must not be accepted
-  final int? nbf;
+  final int? notBefore;
 
   /// Issued At - timestamp when the JWT was issued
-  final int? iat;
+  final int? issuedAt;
 
   /// JWT ID - unique identifier for the JWT
-  final String? jti;
+  final String? jwtId;
 
   /// Additional claims stored in the payload
   final Map<String, dynamic> claims;
 
   JwtPayload({
-    this.iss,
-    this.sub,
-    this.aud,
-    this.exp,
-    this.nbf,
-    this.iat,
-    this.jti,
+    this.issuer,
+    this.subject,
+    this.audience,
+    this.expiresAt,
+    this.notBefore,
+    this.issuedAt,
+    this.jwtId,
     Map<String, dynamic>? claims,
   }) : claims = claims ?? {};
 
   factory JwtPayload.fromJson(Map<String, dynamic> json) {
     return JwtPayload(
-      iss: json['iss'] as String?,
-      sub: json['sub'] as String?,
-      aud: json['aud'],
-      exp: json['exp'] as int?,
-      nbf: json['nbf'] as int?,
-      iat: json['iat'] as int?,
-      jti: json['jti'] as String?,
+      issuer: json['iss'] as String?,
+      subject: json['sub'] as String?,
+      audience: json['aud'],
+      expiresAt: (json['exp'] as num?)?.toInt(),
+      notBefore: (json['nbf'] as num?)?.toInt(),
+      issuedAt: (json['iat'] as num?)?.toInt(),
+      jwtId: json['jti'] as String?,
       claims: Map<String, dynamic>.of(json),
     );
   }
@@ -189,39 +189,39 @@ class JWKSet {
 class JWK {
   /// The "kty" (key type) parameter identifies the cryptographic algorithm
   /// family used with the key, such as "RSA" or "EC".
-  final String kty;
+  final String keyType;
 
   /// The "key_ops" (key operations) parameter identifies the cryptographic
   /// operations for which the key is intended to be used.
-  final List<String> keyOps;
+  final List<String> keyOperations;
 
   /// The "alg" (algorithm) parameter identifies the algorithm intended for
   /// use with the key.
-  final String? alg;
+  final String? algorithm;
 
   /// The "kid" (key ID) parameter is used to match a specific key.
-  final String? kid;
+  final String? keyId;
 
   /// Additional arbitrary properties of the JWK.
   final Map<String, dynamic> _additionalProperties;
 
   /// {@macro jwk}
   JWK({
-    required this.kty,
-    required this.keyOps,
-    this.alg,
-    this.kid,
+    required this.keyType,
+    required this.keyOperations,
+    this.algorithm,
+    this.keyId,
     Map<String, dynamic>? additionalProperties,
   }) : _additionalProperties = additionalProperties ?? {};
 
   /// Creates a [JWK] from a JSON map.
   factory JWK.fromJson(Map<String, dynamic> json) {
-    final kty = json['kty'] as String;
-    final keyOps =
+    final keyType = json['kty'] as String;
+    final keyOperations =
         (json['key_ops'] as List<dynamic>?)?.map((e) => e as String).toList() ??
         [];
-    final alg = json['alg'] as String?;
-    final kid = json['kid'] as String?;
+    final algorithm = json['alg'] as String?;
+    final keyId = json['kid'] as String?;
 
     final Map<String, dynamic> additionalProperties = Map.of(json);
     additionalProperties.remove('kty');
@@ -230,30 +230,30 @@ class JWK {
     additionalProperties.remove('kid');
 
     return JWK(
-      kty: kty,
-      keyOps: keyOps,
-      alg: alg,
-      kid: kid,
+      keyType: keyType,
+      keyOperations: keyOperations,
+      algorithm: algorithm,
+      keyId: keyId,
       additionalProperties: additionalProperties,
     );
   }
 
   /// Allows accessing additional properties using operator[].
   dynamic operator [](String key) => switch (key) {
-    'kty' => kty,
-    'key_ops' => keyOps,
-    'alg' => alg,
-    'kid' => kid,
+    'kty' => keyType,
+    'key_ops' => keyOperations,
+    'alg' => algorithm,
+    'kid' => keyId,
     _ => _additionalProperties[key],
   };
 
   /// Converts this [JWK] to a JSON map.
   Map<String, dynamic> toJson() {
     return {
-      'kty': kty,
-      'key_ops': keyOps,
-      'alg': ?alg,
-      'kid': ?kid,
+      'kty': keyType,
+      'key_ops': keyOperations,
+      'alg': ?algorithm,
+      'kid': ?keyId,
       ..._additionalProperties,
     };
   }

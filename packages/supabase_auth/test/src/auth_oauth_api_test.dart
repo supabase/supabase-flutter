@@ -183,7 +183,7 @@ void main() {
   group('OAuth server', () {
     test('get authorization details', () async {
       final client = await fixture.build();
-      final clientParameters = CreateOAuthClientParams(
+      final clientParameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
         responseTypes: [OAuthClientResponseType.code],
@@ -210,7 +210,7 @@ void main() {
 
     test('approve authorization request', () async {
       final client = await fixture.build();
-      final clientParameters = CreateOAuthClientParams(
+      final clientParameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
       );
@@ -230,7 +230,7 @@ void main() {
 
     test('denies authorization request', () async {
       final client = await fixture.build();
-      final clientParameters = CreateOAuthClientParams(
+      final clientParameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
       );
@@ -254,7 +254,7 @@ void main() {
 
     test('approving authorization without getting details throws', () async {
       final client = await fixture.build();
-      final clientParameters = CreateOAuthClientParams(
+      final clientParameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
       );
@@ -275,7 +275,7 @@ void main() {
 
     test('lists grants after approving an authorization', () async {
       final client = await fixture.build();
-      final clientParameters = CreateOAuthClientParams(
+      final clientParameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
         responseTypes: [OAuthClientResponseType.code],
@@ -296,7 +296,7 @@ void main() {
 
     test('revokes a grant', () async {
       final client = await fixture.build();
-      final clientParameters = CreateOAuthClientParams(
+      final clientParameters = CreateOAuthClientOptions(
         clientName: 'Test OAuth Client',
         redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
         responseTypes: [OAuthClientResponseType.code],
@@ -319,7 +319,7 @@ void main() {
       'approved does not throw',
       () async {
         final client = await fixture.build();
-        final clientParameters = CreateOAuthClientParams(
+        final clientParameters = CreateOAuthClientOptions(
           clientName: 'Test OAuth Client',
           redirectUris: ['http://127.0.0.1:3000/oauth/callback'],
           responseTypes: [OAuthClientResponseType.code],
@@ -376,7 +376,7 @@ class AuthOauthApiFixture {
   late final String _authUrl;
   late final String _serviceRoleToken;
 
-  Future<OAuthClient> createOAuthClient(CreateOAuthClientParams request) {
+  Future<OAuthClient> createOAuthClient(CreateOAuthClientOptions request) {
     return _client.admin.oauth
         .createClient(request)
         .then((response) => response.client!);

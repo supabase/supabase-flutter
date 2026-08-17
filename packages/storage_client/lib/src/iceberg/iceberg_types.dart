@@ -1,3 +1,5 @@
+import 'package:supabase_common/supabase_common.dart';
+
 /// Identifies a table by its namespace and name.
 class TableIdentifier {
   /// The multi level namespace the table belongs to.
@@ -69,14 +71,7 @@ enum AccessDelegation {
 }
 
 /// Which snapshots the server should include when loading a table.
-enum TableSnapshotScope {
-  all('all'),
-  refs('refs');
-
-  const TableSnapshotScope(this.value);
-
-  final String value;
-}
+enum TableSnapshotScope { all, refs }
 
 /// A type in the Iceberg type system. Either a [PrimitiveType] represented by
 /// a type string, or one of the nested types [StructType], [ListType] and
@@ -121,7 +116,7 @@ class TableField {
   final String name;
   final IcebergType type;
   final bool required;
-  final String? doc;
+  final String? documentation;
   final Object? initialDefault;
   final Object? writeDefault;
 
@@ -130,7 +125,7 @@ class TableField {
     required this.name,
     required this.type,
     required this.required,
-    this.doc,
+    this.documentation,
     this.initialDefault,
     this.writeDefault,
   });
@@ -141,7 +136,7 @@ class TableField {
       name: json['name'] as String,
       type: IcebergType.fromJson(json['type'] as Object),
       required: json['required'] as bool,
-      doc: json['doc'] as String?,
+      documentation: json['doc'] as String?,
       initialDefault: json['initial-default'],
       writeDefault: json['write-default'],
     );
@@ -152,7 +147,7 @@ class TableField {
     'name': name,
     'type': type.toJson(),
     'required': required,
-    'doc': ?doc,
+    'doc': ?documentation,
     'initial-default': ?initialDefault,
     'write-default': ?writeDefault,
   };
@@ -277,7 +272,7 @@ class TableSchema {
   };
 }
 
-/// A single field of a [PartitionSpec].
+/// A single field of a [PartitionSpecification].
 class PartitionField {
   final int sourceId;
   final int? fieldId;
@@ -309,15 +304,15 @@ class PartitionField {
 }
 
 /// Describes how a table is partitioned.
-class PartitionSpec {
-  final int? specId;
+class PartitionSpecification {
+  final int? specificationId;
   final List<PartitionField> fields;
 
-  const PartitionSpec({required this.fields, this.specId});
+  const PartitionSpecification({required this.fields, this.specificationId});
 
-  factory PartitionSpec.fromJson(Map<String, dynamic> json) {
-    return PartitionSpec(
-      specId: json['spec-id'] as int?,
+  factory PartitionSpecification.fromJson(Map<String, dynamic> json) {
+    return PartitionSpecification(
+      specificationId: json['spec-id'] as int?,
       fields: (json['fields'] as List)
           .map(
             (field) => PartitionField.fromJson(field as Map<String, dynamic>),
@@ -327,7 +322,7 @@ class PartitionSpec {
   }
 
   Map<String, dynamic> toJson() => {
-    'spec-id': ?specId,
+    'spec-id': ?specificationId,
     'fields': fields.map((field) => field.toJson()).toList(),
   };
 }
@@ -389,15 +384,15 @@ class SortOrder {
 class SnapshotReference {
   final SnapshotReferenceType type;
   final int snapshotId;
-  final int? maxReferenceAgeMs;
-  final int? maxSnapshotAgeMs;
+  final Duration? maxReferenceAge;
+  final Duration? maxSnapshotAge;
   final int? minSnapshotsToKeep;
 
   const SnapshotReference({
     required this.type,
     required this.snapshotId,
-    this.maxReferenceAgeMs,
-    this.maxSnapshotAgeMs,
+    this.maxReferenceAge,
+    this.maxSnapshotAge,
     this.minSnapshotsToKeep,
   });
 
@@ -405,8 +400,11 @@ class SnapshotReference {
     return SnapshotReference(
       type: SnapshotReferenceType.fromValue(json['type'] as String),
       snapshotId: json['snapshot-id'] as int,
-      maxReferenceAgeMs: json['max-ref-age-ms'] as int?,
-      maxSnapshotAgeMs: json['max-snapshot-age-ms'] as int?,
+      maxReferenceAge: tryParseMillisecondsDuration(json, 'max-ref-age-ms'),
+      maxSnapshotAge: tryParseMillisecondsDuration(
+        json,
+        'max-snapshot-age-ms',
+      ),
       minSnapshotsToKeep: json['min-snapshots-to-keep'] as int?,
     );
   }
@@ -414,8 +412,8 @@ class SnapshotReference {
   Map<String, dynamic> toJson() => {
     'type': type.value,
     'snapshot-id': snapshotId,
-    'max-ref-age-ms': ?maxReferenceAgeMs,
-    'max-snapshot-age-ms': ?maxSnapshotAgeMs,
+    'max-ref-age-ms': ?maxReferenceAge?.inMilliseconds,
+    'max-snapshot-age-ms': ?maxSnapshotAge?.inMilliseconds,
     'min-snapshots-to-keep': ?minSnapshotsToKeep,
   };
 }
@@ -425,14 +423,14 @@ class Snapshot {
   final int snapshotId;
   final int? parentSnapshotId;
   final int? sequenceNumber;
-  final int timestampMs;
+  final DateTime timestamp;
   final String manifestList;
   final Map<String, String> summary;
   final int? schemaId;
 
   const Snapshot({
     required this.snapshotId,
-    required this.timestampMs,
+    required this.timestamp,
     required this.manifestList,
     required this.summary,
     this.parentSnapshotId,
@@ -445,7 +443,7 @@ class Snapshot {
       snapshotId: json['snapshot-id'] as int,
       parentSnapshotId: json['parent-snapshot-id'] as int?,
       sequenceNumber: json['sequence-number'] as int?,
-      timestampMs: json['timestamp-ms'] as int,
+      timestamp: parseUnixMilliseconds(json, 'timestamp-ms'),
       manifestList: json['manifest-list'] as String,
       summary: Map.from(json['summary'] as Map? ?? const {}),
       schemaId: json['schema-id'] as int?,
@@ -456,7 +454,7 @@ class Snapshot {
     'snapshot-id': snapshotId,
     'parent-snapshot-id': ?parentSnapshotId,
     'sequence-number': ?sequenceNumber,
-    'timestamp-ms': timestampMs,
+    'timestamp-ms': timestamp.millisecondsSinceEpoch,
     'manifest-list': manifestList,
     'summary': summary,
     'schema-id': ?schemaId,
@@ -469,55 +467,59 @@ class TableMetadata {
   final int formatVersion;
   final String tableUuid;
   final String? location;
-  final int? lastUpdatedMs;
+  final DateTime? lastUpdated;
   final int? lastColumnId;
   final List<TableSchema> schemas;
   final int currentSchemaId;
-  final List<PartitionSpec> partitionSpecs;
-  final int? defaultSpecId;
+  final List<PartitionSpecification> partitionSpecifications;
+  final int? defaultSpecificationId;
   final List<SortOrder> sortOrders;
   final int? defaultSortOrderId;
   final Map<String, String> properties;
   final String? metadataLocation;
   final int? currentSnapshotId;
   final List<Snapshot> snapshots;
-  final Map<String, SnapshotReference>? refs;
+  final Map<String, SnapshotReference>? references;
 
   const TableMetadata({
     required this.formatVersion,
     required this.tableUuid,
     required this.schemas,
     required this.currentSchemaId,
-    required this.partitionSpecs,
+    required this.partitionSpecifications,
     required this.sortOrders,
     required this.properties,
     this.location,
-    this.lastUpdatedMs,
+    this.lastUpdated,
     this.lastColumnId,
-    this.defaultSpecId,
+    this.defaultSpecificationId,
     this.defaultSortOrderId,
     this.metadataLocation,
     this.currentSnapshotId,
     this.snapshots = const [],
-    this.refs,
+    this.references,
   });
 
   factory TableMetadata.fromJson(Map<String, dynamic> json) {
-    final refs = json['refs'] as Map<String, dynamic>?;
+    final references = json['refs'] as Map<String, dynamic>?;
     return TableMetadata(
       formatVersion: json['format-version'] as int,
       tableUuid: json['table-uuid'] as String,
       location: json['location'] as String?,
-      lastUpdatedMs: json['last-updated-ms'] as int?,
+      lastUpdated: tryParseUnixMilliseconds(json, 'last-updated-ms'),
       lastColumnId: json['last-column-id'] as int?,
       schemas: (json['schemas'] as List? ?? [])
           .map((schema) => TableSchema.fromJson(schema as Map<String, dynamic>))
           .toList(),
       currentSchemaId: json['current-schema-id'] as int,
-      partitionSpecs: (json['partition-specs'] as List? ?? [])
-          .map((spec) => PartitionSpec.fromJson(spec as Map<String, dynamic>))
+      partitionSpecifications: (json['partition-specs'] as List? ?? [])
+          .map(
+            (specification) => PartitionSpecification.fromJson(
+              specification as Map<String, dynamic>,
+            ),
+          )
           .toList(),
-      defaultSpecId: json['default-spec-id'] as int?,
+      defaultSpecificationId: json['default-spec-id'] as int?,
       sortOrders: (json['sort-orders'] as List? ?? [])
           .map((order) => SortOrder.fromJson(order as Map<String, dynamic>))
           .toList(),
@@ -532,7 +534,7 @@ class TableMetadata {
             (snapshot) => Snapshot.fromJson(snapshot as Map<String, dynamic>),
           )
           .toList(),
-      refs: refs?.map(
+      references: references?.map(
         (key, value) => MapEntry(
           key,
           SnapshotReference.fromJson(value as Map<String, dynamic>),
@@ -611,7 +613,7 @@ class CreateTableRequest {
   final String name;
   final TableSchema schema;
   final String? location;
-  final PartitionSpec? partitionSpec;
+  final PartitionSpecification? partitionSpecification;
   final SortOrder? writeOrder;
   final Map<String, String>? properties;
   final bool? stageCreate;
@@ -620,7 +622,7 @@ class CreateTableRequest {
     required this.name,
     required this.schema,
     this.location,
-    this.partitionSpec,
+    this.partitionSpecification,
     this.writeOrder,
     this.properties,
     this.stageCreate,
@@ -630,7 +632,7 @@ class CreateTableRequest {
     'name': name,
     'schema': schema.toJson(),
     'location': ?location,
-    'partition-spec': ?partitionSpec?.toJson(),
+    'partition-spec': ?partitionSpecification?.toJson(),
     'write-order': ?writeOrder?.toJson(),
     'properties': ?properties,
     'stage-create': ?stageCreate,

@@ -132,15 +132,10 @@ class IcebergRestCatalog {
     Map<String, String>? headers,
   }) async {
     final uri = _buildUri(path, query);
-    final requestHeaders = <String, String>{
-      ..._headers,
-      if (body != null) 'Content-Type': 'application/json',
-      ...?headers,
-    };
-
     final request = http.Request(method.value, uri)
-      ..headers.addAll(requestHeaders);
+      ..headers.addAll({..._headers, ...?headers});
     if (body != null) {
+      request.headers.putIfAbsent('Content-Type', () => 'application/json');
       request.body = json.encode(body);
     }
 
@@ -148,9 +143,7 @@ class IcebergRestCatalog {
 
     final http.StreamedResponse streamedResponse;
     try {
-      streamedResponse = _httpClient != null
-          ? await _httpClient.send(request)
-          : await request.send();
+      streamedResponse = await request.sendWith(_httpClient);
     } catch (error) {
       throw IcebergNetworkException(
         'Network request failed: $error',
@@ -164,8 +157,7 @@ class IcebergRestCatalog {
       return _IcebergResponse(304, response.headers, null);
     }
 
-    final contentType = response.headers['content-type'] ?? '';
-    final isJson = contentType.contains('application/json');
+    final isJson = response.headers.mediaType == 'application/json';
     final decoded = isJson && response.body.isNotEmpty
         ? json.decode(response.body)
         : response.body;
@@ -405,7 +397,7 @@ class IcebergRestCatalog {
   ]) async {
     final prefix = await _resolvePrefix();
     final query = <String, String>{
-      if (options?.snapshots != null) 'snapshots': options!.snapshots!.value,
+      if (options?.snapshots != null) 'snapshots': options!.snapshots!.name,
     };
     final response = await _request(
       HttpMethod.get,

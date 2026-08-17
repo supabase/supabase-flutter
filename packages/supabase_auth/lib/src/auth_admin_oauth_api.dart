@@ -25,14 +25,14 @@ class OAuthClientResponse {
 @internal
 class OAuthClientListResponse {
   final List<OAuthClient> clients;
-  final String? aud;
+  final String? audience;
   final int? nextPage;
   final int? lastPage;
   final int total;
 
   const OAuthClientListResponse({
     required this.clients,
-    this.aud,
+    this.audience,
     this.nextPage,
     this.lastPage,
     this.total = 0,
@@ -43,10 +43,10 @@ class OAuthClientListResponse {
       clients: (json['clients'] as List)
           .map((e) => OAuthClient.fromJson(e as Map<String, dynamic>))
           .toList(),
-      aud: json['aud'] as String?,
-      nextPage: json['nextPage'] as int?,
-      lastPage: json['lastPage'] as int?,
-      total: json['total'] as int? ?? 0,
+      audience: json['aud'] as String?,
+      nextPage: (json['nextPage'] as num?)?.toInt(),
+      lastPage: (json['lastPage'] as num?)?.toInt(),
+      total: (json['total'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -96,14 +96,14 @@ class AuthAdminOAuthApi {
   /// This function should only be called on a server. Never expose your
   /// `secret` key in the browser.
   Future<OAuthClientResponse> createClient(
-    CreateOAuthClientParams params,
+    CreateOAuthClientOptions options,
   ) async {
     final data = await _fetch.request(
       '$_url/admin/oauth/clients',
       HttpMethod.post,
       options: AuthRequestOptions(
         headers: _headers,
-        body: params.toJson(),
+        body: options.toJson(),
       ),
     );
 
@@ -136,7 +136,7 @@ class AuthAdminOAuthApi {
   /// `secret` key in the browser.
   Future<OAuthClientResponse> updateClient(
     String clientId,
-    UpdateOAuthClientParams params,
+    UpdateOAuthClientOptions options,
   ) async {
     validateUuid(clientId);
 
@@ -145,7 +145,7 @@ class AuthAdminOAuthApi {
       HttpMethod.put,
       options: AuthRequestOptions(
         headers: _headers,
-        body: params.toJson(),
+        body: options.toJson(),
       ),
     );
 

@@ -14,7 +14,7 @@ void main() {
         id: '123',
         appMetadata: {},
         userMetadata: <String, dynamic>{},
-        aud: 'authenticated',
+        audience: 'authenticated',
         createdAt: DateTime.utc(2023, 1, 1),
       );
     });
@@ -108,6 +108,26 @@ void main() {
           equals('test-provider-refresh-token'),
         );
         expect(session.user.id, equals('123'));
+      });
+
+      test('accepts a double expires_in, as sent by a BroadcastChannel', () {
+        final json = {
+          'access_token': 'test-access-token',
+          'expires_in': 3600.0,
+          'token_type': 'bearer',
+          'user': {
+            'id': '123',
+            'app_metadata': <String, dynamic>{},
+            'user_metadata': <String, dynamic>{},
+            'aud': 'authenticated',
+            'created_at': '2023-01-01T00:00:00Z',
+          },
+        };
+
+        final session = Session.fromJson(json);
+
+        expect(session, isNotNull);
+        expect(session!.expiresIn, equals(3600));
       });
     });
 
@@ -319,7 +339,7 @@ void main() {
           id: '456',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 2),
         );
 
@@ -344,7 +364,7 @@ void main() {
           id: '456',
           appMetadata: {},
           userMetadata: <String, dynamic>{},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 2),
         );
 
@@ -466,7 +486,7 @@ void main() {
           id: '123',
           appMetadata: {},
           userMetadata: {},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 
@@ -474,7 +494,7 @@ void main() {
           id: '456',
           appMetadata: {},
           userMetadata: {},
-          aud: 'authenticated',
+          audience: 'authenticated',
           createdAt: DateTime.utc(2023, 1, 1),
         );
 

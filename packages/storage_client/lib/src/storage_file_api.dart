@@ -403,7 +403,7 @@ class StorageFileApi {
       '$url/object/sign/$finalPath',
       {
         'expiresIn': expiresIn,
-        'transform': ?transform?.toQueryParams,
+        'transform': ?transform?.toQueryParameters,
       },
       options: options,
     );
@@ -484,20 +484,20 @@ class StorageFileApi {
   /// [transform] downloads a transformed variant of the image with the provided
   /// options
   ///
-  /// [queryParams] additional query parameters to be added to the URL
+  /// [queryParameters] additional query parameters to be added to the URL
   ///
   /// [cacheNonce] adds a `cacheNonce` query parameter to bypass CDN caching for
   /// a specific file version.
   Future<Uint8List> download(
     String path, {
     TransformOptions? transform,
-    Map<String, String>? queryParams,
+    Map<String, String>? queryParameters,
     String? cacheNonce,
   }) async {
     final fetchUrl = _downloadUri(
       path,
       transform: transform,
-      queryParams: queryParams,
+      queryParameters: queryParameters,
       cacheNonce: cacheNonce,
     );
 
@@ -510,21 +510,22 @@ class StorageFileApi {
 
   /// Builds the download URL shared by [download] and [downloadStream],
   /// selecting the render endpoint when an image transformation is requested
-  /// and appending transform, [queryParams] and [cacheNonce] query parameters.
+  /// and appending transform, [queryParameters] and [cacheNonce] query
+  /// parameters.
   Uri _downloadUri(
     String path, {
     TransformOptions? transform,
-    Map<String, String>? queryParams,
+    Map<String, String>? queryParameters,
     String? cacheNonce,
   }) {
-    final transformationQuery = transform?.toQueryParams ?? {};
+    final transformationQuery = transform?.toQueryParameters ?? {};
     final renderPath = transformationQuery.isNotEmpty
         ? 'render/image/authenticated'
         : 'object';
 
     final query = {
       ...transformationQuery,
-      ...?queryParams,
+      ...?queryParameters,
       'cacheNonce': ?cacheNonce,
     };
 
@@ -547,20 +548,20 @@ class StorageFileApi {
   /// [transform] downloads a transformed variant of the image with the provided
   /// options.
   ///
-  /// [queryParams] additional query parameters to be added to the URL.
+  /// [queryParameters] additional query parameters to be added to the URL.
   ///
   /// [cacheNonce] adds a `cacheNonce` query parameter to bypass CDN caching for
   /// a specific file version.
   Stream<Uint8List> downloadStream(
     String path, {
     TransformOptions? transform,
-    Map<String, String>? queryParams,
+    Map<String, String>? queryParameters,
     String? cacheNonce,
   }) {
     final fetchUrl = _downloadUri(
       path,
       transform: transform,
-      queryParams: queryParams,
+      queryParameters: queryParameters,
       cacheNonce: cacheNonce,
     );
 
@@ -571,7 +572,7 @@ class StorageFileApi {
   }
 
   /// Retrieves the details of an existing file
-  Future<FileObjectV2> info(String path) async {
+  Future<FileObjectV2> getMetadata(String path) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
     final response = await _storageFetch.get(
@@ -622,7 +623,7 @@ class StorageFileApi {
   }) {
     final finalPath = _getFinalPath(path);
 
-    final transformationQuery = transform?.toQueryParams;
+    final transformationQuery = transform?.toQueryParameters;
     final wantsTransformation =
         transformationQuery != null && transformationQuery.isNotEmpty;
     final renderPath = wantsTransformation ? 'render/image' : 'object';

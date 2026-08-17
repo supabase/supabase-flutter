@@ -83,7 +83,7 @@ features:
       - AuthClientSignInProvider.generateRawNonce
   auth.sign_in.sign_in_with_sso:
     status: implemented
-    note: "Split across two methods: getSSOSignInUrl returns Future<String> (the URL) rather than the structured {url} response used by JS, and supabase_flutter's signInWithSSO launches that URL in the browser and returns Future<bool>."
+    note: "Split across two methods: getSSOSignInUrl returns Future<Uri> (the URL) rather than the structured {url} response used by JS, and supabase_flutter's signInWithSSO launches that URL in the browser and returns Future<bool>."
     symbols:
       - AuthClient.getSSOSignInUrl
       - AuthClientSignInProvider.signInWithSSO
@@ -181,11 +181,11 @@ features:
       - JWK
       - JWK.JWK
       - JWK.[]
-      - JWK.alg
+      - JWK.algorithm
       - JWK.fromJson
-      - JWK.keyOps
-      - JWK.kid
-      - JWK.kty
+      - JWK.keyOperations
+      - JWK.keyId
+      - JWK.keyType
       - JWK.publicKey
       - JWK.toJson
       - JWKSet
@@ -195,22 +195,22 @@ features:
       - JWKSet.toJson
       - JwtHeader
       - JwtHeader.JwtHeader
-      - JwtHeader.alg
+      - JwtHeader.algorithm
       - JwtHeader.fromJson
-      - JwtHeader.kid
+      - JwtHeader.keyId
       - JwtHeader.toJson
-      - JwtHeader.typ
+      - JwtHeader.type
       - JwtPayload
       - JwtPayload.JwtPayload
-      - JwtPayload.aud
+      - JwtPayload.audience
       - JwtPayload.claims
-      - JwtPayload.exp
+      - JwtPayload.expiresAt
       - JwtPayload.fromJson
-      - JwtPayload.iat
-      - JwtPayload.iss
-      - JwtPayload.jti
-      - JwtPayload.nbf
-      - JwtPayload.sub
+      - JwtPayload.issuedAt
+      - JwtPayload.issuer
+      - JwtPayload.jwtId
+      - JwtPayload.notBefore
+      - JwtPayload.subject
       - JwtPayload.toJson
       - JwtRawParts
       - JwtRawParts.JwtRawParts
@@ -218,7 +218,7 @@ features:
       - JwtRawParts.payload
       - JwtRawParts.signature
       - decodeJwt
-      - validateExp
+      - validateExpiration
   auth.session.sign_out:
     status: implemented
     symbols:
@@ -238,8 +238,7 @@ features:
       - AuthClient.onAuthStateChange
     supporting_symbols:
       - AuthChangeEvent
-      - AuthChangeEvent.AuthChangeEvent
-      - AuthChangeEvent.jsName
+      - AuthChangeEvent.value
       - AuthState
       - AuthState.AuthState
       - AuthState.event
@@ -345,14 +344,14 @@ features:
       - AuthenticatorAssuranceLevel
       - AuthMFAApi.getAuthenticatorAssuranceLevel
     supporting_symbols:
-      - AMREntry
-      - AMREntry.AMREntry
-      - AMREntry.fromJson
-      - AMREntry.method
-      - AMREntry.timestamp
-      - AMRMethod
-      - AMRMethod.AMRMethod
-      - AMRMethod.code
+      - AuthenticationMethodReferenceEntry
+      - AuthenticationMethodReferenceEntry.AuthenticationMethodReferenceEntry
+      - AuthenticationMethodReferenceEntry.fromJson
+      - AuthenticationMethodReferenceEntry.method
+      - AuthenticationMethodReferenceEntry.timestamp
+      - AuthenticationMethodReference
+      - AuthenticationMethodReference.AuthenticationMethodReference
+      - AuthenticationMethodReference.value
       - AuthMFAGetAuthenticatorAssuranceLevelResponse
       - AuthMFAGetAuthenticatorAssuranceLevelResponse.AuthMFAGetAuthenticatorAssuranceLevelResponse
       - AuthMFAGetAuthenticatorAssuranceLevelResponse.currentAuthenticationMethods
@@ -529,35 +528,35 @@ features:
       - AuthAdminCustomProvidersApi.AuthAdminCustomProvidersApi
       - AuthAdminCustomProvidersApi.createProvider
       - CustomProviderType
-      - CustomProviderType.fromString
-      - CreateCustomProviderParams
-      - CreateCustomProviderParams.CreateCustomProviderParams
-      - CreateCustomProviderParams.acceptableClientIds
-      - CreateCustomProviderParams.attributeMapping
-      - CreateCustomProviderParams.authorizationParams
-      - CreateCustomProviderParams.authorizationUrl
-      - CreateCustomProviderParams.clientId
-      - CreateCustomProviderParams.clientSecret
-      - CreateCustomProviderParams.customClaimsAllowlist
-      - CreateCustomProviderParams.discoveryUrl
-      - CreateCustomProviderParams.emailOptional
-      - CreateCustomProviderParams.enabled
-      - CreateCustomProviderParams.identifier
-      - CreateCustomProviderParams.issuer
-      - CreateCustomProviderParams.jwksUri
-      - CreateCustomProviderParams.name
-      - CreateCustomProviderParams.pkceEnabled
-      - CreateCustomProviderParams.providerType
-      - CreateCustomProviderParams.scopes
-      - CreateCustomProviderParams.skipNonceCheck
-      - CreateCustomProviderParams.toJson
-      - CreateCustomProviderParams.tokenUrl
-      - CreateCustomProviderParams.userinfoUrl
+      - CustomProviderType.fromValue
+      - CreateCustomProviderOptions
+      - CreateCustomProviderOptions.CreateCustomProviderOptions
+      - CreateCustomProviderOptions.acceptableClientIds
+      - CreateCustomProviderOptions.attributeMapping
+      - CreateCustomProviderOptions.authorizationParameters
+      - CreateCustomProviderOptions.authorizationUrl
+      - CreateCustomProviderOptions.clientId
+      - CreateCustomProviderOptions.clientSecret
+      - CreateCustomProviderOptions.customClaimsAllowlist
+      - CreateCustomProviderOptions.discoveryUrl
+      - CreateCustomProviderOptions.emailOptional
+      - CreateCustomProviderOptions.enabled
+      - CreateCustomProviderOptions.identifier
+      - CreateCustomProviderOptions.issuer
+      - CreateCustomProviderOptions.jwksUri
+      - CreateCustomProviderOptions.name
+      - CreateCustomProviderOptions.pkceEnabled
+      - CreateCustomProviderOptions.providerType
+      - CreateCustomProviderOptions.scopes
+      - CreateCustomProviderOptions.skipNonceCheck
+      - CreateCustomProviderOptions.toJson
+      - CreateCustomProviderOptions.tokenUrl
+      - CreateCustomProviderOptions.userInfoUrl
       - CustomOAuthProvider
       - CustomOAuthProvider.CustomOAuthProvider
       - CustomOAuthProvider.acceptableClientIds
       - CustomOAuthProvider.attributeMapping
-      - CustomOAuthProvider.authorizationParams
+      - CustomOAuthProvider.authorizationParameters
       - CustomOAuthProvider.authorizationUrl
       - CustomOAuthProvider.clientId
       - CustomOAuthProvider.createdAt
@@ -578,7 +577,7 @@ features:
       - CustomOAuthProvider.skipNonceCheck
       - CustomOAuthProvider.tokenUrl
       - CustomOAuthProvider.updatedAt
-      - CustomOAuthProvider.userinfoUrl
+      - CustomOAuthProvider.userInfoUrl
       - OIDCDiscoveryDocument
       - OIDCDiscoveryDocument.OIDCDiscoveryDocument
       - OIDCDiscoveryDocument.authorizationEndpoint
@@ -586,12 +585,12 @@ features:
       - OIDCDiscoveryDocument.issuer
       - OIDCDiscoveryDocument.jwksUri
       - OIDCDiscoveryDocument.revocationEndpoint
-      - OIDCDiscoveryDocument.supportedIdTokenSigningAlgs
+      - OIDCDiscoveryDocument.supportedIdTokenSigningAlgorithms
       - OIDCDiscoveryDocument.supportedResponseTypes
       - OIDCDiscoveryDocument.supportedScopes
       - OIDCDiscoveryDocument.supportedSubjectTypes
       - OIDCDiscoveryDocument.tokenEndpoint
-      - OIDCDiscoveryDocument.userinfoEndpoint
+      - OIDCDiscoveryDocument.userInfoEndpoint
   auth.admin.get_provider:
     status: implemented
     symbols:
@@ -600,27 +599,27 @@ features:
     status: implemented
     symbols:
       - AuthAdminCustomProvidersApi.updateProvider
-      - UpdateCustomProviderParams
-      - UpdateCustomProviderParams.UpdateCustomProviderParams
-      - UpdateCustomProviderParams.acceptableClientIds
-      - UpdateCustomProviderParams.attributeMapping
-      - UpdateCustomProviderParams.authorizationParams
-      - UpdateCustomProviderParams.authorizationUrl
-      - UpdateCustomProviderParams.clientId
-      - UpdateCustomProviderParams.clientSecret
-      - UpdateCustomProviderParams.customClaimsAllowlist
-      - UpdateCustomProviderParams.discoveryUrl
-      - UpdateCustomProviderParams.emailOptional
-      - UpdateCustomProviderParams.enabled
-      - UpdateCustomProviderParams.issuer
-      - UpdateCustomProviderParams.jwksUri
-      - UpdateCustomProviderParams.name
-      - UpdateCustomProviderParams.pkceEnabled
-      - UpdateCustomProviderParams.scopes
-      - UpdateCustomProviderParams.skipNonceCheck
-      - UpdateCustomProviderParams.toJson
-      - UpdateCustomProviderParams.tokenUrl
-      - UpdateCustomProviderParams.userinfoUrl
+      - UpdateCustomProviderOptions
+      - UpdateCustomProviderOptions.UpdateCustomProviderOptions
+      - UpdateCustomProviderOptions.acceptableClientIds
+      - UpdateCustomProviderOptions.attributeMapping
+      - UpdateCustomProviderOptions.authorizationParameters
+      - UpdateCustomProviderOptions.authorizationUrl
+      - UpdateCustomProviderOptions.clientId
+      - UpdateCustomProviderOptions.clientSecret
+      - UpdateCustomProviderOptions.customClaimsAllowlist
+      - UpdateCustomProviderOptions.discoveryUrl
+      - UpdateCustomProviderOptions.emailOptional
+      - UpdateCustomProviderOptions.enabled
+      - UpdateCustomProviderOptions.issuer
+      - UpdateCustomProviderOptions.jwksUri
+      - UpdateCustomProviderOptions.name
+      - UpdateCustomProviderOptions.pkceEnabled
+      - UpdateCustomProviderOptions.scopes
+      - UpdateCustomProviderOptions.skipNonceCheck
+      - UpdateCustomProviderOptions.toJson
+      - UpdateCustomProviderOptions.tokenUrl
+      - UpdateCustomProviderOptions.userInfoUrl
   auth.admin.delete_provider:
     status: implemented
     symbols:
@@ -636,15 +635,15 @@ features:
     symbols:
       - AuthAdminOAuthApi.createClient
     supporting_symbols:
-      - CreateOAuthClientParams
-      - CreateOAuthClientParams.CreateOAuthClientParams
-      - CreateOAuthClientParams.clientName
-      - CreateOAuthClientParams.clientUri
-      - CreateOAuthClientParams.grantTypes
-      - CreateOAuthClientParams.redirectUris
-      - CreateOAuthClientParams.responseTypes
-      - CreateOAuthClientParams.scope
-      - CreateOAuthClientParams.toJson
+      - CreateOAuthClientOptions
+      - CreateOAuthClientOptions.CreateOAuthClientOptions
+      - CreateOAuthClientOptions.clientName
+      - CreateOAuthClientOptions.clientUri
+      - CreateOAuthClientOptions.grantTypes
+      - CreateOAuthClientOptions.redirectUris
+      - CreateOAuthClientOptions.responseTypes
+      - CreateOAuthClientOptions.scope
+      - CreateOAuthClientOptions.toJson
   auth.oauth_admin.get_client:
     status: implemented
     symbols:
@@ -654,15 +653,15 @@ features:
     symbols:
       - AuthAdminOAuthApi.updateClient
     supporting_symbols:
-      - UpdateOAuthClientParams
-      - UpdateOAuthClientParams.UpdateOAuthClientParams
-      - UpdateOAuthClientParams.clientName
-      - UpdateOAuthClientParams.clientUri
-      - UpdateOAuthClientParams.grantTypes
-      - UpdateOAuthClientParams.redirectUris
-      - UpdateOAuthClientParams.responseTypes
-      - UpdateOAuthClientParams.scope
-      - UpdateOAuthClientParams.toJson
+      - UpdateOAuthClientOptions
+      - UpdateOAuthClientOptions.UpdateOAuthClientOptions
+      - UpdateOAuthClientOptions.clientName
+      - UpdateOAuthClientOptions.clientUri
+      - UpdateOAuthClientOptions.grantTypes
+      - UpdateOAuthClientOptions.redirectUris
+      - UpdateOAuthClientOptions.responseTypes
+      - UpdateOAuthClientOptions.scope
+      - UpdateOAuthClientOptions.toJson
   auth.oauth_admin.delete_client:
     status: implemented
     symbols:
@@ -1172,7 +1171,7 @@ features:
   storage.file_buckets.file_info:
     status: implemented
     symbols:
-      - StorageFileApi.info
+      - StorageFileApi.getMetadata
     supporting_symbols:
       - FileObjectV2
       - FileObjectV2.FileObjectV2
@@ -1247,7 +1246,7 @@ features:
       - VectorBucketEncryption
       - VectorBucketEncryption.VectorBucketEncryption
       - VectorBucketEncryption.kmsKeyArn
-      - VectorBucketEncryption.sseType
+      - VectorBucketEncryption.serverSideEncryptionType
       - VectorBucketEncryption.fromJson
       - VectorBucketList
       - VectorBucketList.VectorBucketList
@@ -1407,7 +1406,7 @@ features:
       - CreateTableRequest.CreateTableRequest
       - CreateTableRequest.location
       - CreateTableRequest.name
-      - CreateTableRequest.partitionSpec
+      - CreateTableRequest.partitionSpecification
       - CreateTableRequest.properties
       - CreateTableRequest.schema
       - CreateTableRequest.stageCreate
@@ -1437,18 +1436,16 @@ features:
       - LoadTableOptions.ifNoneMatch
       - LoadTableOptions.snapshots
       - TableSnapshotScope
-      - TableSnapshotScope.TableSnapshotScope
-      - TableSnapshotScope.value
   storage.analytics.update_table:
     status: implemented
     note: Data definition table updates (schema, partition spec, sort order, properties, location) are modelled as typed TableUpdate subclasses; snapshot, statistics and encryption key updates are sent through the TableUpdate.raw escape hatch.
     symbols:
       - IcebergRestCatalog.updateTable
     supporting_symbols:
-      - AddPartitionSpecUpdate
-      - AddPartitionSpecUpdate.AddPartitionSpecUpdate
-      - AddPartitionSpecUpdate.spec
-      - AddPartitionSpecUpdate.toJson
+      - AddPartitionSpecificationUpdate
+      - AddPartitionSpecificationUpdate.AddPartitionSpecificationUpdate
+      - AddPartitionSpecificationUpdate.specification
+      - AddPartitionSpecificationUpdate.toJson
       - AddSchemaUpdate
       - AddSchemaUpdate.AddSchemaUpdate
       - AddSchemaUpdate.schema
@@ -1468,10 +1465,10 @@ features:
       - AssertDefaultSortOrderId.AssertDefaultSortOrderId
       - AssertDefaultSortOrderId.defaultSortOrderId
       - AssertDefaultSortOrderId.toJson
-      - AssertDefaultSpecId
-      - AssertDefaultSpecId.AssertDefaultSpecId
-      - AssertDefaultSpecId.defaultSpecId
-      - AssertDefaultSpecId.toJson
+      - AssertDefaultSpecificationId
+      - AssertDefaultSpecificationId.AssertDefaultSpecificationId
+      - AssertDefaultSpecificationId.defaultSpecificationId
+      - AssertDefaultSpecificationId.toJson
       - AssertLastAssignedFieldId
       - AssertLastAssignedFieldId.AssertLastAssignedFieldId
       - AssertLastAssignedFieldId.lastAssignedFieldId
@@ -1502,10 +1499,10 @@ features:
       - RawTableUpdate.action
       - RawTableUpdate.body
       - RawTableUpdate.toJson
-      - RemovePartitionSpecsUpdate
-      - RemovePartitionSpecsUpdate.RemovePartitionSpecsUpdate
-      - RemovePartitionSpecsUpdate.specIds
-      - RemovePartitionSpecsUpdate.toJson
+      - RemovePartitionSpecificationsUpdate
+      - RemovePartitionSpecificationsUpdate.RemovePartitionSpecificationsUpdate
+      - RemovePartitionSpecificationsUpdate.specificationIds
+      - RemovePartitionSpecificationsUpdate.toJson
       - RemovePropertiesUpdate
       - RemovePropertiesUpdate.RemovePropertiesUpdate
       - RemovePropertiesUpdate.removals
@@ -1530,10 +1527,10 @@ features:
       - SetDefaultSortOrderUpdate.SetDefaultSortOrderUpdate
       - SetDefaultSortOrderUpdate.sortOrderId
       - SetDefaultSortOrderUpdate.toJson
-      - SetDefaultSpecUpdate
-      - SetDefaultSpecUpdate.SetDefaultSpecUpdate
-      - SetDefaultSpecUpdate.specId
-      - SetDefaultSpecUpdate.toJson
+      - SetDefaultSpecificationUpdate
+      - SetDefaultSpecificationUpdate.SetDefaultSpecificationUpdate
+      - SetDefaultSpecificationUpdate.specificationId
+      - SetDefaultSpecificationUpdate.toJson
       - SetLocationUpdate
       - SetLocationUpdate.SetLocationUpdate
       - SetLocationUpdate.location
@@ -1659,7 +1656,7 @@ features:
       - RealtimeClient.disconnect
       - RealtimeClientOptions.connectionCloseTimeout
     supporting_symbols:
-      - Constants.wsCloseNormal
+      - Constants.webSocketCloseNormal
       - RealtimeClient.onClose
       - RealtimeCloseEvent
       - RealtimeCloseEvent.RealtimeCloseEvent
@@ -1698,7 +1695,7 @@ features:
   realtime.client.set_auth_token:
     status: implemented
     symbols:
-      - RealtimeClient.setAuth
+      - RealtimeClient.setAccessToken
     supporting_symbols:
       - RealtimeClient.accessToken
 
@@ -1771,9 +1768,9 @@ features:
       - PresenceEvents.state
       - PresenceOnJoinCallback
       - PresenceOnLeaveCallback
-      - PresenceOpts
-      - PresenceOpts.PresenceOpts
-      - PresenceOpts.events
+      - PresenceOptions
+      - PresenceOptions.PresenceOptions
+      - PresenceOptions.events
       - RealtimePresenceJoinPayload
       - RealtimePresenceJoinPayload.RealtimePresenceJoinPayload
       - RealtimePresenceJoinPayload.currentPresences
@@ -1839,7 +1836,7 @@ features:
       - Presence.deepClone
       - Presence.fromJson
       - Presence.payload
-      - Presence.presenceRef
+      - Presence.presenceReference
       - Presence.toString
       - RealtimeChannel.presence
       - RealtimePresence
@@ -1877,13 +1874,13 @@ features:
   realtime.configuration.reconnect_backoff:
     status: implemented
     symbols:
-      - RealtimeClient.reconnectAfterMs
+      - RealtimeClient.reconnectAfter
   realtime.configuration.heartbeat_interval:
     status: implemented
     symbols:
-      - RealtimeClient.heartbeatIntervalMs
+      - RealtimeClient.heartbeatInterval
     supporting_symbols:
-      - Constants.defaultHeartbeatIntervalMs
+      - Constants.defaultHeartbeatInterval
   realtime.configuration.access_token_callback:
     status: implemented
     note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
@@ -1907,7 +1904,7 @@ features:
       - RealtimeEncode
       - RealtimeProtocolVersion
       - RealtimeProtocolVersion.RealtimeProtocolVersion
-      - RealtimeProtocolVersion.vsn
+      - RealtimeProtocolVersion.wireVersion
   realtime.configuration.deferred_disconnect:
     status: implemented
     symbols:
@@ -1930,7 +1927,7 @@ features:
   functions.invocation.set_auth_token:
     status: implemented
     symbols:
-      - FunctionsClient.setAuth
+      - FunctionsClient.setAccessToken
   functions.invocation.method_override:
     status: implemented
     note: "The HttpMethod enum is shared with postgrest, so it also offers head, which supabase-js does not expose for function invocation."
@@ -1960,10 +1957,10 @@ features:
   client.authentication_integration.cross_client_token_sync:
     status: implemented
     symbols:
-      - PostgrestClient.setAuth
-      - RealtimeClient.setAuth
-      - SupabaseStorageClient.setAuth
-      - FunctionsClient.setAuth
+      - PostgrestClient.setAccessToken
+      - RealtimeClient.setAccessToken
+      - SupabaseStorageClient.setAccessToken
+      - FunctionsClient.setAccessToken
   client.authentication_integration.oauth_flow_type:
     status: implemented
     symbols:
@@ -2277,14 +2274,14 @@ supporting_symbols:
   - OAuthClient.registrationType
   - OAuthClient.responseTypes
   - OAuthClient.scope
-  - OAuthClient.tokenEndpointAuthMethod
+  - OAuthClient.tokenEndpointAuthenticationMethod
   - OAuthClient.updatedAt
   - OAuthClientGrantType
   - OAuthClientRegistrationType
-  - OAuthClientRegistrationType.fromString
+  - OAuthClientRegistrationType.fromValue
   - OAuthClientResponseType
   - OAuthClientType
-  - OAuthClientType.fromString
+  - OAuthClientType.fromValue
   - PartitionField
   - PartitionField.PartitionField
   - PartitionField.fieldId
@@ -2293,12 +2290,12 @@ supporting_symbols:
   - PartitionField.sourceId
   - PartitionField.toJson
   - PartitionField.transform
-  - PartitionSpec
-  - PartitionSpec.PartitionSpec
-  - PartitionSpec.fields
-  - PartitionSpec.fromJson
-  - PartitionSpec.specId
-  - PartitionSpec.toJson
+  - PartitionSpecification
+  - PartitionSpecification.PartitionSpecification
+  - PartitionSpecification.fields
+  - PartitionSpecification.fromJson
+  - PartitionSpecification.specificationId
+  - PartitionSpecification.toJson
   - Passkey
   - Passkey.==
   - Passkey.Passkey
@@ -2311,10 +2308,10 @@ supporting_symbols:
   - Passkey.toJson
   - PostgrestBuilder
   - PostgrestBuilder.PostgrestBuilder
-  - PostgrestBuilder.appendSearchParams
+  - PostgrestBuilder.appendSearchParameters
   - PostgrestBuilder.asStream
   - PostgrestBuilder.catchError
-  - PostgrestBuilder.overrideSearchParams
+  - PostgrestBuilder.overrideSearchParameters
   - PostgrestBuilder.then
   - PostgrestBuilder.whenComplete
   - PostgrestApiException
@@ -2368,9 +2365,9 @@ supporting_symbols:
   - RealtimeChannelConfig.toMap
   - RealtimeClient
   - RealtimeClient.RealtimeClient
-  - RealtimeClient.endPoint
-  - RealtimeClient.endPointURL
-  - RealtimeClient.params
+  - RealtimeClient.endpoint
+  - RealtimeClient.endpointUrl
+  - RealtimeClient.parameters
   - RealtimeClient.timeout
   - RealtimeClient.version
   - RealtimeClientOptions
@@ -2411,13 +2408,13 @@ supporting_symbols:
   - Snapshot.sequenceNumber
   - Snapshot.snapshotId
   - Snapshot.summary
-  - Snapshot.timestampMs
+  - Snapshot.timestamp
   - Snapshot.toJson
   - SnapshotReference
   - SnapshotReference.SnapshotReference
   - SnapshotReference.fromJson
-  - SnapshotReference.maxReferenceAgeMs
-  - SnapshotReference.maxSnapshotAgeMs
+  - SnapshotReference.maxReferenceAge
+  - SnapshotReference.maxSnapshotAge
   - SnapshotReference.minSnapshotsToKeep
   - SnapshotReference.snapshotId
   - SnapshotReference.toJson
@@ -2500,7 +2497,7 @@ supporting_symbols:
   - SupabaseStreamFilterBuilder.SupabaseStreamFilterBuilder
   - TableField
   - TableField.TableField
-  - TableField.doc
+  - TableField.documentation
   - TableField.fromJson
   - TableField.id
   - TableField.initialDefault
@@ -2521,16 +2518,16 @@ supporting_symbols:
   - TableMetadata.currentSchemaId
   - TableMetadata.currentSnapshotId
   - TableMetadata.defaultSortOrderId
-  - TableMetadata.defaultSpecId
+  - TableMetadata.defaultSpecificationId
   - TableMetadata.formatVersion
   - TableMetadata.fromJson
   - TableMetadata.lastColumnId
-  - TableMetadata.lastUpdatedMs
+  - TableMetadata.lastUpdated
   - TableMetadata.location
   - TableMetadata.metadataLocation
-  - TableMetadata.partitionSpecs
+  - TableMetadata.partitionSpecifications
   - TableMetadata.properties
-  - TableMetadata.refs
+  - TableMetadata.references
   - TableMetadata.schemas
   - TableMetadata.snapshots
   - TableMetadata.sortOrders
@@ -2547,7 +2544,7 @@ supporting_symbols:
   - User.User
   - User.actionLink
   - User.appMetadata
-  - User.aud
+  - User.audience
   - User.confirmationSentAt
   - User.createdAt
   - User.email

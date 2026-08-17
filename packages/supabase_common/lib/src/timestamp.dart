@@ -78,6 +78,50 @@ DateTime? tryParseUnixSeconds(Map<String, dynamic> json, String key) {
   return parseUnixSeconds(json, key);
 }
 
+/// Parses the Unix timestamp in milliseconds stored under [key] in [json] as a
+/// UTC [DateTime].
+///
+/// Throws a [FormatException] when the value is missing or is not a number.
+/// As in [parseIso8601], the exception does not carry [json] itself.
+DateTime parseUnixMilliseconds(Map<String, dynamic> json, String key) {
+  return DateTime.fromMillisecondsSinceEpoch(
+    _millisecondsUnder(json, key),
+    isUtc: true,
+  );
+}
+
+/// Same as [parseUnixMilliseconds], but returns `null` when the value under
+/// [key] is `null` or absent.
+DateTime? tryParseUnixMilliseconds(Map<String, dynamic> json, String key) {
+  if (json[key] == null) return null;
+  return parseUnixMilliseconds(json, key);
+}
+
+/// Parses the duration in milliseconds stored under [key] in [json].
+///
+/// Throws a [FormatException] when the value is missing or is not a number.
+/// As in [parseIso8601], the exception does not carry [json] itself.
+Duration parseMillisecondsDuration(Map<String, dynamic> json, String key) {
+  return Duration(milliseconds: _millisecondsUnder(json, key));
+}
+
+/// Same as [parseMillisecondsDuration], but returns `null` when the value under
+/// [key] is `null` or absent.
+Duration? tryParseMillisecondsDuration(Map<String, dynamic> json, String key) {
+  if (json[key] == null) return null;
+  return parseMillisecondsDuration(json, key);
+}
+
+int _millisecondsUnder(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is! num) {
+    throw FormatException(
+      'Expected $key to be a number, got ${value.runtimeType}',
+    );
+  }
+  return value.round();
+}
+
 /// Converts a Unix timestamp in [seconds] to a UTC [DateTime].
 DateTime dateTimeFromUnixSeconds(num seconds) {
   return DateTime.fromMillisecondsSinceEpoch(

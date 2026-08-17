@@ -268,16 +268,16 @@ void main() {
     });
   });
 
-  group('httpEndpointURL', () {
+  group('httpEndpointUrl', () {
     test('Converts a hosted Supabase WS URL', () {
       expect(
-        httpEndpointURL('wss://example.supabase.co/realtime/v1'),
+        httpEndpointUrl('wss://example.supabase.co/realtime/v1'),
         equals('https://example.supabase.co/realtime/v1'),
       );
     });
     test('Converts a custom domain WS URL', () {
       expect(
-        httpEndpointURL('wss://custom-domain.com/realtime/v1'),
+        httpEndpointUrl('wss://custom-domain.com/realtime/v1'),
         equals('https://custom-domain.com/realtime/v1'),
       );
     });

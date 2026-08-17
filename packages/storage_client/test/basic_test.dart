@@ -493,7 +493,7 @@ void main() {
 
       final response = await client
           .from('public_bucket')
-          .download('b.txt', queryParams: {'version': '1'});
+          .download('b.txt', queryParameters: {'version': '1'});
       expect(response, isA<Uint8List>());
       expect(String.fromCharCodes(response), 'Updated content');
 
@@ -553,6 +553,49 @@ void main() {
             (e) => e.statusCode,
             'statusCode',
             404,
+          ),
+        ),
+      );
+    });
+
+    test('surfaces the service error code from the response body', () async {
+      addTearDown(() => customHttpClient.statusCode = 201);
+      customHttpClient.statusCode = 404;
+      // Mirrors a real storage payload, which sends statusCode, error and code.
+      customHttpClient.response = {
+        'statusCode': '404',
+        'error': 'not_found',
+        'code': 'NoSuchKey',
+        'message': 'Object not found',
+      };
+
+      await expectLater(
+        client.from('public_bucket').download('missing.txt'),
+        throwsA(
+          isA<StorageApiException>()
+              .having((e) => e.errorCode, 'errorCode', 'NoSuchKey')
+              .having((e) => e.statusCode, 'statusCode', 404)
+              .having((e) => e.message, 'message', 'Object not found'),
+        ),
+      );
+    });
+
+    test('falls back to error when the response body has no code', () async {
+      addTearDown(() => customHttpClient.statusCode = 201);
+      customHttpClient.statusCode = 404;
+      customHttpClient.response = {
+        'statusCode': '404',
+        'error': 'not_found',
+        'message': 'Object not found',
+      };
+
+      await expectLater(
+        client.from('public_bucket').download('missing.txt'),
+        throwsA(
+          isA<StorageException>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            'not_found',
           ),
         ),
       );

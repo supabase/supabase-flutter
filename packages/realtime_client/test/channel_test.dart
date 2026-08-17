@@ -28,14 +28,14 @@ void main() {
       channel = RealtimeChannel(
         'topic',
         socket,
-        params: RealtimeChannelConfig(),
+        config: RealtimeChannelConfig(),
       );
     });
 
     test('sets defaults', () {
       expect(channel.isClosed, isTrue);
       expect(channel.topic, 'topic');
-      expect(channel.params, {
+      expect(channel.parameters, {
         'config': {
           'broadcast': {'ack': false, 'self': false},
           'presence': {'key': '', 'enabled': false},
@@ -49,7 +49,7 @@ void main() {
       channel = RealtimeChannel(
         'topic',
         socket,
-        params: RealtimeChannelConfig(
+        config: RealtimeChannelConfig(
           private: true,
         ),
       );
@@ -68,10 +68,10 @@ void main() {
       channel = RealtimeChannel(
         'topic',
         socket,
-        params: RealtimeChannelConfig(replicationReady: true),
+        config: RealtimeChannelConfig(replicationReady: true),
       );
 
-      expect(channel.params, {
+      expect(channel.parameters, {
         'config': {
           'broadcast': {
             'ack': false,
@@ -123,77 +123,83 @@ void main() {
     });
   });
 
-  group("joinPush 'ok' setAuth error handling", () {
+  group("joinPush 'ok' setAccessToken error handling", () {
     // Re-authorizing the channel on rejoin can throw `FormatException`
     // ('InvalidJWTToken: ...') when the cached access token has expired
     // by the time the server responds with 'ok'. The handler must swallow
     // that specific message so it does not escape as an unhandled async
     // error (which Sentry/Crashlytics surface as a fatal). See
     // https://github.com/supabase/supabase-flutter/issues/1363.
-    test("swallows FormatException with 'InvalidJWTToken' from setAuth and "
-        "still emits 'subscribed' status", () async {
-      final throwingSocket = _SetAuthThrowingSocket(
-        '/socket',
-        thrown: const FormatException(
-          'InvalidJWTToken: Invalid value for JWT claim "exp" with value 0',
-        ),
-      );
-      throwingSocket.accessToken = 'expired-token';
+    test(
+      "swallows FormatException with 'InvalidJWTToken' from setAccessToken and "
+      "still emits 'subscribed' status",
+      () async {
+        final throwingSocket = _SetAuthThrowingSocket(
+          '/socket',
+          thrown: const FormatException(
+            'InvalidJWTToken: Invalid value for JWT claim "exp" with value 0',
+          ),
+        );
+        throwingSocket.accessToken = 'expired-token';
 
-      final localChannel = throwingSocket.channel('topic');
+        final localChannel = throwingSocket.channel('topic');
 
-      RealtimeSubscribeStatus? status;
-      localChannel.subscribe((s, _) => status = s);
-      localChannel.joinPush.trigger('ok', {});
+        RealtimeSubscribeStatus? status;
+        localChannel.subscribe((s, _) => status = s);
+        localChannel.joinPush.trigger('ok', {});
 
-      // Drain the microtask queue so the async 'ok' callback completes.
-      await Future<void>.value();
-      await Future<void>.value();
+        // Drain the microtask queue so the async 'ok' callback completes.
+        await Future<void>.value();
+        await Future<void>.value();
 
-      expect(throwingSocket.setAuthCalls, 1);
-      expect(
-        status,
-        RealtimeSubscribeStatus.subscribed,
-        reason:
-            "If the catch is missing the 'ok' callback aborts at setAuth and "
-            "the subscribed status is never emitted.",
-      );
-    });
+        expect(throwingSocket.setAuthCalls, 1);
+        expect(
+          status,
+          RealtimeSubscribeStatus.subscribed,
+          reason:
+              "If the catch is missing the 'ok' callback aborts at "
+              "setAccessToken and the subscribed status is never emitted.",
+        );
+      },
+    );
 
-    test("non-InvalidJWTToken FormatExceptions from setAuth still abort the "
-        "rejoin handler", () async {
-      final throwingSocket = _SetAuthThrowingSocket(
-        '/socket',
-        thrown: const FormatException('some other parsing failure'),
-      );
-      throwingSocket.accessToken = 'some-token';
+    test(
+      "non-InvalidJWTToken FormatExceptions from setAccessToken still abort "
+      "the rejoin handler",
+      () async {
+        final throwingSocket = _SetAuthThrowingSocket(
+          '/socket',
+          thrown: const FormatException('some other parsing failure'),
+        );
+        throwingSocket.accessToken = 'some-token';
 
-      final localChannel = throwingSocket.channel('topic');
+        final localChannel = throwingSocket.channel('topic');
 
-      RealtimeSubscribeStatus? status;
-      // Use runZonedGuarded so the rethrown async error does not pollute
-      // the test runner zone.
-      await runZonedGuarded(
-        () async {
-          localChannel.subscribe((s, _) => status = s);
-          localChannel.joinPush.trigger('ok', {});
-          await Future<void>.value();
-          await Future<void>.value();
-        },
-        (_, _) {
-          /* expected: rethrown FormatException */
-        },
-      );
+        RealtimeSubscribeStatus? status;
+        // Use runZonedGuarded so the rethrown async error does not pollute
+        // the test runner zone.
+        await runZonedGuarded(
+          () async {
+            localChannel.subscribe((s, _) => status = s);
+            localChannel.joinPush.trigger('ok', {});
+            await Future<void>.value();
+            await Future<void>.value();
+          },
+          (_, _) {
+            /* expected: rethrown FormatException */
+          },
+        );
 
-      expect(throwingSocket.setAuthCalls, 1);
-      expect(
-        status,
-        isNull,
-        reason:
-            'A non-InvalidJWTToken FormatException should propagate out of the '
-            'callback before subscribed is emitted.',
-      );
-    });
+        expect(throwingSocket.setAuthCalls, 1);
+        expect(
+          status,
+          isNull,
+          reason:
+              'A non-InvalidJWTToken FormatException should propagate out of '
+              'the callback before subscribed is emitted.',
+        );
+      },
+    );
   });
 
   group('join with postgres_changes filter matching', () {
@@ -700,7 +706,7 @@ void main() {
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
         headers: {'apikey': 'supabaseKey'},
-        params: {'apikey': 'supabaseKey'},
+        parameters: {'apikey': 'supabaseKey'},
       );
 
       channel = socket.channel('myTopic', RealtimeChannelConfig(private: true));
@@ -713,7 +719,7 @@ void main() {
 
     test('sets endpoint', () {
       expect(
-        channel.broadcastEndpointURL,
+        channel.broadcastEndpointUrl,
         'http://${mockServer.address.host}:${mockServer.port}/realtime/v1/api/broadcast',
       );
       expect(channel.subTopic, 'myTopic');
@@ -818,7 +824,7 @@ void main() {
       channel = RealtimeChannel(
         'topic',
         socket,
-        params: RealtimeChannelConfig(),
+        config: RealtimeChannelConfig(),
       );
     });
 
@@ -912,7 +918,7 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          params: const RealtimeChannelConfig(enabled: true),
+          config: const RealtimeChannelConfig(enabled: true),
         );
 
         channel.subscribe();
@@ -926,7 +932,7 @@ void main() {
       channel = RealtimeChannel(
         'topic',
         socket,
-        params: const RealtimeChannelConfig(),
+        config: const RealtimeChannelConfig(),
       );
 
       channel.onPresenceSync((payload) {});
@@ -943,7 +949,7 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          params: const RealtimeChannelConfig(enabled: true),
+          config: const RealtimeChannelConfig(enabled: true),
         );
 
         channel.onPresenceSync((payload) {});
@@ -961,7 +967,7 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          params: const RealtimeChannelConfig(),
+          config: const RealtimeChannelConfig(),
         );
 
         channel.subscribe();
@@ -975,7 +981,7 @@ void main() {
       channel = RealtimeChannel(
         'topic',
         socket,
-        params: const RealtimeChannelConfig(),
+        config: const RealtimeChannelConfig(),
       );
 
       channel.onPresenceJoin((payload) {});
@@ -989,7 +995,7 @@ void main() {
       channel = RealtimeChannel(
         'topic',
         socket,
-        params: const RealtimeChannelConfig(),
+        config: const RealtimeChannelConfig(),
       );
 
       channel.onPresenceLeave((payload) {});
@@ -1012,16 +1018,16 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          params: const RealtimeChannelConfig(),
+          config: const RealtimeChannelConfig(),
         );
 
         channel.subscribe();
         channel.joinPush.trigger('ok', {});
-        expect(channel.params['config']['presence']['enabled'], isFalse);
+        expect(channel.parameters['config']['presence']['enabled'], isFalse);
 
         channel.onPresenceSync((payload) {});
 
-        expect(channel.params['config']['presence']['enabled'], isTrue);
+        expect(channel.parameters['config']['presence']['enabled'], isTrue);
       },
     );
 
@@ -1032,17 +1038,17 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          params: const RealtimeChannelConfig(enabled: true),
+          config: const RealtimeChannelConfig(enabled: true),
         );
 
         channel.subscribe();
         channel.joinPush.trigger('ok', {});
-        final initialPayload = Map.from(channel.params);
+        final initialPayload = Map.from(channel.parameters);
 
         channel.onPresenceSync((payload) {});
 
-        expect(channel.params['config']['presence']['enabled'], isTrue);
-        expect(channel.params, equals(initialPayload));
+        expect(channel.parameters['config']['presence']['enabled'], isTrue);
+        expect(channel.parameters, equals(initialPayload));
       },
     );
 
@@ -1052,22 +1058,22 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          params: const RealtimeChannelConfig(),
+          config: const RealtimeChannelConfig(),
         );
 
         channel.subscribe();
         channel.joinPush.trigger('ok', {});
-        expect(channel.params['config']['presence']['enabled'], isFalse);
+        expect(channel.parameters['config']['presence']['enabled'], isFalse);
 
         channel.onPresenceSync((payload) {});
-        expect(channel.params['config']['presence']['enabled'], isTrue);
+        expect(channel.parameters['config']['presence']['enabled'], isTrue);
 
-        final payloadAfterFirst = Map.from(channel.params);
+        final payloadAfterFirst = Map.from(channel.parameters);
 
         channel.onPresenceJoin((payload) {});
         channel.onPresenceLeave((payload) {});
 
-        expect(channel.params, equals(payloadAfterFirst));
+        expect(channel.parameters, equals(payloadAfterFirst));
       },
     );
 
@@ -1078,14 +1084,14 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          params: const RealtimeChannelConfig(),
+          config: const RealtimeChannelConfig(),
         );
 
         expect(channel.joinedOnce, isFalse);
 
         channel.onPresenceSync((payload) {});
 
-        expect(channel.params['config']['presence']['enabled'], isFalse);
+        expect(channel.parameters['config']['presence']['enabled'], isFalse);
       },
     );
 
@@ -1096,7 +1102,7 @@ void main() {
         channel = RealtimeChannel(
           'topic',
           socket,
-          params: const RealtimeChannelConfig(),
+          config: const RealtimeChannelConfig(),
         );
 
         channel.subscribe();
@@ -1117,32 +1123,32 @@ void main() {
       channel = RealtimeChannel(
         'topic',
         socket,
-        params: const RealtimeChannelConfig(),
+        config: const RealtimeChannelConfig(),
       );
 
       channel.subscribe();
       channel.joinPush.trigger('ok', {});
-      expect(channel.params['config']['presence']['enabled'], isFalse);
+      expect(channel.parameters['config']['presence']['enabled'], isFalse);
 
       channel.onPresenceJoin((payload) {});
 
-      expect(channel.params['config']['presence']['enabled'], isTrue);
+      expect(channel.parameters['config']['presence']['enabled'], isTrue);
     });
 
     test('should handle presence leave callback resubscription', () {
       channel = RealtimeChannel(
         'topic',
         socket,
-        params: const RealtimeChannelConfig(),
+        config: const RealtimeChannelConfig(),
       );
 
       channel.subscribe();
       channel.joinPush.trigger('ok', {});
-      expect(channel.params['config']['presence']['enabled'], isFalse);
+      expect(channel.parameters['config']['presence']['enabled'], isFalse);
 
       channel.onPresenceLeave((payload) {});
 
-      expect(channel.params['config']['presence']['enabled'], isTrue);
+      expect(channel.parameters['config']['presence']['enabled'], isTrue);
     });
   });
 
@@ -1163,7 +1169,7 @@ void main() {
         socket = RealtimeClient(
           'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
           headers: {'apikey': 'supabaseKey'},
-          params: {'apikey': 'supabaseKey'},
+          parameters: {'apikey': 'supabaseKey'},
         );
         channel = socket.channel(
           'myTopic',
@@ -1199,7 +1205,7 @@ void main() {
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
         headers: {'apikey': 'supabaseKey'},
-        params: {'apikey': 'supabaseKey'},
+        parameters: {'apikey': 'supabaseKey'},
       );
       channel = socket.channel('myTopic');
 
@@ -1226,7 +1232,7 @@ void main() {
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
         headers: {'apikey': 'supabaseKey'},
-        params: {'apikey': 'supabaseKey'},
+        parameters: {'apikey': 'supabaseKey'},
       );
       channel = socket.channel('room:42');
 
@@ -1252,7 +1258,7 @@ void main() {
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
         headers: {'apikey': 'supabaseKey'},
-        params: {'apikey': 'supabaseKey'},
+        parameters: {'apikey': 'supabaseKey'},
       );
       channel = socket.channel('myTopic');
 
@@ -1280,7 +1286,7 @@ void main() {
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
         headers: {'apikey': 'supabaseKey'},
-        params: {'apikey': 'supabaseKey'},
+        parameters: {'apikey': 'supabaseKey'},
       );
       channel = socket.channel('myTopic');
 
@@ -1306,10 +1312,10 @@ void main() {
     test('sends with Authorization header when access token is set', () async {
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
-        params: {'apikey': 'abc123'},
+        parameters: {'apikey': 'abc123'},
         customAccessToken: () async => 'token123',
       );
-      await socket.setAuth('token123');
+      await socket.setAccessToken('token123');
       channel = socket.channel('topic');
 
       final requestFuture = mockServer.first;
@@ -1331,7 +1337,7 @@ void main() {
     test('throws error on non-202 status', () async {
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
-        params: {'apikey': 'abc123'},
+        parameters: {'apikey': 'abc123'},
       );
       channel = socket.channel('topic');
 
@@ -1359,7 +1365,7 @@ void main() {
     test('handles timeout', () async {
       socket = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
-        params: {'apikey': 'abc123'},
+        parameters: {'apikey': 'abc123'},
       );
       channel = socket.channel('topic');
 
@@ -1385,7 +1391,7 @@ void main() {
 }
 
 class _SetAuthThrowingSocket extends RealtimeClient {
-  _SetAuthThrowingSocket(super.endPoint, {required this.thrown});
+  _SetAuthThrowingSocket(super.endpoint, {required this.thrown});
 
   final FormatException thrown;
   int setAuthCalls = 0;
@@ -1397,7 +1403,7 @@ class _SetAuthThrowingSocket extends RealtimeClient {
   }
 
   @override
-  Future<void> setAuth(String? token) async {
+  Future<void> setAccessToken(String? token) async {
     setAuthCalls++;
     throw thrown;
   }

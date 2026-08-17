@@ -416,14 +416,14 @@ class AuthClient {
     required OAuthProvider provider,
     String? redirectTo,
     String? scopes,
-    Map<String, String>? queryParams,
+    Map<String, String>? queryParameters,
   }) {
     return _getUrlForProvider(
       provider,
       url: '$_url/authorize',
       redirectTo: redirectTo,
       scopes: scopes,
-      queryParameters: queryParams,
+      queryParameters: queryParameters,
     );
   }
 
@@ -447,7 +447,7 @@ class AuthClient {
     }
     final codeVerifier = codeVerifierRawString.split('/').first;
     final eventName = codeVerifierRawString.split('/').last;
-    final redirectType = AuthChangeEvent.fromString(eventName);
+    final redirectType = AuthChangeEvent.fromValue(eventName);
 
     final Map<String, dynamic> response = await _fetch.request(
       '$_url/token',
@@ -768,7 +768,11 @@ class AuthClient {
   ///
   /// If you have built an organization-specific login page, you can use the
   /// organization's SSO Identity Provider UUID directly instead.
-  Future<String> getSSOSignInUrl({
+  ///
+  /// Returns the identity provider's authorization [Uri]. Open it in a browser
+  /// to continue the flow, or call `signInWithSSO` from `supabase_flutter` to
+  /// have the browser launched for you.
+  Future<Uri> getSSOSignInUrl({
     String? providerId,
     String? domain,
     String? redirectTo,
@@ -799,7 +803,7 @@ class AuthClient {
       ),
     );
 
-    return response['url'] as String;
+    return Uri.parse(_urlFromResponse(response));
   }
 
   /// Returns a new session, regardless of expiry status. Takes in an optional
@@ -988,7 +992,7 @@ class AuthClient {
 
     // Throws AuthInvalidJwtException if the token is malformed.
     final decoded = decodeJwt(accessToken);
-    final expiresAt = decoded.payload.exp;
+    final expiresAt = decoded.payload.expiresAt;
     final hasExpired =
         expiresAt == null ||
         expiresAt <= timeNow + Constants.expiryMargin.inSeconds;
@@ -1003,7 +1007,7 @@ class AuthClient {
       throw AuthSessionMissingException();
     }
 
-    final issuedAt = decoded.payload.iat;
+    final issuedAt = decoded.payload.issuedAt;
     final session = Session(
       accessToken: accessToken,
       refreshToken: refreshToken,
@@ -1252,14 +1256,14 @@ class AuthClient {
     OAuthProvider provider, {
     String? redirectTo,
     String? scopes,
-    Map<String, String>? queryParams,
+    Map<String, String>? queryParameters,
   }) async {
     final urlResponse = await _getUrlForProvider(
       provider,
       url: '$_url/user/identities/authorize',
       redirectTo: redirectTo,
       scopes: scopes,
-      queryParameters: queryParams,
+      queryParameters: queryParameters,
       skipBrowserRedirect: true,
     );
     final response = await _fetch.request(
@@ -1270,7 +1274,7 @@ class AuthClient {
         jwt: _currentSession?.accessToken,
       ),
     );
-    return OAuthResponse(provider: provider, url: response['url']);
+    return OAuthResponse(provider: provider, url: _urlFromResponse(response));
   }
 
   /// Unlinks an identity from a user by deleting it.
@@ -1289,8 +1293,8 @@ class AuthClient {
   }
 
   /// Set the initial session to the session obtained from local storage
-  Future<void> setInitialSession(String jsonStr) async {
-    final session = Session.fromJson(json.decode(jsonStr));
+  Future<void> setInitialSession(String jsonString) async {
+    final session = Session.fromJson(json.decode(jsonString));
     if (session == null) {
       // sign out to delete the local storage from supabase_flutter
       await _signOut(
@@ -1310,10 +1314,10 @@ class AuthClient {
   }
 
   /// Recover session from stringified [Session].
-  Future<AuthResponse> recoverSession(String jsonStr) async {
+  Future<AuthResponse> recoverSession(String jsonString) async {
     final String refreshToken;
     try {
-      final session = Session.fromJson(json.decode(jsonStr));
+      final session = Session.fromJson(json.decode(jsonString));
       if (session == null) {
         _log.warning("Can't recover session from string, session is null");
         await _signOut(
@@ -1433,8 +1437,7 @@ class AuthClient {
         await _callRefreshToken(refreshToken);
       }
     } catch (error) {
-      // Do nothing. JS client prints here, but error is already tracked via
-      // [notifyException]
+      // Do nothing, the error is already tracked via [notifyException].
     }
   }
 
@@ -1508,6 +1511,20 @@ class AuthClient {
     return OAuthResponse(provider: provider, url: oauthUrl);
   }
 
+  /// Reads the `url` field out of a response that is expected to carry one.
+  ///
+  /// The decoded body is untyped, so without this check a server that omits
+  /// `url` or sends the wrong type for it surfaces as a [TypeError] from
+  /// whichever line happens to consume the value first. Fail at the response
+  /// boundary instead, with an exception from this package's own hierarchy.
+  String _urlFromResponse(dynamic response) {
+    final url = response is Map ? response['url'] : null;
+    if (url is! String) {
+      throw AuthException('No url detected.');
+    }
+    return url;
+  }
+
   /// set currentSession and currentUser
   void _saveSession(Session session) {
     _log.fine('Saving session');
@@ -1522,7 +1539,6 @@ class AuthClient {
 
   void _mayStartBroadcastChannel() {
     if (const bool.fromEnvironment('dart.library.js_interop')) {
-      // Used by the js library as well
       final broadcastKey = defaultPersistSessionKey(_url);
 
       assert(
@@ -1537,21 +1553,7 @@ class AuthClient {
           final rawEvent = messageEvent['event'];
           _log.finest('Received broadcast message: $messageEvent');
           _log.info('Received broadcast event: $rawEvent');
-          final event = switch (rawEvent) {
-            // This library sends the js name of the event to be compatible with
-            // the js library, so we need to convert it back to the dart name
-            'INITIAL_SESSION' => AuthChangeEvent.initialSession,
-            'PASSWORD_RECOVERY' => AuthChangeEvent.passwordRecovery,
-            'SIGNED_IN' => AuthChangeEvent.signedIn,
-            'SIGNED_OUT' => AuthChangeEvent.signedOut,
-            'TOKEN_REFRESHED' => AuthChangeEvent.tokenRefreshed,
-            'USER_UPDATED' => AuthChangeEvent.userUpdated,
-            'MFA_CHALLENGE_VERIFIED' => AuthChangeEvent.mfaChallengeVerified,
-            // This case should never happen though
-            _ => AuthChangeEvent.values.firstWhereOrNull(
-              (changeEvent) => changeEvent.name == rawEvent,
-            ),
-          };
+          final event = AuthChangeEvent.fromValue(rawEvent);
 
           if (event != null) {
             Session? session;
@@ -1713,7 +1715,7 @@ class AuthClient {
     session ??= currentSession;
     if (broadcast && event != AuthChangeEvent.initialSession) {
       _broadcastChannel?.postMessage({
-        'event': event.jsName,
+        'event': event.value,
         'session': session?.toJson(),
       });
     }
@@ -1741,7 +1743,7 @@ class AuthClient {
 
   Future<JWK?> _fetchJwk(String kid, JWKSet suppliedJwks) async {
     // try fetching from the supplied jwks
-    final jwk = suppliedJwks.keys.firstWhereOrNull((key) => key.kid == kid);
+    final jwk = suppliedJwks.keys.firstWhereOrNull((key) => key.keyId == kid);
     if (jwk != null) {
       return jwk;
     }
@@ -1749,7 +1751,7 @@ class AuthClient {
     final now = DateTime.now();
 
     // try fetching from cache
-    final cachedJwk = _jwks?.keys.firstWhereOrNull((key) => key.kid == kid);
+    final cachedJwk = _jwks?.keys.firstWhereOrNull((key) => key.keyId == kid);
 
     // jwks exists and it isn't stale
     if (cachedJwk != null &&
@@ -1776,7 +1778,7 @@ class AuthClient {
     _jwksCachedAt = now;
 
     // find the signing key
-    return jwks.keys.firstWhereOrNull((key) => key.kid == kid);
+    return jwks.keys.firstWhereOrNull((key) => key.keyId == kid);
   }
 
   /// Extracts the JWT claims present in the access token by first verifying the
@@ -1820,13 +1822,17 @@ class AuthClient {
 
     // Validate expiration unless allowExpired is true
     if (!(options?.allowExpired ?? false)) {
-      validateExp(decoded.payload.exp);
+      validateExpiration(decoded.payload.expiresAt);
     }
 
     final signingKey =
-        (decoded.header.alg.startsWith('HS') || decoded.header.kid == null)
+        (decoded.header.algorithm.startsWith('HS') ||
+            decoded.header.keyId == null)
         ? null
-        : await _fetchJwk(decoded.header.kid!, _jwks ?? JWKSet(keys: []));
+        : await _fetchJwk(
+            decoded.header.keyId!,
+            _jwks ?? JWKSet(keys: []),
+          );
 
     // If symmetric algorithm, fallback to getUser()
     if (signingKey == null) {

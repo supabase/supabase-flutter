@@ -247,7 +247,10 @@ void main() {
       final payload = decodeJwt(data!.accessToken).payload;
       expect(
         data.expiresAt,
-        DateTime.fromMillisecondsSinceEpoch(payload.exp! * 1000, isUtc: true),
+        DateTime.fromMillisecondsSinceEpoch(
+          payload.expiresAt! * 1000,
+          isUtc: true,
+        ),
       );
     });
 
@@ -274,7 +277,10 @@ void main() {
       final payload = decodeJwt(data!.accessToken).payload;
       expect(
         data.expiresAt,
-        DateTime.fromMillisecondsSinceEpoch(payload.exp! * 1000, isUtc: true),
+        DateTime.fromMillisecondsSinceEpoch(
+          payload.expiresAt! * 1000,
+          isUtc: true,
+        ),
       );
     });
 

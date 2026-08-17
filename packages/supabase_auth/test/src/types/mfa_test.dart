@@ -28,14 +28,14 @@ void main() {
     });
   });
 
-  group('AMREntry', () {
+  group('AuthenticationMethodReferenceEntry', () {
     test('fromJson parses passkey method', () {
-      final entry = AMREntry.fromJson({
+      final entry = AuthenticationMethodReferenceEntry.fromJson({
         'method': 'passkey',
         'timestamp': 1735689600,
       });
 
-      expect(entry.method, AMRMethod.passkey);
+      expect(entry.method, AuthenticationMethodReference.passkey);
       expect(
         entry.timestamp,
         DateTime.fromMillisecondsSinceEpoch(1735689600 * 1000, isUtc: true),
@@ -43,21 +43,21 @@ void main() {
     });
 
     test('fromJson parses mfa/webauthn method', () {
-      final entry = AMREntry.fromJson({
+      final entry = AuthenticationMethodReferenceEntry.fromJson({
         'method': 'mfa/webauthn',
         'timestamp': 1735689600,
       });
 
-      expect(entry.method, AMRMethod.mfaWebauthn);
+      expect(entry.method, AuthenticationMethodReference.mfaWebauthn);
     });
 
     test('fromJson falls back to unknown for unrecognized methods', () {
-      final entry = AMREntry.fromJson({
+      final entry = AuthenticationMethodReferenceEntry.fromJson({
         'method': 'something-new',
         'timestamp': 1735689600,
       });
 
-      expect(entry.method, AMRMethod.unknown);
+      expect(entry.method, AuthenticationMethodReference.unknown);
     });
   });
 

@@ -259,9 +259,9 @@ class SupabaseClient {
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
   RealtimeChannel channel(
     String name, {
-    RealtimeChannelConfig opts = const RealtimeChannelConfig(),
+    RealtimeChannelConfig options = const RealtimeChannelConfig(),
   }) {
-    return realtime.channel(name, opts);
+    return realtime.channel(name, options);
   }
 
   /// Returns all Realtime channels.
@@ -378,7 +378,7 @@ class SupabaseClient {
   }) {
     return RealtimeClient(
       _realtimeUrl,
-      params: {
+      parameters: {
         'apikey': _supabaseKey,
       },
       headers: {'apikey': _supabaseKey, ...headers},
@@ -422,7 +422,7 @@ class SupabaseClient {
         event == AuthChangeEvent.tokenRefreshed ||
         event == AuthChangeEvent.signedIn) {
       try {
-        await realtime.setAuth(token);
+        await realtime.setAccessToken(token);
       } on FormatException catch (error) {
         if (error.message.contains('InvalidJWTToken')) {
           // The exception is thrown by RealtimeClient when the token is
@@ -435,7 +435,7 @@ class SupabaseClient {
     } else if (event == AuthChangeEvent.signedOut) {
       // Token is removed
 
-      await realtime.setAuth(_supabaseKey);
+      await realtime.setAccessToken(_supabaseKey);
     }
   }
 }

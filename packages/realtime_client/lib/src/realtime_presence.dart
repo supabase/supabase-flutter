@@ -5,13 +5,13 @@ import 'package:realtime_client/src/types.dart';
 /// A single shared state between users with Realtime Presence.
 class Presence {
   /// Reference to the presence object.
-  final String presenceRef;
+  final String presenceReference;
 
   /// The payload shared by users.
   final Map<String, dynamic> payload;
 
   const Presence({
-    required this.presenceRef,
+    required this.presenceReference,
     required this.payload,
   });
 
@@ -20,20 +20,21 @@ class Presence {
     // Create a new map without presence_ref to avoid mutating the input
     final payload = Map<String, dynamic>.of(map)..remove('presence_ref');
     return Presence(
-      presenceRef: ref as String? ?? '',
+      presenceReference: ref as String? ?? '',
       payload: payload,
     );
   }
 
   Presence deepClone() {
     return Presence.fromJson({
-      'presence_ref': presenceRef,
+      'presence_ref': presenceReference,
       ...payload,
     });
   }
 
   @override
-  String toString() => 'Presence(presenceRef: $presenceRef, payload: $payload)';
+  String toString() =>
+      'Presence(presenceReference: $presenceReference, payload: $payload)';
 }
 
 typedef PresenceChooser<T> = T Function(String key, dynamic presence);
@@ -44,10 +45,10 @@ typedef PresenceOnJoinCallback =
 typedef PresenceOnLeaveCallback =
     void Function(String? key, dynamic currentPresences, dynamic newPresences);
 
-class PresenceOpts {
+class PresenceOptions {
   final PresenceEvents events;
 
-  const PresenceOpts({required this.events});
+  const PresenceOptions({required this.events});
 }
 
 class PresenceEvents {
@@ -73,11 +74,11 @@ class RealtimePresence {
   ///
   /// `channel` - The RealtimeChannel
   ///
-  /// `opts` - The options, for example `PresenceOpts(events:
+  /// `options` - The options, for example `PresenceOptions(events:
   /// PresenceEvents(state: 'state', diff: 'diff'))`
-  RealtimePresence(this.channel, [PresenceOpts? opts]) {
+  RealtimePresence(this.channel, [PresenceOptions? options]) {
     final events =
-        opts?.events ??
+        options?.events ??
         PresenceEvents(state: 'presence_state', diff: 'presence_diff');
 
     channel.onEvents(events.state, ChannelFilter(), (newState, [_]) {
@@ -181,19 +182,23 @@ class RealtimePresence {
       final currentPresences = state[key];
 
       if (currentPresences != null) {
-        final newPresenceRefs = (newPresences as List)
-            .map((m) => m.presenceRef as String)
+        final newPresenceReferences = (newPresences as List)
+            .map((m) => m.presenceReference as String)
             .toList();
-        final currentPresenceRefs = currentPresences
-            .map((m) => m.presenceRef)
+        final currentPresenceReferences = currentPresences
+            .map((m) => m.presenceReference)
             .toList();
         final joinedPresences =
             newPresences
-                    .where((m) => !currentPresenceRefs.contains(m.presenceRef))
+                    .where(
+                      (m) => !currentPresenceReferences.contains(
+                        m.presenceReference,
+                      ),
+                    )
                     .toList()
                 as List<Presence>;
         final leftPresences = currentPresences
-            .where((m) => !newPresenceRefs.contains(m.presenceRef))
+            .where((m) => !newPresenceReferences.contains(m.presenceReference))
             .toList();
 
         if (joinedPresences.isNotEmpty) {
@@ -237,11 +242,13 @@ class RealtimePresence {
       }).toList();
 
       if (currentPresences.isNotEmpty) {
-        final joinedPresenceRefs = state[key]!
-            .map((m) => m.presenceRef)
+        final joinedPresenceReferences = state[key]!
+            .map((m) => m.presenceReference)
             .toList();
         final remainingPresences = currentPresences
-            .where((m) => !joinedPresenceRefs.contains(m.presenceRef))
+            .where(
+              (m) => !joinedPresenceReferences.contains(m.presenceReference),
+            )
             .toList();
 
         state[key]!.insertAll(0, remainingPresences);
@@ -255,13 +262,15 @@ class RealtimePresence {
 
       if (currentPresences == null) return;
 
-      final presenceRefsToRemove = (leftPresences as List)
-          .map((leftPresence) => leftPresence.presenceRef as String)
+      final presenceReferencesToRemove = (leftPresences as List)
+          .map((leftPresence) => leftPresence.presenceReference as String)
           .toList();
 
       currentPresences = currentPresences
           .where(
-            (presence) => !presenceRefsToRemove.contains(presence.presenceRef),
+            (presence) => !presenceReferencesToRemove.contains(
+              presence.presenceReference,
+            ),
           )
           .toList();
 

@@ -57,7 +57,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     }).join();
     final newHeaders = {..._headers};
 
-    final url = overrideSearchParams('select', cleanedColumns);
+    final url = overrideSearchParameters('select', cleanedColumns);
     final prefer = _emptyPreferAsNull(newHeaders['Prefer']);
     newHeaders['Prefer'] = [
       ?prefer,
@@ -115,7 +115,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
         '${existingOrder == null ? '' : '$existingOrder,'}$column.'
         '${ascending ? 'asc' : 'desc'}.'
         '${nullsFirst ? 'nullsfirst' : 'nullslast'}';
-    final url = overrideSearchParams(key, value);
+    final url = overrideSearchParameters(key, value);
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
@@ -136,7 +136,7 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   PostgrestTransformBuilder<T> limit(int count, {String? referencedTable}) {
     final key = referencedTable == null ? 'limit' : '$referencedTable.limit';
 
-    final url = overrideSearchParams(key, '$count');
+    final url = overrideSearchParameters(key, '$count');
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 
@@ -169,8 +169,8 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
         ? 'limit'
         : '$referencedTable.limit';
 
-    var url = overrideSearchParams(keyOffset, '$from');
-    url = overrideSearchParams(keyLimit, '${to - from + 1}', url);
+    var url = overrideSearchParameters(keyOffset, '$from');
+    url = overrideSearchParameters(keyLimit, '${to - from + 1}', url);
     return PostgrestTransformBuilder(copyWithUrl(url));
   }
 

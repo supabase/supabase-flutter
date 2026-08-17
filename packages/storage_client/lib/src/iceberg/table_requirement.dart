@@ -72,15 +72,15 @@ class AssertLastAssignedPartitionId extends TableRequirement {
   };
 }
 
-class AssertDefaultSpecId extends TableRequirement {
-  final int defaultSpecId;
+class AssertDefaultSpecificationId extends TableRequirement {
+  final int defaultSpecificationId;
 
-  const AssertDefaultSpecId(this.defaultSpecId);
+  const AssertDefaultSpecificationId(this.defaultSpecificationId);
 
   @override
   Map<String, dynamic> toJson() => {
     'type': 'assert-default-spec-id',
-    'default-spec-id': defaultSpecId,
+    'default-spec-id': defaultSpecificationId,
   };
 }
 

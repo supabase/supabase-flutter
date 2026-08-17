@@ -390,7 +390,7 @@ Map<String, Map<String, dynamic>> getPayloadRecords(
 
 /// Converts a WebSocket URL to an HTTP URL.
 @internal
-String httpEndpointURL(String socketUrl) {
+String httpEndpointUrl(String socketUrl) {
   var url = socketUrl;
 
   // Replace 'ws' or 'wss' with 'http' or 'https' respectively

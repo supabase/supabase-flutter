@@ -22,7 +22,7 @@ void main() {
   });
 
   for (final version in RealtimeProtocolVersion.values) {
-    group('Realtime protocol ${version.vsn}', () {
+    group('Realtime protocol ${version.wireVersion}', () {
       late RealtimeClient client;
 
       setUp(() {
@@ -48,8 +48,8 @@ void main() {
         final heartbeatClient = RealtimeClient(
           localStackRealtimeUrl,
           version: version,
-          params: {'apikey': generateRealtimeToken()},
-          heartbeatIntervalMs: 500,
+          parameters: {'apikey': generateRealtimeToken()},
+          heartbeatInterval: const Duration(milliseconds: 500),
         );
         final statuses = <RealtimeHeartbeatStatus>[];
         final acknowledged = Completer<void>();
@@ -73,14 +73,14 @@ void main() {
       });
 
       test('subscribes to a channel', () async {
-        final channel = client.channel('subscribe-${version.vsn}');
+        final channel = client.channel('subscribe-${version.wireVersion}');
         final status = await _subscribe(channel);
         expect(status, RealtimeSubscribeStatus.subscribed);
         expect(channel.isJoined, isTrue);
       });
 
       test('unsubscribes from a channel', () async {
-        final channel = client.channel('unsubscribe-${version.vsn}');
+        final channel = client.channel('unsubscribe-${version.wireVersion}');
         await _subscribe(channel);
         final result = await channel.unsubscribe();
         expect(result, 'ok');
@@ -89,7 +89,7 @@ void main() {
 
       test('receives its own broadcast when self is enabled', () async {
         final channel = client.channel(
-          'broadcast-self-${version.vsn}',
+          'broadcast-self-${version.wireVersion}',
           const RealtimeChannelConfig(self: true),
         );
         final received = Completer<Map<String, dynamic>>();
@@ -115,7 +115,7 @@ void main() {
       });
 
       test('broadcasts between two clients', () async {
-        final topic = 'broadcast-cross-${version.vsn}';
+        final topic = 'broadcast-cross-${version.wireVersion}';
         final receiver = client;
         final sender = createRealtimeClient(version);
         addTearDown(() async {
@@ -150,7 +150,7 @@ void main() {
 
       test('tracks and syncs presence', () async {
         final channel = client.channel(
-          'presence-${version.vsn}',
+          'presence-${version.wireVersion}',
           const RealtimeChannelConfig(key: 'user-1'),
         );
 
@@ -187,7 +187,7 @@ void main() {
 
       test('removes presence on untrack', () async {
         final channel = client.channel(
-          'presence-untrack-${version.vsn}',
+          'presence-untrack-${version.wireVersion}',
           const RealtimeChannelConfig(key: 'user-2'),
         );
 
@@ -226,7 +226,7 @@ void main() {
           final updates = Completer<PostgresChangePayload>();
           final deletes = Completer<PostgresChangePayload>();
 
-          final channel = client.channel('db-changes-${version.vsn}');
+          final channel = client.channel('db-changes-${version.wireVersion}');
           channel.onPostgresChanges(
             event: PostgresChangeEvent.all,
             schema: 'public',
@@ -281,7 +281,7 @@ void main() {
         test('applies a postgres changes filter', () async {
           final matched = Completer<PostgresChangePayload>();
 
-          final channel = client.channel('db-filter-${version.vsn}');
+          final channel = client.channel('db-filter-${version.wireVersion}');
           channel.onPostgresChanges(
             event: PostgresChangeEvent.insert,
             schema: 'public',

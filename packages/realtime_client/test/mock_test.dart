@@ -180,7 +180,7 @@ void main() {
       mockServer = await HttpServer.bind('localhost', 0);
       client = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
-        params: {'apikey': 'supabaseKey'},
+        parameters: {'apikey': 'supabaseKey'},
       );
       hasListener = false;
       hasSentData = false;
@@ -312,7 +312,10 @@ void main() {
       channel.subscribe(subscribeCallback);
 
       await Future.delayed(Duration(milliseconds: 200));
-      await webSocket?.close(Constants.wsCloseNormal, "heartbeat timeout");
+      await webSocket?.close(
+        Constants.webSocketCloseNormal,
+        "heartbeat timeout",
+      );
     });
   });
 
@@ -443,7 +446,7 @@ void main() {
       mockServer = await HttpServer.bind('localhost', 0);
       client = RealtimeClient(
         'ws://${mockServer.address.host}:${mockServer.port}/realtime/v1',
-        params: {'apikey': 'supabaseKey'},
+        parameters: {'apikey': 'supabaseKey'},
       );
       hasListener = false;
       hasSentData = false;

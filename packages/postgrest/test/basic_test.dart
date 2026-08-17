@@ -112,7 +112,7 @@ void main() {
     });
 
     test('auth', () async {
-      postgrest = PostgrestClient(localStackRestUrl).setAuth('foo');
+      postgrest = PostgrestClient(localStackRestUrl).setAccessToken('foo');
       expect(
         postgrest.headers['Authorization'],
         'Bearer foo',
@@ -607,6 +607,19 @@ void main() {
                 'message',
                 '<html><body>502 Bad Gateway</body></html>',
               ),
+        ),
+      );
+    });
+
+    test('a JSON error body with unexpected field types still throws '
+        'a PostgrestApiException', () async {
+      await expectLater(
+        () => postgrestCustomHttpClient.from('gateway-json-error').select(),
+        throwsA(
+          isA<PostgrestApiException>()
+              .having((e) => e.statusCode, 'statusCode', 502)
+              .having((e) => e.message, 'message', 'Bad gateway')
+              .having((e) => e.errorCode, 'errorCode', '502'),
         ),
       );
     });

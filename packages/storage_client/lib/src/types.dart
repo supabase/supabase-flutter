@@ -605,14 +605,30 @@ class StorageApiException extends StorageException with SupabaseApiException {
     super.errorCode,
   });
 
+  /// Builds an exception from an error response body.
+  ///
+  /// A JSON object is no guarantee that its fields carry the types the storage
+  /// API documents, since a proxy or gateway in front of it can answer with a
+  /// shape of its own, so every field is read defensively. [statusCode] is used
+  /// when the body reports none.
+  ///
+  /// [SupabaseException.errorCode] is read from the body's `code`, the
+  /// documented storage error code such as `NoSuchKey` or `AccessDenied`. The
+  /// body's `error` is the fallback for servers old enough not to send `code`,
+  /// and carries a plain sentence as often as an identifier.
+  ///
+  /// See https://supabase.com/docs/guides/storage/debugging/error-codes
   factory StorageApiException.fromJson(
     Map<String, dynamic> json,
     int statusCode,
-  ) => StorageApiException(
-    json['message'] as String? ?? json.toString(),
-    errorCode: json['error'] as String?,
-    statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
-  );
+  ) {
+    final message = json['message'];
+    return StorageApiException(
+      message is String ? message : json.toString(),
+      errorCode: (json['code'] ?? json['error'])?.toString(),
+      statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
+    );
+  }
 }
 
 class StorageRetryController {
@@ -685,7 +701,7 @@ class TransformOptions {
 
   /// The transformation options as `transform` query parameters.
   @internal
-  Map<String, String> get toQueryParams {
+  Map<String, String> get toQueryParameters {
     return {
       if (width != null) 'width': '$width',
       if (height != null) 'height': '$height',

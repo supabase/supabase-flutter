@@ -339,6 +339,45 @@ void main() {
       expect(exception.statusCode, 404);
     });
 
+    test('fromJson tolerates unexpected field types', () {
+      final exception = StorageApiException.fromJson({
+        'message': {'nested': 'object'},
+        'error': 502,
+      }, 502);
+
+      expect(exception.message, '{message: {nested: object}, error: 502}');
+      expect(exception.errorCode, '502');
+      expect(exception.statusCode, 502);
+    });
+
+    test('fromJson reads the service error code apart from statusCode', () {
+      final exception = StorageApiException.fromJson({
+        'message': 'Object not found',
+        'statusCode': '404',
+        'error': 'not_found',
+        'code': 'NoSuchKey',
+      }, 404);
+      expect(exception.errorCode, 'NoSuchKey');
+      expect(exception.statusCode, 404);
+    });
+
+    test('fromJson falls back to error when the body carries no code', () {
+      final exception = StorageApiException.fromJson({
+        'message': 'Object not found',
+        'statusCode': '404',
+        'error': 'not_found',
+      }, 404);
+      expect(exception.errorCode, 'not_found');
+    });
+
+    test('fromJson leaves the error code null when the body has neither', () {
+      final exception = StorageApiException.fromJson({
+        'message': 'not found',
+        'statusCode': '404',
+      }, 404);
+      expect(exception.errorCode, isNull);
+    });
+
     test(
       'fromJson falls back to the response status code and stringified body',
       () {
@@ -349,7 +388,7 @@ void main() {
     );
   });
 
-  group('TransformOptions.toQueryParams', () {
+  group('TransformOptions.toQueryParameters', () {
     test('omits null values and snake-cases the resize mode', () {
       const options = TransformOptions(
         width: 100,
@@ -359,7 +398,7 @@ void main() {
         format: RequestImageFormat.origin,
       );
 
-      expect(options.toQueryParams, {
+      expect(options.toQueryParameters, {
         'width': '100',
         'height': '200',
         'resize': 'cover',
@@ -370,7 +409,7 @@ void main() {
 
     test('is empty when nothing is set', () {
       const options = TransformOptions();
-      expect(options.toQueryParams, isEmpty);
+      expect(options.toQueryParameters, isEmpty);
     });
   });
 

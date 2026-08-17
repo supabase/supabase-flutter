@@ -246,7 +246,7 @@ class AuthMFAApi {
     }
 
     final amr = (payload['amr'] as List? ?? [])
-        .map((e) => AMREntry.fromJson(Map.from(e)))
+        .map((e) => AuthenticationMethodReferenceEntry.fromJson(Map.from(e)))
         .toList();
     return AuthMFAGetAuthenticatorAssuranceLevelResponse(
       currentLevel: currentLevel,

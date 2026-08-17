@@ -76,6 +76,20 @@ example to hide it in an import.
 Nothing about the wire format changes. The `X-Client-Info` header still identifies this client as
 `gotrue-dart`, and the `gotrue_meta_security` field in captcha payloads is unchanged.
 
+### `AuthClient.getSSOSignInUrl` returns a `Uri`
+
+`getSSOSignInUrl()` now returns a `Future<Uri>` rather than a `Future<String>`.
+
+```dart
+// Before
+final String ssoUrl = await supabase.auth.getSSOSignInUrl(domain: 'company.com');
+
+// After
+final Uri ssoUrl = await supabase.auth.getSSOSignInUrl(domain: 'company.com');
+```
+
+If you need the URL string, use `ssoUrl.toString()`.
+
 ### `RealtimeClient.connectionState` is now typed
 
 `RealtimeClient` used to expose the socket state twice: a typed `connState` field and a stringly
@@ -810,3 +824,77 @@ try {
 
 Exhaustive switches over the sealed hierarchy still compile with the same set of cases, since the
 new base is sealed and every concrete subtype is unchanged.
+
+### Abbreviations in the public API are spelled out
+
+Public identifiers that still used abbreviations are spelled out, continuing the precedent set by
+`conn` to `connection` above. The wire format is unchanged throughout: where a JSON key, query
+parameter or URL path matched the abbreviation, only the Dart identifier is renamed.
+
+Across every package:
+
+| Before | After |
+| --- | --- |
+| `setAuth()` | `setAccessToken()` |
+| `queryParams:` | `queryParameters:` |
+| `opts:` | `options:` |
+| `PresenceOpts` | `PresenceOptions` |
+| `appendSearchParams` | `appendSearchParameters` |
+| `overrideSearchParams` | `overrideSearchParameters` |
+| `toQueryParams` | `toQueryParameters` |
+
+`realtime_client`:
+
+| Before | After |
+| --- | --- |
+| `RealtimeClient.params` | `RealtimeClient.parameters` |
+| `RealtimeClient.endPoint` | `RealtimeClient.endpoint` |
+| `RealtimeClient.endPointURL` | `RealtimeClient.endpointUrl` |
+| `RealtimeConstants.wsCloseNormal` | `RealtimeConstants.webSocketCloseNormal` |
+| `RealtimeProtocolVersion.vsn` | `RealtimeProtocolVersion.wireVersion` |
+| `RealtimeChannel(topic, socket, params: …)` | `RealtimeChannel(topic, socket, config: …)` |
+| `Presence.presenceRef` | `Presence.presenceReference` |
+
+`supabase_auth`:
+
+| Before | After |
+| --- | --- |
+| `JwtPayload.iss/sub/aud/exp/nbf/iat/jti` | `issuer`, `subject`, `audience`, `expiresAt`, `notBefore`, `issuedAt`, `jwtId` |
+| `JwtHeader.alg/kid/typ` | `algorithm`, `keyId`, `type` |
+| `JWK.kty/keyOps/alg/kid` | `keyType`, `keyOperations`, `algorithm`, `keyId` |
+| `User.aud` | `User.audience` |
+| `CreateOAuthClientParams` / `UpdateOAuthClientParams` | `…Options` |
+| `CreateCustomProviderParams` / `UpdateCustomProviderParams` | `…Options` |
+| `authorizationParams` | `authorizationParameters` |
+| `supportedIdTokenSigningAlgs` | `supportedIdTokenSigningAlgorithms` |
+| `tokenEndpointAuthMethod` | `tokenEndpointAuthenticationMethod` |
+| `userinfoEndpoint` / `userinfoUrl` | `userInfoEndpoint` / `userInfoUrl` |
+| `validateExp(int? exp)` | `validateExpiration(int? expiresAt)` |
+| `AMRMethod` / `AMREntry` | `AuthenticationMethodReference` / `…Entry` |
+| `AuthChangeEvent.jsName` | `AuthChangeEvent.value` |
+| `AuthenticationMethodReference.code` | `AuthenticationMethodReference.value` |
+| `GenerateLinkType.fromString` | `GenerateLinkType.fromValue` |
+| `OAuthClientType.fromString` | `OAuthClientType.fromValue` |
+| `OAuthClientRegistrationType.fromString` | `OAuthClientRegistrationType.fromValue` |
+| `CustomProviderType.fromString` | `CustomProviderType.fromValue` |
+
+`storage_client`:
+
+| Before | After |
+| --- | --- |
+| `StorageFileApi.info()` | `StorageFileApi.getMetadata()` |
+| `VectorBucketEncryption.sseType` | `serverSideEncryptionType` |
+| `PartitionSpec` and the Iceberg `spec` cluster | `PartitionSpecification`, `…Specification…` |
+| `TableMetadata.refs` | `TableMetadata.references` |
+| `TableField.doc` | `TableField.documentation` |
+| `TableSnapshotScope.value` | `TableSnapshotScope.name` |
+
+These renames also change a type:
+
+| Before | After |
+| --- | --- |
+| `RealtimeClient.heartbeatIntervalMs` (`int`) | `heartbeatInterval` (`Duration`) |
+| `RealtimeConstants.defaultHeartbeatIntervalMs` (`int`) | `defaultHeartbeatInterval` (`Duration`) |
+| `RealtimeClient.reconnectAfterMs` (`int` return) | `reconnectAfter` (`Duration` return) |
+| `SnapshotReference.maxReferenceAgeMs` / `maxSnapshotAgeMs` (`int?`) | `maxReferenceAge` / `maxSnapshotAge` (`Duration?`) |
+| `Snapshot.timestampMs` / `TableMetadata.lastUpdatedMs` (`int`) | `timestamp` / `lastUpdated` (`DateTime`, UTC) |

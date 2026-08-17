@@ -110,7 +110,7 @@ enum OAuthClientType {
   public,
   confidential;
 
-  static OAuthClientType fromString(String value) {
+  static OAuthClientType fromValue(String value) {
     return OAuthClientType.values.firstWhere((e) => e.snakeCase == value);
   }
 }
@@ -121,7 +121,7 @@ enum OAuthClientRegistrationType {
   dynamic,
   manual;
 
-  static OAuthClientRegistrationType fromString(String value) {
+  static OAuthClientRegistrationType fromValue(String value) {
     return OAuthClientRegistrationType.values.firstWhere(
       (e) => e.snakeCase == value,
     );
@@ -144,7 +144,7 @@ class OAuthClient {
   final OAuthClientType clientType;
 
   /// Token endpoint authentication method
-  final String tokenEndpointAuthMethod;
+  final String tokenEndpointAuthenticationMethod;
 
   /// Registration type of the client
   final OAuthClientRegistrationType registrationType;
@@ -175,7 +175,7 @@ class OAuthClient {
     required this.clientName,
     this.clientSecret,
     required this.clientType,
-    required this.tokenEndpointAuthMethod,
+    required this.tokenEndpointAuthenticationMethod,
     required this.registrationType,
     this.clientUri,
     required this.redirectUris,
@@ -191,9 +191,10 @@ class OAuthClient {
       clientId: json['client_id'] as String,
       clientName: json['client_name'] as String,
       clientSecret: json['client_secret'] as String?,
-      clientType: OAuthClientType.fromString(json['client_type'] as String),
-      tokenEndpointAuthMethod: json['token_endpoint_auth_method'] as String,
-      registrationType: OAuthClientRegistrationType.fromString(
+      clientType: OAuthClientType.fromValue(json['client_type'] as String),
+      tokenEndpointAuthenticationMethod:
+          json['token_endpoint_auth_method'] as String,
+      registrationType: OAuthClientRegistrationType.fromValue(
         json['registration_type'] as String,
       ),
       clientUri: json['client_uri'] as String?,
@@ -221,7 +222,7 @@ class OAuthClient {
 
 /// Parameters for creating a new OAuth client.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
-class CreateOAuthClientParams {
+class CreateOAuthClientOptions {
   /// Human-readable name of the OAuth client
   final String clientName;
 
@@ -241,7 +242,7 @@ class CreateOAuthClientParams {
   /// Scope of the OAuth client
   final String? scope;
 
-  const CreateOAuthClientParams({
+  const CreateOAuthClientOptions({
     required this.clientName,
     this.clientUri,
     required this.redirectUris,
@@ -264,7 +265,7 @@ class CreateOAuthClientParams {
 
 /// Parameters for updating an existing OAuth client.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
-class UpdateOAuthClientParams {
+class UpdateOAuthClientOptions {
   /// Human-readable name of the OAuth client
   final String? clientName;
 
@@ -283,7 +284,7 @@ class UpdateOAuthClientParams {
   /// Scope of the OAuth client
   final String? scope;
 
-  const UpdateOAuthClientParams({
+  const UpdateOAuthClientOptions({
     this.clientName,
     this.clientUri,
     this.redirectUris,

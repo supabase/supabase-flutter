@@ -95,7 +95,7 @@ enum ErrorCode {
 
   static ErrorCode? fromCode(String code) {
     return ErrorCode.values.firstWhereOrNull(
-      (value) => value.code == code,
+      (errorCode) => errorCode.code == code,
     );
   }
 }

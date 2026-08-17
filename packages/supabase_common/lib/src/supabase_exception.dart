@@ -21,7 +21,7 @@ abstract class SupabaseException implements Exception {
   final String message;
 
   /// Identifier for the error, for example `weak_password` (auth), `PGRST116`
-  /// (postgrest) or `not_found` (storage).
+  /// (postgrest) or `NoSuchKey` (storage).
   ///
   /// `null` when neither the service nor the client named the failure.
   final String? errorCode;

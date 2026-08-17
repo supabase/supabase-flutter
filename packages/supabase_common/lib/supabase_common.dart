@@ -9,6 +9,7 @@ export 'src/backoff.dart';
 export 'src/base64url.dart';
 export 'src/client_info.dart';
 export 'src/fetch_options.dart';
+export 'src/http.dart';
 export 'src/http_method.dart';
 export 'src/http_status.dart';
 export 'src/persist_session_key.dart';

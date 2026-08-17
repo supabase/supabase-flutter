@@ -129,7 +129,7 @@ class GenerateLinkProperties {
       emailOtp = json['email_otp'] ?? '',
       hashedToken = json['hashed_token'] ?? '',
       redirectTo = json['redirect_to'] ?? '',
-      verificationType = GenerateLinkType.fromString(
+      verificationType = GenerateLinkType.fromValue(
         json['verification_type'],
       );
 }
