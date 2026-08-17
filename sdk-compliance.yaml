@@ -123,6 +123,7 @@ features:
     status: implemented
     symbols:
       - AuthClient.resetPasswordForEmail
+  auth.sign_in.reset_password: not_implemented
 
   # auth — session & user
   auth.session.get_session:
@@ -1224,6 +1225,7 @@ features:
     status: implemented
     symbols:
       - StorageBucketApi.emptyBucket
+  storage.file_buckets.list_files_paginated: not_implemented
 
   # storage — vector buckets
   storage.vector_buckets.create_vector_bucket:
@@ -1597,6 +1599,8 @@ features:
     status: implemented
     symbols:
       - IcebergRestCatalog.tableExists
+  storage.analytics.iceberg_namespace: not_implemented
+  storage.analytics.iceberg_table: not_implemented
 
   # storage — errors
   storage.errors.error_codes:
@@ -1632,6 +1636,7 @@ features:
     status: implemented
     symbols:
       - RealtimeChannel.httpSend
+  realtime.channel.send: not_implemented
   # realtime — client
   realtime.client.channel:
     status: implemented
