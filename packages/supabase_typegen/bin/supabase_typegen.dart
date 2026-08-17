@@ -22,7 +22,7 @@ final _argParser = ArgParser()
     'output',
     abbr: 'o',
     defaultsTo: 'lib/supabase_schema.g.dart',
-    help: 'Path of the generated Dart file.',
+    help: 'Path of the generated Dart file, or - to write the code to stdout.',
   )
   ..addOption(
     'import',
@@ -104,16 +104,25 @@ Future<int> _run(List<String> arguments) async {
 
   final code = generateDartCode(schema, importUri: options.option('import')!);
 
-  final outputFile = File(options.option('output')!);
-  outputFile.parent.createSync(recursive: true);
-  outputFile.writeAsStringSync(code);
+  final output = options.option('output')!;
+  final String generatedInto;
+  if (output == '-') {
+    stdout.write(code);
+    generatedInto = 'stdout';
+  } else {
+    final outputFile = File(output);
+    outputFile.parent.createSync(recursive: true);
+    outputFile.writeAsStringSync(code);
+    generatedInto = outputFile.path;
+  }
 
   final emittedTables = schema.tables
       .where((table) => table.columns.isNotEmpty)
       .length;
   final skippedTables = schema.tables.length - emittedTables;
-  stdout.writeln(
-    'Generated ${outputFile.path} with $emittedTables tables and '
+  final summarySink = output == '-' ? stderr : stdout;
+  summarySink.writeln(
+    'Generated $generatedInto with $emittedTables tables and '
     '${schema.enums.length} enums from schema "$schemaName".'
     '${skippedTables == 0 ? '' : ' Skipped $skippedTables tables '
               'without columns.'}',
