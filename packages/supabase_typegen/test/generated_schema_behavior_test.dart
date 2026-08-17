@@ -51,6 +51,7 @@ void main() {
         'author_id': 7,
         'price': 12.5,
         'rating': 4,
+        'in_print': true,
         'mood': 'very happy',
         'tags': ['dart', 'types'],
         'metadata': {'reprint': true},
@@ -65,6 +66,7 @@ void main() {
     expect(book.id, 1);
     expect(book.title, 'A typed row');
     expect(book.rating, 4.0);
+    expect(book.inPrint, isTrue);
     expect(book.mood, Mood.veryHappy);
     expect(book.tags, ['dart', 'types']);
     expect(book.metadata, {'reprint': true});

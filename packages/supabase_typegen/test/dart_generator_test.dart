@@ -15,9 +15,13 @@ void main() {
 
   setUpAll(() {
     final document =
-        jsonDecode(File('test/fixtures/openapi.json').readAsStringSync())
+        jsonDecode(
+              File(
+                'test/fixtures/postgres_meta_schema.json',
+              ).readAsStringSync(),
+            )
             as Map<String, dynamic>;
-    schema = parseOpenApiDocument(document);
+    schema = parsePostgresMetaDocument(document);
   });
 
   test('matches the golden output', () {
@@ -49,5 +53,26 @@ void main() {
 
     expect(code, contains('required String title'));
     expect(code, contains('int? id'));
+  });
+
+  test('not null columns with a default read non-nullable', () {
+    final code = generateDartCode(schema);
+
+    expect(code, contains("bool get inPrint => _json['in_print'] as bool;"));
+    expect(
+      code,
+      contains(
+        "DateTime get createdAt => "
+        "DateTime.parse(_json['created_at'] as String);",
+      ),
+    );
+  });
+
+  test('always generated columns are excluded from insert and update', () {
+    final code = generateDartCode(schema);
+
+    expect(code, contains('AuthorsInsert({required String name})'));
+    expect(code, contains('AuthorsUpdate({String? name})'));
+    expect(code, contains("TableColumn<int>('id')"));
   });
 }

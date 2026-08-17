@@ -162,10 +162,10 @@ void _writeTable(
     requireRequiredColumns: true,
     docLine:
         'Values for inserting a row into `${table.name}`. Columns that are '
-        'nullable, part of a generated primary key, or covered by a database '
-        'default are optional; passing `null` omits the column so the '
-        'database default applies. Use the `set…ToNull` methods to insert '
-        'SQL NULL explicitly.',
+        'nullable, identity, or covered by a database default are optional; '
+        'passing `null` omits the column so the database default applies. '
+        'Columns the database always generates itself are left out entirely. '
+        'Use the `set…ToNull` methods to insert SQL NULL explicitly.',
   );
   _writeValues(
     buffer,
@@ -218,13 +218,17 @@ void _writeValues(
 }) {
   bool isRequired(ColumnDescription column) =>
       requireRequiredColumns && column.isRequired;
+  final writableColumns = [
+    for (final column in table.columns)
+      if (!column.isReadOnly) column,
+  ];
 
   buffer
     ..writeln('/// $docLine')
     ..writeln('extension type const $typeName._(Map<String, dynamic> _json)')
     ..writeln('    implements Map<String, dynamic> {')
     ..writeln('  $typeName({');
-  for (final column in table.columns) {
+  for (final column in writableColumns) {
     final binding = bindings[column.name]!;
     final name = memberNames[column.name]!;
     if (isRequired(column)) {
@@ -234,7 +238,7 @@ void _writeValues(
     }
   }
   buffer.writeln('  }) : this._({');
-  for (final column in table.columns) {
+  for (final column in writableColumns) {
     final binding = bindings[column.name]!;
     final name = memberNames[column.name]!;
     final key = _stringLiteral(column.name);
@@ -249,7 +253,7 @@ void _writeValues(
     }
   }
   buffer.writeln('       });');
-  for (final column in table.columns) {
+  for (final column in writableColumns) {
     if (!column.isNullable) continue;
     final name = memberNames[column.name]!;
     final methodName = 'set${name[0].toUpperCase()}${name.substring(1)}ToNull';
