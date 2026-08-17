@@ -38,6 +38,7 @@ features:
       - OtpChannel
   auth.sign_in.sign_in_with_oauth:
     status: implemented
+    note: "getOAuthSignInUrl returns an OAuthResponse whose url is a Uri rather than the string JS returns, and supabase_flutter's signInWithOAuth launches that URL in the browser and returns Future<bool>."
     symbols:
       - AuthClient.getOAuthSignInUrl
       - AuthClientSignInProvider.signInWithOAuth
@@ -254,7 +255,7 @@ features:
   # auth — identities
   auth.identities.link_identity:
     status: implemented
-    note: "Split into getLinkIdentityUrl (OAuth) and linkIdentityWithIdToken (ID token) rather than a single overloaded method."
+    note: "Split into getLinkIdentityUrl (OAuth) and linkIdentityWithIdToken (ID token) rather than a single overloaded method. getLinkIdentityUrl's OAuthResponse carries a Uri rather than the string url JS returns."
     symbols:
       - AuthClient.getLinkIdentityUrl
       - AuthClient.linkIdentityWithIdToken
