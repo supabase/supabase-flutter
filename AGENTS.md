@@ -16,6 +16,7 @@ The repository follows a layered dependency structure:
 - **postgrest**: Database query client with ORM-style API
 - **supabase_realtime**: WebSocket client for real-time subscriptions
 - **supabase_storage**: File storage client with retry logic
+- **iceberg**: Apache Iceberg REST Catalog client used by storage analytics buckets
 - **supabase_functions**: Edge functions invocation client
 - **yet_another_json_isolate**: JSON parsing in separate isolate for performance
 

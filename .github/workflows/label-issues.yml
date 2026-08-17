@@ -26,6 +26,7 @@ jobs:
           "storage": "storage",
           "storage_client": "storage",
           "supabase_storage": "storage",
+          "iceberg": "storage",
           "realtime": "realtime",
           "realtime_client": "realtime",
           "supabase_realtime": "realtime",
