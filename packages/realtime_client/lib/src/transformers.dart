@@ -230,11 +230,14 @@ double? toDouble(dynamic value) {
 
 @internal
 int? toInt(dynamic value) {
-  if (value is int) {
-    return value;
-  }
+  // On the web an integral number satisfies both `is int` and `is double`,
+  // so check `double` first to keep the whole-number and range validation
+  // in effect on every platform.
   if (value is double) {
     return _wholeDoubleToInt(value);
+  }
+  if (value is int) {
+    return value;
   }
   if (value == null) {
     return null;
