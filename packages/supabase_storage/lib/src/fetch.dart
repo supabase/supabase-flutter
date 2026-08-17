@@ -52,7 +52,7 @@ class Fetch {
     return exception;
   }
 
-  Future<dynamic> _handleRequest(
+  Future<T> _handleRequest<T>(
     HttpMethod method,
     String url,
     Map<String, dynamic>? body,
@@ -72,7 +72,7 @@ class Fetch {
     return _handleResponse(streamedResponse, options);
   }
 
-  Future<dynamic> _handleFileRequest(
+  Future<Map<String, dynamic>> _handleFileRequest(
     HttpMethod method,
     String url,
     File file,
@@ -101,7 +101,7 @@ class Fetch {
     );
   }
 
-  Future<dynamic> _handleBinaryFileRequest(
+  Future<Map<String, dynamic>> _handleBinaryFileRequest(
     HttpMethod method,
     String url,
     Uint8List data,
@@ -130,7 +130,7 @@ class Fetch {
     );
   }
 
-  Future<dynamic> _handleMultipartRequest(
+  Future<Map<String, dynamic>> _handleMultipartRequest(
     HttpMethod method,
     String url,
     MultipartFile Function() createMultipartFile,
@@ -180,20 +180,29 @@ class Fetch {
     return _handleResponse(streamedResponse, options);
   }
 
-  Future<dynamic> _handleResponse(
+  /// Reads the response body and returns it as a [T]: [Uint8List] when
+  /// `noResolveJson` is set, `null` for an empty body, and decoded JSON
+  /// otherwise. Throws a [StorageException] when the body is not a [T].
+  Future<T> _handleResponse<T>(
     http.StreamedResponse streamedResponse,
     FetchOptions? options,
   ) async {
     final response = await http.Response.fromStream(streamedResponse);
     if (isSuccessStatusCode(response.statusCode)) {
+      final dynamic body;
       if (options?.noResolveJson == true) {
-        return response.bodyBytes;
+        body = response.bodyBytes;
+      } else if (response.body.isEmpty) {
+        body = null;
+      } else {
+        body = json.decode(response.body);
       }
-      if (response.body.isEmpty) {
-        return null;
+      if (body is! T) {
+        throw StorageException(
+          'Expected a $T response, but got a ${body.runtimeType}',
+        );
       }
-      final jsonBody = json.decode(response.body);
-      return jsonBody;
+      return body;
     }
     throw _handleError(
       response,
@@ -203,8 +212,8 @@ class Fetch {
     );
   }
 
-  Future<dynamic> head(String url, {FetchOptions? options}) {
-    return _handleRequest(
+  Future<void> head(String url, {FetchOptions? options}) {
+    return _handleRequest<dynamic>(
       HttpMethod.head,
       url,
       null,
@@ -212,7 +221,7 @@ class Fetch {
     );
   }
 
-  Future<dynamic> get(String url, {FetchOptions? options}) {
+  Future<T> get<T>(String url, {FetchOptions? options}) {
     return _handleRequest(HttpMethod.get, url, null, options);
   }
 
@@ -248,7 +257,7 @@ class Fetch {
     );
   }
 
-  Future<dynamic> post(
+  Future<T> post<T>(
     String url,
     Map<String, dynamic>? body, {
     FetchOptions? options,
@@ -256,7 +265,7 @@ class Fetch {
     return _handleRequest(HttpMethod.post, url, body, options);
   }
 
-  Future<dynamic> put(
+  Future<T> put<T>(
     String url,
     Map<String, dynamic>? body, {
     FetchOptions? options,
@@ -264,7 +273,7 @@ class Fetch {
     return _handleRequest(HttpMethod.put, url, body, options);
   }
 
-  Future<dynamic> delete(
+  Future<T> delete<T>(
     String url,
     Map<String, dynamic>? body, {
     FetchOptions? options,
@@ -272,7 +281,7 @@ class Fetch {
     return _handleRequest(HttpMethod.delete, url, body, options);
   }
 
-  Future<dynamic> postFile(
+  Future<Map<String, dynamic>> postFile(
     String url,
     File file,
     FileOptions fileOptions, {
@@ -291,7 +300,7 @@ class Fetch {
     );
   }
 
-  Future<dynamic> putFile(
+  Future<Map<String, dynamic>> putFile(
     String url,
     File file,
     FileOptions fileOptions, {
@@ -310,7 +319,7 @@ class Fetch {
     );
   }
 
-  Future<dynamic> postBinaryFile(
+  Future<Map<String, dynamic>> postBinaryFile(
     String url,
     Uint8List data,
     FileOptions fileOptions, {
@@ -329,7 +338,7 @@ class Fetch {
     );
   }
 
-  Future<dynamic> putBinaryFile(
+  Future<Map<String, dynamic>> putBinaryFile(
     String url,
     Uint8List data,
     FileOptions fileOptions, {

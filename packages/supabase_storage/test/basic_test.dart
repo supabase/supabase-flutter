@@ -251,22 +251,30 @@ void main() {
       final file = File('a.txt');
       file.writeAsStringSync('File content');
 
-      customHttpClient.response = {'Key': 'public/a.txt'};
+      customHttpClient.response = {
+        'Id': 'e668cf46-2f9b-4a89-8889-9d95f2653c78',
+        'Key': 'public/a.txt',
+      };
 
       final response = await client.from('public').upload('a.txt', file);
-      expect(response, isA<String>());
-      expect(response, endsWith('/a.txt'));
+      expect(response.id, 'e668cf46-2f9b-4a89-8889-9d95f2653c78');
+      expect(response.path, 'a.txt');
+      expect(response.fullPath, 'public/a.txt');
     });
 
     test('should update file', () async {
       final file = File('a.txt');
       file.writeAsStringSync('Updated content');
 
-      customHttpClient.response = {'Key': 'public/a.txt'};
+      customHttpClient.response = {
+        'Id': 'e668cf46-2f9b-4a89-8889-9d95f2653c78',
+        'Key': 'public/a.txt',
+      };
 
       final response = await client.from('public').update('a.txt', file);
-      expect(response, isA<String>());
-      expect(response, endsWith('/a.txt'));
+      expect(response.id, 'e668cf46-2f9b-4a89-8889-9d95f2653c78');
+      expect(response.path, 'a.txt');
+      expect(response.fullPath, 'public/a.txt');
     });
 
     test('should move file', () async {
@@ -809,8 +817,9 @@ void main() {
       file.writeAsStringSync('File content');
 
       final response = await client.from('public').upload('a.txt', file);
-      expect(response, isA<String>());
-      expect(response, endsWith('/a.txt'));
+      expect(response.id, isNull);
+      expect(response.path, 'a.txt');
+      expect(response.fullPath, 'public/a.txt');
     });
 
     test('aborting upload should throw', () async {
@@ -840,8 +849,8 @@ void main() {
       final response = await client
           .from('public')
           .uploadBinary('a.txt', file.readAsBytesSync());
-      expect(response, isA<String>());
-      expect(response, endsWith('/a.txt'));
+      expect(response.path, 'a.txt');
+      expect(response.fullPath, 'public/a.txt');
     });
 
     test('should update file with few network failures', () async {
@@ -849,8 +858,8 @@ void main() {
       file.writeAsStringSync('File content');
 
       final response = await client.from('public').update('a.txt', file);
-      expect(response, isA<String>());
-      expect(response, endsWith('/a.txt'));
+      expect(response.path, 'a.txt');
+      expect(response.fullPath, 'public/a.txt');
     });
     test('should update binary with few network failures', () async {
       final file = File('a.txt');
@@ -859,8 +868,8 @@ void main() {
       final response = await client
           .from('public')
           .updateBinary('a.txt', file.readAsBytesSync());
-      expect(response, isA<String>());
-      expect(response, endsWith('/a.txt'));
+      expect(response.path, 'a.txt');
+      expect(response.fullPath, 'public/a.txt');
     });
   });
 

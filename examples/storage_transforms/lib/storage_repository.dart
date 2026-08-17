@@ -25,12 +25,13 @@ class StorageRepository {
   Future<String> uploadImage({
     required String name,
     required Uint8List bytes,
-  }) {
-    return _files.uploadBinary(
+  }) async {
+    final response = await _files.uploadBinary(
       name,
       bytes,
       fileOptions: const FileOptions(contentType: 'image/png', upsert: true),
     );
+    return response.path;
   }
 
   /// Lists the images in the bucket, newest first.

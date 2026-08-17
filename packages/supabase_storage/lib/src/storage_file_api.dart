@@ -54,6 +54,14 @@ class StorageFileApi {
 
   FetchOptions get _fetchOptions => FetchOptions(headers);
 
+  UploadResponse _uploadResponse(String cleanPath, Map<String, dynamic> data) {
+    return UploadResponse(
+      id: data['Id'] as String?,
+      path: cleanPath,
+      fullPath: data['Key'] as String,
+    );
+  }
+
   void _assertValidRetryAttempts(int? retryAttempts) {
     assert(
       retryAttempts == null || retryAttempts >= 0,
@@ -76,7 +84,10 @@ class StorageFileApi {
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
-  Future<String> upload(
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> upload(
     String path,
     File file, {
     FileOptions fileOptions = const FileOptions(),
@@ -84,7 +95,8 @@ class StorageFileApi {
     StorageRetryController? retryController,
   }) async {
     _assertValidRetryAttempts(retryAttempts);
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.postFile(
       '$url/object/$finalPath',
       file,
@@ -94,7 +106,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return (response as Map)['Key'] as String;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Uploads a binary file to an existing bucket. Can be used on the web.
@@ -112,7 +124,10 @@ class StorageFileApi {
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
-  Future<String> uploadBinary(
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> uploadBinary(
     String path,
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
@@ -120,7 +135,8 @@ class StorageFileApi {
     StorageRetryController? retryController,
   }) async {
     _assertValidRetryAttempts(retryAttempts);
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.postBinaryFile(
       '$url/object/$finalPath',
       data,
@@ -130,7 +146,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return (response as Map)['Key'] as String;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Upload a file with a token generated from `createUploadSignedUrl`.
@@ -142,7 +158,11 @@ class StorageFileApi {
   /// [token] The token generated from `createUploadSignedUrl`
   ///
   /// [file] The body of the file to be stored in the bucket.
-  Future<String> uploadToSignedUrl(
+  ///
+  /// Returns an [UploadResponse] with the path and full path of the stored
+  /// object. [UploadResponse.id] is `null`, because the server does not
+  /// report it for uploads through a signed URL.
+  Future<UploadResponse> uploadToSignedUrl(
     String path,
     String token,
     File file, [
@@ -157,7 +177,7 @@ class StorageFileApi {
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
     requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
-    await _storageFetch.putFile(
+    final response = await _storageFetch.putFile(
       requestUrl.toString(),
       file,
       fileOptions,
@@ -165,7 +185,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return cleanPath;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Upload a binary file with a token generated from `createUploadSignedUrl`.
@@ -177,7 +197,11 @@ class StorageFileApi {
   /// [token] The token generated from `createUploadSignedUrl`
   ///
   /// [data] The body of the binary file to be stored in the bucket.
-  Future<String> uploadBinaryToSignedUrl(
+  ///
+  /// Returns an [UploadResponse] with the path and full path of the stored
+  /// object. [UploadResponse.id] is `null`, because the server does not
+  /// report it for uploads through a signed URL.
+  Future<UploadResponse> uploadBinaryToSignedUrl(
     String path,
     String token,
     Uint8List data, [
@@ -188,11 +212,11 @@ class StorageFileApi {
     _assertValidRetryAttempts(retryAttempts);
 
     final cleanPath = _removeEmptyFolders(path);
-    final path0 = _getFinalPath(cleanPath);
-    var requestUrl = Uri.parse('$url/object/upload/sign/$path0');
+    final finalPath = _getFinalPath(cleanPath);
+    var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
     requestUrl = requestUrl.replace(queryParameters: {'token': token});
 
-    await _storageFetch.putBinaryFile(
+    final response = await _storageFetch.putBinaryFile(
       requestUrl.toString(),
       data,
       fileOptions,
@@ -200,7 +224,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return cleanPath;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Creates a signed upload URL.
@@ -219,7 +243,7 @@ class StorageFileApi {
   }) async {
     final finalPath = _getFinalPath(path);
 
-    final data = await _storageFetch.post(
+    final data = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/upload/sign/$finalPath',
       {},
       options: FetchOptions({
@@ -257,7 +281,10 @@ class StorageFileApi {
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
-  Future<String> update(
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> update(
     String path,
     File file, {
     FileOptions fileOptions = const FileOptions(),
@@ -265,7 +292,8 @@ class StorageFileApi {
     StorageRetryController? retryController,
   }) async {
     _assertValidRetryAttempts(retryAttempts);
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.putFile(
       '$url/object/$finalPath',
       file,
@@ -275,7 +303,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return (response as Map<String, dynamic>)['Key'] as String;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Replaces an existing file at the specified path with a new one. Can be
@@ -294,7 +322,10 @@ class StorageFileApi {
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
-  Future<String> updateBinary(
+  ///
+  /// Returns an [UploadResponse] with the id, path and full path of the
+  /// stored object.
+  Future<UploadResponse> updateBinary(
     String path,
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
@@ -302,7 +333,8 @@ class StorageFileApi {
     StorageRetryController? retryController,
   }) async {
     _assertValidRetryAttempts(retryAttempts);
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.putBinaryFile(
       '$url/object/$finalPath',
       data,
@@ -312,7 +344,7 @@ class StorageFileApi {
       retryController: retryController,
     );
 
-    return (response as Map)['Key'] as String;
+    return _uploadResponse(cleanPath, response);
   }
 
   /// Moves an existing file.
@@ -330,7 +362,7 @@ class StorageFileApi {
     String? destinationBucket,
   }) async {
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/move',
       {
         'bucketId': bucketId,
@@ -340,7 +372,7 @@ class StorageFileApi {
       },
       options: options,
     );
-    return (response as Map<String, dynamic>)['message'] as String;
+    return response['message'] as String;
   }
 
   /// Copies an existing file.
@@ -359,7 +391,7 @@ class StorageFileApi {
     String? destinationBucket,
   }) async {
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/copy',
       {
         'bucketId': bucketId,
@@ -369,7 +401,7 @@ class StorageFileApi {
       },
       options: options,
     );
-    return (response as Map<String, dynamic>)['Key'] as String;
+    return response['Key'] as String;
   }
 
   /// Create signed URL to download file without requiring permissions. This URL
@@ -399,7 +431,7 @@ class StorageFileApi {
   }) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/sign/$finalPath',
       {
         'expiresIn': expiresIn,
@@ -407,8 +439,7 @@ class StorageFileApi {
       },
       options: options,
     );
-    final signedUrlPath =
-        (response as Map<String, dynamic>)['signedURL'] as String?;
+    final signedUrlPath = response['signedURL'] as String?;
     if (signedUrlPath == null) {
       throw StorageException('No signed URL returned by API');
     }
@@ -448,7 +479,7 @@ class StorageFileApi {
     String? cacheNonce,
   }) async {
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<List<dynamic>>(
       '$url/object/sign/$bucketId',
       {
         'expiresIn': expiresIn,
@@ -456,7 +487,7 @@ class StorageFileApi {
       },
       options: options,
     );
-    return (response as List).map<SignedUrlResult>((e) {
+    return response.map<SignedUrlResult>((e) {
       final signedUrlPath = e['signedURL'] as String?;
       final path = e['path'] as String? ?? '';
       if (signedUrlPath != null) {
@@ -493,7 +524,7 @@ class StorageFileApi {
     TransformOptions? transform,
     Map<String, String>? queryParameters,
     String? cacheNonce,
-  }) async {
+  }) {
     final fetchUrl = _downloadUri(
       path,
       transform: transform,
@@ -501,11 +532,10 @@ class StorageFileApi {
       cacheNonce: cacheNonce,
     );
 
-    final response = await _storageFetch.get(
+    return _storageFetch.get(
       fetchUrl.toString(),
       options: FetchOptions(headers, noResolveJson: true),
     );
-    return response as Uint8List;
   }
 
   /// Builds the download URL shared by [download] and [downloadStream],
@@ -575,7 +605,7 @@ class StorageFileApi {
   Future<FileObjectV2> getMetadata(String path) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
-    final response = await _storageFetch.get(
+    final response = await _storageFetch.get<Map<String, dynamic>>(
       '$url/object/info/$finalPath',
       options: options,
     );
@@ -669,13 +699,13 @@ class StorageFileApi {
   /// name. For example: `remove(['folder/image.png'])`.
   Future<List<FileObject>> remove(List<String> paths) async {
     final options = _fetchOptions;
-    final response = await _storageFetch.delete(
+    final response = await _storageFetch.delete<List<dynamic>>(
       '$url/object/$bucketId',
       {'prefixes': paths},
       options: options,
     );
     final fileObjects = List<FileObject>.from(
-      (response as List).map(
+      response.map(
         (item) => FileObject.fromJson(item),
       ),
     );
@@ -705,12 +735,12 @@ class StorageFileApi {
         queryParameters: {'transformations': 'true'},
       );
     }
-    final response = await _storageFetch.delete(
+    final response = await _storageFetch.delete<Map<String, dynamic>>(
       requestUrl.toString(),
       {},
       options: _fetchOptions,
     );
-    return (response as Map<String, dynamic>)['message'] as String;
+    return response['message'] as String;
   }
 
   /// Lists all the files within a bucket.
@@ -727,13 +757,13 @@ class StorageFileApi {
       ...searchOptions.toMap(),
     };
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<List<dynamic>>(
       '$url/object/list/$bucketId',
       body,
       options: options,
     );
     final fileObjects = List<FileObject>.from(
-      (response as List).map(
+      response.map(
         (item) => FileObject.fromJson(item),
       ),
     );
@@ -752,11 +782,11 @@ class StorageFileApi {
   Future<PaginatedListResult> listPaginated({
     PaginatedSearchOptions options = const PaginatedSearchOptions(),
   }) async {
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/list-v2/$bucketId',
       options.toMap(),
       options: _fetchOptions,
     );
-    return PaginatedListResult.fromJson(response as Map<String, dynamic>);
+    return PaginatedListResult.fromJson(response);
   }
 }
