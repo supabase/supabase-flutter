@@ -15,8 +15,8 @@ const supabasePublishableKey = String.fromEnvironment(
 ///
 /// The first test exercises the core flow through the repository (a JSON
 /// greeting over POST and GET, a plain-text transform, and a validation error),
-/// asserting on what each function returns. The second drives the app widgets to
-/// confirm the greeting card is wired to the function. Edge Functions are
+/// asserting on what each function returns. The second drives the app widgets
+/// to confirm the greeting card is wired to the function. Edge Functions are
 /// stateless, so there is nothing to clean up between runs.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -63,8 +63,8 @@ void main() {
     await expectLater(
       repository.countWords(''),
       throwsA(
-        isA<FunctionException>()
-            .having((error) => error.status, 'status', 400)
+        isA<FunctionsApiException>()
+            .having((error) => error.statusCode, 'statusCode', 400)
             .having(
               (error) => (error.details as Map)['error'],
               'details.error',
@@ -85,7 +85,8 @@ void main() {
   });
 }
 
-/// Pumps frames until [finder] matches at least one widget or [timeout] elapses.
+/// Pumps frames until [finder] matches at least one widget or [timeout]
+/// elapses.
 ///
 /// Invoking a function goes over the network, so the UI can't be settled with
 /// `pumpAndSettle`; this polls the widget tree instead.

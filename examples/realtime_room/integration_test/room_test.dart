@@ -12,8 +12,8 @@ const supabasePublishableKey = String.fromEnvironment(
 
 /// End-to-end test that drives the real app widgets against the local Supabase
 /// stack, exercising all three realtime features through the UI: Postgres
-/// Changes (a message round-tripping through the database), Presence (the online
-/// roster) and Broadcast (the typing indicator).
+/// Changes (a message round-tripping through the database), Presence (the
+/// online roster) and Broadcast (the typing indicator).
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -47,9 +47,9 @@ void main() {
     await tester.tap(find.text('Join room'));
     await tester.pumpAndSettle();
 
-    // Wait for the loading spinner to clear. The room only finishes loading once
-    // Postgres Changes replication is live, so a message sent after this is
-    // guaranteed to stream back rather than being missed during setup.
+    // Wait for the loading spinner to clear. The room only finishes loading
+    // once Postgres Changes replication is live, so a message sent after this
+    // is guaranteed to stream back rather than being missed during setup.
     await _pumpUntilGone(tester, find.byType(CircularProgressIndicator));
 
     // Presence: once subscribed, our own name appears in the roster.
@@ -100,7 +100,8 @@ void main() {
   });
 }
 
-/// Pumps frames until [finder] matches at least one widget or [timeout] elapses.
+/// Pumps frames until [finder] matches at least one widget or [timeout]
+/// elapses.
 ///
 /// Realtime updates arrive asynchronously over the network, so the UI can't be
 /// settled with `pumpAndSettle`; this polls the widget tree instead.

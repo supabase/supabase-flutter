@@ -7,7 +7,8 @@ class PostgrestClientOptions {
   /// fail with a retryable status code or a network error.
   final bool retryEnabled;
 
-  /// The number of retry attempts made for a retryable request before giving up.
+  /// The number of retry attempts made for a retryable request before giving
+  /// up.
   final int retryCount;
 
   /// The HTTP status codes that trigger an automatic retry.
@@ -33,7 +34,7 @@ class PostgrestClientOptions {
 
 class AuthClientOptions {
   final bool autoRefreshToken;
-  final GotrueAsyncStorage? pkceAsyncStorage;
+  final AuthAsyncStorage? pkceAsyncStorage;
   final AuthFlowType authFlowType;
 
   const AuthClientOptions({

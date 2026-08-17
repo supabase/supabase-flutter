@@ -2,8 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models.dart';
 
-/// All database access for the CRUD example lives here, so the UI stays thin and
-/// every `supabase.from(...)` call is easy to read and to exercise from an
+/// All database access for the CRUD example lives here, so the UI stays thin
+/// and every `supabase.from(...)` call is easy to read and to exercise from an
 /// integration test.
 class TasksRepository {
   TasksRepository(this._client);
@@ -26,7 +26,7 @@ class TasksRepository {
   /// * [search] matches the title case-insensitively (`ilike`).
   /// * [onlyIncomplete] hides finished tasks (`eq`).
   ///
-  /// Results are ordered by priority (highest first) then creation time.
+  /// Results are ordered by priority (highest first) then newest first.
   Future<List<Task>> fetchTasks({
     String? projectId,
     String? search,
@@ -47,7 +47,7 @@ class TasksRepository {
 
     final rows = await query
         .order('priority', ascending: false)
-        .order('created_at');
+        .order('created_at', ascending: false);
     return rows.map(Task.fromJson).toList();
   }
 

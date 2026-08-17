@@ -42,8 +42,8 @@ void main() {
         isFalse,
       );
     },
-    // The default relies on the FLUTTER_TEST environment variable, which is only
-    // readable through dart:io and therefore unavailable on web.
+    // The default relies on the FLUTTER_TEST environment variable, which is
+    // only readable through dart:io and therefore unavailable on web.
     skip: kIsWeb,
   );
 

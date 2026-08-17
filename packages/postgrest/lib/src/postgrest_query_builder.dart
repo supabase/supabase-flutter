@@ -1,14 +1,18 @@
 part of 'postgrest_builder.dart';
 
 /// {@template postgrest_query_builder}
-/// The query builder class provides a convenient interface to creating request queries.
+/// The query builder class provides a convenient interface to creating request
+/// queries.
 ///
-/// Allows the user to stack the filter functions before they call any of
+/// Call one of
 /// * select() - "get"
 /// * insert() - "post"
+/// * upsert() - "post"
 /// * update() - "patch"
 /// * delete() - "delete"
-/// Once any of these are called the filters are passed down to the Request.
+/// * count() - "head"
+/// first. Each of these returns a filter builder that allows the user to
+/// stack filter functions before the request is sent.
 /// {@endtemplate}
 class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// {@macro postgrest_query_builder}
@@ -53,13 +57,14 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// ```dart
   /// supabase.from('users').select('id, messages').count(CountOption.exact);
   /// ```
-  /// By appending [count] the return type is [PostgrestResponse]. Otherwise it's the data directly without the wrapper.
+  /// By appending [count] the return type is [PostgrestResponse]. Otherwise
+  /// it's the data directly without the wrapper.
   PostgrestFilterBuilder<PostgrestList> select([String columns = '*']) {
     // Remove whitespaces except when quoted
     var quoted = false;
-    final re = RegExp(r'\s');
+    final whitespaceRegularExpression = RegExp(r'\s');
     final cleanedColumns = columns.split('').map((c) {
-      if (re.hasMatch(c) && !quoted) {
+      if (whitespaceRegularExpression.hasMatch(c) && !quoted) {
         return '';
       }
       if (c == '"') {
@@ -68,7 +73,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       return c;
     }).join();
 
-    final url = overrideSearchParams('select', cleanedColumns);
+    final url = overrideSearchParameters('select', cleanedColumns);
     return PostgrestFilterBuilder(
       _copyWithType(
         url: url,
@@ -81,11 +86,13 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///
   /// By default no data is returned. Use a trailing [select] to return data.
   ///
-  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
-  /// to be either `NULL` or the default value of these columns.
-  /// Fields missing in all rows always use the default value of these columns.
+  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the
+  /// values of fields missing in a proper subset of rows to be either `NULL` or
+  /// the default value of these columns. Fields missing in all rows always use
+  /// the default value of these columns.
   ///
-  /// For single row insertions, missing fields will be set to default values when applicable.
+  /// For single row insertions, missing fields will be set to default values
+  /// when applicable.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -129,16 +136,19 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
 
   /// Perform an UPSERT on the table or view.
   ///
-  /// By specifying the [onConflict] parameter, you can make UPSERT work on a column(s) that has a UNIQUE constraint.
-  /// [ignoreDuplicates] Specifies if duplicate rows should be ignored and not inserted.
+  /// By specifying the [onConflict] parameter, you can make UPSERT work on a
+  /// column(s) that has a UNIQUE constraint. [ignoreDuplicates] Specifies if
+  /// duplicate rows should be ignored and not inserted.
   ///
   /// By default no data is returned. Use a trailing `select` to return data.
   ///
-  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the values of fields missing in a proper subset of rows
-  /// to be either `NULL` or the default value of these columns.
-  /// Fields missing in all rows always use the default value of these columns.
+  /// When inserting multiple rows in bulk, [defaultToNull] is used to set the
+  /// values of fields missing in a proper subset of rows to be either `NULL` or
+  /// the default value of these columns. Fields missing in all rows always use
+  /// the default value of these columns.
   ///
-  /// For single row insertions, missing fields will be set to default values when applicable.
+  /// For single row insertions, missing fields will be set to default values
+  /// when applicable.
   ///
   /// Default (not returning data):
   /// ```dart
@@ -264,7 +274,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final columns = [for (final element in newValues) ...element.keys];
     if (newValues.isNotEmpty) {
       final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
-      return appendSearchParams("columns", uniqueColumns);
+      return appendSearchParameters("columns", uniqueColumns);
     }
     return _url;
   }

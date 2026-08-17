@@ -147,7 +147,7 @@ void main() {
 
       await expectLater(
         () => client.from('users').insert({'name': 'foo'}),
-        throwsA(isA<PostgrestException>()),
+        throwsA(isA<PostgrestApiException>()),
       );
       expect(mock.callCount, 1);
     });
@@ -170,7 +170,7 @@ void main() {
 
       await expectLater(
         () => client.from('users').select(),
-        throwsA(isA<PostgrestException>()),
+        throwsA(isA<PostgrestApiException>()),
       );
       expect(mock.callCount, 1);
     });
@@ -208,7 +208,7 @@ void main() {
 
       await expectLater(
         () => client.from('users').select(),
-        throwsA(isA<PostgrestException>()),
+        throwsA(isA<PostgrestApiException>()),
       );
       expect(mock.callCount, 4);
     });
@@ -219,7 +219,7 @@ void main() {
 
       await expectLater(
         () => client.from('users').select().retry(enabled: false),
-        throwsA(isA<PostgrestException>()),
+        throwsA(isA<PostgrestApiException>()),
       );
       expect(mock.callCount, 1);
     });
@@ -232,7 +232,7 @@ void main() {
 
         await expectLater(
           () => client.from('users').select(),
-          throwsA(isA<PostgrestException>()),
+          throwsA(isA<PostgrestApiException>()),
         );
         expect(mock.callCount, 1);
       },
@@ -307,7 +307,7 @@ void main() {
 
       await expectLater(
         () => client.from('users').select(),
-        throwsA(isA<PostgrestException>()),
+        throwsA(isA<PostgrestApiException>()),
       );
       // Initial attempt + 1 retry.
       expect(mock.callCount, 2);
@@ -319,7 +319,7 @@ void main() {
 
       await expectLater(
         () => client.from('users').select(),
-        throwsA(isA<PostgrestException>()),
+        throwsA(isA<PostgrestApiException>()),
       );
       expect(mock.callCount, 1);
     });
@@ -359,7 +359,7 @@ void main() {
 
       await expectLater(
         () => client.from('users').select(),
-        throwsA(isA<PostgrestException>()),
+        throwsA(isA<PostgrestApiException>()),
       );
       expect(mock.callCount, 1);
     });
@@ -472,7 +472,8 @@ void main() {
 
     test('.retry(requestTimeout:) overrides the timeout per request', () async {
       // The client has no timeout, but the per-request override adds one that
-      // is shorter than every attempt, so each attempt times out and is retried.
+      // is shorter than every attempt, so each attempt times out and is
+      // retried.
       final mock = _MockRetryClient([_ok(), _ok()]);
       final client = PostgrestClient(
         'http://localhost:3000',

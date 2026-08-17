@@ -12,9 +12,9 @@ dynamic main() async {
   try {
     final response = await client.from('countries').select();
     print(response);
-  } on PostgrestException catch (e) {
+  } on PostgrestApiException catch (error) {
     // handle PostgrestError
-    print(e.code);
-    print(e.message);
+    print(error.errorCode);
+    print(error.message);
   }
 }

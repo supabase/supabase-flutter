@@ -362,9 +362,12 @@ void _showError(Object error) {
   String message;
   if (error is FunctionException) {
     final details = error.details;
+    final fallback = error is FunctionsApiException
+        ? 'Function failed with status ${error.statusCode}'
+        : error.message;
     message = details is Map && details['error'] is String
         ? details['error'] as String
-        : 'Function failed with status ${error.status}';
+        : fallback;
   } else {
     message = error.toString();
   }

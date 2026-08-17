@@ -1,0 +1,44 @@
+<br />
+<p align="center">
+  <a href="https://supabase.com">
+    <img alt="Supabase Logo" width="300" src="https://raw.githubusercontent.com/supabase/supabase/master/packages/common/assets/images/logo-preview.jpg">
+  </a>
+
+  <h1 align="center">supabase_storage</h1>
+
+  <p align="center">
+    Dart client library to interact with <a href="https://supabase.com/docs/guides/storage">Supabase Storage</a>.
+  </p>
+
+  <p align="center">
+    <a href="https://supabase.com/docs/guides/storage">Guides</a>
+    ·
+    <a href="https://supabase.com/docs/reference/dart/file-buckets-createbucket">Reference Docs</a>
+  </p>
+</p>
+
+<div align="center">
+
+[![pub package](https://img.shields.io/pub/v/supabase_storage.svg)](https://pub.dev/packages/supabase_storage)
+[![pub test](https://github.com/supabase/supabase-flutter/workflows/Test/badge.svg)](https://github.com/supabase/supabase-flutter/actions?query=workflow%3ATest)
+
+</div>
+
+> **Note**
+>
+> This package was published as `storage_client` up to and including v2. That package is discontinued in favour of `supabase_storage`.
+
+## Docs
+
+The docs can be found on the official Supabase website.
+
+- [Dart reference](https://supabase.com/docs/reference/dart/file-buckets-createbucket)
+- [Storage guide](https://supabase.com/docs/guides/storage)
+
+## License
+
+This repo is licensed under MIT.
+
+## Credits
+
+- https://github.com/supabase/storage-js - ported from supabase/storage-js

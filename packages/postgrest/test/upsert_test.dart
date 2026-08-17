@@ -10,12 +10,12 @@ void main() {
 
   group('UPSERT & onConflict tests', () {
     setUpAll(() async {
-      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+      postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
       await resetHelper.initialize(postgrest);
     });
 
     setUp(() {
-      postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+      postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
     });
 
     tearDown(() async {
@@ -26,7 +26,8 @@ void main() {
       // Clean up the imported_data table before starting the test
       await postgrest.from('imported_data').delete().neq('id', 0);
 
-      // Test data - 3 rows with unique constraint on external_id + source_system
+      // Test data - 3 rows with unique constraint on external_id +
+      // source_system
       final testData = [
         {
           'external_id': 'ext_001',
@@ -59,7 +60,8 @@ void main() {
       expect(insertResult[1]['external_id'], 'ext_002');
       expect(insertResult[2]['external_id'], 'ext_003');
 
-      // Step 2: UPSERT with first row from test data (without onConflict) - should fail
+      // Step 2: UPSERT with first row from test data (without onConflict) -
+      // should fail
       final duplicateData = [
         {
           'external_id': 'ext_001',
@@ -72,11 +74,16 @@ void main() {
       await expectLater(
         () => postgrest.from('imported_data').upsert(duplicateData).select(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '23505'),
+          isA<PostgrestApiException>().having(
+            (e) => e.errorCode,
+            'errorCode',
+            '23505',
+          ),
         ),
       );
 
-      // Step 3: UPSERT with first row from test data (with onConflict) - should succeed
+      // Step 3: UPSERT with first row from test data (with onConflict) - should
+      // succeed
       final updatedData = [
         {
           'external_id': 'ext_001',

@@ -61,7 +61,9 @@ Future<bool> _waitForPort(
   while (DateTime.now().isBefore(deadline)) {
     try {
       final socket = await Socket.connect('localhost', port);
-      await socket.close();
+      // Destroys rather than closes: close() only shuts the sending side down,
+      // and nothing reads this socket, so it would keep the process alive.
+      socket.destroy();
       return true;
     } on SocketException {
       await Future<void>.delayed(const Duration(milliseconds: 200));

@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
-import 'utils/local_stack.dart';
+import 'package:supabase_common/testing.dart';
 
 late SupabaseClient _supabase;
 
@@ -541,7 +541,8 @@ void main() {
 const _streamTimeout = Duration(seconds: 10);
 const _warmUpPrefix = 'warm_up_';
 
-SupabaseClient _createClient() => SupabaseClient(localStackUrl, serviceRoleKey);
+SupabaseClient _createClient() =>
+    SupabaseClient(localStackUrl, localStackServiceRoleKey);
 
 /// Listens to [stream] and asserts that it emits [expectedSnapshots] in order,
 /// where every snapshot is the result of [project] applied to the emitted rows.
@@ -594,9 +595,9 @@ Future<void> _expectSnapshots({
 
 /// Waits until every channel of [_supabase] has joined.
 ///
-/// The first emitted snapshot comes from PostgREST, which is fetched in parallel
-/// with the realtime subscription, so it does not imply that changes are being
-/// streamed yet.
+/// The first emitted snapshot comes from PostgREST, which is fetched in
+/// parallel with the realtime subscription, so it does not imply that changes
+/// are being streamed yet.
 Future<void> _waitUntilJoined() async {
   for (var attempt = 0; attempt < 200; attempt++) {
     final channels = _supabase.getChannels();

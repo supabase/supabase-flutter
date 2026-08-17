@@ -24,8 +24,9 @@ class RoomRepository {
   /// INSERT a message and return the stored row.
   ///
   /// The insert is all that's needed to update every other client: the
-  /// `messages` table is in the realtime publication, so the server streams this
-  /// row to every subscribed [RoomChannel] as a Postgres Changes insert event.
+  /// `messages` table is in the realtime publication, so the server streams
+  /// this row to every subscribed [RoomChannel] as a Postgres Changes insert
+  /// event.
   Future<Message> sendMessage({
     required String username,
     required String content,

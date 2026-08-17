@@ -83,8 +83,9 @@ class _GalleryPageState extends State<GalleryPage> {
     }
   }
 
-  /// Generates a fresh PNG and uploads it, then reloads the gallery. Ignores the
-  /// call while another upload is in flight so a double tap can't fire twice.
+  /// Generates a fresh PNG and uploads it, then reloads the gallery. Ignores
+  /// the call while another upload is in flight so a double tap can't fire
+  /// twice.
   Future<void> _upload() async {
     if (_mutating) return;
     setState(() => _mutating = true);
@@ -137,8 +138,8 @@ class _GalleryPageState extends State<GalleryPage> {
                   final image = _images[index];
                   return _GalleryTile(
                     // A downscaled, cropped thumbnail keeps the grid light: the
-                    // resize happens server-side, so the app never downloads the
-                    // full-size image here.
+                    // resize happens server-side, so the app never downloads
+                    // the full-size image here.
                     url: _repository.imageUrl(
                       image.path,
                       transform: TransformPreset.thumbnail.options,

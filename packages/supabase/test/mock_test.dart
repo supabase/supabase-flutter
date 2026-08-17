@@ -1,4 +1,3 @@
-// ignore_for_file: deprecated_member_use_from_same_package
 // The typed table access API under test is annotated @experimental.
 // ignore_for_file: experimental_member_use
 
@@ -35,7 +34,8 @@ void main() {
   bool hasListener = false;
   StreamSubscription<dynamic>? listener;
 
-  /// `testFilter` is used to test incoming realtime filter. The value should match the realtime filter set by the library.
+  /// `testFilter` is used to test incoming realtime filter. The value should
+  /// match the realtime filter set by the library.
   Future<void> handleRequests(
     HttpServer server, {
     String? expectedFilter,
@@ -89,6 +89,16 @@ void main() {
           ..headers.contentType = ContentType.json
           ..write(jsonString);
         await request.response.close();
+      } else if (url == '/rest/v1/todos?select=%2A&order=id.asc.nullslast') {
+        final jsonString = jsonEncode([
+          {'id': 1, 'task': 'task 1', 'status': true},
+          {'id': 2, 'task': 'task 2', 'status': false},
+        ]);
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonString);
+        await request.response.close();
       } else if (url == '/rest/v1/todos?select=%2A&order=id.desc.nullslast') {
         final jsonString = jsonEncode([
           {'id': 2, 'task': 'task 2', 'status': false},
@@ -128,9 +138,9 @@ void main() {
             /// Protocol 2.0.0 text frames are positional arrays:
             /// [join_ref, ref, topic, event, payload].
             ///
-            /// `filter` might be there or not depending on whether is a filter set
-            /// to the realtime subscription, so include the filter if the request
-            /// includes a filter.
+            /// `filter` might be there or not depending on whether is a filter
+            /// set to the realtime subscription, so include the filter if the
+            /// request includes a filter.
             final requestJson = jsonDecode(message as String) as List;
             final ref = requestJson[1];
             final topic = requestJson[2];
@@ -196,11 +206,7 @@ void main() {
                   'type': 'INSERT',
                   'filter': ?realtimeFilter,
                   'columns': [
-                    {
-                      'name': 'id',
-                      'type': 'int4',
-                      'type_modifier': 4294967295,
-                    },
+                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
                     {
                       'name': 'task',
                       'type': 'text',
@@ -376,9 +382,7 @@ void main() {
     supabase = SupabaseClient(
       'http://${mockServer.address.host}:${mockServer.port}',
       apiKey,
-      headers: {
-        'X-Client-Info': 'supabase-flutter/0.0.0',
-      },
+      headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
     );
     customHeadersClient = SupabaseClient(
       'http://${mockServer.address.host}:${mockServer.port}',
@@ -392,7 +396,8 @@ void main() {
     await supabase.dispose();
     await customHeadersClient.dispose();
 
-    //Manually disconnect the socket channel to avoid automatic retrying to reconnect. This caused failing in later executed tests.
+    // Manually disconnect the socket channel to avoid automatic retrying to
+    // reconnect. This caused failing in later executed tests.
     await supabase.removeAllChannels();
     await customHeadersClient.removeAllChannels();
 
@@ -457,7 +462,8 @@ void main() {
         stream.listen(expectAsync1((event) {}, count: 5));
         stream.listen(expectAsync1((event) {}, count: 5));
 
-        // All realtime events are done emitting, so should receive the current data
+        // All realtime events are done emitting, so should receive the current
+        // data
       });
 
       test("Create two stream to same table", () async {
@@ -468,15 +474,19 @@ void main() {
         stream2.listen(expectAsync1((event) {}, count: 5));
       });
 
-      test("stream should emit the last emitted data when listened to", () async {
-        final stream = supabase.from('todos').stream(primaryKey: ['id']);
-        stream.listen(expectAsync1((event) {}, count: 5));
+      test(
+        "stream should emit the last emitted data when listened to",
+        () async {
+          final stream = supabase.from('todos').stream(primaryKey: ['id']);
+          stream.listen(expectAsync1((event) {}, count: 5));
 
-        await Future.delayed(Duration(seconds: 3));
+          await Future.delayed(Duration(seconds: 3));
 
-        // All realtime events are done emitting, so should receive the current data
-        stream.listen(expectAsync1((event) {}, count: 1));
-      });
+          // All realtime events are done emitting, so should receive the
+          // current data
+          stream.listen(expectAsync1((event) {}, count: 1));
+        },
+      );
       test('emits data', () {
         final stream = supabase.from('todos').stream(primaryKey: ['id']);
         expect(
@@ -556,7 +566,8 @@ void main() {
 
         await Future.delayed(Duration(seconds: 3));
 
-        // All realtime events are done emitting, so should receive the current data
+        // All realtime events are done emitting, so should receive the current
+        // data
         stream.listen(expectAsync1((event) {}, count: 1));
       });
 
@@ -581,11 +592,41 @@ void main() {
         );
       });
 
-      test('with order', () {
+      test('order defaults to ascending', () {
         final stream = supabase
             .from('todos')
             .stream(primaryKey: ['id'])
             .order('id');
+        expect(
+          stream,
+          emitsInOrder([
+            containsAllInOrder([
+              {'id': 1, 'task': 'task 1', 'status': true},
+              {'id': 2, 'task': 'task 2', 'status': false},
+            ]),
+            containsAllInOrder([
+              {'id': 1, 'task': 'task 1', 'status': true},
+              {'id': 2, 'task': 'task 2', 'status': false},
+              {'id': 3, 'task': 'task 3', 'status': true},
+            ]),
+            containsAllInOrder([
+              {'id': 1, 'task': 'task 1', 'status': true},
+              {'id': 2, 'task': 'task 2 updated', 'status': false},
+              {'id': 3, 'task': 'task 3', 'status': true},
+            ]),
+            containsAllInOrder([
+              {'id': 1, 'task': 'task 1', 'status': true},
+              {'id': 3, 'task': 'task 3', 'status': true},
+            ]),
+          ]),
+        );
+      });
+
+      test('with descending order', () {
+        final stream = supabase
+            .from('todos')
+            .stream(primaryKey: ['id'])
+            .order('id', ascending: false);
         expect(
           stream,
           emitsInOrder([
@@ -615,7 +656,7 @@ void main() {
         final stream = supabase
             .from('todos')
             .stream(primaryKey: ['id'])
-            .order('id')
+            .order('id', ascending: false)
             .limit(2);
         expect(
           stream,
@@ -661,7 +702,8 @@ void main() {
     });
 
     group('realtime', () {
-      /// Constructing Supabase query within a realtime callback caused exception
+      /// Constructing Supabase query within a realtime callback caused
+      /// exception
       /// https://github.com/supabase-community/supabase-flutter/issues/81
       test('Calling Postgrest within realtime callback', () async {
         supabase
@@ -766,15 +808,6 @@ void main() {
 
       final stream = supabase.from('todos').stream(primaryKey: ['id']);
 
-      expect(stream, emits(isList));
-    });
-  });
-
-  group('Deprecated execute method', () {
-    test('should work with deprecated execute method', () {
-      unawaited(handleRequests(mockServer));
-      final streamBuilder = supabase.from('todos').stream(primaryKey: ['id']);
-      final stream = streamBuilder.execute();
       expect(stream, emits(isList));
     });
   });

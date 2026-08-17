@@ -7,8 +7,8 @@ const _ok = 0;
 const _failure = 1;
 
 const _noTerminalMessage =
-    'The launcher needs an interactive terminal to pick an example. '
-    'Run it directly in your terminal.';
+    'The launcher needs an interactive terminal to pick an example. Run it '
+    'directly in your terminal.';
 
 final _logger = Logger();
 
@@ -22,9 +22,9 @@ class Example {
 
 /// Boots the local Supabase stack, asks which example to run and runs it.
 ///
-/// Any [args] are forwarded to `flutter run`, replacing the default
+/// Any [arguments] are forwarded to `flutter run`, replacing the default
 /// `-d chrome`, so `dart run -- -d macos` runs the chosen example on macOS.
-Future<int> run(List<String> args) async {
+Future<int> run(List<String> arguments) async {
   _printBanner();
 
   final root = _findExamplesRoot();
@@ -90,14 +90,14 @@ Future<int> run(List<String> args) async {
     _logger
       ..info('')
       ..info(
-        '${styleBold.wrap('Running')} ${cyan.wrap(selected.name)} '
-        'against ${cyan.wrap(url)}',
+        '${styleBold.wrap('Running')} ${cyan.wrap(selected.name)} against '
+        '${cyan.wrap(url)}',
       );
 
     // Serve on a fixed origin so it matches the WebAuthn rp_origins configured
     // in supabase/config.toml, which the passkeys example relies on.
-    final flutterArgs = args.isNotEmpty
-        ? args
+    final flutterArguments = arguments.isNotEmpty
+        ? arguments
         : const [
             '-d',
             'chrome',
@@ -110,7 +110,7 @@ Future<int> run(List<String> args) async {
       'flutter',
       [
         'run',
-        ...flutterArgs,
+        ...flutterArguments,
         '--dart-define=SUPABASE_URL=$url',
         '--dart-define=SUPABASE_PUBLISHABLE_KEY=$key',
       ],
@@ -119,7 +119,8 @@ Future<int> run(List<String> args) async {
     );
 
     // Forward Ctrl-C to flutter so it shuts down and control returns here,
-    // letting the cleanup below stop Supabase, rather than killing the launcher.
+    // letting the cleanup below stop Supabase, rather than killing the
+    // launcher.
     final sigint = ProcessSignal.sigint.watch().listen(
       (_) => process.kill(ProcessSignal.sigint),
     );
@@ -213,10 +214,10 @@ Future<Map<String, String>> _supabaseStatus(Directory root) async {
     root.path,
   ]);
   if (result.exitCode != _ok) return {};
-  return _parseEnv('${result.stdout}');
+  return _parseEnvironment('${result.stdout}');
 }
 
-Map<String, String> _parseEnv(String output) {
+Map<String, String> _parseEnvironment(String output) {
   final env = <String, String>{};
   for (final line in const LineSplitter().convert(output)) {
     final index = line.indexOf('=');

@@ -7,8 +7,8 @@ import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
-import 'package:supabase_flutter/src/constants.dart';
-import 'package:supabase_flutter/src/flutter_go_true_client_options.dart';
+import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
+import 'package:supabase_flutter/src/flutter_auth_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
@@ -43,47 +43,50 @@ class Supabase {
   static Supabase get instance {
     assert(
       _instance._isInitialized,
-      'You must initialize the supabase instance before calling Supabase.instance',
+      'You must initialize the supabase instance before calling '
+      'Supabase.instance',
     );
     return _instance;
   }
 
   /// Initialize the current supabase instance
   ///
-  /// This must be called only once. If called more than once, an
-  /// [AssertionError] is thrown
+  /// This should only be called once. If called again while an instance is
+  /// already initialized, initialization is skipped and the existing
+  /// instance is returned.
   ///
   /// [url] and [publishableKey] can be found on your Supabase dashboard.
-  /// Use the `publishable` (anon) key here — never the secret key in a
+  /// Use the `publishable` (anon) key here, never the secret key in a
   /// Flutter app.
-  ///
-  /// You can access none public schema by passing different [schema].
   ///
   /// Default headers can be overridden by specifying [headers].
   ///
-  /// Pass [localStorage] to override the default local storage option used to
-  /// persist auth.
-  ///
   /// Custom http client can be used by passing [httpClient] parameter.
   ///
-  /// [storageRetryAttempts] specifies how many retry attempts there should be
-  /// to upload a file to Supabase storage when failed due to network
-  /// interruption.
+  /// [realtimeClientOptions], [postgrestOptions], and [storageOptions]
+  /// configure their respective underlying clients, for example
+  /// `storageOptions.retryAttempts` controls how many retry attempts there
+  /// should be to upload a file to Supabase storage when it fails due to a
+  /// network interruption.
   ///
-  /// Set [authFlowType] to [AuthFlowType.implicit] to use the old implicit flow for authentication
+  /// [authOptions] configures authentication behavior. Pass a custom
+  /// [FlutterAuthClientOptions.localStorage] there to override the default
+  /// local storage option used to persist auth.
+  ///
+  /// Set [AuthClientOptions.authFlowType] on [authOptions] to
+  /// [AuthFlowType.implicit] to use the old implicit flow for authentication
   /// involving deep links.
   ///
-  /// PKCE flow uses shared preferences for storing the code verifier by default.
-  /// Pass a custom storage to [pkceAsyncStorage] to override the behavior.
+  /// PKCE flow uses shared preferences for storing the code verifier by
+  /// default. Pass a custom storage to [AuthClientOptions.pkceAsyncStorage]
+  /// on [authOptions] to override the behavior.
   ///
-  /// If [debug] is set to `true`, debug logs will be printed in debug console. Default is `kDebugMode`.
+  /// If [debug] is set to `true`, debug logs will be printed in debug
+  /// console. Defaults to `kDebugMode`, and is disabled by default while
+  /// running in a Flutter test unless [debug] is explicitly set to `true`.
   static Future<Supabase> initialize({
     required String url,
-    String? publishableKey,
-    @Deprecated(
-      'Use publishableKey instead. anonKey will be removed in a future major version.',
-    )
-    String? anonKey,
+    required String publishableKey,
     Map<String, String>? headers,
     Client? httpClient,
     RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
@@ -95,12 +98,6 @@ class Supabase {
     Future<String?> Function()? accessToken,
     bool? debug,
   }) async {
-    assert(
-      publishableKey != null || anonKey != null,
-      'Either publishableKey or anonKey must be provided.',
-    );
-    final effectiveKey = publishableKey ?? anonKey!;
-
     if (_instance._isInitialized) {
       _log.info('Supabase is already initialized. Skipping reinitialization.');
       return _instance;
@@ -112,7 +109,8 @@ class Supabase {
       _instance._logSubscription = Logger('supabase').onRecord.listen((record) {
         if (record.level >= Level.INFO) {
           debugPrint(
-            '${record.loggerName}: ${record.level.name}: ${record.message} ${record.error ?? ""}',
+            '${record.loggerName}: ${record.level.name}: ${record.message} '
+            '${record.error ?? ""}',
           );
         }
       });
@@ -122,22 +120,21 @@ class Supabase {
 
     if (authOptions.pkceAsyncStorage == null) {
       authOptions = authOptions.copyWith(
-        pkceAsyncStorage: SharedPreferencesGotrueAsyncStorage(),
+        pkceAsyncStorage: SharedPreferencesAuthAsyncStorage(),
       );
     }
     if (authOptions.localStorage == null) {
       authOptions = authOptions.copyWith(
         localStorage: authOptions.persistSession
             ? SharedPreferencesLocalStorage(
-                persistSessionKey:
-                    "sb-${Uri.parse(url).host.split(".").first}-auth-token",
+                persistSessionKey: defaultPersistSessionKey(url),
               )
             : const EmptyLocalStorage(),
       );
     }
     _instance._init(
       url,
-      effectiveKey,
+      publishableKey,
       httpClient: httpClient,
       customHeaders: headers,
       realtimeClientOptions: realtimeClientOptions,
@@ -153,7 +150,8 @@ class Supabase {
       _instance._supabaseAuth = supabaseAuth;
       await supabaseAuth.initialize(options: authOptions);
 
-      // Wrap `recoverSession()` in a `CancelableOperation` so that it can be canceled in dispose
+      // Wrap `recoverSession()` in a `CancelableOperation` so that it can be
+      // canceled in dispose
       // if still in progress
       _instance._restoreSessionCancellableOperation =
           CancelableOperation.fromFuture(supabaseAuth.recoverSession());
@@ -172,16 +170,29 @@ class Supabase {
   /// Whether the Supabase instance has been initialized. Useful for debugging.
   bool get isInitialized => _isInitialized;
 
+  SupabaseClient? _client;
+
   /// The supabase client for this instance
   ///
-  /// Throws an error if [Supabase.initialize] was not called.
-  late SupabaseClient client;
+  /// Throws a [StateError] if [Supabase.initialize] was not called, or if the
+  /// instance has since been disposed.
+  SupabaseClient get client {
+    final currentClient = _client;
+    if (currentClient == null) {
+      throw StateError(
+        'You must initialize the supabase instance before calling '
+        'Supabase.instance.client',
+      );
+    }
+    return currentClient;
+  }
 
   SupabaseAuth? _supabaseAuth;
 
   bool _debugEnable = false;
 
-  /// Wraps the `recoverSession()` call so that it can be terminated when `dispose()` is called
+  /// Wraps the `recoverSession()` call so that it can be terminated when
+  /// `dispose()` is called
   ///
   /// Only set when [Supabase.initialize] is called without a custom
   /// `accessToken`, since session recovery is skipped for third-party auth.
@@ -202,14 +213,56 @@ class Supabase {
   StreamSubscription<dynamic>? _logSubscription;
 
   /// Dispose the instance to free up resources.
+  ///
+  /// Calling this on an instance that is not initialized does nothing, so it
+  /// is safe to call more than once.
   Future<void> dispose() async {
-    _targetLifecycleState = null;
-    await _restoreSessionCancellableOperation?.cancel();
-    await _logSubscription?.cancel();
-    await client.dispose();
-    _instance._supabaseAuth?.dispose();
-    _lifecycleListener?.dispose();
+    final currentClient = _client;
+    if (currentClient == null) return;
+
+    final supabaseAuth = _supabaseAuth;
+    final lifecycleListener = _lifecycleListener;
+    final restoreSession = _restoreSessionCancellableOperation;
+    final logSubscription = _logSubscription;
+    final pendingLifecycleOperation = _pendingLifecycleOperation;
+
+    _client = null;
+    _supabaseAuth = null;
+    _restoreSessionCancellableOperation = null;
+    _lifecycleListener = null;
+    _logSubscription = null;
     _isInitialized = false;
+
+    _targetLifecycleState = null;
+    lifecycleListener?.dispose();
+
+    await _disposeAll([
+      () => restoreSession?.cancel(),
+      () => logSubscription?.cancel(),
+      () => pendingLifecycleOperation,
+      currentClient.dispose,
+      () => supabaseAuth?.dispose(),
+    ]);
+  }
+
+  /// Runs every step, then rethrows the first error any of them threw.
+  static Future<void> _disposeAll(List<FutureOr<void> Function()> steps) async {
+    Object? firstError;
+    StackTrace? firstStackTrace;
+
+    for (final step in steps) {
+      try {
+        await step();
+      } catch (error, stackTrace) {
+        _log.warning('Error while disposing Supabase', error, stackTrace);
+        firstError ??= error;
+        firstStackTrace ??= stackTrace;
+      }
+    }
+
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError, firstStackTrace!);
+    }
   }
 
   void _init(
@@ -225,10 +278,10 @@ class Supabase {
     required Future<String?> Function()? accessToken,
   }) {
     final headers = {
-      ...Constants.defaultHeaders,
+      ...SupabaseFlutterConstants.defaultHeaders,
       ...?customHeaders,
     };
-    client = SupabaseClient(
+    final newClient = _client = SupabaseClient(
       supabaseUrl,
       supabaseKey,
       httpClient: httpClient,
@@ -245,7 +298,7 @@ class Supabase {
     // flutter web hot-restart.
     if (kDebugMode) {
       disposePreviousClient();
-      markClientToDispose(client);
+      markClientToDispose(newClient);
     }
 
     _setupLifecycleListener();
@@ -312,7 +365,7 @@ class Supabase {
       // paused or detached — disconnect the WebSocket if it is active.
       // These states are not triggered on web
       if (realtime.isConnected ||
-          realtime.connState == SocketStates.connecting) {
+          realtime.connectionState == SocketState.connecting) {
         await realtime.disconnect();
       }
     }

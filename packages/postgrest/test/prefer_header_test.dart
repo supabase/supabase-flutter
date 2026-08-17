@@ -18,7 +18,7 @@ void main() {
   setUp(() {
     customHttpClient = CustomHttpClient();
     postgrest = PostgrestClient(
-      rootUrl,
+      localStackRestUrl,
       headers: apiHeaders,
       httpClient: customHttpClient,
     );

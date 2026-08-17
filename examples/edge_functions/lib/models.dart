@@ -8,8 +8,8 @@ class Greeting {
 
   factory Greeting.fromJson(Map<String, dynamic> json) => Greeting(
     message: json['message'] as String,
-    // How the function was invoked (`GET` or `POST`), echoed back so the app can
-    // show that the same function was reached two different ways.
+    // How the function was invoked (`GET` or `POST`), echoed back so the app
+    // can show that the same function was reached two different ways.
     method: json['method'] as String,
     // The `x-greeting-source` header the app sent, echoed back to show that
     // custom headers reach the function.

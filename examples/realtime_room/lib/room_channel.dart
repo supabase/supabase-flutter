@@ -7,15 +7,15 @@ import 'models.dart';
 /// A single realtime channel for the room, wrapping the three realtime features
 /// this example demonstrates:
 ///
-/// * **Postgres Changes** stream inserts and deletes on the `messages` table, so
-///   the chat log stays in sync without re-fetching.
-/// * **Broadcast** relays ephemeral "typing" pings that are never written to the
-///   database, only forwarded to the other connected clients.
+/// * **Postgres Changes** stream inserts and deletes on the `messages` table,
+///   so the chat log stays in sync without re-fetching.
+/// * **Broadcast** relays ephemeral "typing" pings that are never written to
+///   the database, only forwarded to the other connected clients.
 /// * **Presence** tracks who is currently in the room and exposes the live
 ///   roster.
 ///
-/// The channel is created but not connected in the constructor; call [subscribe]
-/// to join and [dispose] to leave and release the streams.
+/// The channel is created but not connected in the constructor; call
+/// [subscribe] to join and [dispose] to leave and release the streams.
 class RoomChannel {
   RoomChannel({
     required SupabaseClient client,
@@ -24,14 +24,17 @@ class RoomChannel {
   }) : _client = client,
        _channel = client.channel(
          roomName,
-         // `self: true` echoes our own broadcast and presence events back to us,
-         // so this client also shows up in its own roster.
+         // `self: true` echoes our own broadcast and presence events back to
+         // us, so this client also shows up in its own roster.
          //
          // `replicationReady: true` asks the server to emit a system event once
          // the replication backing Postgres Changes is live. Without it, a row
          // inserted right after joining can be missed, because replication is
          // set up asynchronously after the join is confirmed.
-         opts: const RealtimeChannelConfig(self: true, replicationReady: true),
+         options: const RealtimeChannelConfig(
+           self: true,
+           replicationReady: true,
+         ),
        );
 
   final SupabaseClient _client;
@@ -49,10 +52,12 @@ class RoomChannel {
   final _typing = StreamController<String>.broadcast();
   final _onlineUsers = StreamController<List<OnlineUser>>.broadcast();
 
-  /// A message someone added to the room (from a Postgres Changes insert event).
+  /// A message someone added to the room (from a Postgres Changes insert
+  /// event).
   Stream<Message> get onMessageInserted => _messageInserted.stream;
 
-  /// The id of a message someone removed (from a Postgres Changes delete event).
+  /// The id of a message someone removed (from a Postgres Changes delete
+  /// event).
   Stream<String> get onMessageDeleted => _messageDeleted.stream;
 
   /// The username of another client that is currently typing (from a broadcast
@@ -65,8 +70,9 @@ class RoomChannel {
   static const _typingEvent = 'typing';
 
   /// Registers the realtime listeners and joins the channel. Completes once the
-  /// server confirms both the subscription and that Postgres Changes replication
-  /// is live, so a message sent right afterwards is guaranteed to stream back.
+  /// server confirms both the subscription and that Postgres Changes
+  /// replication is live, so a message sent right afterwards is guaranteed to
+  /// stream back.
   Future<void> subscribe() {
     final ready = Completer<void>();
 
@@ -79,8 +85,8 @@ class RoomChannel {
           callback: (payload) =>
               _messageInserted.add(Message.fromJson(payload.newRecord)),
         )
-        // Postgres Changes: deleted rows. The delete payload carries the removed
-        // row under `oldRecord`.
+        // Postgres Changes: deleted rows. The delete payload carries the
+        // removed row under `oldRecord`.
         .onPostgresChanges(
           event: PostgresChangeEvent.delete,
           schema: 'public',
@@ -116,7 +122,8 @@ class RoomChannel {
         .subscribe((status, error) {
           if (status == RealtimeSubscribeStatus.subscribed) {
             // Announce ourselves to the room now that we're connected. The
-            // payload is arbitrary JSON the other clients read back as presence.
+            // payload is arbitrary JSON the other clients read back as
+            // presence.
             unawaited(
               _channel.track({
                 'username': username,

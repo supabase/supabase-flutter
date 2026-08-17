@@ -13,25 +13,45 @@ void main() {
   final resetHelper = ResetHelper();
 
   setUpAll(() async {
-    postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+    postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
     await resetHelper.initialize(postgrest);
   });
 
   setUp(() {
-    postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+    postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
   });
 
   tearDown(() async {
     await resetHelper.reset();
   });
 
-  test('order', () async {
+  test('order defaults to ascending', () async {
     final response = await postgrest.from('users').select().order('username');
     expect(
-      response[1]['username'],
-      'kiwicopple',
+      response.map((row) => row['username']),
+      [
+        'awailas',
+        'dragarcia',
+        'kiwicopple',
+        'supabot',
+      ],
     );
-    expect(response[3]['username'], 'awailas');
+  });
+
+  test('order descending', () async {
+    final response = await postgrest
+        .from('users')
+        .select()
+        .order('username', ascending: false);
+    expect(
+      response.map((row) => row['username']),
+      [
+        'supabot',
+        'kiwicopple',
+        'dragarcia',
+        'awailas',
+      ],
+    );
   });
 
   test('order on multiple columns', () async {
@@ -39,7 +59,7 @@ void main() {
         .from('users')
         .select()
         .order('status', ascending: true)
-        .order('username');
+        .order('username', ascending: false);
     expect(
       response.map((row) => row['status']),
       [
@@ -66,7 +86,7 @@ void main() {
         .select()
         .gt('username', 'b')
         .lt('username', 'r')
-        .order('username');
+        .order('username', ascending: false);
     expect(
       response.map((row) => row['username']),
       [
@@ -92,7 +112,11 @@ void main() {
         ''',
         )
         .eq("username", "supabot")
-        .order("created_at", referencedTable: "messages.reactions")
+        .order(
+          "created_at",
+          referencedTable: "messages.reactions",
+          ascending: false,
+        )
         .single();
 
     final messages = data['messages'] as List;
@@ -222,7 +246,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );
@@ -388,7 +412,11 @@ void main() {
       await expectLater(
         () => postgrest.from('users').select().maybeSingle(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+          isA<PostgrestApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            406,
+          ),
         ),
       );
     });
@@ -403,18 +431,27 @@ void main() {
             .select()
             .maybeSingle(),
         throwsA(
-          isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+          isA<PostgrestApiException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            406,
+          ),
         ),
       );
     });
 
     test(
-      'maybeSingle followed by another transformer preserves the maybeSingle status',
+      'maybeSingle followed by another transformer preserves the maybeSingle '
+      'status',
       () async {
         await expectLater(
           () => postgrest.from('channels').select().maybeSingle().limit(2),
           throwsA(
-            isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+            isA<PostgrestApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              406,
+            ),
           ),
         );
       },
@@ -430,7 +467,11 @@ void main() {
               .maybeSingle()
               .withConverter((data) => data?.entries.length),
           throwsA(
-            isA<PostgrestException>().having((e) => e.code, 'code', '406'),
+            isA<PostgrestApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              406,
+            ),
           ),
         );
       },
@@ -478,7 +519,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );
@@ -550,7 +591,8 @@ void main() {
     });
 
     test(
-      'maxAffected works with select operations (sets headers but likely ineffective)',
+      'maxAffected works with select operations (sets headers but likely '
+      'ineffective)',
       () async {
         try {
           await postgrestCustomHttpClient.from('users').select().maxAffected(2);
@@ -579,7 +621,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );
@@ -621,7 +663,7 @@ void main() {
     setUp(() {
       customHttpClient = CustomHttpClient();
       postgrestCustomHttpClient = PostgrestClient(
-        rootUrl,
+        localStackRestUrl,
         headers: apiHeaders,
         httpClient: customHttpClient,
       );

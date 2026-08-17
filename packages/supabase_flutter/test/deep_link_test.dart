@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'utils.dart';
 import 'widget_test_stubs.dart';
 
 void main() {
@@ -47,7 +48,8 @@ void main() {
     });
 
     test(
-      'Having `code` as the query parameter triggers `getSessionFromUrl` call on initialize',
+      'Having `code` as the query parameter triggers `getSessionFromUrl` call '
+      'on initialize',
       () async {
         // Wait for the initial app link to be handled, as this is an async
         // process when mocking the event channel.
@@ -60,7 +62,7 @@ void main() {
 
   group('Deep Link with implicit token while PKCE flow is configured', () {
     late final GetUserHttpClient getUserHttpClient;
-    late final Future<AuthState> signedInState;
+    late final Future<AuthState> userUpdatedState;
 
     setUp(() async {
       getUserHttpClient = GetUserHttpClient('new@email.com');
@@ -69,9 +71,9 @@ void main() {
         mockMethodChannel: false,
         mockEventChannel: true,
         initialLink:
-            'com.supabase://callback/#access_token=my-access-token'
-            '&expires_in=3600&refresh_token=my-refresh-token'
-            '&token_type=bearer&type=email_change',
+            'com.supabase://callback/#access_token=my-access-token&expires_in=3'
+            '600&refresh_token=my-refresh-token&token_type=bearer&type=email_ch'
+            'ange',
       );
       await Supabase.initialize(
         url: supabaseUrl,
@@ -84,14 +86,16 @@ void main() {
         ),
       );
 
-      signedInState = Supabase.instance.client.auth.onAuthStateChange
-          .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
+      // The link confirms an email change, so it emits `userUpdated` rather
+      // than `signedIn`.
+      userUpdatedState = Supabase.instance.client.auth.onAuthStateChange
+          .firstWhere((state) => state.event == AuthChangeEvent.userUpdated)
           .timeout(const Duration(seconds: 5));
     });
 
     test('Implicit token in the fragment triggers `getSessionFromUrl` and '
         'updates the current user', () async {
-      final state = await signedInState;
+      final state = await userUpdatedState;
       expect(state.session?.user.email, 'new@email.com');
       expect(getUserHttpClient.requestCount, 1);
       expect(getUserHttpClient.lastRequestUrl?.path, endsWith('/user'));
@@ -182,7 +186,7 @@ void main() {
     test(
       'persists the session to the default storage when persistSession is true',
       () async {
-        SharedPreferences.setMockInitialValues({});
+        mockSharedPreferences();
         final pkceHttpClient = PkceHttpClient();
 
         mockAppLink(
@@ -209,15 +213,15 @@ void main() {
             .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
             .timeout(const Duration(seconds: 5));
 
-        final preferences = await SharedPreferences.getInstance();
-        expect(preferences.getString(persistSessionKey), isNotNull);
+        final preferences = SharedPreferencesAsync();
+        expect(await preferences.getString(persistSessionKey), isNotNull);
       },
     );
 
     test(
       'does not persist the session when persistSession is false',
       () async {
-        SharedPreferences.setMockInitialValues({});
+        mockSharedPreferences();
         final pkceHttpClient = PkceHttpClient();
 
         mockAppLink(
@@ -245,24 +249,23 @@ void main() {
             .firstWhere((state) => state.event == AuthChangeEvent.signedIn)
             .timeout(const Duration(seconds: 5));
 
-        final preferences = await SharedPreferences.getInstance();
-        expect(preferences.getString(persistSessionKey), isNull);
+        final preferences = SharedPreferencesAsync();
+        expect(await preferences.getString(persistSessionKey), isNull);
       },
     );
   });
 
   group('Deep Link with error query parameter', () {
-    late final Completer<AuthException> errorCompleter;
+    late final Completer<AuthApiException> errorCompleter;
 
     setUp(() async {
-      errorCompleter = Completer<AuthException>();
+      errorCompleter = Completer<AuthApiException>();
 
       mockAppLink(
         mockMethodChannel: false,
         mockEventChannel: true,
         initialLink:
-            'com.supabase://callback/?error=access_denied'
-            '&error_code=403',
+            'com.supabase://callback/?error=access_denied&error_code=403',
       );
       await Supabase.initialize(
         url: supabaseUrl,
@@ -278,7 +281,7 @@ void main() {
       Supabase.instance.client.auth.onAuthStateChange.listen(
         (_) {},
         onError: (error) {
-          if (error is AuthException && !errorCompleter.isCompleted) {
+          if (error is AuthApiException && !errorCompleter.isCompleted) {
             errorCompleter.complete(error);
           }
         },
@@ -286,12 +289,12 @@ void main() {
     });
 
     test('Error query parameter triggers `getSessionFromUrl` and surfaces an '
-        'AuthException', () async {
+        'AuthApiException', () async {
       final exception = await errorCompleter.future.timeout(
         const Duration(seconds: 5),
       );
-      expect(exception.code, 'access_denied');
-      expect(exception.statusCode, '403');
+      expect(exception.errorCode, 'access_denied');
+      expect(exception.statusCode, 403);
     });
   });
 }

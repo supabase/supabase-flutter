@@ -1,4 +1,4 @@
--- Table used to exercise postgres_changes in the realtime_client integration tests.
+-- Table used to exercise postgres_changes in the supabase_realtime integration tests.
 -- Ported from the former infra/realtime_client/db/00-schema.sql (the roles and
 -- schemas it created by hand are already provided by the Supabase CLI stack).
 create table if not exists public.todos (

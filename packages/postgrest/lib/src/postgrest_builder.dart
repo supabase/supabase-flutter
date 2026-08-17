@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
-import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
@@ -17,17 +16,6 @@ part 'postgrest_rpc_builder.dart';
 part 'postgrest_transform_builder.dart';
 part 'raw_postgrest_builder.dart';
 part 'response_postgrest_builder.dart';
-
-enum HttpMethod {
-  get,
-  head,
-  post,
-  put,
-  patch,
-  delete;
-
-  String get value => name.toUpperCase();
-}
 
 typedef _Nullable<T> = T?;
 
@@ -53,15 +41,13 @@ class _RetryConfig {
   final Duration Function(int attempt) delay;
 
   _RetryConfig copyWith({
-    // retry() always passes enabled, but keep the standard copyWith shape.
-    // ignore: avoid-unnecessary-nullable-parameters
-    bool? enabled,
+    required bool enabled,
     int? count,
     Set<int>? statusCodes,
     Duration Function(int attempt)? delay,
   }) {
     return _RetryConfig(
-      enabled: enabled ?? this.enabled,
+      enabled: enabled,
       count: count ?? this.count,
       statusCodes: statusCodes ?? this.statusCodes,
       delay: delay ?? this.delay,
@@ -144,7 +130,7 @@ String? _emptyPreferAsNull(String? prefer) =>
 ///
 /// [T] for the overall return type, so `PostgrestResponse<S>` or [S]
 ///
-/// When using [_converter], [S] is the input and [R] is the output
+/// When using [_converter], [R] is the input and [S] is the output
 /// Otherwise [S] and [R] are the same
 @immutable
 class PostgrestBuilder<T, S, R> implements Future<T> {
@@ -165,8 +151,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   Duration? get _requestTimeout => _config.requestTimeout;
   Future<void>? get _abortSignal => _config.abortSignal;
 
-  static Duration _defaultRetryDelay(int attempt) =>
-      Duration(seconds: math.min(math.pow(2, attempt).toInt(), 30));
+  static Duration _defaultRetryDelay(int attempt) => exponentialBackoff(
+    attempt,
+    initialDelay: const Duration(seconds: 1),
+    maxDelay: const Duration(seconds: 30),
+  );
 
   PostgrestBuilder({
     required Uri url,
@@ -290,8 +279,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///   .from('table')
   ///   .select()
   ///   .abortSignal(abortSignal.future);
-  /// } on RequestAbortedException catch (e) {
-  ///  print('Request was aborted: $e');
+  /// } on RequestAbortedException catch (error) {
+  ///  print('Request was aborted: $error');
   /// }
   /// ```
   ///
@@ -303,8 +292,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///   .from('table')
   ///   .select()
   ///   .abortSignal(Future.delayed(Duration(seconds: 5)));
-  /// } on RequestAbortedException catch (e) {
-  ///  print('Request was aborted: $e');
+  /// } on RequestAbortedException catch (error) {
+  ///  print('Request was aborted: $error');
   /// }
   /// ```
   PostgrestBuilder<T, S, R> abortSignal(Future<void> abortSignal) {
@@ -349,7 +338,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (method != HttpMethod.get && method != HttpMethod.head) {
       execHeaders['Content-Type'] = 'application/json';
     }
-    final bodyStr = jsonEncode(_body);
+    final bodyString = jsonEncode(_body);
     _log.finest("Request: ${method.value} $_url");
 
     final requestTimeout = _requestTimeout;
@@ -386,7 +375,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       request.headers.addAll(execHeaders);
       switch (method) {
         case HttpMethod.post || HttpMethod.put || HttpMethod.patch:
-          request.body = bodyStr;
+          request.body = bodyString;
         case HttpMethod.get || HttpMethod.head || HttpMethod.delete:
           break;
       }
@@ -481,9 +470,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             // success status. Surface the raw body as a structured error
             // instead of crashing with an opaque type error or silently
             // returning null.
-            throw PostgrestException(
+            throw PostgrestApiException(
               message: response.body,
-              code: '${response.statusCode}',
+              statusCode: response.statusCode,
               details: response.reasonPhrase,
             );
           }
@@ -493,9 +482,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       // Workaround for https://github.com/supabase/supabase-flutter/issues/560
       if (_maybeSingle && method == HttpMethod.get && body is List) {
         if (body.length > 1) {
-          final exception = PostgrestException(
+          final exception = PostgrestApiException(
             // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
-            code: '406',
+            statusCode: 406,
             details:
                 'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
             hint: null,
@@ -548,30 +537,32 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       }
       return converted as T;
     }
-    PostgrestException error;
+    PostgrestApiException error;
     if (response.request!.method != HttpMethod.head.value) {
-      try {
-        final errorJson = jsonDecode(response.body) as Map<String, dynamic>;
-        error = PostgrestException.fromJson(
+      // A proxy or gateway in front of PostgREST can answer with anything, so
+      // an error body that is not a JSON object is surfaced as-is.
+      final errorJson = tryDecodeJsonObject(response.body);
+      if (errorJson == null) {
+        error = PostgrestApiException(
+          message: response.body,
+          statusCode: response.statusCode,
+          details: response.reasonPhrase,
+        );
+      } else {
+        error = PostgrestApiException.fromJson(
           errorJson,
           message: response.body,
-          code: response.statusCode,
+          statusCode: response.statusCode,
           details: response.reasonPhrase,
         );
 
         if (_maybeSingle) {
           return _handleMaybeSingleError(response, error);
         }
-      } catch (_) {
-        error = PostgrestException(
-          message: response.body,
-          code: '${response.statusCode}',
-          details: response.reasonPhrase,
-        );
       }
     } else {
-      error = PostgrestException(
-        code: '${response.statusCode}',
+      error = PostgrestApiException(
+        statusCode: response.statusCode,
         message: response.body,
         details: 'Error in Postgrest response for method HEAD',
         hint: response.reasonPhrase,
@@ -589,7 +580,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// return PostgrestResponse with null data
   T _handleMaybeSingleError(
     http.Response response,
-    PostgrestException error,
+    PostgrestApiException error,
   ) {
     if (error.details is String &&
         (error.details as String).contains('Results contain 0 rows')) {
@@ -608,30 +599,30 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     throw error;
   }
 
-  /// Get new Uri with updated queryParams
+  /// Get new Uri with updated query parameters
   /// Uses lists to allow multiple values for the same key
   ///
   /// [url] may be used to update based on a different url than the current one
-  Uri appendSearchParams(String key, String value, [Uri? url]) {
-    final searchParams = Map<String, dynamic>.of(
+  Uri appendSearchParameters(String key, String value, [Uri? url]) {
+    final searchParameters = Map<String, dynamic>.of(
       (url ?? _url).queryParametersAll,
     );
-    searchParams[key] = [...?searchParams[key], value];
-    return (url ?? _url).replace(queryParameters: searchParams);
+    searchParameters[key] = [...?searchParameters[key], value];
+    return (url ?? _url).replace(queryParameters: searchParameters);
   }
 
-  /// Get new Uri with overridden queryParams
+  /// Get new Uri with overridden query parameters
   ///
   /// [url] may be used to update based on a different url than the current one
-  Uri overrideSearchParams(String key, String value, [Uri? url]) {
-    final searchParams = Map<String, dynamic>.of(
+  Uri overrideSearchParameters(String key, String value, [Uri? url]) {
+    final searchParameters = Map<String, dynamic>.of(
       (url ?? _url).queryParametersAll,
     );
-    searchParams[key] = value;
-    return (url ?? _url).replace(queryParameters: searchParams);
+    searchParameters[key] = value;
+    return (url ?? _url).replace(queryParameters: searchParameters);
   }
 
-  /// Convert list filter to query params string
+  /// Convert list filter to query parameters string
   String _cleanFilterArray(List<dynamic> filter) {
     if (filter.every((element) => element is num)) {
       return filter.map((s) => '$s').join(',');
@@ -655,8 +646,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       then((value) {
             controller.add(value);
           })
-          .catchError((Object error, StackTrace stack) {
-            controller.addError(error, stack);
+          .catchError((Object error, StackTrace stackTrace) {
+            controller.addError(error, stackTrace);
           })
           .whenComplete(() {
             unawaited(controller.close());
@@ -693,22 +684,22 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     // frames are still on the stack and appear in error traces.
     final callerTrace = StackTrace.current;
 
-    StackTrace enrichStack(StackTrace stack) =>
-        StackTrace.fromString('$stack\n<async call site>\n$callerTrace');
+    StackTrace enrichStack(StackTrace stackTrace) =>
+        StackTrace.fromString('$stackTrace\n<async call site>\n$callerTrace');
 
     if (onError == null) {
       return _execute().then(
         onValue,
-        onError: (Object error, StackTrace stack) {
-          Error.throwWithStackTrace(error, enrichStack(stack));
+        onError: (Object error, StackTrace stackTrace) {
+          Error.throwWithStackTrace(error, enrichStack(stackTrace));
         },
       );
     }
 
     return _execute().then(
       onValue,
-      onError: (Object error, StackTrace stack) async {
-        final enrichedStack = enrichStack(stack);
+      onError: (Object error, StackTrace stackTrace) async {
+        final enrichedStack = enrichStack(stackTrace);
         final FutureOr<U> result;
         if (onError is Function(Object, StackTrace)) {
           result = onError(error, enrichedStack);
@@ -725,8 +716,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           throw ArgumentError.value(
             onError,
             "onError",
-            "Error handler must accept one Object or one Object and a StackTrace "
-                "as arguments, and return a value of the returned future's type",
+            "Error handler must accept one Object or one Object and a "
+                "StackTrace as arguments, and return a value of the returned "
+                "future's type",
           );
         }
         try {

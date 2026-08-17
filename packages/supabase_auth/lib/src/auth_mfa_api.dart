@@ -1,0 +1,257 @@
+part of 'auth_client.dart';
+
+class AuthMFAApi {
+  final AuthClient _client;
+  final AuthFetch _fetch;
+
+  const AuthMFAApi({required AuthClient client, required AuthFetch fetch})
+    : _client = client,
+      _fetch = fetch;
+
+  /// Unenroll removes a MFA factor.
+  ///
+  /// A user has to have an `aal2` authenticator level in order to unenroll a
+  /// `verified` factor.
+  Future<AuthMFAUnenrollResponse> unenroll(String factorId) async {
+    final session = _client.currentSession;
+
+    final data = await _fetch.request(
+      '${_client._url}/factors/$factorId',
+      HttpMethod.delete,
+      options: AuthRequestOptions(
+        headers: _client._headers,
+        jwt: session?.accessToken,
+      ),
+    );
+
+    return AuthMFAUnenrollResponse.fromJson(data);
+  }
+
+  /// Starts the enrollment process for a new Multi-Factor Authentication (MFA)
+  /// factor. This method creates a new `unverified` factor.
+  ///
+  /// For TOTP: To verify a factor, present the QR code or secret to the user
+  /// and ask them to add it to their authenticator app. For Phone: The user
+  /// will receive an SMS with a verification code.
+  ///
+  /// The user has to enter the code from their authenticator app or SMS to
+  /// verify it.
+  ///
+  /// Upon verifying a factor, all other sessions are logged out and the current
+  /// session's authenticator level is promoted to `aal2`.
+  ///
+  /// [factorType] : Type of factor being enrolled.
+  ///
+  /// [issuer] : Domain which the user is enrolled with (TOTP only).
+  ///
+  /// [friendlyName] : Human readable name assigned to the factor.
+  ///
+  /// [phone] : Phone number to enroll for Phone factor type.
+  Future<AuthMFAEnrollResponse> enroll({
+    FactorType factorType = FactorType.totp,
+    String? issuer,
+    String? friendlyName,
+    String? phone,
+  }) async {
+    final session = _client.currentSession;
+
+    final body = <String, dynamic>{
+      'friendly_name': friendlyName,
+      'factor_type': factorType.name,
+    };
+
+    if (factorType == FactorType.totp) {
+      if (issuer != null) {
+        body['issuer'] = issuer;
+      }
+    } else if (factorType == FactorType.phone) {
+      if (phone == null) {
+        throw ArgumentError(
+          'Invalid arguments, expected a phone for the phone factor type.',
+        );
+      }
+      body['phone'] = phone;
+    } else {
+      throw ArgumentError(
+        'Invalid arguments, unsupported factor type for enroll: '
+        '${factorType.name}.',
+      );
+    }
+
+    final data = await _fetch.request(
+      '${_client._url}/factors',
+      HttpMethod.post,
+      options: AuthRequestOptions(
+        headers: _client._headers,
+        body: body,
+        jwt: session?.accessToken,
+      ),
+    );
+
+    if (factorType == FactorType.totp && data['totp'] != null) {
+      data['totp']['qr_code'] =
+          'data:image/svg+xml;utf-8,${data['totp']['qr_code']}';
+    }
+
+    final response = AuthMFAEnrollResponse.fromJson(data);
+    return response;
+  }
+
+  /// Verifies a code against a [challengeId].
+  ///
+  /// The verification [code] is provided by the user by entering a code seen in
+  /// their authenticator app.
+  Future<AuthMFAVerifyResponse> verify({
+    required String factorId,
+    required String challengeId,
+    required String code,
+  }) async {
+    final session = _client.currentSession;
+
+    final data = await _fetch.request(
+      '${_client._url}/factors/$factorId/verify',
+      HttpMethod.post,
+      options: AuthRequestOptions(
+        headers: _client._headers,
+        body: {
+          'challenge_id': challengeId,
+          'code': code,
+        },
+        jwt: session?.accessToken,
+      ),
+    );
+
+    final response = AuthMFAVerifyResponse.fromJson(data);
+    _client._saveSession(
+      Session(
+        accessToken: response.accessToken,
+        tokenType: response.tokenType,
+        user: response.user,
+        expiresIn: response.expiresIn.inSeconds,
+        refreshToken: response.refreshToken,
+      ),
+    );
+    _client.notifyAllSubscribers(AuthChangeEvent.mfaChallengeVerified);
+    return response;
+  }
+
+  /// Prepares a challenge used to verify that a user has access to a MFA
+  /// factor.
+  ///
+  /// [factorId] System assigned identifier for authenticator device as returned
+  /// by enroll
+  ///
+  /// [channel] Messaging channel to use for phone factors (e.g. whatsapp or
+  /// sms). Defaults to the server's behavior (sms) when omitted.
+  Future<AuthMFAChallengeResponse> challenge({
+    required String factorId,
+    OtpChannel? channel,
+  }) async {
+    final session = _client.currentSession;
+
+    final data = await _fetch.request(
+      '${_client._url}/factors/$factorId/challenge',
+      HttpMethod.post,
+      options: AuthRequestOptions(
+        headers: _client._headers,
+        body: channel == null ? null : {'channel': channel.name},
+        jwt: session?.accessToken,
+      ),
+    );
+
+    return AuthMFAChallengeResponse.fromJson(data);
+  }
+
+  /// Helper method which creates a challenge and immediately uses the given
+  /// code to verify against it thereafter.
+  ///
+  /// The verification code is provided by the user by entering a code seen in
+  /// their authenticator app.
+  Future<AuthMFAVerifyResponse> challengeAndVerify({
+    required String factorId,
+    required String code,
+  }) async {
+    final challengeResponse = await challenge(factorId: factorId);
+    return verify(
+      factorId: factorId,
+      challengeId: challengeResponse.id,
+      code: code,
+    );
+  }
+
+  /// Returns the list of MFA factors enabled for this user.
+  ///
+  /// Automatically refreshes the session to get the latest list of factors.
+  Future<AuthMFAListFactorsResponse> listFactors() async {
+    await _client.refreshSession();
+    final user = _client.currentUser;
+    final factors = user?.factors ?? [];
+    final totp = factors
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.totp &&
+              factor.status == FactorStatus.verified,
+        )
+        .toList();
+    final phone = factors
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.phone &&
+              factor.status == FactorStatus.verified,
+        )
+        .toList();
+    final webauthn = factors
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.webauthn &&
+              factor.status == FactorStatus.verified,
+        )
+        .toList();
+
+    return AuthMFAListFactorsResponse(
+      all: factors,
+      totp: totp,
+      phone: phone,
+      webauthn: webauthn,
+    );
+  }
+
+  /// Returns the Authenticator Assurance Level (AAL) for the active session.
+  ///
+  /// You can use this to check whether the current user needs to be shown a
+  /// screen to verify their MFA factors.
+  AuthMFAGetAuthenticatorAssuranceLevelResponse
+  getAuthenticatorAssuranceLevel() {
+    final session = _client.currentSession;
+    if (session == null) {
+      return AuthMFAGetAuthenticatorAssuranceLevelResponse(
+        currentLevel: null,
+        nextLevel: null,
+        currentAuthenticationMethods: [],
+      );
+    }
+    final payload = decodeJwtPayload(session.accessToken).claims;
+
+    final currentLevel = AuthenticatorAssuranceLevel.values.firstWhereOrNull(
+      (level) => level.name == payload['aal'],
+    );
+
+    var nextLevel = currentLevel;
+
+    if (session.user.factors?.any(
+          (factor) => factor.status == FactorStatus.verified,
+        ) ??
+        false) {
+      nextLevel = AuthenticatorAssuranceLevel.aal2;
+    }
+
+    final amr = (payload['amr'] as List? ?? [])
+        .map((e) => AuthenticationMethodReferenceEntry.fromJson(Map.from(e)))
+        .toList();
+    return AuthMFAGetAuthenticatorAssuranceLevelResponse(
+      currentLevel: currentLevel,
+      nextLevel: nextLevel,
+      currentAuthenticationMethods: amr,
+    );
+  }
+}

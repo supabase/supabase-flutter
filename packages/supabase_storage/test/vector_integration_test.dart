@@ -1,0 +1,151 @@
+import 'package:supabase_storage/supabase_storage.dart';
+import 'package:supabase_common/testing.dart';
+import 'package:test/test.dart';
+
+// These tests exercise the Storage Vectors API against a live Supabase stack
+// with `[storage.vector] enabled = true`. Each test provisions and tears down
+// its own bucket/index, so they are self-contained and can run in any order.
+void main() {
+  late SupabaseVectorsClient vectors;
+  final runId = DateTime.now().millisecondsSinceEpoch;
+  var counter = 0;
+
+  setUpAll(() {
+    vectors = SupabaseStorageClient(localStackStorageUrl, {
+      'Authorization': 'Bearer $localStackServiceRoleKey',
+    }).vectors;
+  });
+
+  String uniqueName(String prefix) => '$prefix-$runId-${counter++}';
+
+  group('bucket lifecycle', () {
+    test('create, get, list and delete a vector bucket', () async {
+      final name = uniqueName('vec-bucket');
+
+      await vectors.createBucket(name);
+
+      final bucket = await vectors.getBucket(name);
+      expect(bucket.name, name);
+      expect(bucket.creationTime, isA<DateTime>());
+
+      final list = await vectors.listBuckets(prefix: name);
+      expect(list.buckets.map((entry) => entry.name), contains(name));
+
+      await vectors.deleteBucket(name);
+      await expectLater(
+        vectors.getBucket(name),
+        throwsA(isA<StorageException>()),
+      );
+    });
+  });
+
+  group('index and vector operations', () {
+    late String bucketName;
+    late StorageVectorBucketApi bucket;
+    late StorageVectorIndexApi index;
+
+    setUp(() async {
+      bucketName = uniqueName('vec-idx');
+      await vectors.createBucket(bucketName);
+      bucket = vectors.from(bucketName);
+      await bucket.createIndex(
+        name: 'idx',
+        dimension: 3,
+        distanceMetric: DistanceMetric.cosine,
+      );
+      index = bucket.index('idx');
+    });
+
+    tearDown(() async {
+      try {
+        await bucket.deleteIndex('idx');
+      } catch (_) {}
+      try {
+        await vectors.deleteBucket(bucketName);
+      } catch (_) {}
+    });
+
+    test('get and list indexes', () async {
+      final fetched = await bucket.getIndex('idx');
+      expect(fetched.name, 'idx');
+      expect(fetched.bucketName, bucketName);
+      expect(fetched.dataType, VectorDataType.float32);
+      expect(fetched.dimension, 3);
+      expect(fetched.distanceMetric, DistanceMetric.cosine);
+      expect(fetched.creationTime, isA<DateTime>());
+
+      final list = await bucket.listIndexes();
+      expect(list.indexes.map((entry) => entry.name), contains('idx'));
+    });
+
+    test('put, get and list vectors', () async {
+      await index.putVectors([
+        Vector(key: 'a', data: [0.1, 0.2, 0.3], metadata: {'label': 'first'}),
+        Vector(key: 'b', data: [0.4, 0.5, 0.6]),
+      ]);
+
+      final fetched = await index.getVectors(
+        keys: ['a'],
+        returnData: true,
+        returnMetadata: true,
+      );
+      expect(fetched.single.key, 'a');
+      expect(fetched.single.data, hasLength(3));
+      expect(fetched.single.metadata?['label'], 'first');
+
+      final listed = await index.listVectors();
+      expect(
+        listed.vectors.map((vector) => vector.key),
+        containsAll(['a', 'b']),
+      );
+    });
+
+    test('query returns the nearest vector first', () async {
+      await index.putVectors([
+        Vector(key: 'near', data: [0.1, 0.2, 0.3]),
+        Vector(key: 'far', data: [0.9, 0.1, 0.05]),
+      ]);
+
+      final result = await index.queryVectors(
+        queryVector: [0.1, 0.2, 0.3],
+        topK: 2,
+        returnDistance: true,
+      );
+
+      expect(result.distanceMetric, DistanceMetric.cosine);
+      expect(result.matches.first.key, 'near');
+      expect(result.matches.first.distance, isNotNull);
+    });
+
+    test('delete removes vectors', () async {
+      await index.putVectors([
+        Vector(key: 'a', data: [0.1, 0.2, 0.3]),
+        Vector(key: 'b', data: [0.4, 0.5, 0.6]),
+      ]);
+
+      await index.deleteVectors(['a']);
+
+      final remaining = await index.getVectors(keys: ['a', 'b']);
+      expect(remaining.map((vector) => vector.key), ['b']);
+    });
+
+    test('parallel scan segments cover every vector', () async {
+      await index.putVectors([
+        Vector(key: 'a', data: [0.1, 0.2, 0.3]),
+        Vector(key: 'b', data: [0.4, 0.5, 0.6]),
+        Vector(key: 'c', data: [0.7, 0.8, 0.9]),
+      ]);
+
+      final keys = <String>{};
+      for (var segment = 0; segment < 2; segment++) {
+        final page = await index.listVectors(
+          segmentCount: 2,
+          segmentIndex: segment,
+        );
+        keys.addAll(page.vectors.map((vector) => vector.key));
+      }
+
+      expect(keys, {'a', 'b', 'c'});
+    });
+  });
+}

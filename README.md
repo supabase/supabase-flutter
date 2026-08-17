@@ -18,6 +18,8 @@
     <a href="https://supabase.com/docs/guides/with-flutter">Guides</a>
     ·
     <a href="https://supabase.com/docs/reference/dart/introduction">Reference Docs</a>
+    ·
+    <a href="https://github.com/supabase/supabase-flutter/blob/main/MIGRATION.md">Migration Guides</a>
   </p>
 </p>
 
@@ -46,7 +48,7 @@ To install on a locally developed app:
 
 ## Testing
 
-The tests for the packages `postgrest`, `gotrue`, `realtime_client` and `storage_client` run against a
+The tests for the packages `postgrest`, `supabase_auth`, `supabase_realtime` and `supabase_storage` run against a
 local Supabase stack. To run these tests locally you need `docker` and the
 [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 

@@ -5,7 +5,8 @@ import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
-/// A PostgREST api client written in Dartlang. The goal of this library is to make an "ORM-like" restful interface.
+/// A PostgREST api client written in Dartlang. The goal of this library is to
+/// make an "ORM-like" restful interface.
 class PostgrestClient {
   /// HTTP status codes that trigger an automatic retry by default.
   static const Set<int> defaultRetryableStatusCodes = {503, 520};
@@ -33,11 +34,13 @@ class PostgrestClient {
   ///
   /// [httpClient] is optional and can be used to provide a custom http client
   ///
-  /// [isolate] is optional and can be used to provide a custom isolate, which is used for heavy json computation
+  /// [isolate] is optional and can be used to provide a custom isolate, which
+  /// is used for heavy json computation
   ///
-  /// [retryEnabled] controls whether automatic retries are performed for GET and
-  /// HEAD requests that fail with a retryable status code or a network error.
-  /// Defaults to `true`. Use [PostgrestBuilder.retry] to override this per request.
+  /// [retryEnabled] controls whether automatic retries are performed for GET
+  /// and HEAD requests that fail with a retryable status code or a network
+  /// error. Defaults to `true`. Use [PostgrestBuilder.retry] to override this
+  /// per request.
   ///
   /// [retryCount] is the number of retry attempts made for a retryable request
   /// before giving up. Defaults to `3`.
@@ -81,14 +84,10 @@ class PostgrestClient {
   }
 
   /// Authenticates the request with JWT.
-  @Deprecated("Use setAuth() instead")
-  PostgrestClient auth(String token) {
-    headers['Authorization'] = 'Bearer $token';
-    return this;
-  }
-
-  PostgrestClient setAuth(String? token) {
-    _log.finest("setAuth with: $token");
+  ///
+  /// Passing `null` clears the `Authorization` header.
+  PostgrestClient setAccessToken(String? token) {
+    _log.finest("setAccessToken with: $token");
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     } else {

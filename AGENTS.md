@@ -12,11 +12,12 @@ The repository follows a layered dependency structure:
 
 - **supabase_flutter**: Flutter-specific wrapper with platform integrations (deep links, local storage, app lifecycle)
 - **supabase**: Core Dart client that orchestrates all service clients
-- **gotrue**: Authentication client (sessions, JWT, OAuth)
+- **supabase_auth**: Authentication client (sessions, JWT, OAuth)
 - **postgrest**: Database query client with ORM-style API
-- **realtime_client**: WebSocket client for real-time subscriptions
-- **storage_client**: File storage client with retry logic
-- **functions_client**: Edge functions invocation client
+- **supabase_realtime**: WebSocket client for real-time subscriptions
+- **supabase_storage**: File storage client with retry logic
+- **iceberg**: Apache Iceberg REST Catalog client used by storage analytics buckets
+- **supabase_functions**: Edge functions invocation client
 - **yet_another_json_isolate**: JSON parsing in separate isolate for performance
 
 Key architectural patterns:
@@ -52,9 +53,9 @@ melos format
 
 ### Testing
 
-Most packages have unit tests. The `postgrest`, `gotrue`, `realtime_client`, and `storage_client` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
+Most packages have unit tests. The `postgrest`, `supabase_auth`, `supabase_realtime`, and `supabase_storage` packages run against a local Supabase stack started with the Supabase CLI. This requires Docker and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) installed.
 
-**For packages requiring a backend (postgrest, gotrue, realtime_client, storage_client):**
+**For packages requiring a backend (postgrest, supabase_auth, supabase_realtime, supabase_storage):**
 
 ```bash
 # 1. Start the local Supabase stack from the repository root
@@ -129,9 +130,9 @@ melos version
 
 ### Authentication Flow
 
-- **GoTrueClient** manages sessions, tokens, and JWT validation
+- **AuthClient** manages sessions, tokens, and JWT validation
 - Emits auth state changes via `Stream<AuthState>`
-- **supabase_flutter** adds session persistence via `SharedPreferences` (mobile) or browser localStorage (web)
+- **supabase_flutter** adds session persistence via `SharedPreferencesAsync` (mobile) or browser localStorage (web)
 - Deep link handling for OAuth callbacks (detects `?code=` for PKCE or `#access_token=` for implicit flow)
 - Auth tokens are automatically injected into all HTTP requests via `AuthHttpClient`
 - Realtime client receives token updates when auth state changes
@@ -155,7 +156,7 @@ Example: `supabase.from('users').select('id, name').eq('id', 1).limit(10)`
 ### Error Handling
 
 Each package has its own exception hierarchy:
-- **gotrue**: `AuthException` (base), with specialized subclasses like `AuthApiException`, `AuthRetryableFetchException`
+- **supabase_auth**: `AuthException` (base), with specialized subclasses like `AuthApiException`, `AuthRetryableFetchException`
 - **postgrest**: HTTP-based error responses
 - **realtime**: `RealtimeSubscribeException` with status tracking
 - **storage**: Retry logic with exponential backoff (up to 8 attempts)
@@ -169,7 +170,7 @@ import './local_storage_stub.dart'
 ```
 
 This enables:
-- Native mobile (iOS/Android): SharedPreferences for persistence
+- Native mobile (iOS/Android): SharedPreferencesAsync for persistence
 - Web: Browser localStorage
 - Single codebase for all platforms
 
@@ -211,5 +212,7 @@ await Supabase.initialize(
 - Run `melos analyze` and `melos format` before committing
 - Ensure tests pass for modified packages
 - Update package changelogs if making notable changes
+- Any change that breaks the public API adds its own section to `MIGRATION.md`
+  in the same pull request, under the major version it will ship in
 - Line length limit is 80 characters
 - Use `dart format` for consistent formatting

@@ -24,7 +24,8 @@ class RealtimeSubscribeException implements Exception {
 
   @override
   String toString() {
-    return 'RealtimeSubscribeException(status: ${status.name}, details: $details)';
+    return 'RealtimeSubscribeException(status: ${status.name}, details: '
+        '$details)';
   }
 }
 
@@ -88,12 +89,22 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Orders the result with the specified [column].
   ///
-  /// When `ascending` value is true, the result will be in ascending order.
+  /// [ascending] defaults to `true`, matching SQL's `ORDER BY`, so results come
+  /// back in ascending order unless `ascending: false` is passed.
   ///
   /// ```dart
-  /// supabase.from('users').stream(primaryKey: ['id']).order('username', ascending: false);
+  /// // Ascending is the default.
+  /// supabase.from('users').stream(primaryKey: ['id']).order('username');
   /// ```
-  SupabaseStreamBuilder order(String column, {bool ascending = false}) {
+  ///
+  /// ```dart
+  /// // Descending has to be requested explicitly.
+  /// supabase
+  ///     .from('users')
+  ///     .stream(primaryKey: ['id'])
+  ///     .order('username', ascending: false);
+  /// ```
+  SupabaseStreamBuilder order(String column, {bool ascending = true}) {
     _orderBy = (column: column, ascending: ascending);
     return this;
   }
@@ -106,12 +117,6 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
   SupabaseStreamBuilder limit(int count) {
     _limit = count;
     return this;
-  }
-
-  @Deprecated('Directly listen without execute instead. Deprecated in 1.0.0')
-  Stream<SupabaseStreamEvent> execute() {
-    _setupStream();
-    return _streamController!.stream;
   }
 
   @override
@@ -130,7 +135,8 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
     );
   }
 
-  /// Sets up the stream controller and calls the method to get data as necessary
+  /// Sets up the stream controller and calls the method to get data as
+  /// necessary
   void _setupStream() {
     _streamController ??= ReplaySubject(
       onListen: () {
@@ -207,8 +213,10 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
         .subscribe((status, [error]) {
           switch (status) {
             case RealtimeSubscribeStatus.subscribed:
-              // Reload all data after a reconnect from postgrest
-              // First data from postgrest gets loaded before the realtime connect
+              // Reload all data from PostgREST after a realtime reconnect, so
+              // that changes missed while the socket was down are picked up.
+              // The first subscribe is skipped because the initial load is
+              // already started below, right after subscribing.
               if (_wasSubscribed) {
                 unawaited(_getPostgrestData());
               }

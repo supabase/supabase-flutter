@@ -1,0 +1,58 @@
+import 'package:supabase_realtime/supabase_realtime.dart';
+import 'package:supabase_realtime/src/constants.dart';
+import 'package:meta/meta.dart';
+
+@internal
+class Message {
+  final String topic;
+  final ChannelEvent event;
+  final dynamic payload;
+  final String? ref;
+  final String? joinRef;
+
+  const Message({
+    required this.topic,
+    required this.event,
+    required this.payload,
+    this.ref,
+    this.joinRef,
+  });
+
+  /// Converting to JSON while removing functions
+  Map<String, dynamic> toJson() {
+    final dynamic processedPayload;
+    if (payload is Map) {
+      processedPayload = <String, dynamic>{};
+      for (final outerKey in payload.keys) {
+        final outerValue = payload[outerKey];
+        if (outerValue is Map) {
+          processedPayload[outerKey] = {};
+          for (final innerKey in outerValue.keys) {
+            final innerValue = outerValue[innerKey];
+            if (innerValue is Binding) {
+              processedPayload[outerKey][innerKey] = <String, dynamic>{
+                'type': innerValue.type,
+                'filter': innerValue.filter,
+              };
+            } else {
+              processedPayload[outerKey][innerKey] = innerValue;
+            }
+          }
+        } else {
+          processedPayload[outerKey] = outerValue;
+        }
+      }
+    } else {
+      processedPayload = payload;
+    }
+    return {
+      'topic': topic,
+      'event': event != ChannelEvent.heartbeat
+          ? event.eventName()
+          : 'heartbeat',
+      'payload': processedPayload,
+      'ref': ?ref,
+      'join_ref': ?joinRef,
+    };
+  }
+}

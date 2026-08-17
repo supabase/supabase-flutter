@@ -9,12 +9,12 @@ void main() {
   final resetHelper = ResetHelper();
 
   setUpAll(() async {
-    postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+    postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
     await resetHelper.initialize(postgrest);
   });
 
   setUp(() {
-    postgrest = PostgrestClient(rootUrl, headers: apiHeaders);
+    postgrest = PostgrestClient(localStackRestUrl, headers: apiHeaders);
   });
 
   tearDown(() async {
@@ -60,7 +60,7 @@ void main() {
     final response = await postgrest
         .from('users')
         .select('messages(*)')
-        .order('channel_id', referencedTable: 'messages');
+        .order('channel_id', referencedTable: 'messages', ascending: false);
     expect(
       response[0]['messages']!.length,
       3,
@@ -80,7 +80,7 @@ void main() {
         .from('users')
         .select('username, messages(*)')
         .order('username', ascending: true)
-        .order('channel_id', referencedTable: 'messages');
+        .order('channel_id', referencedTable: 'messages', ascending: false);
     expect(
       response[0]['username'],
       'awailas',
