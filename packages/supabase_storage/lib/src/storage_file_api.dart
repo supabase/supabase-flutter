@@ -54,8 +54,7 @@ class StorageFileApi {
 
   FetchOptions get _fetchOptions => FetchOptions(headers);
 
-  UploadResponse _uploadResponse(String cleanPath, dynamic response) {
-    final data = response as Map;
+  UploadResponse _uploadResponse(String cleanPath, Map<String, dynamic> data) {
     return UploadResponse(
       id: data['Id'] as String?,
       path: cleanPath,
@@ -244,7 +243,7 @@ class StorageFileApi {
   }) async {
     final finalPath = _getFinalPath(path);
 
-    final data = await _storageFetch.post(
+    final data = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/upload/sign/$finalPath',
       {},
       options: FetchOptions({
@@ -363,7 +362,7 @@ class StorageFileApi {
     String? destinationBucket,
   }) async {
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/move',
       {
         'bucketId': bucketId,
@@ -373,7 +372,7 @@ class StorageFileApi {
       },
       options: options,
     );
-    return (response as Map<String, dynamic>)['message'] as String;
+    return response['message'] as String;
   }
 
   /// Copies an existing file.
@@ -392,7 +391,7 @@ class StorageFileApi {
     String? destinationBucket,
   }) async {
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/copy',
       {
         'bucketId': bucketId,
@@ -402,7 +401,7 @@ class StorageFileApi {
       },
       options: options,
     );
-    return (response as Map<String, dynamic>)['Key'] as String;
+    return response['Key'] as String;
   }
 
   /// Create signed URL to download file without requiring permissions. This URL
@@ -432,7 +431,7 @@ class StorageFileApi {
   }) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/sign/$finalPath',
       {
         'expiresIn': expiresIn,
@@ -440,8 +439,7 @@ class StorageFileApi {
       },
       options: options,
     );
-    final signedUrlPath =
-        (response as Map<String, dynamic>)['signedURL'] as String?;
+    final signedUrlPath = response['signedURL'] as String?;
     if (signedUrlPath == null) {
       throw StorageException('No signed URL returned by API');
     }
@@ -481,7 +479,7 @@ class StorageFileApi {
     String? cacheNonce,
   }) async {
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<List<dynamic>>(
       '$url/object/sign/$bucketId',
       {
         'expiresIn': expiresIn,
@@ -489,7 +487,7 @@ class StorageFileApi {
       },
       options: options,
     );
-    return (response as List).map<SignedUrlResult>((e) {
+    return response.map<SignedUrlResult>((e) {
       final signedUrlPath = e['signedURL'] as String?;
       final path = e['path'] as String? ?? '';
       if (signedUrlPath != null) {
@@ -534,11 +532,10 @@ class StorageFileApi {
       cacheNonce: cacheNonce,
     );
 
-    final response = await _storageFetch.get(
+    return _storageFetch.get<Uint8List>(
       fetchUrl.toString(),
       options: FetchOptions(headers, noResolveJson: true),
     );
-    return response as Uint8List;
   }
 
   /// Builds the download URL shared by [download] and [downloadStream],
@@ -608,7 +605,7 @@ class StorageFileApi {
   Future<FileObjectV2> getMetadata(String path) async {
     final finalPath = _getFinalPath(path);
     final options = _fetchOptions;
-    final response = await _storageFetch.get(
+    final response = await _storageFetch.get<Map<String, dynamic>>(
       '$url/object/info/$finalPath',
       options: options,
     );
@@ -702,13 +699,13 @@ class StorageFileApi {
   /// name. For example: `remove(['folder/image.png'])`.
   Future<List<FileObject>> remove(List<String> paths) async {
     final options = _fetchOptions;
-    final response = await _storageFetch.delete(
+    final response = await _storageFetch.delete<List<dynamic>>(
       '$url/object/$bucketId',
       {'prefixes': paths},
       options: options,
     );
     final fileObjects = List<FileObject>.from(
-      (response as List).map(
+      response.map(
         (item) => FileObject.fromJson(item),
       ),
     );
@@ -738,12 +735,12 @@ class StorageFileApi {
         queryParameters: {'transformations': 'true'},
       );
     }
-    final response = await _storageFetch.delete(
+    final response = await _storageFetch.delete<Map<String, dynamic>>(
       requestUrl.toString(),
       {},
       options: _fetchOptions,
     );
-    return (response as Map<String, dynamic>)['message'] as String;
+    return response['message'] as String;
   }
 
   /// Lists all the files within a bucket.
@@ -760,13 +757,13 @@ class StorageFileApi {
       ...searchOptions.toMap(),
     };
     final options = _fetchOptions;
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<List<dynamic>>(
       '$url/object/list/$bucketId',
       body,
       options: options,
     );
     final fileObjects = List<FileObject>.from(
-      (response as List).map(
+      response.map(
         (item) => FileObject.fromJson(item),
       ),
     );
@@ -785,11 +782,11 @@ class StorageFileApi {
   Future<PaginatedListResult> listPaginated({
     PaginatedSearchOptions options = const PaginatedSearchOptions(),
   }) async {
-    final response = await _storageFetch.post(
+    final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/list-v2/$bucketId',
       options.toMap(),
       options: _fetchOptions,
     );
-    return PaginatedListResult.fromJson(response as Map<String, dynamic>);
+    return PaginatedListResult.fromJson(response);
   }
 }
