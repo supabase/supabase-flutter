@@ -524,7 +524,7 @@ class StorageFileApi {
     TransformOptions? transform,
     Map<String, String>? queryParameters,
     String? cacheNonce,
-  }) async {
+  }) {
     final fetchUrl = _downloadUri(
       path,
       transform: transform,
@@ -532,7 +532,7 @@ class StorageFileApi {
       cacheNonce: cacheNonce,
     );
 
-    return _storageFetch.get<Uint8List>(
+    return _storageFetch.get(
       fetchUrl.toString(),
       options: FetchOptions(headers, noResolveJson: true),
     );

@@ -69,7 +69,7 @@ class Fetch {
 
     _log.finest('Request: ${method.value} $url ${request.headers.redacted}');
     final streamedResponse = await request.sendWith(httpClient);
-    return _handleResponse<T>(streamedResponse, options);
+    return _handleResponse(streamedResponse, options);
   }
 
   Future<Map<String, dynamic>> _handleFileRequest(
@@ -177,7 +177,7 @@ class Fetch {
           (error is ClientException || error is TimeoutException),
     );
 
-    return _handleResponse<Map<String, dynamic>>(streamedResponse, options);
+    return _handleResponse(streamedResponse, options);
   }
 
   /// Reads the response body and returns it as a [T]: [Uint8List] when
@@ -222,7 +222,7 @@ class Fetch {
   }
 
   Future<T> get<T>(String url, {FetchOptions? options}) {
-    return _handleRequest<T>(HttpMethod.get, url, null, options);
+    return _handleRequest(HttpMethod.get, url, null, options);
   }
 
   /// Performs a GET request and yields the response body as a byte stream
@@ -262,7 +262,7 @@ class Fetch {
     Map<String, dynamic>? body, {
     FetchOptions? options,
   }) {
-    return _handleRequest<T>(HttpMethod.post, url, body, options);
+    return _handleRequest(HttpMethod.post, url, body, options);
   }
 
   Future<T> put<T>(
@@ -270,7 +270,7 @@ class Fetch {
     Map<String, dynamic>? body, {
     FetchOptions? options,
   }) {
-    return _handleRequest<T>(HttpMethod.put, url, body, options);
+    return _handleRequest(HttpMethod.put, url, body, options);
   }
 
   Future<T> delete<T>(
@@ -278,7 +278,7 @@ class Fetch {
     Map<String, dynamic>? body, {
     FetchOptions? options,
   }) {
-    return _handleRequest<T>(HttpMethod.delete, url, body, options);
+    return _handleRequest(HttpMethod.delete, url, body, options);
   }
 
   Future<Map<String, dynamic>> postFile(
