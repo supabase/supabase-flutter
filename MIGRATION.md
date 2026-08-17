@@ -5,7 +5,7 @@ versions of the Supabase Flutter SDK, together with the steps required to migrat
 
 All packages in this repository are released together for a major version, so a single section
 covers `supabase_flutter`, `supabase`, `supabase_auth`, `postgrest`, `realtime_client`, `storage_client`
-and `functions_client`. Every symbol mentioned here is re-exported from `supabase_flutter`, so the
+and `supabase_functions`. Every symbol mentioned here is re-exported from `supabase_flutter`, so the
 snippets apply whether you depend on the individual package or on the Flutter one.
 
 ## Migrating from v2 to v3
@@ -113,6 +113,39 @@ If you need the URL string, use `response.url.toString()`. Callers that were par
 themselves can drop the `Uri.parse()`.
 
 The URL the server receives is unchanged, only the Dart type differs.
+
+### The `functions_client` package is now `supabase_functions`
+
+`functions_client` says nothing about Supabase and does not match how the rest of the packages are
+named. The package is published as `supabase_functions` from v3 onwards, and the `functions_client`
+package is discontinued on pub.dev when v3 ships.
+
+If you depend on `supabase_flutter` or `supabase` you do not need to change anything, both pull in
+`supabase_functions` for you and re-export it.
+
+If you depend on the functions client directly, rename the dependency and the import:
+
+```yaml
+# Before
+dependencies:
+  functions_client: ^2.7.1
+
+# After
+dependencies:
+  supabase_functions: ^3.0.0
+```
+
+```dart
+// Before
+import 'package:functions_client/functions_client.dart';
+
+// After
+import 'package:supabase_functions/supabase_functions.dart';
+```
+
+No types are renamed, `FunctionsClient` and everything around it keep their names. Nothing about
+the wire format changes either: the `X-Client-Info` header still identifies this client as
+`functions-dart`.
 
 ### `RealtimeClient.connectionState` is now typed
 
@@ -528,7 +561,7 @@ you can also branch on the response of `exchangeCodeForSession()` directly.
 
 ### `HttpMethod` is one shared enum
 
-`functions_client` and `postgrest` each declared their own `HttpMethod`. There is now one, shaped
+`supabase_functions` and `postgrest` each declared their own `HttpMethod`. There is now one, shaped
 like postgrest's and re-exported from both, so imports are unchanged and postgrest callers are
 unaffected. For `functions.invoke`, two things changed:
 

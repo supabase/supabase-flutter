@@ -15,7 +15,7 @@
 #                           explains why.
 #
 # Verified against the source in this repository (packages/supabase_auth, postgrest,
-# storage_client, realtime_client, functions_client, supabase, supabase_flutter).
+# storage_client, realtime_client, supabase_functions, supabase, supabase_flutter).
 # Unlisted features default to not_implemented.
 
 sdk: flutter

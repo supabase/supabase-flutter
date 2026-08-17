@@ -3,7 +3,7 @@
 /// to build secure and scalable products.
 library;
 
-export 'package:functions_client/functions_client.dart';
+export 'package:supabase_functions/supabase_functions.dart';
 export 'package:supabase_auth/supabase_auth.dart';
 export 'package:postgrest/postgrest.dart';
 export 'package:realtime_client/realtime_client.dart';

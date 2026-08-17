@@ -30,6 +30,7 @@ jobs:
           "postgrest": "postgrest",
           "functions": "functions",
           "functions_client": "functions",
+          "supabase_functions": "functions",
           "auth_ui": "auth-ui",
           "supabase": "supabase",
           "supabase_flutter": "supabase_flutter"

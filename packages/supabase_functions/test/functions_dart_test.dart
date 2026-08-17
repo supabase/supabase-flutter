@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:functions_client/src/functions_client.dart';
-import 'package:functions_client/src/types.dart';
+import 'package:supabase_functions/src/functions_client.dart';
+import 'package:supabase_functions/src/types.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:supabase_common/supabase_common.dart';

@@ -6,7 +6,7 @@ environment:
   sdk: '>=3.9.0 <4.0.0'
 
 workspace:
-  - packages/functions_client
+  - packages/supabase_functions
   - packages/supabase_auth
   - packages/postgrest
   - packages/realtime_client
