@@ -36,8 +36,11 @@ void main() {
 
       test('connects and reports the open state', () async {
         final opened = Completer<void>();
-        client.onOpen.listen((_) {
-          if (!opened.isCompleted) opened.complete();
+        client.onStatusChange.listen((change) {
+          if (change.status == RealtimeConnectionStatus.open &&
+              !opened.isCompleted) {
+            opened.complete();
+          }
         });
         await client.connect();
         await opened.future.timeout(const Duration(seconds: 10));

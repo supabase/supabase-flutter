@@ -62,6 +62,35 @@ enum RealtimeHeartbeatStatus {
   timeout,
 }
 
+/// The status of the WebSocket connection reported by
+/// [RealtimeClient.onStatusChange].
+enum RealtimeConnectionStatus {
+  /// The connection is open and messages can be sent and received.
+  open,
+
+  /// The connection is closed, either because [RealtimeClient.disconnect] was
+  /// called or because it dropped, in which case the client reconnects with
+  /// backoff. [RealtimeClient.connectionState] tells the two apart.
+  closed,
+}
+
+/// A connection status change emitted by [RealtimeClient.onStatusChange].
+class RealtimeConnectionStatusChange {
+  /// The new status of the WebSocket connection.
+  final RealtimeConnectionStatus status;
+
+  /// The close code and reason sent by the server, `null` for
+  /// [RealtimeConnectionStatus.open] and for a close without one.
+  final RealtimeCloseEvent? closeEvent;
+
+  const RealtimeConnectionStatusChange(this.status, [this.closeEvent]);
+
+  @override
+  String toString() =>
+      'RealtimeConnectionStatusChange(status: ${status.name}, '
+      'closeEvent: $closeEvent)';
+}
+
 /// Manages a persistent WebSocket connection to the Supabase Realtime server.
 ///
 /// [RealtimeClient] is the central hub for all real-time communication. It owns
@@ -149,9 +178,8 @@ class RealtimeClient {
   @internal
   List<dynamic> sendBuffer = [];
 
-  final _openController = StreamController<void>.broadcast();
-  final _closeController = StreamController<RealtimeCloseEvent?>.broadcast();
-  final _errorController = StreamController<Object>.broadcast();
+  final _statusController =
+      StreamController<RealtimeConnectionStatusChange>.broadcast();
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
 
   final _heartbeatController =
@@ -430,23 +458,24 @@ class RealtimeClient {
     logger?.call(kind, message, data);
   }
 
-  /// Emits whenever the WebSocket connection is opened.
+  /// Emits whenever the WebSocket connection opens or closes.
+  ///
+  /// Connection errors are emitted as stream errors, so they are observed with
+  /// the `onError` handler of [Stream.listen] rather than as status changes:
   ///
   /// ```dart
-  /// final subscription = client.onOpen.listen((_) {
-  ///   print('Socket opened.');
-  /// });
+  /// final subscription = client.onStatusChange.listen(
+  ///   (change) => print('Socket ${change.status.name}.'),
+  ///   onError: (error) => print('Socket error: $error'),
+  /// );
   /// ```
-  Stream<void> get onOpen => _openController.stream;
-
-  /// Emits whenever the WebSocket connection is closed.
   ///
-  /// The emitted [RealtimeCloseEvent] carries the close code and reason sent
-  /// by the server, or `null` when the connection closed without one.
-  Stream<RealtimeCloseEvent?> get onClose => _closeController.stream;
-
-  /// Emits whenever the WebSocket connection reports an error.
-  Stream<Object> get onError => _errorController.stream;
+  /// The connection level statuses and errors are informational: a dropped
+  /// connection and its cause also reach every channel through
+  /// [RealtimeChannel.onStatusChange], which is what a subscription should
+  /// react to.
+  Stream<RealtimeConnectionStatusChange> get onStatusChange =>
+      _statusController.stream;
 
   /// Emits every decoded message received over the WebSocket.
   Stream<Map<String, dynamic>> get onMessage => _messageController.stream;
@@ -674,7 +703,9 @@ class RealtimeClient {
       log('transport', 'error while rejoining channels', error, Level.WARNING);
     }
 
-    _openController.add(null);
+    _statusController.add(
+      const RealtimeConnectionStatusChange(RealtimeConnectionStatus.open),
+    );
   }
 
   /// communication has been closed
@@ -696,13 +727,15 @@ class RealtimeClient {
       reconnectTimer.scheduleTimeout();
     }
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
-    _closeController.add(event);
+    _statusController.add(
+      RealtimeConnectionStatusChange(RealtimeConnectionStatus.closed, event),
+    );
   }
 
   void _onConnectionError(Object error) {
     log('transport', error.toString());
     _triggerChanError(error);
-    _errorController.add(error);
+    _statusController.addError(error);
   }
 
   void _triggerChanError([dynamic error]) {

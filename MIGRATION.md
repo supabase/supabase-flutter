@@ -315,8 +315,10 @@ following the shape `RealtimeClient.onHeartbeat` already had. Streams compose (`
 `firstWhere`, `timeout`), support multiple listeners, and removing a listener is a
 `StreamSubscription.cancel()`, which the callback API had no public equivalent for.
 
-On `RealtimeClient`, the connection listeners are broadcast stream getters instead of
-callback-registration methods:
+On `RealtimeClient`, the four connection callbacks are replaced by two broadcast streams:
+`onStatusChange` for the connection lifecycle and `onMessage` for every decoded frame. Connection
+errors are emitted as stream errors on `onStatusChange`, so they arrive through the `onError`
+handler of `listen`:
 
 ```dart
 // Before
@@ -326,11 +328,20 @@ client.onError((error) => print('error: $error'));
 client.onMessage((message) => print('message: $message'));
 
 // After
-client.onOpen.listen((_) => print('open'));
-client.onClose.listen((event) => print('closed: $event'));
-client.onError.listen((error) => print('error: $error'));
+client.onStatusChange.listen(
+  (change) => switch (change.status) {
+    RealtimeConnectionStatus.open => print('open'),
+    RealtimeConnectionStatus.closed => print('closed: ${change.closeEvent}'),
+  },
+  onError: (error) => print('error: $error'),
+);
 client.onMessage.listen((message) => print('message: $message'));
 ```
+
+Four separate streams for one connection was a different shape than the channel, where all of
+open, closed and error already arrive on a single `RealtimeChannel.onStatusChange`. Since a stream
+needs `listen` and a cancelled subscription to clean up, one status stream is also less
+bookkeeping than three.
 
 On `RealtimeChannel`, `onPostgresChanges` and `onBroadcast` no longer take a `callback` parameter
 and return a typed stream instead of the channel, so they can no longer be chained. Repeated calls

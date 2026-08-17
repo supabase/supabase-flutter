@@ -185,7 +185,10 @@ Future<void> waitForRealtimeServer({
     httpReachable = await _isRealtimeHttpReachable();
 
     final client = createRealtimeClient(RealtimeProtocolVersion.v1);
-    client.onError.listen((error) => lastError = error);
+    client.onStatusChange.listen(
+      (_) {},
+      onError: (Object error) => lastError = error,
+    );
 
     final completer = Completer<bool>();
     final channel = client.channel('readiness-check');

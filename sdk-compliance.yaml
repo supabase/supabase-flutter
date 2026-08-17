@@ -1659,9 +1659,14 @@ features:
       - RealtimeClient.connection
       - RealtimeClient.onConnectionMessage
     supporting_symbols:
-      - RealtimeClient.onError
       - RealtimeClient.onMessage
-      - RealtimeClient.onOpen
+      - RealtimeClient.onStatusChange
+      - RealtimeConnectionStatus
+      - RealtimeConnectionStatusChange
+      - RealtimeConnectionStatusChange.RealtimeConnectionStatusChange
+      - RealtimeConnectionStatusChange.closeEvent
+      - RealtimeConnectionStatusChange.status
+      - RealtimeConnectionStatusChange.toString
   realtime.client.disconnect:
     status: implemented
     symbols:
@@ -1670,7 +1675,7 @@ features:
       - RealtimeClientOptions.connectionCloseTimeout
       - RealtimeConstants.defaultConnectionCloseTimeout
     supporting_symbols:
-      - RealtimeClient.onClose
+      - RealtimeConstants.webSocketCloseNormal
       - RealtimeCloseEvent
       - RealtimeCloseEvent.RealtimeCloseEvent
       - RealtimeCloseEvent.code

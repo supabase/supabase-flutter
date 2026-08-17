@@ -203,13 +203,9 @@ void main() {
     });
 
     test('emits connection state events on the streams', () async {
-      int opens = 0;
-      socket.onOpen.listen((_) {
-        opens += 1;
-      });
-      int closes = 0;
-      socket.onClose.listen((_) {
-        closes += 1;
+      final statuses = <RealtimeConnectionStatus>[];
+      socket.onStatusChange.listen((change) {
+        statuses.add(change.status);
       });
       late dynamic lastMessage;
       socket.onMessage.listen((message) {
@@ -218,7 +214,7 @@ void main() {
 
       await socket.connect();
       await Future.delayed(const Duration(milliseconds: 200));
-      expect(opens, 1);
+      expect(statuses, [RealtimeConnectionStatus.open]);
 
       await socket.sendHeartbeat();
       // need to wait for event to trigger
@@ -227,16 +223,51 @@ void main() {
 
       await socket.disconnect();
       await Future.delayed(const Duration(seconds: 1));
-      expect(closes, 1);
+      expect(statuses, [
+        RealtimeConnectionStatus.open,
+        RealtimeConnectionStatus.closed,
+      ]);
     });
 
-    test('emits errors on the onError stream', () async {
+    test('emits errors on the onStatusChange stream', () async {
       final RealtimeClient erroneousSocket = RealtimeClient('badurl');
-      final errorFuture = erroneousSocket.onError.first;
+      final errorFuture = erroneousSocket.onStatusChange.first;
 
       unawaited(erroneousSocket.connect());
 
-      expect(await errorFuture, isA<WebSocketException>());
+      await expectLater(errorFuture, throwsA(isA<WebSocketException>()));
+    });
+
+    test('reports the close code and reason with the closed status', () async {
+      final mockedSocketChannel = MockIOWebSocketChannel();
+      final mockedSink = MockWebSocketSink();
+      final streamController = StreamController<dynamic>();
+      final mockedSocket = RealtimeClient(
+        socketEndpoint,
+        reconnectAfter: (tries) => const Duration(seconds: 100),
+        transport: (url, headers) => mockedSocketChannel,
+      );
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(
+        () => mockedSocketChannel.stream,
+      ).thenAnswer((_) => streamController.stream);
+      when(() => mockedSocketChannel.closeCode).thenReturn(1011);
+      when(() => mockedSocketChannel.closeReason).thenReturn('server error');
+      when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+
+      final closed = mockedSocket.onStatusChange.firstWhere(
+        (change) => change.status == RealtimeConnectionStatus.closed,
+      );
+
+      await mockedSocket.connect();
+      await streamController.close();
+
+      final change = await closed;
+      expect(change.closeEvent?.code, 1011);
+      expect(change.closeEvent?.reason, 'server error');
+
+      await mockedSocket.disconnect();
     });
 
     test('is idempotent', () {
@@ -507,7 +538,9 @@ void main() {
         transport: (url, headers) => mockedSocketChannel,
       );
       var closeEvents = 0;
-      mockedSocket.onClose.listen((_) => closeEvents += 1);
+      mockedSocket.onStatusChange
+          .where((change) => change.status == RealtimeConnectionStatus.closed)
+          .listen((_) => closeEvents += 1);
 
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
@@ -1196,7 +1229,9 @@ void main() {
         transport: (url, headers) => mockedSocketChannel,
       );
       var opens = 0;
-      socket.onOpen.listen((_) => opens += 1);
+      socket.onStatusChange
+          .where((change) => change.status == RealtimeConnectionStatus.open)
+          .listen((_) => opens += 1);
 
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
