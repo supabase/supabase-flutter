@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:realtime_client/src/websocket/websocket_io.dart';
+import 'package:supabase_realtime/src/websocket/websocket_io.dart';
 import 'package:test/test.dart';
 
 /// Minimal WebSocket server that completes the opening handshake but never

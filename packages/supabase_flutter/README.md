@@ -591,7 +591,7 @@ supabaseLogger.onRecord.listen((record) {
 - `supabase`: `Logger('supabase.supabase')`
 - `postgrest`: `Logger('supabase.postgrest')`
 - `supabase_auth`: `Logger('supabase.auth')`
-- `realtime_client`: `Logger('supabase.realtime')`
+- `supabase_realtime`: `Logger('supabase.realtime')`
 - `storage_client`: `Logger('supabase.storage')`
 - `supabase_functions`: `Logger('supabase.functions')`
 

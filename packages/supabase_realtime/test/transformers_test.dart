@@ -1,4 +1,4 @@
-import 'package:realtime_client/src/transformers.dart';
+import 'package:supabase_realtime/src/transformers.dart';
 import 'package:test/test.dart';
 
 void main() {

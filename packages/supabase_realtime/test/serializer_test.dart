@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:realtime_client/src/serializer.dart';
+import 'package:supabase_realtime/src/serializer.dart';
 import 'package:test/test.dart';
 
 /// Builds a `kind = userBroadcast` (4) binary frame the same way the server

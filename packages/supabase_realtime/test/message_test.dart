@@ -1,5 +1,5 @@
-import 'package:realtime_client/src/constants.dart';
-import 'package:realtime_client/src/message.dart';
+import 'package:supabase_realtime/src/constants.dart';
+import 'package:supabase_realtime/src/message.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,4 +1,4 @@
-import 'package:realtime_client/src/retry_timer.dart';
+import 'package:supabase_realtime/src/retry_timer.dart';
 import 'package:test/test.dart';
 
 void main() {

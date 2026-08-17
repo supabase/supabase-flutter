@@ -9,7 +9,7 @@ workspace:
   - packages/supabase_functions
   - packages/supabase_auth
   - packages/postgrest
-  - packages/realtime_client
+  - packages/supabase_realtime
   - packages/storage_client
   - packages/supabase
   - packages/supabase/example

@@ -6,12 +6,12 @@ import 'package:collection/collection.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
-import 'package:realtime_client/realtime_client.dart';
-import 'package:realtime_client/src/constants.dart';
-import 'package:realtime_client/src/message.dart';
-import 'package:realtime_client/src/retry_timer.dart';
-import 'package:realtime_client/src/serializer.dart';
-import 'package:realtime_client/src/websocket/websocket.dart';
+import 'package:supabase_realtime/supabase_realtime.dart';
+import 'package:supabase_realtime/src/constants.dart';
+import 'package:supabase_realtime/src/message.dart';
+import 'package:supabase_realtime/src/retry_timer.dart';
+import 'package:supabase_realtime/src/serializer.dart';
+import 'package:supabase_realtime/src/websocket/websocket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef WebSocketTransport =

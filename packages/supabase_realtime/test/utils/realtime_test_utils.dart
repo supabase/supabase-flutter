@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:postgres/postgres.dart';
-import 'package:realtime_client/realtime_client.dart';
+import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_common/testing.dart';
 
 export 'package:supabase_common/testing.dart';

@@ -5,9 +5,9 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:realtime_client/realtime_client.dart';
-import 'package:realtime_client/src/constants.dart';
-import 'package:realtime_client/src/message.dart';
+import 'package:supabase_realtime/supabase_realtime.dart';
+import 'package:supabase_realtime/src/constants.dart';
+import 'package:supabase_realtime/src/message.dart';
 import 'package:test/test.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
