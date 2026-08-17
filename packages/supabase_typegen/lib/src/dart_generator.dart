@@ -223,8 +223,8 @@ void _writeValues(
       if (!column.isReadOnly) column,
   ];
 
+  _writeDocComment(buffer, docLine);
   buffer
-    ..writeln('/// $docLine')
     ..writeln('extension type const $typeName._(Map<String, dynamic> _json)')
     ..writeln('    implements Map<String, dynamic> {')
     ..writeln('  $typeName({');
@@ -257,16 +257,17 @@ void _writeValues(
     if (!column.isNullable) continue;
     final name = memberNames[column.name]!;
     final methodName = 'set${name[0].toUpperCase()}${name.substring(1)}ToNull';
-    buffer
-      ..writeln()
-      ..writeln(
-        '  /// Returns a copy with `${column.name}` set to SQL NULL, '
-        'overriding any database default.',
-      )
-      ..writeln(
-        '  $typeName $methodName() => '
-        '$typeName._({..._json, ${_stringLiteral(column.name)}: null});',
-      );
+    buffer.writeln();
+    _writeDocComment(
+      buffer,
+      'Returns a copy with `${column.name}` set to SQL NULL, overriding any '
+      'database default.',
+      indent: '  ',
+    );
+    buffer.writeln(
+      '  $typeName $methodName() => '
+      '$typeName._({..._json, ${_stringLiteral(column.name)}: null});',
+    );
   }
   buffer
     ..writeln('}')
@@ -456,9 +457,28 @@ void _writeDocComment(
   String indent = '',
 }) {
   if (comment == null) return;
+  final width = 80 - indent.length - '/// '.length;
   for (final line in comment.trim().split('\n')) {
-    buffer.writeln('$indent/// ${line.trim()}');
+    for (final wrapped in _wrap(line.trim(), width)) {
+      buffer.writeln('$indent/// $wrapped');
+    }
   }
+}
+
+/// Greedily wraps [text] into lines of at most [width] characters, keeping
+/// words longer than [width] on their own line.
+Iterable<String> _wrap(String text, int width) sync* {
+  final words = text.split(' ').where((word) => word.isNotEmpty);
+  final line = StringBuffer();
+  for (final word in words) {
+    if (line.isNotEmpty && line.length + 1 + word.length > width) {
+      yield line.toString();
+      line.clear();
+    }
+    if (line.isNotEmpty) line.write(' ');
+    line.write(word);
+  }
+  if (line.isNotEmpty) yield line.toString();
 }
 
 String _stringLiteral(String value) {
