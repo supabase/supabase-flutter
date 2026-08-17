@@ -40,7 +40,7 @@ extension type const AuthorStatsRow(Map<String, dynamic> _json)
   int? get bookCount => _json['book_count'] as int?;
 }
 
-/// Values for inserting a row into `author_stats`. Columns that are nullable, part of a generated primary key, or covered by a database default are optional; passing `null` omits the column so the database default applies. Use the `set…ToNull` methods to insert SQL NULL explicitly.
+/// Values for inserting a row into `author_stats`. Columns that are nullable, identity, or covered by a database default are optional; passing `null` omits the column so the database default applies. Columns the database always generates itself are left out entirely. Use the `set…ToNull` methods to insert SQL NULL explicitly.
 extension type const AuthorStatsInsert._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
   AuthorStatsInsert({int? authorId, int? bookCount})
@@ -88,17 +88,16 @@ extension type const AuthorsRow(Map<String, dynamic> _json)
   String get name => _json['name'] as String;
 }
 
-/// Values for inserting a row into `authors`. Columns that are nullable, part of a generated primary key, or covered by a database default are optional; passing `null` omits the column so the database default applies. Use the `set…ToNull` methods to insert SQL NULL explicitly.
+/// Values for inserting a row into `authors`. Columns that are nullable, identity, or covered by a database default are optional; passing `null` omits the column so the database default applies. Columns the database always generates itself are left out entirely. Use the `set…ToNull` methods to insert SQL NULL explicitly.
 extension type const AuthorsInsert._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
-  AuthorsInsert({required int id, required String name})
-    : this._({'id': id, 'name': name});
+  AuthorsInsert({required String name}) : this._({'name': name});
 }
 
 /// Values for updating rows of `authors`. All columns are optional; passing `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods to write SQL NULL explicitly.
 extension type const AuthorsUpdate._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
-  AuthorsUpdate({int? id, String? name}) : this._({'id': ?id, 'name': ?name});
+  AuthorsUpdate({String? name}) : this._({'name': ?name});
 }
 
 /// Typed access to the `authors` table.
@@ -121,7 +120,7 @@ extension type const BooksRow(Map<String, dynamic> _json)
   int get authorId => _json['author_id'] as int;
   num? get price => _json['price'] as num?;
   double? get rating => (_json['rating'] as num?)?.toDouble();
-  bool? get inPrint => _json['in_print'] as bool?;
+  bool get inPrint => _json['in_print'] as bool;
   Mood? get mood => switch (_json['mood']) {
     null => null,
     final Object value => Mood.fromWire(value as String),
@@ -136,17 +135,14 @@ extension type const BooksRow(Map<String, dynamic> _json)
   };
 
   /// When the row was created
-  DateTime? get createdAt => switch (_json['created_at']) {
-    null => null,
-    final Object value => DateTime.parse(value as String),
-  };
+  DateTime get createdAt => DateTime.parse(_json['created_at'] as String);
   DateTime? get updatedAt => switch (_json['updated_at']) {
     null => null,
     final Object value => DateTime.parse(value as String),
   };
 }
 
-/// Values for inserting a row into `books`. Columns that are nullable, part of a generated primary key, or covered by a database default are optional; passing `null` omits the column so the database default applies. Use the `set…ToNull` methods to insert SQL NULL explicitly.
+/// Values for inserting a row into `books`. Columns that are nullable, identity, or covered by a database default are optional; passing `null` omits the column so the database default applies. Columns the database always generates itself are left out entirely. Use the `set…ToNull` methods to insert SQL NULL explicitly.
 extension type const BooksInsert._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
   BooksInsert({
@@ -190,9 +186,6 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
   /// Returns a copy with `rating` set to SQL NULL, overriding any database default.
   BooksInsert setRatingToNull() => BooksInsert._({..._json, 'rating': null});
 
-  /// Returns a copy with `in_print` set to SQL NULL, overriding any database default.
-  BooksInsert setInPrintToNull() => BooksInsert._({..._json, 'in_print': null});
-
   /// Returns a copy with `mood` set to SQL NULL, overriding any database default.
   BooksInsert setMoodToNull() => BooksInsert._({..._json, 'mood': null});
 
@@ -214,10 +207,6 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
   /// Returns a copy with `published_on` set to SQL NULL, overriding any database default.
   BooksInsert setPublishedOnToNull() =>
       BooksInsert._({..._json, 'published_on': null});
-
-  /// Returns a copy with `created_at` set to SQL NULL, overriding any database default.
-  BooksInsert setCreatedAtToNull() =>
-      BooksInsert._({..._json, 'created_at': null});
 
   /// Returns a copy with `updated_at` set to SQL NULL, overriding any database default.
   BooksInsert setUpdatedAtToNull() =>
@@ -268,9 +257,6 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
   /// Returns a copy with `rating` set to SQL NULL, overriding any database default.
   BooksUpdate setRatingToNull() => BooksUpdate._({..._json, 'rating': null});
 
-  /// Returns a copy with `in_print` set to SQL NULL, overriding any database default.
-  BooksUpdate setInPrintToNull() => BooksUpdate._({..._json, 'in_print': null});
-
   /// Returns a copy with `mood` set to SQL NULL, overriding any database default.
   BooksUpdate setMoodToNull() => BooksUpdate._({..._json, 'mood': null});
 
@@ -292,10 +278,6 @@ extension type const BooksUpdate._(Map<String, dynamic> _json)
   /// Returns a copy with `published_on` set to SQL NULL, overriding any database default.
   BooksUpdate setPublishedOnToNull() =>
       BooksUpdate._({..._json, 'published_on': null});
-
-  /// Returns a copy with `created_at` set to SQL NULL, overriding any database default.
-  BooksUpdate setCreatedAtToNull() =>
-      BooksUpdate._({..._json, 'created_at': null});
 
   /// Returns a copy with `updated_at` set to SQL NULL, overriding any database default.
   BooksUpdate setUpdatedAtToNull() =>

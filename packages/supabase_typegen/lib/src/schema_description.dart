@@ -88,6 +88,8 @@ class ColumnDescription {
     required this.isRequired,
     required this.isPrimaryKey,
     required this.hasDefault,
+    required this.isNullable,
+    this.isReadOnly = false,
     this.elementTypeKind,
     this.enumValues,
     this.foreignKey,
@@ -97,7 +99,7 @@ class ColumnDescription {
   /// Name of the column in the database.
   final String name;
 
-  /// The Postgres type, for example `bigint`, `text[]` or `public.mood`.
+  /// The Postgres type, for example `int8`, `_text` or `public.mood`.
   final String postgresFormat;
 
   /// The kind of Dart type the column maps to.
@@ -127,12 +129,12 @@ class ColumnDescription {
   final ForeignKeyDescription? foreignKey;
 
   /// Whether the column can be `null` in query results.
-  ///
-  /// Derived from the OpenAPI description: columns in the `required` list are
-  /// `NOT NULL`, and primary keys are always `NOT NULL`. Other columns are
-  /// treated as nullable, which is safe but over-approximates for `NOT NULL`
-  /// columns that have a database default.
-  bool get isNullable => !isRequired && !isPrimaryKey;
+  final bool isNullable;
+
+  /// Whether the column can never be written, because it is a
+  /// `GENERATED ALWAYS` identity or a generated column. Read-only columns
+  /// appear in the row type but not in the insert and update value types.
+  final bool isReadOnly;
 }
 
 /// The target of a foreign key column.

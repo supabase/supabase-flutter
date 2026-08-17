@@ -14,21 +14,33 @@ For every table the generator emits:
 
 ## Usage
 
+First dump the schema metadata with the Supabase CLI, then generate:
+
 ```sh
-dart run supabase_typegen \
-  --url https://your-project.supabase.co \
-  --key $SUPABASE_ANON_KEY \
+supabase gen types --lang json --local > schema.json
+dart run supabase_typegen --input schema.json \
   --output lib/supabase_schema.g.dart
 ```
 
-`--url` and `--key` fall back to the `SUPABASE_URL` and `SUPABASE_ANON_KEY`
-environment variables. Use `--schema` to generate for a schema other than
-`public`, and `--import` to change which library the generated file imports
-`PostgrestTable` and `TableColumn` from.
+Any of the CLI's connection flags work (`--local`, `--linked`,
+`--db-url`, `--project-id`). Until CLI support for `--lang json` ships, the
+same document comes straight from
+[postgres-meta](https://github.com/supabase/postgres-meta) with
+`PG_META_GENERATE_TYPES=json` or its `/generators/json` endpoint. Pass
+`--input -` to read the document from stdin:
 
-The schema is read from the OpenAPI description that PostgREST serves at the
-API root, so the key only needs read access; tables whose role lacks
-privileges (grants, not row level security) are not included.
+```sh
+supabase gen types --lang json --local | dart run supabase_typegen --input -
+```
+
+Use `--schema` to generate for a schema other than `public`, and `--import`
+to change which library the generated file imports `PostgrestTable` and
+`TableColumn` from.
+
+The metadata comes from the database catalog, so nullability, database
+defaults, and identity columns are exact: a `NOT NULL` column with a default
+reads as non-nullable but stays optional on insert, and `GENERATED ALWAYS`
+columns appear in the row type but not in the insert and update types.
 
 ## Generated code in action
 
@@ -45,9 +57,6 @@ await client.table(Books.table).insert(
 
 ## Known limitations
 
-- The OpenAPI description does not distinguish nullable columns from
-  `NOT NULL` columns with a database default, so getters for defaulted
-  columns other than primary keys are conservatively nullable.
 - Passing `null` to an `Insert`/`Update` parameter omits the column. To write
   SQL NULL explicitly, use the generated `set…ToNull` methods, for example
   `BooksUpdate(inPrint: false).setPriceToNull()`; they only exist for

@@ -8,9 +8,11 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 /// Run from the package root with `dart run tool/regenerate_goldens.dart`.
 void main() {
   final document =
-      jsonDecode(File('test/fixtures/openapi.json').readAsStringSync())
+      jsonDecode(
+            File('test/fixtures/postgres_meta_schema.json').readAsStringSync(),
+          )
           as Map<String, dynamic>;
-  final schema = parseOpenApiDocument(document);
+  final schema = parsePostgresMetaDocument(document);
   File(
     'test/goldens/supabase_schema.dart',
   ).writeAsStringSync(generateDartCode(schema));

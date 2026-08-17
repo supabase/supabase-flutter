@@ -5,16 +5,34 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 import 'package:test/test.dart';
 
 void main() {
+  late Map<String, dynamic> document;
   late SchemaDescription schema;
 
   setUpAll(() {
-    final document =
-        jsonDecode(File('test/fixtures/openapi.json').readAsStringSync())
+    document =
+        jsonDecode(
+              File(
+                'test/fixtures/postgres_meta_schema.json',
+              ).readAsStringSync(),
+            )
             as Map<String, dynamic>;
-    schema = parseOpenApiDocument(document);
+    schema = parsePostgresMetaDocument(document);
   });
 
-  test('parses all tables sorted by name', () {
+  test('rejects unsupported document versions', () {
+    expect(
+      () => parsePostgresMetaDocument({...document, 'version': 2}),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('version 2'),
+        ),
+      ),
+    );
+  });
+
+  test('parses tables and views sorted by name', () {
     expect(schema.tables.map((table) => table.name), [
       'author_stats',
       'authors',
@@ -22,18 +40,24 @@ void main() {
     ]);
   });
 
-  test('parses table comments', () {
+  test('parses table and view comments', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     expect(books.comment, 'Books available in the library');
+
+    final authorStats = schema.tables.singleWhere(
+      (table) => table.name == 'author_stats',
+    );
+    expect(authorStats.comment, 'Aggregated statistics per author');
   });
 
-  test('parses primary keys, requiredness and defaults', () {
+  test('parses primary keys, requiredness, defaults and nullability', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     final id = books.columns.singleWhere((column) => column.name == 'id');
     expect(id.isPrimaryKey, isTrue);
     expect(id.isRequired, isFalse);
     expect(id.hasDefault, isTrue);
     expect(id.isNullable, isFalse);
+    expect(id.isReadOnly, isFalse);
 
     final title = books.columns.singleWhere((column) => column.name == 'title');
     expect(title.isRequired, isTrue);
@@ -44,7 +68,34 @@ void main() {
     expect(price.isNullable, isTrue);
   });
 
-  test('parses foreign keys', () {
+  test('not null columns with a database default are non-nullable reads '
+      'but optional writes', () {
+    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final inPrint = books.columns.singleWhere(
+      (column) => column.name == 'in_print',
+    );
+    expect(inPrint.isNullable, isFalse);
+    expect(inPrint.isRequired, isFalse);
+    expect(inPrint.hasDefault, isTrue);
+
+    final createdAt = books.columns.singleWhere(
+      (column) => column.name == 'created_at',
+    );
+    expect(createdAt.isNullable, isFalse);
+    expect(createdAt.isRequired, isFalse);
+  });
+
+  test('always generated identity columns are read-only', () {
+    final authors = schema.tables.singleWhere(
+      (table) => table.name == 'authors',
+    );
+    final id = authors.columns.singleWhere((column) => column.name == 'id');
+    expect(id.isReadOnly, isTrue);
+    expect(id.isRequired, isFalse);
+    expect(id.isNullable, isFalse);
+  });
+
+  test('parses foreign keys from the relationships', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     final authorId = books.columns.singleWhere(
       (column) => column.name == 'author_id',
@@ -71,23 +122,34 @@ void main() {
     expect(kindOf('cover_uuid'), ColumnTypeKind.text);
   });
 
-  test('collects Postgres enums', () {
+  test('collects Postgres enums with their schema qualification', () {
     expect(schema.enums, hasLength(1));
     final mood = schema.enums.single;
     expect(mood.qualifiedName, 'public.mood');
     expect(mood.name, 'mood');
     expect(mood.values, ['happy', 'very happy', 'sad']);
+
+    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    final moodColumn = books.columns.singleWhere(
+      (column) => column.name == 'mood',
+    );
+    expect(moodColumn.postgresFormat, 'public.mood');
   });
 
   test('parses array columns', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     final tags = books.columns.singleWhere((column) => column.name == 'tags');
-    expect(tags.postgresFormat, 'text[]');
+    expect(tags.postgresFormat, '_text');
     expect(tags.typeKind, ColumnTypeKind.array);
     expect(tags.elementTypeKind, ColumnTypeKind.text);
+
+    final pageCounts = books.columns.singleWhere(
+      (column) => column.name == 'page_counts',
+    );
+    expect(pageCounts.elementTypeKind, ColumnTypeKind.integer);
   });
 
-  test('keeps human column comments without the key markers', () {
+  test('keeps column comments', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     final id = books.columns.singleWhere((column) => column.name == 'id');
     expect(id.comment, isNull);
@@ -96,5 +158,16 @@ void main() {
       (column) => column.name == 'created_at',
     );
     expect(createdAt.comment, 'When the row was created');
+  });
+
+  test('view columns come through like table columns', () {
+    final authorStats = schema.tables.singleWhere(
+      (table) => table.name == 'author_stats',
+    );
+    expect(authorStats.columns.map((column) => column.name), [
+      'author_id',
+      'book_count',
+    ]);
+    expect(authorStats.columns.first.isNullable, isTrue);
   });
 }
