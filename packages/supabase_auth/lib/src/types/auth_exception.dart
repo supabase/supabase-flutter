@@ -129,5 +129,6 @@ class AuthWeakPasswordException extends AuthApiException {
 }
 
 class AuthInvalidJwtException extends AuthException {
-  AuthInvalidJwtException(super.message) : super(errorCode: 'invalid_jwt');
+  const AuthInvalidJwtException(super.message)
+    : super(errorCode: 'invalid_jwt');
 }

@@ -3,16 +3,11 @@ import 'package:supabase/supabase.dart';
 class PostgrestClientOptions {
   final String schema;
 
-  /// Whether automatic retries are performed for GET and HEAD requests that
-  /// fail with a retryable status code or a network error.
-  final bool retryEnabled;
-
-  /// The number of retry attempts made for a retryable request before giving
-  /// up.
-  final int retryCount;
-
-  /// The HTTP status codes that trigger an automatic retry.
-  final Set<int> retryableStatusCodes;
+  /// Configures the automatic retry of GET and HEAD requests that fail with a
+  /// retryable status code or a network error.
+  ///
+  /// Use `PostgrestBuilder.retry` to override it for a single request.
+  final PostgrestRetryOptions retryOptions;
 
   /// Bounds how long a single request attempt may take.
   ///
@@ -25,9 +20,7 @@ class PostgrestClientOptions {
 
   const PostgrestClientOptions({
     this.schema = 'public',
-    this.retryEnabled = true,
-    this.retryCount = 3,
-    this.retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
+    this.retryOptions = const PostgrestRetryOptions(),
     this.requestTimeout,
   });
 }

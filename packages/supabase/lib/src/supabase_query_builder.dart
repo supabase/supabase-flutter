@@ -15,6 +15,8 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder<dynamic> {
     super.httpClient,
     required int incrementId,
     required super.isolate,
+    super.retryOptions,
+    super.requestTimeout,
   }) : _realtime = realtime,
        _schema = schema,
        _table = table,

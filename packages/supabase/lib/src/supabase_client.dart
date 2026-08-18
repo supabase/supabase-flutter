@@ -226,6 +226,8 @@ class SupabaseClient {
       httpClient: _authHttpClient,
       incrementId: _incrementId.increment(),
       isolate: _isolate,
+      retryOptions: rest.retryOptions,
+      requestTimeout: rest.requestTimeout,
     );
   }
 
@@ -343,9 +345,7 @@ class SupabaseClient {
       schema: _postgrestOptions.schema,
       httpClient: _authHttpClient,
       isolate: _isolate,
-      retryEnabled: _postgrestOptions.retryEnabled,
-      retryCount: _postgrestOptions.retryCount,
-      retryableStatusCodes: _postgrestOptions.retryableStatusCodes,
+      retryOptions: _postgrestOptions.retryOptions,
       requestTimeout: _postgrestOptions.requestTimeout,
     );
   }

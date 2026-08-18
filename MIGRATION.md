@@ -1230,3 +1230,29 @@ These renames also change a type:
 | `RealtimeClient.reconnectAfterMs` (`int` return) | `reconnectAfter` (`Duration` return) |
 | `SnapshotReference.maxReferenceAgeMs` / `maxSnapshotAgeMs` (`int?`) | `maxReferenceAge` / `maxSnapshotAge` (`Duration?`) |
 | `Snapshot.timestampMs` / `TableMetadata.lastUpdatedMs` (`int`) | `timestamp` / `lastUpdated` (`DateTime`, UTC) |
+
+### Retry configuration is a single `PostgrestRetryOptions`
+
+The individual retry parameters are replaced by one `PostgrestRetryOptions` value.
+
+| Before | After |
+| --- | --- |
+| `PostgrestClient(retryEnabled: …, retryCount: …, retryableStatusCodes: …)` | `PostgrestClient(retryOptions: …)` |
+| `PostgrestClientOptions(retryEnabled: …, retryCount: …, retryableStatusCodes: …)` | `PostgrestClientOptions(retryOptions: …)` |
+| `PostgrestBuilder`, `PostgrestQueryBuilder` and `PostgrestRpcBuilder` constructors, same three parameters | `retryOptions: …` |
+| `PostgrestClient.defaultRetryableStatusCodes` | `PostgrestRetryOptions.defaultStatusCodes` |
+
+```dart
+// Before
+postgrestOptions: const PostgrestClientOptions(
+  retryCount: 5,
+  retryableStatusCodes: {503},
+),
+
+// After
+postgrestOptions: const PostgrestClientOptions(
+  retryOptions: PostgrestRetryOptions(count: 5, statusCodes: {503}),
+),
+```
+
+The per-request `.retry()` override is unchanged.
