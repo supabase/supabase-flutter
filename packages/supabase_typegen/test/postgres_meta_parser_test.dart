@@ -122,6 +122,50 @@ void main() {
     expect(kindOf('cover_uuid'), ColumnTypeKind.text);
   });
 
+  test('types that PostgREST serializes as strings read as text', () {
+    Map<String, dynamic> columnOf(String format) => {
+      'table_id': 1,
+      'schema': 'public',
+      'table': 'servers',
+      'id': '1.1',
+      'ordinal_position': 1,
+      'name': 'value',
+      'default_value': null,
+      'data_type': format,
+      'format': format,
+      'is_identity': false,
+      'identity_generation': null,
+      'is_generated': false,
+      'is_nullable': true,
+      'is_updatable': true,
+      'is_unique': false,
+      'enums': <String>[],
+      'check': null,
+      'comment': null,
+    };
+
+    for (final format in ['inet', 'cidr', 'macaddr', 'money', 'xml', 'name']) {
+      final parsed = parsePostgresMetaDocument({
+        'version': 1,
+        'tables': [
+          {
+            'id': 1,
+            'schema': 'public',
+            'name': 'servers',
+            'comment': null,
+            'primary_keys': <Map<String, dynamic>>[],
+          },
+        ],
+        'columns': [columnOf(format)],
+      });
+      expect(
+        parsed.tables.single.columns.single.typeKind,
+        ColumnTypeKind.text,
+        reason: '$format should map to text',
+      );
+    }
+  });
+
   test('collects Postgres enums with their schema qualification', () {
     expect(schema.enums, hasLength(1));
     final mood = schema.enums.single;

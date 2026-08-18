@@ -226,33 +226,39 @@ void _writeValues(
   _writeDocComment(buffer, docLine);
   buffer
     ..writeln('extension type const $typeName._(Map<String, dynamic> _json)')
-    ..writeln('    implements Map<String, dynamic> {')
-    ..writeln('  $typeName({');
-  for (final column in writableColumns) {
-    final binding = bindings[column.name]!;
-    final name = memberNames[column.name]!;
-    if (isRequired(column)) {
-      buffer.writeln('    required ${binding.dartType} $name,');
-    } else {
-      buffer.writeln('    ${binding.dartType}? $name,');
+    ..writeln('    implements Map<String, dynamic> {');
+  if (writableColumns.isEmpty) {
+    // A named parameter list cannot be empty, so a table whose columns are
+    // all read-only gets a parameterless constructor.
+    buffer.writeln('  $typeName() : this._({});');
+  } else {
+    buffer.writeln('  $typeName({');
+    for (final column in writableColumns) {
+      final binding = bindings[column.name]!;
+      final name = memberNames[column.name]!;
+      if (isRequired(column)) {
+        buffer.writeln('    required ${binding.dartType} $name,');
+      } else {
+        buffer.writeln('    ${binding.dartType}? $name,');
+      }
     }
-  }
-  buffer.writeln('  }) : this._({');
-  for (final column in writableColumns) {
-    final binding = bindings[column.name]!;
-    final name = memberNames[column.name]!;
-    final key = _stringLiteral(column.name);
-    if (isRequired(column)) {
-      buffer.writeln(
-        '         $key: ${_writeExpression(name, binding, nullable: false)},',
-      );
-    } else {
-      buffer.writeln(
-        '         $key: ?${_writeExpression(name, binding, nullable: true)},',
-      );
+    buffer.writeln('  }) : this._({');
+    for (final column in writableColumns) {
+      final binding = bindings[column.name]!;
+      final name = memberNames[column.name]!;
+      final key = _stringLiteral(column.name);
+      if (isRequired(column)) {
+        buffer.writeln(
+          '         $key: ${_writeExpression(name, binding, nullable: false)},',
+        );
+      } else {
+        buffer.writeln(
+          '         $key: ?${_writeExpression(name, binding, nullable: true)},',
+        );
+      }
     }
+    buffer.writeln('       });');
   }
-  buffer.writeln('       });');
   for (final column in writableColumns) {
     if (!column.isNullable) continue;
     final name = memberNames[column.name]!;
