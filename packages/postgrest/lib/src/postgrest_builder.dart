@@ -140,7 +140,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
          isolate: isolate,
          count: count,
          maybeSingle: maybeSingle,
-         retry: retryOptions,
+         // Snapshot the status codes so that mutating the set the caller
+         // passed does not change the retry behavior of this request.
+         retry: retryOptions.copyWith(
+           statusCodes: Set.unmodifiable(retryOptions.statusCodes),
+         ),
          requestTimeout: requestTimeout,
          abortSignal: abortSignal,
        );

@@ -366,6 +366,25 @@ void main() {
       expect(mock.callCount, 1);
     });
 
+    test('a directly built builder snapshots the provided set', () async {
+      final mock = _MockRetryClient([_status(500), _ok()]);
+      final statusCodes = {500};
+      final builder = PostgrestQueryBuilder<dynamic>(
+        url: Uri.parse('http://localhost:3000/users'),
+        httpClient: mock,
+        retryOptions: PostgrestRetryOptions(
+          statusCodes: statusCodes,
+          delay: (_) => Duration.zero,
+        ),
+      );
+
+      statusCodes.clear();
+
+      await builder.select();
+
+      expect(mock.callCount, 2);
+    });
+
     test('mutating the provided set does not affect retry behavior', () async {
       final mock = _MockRetryClient([_status(500), _ok()]);
       final statusCodes = {500};

@@ -6,7 +6,8 @@ import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
-/// Answers with [statuses] in order, one status per request.
+/// Answers with [statuses] in order, one status per request, and repeats the
+/// last one once they run out.
 class _StatusSequenceClient extends BaseClient {
   _StatusSequenceClient(this.statuses);
 
@@ -15,7 +16,9 @@ class _StatusSequenceClient extends BaseClient {
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
-    final status = statuses[callCount.clamp(0, statuses.length - 1)];
+    final status = callCount < statuses.length
+        ? statuses[callCount]
+        : statuses.last;
     callCount++;
     return StreamedResponse(
       Stream.value(Uint8List.fromList(utf8.encode('[]'))),
@@ -31,8 +34,11 @@ void main() {
   late _StatusSequenceClient httpClient;
   late SupabaseClient supabase;
 
-  void initialize({required PostgrestRetryOptions retryOptions}) {
-    httpClient = _StatusSequenceClient([503, 503, 200]);
+  void initialize({
+    required List<int> statuses,
+    required PostgrestRetryOptions retryOptions,
+  }) {
+    httpClient = _StatusSequenceClient(statuses);
     supabase = SupabaseClient(
       'http://localhost:9999',
       supabaseKey,
@@ -41,14 +47,22 @@ void main() {
     );
   }
 
+  /// 500 is not retried by default, so a request that recovers from it proves
+  /// that the configured options were used and not the default ones.
+  void initializeWithCustomStatusCode() => initialize(
+    statuses: [500, 500, 200],
+    retryOptions: PostgrestRetryOptions(
+      statusCodes: {500},
+      delay: (_) => Duration.zero,
+    ),
+  );
+
   tearDown(() async {
     await supabase.dispose();
   });
 
   test('from() retries with the configured retry options', () async {
-    initialize(
-      retryOptions: PostgrestRetryOptions(delay: (_) => Duration.zero),
-    );
+    initializeWithCustomStatusCode();
 
     await supabase.from('todos').select();
 
@@ -57,6 +71,7 @@ void main() {
 
   test('from() honors disabled retries', () async {
     initialize(
+      statuses: [503, 503, 200],
       retryOptions: const PostgrestRetryOptions(enabled: false),
     );
 
@@ -69,12 +84,7 @@ void main() {
   });
 
   test('schema().from() retries with the configured retry options', () async {
-    initialize(
-      retryOptions: PostgrestRetryOptions(
-        statusCodes: {503},
-        delay: (_) => Duration.zero,
-      ),
-    );
+    initializeWithCustomStatusCode();
 
     await supabase.schema('personal').from('todos').select();
 
@@ -82,9 +92,7 @@ void main() {
   });
 
   test('rpc() retries with the configured retry options', () async {
-    initialize(
-      retryOptions: PostgrestRetryOptions(delay: (_) => Duration.zero),
-    );
+    initializeWithCustomStatusCode();
 
     await supabase.rpc('get_todos', params: {}, get: true);
 

@@ -56,7 +56,7 @@ class PostgrestRetryOptions {
     bool? enabled,
     int? count,
     Set<int>? statusCodes,
-    Duration Function(int attempt)? delay,
+    @visibleForTesting Duration Function(int attempt)? delay,
   }) {
     return PostgrestRetryOptions(
       enabled: enabled ?? this.enabled,
