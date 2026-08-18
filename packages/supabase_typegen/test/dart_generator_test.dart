@@ -17,11 +17,11 @@ void main() {
     final document =
         jsonDecode(
               File(
-                'test/fixtures/postgres_meta_schema.json',
+                'test/fixtures/generator_metadata.json',
               ).readAsStringSync(),
             )
             as Map<String, dynamic>;
-    schema = parsePostgresMetaDocument(document);
+    schema = parseGeneratorMetadata(document);
   });
 
   test('matches the golden output', () {
@@ -87,7 +87,6 @@ void main() {
           postgresFormat: 'int8',
           typeKind: ColumnTypeKind.integer,
           isRequired: false,
-          isPrimaryKey: true,
           hasDefault: true,
           isNullable: false,
           isReadOnly: true,

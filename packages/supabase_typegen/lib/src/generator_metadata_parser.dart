@@ -1,8 +1,5 @@
 import 'schema_description.dart';
 
-/// The metadata document version this parser understands.
-const supportedPostgresMetaVersion = 1;
-
 const _integerFormats = {'int2', 'int4', 'int8', 'oid'};
 const _floatingFormats = {'float4', 'float8'};
 
@@ -58,22 +55,22 @@ ColumnTypeKind _elementTypeKind(String elementFormat, {required bool isEnum}) {
   return kind == ColumnTypeKind.enumType ? ColumnTypeKind.text : kind;
 }
 
-/// Parses the generator metadata document that postgres-meta emits from its
-/// `json` generator (`supabase gen types --lang json`, the
-/// `/generators/json` endpoint, or `PG_META_GENERATE_TYPES=json`) into a
-/// [SchemaDescription] for [schemaName].
+/// Parses a `GeneratorMetadata` document, the introspection contract shared
+/// by `@supabase/postgrest-typegen` and postgres-meta
+/// (`supabase gen types --lang json`), into a [SchemaDescription] for
+/// [schemaName].
 ///
-/// Throws a [FormatException] when the document does not carry the supported
-/// `version`.
-SchemaDescription parsePostgresMetaDocument(
+/// Throws a [FormatException] when the document does not have the
+/// `GeneratorMetadata` shape.
+SchemaDescription parseGeneratorMetadata(
   Map<String, dynamic> document, {
   String schemaName = 'public',
 }) {
-  final version = document['version'];
-  if (version != supportedPostgresMetaVersion) {
-    throw FormatException(
-      'Unsupported postgres-meta document version $version; this version of '
-      'supabase_typegen supports version $supportedPostgresMetaVersion.',
+  if (document['tables'] is! List<dynamic> ||
+      document['columns'] is! List<dynamic>) {
+    throw const FormatException(
+      'Not a GeneratorMetadata document: expected the introspection contract '
+      'of @supabase/postgrest-typegen, with "tables" and "columns" lists.',
     );
   }
 
@@ -106,12 +103,6 @@ SchemaDescription parsePostgresMetaDocument(
 
   for (final relation in relations) {
     final relationName = relation['name'] as String;
-    final primaryKeyNames = {
-      for (final primaryKey
-          in (relation['primary_keys'] as List<dynamic>? ?? const [])
-              .cast<Map<String, dynamic>>())
-        primaryKey['name'] as String,
-    };
 
     final columns = <ColumnDescription>[];
     for (final column
@@ -150,7 +141,6 @@ SchemaDescription parsePostgresMetaDocument(
               : null,
           enumValues: isEnum ? enumValues : null,
           isRequired: !isNullable && !hasDefault,
-          isPrimaryKey: primaryKeyNames.contains(name),
           hasDefault: hasDefault,
           isNullable: isNullable,
           isReadOnly:
