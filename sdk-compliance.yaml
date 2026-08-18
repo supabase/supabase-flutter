@@ -387,6 +387,9 @@ features:
       - PasskeyAuthenticationOptionsResponse.expiresAt
       - PasskeyAuthenticationOptionsResponse.fromJson
       - PasskeyAuthenticationOptionsResponse.options
+  auth.passkey.delete_passkey: not_implemented
+  auth.passkey.list_passkeys: not_implemented
+  auth.passkey.update_passkey: not_implemented
 
   # auth — OAuth server (Supabase acting as an OAuth provider)
   auth.oauth_server.get_authorization_details:
@@ -1232,6 +1235,7 @@ features:
     status: implemented
     symbols:
       - StorageBucketApi.emptyBucket
+  storage.file_buckets.request_cancellation: not_implemented
 
   # storage — vector buckets
   storage.vector_buckets.create_vector_bucket:
@@ -1605,6 +1609,7 @@ features:
     status: implemented
     symbols:
       - IcebergRestCatalog.tableExists
+  storage.analytics.access_catalog: not_implemented
 
   # storage — errors
   storage.errors.error_codes:
@@ -1824,6 +1829,7 @@ features:
       - ReplayOption.limit
       - ReplayOption.since
       - ReplayOption.toMap
+  realtime.subscriptions.postgres_changes_multiple_filters: not_implemented
 
   # realtime — presence
   realtime.presence.track:
@@ -2053,6 +2059,8 @@ features:
       - TracePropagationOptions.enabled
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
+  # Newly synced from the canonical spec; no local group yet, place manually.
+  storage.configuration.auto_retry: not_implemented
 
 # Public API the matrix accounts for but that no single capability owns: shared
 # domain models, the exception hierarchies, the client and sub-API handles that
