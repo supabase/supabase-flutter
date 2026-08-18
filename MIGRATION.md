@@ -1239,7 +1239,7 @@ The individual retry parameters are replaced by one `PostgrestRetryOptions` valu
 | --- | --- |
 | `PostgrestClient(retryEnabled: …, retryCount: …, retryableStatusCodes: …)` | `PostgrestClient(retryOptions: …)` |
 | `PostgrestClientOptions(retryEnabled: …, retryCount: …, retryableStatusCodes: …)` | `PostgrestClientOptions(retryOptions: …)` |
-| `PostgrestQueryBuilder(retryEnabled: …, …)` / `PostgrestRpcBuilder(retryEnabled: …, …)` | `PostgrestQueryBuilder(retryOptions: …)` / `PostgrestRpcBuilder(retryOptions: …)` |
+| `PostgrestBuilder`, `PostgrestQueryBuilder` and `PostgrestRpcBuilder` constructors, same three parameters | `retryOptions: …` |
 | `PostgrestClient.defaultRetryableStatusCodes` | `PostgrestRetryOptions.defaultStatusCodes` |
 
 ```dart

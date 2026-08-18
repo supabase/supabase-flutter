@@ -6,13 +6,16 @@ import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
+abstract class _CountingClient extends BaseClient {
+  int callCount = 0;
+}
+
 /// Answers with [statuses] in order, one status per request, and repeats the
 /// last one once they run out.
-class _StatusSequenceClient extends BaseClient {
+class _StatusSequenceClient extends _CountingClient {
   _StatusSequenceClient(this.statuses);
 
   final List<int> statuses;
-  int callCount = 0;
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
@@ -29,23 +32,63 @@ class _StatusSequenceClient extends BaseClient {
   }
 }
 
+/// Never answers, so only an abort ends the request.
+class _StallingClient extends _CountingClient {
+  @override
+  Future<StreamedResponse> send(BaseRequest request) {
+    callCount++;
+    final completer = Completer<StreamedResponse>();
+    if (request is AbortableRequest) {
+      unawaited(
+        request.abortTrigger?.then((_) {
+          if (!completer.isCompleted) {
+            completer.completeError(
+              RequestAbortedException(),
+              StackTrace.current,
+            );
+          }
+        }),
+      );
+    }
+    return completer.future;
+  }
+}
+
 void main() {
   const supabaseKey = 'supabaseKey';
-  late _StatusSequenceClient httpClient;
+  late _CountingClient httpClient;
   late SupabaseClient supabase;
+
+  void initializeWith({
+    required _CountingClient client,
+    PostgrestRetryOptions retryOptions = const PostgrestRetryOptions(),
+    Duration? requestTimeout,
+  }) {
+    httpClient = client;
+    supabase = SupabaseClient(
+      'http://localhost:9999',
+      supabaseKey,
+      httpClient: client,
+      postgrestOptions: PostgrestClientOptions(
+        retryOptions: retryOptions,
+        requestTimeout: requestTimeout,
+      ),
+    );
+  }
 
   void initialize({
     required List<int> statuses,
     required PostgrestRetryOptions retryOptions,
-  }) {
-    httpClient = _StatusSequenceClient(statuses);
-    supabase = SupabaseClient(
-      'http://localhost:9999',
-      supabaseKey,
-      httpClient: httpClient,
-      postgrestOptions: PostgrestClientOptions(retryOptions: retryOptions),
-    );
-  }
+  }) => initializeWith(
+    client: _StatusSequenceClient(statuses),
+    retryOptions: retryOptions,
+  );
+
+  void initializeStalled() => initializeWith(
+    client: _StallingClient(),
+    retryOptions: const PostgrestRetryOptions(count: 0),
+    requestTimeout: const Duration(milliseconds: 50),
+  );
 
   /// 500 is not retried by default, so a request that recovers from it proves
   /// that the configured options were used and not the default ones.
@@ -97,5 +140,27 @@ void main() {
     await supabase.rpc('get_todos', params: {}, get: true);
 
     expect(httpClient.callCount, 3);
+  });
+
+  test('from() times out with the configured request timeout', () async {
+    initializeStalled();
+
+    await expectLater(
+      () => supabase.from('todos').select(),
+      throwsA(isA<TimeoutException>()),
+    );
+
+    expect(httpClient.callCount, 1);
+  });
+
+  test('schema().from() times out with the configured timeout', () async {
+    initializeStalled();
+
+    await expectLater(
+      () => supabase.schema('personal').from('todos').select(),
+      throwsA(isA<TimeoutException>()),
+    );
+
+    expect(httpClient.callCount, 1);
   });
 }
