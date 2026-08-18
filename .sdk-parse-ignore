@@ -8,6 +8,9 @@
 # extractor honours it and excludes them from the scan. Use this file only for
 # paths that cannot carry that annotation, e.g. generated sources.
 
+# Code generation tooling, not part of the Supabase SDK capability surface.
+packages/supabase_openapi_generator/
+
 # supabase_common is an internal, cross-package helper library. Its public
 # symbols are imported by the other packages, so they cannot be marked
 # @internal (that would trigger invalid_use_of_internal_member in the
