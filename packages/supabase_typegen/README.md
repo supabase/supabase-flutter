@@ -14,7 +14,19 @@ For every table the generator emits:
 
 ## Usage
 
-First dump the schema metadata with the Supabase CLI, then generate:
+The easiest way is through the Supabase CLI, which handles the database
+connection and runs this package for you. Add `supabase_typegen` as a dev
+dependency of your project, then:
+
+```sh
+supabase gen types --lang dart --local > lib/supabase_schema.g.dart
+```
+
+Any of the CLI's connection flags work (`--local`, `--linked`, `--db-url`,
+`--project-id`).
+
+To run the package yourself, dump the schema metadata first and pass it with
+`--input` (a path, or `-` for stdin):
 
 ```sh
 supabase gen types --lang json --local > schema.json
@@ -22,16 +34,10 @@ dart run supabase_typegen --input schema.json \
   --output lib/supabase_schema.g.dart
 ```
 
-Any of the CLI's connection flags work (`--local`, `--linked`,
-`--db-url`, `--project-id`). Until CLI support for `--lang json` ships, the
-same document comes straight from
+Until CLI support for `--lang dart` and `--lang json` ships, the same
+metadata document comes straight from
 [postgres-meta](https://github.com/supabase/postgres-meta) with
-`PG_META_GENERATE_TYPES=json` or its `/generators/json` endpoint. Pass
-`--input -` to read the document from stdin:
-
-```sh
-supabase gen types --lang json --local | dart run supabase_typegen --input -
-```
+`PG_META_GENERATE_TYPES=json` or its `/generators/json` endpoint.
 
 Use `--schema` to generate for a schema other than `public`, and `--import`
 to change which library the generated file imports `PostgrestTable` and
