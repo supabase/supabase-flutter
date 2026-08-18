@@ -4,6 +4,8 @@ import 'package:supabase_auth/supabase_auth.dart';
 import 'package:http/http.dart';
 import 'package:test/test.dart';
 
+import 'utils.dart';
+
 /// Serves a fixed list-users response with the pagination headers the GoTrue
 /// server sends alongside it.
 class ListUsersMockClient extends BaseClient {
@@ -52,6 +54,7 @@ void main() {
   AuthClient clientWith(ListUsersMockClient mockClient) => AuthClient(
     url: 'http://localhost:9999',
     httpClient: mockClient,
+    asyncStorage: TestAsyncStorage(),
   );
 
   test('listUsers() returns the metadata of a middle page', () async {
