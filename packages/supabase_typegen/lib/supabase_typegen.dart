@@ -4,5 +4,5 @@ library;
 
 export 'src/dart_generator.dart';
 export 'src/identifiers.dart';
-export 'src/postgres_meta_parser.dart';
+export 'src/generator_metadata_parser.dart';
 export 'src/schema_description.dart';

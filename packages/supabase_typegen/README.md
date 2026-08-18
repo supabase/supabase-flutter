@@ -34,10 +34,11 @@ dart run supabase_typegen --input schema.json \
   --output lib/supabase_schema.g.dart
 ```
 
-Until CLI support for `--lang dart` and `--lang json` ships, the same
-metadata document comes straight from
-[postgres-meta](https://github.com/supabase/postgres-meta) with
-`PG_META_GENERATE_TYPES=json` or its `/generators/json` endpoint.
+The document is the `GeneratorMetadata` introspection contract of
+[`@supabase/postgrest-typegen`](https://github.com/supabase/pg-toolbelt),
+which is also what postgres-meta's own type generators consume. Until CLI
+support for `--lang dart` and `--lang json` ships, the same document comes
+from serializing that package's `introspect()` result.
 
 ## Committing schema.json
 

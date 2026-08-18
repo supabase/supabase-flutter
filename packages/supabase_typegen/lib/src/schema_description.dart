@@ -86,7 +86,6 @@ class ColumnDescription {
     required this.postgresFormat,
     required this.typeKind,
     required this.isRequired,
-    required this.isPrimaryKey,
     required this.hasDefault,
     required this.isNullable,
     this.isReadOnly = false,
@@ -115,9 +114,6 @@ class ColumnDescription {
   /// Whether the column is `NOT NULL` without a database default, which makes
   /// it required on insert.
   final bool isRequired;
-
-  /// Whether the column is part of the primary key.
-  final bool isPrimaryKey;
 
   /// Whether the column has a database default.
   final bool hasDefault;

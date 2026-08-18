@@ -12,21 +12,21 @@ void main() {
     document =
         jsonDecode(
               File(
-                'test/fixtures/postgres_meta_schema.json',
+                'test/fixtures/generator_metadata.json',
               ).readAsStringSync(),
             )
             as Map<String, dynamic>;
-    schema = parsePostgresMetaDocument(document);
+    schema = parseGeneratorMetadata(document);
   });
 
-  test('rejects unsupported document versions', () {
+  test('rejects documents without the GeneratorMetadata shape', () {
     expect(
-      () => parsePostgresMetaDocument({...document, 'version': 2}),
+      () => parseGeneratorMetadata({'swagger': '2.0', 'definitions': {}}),
       throwsA(
         isA<FormatException>().having(
           (error) => error.message,
           'message',
-          contains('version 2'),
+          contains('GeneratorMetadata'),
         ),
       ),
     );
@@ -50,10 +50,9 @@ void main() {
     expect(authorStats.comment, 'Aggregated statistics per author');
   });
 
-  test('parses primary keys, requiredness, defaults and nullability', () {
+  test('parses requiredness, defaults and nullability', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     final id = books.columns.singleWhere((column) => column.name == 'id');
-    expect(id.isPrimaryKey, isTrue);
     expect(id.isRequired, isFalse);
     expect(id.hasDefault, isTrue);
     expect(id.isNullable, isFalse);
@@ -145,15 +144,13 @@ void main() {
     };
 
     for (final format in ['inet', 'cidr', 'macaddr', 'money', 'xml', 'name']) {
-      final parsed = parsePostgresMetaDocument({
-        'version': 1,
+      final parsed = parseGeneratorMetadata({
         'tables': [
           {
             'id': 1,
             'schema': 'public',
             'name': 'servers',
             'comment': null,
-            'primary_keys': <Map<String, dynamic>>[],
           },
         ],
         'columns': [columnOf(format)],

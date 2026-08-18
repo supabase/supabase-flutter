@@ -1,7 +1,10 @@
 {
-  "version": 1,
   "schemas": [
-    { "id": 2200, "name": "public", "owner": "postgres" }
+    {
+      "id": 2200,
+      "name": "public",
+      "owner": "postgres"
+    }
   ],
   "tables": [
     {
@@ -15,11 +18,7 @@
       "size": "8192 bytes",
       "live_rows_estimate": 0,
       "dead_rows_estimate": 0,
-      "comment": "Books available in the library",
-      "primary_keys": [
-        { "schema": "public", "table_name": "books", "name": "id", "table_id": 16385 }
-      ],
-      "relationships": []
+      "comment": "Books available in the library"
     },
     {
       "id": 16401,
@@ -32,11 +31,7 @@
       "size": "8192 bytes",
       "live_rows_estimate": 0,
       "dead_rows_estimate": 0,
-      "comment": null,
-      "primary_keys": [
-        { "schema": "public", "table_name": "authors", "name": "id", "table_id": 16401 }
-      ],
-      "relationships": []
+      "comment": null
     }
   ],
   "foreignTables": [],
@@ -187,7 +182,11 @@
       "is_nullable": true,
       "is_updatable": true,
       "is_unique": false,
-      "enums": ["happy", "very happy", "sad"],
+      "enums": [
+        "happy",
+        "very happy",
+        "sad"
+      ],
       "check": null,
       "comment": null
     },
@@ -417,11 +416,15 @@
       "foreign_key_name": "books_author_id_fkey",
       "schema": "public",
       "relation": "books",
-      "columns": ["author_id"],
+      "columns": [
+        "author_id"
+      ],
       "is_one_to_one": false,
       "referenced_schema": "public",
       "referenced_relation": "authors",
-      "referenced_columns": ["id"]
+      "referenced_columns": [
+        "id"
+      ]
     }
   ],
   "functions": [],
@@ -431,7 +434,11 @@
       "name": "mood",
       "schema": "public",
       "format": "mood",
-      "enums": ["happy", "very happy", "sad"],
+      "enums": [
+        "happy",
+        "very happy",
+        "sad"
+      ],
       "attributes": [],
       "comment": null,
       "type_relation_id": null

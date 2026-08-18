@@ -9,7 +9,7 @@ final _argParser = ArgParser()
     'input',
     abbr: 'i',
     help:
-        'Path of the postgres-meta generator metadata document, or - to '
+        'Path of the GeneratorMetadata document, or - to '
         'read it from stdin. Produce it with '
         '`supabase gen types --lang json`.',
   )
@@ -65,7 +65,7 @@ Future<int> _run(List<String> arguments) async {
   final input = options.option('input');
   if (input == null) {
     stderr.writeln(
-      '--input is required: the path of a postgres-meta generator metadata '
+      '--input is required: the path of a GeneratorMetadata '
       'document, or - to read it from stdin. Produce it with '
       '`supabase gen types --lang json`.',
     );
@@ -87,7 +87,7 @@ Future<int> _run(List<String> arguments) async {
   final schemaName = options.option('schema')!;
   final SchemaDescription schema;
   try {
-    schema = parsePostgresMetaDocument(
+    schema = parseGeneratorMetadata(
       jsonDecode(contents) as Map<String, dynamic>,
       schemaName: schemaName,
     );
@@ -96,7 +96,7 @@ Future<int> _run(List<String> arguments) async {
     return 65;
   } on TypeError {
     stderr.writeln(
-      'The document in $input is not postgres-meta generator metadata. '
+      'The document in $input is not a GeneratorMetadata document. '
       'Produce it with `supabase gen types --lang json`.',
     );
     return 65;

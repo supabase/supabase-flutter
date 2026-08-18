@@ -9,10 +9,10 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 void main() {
   final document =
       jsonDecode(
-            File('test/fixtures/postgres_meta_schema.json').readAsStringSync(),
+            File('test/fixtures/generator_metadata.json').readAsStringSync(),
           )
           as Map<String, dynamic>;
-  final schema = parsePostgresMetaDocument(document);
+  final schema = parseGeneratorMetadata(document);
   File(
     'test/goldens/supabase_schema.dart',
   ).writeAsStringSync(generateDartCode(schema));
