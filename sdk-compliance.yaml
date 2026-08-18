@@ -387,9 +387,18 @@ features:
       - PasskeyAuthenticationOptionsResponse.expiresAt
       - PasskeyAuthenticationOptionsResponse.fromJson
       - PasskeyAuthenticationOptionsResponse.options
-  auth.passkey.delete_passkey: not_implemented
-  auth.passkey.list_passkeys: not_implemented
-  auth.passkey.update_passkey: not_implemented
+  auth.passkey.list_passkeys:
+    status: implemented
+    symbols:
+      - AuthPasskeyApi.list
+  auth.passkey.update_passkey:
+    status: implemented
+    symbols:
+      - AuthPasskeyApi.update
+  auth.passkey.delete_passkey:
+    status: implemented
+    symbols:
+      - AuthPasskeyApi.delete
 
   # auth — OAuth server (Supabase acting as an OAuth provider)
   auth.oauth_server.get_authorization_details:
@@ -1235,7 +1244,15 @@ features:
     status: implemented
     symbols:
       - StorageBucketApi.emptyBucket
-  storage.file_buckets.request_cancellation: not_implemented
+  storage.file_buckets.request_cancellation:
+    status: partially_implemented
+    note: "StorageRetryController.cancel only stops the upload from being retried again; the attempt that is already in flight keeps transferring until it completes or fails, and downloads have no cancellation surface at all."
+    symbols:
+      - StorageRetryController.cancel
+    supporting_symbols:
+      - StorageRetryController
+      - StorageRetryController.StorageRetryController
+      - StorageRetryController.cancelled
 
   # storage — vector buckets
   storage.vector_buckets.create_vector_bucket:
@@ -1609,7 +1626,19 @@ features:
     status: implemented
     symbols:
       - IcebergRestCatalog.tableExists
-  storage.analytics.access_catalog: not_implemented
+  storage.analytics.access_catalog:
+    status: implemented
+    symbols:
+      - SupabaseStorageClient.analyticsCatalog
+    supporting_symbols:
+      - IcebergRestCatalog
+      - IcebergRestCatalog.IcebergRestCatalog
+
+  # storage — configuration
+  storage.configuration.auto_retry:
+    status: implemented
+    symbols:
+      - StorageClientOptions.retryAttempts
 
   # storage — errors
   storage.errors.error_codes:
@@ -1776,6 +1805,12 @@ features:
       - PostgresChangeFilter.type
       - PostgresChangeFilter.value
       - PostgresChangeFilterType
+  realtime.subscriptions.postgres_changes_multiple_filters:
+    status: implemented
+    symbols:
+      - RealtimeChannel.onPostgresChanges
+    supporting_symbols:
+      - PostgresChangeFilter
   realtime.subscriptions.subscribe_presence:
     status: implemented
     symbols:
@@ -1829,7 +1864,6 @@ features:
       - ReplayOption.limit
       - ReplayOption.since
       - ReplayOption.toMap
-  realtime.subscriptions.postgres_changes_multiple_filters: not_implemented
 
   # realtime — presence
   realtime.presence.track:
@@ -2059,8 +2093,6 @@ features:
       - TracePropagationOptions.enabled
       - TracePropagationOptions.respectSamplingDecision
       - TracePropagationOptions.traceContextProvider
-  # Newly synced from the canonical spec; no local group yet, place manually.
-  storage.configuration.auto_retry: not_implemented
 
 # Public API the matrix accounts for but that no single capability owns: shared
 # domain models, the exception hierarchies, the client and sub-API handles that
@@ -2187,9 +2219,6 @@ supporting_symbols:
   - AuthMFAApi.AuthMFAApi
   - AuthPasskeyApi
   - AuthPasskeyApi.AuthPasskeyApi
-  - AuthPasskeyApi.delete
-  - AuthPasskeyApi.list
-  - AuthPasskeyApi.update
   - Headers
   - IcebergApiException
   - IcebergApiException.IcebergApiException
@@ -2210,8 +2239,6 @@ supporting_symbols:
   - IcebergNetworkException.IcebergNetworkException
   - IcebergNotFoundException
   - IcebergNotFoundException.IcebergNotFoundException
-  - IcebergRestCatalog
-  - IcebergRestCatalog.IcebergRestCatalog
   - IcebergServerException
   - IcebergServerException.IcebergServerException
   - IcebergType
@@ -2435,7 +2462,6 @@ supporting_symbols:
   - StorageBucketApi.url
   - StorageClientOptions
   - StorageClientOptions.StorageClientOptions
-  - StorageClientOptions.retryAttempts
   - StorageClientOptions.useNewHostname
   - StorageCredential
   - StorageCredential.StorageCredential
@@ -2446,10 +2472,6 @@ supporting_symbols:
   - StorageFileApi.StorageFileApi
   - StorageFileApi.bucketId
   - StorageFileApi.url
-  - StorageRetryController
-  - StorageRetryController.StorageRetryController
-  - StorageRetryController.cancel
-  - StorageRetryController.cancelled
   - StructType
   - StructType.StructType
   - StructType.fields
@@ -2474,7 +2496,6 @@ supporting_symbols:
   - SupabaseQueryBuilder.stream
   - SupabaseStorageClient
   - SupabaseStorageClient.SupabaseStorageClient
-  - SupabaseStorageClient.analyticsCatalog
   - SupabaseStreamBuilder
   - SupabaseStreamBuilder.SupabaseStreamBuilder
   - SupabaseStreamBuilder.asyncExpand
