@@ -31,7 +31,7 @@ void main() {
   late _StatusSequenceClient httpClient;
   late SupabaseClient supabase;
 
-  Future<void> initialize({required PostgrestRetryOptions retryOptions}) async {
+  void initialize({required PostgrestRetryOptions retryOptions}) {
     httpClient = _StatusSequenceClient([503, 503, 200]);
     supabase = SupabaseClient(
       'http://localhost:9999',
@@ -46,7 +46,7 @@ void main() {
   });
 
   test('from() retries with the configured retry options', () async {
-    await initialize(
+    initialize(
       retryOptions: PostgrestRetryOptions(delay: (_) => Duration.zero),
     );
 
@@ -56,7 +56,7 @@ void main() {
   });
 
   test('from() honors disabled retries', () async {
-    await initialize(
+    initialize(
       retryOptions: const PostgrestRetryOptions(enabled: false),
     );
 
@@ -69,7 +69,7 @@ void main() {
   });
 
   test('schema().from() retries with the configured retry options', () async {
-    await initialize(
+    initialize(
       retryOptions: PostgrestRetryOptions(
         statusCodes: {503},
         delay: (_) => Duration.zero,
@@ -82,7 +82,7 @@ void main() {
   });
 
   test('rpc() retries with the configured retry options', () async {
-    await initialize(
+    initialize(
       retryOptions: PostgrestRetryOptions(delay: (_) => Duration.zero),
     );
 
