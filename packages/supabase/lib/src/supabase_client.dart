@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
 import 'package:supabase/src/supabase_constants.dart';
 import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
@@ -92,10 +93,7 @@ class SupabaseClient {
   /// unsubscribe and resubscribe these channels.
   set headers(Map<String, String> newHeaders) {
     _headers.clear();
-    _headers.addAll({
-      ...SupabaseConstants.defaultHeaders,
-      ...newHeaders,
-    });
+    _headers.addAll({...SupabaseConstants.defaultHeaders, ...newHeaders});
 
     rest.headers
       ..clear()
@@ -123,10 +121,7 @@ class SupabaseClient {
     // manually unsubscribe and resubscribe to all channels.
     realtime.headers
       ..clear()
-      ..addAll({
-        'apikey': _supabaseKey,
-        ..._headers,
-      });
+      ..addAll({'apikey': _supabaseKey, ..._headers});
   }
 
   /// {@macro supabase_client}
@@ -152,10 +147,7 @@ class SupabaseClient {
        _storageUrl = '$supabaseUrl/storage/v1',
        _functionsUrl = '$supabaseUrl/functions/v1',
        _postgrestOptions = postgrestOptions,
-       _headers = {
-         ...SupabaseConstants.defaultHeaders,
-         ...?headers,
-       },
+       _headers = {...SupabaseConstants.defaultHeaders, ...?headers},
        _httpClient = httpClient,
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null {
@@ -227,6 +219,23 @@ class SupabaseClient {
       incrementId: _incrementId.increment(),
       isolate: _isolate,
     );
+  }
+
+  /// Perform a typed table operation.
+  ///
+  /// Unlike [from], results are converted into the row type of [table]
+  /// instead of raw `Map<String, dynamic>` data, and filters are built from
+  /// [TableColumn]s, which makes them compile-time checked.
+  ///
+  /// ```dart
+  /// final List<Book> books = await supabase
+  ///     .table(Books.table)
+  ///     .select()
+  ///     .where(Books.id.gt(10));
+  /// ```
+  @experimental
+  SupabaseTypedQueryBuilder<Row> table<Row>(PostgrestTable<Row> table) {
+    return SupabaseTypedQueryBuilder(from(table.name), table);
   }
 
   /// Select a schema to query or perform an function (rpc) call.
@@ -373,14 +382,10 @@ class SupabaseClient {
     );
   }
 
-  RealtimeClient _initRealtimeClient({
-    required RealtimeClientOptions options,
-  }) {
+  RealtimeClient _initRealtimeClient({required RealtimeClientOptions options}) {
     return RealtimeClient(
       _realtimeUrl,
-      parameters: {
-        'apikey': _supabaseKey,
-      },
+      parameters: {'apikey': _supabaseKey},
       headers: {'apikey': _supabaseKey, ...headers},
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
@@ -407,14 +412,9 @@ class SupabaseClient {
 
   void _listenForAuthEvents() {
     // ignore: invalid_use_of_internal_member
-    _authStateSubscription = auth.onAuthStateChangeSync.listen(
-      (data) {
-        unawaited(
-          _handleTokenChanged(data.event, data.session?.accessToken),
-        );
-      },
-      onError: (error, stack) {},
-    );
+    _authStateSubscription = auth.onAuthStateChangeSync.listen((data) {
+      unawaited(_handleTokenChanged(data.event, data.session?.accessToken));
+    }, onError: (error, stack) {});
   }
 
   Future<void> _handleTokenChanged(AuthChangeEvent event, String? token) async {
