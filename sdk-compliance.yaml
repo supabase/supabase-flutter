@@ -949,18 +949,22 @@ features:
   database.configuration.auto_retry:
     status: implemented
     symbols:
-      - PostgrestClient.retryEnabled
-      - PostgrestClient.retryCount
-      - PostgrestClient.retryableStatusCodes
-      - PostgrestClientOptions.retryEnabled
-      - PostgrestClientOptions.retryCount
-      - PostgrestClientOptions.retryableStatusCodes
+      - PostgrestClient.retryOptions
+      - PostgrestClientOptions.retryOptions
       - PostgrestBuilder.retry
-      - PostgrestClient.defaultRetryableStatusCodes
+      - PostgrestRetryOptions
+      - PostgrestRetryOptions.enabled
+      - PostgrestRetryOptions.count
+      - PostgrestRetryOptions.statusCodes
+      - PostgrestRetryOptions.defaultStatusCodes
     supporting_symbols:
       - PostgrestFilterBuilder.retry
       - PostgrestQueryBuilder.retry
       - PostgrestTransformBuilder.retry
+      - PostgrestRetryOptions.PostgrestRetryOptions
+      - PostgrestRetryOptions.copyWith
+      - PostgrestRetryOptions.delay
+      - PostgrestRetryOptions.toString
   database.configuration.request_timeout:
     status: implemented
     symbols:

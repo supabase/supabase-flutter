@@ -1,6 +1,5 @@
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
-import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -8,20 +7,17 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 /// A PostgREST api client written in Dartlang. The goal of this library is to
 /// make an "ORM-like" restful interface.
 class PostgrestClient {
-  /// HTTP status codes that trigger an automatic retry by default.
-  static const Set<int> defaultRetryableStatusCodes = {503, 520};
-
   final String url;
   final Map<String, String> headers;
   final String? _schema;
   final Client? httpClient;
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
-  final bool retryEnabled;
-  final int retryCount;
-  final Set<int> retryableStatusCodes;
+
+  /// Configures the automatic retry of GET and HEAD requests.
+  final PostgrestRetryOptions retryOptions;
+
   final Duration? requestTimeout;
-  final Duration Function(int attempt)? _retryDelay;
   final _log = Logger('supabase.postgrest');
 
   /// To create a [PostgrestClient], you need to provide an [url] endpoint.
@@ -37,16 +33,9 @@ class PostgrestClient {
   /// [isolate] is optional and can be used to provide a custom isolate, which
   /// is used for heavy json computation
   ///
-  /// [retryEnabled] controls whether automatic retries are performed for GET
-  /// and HEAD requests that fail with a retryable status code or a network
-  /// error. Defaults to `true`. Use [PostgrestBuilder.retry] to override this
-  /// per request.
-  ///
-  /// [retryCount] is the number of retry attempts made for a retryable request
-  /// before giving up. Defaults to `3`.
-  ///
-  /// [retryableStatusCodes] are the HTTP status codes that trigger a retry.
-  /// Defaults to `{503, 520}`.
+  /// [retryOptions] configures the automatic retry of GET and HEAD requests
+  /// that fail with a retryable status code or a network error. Use
+  /// [PostgrestBuilder.retry] to override it for a single request.
   ///
   /// [requestTimeout] optionally bounds how long a single request attempt may
   /// take. It is implemented on top of the abort mechanism, so it actually
@@ -61,24 +50,17 @@ class PostgrestClient {
     String? schema,
     this.httpClient,
     YAJsonIsolate? isolate,
-    this.retryEnabled = true,
-    this.retryCount = 3,
-    Set<int> retryableStatusCodes = defaultRetryableStatusCodes,
+    PostgrestRetryOptions retryOptions = const PostgrestRetryOptions(),
     this.requestTimeout,
-    @visibleForTesting Duration Function(int attempt)? retryDelay,
-  }) : retryableStatusCodes = Set.unmodifiable(retryableStatusCodes),
+  }) : // Snapshot the status codes so that mutating the set the caller passed
+       // does not change the retry behavior of an existing client.
+       retryOptions = retryOptions.copyWith(
+         statusCodes: Set.unmodifiable(retryOptions.statusCodes),
+       ),
        _schema = schema,
        headers = {...defaultHeaders, ...?headers},
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-       _hasCustomIsolate = isolate != null,
-       _retryDelay = retryDelay {
-    if (retryCount < 0) {
-      throw ArgumentError.value(
-        retryCount,
-        'retryCount',
-        'must not be negative',
-      );
-    }
+       _hasCustomIsolate = isolate != null {
     _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
     _log.finest('Initialize with headers: $headers');
   }
@@ -105,11 +87,8 @@ class PostgrestClient {
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
-      retryEnabled: retryEnabled,
-      retryCount: retryCount,
-      retryableStatusCodes: retryableStatusCodes,
+      retryOptions: retryOptions,
       requestTimeout: requestTimeout,
-      retryDelay: _retryDelay,
     );
   }
 
@@ -123,11 +102,8 @@ class PostgrestClient {
       schema: schema,
       httpClient: httpClient,
       isolate: _isolate,
-      retryEnabled: retryEnabled,
-      retryCount: retryCount,
-      retryableStatusCodes: retryableStatusCodes,
+      retryOptions: retryOptions,
       requestTimeout: requestTimeout,
-      retryDelay: _retryDelay,
     );
   }
 
@@ -158,11 +134,8 @@ class PostgrestClient {
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
-      retryEnabled: retryEnabled,
-      retryCount: retryCount,
-      retryableStatusCodes: retryableStatusCodes,
+      retryOptions: retryOptions,
       requestTimeout: requestTimeout,
-      retryDelay: _retryDelay,
     ).rpc(params, get);
   }
 

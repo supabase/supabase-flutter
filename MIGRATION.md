@@ -1230,3 +1230,50 @@ These renames also change a type:
 | `RealtimeClient.reconnectAfterMs` (`int` return) | `reconnectAfter` (`Duration` return) |
 | `SnapshotReference.maxReferenceAgeMs` / `maxSnapshotAgeMs` (`int?`) | `maxReferenceAge` / `maxSnapshotAge` (`Duration?`) |
 | `Snapshot.timestampMs` / `TableMetadata.lastUpdatedMs` (`int`) | `timestamp` / `lastUpdated` (`DateTime`, UTC) |
+
+### Retry configuration is a single `PostgrestRetryOptions`
+
+The retry settings used to be individual parameters that were threaded through every constructor in
+the builder chain. They are replaced by one `PostgrestRetryOptions` value, so the retry
+configuration is passed and read as a single object.
+
+| Before | After |
+| --- | --- |
+| `PostgrestClient(retryEnabled: …, retryCount: …, retryableStatusCodes: …)` | `PostgrestClient(retryOptions: …)` |
+| `PostgrestClientOptions(retryEnabled: …, retryCount: …, retryableStatusCodes: …)` | `PostgrestClientOptions(retryOptions: …)` |
+| `PostgrestQueryBuilder(retryEnabled: …, …)` / `PostgrestRpcBuilder(retryEnabled: …, …)` | `PostgrestQueryBuilder(retryOptions: …)` / `PostgrestRpcBuilder(retryOptions: …)` |
+| `PostgrestClient.defaultRetryableStatusCodes` | `PostgrestRetryOptions.defaultStatusCodes` |
+
+```dart
+// Before
+final supabase = SupabaseClient(
+  supabaseUrl,
+  supabaseKey,
+  postgrestOptions: const PostgrestClientOptions(
+    retryCount: 5,
+    retryableStatusCodes: {503},
+  ),
+);
+
+// After
+final supabase = SupabaseClient(
+  supabaseUrl,
+  supabaseKey,
+  postgrestOptions: const PostgrestClientOptions(
+    retryOptions: PostgrestRetryOptions(count: 5, statusCodes: {503}),
+  ),
+);
+```
+
+The per-request override is unchanged, so `from('todos').select().retry(enabled: false)` and
+`.retry(count: 5)` keep working. They now apply on top of the client's `retryOptions`.
+
+Two details changed with the move:
+
+- A negative retry count is rejected by an assertion on `PostgrestRetryOptions` instead of an
+  `ArgumentError` from the `PostgrestClient` constructor.
+- `PostgrestClientOptions` is now applied to queries built with `SupabaseClient.from()` and
+  `SupabaseClient.schema(…).from()` as well. Previously the retry settings and `requestTimeout` of
+  those options only reached `SupabaseClient.rest`, so a client configured with, for example,
+  `retryEnabled: false` still retried `supabase.from('todos').select()`. Configure `retryOptions`
+  per request with `.retry()` if you relied on the old behavior.
