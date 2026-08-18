@@ -3,19 +3,32 @@ import 'schema_description.dart';
 /// The metadata document version this parser understands.
 const supportedPostgresMetaVersion = 1;
 
-const _integerFormats = {'int2', 'int4', 'int8'};
+const _integerFormats = {'int2', 'int4', 'int8', 'oid'};
 const _floatingFormats = {'float4', 'float8'};
+
+/// Types that PostgREST serializes as JSON strings.
 const _textFormats = {
   'text',
   'citext',
   'varchar',
   'bpchar',
   'char',
+  'name',
   'uuid',
   'time',
   'timetz',
   'interval',
   'bytea',
+  'inet',
+  'cidr',
+  'macaddr',
+  'macaddr8',
+  'money',
+  'xml',
+  'bit',
+  'varbit',
+  'tsvector',
+  'tsquery',
 };
 const _jsonFormats = {'json', 'jsonb'};
 

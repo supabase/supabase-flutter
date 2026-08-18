@@ -75,4 +75,31 @@ void main() {
     expect(code, contains('AuthorsUpdate({String? name})'));
     expect(code, contains("TableColumn<int>('id')"));
   });
+
+  test('tables whose columns are all read-only get parameterless '
+      'insert and update constructors', () {
+    final table = TableDescription(
+      name: 'counters',
+      comment: null,
+      columns: [
+        ColumnDescription(
+          name: 'id',
+          postgresFormat: 'int8',
+          typeKind: ColumnTypeKind.integer,
+          isRequired: false,
+          isPrimaryKey: true,
+          hasDefault: true,
+          isNullable: false,
+          isReadOnly: true,
+        ),
+      ],
+    );
+    final code = generateDartCode(
+      SchemaDescription(schemaName: 'public', tables: [table], enums: []),
+    );
+
+    expect(code, contains('CountersInsert() : this._({});'));
+    expect(code, contains('CountersUpdate() : this._({});'));
+    expect(code, contains("int get id => _json['id'] as int;"));
+  });
 }
