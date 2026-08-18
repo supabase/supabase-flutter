@@ -68,5 +68,9 @@ await client.table(Books.table).insert(
 - `timestamptz` values are written back in UTC, naive `timestamp` values as
   local wall time, and `date` values date-only, so calendar dates never
   shift with the client timezone.
+- The metadata identifies a column's enum type only by its bare name. When
+  two schemas define enums with the same name, columns using the enum from
+  the other schema resolve to the generated schema's enum, so keep enum
+  names unique across schemas.
 - Foreign key relationship getters and typed functions (rpc) are not
   generated yet.
