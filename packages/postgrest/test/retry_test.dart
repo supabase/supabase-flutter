@@ -96,7 +96,7 @@ PostgrestClient _buildClient(
       enabled: enabled,
       count: count,
       statusCodes: statusCodes,
-      delay: (_) => Duration.zero,
+      initialDelay: Duration.zero,
     ),
   );
 }
@@ -374,7 +374,7 @@ void main() {
         httpClient: mock,
         retryOptions: PostgrestRetryOptions(
           statusCodes: statusCodes,
-          delay: (_) => Duration.zero,
+          initialDelay: Duration.zero,
         ),
       );
 
@@ -401,11 +401,13 @@ void main() {
 
   group('PostgrestRetryOptions', () {
     test('copyWith keeps the fields that are not overridden', () {
-      final options = PostgrestRetryOptions(
+      const options = PostgrestRetryOptions(
         enabled: false,
         count: 7,
         statusCodes: {500},
-        delay: (_) => Duration.zero,
+        initialDelay: Duration(milliseconds: 5),
+        maxDelay: Duration(milliseconds: 50),
+        randomizationFactor: 0.5,
       );
 
       final copy = options.copyWith(enabled: true);
@@ -413,7 +415,43 @@ void main() {
       expect(copy.enabled, isTrue);
       expect(copy.count, 7);
       expect(copy.statusCodes, {500});
-      expect(copy.delay(0), Duration.zero);
+      expect(copy.initialDelay, const Duration(milliseconds: 5));
+      expect(copy.maxDelay, const Duration(milliseconds: 50));
+      expect(copy.randomizationFactor, 0.5);
+    });
+
+    test('the delay doubles for every attempt up to maxDelay', () {
+      const options = PostgrestRetryOptions(
+        initialDelay: Duration(seconds: 1),
+        maxDelay: Duration(seconds: 4),
+      );
+
+      expect(options.delay(0), const Duration(seconds: 1));
+      expect(options.delay(1), const Duration(seconds: 2));
+      expect(options.delay(2), const Duration(seconds: 4));
+      expect(options.delay(5), const Duration(seconds: 4));
+    });
+
+    test('the configured delay is waited between attempts', () async {
+      final mock = _MockRetryClient(
+        [_status(520), _ok()],
+        responseLatency: (_) => Duration.zero,
+      );
+      final client = PostgrestClient(
+        'http://localhost:3000',
+        httpClient: mock,
+        retryOptions: const PostgrestRetryOptions(
+          count: 1,
+          initialDelay: Duration(milliseconds: 300),
+        ),
+      );
+
+      final stopwatch = Stopwatch()..start();
+      await client.from('users').select();
+      stopwatch.stop();
+
+      expect(mock.callCount, 2);
+      expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(300));
     });
 
     test('the client keeps the retry options it was given', () {
@@ -468,7 +506,7 @@ void main() {
         httpClient: mock,
         retryOptions: PostgrestRetryOptions(
           count: 2,
-          delay: (_) => Duration.zero,
+          initialDelay: Duration.zero,
         ),
         requestTimeout: const Duration(milliseconds: 50),
       );
@@ -494,7 +532,7 @@ void main() {
           'http://localhost:3000',
           httpClient: mock,
           requestTimeout: const Duration(milliseconds: 100),
-          retryOptions: PostgrestRetryOptions(delay: (_) => Duration.zero),
+          retryOptions: PostgrestRetryOptions(initialDelay: Duration.zero),
         );
 
         final result = await client.from('users').select();
@@ -528,7 +566,7 @@ void main() {
         httpClient: mock,
         retryOptions: PostgrestRetryOptions(
           count: 1,
-          delay: (_) => Duration.zero,
+          initialDelay: Duration.zero,
         ),
       );
 
@@ -549,7 +587,7 @@ void main() {
         'http://localhost:3000',
         httpClient: mock,
         requestTimeout: const Duration(seconds: 5),
-        retryOptions: PostgrestRetryOptions(delay: (_) => Duration.zero),
+        retryOptions: PostgrestRetryOptions(initialDelay: Duration.zero),
       );
 
       final abort = Completer<void>();

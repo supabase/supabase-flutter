@@ -33,41 +33,57 @@ class PostgrestRetryOptions {
   /// The HTTP status codes that trigger a retry.
   final Set<int> statusCodes;
 
-  /// How long to wait before the attempt that follows the zero based
-  /// `attempt`, so `0` is the delay after the initial request.
+  /// How long to wait before the first retry, doubled for every attempt after
+  /// that until [maxDelay] is reached.
+  final Duration initialDelay;
+
+  /// The upper bound of the delay between two attempts.
+  final Duration maxDelay;
+
+  /// The fraction between 0 and 1 the delay is randomized by.
   ///
-  /// Defaults to an exponential backoff between one and thirty seconds.
-  final Duration Function(int attempt) delay;
+  /// Defaults to `0`, which waits exactly as long as the backoff says.
+  final double randomizationFactor;
 
   const PostgrestRetryOptions({
     this.enabled = true,
     this.count = 3,
     this.statusCodes = defaultStatusCodes,
-    @visibleForTesting this.delay = _defaultDelay,
+    this.initialDelay = const Duration(seconds: 1),
+    this.maxDelay = const Duration(seconds: 30),
+    this.randomizationFactor = 0,
   }) : assert(count >= 0, 'count must not be negative');
 
-  static Duration _defaultDelay(int attempt) => exponentialBackoff(
+  /// The delay before the attempt that follows the zero based [attempt], so
+  /// `0` is the delay after the initial request.
+  Duration delay(int attempt) => exponentialBackoff(
     attempt,
-    initialDelay: const Duration(seconds: 1),
-    maxDelay: const Duration(seconds: 30),
+    initialDelay: initialDelay,
+    maxDelay: maxDelay,
+    randomizationFactor: randomizationFactor,
   );
 
   PostgrestRetryOptions copyWith({
     bool? enabled,
     int? count,
     Set<int>? statusCodes,
-    @visibleForTesting Duration Function(int attempt)? delay,
+    Duration? initialDelay,
+    Duration? maxDelay,
+    double? randomizationFactor,
   }) {
     return PostgrestRetryOptions(
       enabled: enabled ?? this.enabled,
       count: count ?? this.count,
       statusCodes: statusCodes ?? this.statusCodes,
-      delay: delay ?? this.delay,
+      initialDelay: initialDelay ?? this.initialDelay,
+      maxDelay: maxDelay ?? this.maxDelay,
+      randomizationFactor: randomizationFactor ?? this.randomizationFactor,
     );
   }
 
   @override
   String toString() =>
       'PostgrestRetryOptions(enabled: $enabled, count: $count, '
-      'statusCodes: $statusCodes)';
+      'statusCodes: $statusCodes, initialDelay: $initialDelay, '
+      'maxDelay: $maxDelay, randomizationFactor: $randomizationFactor)';
 }

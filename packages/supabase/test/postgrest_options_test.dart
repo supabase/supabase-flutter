@@ -96,7 +96,7 @@ void main() {
     statuses: [500, 500, 200],
     retryOptions: PostgrestRetryOptions(
       statusCodes: {500},
-      delay: (_) => Duration.zero,
+      initialDelay: Duration.zero,
     ),
   );
 
