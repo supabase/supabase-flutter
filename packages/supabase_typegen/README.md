@@ -39,6 +39,27 @@ metadata document comes straight from
 [postgres-meta](https://github.com/supabase/postgres-meta) with
 `PG_META_GENERATE_TYPES=json` or its `/generators/json` endpoint.
 
+## Committing schema.json
+
+The SQL in your `supabase/` directory stays the single source of truth: the
+CLI applies your migrations to the local database and the metadata document
+is introspected from the result. `schema.json` is derived output, the same
+category as the generated Dart file, so committing it is optional and the
+recommended one-liner never writes it at all.
+
+Committing a snapshot can still be worthwhile:
+
+- it diffs nicely in review, so a migration's effect on the API surface is
+  visible next to the SQL that caused it,
+- the generator can re-run from it offline, without Docker or a database,
+  which keeps CI checks and codegen fast and hermetic,
+- a stale generated file is detectable by regenerating from the snapshot and
+  comparing.
+
+If you commit it, treat it like a lockfile: regenerate it in the same change
+as every migration, and never edit it by hand. When the snapshot and the
+migrations disagree, the migrations win; regenerate the snapshot.
+
 Use `--schema` to generate for a schema other than `public`, and `--import`
 to change which library the generated file imports `PostgrestTable` and
 `TableColumn` from.
