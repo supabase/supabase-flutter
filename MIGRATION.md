@@ -668,7 +668,7 @@ already inert: unused types, options the client ignored, or values the server ne
 | `OAuthProvider.snakeCase` | `OAuthProvider.name` | `supabase_auth` |
 | `User.confirmedAt` | `User.emailConfirmedAt` | `supabase_auth` |
 | `ReturningOption` | none, it was unused | `postgrest` |
-| `PostgrestClient.auth()` | `PostgrestClient.setAuth()` | `postgrest` |
+| `PostgrestClient.auth()` | none, pass an `Authorization` header instead | `postgrest` |
 | `RealtimeClient.longpollerTimeout` | none, there is no longpoll transport | `supabase_realtime` |
 | `ChannelResponse.rateLimited` | none, it was never returned | `supabase_realtime` |
 | `FileObject.lastAccessedAt`, `FileObjectV2.lastAccessedAt` | none, the server does not populate it | `supabase_storage` |
@@ -1167,7 +1167,7 @@ Across every package:
 
 | Before | After |
 | --- | --- |
-| `setAuth()` | `setAccessToken()` |
+| `RealtimeClient.setAuth()` | `RealtimeClient.setAccessToken()` |
 | `queryParams:` | `queryParameters:` |
 | `opts:` | `options:` |
 | `PresenceOpts` | `PresenceOptions` |
@@ -1333,3 +1333,56 @@ try {
   }
 }
 ```
+
+### `setAccessToken()` is gone from the rest, storage and functions clients
+
+`PostgrestClient.setAccessToken()`, `SupabaseStorageClient.setAccessToken()` and
+`FunctionsClient.setAccessToken()` are removed. `RealtimeClient.setAccessToken()` stays.
+
+Despite the name, these three pinned a token rather than kept one in sync. `SupabaseClient` gives
+the rest, storage and functions clients an HTTP client that attaches the current session token to
+every request, but only when the request does not already carry an `Authorization` header. A token
+set through `setAccessToken` did carry one, so it won, and nothing ever cleared it: it kept
+overriding the session token across refreshes and sign-outs for the rest of the client's life.
+
+If you never called them, nothing changes. If you did, the replacement depends on what you were
+after.
+
+To authenticate as the signed-in user, do nothing. `SupabaseClient` already resolves that token on
+every request.
+
+To pin a token on a client you construct yourself, pass it as a constructor header:
+
+```dart
+// Before
+final functions = FunctionsClient(functionsUrl, {'apikey': anonKey});
+functions.setAccessToken(jwt);
+
+// After
+final functions = FunctionsClient(functionsUrl, {
+  'apikey': anonKey,
+  'Authorization': 'Bearer $jwt',
+});
+```
+
+To use a different token for a single call, pass it to that call:
+
+```dart
+await functions.invoke('hello', headers: {'Authorization': 'Bearer $jwt'});
+await postgrest.from('countries').select().setHeader('Authorization', 'Bearer $jwt');
+```
+
+To pin a token on a client you got from `SupabaseClient`, set the header yourself. The header maps
+are still mutable:
+
+```dart
+supabase.storage.setHeader('Authorization', 'Bearer $jwt');
+supabase.rest.headers['Authorization'] = 'Bearer $jwt';
+supabase.functions.headers['Authorization'] = 'Bearer $jwt';
+```
+
+That shadows the session token exactly as the old setter did, so remove the header again once the
+pinned token should no longer apply.
+
+Realtime keeps its setter because it holds a live socket and has to push a new token over it rather
+than attach one per request.

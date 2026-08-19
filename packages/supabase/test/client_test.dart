@@ -250,6 +250,53 @@ void main() {
       await mockServer.close();
     });
 
+    test(
+      'a per-request Authorization header wins over the session token',
+      () async {
+        final (:sessionString, accessToken: _) = getSessionData(
+          DateTime.now().add(Duration(hours: 1)),
+        );
+
+        final mockServer = await HttpServer.bind('localhost', 0);
+        addTearDown(() => mockServer.close(force: true));
+        final supabase = SupabaseClient(
+          'http://${mockServer.address.host}:${mockServer.port}',
+          "supabaseKey",
+          authOptions: AuthClientOptions(autoRefreshToken: false),
+        );
+        addTearDown(supabase.dispose);
+        await supabase.auth.recoverSession(sessionString);
+
+        final pending = [
+          supabase.functions.invoke(
+            "test",
+            headers: {'Authorization': 'Bearer pinned'},
+          ),
+          // then() subscribes, which is what starts a Postgrest builder.
+          supabase
+              .from("test")
+              .select()
+              .setHeader('Authorization', 'Bearer pinned')
+              .then((value) => value),
+        ];
+
+        var count = 0;
+        await for (final request in mockServer) {
+          expect(request.headers.value('Authorization'), 'Bearer pinned');
+          request.response
+            ..headers.contentType = ContentType.json
+            ..write('[]');
+          await request.response.close();
+          count++;
+          if (count == pending.length) {
+            break;
+          }
+        }
+
+        await Future.wait(pending);
+      },
+    );
+
     test('call recoverSession', () async {
       final expiresAt = DateTime.now().add(Duration(seconds: 31));
 

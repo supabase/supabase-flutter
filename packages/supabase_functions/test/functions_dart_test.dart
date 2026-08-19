@@ -438,21 +438,12 @@ void main() {
     });
 
     group('Headers', () {
-      test('setAccessToken updates authorization header', () async {
-        functionsCustomHttpClient.setAccessToken('new-token');
+      test('headers getter returns the constructor headers merged with the '
+          'defaults', () {
+        final client = FunctionsClient("", {'apikey': 'foo'});
 
-        await functionsCustomHttpClient.invoke('function');
-
-        final request = customHttpClient.receivedRequests.last;
-        expect(request.headers['Authorization'], 'Bearer new-token');
-      });
-
-      test('headers getter returns current headers', () {
-        functionsCustomHttpClient.setAccessToken('test-token');
-
-        final headers = functionsCustomHttpClient.headers;
-        expect(headers['Authorization'], 'Bearer test-token');
-        expect(headers, contains('X-Client-Info'));
+        expect(client.headers['apikey'], 'foo');
+        expect(client.headers, contains('X-Client-Info'));
       });
 
       test('custom headers override defaults', () async {

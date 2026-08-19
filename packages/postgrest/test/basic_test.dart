@@ -111,14 +111,6 @@ void main() {
       );
     });
 
-    test('auth', () async {
-      postgrest = PostgrestClient(localStackRestUrl).setAccessToken('foo');
-      expect(
-        postgrest.headers['Authorization'],
-        'Bearer foo',
-      );
-    });
-
     test('set header on rpc', () async {
       final httpClient = CustomHttpClient();
       final client = PostgrestClient(localStackRestUrl, httpClient: httpClient);
