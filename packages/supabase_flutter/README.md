@@ -609,7 +609,7 @@ Without `hierarchicalLoggingEnabled = true`, `package:logging` only supports lis
 ### Log levels
 
 - `Level.CONFIG`: client configuration during initialization.
-- `Level.FINEST`: wire-level details such as request and response payloads. These records can contain sensitive data like access tokens and row data, so handle them accordingly. Credential headers are redacted before they are logged.
+- `Level.FINEST`: wire-level details such as request and response payloads. These records can contain sensitive data like row data, so handle them accordingly. Credentials never appear in any record at any level: headers, URL parameters, and payload fields that carry an API key, access token, or other credential are replaced by `<redacted>` before they are logged.
 - `Level.FINE`: internal lifecycle events, for example the realtime socket connecting or disconnecting.
 - `Level.INFO`: notable events, for example completed initialization or session recovery.
 - `Level.WARNING`: recoverable problems, for example a failed retry attempt or an unexpected disconnect.

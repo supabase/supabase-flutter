@@ -65,7 +65,8 @@ class PostgrestClient {
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null {
     postgrestLogger.config(
-      'Initialize PostgrestClient with url: $url, schema: $_schema',
+      'Initialize PostgrestClient with url: ${Uri.parse(url).redacted}, '
+      'schema: $_schema',
     );
     postgrestLogger.finest(
       'Initialize with headers: ${this.headers.redacted}',

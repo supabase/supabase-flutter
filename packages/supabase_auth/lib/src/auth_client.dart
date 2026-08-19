@@ -202,7 +202,8 @@ class AuthClient {
 
     final authUrl = url ?? AuthConstants.defaultAuthUrl;
     authLogger.config(
-      'Initialize AuthClient v$version with url: $_url, autoRefreshToken: '
+      'Initialize AuthClient v$version with url: '
+      '${Uri.parse(_url).redacted}, autoRefreshToken: '
       '$_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: '
       '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
       '${AuthConstants.autoRefreshTickThreshold}',
@@ -1666,11 +1667,9 @@ class AuthClient {
           messageEvent,
         ) {
           final rawEvent = messageEvent['event'];
-          final loggedMessage = {
-            for (final entry in messageEvent.entries)
-              entry.key: entry.key == 'session' ? '<redacted>' : entry.value,
-          };
-          authLogger.finest('Received broadcast message: $loggedMessage');
+          authLogger.finest(
+            'Received broadcast message: ${redactedPayload(messageEvent)}',
+          );
           authLogger.info('Received broadcast event: $rawEvent');
           final event = AuthChangeEvent.fromValue(rawEvent);
 

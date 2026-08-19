@@ -414,7 +414,7 @@ void main() {
     });
 
     group('toString', () {
-      test('includes all session properties', () {
+      test('redacts every token and keeps the other properties', () {
         final session = Session(
           accessToken: 'test-token',
           expiresIn: 3600,
@@ -428,13 +428,29 @@ void main() {
         final string = session.toString();
 
         expect(string, contains('Session('));
-        expect(string, contains('providerToken: test-provider'));
-        expect(string, contains('providerRefreshToken: test-provider-refresh'));
+        expect(string, contains('providerToken: <redacted>'));
+        expect(string, contains('providerRefreshToken: <redacted>'));
         expect(string, contains('expiresIn: 3600'));
         expect(string, contains('tokenType: bearer'));
-        expect(string, contains('accessToken: test-token'));
-        expect(string, contains('refreshToken: test-refresh'));
+        expect(string, contains('accessToken: <redacted>'));
+        expect(string, contains('refreshToken: <redacted>'));
         expect(string, contains('user: $mockUser'));
+        expect(string, isNot(contains('test-token')));
+        expect(string, isNot(contains('test-refresh')));
+        expect(string, isNot(contains('test-provider')));
+      });
+
+      test('keeps null tokens readable as null', () {
+        final session = Session(
+          accessToken: 'test-token',
+          tokenType: 'bearer',
+          user: mockUser,
+        );
+
+        final string = session.toString();
+
+        expect(string, contains('providerToken: null'));
+        expect(string, contains('refreshToken: null'));
       });
     });
 

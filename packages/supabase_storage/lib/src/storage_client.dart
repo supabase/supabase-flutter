@@ -46,7 +46,8 @@ class SupabaseStorageClient extends StorageBucketApi {
          {...StorageConstants.defaultHeaders, ...headers},
        ) {
     storageLogger.config(
-      'Initialize SupabaseStorageClient v$version with url: $url, '
+      'Initialize SupabaseStorageClient v$version with url: '
+      '${Uri.parse(url).redacted}, '
       'retryOptions: $retryOptions',
     );
     storageLogger.finest('Initialize with headers: ${headers.redacted}');

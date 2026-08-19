@@ -15,6 +15,7 @@ export 'src/http_status.dart';
 export 'src/persist_session_key.dart';
 export 'src/pkce.dart';
 export 'src/platform/platform_info.dart';
+export 'src/redaction.dart';
 export 'src/replay_subject.dart';
 export 'src/retry.dart';
 export 'src/retry_options.dart';

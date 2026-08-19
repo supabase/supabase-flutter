@@ -138,7 +138,7 @@ class IcebergRestCatalog {
       request.body = json.encode(body);
     }
 
-    icebergLogger.finest('Request: ${method.value} $uri');
+    icebergLogger.finest('Request: ${method.value} ${uri.redacted}');
 
     final http.StreamedResponse streamedResponse;
     try {

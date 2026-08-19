@@ -32,14 +32,22 @@ class Fetch {
     if (error is! http.Response) {
       // No response was received, so there is neither a status nor a service
       // error code to report. The error's own toString names its type.
-      storageLogger.fine('StorageException for $url', error, stackTrace);
+      storageLogger.fine(
+        'StorageException for ${url?.redacted}',
+        error,
+        stackTrace,
+      );
       return StorageException(error.toString());
     }
 
     final data = tryDecodeJsonObject(error.body);
 
     if (data == null) {
-      storageLogger.fine('StorageException for $url', error.body, stackTrace);
+      storageLogger.fine(
+        'StorageException for ${url?.redacted}',
+        error.body,
+        stackTrace,
+      );
       return StorageApiException(
         error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
         statusCode: error.statusCode,
@@ -47,7 +55,11 @@ class Fetch {
     }
 
     final exception = StorageApiException.fromJson(data, error.statusCode);
-    storageLogger.fine('StorageException for $url', exception, stackTrace);
+    storageLogger.fine(
+      'StorageException for ${url?.redacted}',
+      exception,
+      stackTrace,
+    );
     return exception;
   }
 
@@ -67,7 +79,8 @@ class Fetch {
     }
 
     storageLogger.finest(
-      'Request: ${method.value} $url ${request.headers.redacted}',
+      'Request: ${method.value} ${Uri.parse(url).redacted} '
+      '${request.headers.redacted}',
     );
     final streamedResponse = await request.sendWith(httpClient);
     return _handleResponse(streamedResponse, options);
@@ -164,8 +177,8 @@ class Fetch {
       () async {
         attempts++;
         storageLogger.finest(
-          'Request: attempt: $attempts ${method.value} $url '
-          '${headers.redacted}',
+          'Request: attempt: $attempts ${method.value} '
+          '${Uri.parse(url).redacted} ${headers.redacted}',
         );
 
         // Create a fresh request for each retry attempt
@@ -240,7 +253,8 @@ class Fetch {
       ..headers.addAll({...?options?.headers});
 
     storageLogger.finest(
-      'Request: GET (stream) $url ${request.headers.redacted}',
+      'Request: GET (stream) ${Uri.parse(url).redacted} '
+      '${request.headers.redacted}',
     );
     final streamedResponse = await request.sendWith(httpClient);
 

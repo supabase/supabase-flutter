@@ -288,7 +288,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       execHeaders['Content-Type'] = 'application/json';
     }
     final bodyString = jsonEncode(_body);
-    postgrestLogger.finest("Request: ${method.value} $_url");
+    postgrestLogger.finest("Request: ${method.value} ${_url.redacted}");
 
     final requestTimeout = _requestTimeout;
 
@@ -443,7 +443,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             message: 'JSON object requested, multiple (or no) rows returned',
           );
 
-          postgrestLogger.finest('$exception for request $_url');
+          postgrestLogger.finest('$exception for request ${_url.redacted}');
           throw exception;
         } else if (body.length == 1) {
           body = body.first;
@@ -521,7 +521,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       );
     }
 
-    postgrestLogger.finest('$error from request: $_url');
+    postgrestLogger.finest('$error from request: ${_url.redacted}');
     postgrestLogger.fine('$error from request');
 
     throw error;

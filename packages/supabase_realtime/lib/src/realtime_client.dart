@@ -267,13 +267,14 @@ class RealtimeClient {
                ? _decodeLegacy
                : _serializer.decode) {
     realtimeLogger.config(
-      'Initialize RealtimeClient with endpoint: $endpoint, timeout: $timeout, '
+      'Initialize RealtimeClient with endpoint: '
+      '${Uri.parse(this.endpoint).redacted}, timeout: $timeout, '
       'heartbeatInterval: $heartbeatInterval, '
       'logLevel: ${logLevel?.name}',
     );
     realtimeLogger.finest(
       'Initialize with headers: ${this.headers.redacted}, '
-      'parameters: $_redactedParameters',
+      'parameters: ${redactedPayload(parameters)}',
     );
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? parameters['apikey'];
@@ -538,18 +539,9 @@ class RealtimeClient {
       connection?.sink.add(encode(message.toJson()));
     }
 
-    final payload = message.payload;
-    final loggedPayload = payload is Map
-        ? {
-            for (final entry in payload.entries)
-              entry.key: entry.key == 'access_token'
-                  ? '<redacted>'
-                  : entry.value,
-          }
-        : payload;
     realtimeLogger.finest(
       'Push ${message.topic} ${message.event.name} (${message.ref}): '
-      '$loggedPayload',
+      '${redactedPayload(message.payload)}',
     );
 
     if (isConnected) {
@@ -585,7 +577,8 @@ class RealtimeClient {
     final status = payload is Map ? (payload['status'] ?? '') : '';
     realtimeLogger.finest(
       "Receive $status $topic $event "
-      "${messageRef != null ? '($messageRef)' : ''}: $payload",
+      "${messageRef != null ? '($messageRef)' : ''}: "
+      "${redactedPayload(payload)}",
     );
 
     channels
@@ -615,20 +608,7 @@ class RealtimeClient {
 
   /// [endpointUrl] with credential-bearing query parameters replaced by
   /// `<redacted>`, safe to include in log records.
-  String get _redactedEndpointUrl {
-    final uri = Uri.parse(endpointUrl);
-    return uri
-        .replace(queryParameters: uri.queryParameters.redacted)
-        .toString();
-  }
-
-  /// [parameters] with credential-bearing values replaced by `<redacted>`,
-  /// safe to include in log records.
-  Map<String, String> get _redactedParameters {
-    return {
-      for (final entry in parameters.entries) entry.key: '${entry.value}',
-    }.redacted;
-  }
+  String get _redactedEndpointUrl => Uri.parse(endpointUrl).redacted.toString();
 
   /// Return the next message ref, accounting for overflows
   @internal

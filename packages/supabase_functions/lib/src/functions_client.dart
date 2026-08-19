@@ -33,7 +33,8 @@ class FunctionsClient {
        _httpClient = httpClient,
        _region = region {
     functionsLogger.config(
-      "Initialize FunctionsClient v$version with url '$url' and region "
+      "Initialize FunctionsClient v$version with url "
+      "'${Uri.parse(url).redacted}' and region "
       "'$region'",
     );
     functionsLogger.finest("Initialize with headers: ${headers.redacted}");
@@ -194,7 +195,8 @@ class FunctionsClient {
     }
 
     functionsLogger.finest(
-      'Request: ${request.method} ${request.url} ${request.headers.redacted}',
+      'Request: ${request.method} ${request.url.redacted} '
+      '${request.headers.redacted}',
     );
 
     final http.StreamedResponse response;
