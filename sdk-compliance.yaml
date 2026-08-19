@@ -2040,6 +2040,10 @@ features:
       - LocalStorage.initialize
       - LocalStorage.persistSession
       - LocalStorage.removePersistedSession
+      - MemoryAuthAsyncStorage
+      - MemoryAuthAsyncStorage.getItem
+      - MemoryAuthAsyncStorage.removeItem
+      - MemoryAuthAsyncStorage.setItem
       - SharedPreferencesAuthAsyncStorage
       - SharedPreferencesAuthAsyncStorage.SharedPreferencesAuthAsyncStorage
       - SharedPreferencesAuthAsyncStorage.getItem

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:supabase/supabase.dart';
+
 /// Construct session data for a given expiration date
 ({String accessToken, String sessionString}) getSessionData(DateTime dateTime) {
   final expiresAt = dateTime.millisecondsSinceEpoch ~/ 1000;
@@ -26,3 +28,5 @@ import 'dart:convert';
       'at":"2023-04-01T08:35:05.226938Z"}}';
   return (accessToken: accessToken, sessionString: sessionString);
 }
+
+class TestAsyncStorage extends MemoryAuthAsyncStorage {}

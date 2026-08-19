@@ -27,6 +27,21 @@ class PostgrestClientOptions {
 
 class AuthClientOptions {
   final bool autoRefreshToken;
+
+  /// Storage for the code verifiers of the pkce flow, required when
+  /// [authFlowType] is [AuthFlowType.pkce].
+  ///
+  /// A persistent implementation is needed whenever the flow can leave the
+  /// process before the code comes back. Email links do so by definition, and
+  /// so does a redirect to an OAuth provider, since the app may be reaped
+  /// while it waits and the page context is gone after a web redirect.
+  /// `supabase_flutter` therefore defaults this to shared preferences.
+  ///
+  /// [MemoryAuthAsyncStorage] only suits flows that start and complete in the
+  /// same process, such as tests and command line tools that keep a redirect
+  /// listener open. It is also unfit for a server handling more than one user
+  /// at a time, because the verifier is held under a single key that
+  /// concurrent sign-ins overwrite.
   final AuthAsyncStorage? pkceAsyncStorage;
   final AuthFlowType authFlowType;
 

@@ -4,6 +4,8 @@ import 'package:supabase_auth/supabase_auth.dart';
 import 'package:http/http.dart';
 import 'package:test/test.dart';
 
+import 'utils.dart';
+
 class _CapturingHttpClient extends BaseClient {
   Request? lastRequest;
 
@@ -25,6 +27,7 @@ void main() {
     client = AuthClient(
       url: 'http://localhost:9999',
       httpClient: httpClient,
+      asyncStorage: TestAsyncStorage(),
     );
   });
 

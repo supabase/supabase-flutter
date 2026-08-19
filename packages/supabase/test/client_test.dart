@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:supabase/supabase.dart';
+import 'package:supabase/src/supabase_client.dart' as real;
+import 'package:supabase/supabase.dart' hide SupabaseClient;
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -183,6 +184,36 @@ void main() {
   });
 
   group('auth', () {
+    test('the pkce flow asserts when no pkceAsyncStorage is given', () {
+      expect(
+        () => real.SupabaseClient('http://localhost:1', 'supabaseKey'),
+        throwsA(
+          isA<AssertionError>().having(
+            (error) => error.message,
+            'message',
+            contains('You need to provide asyncStorage to perform pkce flow.'),
+          ),
+        ),
+      );
+    });
+
+    test('the pkce flow works with a MemoryAuthAsyncStorage', () async {
+      final supabase = real.SupabaseClient(
+        'http://localhost:1',
+        'supabaseKey',
+        authOptions: AuthClientOptions(
+          pkceAsyncStorage: MemoryAuthAsyncStorage(),
+        ),
+      );
+      addTearDown(supabase.dispose);
+
+      final response = await supabase.auth.getOAuthSignInUrl(
+        provider: OAuthProvider.github,
+      );
+
+      expect(response.url.queryParameters, contains('code_challenge'));
+    });
+
     test('properly set Authorization header', () async {
       final (:sessionString, :accessToken) = getSessionData(
         DateTime.now().add(Duration(hours: 1)),
@@ -468,4 +499,29 @@ void main() {
       });
     });
   });
+}
+
+/// A [real.SupabaseClient] that falls back to an in-memory pkce storage, so the
+/// tests below do not have to pass one at every construction site.
+class SupabaseClient extends real.SupabaseClient {
+  SupabaseClient(
+    super.supabaseUrl,
+    super.supabaseKey, {
+    super.postgrestOptions,
+    AuthClientOptions authOptions = const AuthClientOptions(),
+    super.storageOptions,
+    super.functionsOptions,
+    super.realtimeClientOptions,
+    super.accessToken,
+    super.headers,
+    super.httpClient,
+    super.isolate,
+  }) : super(
+         authOptions: AuthClientOptions(
+           autoRefreshToken: authOptions.autoRefreshToken,
+           pkceAsyncStorage:
+               authOptions.pkceAsyncStorage ?? MemoryAuthAsyncStorage(),
+           authFlowType: authOptions.authFlowType,
+         ),
+       );
 }
