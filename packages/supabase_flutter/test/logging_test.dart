@@ -13,11 +13,13 @@ void main() {
   final printed = <String>[];
   final records = <LogRecord>[];
   late StreamSubscription<LogRecord> subscription;
+  late DebugPrintCallback previousDebugPrint;
 
   setUp(() {
     printed.clear();
     records.clear();
     mockAppLink();
+    previousDebugPrint = debugPrint;
     debugPrint = (String? message, {int? wrapWidth}) {
       if (message != null) printed.add(message);
     };
@@ -25,6 +27,7 @@ void main() {
   });
 
   tearDown(() async {
+    debugPrint = previousDebugPrint;
     await subscription.cancel();
     try {
       await Supabase.instance.dispose();

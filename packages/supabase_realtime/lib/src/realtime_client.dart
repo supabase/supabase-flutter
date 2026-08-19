@@ -5,6 +5,7 @@ import 'dart:core';
 import 'package:collection/collection.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/logger.dart';
@@ -271,7 +272,8 @@ class RealtimeClient {
       'logLevel: ${logLevel?.name}',
     );
     realtimeLogger.finest(
-      'Initialize with headers: $headers, parameters: $parameters',
+      'Initialize with headers: ${this.headers.redacted}, '
+      'parameters: $_redactedParameters',
     );
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? parameters['apikey'];
@@ -298,7 +300,7 @@ class RealtimeClient {
 
     try {
       realtimeLogger.fine('Connecting');
-      realtimeLogger.finest('Connecting to $endpointUrl');
+      realtimeLogger.finest('Connecting to $_redactedEndpointUrl');
       connectionState = SocketState.connecting;
       final WebSocketChannel localConnection = transport(endpointUrl, headers);
       connection = localConnection;
@@ -602,6 +604,23 @@ class RealtimeClient {
     return _appendParameters(endpoint, queryParameters);
   }
 
+  /// [endpointUrl] with credential-bearing query parameters replaced by
+  /// `<redacted>`, safe to include in log records.
+  String get _redactedEndpointUrl {
+    final uri = Uri.parse(endpointUrl);
+    return uri
+        .replace(queryParameters: uri.queryParameters.redacted)
+        .toString();
+  }
+
+  /// [parameters] with credential-bearing values replaced by `<redacted>`,
+  /// safe to include in log records.
+  Map<String, String> get _redactedParameters {
+    return {
+      for (final entry in parameters.entries) entry.key: '${entry.value}',
+    }.redacted;
+  }
+
   /// Return the next message ref, accounting for overflows
   @internal
   String makeRef() {
@@ -655,7 +674,7 @@ class RealtimeClient {
 
   void _onConnectionOpen() {
     realtimeLogger.fine('Connected');
-    realtimeLogger.finest('Connected to $endpointUrl');
+    realtimeLogger.finest('Connected to $_redactedEndpointUrl');
     unawaited(_resolveAccessTokenAndFlush());
     reconnectTimer.reset();
     if (heartbeatTimer != null) heartbeatTimer!.cancel();

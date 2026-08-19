@@ -207,7 +207,7 @@ class AuthClient {
       '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
       '${AuthConstants.autoRefreshTickThreshold}',
     );
-    authLogger.finest('Initialize with headers: $_headers');
+    authLogger.finest('Initialize with headers: ${_headers.redacted}');
     admin = AuthAdminApi(
       authUrl,
       headers: _headers,

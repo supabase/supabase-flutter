@@ -1386,3 +1386,65 @@ pinned token should no longer apply.
 
 Realtime keeps its setter because it holds a live socket and has to push a new token over it rather
 than attach one per request.
+
+### The SDK no longer prints logs
+
+`Supabase.initialize` no longer takes a `debug` flag and never prints anything to the console. All
+packages still emit their records through [`package:logging`](https://pub.dev/packages/logging)
+under the `supabase` logger hierarchy, but whether, where, and at which level those records are
+handled is now entirely up to the application.
+
+```dart
+// Before
+await Supabase.initialize(
+  url: supabaseUrl,
+  publishableKey: supabaseKey,
+  debug: true,
+);
+
+// After
+Logger.root.onRecord.listen((record) {
+  if (record.loggerName.startsWith('supabase.')) {
+    debugPrint('${record.loggerName}: ${record.level.name}: '
+        '${record.message} ${record.error ?? ''}');
+  }
+});
+await Supabase.initialize(
+  url: supabaseUrl,
+  publishableKey: supabaseKey,
+);
+```
+
+See the `Logging` section of the `supabase_flutter` README for level filtering with
+`hierarchicalLoggingEnabled`.
+
+Two logger names changed, so update any listeners that filter on `LogRecord.loggerName`:
+
+| Before | After |
+| --- | --- |
+| `supabase.supabase` | `supabase.dart` |
+| `supabase.supabase_flutter` | `supabase.flutter` |
+
+### `RealtimeClient.logger` and `RealtimeClient.log` are gone
+
+The realtime client had a second logging path next to `package:logging`: a `logger` callback
+constructor parameter and a public `log` method. Both are removed. Realtime diagnostics are
+emitted on the `supabase.realtime` logger, so listen there instead.
+
+```dart
+// Before
+final client = RealtimeClient(
+  realtimeUrl,
+  logger: (kind, message, data) => print('$kind: $message $data'),
+);
+
+// After
+Logger('supabase.realtime').onRecord.listen((record) {
+  print('${record.level.name}: ${record.message} ${record.error ?? ''}');
+});
+final client = RealtimeClient(realtimeUrl);
+```
+
+Listening on a non-root logger such as `Logger('supabase.realtime')` requires
+`hierarchicalLoggingEnabled = true`; without it, listen on `Logger.root` and filter on
+`LogRecord.loggerName`.

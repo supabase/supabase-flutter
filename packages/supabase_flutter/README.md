@@ -573,7 +573,7 @@ import 'package:logging/logging.dart';
 
 void main() {
   Logger.root.onRecord.listen((record) {
-    if (record.loggerName.startsWith('supabase')) {
+    if (record.loggerName.startsWith('supabase.')) {
       debugPrint('${record.loggerName}: ${record.level.name}: '
           '${record.message} ${record.error ?? ''}');
     }

@@ -2,6 +2,7 @@ import 'package:http/http.dart';
 import 'package:postgrest/src/logger.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 /// A PostgREST api client written in Dartlang. The goal of this library is to
@@ -66,7 +67,9 @@ class PostgrestClient {
     postgrestLogger.config(
       'Initialize PostgrestClient with url: $url, schema: $_schema',
     );
-    postgrestLogger.finest('Initialize with headers: $headers');
+    postgrestLogger.finest(
+      'Initialize with headers: ${this.headers.redacted}',
+    );
   }
 
   /// Perform a table operation.
