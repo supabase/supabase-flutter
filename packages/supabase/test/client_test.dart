@@ -258,14 +258,16 @@ void main() {
         );
 
         final mockServer = await HttpServer.bind('localhost', 0);
+        addTearDown(() => mockServer.close(force: true));
         final supabase = SupabaseClient(
           'http://${mockServer.address.host}:${mockServer.port}',
           "supabaseKey",
           authOptions: AuthClientOptions(autoRefreshToken: false),
         );
+        addTearDown(supabase.dispose);
         await supabase.auth.recoverSession(sessionString);
 
-        final pending = <Future<Object?>>[
+        final pending = [
           supabase.functions.invoke(
             "test",
             headers: {'Authorization': 'Bearer pinned'},
@@ -292,8 +294,6 @@ void main() {
         }
 
         await Future.wait(pending);
-        await supabase.dispose();
-        await mockServer.close();
       },
     );
 
