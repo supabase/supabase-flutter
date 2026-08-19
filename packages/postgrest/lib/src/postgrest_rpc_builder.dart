@@ -8,7 +8,7 @@ class PostgrestRpcBuilder
     String? schema,
     Client? httpClient,
     required YAJsonIsolate isolate,
-    PostgrestRetryOptions retryOptions = const PostgrestRetryOptions(),
+    SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) : super(

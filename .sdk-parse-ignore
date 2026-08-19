@@ -11,8 +11,11 @@
 # supabase_common is an internal, cross-package helper library. Its public
 # symbols are imported by the other packages, so they cannot be marked
 # @internal (that would trigger invalid_use_of_internal_member in the
-# consumers). Exclude the whole package from the public-API scan instead.
-packages/supabase_common/
+# consumers). Exclude its sources from the public-API scan instead, except for
+# the retry options, which every client re-exports as user facing API and so
+# are registered in the capability matrix.
+packages/supabase_common/lib/
+!packages/supabase_common/lib/src/retry_options.dart
 
 # supabase_typegen is a development-time code generator, not SDK client surface,
 # so its public symbols are not capability-matrix symbols.

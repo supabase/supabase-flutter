@@ -10,14 +10,14 @@ class StorageFileApi {
   final String url;
   Map<String, String> _headers;
   final String? bucketId;
-  final int _retryAttempts;
+  final SupabaseRetryOptions _retryOptions;
   final Fetch _storageFetch;
 
   StorageFileApi(
     this.url,
     Map<String, String> headers,
     this.bucketId,
-    this._retryAttempts,
+    this._retryOptions,
     this._storageFetch,
   ) : _headers = {...headers};
 
@@ -62,13 +62,6 @@ class StorageFileApi {
     );
   }
 
-  void _assertValidRetryAttempts(int? retryAttempts) {
-    assert(
-      retryAttempts == null || retryAttempts >= 0,
-      'retryAttempts has to be greater or equal to 0',
-    );
-  }
-
   /// Uploads a file to an existing bucket.
   ///
   /// [path] is the relative file path without the bucket ID. Should be of the
@@ -79,8 +72,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the
-  /// storage client.
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
@@ -91,10 +84,9 @@ class StorageFileApi {
     String path,
     File file, {
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   }) async {
-    _assertValidRetryAttempts(retryAttempts);
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.postFile(
@@ -102,7 +94,7 @@ class StorageFileApi {
       file,
       fileOptions,
       options: _fetchOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -119,8 +111,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the
-  /// storage client.
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
@@ -131,10 +123,9 @@ class StorageFileApi {
     String path,
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   }) async {
-    _assertValidRetryAttempts(retryAttempts);
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.postBinaryFile(
@@ -142,7 +133,7 @@ class StorageFileApi {
       data,
       fileOptions,
       options: _fetchOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -167,11 +158,9 @@ class StorageFileApi {
     String token,
     File file, [
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   ]) async {
-    _assertValidRetryAttempts(retryAttempts);
-
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
@@ -181,7 +170,7 @@ class StorageFileApi {
       requestUrl.toString(),
       file,
       fileOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -206,11 +195,9 @@ class StorageFileApi {
     String token,
     Uint8List data, [
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   ]) async {
-    _assertValidRetryAttempts(retryAttempts);
-
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
@@ -220,7 +207,7 @@ class StorageFileApi {
       requestUrl.toString(),
       data,
       fileOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -276,8 +263,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the
-  /// storage client.
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
@@ -288,10 +275,9 @@ class StorageFileApi {
     String path,
     File file, {
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   }) async {
-    _assertValidRetryAttempts(retryAttempts);
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.putFile(
@@ -299,7 +285,7 @@ class StorageFileApi {
       file,
       fileOptions,
       options: _fetchOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -317,8 +303,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the
-  /// storage client.
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
@@ -329,10 +315,9 @@ class StorageFileApi {
     String path,
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   }) async {
-    _assertValidRetryAttempts(retryAttempts);
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.putBinaryFile(
@@ -340,7 +325,7 @@ class StorageFileApi {
       data,
       fileOptions,
       options: _fetchOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 

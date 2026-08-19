@@ -9,7 +9,9 @@ import 'package:supabase_storage/src/vector_client.dart';
 import 'package:supabase_storage/src/version.dart';
 
 class SupabaseStorageClient extends StorageBucketApi {
-  final int _defaultRetryAttempts;
+  /// Configures the automatic retry of uploads.
+  final SupabaseRetryOptions retryOptions;
+
   final _log = Logger('supabase.storage');
 
   /// To create a [SupabaseStorageClient], you need to provide an [url] and
@@ -21,20 +23,14 @@ class SupabaseStorageClient extends StorageBucketApi {
   ///
   /// [httpClient] is optional and can be used to provide a custom http client
   ///
-  /// [retryAttempts] specifies how many retry attempts there should be to
-  ///  upload a file when failed due to network interruption.
+  /// [retryOptions] configures how an upload that failed due to a network
+  /// interruption is retried. Uploads are not retried unless
+  /// [SupabaseRetryOptions.count] is above zero, since repeating one costs
+  /// bandwidth. With the default backoff the delays are 400 ms, 800 ms,
+  /// 1600 ms and so on, each randomized by up to 25%, capped at 30 seconds.
   ///
-  /// Time between each retries are set as the following:
-  ///  1. 400 ms +/- 25%
-  ///  2. 800 ms +/- 25%
-  ///  3. 1600 ms +/- 25%
-  ///  4. 3200 ms +/- 25%
-  ///  5. 6400 ms +/- 25%
-  ///  6. 12800 ms +/- 25%
-  ///  7. 25600 ms +/- 25%
-  ///  8. 30000 ms +/- 25%
-  ///
-  /// Anything beyond the 8th try will have 30 second delay.
+  /// Override it for a single upload with the `retryOptions` parameter of
+  /// [StorageFileApi.upload] and its siblings.
   ///
   /// [useNewHostname] controls whether legacy storage URLs are rewritten to use
   /// the dedicated storage host (`<ref>.storage.supabase.co`). Set to `true`
@@ -45,20 +41,15 @@ class SupabaseStorageClient extends StorageBucketApi {
     String url,
     Map<String, String> headers, {
     super.httpClient,
-    int retryAttempts = 0,
+    this.retryOptions = const SupabaseRetryOptions(count: 0),
     bool useNewHostname = false,
-  }) : assert(
-         retryAttempts >= 0,
-         'retryAttempts has to be greater than or equal to 0',
-       ),
-       _defaultRetryAttempts = retryAttempts,
-       super(
+  }) : super(
          useNewHostname ? _transformStorageUrl(url) : url,
          {...StorageConstants.defaultHeaders, ...headers},
        ) {
     _log.config(
       'Initialize SupabaseStorageClient v$version with url: $url, '
-      'retryAttempts: $_defaultRetryAttempts',
+      'retryOptions: $retryOptions',
     );
     _log.finest('Initialize with headers: ${headers.redacted}');
   }
@@ -105,7 +96,7 @@ class SupabaseStorageClient extends StorageBucketApi {
       url,
       headers,
       id,
-      _defaultRetryAttempts,
+      retryOptions,
       storageFetch,
     );
   }

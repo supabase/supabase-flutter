@@ -23,7 +23,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     String? schema,
     Client? httpClient,
     YAJsonIsolate? isolate,
-    PostgrestRetryOptions retryOptions = const PostgrestRetryOptions(),
+    SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) : super(

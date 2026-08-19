@@ -795,7 +795,7 @@ void main() {
       client = SupabaseStorageClient(
         '$supabaseUrl/storage/v1',
         {'Authorization': 'Bearer $supabaseKey'},
-        retryAttempts: 5,
+        retryOptions: const SupabaseRetryOptions(count: 5),
         // `RetryHttpClient` will throw `SocketException` for the first two
         // tries
         httpClient: RetryHttpClient(),
@@ -808,7 +808,11 @@ void main() {
 
       final uploadTask = client
           .from('public')
-          .upload('a.txt', file, retryAttempts: 1);
+          .upload(
+            'a.txt',
+            file,
+            retryOptions: const SupabaseRetryOptions(count: 1),
+          );
       await expectLater(uploadTask, throwsException);
     });
 

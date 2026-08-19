@@ -237,6 +237,8 @@ features:
       - AuthClient.stopAutoRefresh
     supporting_symbols:
       - AuthClientOptions.autoRefreshToken
+      - AuthClient.retryOptions
+      - AuthClientOptions.retryOptions
   auth.session.subscribe_auth_events:
     status: implemented
     symbols:
@@ -966,22 +968,24 @@ features:
     symbols:
       - PostgrestClient.retryOptions
       - PostgrestClientOptions.retryOptions
+      - PostgrestClient.retryableStatusCodes
       - PostgrestBuilder.retry
-      - PostgrestRetryOptions
-      - PostgrestRetryOptions.enabled
-      - PostgrestRetryOptions.count
-      - PostgrestRetryOptions.statusCodes
-      - PostgrestRetryOptions.initialDelay
-      - PostgrestRetryOptions.maxDelay
-      - PostgrestRetryOptions.randomizationFactor
+      - SupabaseRetryOptions
+      - SupabaseRetryOptions.enabled
+      - SupabaseRetryOptions.count
+      - SupabaseRetryOptions.initialDelay
+      - SupabaseRetryOptions.maxDelay
+      - SupabaseRetryOptions.randomizationFactor
     supporting_symbols:
       - PostgrestFilterBuilder.retry
       - PostgrestQueryBuilder.retry
       - PostgrestTransformBuilder.retry
-      - PostgrestRetryOptions.PostgrestRetryOptions
-      - PostgrestRetryOptions.copyWith
-      - PostgrestRetryOptions.delay
-      - PostgrestRetryOptions.toString
+      - SupabaseRetryOptions.SupabaseRetryOptions
+      - SupabaseRetryOptions.copyWith
+      - SupabaseRetryOptions.delay
+      - SupabaseRetryOptions.==
+      - SupabaseRetryOptions.hashCode
+      - SupabaseRetryOptions.toString
   database.configuration.request_timeout:
     status: implemented
     symbols:
@@ -1647,7 +1651,8 @@ features:
   storage.configuration.auto_retry:
     status: implemented
     symbols:
-      - StorageClientOptions.retryAttempts
+      - StorageClientOptions.retryOptions
+      - SupabaseStorageClient.retryOptions
 
   # storage — errors
   storage.errors.error_codes:

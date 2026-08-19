@@ -2,10 +2,13 @@
 library;
 
 export 'package:supabase_common/supabase_common.dart'
-    show HttpMethod, SupabaseApiException, SupabaseException;
+    show
+        HttpMethod,
+        SupabaseApiException,
+        SupabaseException,
+        SupabaseRetryOptions;
 
 export 'src/postgrest.dart';
 export 'src/postgrest_builder.dart';
-export 'src/postgrest_retry_options.dart';
 export 'src/types.dart';
 export 'package:http/http.dart' show RequestAbortedException;

@@ -7,6 +7,14 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 /// A PostgREST api client written in Dartlang. The goal of this library is to
 /// make an "ORM-like" restful interface.
 class PostgrestClient {
+  /// The HTTP status codes that trigger a retry.
+  ///
+  /// `503 Service Unavailable` and `520 Unknown Error` are the only responses
+  /// a Supabase project answers with that are worth repeating, so the set is
+  /// fixed. Retrying anything else, a `500` from a failing query for example,
+  /// only multiplies the load without a chance of a different answer.
+  static const Set<int> retryableStatusCodes = {503, 520};
+
   final String url;
   final Map<String, String> headers;
   final String? _schema;
@@ -15,7 +23,7 @@ class PostgrestClient {
   final bool _hasCustomIsolate;
 
   /// Configures the automatic retry of GET and HEAD requests.
-  final PostgrestRetryOptions retryOptions;
+  final SupabaseRetryOptions retryOptions;
 
   final Duration? requestTimeout;
   final _log = Logger('supabase.postgrest');
@@ -50,7 +58,7 @@ class PostgrestClient {
     String? schema,
     this.httpClient,
     YAJsonIsolate? isolate,
-    this.retryOptions = const PostgrestRetryOptions(),
+    this.retryOptions = const SupabaseRetryOptions(),
     this.requestTimeout,
   }) : _schema = schema,
        headers = {...defaultHeaders, ...?headers},
