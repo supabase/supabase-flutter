@@ -12,6 +12,18 @@ class AuthConstants {
   /// storage key prefix to store code verifiers
   static const String defaultStorageKey = 'supabase.auth.token';
 
+  /// Reserved query parameter appended to `redirectTo` URLs of PKCE flows when
+  /// `appendPkceFlowIdToRedirects` is enabled.
+  ///
+  /// It round-trips through the auth server untouched and identifies the
+  /// verifier slot the callback belongs to. The verifier itself never
+  /// appears in a URL.
+  static const String pkceFlowIdParam = 'sb_flow_id';
+
+  /// Maximum number of PKCE code verifiers kept in storage at once. Starting
+  /// another flow beyond this evicts the oldest pending verifier.
+  static const int pkceMaxConcurrentFlows = 5;
+
   /// The margin to use when checking if a token is expired.
   static const expiryMargin = Duration(seconds: 30);
 

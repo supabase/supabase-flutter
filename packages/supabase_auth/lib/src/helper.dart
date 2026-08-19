@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/jwt.dart';
 import 'package:meta/meta.dart';
@@ -75,6 +76,55 @@ JwtPayload decodeJwtPayload(String token) {
     throw AuthInvalidJwtException('Failed to decode JWT: $error');
   }
 }
+
+/// Appends the reserved flow id parameter to a `redirectTo` URL, replacing any
+/// occurrence already there.
+///
+/// Works on the string rather than going through [Uri] so that custom schemes
+/// used by deep links and the exact encoding of the app's own parameters
+/// survive untouched. A fragment stays at the end of the URL.
+///
+/// An occurrence already in the fragment is dropped too, because
+/// `getSessionFromUrl` folds the fragment into the query parameters, where a
+/// stale copy parsed after the appended one would win.
+@internal
+String appendPKCEFlowIdToRedirect(String redirectTo, String flowId) {
+  final fragmentIndex = redirectTo.indexOf('#');
+  var fragment = fragmentIndex == -1 ? '' : redirectTo.substring(fragmentIndex);
+  var base = fragmentIndex == -1
+      ? redirectTo
+      : redirectTo.substring(0, fragmentIndex);
+
+  final queryIndex = base.indexOf('?');
+  if (queryIndex != -1) {
+    final path = base.substring(0, queryIndex);
+    final remaining = _withoutFlowId(base.substring(queryIndex + 1));
+    base = remaining.isEmpty ? path : '$path?$remaining';
+  }
+
+  if (fragment.length > 1) {
+    final remaining = _withoutFlowId(fragment.substring(1));
+    fragment = remaining.isEmpty ? '' : '#$remaining';
+  }
+
+  final separator = base.contains('?') ? '&' : '?';
+  return '$base$separator${AuthConstants.pkceFlowIdParam}='
+      '${Uri.encodeQueryComponent(flowId)}$fragment';
+}
+
+/// Drops the reserved flow id parameter from an `&` joined list of pairs.
+///
+/// Matching is on the whole name so that a parameter of the app's own whose
+/// name merely starts with the reserved one, such as `sb_flow_idx`, is kept.
+String _withoutFlowId(String pairs) => pairs
+    .split('&')
+    .where(
+      (pair) =>
+          pair.isNotEmpty &&
+          pair != AuthConstants.pkceFlowIdParam &&
+          !pair.startsWith('${AuthConstants.pkceFlowIdParam}='),
+    )
+    .join('&');
 
 /// Validates the expiration time of a JWT
 ///

@@ -13,6 +13,7 @@ const _authParameters = {
   'error_code',
   'error_description',
   'type',
+  'sb_flow_id',
 };
 
 /// Returns [url] with all authentication parameters removed from both the

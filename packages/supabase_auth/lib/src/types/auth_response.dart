@@ -23,10 +23,22 @@ class OAuthResponse {
   /// The provider's authorization URL to send the user to.
   final Uri url;
 
+  /// Identifier of the PKCE flow this call started.
+  ///
+  /// Pass it as the `flowId` of [AuthClient.exchangeCodeForSession] to
+  /// exchange the auth code with this flow's code verifier when several flows
+  /// are pending at the same time. `null` when the client is not using the PKCE
+  /// flow.
+  ///
+  /// The id only selects a verifier held in storage, it never contains the
+  /// verifier itself.
+  final String? flowId;
+
   /// Instantiates an `OAuthResponse` object from json response.
   const OAuthResponse({
     required this.provider,
     required this.url,
+    this.flowId,
   });
 }
 

@@ -31,6 +31,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     super.authFlowType,
     super.autoRefreshToken,
     super.pkceAsyncStorage,
+    super.appendPkceFlowIdToRedirects,
     this.localStorage,
     this.detectSessionInUri = true,
     this.detectSessionInUriPredicate,
@@ -42,6 +43,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     bool? autoRefreshToken,
     LocalStorage? localStorage,
     AuthAsyncStorage? pkceAsyncStorage,
+    bool? appendPkceFlowIdToRedirects,
     bool? detectSessionInUri,
     bool Function(Uri uri)? detectSessionInUriPredicate,
     bool? persistSession,
@@ -51,6 +53,8 @@ class FlutterAuthClientOptions extends AuthClientOptions {
       autoRefreshToken: autoRefreshToken ?? this.autoRefreshToken,
       localStorage: localStorage ?? this.localStorage,
       pkceAsyncStorage: pkceAsyncStorage ?? this.pkceAsyncStorage,
+      appendPkceFlowIdToRedirects:
+          appendPkceFlowIdToRedirects ?? this.appendPkceFlowIdToRedirects,
       detectSessionInUri: detectSessionInUri ?? this.detectSessionInUri,
       detectSessionInUriPredicate:
           detectSessionInUriPredicate ?? this.detectSessionInUriPredicate,

@@ -8,6 +8,7 @@ import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/fetch.dart';
 import 'package:supabase_auth/src/helper.dart';
+import 'package:supabase_auth/src/pkce_verifier_store.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
@@ -49,6 +50,9 @@ class _SessionState {
 /// do not need to outlive the process.
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
+///
+/// Set [AuthClient.appendPkceFlowIdToRedirects] to match a pkce callback to the
+/// flow that started it when several flows can be pending at once.
 /// {@endtemplate}
 class AuthClient {
   /// Namespace for the Supabase Auth admin API methods. These can be used for
@@ -100,8 +104,24 @@ class AuthClient {
     sync: true,
   );
 
-  /// Local storage to store pkce code verifiers.
-  final AuthAsyncStorage? _asyncStorage;
+  /// Keeps one code verifier per pending pkce flow. Null when no
+  /// [AuthAsyncStorage] was provided, in which case the pkce flow cannot run.
+  final PKCEVerifierStore? _pkceVerifierStore;
+
+  /// Whether the reserved `sb_flow_id` query parameter is appended to the
+  /// redirect URL of pkce flows, so a callback can be matched to the flow that
+  /// started it.
+  ///
+  /// Only needed for flows that hand back no flow id, such as email OTP,
+  /// password recovery and email change. Elsewhere pass the
+  /// [OAuthResponse.flowId] of [getOAuthSignInUrl] or [getLinkIdentityUrl] to
+  /// [exchangeCodeForSession] instead.
+  ///
+  /// Defaults to false, because the [redirect URL allow
+  /// list](https://supabase.com/docs/guides/auth/redirect-urls) is matched
+  /// against the full URL: an entry without a wildcard stops matching once the
+  /// parameter is appended, and the redirect falls back to your Site URL.
+  final bool appendPkceFlowIdToRedirects;
 
   /// Receive a notification every time an auth event happens.
   ///
@@ -158,6 +178,7 @@ class AuthClient {
     Client? httpClient,
     AuthAsyncStorage? asyncStorage,
     AuthFlowType flowType = AuthFlowType.pkce,
+    this.appendPkceFlowIdToRedirects = false,
   }) : assert(
          flowType != AuthFlowType.pkce || asyncStorage != null,
          'You need to provide asyncStorage to perform pkce flow. Pass a '
@@ -167,7 +188,9 @@ class AuthClient {
        _url = url ?? AuthConstants.defaultAuthUrl,
        _headers = {...AuthConstants.defaultHeaders, ...?headers},
        _httpClient = httpClient,
-       _asyncStorage = asyncStorage,
+       _pkceVerifierStore = asyncStorage == null
+           ? null
+           : PKCEVerifierStore(asyncStorage),
        _flowType = flowType {
     _autoRefreshToken = autoRefreshToken ?? true;
 
@@ -314,21 +337,24 @@ class AuthClient {
     final Map<String, dynamic> response;
 
     if (email != null) {
-      final codeChallenge = await _generatePKCECodeChallenge();
+      final pkceFlow = await _startPKCEFlow();
 
       response = await _fetch.request(
         '$_url/signup',
         HttpMethod.post,
         options: AuthRequestOptions(
           headers: _headers,
-          redirectTo: emailRedirectTo,
+          redirectTo: _maybeAppendFlowIdToRedirect(
+            emailRedirectTo,
+            pkceFlow?.flowId,
+          ),
           body: {
             'email': email,
             'password': password,
             'data': data,
             'gotrue_meta_security': {'captcha_token': captchaToken},
-            'code_challenge': codeChallenge,
-            'code_challenge_method': codeChallenge != null ? 's256' : null,
+            'code_challenge': pkceFlow?.codeChallenge,
+            'code_challenge_method': pkceFlow != null ? 's256' : null,
           },
         ),
       );
@@ -425,14 +451,18 @@ class AuthClient {
     String? scopes,
     Map<String, String>? queryParameters,
   }) async {
-    final url = await _getUrlForProvider(
+    final urlResponse = await _getUrlForProvider(
       provider,
       url: '$_url/authorize',
       redirectTo: redirectTo,
       scopes: scopes,
       queryParameters: queryParameters,
     );
-    return OAuthResponse(provider: provider, url: url);
+    return OAuthResponse(
+      provider: provider,
+      url: urlResponse.url,
+      flowId: urlResponse.flowId,
+    );
   }
 
   /// Verifies the PKCE code verifier and retrieves a session.
@@ -441,14 +471,41 @@ class AuthClient {
   /// [resetPasswordForEmail], which emits [AuthChangeEvent.passwordRecovery],
   /// or by an email change through [updateUser], which emits
   /// [AuthChangeEvent.userUpdated].
-  Future<AuthSessionUrlResponse> exchangeCodeForSession(String authCode) async {
+  ///
+  /// When several PKCE flows are pending at the same time, pass the [flowId] of
+  /// the flow the [authCode] belongs to, so the code is exchanged with the code
+  /// verifier that flow created. [getOAuthSignInUrl] and [getLinkIdentityUrl]
+  /// return it as [OAuthResponse.flowId], and with
+  /// [appendPkceFlowIdToRedirects] enabled it also arrives on the callback URL
+  /// as the reserved `sb_flow_id` query parameter, which [getSessionFromUrl]
+  /// reads for you.
+  ///
+  /// When a [flowId] is given but its stored verifier is gone, because it was
+  /// evicted, already used, or created on another device, this throws instead
+  /// of trying another flow's verifier: a mismatched verifier would spend the
+  /// single-use [authCode]. Without a [flowId] the verifier of the most
+  /// recently started flow is used, as it always was.
+  Future<AuthSessionUrlResponse> exchangeCodeForSession(
+    String authCode, {
+    String? flowId,
+  }) async {
     assert(
-      _asyncStorage != null,
+      _pkceVerifierStore != null,
       'You need to provide asyncStorage to perform pkce flow.',
     );
 
-    final codeVerifierRawString = await _asyncStorage!.getItem(
-      key: '${AuthConstants.defaultStorageKey}-code-verifier',
+    final requestedFlowId = PKCEVerifierStore.validateFlowId(flowId);
+    if (flowId != null && requestedFlowId == null) {
+      // Told apart from a missing verifier so the message points at the
+      // callback URL rather than at storage. Bounded because the id comes
+      // from that URL.
+      throw AuthException(
+        'PKCE flow id is not a valid flow id: ${_bounded(flowId)}',
+      );
+    }
+
+    final codeVerifierRawString = await _pkceVerifierStore!.retrieve(
+      flowId: requestedFlowId,
     );
     if (codeVerifierRawString == null) {
       throw AuthException('Code verifier could not be found in local storage.');
@@ -467,9 +524,7 @@ class AuthClient {
       ),
     );
 
-    await _asyncStorage.removeItem(
-      key: '${AuthConstants.defaultStorageKey}-code-verifier',
-    );
+    await _pkceVerifierStore.remove(flowId: requestedFlowId);
 
     final authSessionUrlResponse = AuthSessionUrlResponse(
       session: Session.fromJson(response)!,
@@ -485,28 +540,53 @@ class AuthClient {
     return authSessionUrlResponse;
   }
 
-  /// Generates a PKCE code verifier, persists it, and returns the derived code
-  /// challenge.
+  /// Starts a PKCE flow by generating a code verifier and persisting it in a
+  /// slot of its own, and returns the derived code challenge together with the
+  /// id of the flow it belongs to.
   ///
   /// Returns `null` when the client is not using the PKCE flow. When
   /// [storageEventName] is provided it is appended to the stored verifier so it
   /// can be recovered in [exchangeCodeForSession].
-  Future<String?> _generatePKCECodeChallenge({String? storageEventName}) async {
+  Future<({String codeChallenge, String flowId})?> _startPKCEFlow({
+    String? storageEventName,
+  }) async {
     if (_flowType != AuthFlowType.pkce) {
       return null;
     }
     assert(
-      _asyncStorage != null,
+      _pkceVerifierStore != null,
       'You need to provide asyncStorage to perform pkce flow.',
     );
     final codeVerifier = generatePKCEVerifier();
-    await _asyncStorage!.setItem(
-      key: '${AuthConstants.defaultStorageKey}-code-verifier',
-      value: storageEventName == null
+    final flowId = PKCEVerifierStore.generateFlowId();
+    final evicted = await _pkceVerifierStore!.store(
+      flowId: flowId,
+      verifier: storageEventName == null
           ? codeVerifier
           : '$codeVerifier/$storageEventName',
     );
-    return generatePKCEChallenge(codeVerifier);
+    for (final evictedFlowId in evicted) {
+      _log.warning(
+        'Evicted the oldest pending PKCE verifier to start a new flow, '
+        'flow id: $evictedFlowId',
+      );
+    }
+    return (codeChallenge: generatePKCEChallenge(codeVerifier), flowId: flowId);
+  }
+
+  /// Caps untrusted input echoed back in an exception message to the longest
+  /// flow id the store accepts.
+  static String _bounded(String value) =>
+      value.length <= 64 ? value : '${value.substring(0, 64)}...';
+
+  /// Appends the flow id to [redirectTo] so the callback can be matched to the
+  /// verifier stored for its flow, when [appendPkceFlowIdToRedirects] allows
+  /// it.
+  String? _maybeAppendFlowIdToRedirect(String? redirectTo, String? flowId) {
+    if (redirectTo == null || flowId == null || !appendPkceFlowIdToRedirects) {
+      return redirectTo;
+    }
+    return appendPKCEFlowIdToRedirect(redirectTo, flowId);
   }
 
   /// Allows signing in with an ID token issued by supported providers. Common
@@ -638,20 +718,23 @@ class AuthClient {
     OtpChannel channel = OtpChannel.sms,
   }) async {
     if (email != null) {
-      final codeChallenge = await _generatePKCECodeChallenge();
+      final pkceFlow = await _startPKCEFlow();
       await _fetch.request(
         '$_url/otp',
         HttpMethod.post,
         options: AuthRequestOptions(
           headers: _headers,
-          redirectTo: emailRedirectTo,
+          redirectTo: _maybeAppendFlowIdToRedirect(
+            emailRedirectTo,
+            pkceFlow?.flowId,
+          ),
           body: {
             'email': email,
             'data': data ?? {},
             'create_user': shouldCreateUser ?? true,
             'gotrue_meta_security': {'captcha_token': captchaToken},
-            'code_challenge': codeChallenge,
-            'code_challenge_method': codeChallenge != null ? 's256' : null,
+            'code_challenge': pkceFlow?.codeChallenge,
+            'code_challenge_method': pkceFlow != null ? 's256' : null,
           },
         ),
       );
@@ -791,7 +874,7 @@ class AuthClient {
       'providerId or domain has to be provided.',
     );
 
-    final codeChallenge = await _generatePKCECodeChallenge();
+    final pkceFlow = await _startPKCEFlow();
 
     final response = await _fetch.request(
       '$_url/sso',
@@ -800,12 +883,15 @@ class AuthClient {
         body: {
           'provider_id': ?providerId,
           'domain': ?domain,
-          'redirect_to': ?redirectTo,
+          'redirect_to': ?_maybeAppendFlowIdToRedirect(
+            redirectTo,
+            pkceFlow?.flowId,
+          ),
           if (captchaToken != null)
             'gotrue_meta_security': {'captcha_token': captchaToken},
           'skip_http_redirect': true,
-          'code_challenge': codeChallenge,
-          'code_challenge_method': codeChallenge != null ? 's256' : null,
+          'code_challenge': pkceFlow?.codeChallenge,
+          'code_challenge_method': pkceFlow != null ? 's256' : null,
         },
         headers: _headers,
       ),
@@ -883,9 +969,7 @@ class AuthClient {
       );
     }
 
-    final codeChallenge = email != null
-        ? await _generatePKCECodeChallenge()
-        : null;
+    final pkceFlow = email != null ? await _startPKCEFlow() : null;
 
     final body = {
       'email': ?email,
@@ -893,15 +977,18 @@ class AuthClient {
       'type': type.snakeCase,
       'gotrue_meta_security': {'captcha_token': captchaToken},
       if (email != null) ...{
-        'code_challenge': codeChallenge,
-        'code_challenge_method': codeChallenge != null ? 's256' : null,
+        'code_challenge': pkceFlow?.codeChallenge,
+        'code_challenge_method': pkceFlow != null ? 's256' : null,
       },
     };
 
     final options = AuthRequestOptions(
       headers: _headers,
       body: body,
-      redirectTo: emailRedirectTo,
+      redirectTo: _maybeAppendFlowIdToRedirect(
+        emailRedirectTo,
+        pkceFlow?.flowId,
+      ),
     );
 
     final response = await _fetch.request(
@@ -943,8 +1030,8 @@ class AuthClient {
       throw AuthSessionMissingException();
     }
 
-    final codeChallenge = attributes.email != null
-        ? await _generatePKCECodeChallenge(
+    final pkceFlow = attributes.email != null
+        ? await _startPKCEFlow(
             storageEventName: AuthChangeEvent.userUpdated.name,
           )
         : null;
@@ -952,15 +1039,18 @@ class AuthClient {
     final body = {
       ...attributes.toJson(),
       if (attributes.email != null) ...{
-        'code_challenge': codeChallenge,
-        'code_challenge_method': codeChallenge != null ? 's256' : null,
+        'code_challenge': pkceFlow?.codeChallenge,
+        'code_challenge_method': pkceFlow != null ? 's256' : null,
       },
     };
     final options = AuthRequestOptions(
       headers: _headers,
       body: body,
       jwt: accessToken,
-      redirectTo: emailRedirectTo,
+      redirectTo: _maybeAppendFlowIdToRedirect(
+        emailRedirectTo,
+        pkceFlow?.flowId,
+      ),
     );
     final response = await _fetch.request(
       '$_url/user',
@@ -1072,7 +1162,10 @@ class AuthClient {
 
     final authCode = url.queryParameters['code'];
     if (authCode != null) {
-      return await exchangeCodeForSession(authCode);
+      return await exchangeCodeForSession(
+        authCode,
+        flowId: url.queryParameters[AuthConstants.pkceFlowIdParam],
+      );
     }
 
     if (_flowType == AuthFlowType.pkce &&
@@ -1149,9 +1242,7 @@ class AuthClient {
 
     if (scope != SignOutScope.others) {
       _removeSession();
-      await _asyncStorage?.removeItem(
-        key: '${AuthConstants.defaultStorageKey}-code-verifier',
-      );
+      await _pkceVerifierStore?.removeAll();
       notifyAllSubscribers(
         AuthChangeEvent.signedOut,
         signOutReason: reason,
@@ -1181,21 +1272,21 @@ class AuthClient {
     String? redirectTo,
     String? captchaToken,
   }) async {
-    final codeChallenge = await _generatePKCECodeChallenge(
+    final pkceFlow = await _startPKCEFlow(
       storageEventName: AuthChangeEvent.passwordRecovery.name,
     );
 
     final body = {
       'email': email,
       'gotrue_meta_security': {'captcha_token': captchaToken},
-      'code_challenge': codeChallenge,
-      'code_challenge_method': codeChallenge != null ? 's256' : null,
+      'code_challenge': pkceFlow?.codeChallenge,
+      'code_challenge_method': pkceFlow != null ? 's256' : null,
     };
 
     final fetchOptions = AuthRequestOptions(
       headers: _headers,
       body: body,
-      redirectTo: redirectTo,
+      redirectTo: _maybeAppendFlowIdToRedirect(redirectTo, pkceFlow?.flowId),
     );
     await _fetch.request(
       '$_url/recover',
@@ -1275,7 +1366,7 @@ class AuthClient {
       skipBrowserRedirect: true,
     );
     final response = await _fetch.request(
-      authorizeUrl.toString(),
+      authorizeUrl.url.toString(),
       HttpMethod.get,
       options: AuthRequestOptions(
         headers: _headers,
@@ -1285,6 +1376,7 @@ class AuthClient {
     return OAuthResponse(
       provider: provider,
       url: Uri.parse(_urlFromResponse(response)),
+      flowId: authorizeUrl.flowId,
     );
   }
 
@@ -1496,8 +1588,10 @@ class AuthClient {
     );
   }
 
-  /// Returns the OAuth sign in URL constructed from the [url] parameter.
-  Future<Uri> _getUrlForProvider(
+  /// Returns the OAuth sign in URL constructed from the [url] parameter,
+  /// together with the id of the pkce flow it started, `null` on the implicit
+  /// flow.
+  Future<({Uri url, String? flowId})> _getUrlForProvider(
     OAuthProvider provider, {
     required String url,
     required String? scopes,
@@ -1505,20 +1599,26 @@ class AuthClient {
     required Map<String, String>? queryParameters,
     bool skipBrowserRedirect = false,
   }) async {
-    final codeChallenge = await _generatePKCECodeChallenge();
+    final pkceFlow = await _startPKCEFlow();
     final urlParameters = {
       'provider': provider.name,
       'scopes': ?scopes,
-      'redirect_to': ?redirectTo,
+      'redirect_to': ?_maybeAppendFlowIdToRedirect(
+        redirectTo,
+        pkceFlow?.flowId,
+      ),
       ...?queryParameters,
-      if (codeChallenge != null) ...{
+      if (pkceFlow != null) ...{
         'flow_type': _flowType.name,
-        'code_challenge': codeChallenge,
+        'code_challenge': pkceFlow.codeChallenge,
         'code_challenge_method': 's256',
       },
       if (skipBrowserRedirect) 'skip_http_redirect': 'true',
     };
-    return Uri.parse('$url?${Uri(queryParameters: urlParameters).query}');
+    return (
+      url: Uri.parse('$url?${Uri(queryParameters: urlParameters).query}'),
+      flowId: pkceFlow?.flowId,
+    );
   }
 
   /// Reads the `url` field out of a response that is expected to carry one.

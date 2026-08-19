@@ -176,6 +176,7 @@ class SupabaseClient {
       autoRefreshToken: authOptions.autoRefreshToken,
       authAsyncStorage: authOptions.pkceAsyncStorage,
       authFlowType: authOptions.authFlowType,
+      appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
     );
     _authHttpClient = AuthHttpClient(
       _supabaseKey,
@@ -327,6 +328,7 @@ class SupabaseClient {
     required bool autoRefreshToken,
     required AuthAsyncStorage? authAsyncStorage,
     required AuthFlowType authFlowType,
+    required bool appendPkceFlowIdToRedirects,
   }) {
     final authHeaders = {...headers};
     authHeaders['apikey'] = _supabaseKey;
@@ -339,6 +341,7 @@ class SupabaseClient {
       httpClient: _authApiHttpClient,
       asyncStorage: authAsyncStorage,
       flowType: authFlowType,
+      appendPkceFlowIdToRedirects: appendPkceFlowIdToRedirects,
     );
   }
 
