@@ -6,4 +6,4 @@ import 'package:meta/meta.dart';
 /// Part of the `supabase` logger hierarchy that all Supabase packages log
 /// under. Attach a listener in application code to receive the records.
 @internal
-final Logger clientLogger = Logger('supabase.client');
+final Logger clientLogger = Logger('supabase.dart');

@@ -617,7 +617,7 @@ Without `hierarchicalLoggingEnabled = true`, `package:logging` only supports lis
 ### Package loggers
 
 - `supabase_flutter`: `Logger('supabase.flutter')`
-- `supabase`: `Logger('supabase.client')`
+- `supabase`: `Logger('supabase.dart')`
 - `postgrest`: `Logger('supabase.postgrest')`
 - `supabase_auth`: `Logger('supabase.auth')`
 - `supabase_realtime`: `Logger('supabase.realtime')`

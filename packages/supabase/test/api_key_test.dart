@@ -33,7 +33,7 @@ void main() {
 
       expect(records, hasLength(1));
       expect(records.first.level, Level.WARNING);
-      expect(records.first.loggerName, 'supabase.client');
+      expect(records.first.loggerName, 'supabase.dart');
       expect(records.first.message, isNot(contains('weirdtype')));
       expect(records.first.message, isNot(contains('supersecretvalue')));
     });
