@@ -65,9 +65,8 @@ class Supabase {
   ///
   /// [realtimeClientOptions], [postgrestOptions], and [storageOptions]
   /// configure their respective underlying clients, for example
-  /// `storageOptions.retryAttempts` controls how many retry attempts there
-  /// should be to upload a file to Supabase storage when it fails due to a
-  /// network interruption.
+  /// `storageOptions.retryOptions` configures how an upload to Supabase
+  /// storage that failed due to a network interruption is retried.
   ///
   /// [authOptions] configures authentication behavior. Pass a custom
   /// [FlutterAuthClientOptions.localStorage] there to override the default

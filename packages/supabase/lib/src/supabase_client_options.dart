@@ -7,7 +7,7 @@ class PostgrestClientOptions {
   /// retryable status code or a network error.
   ///
   /// Use `PostgrestBuilder.retry` to override it for a single request.
-  final PostgrestRetryOptions retryOptions;
+  final SupabaseRetryOptions retryOptions;
 
   /// Bounds how long a single request attempt may take.
   ///
@@ -20,13 +20,20 @@ class PostgrestClientOptions {
 
   const PostgrestClientOptions({
     this.schema = 'public',
-    this.retryOptions = const PostgrestRetryOptions(),
+    this.retryOptions = const SupabaseRetryOptions(),
     this.requestTimeout,
   });
 }
 
 class AuthClientOptions {
   final bool autoRefreshToken;
+
+  /// Configures how a token refresh that never reached the service is retried.
+  ///
+  /// A refresh also stops retrying once the next backoff would fall after the
+  /// next refresh tick, so the count only caps how many attempts a short
+  /// backoff can squeeze into that window.
+  final SupabaseRetryOptions retryOptions;
 
   /// Storage for the code verifiers of the pkce flow, required when
   /// [authFlowType] is [AuthFlowType.pkce].
@@ -58,11 +65,17 @@ class AuthClientOptions {
     this.pkceAsyncStorage,
     this.authFlowType = AuthFlowType.pkce,
     this.appendPkceFlowIdToRedirects = false,
+    this.retryOptions = const SupabaseRetryOptions(count: 8),
   });
 }
 
 class StorageClientOptions {
-  final int retryAttempts;
+  /// Configures how an upload that failed due to a network interruption is
+  /// retried.
+  ///
+  /// Uploads are not retried unless `SupabaseRetryOptions.count` is above
+  /// zero, since repeating one costs bandwidth.
+  final SupabaseRetryOptions retryOptions;
 
   /// Whether to rewrite legacy storage URLs to use the dedicated storage host
   /// (`<ref>.storage.supabase.co`). Enables uploads larger than 50 GB by
@@ -74,7 +87,7 @@ class StorageClientOptions {
   final bool useNewHostname;
 
   const StorageClientOptions({
-    this.retryAttempts = 0,
+    this.retryOptions = const SupabaseRetryOptions(count: 0),
     this.useNewHostname = false,
   });
 }

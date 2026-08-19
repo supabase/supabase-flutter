@@ -136,7 +136,7 @@ void main() {
           httpClient: _MockClient(
             (_) async => throw const SocketException('refused'),
           ),
-          retryOptions: const PostgrestRetryOptions(enabled: false),
+          retryOptions: const SupabaseRetryOptions(enabled: false),
         );
 
         StackTrace? capturedTrace;

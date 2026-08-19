@@ -1231,29 +1231,76 @@ These renames also change a type:
 | `SnapshotReference.maxReferenceAgeMs` / `maxSnapshotAgeMs` (`int?`) | `maxReferenceAge` / `maxSnapshotAge` (`Duration?`) |
 | `Snapshot.timestampMs` / `TableMetadata.lastUpdatedMs` (`int`) | `timestamp` / `lastUpdated` (`DateTime`, UTC) |
 
-### Retry configuration is a single `PostgrestRetryOptions`
+### Every client takes one `SupabaseRetryOptions`
 
-The individual retry parameters are replaced by one `PostgrestRetryOptions` value.
+Retry used to be configured differently in every client: PostgREST took three
+separate parameters, storage took an `int`, and the auth token refresh had no
+knobs at all. All three take the same `SupabaseRetryOptions` now, which carries
+`enabled`, `count`, `initialDelay`, `maxDelay` and `randomizationFactor`. What
+counts as a retryable failure stays with each client, since those are not
+interchangeable: PostgREST repeats a read that answered with `503` or `520`,
+storage repeats an upload that hit a network error, and auth repeats a token
+refresh that never reached the service.
 
 | Before | After |
 | --- | --- |
 | `PostgrestClient(retryEnabled: …, retryCount: …)` | `PostgrestClient(retryOptions: …)` |
 | `PostgrestClientOptions(retryEnabled: …, retryCount: …)` | `PostgrestClientOptions(retryOptions: …)` |
 | `PostgrestBuilder`, `PostgrestQueryBuilder` and `PostgrestRpcBuilder` constructors, same parameters | `retryOptions: …` |
+| `SupabaseStorageClient(retryAttempts: 5)` | `SupabaseStorageClient(retryOptions: SupabaseRetryOptions(count: 5))` |
+| `StorageClientOptions(retryAttempts: 5)` | `StorageClientOptions(retryOptions: SupabaseRetryOptions(count: 5))` |
+| `upload(…, retryAttempts: 5)` and the same parameter on `uploadBinary`, `uploadToSignedUrl`, `uploadBinaryToSignedUrl`, `update` and `updateBinary` | `retryOptions: SupabaseRetryOptions(count: 5)` |
 
 ```dart
 // Before
-postgrestOptions: const PostgrestClientOptions(
-  retryCount: 5,
-),
+postgrestOptions: const PostgrestClientOptions(retryCount: 5),
+storageOptions: const StorageClientOptions(retryAttempts: 5),
 
 // After
 postgrestOptions: const PostgrestClientOptions(
-  retryOptions: PostgrestRetryOptions(count: 5),
+  retryOptions: SupabaseRetryOptions(count: 5),
+),
+storageOptions: const StorageClientOptions(
+  retryOptions: SupabaseRetryOptions(count: 5),
 ),
 ```
 
-The per-request `.retry()` override is unchanged.
+`count` is the number of retries after the first attempt, so `count: 0` sends a
+request exactly once. The old storage `retryAttempts` counted the same way, so
+the number carries over unchanged.
+
+The auth token refresh is configurable for the first time, through
+`AuthClientOptions.retryOptions` and `AuthClient(retryOptions: …)`. The refresh
+still stops retrying once the next backoff would fall after the next refresh
+tick, so the count only caps how many attempts a short backoff can squeeze into
+that window.
+
+The per-request `PostgrestBuilder.retry()` override is unchanged.
+
+### The retry backoff defaults are the same in every client
+
+One curve is used everywhere now: the first retry waits 400 ms, every retry
+after that waits twice as long up to 30 seconds, and each delay is randomized
+by up to 25% so that many clients do not retry in lockstep. Only how many
+retries are made differs, and only where it has to.
+
+| Client | Before | After |
+| --- | --- | --- |
+| `postgrest` | 3 retries, 1s doubling to 30s, no jitter | 3 retries on the shared curve |
+| `supabase_storage` | opt-in, 400ms doubling to 30s, 25% jitter | unchanged, still opt-in with `count: 0` |
+| `supabase_auth` | 400ms doubling to 10s, no jitter | shared curve, bounded by the refresh tick as before |
+
+PostgREST reads therefore back off sooner than they did, and with jitter. Pass
+your own `SupabaseRetryOptions` to keep the old curve:
+
+```dart
+postgrestOptions: const PostgrestClientOptions(
+  retryOptions: SupabaseRetryOptions(
+    initialDelay: Duration(seconds: 1),
+    randomizationFactor: 0,
+  ),
+),
+```
 
 ### The retried status codes are no longer configurable
 
@@ -1266,7 +1313,7 @@ chance of a different answer.
 | --- | --- |
 | `PostgrestClient(retryableStatusCodes: …)` | removed |
 | `PostgrestClientOptions(retryableStatusCodes: …)` | removed |
-| `PostgrestClient.defaultRetryableStatusCodes` | `PostgrestRetryOptions.statusCodes` |
+| `PostgrestClient.defaultRetryableStatusCodes` | `PostgrestClient.retryableStatusCodes` |
 
 If you retried a status code outside that set, catch the exception and decide
 what to do with it yourself:

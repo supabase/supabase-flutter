@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
@@ -53,6 +52,11 @@ class _SessionState {
 ///
 /// Set [AuthClient.appendPkceFlowIdToRedirects] to match a pkce callback to the
 /// flow that started it when several flows can be pending at once.
+///
+/// [retryOptions] configures how a token refresh that never reached the
+/// service is retried. A refresh also stops retrying once the next backoff
+/// would fall after the next refresh tick, so the count only caps how many
+/// attempts a short backoff can squeeze into that window.
 /// {@endtemplate}
 class AuthClient {
   /// Namespace for the Supabase Auth admin API methods. These can be used for
@@ -162,6 +166,9 @@ class AuthClient {
 
   final AuthFlowType _flowType;
 
+  /// Configures how a token refresh that never reached the service is retried.
+  final SupabaseRetryOptions retryOptions;
+
   final _log = Logger('supabase.auth');
 
   /// Proxy to the web BroadcastChannel API. Should be null on non-web
@@ -179,6 +186,7 @@ class AuthClient {
     AuthAsyncStorage? asyncStorage,
     AuthFlowType flowType = AuthFlowType.pkce,
     this.appendPkceFlowIdToRedirects = false,
+    this.retryOptions = const SupabaseRetryOptions(count: 8),
   }) : assert(
          flowType != AuthFlowType.pkce || asyncStorage != null,
          'You need to provide asyncStorage to perform pkce flow. Pass a '
@@ -1567,11 +1575,12 @@ class AuthClient {
         final authResponse = AuthResponse.fromJson(response);
         return authResponse;
       },
+      options: retryOptions,
       retryIf: (e) {
-        // Do not retry if the next retry comes after the next tick.
-        final nextBackOff = Duration(
-          milliseconds: (200 * pow(2, attempt - 1).floor()),
-        );
+        // Do not retry if the next retry comes after the next tick. The
+        // deadline is the real bound here, so the configured count only caps
+        // how many attempts a short backoff can squeeze into the tick.
+        final nextBackOff = retryOptions.delay(attempt - 1);
 
         return e is AuthRetryableFetchException &&
             (DateTime.now().millisecondsSinceEpoch +
@@ -1579,12 +1588,6 @@ class AuthClient {
                     startedAt.millisecondsSinceEpoch) <
                 AuthConstants.autoRefreshTickDuration.inMilliseconds;
       },
-      maxDelay: Duration(seconds: 10),
-      randomizationFactor: 0,
-
-      // Max interval between retries is 10 sec, so just set the maxAttempts
-      // to something that will yield a more than 10 sec interval.
-      maxAttempts: 999,
     );
   }
 

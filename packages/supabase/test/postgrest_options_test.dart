@@ -61,7 +61,7 @@ void main() {
 
   void initializeWith({
     required _CountingClient client,
-    PostgrestRetryOptions retryOptions = const PostgrestRetryOptions(),
+    SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
   }) {
     httpClient = client;
@@ -81,7 +81,7 @@ void main() {
 
   void initialize({
     required List<int> statuses,
-    required PostgrestRetryOptions retryOptions,
+    required SupabaseRetryOptions retryOptions,
   }) => initializeWith(
     client: _StatusSequenceClient(statuses),
     retryOptions: retryOptions,
@@ -89,7 +89,7 @@ void main() {
 
   void initializeStalled() => initializeWith(
     client: _StallingClient(),
-    retryOptions: const PostgrestRetryOptions(count: 0),
+    retryOptions: const SupabaseRetryOptions(count: 0),
     requestTimeout: const Duration(milliseconds: 50),
   );
 
@@ -98,7 +98,7 @@ void main() {
   /// and not the default ones.
   void initializeWithCustomRetryCount() => initialize(
     statuses: [503, 503, 503, 503, 200],
-    retryOptions: const PostgrestRetryOptions(
+    retryOptions: const SupabaseRetryOptions(
       count: 5,
       initialDelay: Duration.zero,
     ),
@@ -119,7 +119,7 @@ void main() {
   test('from() honors disabled retries', () async {
     initialize(
       statuses: [503, 503, 200],
-      retryOptions: const PostgrestRetryOptions(enabled: false),
+      retryOptions: const SupabaseRetryOptions(enabled: false),
     );
 
     await expectLater(

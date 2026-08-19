@@ -50,7 +50,7 @@ class _RequestConfig {
   final YAJsonIsolate? isolate;
   final CountOption? count;
   final bool maybeSingle;
-  final PostgrestRetryOptions retry;
+  final SupabaseRetryOptions retry;
   final Duration? requestTimeout;
   final Future<void>? abortSignal;
 
@@ -64,7 +64,7 @@ class _RequestConfig {
     YAJsonIsolate? isolate,
     CountOption? count,
     bool? maybeSingle,
-    PostgrestRetryOptions? retry,
+    SupabaseRetryOptions? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) {
@@ -111,7 +111,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   Client? get _httpClient => _config.httpClient;
   YAJsonIsolate? get _isolate => _config.isolate;
   CountOption? get _count => _config.count;
-  PostgrestRetryOptions get _retry => _config.retry;
+  SupabaseRetryOptions get _retry => _config.retry;
   Duration? get _requestTimeout => _config.requestTimeout;
   Future<void>? get _abortSignal => _config.abortSignal;
 
@@ -126,7 +126,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
-    PostgrestRetryOptions retryOptions = const PostgrestRetryOptions(),
+    SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) : _converter = converter,
@@ -165,7 +165,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
-    PostgrestRetryOptions? retry,
+    SupabaseRetryOptions? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) => PostgrestBuilder._(
@@ -189,7 +189,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// Overrides the retry behavior for this specific request.
   ///
   /// When [enabled] is `false`, retries are disabled for this request even if
-  /// the [PostgrestRetryOptions] of the client enable them. When [enabled] is
+  /// the [SupabaseRetryOptions] of the client enable them. When [enabled] is
   /// `true`, retries are enabled for this request even if the client disables
   /// them.
   ///
@@ -374,8 +374,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
       try {
         final response = await send();
-        if (!PostgrestRetryOptions.statusCodes.contains(response.statusCode) ||
-            attempt == maxRetries) {
+        final isRetryable = PostgrestClient.retryableStatusCodes.contains(
+          response.statusCode,
+        );
+        if (!isRetryable || attempt == maxRetries) {
           return response;
         }
       } on RequestAbortedException catch (_) {

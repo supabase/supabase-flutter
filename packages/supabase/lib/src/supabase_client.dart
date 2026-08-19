@@ -26,9 +26,8 @@ import 'trace_http_client.dart';
 ///
 /// Custom http client can be used by passing [httpClient] parameter.
 ///
-/// Set the `retryAttempts` field of [storageOptions] to specify how many
-/// retry attempts there should be to upload a file to Supabase storage when
-/// failed due to network interruption.
+/// Set the `retryOptions` field of [storageOptions] to configure how an upload
+/// to Supabase storage that failed due to a network interruption is retried.
 ///
 /// [realtimeClientOptions] specifies different options you can pass to
 /// `RealtimeClient`.
@@ -177,6 +176,7 @@ class SupabaseClient {
       authAsyncStorage: authOptions.pkceAsyncStorage,
       authFlowType: authOptions.authFlowType,
       appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
+      retryOptions: authOptions.retryOptions,
     );
     _authHttpClient = AuthHttpClient(
       _supabaseKey,
@@ -193,7 +193,7 @@ class SupabaseClient {
     rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(
-      storageOptions.retryAttempts,
+      storageOptions.retryOptions,
       storageOptions.useNewHostname,
     );
     realtime = _initRealtimeClient(options: realtimeClientOptions);
@@ -329,6 +329,7 @@ class SupabaseClient {
     required AuthAsyncStorage? authAsyncStorage,
     required AuthFlowType authFlowType,
     required bool appendPkceFlowIdToRedirects,
+    required SupabaseRetryOptions retryOptions,
   }) {
     final authHeaders = {...headers};
     authHeaders['apikey'] = _supabaseKey;
@@ -342,6 +343,7 @@ class SupabaseClient {
       asyncStorage: authAsyncStorage,
       flowType: authFlowType,
       appendPkceFlowIdToRedirects: appendPkceFlowIdToRedirects,
+      retryOptions: retryOptions,
     );
   }
 
@@ -368,14 +370,14 @@ class SupabaseClient {
   }
 
   SupabaseStorageClient _initStorageClient(
-    int storageRetryAttempts,
+    SupabaseRetryOptions storageRetryOptions,
     bool useNewHostname,
   ) {
     return SupabaseStorageClient(
       _storageUrl,
       {...headers},
       httpClient: _authHttpClient,
-      retryAttempts: storageRetryAttempts,
+      retryOptions: storageRetryOptions,
       useNewHostname: useNewHostname,
     );
   }

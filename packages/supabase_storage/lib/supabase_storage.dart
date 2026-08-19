@@ -3,7 +3,7 @@ library;
 
 export 'package:iceberg/iceberg.dart';
 export 'package:supabase_common/supabase_common.dart'
-    show SupabaseApiException, SupabaseException;
+    show SupabaseApiException, SupabaseException, SupabaseRetryOptions;
 
 export 'src/storage_client.dart';
 export 'src/storage_file_api.dart';

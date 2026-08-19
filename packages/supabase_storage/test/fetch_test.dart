@@ -58,7 +58,7 @@ void main() {
           storageUrl,
           headers,
           httpClient: retryClient,
-          retryAttempts: 3,
+          retryOptions: const SupabaseRetryOptions(count: 3),
         );
 
         final result = await client
@@ -69,6 +69,71 @@ void main() {
         expect(retryClient.attempts, 2);
       },
     );
+
+    test('does not retry an upload by default', () async {
+      final retryClient = FinalizingRetryHttpClient(failuresBeforeSuccess: 1);
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: retryClient,
+      );
+
+      await expectLater(
+        client
+            .from('bucket')
+            .uploadBinary(
+              'folder/file.png',
+              Uint8List.fromList([1, 2, 3]),
+            ),
+        throwsA(isA<ClientException>()),
+      );
+      expect(retryClient.attempts, 1);
+    });
+
+    test('does not retry an upload with retries disabled', () async {
+      final retryClient = FinalizingRetryHttpClient(failuresBeforeSuccess: 1);
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: retryClient,
+        retryOptions: const SupabaseRetryOptions(count: 3, enabled: false),
+      );
+
+      await expectLater(
+        client
+            .from('bucket')
+            .uploadBinary(
+              'folder/file.png',
+              Uint8List.fromList([1, 2, 3]),
+            ),
+        throwsA(isA<ClientException>()),
+      );
+      expect(retryClient.attempts, 1);
+    });
+
+    test('a per-upload override replaces the client retry options', () async {
+      final retryClient = FinalizingRetryHttpClient(failuresBeforeSuccess: 2);
+      final client = SupabaseStorageClient(
+        storageUrl,
+        headers,
+        httpClient: retryClient,
+        retryOptions: const SupabaseRetryOptions(count: 0),
+      );
+
+      final result = await client
+          .from('bucket')
+          .uploadBinary(
+            'folder/file.png',
+            Uint8List.fromList([1, 2, 3]),
+            retryOptions: const SupabaseRetryOptions(
+              count: 2,
+              initialDelay: Duration(milliseconds: 1),
+            ),
+          );
+
+      expect(result.fullPath, 'public/a.txt');
+      expect(retryClient.attempts, 3);
+    });
 
     test(
       'detects content type from the path of a binary signed url upload',

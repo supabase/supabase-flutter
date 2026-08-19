@@ -78,7 +78,7 @@ class Fetch {
     File file,
     FileOptions fileOptions,
     FetchOptions? options,
-    int retryAttempts,
+    SupabaseRetryOptions retryOptions,
     StorageRetryController? retryController,
   ) {
     final contentType = fileOptions.contentType != null
@@ -96,7 +96,7 @@ class Fetch {
       ),
       fileOptions,
       options,
-      retryAttempts,
+      retryOptions,
       retryController,
     );
   }
@@ -107,7 +107,7 @@ class Fetch {
     Uint8List data,
     FileOptions fileOptions,
     FetchOptions? options,
-    int retryAttempts,
+    SupabaseRetryOptions retryOptions,
     StorageRetryController? retryController,
   ) {
     final contentType = fileOptions.contentType != null
@@ -125,7 +125,7 @@ class Fetch {
       ),
       fileOptions,
       options,
-      retryAttempts,
+      retryOptions,
       retryController,
     );
   }
@@ -136,7 +136,7 @@ class Fetch {
     MultipartFile Function() createMultipartFile,
     FileOptions fileOptions,
     FetchOptions? options,
-    int retryAttempts,
+    SupabaseRetryOptions retryOptions,
     StorageRetryController? retryController,
   ) async {
     final headers = options?.headers ?? {};
@@ -158,10 +158,8 @@ class Fetch {
       return request;
     }
 
-    final http.StreamedResponse streamedResponse;
-    final r = RetryOptions(maxAttempts: (retryAttempts + 1));
     var attempts = 0;
-    streamedResponse = await r.retry<http.StreamedResponse>(
+    final streamedResponse = await retry<http.StreamedResponse>(
       () async {
         attempts++;
         _log.finest(
@@ -172,6 +170,7 @@ class Fetch {
         // Create a fresh request for each retry attempt
         return createRequest().sendWith(httpClient);
       },
+      options: retryOptions,
       retryIf: (error) =>
           retryController?.cancelled != true &&
           (error is ClientException || error is TimeoutException),
@@ -286,7 +285,7 @@ class Fetch {
     File file,
     FileOptions fileOptions, {
     FetchOptions? options,
-    required int retryAttempts,
+    required SupabaseRetryOptions retryOptions,
     required StorageRetryController? retryController,
   }) {
     return _handleFileRequest(
@@ -295,7 +294,7 @@ class Fetch {
       file,
       fileOptions,
       options,
-      retryAttempts,
+      retryOptions,
       retryController,
     );
   }
@@ -305,7 +304,7 @@ class Fetch {
     File file,
     FileOptions fileOptions, {
     FetchOptions? options,
-    required int retryAttempts,
+    required SupabaseRetryOptions retryOptions,
     required StorageRetryController? retryController,
   }) {
     return _handleFileRequest(
@@ -314,7 +313,7 @@ class Fetch {
       file,
       fileOptions,
       options,
-      retryAttempts,
+      retryOptions,
       retryController,
     );
   }
@@ -324,7 +323,7 @@ class Fetch {
     Uint8List data,
     FileOptions fileOptions, {
     FetchOptions? options,
-    required int retryAttempts,
+    required SupabaseRetryOptions retryOptions,
     required StorageRetryController? retryController,
   }) {
     return _handleBinaryFileRequest(
@@ -333,7 +332,7 @@ class Fetch {
       data,
       fileOptions,
       options,
-      retryAttempts,
+      retryOptions,
       retryController,
     );
   }
@@ -343,7 +342,7 @@ class Fetch {
     Uint8List data,
     FileOptions fileOptions, {
     FetchOptions? options,
-    required int retryAttempts,
+    required SupabaseRetryOptions retryOptions,
     required StorageRetryController? retryController,
   }) {
     return _handleBinaryFileRequest(
@@ -352,7 +351,7 @@ class Fetch {
       data,
       fileOptions,
       options,
-      retryAttempts,
+      retryOptions,
       retryController,
     );
   }
