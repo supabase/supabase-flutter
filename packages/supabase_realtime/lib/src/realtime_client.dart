@@ -4,10 +4,11 @@ import 'dart:core';
 
 import 'package:collection/collection.dart';
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
+import 'package:supabase_realtime/src/logger.dart';
 import 'package:supabase_realtime/src/message.dart';
 import 'package:supabase_realtime/src/retry_timer.dart';
 import 'package:supabase_realtime/src/serializer.dart';
@@ -139,7 +140,6 @@ class RealtimeClient {
   final Duration timeout;
   final WebSocketTransport transport;
   final Client? httpClient;
-  final _log = Logger('supabase.realtime');
   Duration heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval;
   @internal
   Timer? heartbeatTimer;
@@ -168,7 +168,6 @@ class RealtimeClient {
   int ref = 0;
   @internal
   late RetryTimer reconnectTimer;
-  void Function(String? kind, String? message, dynamic data)? logger;
   static final Serializer _serializer = Serializer();
   final RealtimeEncode encode;
   final RealtimeDecode decode;
@@ -213,12 +212,6 @@ class RealtimeClient {
   /// reused. Pass [Duration.zero] to disconnect immediately. Defaults to twice
   /// the heartbeat interval.
   ///
-  /// [logger] The optional function for specialized logging, ie:
-  ///
-  /// ```dart
-  /// logger: (kind, message, data) => print('$kind: $message $data')
-  /// ```
-  ///
   /// [encode] Overrides how outgoing messages are serialized, for example to
   /// use a faster JSON implementation. Defaults to the codec for [version].
   ///
@@ -242,7 +235,6 @@ class RealtimeClient {
         RealtimeConstants.defaultConnectionCloseTimeout,
     this.heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval,
     Duration? disconnectOnEmptyChannelsAfter,
-    this.logger,
     RealtimeEncode? encode,
     RealtimeDecode? decode,
     TimerCalculation? reconnectAfter,
@@ -274,12 +266,16 @@ class RealtimeClient {
            (version == RealtimeProtocolVersion.v1
                ? _decodeLegacy
                : _serializer.decode) {
-    _log.config(
-      'Initialize RealtimeClient with endpoint: $endpoint, timeout: $timeout, '
+    realtimeLogger.config(
+      'Initialize RealtimeClient with endpoint: '
+      '${Uri.parse(this.endpoint).redacted}, timeout: $timeout, '
       'heartbeatInterval: $heartbeatInterval, '
       'logLevel: ${logLevel?.name}',
     );
-    _log.finest('Initialize with headers: $headers, parameters: $parameters');
+    realtimeLogger.finest(
+      'Initialize with headers: ${this.headers.redacted}, '
+      'parameters: ${redactedPayload(parameters)}',
+    );
     final customJWT = this.headers['Authorization']?.split(' ').last;
     accessToken = customJWT ?? parameters['apikey'];
 
@@ -304,8 +300,8 @@ class RealtimeClient {
     }
 
     try {
-      log('transport', 'connecting to $endpointUrl', null);
-      log('transport', 'connecting', null, Level.FINE);
+      realtimeLogger.fine('Connecting');
+      realtimeLogger.finest('Connecting to $_redactedEndpointUrl');
       connectionState = SocketState.connecting;
       final WebSocketChannel localConnection = transport(endpointUrl, headers);
       connection = localConnection;
@@ -373,20 +369,12 @@ class RealtimeClient {
         // Don't set the state to `disconnecting` if the connection is already
         // closed.
         connectionState = SocketState.disconnecting;
-        log('transport', 'disconnecting', {
-          'code': code,
-          'reason': reason,
-        }, Level.FINE);
+        realtimeLogger.fine('Disconnecting (code: $code, reason: $reason)');
       }
 
       if (shouldCloseSink) {
         onTimeout() {
-          log(
-            'transport',
-            'timeout while closing connection',
-            null,
-            Level.FINE,
-          );
+          realtimeLogger.fine('Timeout while closing connection');
           // Handle as the connection would have been closed successfully, to
           // avoid hanging the client. This is done by mimicking the onDone
           // callback of the connection stream. By canceling the subscription,
@@ -410,7 +398,7 @@ class RealtimeClient {
           );
         }
         connectionState = SocketState.disconnected;
-        log('transport', 'disconnected', null, Level.FINE);
+        realtimeLogger.fine('Disconnected');
       }
 
       // Cancel any reconnect scheduled by `_onConnectionClose`. When the socket
@@ -443,19 +431,6 @@ class RealtimeClient {
     );
     await disconnect();
     return values;
-  }
-
-  /// Logs the message. Override `this.logger` for specialized logging.
-  ///
-  /// [level] must be [Level.FINEST] for sensitive data
-  void log([
-    String? kind,
-    String? message,
-    dynamic data,
-    Level level = Level.FINEST,
-  ]) {
-    _log.log(level, '$kind: $message', data);
-    logger?.call(kind, message, data);
   }
 
   /// Emits whenever the WebSocket connection opens or closes.
@@ -497,7 +472,7 @@ class RealtimeClient {
   void remove(RealtimeChannel channel) {
     channels = channels.where((c) => !identical(c, channel)).toList();
     if (channels.isEmpty) {
-      log('transport', 'no channels remaining, scheduling disconnect');
+      realtimeLogger.fine('No channels remaining, scheduling disconnect');
       _schedulePendingDisconnect();
     }
   }
@@ -520,7 +495,7 @@ class RealtimeClient {
   void _schedulePendingDisconnect() {
     _cancelPendingDisconnect();
     if (disconnectOnEmptyChannelsAfter == Duration.zero) {
-      log('transport', 'disconnecting immediately - no channels');
+      realtimeLogger.fine('Disconnecting immediately, no channels remaining');
       unawaited(disconnect());
       return;
     }
@@ -529,25 +504,26 @@ class RealtimeClient {
       () {
         _pendingDisconnectTimer = null;
         if (channels.isEmpty) {
-          log(
-            'transport',
-            'deferred disconnect fired - no channels, disconnecting',
+          realtimeLogger.fine(
+            'Deferred disconnect fired with no channels remaining, '
+            'disconnecting',
           );
           unawaited(disconnect());
         }
       },
     );
-    log(
-      'transport',
-      'deferred disconnect scheduled in '
-          '${disconnectOnEmptyChannelsAfter.inMilliseconds}ms',
+    realtimeLogger.fine(
+      'Deferred disconnect scheduled in '
+      '${disconnectOnEmptyChannelsAfter.inMilliseconds}ms',
     );
   }
 
   /// Cancels a scheduled disconnect when channel activity is detected.
   void _cancelPendingDisconnect() {
     if (_pendingDisconnectTimer != null) {
-      log('transport', 'pending disconnect cancelled - channel activity');
+      realtimeLogger.fine(
+        'Pending disconnect cancelled due to channel activity',
+      );
       _pendingDisconnectTimer!.cancel();
       _pendingDisconnectTimer = null;
     }
@@ -563,10 +539,9 @@ class RealtimeClient {
       connection?.sink.add(encode(message.toJson()));
     }
 
-    log(
-      'push',
-      '${message.topic} ${message.event.name} (${message.ref})',
-      message.payload,
+    realtimeLogger.finest(
+      'Push ${message.topic} ${message.event.name} (${message.ref}): '
+      '${redactedPayload(message.payload)}',
     );
 
     if (isConnected) {
@@ -581,7 +556,7 @@ class RealtimeClient {
     try {
       message = decode(rawMessage);
     } catch (error) {
-      log('transport', 'failed to decode message', error);
+      realtimeLogger.warning('Failed to decode message', error);
       return;
     }
 
@@ -600,10 +575,10 @@ class RealtimeClient {
     }
 
     final status = payload is Map ? (payload['status'] ?? '') : '';
-    log(
-      'receive',
-      "$status $topic $event ${messageRef != null ? '($messageRef)' : ''}",
-      payload,
+    realtimeLogger.finest(
+      "Receive $status $topic $event "
+      "${messageRef != null ? '($messageRef)' : ''}: "
+      "${redactedPayload(payload)}",
     );
 
     channels
@@ -630,6 +605,10 @@ class RealtimeClient {
     queryParameters['vsn'] = version.wireVersion;
     return _appendParameters(endpoint, queryParameters);
   }
+
+  /// [endpointUrl] with credential-bearing query parameters replaced by
+  /// `<redacted>`, safe to include in log records.
+  String get _redactedEndpointUrl => Uri.parse(endpointUrl).redacted.toString();
 
   /// Return the next message ref, accounting for overflows
   @internal
@@ -677,14 +656,14 @@ class RealtimeClient {
       (c) => c.topic == topic && (c.isJoined || c.isJoining),
     );
     if (dupChannel != null) {
-      log('transport', 'leaving duplicate topic "$topic"');
+      realtimeLogger.fine('Leaving duplicate topic "$topic"');
       unawaited(dupChannel.unsubscribe());
     }
   }
 
   void _onConnectionOpen() {
-    log('transport', 'connected to $endpointUrl');
-    log('transport', 'connected', null, Level.FINE);
+    realtimeLogger.fine('Connected');
+    realtimeLogger.finest('Connected to $_redactedEndpointUrl');
     unawaited(_resolveAccessTokenAndFlush());
     reconnectTimer.reset();
     if (heartbeatTimer != null) heartbeatTimer!.cancel();
@@ -700,7 +679,7 @@ class RealtimeClient {
         }
       }
     } catch (error) {
-      log('transport', 'error while rejoining channels', error, Level.WARNING);
+      realtimeLogger.warning('Error while rejoining channels', error);
     }
 
     _statusController.add(
@@ -718,7 +697,7 @@ class RealtimeClient {
         reason: connection?.closeReason,
       );
     }
-    log('transport', 'close', event, Level.FINE);
+    realtimeLogger.fine('Connection closed: $event');
 
     /// SocketState.disconnected: by user with socket.disconnect()
     /// SocketState.closed: NOT by user, should try to reconnect
@@ -733,7 +712,7 @@ class RealtimeClient {
   }
 
   void _onConnectionError(Object error) {
-    log('transport', error.toString());
+    realtimeLogger.warning('Connection error', error);
     _triggerChanError(error);
     _statusController.addError(error);
   }
@@ -795,7 +774,10 @@ class RealtimeClient {
         }
       }
     } catch (error) {
-      log('transport', 'error resolving access token on connect', error);
+      realtimeLogger.warning(
+        'Error resolving access token on connect',
+        error,
+      );
     } finally {
       _flushSendBuffer();
     }
@@ -810,9 +792,8 @@ class RealtimeClient {
     // If the previous heartbeat hasn't received a reply, close the connection.
     if (pendingHeartbeatRef != null) {
       pendingHeartbeatRef = null;
-      log(
-        'transport',
-        'heartbeat timeout. Attempting to re-establish connection',
+      realtimeLogger.warning(
+        'Heartbeat timeout, attempting to re-establish connection',
       );
       _heartbeatController.add(RealtimeHeartbeatStatus.timeout);
       unawaited(

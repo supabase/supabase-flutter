@@ -6,7 +6,7 @@ import 'package:supabase_functions/src/types.dart';
 import 'package:supabase_functions/src/version.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show MultipartRequest;
-import 'package:logging/logging.dart';
+import 'package:supabase_functions/src/logger.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
@@ -17,7 +17,6 @@ class FunctionsClient {
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
   final String? _region;
-  final _log = Logger("supabase.functions");
 
   /// In case you don't provide your own isolate, call [dispose] when you're
   /// done
@@ -33,11 +32,12 @@ class FunctionsClient {
        _hasCustomIsolate = isolate != null,
        _httpClient = httpClient,
        _region = region {
-    _log.config(
-      "Initialize FunctionsClient v$version with url '$url' and region "
+    functionsLogger.config(
+      "Initialize FunctionsClient v$version with url "
+      "'${Uri.parse(url).redacted}' and region "
       "'$region'",
     );
-    _log.finest("Initialize with headers: ${headers.redacted}");
+    functionsLogger.finest("Initialize with headers: ${headers.redacted}");
   }
 
   /// Getter for the headers
@@ -194,8 +194,9 @@ class FunctionsClient {
       request = bodyRequest;
     }
 
-    _log.finest(
-      'Request: ${request.method} ${request.url} ${request.headers.redacted}',
+    functionsLogger.finest(
+      'Request: ${request.method} ${request.url.redacted} '
+      '${request.headers.redacted}',
     );
 
     final http.StreamedResponse response;
@@ -269,7 +270,7 @@ class FunctionsClient {
   ///
   /// Does nothing if you pass your own isolate
   Future<void> dispose() async {
-    _log.fine("Dispose FunctionsClient");
+    functionsLogger.fine("Dispose FunctionsClient");
     if (!_hasCustomIsolate) {
       return _isolate.dispose();
     }

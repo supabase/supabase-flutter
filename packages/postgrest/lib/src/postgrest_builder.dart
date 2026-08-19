@@ -4,7 +4,7 @@ import 'dart:core';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
+import 'package:postgrest/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart';
@@ -100,7 +100,6 @@ String? _emptyPreferAsNull(String? prefer) =>
 class PostgrestBuilder<T, S, R> implements Future<T> {
   final _RequestConfig _config;
   final PostgrestConverter<S, R>? _converter;
-  final _log = Logger('supabase.postgrest');
 
   Object? get _body => _config.body;
   Headers get _headers => _config.headers;
@@ -148,7 +147,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// Rewraps an existing [config] under a possibly different [converter] (and
   /// therefore possibly different generic types). This is what lets the typed
   /// builders share a single config instance without re-listing its fields.
-  PostgrestBuilder._({
+  const PostgrestBuilder._({
     required _RequestConfig config,
     required PostgrestConverter<S, R>? converter,
   }) : _config = config,
@@ -289,7 +288,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       execHeaders['Content-Type'] = 'application/json';
     }
     final bodyString = jsonEncode(_body);
-    _log.finest("Request: ${method.value} $_url");
+    postgrestLogger.finest("Request: ${method.value} ${_url.redacted}");
 
     final requestTimeout = _requestTimeout;
 
@@ -444,7 +443,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             message: 'JSON object requested, multiple (or no) rows returned',
           );
 
-          _log.finest('$exception for request $_url');
+          postgrestLogger.finest('$exception for request ${_url.redacted}');
           throw exception;
         } else if (body.length == 1) {
           body = body.first;
@@ -522,8 +521,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       );
     }
 
-    _log.finest('$error from request: $_url');
-    _log.fine('$error from request');
+    postgrestLogger.finest('$error from request: ${_url.redacted}');
+    postgrestLogger.fine('$error from request');
 
     throw error;
   }

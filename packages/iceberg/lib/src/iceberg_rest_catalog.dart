@@ -6,7 +6,7 @@ import 'package:iceberg/src/iceberg_error.dart';
 import 'package:iceberg/src/iceberg_types.dart';
 import 'package:iceberg/src/table_requirement.dart';
 import 'package:iceberg/src/table_update.dart';
-import 'package:logging/logging.dart';
+import 'package:iceberg/src/logger.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class _IcebergResponse {
@@ -31,7 +31,6 @@ class IcebergRestCatalog {
   final http.Client? _httpClient;
   final String? _warehouse;
   final String? _accessDelegation;
-  final _log = Logger('supabase.storage.iceberg');
   final _random = Random.secure();
 
   Future<String>? _prefixFuture;
@@ -139,7 +138,7 @@ class IcebergRestCatalog {
       request.body = json.encode(body);
     }
 
-    _log.finest('Request: ${method.value} $uri');
+    icebergLogger.finest('Request: ${method.value} ${uri.redacted}');
 
     final http.StreamedResponse streamedResponse;
     try {

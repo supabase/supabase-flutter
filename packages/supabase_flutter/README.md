@@ -561,33 +561,69 @@ Supabase.initialize(
 
 ## Logging
 
-All Supabase packages use the [logging](https://pub.dev/packages/logging) package to log information. Each sub-package has its own logger instance. You can listen to logs and set custom log levels for each logger.
+All Supabase packages emit their logs through the [logging](https://pub.dev/packages/logging) package, using loggers under the shared `supabase` hierarchy. The packages only emit records; they never print anything and never change any `package:logging` settings. Your application decides whether, where, and at which level logs are handled.
 
-In debug mode, or depending on the value for `debug` from `Supabase.initialize()`, records with `Level.INFO` and above are printed to the console.
+### Listen to Supabase logs
 
-Records containing sensitive data like access tokens and which requests are made are logged with `Level.FINEST`, so you can handle them accordingly.
-
-### Listen to all Supabase logs
+The simplest setup listens on the root logger and filters on the logger name. It receives the records allowed by `Logger.root.level`, which defaults to `Level.INFO`; set `Logger.root.level = Level.ALL` to also receive the fine-grained records, including the `Level.FINEST` payloads described below.
 
 ```dart
+import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
-final supabaseLogger = Logger('supabase');
-supabaseLogger.level = Level.ALL; // custom log level filtering, default is Level.INFO
-supabaseLogger.onRecord.listen((record) {
-    print('${record.level.name}: ${record.time}: ${record.message}');
-});
+void main() {
+  Logger.root.onRecord.listen((record) {
+    if (record.loggerName.startsWith('supabase.')) {
+      debugPrint('${record.loggerName}: ${record.level.name}: '
+          '${record.message} ${record.error ?? ''}');
+    }
+  });
+
+  // ...
+}
 ```
 
-### Sub-package loggers
+### Filter Supabase logs by level
 
-- `supabase_flutter`: `Logger('supabase.supabase_flutter')`
-- `supabase`: `Logger('supabase.supabase')`
+To control the level of Supabase logs independently of the rest of your application, enable hierarchical logging and configure the `supabase` logger directly:
+
+```dart
+import 'package:flutter/foundation.dart';
+import 'package:logging/logging.dart';
+
+void main() {
+  hierarchicalLoggingEnabled = true;
+  Logger('supabase')
+    ..level = Level.INFO // or Level.ALL to also receive request payloads
+    ..onRecord.listen((record) {
+      debugPrint('${record.loggerName}: ${record.level.name}: '
+          '${record.message} ${record.error ?? ''}');
+    });
+
+  // ...
+}
+```
+
+Without `hierarchicalLoggingEnabled = true`, `package:logging` only supports listening and setting levels on `Logger.root`.
+
+### Log levels
+
+- `Level.CONFIG`: client configuration during initialization.
+- `Level.FINEST`: wire-level details such as request and response payloads. These records can contain sensitive data like row data, so handle them accordingly. Credentials never appear in any record at any level: headers, URL parameters, and payload fields that carry an API key, access token, or other credential are replaced by `<redacted>` before they are logged.
+- `Level.FINE`: internal lifecycle events, for example the realtime socket connecting or disconnecting.
+- `Level.INFO`: notable events, for example completed initialization or session recovery.
+- `Level.WARNING`: recoverable problems, for example a failed retry attempt or an unexpected disconnect.
+
+### Package loggers
+
+- `supabase_flutter`: `Logger('supabase.flutter')`
+- `supabase`: `Logger('supabase.dart')`
 - `postgrest`: `Logger('supabase.postgrest')`
 - `supabase_auth`: `Logger('supabase.auth')`
 - `supabase_realtime`: `Logger('supabase.realtime')`
 - `supabase_storage`: `Logger('supabase.storage')`
 - `supabase_functions`: `Logger('supabase.functions')`
+- `iceberg`: `Logger('supabase.storage.iceberg')`
 
 ---
 

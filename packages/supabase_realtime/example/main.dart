@@ -1,14 +1,19 @@
+import 'package:logging/logging.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 
 /// Example to use with Supabase Realtime https://supabase.com/
 Future<void> main() async {
+  // Supabase packages log through `package:logging` under the `supabase`
+  // logger hierarchy. Attach a listener to receive the records.
+  Logger.root.level = Level.ALL;
+  Logger.root.onRecord.listen((record) {
+    // ignore: avoid_print
+    print('${record.loggerName}: ${record.level.name}: ${record.message}');
+  });
+
   final socket = RealtimeClient(
     'ws://SUPABASE_API_ENDPOINT/realtime/v1',
     parameters: {'apikey': 'SUPABASE_API_KEY'},
-    // ignore: avoid_print
-    logger: (kind, message, data) {
-      print('$kind $message $data');
-    },
   );
 
   final channel = socket.channel('realtime:public');

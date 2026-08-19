@@ -90,15 +90,6 @@ void main() {
         RealtimeConstants.defaultHeartbeatInterval,
       );
       expect(
-        socket.logger
-            is void Function(
-              String? kind,
-              String? message,
-              dynamic data,
-            ),
-        isFalse,
-      );
-      expect(
         socket.headers['X-Client-Info']!.split('/').first,
         'realtime-dart',
       );
@@ -110,8 +101,6 @@ void main() {
         'wss://example.com/socket',
         timeout: const Duration(milliseconds: 40000),
         heartbeatInterval: const Duration(seconds: 60),
-        // ignore: avoid_print
-        logger: (kind, message, data) => print('[$kind] $message $data'),
         headers: {'X-Client-Info': 'supabase-dart/0.0.0'},
       );
       expect(socket.channels, isEmpty);
@@ -120,15 +109,6 @@ void main() {
       expect(socket.endpoint, 'wss://example.com/socket/websocket');
       expect(socket.timeout, const Duration(milliseconds: 40000));
       expect(socket.heartbeatInterval, const Duration(seconds: 60));
-      expect(
-        socket.logger
-            is void Function(
-              String? kind,
-              String? message,
-              dynamic data,
-            ),
-        isTrue,
-      );
       expect(socket.headers['X-Client-Info'], 'supabase-dart/0.0.0');
     });
   });

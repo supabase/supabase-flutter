@@ -129,12 +129,19 @@ class Session {
     );
   }
 
+  /// The tokens are redacted so that a logged session never exposes them;
+  /// use the fields directly when the actual values are needed.
   @override
   String toString() {
-    return 'Session(providerToken: $providerToken, providerRefreshToken: '
-        '$providerRefreshToken, expiresIn: $expiresIn, tokenType: $tokenType, '
-        'user: $user, accessToken: $accessToken, refreshToken: $refreshToken)';
+    return 'Session(providerToken: ${_redactToken(providerToken)}, '
+        'providerRefreshToken: ${_redactToken(providerRefreshToken)}, '
+        'expiresIn: $expiresIn, tokenType: $tokenType, user: $user, '
+        'accessToken: ${_redactToken(accessToken)}, '
+        'refreshToken: ${_redactToken(refreshToken)})';
   }
+
+  static String _redactToken(String? token) =>
+      token == null ? 'null' : '<redacted>';
 
   @override
   bool operator ==(Object other) {

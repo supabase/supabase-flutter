@@ -1,5 +1,5 @@
 import 'package:iceberg/iceberg.dart';
-import 'package:logging/logging.dart';
+import 'package:supabase_storage/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_storage/src/storage_constants.dart';
@@ -11,8 +11,6 @@ import 'package:supabase_storage/src/version.dart';
 class SupabaseStorageClient extends StorageBucketApi {
   /// Configures the automatic retry of uploads.
   final SupabaseRetryOptions retryOptions;
-
-  final _log = Logger('supabase.storage');
 
   /// To create a [SupabaseStorageClient], you need to provide an [url] and
   /// [headers].
@@ -47,11 +45,12 @@ class SupabaseStorageClient extends StorageBucketApi {
          useNewHostname ? _transformStorageUrl(url) : url,
          {...StorageConstants.defaultHeaders, ...headers},
        ) {
-    _log.config(
-      'Initialize SupabaseStorageClient v$version with url: $url, '
+    storageLogger.config(
+      'Initialize SupabaseStorageClient v$version with url: '
+      '${Uri.parse(url).redacted}, '
       'retryOptions: $retryOptions',
     );
-    _log.finest('Initialize with headers: ${headers.redacted}');
+    storageLogger.finest('Initialize with headers: ${headers.redacted}');
   }
 
   /// Transforms legacy storage URLs to use the dedicated storage host.

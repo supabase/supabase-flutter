@@ -10,7 +10,7 @@ import 'package:supabase_auth/src/helper.dart';
 import 'package:supabase_auth/src/pkce_verifier_store.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
+import 'package:supabase_auth/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
@@ -169,8 +169,6 @@ class AuthClient {
   /// Configures how a token refresh that never reached the service is retried.
   final SupabaseRetryOptions retryOptions;
 
-  final _log = Logger('supabase.auth');
-
   /// Proxy to the web BroadcastChannel API. Should be null on non-web
   /// platforms.
   BroadcastChannel? _broadcastChannel;
@@ -203,13 +201,14 @@ class AuthClient {
     _autoRefreshToken = autoRefreshToken ?? true;
 
     final authUrl = url ?? AuthConstants.defaultAuthUrl;
-    _log.config(
-      'Initialize AuthClient v$version with url: $_url, autoRefreshToken: '
+    authLogger.config(
+      'Initialize AuthClient v$version with url: '
+      '${Uri.parse(_url).redacted}, autoRefreshToken: '
       '$_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: '
       '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
       '${AuthConstants.autoRefreshTickThreshold}',
     );
-    _log.finest('Initialize with headers: $_headers');
+    authLogger.finest('Initialize with headers: ${_headers.redacted}');
     admin = AuthAdminApi(
       authUrl,
       headers: _headers,
@@ -574,7 +573,7 @@ class AuthClient {
           : '$codeVerifier/$storageEventName',
     );
     for (final evictedFlowId in evicted) {
-      _log.warning(
+      authLogger.warning(
         'Evicted the oldest pending PKCE verifier to start a new flow, '
         'flow id: $evictedFlowId',
       );
@@ -913,13 +912,13 @@ class AuthClient {
   /// retrieve it from the current session. If no refresh token is available
   /// (neither provided nor in current session), an error will be thrown.
   Future<AuthResponse> refreshSession([String? refreshToken]) async {
-    _log.info('Refresh session');
+    authLogger.info('Refresh session');
 
     final currentSessionRefreshToken =
         refreshToken ?? _currentSession?.refreshToken;
 
     if (currentSessionRefreshToken == null) {
-      _log.warning("Can't refresh session, no refresh token found.");
+      authLogger.warning("Can't refresh session, no refresh token found.");
       throw AuthSessionMissingException();
     }
 
@@ -1245,7 +1244,7 @@ class AuthClient {
     required SignOutScope scope,
     required SignOutReason reason,
   }) async {
-    _log.info('Signing out user with scope: ${scope.name}');
+    authLogger.info('Signing out user with scope: ${scope.name}');
     final accessToken = currentSession?.accessToken;
 
     if (scope != SignOutScope.others) {
@@ -1430,7 +1429,9 @@ class AuthClient {
     try {
       final session = Session.fromJson(json.decode(jsonString));
       if (session == null) {
-        _log.warning("Can't recover session from string, session is null");
+        authLogger.warning(
+          "Can't recover session from string, session is null",
+        );
         await _signOut(
           scope: SignOutScope.local,
           reason: SignOutReason.sessionMissing,
@@ -1456,13 +1457,15 @@ class AuthClient {
         return AuthResponse(session: session);
       }
 
-      _log.fine('Session from recovery is expired');
+      authLogger.fine('Session from recovery is expired');
 
       final existingSession = _currentSession;
       if (existingSession != null &&
           !existingSession.isExpired &&
           existingSession.user.id == session.user.id) {
-        _log.fine('Session was already refreshed elsewhere, skipping recovery');
+        authLogger.fine(
+          'Session was already refreshed elsewhere, skipping recovery',
+        );
         return AuthResponse(session: existingSession);
       }
 
@@ -1502,7 +1505,7 @@ class AuthClient {
   void startAutoRefresh() async {
     stopAutoRefresh();
 
-    _log.fine('Starting auto refresh');
+    authLogger.fine('Starting auto refresh');
     _autoRefreshTicker = Timer.periodic(
       AuthConstants.autoRefreshTickDuration,
       (Timer t) => _autoRefreshTokenTick(),
@@ -1514,7 +1517,7 @@ class AuthClient {
 
   /// Stops an active auto refresh process running in the background (if any).
   void stopAutoRefresh() {
-    _log.fine('Stopping auto refresh');
+    authLogger.fine('Stopping auto refresh');
     _autoRefreshTicker?.cancel();
     _autoRefreshTicker = null;
   }
@@ -1541,7 +1544,7 @@ class AuthClient {
                   AuthConstants.autoRefreshTickDuration.inMilliseconds)
               .floor();
 
-      _log.finer('Access token expires in $expiresInTicks ticks');
+      authLogger.finer('Access token expires in $expiresInTicks ticks');
 
       // Only tick if the next tick comes after the retry threshold
       if (expiresInTicks <= AuthConstants.autoRefreshTickThreshold) {
@@ -1561,7 +1564,7 @@ class AuthClient {
       // Make a GET request
       () async {
         attempt++;
-        _log.fine('Attempt $attempt to refresh token');
+        authLogger.fine('Attempt $attempt to refresh token');
         final options = AuthRequestOptions(
           headers: _headers,
           body: {'refresh_token': refreshToken},
@@ -1640,13 +1643,13 @@ class AuthClient {
 
   /// set currentSession and currentUser
   void _saveSession(Session session) {
-    _log.fine('Saving session');
-    _log.finest('Saving session: $session');
+    authLogger.fine('Saving session');
+    authLogger.finest('Saving session: $session');
     _currentSession = session;
   }
 
   void _removeSession() {
-    _log.fine('Removing session');
+    authLogger.fine('Removing session');
     _currentSession = null;
   }
 
@@ -1664,8 +1667,10 @@ class AuthClient {
           messageEvent,
         ) {
           final rawEvent = messageEvent['event'];
-          _log.finest('Received broadcast message: $messageEvent');
-          _log.info('Received broadcast event: $rawEvent');
+          authLogger.finest(
+            'Received broadcast message: ${redactedPayload(messageEvent)}',
+          );
+          authLogger.info('Received broadcast event: $rawEvent');
           final event = AuthChangeEvent.fromValue(rawEvent);
 
           if (event != null) {
@@ -1682,7 +1687,11 @@ class AuthClient {
           }
         });
       } catch (error, stackTrace) {
-        _log.warning('Failed to start broadcast channel', error, stackTrace);
+        authLogger.warning(
+          'Failed to start broadcast channel',
+          error,
+          stackTrace,
+        );
         // Ignoring
       }
     }
@@ -1719,7 +1728,7 @@ class AuthClient {
     // in-flight.
     final existing = _pendingRefreshes[refreshToken];
     if (existing != null) {
-      _log.finer('Refresh already pending for this token');
+      authLogger.finer('Refresh already pending for this token');
       return existing.future;
     }
 
@@ -1758,7 +1767,7 @@ class AuthClient {
   /// for a retryable/unexpected failure.
   Future<AuthResponse> _doRefresh(String refreshToken) async {
     final versionBeforeRefresh = _sessionVersion;
-    _log.fine('Refresh access token');
+    authLogger.fine('Refresh access token');
 
     try {
       final data = await _refreshAccessToken(refreshToken);
@@ -1772,7 +1781,9 @@ class AuthClient {
       // mutated (e.g. a concurrent signIn or signOut) while we were awaiting
       // the network request, so we don't overwrite the newer session.
       if (_isDisposed || _sessionVersion != versionBeforeRefresh) {
-        _log.fine('Session changed during refresh, discarding stale result.');
+        authLogger.fine(
+          'Session changed during refresh, discarding stale result.',
+        );
         return data;
       }
 
@@ -1785,7 +1796,7 @@ class AuthClient {
           error.errorCode == 'refresh_token_already_used' &&
           existingSession != null &&
           !existingSession.isExpired) {
-        _log.fine(
+        authLogger.fine(
           'Refresh token already used but current session is still valid, '
           'returning it instead of signing out',
         );
@@ -1838,7 +1849,7 @@ class AuthClient {
       fromBroadcast: !broadcast,
       signOutReason: signOutReason,
     );
-    _log.finest('onAuthStateChange: $state');
+    authLogger.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }
@@ -1846,7 +1857,7 @@ class AuthClient {
   /// For internal use only.
   @internal
   Object notifyException(Object exception, [StackTrace? stackTrace]) {
-    _log.warning('Notifying exception', exception, stackTrace);
+    authLogger.warning('Notifying exception', exception, stackTrace);
     _onAuthStateChangeController.addError(
       exception,
       stackTrace ?? StackTrace.current,
