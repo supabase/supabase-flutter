@@ -563,9 +563,9 @@ Supabase.initialize(
 
 All Supabase packages emit their logs through the [logging](https://pub.dev/packages/logging) package, using loggers under the shared `supabase` hierarchy. The packages only emit records; they never print anything and never change any `package:logging` settings. Your application decides whether, where, and at which level logs are handled.
 
-### Listen to all Supabase logs
+### Listen to Supabase logs
 
-The simplest setup listens on the root logger and filters on the logger name:
+The simplest setup listens on the root logger and filters on the logger name. It receives the records allowed by `Logger.root.level`, which defaults to `Level.INFO`; set `Logger.root.level = Level.ALL` to also receive the fine-grained records, including the `Level.FINEST` payloads described below.
 
 ```dart
 import 'package:flutter/foundation.dart';

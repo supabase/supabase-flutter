@@ -1439,12 +1439,13 @@ final client = RealtimeClient(
 );
 
 // After
+hierarchicalLoggingEnabled = true;
 Logger('supabase.realtime').onRecord.listen((record) {
   print('${record.level.name}: ${record.message} ${record.error ?? ''}');
 });
 final client = RealtimeClient(realtimeUrl);
 ```
 
-Listening on a non-root logger such as `Logger('supabase.realtime')` requires
-`hierarchicalLoggingEnabled = true`; without it, listen on `Logger.root` and filter on
-`LogRecord.loggerName`.
+Without `hierarchicalLoggingEnabled = true`, `package:logging` resolves the `onRecord` stream of a
+non-root logger to `Logger.root.onRecord`, which receives records from every logger in the
+application; in that case listen on `Logger.root` and filter on `LogRecord.loggerName` instead.

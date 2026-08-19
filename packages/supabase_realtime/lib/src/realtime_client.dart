@@ -538,9 +538,12 @@ class RealtimeClient {
       connection?.sink.add(encode(message.toJson()));
     }
 
+    final loggedPayload = message.event == ChannelEvent.accessToken
+        ? '<redacted>'
+        : message.payload;
     realtimeLogger.finest(
       'Push ${message.topic} ${message.event.name} (${message.ref}): '
-      '${message.payload}',
+      '$loggedPayload',
     );
 
     if (isConnected) {
