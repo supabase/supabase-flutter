@@ -50,14 +50,9 @@ class PostgrestClient {
     String? schema,
     this.httpClient,
     YAJsonIsolate? isolate,
-    PostgrestRetryOptions retryOptions = const PostgrestRetryOptions(),
+    this.retryOptions = const PostgrestRetryOptions(),
     this.requestTimeout,
-  }) : // Snapshot the status codes so that mutating the set the caller passed
-       // does not change the retry behavior of an existing client.
-       retryOptions = retryOptions.copyWith(
-         statusCodes: Set.unmodifiable(retryOptions.statusCodes),
-       ),
-       _schema = schema,
+  }) : _schema = schema,
        headers = {...defaultHeaders, ...?headers},
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null {

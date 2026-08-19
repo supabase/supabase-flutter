@@ -93,12 +93,13 @@ void main() {
     requestTimeout: const Duration(milliseconds: 50),
   );
 
-  /// 500 is not retried by default, so a request that recovers from it proves
-  /// that the configured options were used and not the default ones.
-  void initializeWithCustomStatusCode() => initialize(
-    statuses: [500, 500, 200],
-    retryOptions: PostgrestRetryOptions(
-      statusCodes: {500},
+  /// The default of three retries gives up before the fifth response, so a
+  /// request that recovers on it proves that the configured options were used
+  /// and not the default ones.
+  void initializeWithCustomRetryCount() => initialize(
+    statuses: [503, 503, 503, 503, 200],
+    retryOptions: const PostgrestRetryOptions(
+      count: 5,
       initialDelay: Duration.zero,
     ),
   );
@@ -108,11 +109,11 @@ void main() {
   });
 
   test('from() retries with the configured retry options', () async {
-    initializeWithCustomStatusCode();
+    initializeWithCustomRetryCount();
 
     await supabase.from('todos').select();
 
-    expect(httpClient.callCount, 3);
+    expect(httpClient.callCount, 5);
   });
 
   test('from() honors disabled retries', () async {
@@ -130,19 +131,19 @@ void main() {
   });
 
   test('schema().from() retries with the configured retry options', () async {
-    initializeWithCustomStatusCode();
+    initializeWithCustomRetryCount();
 
     await supabase.schema('personal').from('todos').select();
 
-    expect(httpClient.callCount, 3);
+    expect(httpClient.callCount, 5);
   });
 
   test('rpc() retries with the configured retry options', () async {
-    initializeWithCustomStatusCode();
+    initializeWithCustomRetryCount();
 
     await supabase.rpc('get_todos', params: {}, get: true);
 
-    expect(httpClient.callCount, 3);
+    expect(httpClient.callCount, 5);
   });
 
   test('from() times out with the configured request timeout', () async {

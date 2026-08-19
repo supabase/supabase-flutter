@@ -1237,22 +1237,52 @@ The individual retry parameters are replaced by one `PostgrestRetryOptions` valu
 
 | Before | After |
 | --- | --- |
-| `PostgrestClient(retryEnabled: …, retryCount: …, retryableStatusCodes: …)` | `PostgrestClient(retryOptions: …)` |
-| `PostgrestClientOptions(retryEnabled: …, retryCount: …, retryableStatusCodes: …)` | `PostgrestClientOptions(retryOptions: …)` |
-| `PostgrestBuilder`, `PostgrestQueryBuilder` and `PostgrestRpcBuilder` constructors, same three parameters | `retryOptions: …` |
-| `PostgrestClient.defaultRetryableStatusCodes` | `PostgrestRetryOptions.defaultStatusCodes` |
+| `PostgrestClient(retryEnabled: …, retryCount: …)` | `PostgrestClient(retryOptions: …)` |
+| `PostgrestClientOptions(retryEnabled: …, retryCount: …)` | `PostgrestClientOptions(retryOptions: …)` |
+| `PostgrestBuilder`, `PostgrestQueryBuilder` and `PostgrestRpcBuilder` constructors, same parameters | `retryOptions: …` |
 
 ```dart
 // Before
 postgrestOptions: const PostgrestClientOptions(
   retryCount: 5,
-  retryableStatusCodes: {503},
 ),
 
 // After
 postgrestOptions: const PostgrestClientOptions(
-  retryOptions: PostgrestRetryOptions(count: 5, statusCodes: {503}),
+  retryOptions: PostgrestRetryOptions(count: 5),
 ),
 ```
 
 The per-request `.retry()` override is unchanged.
+
+### The retried status codes are no longer configurable
+
+`503 Service Unavailable` and `520 Unknown Error` are the only responses worth
+repeating, so the set of retried status codes is fixed. Retrying anything else,
+a `500` from a failing query for example, only multiplies the load without a
+chance of a different answer.
+
+| Before | After |
+| --- | --- |
+| `PostgrestClient(retryableStatusCodes: …)` | removed |
+| `PostgrestClientOptions(retryableStatusCodes: …)` | removed |
+| `PostgrestClient.defaultRetryableStatusCodes` | `PostgrestRetryOptions.statusCodes` |
+
+If you retried a status code outside that set, catch the exception and decide
+what to do with it yourself:
+
+```dart
+// Before
+postgrestOptions: const PostgrestClientOptions(
+  retryableStatusCodes: {500, 503, 520},
+),
+
+// After
+try {
+  await supabase.from('todos').select();
+} on PostgrestApiException catch (error) {
+  if (error.statusCode == 500) {
+    // Retry it yourself, or surface it.
+  }
+}
+```
