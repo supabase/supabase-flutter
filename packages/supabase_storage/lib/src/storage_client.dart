@@ -140,10 +140,6 @@ class SupabaseStorageClient extends StorageBucketApi {
     storageFetch,
   );
 
-  void setAccessToken(String jwt) {
-    headers['Authorization'] = 'Bearer $jwt';
-  }
-
   /// Sets an HTTP header for subsequent requests.
   ///
   /// Mutates the headers map used by this client in place. Instances of

@@ -438,20 +438,9 @@ void main() {
     });
 
     group('Headers', () {
-      test('setAccessToken updates authorization header', () async {
-        functionsCustomHttpClient.setAccessToken('new-token');
-
-        await functionsCustomHttpClient.invoke('function');
-
-        final request = customHttpClient.receivedRequests.last;
-        expect(request.headers['Authorization'], 'Bearer new-token');
-      });
-
-      test('headers getter returns current headers', () {
-        functionsCustomHttpClient.setAccessToken('test-token');
-
+      test('headers getter returns the client headers', () {
         final headers = functionsCustomHttpClient.headers;
-        expect(headers['Authorization'], 'Bearer test-token');
+
         expect(headers, contains('X-Client-Info'));
       });
 

@@ -1971,8 +1971,10 @@ features:
       - FunctionResponse.FunctionResponse
   functions.invocation.set_auth_token:
     status: implemented
+    note: "There is no dedicated setter. The token is passed as an Authorization header, either to the constructor for every invocation or to invoke for a single one. Through SupabaseClient the live session token is resolved and applied per request, so no manual call is needed."
     symbols:
-      - FunctionsClient.setAccessToken
+      - FunctionsClient.FunctionsClient
+      - FunctionsClient.invoke
   functions.invocation.method_override:
     status: implemented
     note: "The HttpMethod enum is shared with postgrest, so it also offers head, which supabase-js does not expose for function invocation."
@@ -2001,11 +2003,10 @@ features:
       - SupabaseClient.accessToken
   client.authentication_integration.cross_client_token_sync:
     status: implemented
+    note: "The rest, storage and functions clients share an HTTP client that resolves the current access token on every request, so there is nothing to synchronize and they expose no setter. Realtime keeps one because it pushes the token over a live socket rather than per request."
     symbols:
-      - PostgrestClient.setAccessToken
       - RealtimeClient.setAccessToken
-      - SupabaseStorageClient.setAccessToken
-      - FunctionsClient.setAccessToken
+      - SupabaseClient.accessToken
   client.authentication_integration.oauth_flow_type:
     status: implemented
     symbols:

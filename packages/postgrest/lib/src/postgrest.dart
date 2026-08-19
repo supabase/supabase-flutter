@@ -68,19 +68,6 @@ class PostgrestClient {
     _log.finest('Initialize with headers: $headers');
   }
 
-  /// Authenticates the request with JWT.
-  ///
-  /// Passing `null` clears the `Authorization` header.
-  PostgrestClient setAccessToken(String? token) {
-    _log.finest("setAccessToken with: $token");
-    if (token != null) {
-      headers['Authorization'] = 'Bearer $token';
-    } else {
-      headers.remove('Authorization');
-    }
-    return this;
-  }
-
   /// Perform a table operation.
   PostgrestQueryBuilder<void> from(String table) {
     final requestUrl = '$url/$table';

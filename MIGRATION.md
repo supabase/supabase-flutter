@@ -1167,7 +1167,7 @@ Across every package:
 
 | Before | After |
 | --- | --- |
-| `setAuth()` | `setAccessToken()` |
+| `RealtimeClient.setAuth()` | `RealtimeClient.setAccessToken()` |
 | `queryParams:` | `queryParameters:` |
 | `opts:` | `options:` |
 | `PresenceOpts` | `PresenceOptions` |
@@ -1332,4 +1332,49 @@ try {
     // Retry it yourself, or surface it.
   }
 }
+```
+
+### `setAccessToken()` is gone from the rest, storage and functions clients
+
+`PostgrestClient.setAccessToken()`, `SupabaseStorageClient.setAccessToken()` and
+`FunctionsClient.setAccessToken()` are removed. `RealtimeClient.setAccessToken()` stays.
+
+`SupabaseClient` never called any of the three. It wraps the HTTP client the rest, storage and
+functions clients use, and resolves the current session token on every request, so a token pushed in
+by hand was overwritten by the live one anyway. Nothing changes for you if you go through
+`SupabaseClient`, and the token you set with `SupabaseClient.accessToken` or by signing in still
+reaches all three.
+
+Realtime keeps its setter because it holds a live socket and has to push a new token over it rather
+than attach one per request.
+
+If you construct one of these clients yourself, pass the header to the constructor instead:
+
+```dart
+// Before
+final functions = FunctionsClient(functionsUrl, {'apikey': anonKey});
+functions.setAccessToken(jwt);
+
+// After
+final functions = FunctionsClient(functionsUrl, {
+  'apikey': anonKey,
+  'Authorization': 'Bearer $jwt',
+});
+```
+
+To use a different token per call, pass it to that call rather than to the client. This already
+worked in v2:
+
+```dart
+await functions.invoke('hello', headers: {'Authorization': 'Bearer $jwt'});
+await postgrest.from('countries').select().setHeader('Authorization', 'Bearer $jwt');
+```
+
+If you have to swap the token on a long-lived client you built yourself, the header maps are still
+mutable. `SupabaseStorageClient.setHeader()` is unaffected, and `PostgrestClient.headers` and
+`FunctionsClient.headers` can be written to directly:
+
+```dart
+storage.setHeader('Authorization', 'Bearer $jwt');
+postgrest.headers['Authorization'] = 'Bearer $jwt';
 ```

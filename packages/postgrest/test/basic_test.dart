@@ -112,7 +112,10 @@ void main() {
     });
 
     test('auth', () async {
-      postgrest = PostgrestClient(localStackRestUrl).setAccessToken('foo');
+      postgrest = PostgrestClient(
+        localStackRestUrl,
+        headers: {'Authorization': 'Bearer foo'},
+      );
       expect(
         postgrest.headers['Authorization'],
         'Bearer foo',
