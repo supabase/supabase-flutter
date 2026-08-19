@@ -69,7 +69,9 @@ void main() {
       'http://localhost:9999',
       supabaseKey,
       httpClient: client,
-      authOptions: AuthClientOptions(pkceAsyncStorage: MemoryAuthAsyncStorage()),
+      authOptions: AuthClientOptions(
+        pkceAsyncStorage: MemoryAuthAsyncStorage(),
+      ),
       postgrestOptions: PostgrestClientOptions(
         retryOptions: retryOptions,
         requestTimeout: requestTimeout,
