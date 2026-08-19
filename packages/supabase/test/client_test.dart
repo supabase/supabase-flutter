@@ -265,28 +265,34 @@ void main() {
         );
         await supabase.auth.recoverSession(sessionString);
 
-        unawaited(
-          supabase.functions
-              .invoke("test", headers: {'Authorization': 'Bearer pinned'})
-              .then((value) => null),
-        );
-        unawaited(
+        final pending = <Future<Object?>>[
+          supabase.functions.invoke(
+            "test",
+            headers: {'Authorization': 'Bearer pinned'},
+          ),
+          // then() subscribes, which is what starts a Postgrest builder.
           supabase
               .from("test")
               .select()
               .setHeader('Authorization', 'Bearer pinned')
-              .then((value) => null),
-        );
+              .then((value) => value),
+        ];
 
         var count = 0;
         await for (final request in mockServer) {
           expect(request.headers.value('Authorization'), 'Bearer pinned');
+          request.response
+            ..headers.contentType = ContentType.json
+            ..write('[]');
+          await request.response.close();
           count++;
-          if (count == 2) {
+          if (count == pending.length) {
             break;
           }
         }
 
+        await Future.wait(pending);
+        await supabase.dispose();
         await mockServer.close();
       },
     );
