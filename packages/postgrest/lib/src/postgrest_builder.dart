@@ -140,11 +140,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
          isolate: isolate,
          count: count,
          maybeSingle: maybeSingle,
-         // Snapshot the status codes so that mutating the set the caller
-         // passed does not change the retry behavior of this request.
-         retry: retryOptions.copyWith(
-           statusCodes: Set.unmodifiable(retryOptions.statusCodes),
-         ),
+         retry: retryOptions,
          requestTimeout: requestTimeout,
          abortSignal: abortSignal,
        );
@@ -361,7 +357,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Map<String, String> execHeaders,
   ) async {
     final maxRetries = _retry.count;
-    final retryableStatusCodes = _retry.statusCodes;
 
     final isRetryableMethod =
         method == HttpMethod.get || method == HttpMethod.head;
@@ -379,7 +374,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
       try {
         final response = await send();
-        if (!retryableStatusCodes.contains(response.statusCode) ||
+        if (!PostgrestRetryOptions.statusCodes.contains(response.statusCode) ||
             attempt == maxRetries) {
           return response;
         }

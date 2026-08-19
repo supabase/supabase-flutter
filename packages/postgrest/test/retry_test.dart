@@ -87,7 +87,6 @@ PostgrestClient _buildClient(
   _MockRetryClient mock, {
   bool enabled = true,
   int count = 3,
-  Set<int> statusCodes = const {503, 520},
 }) {
   return PostgrestClient(
     'http://localhost:3000',
@@ -95,7 +94,6 @@ PostgrestClient _buildClient(
     retryOptions: PostgrestRetryOptions(
       enabled: enabled,
       count: count,
-      statusCodes: statusCodes,
       initialDelay: Duration.zero,
     ),
   );
@@ -168,6 +166,17 @@ void main() {
 
     test('GET does not retry on non-520 error (e.g., 400)', () async {
       final mock = _MockRetryClient([_status(400)]);
+      final client = _buildClient(mock);
+
+      await expectLater(
+        () => client.from('users').select(),
+        throwsA(isA<PostgrestApiException>()),
+      );
+      expect(mock.callCount, 1);
+    });
+
+    test('GET does not retry on 500', () async {
+      final mock = _MockRetryClient([_status(500)]);
       final client = _buildClient(mock);
 
       await expectLater(
@@ -344,67 +353,11 @@ void main() {
     });
   });
 
-  group('configurable retryable status codes', () {
-    test('retries on a custom status code', () async {
-      final mock = _MockRetryClient([_status(500), _ok()]);
-      final client = _buildClient(mock, statusCodes: {500});
-
-      final result = await client.from('users').select();
-
-      expect(result, isEmpty);
-      expect(mock.callCount, 2);
-    });
-
-    test('does not retry on a status code outside the custom set', () async {
-      final mock = _MockRetryClient([_status(520)]);
-      final client = _buildClient(mock, statusCodes: {500});
-
-      await expectLater(
-        () => client.from('users').select(),
-        throwsA(isA<PostgrestApiException>()),
-      );
-      expect(mock.callCount, 1);
-    });
-
-    test('a directly built builder snapshots the provided set', () async {
-      final mock = _MockRetryClient([_status(500), _ok()]);
-      final statusCodes = {500};
-      final builder = PostgrestQueryBuilder<dynamic>(
-        url: Uri.parse('http://localhost:3000/users'),
-        httpClient: mock,
-        retryOptions: PostgrestRetryOptions(
-          statusCodes: statusCodes,
-          initialDelay: Duration.zero,
-        ),
-      );
-
-      statusCodes.clear();
-
-      await builder.select();
-
-      expect(mock.callCount, 2);
-    });
-
-    test('mutating the provided set does not affect retry behavior', () async {
-      final mock = _MockRetryClient([_status(500), _ok()]);
-      final statusCodes = {500};
-      final client = _buildClient(mock, statusCodes: statusCodes);
-
-      statusCodes.clear();
-
-      final result = await client.from('users').select();
-
-      expect(result, isEmpty);
-      expect(mock.callCount, 2);
-    });
-  });
-
   group('PostgrestRetryOptions', () {
     test('copyWith keeps the fields that are not overridden', () {
       const options = PostgrestRetryOptions(
         enabled: false,
         count: 7,
-        statusCodes: {500},
         initialDelay: Duration(milliseconds: 5),
         maxDelay: Duration(milliseconds: 50),
         randomizationFactor: 0.5,
@@ -414,7 +367,6 @@ void main() {
 
       expect(copy.enabled, isTrue);
       expect(copy.count, 7);
-      expect(copy.statusCodes, {500});
       expect(copy.initialDelay, const Duration(milliseconds: 5));
       expect(copy.maxDelay, const Duration(milliseconds: 50));
       expect(copy.randomizationFactor, 0.5);
@@ -455,45 +407,45 @@ void main() {
     });
 
     test('the client keeps the retry options it was given', () {
-      final options = PostgrestRetryOptions(count: 1, statusCodes: {500});
+      const options = PostgrestRetryOptions(count: 1);
       final client = PostgrestClient(
         'http://localhost:3000',
         retryOptions: options,
       );
 
-      expect(client.retryOptions.count, 1);
-      expect(client.retryOptions.statusCodes, {500});
+      expect(client.retryOptions, same(options));
+    });
+
+    test('the retried status codes are 503 and 520', () {
+      expect(PostgrestRetryOptions.statusCodes, {503, 520});
     });
   });
 
   group('retry config propagation through builder chain', () {
-    test(
-      'count() preserves a custom retry count and status codes',
-      () async {
-        _ResponseFactory okWithCount() =>
-            (req) => Future.value(
-              StreamedResponse(
-                Stream.value(Uint8List.fromList('[]'.codeUnits)),
-                200,
-                request: req,
-                headers: {
-                  'content-type': 'application/json',
-                  'content-range': '0-0/0',
-                },
-              ),
-            );
-        final mock = _MockRetryClient([
-          _status(500),
-          _status(500),
-          okWithCount(),
-        ]);
-        final client = _buildClient(mock, count: 5, statusCodes: {500});
+    test('count() preserves a custom retry count', () async {
+      _ResponseFactory okWithCount() =>
+          (req) => Future.value(
+            StreamedResponse(
+              Stream.value(Uint8List.fromList('[]'.codeUnits)),
+              200,
+              request: req,
+              headers: {
+                'content-type': 'application/json',
+                'content-range': '0-0/0',
+              },
+            ),
+          );
+      final mock = _MockRetryClient([
+        _status(520),
+        _status(520),
+        okWithCount(),
+      ]);
+      final client = _buildClient(mock, count: 5);
 
-        await client.from('users').select().count(CountOption.exact);
+      await client.from('users').select().count(CountOption.exact);
 
-        expect(mock.callCount, 3);
-      },
-    );
+      expect(mock.callCount, 3);
+    });
   });
 
   group('request timeout', () {

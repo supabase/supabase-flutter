@@ -6,12 +6,12 @@ import 'package:supabase_common/supabase_common.dart';
 ///
 /// Only GET and HEAD requests are retried, since they are the only methods
 /// that are safe to repeat. A request is retried when it fails with a network
-/// error or answers with one of [statusCodes].
+/// error or answers with one of the [statusCodes].
 ///
 /// ```dart
 /// PostgrestClient(
 ///   restUrl,
-///   retryOptions: PostgrestRetryOptions(count: 5, statusCodes: {503}),
+///   retryOptions: PostgrestRetryOptions(count: 5),
 /// );
 /// ```
 ///
@@ -19,8 +19,13 @@ import 'package:supabase_common/supabase_common.dart';
 /// request.
 @immutable
 class PostgrestRetryOptions {
-  /// The HTTP status codes that trigger a retry by default.
-  static const Set<int> defaultStatusCodes = {503, 520};
+  /// The HTTP status codes that trigger a retry.
+  ///
+  /// `503 Service Unavailable` and `520 Unknown Error` are the only responses
+  /// a Supabase project answers with that are worth repeating, so the set is
+  /// fixed. Retrying anything else, a `500` from a failing query for example,
+  /// only multiplies the load without a chance of a different answer.
+  static const Set<int> statusCodes = {503, 520};
 
   /// Whether automatic retries are performed.
   final bool enabled;
@@ -29,9 +34,6 @@ class PostgrestRetryOptions {
   ///
   /// Set it to `0` to send every request exactly once.
   final int count;
-
-  /// The HTTP status codes that trigger a retry.
-  final Set<int> statusCodes;
 
   /// How long to wait before the first retry, doubled for every attempt after
   /// that until [maxDelay] is reached.
@@ -48,7 +50,6 @@ class PostgrestRetryOptions {
   const PostgrestRetryOptions({
     this.enabled = true,
     this.count = 3,
-    this.statusCodes = defaultStatusCodes,
     this.initialDelay = const Duration(seconds: 1),
     this.maxDelay = const Duration(seconds: 30),
     this.randomizationFactor = 0,
@@ -66,7 +67,6 @@ class PostgrestRetryOptions {
   PostgrestRetryOptions copyWith({
     bool? enabled,
     int? count,
-    Set<int>? statusCodes,
     Duration? initialDelay,
     Duration? maxDelay,
     double? randomizationFactor,
@@ -74,7 +74,6 @@ class PostgrestRetryOptions {
     return PostgrestRetryOptions(
       enabled: enabled ?? this.enabled,
       count: count ?? this.count,
-      statusCodes: statusCodes ?? this.statusCodes,
       initialDelay: initialDelay ?? this.initialDelay,
       maxDelay: maxDelay ?? this.maxDelay,
       randomizationFactor: randomizationFactor ?? this.randomizationFactor,
@@ -84,6 +83,6 @@ class PostgrestRetryOptions {
   @override
   String toString() =>
       'PostgrestRetryOptions(enabled: $enabled, count: $count, '
-      'statusCodes: $statusCodes, initialDelay: $initialDelay, '
-      'maxDelay: $maxDelay, randomizationFactor: $randomizationFactor)';
+      'initialDelay: $initialDelay, maxDelay: $maxDelay, '
+      'randomizationFactor: $randomizationFactor)';
 }

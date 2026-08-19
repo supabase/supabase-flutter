@@ -968,7 +968,6 @@ features:
       - PostgrestRetryOptions.enabled
       - PostgrestRetryOptions.count
       - PostgrestRetryOptions.statusCodes
-      - PostgrestRetryOptions.defaultStatusCodes
       - PostgrestRetryOptions.initialDelay
       - PostgrestRetryOptions.maxDelay
       - PostgrestRetryOptions.randomizationFactor
