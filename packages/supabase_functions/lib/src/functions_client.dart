@@ -20,17 +20,34 @@ class FunctionsClient {
 
   /// In case you don't provide your own isolate, call [dispose] when you're
   /// done
+  ///
+  /// [accessToken] is resolved before every invocation and sent as
+  /// `Authorization: Bearer <token>`. Use it when the token rotates, for
+  /// example a session token that is refreshed. Returning `null` sends no
+  /// bearer token. A header passed to [invoke] still wins over it, so a single
+  /// call can be made with a different token.
   FunctionsClient(
     String url,
     Map<String, String> headers, {
     http.Client? httpClient,
     YAJsonIsolate? isolate,
     String? region,
-  }) : _url = url,
+    Future<String?> Function()? accessToken,
+  }) : assert(
+         accessToken == null || headers.header('Authorization') == null,
+         'Pass either an Authorization header or accessToken, not both: the '
+         'header would win over the resolved token on every invocation.',
+       ),
+       _url = url,
        _headers = {...FunctionsConstants.defaultHeaders, ...headers},
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null,
-       _httpClient = httpClient,
+       // The transport belongs to the caller, so the client never closes it,
+       // the same way it leaves a caller-provided isolate alone.
+       // ignore: dispose-class-fields
+       _httpClient = accessToken == null
+           ? httpClient
+           : AccessTokenClient(accessToken, httpClient),
        _region = region {
     functionsLogger.config(
       "Initialize FunctionsClient v$version with url "

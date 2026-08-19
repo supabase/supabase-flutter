@@ -5,6 +5,7 @@
 /// notice.
 library;
 
+export 'src/access_token_client.dart';
 export 'src/backoff.dart';
 export 'src/base64url.dart';
 export 'src/client_info.dart';
