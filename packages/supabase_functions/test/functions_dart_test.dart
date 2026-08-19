@@ -438,10 +438,12 @@ void main() {
     });
 
     group('Headers', () {
-      test('headers getter returns the client headers', () {
-        final headers = functionsCustomHttpClient.headers;
+      test('headers getter returns the constructor headers merged with the '
+          'defaults', () {
+        final client = FunctionsClient("", {'apikey': 'foo'});
 
-        expect(headers, contains('X-Client-Info'));
+        expect(client.headers['apikey'], 'foo');
+        expect(client.headers, contains('X-Client-Info'));
       });
 
       test('custom headers override defaults', () async {

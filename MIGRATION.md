@@ -668,7 +668,7 @@ already inert: unused types, options the client ignored, or values the server ne
 | `OAuthProvider.snakeCase` | `OAuthProvider.name` | `supabase_auth` |
 | `User.confirmedAt` | `User.emailConfirmedAt` | `supabase_auth` |
 | `ReturningOption` | none, it was unused | `postgrest` |
-| `PostgrestClient.auth()` | `PostgrestClient.setAuth()` | `postgrest` |
+| `PostgrestClient.auth()` | none, pass an `Authorization` header instead | `postgrest` |
 | `RealtimeClient.longpollerTimeout` | none, there is no longpoll transport | `supabase_realtime` |
 | `ChannelResponse.rateLimited` | none, it was never returned | `supabase_realtime` |
 | `FileObject.lastAccessedAt`, `FileObjectV2.lastAccessedAt` | none, the server does not populate it | `supabase_storage` |
