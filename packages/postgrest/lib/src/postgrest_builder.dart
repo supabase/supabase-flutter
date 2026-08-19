@@ -147,7 +147,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// Rewraps an existing [config] under a possibly different [converter] (and
   /// therefore possibly different generic types). This is what lets the typed
   /// builders share a single config instance without re-listing its fields.
-  PostgrestBuilder._({
+  const PostgrestBuilder._({
     required _RequestConfig config,
     required PostgrestConverter<S, R>? converter,
   }) : _config = config,
