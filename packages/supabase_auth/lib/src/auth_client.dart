@@ -1666,7 +1666,11 @@ class AuthClient {
           messageEvent,
         ) {
           final rawEvent = messageEvent['event'];
-          authLogger.finest('Received broadcast message: $messageEvent');
+          final loggedMessage = {
+            for (final entry in messageEvent.entries)
+              entry.key: entry.key == 'session' ? '<redacted>' : entry.value,
+          };
+          authLogger.finest('Received broadcast message: $loggedMessage');
           authLogger.info('Received broadcast event: $rawEvent');
           final event = AuthChangeEvent.fromValue(rawEvent);
 
