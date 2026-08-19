@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
+import 'package:supabase/src/logger.dart';
 import 'package:supabase/src/supabase_constants.dart';
 import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
@@ -85,8 +85,6 @@ class SupabaseClient {
   /// Increment ID of the stream to create different realtime topic for each
   /// stream
   final _incrementId = Counter();
-
-  final _log = Logger('supabase.supabase');
 
   /// Getter for the HTTP headers
   Map<String, String> get headers => Map.unmodifiable(_headers);
@@ -189,7 +187,7 @@ class SupabaseClient {
       _getAccessToken,
       omitNewApiKeyAsBearer: true,
     );
-    warnOnUnrecognizedApiKey(_supabaseKey, _log);
+    warnOnUnrecognizedApiKey(_supabaseKey);
     rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(
@@ -198,12 +196,12 @@ class SupabaseClient {
     );
     realtime = _initRealtimeClient(options: realtimeClientOptions);
     if (accessToken == null) {
-      _log.config(
+      clientLogger.config(
         'Initialize SupabaseClient v$version with no custom access token',
       );
       _listenForAuthEvents();
     } else {
-      _log.config(
+      clientLogger.config(
         'Initialize SupabaseClient v$version with custom access token',
       );
     }
@@ -300,7 +298,7 @@ class SupabaseClient {
       return session?.accessToken;
     } on AuthException catch (error, stackTrace) {
       // Throw the error instead of making an API request with an expired token.
-      _log.warning(
+      clientLogger.warning(
         'Access token is expired and refreshing failed, aborting api request',
         error,
         stackTrace,
@@ -310,7 +308,7 @@ class SupabaseClient {
   }
 
   Future<void> dispose() async {
-    _log.fine('Dispose SupabaseClient');
+    clientLogger.fine('Dispose SupabaseClient');
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
     await functions.dispose();

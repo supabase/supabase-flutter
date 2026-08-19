@@ -7,6 +7,7 @@ import 'package:http/http.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
+import 'package:supabase_realtime/src/logger.dart';
 import 'package:supabase_realtime/src/push.dart';
 import 'package:supabase_realtime/src/realtime_presence.dart';
 import 'package:supabase_realtime/src/retry_timer.dart';
@@ -94,7 +95,7 @@ class RealtimeChannel {
 
     _onClose(() {
       _rejoinTimer.reset();
-      socket.log('channel', 'close $topic $joinRef');
+      realtimeLogger.fine('Channel close: $topic $joinRef');
       _state = ChannelState.closed;
       socket.remove(this);
       // Deferred so that bindings registered after this one (such as the
@@ -107,7 +108,7 @@ class RealtimeChannel {
       if (isLeaving || isClosed) {
         return;
       }
-      socket.log('channel', 'error $topic', reason);
+      realtimeLogger.warning('Channel error: $topic', reason);
       _state = ChannelState.errored;
       _rejoinTimer.scheduleTimeout();
     });
@@ -116,7 +117,9 @@ class RealtimeChannel {
       if (!isJoining) {
         return;
       }
-      socket.log('channel', 'timeout $topic', joinPush.timeout);
+      realtimeLogger.warning(
+        'Channel join timeout: $topic after ${joinPush.timeout}',
+      );
       _state = ChannelState.errored;
       _rejoinTimer.scheduleTimeout();
     });
@@ -645,7 +648,6 @@ class RealtimeChannel {
     if ((isJoined || isJoining) && typeLower == 'postgres_changes') {
       final message =
           'cannot add `$typeLower` callbacks for $topic after `subscribe()`.';
-      socket.log('channel', message);
       throw message;
     }
 
@@ -906,7 +908,7 @@ class RealtimeChannel {
   Future<String> unsubscribe([Duration? timeout]) {
     _state = ChannelState.leaving;
     void onClose() {
-      socket.log('channel', 'leave $topic');
+      realtimeLogger.fine('Channel leave: $topic');
       trigger(ChannelEvent.close.eventName(), 'leave', joinRef);
     }
 

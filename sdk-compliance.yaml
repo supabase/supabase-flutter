@@ -1934,10 +1934,8 @@ features:
   realtime.configuration.custom_logger:
     status: implemented
     symbols:
-      - RealtimeClient.logger
-    supporting_symbols:
-      - RealtimeClient.log
       - RealtimeClientOptions.logLevel
+    supporting_symbols:
       - RealtimeLogLevel
   realtime.configuration.binary_protocol:
     status: implemented

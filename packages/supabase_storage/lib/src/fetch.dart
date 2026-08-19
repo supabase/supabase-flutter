@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
+import 'package:supabase_storage/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
 import 'package:supabase_storage/src/types.dart';
@@ -15,7 +15,6 @@ import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 @internal
 class Fetch {
   final Client? httpClient;
-  final _log = Logger('supabase.storage');
 
   Fetch([this.httpClient]);
 
@@ -33,14 +32,14 @@ class Fetch {
     if (error is! http.Response) {
       // No response was received, so there is neither a status nor a service
       // error code to report. The error's own toString names its type.
-      _log.fine('StorageException for $url', error, stackTrace);
+      storageLogger.fine('StorageException for $url', error, stackTrace);
       return StorageException(error.toString());
     }
 
     final data = tryDecodeJsonObject(error.body);
 
     if (data == null) {
-      _log.fine('StorageException for $url', error.body, stackTrace);
+      storageLogger.fine('StorageException for $url', error.body, stackTrace);
       return StorageApiException(
         error.body.isEmpty ? (error.reasonPhrase ?? '') : error.body,
         statusCode: error.statusCode,
@@ -48,7 +47,7 @@ class Fetch {
     }
 
     final exception = StorageApiException.fromJson(data, error.statusCode);
-    _log.fine('StorageException for $url', exception, stackTrace);
+    storageLogger.fine('StorageException for $url', exception, stackTrace);
     return exception;
   }
 
@@ -67,7 +66,9 @@ class Fetch {
       request.body = json.encode(body);
     }
 
-    _log.finest('Request: ${method.value} $url ${request.headers.redacted}');
+    storageLogger.finest(
+      'Request: ${method.value} $url ${request.headers.redacted}',
+    );
     final streamedResponse = await request.sendWith(httpClient);
     return _handleResponse(streamedResponse, options);
   }
@@ -162,7 +163,7 @@ class Fetch {
     final streamedResponse = await retry<http.StreamedResponse>(
       () async {
         attempts++;
-        _log.finest(
+        storageLogger.finest(
           'Request: attempt: $attempts ${method.value} $url '
           '${headers.redacted}',
         );
@@ -238,7 +239,9 @@ class Fetch {
     final request = http.Request(HttpMethod.get.value, Uri.parse(url))
       ..headers.addAll({...?options?.headers});
 
-    _log.finest('Request: GET (stream) $url ${request.headers.redacted}');
+    storageLogger.finest(
+      'Request: GET (stream) $url ${request.headers.redacted}',
+    );
     final streamedResponse = await request.sendWith(httpClient);
 
     if (!isSuccessStatusCode(streamedResponse.statusCode)) {

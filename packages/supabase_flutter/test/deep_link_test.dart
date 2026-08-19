@@ -38,7 +38,6 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         httpClient: pkceHttpClient,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockEmptyLocalStorage(),
@@ -78,7 +77,6 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         httpClient: getUserHttpClient,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockEmptyLocalStorage(),
@@ -126,7 +124,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
           httpClient: pkceHttpClient,
           authOptions: FlutterAuthClientOptions(
             localStorage: const MockEmptyLocalStorage(),
@@ -159,7 +156,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
           httpClient: pkceHttpClient,
           authOptions: FlutterAuthClientOptions(
             localStorage: const MockEmptyLocalStorage(),
@@ -202,7 +198,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
           httpClient: pkceHttpClient,
           authOptions: FlutterAuthClientOptions(
             pkceAsyncStorage: pkceAsyncStorage,
@@ -237,7 +232,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
           httpClient: pkceHttpClient,
           authOptions: FlutterAuthClientOptions(
             pkceAsyncStorage: pkceAsyncStorage,
@@ -270,7 +264,6 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         httpClient: GetUserHttpClient('new@email.com'),
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockEmptyLocalStorage(),

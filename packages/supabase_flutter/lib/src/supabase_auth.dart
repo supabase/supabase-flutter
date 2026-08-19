@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:logging/logging.dart';
+import 'package:supabase_flutter/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -80,8 +80,6 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   final _appLinks = AppLinks();
 
-  final _log = Logger('supabase.supabase_flutter');
-
   /// - Obtains session from local storage and sets it as the current session
   /// - Starts a deep link observer
   /// - Emits an initial session if there were no session stored in local
@@ -121,7 +119,7 @@ class SupabaseAuth with WidgetsBindingObserver {
           );
           shouldEmitInitialSession = false;
         } catch (error, stackTrace) {
-          _log.warning(
+          flutterLogger.warning(
             'Error while setting initial session',
             error,
             stackTrace,
@@ -156,9 +154,13 @@ class SupabaseAuth with WidgetsBindingObserver {
         }
       }
     } on AuthException catch (error, stackTrace) {
-      _log.warning(error.message, error, stackTrace);
+      flutterLogger.warning(error.message, error, stackTrace);
     } catch (error, stackTrace) {
-      _log.warning("Error while recovering session", error, stackTrace);
+      flutterLogger.warning(
+        "Error while recovering session",
+        error,
+        stackTrace,
+      );
     }
   }
 
@@ -202,7 +204,7 @@ class SupabaseAuth with WidgetsBindingObserver {
         await _localStorage.removePersistedSession();
       }
     } catch (error, stackTrace) {
-      _log.warning(
+      flutterLogger.warning(
         'Error while persisting auth state change',
         error,
         stackTrace,
@@ -240,7 +242,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Enable deep link observer to handle deep links
   Future<void> _startDeeplinkObserver() async {
-    _log.fine('Starting deeplink observer');
+    flutterLogger.fine('Starting deeplink observer');
     _handleIncomingLinks();
     await _handleInitialUri();
   }
@@ -250,7 +252,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   /// Automatically called on dispose().
   void _stopDeeplinkObserver() {
     if (_deeplinkSubscription != null) {
-      _log.fine('Stopping deeplink observer');
+      flutterLogger.fine('Stopping deeplink observer');
       unawaited(_deeplinkSubscription?.cancel());
     }
   }
@@ -308,8 +310,8 @@ class SupabaseAuth with WidgetsBindingObserver {
   Future<void> _handleDeeplink(Uri uri) async {
     if (!_isAuthCallbackDeeplink(uri)) return;
 
-    _log.finest('handle deeplink uri: $uri');
-    _log.info('handle deeplink uri');
+    flutterLogger.finest('handle deeplink uri: $uri');
+    flutterLogger.info('handle deeplink uri');
 
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
@@ -320,13 +322,13 @@ class SupabaseAuth with WidgetsBindingObserver {
       // ignore: invalid_use_of_internal_member
       Supabase.instance.client.auth.notifyException(error, stackTrace);
     } catch (error, stackTrace) {
-      _log.warning('Error while getSessionFromUrl', error, stackTrace);
+      flutterLogger.warning('Error while getSessionFromUrl', error, stackTrace);
     }
   }
 
   /// Callback when deeplink receiving throw error
   void _onErrorReceivingDeeplink(Object error, StackTrace stackTrace) {
-    _log.warning('Error while receiving deeplink', error, stackTrace);
+    flutterLogger.warning('Error while receiving deeplink', error, stackTrace);
   }
 }
 

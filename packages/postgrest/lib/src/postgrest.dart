@@ -1,5 +1,5 @@
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
+import 'package:postgrest/src/logger.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -26,7 +26,6 @@ class PostgrestClient {
   final SupabaseRetryOptions retryOptions;
 
   final Duration? requestTimeout;
-  final _log = Logger('supabase.postgrest');
 
   /// To create a [PostgrestClient], you need to provide an [url] endpoint.
   ///
@@ -64,8 +63,10 @@ class PostgrestClient {
        headers = {...defaultHeaders, ...?headers},
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null {
-    _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
-    _log.finest('Initialize with headers: $headers');
+    postgrestLogger.config(
+      'Initialize PostgrestClient with url: $url, schema: $_schema',
+    );
+    postgrestLogger.finest('Initialize with headers: $headers');
   }
 
   /// Perform a table operation.
@@ -130,7 +131,7 @@ class PostgrestClient {
   }
 
   Future<void> dispose() async {
-    _log.fine("dispose PostgrestClient");
+    postgrestLogger.fine("dispose PostgrestClient");
     if (!_hasCustomIsolate) {
       return _isolate.dispose();
     }

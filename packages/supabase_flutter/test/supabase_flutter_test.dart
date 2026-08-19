@@ -15,7 +15,6 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
@@ -35,7 +34,6 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
@@ -51,7 +49,6 @@ void main() {
     final supabase = await Supabase.initialize(
       url: supabaseUrl,
       publishableKey: supabaseUrl,
-      debug: false,
       authOptions: FlutterAuthClientOptions(
         localStorage: const MockLocalStorage(),
         pkceAsyncStorage: MockAsyncStorage(),
@@ -68,7 +65,6 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockExpiredStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
@@ -94,7 +90,6 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),
@@ -120,7 +115,6 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: localStorage,
           pkceAsyncStorage: MockAsyncStorage(),

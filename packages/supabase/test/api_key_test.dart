@@ -25,15 +25,15 @@ void main() {
     test('warns once per unrecognized sb_ subtype without logging the key', () {
       final records = <LogRecord>[];
       final subscription = Logger.root.onRecord.listen(records.add);
-      final log = Logger('test.api_key');
 
-      warnOnUnrecognizedApiKey('sb_weirdtype_supersecretvalue', log);
-      warnOnUnrecognizedApiKey('sb_weirdtype_anothersecretvalue', log);
+      warnOnUnrecognizedApiKey('sb_weirdtype_supersecretvalue');
+      warnOnUnrecognizedApiKey('sb_weirdtype_anothersecretvalue');
 
       unawaited(subscription.cancel());
 
       expect(records, hasLength(1));
       expect(records.first.level, Level.WARNING);
+      expect(records.first.loggerName, 'supabase.client');
       expect(records.first.message, isNot(contains('weirdtype')));
       expect(records.first.message, isNot(contains('supersecretvalue')));
     });
@@ -41,9 +41,8 @@ void main() {
     test('does not log the key when there is no second underscore', () {
       final records = <LogRecord>[];
       final subscription = Logger.root.onRecord.listen(records.add);
-      final log = Logger('test.api_key');
 
-      warnOnUnrecognizedApiKey('sb_sensitivevalue', log);
+      warnOnUnrecognizedApiKey('sb_sensitivevalue');
 
       unawaited(subscription.cancel());
 
@@ -55,11 +54,10 @@ void main() {
     test('does not warn on recognized or legacy keys', () {
       final records = <LogRecord>[];
       final subscription = Logger.root.onRecord.listen(records.add);
-      final log = Logger('test.api_key');
 
-      warnOnUnrecognizedApiKey('sb_publishable_abc', log);
-      warnOnUnrecognizedApiKey('sb_secret_abc', log);
-      warnOnUnrecognizedApiKey('eyJhbGciOiJIUzI1NiJ9', log);
+      warnOnUnrecognizedApiKey('sb_publishable_abc');
+      warnOnUnrecognizedApiKey('sb_secret_abc');
+      warnOnUnrecognizedApiKey('eyJhbGciOiJIUzI1NiJ9');
 
       unawaited(subscription.cancel());
 
