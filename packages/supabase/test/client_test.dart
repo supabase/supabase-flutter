@@ -250,6 +250,47 @@ void main() {
       await mockServer.close();
     });
 
+    test(
+      'a per-request Authorization header wins over the session token',
+      () async {
+        final (:sessionString, accessToken: _) = getSessionData(
+          DateTime.now().add(Duration(hours: 1)),
+        );
+
+        final mockServer = await HttpServer.bind('localhost', 0);
+        final supabase = SupabaseClient(
+          'http://${mockServer.address.host}:${mockServer.port}',
+          "supabaseKey",
+          authOptions: AuthClientOptions(autoRefreshToken: false),
+        );
+        await supabase.auth.recoverSession(sessionString);
+
+        unawaited(
+          supabase.functions
+              .invoke("test", headers: {'Authorization': 'Bearer pinned'})
+              .then((value) => null),
+        );
+        unawaited(
+          supabase
+              .from("test")
+              .select()
+              .setHeader('Authorization', 'Bearer pinned')
+              .then((value) => null),
+        );
+
+        var count = 0;
+        await for (final request in mockServer) {
+          expect(request.headers.value('Authorization'), 'Bearer pinned');
+          count++;
+          if (count == 2) {
+            break;
+          }
+        }
+
+        await mockServer.close();
+      },
+    );
+
     test('call recoverSession', () async {
       final expiresAt = DateTime.now().add(Duration(seconds: 31));
 

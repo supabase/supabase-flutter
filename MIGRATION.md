@@ -1339,16 +1339,19 @@ try {
 `PostgrestClient.setAccessToken()`, `SupabaseStorageClient.setAccessToken()` and
 `FunctionsClient.setAccessToken()` are removed. `RealtimeClient.setAccessToken()` stays.
 
-`SupabaseClient` never called any of the three. It wraps the HTTP client the rest, storage and
-functions clients use, and resolves the current session token on every request, so a token pushed in
-by hand was overwritten by the live one anyway. Nothing changes for you if you go through
-`SupabaseClient`, and the token you set with `SupabaseClient.accessToken` or by signing in still
-reaches all three.
+Despite the name, these three pinned a token rather than kept one in sync. `SupabaseClient` gives
+the rest, storage and functions clients an HTTP client that attaches the current session token to
+every request, but only when the request does not already carry an `Authorization` header. A token
+set through `setAccessToken` did carry one, so it won, and nothing ever cleared it: it kept
+overriding the session token across refreshes and sign-outs for the rest of the client's life.
 
-Realtime keeps its setter because it holds a live socket and has to push a new token over it rather
-than attach one per request.
+If you never called them, nothing changes. If you did, the replacement depends on what you were
+after.
 
-If you construct one of these clients yourself, pass the header to the constructor instead:
+To authenticate as the signed-in user, do nothing. `SupabaseClient` already resolves that token on
+every request.
+
+To pin a token on a client you construct yourself, pass it as a constructor header:
 
 ```dart
 // Before
@@ -1362,19 +1365,24 @@ final functions = FunctionsClient(functionsUrl, {
 });
 ```
 
-To use a different token per call, pass it to that call rather than to the client. This already
-worked in v2:
+To use a different token for a single call, pass it to that call:
 
 ```dart
 await functions.invoke('hello', headers: {'Authorization': 'Bearer $jwt'});
 await postgrest.from('countries').select().setHeader('Authorization', 'Bearer $jwt');
 ```
 
-If you have to swap the token on a long-lived client you built yourself, the header maps are still
-mutable. `SupabaseStorageClient.setHeader()` is unaffected, and `PostgrestClient.headers` and
-`FunctionsClient.headers` can be written to directly:
+To pin a token on a client you got from `SupabaseClient`, set the header yourself. The header maps
+are still mutable:
 
 ```dart
-storage.setHeader('Authorization', 'Bearer $jwt');
-postgrest.headers['Authorization'] = 'Bearer $jwt';
+supabase.storage.setHeader('Authorization', 'Bearer $jwt');
+supabase.rest.headers['Authorization'] = 'Bearer $jwt';
+supabase.functions.headers['Authorization'] = 'Bearer $jwt';
 ```
+
+That shadows the session token exactly as the old setter did, so remove the header again once the
+pinned token should no longer apply.
+
+Realtime keeps its setter because it holds a live socket and has to push a new token over it rather
+than attach one per request.
