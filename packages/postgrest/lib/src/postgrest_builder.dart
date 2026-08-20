@@ -582,22 +582,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     throw error;
   }
 
-  /// Get new Uri with updated query parameters
-  /// Uses lists to allow multiple values for the same key
-  ///
-  /// [url] may be used to update based on a different url than the current one
-  Uri appendSearchParameters(String key, String value, [Uri? url]) =>
-      (url ?? _url).appendSearchParameters(key, value);
-
-  /// Get new Uri with overridden query parameters
-  ///
-  /// [url] may be used to update based on a different url than the current one
-  Uri overrideSearchParameters(String key, String value, [Uri? url]) =>
-      (url ?? _url).overrideSearchParameters(key, value);
-
-  /// Convert list filter to query parameters string
-  String _cleanFilterArray(List<dynamic> filter) => _cleanFilterList(filter);
-
   @override
   Stream<T> asStream() {
     final controller = StreamController<T>.broadcast();

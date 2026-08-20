@@ -1423,6 +1423,7 @@ before a table operation has been chosen.
 | `await supabase.from('countries')` compiled and threw an `ArgumentError` at runtime | does not compile |
 | `SupabaseQuerySchema(headers: …)` | removed, the headers of the `rest` client are used |
 | `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation |
+| `PostgrestBuilder.appendSearchParameters()` and `PostgrestBuilder.overrideSearchParameters()` | removed, they were internal URL helpers that leaked into the public API |
 
 `PostgrestClient.headers` is now an unmodifiable map. The client never changes after construction,
 which makes it safe to share across requests and removes a class of bugs where one call site's
