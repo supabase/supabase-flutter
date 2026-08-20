@@ -58,29 +58,25 @@ dev_dependencies:
   supabase_testing: ^0.1.0
 ```
 
-Then hand a mock HTTP client to your Supabase client and test against it, with
-no running stack required:
+Then stub the endpoints the code under test talks to and run it against a
+real `SupabaseClient`, with no running stack required:
 
 ```dart
-final supabase = SupabaseClient(
-  'http://localhost:54321',
-  unsignedTestJwt({'role': 'anon'}),
-  httpClient: JsonResponseMockClient(
-    body: [
-      {'id': 1, 'task': 'Ship it', 'status': false},
-    ],
-  ),
-  authOptions: AuthClientOptions(
-    pkceAsyncStorage: MemoryAuthAsyncStorage(),
-  ),
-);
+final httpClient = MockSupabaseHttpClient()
+  ..stubTable('todos', rows: [
+    {'id': 1, 'task': 'Ship it', 'status': false},
+  ]);
+final supabase = testSupabaseClient(httpClient: httpClient);
+addTearDown(supabase.dispose);
 
 final todos = await supabase.from('todos').select();
 expect(todos, hasLength(1));
 ```
 
 See the [supabase_testing README](packages/supabase_testing/README.md) for the
-full list of helpers.
+full guide: stubbing database, rpc, edge function and auth endpoints,
+asserting on recorded requests, running tests as a signed-in user, and wiring
+`Supabase.initialize` in Flutter widget tests.
 
 ## Testing this repo
 
