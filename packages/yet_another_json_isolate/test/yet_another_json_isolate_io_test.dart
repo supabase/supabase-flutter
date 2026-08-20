@@ -1,6 +1,8 @@
 @TestOn('vm')
 library;
 
+import 'dart:async';
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:test/test.dart';
@@ -74,6 +76,26 @@ void main() {
       await dispose(isolate);
 
       expect(isolate.decode('{}'), throwsStateError);
+    });
+
+    test('dispose waits for in-flight isolate work', () async {
+      final isolate = YAJsonIsolate();
+      final largeJson = jsonEncode([
+        for (var i = 0; i < 5000; i++) {'id': i, 'name': 'user_$i'},
+      ]);
+
+      var decodeCompleted = false;
+      final pending = isolate.decode(largeJson).then((_) {
+        decodeCompleted = true;
+      });
+
+      await dispose(isolate);
+      // One event loop turn lets the completion listeners of the awaited
+      // work run; the isolate round trip itself takes far longer, so this
+      // fails when disposal stops awaiting in-flight work.
+      await Future<void>.delayed(Duration.zero);
+      expect(decodeCompleted, isTrue);
+      await pending;
     });
 
     test('encodes an unsendable value inline', () async {

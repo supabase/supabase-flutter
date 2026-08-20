@@ -36,6 +36,7 @@ class YAJsonIsolate {
 
   bool _hasStartedInitialize = false;
   Future<void>? _disposal;
+  final Set<Future<void>> _activeWork = {};
 
   bool get _isDisposed => _disposal != null;
 
@@ -63,10 +64,26 @@ class YAJsonIsolate {
 
   /// Dispose the instance.
   ///
-  /// Safe to call more than once, and safe to call on an instance that was
-  /// never used. Concurrent calls all await the same disposal. Using the
-  /// instance afterwards throws a [StateError].
-  Future<void> dispose() => _disposal ??= Future.value();
+  /// Rejects new work immediately and completes once the isolate work that
+  /// was still in flight has finished. Safe to call more than once, and safe
+  /// to call on an instance that was never used. Concurrent calls all await
+  /// the same disposal. Using the instance afterwards throws a [StateError].
+  Future<void> dispose() => _disposal ??= _activeWork.isEmpty
+      ? Future.value()
+      : Future.wait(_activeWork.toList()).then((_) {});
+
+  /// Runs [computation] on a short lived isolate, keeping the call tracked
+  /// so [dispose] can await it.
+  Future<T> _runTracked<T>(T Function() computation) async {
+    final completer = Completer<void>();
+    _activeWork.add(completer.future);
+    try {
+      return await Isolate.run(computation, debugName: debugName);
+    } finally {
+      _activeWork.remove(completer.future);
+      completer.complete();
+    }
+  }
 
   /// Decodes [json] into Dart values, like [jsonDecode].
   ///
@@ -77,7 +94,7 @@ class YAJsonIsolate {
       await null;
       return jsonDecode(json);
     }
-    return Isolate.run(() => jsonDecode(json), debugName: debugName);
+    return _runTracked(() => jsonDecode(json));
   }
 
   /// Decodes UTF-8 encoded JSON in [encodedJson] into Dart values.
@@ -94,9 +111,8 @@ class YAJsonIsolate {
       return _utf8JsonDecoder.convert(encodedJson);
     }
     final transferable = TransferableTypedData.fromList([encodedJson]);
-    return Isolate.run(
+    return _runTracked(
       () => _utf8JsonDecoder.convert(transferable.materialize().asUint8List()),
-      debugName: debugName,
     );
   }
 
@@ -113,7 +129,7 @@ class YAJsonIsolate {
       return jsonEncode(json);
     }
     try {
-      return await Isolate.run(() => jsonEncode(json), debugName: debugName);
+      return await _runTracked(() => jsonEncode(json));
     } on ArgumentError {
       return jsonEncode(json);
     }
@@ -129,6 +145,13 @@ class YAJsonIsolate {
 /// less than the encoding itself. Values of unrecognized types, and structures
 /// nested deeper than [_maxEstimationDepth], exhaust the budget immediately so
 /// they are encoded on an isolate.
+///
+/// Numbers are charged at their maximum textual width. Strings are charged
+/// one character each, without inspecting them for characters that JSON
+/// escaping expands, because such a scan would cost nearly as much as the
+/// encoding itself. A string dense in escaped characters can therefore be
+/// undercounted by up to a factor of six, which at worst lets a payload a few
+/// times [_isolateThresholdBytes] be encoded inline.
 int _remainingBudget(Object? value, int budget, int depth) {
   if (budget < 0 || depth > _maxEstimationDepth) {
     return -1;
@@ -139,7 +162,7 @@ int _remainingBudget(Object? value, int budget, int depth) {
     case bool _:
       return budget - 5;
     case num _:
-      return budget - 8;
+      return budget - 20;
     case String string:
       return budget - string.length - 2;
     case List<dynamic> list:
