@@ -614,14 +614,14 @@ class RealtimeClient {
   }
 
   /// Awaits [encoded] and every write pushed before it, then writes the frame
-  /// to [connection] if it is still the current one.
+  /// to [originConnection] if it is still the current one.
   ///
   /// Never completes with an error, so that a failed encode does not stall the
   /// writes chained after it. A frame whose connection was replaced by a
   /// reconnect in the meantime is dropped rather than written to the new
   /// connection.
   Future<void> _writeWhenReady(
-    WebSocketChannel? connection,
+    WebSocketChannel? originConnection,
     Future<void>? previousWrite,
     Future<Object> encoded,
   ) async {
@@ -639,7 +639,7 @@ class RealtimeClient {
       return;
     }
 
-    if (!identical(connection, this.connection)) {
+    if (!identical(originConnection, connection)) {
       realtimeLogger.finest(
         'Dropping an encoded frame from a superseded connection',
       );
@@ -647,7 +647,7 @@ class RealtimeClient {
     }
 
     try {
-      connection?.sink.add(frame);
+      originConnection?.sink.add(frame);
     } catch (error) {
       realtimeLogger.warning('Failed to write message', error);
     }
@@ -693,14 +693,14 @@ class RealtimeClient {
   }
 
   /// Awaits [decoded] and every message received before it, then dispatches it
-  /// if [connection] is still the current one.
+  /// if [originConnection] is still the current one.
   ///
   /// Never completes with an error, so that a failed decode does not stall the
   /// messages chained after it. A message received on a connection that a
   /// reconnect has since replaced is dropped rather than dispatched into the
   /// new session.
   Future<void> _dispatchWhenReady(
-    WebSocketChannel? connection,
+    WebSocketChannel? originConnection,
     Future<void>? previousDispatch,
     Future<RealtimeMessage> decoded,
   ) async {
@@ -718,7 +718,7 @@ class RealtimeClient {
       return;
     }
 
-    if (!identical(connection, this.connection)) {
+    if (!identical(originConnection, connection)) {
       realtimeLogger.finest(
         'Dropping a decoded message from a superseded connection',
       );
