@@ -95,7 +95,7 @@ Future<void> main() async {
 }
 
 class _Scenario {
-  _Scenario({
+  const _Scenario({
     required this.name,
     required this.iterations,
     required this.body,
@@ -107,7 +107,7 @@ class _Scenario {
 }
 
 class _ScenarioResult {
-  _ScenarioResult({
+  const _ScenarioResult({
     required this.name,
     required this.latenciesMicroseconds,
     required this.maxStallMicroseconds,

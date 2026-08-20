@@ -50,13 +50,14 @@ class YAJsonIsolate {
   /// There is no persistent isolate anymore, so there is nothing to
   /// initialize: large payloads are processed on short lived isolates spawned
   /// per call.
-  Future<void> initialize() async {
+  Future<void> initialize() {
     _throwIfDisposed();
     assert(
       _hasStartedInitialize == false,
       'initialize() can only be called once per isolate.',
     );
     _hasStartedInitialize = true;
+    return Future.value();
   }
 
   /// Dispose the instance.

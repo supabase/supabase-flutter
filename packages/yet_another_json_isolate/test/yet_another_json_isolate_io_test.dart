@@ -15,7 +15,7 @@ void main() {
       final isolate = YAJsonIsolate();
       await isolate.initialize();
       addTearDown(() => dispose(isolate));
-      expect(isolate.initialize(), throwsA(isA<AssertionError>()));
+      expect(() => isolate.initialize(), throwsA(isA<AssertionError>()));
     });
 
     test('exposes the provided debug name', () {
@@ -56,7 +56,7 @@ void main() {
 
       expect(isolate.decode('{}'), throwsStateError);
       expect(isolate.encode({}), throwsStateError);
-      expect(isolate.initialize(), throwsStateError);
+      expect(() => isolate.initialize(), throwsStateError);
     });
 
     test('a never used isolate also rejects work after dispose', () async {
