@@ -106,12 +106,22 @@ class RealtimeMessage {
     if (json is! Map) {
       throw FormatException('Invalid 1.0.0 message', json);
     }
+    final topic = json['topic'];
+    final event = json['event'];
+    final ref = json['ref'];
+    final joinRef = json['join_ref'];
+    if (topic is! String ||
+        event is! String ||
+        ref is! String? ||
+        joinRef is! String?) {
+      throw FormatException('Invalid 1.0.0 message', json);
+    }
     return RealtimeMessage(
-      topic: json['topic'] as String,
-      event: json['event'] as String,
+      topic: topic,
+      event: event,
       payload: json['payload'],
-      ref: json['ref'] as String?,
-      joinRef: json['join_ref'] as String?,
+      ref: ref,
+      joinRef: joinRef,
     );
   }
 
@@ -119,11 +129,21 @@ class RealtimeMessage {
     if (json is! List || json.length < 5) {
       throw FormatException('Invalid 2.0.0 message', json);
     }
+    final joinRef = json[0];
+    final ref = json[1];
+    final topic = json[2];
+    final event = json[3];
+    if (joinRef is! String? ||
+        ref is! String? ||
+        topic is! String ||
+        event is! String) {
+      throw FormatException('Invalid 2.0.0 message', json);
+    }
     return RealtimeMessage(
-      joinRef: json[0] as String?,
-      ref: json[1] as String?,
-      topic: json[2] as String,
-      event: json[3] as String,
+      joinRef: joinRef,
+      ref: ref,
+      topic: topic,
+      event: event,
       payload: json[4],
     );
   }

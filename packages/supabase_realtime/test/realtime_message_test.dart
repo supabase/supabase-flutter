@@ -173,6 +173,44 @@ void main() {
       );
     });
 
+    test('throws a FormatException when a field has the wrong type', () {
+      expect(
+        () => RealtimeMessage.fromJson({
+          'topic': 1,
+          'event': 'phx_reply',
+        }, RealtimeProtocolVersion.v1),
+        throwsFormatException,
+      );
+      expect(
+        () => RealtimeMessage.fromJson({
+          'topic': 'realtime:room',
+          'event': 'phx_reply',
+          'ref': 2,
+        }, RealtimeProtocolVersion.v1),
+        throwsFormatException,
+      );
+      expect(
+        () => RealtimeMessage.fromJson([
+          '1',
+          '2',
+          'realtime:room',
+          3,
+          {'status': 'ok'},
+        ]),
+        throwsFormatException,
+      );
+      expect(
+        () => RealtimeMessage.fromJson([
+          1,
+          '2',
+          'realtime:room',
+          'phx_reply',
+          {'status': 'ok'},
+        ]),
+        throwsFormatException,
+      );
+    });
+
     test('round trips through toJson for every protocol version', () {
       const message = RealtimeMessage(
         topic: 'realtime:room',

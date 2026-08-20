@@ -439,6 +439,12 @@ class RealtimeClient {
       await _connectionSubscription?.cancel();
       _connectionSubscription = null;
 
+      // Drop the chain so a write or dispatch from the closed connection does
+      // not hold back the next session's; each is dropped on its own once it
+      // resolves, since it no longer matches the current connection.
+      _pendingWrite = null;
+      _pendingDispatch = null;
+
       // remove open handles
       if (heartbeatTimer != null) heartbeatTimer?.cancel();
     }
@@ -581,6 +587,7 @@ class RealtimeClient {
   /// awaited first, and its write is chained onto [_pendingWrite] so that a
   /// fast encode never overtakes a slow one that was pushed before it.
   void _write(RealtimeMessage message) {
+    final connection = this.connection;
     final encode = this.encode;
     if (encode == null) {
       connection?.sink.add(_builtInEncode(message));
@@ -595,7 +602,7 @@ class RealtimeClient {
       return;
     }
 
-    final write = _writeWhenReady(_pendingWrite, encoded);
+    final write = _writeWhenReady(connection, _pendingWrite, encoded);
     _pendingWrite = write;
     unawaited(
       write.whenComplete(() {
@@ -606,11 +613,15 @@ class RealtimeClient {
     );
   }
 
-  /// Awaits [encoded] and every write pushed before it, then writes the frame.
+  /// Awaits [encoded] and every write pushed before it, then writes the frame
+  /// to [connection] if it is still the current one.
   ///
   /// Never completes with an error, so that a failed encode does not stall the
-  /// writes chained after it.
+  /// writes chained after it. A frame whose connection was replaced by a
+  /// reconnect in the meantime is dropped rather than written to the new
+  /// connection.
   Future<void> _writeWhenReady(
+    WebSocketChannel? connection,
     Future<void>? previousWrite,
     Future<Object> encoded,
   ) async {
@@ -628,6 +639,13 @@ class RealtimeClient {
       return;
     }
 
+    if (!identical(connection, this.connection)) {
+      realtimeLogger.finest(
+        'Dropping an encoded frame from a superseded connection',
+      );
+      return;
+    }
+
     try {
       connection?.sink.add(frame);
     } catch (error) {
@@ -641,6 +659,7 @@ class RealtimeClient {
   /// first, and its dispatch is chained onto [_pendingDispatch] so that a fast
   /// decode never overtakes a slow one that was received before it.
   void onConnectionMessage(Object rawMessage) {
+    final connection = this.connection;
     final decode = this.decode;
     if (decode == null) {
       final RealtimeMessage message;
@@ -662,7 +681,7 @@ class RealtimeClient {
       return;
     }
 
-    final dispatch = _dispatchWhenReady(_pendingDispatch, decoded);
+    final dispatch = _dispatchWhenReady(connection, _pendingDispatch, decoded);
     _pendingDispatch = dispatch;
     unawaited(
       dispatch.whenComplete(() {
@@ -673,11 +692,15 @@ class RealtimeClient {
     );
   }
 
-  /// Awaits [decoded] and every message received before it, then dispatches it.
+  /// Awaits [decoded] and every message received before it, then dispatches it
+  /// if [connection] is still the current one.
   ///
   /// Never completes with an error, so that a failed decode does not stall the
-  /// messages chained after it.
+  /// messages chained after it. A message received on a connection that a
+  /// reconnect has since replaced is dropped rather than dispatched into the
+  /// new session.
   Future<void> _dispatchWhenReady(
+    WebSocketChannel? connection,
     Future<void>? previousDispatch,
     Future<RealtimeMessage> decoded,
   ) async {
@@ -692,6 +715,13 @@ class RealtimeClient {
     // chain onto this one alone and could overtake `previousDispatch`.
     await previousDispatch;
     if (message == null) {
+      return;
+    }
+
+    if (!identical(connection, this.connection)) {
+      realtimeLogger.finest(
+        'Dropping a decoded message from a superseded connection',
+      );
       return;
     }
 

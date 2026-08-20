@@ -172,6 +172,49 @@ void main() {
 
       expect(written, hasLength(1));
     });
+
+    test(
+      'drops a pending write if the connection changes before it completes',
+      () async {
+        final completer = Completer<Object>();
+        final writtenPerConnection = <List<Object?>>[];
+
+        final client = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) {
+            final channel = MockIOWebSocketChannel();
+            final sink = MockWebSocketSink();
+            final writtenHere = <Object?>[];
+            when(() => channel.sink).thenReturn(sink);
+            when(() => channel.ready).thenAnswer((_) => Future.value());
+            when(() => sink.close()).thenAnswer((_) => Future.value());
+            when(() => sink.add(any())).thenAnswer((invocation) {
+              writtenHere.add(invocation.positionalArguments.first);
+            });
+            writtenPerConnection.add(writtenHere);
+            return channel;
+          },
+          encode: (_) => completer.future,
+        );
+        unawaited(client.connect());
+        client.connectionState = SocketState.open;
+
+        client.push(messageWithRef('1'));
+        await pumpEventQueue();
+
+        // Reconnect to a new connection while the encode above is pending.
+        await client.disconnect();
+        unawaited(client.connect());
+        client.connectionState = SocketState.open;
+
+        completer.complete('frame-1');
+        await pumpEventQueue();
+
+        expect(writtenPerConnection, hasLength(2));
+        expect(writtenPerConnection[0], isEmpty);
+        expect(writtenPerConnection[1], isEmpty);
+      },
+    );
   });
 
   group('asynchronous decode', () {
@@ -300,5 +343,45 @@ void main() {
 
       verify(() => channel.trigger('broadcast', any(), '1')).called(1);
     });
+
+    test(
+      'drops a pending dispatch if the connection changes before it '
+      'completes',
+      () async {
+        final completer = Completer<RealtimeMessage>();
+
+        final client = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) {
+            final channel = MockIOWebSocketChannel();
+            final sink = MockWebSocketSink();
+            when(() => channel.sink).thenReturn(sink);
+            when(() => channel.ready).thenAnswer((_) => Future.value());
+            when(() => sink.close()).thenAnswer((_) => Future.value());
+            when(() => sink.add(any())).thenAnswer((_) {});
+            return channel;
+          },
+          decode: (_) => completer.future,
+        );
+        unawaited(client.connect());
+        client.connectionState = SocketState.open;
+
+        final received = <String?>[];
+        client.onMessage.listen((message) => received.add(message.ref));
+
+        client.onConnectionMessage('raw-1');
+        await pumpEventQueue();
+
+        // Reconnect to a new connection while the decode above is pending.
+        await client.disconnect();
+        unawaited(client.connect());
+        client.connectionState = SocketState.open;
+
+        completer.complete(frameWithRef('1'));
+        await pumpEventQueue();
+
+        expect(received, isEmpty);
+      },
+    );
   });
 }

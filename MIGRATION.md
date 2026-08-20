@@ -501,6 +501,17 @@ final client = RealtimeClient(
 );
 ```
 
+`RealtimeClient.onMessage` now emits `RealtimeMessage` instead of `Map<String, dynamic>`, so a
+listener that reads fields off the map needs to switch to properties:
+
+```dart
+// Before
+client.onMessage.listen((message) => print(message['event']));
+
+// After
+client.onMessage.listen((message) => print(message.event));
+```
+
 `toJson` and `RealtimeMessage.fromJson` default to protocol `2.0.0`; pass
 `RealtimeProtocolVersion.v1` to either when the client runs on the legacy protocol.
 
@@ -519,9 +530,10 @@ await Supabase.initialize(
 );
 ```
 
-`encode` and `decode` are now `null` unless you pass one, and the built-in codec is used while they
-are. That codec is synchronous, so a client that does not override it still writes and dispatches
-without a microtask hop. Reading the codec back off the client changed accordingly:
+`encode` and `decode` are now `null` unless you pass one; `RealtimeClient` uses the built-in codec
+for whichever of the two is `null`. That codec is synchronous, so a client that overrides neither
+still writes and dispatches without a microtask hop. Reading the codec back off the client changed
+accordingly:
 
 ```dart
 // Before
