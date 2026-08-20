@@ -2617,6 +2617,7 @@ supporting_symbols:
   - YAJsonIsolate.YAJsonIsolate
   - YAJsonIsolate.debugName
   - YAJsonIsolate.decode
+  - YAJsonIsolate.decodeBytes
   - YAJsonIsolate.dispose
   - YAJsonIsolate.encode
   - YAJsonIsolate.initialize

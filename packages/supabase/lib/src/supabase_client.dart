@@ -40,8 +40,9 @@ import 'trace_http_client.dart';
 /// if this is not supported by the client libraries. When set, the `auth`
 /// namespace of the Supabase client cannot be used.
 ///
-/// Pass an instance of `YAJsonIsolate` to [isolate] to use your own persisted
-/// isolate instance. A new instance will be created if [isolate] is omitted.
+/// Pass an instance of `YAJsonIsolate` to [isolate] to share one instance
+/// for JSON encoding and decoding across clients. A new instance will be
+/// created if [isolate] is omitted.
 ///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `pkceAsyncStorage` field of [authOptions].
