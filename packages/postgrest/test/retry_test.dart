@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
+import 'package:supabase_common/testing.dart';
 import 'package:test/test.dart';
 
 typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
@@ -59,27 +60,12 @@ class _MockRetryClient extends BaseClient {
       );
     }
 
-    final completer = Completer<StreamedResponse>();
-    if (request is AbortableRequest) {
-      unawaited(
-        request.abortTrigger?.then((_) {
-          if (!completer.isCompleted) {
-            completer.completeError(
-              RequestAbortedException(),
-              StackTrace.current,
-            );
-          }
-        }),
-      );
-    }
-    unawaited(
-      Future.delayed(_responseLatency(index)).then((_) {
-        if (!completer.isCompleted) {
-          completer.complete(_responses[index](request));
-        }
-      }),
-    );
-    return await completer.future;
+    return await Future.any([
+      stallUntilAborted(request),
+      Future.delayed(
+        _responseLatency(index),
+      ).then((_) => _responses[index](request)),
+    ]);
   }
 }
 

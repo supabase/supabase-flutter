@@ -672,7 +672,7 @@ void main() {
     setUpAll(() {
       client = AuthClient(
         url: authUrl,
-        httpClient: CustomHttpClient(),
+        httpClient: FailingHttpClient(),
         asyncStorage: TestAsyncStorage(),
       );
     });

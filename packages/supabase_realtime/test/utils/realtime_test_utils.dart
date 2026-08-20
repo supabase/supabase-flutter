@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
 import 'package:postgres/postgres.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_common/testing.dart';
@@ -17,38 +15,15 @@ const _postgresEndpoint = (
   password: localStackDatabasePassword,
 );
 
-String _base64Url(List<int> bytes) =>
-    base64Url.encode(bytes).replaceAll('=', '');
-
 /// Generates an HS256 JWT signed with [localStackJwtSecret] that the Realtime
 /// server accepts as the connection apikey.
 String generateRealtimeToken({String role = 'anon'}) {
   final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  final header = _base64Url(
-    utf8.encode(
-      json.encode({
-        'alg': 'HS256',
-        'typ': 'JWT',
-      }),
-    ),
-  );
-  final payload = _base64Url(
-    utf8.encode(
-      json.encode({
-        'role': role,
-        'iat': now,
-        'exp': now + 60 * 60,
-      }),
-    ),
-  );
-  final signingInput = '$header.$payload';
-  final signature = _base64Url(
-    Hmac(
-      sha256,
-      utf8.encode(localStackJwtSecret),
-    ).convert(utf8.encode(signingInput)).bytes,
-  );
-  return '$signingInput.$signature';
+  return signedTestJwt({
+    'role': role,
+    'iat': now,
+    'exp': now + 60 * 60,
+  }, secret: localStackJwtSecret);
 }
 
 /// Creates a [RealtimeClient] connected to the local Supabase CLI Realtime

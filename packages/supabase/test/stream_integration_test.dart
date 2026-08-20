@@ -6,8 +6,6 @@ import 'dart:async';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
-import 'package:supabase_common/testing.dart';
-
 import 'utils.dart';
 
 late SupabaseClient _supabase;

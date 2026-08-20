@@ -25,19 +25,10 @@ Map<String, dynamic> get _mockUserJson => {
   'updated_at': '2024-01-01T00:00:00.000Z',
 };
 
-String _makeRawJwt(Map<String, dynamic> payload) {
-  final header = base64Url.encode(
-    utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
-  );
-  final body = base64Url.encode(utf8.encode(jsonEncode(payload)));
-  const signature = 'AAAA';
-  return '$header.$body.$signature';
-}
-
 String _freshAccessToken({String sub = 'mock-user-id'}) {
   final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
   final issuedAt = expiresAt - 3600;
-  return _makeRawJwt({'exp': expiresAt, 'iat': issuedAt, 'sub': sub});
+  return unsignedTestJwt({'exp': expiresAt, 'iat': issuedAt, 'sub': sub});
 }
 
 String _tokenResponseJson({
