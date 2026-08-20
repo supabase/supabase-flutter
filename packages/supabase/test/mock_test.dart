@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:supabase/supabase.dart';
-import 'package:supabase_common/testing.dart';
+import 'package:supabase_testing/supabase_testing.dart';
 import 'package:test/test.dart';
 
 void main() {

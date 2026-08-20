@@ -3,6 +3,7 @@ import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_common/testing.dart';
 
 export 'package:supabase_common/testing.dart';
+export 'package:supabase_testing/supabase_testing.dart';
 
 /// Email of a user with unverified factor
 const email1 = 'fake1@email.com';

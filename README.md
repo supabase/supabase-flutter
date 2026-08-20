@@ -49,13 +49,13 @@ To install on a locally developed app:
 ## Testing your app
 
 The helpers the test suites of these packages run on are published in
-[`package:supabase_common/testing.dart`](https://pub.dev/packages/supabase_common),
+[`package:supabase_testing`](https://pub.dev/packages/supabase_testing),
 so your tests can build on the same primitives: mock HTTP clients, JWT builders,
 auth session fixtures and realtime frames. Add the package as a dev dependency:
 
 ```yaml
 dev_dependencies:
-  supabase_common: ^0.1.2
+  supabase_testing: ^0.1.0
 ```
 
 Then hand a mock HTTP client to your Supabase client and test against it, with
@@ -79,7 +79,7 @@ final todos = await supabase.from('todos').select();
 expect(todos, hasLength(1));
 ```
 
-See the [supabase_common README](packages/supabase_common/README.md) for the
+See the [supabase_testing README](packages/supabase_testing/README.md) for the
 full list of helpers.
 
 ## Testing this repo

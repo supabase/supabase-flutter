@@ -1,13 +1,13 @@
-name: supabase_common
-description: Shared internal utilities used across the Supabase Dart and Flutter client packages.
-version: 0.1.2
+name: supabase_testing
+description: Test helpers for apps built on the Supabase Dart and Flutter clients, with mock HTTP clients, JWT builders and auth fixtures.
+version: 0.1.0
 homepage: 'https://supabase.com'
-repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_common'
+repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_testing'
 issue_tracker: 'https://github.com/supabase/supabase-flutter/issues'
 topics:
   - supabase
-  - internal
-  - utilities
+  - testing
+  - mock
 
 environment:
   sdk: '>=3.9.0 <4.0.0'

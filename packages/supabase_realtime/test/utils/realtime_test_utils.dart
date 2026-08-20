@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:postgres/postgres.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_common/testing.dart';
+import 'package:supabase_testing/supabase_testing.dart';
 
 export 'package:supabase_common/testing.dart';
+export 'package:supabase_testing/supabase_testing.dart';
 
 const _postgresEndpoint = (
   host: localStackHost,

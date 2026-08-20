@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart';
 
-export 'package:supabase_common/testing.dart' show FailingHttpClient;
+export 'package:supabase_testing/supabase_testing.dart' show FailingHttpClient;
 
 /// Client that fails for few times when attempting to upload file
 class RetryHttpClient extends BaseClient {
