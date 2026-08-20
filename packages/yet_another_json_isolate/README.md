@@ -7,7 +7,7 @@
   <h1 align="center">yet_another_json_isolate</h1>
 
   <p align="center">
-    Simplify and improve JSON parsing in isolates by keeping one isolate running per instance.
+    JSON parsing that never blocks the main isolate for long: small payloads are processed inline, large payloads on short lived isolates that hand their result back without copying.
   </p>
 </p>
 
@@ -21,14 +21,17 @@
 ## Usage
 
 ```dart
-// initialize an `YAJsonIsolate` instance
-final isolate = YAJsonIsolate()..initialize();
+final isolate = YAJsonIsolate();
 
-// serialize a JSON using an isolate
+// serialize to a JSON string
 final requestBody = await isolate.encode(requestObject);
 
-// deserialize a JSON string using an isolate
+// deserialize a JSON string
 final json = await isolate.decode(responseBody);
+
+// deserialize UTF-8 encoded JSON bytes, such as an HTTP response body,
+// without materializing the intermediate string on the calling isolate
+final data = await isolate.decodeBytes(response.bodyBytes);
 
 // dispose when no longer needed
 isolate.dispose();
