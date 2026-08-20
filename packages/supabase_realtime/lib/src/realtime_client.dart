@@ -590,7 +590,18 @@ class RealtimeClient {
     final connection = this.connection;
     final encode = this.encode;
     if (encode == null) {
-      connection?.sink.add(_builtInEncode(message));
+      Object frame;
+      try {
+        frame = _builtInEncode(message);
+      } catch (error) {
+        realtimeLogger.warning('Failed to encode message', error);
+        return;
+      }
+      try {
+        connection?.sink.add(frame);
+      } catch (error) {
+        realtimeLogger.warning('Failed to write message', error);
+      }
       return;
     }
 
@@ -669,7 +680,11 @@ class RealtimeClient {
         realtimeLogger.warning('Failed to decode message', error);
         return;
       }
-      _dispatch(message);
+      try {
+        _dispatch(message);
+      } catch (error) {
+        realtimeLogger.warning('Failed to dispatch message', error);
+      }
       return;
     }
 

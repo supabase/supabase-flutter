@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_realtime/src/constants.dart';
@@ -149,23 +151,24 @@ class RealtimeMessage {
   }
 
   static Object? _withoutBindings(Object? payload) {
-    if (payload is! Map) {
+    if (payload is Binding) {
+      return {'type': payload.type, 'filter': payload.filter};
+    }
+    // Binary payloads (Uint8List and other TypedData/ByteBuffer) are opaque
+    // bytes for a binary broadcast, not a JSON list to recurse into.
+    if (payload is TypedData || payload is ByteBuffer) {
       return payload;
     }
-    return {
-      for (final entry in payload.entries)
-        entry.key: entry.value is Map
-            ? {
-                for (final inner in (entry.value as Map).entries)
-                  inner.key: inner.value is Binding
-                      ? {
-                          'type': (inner.value as Binding).type,
-                          'filter': (inner.value as Binding).filter,
-                        }
-                      : inner.value,
-              }
-            : entry.value,
-    };
+    if (payload is Map) {
+      return {
+        for (final entry in payload.entries)
+          entry.key: _withoutBindings(entry.value),
+      };
+    }
+    if (payload is List) {
+      return [for (final item in payload) _withoutBindings(item)];
+    }
+    return payload;
   }
 
   @override

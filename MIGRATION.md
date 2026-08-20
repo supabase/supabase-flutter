@@ -532,8 +532,9 @@ await Supabase.initialize(
 
 `encode` and `decode` are now `null` unless you pass one; `RealtimeClient` uses the built-in codec
 for whichever of the two is `null`. That codec is synchronous, so a client that overrides neither
-still writes and dispatches without a microtask hop. Reading the codec back off the client changed
-accordingly:
+still writes and dispatches without a microtask hop. Reading a custom codec back off the client
+changed accordingly; the built-in codec has no public accessor, so this only applies when you
+passed your own:
 
 ```dart
 // Before

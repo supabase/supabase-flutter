@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/types.dart';
@@ -61,6 +63,66 @@ void main() {
       );
 
       expect(message.payload, {'event': 'track', 'payload': {}});
+    });
+
+    test('leaves a binary payload as Uint8List', () {
+      final bytes = Uint8List.fromList([1, 2, 3]);
+      final message = RealtimeMessage.outgoing(
+        topic: 'realtime:room',
+        event: ChannelEvent.broadcast,
+        payload: {'type': 'broadcast', 'event': 'file', 'payload': bytes},
+      );
+
+      expect((message.payload as Map)['payload'], isA<Uint8List>());
+      expect((message.payload as Map)['payload'], same(bytes));
+    });
+
+    test('replaces a binding nested inside a list', () {
+      final binding = Binding('postgres_changes', {'event': '*'}, (_, [_]) {});
+      final message = RealtimeMessage.outgoing(
+        topic: 'realtime:room',
+        event: ChannelEvent.join,
+        payload: {
+          'config': {
+            'postgres_changes': [binding],
+          },
+        },
+      );
+
+      expect(message.payload, {
+        'config': {
+          'postgres_changes': [
+            {
+              'type': 'postgres_changes',
+              'filter': {'event': '*'},
+            },
+          ],
+        },
+      });
+    });
+
+    test('replaces a binding nested three levels deep', () {
+      final binding = Binding('postgres_changes', {'event': '*'}, (_, [_]) {});
+      final message = RealtimeMessage.outgoing(
+        topic: 'realtime:room',
+        event: ChannelEvent.join,
+        payload: {
+          'config': {
+            'postgres_changes': {'0': binding},
+          },
+        },
+      );
+
+      expect(message.payload, {
+        'config': {
+          'postgres_changes': {
+            '0': {
+              'type': 'postgres_changes',
+              'filter': {'event': '*'},
+            },
+          },
+        },
+      });
     });
   });
 

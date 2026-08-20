@@ -173,6 +173,29 @@ void main() {
       expect(written, hasLength(1));
     });
 
+    test('the built-in codec logs and swallows an encode failure', () {
+      final client = createClient();
+
+      expect(
+        () => client.push(
+          RealtimeMessage(
+            topic: 'realtime:room',
+            event: 'broadcast',
+            payload: {'bad': Object()},
+          ),
+        ),
+        returnsNormally,
+      );
+      expect(written, isEmpty);
+    });
+
+    test('the built-in codec logs and swallows a write failure', () {
+      final client = createClient();
+      when(() => mockedSink.add(any())).thenThrow(StateError('boom'));
+
+      expect(() => client.push(messageWithRef('1')), returnsNormally);
+    });
+
     test(
       'drops a pending write if the connection changes before it completes',
       () async {
@@ -194,7 +217,9 @@ void main() {
             writtenPerConnection.add(writtenHere);
             return channel;
           },
-          encode: (_) => completer.future,
+          encode: (message) => message.ref == '1'
+              ? completer.future
+              : Future.value('frame-${message.ref}'),
         );
         unawaited(client.connect());
         client.connectionState = SocketState.open;
@@ -207,12 +232,17 @@ void main() {
         unawaited(client.connect());
         client.connectionState = SocketState.open;
 
+        // The new connection keeps working while the stale encode is
+        // pending, so it is not the encode itself stalling forever.
+        client.push(messageWithRef('2'));
+        await pumpEventQueue();
+
         completer.complete('frame-1');
         await pumpEventQueue();
 
         expect(writtenPerConnection, hasLength(2));
         expect(writtenPerConnection[0], isEmpty);
-        expect(writtenPerConnection[1], isEmpty);
+        expect(writtenPerConnection[1], ['frame-2']);
       },
     );
   });
@@ -344,6 +374,24 @@ void main() {
       verify(() => channel.trigger('broadcast', any(), '1')).called(1);
     });
 
+    test('the built-in codec logs and swallows a dispatch failure', () {
+      final client = createClient();
+
+      final channel = MockChannel();
+      when(() => channel.isMember('realtime:room')).thenReturn(true);
+      when(
+        () => channel.trigger(any(), any(), any()),
+      ).thenThrow(StateError('boom'));
+      client.channels.add(channel);
+
+      expect(
+        () => client.onConnectionMessage(
+          '[null,"1","realtime:room","broadcast",{}]',
+        ),
+        returnsNormally,
+      );
+    });
+
     test(
       'drops a pending dispatch if the connection changes before it '
       'completes',
@@ -361,7 +409,9 @@ void main() {
             when(() => sink.add(any())).thenAnswer((_) {});
             return channel;
           },
-          decode: (_) => completer.future,
+          decode: (rawMessage) => rawMessage == 'raw-1'
+              ? completer.future
+              : Future.value(frameWithRef(rawMessage as String)),
         );
         unawaited(client.connect());
         client.connectionState = SocketState.open;
@@ -377,10 +427,15 @@ void main() {
         unawaited(client.connect());
         client.connectionState = SocketState.open;
 
+        // The new connection keeps dispatching while the stale decode is
+        // pending, so it is not the decode itself stalling forever.
+        client.onConnectionMessage('2');
+        await pumpEventQueue();
+
         completer.complete(frameWithRef('1'));
         await pumpEventQueue();
 
-        expect(received, isEmpty);
+        expect(received, ['2']);
       },
     );
   });
