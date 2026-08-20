@@ -88,6 +88,8 @@ class YAJsonIsolate {
   /// Decodes [json] into Dart values, like [jsonDecode].
   ///
   /// Small payloads are decoded inline, large ones on a short lived isolate.
+  /// The threshold compares the length in UTF-16 code units, which is what
+  /// the cost of parsing a string scales with.
   Future<dynamic> decode(String json) async {
     _throwIfDisposed();
     if (json.length < _isolateThresholdBytes) {
@@ -104,14 +106,16 @@ class YAJsonIsolate {
   /// handed to the decoding isolate in constant time, and the UTF-8 and JSON
   /// decoding steps are fused, so the calling isolate never pays for
   /// materializing the intermediate string.
+  ///
+  /// The bytes are read before control returns to the caller, so the buffer
+  /// can be reused as soon as the call returns.
   Future<dynamic> decodeBytes(Uint8List encodedJson) async {
     _throwIfDisposed();
     if (encodedJson.length < _isolateThresholdBytes) {
-      await null;
       return _utf8JsonDecoder.convert(encodedJson);
     }
     final transferable = TransferableTypedData.fromList([encodedJson]);
-    return _runTracked(
+    return await _runTracked(
       () => _utf8JsonDecoder.convert(transferable.materialize().asUint8List()),
     );
   }
@@ -122,10 +126,12 @@ class YAJsonIsolate {
   /// lived isolate. A value that cannot be sent to an isolate, for example an
   /// object whose `toJson()` result is encodable while the object itself
   /// holds a `ReceivePort`, is encoded inline instead.
+  ///
+  /// The value is consumed before control returns to the caller, so it can
+  /// be mutated as soon as the call returns.
   Future<String> encode(Object? json) async {
     _throwIfDisposed();
     if (_remainingBudget(json, _isolateThresholdBytes, 0) >= 0) {
-      await null;
       return jsonEncode(json);
     }
     try {

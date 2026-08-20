@@ -152,6 +152,13 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('reads the buffer before the caller can mutate it', () async {
+      final bytes = Uint8List.fromList(utf8.encode(_jsonString));
+      final pending = isolate.decodeBytes(bytes);
+      bytes.fillRange(0, bytes.length, 0x20);
+      expect(await pending, _jsonMap);
+    });
   });
 
   group('large payloads', () {

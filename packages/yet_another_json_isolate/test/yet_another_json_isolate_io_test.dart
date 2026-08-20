@@ -120,7 +120,11 @@ void main() {
         ];
 
         final encoded = await isolate.encode(large);
-        expect(encoded, endsWith('{"type":"unsendable"}]'));
+        final decoded = jsonDecode(encoded) as List<dynamic>;
+        expect(decoded, hasLength(5001));
+        expect(decoded.first, {'id': 0, 'name': 'user_0'});
+        expect(decoded[4999], {'id': 4999, 'name': 'user_4999'});
+        expect(decoded.last, {'type': 'unsendable'});
       },
     );
   });

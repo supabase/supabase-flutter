@@ -24,9 +24,8 @@ class YAJsonIsolate {
     return jsonDecode(json);
   }
 
-  Future<dynamic> decodeBytes(Uint8List encodedJson) async {
-    await null;
-    return _utf8JsonDecoder.convert(encodedJson);
+  Future<dynamic> decodeBytes(Uint8List encodedJson) {
+    return Future.sync(() => _utf8JsonDecoder.convert(encodedJson));
   }
 
   Future<String> encode(Object? json) async {
