@@ -105,6 +105,7 @@ void main() {
         localStackRestUrl,
         headers: {'apikey': 'foo'},
       );
+      addTearDown(client.dispose);
       expect(
         () => client.headers['apikey'] = 'bar',
         throwsUnsupportedError,

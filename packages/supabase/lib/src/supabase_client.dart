@@ -100,7 +100,9 @@ class SupabaseClient {
 
   /// To apply the new headers in existing realtime channels, manually
   /// unsubscribe and resubscribe these channels.
-  set headers(Map<String, String> newHeaders) {
+  set headers(Map<String, String> newHeaders) => _replaceHeaders(newHeaders);
+
+  void _replaceHeaders(Map<String, String> newHeaders) {
     _headers.clear();
     _headers.addAll({
       ...SupabaseConstants.defaultHeaders,
@@ -317,7 +319,7 @@ class SupabaseClient {
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
     await functions.dispose();
-    await rest.dispose();
+    await _rest.dispose();
     if (!_hasCustomIsolate) {
       await _isolate.dispose();
     }

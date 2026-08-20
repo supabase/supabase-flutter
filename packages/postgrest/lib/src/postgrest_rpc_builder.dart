@@ -18,7 +18,7 @@ class PostgrestRpcBuilder {
     Duration? requestTimeout,
   }) : _config = _RequestConfig(
          url: Uri.parse(url),
-         headers: headers ?? {},
+         headers: {...?headers},
          schema: schema,
          httpClient: httpClient,
          isolate: isolate,
@@ -63,7 +63,7 @@ class PostgrestRpcBuilder {
       method = HttpMethod.post;
     }
 
-    return PostgrestFilterBuilder<T>(
+    return PostgrestFilterBuilder(
       PostgrestBuilder<T, T, T>._(
         config: _config.copyWith(
           method: method,

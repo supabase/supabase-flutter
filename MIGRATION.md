@@ -1422,8 +1422,8 @@ before a table operation has been chosen.
 | `postgrest.headers['X-Foo'] = 'bar'` | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request |
 | `await supabase.from('countries')` compiled and threw an `ArgumentError` at runtime | does not compile |
 | `SupabaseQuerySchema(headers: …)` | removed, the headers of the `rest` client are used |
-| `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation |
-| `PostgrestBuilder.appendSearchParameters()` and `PostgrestBuilder.overrideSearchParameters()` | removed, they were internal URL helpers that leaked into the public API |
+| `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation or by `rpc()` |
+| `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()` | removed, internal URL helpers that leaked into the public API |
 
 `PostgrestClient.headers` is now an unmodifiable map. The client never changes after construction,
 which makes it safe to share across requests and removes a class of bugs where one call site's
@@ -1433,7 +1433,9 @@ constructor for all requests, or with `setHeader()` on a builder for a single re
 On `SupabaseClient`, `rest` is no longer a mutable singleton for the same reason. Assigning
 `supabase.headers` replaces the rest client with one carrying the new headers, so reads through
 `supabase.rest.headers` stay correct, but in-place mutation of that map now throws an
-`UnsupportedError`. `supabase.rpc()` used to permanently merge the client headers into the rest
+`UnsupportedError`. A `PostgrestClient` reference captured before the assignment keeps the headers
+it was built with; read `supabase.rest` again (and create new builders) after changing
+`supabase.headers`. `supabase.rpc()` used to permanently merge the client headers into the rest
 client on every call; that mutation is gone along with the state it leaked into.
 
 A query builder that has not chosen a table operation is meaningless as a request, so

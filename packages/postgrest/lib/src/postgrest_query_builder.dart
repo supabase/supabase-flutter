@@ -33,7 +33,7 @@ class PostgrestQueryBuilder<T> {
     Duration? requestTimeout,
   }) : _config = _RequestConfig(
          url: url,
-         headers: headers ?? {},
+         headers: {...?headers},
          schema: schema,
          httpClient: httpClient,
          isolate: isolate,
@@ -46,7 +46,7 @@ class PostgrestQueryBuilder<T> {
   /// Wraps [config] in the executable filter phase once a table operation has
   /// been chosen.
   PostgrestFilterBuilder<P> _filterBuilder<P>(_RequestConfig config) =>
-      PostgrestFilterBuilder<P>(
+      PostgrestFilterBuilder(
         PostgrestBuilder<P, P, P>._(config: config, converter: null),
       );
 
