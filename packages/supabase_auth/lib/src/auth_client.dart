@@ -1171,7 +1171,7 @@ class AuthClient {
     if (authCode != null) {
       return await exchangeCodeForSession(
         authCode,
-        flowId: url.queryParameters[AuthConstants.pkceFlowIdParam],
+        flowId: url.queryParameters[pkceFlowIdParam],
       );
     }
 

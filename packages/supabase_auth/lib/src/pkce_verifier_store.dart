@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/types/auth_async_storage.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// Stores PKCE code verifiers in a separate slot per flow, so several flows can
 /// be pending at the same time.
@@ -67,13 +67,7 @@ class PKCEVerifierStore {
   ///
   /// The id only selects a verifier held in storage and is never secret, but it
   /// is generated from a secure source so that concurrent flows cannot collide.
-  static String generateFlowId() {
-    final random = Random.secure();
-    return List.generate(
-      16,
-      (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0'),
-    ).join();
-  }
+  static String generateFlowId() => randomHex(16);
 
   /// Stores [verifier] in [flowId]'s own slot, evicting the oldest pending slot
   /// when that would exceed [AuthConstants.pkceMaxConcurrentFlows].

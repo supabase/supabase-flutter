@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/types/auth_exception.dart';
 import 'package:supabase_auth/src/types/jwt.dart';
 import 'package:meta/meta.dart';
@@ -108,7 +107,7 @@ String appendPKCEFlowIdToRedirect(String redirectTo, String flowId) {
   }
 
   final separator = base.contains('?') ? '&' : '?';
-  return '$base$separator${AuthConstants.pkceFlowIdParam}='
+  return '$base$separator$pkceFlowIdParam='
       '${Uri.encodeQueryComponent(flowId)}$fragment';
 }
 
@@ -121,8 +120,8 @@ String _withoutFlowId(String pairs) => pairs
     .where(
       (pair) =>
           pair.isNotEmpty &&
-          pair != AuthConstants.pkceFlowIdParam &&
-          !pair.startsWith('${AuthConstants.pkceFlowIdParam}='),
+          pair != pkceFlowIdParam &&
+          !pair.startsWith('$pkceFlowIdParam='),
     )
     .join('&');
 

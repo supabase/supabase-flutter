@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:http/http.dart' as http;
 import 'package:iceberg/src/iceberg_error.dart';
@@ -31,7 +30,6 @@ class IcebergRestCatalog {
   final http.Client? _httpClient;
   final String? _warehouse;
   final String? _accessDelegation;
-  final _random = Random.secure();
 
   Future<String>? _prefixFuture;
 
@@ -69,9 +67,7 @@ class IcebergRestCatalog {
     bytes[3] = (milliseconds >> 16) & 0xff;
     bytes[4] = (milliseconds >> 8) & 0xff;
     bytes[5] = milliseconds & 0xff;
-    for (var index = 6; index < 16; index++) {
-      bytes[index] = _random.nextInt(256);
-    }
+    bytes.setRange(6, 16, randomBytes(10));
     bytes[6] = (bytes[6] & 0x0f) | 0x70;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
     final hex = bytes
@@ -161,7 +157,7 @@ class IcebergRestCatalog {
         ? json.decode(response.body)
         : response.body;
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
+    if (!isSuccessStatusCode(response.statusCode)) {
       throw IcebergApiException.fromResponse(response.statusCode, decoded);
     }
 
