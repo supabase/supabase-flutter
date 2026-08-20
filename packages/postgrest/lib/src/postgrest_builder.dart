@@ -90,20 +90,24 @@ class _RequestConfig {
 String? _emptyPreferAsNull(String? prefer) =>
     (prefer == null || prefer.isEmpty) ? null : prefer;
 
-/// Returns [url] with [value] appended to the values of query parameter [key].
-///
-/// Uses lists to allow multiple values for the same key.
-Uri _appendSearchParameters(Uri url, String key, String value) {
-  final searchParameters = Map<String, dynamic>.of(url.queryParametersAll);
-  searchParameters[key] = [...?searchParameters[key], value];
-  return url.replace(queryParameters: searchParameters);
-}
+extension on Uri {
+  /// Returns this url with [value] appended to the values of query parameter
+  /// [key].
+  ///
+  /// Uses lists to allow multiple values for the same key.
+  Uri appendSearchParameters(String key, String value) {
+    final searchParameters = Map<String, dynamic>.of(queryParametersAll);
+    searchParameters[key] = [...?searchParameters[key], value];
+    return replace(queryParameters: searchParameters);
+  }
 
-/// Returns [url] with the values of query parameter [key] replaced by [value].
-Uri _overrideSearchParameters(Uri url, String key, String value) {
-  final searchParameters = Map<String, dynamic>.of(url.queryParametersAll);
-  searchParameters[key] = value;
-  return url.replace(queryParameters: searchParameters);
+  /// Returns this url with the values of query parameter [key] replaced by
+  /// [value].
+  Uri overrideSearchParameters(String key, String value) {
+    final searchParameters = Map<String, dynamic>.of(queryParametersAll);
+    searchParameters[key] = value;
+    return replace(queryParameters: searchParameters);
+  }
 }
 
 /// Convert list filter to query parameters string
@@ -583,13 +587,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   ///
   /// [url] may be used to update based on a different url than the current one
   Uri appendSearchParameters(String key, String value, [Uri? url]) =>
-      _appendSearchParameters(url ?? _url, key, value);
+      (url ?? _url).appendSearchParameters(key, value);
 
   /// Get new Uri with overridden query parameters
   ///
   /// [url] may be used to update based on a different url than the current one
   Uri overrideSearchParameters(String key, String value, [Uri? url]) =>
-      _overrideSearchParameters(url ?? _url, key, value);
+      (url ?? _url).overrideSearchParameters(key, value);
 
   /// Convert list filter to query parameters string
   String _cleanFilterArray(List<dynamic> filter) => _cleanFilterList(filter);

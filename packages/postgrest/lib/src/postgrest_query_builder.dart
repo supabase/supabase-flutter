@@ -77,7 +77,7 @@ class PostgrestQueryBuilder<T> {
 
     return _filterBuilder(
       _config.copyWith(
-        url: _overrideSearchParameters(_config.url, 'select', cleanedColumns),
+        url: _config.url.overrideSearchParameters('select', cleanedColumns),
         method: HttpMethod.get,
       ),
     );
@@ -275,7 +275,7 @@ class PostgrestQueryBuilder<T> {
     final columns = [for (final element in newValues) ...element.keys];
     if (newValues.isNotEmpty) {
       final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
-      return _appendSearchParameters(_config.url, "columns", uniqueColumns);
+      return _config.url.appendSearchParameters("columns", uniqueColumns);
     }
     return _config.url;
   }
