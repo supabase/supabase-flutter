@@ -1451,6 +1451,8 @@ await supabase.from('countries');
 await supabase.from('countries').select();
 ```
 
+### The SDK no longer prints logs
+
 `Supabase.initialize` no longer takes a `debug` flag and never prints anything to the console. All
 packages still emit their records through [`package:logging`](https://pub.dev/packages/logging)
 under the `supabase` logger hierarchy, but whether, where, and at which level those records are
