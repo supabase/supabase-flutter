@@ -81,9 +81,9 @@ dcm:
     prefer-shorthands-with-static-fields: false # needs dot shorthands (experimental)
     prefer-shorthands-with-constructors: false # needs dot shorthands (experimental)
 
-    # Off for good, not part of the ratchet above. Each one asks for a naming
-    # or typing convention this SDK deliberately does not follow, so there is
-    # nothing left to fix.
+    # Off for good, not part of the ratchet above. Each one asks for a
+    # convention this SDK deliberately does not follow, so there is nothing
+    # left to fix.
 
     # Wants every field of a Function type to be named `on*`/`*Builder`, and
     # every field named that way to be a Function. Our Function-typed fields
@@ -92,6 +92,14 @@ dcm:
     # read as callbacks are the cross-SDK names we must keep
     # (AuthClient.onAuthStateChange is a Stream, not a Function).
     prefer-correct-callback-field-name: false
+
+    # Wants a subclass that adds a field to reimplement `==` and `hashCode`
+    # over it. The three classes it flags add a field to an exception or a
+    # response, where value equality is not a use case we serve, and the two
+    # auth ones would compare by reference anyway: `originalError` only ever
+    # holds an `http.Response` or a `FormatException`, neither of which
+    # implements `==`.
+    prefer-overriding-parent-equality: false
 
     # Wants the Flutter `k` prefix on global constants. The Dart style guide
     # asks for plain lowerCamelCase instead, and a one-letter prefix also runs

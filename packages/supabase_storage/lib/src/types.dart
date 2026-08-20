@@ -515,7 +515,6 @@ class SignedUrl {
     if (identical(this, other)) return true;
 
     return other is SignedUrl &&
-        other.runtimeType == runtimeType &&
         other.path == path &&
         other.signedUrl == signedUrl;
   }
@@ -610,15 +609,6 @@ class SignedUploadURLResponse extends SignedUrl {
     required super.path,
     required this.token,
   });
-
-  @override
-  bool operator ==(Object other) =>
-      other is SignedUploadURLResponse &&
-      super == other &&
-      other.token == token;
-
-  @override
-  int get hashCode => Object.hash(super.hashCode, token);
 }
 
 /// Thrown when a storage operation fails.

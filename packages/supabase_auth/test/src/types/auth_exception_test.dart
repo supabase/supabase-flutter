@@ -176,54 +176,6 @@ void main() {
       );
       expect(string, isNot(contains('statusCode:')));
     });
-
-    test('equality compares the original error', () {
-      final exception = AuthUnknownException(
-        message: 'Unknown error',
-        originalError: 'original',
-      );
-
-      expect(
-        exception,
-        equals(
-          AuthUnknownException(
-            message: 'Unknown error',
-            originalError: 'original',
-          ),
-        ),
-      );
-      expect(
-        exception.hashCode,
-        equals(
-          AuthUnknownException(
-            message: 'Unknown error',
-            originalError: 'original',
-          ).hashCode,
-        ),
-      );
-      expect(
-        exception,
-        isNot(
-          equals(
-            AuthUnknownException(
-              message: 'Unknown error',
-              originalError: 'other',
-            ),
-          ),
-        ),
-      );
-    });
-
-    test('is never equal to the base it extends', () {
-      final unknown = AuthUnknownException(
-        message: 'Unknown error',
-        originalError: 'original',
-      );
-      const base = AuthException('Unknown error');
-
-      expect(unknown, isNot(equals(base)));
-      expect(base, isNot(equals(unknown)));
-    });
   });
 
   group('AuthWeakPasswordException', () {
@@ -250,63 +202,6 @@ void main() {
         'statusCode: 422, errorCode: weak_password, '
         'reasons: [too_short, no_special_chars])',
       );
-    });
-
-    test('equality compares the reasons', () {
-      final exception = AuthWeakPasswordException(
-        message: 'Password too weak',
-        statusCode: 422,
-        reasons: ['too_short'],
-      );
-
-      expect(
-        exception,
-        equals(
-          AuthWeakPasswordException(
-            message: 'Password too weak',
-            statusCode: 422,
-            reasons: ['too_short'],
-          ),
-        ),
-      );
-      expect(
-        exception.hashCode,
-        equals(
-          AuthWeakPasswordException(
-            message: 'Password too weak',
-            statusCode: 422,
-            reasons: ['too_short'],
-          ).hashCode,
-        ),
-      );
-      expect(
-        exception,
-        isNot(
-          equals(
-            AuthWeakPasswordException(
-              message: 'Password too weak',
-              statusCode: 422,
-              reasons: ['no_special_chars'],
-            ),
-          ),
-        ),
-      );
-    });
-
-    test('is never equal to the api failure it extends', () {
-      final weak = AuthWeakPasswordException(
-        message: 'Password too weak',
-        statusCode: 422,
-        reasons: ['too_short'],
-      );
-      const api = AuthApiException(
-        'Password too weak',
-        statusCode: 422,
-        errorCode: 'weak_password',
-      );
-
-      expect(weak, isNot(equals(api)));
-      expect(api, isNot(equals(weak)));
     });
   });
 
