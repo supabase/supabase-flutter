@@ -17,7 +17,7 @@ import 'test_jwt.dart';
 /// read, so a test can assert on what the code under test sent.
 @visibleForTesting
 class RecordedRequest {
-  RecordedRequest._(this.method, this.url, this.headers, this.bodyBytes);
+  const RecordedRequest._(this.method, this.url, this.headers, this.bodyBytes);
 
   final String method;
   final Uri url;

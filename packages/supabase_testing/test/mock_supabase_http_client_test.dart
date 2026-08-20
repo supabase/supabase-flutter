@@ -46,7 +46,7 @@ void main() {
       );
 
       await expectLater(
-        supabase.from('todos').select(),
+        () => supabase.from('todos').select(),
         throwsA(
           isA<PostgrestApiException>().having(
             (exception) => exception.errorCode,
