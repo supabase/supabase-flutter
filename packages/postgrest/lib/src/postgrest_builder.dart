@@ -328,10 +328,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         case HttpMethod.get || HttpMethod.head || HttpMethod.delete:
           break;
       }
-      final client = _httpClient ?? http.Client();
-
       try {
-        final streamResponse = await client.send(request);
+        final streamResponse = await request.sendWith(_httpClient);
         return await http.Response.fromStream(streamResponse);
       } on RequestAbortedException {
         if (timedOut) {
@@ -340,9 +338,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         rethrow;
       } finally {
         timeoutTimer?.cancel();
-        if (_httpClient == null) {
-          client.close();
-        }
       }
     }
 

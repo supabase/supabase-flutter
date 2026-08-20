@@ -5,6 +5,7 @@ import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/helper.dart';
 import 'package:supabase_auth/src/pkce_verifier_store.dart';
 import 'package:http/http.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 
 import 'utils.dart';
@@ -655,7 +656,7 @@ void main() {
       final redirectTo = Uri.parse(mockClient.lastRedirectTo!);
       expect(
         PKCEVerifierStore.validateFlowId(
-          redirectTo.queryParameters[AuthConstants.pkceFlowIdParam],
+          redirectTo.queryParameters[pkceFlowIdParam],
         ),
         isNotNull,
       );
@@ -668,7 +669,7 @@ void main() {
 
       expect(
         mockClient.lastRedirectTo,
-        contains('${AuthConstants.pkceFlowIdParam}='),
+        contains('$pkceFlowIdParam='),
       );
     });
 
@@ -685,7 +686,7 @@ void main() {
         response.url.queryParameters['redirect_to']!,
       );
       expect(
-        redirectTo.queryParameters[AuthConstants.pkceFlowIdParam],
+        redirectTo.queryParameters[pkceFlowIdParam],
         response.flowId,
       );
     });

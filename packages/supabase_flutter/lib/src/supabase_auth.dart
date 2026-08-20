@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart'
@@ -437,10 +436,7 @@ extension AuthClientSignInProvider on AuthClient {
     );
   }
 
-  String generateRawNonce() {
-    final random = Random.secure();
-    return base64Url.encode(List.generate(16, (_) => random.nextInt(256)));
-  }
+  String generateRawNonce() => base64Url.encode(randomBytes(16));
 
   /// Links an oauth identity to an existing user.
   /// This method supports the PKCE flow.

@@ -1,20 +1,5 @@
 import 'package:meta/meta.dart';
-
-const _authParameters = {
-  'code',
-  'access_token',
-  'expires_in',
-  'expires_at',
-  'refresh_token',
-  'token_type',
-  'provider_token',
-  'provider_refresh_token',
-  'error',
-  'error_code',
-  'error_description',
-  'type',
-  'sb_flow_id',
-};
+import 'package:supabase_common/supabase_common.dart';
 
 /// Returns [url] with all authentication parameters removed from both the
 /// query and the fragment, preserving any unrelated parameters.
@@ -27,7 +12,7 @@ String removeAuthParametersFromUrl(String url) {
   final currentUri = Uri.parse(url);
 
   final query = Map<String, List<String>>.of(currentUri.queryParametersAll)
-    ..removeWhere((key, value) => _authParameters.contains(key));
+    ..removeWhere((key, value) => authCallbackParameters.contains(key));
 
   final cleanedUri = Uri(
     scheme: currentUri.scheme,
@@ -49,7 +34,7 @@ String? _removeAuthParametersFromFragment(String fragment) {
   final fragmentParameters = Uri(query: fragment).queryParametersAll;
   final cleaned = {
     for (final entry in fragmentParameters.entries)
-      if (!_authParameters.contains(entry.key)) entry.key: entry.value,
+      if (!authCallbackParameters.contains(entry.key)) entry.key: entry.value,
   };
   if (cleaned.length == fragmentParameters.length) {
     return fragment;
