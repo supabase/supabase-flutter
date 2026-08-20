@@ -77,7 +77,7 @@ class SupabaseClient {
   /// photos or videos.
   late final SupabaseStorageClient storage;
   late final RealtimeClient realtime;
-  late final PostgrestClient rest;
+  late PostgrestClient _rest;
   StreamSubscription<AuthState>? _authStateSubscription;
   final YAJsonIsolate _isolate;
   final bool _hasCustomIsolate;
@@ -90,6 +90,14 @@ class SupabaseClient {
   /// Getter for the HTTP headers
   Map<String, String> get headers => Map.unmodifiable(_headers);
 
+  /// Supabase PostgREST allows you to query your database with a RESTful
+  /// interface.
+  ///
+  /// The client is stateless, so its headers cannot be mutated in place.
+  /// Assign [headers] on this class instead, which replaces the rest client
+  /// with one carrying the new headers.
+  PostgrestClient get rest => _rest;
+
   /// To apply the new headers in existing realtime channels, manually
   /// unsubscribe and resubscribe these channels.
   set headers(Map<String, String> newHeaders) {
@@ -99,9 +107,7 @@ class SupabaseClient {
       ...newHeaders,
     });
 
-    rest.headers
-      ..clear()
-      ..addAll(_headers);
+    _rest = _initRestClient();
 
     functions.headers
       ..clear()
@@ -189,7 +195,7 @@ class SupabaseClient {
       omitNewApiKeyAsBearer: true,
     );
     warnOnUnrecognizedApiKey(_supabaseKey);
-    rest = _initRestClient();
+    _rest = _initRestClient();
     functions = _initFunctionsClient();
     storage = _initStorageClient(
       storageOptions.retryOptions,
@@ -224,7 +230,7 @@ class SupabaseClient {
     return SupabaseQueryBuilder(
       url,
       realtime,
-      headers: {...rest.headers, ...headers},
+      headers: {...rest.headers},
       schema: _postgrestOptions.schema,
       table: table,
       httpClient: _authHttpClient,
@@ -243,7 +249,6 @@ class SupabaseClient {
     return SupabaseQuerySchema(
       counter: _incrementId,
       restUrl: _restUrl,
-      headers: headers,
       schema: schema,
       isolate: _isolate,
       authHttpClient: _authHttpClient,
@@ -258,7 +263,6 @@ class SupabaseClient {
     Map<String, dynamic>? params,
     get = false,
   }) {
-    rest.headers.addAll(headers);
     return rest.rpc(fn, params: params, get: get);
   }
 

@@ -617,7 +617,7 @@ void main() {
               table: 'todos',
             )
             .listen((payload) {
-              unawaited(supabase.from('todos'));
+              supabase.from('todos');
             });
         channel.subscribe();
 

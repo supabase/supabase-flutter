@@ -17,6 +17,12 @@ class PostgrestClient {
   static const Set<int> retryableStatusCodes = {503, 520};
 
   final String url;
+
+  /// The headers sent with every request.
+  ///
+  /// The map is unmodifiable: the client is stateless, so headers are set
+  /// through the constructor, or per request with
+  /// [PostgrestBuilder.setHeader].
   final Map<String, String> headers;
   final String? _schema;
   final Client? httpClient;
@@ -80,7 +86,7 @@ class PostgrestClient {
            ? httpClient
            : AccessTokenClient(accessToken, httpClient),
        _schema = schema,
-       headers = {...defaultHeaders, ...?headers},
+       headers = Map.unmodifiable({...defaultHeaders, ...?headers}),
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null {
     postgrestLogger.config(
