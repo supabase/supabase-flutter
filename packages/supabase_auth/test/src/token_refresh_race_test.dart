@@ -34,10 +34,14 @@ String _makeRawJwt(Map<String, dynamic> payload) {
   return '$header.$body.$signature';
 }
 
-String _freshAccessToken({String sub = 'mock-user-id'}) {
+String _freshAccessToken() {
   final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
   final issuedAt = expiresAt - 3600;
-  return _makeRawJwt({'exp': expiresAt, 'iat': issuedAt, 'sub': sub});
+  return _makeRawJwt({
+    'exp': expiresAt,
+    'iat': issuedAt,
+    'sub': 'mock-user-id',
+  });
 }
 
 String _tokenResponseJson({

@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:supabase_auth/src/types/error_code.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_common/supabase_common.dart';
@@ -108,6 +109,15 @@ class AuthUnknownException extends AuthException {
   }) : super(message);
 
   @override
+  bool operator ==(Object other) =>
+      other is AuthUnknownException &&
+      super == other &&
+      other.originalError == originalError;
+
+  @override
+  int get hashCode => Object.hash(super.hashCode, originalError);
+
+  @override
   String toString() =>
       '$runtimeType(message: $message, errorCode: $errorCode, '
       'originalError: $originalError)';
@@ -121,6 +131,16 @@ class AuthWeakPasswordException extends AuthApiException {
     required super.statusCode,
     required this.reasons,
   }) : super(message, errorCode: ErrorCode.weakPassword.code);
+
+  @override
+  bool operator ==(Object other) =>
+      other is AuthWeakPasswordException &&
+      super == other &&
+      const ListEquality<String>().equals(other.reasons, reasons);
+
+  @override
+  int get hashCode =>
+      Object.hash(super.hashCode, const ListEquality<String>().hash(reasons));
 
   @override
   String toString() =>

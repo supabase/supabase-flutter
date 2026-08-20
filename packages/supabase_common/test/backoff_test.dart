@@ -22,13 +22,12 @@ class _FixedRandom implements Random {
 
 void main() {
   group('exponentialBackoff', () {
-    Duration backoff(int attempt, {double randomizationFactor = 0}) =>
-        exponentialBackoff(
-          attempt,
-          initialDelay: const Duration(seconds: 1),
-          maxDelay: const Duration(seconds: 30),
-          randomizationFactor: randomizationFactor,
-        );
+    Duration backoff(int attempt) => exponentialBackoff(
+      attempt,
+      initialDelay: const Duration(seconds: 1),
+      maxDelay: const Duration(seconds: 30),
+      randomizationFactor: 0,
+    );
 
     test('starts at the initial delay', () {
       expect(backoff(0), const Duration(seconds: 1));

@@ -1,3 +1,7 @@
+// DCM resolves call sites of a private member only within the file that
+// declares it, so the parameters below that are only ever passed from the
+// sibling `part` files of this library read as never passed.
+// ignore_for_file: avoid-never-passed-parameters
 part of 'postgrest_builder.dart';
 
 /// Needed as a wrapper around [PostgrestBuilder] to allow for the different
@@ -13,11 +17,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     Uri? url,
     // ignore: avoid-unnecessary-nullable-parameters
     Headers? headers,
-    String? schema,
     HttpMethod? method,
     Object? body,
-    Client? httpClient,
-    YAJsonIsolate? isolate,
     CountOption? count,
     bool? maybeSingle,
   }) {
@@ -26,11 +27,8 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
         config: _config.copyWith(
           url: url,
           headers: headers,
-          schema: schema,
           method: method,
           body: body,
-          httpClient: httpClient,
-          isolate: isolate,
           count: count,
           maybeSingle: maybeSingle,
         ),

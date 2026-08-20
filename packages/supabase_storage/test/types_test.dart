@@ -266,6 +266,38 @@ void main() {
     });
   });
 
+  group('SignedUploadURLResponse', () {
+    const response = SignedUploadURLResponse(
+      path: 'a.png',
+      signedUrl: 'https://x/a.png',
+      token: 'token-a',
+    );
+
+    test('value equality and hashCode include the token', () {
+      const same = SignedUploadURLResponse(
+        path: 'a.png',
+        signedUrl: 'https://x/a.png',
+        token: 'token-a',
+      );
+      const differentToken = SignedUploadURLResponse(
+        path: 'a.png',
+        signedUrl: 'https://x/a.png',
+        token: 'token-b',
+      );
+
+      expect(response, same);
+      expect(response.hashCode, same.hashCode);
+      expect(response, isNot(differentToken));
+    });
+
+    test('is never equal to the signed url it extends', () {
+      const url = SignedUrl(path: 'a.png', signedUrl: 'https://x/a.png');
+
+      expect(response, isNot(url));
+      expect(url, isNot(response));
+    });
+  });
+
   group('SignedUrlResult', () {
     test('success exposes the url and a descriptive toString', () {
       const result = SignedUrlSuccess(path: 'a.png', signedUrl: 'https://x/a');

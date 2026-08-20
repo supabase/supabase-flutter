@@ -64,7 +64,6 @@ dcm:
     avoid-duplicate-initializers: false
     avoid-duplicate-test-assertions: false
     avoid-dynamic: false
-    avoid-never-passed-parameters: false
     avoid-nullable-interpolation: false
     avoid-throw-in-catch-block: false
     avoid-unassigned-stream-subscriptions: false
@@ -72,11 +71,7 @@ dcm:
     avoid-unused-parameters: false
     move-variable-closer-to-its-usage: false
     no-empty-block: false
-    prefer-correct-callback-field-name: false
-    prefer-explicit-function-type: false
     prefer-match-file-name: false
-    prefer-overriding-parent-equality: false
-    prefer-prefixed-global-constants: false
     prefer-switch-with-enums: false
 
     # Blocked until dot shorthands stabilize. They are still an experimental
@@ -85,3 +80,26 @@ dcm:
     prefer-shorthands-with-enums: false # needs dot shorthands (experimental)
     prefer-shorthands-with-static-fields: false # needs dot shorthands (experimental)
     prefer-shorthands-with-constructors: false # needs dot shorthands (experimental)
+
+    # Off for good, not part of the ratchet above. Each one asks for a naming
+    # or typing convention this SDK deliberately does not follow, so there is
+    # nothing left to fix.
+
+    # Wants every field of a Function type to be named `on*`/`*Builder`, and
+    # every field named that way to be a Function. Our Function-typed fields
+    # are collaborators rather than event callbacks (RealtimeClient.transport,
+    # .encode, .decode, .logger, RetryTimer.timerCalc), and the fields that do
+    # read as callbacks are the cross-SDK names we must keep
+    # (AuthClient.onAuthStateChange is a Stream, not a Function).
+    prefer-correct-callback-field-name: false
+
+    # Wants the Flutter `k` prefix on global constants. The Dart style guide
+    # asks for plain lowerCamelCase instead, and a one-letter prefix also runs
+    # against our own no-abbreviations rule.
+    prefer-prefixed-global-constants: false
+
+    # Almost every bare `Function` we declare is forced by the `Future`
+    # interface we implement (`PostgrestBuilder.catchError(Function onError)`,
+    # `then({Function? onError})`), where an explicit type would no longer
+    # match the overridden signature.
+    prefer-explicit-function-type: false

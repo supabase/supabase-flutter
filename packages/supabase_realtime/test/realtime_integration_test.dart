@@ -349,10 +349,8 @@ Future<RealtimeSubscribeStatus> _subscribe(RealtimeChannel channel) {
 }
 
 /// Polls [condition] until it returns true or the timeout elapses.
-Future<void> _waitFor(
-  bool Function() condition, {
-  Duration timeout = const Duration(seconds: 15),
-}) async {
+Future<void> _waitFor(bool Function() condition) async {
+  const timeout = Duration(seconds: 15);
   final deadline = DateTime.now().add(timeout);
   while (DateTime.now().isBefore(deadline)) {
     if (condition()) return;

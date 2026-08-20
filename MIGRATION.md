@@ -1386,3 +1386,49 @@ pinned token should no longer apply.
 
 Realtime keeps its setter because it holds a live socket and has to push a new token over it rather
 than attach one per request.
+
+### `RealtimeClient.push` returns `void`
+
+`push` was declared `String? push(Message message)` but only ever returned `null`, a leftover from
+the JavaScript port. It is now `void push(Message message)`, matching `realtime-js`. Drop the
+result if you stored it:
+
+```dart
+// Before
+final reference = client.push(message); // always null
+
+// After
+client.push(message);
+```
+
+### Subclass fields count towards equality
+
+`AuthUnknownException`, `AuthWeakPasswordException` and `SignedUploadURLResponse` each add a field
+to the type they extend but inherited `==` and `hashCode` from it, so the added field was ignored
+and two instances that differed only by it compared equal. They now implement `==` and `hashCode`
+over their own field as well:
+
+```dart
+final first = AuthUnknownException(message: 'Unknown', originalError: 'a');
+final second = AuthUnknownException(message: 'Unknown', originalError: 'b');
+
+first == second; // was true, now false
+```
+
+`SignedUrl` equality also became type aware. It compared `path` and `signedUrl` only, so a
+`SignedUrl` compared equal to a `SignedUploadURLResponse` with the same path and URL. It now
+requires the same runtime type, matching what `AuthException` already did:
+
+```dart
+const url = SignedUrl(path: 'a.png', signedUrl: 'https://x/a.png');
+const upload = SignedUploadURLResponse(
+  path: 'a.png',
+  signedUrl: 'https://x/a.png',
+  token: 'token',
+);
+
+url == upload; // was true, now false
+```
+
+If you relied on the old semantics, compare the fields you actually care about instead of the whole
+object.

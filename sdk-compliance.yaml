@@ -1187,7 +1187,9 @@ features:
       - StorageFileApi.createSignedUploadUrl
     supporting_symbols:
       - SignedUploadURLResponse
+      - SignedUploadURLResponse.==
       - SignedUploadURLResponse.SignedUploadURLResponse
+      - SignedUploadURLResponse.hashCode
       - SignedUploadURLResponse.token
   storage.file_buckets.get_public_url:
     status: implemented
@@ -2160,11 +2162,15 @@ supporting_symbols:
   - AuthSessionMissingException
   - AuthSessionMissingException.AuthSessionMissingException
   - AuthUnknownException
+  - AuthUnknownException.==
   - AuthUnknownException.AuthUnknownException
+  - AuthUnknownException.hashCode
   - AuthUnknownException.originalError
   - AuthUnknownException.toString
   - AuthWeakPasswordException
+  - AuthWeakPasswordException.==
   - AuthWeakPasswordException.AuthWeakPasswordException
+  - AuthWeakPasswordException.hashCode
   - AuthWeakPasswordException.reasons
   - AuthWeakPasswordException.toString
   - BroadcastChannel
