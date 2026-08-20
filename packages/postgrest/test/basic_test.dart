@@ -111,6 +111,54 @@ void main() {
       );
     });
 
+    test('accessToken is resolved before every request', () async {
+      var calls = 0;
+      final httpClient = CustomHttpClient();
+      final client = PostgrestClient(
+        localStackRestUrl,
+        httpClient: httpClient,
+        accessToken: () async => 'token-${calls++}',
+      );
+
+      await client.from('empty-succ').select().head();
+      final first = httpClient.lastRequest!.headers['Authorization'];
+      await client.from('empty-succ').select().head();
+      final second = httpClient.lastRequest!.headers['Authorization'];
+
+      expect([first, second], ['Bearer token-0', 'Bearer token-1']);
+    });
+
+    test('setHeader wins over accessToken', () async {
+      final httpClient = CustomHttpClient();
+      final client = PostgrestClient(
+        localStackRestUrl,
+        httpClient: httpClient,
+        accessToken: () async => 'resolved',
+      );
+
+      await client
+          .from('empty-succ')
+          .select()
+          .setHeader('Authorization', 'Bearer per-request')
+          .head();
+
+      expect(
+        httpClient.lastRequest!.headers['Authorization'],
+        'Bearer per-request',
+      );
+    });
+
+    test('accessToken together with an Authorization header asserts', () {
+      expect(
+        () => PostgrestClient(
+          localStackRestUrl,
+          headers: {'Authorization': 'Bearer static'},
+          accessToken: () async => 'resolved',
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+
     test('set header on rpc', () async {
       final httpClient = CustomHttpClient();
       final client = PostgrestClient(localStackRestUrl, httpClient: httpClient);

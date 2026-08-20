@@ -1,3 +1,4 @@
+import 'package:http/http.dart';
 import 'package:iceberg/iceberg.dart';
 import 'package:supabase_storage/src/logger.dart';
 import 'package:meta/meta.dart';
@@ -30,6 +31,12 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// Override it for a single upload with the `retryOptions` parameter of
   /// [StorageFileApi.upload] and its siblings.
   ///
+  /// [accessToken] is resolved before every request and sent as
+  /// `Authorization: Bearer <token>`. Use it when the token rotates, for
+  /// example a session token that is refreshed. Returning `null` sends no
+  /// bearer token, and it is resolved again for every upload retry. A header
+  /// set with [setHeader] still wins over it.
+  ///
   /// [useNewHostname] controls whether legacy storage URLs are rewritten to use
   /// the dedicated storage host (`<ref>.storage.supabase.co`). Set to `true`
   /// only if your project has the dedicated storage host enabled; otherwise
@@ -38,12 +45,21 @@ class SupabaseStorageClient extends StorageBucketApi {
   SupabaseStorageClient(
     String url,
     Map<String, String> headers, {
-    super.httpClient,
+    Client? httpClient,
     this.retryOptions = const SupabaseRetryOptions(count: 0),
     bool useNewHostname = false,
-  }) : super(
+    Future<String?> Function()? accessToken,
+  }) : assert(
+         accessToken == null || headers.header('Authorization') == null,
+         'Pass either an Authorization header or accessToken, not both: the '
+         'header would win over the resolved token on every request.',
+       ),
+       super(
          useNewHostname ? _transformStorageUrl(url) : url,
          {...StorageConstants.defaultHeaders, ...headers},
+         httpClient: accessToken == null
+             ? httpClient
+             : AccessTokenClient(accessToken, httpClient),
        ) {
     storageLogger.config(
       'Initialize SupabaseStorageClient v$version with url: '

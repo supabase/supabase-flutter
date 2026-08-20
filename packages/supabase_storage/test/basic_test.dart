@@ -924,6 +924,60 @@ void main() {
     });
   });
 
+  group('accessToken', () {
+    setUp(() {
+      customHttpClient.response = [testBucketJson];
+    });
+
+    test('is resolved before every request', () async {
+      var calls = 0;
+      final storage = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {},
+        httpClient: customHttpClient,
+        accessToken: () async => 'token-${calls++}',
+      );
+
+      await storage.listBuckets();
+      await storage.listBuckets();
+
+      expect(
+        customHttpClient.receivedRequests
+            .map((request) => request.headers['Authorization'])
+            .toList(),
+        ['Bearer token-0', 'Bearer token-1'],
+      );
+    });
+
+    test('setHeader wins over the resolved token', () async {
+      final storage = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {},
+        httpClient: customHttpClient,
+        accessToken: () async => 'resolved',
+      );
+
+      storage.setHeader('Authorization', 'Bearer pinned');
+      await storage.listBuckets();
+
+      expect(
+        customHttpClient.receivedRequests.last.headers['Authorization'],
+        'Bearer pinned',
+      );
+    });
+
+    test('together with an Authorization header asserts', () {
+      expect(
+        () => SupabaseStorageClient(
+          '$supabaseUrl/storage/v1',
+          {'Authorization': 'Bearer static'},
+          accessToken: () async => 'resolved',
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
+  });
+
   group('URL Construction', () {
     group('default behavior (useNewHostname: false)', () {
       test('should NOT transform legacy prod host by default', () {

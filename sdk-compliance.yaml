@@ -1969,7 +1969,7 @@ features:
       - FunctionResponse.FunctionResponse
   functions.invocation.set_auth_token:
     status: implemented
-    note: "There is no dedicated setter. Through SupabaseClient the current session token is resolved on every invocation, so it stays up to date without one. A standalone FunctionsClient takes the Authorization header in its constructor, or per call through invoke."
+    note: "There is no setter. The token is supplied as an accessToken callback that is resolved before every invocation, so a rotating token is picked up without a call to update it. Through SupabaseClient it is wired up automatically. A single invocation can override it with an Authorization header."
     symbols:
       - FunctionsClient.FunctionsClient
       - FunctionsClient.invoke

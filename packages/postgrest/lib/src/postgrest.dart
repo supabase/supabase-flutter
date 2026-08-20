@@ -52,15 +52,34 @@ class PostgrestClient {
   /// thrown once the retries are exhausted. When `null` (the default) no
   /// timeout is applied. Use [PostgrestBuilder.abortSignal] to cancel a request
   /// outright, which stops retrying immediately.
+  ///
+  /// [accessToken] is resolved before every request and sent as
+  /// `Authorization: Bearer <token>`. Use it when the token rotates, for
+  /// example a session token that is refreshed. Returning `null` sends no
+  /// bearer token, and it is resolved again for every retry. A header set with
+  /// [PostgrestBuilder.setHeader] still wins over it, so a single request can
+  /// be made with a different token.
   PostgrestClient(
     this.url, {
     Map<String, String>? headers,
     String? schema,
-    this.httpClient,
+    Client? httpClient,
     YAJsonIsolate? isolate,
     this.retryOptions = const SupabaseRetryOptions(),
     this.requestTimeout,
-  }) : _schema = schema,
+    Future<String?> Function()? accessToken,
+  }) : assert(
+         accessToken == null || headers?.header('Authorization') == null,
+         'Pass either an Authorization header or accessToken, not both: the '
+         'header would win over the resolved token on every request.',
+       ),
+       // The transport belongs to the caller, so the client never closes it,
+       // the same way it leaves a caller-provided isolate alone.
+       // ignore: dispose-class-fields
+       httpClient = accessToken == null
+           ? httpClient
+           : AccessTokenClient(accessToken, httpClient),
+       _schema = schema,
        headers = {...defaultHeaders, ...?headers},
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null {

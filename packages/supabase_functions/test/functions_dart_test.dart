@@ -446,6 +446,72 @@ void main() {
         expect(client.headers, contains('X-Client-Info'));
       });
 
+      test('accessToken is resolved before every invocation', () async {
+        var calls = 0;
+        final client = FunctionsClient(
+          "",
+          {},
+          httpClient: customHttpClient,
+          accessToken: () async => 'token-${calls++}',
+        );
+
+        await client.invoke('function');
+        await client.invoke('function');
+
+        expect(
+          customHttpClient.receivedRequests
+              .map((request) => request.headers['Authorization'])
+              .toList(),
+          ['Bearer token-0', 'Bearer token-1'],
+        );
+      });
+
+      test('a header passed to invoke wins over accessToken', () async {
+        final client = FunctionsClient(
+          "",
+          {},
+          httpClient: customHttpClient,
+          accessToken: () async => 'resolved',
+        );
+
+        await client.invoke(
+          'function',
+          headers: {'Authorization': 'Bearer per-call'},
+        );
+
+        expect(
+          customHttpClient.receivedRequests.last.headers['Authorization'],
+          'Bearer per-call',
+        );
+      });
+
+      test('accessToken sends nothing when it resolves to null', () async {
+        final client = FunctionsClient(
+          "",
+          {},
+          httpClient: customHttpClient,
+          accessToken: () async => null,
+        );
+
+        await client.invoke('function');
+
+        expect(
+          customHttpClient.receivedRequests.last.headers,
+          isNot(contains('Authorization')),
+        );
+      });
+
+      test('accessToken together with an Authorization header asserts', () {
+        expect(
+          () => FunctionsClient(
+            "",
+            {'Authorization': 'Bearer static'},
+            accessToken: () async => 'resolved',
+          ),
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
       test('custom headers override defaults', () async {
         await functionsCustomHttpClient.invoke(
           'function',

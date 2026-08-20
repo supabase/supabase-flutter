@@ -1351,7 +1351,9 @@ after.
 To authenticate as the signed-in user, do nothing. `SupabaseClient` already resolves that token on
 every request.
 
-To pin a token on a client you construct yourself, pass it as a constructor header:
+On a client you construct yourself, pass an `accessToken` callback. It is resolved before every
+request, so a token that rotates is picked up without you pushing the new value anywhere. This is
+the closest replacement for the old setter, and unlike it, it does not go stale:
 
 ```dart
 // Before
@@ -1359,11 +1361,25 @@ final functions = FunctionsClient(functionsUrl, {'apikey': anonKey});
 functions.setAccessToken(jwt);
 
 // After
+final functions = FunctionsClient(
+  functionsUrl,
+  {'apikey': anonKey},
+  accessToken: () async => currentJwt,
+);
+```
+
+`PostgrestClient` and `SupabaseStorageClient` take the same callback. If the token never changes,
+a constructor header is still enough:
+
+```dart
 final functions = FunctionsClient(functionsUrl, {
   'apikey': anonKey,
   'Authorization': 'Bearer $jwt',
 });
 ```
+
+Passing both an `Authorization` header and `accessToken` asserts, because the header would win on
+every request and the callback would never be used.
 
 To use a different token for a single call, pass it to that call:
 
@@ -1372,8 +1388,9 @@ await functions.invoke('hello', headers: {'Authorization': 'Bearer $jwt'});
 await postgrest.from('countries').select().setHeader('Authorization', 'Bearer $jwt');
 ```
 
-To pin a token on a client you got from `SupabaseClient`, set the header yourself. The header maps
-are still mutable:
+To pin a token on a client you got from `SupabaseClient`, set the header yourself. `SupabaseClient`
+builds its sub-clients, so there is no `accessToken` callback to pass, but the header maps are
+still mutable:
 
 ```dart
 supabase.storage.setHeader('Authorization', 'Bearer $jwt');
