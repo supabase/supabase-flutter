@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:crypto/crypto.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:supabase_common/testing.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
 import 'package:supabase_realtime/src/message.dart';
@@ -24,26 +24,12 @@ typedef WebSocketChannelClosure =
 ///
 /// [exp] in seconds since Epoch
 String generateJwt([int? exp]) {
-  final header = {'alg': 'HS256', 'typ': 'JWT'};
-
   final now = DateTime.now();
   final expiry =
       exp ??
       (now.add(Duration(hours: 1)).millisecondsSinceEpoch / 1000).floor();
 
-  final payload = {'exp': expiry};
-
-  final key = 'your-256-bit-secret';
-
-  final encodedHeader = base64Url.encode(utf8.encode(json.encode(header)));
-  final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
-
-  final signatureInput = '$encodedHeader.$encodedPayload';
-  final hmac = Hmac(sha256, utf8.encode(key));
-  final digest = hmac.convert(utf8.encode(signatureInput));
-  final signature = base64Url.encode(digest.bytes);
-
-  return '$encodedHeader.$encodedPayload.$signature';
+  return signedTestJwt({'exp': expiry}, secret: 'your-256-bit-secret');
 }
 
 void main() {

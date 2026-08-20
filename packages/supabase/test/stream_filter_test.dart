@@ -6,8 +6,6 @@ import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 import 'package:web_socket_channel/io.dart';
 
-import 'package:supabase_common/testing.dart';
-
 import 'utils.dart';
 
 /// Asserts how the filters of `stream()` are sent to the realtime server and to

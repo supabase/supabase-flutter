@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
+import 'package:supabase_common/testing.dart';
 import 'package:test/test.dart';
 
 abstract class _CountingClient extends BaseClient {
@@ -37,20 +38,7 @@ class _StallingClient extends _CountingClient {
   @override
   Future<StreamedResponse> send(BaseRequest request) {
     callCount++;
-    final completer = Completer<StreamedResponse>();
-    if (request is AbortableRequest) {
-      unawaited(
-        request.abortTrigger?.then((_) {
-          if (!completer.isCompleted) {
-            completer.completeError(
-              RequestAbortedException(),
-              StackTrace.current,
-            );
-          }
-        }),
-      );
-    }
-    return completer.future;
+    return stallUntilAborted(request);
   }
 }
 

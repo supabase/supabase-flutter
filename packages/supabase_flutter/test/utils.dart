@@ -1,8 +1,8 @@
-import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+
+export 'package:supabase_common/testing.dart';
 
 /// Replaces both shared_preferences APIs with empty in-memory stores.
 ///
@@ -12,34 +12,4 @@ void mockSharedPreferences({Map<String, Object> legacyValues = const {}}) {
   SharedPreferences.setMockInitialValues(legacyValues);
   SharedPreferencesAsyncPlatform.instance =
       InMemorySharedPreferencesAsync.empty();
-}
-
-/// Construct session data for a given expiration date
-({String accessToken, String sessionString}) getSessionData(
-  DateTime accessTokenExpireDateTime,
-) {
-  final accessTokenExpiresAt =
-      accessTokenExpireDateTime.millisecondsSinceEpoch ~/ 1000;
-  final accessTokenMid = base64.encode(
-    utf8.encode(
-      json.encode({
-        'exp': accessTokenExpiresAt,
-        'sub': '1234567890',
-        'role': 'authenticated',
-      }),
-    ),
-  );
-  final accessToken = 'any.$accessTokenMid.any';
-  final sessionString =
-      '{"access_token":"$accessToken","expires_in":'
-      '${accessTokenExpireDateTime.difference(DateTime.now()).inSeconds},"refre'
-      'sh_token":"-yeS4omysFs9tpUYBws9Rg","token_type":"bearer","provider_token'
-      '":null,"provider_refresh_token":null,"user":{"id":"4d2583da-8de4-49d3-9c'
-      'd1-37a9a74f55bd","app_metadata":{"provider":"email","providers":["email"'
-      ']},"user_metadata":{"Hello":"World"},"aud":"","email":"fake1680338105@em'
-      'ail.com","phone":"","created_at":"2023-04-01T08:35:05.208586Z","confirme'
-      'd_at":null,"email_confirmed_at":"2023-04-01T08:35:05.220096086Z","phone_'
-      'confirmed_at":null,"last_sign_in_at":"2023-04-01T08:35:05.222755878Z","r'
-      'ole":"","updated_at":"2023-04-01T08:35:05.226938Z"}}';
-  return (accessToken: accessToken, sessionString: sessionString);
 }

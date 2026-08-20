@@ -34,7 +34,6 @@ dependencies:
   web: '>=1.0.0 <2.0.0'
 
 dev_dependencies:
-  dart_jsonwebtoken: ">=3.0.0 <4.0.0"
   flutter_test:
     sdk: flutter
   shared_preferences_platform_interface: ^2.4.0
