@@ -1,8 +1,18 @@
 @TestOn('vm')
 library;
 
+import 'dart:isolate';
+
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
+
+/// JSON encodable through [toJson], but not sendable to another isolate
+/// because it holds a [ReceivePort].
+class _UnsendableButEncodable {
+  final ReceivePort port = ReceivePort();
+
+  Map<String, dynamic> toJson() => {'type': 'unsendable'};
+}
 
 /// Every disposal in this group is bounded, so a regression that makes
 /// `dispose()` wait forever fails the test instead of hanging the suite.
@@ -15,7 +25,7 @@ void main() {
       final isolate = YAJsonIsolate();
       await isolate.initialize();
       addTearDown(() => dispose(isolate));
-      expect(() => isolate.initialize(), throwsA(isA<AssertionError>()));
+      expect(isolate.initialize(), throwsA(isA<AssertionError>()));
     });
 
     test('exposes the provided debug name', () {
@@ -56,7 +66,7 @@ void main() {
 
       expect(isolate.decode('{}'), throwsStateError);
       expect(isolate.encode({}), throwsStateError);
-      expect(() => isolate.initialize(), throwsStateError);
+      expect(isolate.initialize(), throwsStateError);
     });
 
     test('a never used isolate also rejects work after dispose', () async {
@@ -65,5 +75,31 @@ void main() {
 
       expect(isolate.decode('{}'), throwsStateError);
     });
+
+    test('encodes an unsendable value inline', () async {
+      final isolate = YAJsonIsolate();
+      addTearDown(() => dispose(isolate));
+      final value = _UnsendableButEncodable();
+      addTearDown(value.port.close);
+
+      expect(await isolate.encode(value), '{"type":"unsendable"}');
+    });
+
+    test(
+      'encodes a large structure holding an unsendable value inline',
+      () async {
+        final isolate = YAJsonIsolate();
+        addTearDown(() => dispose(isolate));
+        final value = _UnsendableButEncodable();
+        addTearDown(value.port.close);
+        final large = [
+          for (var i = 0; i < 5000; i++) {'id': i, 'name': 'user_$i'},
+          value,
+        ];
+
+        final encoded = await isolate.encode(large);
+        expect(encoded, endsWith('{"type":"unsendable"}]'));
+      },
+    );
   });
 }

@@ -51,13 +51,14 @@ class YAJsonIsolate {
   /// initialize: large payloads are processed on short lived isolates spawned
   /// per call.
   Future<void> initialize() {
-    _throwIfDisposed();
-    assert(
-      _hasStartedInitialize == false,
-      'initialize() can only be called once per isolate.',
-    );
-    _hasStartedInitialize = true;
-    return Future.value();
+    return Future.sync(() {
+      _throwIfDisposed();
+      assert(
+        _hasStartedInitialize == false,
+        'initialize() can only be called once per isolate.',
+      );
+      _hasStartedInitialize = true;
+    });
   }
 
   /// Dispose the instance.
@@ -82,9 +83,10 @@ class YAJsonIsolate {
   /// Decodes UTF-8 encoded JSON in [encodedJson] into Dart values.
   ///
   /// Preferred over [decode] when the payload is available as bytes, such as
-  /// an HTTP response body: the bytes are moved to the decoding isolate
-  /// without copying and the UTF-8 and JSON decoding steps are fused, so the
-  /// calling isolate never pays for materializing the intermediate string.
+  /// an HTTP response body: the bytes are copied once into a buffer that is
+  /// handed to the decoding isolate in constant time, and the UTF-8 and JSON
+  /// decoding steps are fused, so the calling isolate never pays for
+  /// materializing the intermediate string.
   Future<dynamic> decodeBytes(Uint8List encodedJson) async {
     _throwIfDisposed();
     if (encodedJson.length < _isolateThresholdBytes) {
@@ -101,14 +103,20 @@ class YAJsonIsolate {
   /// Encodes [json] into a JSON string, like [jsonEncode].
   ///
   /// Payloads estimated to be small are encoded inline, the rest on a short
-  /// lived isolate.
+  /// lived isolate. A value that cannot be sent to an isolate, for example an
+  /// object whose `toJson()` result is encodable while the object itself
+  /// holds a `ReceivePort`, is encoded inline instead.
   Future<String> encode(Object? json) async {
     _throwIfDisposed();
     if (_remainingBudget(json, _isolateThresholdBytes, 0) >= 0) {
       await null;
       return jsonEncode(json);
     }
-    return Isolate.run(() => jsonEncode(json), debugName: debugName);
+    try {
+      return await Isolate.run(() => jsonEncode(json), debugName: debugName);
+    } on ArgumentError {
+      return jsonEncode(json);
+    }
   }
 }
 

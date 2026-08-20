@@ -414,7 +414,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             if (isolate != null) {
               body = await isolate.decodeBytes(response.bodyBytes);
             } else {
-              body = jsonDecode(response.body);
+              body = jsonDecode(utf8.decode(response.bodyBytes));
             }
           } on FormatException catch (_) {
             // A 2xx status does not guarantee a JSON body. A proxy or gateway
