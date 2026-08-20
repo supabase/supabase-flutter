@@ -1,10 +1,22 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 const _jsonString = '{"a":1,"b":2}';
 const _jsonMap = {'a': 1, 'b': 2};
+
+/// Large enough to encode to well over 64 KiB, so that operations on it are
+/// processed on an isolate rather than inline.
+final _largeValue = List.generate(
+  2000,
+  (index) => {
+    'id': index,
+    'name': 'user_$index',
+    'description': 'A description for row $index. ${'x' * 40}',
+  },
+);
 
 void main() {
   late YAJsonIsolate isolate;
@@ -103,6 +115,93 @@ void main() {
     test('round trips an encoded value back to the original', () async {
       final encoded = await isolate.encode(_jsonMap);
       expect(await isolate.decode(encoded), _jsonMap);
+    });
+  });
+
+  group('decodeBytes', () {
+    setUp(() {
+      isolate = YAJsonIsolate();
+    });
+
+    tearDown(() async {
+      await isolate.dispose();
+    });
+
+    test('decodes UTF-8 encoded JSON bytes', () async {
+      expect(await isolate.decodeBytes(utf8.encode(_jsonString)), _jsonMap);
+    });
+
+    test('preserves unicode characters', () async {
+      const value = {'emoji': '🚀', 'text': 'Grüße'};
+      expect(
+        await isolate.decodeBytes(utf8.encode(jsonEncode(value))),
+        value,
+      );
+    });
+
+    test('throws FormatException for invalid JSON bytes', () async {
+      await expectLater(
+        isolate.decodeBytes(utf8.encode('{not valid json')),
+        throwsFormatException,
+      );
+    });
+
+    test('throws FormatException for invalid UTF-8 bytes', () async {
+      await expectLater(
+        isolate.decodeBytes(Uint8List.fromList([0x22, 0xFF, 0xFE, 0x22])),
+        throwsFormatException,
+      );
+    });
+  });
+
+  group('large payloads', () {
+    setUp(() {
+      isolate = YAJsonIsolate();
+    });
+
+    tearDown(() async {
+      await isolate.dispose();
+    });
+
+    test('round trips a large structure', () async {
+      final encoded = await isolate.encode(_largeValue);
+      expect(encoded.length, greaterThan(64 * 1024));
+      expect(await isolate.decode(encoded), _largeValue);
+    });
+
+    test('decodes large UTF-8 encoded JSON bytes', () async {
+      final encoded = utf8.encode(jsonEncode(_largeValue));
+      expect(await isolate.decodeBytes(encoded), _largeValue);
+    });
+
+    test('throws FormatException for large invalid JSON', () async {
+      final truncated = jsonEncode(
+        _largeValue,
+      ).substring(0, 70 * 1024);
+      await expectLater(isolate.decode(truncated), throwsFormatException);
+      await expectLater(
+        isolate.decodeBytes(utf8.encode(truncated)),
+        throwsFormatException,
+      );
+    });
+
+    test('throws for a large structure with a non encodable value', () async {
+      final value = [..._largeValue, DateTime.now()];
+      await expectLater(
+        isolate.encode(value),
+        throwsA(isA<JsonUnsupportedObjectError>()),
+      );
+    });
+
+    test('resolves concurrent large decodes to the correct results', () async {
+      final first = jsonEncode(_largeValue);
+      final second = jsonEncode(_largeValue.reversed.toList());
+      final results = await Future.wait([
+        isolate.decode(first),
+        isolate.decode(second),
+      ]);
+      expect(results[0], _largeValue);
+      expect(results[1], _largeValue.reversed.toList());
     });
   });
 

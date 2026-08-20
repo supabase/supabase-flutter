@@ -411,8 +411,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         } else {
           try {
             final isolate = _isolate;
-            if ((response.contentLength ?? 0) > 10000 && isolate != null) {
-              body = await isolate.decode(response.body);
+            if (isolate != null) {
+              body = await isolate.decodeBytes(response.bodyBytes);
             } else {
               body = jsonDecode(response.body);
             }

@@ -1,24 +1,39 @@
-//Modified from https://github.com/dart-lang/samples/blob/master/isolates/bin/long_running_isolate.dart
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
+import 'dart:typed_data';
 
-import 'package:async/async.dart';
+/// Payloads estimated to be smaller than this are processed directly on the
+/// calling isolate.
+///
+/// Below this size the JSON work takes well under a millisecond even on slow
+/// devices, while handing it to another isolate costs more than that in
+/// messaging overhead.
+const _isolateThresholdBytes = 64 * 1024;
 
-// One instance manages one isolate
+/// Depth guard for [_remainingBudget], so that a cyclic or extremely deep
+/// structure is handed to the isolate path instead of overflowing the stack
+/// during estimation.
+const _maxEstimationDepth = 512;
+
+final Converter<List<int>, Object?> _utf8JsonDecoder = const Utf8Decoder().fuse(
+  const JsonDecoder(),
+);
+
+/// Encodes and decodes JSON without blocking the calling isolate.
+///
+/// Small payloads are processed inline, because parsing them costs less than
+/// an isolate round trip. Large payloads are processed on a short lived
+/// isolate spawned per call: its result is handed back through `Isolate.exit`
+/// without copying, and independent calls run in parallel.
 class YAJsonIsolate {
   YAJsonIsolate({
     this.debugName,
   });
 
-  /// The debug name used for the isolate spawned by this instance.
+  /// The debug name used for the isolates spawned by this instance.
   final String? debugName;
 
-  final _receivePort = ReceivePort();
-  late final SendPort _sendPort;
-  final _createdIsolate = Completer<void>();
-  late final _events = StreamQueue(_receivePort);
   bool _hasStartedInitialize = false;
   Future<void>? _disposal;
 
@@ -30,11 +45,11 @@ class YAJsonIsolate {
     }
   }
 
-  /// Initialize the isolate
+  /// Kept for backwards compatibility.
   ///
-  /// This method is called automatically when the first method is called.
-  /// Manually initializing before the first JSON decode or encode can improve
-  /// performance.
+  /// There is no persistent isolate anymore, so there is nothing to
+  /// initialize: large payloads are processed on short lived isolates spawned
+  /// per call.
   Future<void> initialize() async {
     _throwIfDisposed();
     assert(
@@ -42,134 +57,102 @@ class YAJsonIsolate {
       'initialize() can only be called once per isolate.',
     );
     _hasStartedInitialize = true;
-    await Isolate.spawn(
-      _compute,
-      _receivePort.sendPort,
-      onExit: _receivePort.sendPort,
-      onError: _receivePort.sendPort,
-      debugName: debugName,
-    );
-    _sendPort = await _events.next;
-    _createdIsolate.complete();
   }
 
-  /// Dispose the isolate
+  /// Dispose the instance.
   ///
-  /// This exits the isolate. Safe to call more than once, and safe to call on
-  /// an instance that was never used. Concurrent calls all await the same
-  /// shutdown, so awaiting any of them means the isolate is gone. Using the
+  /// Safe to call more than once, and safe to call on an instance that was
+  /// never used. Concurrent calls all await the same disposal. Using the
   /// instance afterwards throws a [StateError].
-  Future<void> dispose() => _disposal ??= _dispose();
+  Future<void> dispose() => _disposal ??= Future.value();
 
-  Future<void> _dispose() async {
-    if (!_hasStartedInitialize) {
-      _receivePort.close();
-      return;
-    }
-
-    await _createdIsolate.future;
-    _sendPort.send(null);
-    _receivePort.close();
-    await _events.cancel();
-  }
-
+  /// Decodes [json] into Dart values, like [jsonDecode].
+  ///
+  /// Small payloads are decoded inline, large ones on a short lived isolate.
   Future<dynamic> decode(String json) async {
     _throwIfDisposed();
-    if (!_createdIsolate.isCompleted) {
-      if (!_hasStartedInitialize) await initialize();
-      await _createdIsolate.future;
+    if (json.length < _isolateThresholdBytes) {
+      await null;
+      return jsonDecode(json);
     }
-    _sendPort.send([json, false]);
-    return _handleResponse(await _events.next);
+    return Isolate.run(() => jsonDecode(json), debugName: debugName);
   }
 
+  /// Decodes UTF-8 encoded JSON in [encodedJson] into Dart values.
+  ///
+  /// Preferred over [decode] when the payload is available as bytes, such as
+  /// an HTTP response body: the bytes are moved to the decoding isolate
+  /// without copying and the UTF-8 and JSON decoding steps are fused, so the
+  /// calling isolate never pays for materializing the intermediate string.
+  Future<dynamic> decodeBytes(Uint8List encodedJson) async {
+    _throwIfDisposed();
+    if (encodedJson.length < _isolateThresholdBytes) {
+      await null;
+      return _utf8JsonDecoder.convert(encodedJson);
+    }
+    final transferable = TransferableTypedData.fromList([encodedJson]);
+    return Isolate.run(
+      () => _utf8JsonDecoder.convert(transferable.materialize().asUint8List()),
+      debugName: debugName,
+    );
+  }
+
+  /// Encodes [json] into a JSON string, like [jsonEncode].
+  ///
+  /// Payloads estimated to be small are encoded inline, the rest on a short
+  /// lived isolate.
   Future<String> encode(Object? json) async {
     _throwIfDisposed();
-    if (!_createdIsolate.isCompleted) {
-      if (!_hasStartedInitialize) await initialize();
-      await _createdIsolate.future;
+    if (_remainingBudget(json, _isolateThresholdBytes, 0) >= 0) {
+      await null;
+      return jsonEncode(json);
     }
-    _sendPort.send([json, true]);
-    return _handleResponse(await _events.next);
-  }
-
-  Future<R> _handleResponse<R>(List<dynamic> response) async {
-    final int type = response.length;
-    assert(1 <= type && type <= 3);
-
-    switch (type) {
-      // success; see _buildSuccessResponse
-      case 1:
-        return response[0] as R;
-
-      // native error; see Isolate.addErrorListener
-      case 2:
-        await Future<Never>.error(
-          RemoteError(
-            response[0] as String,
-            response[1] as String,
-          ),
-        );
-
-      // caught error; see _buildErrorResponse
-      case 3:
-      default:
-        assert(type == 3 && response[2] == null);
-
-        await Future<Never>.error(
-          response[0] as Object,
-          response[1] as StackTrace,
-        );
-    }
+    return Isolate.run(() => jsonEncode(json), debugName: debugName);
   }
 }
 
-List<dynamic> _computeResponse(dynamic input, {required bool isEncoding}) {
-  try {
-    return _buildSuccessResponse(
-      isEncoding ? jsonEncode(input) : jsonDecode(input),
-    );
-  } catch (error, stackTrace) {
-    return _buildErrorResponse(error, stackTrace);
-  }
-}
-
-void _compute(SendPort sendPort) async {
-  final commandPort = ReceivePort();
-  sendPort.send(commandPort.sendPort);
-
-  await for (final event in commandPort) {
-    // [event] is a list of [input, isEncoding]
-    if (event is List) {
-      final input = event.first;
-
-      /// `true` for encoding and `false` for decoding
-      final bool isEncoding = event.last;
-
-      sendPort.send(_computeResponse(input, isEncoding: isEncoding));
-    } else if (event == null) {
-      break;
-    }
-  }
-  Isolate.exit();
-}
-
-/// Wrap in [List] to ensure our expectations in the main [Isolate] are met.
+/// Returns what is left of [budget] after subtracting an estimate of the
+/// encoded size of [value], or a negative number as soon as the estimate
+/// exceeds the budget.
 ///
-/// We need to wrap a success result in a [List] because the user provided type
-/// [R] could also be a [List]. Meaning, a check `result is R` could return true
-/// for what was an error event.
-List<R> _buildSuccessResponse<R>(R result) {
-  return List.filled(1, result);
-}
-
-/// Wrap in [List] to ensure our expectations in the main isolate are met.
-///
-/// We wrap a caught error in a 3 element [List]. Where the last element is
-/// always null. We do this so we have a way to know if an error was one we
-/// caught or one thrown by the library code.
-List<dynamic> _buildErrorResponse(Object error, StackTrace stackTrace) {
-  return List<dynamic>.filled(3, null)
-    ..[0] = error
-    ..[1] = stackTrace;
+/// The estimate is deliberately rough: it only has to decide whether encoding
+/// inline could block the calling isolate for too long, and it must cost far
+/// less than the encoding itself. Values of unrecognized types, and structures
+/// nested deeper than [_maxEstimationDepth], exhaust the budget immediately so
+/// they are encoded on an isolate.
+int _remainingBudget(Object? value, int budget, int depth) {
+  if (budget < 0 || depth > _maxEstimationDepth) {
+    return -1;
+  }
+  switch (value) {
+    case null:
+      return budget - 4;
+    case bool _:
+      return budget - 5;
+    case num _:
+      return budget - 8;
+    case String string:
+      return budget - string.length - 2;
+    case List<dynamic> list:
+      budget -= 2;
+      for (final element in list) {
+        budget = _remainingBudget(element, budget, depth + 1) - 1;
+        if (budget < 0) {
+          return -1;
+        }
+      }
+      return budget;
+    case Map<dynamic, dynamic> map:
+      budget -= 2;
+      for (final entry in map.entries) {
+        budget = _remainingBudget(entry.key, budget, depth + 1);
+        budget = _remainingBudget(entry.value, budget, depth + 1) - 2;
+        if (budget < 0) {
+          return -1;
+        }
+      }
+      return budget;
+    default:
+      return -1;
+  }
 }

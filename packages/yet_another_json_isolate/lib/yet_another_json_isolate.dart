@@ -1,5 +1,6 @@
-/// Simplifies JSON parsing in isolates by keeping one isolate running per
-/// instance.
+/// JSON encoding and decoding that never blocks the calling isolate for
+/// long: small payloads are processed inline, large payloads on short lived
+/// isolates that hand their result back without copying.
 library;
 
 export 'src/_isolates_io.dart'
