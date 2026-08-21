@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _InlineJsonCodec implements AsyncJsonCodec {
+  const _InlineJsonCodec();
+
   @override
   Future<dynamic> decode(String json) async => jsonDecode(json);
 
@@ -23,7 +25,7 @@ void main() {
   test(
     'AsyncJsonCodec is implementable through the supabase_flutter export',
     () async {
-      final AsyncJsonCodec jsonCodec = _InlineJsonCodec();
+      const AsyncJsonCodec jsonCodec = _InlineJsonCodec();
       final client = FunctionsClient(
         'https://example.com',
         const {},

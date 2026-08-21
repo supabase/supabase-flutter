@@ -1641,10 +1641,10 @@ final client = SupabaseClient(url, key);
 ```
 
 The parameter existed to share or supervise a single long-lived worker isolate. There is no
-such worker anymore: the default codec runs small payloads inline and spawns a short lived
-isolate per large one, so a second instance costs nothing and there is nothing to
-supervise. Construct a `PostgrestClient` or a `FunctionsClient` directly with `jsonCodec:`
-when you do need to choose how their JSON is processed.
+such worker anymore: the default codec runs small payloads inline and spawns a short-lived
+isolate per large one, so a second instance costs nothing and there is nothing to supervise.
+Construct a `PostgrestClient` or a `FunctionsClient` directly with `jsonCodec:` when you do
+need to choose how their JSON is processed.
 
 ### `RealtimeClient.logger` and `RealtimeClient.log` are gone
 
