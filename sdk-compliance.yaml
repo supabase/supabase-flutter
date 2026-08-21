@@ -1078,9 +1078,6 @@ features:
       - FileSort.order
       - FileSort.toMap
       - FileSortColumn
-      - FileSortOrder
-      - FileSortOrder.FileSortOrder
-      - FileSortOrder.value
       - PaginatedFile
       - PaginatedFile.PaginatedFile
       - PaginatedFile.createdAt
@@ -1242,9 +1239,6 @@ features:
       - ListBucketsOptions.sortOrder
       - ListBucketsOptions.toQueryParameters
       - BucketSortColumn
-      - BucketSortOrder
-      - BucketSortOrder.BucketSortOrder
-      - BucketSortOrder.value
   storage.file_buckets.update_bucket:
     status: implemented
     symbols:

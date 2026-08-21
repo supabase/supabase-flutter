@@ -23,6 +23,7 @@ export 'src/replay_subject.dart';
 export 'src/retry.dart';
 export 'src/retry_options.dart';
 export 'src/snake_case.dart';
+export 'src/sort_direction.dart';
 export 'src/supabase_exception.dart';
 export 'src/timestamp.dart';
 export 'src/uuid.dart';

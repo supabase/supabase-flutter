@@ -87,7 +87,7 @@ void main() {
             offset: 5,
             search: 'prod',
             sortColumn: BucketSortColumn.createdAt,
-            sortOrder: BucketSortOrder.descending,
+            sortOrder: SortDirection.descending,
           ),
         );
 
@@ -220,7 +220,7 @@ void main() {
           offset: 5,
           search: 'ware',
           sortColumn: BucketSortColumn.createdAt,
-          sortOrder: BucketSortOrder.descending,
+          sortOrder: SortDirection.descending,
         ),
       );
 
@@ -443,7 +443,7 @@ void main() {
               withDelimiter: true,
               sortBy: FileSort(
                 column: FileSortColumn.createdAt,
-                order: FileSortOrder.descending,
+                order: SortDirection.descending,
               ),
             ),
           );

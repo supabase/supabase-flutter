@@ -186,17 +186,6 @@ class BucketOptions {
 /// The column that [StorageBucketApi.listBuckets] can sort its results by.
 enum BucketSortColumn { id, name, createdAt, updatedAt }
 
-/// The direction that [StorageBucketApi.listBuckets] sorts its results in.
-enum BucketSortOrder {
-  ascending('asc'),
-  descending('desc');
-
-  const BucketSortOrder(this.value);
-
-  /// The value sent to the storage API.
-  final String value;
-}
-
 /// Filter, sort and pagination options for [StorageBucketApi.listBuckets].
 class ListBucketsOptions {
   /// The maximum number of buckets to return.
@@ -209,7 +198,7 @@ class ListBucketsOptions {
   final BucketSortColumn? sortColumn;
 
   /// The direction to sort the buckets in.
-  final BucketSortOrder? sortOrder;
+  final SortDirection? sortOrder;
 
   /// A search term used to filter buckets by name.
   final String? search;
@@ -277,7 +266,7 @@ class SearchOptions {
   /// The starting position.
   final int? offset;
 
-  /// The column to sort by. Can be any column inside a FileObject.
+  /// The column and direction to sort by.
   final SortBy? sortBy;
 
   /// The search string to filter files by.
@@ -300,33 +289,29 @@ class SearchOptions {
   }
 }
 
+/// The column and direction that [StorageFileApi.list] sorts its results by.
 class SortBy {
+  /// The column to sort by. Can be any column inside a [FileObject].
   final String? column;
-  final String? order;
 
-  const SortBy({this.column = 'name', this.order = 'asc'});
+  /// The sort direction.
+  final SortDirection order;
+
+  const SortBy({
+    this.column = 'name',
+    this.order = SortDirection.ascending,
+  });
 
   Map<String, dynamic> toMap() {
     return {
       'column': column ?? 'name',
-      'order': order ?? 'asc',
+      'order': order.value,
     };
   }
 }
 
 /// The column that [StorageFileApi.listPaginated] can sort its results by.
 enum FileSortColumn { name, updatedAt, createdAt }
-
-/// The direction that [StorageFileApi.listPaginated] sorts its results in.
-enum FileSortOrder {
-  ascending('asc'),
-  descending('desc');
-
-  const FileSortOrder(this.value);
-
-  /// The value sent to the storage API.
-  final String value;
-}
 
 /// The column and direction that [StorageFileApi.listPaginated] sorts its
 /// results by.
@@ -335,11 +320,11 @@ class FileSort {
   final FileSortColumn column;
 
   /// The sort direction.
-  final FileSortOrder order;
+  final SortDirection order;
 
   const FileSort({
     this.column = FileSortColumn.name,
-    this.order = FileSortOrder.ascending,
+    this.order = SortDirection.ascending,
   });
 
   Map<String, dynamic> toMap() {

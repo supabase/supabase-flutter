@@ -20,19 +20,6 @@ class TableIdentifier {
   Map<String, dynamic> toJson() => {'namespace': namespace, 'name': name};
 }
 
-/// The direction used when sorting a [SortField].
-enum SortDirection {
-  ascending('asc'),
-  descending('desc');
-
-  const SortDirection(this.value);
-
-  final String value;
-
-  static SortDirection fromValue(String value) =>
-      values.firstWhere((direction) => direction.value == value);
-}
-
 /// Where null values are ordered relative to non null values in a [SortField].
 enum NullOrder {
   nullsFirst('nulls-first'),
