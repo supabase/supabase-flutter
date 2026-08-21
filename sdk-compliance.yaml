@@ -2136,6 +2136,11 @@ supporting_symbols:
   - AdminUserAttributes.phoneConfirm
   - AdminUserAttributes.toJson
   - AdminUserAttributes.userMetadata
+  - AsyncJsonCodec
+  - AsyncJsonCodec.decode
+  - AsyncJsonCodec.decodeBytes
+  - AsyncJsonCodec.dispose
+  - AsyncJsonCodec.encode
   - AuthApiException
   - AuthApiException.==
   - AuthApiException.AuthApiException

@@ -14,7 +14,7 @@ class SupabaseQueryBuilder extends PostgrestQueryBuilder {
     required String table,
     super.httpClient,
     required int incrementId,
-    required super.isolate,
+    required super.jsonCodec,
     super.retryOptions,
     super.requestTimeout,
   }) : _realtime = realtime,

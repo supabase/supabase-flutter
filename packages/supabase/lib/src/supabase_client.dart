@@ -40,10 +40,6 @@ import 'trace_http_client.dart';
 /// if this is not supported by the client libraries. When set, the `auth`
 /// namespace of the Supabase client cannot be used.
 ///
-/// Pass an instance of `YAJsonIsolate` to [isolate] to share one instance
-/// for JSON encoding and decoding across clients. A new instance will be
-/// created if [isolate] is omitted.
-///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `pkceAsyncStorage` field of [authOptions].
 /// Pass a persistent implementation whenever the flow can leave the process
@@ -79,8 +75,7 @@ class SupabaseClient {
   late final RealtimeClient realtime;
   late PostgrestClient _rest;
   StreamSubscription<AuthState>? _authStateSubscription;
-  final YAJsonIsolate _isolate;
-  final bool _hasCustomIsolate;
+  final YAJsonIsolate _jsonCodec;
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each
@@ -153,7 +148,6 @@ class SupabaseClient {
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
-    YAJsonIsolate? isolate,
   }) : _supabaseKey = supabaseKey,
        _functionsOptions = functionsOptions,
        _restUrl = '$supabaseUrl/rest/v1',
@@ -167,8 +161,7 @@ class SupabaseClient {
          ...?headers,
        },
        _httpClient = httpClient,
-       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-       _hasCustomIsolate = isolate != null {
+       _jsonCodec = (YAJsonIsolate()..initialize()) {
     final baseHttpClient = httpClient ?? Client();
     final tracedHttpClient = tracePropagationOptions.enabled
         ? TracePropagationClient(
@@ -232,7 +225,7 @@ class SupabaseClient {
     counter: _incrementId,
     restUrl: _restUrl,
     schema: _postgrestOptions.schema,
-    isolate: _isolate,
+    jsonCodec: _jsonCodec,
     authHttpClient: _authHttpClient,
     realtime: realtime,
     rest: rest,
@@ -307,9 +300,7 @@ class SupabaseClient {
     await _authStateSubscription?.cancel();
     await functions.dispose();
     await _rest.dispose();
-    if (!_hasCustomIsolate) {
-      await _isolate.dispose();
-    }
+    await _jsonCodec.dispose();
     if (_httpClient == null) {
       _authHttpClient.close();
     }
@@ -345,7 +336,7 @@ class SupabaseClient {
       headers: {...headers},
       schema: _postgrestOptions.schema,
       httpClient: _authHttpClient,
-      isolate: _isolate,
+      jsonCodec: _jsonCodec,
       retryOptions: _postgrestOptions.retryOptions,
       requestTimeout: _postgrestOptions.requestTimeout,
     );
@@ -356,7 +347,7 @@ class SupabaseClient {
       _functionsUrl,
       {...headers},
       httpClient: _functionsHttpClient,
-      isolate: _isolate,
+      jsonCodec: _jsonCodec,
       region: _functionsOptions.region,
     );
   }

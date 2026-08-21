@@ -1576,6 +1576,76 @@ Two logger names changed, so update any listeners that filter on `LogRecord.logg
 | `supabase.supabase` | `supabase.dart` |
 | `supabase.supabase_flutter` | `supabase.flutter` |
 
+### JSON encoding and decoding is behind the `AsyncJsonCodec` interface
+
+`PostgrestClient` and `FunctionsClient` used to take a `YAJsonIsolate` through an
+`isolate:` parameter, which named an implementation rather than a contract, and named one
+that does not spawn an isolate at all on web. They now take an `AsyncJsonCodec` through
+`jsonCodec:`, the interface `YAJsonIsolate` implements. The same rename applies to the
+builders that carry the codec through the chain: `PostgrestBuilder`,
+`PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `RawPostgrestBuilder`,
+`SupabaseQueryBuilder` and `SupabaseQuerySchema`.
+
+```dart
+// Before
+final postgrest = PostgrestClient(url, isolate: YAJsonIsolate()..initialize());
+
+// After
+final postgrest = PostgrestClient(url, jsonCodec: YAJsonIsolate()..initialize());
+```
+
+`AsyncJsonCodec` is exported from `postgrest`, `supabase_functions`, `supabase` and
+`supabase_flutter`, so an application can encode and decode JSON its own way, for example
+through a native parser or through a wrapper that records how long each payload takes:
+
+```dart
+class TimedJsonCodec implements AsyncJsonCodec {
+  TimedJsonCodec(this._inner);
+
+  final AsyncJsonCodec _inner;
+
+  @override
+  Future<dynamic> decode(String json) => _time(() => _inner.decode(json));
+
+  @override
+  Future<dynamic> decodeBytes(Uint8List encodedJson) =>
+      _time(() => _inner.decodeBytes(encodedJson));
+
+  @override
+  Future<String> encode(Object? json) => _time(() => _inner.encode(json));
+
+  @override
+  Future<void> dispose() => _inner.dispose();
+}
+```
+
+A codec passed to a client belongs to the caller, so `dispose()` leaves it alone, exactly
+as the old `isolate:` parameter did. A client that was not given one creates the default
+codec and disposes it with itself. `YAJsonIsolate` is not exported by `supabase` or
+`supabase_flutter`, so depend on `yet_another_json_isolate` directly to name the default
+implementation, for example to wrap it as above.
+
+### `SupabaseClient` no longer takes an `isolate`
+
+`SupabaseClient(isolate: …)` is removed, and `Supabase.initialize` never forwarded it, so
+nothing replaces it on the `supabase_flutter` side either. The client creates one
+`AsyncJsonCodec`, hands it to the rest and functions clients so they share it, and disposes
+it in `dispose()`.
+
+```dart
+// Before
+final client = SupabaseClient(url, key, isolate: myIsolate);
+
+// After
+final client = SupabaseClient(url, key);
+```
+
+The parameter existed to share or supervise a single long-lived worker isolate. There is no
+such worker anymore: the default codec runs small payloads inline and spawns a short lived
+isolate per large one, so a second instance costs nothing and there is nothing to
+supervise. Construct a `PostgrestClient` or a `FunctionsClient` directly with `jsonCodec:`
+when you do need to choose how their JSON is processed.
+
 ### `RealtimeClient.logger` and `RealtimeClient.log` are gone
 
 The realtime client had a second logging path next to `package:logging`: a `logger` callback

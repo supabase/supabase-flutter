@@ -28,7 +28,7 @@ class PostgrestQueryBuilder {
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
   }) : _config = _RequestConfig(
@@ -36,7 +36,7 @@ class PostgrestQueryBuilder {
          headers: {...?headers},
          schema: schema,
          httpClient: httpClient,
-         isolate: isolate,
+         jsonCodec: jsonCodec,
          retry: retryOptions,
          requestTimeout: requestTimeout,
        );

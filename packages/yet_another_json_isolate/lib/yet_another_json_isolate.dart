@@ -3,5 +3,6 @@
 /// isolates that hand their result back without copying.
 library;
 
+export 'src/async_json_codec.dart';
 export 'src/_isolates_io.dart'
     if (dart.library.js_interop) 'src/_isolates_web.dart';

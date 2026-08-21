@@ -8,7 +8,6 @@ import 'package:postgrest/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart';
-import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 part 'postgrest_filter_builder.dart';
 part 'postgrest_query_builder.dart';
@@ -33,7 +32,7 @@ class _RequestConfig {
     this.method,
     this.body,
     this.httpClient,
-    this.isolate,
+    this.jsonCodec,
     this.count,
     this.maybeSingle = false,
     required this.retry,
@@ -47,7 +46,7 @@ class _RequestConfig {
   final HttpMethod? method;
   final Object? body;
   final Client? httpClient;
-  final YAJsonIsolate? isolate;
+  final AsyncJsonCodec? jsonCodec;
   final CountOption? count;
   final bool maybeSingle;
   final SupabaseRetryOptions retry;
@@ -61,7 +60,7 @@ class _RequestConfig {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
     SupabaseRetryOptions? retry,
@@ -75,7 +74,7 @@ class _RequestConfig {
       method: method ?? this.method,
       body: body ?? this.body,
       httpClient: httpClient ?? this.httpClient,
-      isolate: isolate ?? this.isolate,
+      jsonCodec: jsonCodec ?? this.jsonCodec,
       count: count ?? this.count,
       maybeSingle: maybeSingle ?? this.maybeSingle,
       retry: retry ?? this.retry,
@@ -151,7 +150,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   String? get _schema => _config.schema;
   Uri get _url => _config.url;
   Client? get _httpClient => _config.httpClient;
-  YAJsonIsolate? get _isolate => _config.isolate;
+  AsyncJsonCodec? get _jsonCodec => _config.jsonCodec;
   CountOption? get _count => _config.count;
   SupabaseRetryOptions get _retry => _config.retry;
   Duration? get _requestTimeout => _config.requestTimeout;
@@ -164,7 +163,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
@@ -179,7 +178,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
          method: method,
          body: body,
          httpClient: httpClient,
-         isolate: isolate,
+         jsonCodec: jsonCodec,
          count: count,
          maybeSingle: maybeSingle,
          retry: retryOptions,
@@ -203,7 +202,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
@@ -218,7 +217,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       method: method,
       body: body,
       httpClient: httpClient,
-      isolate: isolate,
+      jsonCodec: jsonCodec,
       count: count,
       maybeSingle: maybeSingle,
       retry: retry,
@@ -448,9 +447,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           body = response.body;
         } else {
           try {
-            final isolate = _isolate;
-            if (isolate != null) {
-              body = await isolate.decodeBytes(response.bodyBytes);
+            final jsonCodec = _jsonCodec;
+            if (jsonCodec != null) {
+              body = await jsonCodec.decodeBytes(response.bodyBytes);
             } else {
               body = jsonDecode(utf8.decode(response.bodyBytes));
             }

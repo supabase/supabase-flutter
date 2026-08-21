@@ -257,22 +257,45 @@ void main() {
       expect(response.statusCode, 200);
     });
 
-    test('dispose isolate', () async {
+    test('dispose the JSON codec it created itself', () async {
       await functionsCustomHttpClient.dispose();
       expect(functionsCustomHttpClient.invoke('function'), throwsStateError);
     });
 
-    test('do not dispose custom isolate', () async {
+    test('do not dispose a supplied JSON codec', () async {
       final client = FunctionsClient(
         "",
         {},
-        isolate: YAJsonIsolate(),
+        jsonCodec: YAJsonIsolate(),
         httpClient: CustomHttpClient(),
       );
 
       await client.dispose();
       final response = await client.invoke('function');
       expect(response.data, {'key': 'Hello World'});
+    });
+
+    test('encodes and decodes through a supplied JSON codec', () async {
+      final jsonCodec = _RecordingJsonCodec();
+      final client = FunctionsClient(
+        "",
+        {},
+        jsonCodec: jsonCodec,
+        httpClient: CustomHttpClient(),
+      );
+      addTearDown(client.dispose);
+
+      final response = await client.invoke(
+        'function',
+        body: {'name': 'Supabase'},
+      );
+
+      expect(response.data, {'key': 'Hello World'});
+      expect(jsonCodec.encodedValues, [
+        {'name': 'Supabase'},
+      ]);
+      expect(jsonCodec.decodedPayloads, 1);
+      expect(jsonCodec.isDisposed, isFalse);
     });
 
     test('Listen to SSE event', () async {
@@ -633,13 +656,12 @@ void main() {
 
     group('Constructor variations', () {
       test('constructor with all parameters', () {
-        final isolate = YAJsonIsolate();
         final httpClient = CustomHttpClient();
         final client = FunctionsClient(
           'https://example.com',
           {'X-Test': 'value'},
           httpClient: httpClient,
-          isolate: isolate,
+          jsonCodec: YAJsonIsolate(),
         );
 
         expect(client.headers['X-Test'], 'value');
@@ -784,4 +806,36 @@ void main() {
       );
     });
   });
+}
+
+/// An [AsyncJsonCodec] that works inline and records what it was asked to
+/// process, so a test can assert that the client routes its JSON through the
+/// codec it was given and leaves its disposal to the caller.
+class _RecordingJsonCodec implements AsyncJsonCodec {
+  final List<Object?> encodedValues = [];
+  int decodedPayloads = 0;
+  bool isDisposed = false;
+
+  @override
+  Future<dynamic> decode(String json) async {
+    decodedPayloads++;
+    return jsonDecode(json);
+  }
+
+  @override
+  Future<dynamic> decodeBytes(Uint8List encodedJson) async {
+    decodedPayloads++;
+    return jsonDecode(utf8.decode(encodedJson));
+  }
+
+  @override
+  Future<String> encode(Object? json) async {
+    encodedValues.add(json);
+    return jsonEncode(json);
+  }
+
+  @override
+  Future<void> dispose() async {
+    isDisposed = true;
+  }
 }
