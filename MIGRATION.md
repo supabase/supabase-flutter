@@ -488,7 +488,9 @@ isolate:
 `RealtimeMessage` carries the `joinRef`, `ref`, `topic`, `event` and `payload` of a message, and
 converts to and from the shape a protocol version puts on the wire, so a codec only has to turn that
 shape into bytes and back. Outgoing frames are written in push order and incoming messages are
-dispatched in receive order, even when a later payload finishes encoding or decoding first:
+dispatched in receive order, even when a later payload finishes encoding or decoding first. A codec
+call that never completes fails after `RealtimeClient.timeout` instead of stalling every write or
+dispatch queued behind it:
 
 ```dart
 final isolate = YAJsonIsolate();

@@ -29,12 +29,14 @@ void main() {
   RealtimeClient createClient({
     RealtimeEncode? encode,
     RealtimeDecode? decode,
+    Duration? timeout,
   }) {
     final client = RealtimeClient(
       socketEndpoint,
       transport: (url, headers) => mockedChannel,
       encode: encode,
       decode: decode,
+      timeout: timeout ?? RealtimeConstants.defaultTimeout,
     );
     unawaited(client.connect());
     client.connectionState = SocketState.open;
@@ -164,6 +166,28 @@ void main() {
 
       expect(written, ['frame-1', 'frame-2']);
     });
+
+    test(
+      'a custom encode that never completes fails after timeout, without '
+      'stalling later writes',
+      () async {
+        final neverCompletes = Completer<Object>();
+        final client = createClient(
+          encode: (message) => message.ref == '1'
+              ? neverCompletes.future
+              : Future.value('frame-${message.ref}'),
+          timeout: const Duration(milliseconds: 20),
+        );
+
+        client.push(messageWithRef('1'));
+        await pumpEventQueue();
+
+        client.push(messageWithRef('2'));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(written, ['frame-2']);
+      },
+    );
 
     test('the built-in codec writes without a microtask hop', () {
       final client = createClient();
@@ -361,6 +385,31 @@ void main() {
 
       expect(received, ['2']);
     });
+
+    test(
+      'a custom decode that never completes fails after timeout, without '
+      'stalling later dispatches',
+      () async {
+        final neverCompletes = Completer<RealtimeMessage>();
+        final client = createClient(
+          decode: (rawMessage) => rawMessage == '1'
+              ? neverCompletes.future
+              : Future.value(frameWithRef(rawMessage as String)),
+          timeout: const Duration(milliseconds: 20),
+        );
+
+        final received = <String?>[];
+        client.onMessage.listen((message) => received.add(message.ref));
+
+        client.onConnectionMessage('1');
+        await pumpEventQueue();
+
+        client.onConnectionMessage('2');
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(received, ['2']);
+      },
+    );
 
     test('the built-in codec dispatches without a microtask hop', () {
       final client = createClient();

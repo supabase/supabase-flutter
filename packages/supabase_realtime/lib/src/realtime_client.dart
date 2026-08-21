@@ -227,7 +227,10 @@ class RealtimeClient {
   ///
   /// [transport] The Websocket Transport, for example WebSocket.
   ///
-  /// [timeout] The default timeout to trigger push timeouts.
+  /// [timeout] The default timeout to trigger push timeouts. Also bounds a
+  /// custom [encode] or [decode] call, so one that never completes fails
+  /// after [timeout] instead of stalling every write or dispatch chained
+  /// after it.
   ///
   /// [connectionCloseTimeout] The timeout to wait for the connection to close
   /// before dismissing the result. Defaults to 6 seconds.
@@ -584,8 +587,9 @@ class RealtimeClient {
   /// Encodes [message] and writes it to the socket.
   ///
   /// The built-in codec writes straight to the sink. A custom [encode] is
-  /// awaited first, and its write is chained onto [_pendingWrite] so that a
-  /// fast encode never overtakes a slow one that was pushed before it.
+  /// awaited first, bounded by [timeout] so it cannot stall the chain
+  /// forever, and its write is chained onto [_pendingWrite] so that a fast
+  /// encode never overtakes a slow one that was pushed before it.
   void _write(RealtimeMessage message) {
     final connection = this.connection;
     final encode = this.encode;
@@ -607,7 +611,7 @@ class RealtimeClient {
 
     final Future<Object> encoded;
     try {
-      encoded = encode(message);
+      encoded = encode(message).timeout(timeout);
     } catch (error) {
       realtimeLogger.warning('Failed to encode message', error);
       return;
@@ -666,9 +670,10 @@ class RealtimeClient {
 
   /// Decodes [rawMessage] and dispatches it to the channels it belongs to.
   ///
-  /// The built-in codec dispatches straight away. A custom [decode] is awaited
-  /// first, and its dispatch is chained onto [_pendingDispatch] so that a fast
-  /// decode never overtakes a slow one that was received before it.
+  /// The built-in codec dispatches straight away. A custom [decode] is
+  /// awaited first, bounded by [timeout] so it cannot stall the chain
+  /// forever, and its dispatch is chained onto [_pendingDispatch] so that a
+  /// fast decode never overtakes a slow one that was received before it.
   void onConnectionMessage(Object rawMessage) {
     final connection = this.connection;
     final decode = this.decode;
@@ -690,7 +695,7 @@ class RealtimeClient {
 
     final Future<RealtimeMessage> decoded;
     try {
-      decoded = decode(rawMessage);
+      decoded = decode(rawMessage).timeout(timeout);
     } catch (error) {
       realtimeLogger.warning('Failed to decode message', error);
       return;
