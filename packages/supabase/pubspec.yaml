@@ -1,6 +1,6 @@
 name: supabase
 description: A dart client for Supabase. This client makes it simple for developers to build secure and scalable products.
-version: 2.16.0
+version: 3.0.0-dev.1
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/supabase'
 issue_tracker: 'https://github.com/supabase/supabase-flutter/issues'
@@ -20,9 +20,9 @@ resolution: workspace
 dependencies:
   http: ^1.6.0
   meta: ^1.7.0
-  postgrest: 2.9.1
+  postgrest: 3.0.0-dev.1
   supabase_auth: 3.0.0-dev.1
-  supabase_common: 0.1.2
+  supabase_common: 3.0.0-dev.1
   supabase_functions: 3.0.0-dev.1
   supabase_realtime: 3.0.0-dev.1
   supabase_storage: 3.0.0-dev.1
