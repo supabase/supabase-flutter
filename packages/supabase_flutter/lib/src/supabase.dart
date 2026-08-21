@@ -61,6 +61,11 @@ class Supabase {
   ///
   /// Custom http client can be used by passing [httpClient] parameter.
   ///
+  /// Pass [jsonCodec] to encode and decode the JSON of the rest and functions
+  /// clients some other way, for example through a native parser. A codec
+  /// passed here is owned by the caller, so it is not disposed together with
+  /// the client. One is created internally when this is omitted.
+  ///
   /// [realtimeClientOptions], [postgrestOptions], and [storageOptions]
   /// configure their respective underlying clients, for example
   /// `storageOptions.retryOptions` configures how an upload to Supabase
@@ -95,6 +100,7 @@ class Supabase {
     TracePropagationOptions tracePropagationOptions =
         const TracePropagationOptions(),
     Future<String?> Function()? accessToken,
+    AsyncJsonCodec? jsonCodec,
   }) async {
     if (_instance._isInitialized) {
       flutterLogger.info(
@@ -130,6 +136,7 @@ class Supabase {
       storageOptions: storageOptions,
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
+      jsonCodec: jsonCodec,
     );
 
     if (accessToken == null) {
@@ -260,6 +267,7 @@ class Supabase {
     required AuthClientOptions authOptions,
     required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
+    required AsyncJsonCodec? jsonCodec,
   }) {
     final headers = {
       ...SupabaseFlutterConstants.defaultHeaders,
@@ -276,6 +284,7 @@ class Supabase {
       authOptions: authOptions,
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
+      jsonCodec: jsonCodec,
     );
 
     // Close any previous realtime client that may still be connected due to
