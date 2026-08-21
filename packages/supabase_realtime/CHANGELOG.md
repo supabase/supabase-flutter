@@ -1,3 +1,15 @@
+## 3.0.0-dev.1
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: share the test helpers through supabase_common ([#1745](https://github.com/supabase/supabase-flutter/issues/1745)). ([bcb41fa4](https://github.com/supabase/supabase-flutter/commit/bcb41fa4d9ef840c0380e641d3e45968084090c8))
+ - **FEAT**: introduce the supabase_testing package ([#1747](https://github.com/supabase/supabase-flutter/issues/1747)). ([5a3aa9b4](https://github.com/supabase/supabase-flutter/commit/5a3aa9b4265385e3d747ca70ad499102fa388ee9))
+ - **BREAKING** **REFACTOR**: rework logging to emit only through the supabase logger hierarchy ([#1741](https://github.com/supabase/supabase-flutter/issues/1741)). ([d1642c80](https://github.com/supabase/supabase-flutter/commit/d1642c80c60d93cf3bf7919b0cef775470275ed9))
+ - **BREAKING** **REFACTOR**(realtime): replace listener callbacks with streams ([#1706](https://github.com/supabase/supabase-flutter/issues/1706)). ([07345bf9](https://github.com/supabase/supabase-flutter/commit/07345bf9568a0ba495f1e34cb6ba542eddecc7e9))
+ - **BREAKING** **FEAT**(realtime): support asynchronous encode/decode codecs ([#1684](https://github.com/supabase/supabase-flutter/issues/1684)). ([5c496198](https://github.com/supabase/supabase-flutter/commit/5c496198fb0cfb874f2a036b02862834bc739572))
+ - **BREAKING** **FEAT**: rename the realtime_client package to supabase_realtime ([#1714](https://github.com/supabase/supabase-flutter/issues/1714)). ([d37bed56](https://github.com/supabase/supabase-flutter/commit/d37bed567711c8ed68590a002bb3f1a45432abcb))
+ - **BREAKING** **CHORE**: give each package's Constants class a package-specific name ([#1677](https://github.com/supabase/supabase-flutter/issues/1677)). ([40f6d89c](https://github.com/supabase/supabase-flutter/commit/40f6d89c7fad32e49f028b2644914807fd731b70))
+
 ## 2.13.0
 
  - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
