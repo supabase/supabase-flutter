@@ -61,6 +61,12 @@ class Supabase {
   ///
   /// Custom http client can be used by passing [httpClient] parameter.
   ///
+  /// Pass [isolate] to supply the [YAJsonIsolate] used for JSON encoding and
+  /// decoding, for example to share a single instance with code outside of
+  /// Supabase. An instance supplied here is owned by the caller and is not
+  /// disposed together with the client. One is created internally when this
+  /// is omitted.
+  ///
   /// [realtimeClientOptions], [postgrestOptions], and [storageOptions]
   /// configure their respective underlying clients, for example
   /// `storageOptions.retryOptions` configures how an upload to Supabase
@@ -95,6 +101,7 @@ class Supabase {
     TracePropagationOptions tracePropagationOptions =
         const TracePropagationOptions(),
     Future<String?> Function()? accessToken,
+    YAJsonIsolate? isolate,
   }) async {
     if (_instance._isInitialized) {
       flutterLogger.info(
@@ -130,6 +137,7 @@ class Supabase {
       storageOptions: storageOptions,
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
+      isolate: isolate,
     );
 
     if (accessToken == null) {
@@ -260,6 +268,7 @@ class Supabase {
     required AuthClientOptions authOptions,
     required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
+    required YAJsonIsolate? isolate,
   }) {
     final headers = {
       ...SupabaseFlutterConstants.defaultHeaders,
@@ -276,6 +285,7 @@ class Supabase {
       authOptions: authOptions,
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
+      isolate: isolate,
     );
 
     // Close any previous realtime client that may still be connected due to

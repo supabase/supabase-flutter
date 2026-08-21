@@ -5,7 +5,6 @@ import 'package:supabase/src/logger.dart';
 import 'package:supabase/src/supabase_constants.dart';
 import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
-import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'api_key.dart';
 import 'auth_http_client.dart';

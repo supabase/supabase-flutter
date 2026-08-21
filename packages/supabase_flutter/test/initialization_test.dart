@@ -41,6 +41,36 @@ void main() {
       });
     });
 
+    group('Custom isolate initialization', () {
+      test('initializes with a caller supplied isolate', () async {
+        final isolate = YAJsonIsolate(debugName: 'custom');
+        addTearDown(isolate.dispose);
+
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          isolate: isolate,
+        );
+
+        expect(Supabase.instance.isInitialized, isTrue);
+      });
+
+      test('leaves a caller supplied isolate usable after dispose', () async {
+        final isolate = YAJsonIsolate(debugName: 'custom');
+        addTearDown(isolate.dispose);
+
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          isolate: isolate,
+        );
+        await Supabase.instance.dispose();
+
+        // The caller owns it, so the client must not have disposed it.
+        expect(await isolate.decode('{"a":1}'), {'a': 1});
+      });
+    });
+
     group('Custom storage initialization', () {
       test('initialize successfully with custom localStorage', () {
         const localStorage = MockLocalStorage();

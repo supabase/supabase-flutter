@@ -5,7 +5,6 @@ import 'package:supabase/src/supabase_client.dart' as real;
 import 'package:supabase/supabase.dart' hide SupabaseClient;
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
-import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'utils.dart';
 
