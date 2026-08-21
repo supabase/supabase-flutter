@@ -1576,6 +1576,69 @@ Two logger names changed, so update any listeners that filter on `LogRecord.logg
 | `supabase.supabase` | `supabase.dart` |
 | `supabase.supabase_flutter` | `supabase.flutter` |
 
+### JSON encoding and decoding is behind the `AsyncJsonCodec` interface
+
+`SupabaseClient`, `PostgrestClient` and `FunctionsClient` used to take a `YAJsonIsolate`
+through an `isolate:` parameter, which named an implementation rather than a contract, and
+named one that does not spawn an isolate at all on web. They now take an `AsyncJsonCodec`
+through `jsonCodec:`, the interface `YAJsonIsolate` implements. The same rename applies to
+the builders that carry the codec through the chain: `PostgrestBuilder`,
+`PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `RawPostgrestBuilder`,
+`SupabaseQueryBuilder` and `SupabaseQuerySchema`.
+
+```dart
+// Before
+final client = SupabaseClient(url, key, isolate: YAJsonIsolate()..initialize());
+
+// After
+final client = SupabaseClient(url, key, jsonCodec: YAJsonIsolate()..initialize());
+```
+
+`Supabase.initialize` takes the codec too, so a `supabase_flutter` application never has to
+construct a `SupabaseClient` to choose one:
+
+```dart
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  jsonCodec: myJsonCodec,
+);
+```
+
+`AsyncJsonCodec` is exported from `postgrest`, `supabase_functions`, `supabase` and
+`supabase_flutter`, so an application can encode and decode JSON its own way, for example
+through a native parser or through a wrapper that records how long each payload takes:
+
+```dart
+class TimedJsonCodec implements AsyncJsonCodec {
+  TimedJsonCodec(this._inner);
+
+  final AsyncJsonCodec _inner;
+
+  @override
+  Future<dynamic> decode(String json) => _time(() => _inner.decode(json));
+
+  @override
+  Future<dynamic> decodeBytes(Uint8List encodedJson) =>
+      _time(() => _inner.decodeBytes(encodedJson));
+
+  @override
+  Future<String> encode(Object? json) => _time(() => _inner.encode(json));
+
+  @override
+  Future<void> dispose() => _inner.dispose();
+}
+```
+
+A codec passed to a client belongs to the caller, so `dispose()` leaves it alone, exactly
+as the old `isolate:` parameter did. A client that was not given one creates the default
+codec and disposes it with itself. `SupabaseClient` passes its codec on to the rest and
+functions clients it builds, so one codec serves all three.
+
+`YAJsonIsolate` is not exported by `supabase` or `supabase_flutter`, so depend on
+`yet_another_json_isolate` directly to name the default implementation, for example to wrap
+it as above.
+
 ### `RealtimeClient.logger` and `RealtimeClient.log` are gone
 
 The realtime client had a second logging path next to `package:logging`: a `logger` callback

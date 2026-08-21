@@ -13,7 +13,7 @@ class PostgrestRpcBuilder {
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
-    required YAJsonIsolate isolate,
+    required AsyncJsonCodec jsonCodec,
     SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
   }) : _config = _RequestConfig(
@@ -21,7 +21,7 @@ class PostgrestRpcBuilder {
          headers: {...?headers},
          schema: schema,
          httpClient: httpClient,
-         isolate: isolate,
+         jsonCodec: jsonCodec,
          retry: retryOptions,
          requestTimeout: requestTimeout,
        );

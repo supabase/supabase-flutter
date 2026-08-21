@@ -40,9 +40,11 @@ import 'trace_http_client.dart';
 /// if this is not supported by the client libraries. When set, the `auth`
 /// namespace of the Supabase client cannot be used.
 ///
-/// Pass an instance of `YAJsonIsolate` to [isolate] to share one instance
-/// for JSON encoding and decoding across clients. A new instance will be
-/// created if [isolate] is omitted.
+/// [jsonCodec] encodes and decodes the JSON of the rest and functions clients.
+/// The default codec keeps large payloads off the calling isolate. Pass your
+/// own to process that JSON some other way, for example through a native
+/// parser. A codec passed here is owned by the caller, so [dispose] leaves it
+/// alone, and it can be shared with other clients.
 ///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `pkceAsyncStorage` field of [authOptions].
@@ -79,8 +81,8 @@ class SupabaseClient {
   late final RealtimeClient realtime;
   late PostgrestClient _rest;
   StreamSubscription<AuthState>? _authStateSubscription;
-  final YAJsonIsolate _isolate;
-  final bool _hasCustomIsolate;
+  final AsyncJsonCodec _jsonCodec;
+  final bool _ownsJsonCodec;
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each
@@ -153,7 +155,7 @@ class SupabaseClient {
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
   }) : _supabaseKey = supabaseKey,
        _functionsOptions = functionsOptions,
        _restUrl = '$supabaseUrl/rest/v1',
@@ -167,8 +169,8 @@ class SupabaseClient {
          ...?headers,
        },
        _httpClient = httpClient,
-       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-       _hasCustomIsolate = isolate != null {
+       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _ownsJsonCodec = jsonCodec == null {
     final baseHttpClient = httpClient ?? Client();
     final tracedHttpClient = tracePropagationOptions.enabled
         ? TracePropagationClient(
@@ -232,7 +234,7 @@ class SupabaseClient {
     counter: _incrementId,
     restUrl: _restUrl,
     schema: _postgrestOptions.schema,
-    isolate: _isolate,
+    jsonCodec: _jsonCodec,
     authHttpClient: _authHttpClient,
     realtime: realtime,
     rest: rest,
@@ -307,8 +309,8 @@ class SupabaseClient {
     await _authStateSubscription?.cancel();
     await functions.dispose();
     await _rest.dispose();
-    if (!_hasCustomIsolate) {
-      await _isolate.dispose();
+    if (_ownsJsonCodec) {
+      await _jsonCodec.dispose();
     }
     if (_httpClient == null) {
       _authHttpClient.close();
@@ -345,7 +347,7 @@ class SupabaseClient {
       headers: {...headers},
       schema: _postgrestOptions.schema,
       httpClient: _authHttpClient,
-      isolate: _isolate,
+      jsonCodec: _jsonCodec,
       retryOptions: _postgrestOptions.retryOptions,
       requestTimeout: _postgrestOptions.requestTimeout,
     );
@@ -356,7 +358,7 @@ class SupabaseClient {
       _functionsUrl,
       {...headers},
       httpClient: _functionsHttpClient,
-      isolate: _isolate,
+      jsonCodec: _jsonCodec,
       region: _functionsOptions.region,
     );
   }

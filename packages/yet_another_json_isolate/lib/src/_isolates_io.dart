@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'async_json_codec.dart';
+
 /// Payloads estimated to be smaller than this are processed directly on the
 /// calling isolate.
 ///
@@ -26,7 +28,7 @@ final Converter<List<int>, Object?> _utf8JsonDecoder = const Utf8Decoder().fuse(
 /// an isolate round trip. Large payloads are processed on a short lived
 /// isolate spawned per call: its result is handed back through `Isolate.exit`
 /// without copying, and independent calls run in parallel.
-class YAJsonIsolate {
+class YAJsonIsolate implements AsyncJsonCodec {
   YAJsonIsolate({
     this.debugName,
   });
@@ -68,6 +70,7 @@ class YAJsonIsolate {
   /// was still in flight has finished. Safe to call more than once, and safe
   /// to call on an instance that was never used. Concurrent calls all await
   /// the same disposal. Using the instance afterwards throws a [StateError].
+  @override
   Future<void> dispose() => _disposal ??= _activeWork.isEmpty
       ? Future.value()
       : Future.wait(_activeWork.toList()).then((_) {});
@@ -90,6 +93,7 @@ class YAJsonIsolate {
   /// Small payloads are decoded inline, large ones on a short lived isolate.
   /// The threshold compares the length in UTF-16 code units, which is what
   /// the cost of parsing a string scales with.
+  @override
   Future<dynamic> decode(String json) async {
     _throwIfDisposed();
     if (json.length < _isolateThresholdBytes) {
@@ -109,6 +113,7 @@ class YAJsonIsolate {
   ///
   /// The bytes are read before control returns to the caller, so the buffer
   /// can be reused as soon as the call returns.
+  @override
   Future<dynamic> decodeBytes(Uint8List encodedJson) async {
     _throwIfDisposed();
     if (encodedJson.length < _isolateThresholdBytes) {
@@ -129,6 +134,7 @@ class YAJsonIsolate {
   ///
   /// The value is consumed before control returns to the caller, so it can
   /// be mutated as soon as the call returns.
+  @override
   Future<String> encode(Object? json) async {
     _throwIfDisposed();
     if (_remainingBudget(json, _isolateThresholdBytes, 0) >= 0) {

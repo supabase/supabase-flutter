@@ -37,6 +37,33 @@ final data = await isolate.decodeBytes(response.bodyBytes);
 isolate.dispose();
 ```
 
+## `AsyncJsonCodec`
+
+`YAJsonIsolate` implements `AsyncJsonCodec`, the interface the Supabase clients accept
+through their `jsonCodec` parameter. Implement it to process their JSON some other way, for
+example with a native parser, or to wrap the default implementation and measure it.
+
+```dart
+class TimedJsonCodec implements AsyncJsonCodec {
+  TimedJsonCodec(this._inner);
+
+  final AsyncJsonCodec _inner;
+
+  @override
+  Future<dynamic> decode(String json) => _time(() => _inner.decode(json));
+
+  @override
+  Future<dynamic> decodeBytes(Uint8List encodedJson) =>
+      _time(() => _inner.decodeBytes(encodedJson));
+
+  @override
+  Future<String> encode(Object? json) => _time(() => _inner.encode(json));
+
+  @override
+  Future<void> dispose() => _inner.dispose();
+}
+```
+
 ## License
 
 This repo is licensed under MIT.

@@ -26,8 +26,8 @@ class PostgrestClient {
   final Map<String, String> headers;
   final String? _schema;
   final Client? httpClient;
-  final YAJsonIsolate _isolate;
-  final bool _hasCustomIsolate;
+  final AsyncJsonCodec _jsonCodec;
+  final bool _ownsJsonCodec;
 
   /// Configures the automatic retry of GET and HEAD requests.
   final SupabaseRetryOptions retryOptions;
@@ -44,8 +44,9 @@ class PostgrestClient {
   ///
   /// [httpClient] is optional and can be used to provide a custom http client
   ///
-  /// [isolate] is optional and can be used to provide a custom isolate, which
-  /// is used for heavy json computation
+  /// [jsonCodec] is optional and can be used to encode and decode JSON
+  /// somewhere other than on the isolates the default codec spawns. A codec
+  /// passed here is owned by the caller and is not disposed by [dispose]
   ///
   /// [retryOptions] configures the automatic retry of GET and HEAD requests
   /// that fail with a retryable status code or a network error. Use
@@ -70,7 +71,7 @@ class PostgrestClient {
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     this.retryOptions = const SupabaseRetryOptions(),
     this.requestTimeout,
     Future<String?> Function()? accessToken,
@@ -80,15 +81,15 @@ class PostgrestClient {
          'header would win over the resolved token on every request.',
        ),
        // The transport belongs to the caller, so the client never closes it,
-       // the same way it leaves a caller-provided isolate alone.
+       // the same way it leaves a caller-provided JSON codec alone.
        // ignore: dispose-class-fields
        httpClient = accessToken == null
            ? httpClient
            : AccessTokenClient(accessToken, httpClient),
        _schema = schema,
        headers = Map.unmodifiable({...defaultHeaders, ...?headers}),
-       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-       _hasCustomIsolate = isolate != null {
+       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _ownsJsonCodec = jsonCodec == null {
     postgrestLogger.config(
       () =>
           'Initialize PostgrestClient with url: ${Uri.parse(url).redacted}, '
@@ -107,7 +108,7 @@ class PostgrestClient {
       headers: headers,
       schema: _schema,
       httpClient: httpClient,
-      isolate: _isolate,
+      jsonCodec: _jsonCodec,
       retryOptions: retryOptions,
       requestTimeout: requestTimeout,
     );
@@ -122,7 +123,7 @@ class PostgrestClient {
       headers: headers,
       schema: schema,
       httpClient: httpClient,
-      isolate: _isolate,
+      jsonCodec: _jsonCodec,
       retryOptions: retryOptions,
       requestTimeout: requestTimeout,
     );
@@ -154,7 +155,7 @@ class PostgrestClient {
       headers: headers,
       schema: _schema,
       httpClient: httpClient,
-      isolate: _isolate,
+      jsonCodec: _jsonCodec,
       retryOptions: retryOptions,
       requestTimeout: requestTimeout,
     ).rpc(params, get);
@@ -162,8 +163,8 @@ class PostgrestClient {
 
   Future<void> dispose() async {
     postgrestLogger.fine("dispose PostgrestClient");
-    if (!_hasCustomIsolate) {
-      return _isolate.dispose();
+    if (_ownsJsonCodec) {
+      return _jsonCodec.dispose();
     }
   }
 }

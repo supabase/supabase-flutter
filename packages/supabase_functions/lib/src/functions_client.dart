@@ -14,12 +14,14 @@ class FunctionsClient {
   final String _url;
   final Map<String, String> _headers;
   final http.Client? _httpClient;
-  final YAJsonIsolate _isolate;
-  final bool _hasCustomIsolate;
+  final AsyncJsonCodec _jsonCodec;
+  final bool _ownsJsonCodec;
   final String? _region;
 
-  /// In case you don't provide your own isolate, call [dispose] when you're
-  /// done
+  /// [jsonCodec] encodes the request body and decodes the response. The
+  /// default codec keeps large payloads off the calling isolate. A codec
+  /// passed here is owned by the caller, so [dispose] leaves it alone; call
+  /// [dispose] when you're done with a client that created its own.
   ///
   /// [accessToken] is resolved before every invocation and sent as
   /// `Authorization: Bearer <token>`. Use it when the token rotates, for
@@ -30,7 +32,7 @@ class FunctionsClient {
     String url,
     Map<String, String> headers, {
     http.Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     String? region,
     Future<String?> Function()? accessToken,
   }) : assert(
@@ -40,10 +42,10 @@ class FunctionsClient {
        ),
        _url = url,
        _headers = {...FunctionsConstants.defaultHeaders, ...headers},
-       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-       _hasCustomIsolate = isolate != null,
+       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _ownsJsonCodec = jsonCodec == null,
        // The transport belongs to the caller, so the client never closes it,
-       // the same way it leaves a caller-provided isolate alone.
+       // the same way it leaves a caller-provided JSON codec alone.
        // ignore: dispose-class-fields
        _httpClient = accessToken == null
            ? httpClient
@@ -205,7 +207,7 @@ class FunctionsClient {
         } else if (body is Uint8List) {
           bodyRequest.bodyBytes = body;
         } else {
-          bodyRequest.body = await _isolate.encode(body);
+          bodyRequest.body = await _jsonCodec.encode(body);
         }
       }
       request = bodyRequest;
@@ -239,7 +241,7 @@ class FunctionsClient {
       } else {
         dynamic decoded;
         try {
-          decoded = await _isolate.decodeBytes(bodyBytes);
+          decoded = await _jsonCodec.decodeBytes(bodyBytes);
         } on FormatException {
           // A body labeled JSON that doesn't parse is only tolerated on an
           // error status, where the raw text still needs to reach the caller
@@ -282,13 +284,14 @@ class FunctionsClient {
     );
   }
 
-  /// Disposes the self created isolate for json encoding/decoding
+  /// Disposes the JSON codec the client created for itself.
   ///
-  /// Does nothing if you pass your own isolate
+  /// Does nothing when a codec was passed to the constructor, since that one
+  /// belongs to the caller.
   Future<void> dispose() async {
     functionsLogger.fine("Dispose FunctionsClient");
-    if (!_hasCustomIsolate) {
-      return _isolate.dispose();
+    if (_ownsJsonCodec) {
+      return _jsonCodec.dispose();
     }
   }
 }

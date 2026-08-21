@@ -8,7 +8,6 @@ import 'package:postgrest/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart';
-import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 part 'postgrest_filter_builder.dart';
 part 'postgrest_query_builder.dart';
@@ -33,7 +32,7 @@ class _RequestConfig {
     this.method,
     this.body,
     this.httpClient,
-    this.isolate,
+    this.jsonCodec,
     this.count,
     this.maybeSingle = false,
     required this.retry,
@@ -47,7 +46,7 @@ class _RequestConfig {
   final HttpMethod? method;
   final Object? body;
   final Client? httpClient;
-  final YAJsonIsolate? isolate;
+  final AsyncJsonCodec? jsonCodec;
   final CountOption? count;
   final bool maybeSingle;
   final SupabaseRetryOptions retry;
@@ -61,7 +60,7 @@ class _RequestConfig {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
     SupabaseRetryOptions? retry,
@@ -75,7 +74,7 @@ class _RequestConfig {
       method: method ?? this.method,
       body: body ?? this.body,
       httpClient: httpClient ?? this.httpClient,
-      isolate: isolate ?? this.isolate,
+      jsonCodec: jsonCodec ?? this.jsonCodec,
       count: count ?? this.count,
       maybeSingle: maybeSingle ?? this.maybeSingle,
       retry: retry ?? this.retry,
@@ -151,7 +150,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   String? get _schema => _config.schema;
   Uri get _url => _config.url;
   Client? get _httpClient => _config.httpClient;
-  YAJsonIsolate? get _isolate => _config.isolate;
+  AsyncJsonCodec? get _jsonCodec => _config.jsonCodec;
   CountOption? get _count => _config.count;
   SupabaseRetryOptions get _retry => _config.retry;
   Duration? get _requestTimeout => _config.requestTimeout;
@@ -164,7 +163,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
@@ -179,7 +178,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
          method: method,
          body: body,
          httpClient: httpClient,
-         isolate: isolate,
+         jsonCodec: jsonCodec,
          count: count,
          maybeSingle: maybeSingle,
          retry: retryOptions,
@@ -203,7 +202,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
@@ -218,7 +217,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       method: method,
       body: body,
       httpClient: httpClient,
-      isolate: isolate,
+      jsonCodec: jsonCodec,
       count: count,
       maybeSingle: maybeSingle,
       retry: retry,
@@ -330,7 +329,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (method != HttpMethod.get && method != HttpMethod.head) {
       execHeaders['Content-Type'] = 'application/json';
     }
-    final bodyString = jsonEncode(_body);
+    // Only a write carries a body, so a read skips the encode entirely and a
+    // client with a codec does not pay for one on every select.
+    final bodyString = switch (method) {
+      HttpMethod.post ||
+      HttpMethod.put ||
+      HttpMethod.patch => await _encodeBody(),
+      HttpMethod.get || HttpMethod.head || HttpMethod.delete => null,
+    };
     postgrestLogger.finest("Request: ${method.value} ${_url.redacted}");
 
     final requestTimeout = _requestTimeout;
@@ -367,7 +373,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       request.headers.addAll(execHeaders);
       switch (method) {
         case HttpMethod.post || HttpMethod.put || HttpMethod.patch:
-          request.body = bodyString;
+          // Encoded above for exactly these methods.
+          request.body = bodyString!;
         case HttpMethod.get || HttpMethod.head || HttpMethod.delete:
           break;
       }
@@ -432,6 +439,16 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     throw StateError('unreachable');
   }
 
+  /// Encodes the request body, on the codec when there is one so that a large
+  /// payload, a bulk insert for example, does not block the calling isolate.
+  Future<String> _encodeBody() async {
+    final jsonCodec = _jsonCodec;
+    if (jsonCodec == null) {
+      return jsonEncode(_body);
+    }
+    return jsonCodec.encode(_body);
+  }
+
   /// Parse request response to json object if possible
   Future<T> _parseResponse(http.Response response, HttpMethod method) async {
     if (isSuccessStatusCode(response.statusCode)) {
@@ -448,9 +465,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           body = response.body;
         } else {
           try {
-            final isolate = _isolate;
-            if (isolate != null) {
-              body = await isolate.decodeBytes(response.bodyBytes);
+            final jsonCodec = _jsonCodec;
+            if (jsonCodec != null) {
+              body = await jsonCodec.decodeBytes(response.bodyBytes);
             } else {
               body = jsonDecode(utf8.decode(response.bodyBytes));
             }

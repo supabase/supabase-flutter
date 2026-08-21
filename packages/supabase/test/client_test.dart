@@ -520,36 +520,34 @@ void main() {
       );
     });
 
-    group('Shared YAJsonIsolate', () {
+    group('JSON codec', () {
       test(
-        'does not dispose an injected YAJsonIsolate so the caller retains '
-        'ownership',
+        'does not dispose a supplied codec, so the caller keeps ownership',
         () async {
-          final isolate = YAJsonIsolate();
-          await isolate.initialize();
+          final jsonCodec = YAJsonIsolate();
+          await jsonCodec.initialize();
 
           final client = SupabaseClient(
             supabaseUrl,
             supabaseKey,
-            isolate: isolate,
+            jsonCodec: jsonCodec,
           );
 
           await client.dispose();
 
-          // Isolate is still alive — caller owns the lifecycle
-          expect(await isolate.encode({'key': 'value'}), isA<String>());
+          expect(await jsonCodec.encode({'key': 'value'}), isA<String>());
 
-          await isolate.dispose();
+          await jsonCodec.dispose();
         },
       );
 
       test(
-        'creates a single isolate shared across rest and functions clients',
+        'creates a single codec shared across rest and functions clients',
         () async {
-          // Creating a SupabaseClient without providing an isolate should
-          // still result in a single shared isolate (not one per sub-client).
-          // Verified indirectly: dispose() should complete without error,
-          // meaning there is no double-dispose from sub-clients.
+          // The rest and functions clients get the codec the SupabaseClient
+          // created, rather than one each, so disposing the client disposes it
+          // exactly once. Verified indirectly: a double dispose of the same
+          // codec would throw.
           final client = SupabaseClient(supabaseUrl, supabaseKey);
 
           expect(client.dispose(), completes);
@@ -598,7 +596,7 @@ class SupabaseClient extends real.SupabaseClient {
     super.accessToken,
     super.headers,
     super.httpClient,
-    super.isolate,
+    super.jsonCodec,
   }) : super(
          authOptions: AuthClientOptions(
            autoRefreshToken: authOptions.autoRefreshToken,
