@@ -28,6 +28,36 @@ void main() {
       expect(jsonCodec.decodedPayloads, 1);
     });
 
+    test('encodes request bodies through a supplied codec', () async {
+      final jsonCodec = _RecordingJsonCodec();
+      final postgrest = PostgrestClient(
+        'https://example.com',
+        httpClient: JsonResponseMockClient(body: const []),
+        jsonCodec: jsonCodec,
+      );
+      addTearDown(postgrest.dispose);
+
+      await postgrest.from('users').insert({'name': 'Supabase'});
+
+      expect(jsonCodec.encodedValues, [
+        {'name': 'Supabase'},
+      ]);
+    });
+
+    test('encodes nothing for a read', () async {
+      final jsonCodec = _RecordingJsonCodec();
+      final postgrest = PostgrestClient(
+        'https://example.com',
+        httpClient: JsonResponseMockClient(body: const []),
+        jsonCodec: jsonCodec,
+      );
+      addTearDown(postgrest.dispose);
+
+      await postgrest.from('users').select();
+
+      expect(jsonCodec.encodedValues, isEmpty);
+    });
+
     test('leaves a supplied codec for the caller to dispose', () async {
       final jsonCodec = _RecordingJsonCodec();
       final postgrest = PostgrestClient(

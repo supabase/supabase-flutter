@@ -1594,6 +1594,17 @@ final client = SupabaseClient(url, key, isolate: YAJsonIsolate()..initialize());
 final client = SupabaseClient(url, key, jsonCodec: YAJsonIsolate()..initialize());
 ```
 
+`Supabase.initialize` takes the codec too, so a `supabase_flutter` application never has to
+construct a `SupabaseClient` to choose one:
+
+```dart
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  jsonCodec: myJsonCodec,
+);
+```
+
 `AsyncJsonCodec` is exported from `postgrest`, `supabase_functions`, `supabase` and
 `supabase_flutter`, so an application can encode and decode JSON its own way, for example
 through a native parser or through a wrapper that records how long each payload takes:

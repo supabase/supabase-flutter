@@ -329,7 +329,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (method != HttpMethod.get && method != HttpMethod.head) {
       execHeaders['Content-Type'] = 'application/json';
     }
-    final bodyString = jsonEncode(_body);
+    // Only a write carries a body, so a read skips the encode entirely and a
+    // client with a codec does not pay for one on every select.
+    final bodyString = switch (method) {
+      HttpMethod.post ||
+      HttpMethod.put ||
+      HttpMethod.patch => await _encodeBody(),
+      HttpMethod.get || HttpMethod.head || HttpMethod.delete => null,
+    };
     postgrestLogger.finest("Request: ${method.value} ${_url.redacted}");
 
     final requestTimeout = _requestTimeout;
@@ -366,7 +373,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       request.headers.addAll(execHeaders);
       switch (method) {
         case HttpMethod.post || HttpMethod.put || HttpMethod.patch:
-          request.body = bodyString;
+          // Encoded above for exactly these methods.
+          request.body = bodyString!;
         case HttpMethod.get || HttpMethod.head || HttpMethod.delete:
           break;
       }
@@ -429,6 +437,16 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     }
 
     throw StateError('unreachable');
+  }
+
+  /// Encodes the request body, on the codec when there is one so that a large
+  /// payload, a bulk insert for example, does not block the calling isolate.
+  Future<String> _encodeBody() async {
+    final jsonCodec = _jsonCodec;
+    if (jsonCodec == null) {
+      return jsonEncode(_body);
+    }
+    return jsonCodec.encode(_body);
   }
 
   /// Parse request response to json object if possible
