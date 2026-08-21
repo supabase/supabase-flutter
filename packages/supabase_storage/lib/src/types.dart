@@ -277,7 +277,7 @@ class SearchOptions {
   /// The starting position.
   final int? offset;
 
-  /// The column to sort by. Can be any column inside a FileObject.
+  /// The column and direction to sort by.
   final SortBy? sortBy;
 
   /// The search string to filter files by.
@@ -300,16 +300,23 @@ class SearchOptions {
   }
 }
 
+/// The column and direction that [StorageFileApi.list] sorts its results by.
 class SortBy {
+  /// The column to sort by. Can be any column inside a [FileObject].
   final String? column;
-  final String? order;
 
-  const SortBy({this.column = 'name', this.order = 'asc'});
+  /// The sort direction.
+  final FileSortOrder order;
+
+  const SortBy({
+    this.column = 'name',
+    this.order = FileSortOrder.ascending,
+  });
 
   Map<String, dynamic> toMap() {
     return {
       'column': column ?? 'name',
-      'order': order ?? 'asc',
+      'order': order.value,
     };
   }
 }
@@ -317,7 +324,8 @@ class SortBy {
 /// The column that [StorageFileApi.listPaginated] can sort its results by.
 enum FileSortColumn { name, updatedAt, createdAt }
 
-/// The direction that [StorageFileApi.listPaginated] sorts its results in.
+/// The direction that [StorageFileApi.list] and
+/// [StorageFileApi.listPaginated] sort their results in.
 enum FileSortOrder {
   ascending('asc'),
   descending('desc');

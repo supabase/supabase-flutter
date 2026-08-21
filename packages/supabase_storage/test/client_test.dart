@@ -948,7 +948,7 @@ void main() {
           .from('test-bucket')
           .list(
             searchOptions: const SearchOptions(
-              sortBy: SortBy(order: 'desc'),
+              sortBy: SortBy(order: FileSortOrder.descending),
             ),
           );
 
@@ -964,7 +964,7 @@ void main() {
       expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
     });
 
-    test('fills in fields passed explicitly as null', () async {
+    test('fills in a column passed explicitly as null', () async {
       customHttpClient.response = [];
       customHttpClient.statusCode = 200;
 
@@ -972,7 +972,7 @@ void main() {
           .from('test-bucket')
           .list(
             searchOptions: const SearchOptions(
-              sortBy: SortBy(column: null, order: null),
+              sortBy: SortBy(column: null),
             ),
           );
 
@@ -987,7 +987,10 @@ void main() {
           .from('test-bucket')
           .list(
             searchOptions: const SearchOptions(
-              sortBy: SortBy(column: 'created_at', order: 'desc'),
+              sortBy: SortBy(
+                column: 'created_at',
+                order: FileSortOrder.descending,
+              ),
             ),
           );
 

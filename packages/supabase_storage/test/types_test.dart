@@ -176,9 +176,17 @@ void main() {
   });
 
   group('SortBy.toMap', () {
-    test('falls back to defaults when column and order are null', () {
-      const sortBy = SortBy(column: null, order: null);
+    test('falls back to the default column when it is null', () {
+      const sortBy = SortBy(column: null);
       expect(sortBy.toMap(), {'column': 'name', 'order': 'asc'});
+    });
+
+    test('serializes the order to its value', () {
+      const sortBy = SortBy(
+        column: 'updated_at',
+        order: FileSortOrder.descending,
+      );
+      expect(sortBy.toMap(), {'column': 'updated_at', 'order': 'desc'});
     });
   });
 

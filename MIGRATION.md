@@ -1466,3 +1466,28 @@ final client = RealtimeClient(realtimeUrl);
 Without `hierarchicalLoggingEnabled = true`, `package:logging` resolves the `onRecord` stream of a
 non-root logger to `Logger.root.onRecord`, which receives records from every logger in the
 application; in that case listen on `Logger.root` and filter on `LogRecord.loggerName` instead.
+
+### `SortBy.order` is a `FileSortOrder`
+
+`SearchOptions.sortBy` took its sort direction as a `String`, so a typo such as `'ascending'` only
+surfaced as a 400 from the storage server. `SortBy.order` is now the `FileSortOrder` enum that
+`listPaginated` already used, and it is non-nullable with `FileSortOrder.ascending` as its default.
+
+```dart
+// Before
+await supabase.storage.from('bucket').list(
+      searchOptions: const SearchOptions(
+        sortBy: SortBy(column: 'created_at', order: 'desc'),
+      ),
+    );
+
+// After
+await supabase.storage.from('bucket').list(
+      searchOptions: const SearchOptions(
+        sortBy: SortBy(column: 'created_at', order: FileSortOrder.descending),
+      ),
+    );
+```
+
+`SortBy(order: null)` no longer compiles; leave `order` out to sort ascending. `column` is
+unchanged, since `list()` accepts any column of a `FileObject`.

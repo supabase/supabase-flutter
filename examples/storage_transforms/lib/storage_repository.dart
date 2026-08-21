@@ -41,7 +41,7 @@ class StorageRepository {
   Future<List<StoredImage>> listImages() async {
     final files = await _files.list(
       searchOptions: const SearchOptions(
-        sortBy: SortBy(column: 'created_at', order: 'desc'),
+        sortBy: SortBy(column: 'created_at', order: FileSortOrder.descending),
       ),
     );
     return files
