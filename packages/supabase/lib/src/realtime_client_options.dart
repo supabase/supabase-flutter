@@ -26,25 +26,29 @@ class RealtimeClientOptions {
   /// heartbeat interval.
   final Duration? disconnectOnEmptyChannelsAfter;
 
-  /// Serializes outgoing messages, for example on a background isolate so
-  /// that a large payload does not block the event loop.
+  /// Serializes outgoing messages into the frames written to the socket.
   ///
-  /// Defaults to the built-in synchronous codec.
+  /// The JSON of a frame already goes through the `jsonCodec` of
+  /// `SupabaseClient`, which keeps a large payload off the calling isolate, so
+  /// this is only needed to put something other than the Realtime wire format
+  /// on the socket, for example a different serialization format altogether.
   ///
   /// ```dart
-  /// final isolate = YAJsonIsolate();
-  ///
   /// RealtimeClientOptions(
-  ///   encode: (message) => isolate.encode(message.toJson()),
+  ///   encode: (message) async => myFormat.serialize(message.toJson()),
   ///   decode: (frame) async =>
-  ///       RealtimeMessage.fromJson(await isolate.decode(frame as String)),
+  ///       RealtimeMessage.fromJson(myFormat.deserialize(frame)),
   /// );
   /// ```
+  ///
+  /// Takes precedence over the codec, so a message passed here is not handed
+  /// to it.
   final RealtimeEncode? encode;
 
-  /// Deserializes incoming frames, for example on a background isolate.
+  /// Deserializes incoming frames into messages.
   ///
-  /// Defaults to the built-in synchronous codec. See [encode] for an example.
+  /// See [encode], which describes when to reach for this and what it takes
+  /// precedence over.
   final RealtimeDecode? decode;
 
   /// {@macro realtime_client_options}

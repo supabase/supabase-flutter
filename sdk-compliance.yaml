@@ -1936,6 +1936,7 @@ features:
     symbols:
       - RealtimeClient.encode
       - RealtimeClient.decode
+      - RealtimeClient.jsonCodec
       - RealtimeClientOptions.encode
       - RealtimeClientOptions.decode
     supporting_symbols:

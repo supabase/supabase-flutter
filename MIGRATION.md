@@ -493,15 +493,17 @@ call that never completes fails after `RealtimeClient.timeout` instead of stalli
 dispatch queued behind it:
 
 ```dart
-final isolate = YAJsonIsolate();
-
 final client = RealtimeClient(
   'wss://project.supabase.co/realtime/v1',
-  encode: (message) => isolate.encode(message.toJson()),
-  decode: (frame) async =>
-      RealtimeMessage.fromJson(await isolate.decode(frame as String)),
+  encode: (message) async => myFormat.serialize(message.toJson()),
+  decode: (frame) async => RealtimeMessage.fromJson(myFormat.deserialize(frame)),
 );
 ```
+
+Keeping the JSON off the calling isolate does not need these two, though. The
+`jsonCodec` of the client already handles the JSON of every frame, so reach for `encode` and
+`decode` only to put something other than the Realtime wire format on the socket. They take
+precedence over the codec, so a message either goes through them or through it.
 
 `RealtimeClient.onMessage` now emits `RealtimeMessage` instead of `Map<String, dynamic>`, so a
 listener that reads fields off the map needs to switch to properties:
@@ -523,11 +525,10 @@ on `Supabase.initialize` without constructing a `RealtimeClient` yourself:
 ```dart
 await Supabase.initialize(
   url: url,
-  anonKey: anonKey,
+  publishableKey: publishableKey,
   realtimeClientOptions: RealtimeClientOptions(
-    encode: (message) => isolate.encode(message.toJson()),
-    decode: (frame) async =>
-        RealtimeMessage.fromJson(await isolate.decode(frame as String)),
+    encode: (message) async => myFormat.serialize(message.toJson()),
+    decode: (frame) async => RealtimeMessage.fromJson(myFormat.deserialize(frame)),
   ),
 );
 ```
@@ -1629,6 +1630,10 @@ class TimedJsonCodec implements AsyncJsonCodec {
   Future<void> dispose() => _inner.dispose();
 }
 ```
+
+The realtime client uses the same codec for the JSON of its frames, so one codec covers
+every client. Its `RealtimeClientOptions.encode` and `decode` hooks stay for putting a
+different wire format on the socket, and take precedence over the codec.
 
 A codec passed to a client belongs to the caller, so `dispose()` leaves it alone, exactly
 as the old `isolate:` parameter did. A client that was not given one creates the default

@@ -396,6 +396,7 @@ class SupabaseClient {
       disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
       encode: options.encode,
       decode: options.decode,
+      jsonCodec: _jsonCodec,
     );
   }
 

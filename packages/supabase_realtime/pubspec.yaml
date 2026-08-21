@@ -24,6 +24,7 @@ dependencies:
   meta: ^1.16.0
   supabase_common: 0.1.2
   web_socket_channel: ^3.0.3
+  yet_another_json_isolate: 2.1.1
 
 dev_dependencies:
   supabase_lints: ^0.1.1

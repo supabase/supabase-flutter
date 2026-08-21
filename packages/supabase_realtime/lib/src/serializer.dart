@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:meta/meta.dart';
 import 'package:supabase_realtime/src/realtime_message.dart';
+import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 /// Encodes and decodes Realtime protocol `2.0.0` frames.
 ///
@@ -54,6 +55,44 @@ class Serializer {
     }
 
     return jsonEncode(message.toJson());
+  }
+
+  /// Encodes [message] like [encode], handing the JSON work to [codec] so that
+  /// a large payload does not block the calling isolate.
+  ///
+  /// A binary broadcast carries its user payload as raw bytes and its metadata
+  /// in the frame header, so that path holds no JSON body worth handing over
+  /// and is built here as [encode] builds it.
+  Future<Object> encodeWith(
+    AsyncJsonCodec codec,
+    RealtimeMessage message,
+  ) async {
+    final payload = message.payload;
+    if (message.event == broadcastEvent &&
+        payload is Map &&
+        payload['event'] is String &&
+        _isBinary(payload['payload'])) {
+      return _encodeBinaryUserBroadcastPush(message, payload);
+    }
+
+    return codec.encode(message.toJson());
+  }
+
+  /// Decodes a raw WebSocket frame like [decode], handing the JSON work of a
+  /// text frame to [codec].
+  ///
+  /// Binary frames are decoded here as [decode] decodes them: their payload is
+  /// either raw bytes or a body small enough that the frame header could carry
+  /// its size, so there is nothing worth an isolate.
+  Future<RealtimeMessage> decodeWith(
+    AsyncJsonCodec codec,
+    Object rawPayload,
+  ) async {
+    if (rawPayload is String) {
+      return RealtimeMessage.fromJson(await codec.decode(rawPayload));
+    }
+
+    return decode(rawPayload);
   }
 
   /// Decodes a raw WebSocket frame into a message.

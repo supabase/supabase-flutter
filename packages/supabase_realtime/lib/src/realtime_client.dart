@@ -185,10 +185,24 @@ class RealtimeClient {
   /// [version].
   final RealtimeDecode? decode;
 
-  /// Codec used while [encode] and [decode] are `null`.
+  /// Encodes and decodes the JSON of the frames while [encode] and [decode]
+  /// are `null`, so that a large payload does not block the calling isolate.
   ///
-  /// It is synchronous, so a client that does not override the codec writes
-  /// and dispatches without a microtask hop.
+  /// `null` leaves the JSON to the synchronous built-in codec below.
+  /// `SupabaseClient` passes the codec it gives the rest and functions
+  /// clients, so one codec serves every client.
+  final AsyncJsonCodec? jsonCodec;
+
+  /// [jsonCodec] wired up as an [encode], or `null` when no codec was given.
+  final RealtimeEncode? _codecEncode;
+
+  /// [jsonCodec] wired up as a [decode], or `null` when no codec was given.
+  final RealtimeDecode? _codecDecode;
+
+  /// Codec used while [encode], [decode] and [jsonCodec] are all `null`.
+  ///
+  /// It is synchronous, so a client that overrides nothing writes and
+  /// dispatches without a microtask hop.
   final Object Function(RealtimeMessage) _builtInEncode;
   final RealtimeMessage Function(Object) _builtInDecode;
   late TimerCalculation reconnectAfter;
@@ -247,11 +261,16 @@ class RealtimeClient {
   /// reused. Pass [Duration.zero] to disconnect immediately. Defaults to twice
   /// the heartbeat interval.
   ///
-  /// [encode] Overrides how outgoing messages are serialized, for example to
-  /// serialize on a background isolate. Defaults to the codec for [version].
+  /// [encode] Overrides how outgoing messages are serialized, for example into
+  /// a format other than the Realtime wire format. Defaults to the codec for
+  /// [version].
   ///
   /// [decode] Overrides how incoming frames are deserialized. Defaults to the
   /// codec for [version].
+  ///
+  /// [jsonCodec] Encodes and decodes the JSON of the frames, so that a large
+  /// payload does not block the calling isolate. Ignored for a message that
+  /// [encode] or [decode] handles. Without it the JSON is processed inline.
   ///
   /// [reconnectAfter] The optional function that returns the reconnect
   /// interval. Defaults to the stepped backoff of
@@ -272,6 +291,7 @@ class RealtimeClient {
     Duration? disconnectOnEmptyChannelsAfter,
     this.encode,
     this.decode,
+    this.jsonCodec,
     TimerCalculation? reconnectAfter,
     Map<String, String>? headers,
     this.parameters = const {},
@@ -291,6 +311,8 @@ class RealtimeClient {
          ...?headers,
        },
        transport = transport ?? createWebSocketClient,
+       _codecEncode = _codecEncoder(jsonCodec, version),
+       _codecDecode = _codecDecoder(jsonCodec, version),
        _builtInEncode = version == RealtimeProtocolVersion.v1
            ? _encodeLegacy
            : _serializer.encode,
@@ -592,8 +614,8 @@ class RealtimeClient {
   /// encode never overtakes a slow one that was pushed before it.
   void _write(RealtimeMessage message) {
     final connection = this.connection;
-    final encode = this.encode;
-    if (encode == null) {
+    final effectiveEncode = encode ?? _codecEncode;
+    if (effectiveEncode == null) {
       Object frame;
       try {
         frame = _builtInEncode(message);
@@ -611,7 +633,7 @@ class RealtimeClient {
 
     final Future<Object> encoded;
     try {
-      encoded = encode(message).timeout(timeout);
+      encoded = effectiveEncode(message).timeout(timeout);
     } catch (error) {
       realtimeLogger.warning('Failed to encode message', error);
       return;
@@ -676,8 +698,8 @@ class RealtimeClient {
   /// fast decode never overtakes a slow one that was received before it.
   void onConnectionMessage(Object rawMessage) {
     final connection = this.connection;
-    final decode = this.decode;
-    if (decode == null) {
+    final effectiveDecode = decode ?? _codecDecode;
+    if (effectiveDecode == null) {
       final RealtimeMessage message;
       try {
         message = _builtInDecode(rawMessage);
@@ -695,7 +717,7 @@ class RealtimeClient {
 
     final Future<RealtimeMessage> decoded;
     try {
-      decoded = decode(rawMessage).timeout(timeout);
+      decoded = effectiveDecode(rawMessage).timeout(timeout);
     } catch (error) {
       realtimeLogger.warning('Failed to decode message', error);
       return;
@@ -784,6 +806,40 @@ class RealtimeClient {
           ),
         );
     _messageController.add(message);
+  }
+
+  /// Wires [codec] up as an [encode] for [version], or returns `null` when
+  /// there is no codec to wire up.
+  static RealtimeEncode? _codecEncoder(
+    AsyncJsonCodec? codec,
+    RealtimeProtocolVersion version,
+  ) {
+    if (codec == null) {
+      return null;
+    }
+    if (version == RealtimeProtocolVersion.v1) {
+      return (message) =>
+          codec.encode(message.toJson(RealtimeProtocolVersion.v1));
+    }
+    return (message) => _serializer.encodeWith(codec, message);
+  }
+
+  /// Wires [codec] up as a [decode] for [version], or returns `null` when
+  /// there is no codec to wire up.
+  static RealtimeDecode? _codecDecoder(
+    AsyncJsonCodec? codec,
+    RealtimeProtocolVersion version,
+  ) {
+    if (codec == null) {
+      return null;
+    }
+    if (version == RealtimeProtocolVersion.v1) {
+      return (frame) async => RealtimeMessage.fromJson(
+        await codec.decode(frame as String),
+        RealtimeProtocolVersion.v1,
+      );
+    }
+    return (frame) => _serializer.decodeWith(codec, frame);
   }
 
   static Object _encodeLegacy(RealtimeMessage message) =>

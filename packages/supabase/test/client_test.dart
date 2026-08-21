@@ -541,6 +541,28 @@ void main() {
         },
       );
 
+      test('hands its codec to the realtime client', () async {
+        final jsonCodec = YAJsonIsolate();
+        final client = SupabaseClient(
+          supabaseUrl,
+          supabaseKey,
+          jsonCodec: jsonCodec,
+        );
+        addTearDown(jsonCodec.dispose);
+
+        expect(client.realtime.jsonCodec, same(jsonCodec));
+
+        await client.dispose();
+      });
+
+      test('gives the realtime client the codec it created for itself', () {
+        final client = SupabaseClient(supabaseUrl, supabaseKey);
+
+        expect(client.realtime.jsonCodec, isNotNull);
+
+        expect(client.dispose(), completes);
+      });
+
       test(
         'creates a single codec shared across rest and functions clients',
         () async {

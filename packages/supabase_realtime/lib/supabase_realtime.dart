@@ -2,6 +2,9 @@
 /// changes, broadcast messages, and presence over a websocket connection.
 library;
 
+export 'package:yet_another_json_isolate/yet_another_json_isolate.dart'
+    show AsyncJsonCodec;
+
 export 'src/constants.dart'
     show RealtimeLogLevel, RealtimeProtocolVersion, SocketState;
 export 'src/realtime_channel.dart';
