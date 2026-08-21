@@ -63,14 +63,11 @@ class PostgrestRpcBuilder {
       method = HttpMethod.post;
     }
 
-    return PostgrestFilterBuilder(
-      PostgrestBuilder<T, T, T>._(
-        config: _config.copyWith(
-          method: method,
-          url: newUrl,
-          body: params,
-        ),
-        converter: null,
+    return _filterBuilder(
+      _config.copyWith(
+        method: method,
+        url: newUrl,
+        body: params,
       ),
     );
   }

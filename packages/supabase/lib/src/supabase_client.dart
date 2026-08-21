@@ -226,38 +226,25 @@ class SupabaseClient {
     );
   }
 
+  /// The default-schema view of the database, built on access so it always
+  /// wraps the current rest client.
+  SupabaseQuerySchema get _defaultSchema => SupabaseQuerySchema(
+    counter: _incrementId,
+    restUrl: _restUrl,
+    schema: _postgrestOptions.schema,
+    isolate: _isolate,
+    authHttpClient: _authHttpClient,
+    realtime: realtime,
+    rest: rest,
+  );
+
   /// Perform a table operation.
-  SupabaseQueryBuilder from(String table) {
-    final url = '$_restUrl/$table';
-    return SupabaseQueryBuilder(
-      url,
-      realtime,
-      headers: {...rest.headers},
-      schema: _postgrestOptions.schema,
-      table: table,
-      httpClient: _authHttpClient,
-      incrementId: _incrementId.increment(),
-      isolate: _isolate,
-      retryOptions: rest.retryOptions,
-      requestTimeout: rest.requestTimeout,
-    );
-  }
+  SupabaseQueryBuilder from(String table) => _defaultSchema.from(table);
 
   /// Select a schema to query or perform an function (rpc) call.
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
-  SupabaseQuerySchema schema(String schema) {
-    final newRest = rest.schema(schema);
-    return SupabaseQuerySchema(
-      counter: _incrementId,
-      restUrl: _restUrl,
-      schema: schema,
-      isolate: _isolate,
-      authHttpClient: _authHttpClient,
-      realtime: realtime,
-      rest: newRest,
-    );
-  }
+  SupabaseQuerySchema schema(String schema) => _defaultSchema.schema(schema);
 
   /// {@macro postgrest_rpc}
   PostgrestFilterBuilder<T> rpc<T>(
@@ -265,7 +252,7 @@ class SupabaseClient {
     Map<String, dynamic>? params,
     get = false,
   }) {
-    return rest.rpc(fn, params: params, get: get);
+    return _defaultSchema.rpc(fn, params: params, get: get);
   }
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.

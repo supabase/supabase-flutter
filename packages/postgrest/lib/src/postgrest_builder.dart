@@ -110,6 +110,13 @@ extension on Uri {
   }
 }
 
+/// Wraps [config] in the executable filter phase once a table operation or
+/// function call has been chosen.
+PostgrestFilterBuilder<P> _filterBuilder<P>(_RequestConfig config) =>
+    PostgrestFilterBuilder(
+      PostgrestBuilder<P, P, P>._(config: config, converter: null),
+    );
+
 /// Convert list filter to query parameters string
 String _cleanFilterList(List<dynamic> filter) {
   if (filter.every((element) => element is num)) {

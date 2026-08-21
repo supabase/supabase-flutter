@@ -37,7 +37,7 @@ class SupabaseQuerySchema {
     return SupabaseQueryBuilder(
       url,
       _realtime,
-      headers: {..._rest.headers},
+      headers: _rest.headers,
       schema: _schema,
       table: table,
       httpClient: _authHttpClient,

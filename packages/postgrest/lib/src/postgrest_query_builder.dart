@@ -19,7 +19,7 @@ part of 'postgrest_builder.dart';
 /// error rather than a runtime one.
 /// {@endtemplate}
 @immutable
-class PostgrestQueryBuilder<T> {
+class PostgrestQueryBuilder {
   final _RequestConfig _config;
 
   /// {@macro postgrest_query_builder}
@@ -42,13 +42,6 @@ class PostgrestQueryBuilder<T> {
        );
 
   const PostgrestQueryBuilder._(this._config);
-
-  /// Wraps [config] in the executable filter phase once a table operation has
-  /// been chosen.
-  PostgrestFilterBuilder<P> _filterBuilder<P>(_RequestConfig config) =>
-      PostgrestFilterBuilder(
-        PostgrestBuilder<P, P, P>._(config: config, converter: null),
-      );
 
   /// Perform a SELECT query on the table or view.
   ///
@@ -109,7 +102,7 @@ class PostgrestQueryBuilder<T> {
   ///   'channel_id': 1
   /// }).select();
   /// ```
-  PostgrestFilterBuilder<T> insert(
+  PostgrestFilterBuilder<void> insert(
     Object values, {
     bool defaultToNull = true,
   }) {
@@ -169,7 +162,7 @@ class PostgrestQueryBuilder<T> {
   ///   'channel_id': 1
   /// }).select();
   /// ```
-  PostgrestFilterBuilder<T> upsert(
+  PostgrestFilterBuilder<void> upsert(
     Object values, {
     String? onConflict,
     bool ignoreDuplicates = false,
@@ -228,7 +221,7 @@ class PostgrestQueryBuilder<T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> update(Map<dynamic, dynamic> values) {
+  PostgrestFilterBuilder<void> update(Map<dynamic, dynamic> values) {
     final newHeaders = {..._config.headers}..remove('Prefer');
 
     return _filterBuilder(
@@ -260,7 +253,7 @@ class PostgrestQueryBuilder<T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> delete() {
+  PostgrestFilterBuilder<void> delete() {
     final newHeaders = {..._config.headers}..remove('Prefer');
     return _filterBuilder(
       _config.copyWith(
@@ -296,7 +289,7 @@ class PostgrestQueryBuilder<T> {
   /// Overrides the retry behavior of the requests built by this builder.
   ///
   /// See [PostgrestBuilder.retry] for the parameters.
-  PostgrestQueryBuilder<T> retry({
+  PostgrestQueryBuilder retry({
     bool enabled = true,
     int? count,
     Duration? requestTimeout,
@@ -310,7 +303,7 @@ class PostgrestQueryBuilder<T> {
   }
 
   /// Sets a header on the requests built by this builder.
-  PostgrestQueryBuilder<T> setHeader(String key, String value) {
+  PostgrestQueryBuilder setHeader(String key, String value) {
     return PostgrestQueryBuilder._(
       _config.copyWith(
         headers: {..._config.headers, key: value},

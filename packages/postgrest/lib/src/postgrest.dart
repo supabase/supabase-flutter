@@ -90,20 +90,21 @@ class PostgrestClient {
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null {
     postgrestLogger.config(
-      'Initialize PostgrestClient with url: ${Uri.parse(url).redacted}, '
-      'schema: $_schema',
+      () =>
+          'Initialize PostgrestClient with url: ${Uri.parse(url).redacted}, '
+          'schema: $_schema',
     );
     postgrestLogger.finest(
-      'Initialize with headers: ${this.headers.redacted}',
+      () => 'Initialize with headers: ${this.headers.redacted}',
     );
   }
 
   /// Perform a table operation.
-  PostgrestQueryBuilder<void> from(String table) {
+  PostgrestQueryBuilder from(String table) {
     final requestUrl = '$url/$table';
     return PostgrestQueryBuilder(
       url: Uri.parse(requestUrl),
-      headers: {...headers},
+      headers: headers,
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
@@ -118,7 +119,7 @@ class PostgrestClient {
   PostgrestClient schema(String schema) {
     return PostgrestClient(
       url,
-      headers: {...headers},
+      headers: headers,
       schema: schema,
       httpClient: httpClient,
       isolate: _isolate,
@@ -150,7 +151,7 @@ class PostgrestClient {
     final requestUrl = '$url/rpc/$fn';
     return PostgrestRpcBuilder(
       requestUrl,
-      headers: {...headers},
+      headers: headers,
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
