@@ -1936,9 +1936,23 @@ features:
     symbols:
       - RealtimeClient.encode
       - RealtimeClient.decode
+      - RealtimeClientOptions.encode
+      - RealtimeClientOptions.decode
     supporting_symbols:
       - RealtimeDecode
       - RealtimeEncode
+      - RealtimeMessage
+      - RealtimeMessage.RealtimeMessage
+      - RealtimeMessage.==
+      - RealtimeMessage.event
+      - RealtimeMessage.fromJson
+      - RealtimeMessage.hashCode
+      - RealtimeMessage.joinRef
+      - RealtimeMessage.payload
+      - RealtimeMessage.ref
+      - RealtimeMessage.toJson
+      - RealtimeMessage.toString
+      - RealtimeMessage.topic
       - RealtimeProtocolVersion
       - RealtimeProtocolVersion.RealtimeProtocolVersion
       - RealtimeProtocolVersion.wireVersion

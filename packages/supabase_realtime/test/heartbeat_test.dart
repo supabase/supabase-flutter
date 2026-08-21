@@ -12,8 +12,10 @@ void main() {
   setUp(() {
     client = RealtimeClient(
       'wss://localhost:0/',
-      decode: (rawMessage) =>
-          Map<String, dynamic>.from(jsonDecode(rawMessage as String) as Map),
+      decode: (rawMessage) async => RealtimeMessage.fromJson(
+        jsonDecode(rawMessage as String),
+        RealtimeProtocolVersion.v1,
+      ),
     );
     statuses = [];
     subscription = client.onHeartbeat.listen(statuses.add);

@@ -26,6 +26,27 @@ class RealtimeClientOptions {
   /// heartbeat interval.
   final Duration? disconnectOnEmptyChannelsAfter;
 
+  /// Serializes outgoing messages, for example on a background isolate so
+  /// that a large payload does not block the event loop.
+  ///
+  /// Defaults to the built-in synchronous codec.
+  ///
+  /// ```dart
+  /// final isolate = YAJsonIsolate();
+  ///
+  /// RealtimeClientOptions(
+  ///   encode: (message) => isolate.encode(message.toJson()),
+  ///   decode: (frame) async =>
+  ///       RealtimeMessage.fromJson(await isolate.decode(frame as String)),
+  /// );
+  /// ```
+  final RealtimeEncode? encode;
+
+  /// Deserializes incoming frames, for example on a background isolate.
+  ///
+  /// Defaults to the built-in synchronous codec. See [encode] for an example.
+  final RealtimeDecode? decode;
+
   /// {@macro realtime_client_options}
   const RealtimeClientOptions({
     this.logLevel,
@@ -33,5 +54,7 @@ class RealtimeClientOptions {
     this.connectionCloseTimeout,
     this.transport,
     this.disconnectOnEmptyChannelsAfter,
+    this.encode,
+    this.decode,
   });
 }

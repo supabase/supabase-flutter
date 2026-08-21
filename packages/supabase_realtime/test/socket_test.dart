@@ -7,7 +7,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:supabase_testing/supabase_testing.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
-import 'package:supabase_realtime/src/message.dart';
 import 'package:test/test.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -173,7 +172,7 @@ void main() {
       socket.onStatusChange.listen((change) {
         statuses.add(change.status);
       });
-      late dynamic lastMessage;
+      late RealtimeMessage lastMessage;
       socket.onMessage.listen((message) {
         lastMessage = message;
       });
@@ -185,7 +184,7 @@ void main() {
       await socket.sendHeartbeat();
       // need to wait for event to trigger
       await Future.delayed(const Duration(seconds: 1));
-      expect(lastMessage['event'], 'heartbeat');
+      expect(lastMessage.event, 'heartbeat');
 
       await socket.disconnect();
       await Future.delayed(const Duration(seconds: 1));
@@ -831,7 +830,7 @@ void main() {
       unawaited(mockedSocket.connect());
       mockedSocket.connectionState = SocketState.open;
 
-      final message = Message(
+      final message = RealtimeMessage.outgoing(
         topic: topic,
         payload: payload,
         event: event,
@@ -850,7 +849,7 @@ void main() {
 
       expect(mockedSocket.sendBuffer, isEmpty);
 
-      final message = Message(
+      final message = RealtimeMessage.outgoing(
         topic: topic,
         payload: payload,
         event: event,
@@ -873,7 +872,7 @@ void main() {
       mockedSocket.connectionState = SocketState.open;
 
       final binaryPayload = Uint8List.fromList([1, 2, 3]);
-      final message = Message(
+      final message = RealtimeMessage.outgoing(
         topic: 'realtime:room',
         event: ChannelEvent.broadcast,
         payload: {
@@ -911,7 +910,7 @@ void main() {
         'ref': ref,
       });
 
-      final message = Message(
+      final message = RealtimeMessage.outgoing(
         topic: topic,
         payload: payload,
         event: event,
@@ -924,7 +923,7 @@ void main() {
       ).called(1);
     });
 
-    test('uses a custom encode override when provided', () {
+    test('uses a custom encode override when provided', () async {
       final customChannel = MockIOWebSocketChannel();
       final customSink = MockWebSocketSink();
       when(() => customChannel.sink).thenReturn(customSink);
@@ -934,14 +933,20 @@ void main() {
       final customSocket = RealtimeClient(
         socketEndpoint,
         transport: (url, headers) => customChannel,
-        encode: (_) => 'custom-frame',
+        encode: (_) async => 'custom-frame',
       );
       unawaited(customSocket.connect());
       customSocket.connectionState = SocketState.open;
 
       customSocket.push(
-        Message(topic: topic, payload: payload, event: event, ref: ref),
+        RealtimeMessage.outgoing(
+          topic: topic,
+          payload: payload,
+          event: event,
+          ref: ref,
+        ),
       );
+      await pumpEventQueue();
 
       verify(
         () => customSink.add(captureAny(that: equals('custom-frame'))),

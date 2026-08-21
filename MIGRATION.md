@@ -473,6 +473,82 @@ final byKey = {
 
 The `Presence` payload class is unchanged and stays public.
 
+### `RealtimeEncode` and `RealtimeDecode` are asynchronous and typed
+
+The codec overrides on `RealtimeClient` were synchronous and worked on raw maps, so the JSON work
+always ran on the main isolate and a large payload could block the event loop. Both typedefs now
+work on a `RealtimeMessage` and return a `Future`, which lets you hand the work to a background
+isolate:
+
+| Before | After |
+| --- | --- |
+| `Object Function(Map<String, dynamic>)` | `Future<Object> Function(RealtimeMessage)` |
+| `Map<String, dynamic> Function(Object)` | `Future<RealtimeMessage> Function(Object)` |
+
+`RealtimeMessage` carries the `joinRef`, `ref`, `topic`, `event` and `payload` of a message, and
+converts to and from the shape a protocol version puts on the wire, so a codec only has to turn that
+shape into bytes and back. Outgoing frames are written in push order and incoming messages are
+dispatched in receive order, even when a later payload finishes encoding or decoding first. A codec
+call that never completes fails after `RealtimeClient.timeout` instead of stalling every write or
+dispatch queued behind it:
+
+```dart
+final isolate = YAJsonIsolate();
+
+final client = RealtimeClient(
+  'wss://project.supabase.co/realtime/v1',
+  encode: (message) => isolate.encode(message.toJson()),
+  decode: (frame) async =>
+      RealtimeMessage.fromJson(await isolate.decode(frame as String)),
+);
+```
+
+`RealtimeClient.onMessage` now emits `RealtimeMessage` instead of `Map<String, dynamic>`, so a
+listener that reads fields off the map needs to switch to properties:
+
+```dart
+// Before
+client.onMessage.listen((message) => print(message['event']));
+
+// After
+client.onMessage.listen((message) => print(message.event));
+```
+
+`toJson` and `RealtimeMessage.fromJson` default to protocol `2.0.0`; pass
+`RealtimeProtocolVersion.v1` to either when the client runs on the legacy protocol.
+
+`RealtimeClientOptions` takes the same two callbacks, so a codec can be set on `SupabaseClient` and
+on `Supabase.initialize` without constructing a `RealtimeClient` yourself:
+
+```dart
+await Supabase.initialize(
+  url: url,
+  anonKey: anonKey,
+  realtimeClientOptions: RealtimeClientOptions(
+    encode: (message) => isolate.encode(message.toJson()),
+    decode: (frame) async =>
+        RealtimeMessage.fromJson(await isolate.decode(frame as String)),
+  ),
+);
+```
+
+`encode` and `decode` are now `null` unless you pass one; `RealtimeClient` uses the built-in codec
+for whichever of the two is `null`. That codec is synchronous, so a client that overrides neither
+still writes and dispatches without a microtask hop. Reading a custom codec back off the client
+changed accordingly; the built-in codec has no public accessor, so this only applies when you
+passed your own:
+
+```dart
+// Before
+final Map<String, dynamic> message = client.decode(frame);
+
+// After
+final RealtimeMessage message = await client.decode!(frame);
+```
+
+A codec replaces the built-in one completely, so the one above handles text frames only. Handle a
+`Uint8List` frame as well if you send or receive binary broadcasts.
+
 ### Plural enum names singularized
 
 A Dart enum type names one value rather than the set, so its name should be singular. Five enums

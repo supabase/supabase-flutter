@@ -392,6 +392,8 @@ class SupabaseClient {
       customAccessToken: accessToken,
       transport: options.transport,
       disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
+      encode: options.encode,
+      decode: options.decode,
     );
   }
 
