@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:supabase/supabase.dart';
-import 'package:supabase_common/testing.dart';
+import 'package:supabase_testing/supabase_testing.dart';
 import 'package:test/test.dart';
 
 abstract class _CountingClient extends BaseClient {

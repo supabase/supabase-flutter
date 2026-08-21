@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:http/http.dart';
 import 'package:iceberg/iceberg.dart';
-import 'package:supabase_common/testing.dart';
+import 'package:supabase_testing/supabase_testing.dart';
 import 'package:test/test.dart';
 
 const String supabaseUrl = 'SUPABASE_TEST_URL';

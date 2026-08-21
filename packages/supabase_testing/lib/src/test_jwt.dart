@@ -21,6 +21,15 @@ String unsignedTestJwt(Map<String, dynamic> claims) {
   return '$header.$body.$signature';
 }
 
+/// Decodes the claims of [jwt] without verifying its signature, for
+/// asserting on tokens the code under test produced or sent.
+@visibleForTesting
+Map<String, dynamic> decodeTestJwtClaims(String jwt) {
+  final payload = jwt.split('.')[1];
+  final decoded = utf8.decode(base64Url.decode(base64Url.normalize(payload)));
+  return jsonDecode(decoded) as Map<String, dynamic>;
+}
+
 /// Crafts an HS256 JWT carrying exactly [claims], signed with [secret].
 @visibleForTesting
 String signedTestJwt(Map<String, dynamic> claims, {required String secret}) {

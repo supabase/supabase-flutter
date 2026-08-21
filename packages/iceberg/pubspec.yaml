@@ -26,6 +26,7 @@ dependencies:
 dev_dependencies:
   test: ^1.25.0
   supabase_lints: ^0.1.1
+  supabase_testing: 0.1.0
 
 false_secrets:
   - /test/**

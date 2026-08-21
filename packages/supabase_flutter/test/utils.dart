@@ -3,6 +3,7 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 export 'package:supabase_common/testing.dart';
+export 'package:supabase_testing/supabase_testing.dart';
 
 /// Replaces both shared_preferences APIs with empty in-memory stores.
 ///

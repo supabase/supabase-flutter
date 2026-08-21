@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart';
 import 'package:postgrest/postgrest.dart';
-import 'package:supabase_common/testing.dart';
+import 'package:supabase_testing/supabase_testing.dart';
 import 'package:test/test.dart';
 
 typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
