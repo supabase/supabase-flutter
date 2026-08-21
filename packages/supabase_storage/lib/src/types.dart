@@ -186,17 +186,6 @@ class BucketOptions {
 /// The column that [StorageBucketApi.listBuckets] can sort its results by.
 enum BucketSortColumn { id, name, createdAt, updatedAt }
 
-/// The direction that [StorageBucketApi.listBuckets] sorts its results in.
-enum BucketSortOrder {
-  ascending('asc'),
-  descending('desc');
-
-  const BucketSortOrder(this.value);
-
-  /// The value sent to the storage API.
-  final String value;
-}
-
 /// Filter, sort and pagination options for [StorageBucketApi.listBuckets].
 class ListBucketsOptions {
   /// The maximum number of buckets to return.
@@ -209,7 +198,7 @@ class ListBucketsOptions {
   final BucketSortColumn? sortColumn;
 
   /// The direction to sort the buckets in.
-  final BucketSortOrder? sortOrder;
+  final SortDirection? sortOrder;
 
   /// A search term used to filter buckets by name.
   final String? search;
@@ -306,11 +295,11 @@ class SortBy {
   final String? column;
 
   /// The sort direction.
-  final FileSortOrder order;
+  final SortDirection order;
 
   const SortBy({
     this.column = 'name',
-    this.order = FileSortOrder.ascending,
+    this.order = SortDirection.ascending,
   });
 
   Map<String, dynamic> toMap() {
@@ -324,18 +313,6 @@ class SortBy {
 /// The column that [StorageFileApi.listPaginated] can sort its results by.
 enum FileSortColumn { name, updatedAt, createdAt }
 
-/// The direction that [StorageFileApi.list] and
-/// [StorageFileApi.listPaginated] sort their results in.
-enum FileSortOrder {
-  ascending('asc'),
-  descending('desc');
-
-  const FileSortOrder(this.value);
-
-  /// The value sent to the storage API.
-  final String value;
-}
-
 /// The column and direction that [StorageFileApi.listPaginated] sorts its
 /// results by.
 class FileSort {
@@ -343,11 +320,11 @@ class FileSort {
   final FileSortColumn column;
 
   /// The sort direction.
-  final FileSortOrder order;
+  final SortDirection order;
 
   const FileSort({
     this.column = FileSortColumn.name,
-    this.order = FileSortOrder.ascending,
+    this.order = SortDirection.ascending,
   });
 
   Map<String, dynamic> toMap() {

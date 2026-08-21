@@ -948,7 +948,7 @@ void main() {
           .from('test-bucket')
           .list(
             searchOptions: const SearchOptions(
-              sortBy: SortBy(order: FileSortOrder.descending),
+              sortBy: SortBy(order: SortDirection.descending),
             ),
           );
 
@@ -989,7 +989,7 @@ void main() {
             searchOptions: const SearchOptions(
               sortBy: SortBy(
                 column: 'created_at',
-                order: FileSortOrder.descending,
+                order: SortDirection.descending,
               ),
             ),
           );

@@ -150,7 +150,7 @@ void main() {
         offset: 5,
         search: 'photo',
         sortColumn: BucketSortColumn.createdAt,
-        sortOrder: BucketSortOrder.descending,
+        sortOrder: SortDirection.descending,
       );
 
       expect(options.toQueryParameters(), {
@@ -184,7 +184,7 @@ void main() {
     test('serializes the order to its value', () {
       const sortBy = SortBy(
         column: 'updated_at',
-        order: FileSortOrder.descending,
+        order: SortDirection.descending,
       );
       expect(sortBy.toMap(), {'column': 'updated_at', 'order': 'desc'});
     });
@@ -194,7 +194,7 @@ void main() {
     test('serializes column to snake_case and order to its value', () {
       const sort = FileSort(
         column: FileSortColumn.updatedAt,
-        order: FileSortOrder.descending,
+        order: SortDirection.descending,
       );
       expect(sort.toMap(), {'column': 'updated_at', 'order': 'desc'});
     });
