@@ -5,6 +5,7 @@ import 'package:supabase/src/supabase_client.dart' as real;
 import 'package:supabase/supabase.dart' hide SupabaseClient;
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
+import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 import 'utils.dart';
 
@@ -521,6 +522,26 @@ void main() {
 
     group('JSON codec', () {
       test(
+        'does not dispose a supplied codec, so the caller keeps ownership',
+        () async {
+          final jsonCodec = YAJsonIsolate();
+          await jsonCodec.initialize();
+
+          final client = SupabaseClient(
+            supabaseUrl,
+            supabaseKey,
+            jsonCodec: jsonCodec,
+          );
+
+          await client.dispose();
+
+          expect(await jsonCodec.encode({'key': 'value'}), isA<String>());
+
+          await jsonCodec.dispose();
+        },
+      );
+
+      test(
         'creates a single codec shared across rest and functions clients',
         () async {
           // The rest and functions clients get the codec the SupabaseClient
@@ -575,6 +596,7 @@ class SupabaseClient extends real.SupabaseClient {
     super.accessToken,
     super.headers,
     super.httpClient,
+    super.jsonCodec,
   }) : super(
          authOptions: AuthClientOptions(
            autoRefreshToken: authOptions.autoRefreshToken,

@@ -40,6 +40,12 @@ import 'trace_http_client.dart';
 /// if this is not supported by the client libraries. When set, the `auth`
 /// namespace of the Supabase client cannot be used.
 ///
+/// [jsonCodec] encodes and decodes the JSON of the rest and functions clients.
+/// The default codec keeps large payloads off the calling isolate. Pass your
+/// own to process that JSON some other way, for example through a native
+/// parser. A codec passed here is owned by the caller, so [dispose] leaves it
+/// alone, and it can be shared with other clients.
+///
 /// The pkce flow is used by default and keeps its code verifiers in the
 /// `AuthAsyncStorage` passed to the `pkceAsyncStorage` field of [authOptions].
 /// Pass a persistent implementation whenever the flow can leave the process
@@ -75,7 +81,8 @@ class SupabaseClient {
   late final RealtimeClient realtime;
   late PostgrestClient _rest;
   StreamSubscription<AuthState>? _authStateSubscription;
-  final YAJsonIsolate _jsonCodec;
+  final AsyncJsonCodec _jsonCodec;
+  final bool _ownsJsonCodec;
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each
@@ -148,6 +155,7 @@ class SupabaseClient {
     this.accessToken,
     Map<String, String>? headers,
     Client? httpClient,
+    AsyncJsonCodec? jsonCodec,
   }) : _supabaseKey = supabaseKey,
        _functionsOptions = functionsOptions,
        _restUrl = '$supabaseUrl/rest/v1',
@@ -161,7 +169,8 @@ class SupabaseClient {
          ...?headers,
        },
        _httpClient = httpClient,
-       _jsonCodec = (YAJsonIsolate()..initialize()) {
+       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _ownsJsonCodec = jsonCodec == null {
     final baseHttpClient = httpClient ?? Client();
     final tracedHttpClient = tracePropagationOptions.enabled
         ? TracePropagationClient(
@@ -300,7 +309,9 @@ class SupabaseClient {
     await _authStateSubscription?.cancel();
     await functions.dispose();
     await _rest.dispose();
-    await _jsonCodec.dispose();
+    if (_ownsJsonCodec) {
+      await _jsonCodec.dispose();
+    }
     if (_httpClient == null) {
       _authHttpClient.close();
     }
