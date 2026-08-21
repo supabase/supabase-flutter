@@ -437,6 +437,19 @@ void main() {
         expect(supabase.realtime.headers['Custom-Header'], 'custom-value');
       });
 
+      test('rest client headers cannot be mutated in place', () {
+        expect(
+          () => supabase.rest.headers['Custom-Header'] = 'custom-value',
+          throwsUnsupportedError,
+        );
+      });
+
+      test('rpc leaves the rest client headers untouched', () {
+        final headersBefore = {...supabase.rest.headers};
+        unawaited(supabase.rpc('do_something'));
+        expect(supabase.rest.headers, headersBefore);
+      });
+
       test('should preserve default headers when setting custom headers', () {
         supabase.headers = {'Custom-Header': 'custom-value'};
 

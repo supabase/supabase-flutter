@@ -17,6 +17,12 @@ class PostgrestClient {
   static const Set<int> retryableStatusCodes = {503, 520};
 
   final String url;
+
+  /// The headers sent with every request.
+  ///
+  /// The map is unmodifiable: the client is stateless, so headers are set
+  /// through the constructor, or per request with
+  /// [PostgrestBuilder.setHeader].
   final Map<String, String> headers;
   final String? _schema;
   final Client? httpClient;
@@ -80,24 +86,25 @@ class PostgrestClient {
            ? httpClient
            : AccessTokenClient(accessToken, httpClient),
        _schema = schema,
-       headers = {...defaultHeaders, ...?headers},
+       headers = Map.unmodifiable({...defaultHeaders, ...?headers}),
        _isolate = isolate ?? (YAJsonIsolate()..initialize()),
        _hasCustomIsolate = isolate != null {
     postgrestLogger.config(
-      'Initialize PostgrestClient with url: ${Uri.parse(url).redacted}, '
-      'schema: $_schema',
+      () =>
+          'Initialize PostgrestClient with url: ${Uri.parse(url).redacted}, '
+          'schema: $_schema',
     );
     postgrestLogger.finest(
-      'Initialize with headers: ${this.headers.redacted}',
+      () => 'Initialize with headers: ${this.headers.redacted}',
     );
   }
 
   /// Perform a table operation.
-  PostgrestQueryBuilder<void> from(String table) {
+  PostgrestQueryBuilder from(String table) {
     final requestUrl = '$url/$table';
     return PostgrestQueryBuilder(
       url: Uri.parse(requestUrl),
-      headers: {...headers},
+      headers: headers,
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,
@@ -112,7 +119,7 @@ class PostgrestClient {
   PostgrestClient schema(String schema) {
     return PostgrestClient(
       url,
-      headers: {...headers},
+      headers: headers,
       schema: schema,
       httpClient: httpClient,
       isolate: _isolate,
@@ -144,7 +151,7 @@ class PostgrestClient {
     final requestUrl = '$url/rpc/$fn';
     return PostgrestRpcBuilder(
       requestUrl,
-      headers: {...headers},
+      headers: headers,
       schema: _schema,
       httpClient: httpClient,
       isolate: _isolate,

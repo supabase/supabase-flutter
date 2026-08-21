@@ -100,6 +100,18 @@ void main() {
       expect(client.headers['apikey'], 'foo');
     });
 
+    test('headers cannot be mutated in place', () {
+      final client = PostgrestClient(
+        localStackRestUrl,
+        headers: {'apikey': 'foo'},
+      );
+      addTearDown(client.dispose);
+      expect(
+        () => client.headers['apikey'] = 'bar',
+        throwsUnsupportedError,
+      );
+    });
+
     test('override X-Client-Info', () async {
       final client = PostgrestClient(
         localStackRestUrl,
@@ -471,13 +483,6 @@ void main() {
           .count(CountOption.exact);
 
       expect(response.count, 1);
-    });
-
-    test('execute without table operation', () async {
-      await expectLater(
-        () => postgrest.from('users'),
-        throwsA(isA<ArgumentError>()),
-      );
     });
 
     test('select from uppercase table name', () async {

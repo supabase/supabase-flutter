@@ -9,7 +9,6 @@ import 'counter.dart';
 class SupabaseQuerySchema {
   final Counter _counter;
   final String _restUrl;
-  final Map<String, String> _headers;
   final String _schema;
   final YAJsonIsolate _isolate;
   final Client? _authHttpClient;
@@ -19,7 +18,6 @@ class SupabaseQuerySchema {
   const SupabaseQuerySchema({
     required Counter counter,
     required String restUrl,
-    required Map<String, String> headers,
     required String schema,
     required YAJsonIsolate isolate,
     required Client? authHttpClient,
@@ -27,7 +25,6 @@ class SupabaseQuerySchema {
     required PostgrestClient rest,
   }) : _counter = counter,
        _restUrl = restUrl,
-       _headers = headers,
        _schema = schema,
        _isolate = isolate,
        _authHttpClient = authHttpClient,
@@ -40,7 +37,7 @@ class SupabaseQuerySchema {
     return SupabaseQueryBuilder(
       url,
       _realtime,
-      headers: {..._rest.headers, ..._headers},
+      headers: _rest.headers,
       schema: _schema,
       table: table,
       httpClient: _authHttpClient,
@@ -57,7 +54,6 @@ class SupabaseQuerySchema {
     Map<String, dynamic>? params,
     bool get = false,
   }) {
-    _rest.headers.addAll(_headers);
     return _rest.rpc(
       fn,
       params: params,
@@ -70,7 +66,6 @@ class SupabaseQuerySchema {
     return SupabaseQuerySchema(
       counter: _counter,
       restUrl: _restUrl,
-      headers: _headers,
       schema: schema,
       isolate: _isolate,
       authHttpClient: _authHttpClient,

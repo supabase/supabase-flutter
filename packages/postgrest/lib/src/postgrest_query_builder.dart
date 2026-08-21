@@ -13,34 +13,35 @@ part of 'postgrest_builder.dart';
 /// * count() - "head"
 /// first. Each of these returns a filter builder that allows the user to
 /// stack filter functions before the request is sent.
+///
+/// The query builder itself is not executable: a request without one of the
+/// table operations above is meaningless, so awaiting it is a compile-time
+/// error rather than a runtime one.
 /// {@endtemplate}
-class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
+@immutable
+class PostgrestQueryBuilder {
+  final _RequestConfig _config;
+
   /// {@macro postgrest_query_builder}
   PostgrestQueryBuilder({
     required Uri url,
-    HttpMethod? method,
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
     YAJsonIsolate? isolate,
     SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
-    Future<void>? abortSignal,
-  }) : super(
-         PostgrestBuilder(
-           url: url,
-           method: method,
-           headers: headers ?? {},
-           schema: schema,
-           httpClient: httpClient,
-           isolate: isolate,
-           retryOptions: retryOptions,
-           requestTimeout: requestTimeout,
-           abortSignal: abortSignal,
-         ),
+  }) : _config = _RequestConfig(
+         url: url,
+         headers: {...?headers},
+         schema: schema,
+         httpClient: httpClient,
+         isolate: isolate,
+         retry: retryOptions,
+         requestTimeout: requestTimeout,
        );
 
-  PostgrestQueryBuilder._(super.builder);
+  const PostgrestQueryBuilder._(this._config);
 
   /// Perform a SELECT query on the table or view.
   ///
@@ -67,10 +68,9 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       return c;
     }).join();
 
-    final url = overrideSearchParameters('select', cleanedColumns);
-    return PostgrestFilterBuilder(
-      _copyWithType(
-        url: url,
+    return _filterBuilder(
+      _config.copyWith(
+        url: _config.url.overrideSearchParameters('select', cleanedColumns),
         method: HttpMethod.get,
       ),
     );
@@ -102,24 +102,24 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///   'channel_id': 1
   /// }).select();
   /// ```
-  PostgrestFilterBuilder<T> insert(
+  PostgrestFilterBuilder<void> insert(
     Object values, {
     bool defaultToNull = true,
   }) {
-    final newHeaders = {..._headers};
+    final newHeaders = {..._config.headers};
     if (defaultToNull) {
       newHeaders.remove('Prefer');
     } else {
       newHeaders['Prefer'] = 'missing=default';
     }
 
-    Uri url = _url;
+    Uri url = _config.url;
     if (values is List) {
       url = _setColumnsSearchParam(values);
     }
 
-    return PostgrestFilterBuilder(
-      _copyWith(
+    return _filterBuilder(
+      _config.copyWith(
         method: HttpMethod.post,
         headers: newHeaders,
         body: values,
@@ -162,13 +162,13 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///   'channel_id': 1
   /// }).select();
   /// ```
-  PostgrestFilterBuilder<T> upsert(
+  PostgrestFilterBuilder<void> upsert(
     Object values, {
     String? onConflict,
     bool ignoreDuplicates = false,
     bool defaultToNull = true,
   }) {
-    final newHeaders = {..._headers};
+    final newHeaders = {..._config.headers};
     newHeaders['Prefer'] =
         'resolution=${ignoreDuplicates ? 'ignore' : 'merge'}-duplicates';
 
@@ -176,7 +176,7 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       newHeaders['Prefer'] = '${newHeaders['Prefer']!},missing=default';
     }
 
-    Uri url = _url;
+    Uri url = _config.url;
 
     if (values is List) {
       url = _setColumnsSearchParam(values);
@@ -191,8 +191,8 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
       );
     }
 
-    return PostgrestFilterBuilder(
-      _copyWith(
+    return _filterBuilder(
+      _config.copyWith(
         method: HttpMethod.post,
         headers: newHeaders,
         body: values,
@@ -221,11 +221,11 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> update(Map<dynamic, dynamic> values) {
-    final newHeaders = {..._headers}..remove('Prefer');
+  PostgrestFilterBuilder<void> update(Map<dynamic, dynamic> values) {
+    final newHeaders = {..._config.headers}..remove('Prefer');
 
-    return PostgrestFilterBuilder(
-      _copyWith(
+    return _filterBuilder(
+      _config.copyWith(
         method: HttpMethod.patch,
         headers: newHeaders,
         body: values,
@@ -253,10 +253,10 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   ///     .eq('message', 'foo')
   ///     .select();
   /// ```
-  PostgrestFilterBuilder<T> delete() {
-    final newHeaders = {..._headers}..remove('Prefer');
-    return PostgrestFilterBuilder(
-      _copyWith(
+  PostgrestFilterBuilder<void> delete() {
+    final newHeaders = {..._config.headers}..remove('Prefer');
+    return _filterBuilder(
+      _config.copyWith(
         method: HttpMethod.delete,
         headers: newHeaders,
       ),
@@ -268,9 +268,9 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     final columns = [for (final element in newValues) ...element.keys];
     if (newValues.isNotEmpty) {
       final uniqueColumns = {...columns}.map((e) => '"$e"').join(',');
-      return appendSearchParameters("columns", uniqueColumns);
+      return _config.url.appendSearchParameters("columns", uniqueColumns);
     }
-    return _url;
+    return _config.url;
   }
 
   /// Only performs a count query on the table or view.
@@ -278,40 +278,36 @@ class PostgrestQueryBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// int count = await supabase.from('users').count();
   /// ```
   PostgrestFilterBuilder<int> count([CountOption option = CountOption.exact]) {
-    return PostgrestFilterBuilder(
-      _copyWithType(
+    return _filterBuilder(
+      _config.copyWith(
         method: HttpMethod.head,
         count: option,
       ),
     );
   }
 
-  @override
-  PostgrestQueryBuilder<T> retry({
+  /// Overrides the retry behavior of the requests built by this builder.
+  ///
+  /// See [PostgrestBuilder.retry] for the parameters.
+  PostgrestQueryBuilder retry({
     bool enabled = true,
     int? count,
     Duration? requestTimeout,
   }) {
     return PostgrestQueryBuilder._(
-      _copyWith(
-        retry: _retry.copyWith(enabled: enabled, count: count),
+      _config.copyWith(
+        retry: _config.retry.copyWith(enabled: enabled, count: count),
         requestTimeout: requestTimeout,
       ),
     );
   }
 
-  @override
-  PostgrestQueryBuilder<T> setHeader(String key, String value) {
-    return PostgrestQueryBuilder(
-      url: _url,
-      headers: {..._headers, key: value},
-      httpClient: _httpClient,
-      method: _method,
-      schema: _schema,
-      isolate: _isolate,
-      retryOptions: _retry,
-      requestTimeout: _requestTimeout,
-      abortSignal: _abortSignal,
+  /// Sets a header on the requests built by this builder.
+  PostgrestQueryBuilder setHeader(String key, String value) {
+    return PostgrestQueryBuilder._(
+      _config.copyWith(
+        headers: {..._config.headers, key: value},
+      ),
     );
   }
 }

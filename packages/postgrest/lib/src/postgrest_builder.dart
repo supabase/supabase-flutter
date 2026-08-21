@@ -90,6 +90,49 @@ class _RequestConfig {
 String? _emptyPreferAsNull(String? prefer) =>
     (prefer == null || prefer.isEmpty) ? null : prefer;
 
+extension on Uri {
+  /// Returns this url with [value] appended to the values of query parameter
+  /// [key].
+  ///
+  /// Uses lists to allow multiple values for the same key.
+  Uri appendSearchParameters(String key, String value) {
+    final searchParameters = Map<String, dynamic>.of(queryParametersAll);
+    searchParameters[key] = [...?searchParameters[key], value];
+    return replace(queryParameters: searchParameters);
+  }
+
+  /// Returns this url with the values of query parameter [key] replaced by
+  /// [value].
+  Uri overrideSearchParameters(String key, String value) {
+    final searchParameters = Map<String, dynamic>.of(queryParametersAll);
+    searchParameters[key] = value;
+    return replace(queryParameters: searchParameters);
+  }
+}
+
+/// Wraps [config] in the executable filter phase once a table operation or
+/// function call has been chosen.
+PostgrestFilterBuilder<P> _filterBuilder<P>(_RequestConfig config) =>
+    PostgrestFilterBuilder(
+      PostgrestBuilder<P, P, P>._(config: config, converter: null),
+    );
+
+/// Convert list filter to query parameters string
+String _cleanFilterList(List<dynamic> filter) {
+  if (filter.every((element) => element is num)) {
+    return filter.map((s) => '$s').join(',');
+  }
+  // Escape `\` and `"` inside each element before quoting, otherwise a value
+  // containing a double quote (e.g. `a"b`) produces a malformed PostgREST
+  // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
+  return filter
+      .map((s) {
+        final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+        return '"$escaped"';
+      })
+      .join(',');
+}
+
 /// The base builder class.
 ///
 /// [T] for the overall return type, so `PostgrestResponse<S>` or [S]
@@ -544,45 +587,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       return null as T;
     }
     throw error;
-  }
-
-  /// Get new Uri with updated query parameters
-  /// Uses lists to allow multiple values for the same key
-  ///
-  /// [url] may be used to update based on a different url than the current one
-  Uri appendSearchParameters(String key, String value, [Uri? url]) {
-    final searchParameters = Map<String, dynamic>.of(
-      (url ?? _url).queryParametersAll,
-    );
-    searchParameters[key] = [...?searchParameters[key], value];
-    return (url ?? _url).replace(queryParameters: searchParameters);
-  }
-
-  /// Get new Uri with overridden query parameters
-  ///
-  /// [url] may be used to update based on a different url than the current one
-  Uri overrideSearchParameters(String key, String value, [Uri? url]) {
-    final searchParameters = Map<String, dynamic>.of(
-      (url ?? _url).queryParametersAll,
-    );
-    searchParameters[key] = value;
-    return (url ?? _url).replace(queryParameters: searchParameters);
-  }
-
-  /// Convert list filter to query parameters string
-  String _cleanFilterArray(List<dynamic> filter) {
-    if (filter.every((element) => element is num)) {
-      return filter.map((s) => '$s').join(',');
-    }
-    // Escape `\` and `"` inside each element before quoting, otherwise a value
-    // containing a double quote (e.g. `a"b`) produces a malformed PostgREST
-    // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
-    return filter
-        .map((s) {
-          final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
-          return '"$escaped"';
-        })
-        .join(',');
   }
 
   @override

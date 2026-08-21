@@ -1389,13 +1389,20 @@ await postgrest.from('countries').select().setHeader('Authorization', 'Bearer $j
 ```
 
 To pin a token on a client you got from `SupabaseClient`, set the header yourself. `SupabaseClient`
-builds its sub-clients, so there is no `accessToken` callback to pass, but the header maps are
-still mutable:
+builds its sub-clients, so there is no `accessToken` callback to pass:
 
 ```dart
 supabase.storage.setHeader('Authorization', 'Bearer $jwt');
-supabase.rest.headers['Authorization'] = 'Bearer $jwt';
 supabase.functions.headers['Authorization'] = 'Bearer $jwt';
+```
+
+The rest client is stateless and its header map unmodifiable (see
+[the stateless rest client](#the-rest-client-and-its-builders-are-stateless)), so a pinned token is
+passed per request there, or client-wide through the `headers` setter of `SupabaseClient`:
+
+```dart
+await supabase.from('countries').select().setHeader('Authorization', 'Bearer $jwt');
+supabase.headers = {...supabase.headers, 'Authorization': 'Bearer $jwt'};
 ```
 
 That shadows the session token exactly as the old setter did, so remove the header again once the
@@ -1403,6 +1410,57 @@ pinned token should no longer apply.
 
 Realtime keeps its setter because it holds a live socket and has to push a new token over it rather
 than attach one per request.
+
+### The rest client and its builders are stateless
+
+`PostgrestClient` no longer holds any mutable state, and the query builder is no longer awaitable
+before a table operation has been chosen.
+
+| Before | After |
+| --- | --- |
+| `supabase.rest.headers['X-Foo'] = 'bar'` | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}` |
+| `postgrest.headers['X-Foo'] = 'bar'` | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request |
+| `await supabase.from('countries')` compiled and threw an `ArgumentError` at runtime | does not compile |
+| `SupabaseQuerySchema(headers: …)` | removed, the headers of the `rest` client are used |
+| `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation or by `rpc()` |
+| `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()` | removed, internal URL helpers that leaked into the public API |
+| `PostgrestQueryBuilder<T>` | `PostgrestQueryBuilder`, the type argument only mattered when the builder was awaitable |
+
+`PostgrestClient.headers` is now an unmodifiable map. The client never changes after construction,
+which makes it safe to share across requests and removes a class of bugs where one call site's
+header mutation leaked into every later request. Set headers where they belong instead: on the
+constructor for all requests, or with `setHeader()` on a builder for a single request.
+
+On `SupabaseClient`, `rest` is no longer a mutable singleton for the same reason. Assigning
+`supabase.headers` replaces the rest client with one carrying the new headers, so reads through
+`supabase.rest.headers` stay correct, but in-place mutation of that map now throws an
+`UnsupportedError`. A `PostgrestClient` reference captured before the assignment keeps the headers
+it was built with, and the same holds for the `SupabaseQuerySchema` returned by
+`supabase.schema(…)`, which wraps the rest client it was created with. Read `supabase.rest` or call
+`supabase.schema(…)` again (and create new builders) after changing `supabase.headers`.
+`supabase.rpc()` used to permanently merge the client headers into the rest client on every call;
+that mutation is gone along with the state it leaked into.
+
+Since the query builder is no longer awaitable, its type argument no longer means anything and is
+gone: `insert()`, `upsert()`, `update()` and `delete()` without a trailing `select()` now resolve
+to `void` everywhere, where `supabase.from()` used to yield `dynamic` and a standalone
+`PostgrestClient` `void`. Code that assigned that value was reading `null`; drop the assignment or
+add `select()` to actually return data.
+
+A query builder that has not chosen a table operation is meaningless as a request, so
+`supabase.from('countries')` by itself no longer implements `Future` and cannot be awaited,
+converted with `withConverter()`, or given an `abortSignal()`. Call `select()`, `insert()`,
+`upsert()`, `update()`, `delete()` or `count()` first; everything after that point is unchanged.
+`setHeader()` and `retry()` remain available before the operation, since they configure whichever
+request follows:
+
+```dart
+// Before: compiled, but threw an ArgumentError at runtime.
+await supabase.from('countries');
+
+// After: does not compile. Choose an operation first.
+await supabase.from('countries').select();
+```
 
 ### The SDK no longer prints logs
 
