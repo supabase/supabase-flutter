@@ -11,3 +11,8 @@ updates:
       codeql-action:
         patterns:
           - "github/codeql-action*"
+      # Every reusable workflow we call from supabase/sdk shares that
+      # repository's release tags, so they always move in lockstep.
+      supabase-sdk-workflows:
+        patterns:
+          - "supabase/sdk*"
