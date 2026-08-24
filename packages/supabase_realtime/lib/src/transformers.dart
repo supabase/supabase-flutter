@@ -346,28 +346,141 @@ dynamic toArray(dynamic value, String type) {
     return value;
   }
 
-  // trim Postgres array curly brackets
-  final lastIndex = value.length - 1;
-  final closeBrace = value[lastIndex];
-  final openBrace = value[0];
-
   // Confirm value is a Postgres array by checking curly brackets
-  if (openBrace == '{' && closeBrace == '}') {
-    final trimmedValue = value.substring(1, lastIndex);
-    List<dynamic> array;
-
-    // TODO: find a better solution to separate Postgres array data
-    try {
-      array = json.decode('[$trimmedValue]') as List;
-    } catch (_) {
-      // WARNING: splitting on comma does not cover all edge cases
-      array = trimmedValue != '' ? trimmedValue.split(',') : [];
-    }
-
-    return array.map((element) => convertCell(type, element)).toList();
+  if (value.length < 2 || !value.startsWith('{') || !value.endsWith('}')) {
+    return value;
   }
 
-  return value;
+  final elements = _parseArrayLiteral(value);
+  if (elements == null) {
+    // Not a literal this parser understands, hand the raw value back rather
+    // than splitting it into something that looks like data but isn't.
+    return value;
+  }
+
+  return _convertElements(elements, type);
+}
+
+/// Runs [convertCell] over every leaf of a parsed array literal, leaving nulls
+/// and the shape of nested arrays intact.
+dynamic _convertElements(dynamic element, String type) {
+  if (element is List) {
+    return element.map((child) => _convertElements(child, type)).toList();
+  }
+  if (element == null) {
+    return null;
+  }
+  return convertCell(type, element);
+}
+
+/// Parses the array literal Postgres sends on the wire, for example
+/// `{"a,b",c}` or `{{1,2},{3,4}}`.
+///
+/// Elements are separated by commas, may be quoted with `"` (in which case `\`
+/// escapes the next character), and unquoted whitespace around an element is
+/// not part of its value. An unquoted `NULL` is the null element, while a
+/// quoted `"NULL"` is the four character string.
+///
+/// Returns null when [literal] doesn't parse, so the caller can fall back to
+/// the raw value instead of silently returning corrupted data.
+List<dynamic>? _parseArrayLiteral(String literal) {
+  var index = 0;
+
+  void skipWhitespace() {
+    while (index < literal.length && literal[index].trim().isEmpty) {
+      index++;
+    }
+  }
+
+  String? parseQuoted() {
+    final buffer = StringBuffer();
+    index++; // opening quote
+    while (index < literal.length) {
+      final char = literal[index];
+      if (char == r'\') {
+        index++;
+        if (index >= literal.length) {
+          return null;
+        }
+        buffer.write(literal[index]);
+      } else if (char == '"') {
+        index++; // closing quote
+        return buffer.toString();
+      } else {
+        buffer.write(char);
+      }
+      index++;
+    }
+    return null; // unterminated
+  }
+
+  List<dynamic>? parseArray() {
+    if (index >= literal.length || literal[index] != '{') {
+      return null;
+    }
+    index++;
+
+    final elements = <dynamic>[];
+    skipWhitespace();
+    if (index < literal.length && literal[index] == '}') {
+      index++;
+      return elements;
+    }
+
+    while (index < literal.length) {
+      skipWhitespace();
+      if (index >= literal.length) {
+        return null;
+      }
+
+      final dynamic element;
+      switch (literal[index]) {
+        case '{':
+          final nested = parseArray();
+          if (nested == null) {
+            return null;
+          }
+          element = nested;
+        case '"':
+          final quoted = parseQuoted();
+          if (quoted == null) {
+            return null;
+          }
+          element = quoted;
+        default:
+          final start = index;
+          while (index < literal.length &&
+              literal[index] != ',' &&
+              literal[index] != '}') {
+            index++;
+          }
+          final raw = literal.substring(start, index).trim();
+          element = raw.toUpperCase() == 'NULL' ? null : raw;
+      }
+      elements.add(element);
+
+      skipWhitespace();
+      if (index >= literal.length) {
+        return null;
+      }
+      if (literal[index] == ',') {
+        index++;
+        continue;
+      }
+      if (literal[index] == '}') {
+        index++;
+        return elements;
+      }
+      return null; // junk between an element and the next separator
+    }
+    return null; // unterminated
+  }
+
+  final parsed = parseArray();
+  if (parsed == null || index != literal.length) {
+    return null;
+  }
+  return parsed;
 }
 
 /// Fixes timestamp to be ISO-8601. Swaps the space between the date and time
