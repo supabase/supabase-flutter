@@ -79,6 +79,10 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   final _appLinks = AppLinks();
 
+  /// Set by [dispose] so that a lifecycle callback that is delivered after
+  /// teardown does not touch the disposed [Supabase] instance.
+  bool _isDisposed = false;
+
   /// - Obtains session from local storage and sets it as the current session
   /// - Starts a deep link observer
   /// - Emits an initial session if there were no session stored in local
@@ -165,6 +169,7 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   /// Dispose the instance to free up resources
   void dispose() {
+    _isDisposed = true;
     if (isRunningInFlutterTest) {
       _initialDeeplinkIsHandled = false;
     }
@@ -175,6 +180,10 @@ class SupabaseAuth with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_isDisposed) {
+      return;
+    }
+
     switch (state) {
       case AppLifecycleState.resumed:
         if (_autoRefreshToken) {
