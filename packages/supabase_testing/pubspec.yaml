@@ -18,7 +18,7 @@ dependencies:
   crypto: ^3.0.7
   http: ^1.6.0
   meta: ^1.16.0
-  supabase: 2.16.0
+  supabase: 3.0.0-dev.1
 
 dev_dependencies:
   supabase_lints: ^0.1.1
