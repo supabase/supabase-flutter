@@ -1014,27 +1014,16 @@ class RealtimeClient {
   }
 
   /// Resolves the access token before rejoining errored channels and flushing
-  /// the send buffer, so that joins and buffered channel join payloads carry
-  /// the correct token.
+  /// the send buffer, so that every join carries the resolved identity rather
+  /// than the stale payload captured while the socket was disconnected.
   ///
-  /// When [RealtimeChannel.subscribe] runs before an asynchronous access token
-  /// has resolved (common when [customAccessToken] reads from async storage),
-  /// the buffered join payload has no `access_token`. That buffered message
-  /// captured the stale payload, so once auth has settled the join payloads are
-  /// patched with the resolved token, the stale buffered joins are dropped, and
-  /// the join is re-sent for any channel still joining.
-  ///
-  /// A throwing [customAccessToken] fails the connect instead of silently
-  /// downgrading the buffered messages to the identity the socket already has:
-  /// the error reaches the channels as a `channelError` status and
-  /// [onStatusChange] as a stream error, the buffer is kept unsent, and the
-  /// connection is closed so the reconnect backoff retries the provider.
-  ///
-  /// A resolution that outlives its connection is dropped entirely, whether it
-  /// succeeded or failed: a stale token must not overwrite the identity of a
-  /// newer connection (whose own resolution applies the current token), and a
-  /// stale error must not be surfaced for a connection the user already
-  /// disconnected.
+  /// On success the join payloads are patched with the token, the stale
+  /// buffered joins are dropped, and the join is re-sent for any channel still
+  /// joining. A throwing [customAccessToken] instead fails the connect: the
+  /// error surfaces as a `channelError` status and on [onStatusChange], the
+  /// buffer stays unsent, and the connection is closed so the reconnect
+  /// backoff retries the provider. A resolution that outlives its connection
+  /// is dropped entirely, success and error alike.
   Future<void> _resolveAccessTokenAndFlush() async {
     final customAccessToken = this.customAccessToken;
     if (customAccessToken != null) {
