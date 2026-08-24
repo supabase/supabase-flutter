@@ -839,6 +839,7 @@ features:
   database.using_filters.not_in:
     status: implemented
     symbols:
+      - PostgrestFilterBuilder.notInFilter
       - PostgrestFilterBuilder.not
   database.using_filters.contains:
     status: implemented
