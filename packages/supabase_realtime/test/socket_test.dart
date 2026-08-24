@@ -1565,13 +1565,17 @@ void main() {
         expect(socket.connectionState, SocketState.open);
 
         await socket.disconnect();
-        tokenCompleter.completeError(Exception('provider failed late'));
+        tokenCompleter.completeError(
+          Exception('provider failed late'),
+          StackTrace.current,
+        );
         await Future<void>.delayed(Duration.zero);
 
         // The stale error is not surfaced for a user-initiated disconnect and
         // the failure close is never issued.
         expect(channelErrors, isEmpty);
         expect(socketErrors, isEmpty);
+        expect(capturedMessages, isEmpty);
         verifyNever(
           () => mockedSink.close(
             RealtimeConstants.webSocketCloseNormal,
