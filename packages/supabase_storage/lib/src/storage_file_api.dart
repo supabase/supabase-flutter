@@ -44,12 +44,13 @@ class StorageFileApi {
     // separators, the bucket id, and characters that are already valid in a
     // path segment (such as `:` in ISO-8601 timestamps) are preserved, so URLs
     // for existing valid keys are unchanged.
-    final encodedPath = Uri(pathSegments: path.split('/')).path;
+    final cleanPath = _removeEmptyFolders(path);
+    final encodedPath = Uri(pathSegments: cleanPath.split('/')).path;
     return '$bucketId/$encodedPath';
   }
 
   String _removeEmptyFolders(String path) {
-    return path.replaceAll(RegExp(r'^/|/$'), '').replaceAll(RegExp(r'/+'), '/');
+    return path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
   }
 
   FetchOptions get _fetchOptions => FetchOptions(headers);
@@ -228,7 +229,8 @@ class StorageFileApi {
     String path, {
     bool upsert = false,
   }) async {
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
 
     final data = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/upload/sign/$finalPath',
@@ -249,7 +251,7 @@ class StorageFileApi {
 
     return SignedUploadURLResponse(
       signedUrl: signedUrl.toString(),
-      path: path,
+      path: cleanPath,
       token: token,
     );
   }
