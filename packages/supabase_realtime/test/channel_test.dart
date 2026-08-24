@@ -138,8 +138,8 @@ void main() {
           thrown: const FormatException(
             'InvalidJWTToken: Invalid value for JWT claim "exp" with value 0',
           ),
+          headers: {'Authorization': 'Bearer expired-token'},
         );
-        throwingSocket.accessToken = 'expired-token';
 
         final localChannel = throwingSocket.channel('topic');
 
@@ -170,8 +170,8 @@ void main() {
         final throwingSocket = _SetAuthThrowingSocket(
           '/socket',
           thrown: const FormatException('some other parsing failure'),
+          headers: {'Authorization': 'Bearer some-token'},
         );
-        throwingSocket.accessToken = 'some-token';
 
         final localChannel = throwingSocket.channel('topic');
 
@@ -1459,7 +1459,11 @@ void main() {
 }
 
 class _SetAuthThrowingSocket extends RealtimeClient {
-  _SetAuthThrowingSocket(super.endpoint, {required this.thrown});
+  _SetAuthThrowingSocket(
+    super.endpoint, {
+    required this.thrown,
+    super.headers,
+  });
 
   final FormatException thrown;
   int setAuthCalls = 0;

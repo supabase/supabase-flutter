@@ -268,6 +268,53 @@ final WebSocketChannel? socket = client.connection;
 client.onConnectionMessage(rawMessage);
 ```
 
+### The mutable internals of `RealtimeClient` are private
+
+`RealtimeClient` used to expose its internal state machine as public mutable fields, so external
+code could reset the message counter, cancel the heartbeat timer, or add channels to the internal
+list, bypassing all lifecycle management. The internals are now private and the remaining public
+surface is read-only:
+
+| Before | After |
+| --- | --- |
+| `client.channels` (mutable list) | `client.channels` (unmodifiable view) |
+| `client.getChannels()` | `client.channels` |
+| `supabase.getChannels()` | `supabase.channels` |
+| `client.accessToken = token` | `await client.setAccessToken(token)` |
+| `client.heartbeatInterval = interval` | `RealtimeClient(heartbeatInterval: interval)` |
+| `client.customAccessToken = getter` | `RealtimeClient(customAccessToken: getter)` |
+| `client.reconnectAfter = calculation` | `RealtimeClient(reconnectAfter: calculation)` |
+| `client.connection = channel` | removed, the getter remains |
+| `client.connectionState = state` | removed, the getter remains |
+| `client.headers['key'] = value` | `RealtimeClient(headers: headers)` |
+| `client.ref`, `client.pendingHeartbeatRef`, `client.heartbeatTimer`, `client.reconnectTimer`, `client.sendBuffer` | removed |
+
+`channels`, `accessToken`, `connection` and `connectionState` are still readable, and everything
+that used to be mutated after construction is either a constructor parameter or has a dedicated
+method. Channels are added with `channel()` and removed with `removeChannel()` or
+`removeAllChannels()`; the returned `channels` list is an unmodifiable snapshot, so mutating it
+throws an `UnsupportedError`. The `headers` and `parameters` maps are also unmodifiable now; pass
+them to the constructor instead, or assign `SupabaseClient.headers` when the client is managed by
+a `SupabaseClient`.
+
+```dart
+// Before
+client.accessToken = newToken;
+client.heartbeatInterval = const Duration(seconds: 60);
+final channels = client.getChannels();
+
+// After
+await client.setAccessToken(newToken);
+final client = RealtimeClient(
+  realtimeUrl,
+  heartbeatInterval: const Duration(seconds: 60),
+);
+final channels = client.channels;
+```
+
+`setAccessToken()` is the intentional path for token rotation: unlike the removed field write, it
+also propagates the new token to every joined channel.
+
 ### Broadcasts no longer fall back to the REST API
 
 `sendBroadcastMessage()` used to silently post to the REST broadcast endpoint whenever the channel

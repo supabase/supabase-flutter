@@ -627,6 +627,19 @@ void main() {
 
       expect(socket.channels, [channel2]);
     });
+
+    test('a close message that removes its channels does not break the '
+        'dispatch to the other members of the topic', () {
+      // A phx_close trigger removes its channel from the client synchronously,
+      // which must not invalidate the dispatch iteration over the members.
+      final socket = RealtimeClient(socketEndpoint);
+      socket.channel('topic');
+      socket.channel('topic');
+
+      socket.onConnectionMessage('[null,null,"realtime:topic","phx_close",{}]');
+
+      expect(socket.channels, isEmpty);
+    });
   });
 
   group('deferred disconnect', () {
@@ -1214,7 +1227,8 @@ void main() {
       when(() => healthyChannel.isErrored).thenReturn(false);
       when(() => erroredChannel.rejoin()).thenReturn(null);
 
-      socket.channels.addAll([erroredChannel, healthyChannel]);
+      socket.addChannelForTesting(erroredChannel);
+      socket.addChannelForTesting(healthyChannel);
       await socket.connect();
 
       verify(() => erroredChannel.rejoin()).called(1);

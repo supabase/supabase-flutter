@@ -416,7 +416,7 @@ void main() {
 
       final channel = MockChannel();
       when(() => channel.isMember('realtime:room')).thenReturn(true);
-      client.channels.add(channel);
+      client.addChannelForTesting(channel);
 
       client.onConnectionMessage('[null,"1","realtime:room","broadcast",{}]');
 
@@ -431,7 +431,7 @@ void main() {
       when(
         () => channel.trigger(any(), any(), any()),
       ).thenThrow(StateError('boom'));
-      client.channels.add(channel);
+      client.addChannelForTesting(channel);
 
       expect(
         () => client.onConnectionMessage(
