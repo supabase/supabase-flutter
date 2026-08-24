@@ -885,7 +885,11 @@ class RealtimeClient {
   Future<void> setAccessToken(String? token) async {
     final tokenToSend =
         token ?? (await customAccessToken?.call()) ?? _accessToken;
+    _applyAccessToken(tokenToSend);
+  }
 
+  /// Applies an already resolved access token to the socket and its channels.
+  void _applyAccessToken(String? tokenToSend) {
     if (_accessToken == tokenToSend) {
       return;
     }
@@ -1025,15 +1029,21 @@ class RealtimeClient {
   /// the error reaches the channels as a `channelError` status and
   /// [onStatusChange] as a stream error, the buffer is kept unsent, and the
   /// connection is closed so the reconnect backoff retries the provider.
+  ///
+  /// A resolution that outlives its connection is dropped entirely, whether it
+  /// succeeded or failed: a stale token must not overwrite the identity of a
+  /// newer connection (whose own resolution applies the current token), and a
+  /// stale error must not be surfaced for a connection the user already
+  /// disconnected.
   Future<void> _resolveAccessTokenAndFlush() async {
-    final originConnection = _connection;
+    final customAccessToken = this.customAccessToken;
     if (customAccessToken != null) {
+      final originConnection = _connection;
+      final String? providedToken;
       try {
-        await setAccessToken(null);
+        providedToken = await customAccessToken();
       } catch (error) {
-        // Bail out if disconnect() ran or a reconnect replaced the connection
-        // while the token was resolving.
-        if (!identical(_connection, originConnection)) {
+        if (!_isCurrentOpenConnection(originConnection)) {
           return;
         }
         realtimeLogger.warning(
@@ -1050,6 +1060,10 @@ class RealtimeClient {
         );
         return;
       }
+      if (!_isCurrentOpenConnection(originConnection)) {
+        return;
+      }
+      _applyAccessToken(providedToken ?? _accessToken);
       final resolvedToken = _accessToken;
       if (resolvedToken != null) {
         // Snapshot before patching and rejoining, in case either removes a
@@ -1069,6 +1083,17 @@ class RealtimeClient {
     _rejoinErroredChannels();
     _flushSendBuffer();
   }
+
+  /// Whether [originConnection] is still the connection in use and open, so
+  /// that work started on it (such as an access token resolution) may still
+  /// apply its result.
+  ///
+  /// The state check matters on its own: while [disconnect] awaits the sink
+  /// close, [connection] still points at the old connection even though the
+  /// state has already left [SocketState.open].
+  bool _isCurrentOpenConnection(WebSocketChannel? originConnection) =>
+      identical(_connection, originConnection) &&
+      _connectionState == SocketState.open;
 
   /// Rejoins the channels that errored on a previous connection, once the
   /// access token has resolved so the joins carry the correct identity.

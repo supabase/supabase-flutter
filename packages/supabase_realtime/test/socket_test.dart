@@ -1469,6 +1469,119 @@ void main() {
         await socket.disconnect();
       },
     );
+
+    test(
+      'ignores a token resolution that completes after a disconnect',
+      () async {
+        final tokenCompleter = Completer<String?>();
+        final capturedMessages = <String>[];
+        final streamController = StreamController<dynamic>.broadcast();
+
+        final mockedChannel = MockIOWebSocketChannel();
+        final mockedSink = MockWebSocketSink();
+        when(() => mockedChannel.sink).thenReturn(mockedSink);
+        when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
+        when(
+          () => mockedChannel.stream,
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockedSink.close(any(), any()),
+        ).thenAnswer((_) => Future.value());
+        when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+        when(() => mockedSink.add(any())).thenAnswer((invocation) {
+          capturedMessages.add(invocation.positionalArguments.first as String);
+        });
+
+        final socket = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) => mockedChannel,
+          reconnectAfter: (tries) => const Duration(minutes: 5),
+          customAccessToken: () => tokenCompleter.future,
+        );
+
+        final channel = socket.channel('realtime:test');
+        channel.subscribe();
+
+        // Let the connection open and the token resolution start.
+        await Future<void>.delayed(Duration.zero);
+        expect(socket.connectionState, SocketState.open);
+
+        await socket.disconnect();
+        tokenCompleter.complete(generateJwt());
+        await Future<void>.delayed(Duration.zero);
+
+        // The stale resolution did not overwrite the identity of the socket
+        // and nothing was rejoined or flushed with it.
+        expect(socket.accessToken, isNull);
+        expect(capturedMessages, isEmpty);
+
+        await streamController.close();
+      },
+    );
+
+    test(
+      'does not surface a provider error that completes after a disconnect',
+      () async {
+        final tokenCompleter = Completer<String?>();
+        final capturedMessages = <String>[];
+        final streamController = StreamController<dynamic>.broadcast();
+
+        final mockedChannel = MockIOWebSocketChannel();
+        final mockedSink = MockWebSocketSink();
+        when(() => mockedChannel.sink).thenReturn(mockedSink);
+        when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
+        when(
+          () => mockedChannel.stream,
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockedSink.close(any(), any()),
+        ).thenAnswer((_) => Future.value());
+        when(() => mockedSink.close()).thenAnswer((_) => Future.value());
+        when(() => mockedSink.add(any())).thenAnswer((invocation) {
+          capturedMessages.add(invocation.positionalArguments.first as String);
+        });
+
+        final socket = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) => mockedChannel,
+          reconnectAfter: (tries) => const Duration(minutes: 5),
+          customAccessToken: () => tokenCompleter.future,
+        );
+
+        final socketErrors = <Object>[];
+        socket.onStatusChange.listen((_) {}, onError: socketErrors.add);
+
+        final channel = socket.channel('realtime:test');
+        final channelErrors = <RealtimeSubscribeStatusChange>[];
+        channel.onStatusChange
+            .where(
+              (change) => change.status == RealtimeSubscribeStatus.channelError,
+            )
+            .listen(channelErrors.add);
+        channel.subscribe();
+
+        // Let the connection open and the token resolution start.
+        await Future<void>.delayed(Duration.zero);
+        expect(socket.connectionState, SocketState.open);
+
+        await socket.disconnect();
+        tokenCompleter.completeError(Exception('provider failed late'));
+        await Future<void>.delayed(Duration.zero);
+
+        // The stale error is not surfaced for a user-initiated disconnect and
+        // the failure close is never issued.
+        expect(channelErrors, isEmpty);
+        expect(socketErrors, isEmpty);
+        verifyNever(
+          () => mockedSink.close(
+            RealtimeConstants.webSocketCloseNormal,
+            'access token resolution failed',
+          ),
+        );
+
+        await streamController.close();
+      },
+    );
   });
 
   group('sendHeartbeat', () {
