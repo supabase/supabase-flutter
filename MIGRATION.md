@@ -287,7 +287,8 @@ surface is read-only:
 | `client.connection = channel` | removed, the getter remains |
 | `client.connectionState = state` | removed, the getter remains |
 | `client.headers['key'] = value` | `RealtimeClient(headers: headers)` |
-| `client.ref`, `client.pendingHeartbeatRef`, `client.heartbeatTimer`, `client.reconnectTimer`, `client.sendBuffer` | removed |
+| `client.heartbeatTimer`, `client.reconnectTimer` | removed |
+| `client.ref`, `client.pendingHeartbeatRef`, `client.sendBuffer` | internal and test-only |
 
 `channels`, `accessToken`, `connection` and `connectionState` are still readable, and everything
 that used to be mutated after construction is either a constructor parameter or has a dedicated
@@ -297,18 +298,32 @@ throws an `UnsupportedError`. The `headers` and `parameters` maps are also unmod
 them to the constructor instead, or assign `SupabaseClient.headers` when the client is managed by
 a `SupabaseClient`.
 
+When the client is managed by a `SupabaseClient`, pass the heartbeat interval and the reconnect
+backoff through `RealtimeClientOptions` instead:
+
+```dart
+final supabase = SupabaseClient(
+  supabaseUrl,
+  supabaseKey,
+  realtimeClientOptions: const RealtimeClientOptions(
+    heartbeatInterval: Duration(seconds: 60),
+  ),
+);
+```
+
 ```dart
 // Before
-client.accessToken = newToken;
+final client = RealtimeClient(realtimeUrl);
 client.heartbeatInterval = const Duration(seconds: 60);
+client.accessToken = newToken;
 final channels = client.getChannels();
 
 // After
-await client.setAccessToken(newToken);
 final client = RealtimeClient(
   realtimeUrl,
   heartbeatInterval: const Duration(seconds: 60),
 );
+await client.setAccessToken(newToken);
 final channels = client.channels;
 ```
 

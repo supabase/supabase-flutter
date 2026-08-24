@@ -388,6 +388,10 @@ class SupabaseClient {
       connectionCloseTimeout:
           options.connectionCloseTimeout ??
           RealtimeConstants.defaultConnectionCloseTimeout,
+      heartbeatInterval:
+          options.heartbeatInterval ??
+          RealtimeConstants.defaultHeartbeatInterval,
+      reconnectAfter: options.reconnectAfter,
       customAccessToken: accessToken,
       transport: options.transport,
       disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,

@@ -154,7 +154,9 @@ class RealtimeClient {
 
   /// The headers sent when connecting, as an unmodifiable view.
   ///
-  /// Replaced wholesale with [replaceHeaders].
+  /// Pass headers to the constructor instead of mutating them here. A client
+  /// managed by a `SupabaseClient` gets its headers replaced through the
+  /// internal [replaceHeaders] when `SupabaseClient.headers` is assigned.
   Map<String, String> get headers => Map.unmodifiable(_headers);
   final Map<String, String> _headers;
 
@@ -189,10 +191,6 @@ class RealtimeClient {
   @internal
   @visibleForTesting
   String? get pendingHeartbeatRef => _pendingHeartbeatRef;
-
-  @internal
-  @visibleForTesting
-  set pendingHeartbeatRef(String? value) => _pendingHeartbeatRef = value;
 
   /// Counter used by [makeRef] to generate a unique reference ID for every
   /// pushed message, including heartbeats.
@@ -261,10 +259,6 @@ class RealtimeClient {
   /// The current state of the socket, or `null` before the first [connect].
   SocketState? get connectionState => _connectionState;
   SocketState? _connectionState;
-
-  @internal
-  @visibleForTesting
-  set connectionState(SocketState? value) => _connectionState = value;
 
   final Future<String?> Function()? customAccessToken;
 
@@ -572,11 +566,13 @@ class RealtimeClient {
     return newChannel;
   }
 
-  /// Registers [channel] directly, bypassing [channel]'s construction and
-  /// lifecycle handling, so tests can inject mock channels.
+  /// Registers [channel] with the same lifecycle handling as [channel]'s
+  /// registration, without constructing one, so tests can inject mock
+  /// channels.
   @internal
   @visibleForTesting
   void addChannelForTesting(RealtimeChannel channel) {
+    _cancelPendingDisconnect();
     _channels.add(channel);
   }
 
@@ -896,7 +892,9 @@ class RealtimeClient {
 
     _accessToken = tokenToSend;
 
-    for (final channel in _channels) {
+    // Snapshot before pushing, in case a push synchronously removes a channel
+    // from [_channels].
+    for (final channel in _channels.toList()) {
       if (tokenToSend != null) {
         channel.updateJoinPayload({
           'access_token': tokenToSend,
@@ -1038,11 +1036,14 @@ class RealtimeClient {
         await setAccessToken(null);
         final resolvedToken = _accessToken;
         if (resolvedToken != null) {
-          for (final channel in _channels) {
+          // Snapshot before patching and rejoining, in case either removes a
+          // channel from [_channels] synchronously.
+          final channelsSnapshot = _channels.toList();
+          for (final channel in channelsSnapshot) {
             channel.updateJoinPayload({'access_token': resolvedToken});
           }
           _sendBuffer.clear();
-          for (final channel in _channels) {
+          for (final channel in channelsSnapshot) {
             if (channel.isJoining) {
               channel.forceRejoin();
             }

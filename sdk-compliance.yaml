@@ -1914,10 +1914,16 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.reconnectAfter
+      - RealtimeClientOptions.reconnectAfter
+    supporting_symbols:
+      - TimerCalculation
   realtime.configuration.heartbeat_interval:
     status: implemented
     symbols:
       - RealtimeClient.heartbeatInterval
+      - RealtimeClientOptions.heartbeatInterval
+    supporting_symbols:
+      - RealtimeConstants.defaultHeartbeatInterval
   realtime.configuration.access_token_callback:
     status: implemented
     note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."

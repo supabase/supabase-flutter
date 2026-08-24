@@ -14,6 +14,14 @@ class RealtimeClientOptions {
   /// result.
   final Duration? connectionCloseTimeout;
 
+  /// The interval at which to send a heartbeat message.
+  final Duration? heartbeatInterval;
+
+  /// Returns the reconnect interval per attempt.
+  ///
+  /// Defaults to the stepped backoff of the RealtimeClient.
+  final TimerCalculation? reconnectAfter;
+
   /// Custom WebSocket transport factory for the RealtimeClient.
   final WebSocketTransport? transport;
 
@@ -52,6 +60,8 @@ class RealtimeClientOptions {
     this.logLevel,
     this.timeout,
     this.connectionCloseTimeout,
+    this.heartbeatInterval,
+    this.reconnectAfter,
     this.transport,
     this.disconnectOnEmptyChannelsAfter,
     this.encode,

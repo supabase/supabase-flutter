@@ -20,17 +20,20 @@ void main() {
 
     when(() => mockedChannel.sink).thenReturn(mockedSink);
     when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
+    when(
+      () => mockedChannel.stream,
+    ).thenAnswer((_) => StreamController<dynamic>.broadcast().stream);
     when(() => mockedSink.close()).thenAnswer((_) => Future.value());
     when(() => mockedSink.add(any())).thenAnswer((invocation) {
       written.add(invocation.positionalArguments.first);
     });
   });
 
-  RealtimeClient createClient({
+  Future<RealtimeClient> createClient({
     RealtimeEncode? encode,
     RealtimeDecode? decode,
     Duration? timeout,
-  }) {
+  }) async {
     final client = RealtimeClient(
       socketEndpoint,
       transport: (url, headers) => mockedChannel,
@@ -38,8 +41,7 @@ void main() {
       decode: decode,
       timeout: timeout ?? RealtimeConstants.defaultTimeout,
     );
-    unawaited(client.connect());
-    client.connectionState = SocketState.open;
+    await client.connect();
     return client;
   }
 
@@ -53,7 +55,7 @@ void main() {
   group('asynchronous encode', () {
     test('writes the frame once the encode completes', () async {
       final completer = Completer<Object>();
-      final client = createClient(encode: (_) => completer.future);
+      final client = await createClient(encode: (_) => completer.future);
 
       client.push(messageWithRef('1'));
       await pumpEventQueue();
@@ -72,7 +74,7 @@ void main() {
         '2': Completer<Object>(),
         '3': Completer<Object>(),
       };
-      final client = createClient(
+      final client = await createClient(
         encode: (message) => completers[message.ref]!.future,
       );
 
@@ -94,7 +96,7 @@ void main() {
 
     test('an immediate encode waits for the messages before it', () async {
       final completer = Completer<Object>();
-      final client = createClient(
+      final client = await createClient(
         encode: (message) => message.ref == '1'
             ? completer.future
             : Future.value('frame-${message.ref}'),
@@ -113,7 +115,7 @@ void main() {
     });
 
     test('a failed encode drops only its own message', () async {
-      final client = createClient(
+      final client = await createClient(
         encode: (message) => message.ref == '1'
             ? Future<Object>.error(StateError('encode failed'))
             : Future<Object>.value('frame-${message.ref}'),
@@ -129,7 +131,7 @@ void main() {
     test(
       'a synchronously throwing encode drops only its own message',
       () async {
-        final client = createClient(
+        final client = await createClient(
           encode: (message) => message.ref == '1'
               ? throw StateError('encode failed')
               : Future<Object>.value('frame-${message.ref}'),
@@ -145,22 +147,24 @@ void main() {
 
     test('buffered messages are written in order once connected', () async {
       final completer = Completer<Object>();
-      final client = createClient(
+      final client = RealtimeClient(
+        socketEndpoint,
+        transport: (url, headers) => mockedChannel,
         encode: (message) => message.ref == '1'
             ? completer.future
             : Future.value('frame-${message.ref}'),
       );
-      client.connectionState = SocketState.connecting;
 
       client.push(messageWithRef('1'));
       client.push(messageWithRef('2'));
 
       expect(client.sendBuffer, hasLength(2));
 
-      client.connectionState = SocketState.open;
-      for (final callback in client.sendBuffer) {
-        callback();
-      }
+      await client.connect();
+      await pumpEventQueue();
+
+      expect(written, isEmpty);
+
       completer.complete('frame-1');
       await pumpEventQueue();
 
@@ -172,7 +176,7 @@ void main() {
       'stalling later writes',
       () async {
         final neverCompletes = Completer<Object>();
-        final client = createClient(
+        final client = await createClient(
           encode: (message) => message.ref == '1'
               ? neverCompletes.future
               : Future.value('frame-${message.ref}'),
@@ -189,16 +193,16 @@ void main() {
       },
     );
 
-    test('the built-in codec writes without a microtask hop', () {
-      final client = createClient();
+    test('the built-in codec writes without a microtask hop', () async {
+      final client = await createClient();
 
       client.push(messageWithRef('1'));
 
       expect(written, hasLength(1));
     });
 
-    test('the built-in codec logs and swallows an encode failure', () {
-      final client = createClient();
+    test('the built-in codec logs and swallows an encode failure', () async {
+      final client = await createClient();
 
       expect(
         () => client.push(
@@ -213,8 +217,8 @@ void main() {
       expect(written, isEmpty);
     });
 
-    test('the built-in codec logs and swallows a write failure', () {
-      final client = createClient();
+    test('the built-in codec logs and swallows a write failure', () async {
+      final client = await createClient();
       when(() => mockedSink.add(any())).thenThrow(StateError('boom'));
 
       expect(() => client.push(messageWithRef('1')), returnsNormally);
@@ -234,6 +238,9 @@ void main() {
             final writtenHere = <Object?>[];
             when(() => channel.sink).thenReturn(sink);
             when(() => channel.ready).thenAnswer((_) => Future.value());
+            when(
+              () => channel.stream,
+            ).thenAnswer((_) => StreamController<dynamic>.broadcast().stream);
             when(() => sink.close()).thenAnswer((_) => Future.value());
             when(() => sink.add(any())).thenAnswer((invocation) {
               writtenHere.add(invocation.positionalArguments.first);
@@ -245,16 +252,14 @@ void main() {
               ? completer.future
               : Future.value('frame-${message.ref}'),
         );
-        unawaited(client.connect());
-        client.connectionState = SocketState.open;
+        await client.connect();
 
         client.push(messageWithRef('1'));
         await pumpEventQueue();
 
         // Reconnect to a new connection while the encode above is pending.
         await client.disconnect();
-        unawaited(client.connect());
-        client.connectionState = SocketState.open;
+        await client.connect();
 
         // The new connection keeps working while the stale encode is
         // pending, so it is not the encode itself stalling forever.
@@ -281,7 +286,7 @@ void main() {
 
     test('dispatches the message once the decode completes', () async {
       final completer = Completer<RealtimeMessage>();
-      final client = createClient(decode: (_) => completer.future);
+      final client = await createClient(decode: (_) => completer.future);
 
       final received = <String?>[];
       client.onMessage.listen((message) => received.add(message.ref));
@@ -305,7 +310,7 @@ void main() {
           '2': Completer<RealtimeMessage>(),
           '3': Completer<RealtimeMessage>(),
         };
-        final client = createClient(
+        final client = await createClient(
           decode: (rawMessage) => completers[rawMessage]!.future,
         );
 
@@ -331,7 +336,7 @@ void main() {
 
     test('an immediate decode waits for the frames before it', () async {
       final completer = Completer<RealtimeMessage>();
-      final client = createClient(
+      final client = await createClient(
         decode: (rawMessage) => rawMessage == '1'
             ? completer.future
             : Future.value(frameWithRef(rawMessage as String)),
@@ -353,7 +358,7 @@ void main() {
     });
 
     test('a failed decode drops only its own frame', () async {
-      final client = createClient(
+      final client = await createClient(
         decode: (rawMessage) => rawMessage == '1'
             ? Future<RealtimeMessage>.error(FormatException('decode failed'))
             : Future.value(frameWithRef(rawMessage as String)),
@@ -370,7 +375,7 @@ void main() {
     });
 
     test('a synchronously throwing decode drops only its own frame', () async {
-      final client = createClient(
+      final client = await createClient(
         decode: (rawMessage) => rawMessage == '1'
             ? throw FormatException('decode failed')
             : Future.value(frameWithRef(rawMessage as String)),
@@ -391,7 +396,7 @@ void main() {
       'stalling later dispatches',
       () async {
         final neverCompletes = Completer<RealtimeMessage>();
-        final client = createClient(
+        final client = await createClient(
           decode: (rawMessage) => rawMessage == '1'
               ? neverCompletes.future
               : Future.value(frameWithRef(rawMessage as String)),
@@ -411,8 +416,8 @@ void main() {
       },
     );
 
-    test('the built-in codec dispatches without a microtask hop', () {
-      final client = createClient();
+    test('the built-in codec dispatches without a microtask hop', () async {
+      final client = await createClient();
 
       final channel = MockChannel();
       when(() => channel.isMember('realtime:room')).thenReturn(true);
@@ -423,8 +428,8 @@ void main() {
       verify(() => channel.trigger('broadcast', any(), '1')).called(1);
     });
 
-    test('the built-in codec logs and swallows a dispatch failure', () {
-      final client = createClient();
+    test('the built-in codec logs and swallows a dispatch failure', () async {
+      final client = await createClient();
 
       final channel = MockChannel();
       when(() => channel.isMember('realtime:room')).thenReturn(true);
@@ -454,6 +459,9 @@ void main() {
             final sink = MockWebSocketSink();
             when(() => channel.sink).thenReturn(sink);
             when(() => channel.ready).thenAnswer((_) => Future.value());
+            when(
+              () => channel.stream,
+            ).thenAnswer((_) => StreamController<dynamic>.broadcast().stream);
             when(() => sink.close()).thenAnswer((_) => Future.value());
             when(() => sink.add(any())).thenAnswer((_) {});
             return channel;
@@ -462,8 +470,7 @@ void main() {
               ? completer.future
               : Future.value(frameWithRef(rawMessage as String)),
         );
-        unawaited(client.connect());
-        client.connectionState = SocketState.open;
+        await client.connect();
 
         final received = <String?>[];
         client.onMessage.listen((message) => received.add(message.ref));
@@ -473,8 +480,7 @@ void main() {
 
         // Reconnect to a new connection while the decode above is pending.
         await client.disconnect();
-        unawaited(client.connect());
-        client.connectionState = SocketState.open;
+        await client.connect();
 
         // The new connection keeps dispatching while the stale decode is
         // pending, so it is not the decode itself stalling forever.

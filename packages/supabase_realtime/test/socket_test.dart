@@ -273,6 +273,10 @@ void main() {
       final mockedSink = MockWebSocketSink();
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
+      when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(
+        () => mockedSocketChannel.stream,
+      ).thenAnswer((_) => StreamController<dynamic>.broadcast().stream);
       when(
         () => mockedSink.close(any(), any()),
       ).thenAnswer((_) => Future.value());
@@ -281,7 +285,6 @@ void main() {
       const tReason = 'reason';
 
       await mockedSocket.connect();
-      mockedSocket.connectionState = SocketState.open;
       await Future.delayed(const Duration(milliseconds: 200));
       await mockedSocket.disconnect(code: tCode, reason: tReason);
       await Future.delayed(const Duration(milliseconds: 200));
@@ -836,12 +839,14 @@ void main() {
 
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
+      when(
+        () => mockedSocketChannel.stream,
+      ).thenAnswer((_) => StreamController<dynamic>.broadcast().stream);
       when(() => mockedSink.close()).thenAnswer((_) => Future.value());
     });
 
-    test('sends data to connection when connected', () {
-      unawaited(mockedSocket.connect());
-      mockedSocket.connectionState = SocketState.open;
+    test('sends data to connection when connected', () async {
+      await mockedSocket.connect();
 
       final message = RealtimeMessage.outgoing(
         topic: topic,
@@ -856,10 +861,7 @@ void main() {
       ).called(1);
     });
 
-    test('buffers data when not connected', () async {
-      unawaited(mockedSocket.connect());
-      mockedSocket.connectionState = SocketState.connecting;
-
+    test('buffers data when not connected and flushes on connect', () async {
       expect(mockedSocket.sendBuffer, isEmpty);
 
       final message = RealtimeMessage.outgoing(
@@ -873,16 +875,17 @@ void main() {
       verifyNever(() => mockedSink.add(any()));
       expect(mockedSocket.sendBuffer, hasLength(1));
 
-      final callback = mockedSocket.sendBuffer[0];
-      callback();
+      await mockedSocket.connect();
+      await pumpEventQueue();
+
       verify(
         () => mockedSink.add(captureAny(that: equals(jsonData))),
       ).called(1);
+      expect(mockedSocket.sendBuffer, isEmpty);
     });
 
-    test('sends a broadcast with a binary payload as a binary frame', () {
-      unawaited(mockedSocket.connect());
-      mockedSocket.connectionState = SocketState.open;
+    test('sends a broadcast with a binary payload as a binary frame', () async {
+      await mockedSocket.connect();
 
       final binaryPayload = Uint8List.fromList([1, 2, 3]);
       final message = RealtimeMessage.outgoing(
@@ -901,11 +904,14 @@ void main() {
       ).called(1);
     });
 
-    test('encodes with the legacy object format when version is v1', () {
+    test('encodes with the legacy object format when version is v1', () async {
       final legacyChannel = MockIOWebSocketChannel();
       final legacySink = MockWebSocketSink();
       when(() => legacyChannel.sink).thenReturn(legacySink);
       when(() => legacyChannel.ready).thenAnswer((_) => Future.value());
+      when(
+        () => legacyChannel.stream,
+      ).thenAnswer((_) => StreamController<dynamic>.broadcast().stream);
       when(() => legacySink.close()).thenAnswer((_) => Future.value());
 
       final legacySocket = RealtimeClient(
@@ -913,8 +919,7 @@ void main() {
         transport: (url, headers) => legacyChannel,
         version: RealtimeProtocolVersion.v1,
       );
-      unawaited(legacySocket.connect());
-      legacySocket.connectionState = SocketState.open;
+      await legacySocket.connect();
 
       final legacyData = json.encode({
         'topic': topic,
@@ -941,6 +946,9 @@ void main() {
       final customSink = MockWebSocketSink();
       when(() => customChannel.sink).thenReturn(customSink);
       when(() => customChannel.ready).thenAnswer((_) => Future.value());
+      when(
+        () => customChannel.stream,
+      ).thenAnswer((_) => StreamController<dynamic>.broadcast().stream);
       when(() => customSink.close()).thenAnswer((_) => Future.value());
 
       final customSocket = RealtimeClient(
@@ -948,8 +956,7 @@ void main() {
         transport: (url, headers) => customChannel,
         encode: (_) async => 'custom-frame',
       );
-      unawaited(customSocket.connect());
-      customSocket.connectionState = SocketState.open;
+      await customSocket.connect();
 
       customSocket.push(
         RealtimeMessage.outgoing(
@@ -1331,15 +1338,16 @@ void main() {
       when(() => mockedSocketChannel.sink).thenReturn(mockedSink);
       when(() => mockedSink.close()).thenAnswer((_) => Future.value());
       when(() => mockedSocketChannel.ready).thenAnswer((_) => Future.value());
-
-      unawaited(mockedSocket.connect());
+      when(
+        () => mockedSocketChannel.stream,
+      ).thenAnswer((_) => StreamController<dynamic>.broadcast().stream);
     });
 
     //! Unimplemented Test: closes socket when heartbeat is not ack'd within
     //! heartbeat window
 
     test('pushes heartbeat data when connected', () async {
-      mockedSocket.connectionState = SocketState.open;
+      await mockedSocket.connect();
 
       await mockedSocket.sendHeartbeat();
 
@@ -1347,9 +1355,8 @@ void main() {
     });
 
     test('no ops when not connected', () async {
-      mockedSocket.connectionState = SocketState.connecting;
-
       await mockedSocket.sendHeartbeat();
+
       verifyNever(() => mockedSink.add(any()));
     });
   });
