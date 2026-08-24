@@ -16,3 +16,17 @@ updates:
       supabase-sdk-workflows:
         patterns:
           - "supabase/sdk*"
+      # Same story for the reusable workflows we call from supabase/actions,
+      # which are all pinned to a single commit of that repository.
+      supabase-actions-workflows:
+        patterns:
+          - "supabase/actions*"
+      # Everything else that cannot break a workflow on its own, batched into a
+      # single pull request. Major bumps deliberately match no group so they
+      # still arrive individually and get reviewed on their own.
+      actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
