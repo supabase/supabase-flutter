@@ -6,6 +6,7 @@ import 'package:supabase_functions/src/types.dart';
 import 'package:supabase_functions/src/version.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show MultipartRequest;
+import 'package:meta/meta.dart';
 import 'package:supabase_functions/src/logger.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -58,9 +59,19 @@ class FunctionsClient {
   final bool _ownsJsonCodec;
   final String? _region;
 
-  /// Getter for the headers
-  Map<String, String> get headers {
-    return _headers;
+  /// The headers sent with every invocation, as an unmodifiable view.
+  ///
+  /// Pass headers to the constructor instead of mutating them here. A client
+  /// managed by a `SupabaseClient` gets its headers replaced through the
+  /// internal [replaceHeaders] when `SupabaseClient.headers` is assigned.
+  Map<String, String> get headers => Map.unmodifiable(_headers);
+
+  /// Replaces the invocation headers with [newHeaders].
+  @internal
+  void replaceHeaders(Map<String, String> newHeaders) {
+    _headers
+      ..clear()
+      ..addAll(newHeaders);
   }
 
   /// Invokes a function

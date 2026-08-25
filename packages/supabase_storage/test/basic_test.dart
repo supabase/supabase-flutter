@@ -922,6 +922,21 @@ void main() {
 
       expect(client.headers['X-Client-Info'], 'supabase-dart/0.0.0');
     });
+
+    test('headers cannot be mutated in place', () {
+      client = SupabaseStorageClient('$supabaseUrl/storage/v1', {
+        'Authorization': 'Bearer $supabaseKey',
+      });
+
+      expect(
+        () => client.headers['x-custom-header'] = 'value',
+        throwsUnsupportedError,
+      );
+      expect(
+        () => client.from('bucket').headers['x-custom-header'] = 'value',
+        throwsUnsupportedError,
+      );
+    });
   });
 
   group('accessToken', () {

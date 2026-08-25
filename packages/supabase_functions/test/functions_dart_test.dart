@@ -469,6 +469,16 @@ void main() {
         expect(client.headers, contains('X-Client-Info'));
       });
 
+      test('headers cannot be mutated in place', () {
+        final client = FunctionsClient("", {'apikey': 'foo'});
+
+        expect(
+          () => client.headers['apikey'] = 'bar',
+          throwsUnsupportedError,
+        );
+        expect(client.headers['apikey'], 'foo');
+      });
+
       test('accessToken is resolved before every invocation', () async {
         var calls = 0;
         final client = FunctionsClient(

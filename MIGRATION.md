@@ -1531,7 +1531,7 @@ builds its sub-clients, so there is no `accessToken` callback to pass:
 
 ```dart
 supabase.storage.setHeader('Authorization', 'Bearer $jwt');
-supabase.functions.headers['Authorization'] = 'Bearer $jwt';
+supabase.headers = {...supabase.headers, 'Authorization': 'Bearer $jwt'};
 ```
 
 The rest client is stateless and its header map unmodifiable (see
@@ -1599,6 +1599,31 @@ await supabase.from('countries');
 // After: does not compile. Choose an operation first.
 await supabase.from('countries').select();
 ```
+
+### Client header maps are unmodifiable
+
+The auth, functions and storage clients used to hand out their internal header map, so any caller
+could rewrite the headers of a client from anywhere, including the sub-clients a `SupabaseClient`
+manages. Every `headers` getter now returns an unmodifiable view, the same way
+`PostgrestClient.headers` and `RealtimeClient.headers` already did.
+
+| Before | After |
+| --- | --- |
+| `supabase.auth.headers['X-Foo'] = 'bar'` | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}` |
+| `supabase.functions.headers['X-Foo'] = 'bar'` | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}` |
+| `supabase.storage.headers['X-Foo'] = 'bar'` | `supabase.storage.setHeader('X-Foo', 'bar')` |
+| `storage.from('bucket').headers['X-Foo'] = 'bar'` | `storage.from('bucket').setHeader('X-Foo', 'bar')` |
+| `AuthClient(...).headers['X-Foo'] = 'bar'` | `AuthClient(headers: {'X-Foo': 'bar'})` |
+| `FunctionsClient(...).headers['X-Foo'] = 'bar'` | `FunctionsClient(url, {'X-Foo': 'bar'})` |
+
+Mutating one of those maps now throws an `UnsupportedError`. Pass the headers to the constructor of
+a standalone client, and for a client managed by a `SupabaseClient` assign `SupabaseClient.headers`,
+which propagates the new headers to every sub-client. Storage keeps `setHeader()` for adding a
+single header to a client or to one bucket.
+
+`SupabaseStorageClient.vectors` is a getter that builds a client on each access instead of a cached
+instance, so it always carries the current headers. Hold on to the returned client only for as long
+as its headers should stay fixed.
 
 ### The SDK no longer prints logs
 

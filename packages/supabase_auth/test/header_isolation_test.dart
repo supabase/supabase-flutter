@@ -73,5 +73,16 @@ void main() {
 
       expect(client.headers, before);
     });
+
+    test('headers cannot be mutated in place', () async {
+      expect(
+        () => client.headers['apikey'] = 'other-key',
+        throwsUnsupportedError,
+      );
+
+      await client.getUser('user-access-token');
+
+      expect(http.requestHeaders.single['apikey'], 'anon-key');
+    });
   });
 }

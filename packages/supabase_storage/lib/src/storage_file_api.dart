@@ -20,8 +20,10 @@ class StorageFileApi {
   final SupabaseRetryOptions _retryOptions;
   final Fetch _storageFetch;
 
-  /// The headers used for requests.
-  Map<String, String> get headers => _headers;
+  /// The headers used for requests, as an unmodifiable view.
+  ///
+  /// Use [setHeader] to add one instead of mutating them here.
+  Map<String, String> get headers => Map.unmodifiable(_headers);
 
   /// Sets an HTTP header for subsequent requests.
   ///
@@ -52,7 +54,7 @@ class StorageFileApi {
     return path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
   }
 
-  FetchOptions get _fetchOptions => FetchOptions(headers);
+  FetchOptions get _fetchOptions => FetchOptions(_headers);
 
   UploadResponse _uploadResponse(String cleanPath, Map<String, dynamic> data) {
     return UploadResponse(
@@ -235,7 +237,7 @@ class StorageFileApi {
       '$url/object/upload/sign/$finalPath',
       {},
       options: FetchOptions({
-        ...headers,
+        ..._headers,
         if (upsert) 'x-upsert': 'true',
       }),
     );
@@ -520,7 +522,7 @@ class StorageFileApi {
 
     return _storageFetch.get(
       fetchUrl.toString(),
-      options: FetchOptions(headers, noResolveJson: true),
+      options: FetchOptions(_headers, noResolveJson: true),
     );
   }
 
@@ -583,7 +585,7 @@ class StorageFileApi {
 
     return _storageFetch.getStream(
       fetchUrl.toString(),
-      options: FetchOptions(headers, noResolveJson: true),
+      options: FetchOptions(_headers, noResolveJson: true),
     );
   }
 
