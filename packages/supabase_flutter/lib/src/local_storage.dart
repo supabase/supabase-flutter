@@ -17,6 +17,7 @@ import './local_storage_stub.dart'
 ///   * [SharedPreferencesLocalStorage], that implements SharedPreferencesAsync
 ///     as storage method
 abstract class LocalStorage {
+  /// Const constructor for subclasses.
   const LocalStorage();
 
   /// Initialize the storage to persist session.
@@ -67,6 +68,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   SharedPreferencesLocalStorage({required this.persistSessionKey});
   late final SharedPreferencesAsync _preferences;
 
+  /// The shared preferences key the session is stored under.
   final String persistSessionKey;
   static const _useWebLocalStorage =
       kIsWeb && bool.fromEnvironment("dart.library.js_interop");
@@ -173,6 +175,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
 
 /// local storage to store pkce flow code verifier.
 class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
+  /// Creates a storage backed by shared preferences.
   SharedPreferencesAuthAsyncStorage() {
     WidgetsFlutterBinding.ensureInitialized();
   }
