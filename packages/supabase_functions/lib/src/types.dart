@@ -54,7 +54,6 @@ sealed class FunctionException extends SupabaseException {
 ///
 /// The originating error is available in [details].
 class FunctionsFetchException extends FunctionException {
-  /// Creates a fetch exception.
   const FunctionsFetchException({
     super.details,
     String? message,
@@ -90,7 +89,6 @@ class FunctionsApiException extends FunctionException
 ///
 /// The function itself may never have run.
 class FunctionsRelayException extends FunctionsApiException {
-  /// Creates a relay exception.
   const FunctionsRelayException({
     required super.statusCode,
     super.details,

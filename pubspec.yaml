@@ -51,12 +51,6 @@ melos:
           version=$(awk '/version:/ {
             pos=match($2, /[0-9]+\.[0-9]+\.[0-9]+/);
             print substr($2, pos); }' $d/pubspec.yaml)
-          {
-            echo "import 'package:meta/meta.dart';"
-            echo
-            echo "/// The published version of this package."
-            echo "@internal"
-            echo "const version = '$version';"
-          } > $d/lib/src/version.dart
+          echo "const version = '$version';" > $d/lib/src/version.dart
         done
         git add packages/*/lib/src/version.dart
