@@ -1,6 +1,5 @@
 /// Converts an enum value's [Enum.name] to its `snake_case` representation.
 extension ToSnakeCase on Enum {
-  /// The `snake_case` representation of [Enum.name].
   String get snakeCase {
     final a = 'a'.codeUnitAt(0), z = 'z'.codeUnitAt(0);
     final A = 'A'.codeUnitAt(0), Z = 'Z'.codeUnitAt(0);

@@ -62,7 +62,6 @@ class SupabaseRetryOptions {
     randomizationFactor: randomizationFactor,
   );
 
-  /// Returns a copy with the given fields replaced.
   SupabaseRetryOptions copyWith({
     bool? enabled,
     int? count,

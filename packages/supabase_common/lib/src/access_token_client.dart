@@ -11,8 +11,6 @@ import 'package:supabase_common/src/http.dart';
 /// A request that already carries an `Authorization` header keeps it, which is
 /// how a per-request override wins over the resolved token.
 class AccessTokenClient extends BaseClient {
-  /// Creates a client that resolves its bearer token through [_accessToken],
-  /// sending requests over [_inner].
   AccessTokenClient(this._accessToken, this._inner);
 
   final Future<String?> Function() _accessToken;
