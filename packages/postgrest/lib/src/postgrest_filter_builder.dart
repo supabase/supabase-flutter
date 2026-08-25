@@ -260,6 +260,24 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
     );
   }
 
+  /// Finds all rows whose value on the stated [column] is not found on the
+  /// specified [values].
+  ///
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .notInFilter('status', ['ONLINE', 'OFFLINE']);
+  /// ```
+  PostgrestFilterBuilder<T> notInFilter(String column, List<dynamic> values) {
+    return copyWithUrl(
+      _url.appendSearchParameters(
+        column,
+        'not.in.(${_cleanFilterList(values)})',
+      ),
+    );
+  }
+
   /// Finds all rows whose json, array, or range value on the stated [column]
   /// contains the values specified in [value].
   ///
