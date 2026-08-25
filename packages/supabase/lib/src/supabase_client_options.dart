@@ -1,11 +1,15 @@
 import 'package:supabase/supabase.dart';
 
+/// Configuration for the PostgREST client used by `SupabaseClient.from` and
+/// `SupabaseClient.rpc`.
 class PostgrestClientOptions {
   const PostgrestClientOptions({
     this.schema = 'public',
     this.retryOptions = const SupabaseRetryOptions(),
     this.requestTimeout,
   });
+
+  /// The Postgres schema to query, must be exposed in your Supabase project.
   final String schema;
 
   /// Configures the automatic retry of GET and HEAD requests that fail with a
@@ -24,6 +28,7 @@ class PostgrestClientOptions {
   final Duration? requestTimeout;
 }
 
+/// Configuration for the auth client used by `SupabaseClient.auth`.
 class AuthClientOptions {
   const AuthClientOptions({
     this.autoRefreshToken = true,
@@ -32,6 +37,9 @@ class AuthClientOptions {
     this.appendPkceFlowIdToRedirects = false,
     this.retryOptions = const SupabaseRetryOptions(count: 8),
   });
+
+  /// Whether an expiring session is refreshed automatically in the
+  /// background.
   final bool autoRefreshToken;
 
   /// Configures how a token refresh that never reached the service is retried.
@@ -56,6 +64,8 @@ class AuthClientOptions {
   /// at a time, because the verifier is held under a single key that
   /// concurrent sign-ins overwrite.
   final AuthAsyncStorage? pkceAsyncStorage;
+
+  /// The auth flow used for sign-in, sign-up, and password recovery.
   final AuthFlowType authFlowType;
 
   /// Whether to append the reserved `sb_flow_id` query parameter to the
@@ -67,6 +77,7 @@ class AuthClientOptions {
   final bool appendPkceFlowIdToRedirects;
 }
 
+/// Configuration for the storage client used by `SupabaseClient.storage`.
 class StorageClientOptions {
   const StorageClientOptions({
     this.retryOptions = const SupabaseRetryOptions(count: 0),
@@ -90,7 +101,12 @@ class StorageClientOptions {
   final bool useNewHostname;
 }
 
+/// Configuration for the Edge Functions client used by
+/// `SupabaseClient.functions`.
 class FunctionsClientOptions {
   const FunctionsClientOptions({this.region});
+
+  /// The region to invoke functions in by default, overridable per call with
+  /// `FunctionsClient.invoke`'s own `region` parameter.
   final String? region;
 }

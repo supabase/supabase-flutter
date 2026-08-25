@@ -59,6 +59,7 @@ class SupabaseQuerySchema {
     );
   }
 
+  /// Returns a copy of this scoped to [schema] instead.
   SupabaseQuerySchema schema(String schema) {
     final newRest = _rest.schema(schema);
     return SupabaseQuerySchema(
