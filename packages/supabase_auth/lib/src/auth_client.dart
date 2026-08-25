@@ -97,7 +97,8 @@ class AuthClient {
   final Map<String, Completer<AuthResponse>> _pendingRefreshes = {};
 
   /// Set by [dispose] to prevent [_doRefresh] from mutating state
-  /// or emitting events on closed stream controllers.
+  /// or emitting events on closed stream controllers, and to stop
+  /// [startAutoRefresh] from installing a timer that nothing would cancel.
   bool _isDisposed = false;
 
   JWKSet? _jwks;
@@ -1502,8 +1503,17 @@ class AuthClient {
   /// Starts an auto-refresh process in the background. Close to the time of
   /// expiration a process is started to refresh the session. If refreshing
   /// fails it will be retried for as long as necessary.
+  ///
+  /// Does nothing once the client has been disposed, so that a late call (for
+  /// example from an app lifecycle observer that has not been removed yet)
+  /// cannot install a timer that outlives [dispose].
   void startAutoRefresh() async {
     stopAutoRefresh();
+
+    if (_isDisposed) {
+      authLogger.finer('Not starting auto refresh, the client is disposed');
+      return;
+    }
 
     authLogger.fine('Starting auto refresh');
     _autoRefreshTicker = Timer.periodic(
@@ -1523,6 +1533,10 @@ class AuthClient {
   }
 
   Future<void> _autoRefreshTokenTick() async {
+    if (_isDisposed) {
+      return;
+    }
+
     try {
       final now = DateTime.now();
 
@@ -1710,7 +1724,7 @@ class AuthClient {
       }
     }
     _pendingRefreshes.clear();
-    _autoRefreshTicker?.cancel();
+    stopAutoRefresh();
   }
 
   /// Generates a new JWT.

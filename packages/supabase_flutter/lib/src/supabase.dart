@@ -224,11 +224,13 @@ class Supabase {
     _targetLifecycleState = null;
     lifecycleListener?.dispose();
 
+    // The lifecycle observer is removed before the client is disposed, so a
+    // lifecycle event cannot reach a client that is already torn down.
     await _disposeAll([
+      () => supabaseAuth?.dispose(),
       () => restoreSession?.cancel(),
       () => pendingLifecycleOperation,
       currentClient.dispose,
-      () => supabaseAuth?.dispose(),
     ]);
   }
 
