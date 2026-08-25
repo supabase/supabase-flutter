@@ -6,6 +6,7 @@ import 'package:supabase_common/supabase_common.dart';
 /// Currently the S3 Vectors service only supports 32-bit floats.
 @experimental
 enum VectorDataType {
+  /// 32-bit floating point components.
   float32;
 
   /// The value sent to and returned by the storage API.
@@ -24,8 +25,13 @@ enum VectorDataType {
 /// Distance metric used when comparing vectors during a similarity search.
 @experimental
 enum DistanceMetric {
+  /// The cosine of the angle between two vectors.
   cosine,
+
+  /// The straight-line distance between two vectors.
   euclidean,
+
+  /// The dot product of two vectors.
   dotProduct;
 
   /// The value sent to and returned by the storage API.
@@ -58,8 +64,10 @@ DateTime? _parseUnixSeconds(Object? value) {
 /// Encryption settings attached to a vector bucket.
 @experimental
 class VectorBucketEncryption {
+  /// Creates encryption settings.
   const VectorBucketEncryption({this.kmsKeyArn, this.serverSideEncryptionType});
 
+  /// Creates encryption settings from their wire representation.
   factory VectorBucketEncryption.fromJson(Map<String, dynamic> json) {
     return VectorBucketEncryption(
       kmsKeyArn: json['kmsKeyArn'] as String?,
@@ -77,12 +85,14 @@ class VectorBucketEncryption {
 /// Metadata describing a vector bucket.
 @experimental
 class VectorBucket {
+  /// Creates bucket metadata.
   const VectorBucket({
     required this.name,
     this.creationTime,
     this.encryption,
   });
 
+  /// Creates bucket metadata from its wire representation.
   factory VectorBucket.fromJson(Map<String, dynamic> json) {
     final encryption = json['encryptionConfiguration'];
     return VectorBucket(
@@ -108,6 +118,7 @@ class VectorBucket {
 /// Metadata describing a vector index within a bucket.
 @experimental
 class VectorIndex {
+  /// Creates index metadata.
   const VectorIndex({
     required this.name,
     this.bucketName,
@@ -118,6 +129,7 @@ class VectorIndex {
     this.creationTime,
   });
 
+  /// Creates index metadata from its wire representation.
   factory VectorIndex.fromJson(Map<String, dynamic> json) {
     final metadataConfiguration = json['metadataConfiguration'];
     final nonFilterableMetadataKeys =
@@ -167,6 +179,7 @@ class VectorIndex {
 /// [StorageVectorIndexApi.putVectors].
 @experimental
 class Vector {
+  /// Creates a vector.
   const Vector({
     required this.key,
     required this.data,
@@ -182,6 +195,7 @@ class Vector {
   /// Optional arbitrary metadata stored alongside the vector.
   final Map<String, dynamic>? metadata;
 
+  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'key': key,
@@ -197,6 +211,7 @@ class Vector {
 /// operation was asked to return them.
 @experimental
 class VectorMatch {
+  /// Creates a match.
   const VectorMatch({
     required this.key,
     this.data,
@@ -204,6 +219,7 @@ class VectorMatch {
     this.distance,
   });
 
+  /// Creates a match from its wire representation.
   factory VectorMatch.fromJson(Map<String, dynamic> json) {
     return VectorMatch(
       key: json['key'] as String,
@@ -230,11 +246,13 @@ class VectorMatch {
 /// The result of [SupabaseVectorsClient.listBuckets].
 @experimental
 class VectorBucketList {
+  /// Creates a page of buckets.
   const VectorBucketList({
     required this.buckets,
     this.nextToken,
   });
 
+  /// Creates a page of buckets from its wire representation.
   factory VectorBucketList.fromJson(Map<String, dynamic> json) {
     final buckets = json['vectorBuckets'] as List? ?? const [];
     return VectorBucketList(
@@ -255,11 +273,13 @@ class VectorBucketList {
 /// The result of [StorageVectorBucketApi.listIndexes].
 @experimental
 class VectorIndexList {
+  /// Creates a page of indexes.
   const VectorIndexList({
     required this.indexes,
     this.nextToken,
   });
 
+  /// Creates a page of indexes from its wire representation.
   factory VectorIndexList.fromJson(Map<String, dynamic> json) {
     final indexes = json['indexes'] as List? ?? const [];
     return VectorIndexList(
@@ -280,11 +300,13 @@ class VectorIndexList {
 /// The result of [StorageVectorIndexApi.listVectors].
 @experimental
 class VectorList {
+  /// Creates a page of vectors.
   const VectorList({
     required this.vectors,
     this.nextToken,
   });
 
+  /// Creates a page of vectors from its wire representation.
   factory VectorList.fromJson(Map<String, dynamic> json) {
     final vectors = json['vectors'] as List? ?? const [];
     return VectorList(
@@ -305,11 +327,13 @@ class VectorList {
 /// The result of [StorageVectorIndexApi.queryVectors].
 @experimental
 class VectorQueryResult {
+  /// Creates a query result.
   const VectorQueryResult({
     required this.matches,
     this.distanceMetric,
   });
 
+  /// Creates a query result from its wire representation.
   factory VectorQueryResult.fromJson(Map<String, dynamic> json) {
     final matches = json['vectors'] as List? ?? const [];
     return VectorQueryResult(

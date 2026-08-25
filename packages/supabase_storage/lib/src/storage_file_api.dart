@@ -6,7 +6,10 @@ import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
+/// API namespace for managing the objects within a bucket, obtained with
+/// `SupabaseStorageClient.from`.
 class StorageFileApi {
+  /// Creates the API namespace.
   StorageFileApi(
     this.url,
     Map<String, String> headers,
@@ -14,8 +17,12 @@ class StorageFileApi {
     this._retryOptions,
     this._storageFetch,
   ) : _headers = {...headers};
+
+  /// The storage endpoint requests are sent to.
   final String url;
   Map<String, String> _headers;
+
+  /// The ID of the bucket this namespace operates on.
   final String? bucketId;
   final SupabaseRetryOptions _retryOptions;
   final Fetch _storageFetch;
