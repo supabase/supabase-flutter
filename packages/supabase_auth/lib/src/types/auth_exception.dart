@@ -11,6 +11,7 @@ import 'package:supabase_common/supabase_common.dart';
 /// Find the full list of error codes in our documentation.
 /// https://supabase.com/docs/guides/auth/debugging/error-codes
 class AuthException extends SupabaseException {
+  /// Creates an exception.
   const AuthException(super.message, {super.errorCode});
 
   @override
@@ -27,11 +28,16 @@ class AuthException extends SupabaseException {
   int get hashCode => Object.hash(runtimeType, message, errorCode);
 }
 
+/// Thrown when a PKCE flow deep link is missing the `code` query parameter
+/// needed to exchange it for a session.
 class AuthPKCEGrantCodeExchangeError extends AuthException {
+  /// Creates an exception.
   const AuthPKCEGrantCodeExchangeError(super.message);
 }
 
+/// Thrown when an operation requires a session but none is active.
 class AuthSessionMissingException extends AuthException {
+  /// Creates an exception.
   AuthSessionMissingException([String? message])
     : super(
         message ?? 'Auth session missing!',
@@ -45,6 +51,7 @@ class AuthSessionMissingException extends AuthException {
 /// A retryable 5xx is an [AuthRetryableApiException]. Catch this type to cover
 /// both.
 class AuthRetryableFetchException extends AuthException {
+  /// Creates an exception.
   AuthRetryableFetchException({
     String message = 'AuthRetryableFetchException',
   }) : super(message);
@@ -54,6 +61,7 @@ class AuthRetryableFetchException extends AuthException {
 /// retrying.
 class AuthRetryableApiException extends AuthRetryableFetchException
     with SupabaseApiException {
+  /// Creates an exception.
   AuthRetryableApiException({
     required super.message,
     required this.statusCode,
@@ -73,6 +81,7 @@ class AuthRetryableApiException extends AuthRetryableFetchException
 
 /// Thrown when the auth service answered with an error.
 class AuthApiException extends AuthException with SupabaseApiException {
+  /// Creates an exception.
   const AuthApiException(
     super.message, {
     required this.statusCode,
@@ -97,6 +106,7 @@ class AuthApiException extends AuthException with SupabaseApiException {
 /// It reports no status code of its own; read it from [originalError] when that
 /// is a response.
 class AuthUnknownException extends AuthException {
+  /// Creates an exception.
   AuthUnknownException({
     required String message,
     required this.originalError,
@@ -111,12 +121,16 @@ class AuthUnknownException extends AuthException {
       'originalError: $originalError)';
 }
 
+/// Thrown when a password fails the project's strength requirements.
 class AuthWeakPasswordException extends AuthApiException {
+  /// Creates an exception.
   AuthWeakPasswordException({
     required String message,
     required super.statusCode,
     required this.reasons,
   }) : super(message, errorCode: ErrorCode.weakPassword.code);
+
+  /// Why the password was rejected, for example `'characters'`.
   final List<String> reasons;
 
   @override
@@ -125,7 +139,10 @@ class AuthWeakPasswordException extends AuthApiException {
       'errorCode: $errorCode, reasons: $reasons)';
 }
 
+/// Thrown when a JWT could not be parsed or verified, for example by
+/// `AuthClient.getClaims`.
 class AuthInvalidJwtException extends AuthException {
+  /// Creates an exception.
   const AuthInvalidJwtException(super.message)
     : super(errorCode: 'invalid_jwt');
 }

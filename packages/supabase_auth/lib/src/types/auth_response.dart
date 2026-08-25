@@ -2,6 +2,7 @@ import 'package:supabase_auth/supabase_auth.dart';
 
 /// Response which might or might not contain session and/or user
 class AuthResponse {
+  /// Creates a response.
   AuthResponse({
     this.session,
     User? user,
@@ -11,7 +12,12 @@ class AuthResponse {
   AuthResponse.fromJson(Map<String, dynamic> json)
     : session = Session.fromJson(json),
       user = User.fromJson(json) ?? Session.fromJson(json)?.user;
+
+  /// The new session, `null` when the call did not create one, for example
+  /// a sign-up that requires email confirmation first.
   final Session? session;
+
+  /// The user, taken from [session] when not overridden.
   final User? user;
 }
 
@@ -23,6 +29,8 @@ class OAuthResponse {
     required this.url,
     this.flowId,
   });
+
+  /// The provider the user was sent to.
   final OAuthProvider provider;
 
   /// The provider's authorization URL to send the user to.
@@ -42,13 +50,17 @@ class OAuthResponse {
 
 /// Response that contains a user
 class UserResponse {
+  /// Creates a response from its wire representation.
   UserResponse.fromJson(Map<String, dynamic> json) : user = User.fromJson(json);
+
+  /// The user.
   final User? user;
 }
 
 /// Response of [AuthAdminApi.listUsers], a page of users together with the
 /// pagination metadata the server reports for it.
 class ListUsersResponse {
+  /// Creates a response.
   const ListUsersResponse({
     required this.users,
     this.total,
@@ -77,7 +89,9 @@ class ListUsersResponse {
   final String? audience;
 }
 
+/// The response of `AuthClient.resend`.
 class ResendResponse {
+  /// Creates a response.
   const ResendResponse({
     this.messageId,
   });
@@ -86,20 +100,33 @@ class ResendResponse {
   final String? messageId;
 }
 
+/// The response of `AuthClient.getSessionFromUrl`.
 class AuthSessionUrlResponse {
+  /// Creates a response.
   const AuthSessionUrlResponse({
     required this.session,
     required this.redirectType,
   });
+
+  /// The session obtained from the URL.
   final Session session;
+
+  /// The `type` query parameter of the URL, for example `'recovery'` or
+  /// `'email_change'`, `null` when the URL did not carry one.
   final String? redirectType;
 }
 
+/// The response of `AuthAdminApi.generateLink`.
 class GenerateLinkResponse {
+  /// Creates a response from its wire representation.
   GenerateLinkResponse.fromJson(Map<String, dynamic> json)
     : properties = GenerateLinkProperties.fromJson(json),
       user = _parseUser(json);
+
+  /// The generated link and its associated metadata.
   final GenerateLinkProperties properties;
+
+  /// The user the link was generated for.
   final User user;
 
   static User _parseUser(Map<String, dynamic> json) {
@@ -114,7 +141,10 @@ class GenerateLinkResponse {
   }
 }
 
+/// The generated link and its associated metadata, part of a
+/// [GenerateLinkResponse].
 class GenerateLinkProperties {
+  /// Creates properties from their wire representation.
   GenerateLinkProperties.fromJson(Map<String, dynamic> json)
     : actionLink = json['action_link'] ?? '',
       emailOtp = json['email_otp'] ?? '',

@@ -2,14 +2,20 @@ import 'package:supabase_auth/src/constants.dart';
 import 'package:supabase_auth/src/types/session.dart';
 import 'package:supabase_auth/src/types/sign_out_reason.dart';
 
+/// An event emitted on `AuthClient.onAuthStateChange`.
 class AuthState {
+  /// Creates a state.
   const AuthState(
     this.event,
     this.session, {
     this.fromBroadcast = false,
     this.signOutReason,
   });
+
+  /// The kind of change.
   final AuthChangeEvent event;
+
+  /// The session after the change, `null` when the user is signed out.
   final Session? session;
 
   /// Why the user was signed out, when [event] is

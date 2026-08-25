@@ -4,7 +4,9 @@ import 'package:supabase_auth/src/types/user.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+/// A signed-in user's authentication tokens.
 class Session {
+  /// Creates a session.
   Session({
     required this.accessToken,
     this.expiresIn,
@@ -14,16 +16,29 @@ class Session {
     this.providerRefreshToken,
     required this.user,
   });
+
+  /// The third-party provider's OAuth access token, `null` unless the user
+  /// signed in through OAuth.
   final String? providerToken;
+
+  /// The third-party provider's OAuth refresh token, `null` unless the user
+  /// signed in through OAuth and the provider issued one.
   final String? providerRefreshToken;
+
+  /// The JWT used to authenticate requests, valid until [expiresAt].
   final String accessToken;
 
   /// The number of seconds until the token expires (since it was issued).
   /// Returned when a login is confirmed.
   final int? expiresIn;
 
+  /// The token used to obtain a new session once [accessToken] expires.
   final String? refreshToken;
+
+  /// The type of [accessToken], typically `'bearer'`.
   final String tokenType;
+
+  /// The signed-in user.
   final User user;
 
   /// Returns a `Session` object from a map of json
@@ -55,6 +70,7 @@ class Session {
     );
   }
 
+  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     final expiresAt = this.expiresAt;
     return {
@@ -108,6 +124,7 @@ class Session {
     return DateTime.now().isAfter(expiresAt);
   }
 
+  /// Returns a copy with the given fields replaced.
   Session copyWith({
     String? accessToken,
     int? expiresIn,

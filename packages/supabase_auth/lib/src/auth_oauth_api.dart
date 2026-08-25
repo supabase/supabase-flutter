@@ -5,6 +5,7 @@ part of 'auth_client.dart';
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizedClient {
+  /// Creates a client.
   const OAuthAuthorizedClient({
     required this.clientId,
     this.clientName,
@@ -12,6 +13,7 @@ class OAuthAuthorizedClient {
     this.logoUri,
   });
 
+  /// Creates a client from its wire representation.
   factory OAuthAuthorizedClient.fromJson(Map<String, dynamic> json) {
     return OAuthAuthorizedClient(
       clientId: json['id'] as String,
@@ -41,8 +43,10 @@ class OAuthAuthorizedClient {
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizingUser {
+  /// Creates a user.
   const OAuthAuthorizingUser({required this.id, required this.email});
 
+  /// Creates a user from its wire representation.
   factory OAuthAuthorizingUser.fromJson(Map<String, dynamic> json) {
     final id = json['id'];
     final email = json['email'];
@@ -66,12 +70,14 @@ class OAuthAuthorizingUser {
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthGrant {
+  /// Creates a grant.
   const OAuthGrant({
     required this.client,
     required this.scopes,
     required this.grantedAt,
   });
 
+  /// Creates a grant from its wire representation.
   factory OAuthGrant.fromJson(Map<String, dynamic> json) {
     return OAuthGrant(
       client: OAuthAuthorizedClient.fromJson(json['client']),
@@ -121,6 +127,7 @@ sealed class OAuthAuthorizationResponse {
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
+  /// Creates a response.
   const OAuthAuthorizationDetailsResponse({
     required this.authorizationId,
     required this.client,
@@ -129,6 +136,7 @@ class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
     this.scope,
   });
 
+  /// Creates a response from its wire representation.
   factory OAuthAuthorizationDetailsResponse.fromJson(
     Map<String, dynamic> json,
   ) {
@@ -173,8 +181,10 @@ class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizationRedirectResponse extends OAuthAuthorizationResponse {
+  /// Creates a response.
   const OAuthAuthorizationRedirectResponse({required this.redirectUrl});
 
+  /// Creates a response from its wire representation.
   factory OAuthAuthorizationRedirectResponse.fromJson(
     Map<String, dynamic> json,
   ) {
@@ -192,8 +202,10 @@ class OAuthAuthorizationRedirectResponse extends OAuthAuthorizationResponse {
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthConsentResponse {
+  /// Creates a response.
   const OAuthConsentResponse({this.redirectUrl});
 
+  /// Creates a response from its wire representation.
   factory OAuthConsentResponse.fromJson(Map<String, dynamic> json) {
     return OAuthConsentResponse(
       redirectUrl: json['redirect_url'] as String?,
@@ -241,6 +253,7 @@ class OAuthConsentResponse {
 /// server feature is enabled in your Supabase Auth configuration.
 /// {@endtemplate}
 class AuthOAuthApi {
+  /// Creates the API namespace.
   const AuthOAuthApi({
     required AuthClient client,
     required AuthFetch fetch,

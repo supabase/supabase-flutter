@@ -6,9 +6,14 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// Type of a custom OAuth/OIDC provider managed through the admin API.
 enum CustomProviderType {
+  /// A generic OAuth 2.0 provider.
   oauth2,
+
+  /// An OpenID Connect provider, discoverable through its `.well-known`
+  /// configuration document.
   oidc;
 
+  /// Parses the `type` field of a custom provider response.
   static CustomProviderType fromValue(String value) {
     return CustomProviderType.values.firstWhere((e) => e.name == value);
   }
@@ -19,6 +24,7 @@ enum CustomProviderType {
 /// Populated when the server successfully fetches and validates the
 /// provider's OpenID Connect discovery document.
 class OIDCDiscoveryDocument {
+  /// Creates a discovery document.
   const OIDCDiscoveryDocument({
     required this.issuer,
     required this.authorizationEndpoint,
@@ -32,6 +38,7 @@ class OIDCDiscoveryDocument {
     this.supportedIdTokenSigningAlgorithms,
   });
 
+  /// Creates a discovery document from its wire representation.
   factory OIDCDiscoveryDocument.fromJson(Map<String, dynamic> json) {
     return OIDCDiscoveryDocument(
       issuer: json['issuer'] as String,
@@ -82,6 +89,7 @@ class OIDCDiscoveryDocument {
 
 /// Custom OAuth/OIDC provider object returned from the admin API.
 class CustomOAuthProvider {
+  /// Creates a provider.
   const CustomOAuthProvider({
     required this.id,
     required this.providerType,
@@ -108,6 +116,7 @@ class CustomOAuthProvider {
     required this.updatedAt,
   });
 
+  /// Creates a provider from its wire representation.
   factory CustomOAuthProvider.fromJson(Map<String, dynamic> json) {
     final discoveryDocument = json['discovery_document'];
     return CustomOAuthProvider(
@@ -218,6 +227,7 @@ class CustomOAuthProvider {
 
 /// Parameters for creating a new custom provider.
 class CreateCustomProviderOptions {
+  /// Creates options for a new custom provider.
   const CreateCustomProviderOptions({
     required this.providerType,
     required this.identifier,
@@ -304,6 +314,7 @@ class CreateCustomProviderOptions {
   /// JWKS URI for token verification
   final String? jwksUri;
 
+  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'provider_type': providerType.name,
@@ -335,6 +346,7 @@ class CreateCustomProviderOptions {
 /// All fields are optional. Only provided fields will be updated.
 /// `providerType` and `identifier` are immutable and cannot be changed.
 class UpdateCustomProviderOptions {
+  /// Creates options for updating a custom provider.
   const UpdateCustomProviderOptions({
     this.name,
     this.clientId,
@@ -413,6 +425,7 @@ class UpdateCustomProviderOptions {
   /// JWKS URI for token verification
   final String? jwksUri;
 
+  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'name': ?name,
