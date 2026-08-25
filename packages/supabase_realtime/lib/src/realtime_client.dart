@@ -938,7 +938,6 @@ class RealtimeClient {
     realtimeLogger.fine('Connected');
     realtimeLogger.finest('Connected to $_redactedEndpointUrl');
     unawaited(_resolveAccessTokenAndFlush());
-    _reconnectTimer.reset();
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
       heartbeatInterval,
@@ -1069,6 +1068,10 @@ class RealtimeClient {
         }
       }
     }
+    // The backoff is only reset here, once the connection is usable: a
+    // connect whose provider threw above counts as a failed attempt, so
+    // repeated provider failures keep growing the reconnect delay.
+    _reconnectTimer.reset();
     _rejoinErroredChannels();
     _flushSendBuffer();
   }

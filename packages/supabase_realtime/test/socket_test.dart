@@ -1586,6 +1586,146 @@ void main() {
         await streamController.close();
       },
     );
+
+    test(
+      'ignores a stale token resolution once a newer connection owns the '
+      'socket',
+      () async {
+        final staleToken = generateJwt(4102444800);
+        final freshToken = generateJwt(4102448400);
+        var tokenCallbackCalls = 0;
+        final staleCompleter = Completer<String?>();
+
+        final capturedMessages = <String>[];
+        final joinSent = Completer<Map<dynamic, dynamic>>();
+        final controllers = <StreamController<dynamic>>[];
+
+        WebSocketChannel makeConnection() {
+          final mockedChannel = MockIOWebSocketChannel();
+          final mockedSink = MockWebSocketSink();
+          final controller = StreamController<dynamic>.broadcast();
+          controllers.add(controller);
+          when(() => mockedChannel.sink).thenReturn(mockedSink);
+          when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
+          when(
+            () => mockedChannel.stream,
+          ).thenAnswer((_) => controller.stream);
+          when(() => mockedSink.close()).thenAnswer((_) async {
+            await controller.close();
+          });
+          when(() => mockedSink.close(any(), any())).thenAnswer((_) async {
+            await controller.close();
+          });
+          when(() => mockedSink.add(any())).thenAnswer((invocation) {
+            final raw = invocation.positionalArguments.first as String;
+            capturedMessages.add(raw);
+            final frame = json.decode(raw) as List;
+            if (frame[3] == ChannelEvent.join.eventName() &&
+                !joinSent.isCompleted) {
+              joinSent.complete(frame[4] as Map);
+            }
+          });
+          return mockedChannel;
+        }
+
+        final socket = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) => makeConnection(),
+          reconnectAfter: (tries) => const Duration(milliseconds: 10),
+          customAccessToken: () {
+            tokenCallbackCalls++;
+            if (tokenCallbackCalls == 1) {
+              return staleCompleter.future;
+            }
+            return Future.value(freshToken);
+          },
+        );
+
+        final channel = socket.channel('realtime:test');
+        channel.subscribe();
+
+        // Let the first connection open; its token resolution stays pending.
+        await Future<void>.delayed(Duration.zero);
+        expect(socket.connectionState, SocketState.open);
+        expect(tokenCallbackCalls, 1);
+
+        // Drop the first connection so the client reconnects and resolves the
+        // fresh token on the replacement connection.
+        await controllers.first.close();
+        final joinPayload = await joinSent.future.timeout(
+          const Duration(seconds: 5),
+        );
+        expect(joinPayload['access_token'], freshToken);
+
+        // The stale resolution completing now must not overwrite the identity
+        // of the replacement connection.
+        staleCompleter.complete(staleToken);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(socket.accessToken, freshToken);
+        for (final raw in capturedMessages) {
+          final frame = json.decode(raw) as List;
+          if (frame[3] == ChannelEvent.join.eventName()) {
+            expect((frame[4] as Map)['access_token'], freshToken);
+          }
+        }
+
+        await socket.disconnect();
+      },
+    );
+
+    test(
+      'grows the reconnect backoff while the access token provider keeps '
+      'failing',
+      () async {
+        final triesSeen = <int>[];
+
+        WebSocketChannel makeConnection() {
+          final mockedChannel = MockIOWebSocketChannel();
+          final mockedSink = MockWebSocketSink();
+          final controller = StreamController<dynamic>.broadcast();
+          when(() => mockedChannel.sink).thenReturn(mockedSink);
+          when(() => mockedChannel.ready).thenAnswer((_) => Future.value());
+          when(
+            () => mockedChannel.stream,
+          ).thenAnswer((_) => controller.stream);
+          when(() => mockedSink.close()).thenAnswer((_) async {
+            await controller.close();
+          });
+          when(() => mockedSink.close(any(), any())).thenAnswer((_) async {
+            await controller.close();
+          });
+          return mockedChannel;
+        }
+
+        final socket = RealtimeClient(
+          socketEndpoint,
+          transport: (url, headers) => makeConnection(),
+          reconnectAfter: (tries) {
+            triesSeen.add(tries);
+            return const Duration(milliseconds: 10);
+          },
+          customAccessToken: () async {
+            throw Exception('provider is persistently down');
+          },
+        );
+        socket.onStatusChange.listen((_) {}, onError: (_) {});
+
+        unawaited(socket.connect());
+
+        // Each failed resolution closes the socket and schedules a reconnect
+        // with a growing attempt count instead of restarting the backoff.
+        final deadline = DateTime.now().add(const Duration(seconds: 5));
+        while (triesSeen.length < 3 && DateTime.now().isBefore(deadline)) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+
+        expect(triesSeen.length, greaterThanOrEqualTo(3));
+        expect(triesSeen.sublist(0, 3), [1, 2, 3]);
+
+        await socket.disconnect();
+      },
+    );
   });
 
   group('sendHeartbeat', () {
