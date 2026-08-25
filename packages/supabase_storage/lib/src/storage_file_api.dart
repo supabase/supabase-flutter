@@ -353,8 +353,8 @@ class StorageFileApi {
       '$url/object/move',
       {
         'bucketId': bucketId,
-        'sourceKey': fromPath,
-        'destinationKey': toPath,
+        'sourceKey': _removeEmptyFolders(fromPath),
+        'destinationKey': _removeEmptyFolders(toPath),
         'destinationBucket': ?destinationBucket,
       },
       options: options,
@@ -382,8 +382,8 @@ class StorageFileApi {
       '$url/object/copy',
       {
         'bucketId': bucketId,
-        'sourceKey': fromPath,
-        'destinationKey': toPath,
+        'sourceKey': _removeEmptyFolders(fromPath),
+        'destinationKey': _removeEmptyFolders(toPath),
         'destinationBucket': ?destinationBucket,
       },
       options: options,
@@ -470,7 +470,7 @@ class StorageFileApi {
       '$url/object/sign/$bucketId',
       {
         'expiresIn': expiresIn,
-        'paths': paths,
+        'paths': paths.map(_removeEmptyFolders).toList(),
       },
       options: options,
     );
@@ -688,7 +688,7 @@ class StorageFileApi {
     final options = _fetchOptions;
     final response = await _storageFetch.delete<List<dynamic>>(
       '$url/object/$bucketId',
-      {'prefixes': paths},
+      {'prefixes': paths.map(_removeEmptyFolders).toList()},
       options: options,
     );
     final fileObjects = List<FileObject>.from(
@@ -740,7 +740,7 @@ class StorageFileApi {
     SearchOptions searchOptions = const SearchOptions(),
   }) async {
     final Map<String, dynamic> body = {
-      'prefix': path ?? '',
+      'prefix': _removeEmptyFolders(path ?? ''),
       ...searchOptions.toMap(),
     };
     final options = _fetchOptions;

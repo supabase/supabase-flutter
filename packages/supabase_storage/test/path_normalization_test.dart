@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:http/http.dart' as http;
 import 'package:supabase_storage/supabase_storage.dart';
 import 'package:test/test.dart';
 
@@ -22,6 +24,9 @@ void main() {
   });
 
   Uri requestUrl() => mockClient.receivedRequests.single.url;
+
+  dynamic requestBody() =>
+      jsonDecode((mockClient.receivedRequests.single as http.Request).body);
 
   const unnormalizedPaths = [
     '/folder/file.txt',
@@ -180,6 +185,63 @@ void main() {
           '/storage/v1/object/bucket/folder/file.txt',
         );
         expect(response.path, 'folder/file.txt');
+      });
+
+      test('by move, in the request body', () async {
+        mockClient.response = {'message': 'ok'};
+        mockClient.statusCode = 200;
+
+        await client.from('bucket').move(path, path);
+
+        final body = requestBody() as Map<String, dynamic>;
+        expect(body['sourceKey'], 'folder/file.txt');
+        expect(body['destinationKey'], 'folder/file.txt');
+      });
+
+      test('by copy, in the request body', () async {
+        mockClient.response = {'Key': 'bucket/folder/file.txt'};
+        mockClient.statusCode = 200;
+
+        await client.from('bucket').copy(path, path);
+
+        final body = requestBody() as Map<String, dynamic>;
+        expect(body['sourceKey'], 'folder/file.txt');
+        expect(body['destinationKey'], 'folder/file.txt');
+      });
+
+      test('by remove, in the request body', () async {
+        mockClient.response = <dynamic>[];
+        mockClient.statusCode = 200;
+
+        await client.from('bucket').remove([path]);
+
+        final body = requestBody() as Map<String, dynamic>;
+        expect(body['prefixes'], ['folder/file.txt']);
+      });
+
+      test('by createSignedUrls, in the request body', () async {
+        mockClient.response = [
+          {
+            'signedURL': '/object/sign/bucket/folder/file.txt?token=abc',
+            'path': 'folder/file.txt',
+          },
+        ];
+        mockClient.statusCode = 200;
+
+        await client.from('bucket').createSignedUrls([path], 60);
+
+        final body = requestBody() as Map<String, dynamic>;
+        expect(body['paths'], ['folder/file.txt']);
+      });
+
+      test('by list, in the request body', () async {
+        mockClient.response = <dynamic>[];
+        mockClient.statusCode = 200;
+
+        await client.from('bucket').list(path: path);
+
+        final body = requestBody() as Map<String, dynamic>;
+        expect(body['prefix'], 'folder/file.txt');
       });
 
       test('by uploadBinaryToSignedUrl, including the returned path', () async {
