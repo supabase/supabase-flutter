@@ -479,6 +479,49 @@ void main() {
         expect(client.headers['apikey'], 'foo');
       });
 
+      test('setHeader adds a header to subsequent invocations', () async {
+        final httpClient = CustomHttpClient();
+        final client = FunctionsClient(
+          'http://localhost',
+          {'apikey': 'foo'},
+          httpClient: httpClient,
+        );
+        addTearDown(client.dispose);
+
+        expect(
+          identical(client.setHeader('x-custom-header', 'value'), client),
+          isTrue,
+        );
+        await client.invoke('function');
+
+        expect(
+          httpClient.receivedRequests.last.headers['x-custom-header'],
+          'value',
+        );
+      });
+
+      test('a header passed to invoke wins over setHeader', () async {
+        final httpClient = CustomHttpClient();
+        final client = FunctionsClient(
+          'http://localhost',
+          {'apikey': 'foo'},
+          httpClient: httpClient,
+        );
+        addTearDown(client.dispose);
+
+        client.setHeader('x-custom-header', 'value');
+        await client.invoke(
+          'function',
+          headers: {'x-custom-header': 'per-call'},
+        );
+
+        expect(
+          httpClient.receivedRequests.last.headers['x-custom-header'],
+          'per-call',
+        );
+        expect(client.headers['x-custom-header'], 'value');
+      });
+
       test('accessToken is resolved before every invocation', () async {
         var calls = 0;
         final client = FunctionsClient(

@@ -66,6 +66,21 @@ class FunctionsClient {
   /// internal [replaceHeaders] when `SupabaseClient.headers` is assigned.
   Map<String, String> get headers => Map.unmodifiable(_headers);
 
+  /// Sets an HTTP header for subsequent invocations.
+  ///
+  /// Returns this for method chaining. A header passed to [invoke] still wins
+  /// over it for that single call. On a client managed by a `SupabaseClient`,
+  /// assign `SupabaseClient.headers` instead, so that every client gets the
+  /// header.
+  ///
+  /// ```dart
+  /// functions.setHeader('x-custom-header', 'value');
+  /// ```
+  FunctionsClient setHeader(String key, String value) {
+    _headers[key] = value;
+    return this;
+  }
+
   /// Replaces the invocation headers with [newHeaders].
   @internal
   void replaceHeaders(Map<String, String> newHeaders) {

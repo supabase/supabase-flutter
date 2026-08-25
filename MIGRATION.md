@@ -1531,7 +1531,7 @@ builds its sub-clients, so there is no `accessToken` callback to pass:
 
 ```dart
 supabase.storage.setHeader('Authorization', 'Bearer $jwt');
-supabase.headers = {...supabase.headers, 'Authorization': 'Bearer $jwt'};
+supabase.functions.setHeader('Authorization', 'Bearer $jwt');
 ```
 
 The rest client is stateless and its header map unmodifiable (see
@@ -1613,13 +1613,13 @@ manages. Every `headers` getter now returns an unmodifiable view, the same way
 | `supabase.functions.headers['X-Foo'] = 'bar'` | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}` |
 | `supabase.storage.headers['X-Foo'] = 'bar'` | `supabase.storage.setHeader('X-Foo', 'bar')` |
 | `storage.from('bucket').headers['X-Foo'] = 'bar'` | `storage.from('bucket').setHeader('X-Foo', 'bar')` |
-| `AuthClient(...).headers['X-Foo'] = 'bar'` | `AuthClient(headers: {'X-Foo': 'bar'})` |
-| `FunctionsClient(...).headers['X-Foo'] = 'bar'` | `FunctionsClient(url, {'X-Foo': 'bar'})` |
+| `authClient.headers['X-Foo'] = 'bar'` | `authClient.setHeader('X-Foo', 'bar')` |
+| `functionsClient.headers['X-Foo'] = 'bar'` | `functionsClient.setHeader('X-Foo', 'bar')` |
 
-Mutating one of those maps now throws an `UnsupportedError`. Pass the headers to the constructor of
-a standalone client, and for a client managed by a `SupabaseClient` assign `SupabaseClient.headers`,
-which propagates the new headers to every sub-client. Storage keeps `setHeader()` for adding a
-single header to a client or to one bucket.
+Mutating one of those maps now throws an `UnsupportedError`. To add a single header, the auth,
+functions and storage clients have a `setHeader()` method, and storage has one per bucket as well.
+A whole set of headers is passed to the constructor. For a client managed by a `SupabaseClient`,
+assign `SupabaseClient.headers`, which propagates the new headers to every sub-client at once.
 
 `SupabaseStorageClient.vectors` is a getter that builds a client on each access instead of a cached
 instance, so it always carries the current headers. Hold on to the returned client only for as long

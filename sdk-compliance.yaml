@@ -2095,7 +2095,9 @@ features:
       - SupabaseClient.headers
     supporting_symbols:
       - FunctionsClient.headers
+      - FunctionsClient.setHeader
       - AuthClient.headers
+      - AuthClient.setHeader
       - PostgrestBuilder.setHeader
       - PostgrestClient.headers
       - PostgrestFilterBuilder.setHeader

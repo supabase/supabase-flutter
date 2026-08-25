@@ -232,6 +232,21 @@ class AuthClient {
   /// internal [replaceHeaders] when `SupabaseClient.headers` is assigned.
   Map<String, String> get headers => Map.unmodifiable(_headers);
 
+  /// Sets an HTTP header for subsequent requests.
+  ///
+  /// The header is shared with [admin], so its requests carry it as well.
+  /// Returns this for method chaining. On a client managed by a
+  /// `SupabaseClient`, assign `SupabaseClient.headers` instead, so that every
+  /// client gets the header.
+  ///
+  /// ```dart
+  /// auth.setHeader('x-custom-header', 'value');
+  /// ```
+  AuthClient setHeader(String key, String value) {
+    _headers[key] = value;
+    return this;
+  }
+
   /// Replaces the request headers with [newHeaders].
   ///
   /// The map is shared with [admin], so its requests pick up the new headers
