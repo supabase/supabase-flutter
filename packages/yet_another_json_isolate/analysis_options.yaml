@@ -1,9 +1,5 @@
 include: package:supabase_lints/analysis_options.yaml
 
-linter:
-  rules:
-    public_member_api_docs: true
-
 analyzer:
   exclude:
     - build/**
