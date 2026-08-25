@@ -6,7 +6,6 @@ import 'types/mfa.dart';
 
 /// Admin API namespace for managing users' MFA factors.
 class AuthAdminMFAApi {
-  /// Creates the API namespace.
   const AuthAdminMFAApi({
     required String url,
     required Map<String, String> headers,

@@ -52,7 +52,6 @@ class OAuthClientListResponse {
 /// Contains all OAuth client administration methods.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class AuthAdminOAuthApi {
-  /// Creates the API namespace.
   const AuthAdminOAuthApi({
     required String url,
     required Map<String, String> headers,

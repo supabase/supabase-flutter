@@ -2,7 +2,6 @@ import 'package:supabase_auth/supabase_auth.dart';
 
 /// Response which might or might not contain session and/or user
 class AuthResponse {
-  /// Creates a response.
   AuthResponse({
     this.session,
     User? user,
@@ -50,7 +49,6 @@ class OAuthResponse {
 
 /// Response that contains a user
 class UserResponse {
-  /// Creates a response from its wire representation.
   UserResponse.fromJson(Map<String, dynamic> json) : user = User.fromJson(json);
 
   /// The user.
@@ -60,7 +58,6 @@ class UserResponse {
 /// Response of [AuthAdminApi.listUsers], a page of users together with the
 /// pagination metadata the server reports for it.
 class ListUsersResponse {
-  /// Creates a response.
   const ListUsersResponse({
     required this.users,
     this.total,
@@ -91,7 +88,6 @@ class ListUsersResponse {
 
 /// The response of `AuthClient.resend`.
 class ResendResponse {
-  /// Creates a response.
   const ResendResponse({
     this.messageId,
   });
@@ -102,7 +98,6 @@ class ResendResponse {
 
 /// The response of `AuthClient.getSessionFromUrl`.
 class AuthSessionUrlResponse {
-  /// Creates a response.
   const AuthSessionUrlResponse({
     required this.session,
     required this.redirectType,
@@ -118,7 +113,6 @@ class AuthSessionUrlResponse {
 
 /// The response of `AuthAdminApi.generateLink`.
 class GenerateLinkResponse {
-  /// Creates a response from its wire representation.
   GenerateLinkResponse.fromJson(Map<String, dynamic> json)
     : properties = GenerateLinkProperties.fromJson(json),
       user = _parseUser(json);
@@ -144,7 +138,6 @@ class GenerateLinkResponse {
 /// The generated link and its associated metadata, part of a
 /// [GenerateLinkResponse].
 class GenerateLinkProperties {
-  /// Creates properties from their wire representation.
   GenerateLinkProperties.fromJson(Map<String, dynamic> json)
     : actionLink = json['action_link'] ?? '',
       emailOtp = json['email_otp'] ?? '',

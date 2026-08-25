@@ -1,6 +1,5 @@
 /// Interface to provide async storage to store pkce tokens.
 abstract class AuthAsyncStorage {
-  /// Const constructor for subclasses.
   const AuthAsyncStorage();
 
   /// Retrieves an item asynchronously from the storage with the key.

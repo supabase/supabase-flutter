@@ -4,7 +4,6 @@ import 'package:supabase_auth/src/types/sign_out_reason.dart';
 
 /// An event emitted on `AuthClient.onAuthStateChange`.
 class AuthState {
-  /// Creates a state.
   const AuthState(
     this.event,
     this.session, {

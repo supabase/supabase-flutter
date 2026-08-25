@@ -3,7 +3,6 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// The response of `AuthMFAApi.enroll`.
 class AuthMFAEnrollResponse {
-  /// Creates a response.
   const AuthMFAEnrollResponse({
     required this.id,
     required this.type,
@@ -11,7 +10,6 @@ class AuthMFAEnrollResponse {
     this.phone,
   });
 
-  /// Creates a response from its wire representation.
   factory AuthMFAEnrollResponse.fromJson(Map<String, dynamic> json) {
     final type = FactorType.values.firstWhere(
       (e) => e.name == json['type'],
@@ -45,14 +43,12 @@ class AuthMFAEnrollResponse {
 
 /// TOTP enrollment information returned by `AuthMFAApi.enroll`.
 class TOTPEnrollment {
-  /// Creates enrollment information.
   const TOTPEnrollment({
     required this.qrCode,
     required this.secret,
     required this.uri,
   });
 
-  /// Creates enrollment information from its wire representation.
   factory TOTPEnrollment.fromJson(Map<String, dynamic> json) {
     return TOTPEnrollment(
       qrCode: json['qr_code'] as String,
@@ -81,12 +77,10 @@ class TOTPEnrollment {
 
 /// Phone enrollment information returned by `AuthMFAApi.enroll`.
 class PhoneEnrollment {
-  /// Creates enrollment information.
   const PhoneEnrollment({
     required this.phone,
   });
 
-  /// Creates enrollment information from its wire representation.
   factory PhoneEnrollment.fromJson(Map<String, dynamic> json) {
     return PhoneEnrollment(
       phone: json['phone'] as String,
@@ -109,10 +103,8 @@ class PhoneEnrollment {
 
 /// The response of `AuthMFAApi.challenge`.
 class AuthMFAChallengeResponse {
-  /// Creates a response.
   const AuthMFAChallengeResponse({required this.id, required this.expiresAt});
 
-  /// Creates a response from its wire representation.
   factory AuthMFAChallengeResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAChallengeResponse(
       id: json['id'] as String,
@@ -129,7 +121,6 @@ class AuthMFAChallengeResponse {
 
 /// The response of `AuthMFAApi.verify` and `AuthMFAApi.challengeAndVerify`.
 class AuthMFAVerifyResponse {
-  /// Creates a response.
   const AuthMFAVerifyResponse({
     required this.accessToken,
     required this.tokenType,
@@ -138,7 +129,6 @@ class AuthMFAVerifyResponse {
     required this.user,
   });
 
-  /// Creates a response from its wire representation.
   factory AuthMFAVerifyResponse.fromJson(Map<String, dynamic> json) {
     final expiresInValue = json['expires_in'];
     if (expiresInValue is! num) {
@@ -189,10 +179,8 @@ class AuthMFAVerifyResponse {
 
 /// The response of `AuthMFAApi.unenroll`.
 class AuthMFAUnenrollResponse {
-  /// Creates a response.
   const AuthMFAUnenrollResponse({required this.id});
 
-  /// Creates a response from its wire representation.
   factory AuthMFAUnenrollResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAUnenrollResponse(id: json['id'] as String);
   }
@@ -203,7 +191,6 @@ class AuthMFAUnenrollResponse {
 
 /// The response of `AuthMFAApi.listFactors`.
 class AuthMFAListFactorsResponse {
-  /// Creates a response.
   const AuthMFAListFactorsResponse({
     required this.all,
     required this.totp,
@@ -226,10 +213,8 @@ class AuthMFAListFactorsResponse {
 
 /// The response of `AuthAdminMFAApi.listFactors`.
 class AuthMFAAdminListFactorsResponse {
-  /// Creates a response.
   const AuthMFAAdminListFactorsResponse({required this.factors});
 
-  /// Creates a response from its wire representation.
   factory AuthMFAAdminListFactorsResponse.fromJson(Map<String, dynamic> json) {
     final factorsList = json['factors'];
     if (factorsList is! List) {
@@ -251,10 +236,8 @@ class AuthMFAAdminListFactorsResponse {
 
 /// The response of `AuthAdminMFAApi.deleteFactor`.
 class AuthMFAAdminDeleteFactorResponse {
-  /// Creates a response.
   const AuthMFAAdminDeleteFactorResponse({required this.id});
 
-  /// Creates a response from its wire representation.
   factory AuthMFAAdminDeleteFactorResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAAdminDeleteFactorResponse(id: json['id'] as String);
   }
@@ -294,7 +277,6 @@ enum FactorType {
 
 /// An MFA factor enrolled by a user.
 class Factor {
-  /// Creates a factor.
   const Factor({
     required this.id,
     required this.friendlyName,
@@ -304,7 +286,6 @@ class Factor {
     required this.updatedAt,
   });
 
-  /// Creates a factor from its wire representation.
   factory Factor.fromJson(Map<String, dynamic> json) {
     return Factor(
       id: json['id'] as String,
@@ -341,7 +322,6 @@ class Factor {
   /// When the factor was last updated, for example when it was verified.
   final DateTime updatedAt;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -397,7 +377,6 @@ enum AuthenticatorAssuranceLevel {
 
 /// The response of `AuthMFAApi.getAuthenticatorAssuranceLevel`.
 class AuthMFAGetAuthenticatorAssuranceLevelResponse {
-  /// Creates a response.
   const AuthMFAGetAuthenticatorAssuranceLevelResponse({
     required this.currentLevel,
     required this.nextLevel,
@@ -486,13 +465,11 @@ enum AuthenticationMethodReference {
 /// see [AuthMFAApi.getAuthenticatorAssuranceLevel].
 ///
 class AuthenticationMethodReferenceEntry {
-  /// Creates an entry.
   const AuthenticationMethodReferenceEntry({
     required this.method,
     required this.timestamp,
   });
 
-  /// Creates an entry from its wire representation.
   factory AuthenticationMethodReferenceEntry.fromJson(
     Map<String, dynamic> json,
   ) {

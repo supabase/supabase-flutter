@@ -6,7 +6,6 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// A signed-in user's authentication tokens.
 class Session {
-  /// Creates a session.
   Session({
     required this.accessToken,
     this.expiresIn,
@@ -70,7 +69,6 @@ class Session {
     );
   }
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     final expiresAt = this.expiresAt;
     return {
@@ -124,7 +122,6 @@ class Session {
     return DateTime.now().isAfter(expiresAt);
   }
 
-  /// Returns a copy with the given fields replaced.
   Session copyWith({
     String? accessToken,
     int? expiresIn,

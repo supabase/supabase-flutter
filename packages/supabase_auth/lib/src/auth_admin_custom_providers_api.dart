@@ -10,7 +10,6 @@ import 'types/fetch_options.dart';
 /// `custom:mycompany`, and are distinct from the OAuth 2.1 server clients
 /// managed through [AuthAdminOAuthApi].
 class AuthAdminCustomProvidersApi {
-  /// Creates the API namespace.
   const AuthAdminCustomProvidersApi({
     required String url,
     required Map<String, String> headers,

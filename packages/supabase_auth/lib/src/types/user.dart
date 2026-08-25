@@ -4,7 +4,6 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// A user account in Supabase Auth.
 class User {
-  /// Creates a user.
   const User({
     required this.id,
     required this.appMetadata,
@@ -133,7 +132,6 @@ class User {
     );
   }
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -233,7 +231,6 @@ class User {
 
 /// A third-party identity linked to a [User].
 class UserIdentity {
-  /// Creates an identity.
   const UserIdentity({
     required this.id,
     required this.userId,
@@ -245,7 +242,6 @@ class UserIdentity {
     this.updatedAt,
   });
 
-  /// Creates an identity from its wire representation.
   factory UserIdentity.fromMap(Map<String, dynamic> map) {
     return UserIdentity(
       id: map['id'] as String,
@@ -284,7 +280,6 @@ class UserIdentity {
   /// When the identity was last updated.
   final DateTime? updatedAt;
 
-  /// Returns a copy with the given fields replaced.
   UserIdentity copyWith({
     String? id,
     String? userId,
@@ -307,7 +302,6 @@ class UserIdentity {
     );
   }
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'id': id,

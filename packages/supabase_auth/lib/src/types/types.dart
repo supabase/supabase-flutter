@@ -200,7 +200,6 @@ enum OAuthClientRegistrationType {
 /// OAuth client object returned from the OAuth 2.1 server.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthClient {
-  /// Creates an OAuth client.
   const OAuthClient({
     required this.clientId,
     required this.clientName,
@@ -217,7 +216,6 @@ class OAuthClient {
     required this.updatedAt,
   });
 
-  /// Creates an OAuth client from its wire representation.
   factory OAuthClient.fromJson(Map<String, dynamic> json) {
     return OAuthClient(
       clientId: json['client_id'] as String,
@@ -294,7 +292,6 @@ class OAuthClient {
 /// Parameters for creating a new OAuth client.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class CreateOAuthClientOptions {
-  /// Creates options for a new OAuth client.
   const CreateOAuthClientOptions({
     required this.clientName,
     this.clientUri,
@@ -323,7 +320,6 @@ class CreateOAuthClientOptions {
   /// Scope of the OAuth client
   final String? scope;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'client_name': clientName,
@@ -339,7 +335,6 @@ class CreateOAuthClientOptions {
 /// Parameters for updating an existing OAuth client.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class UpdateOAuthClientOptions {
-  /// Creates options for updating an OAuth client.
   const UpdateOAuthClientOptions({
     this.clientName,
     this.clientUri,
@@ -367,7 +362,6 @@ class UpdateOAuthClientOptions {
   /// Scope of the OAuth client
   final String? scope;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'client_name': ?clientName,

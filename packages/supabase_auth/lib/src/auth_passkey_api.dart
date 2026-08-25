@@ -39,7 +39,6 @@ part of 'auth_client.dart';
 /// {@endtemplate}
 @experimental
 class AuthPasskeyApi {
-  /// Creates the API namespace.
   const AuthPasskeyApi({
     required AuthClient client,
     required AuthFetch fetch,

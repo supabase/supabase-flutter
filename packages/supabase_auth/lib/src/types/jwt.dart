@@ -5,14 +5,12 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// JWT Header structure
 class JwtHeader {
-  /// Creates a header.
   const JwtHeader({
     required this.algorithm,
     this.keyId,
     this.type,
   });
 
-  /// Creates a header from its wire representation.
   factory JwtHeader.fromJson(Map<String, dynamic> json) {
     return JwtHeader(
       algorithm: json['alg'] as String,
@@ -30,7 +28,6 @@ class JwtHeader {
   /// Token type - typically 'JWT'
   final String? type;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'alg': algorithm,
@@ -42,7 +39,6 @@ class JwtHeader {
 
 /// JWT Payload structure with standard claims
 class JwtPayload {
-  /// Creates a payload.
   JwtPayload({
     this.issuer,
     this.subject,
@@ -54,9 +50,8 @@ class JwtPayload {
     Map<String, dynamic>? claims,
   }) : claims = claims ?? {};
 
-  /// Creates a payload from its wire representation. Every field of [json]
-  /// is kept in [claims], including the standard ones already exposed as
-  /// typed fields.
+  /// Every field of [json] is kept in [claims], including the standard ones
+  /// already exposed as typed fields.
   factory JwtPayload.fromJson(Map<String, dynamic> json) {
     return JwtPayload(
       issuer: json['iss'] as String?,
@@ -102,7 +97,6 @@ class JwtPayload {
 
 /// Decoded JWT structure
 class DecodedJwt {
-  /// Creates a decoded JWT.
   const DecodedJwt({
     required this.header,
     required this.payload,
@@ -125,7 +119,6 @@ class DecodedJwt {
 
 /// Raw encoded parts of a JWT
 class JwtRawParts {
-  /// Creates raw parts.
   const JwtRawParts({
     required this.header,
     required this.payload,
@@ -144,7 +137,6 @@ class JwtRawParts {
 
 /// Response from getClaims method
 class GetClaimsResponse {
-  /// Creates a response.
   const GetClaimsResponse({
     required this.claims,
     required this.header,
@@ -163,7 +155,6 @@ class GetClaimsResponse {
 
 /// Options for getClaims method
 class GetClaimsOptions {
-  /// Creates options.
   const GetClaimsOptions({
     this.allowExpired = false,
   });
@@ -177,10 +168,8 @@ class GetClaimsOptions {
 /// A JSON Web Key Set (JWKS), as published by Supabase Auth's `/.well-known`
 /// endpoint.
 class JWKSet {
-  /// Creates a key set.
   const JWKSet({required this.keys});
 
-  /// Creates a key set from its wire representation.
   factory JWKSet.fromJson(Map<String, dynamic> json) {
     final keys =
         (json['keys'] as List<dynamic>?)
@@ -193,7 +182,6 @@ class JWKSet {
   /// The keys in this set.
   final List<JWK> keys;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'keys': keys.map((e) => e.toJson()).toList(),

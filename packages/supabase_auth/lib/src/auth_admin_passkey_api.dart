@@ -14,7 +14,6 @@ import 'types/passkey.dart';
 /// server. Never expose your `secret` key on the client.
 @experimental
 class AuthAdminPasskeyApi {
-  /// Creates the API namespace.
   const AuthAdminPasskeyApi({
     required String url,
     required Map<String, String> headers,

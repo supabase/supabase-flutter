@@ -3,7 +3,6 @@ part of 'auth_client.dart';
 /// API namespace for managing the signed-in user's MFA factors, exposed on
 /// `AuthClient.mfa`.
 class AuthMFAApi {
-  /// Creates the API namespace.
   const AuthMFAApi({required AuthClient client, required AuthFetch fetch})
     : _client = client,
       _fetch = fetch;

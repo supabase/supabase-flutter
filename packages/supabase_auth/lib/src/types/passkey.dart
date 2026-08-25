@@ -4,7 +4,6 @@ import 'package:supabase_common/supabase_common.dart';
 /// A passkey (WebAuthn credential) registered to a user.
 @experimental
 class Passkey {
-  /// Creates a passkey.
   const Passkey({
     required this.id,
     this.friendlyName,
@@ -12,7 +11,6 @@ class Passkey {
     this.lastUsedAt,
   });
 
-  /// Creates a passkey from its wire representation.
   factory Passkey.fromJson(Map<String, dynamic> json) {
     return Passkey(
       id: json['id'] as String,
@@ -38,7 +36,6 @@ class Passkey {
   /// Timestamp when the passkey was last used to sign in, if ever.
   final DateTime? lastUsedAt;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -71,14 +68,12 @@ class Passkey {
 /// Response containing the options needed to register a new passkey.
 @experimental
 class PasskeyRegistrationOptionsResponse {
-  /// Creates a response.
   const PasskeyRegistrationOptionsResponse({
     required this.challengeId,
     required this.options,
     required this.expiresAt,
   });
 
-  /// Creates a response from its wire representation.
   factory PasskeyRegistrationOptionsResponse.fromJson(
     Map<String, dynamic> json,
   ) {
@@ -108,14 +103,12 @@ class PasskeyRegistrationOptionsResponse {
 /// Response containing the options needed to sign in with a passkey.
 @experimental
 class PasskeyAuthenticationOptionsResponse {
-  /// Creates a response.
   const PasskeyAuthenticationOptionsResponse({
     required this.challengeId,
     required this.options,
     required this.expiresAt,
   });
 
-  /// Creates a response from its wire representation.
   factory PasskeyAuthenticationOptionsResponse.fromJson(
     Map<String, dynamic> json,
   ) {

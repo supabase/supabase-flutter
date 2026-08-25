@@ -41,7 +41,6 @@ Map<String, int> _parsePaginationLinks(String? header) {
 /// Requires the Supabase `secret` key; never use these methods from a
 /// client-side app.
 class AuthAdminApi {
-  /// Creates the API namespace.
   AuthAdminApi(
     this._url, {
     Map<String, String>? headers,

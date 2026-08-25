@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 
 /// Attributes for `AuthClient.updateUser`.
 class UserAttributes {
-  /// Creates attributes.
   UserAttributes({
     this.email,
     this.phone,
@@ -42,7 +41,6 @@ class UserAttributes {
   /// to verify the change.
   final String? currentPassword;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'email': ?email,
@@ -83,7 +81,6 @@ class UserAttributes {
 /// Attributes for `AuthAdminApi.createUser` and
 /// `AuthAdminApi.updateUserById`.
 class AdminUserAttributes extends UserAttributes {
-  /// Creates attributes.
   AdminUserAttributes({
     super.email,
     super.phone,
