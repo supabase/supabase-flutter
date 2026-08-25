@@ -4,6 +4,19 @@ import 'package:supabase_realtime/supabase_realtime.dart';
 /// Options to pass to the RealtimeClient.
 /// {@endtemplate}
 class RealtimeClientOptions {
+  /// {@macro realtime_client_options}
+  const RealtimeClientOptions({
+    this.logLevel,
+    this.timeout,
+    this.connectionCloseTimeout,
+    this.heartbeatInterval,
+    this.reconnectAfter,
+    this.transport,
+    this.disconnectOnEmptyChannelsAfter,
+    this.encode,
+    this.decode,
+  });
+
   /// Level of realtime server logs to be logged
   final RealtimeLogLevel? logLevel;
 
@@ -54,17 +67,4 @@ class RealtimeClientOptions {
   ///
   /// Defaults to the built-in synchronous codec. See [encode] for an example.
   final RealtimeDecode? decode;
-
-  /// {@macro realtime_client_options}
-  const RealtimeClientOptions({
-    this.logLevel,
-    this.timeout,
-    this.connectionCloseTimeout,
-    this.heartbeatInterval,
-    this.reconnectAfter,
-    this.transport,
-    this.disconnectOnEmptyChannelsAfter,
-    this.encode,
-    this.decode,
-  });
 }

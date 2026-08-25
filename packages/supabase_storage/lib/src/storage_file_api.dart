@@ -7,12 +7,6 @@ import 'package:supabase_common/supabase_common.dart';
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 class StorageFileApi {
-  final String url;
-  Map<String, String> _headers;
-  final String? bucketId;
-  final SupabaseRetryOptions _retryOptions;
-  final Fetch _storageFetch;
-
   StorageFileApi(
     this.url,
     Map<String, String> headers,
@@ -20,6 +14,11 @@ class StorageFileApi {
     this._retryOptions,
     this._storageFetch,
   ) : _headers = {...headers};
+  final String url;
+  Map<String, String> _headers;
+  final String? bucketId;
+  final SupabaseRetryOptions _retryOptions;
+  final Fetch _storageFetch;
 
   /// The headers used for requests.
   Map<String, String> get headers => _headers;

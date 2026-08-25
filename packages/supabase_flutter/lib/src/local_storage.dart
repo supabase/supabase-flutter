@@ -64,9 +64,8 @@ class EmptyLocalStorage extends LocalStorage {
 /// [SharedPreferences] API, is moved over to [SharedPreferencesAsync] on
 /// [initialize].
 class SharedPreferencesLocalStorage extends LocalStorage {
-  late final SharedPreferencesAsync _preferences;
-
   SharedPreferencesLocalStorage({required this.persistSessionKey});
+  late final SharedPreferencesAsync _preferences;
 
   final String persistSessionKey;
   static const _useWebLocalStorage =

@@ -14,9 +14,8 @@ import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
 @internal
 class Fetch {
-  final Client? httpClient;
-
   const Fetch([this.httpClient]);
+  final Client? httpClient;
 
   MediaType _parseMediaType(String path) {
     final mime = lookupMimeType(path);

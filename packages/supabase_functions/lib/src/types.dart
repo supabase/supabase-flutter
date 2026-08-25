@@ -5,6 +5,11 @@ import 'package:http/http.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class FunctionResponse {
+  const FunctionResponse({
+    this.data,
+    required this.statusCode,
+  });
+
   /// The data returned by the function. Type depends on the header
   /// `Content-Type`:
   /// - 'text/plain': [String]
@@ -15,11 +20,6 @@ class FunctionResponse {
 
   /// HTTP status code of the response.
   final int statusCode;
-
-  const FunctionResponse({
-    this.data,
-    required this.statusCode,
-  });
 }
 
 /// Thrown when invoking an Edge Function fails.
@@ -35,12 +35,11 @@ class FunctionResponse {
 /// - [FunctionsRelayException]: The Supabase relay returned an error
 ///   (`x-relay-error`).
 sealed class FunctionException extends SupabaseException {
-  final dynamic details;
-
   const FunctionException({
     required String message,
     this.details,
   }) : super(message);
+  final dynamic details;
 
   @override
   String toString() => '$runtimeType(message: $message, details: $details)';
@@ -64,9 +63,6 @@ class FunctionsFetchException extends FunctionException {
 /// The response body is available in [details].
 class FunctionsApiException extends FunctionException
     with SupabaseApiException {
-  @override
-  final int statusCode;
-
   const FunctionsApiException({
     required this.statusCode,
     super.details,
@@ -74,6 +70,8 @@ class FunctionsApiException extends FunctionException
   }) : super(
          message: message ?? 'Edge Function returned a non-2xx status code',
        );
+  @override
+  final int statusCode;
 
   @override
   String toString() =>

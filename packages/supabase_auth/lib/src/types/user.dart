@@ -3,28 +3,6 @@ import 'package:supabase_auth/src/types/mfa.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class User {
-  final String id;
-  final Map<String, dynamic> appMetadata;
-  final Map<String, dynamic>? userMetadata;
-  final String audience;
-  final DateTime? confirmationSentAt;
-  final DateTime? recoverySentAt;
-  final DateTime? emailChangeSentAt;
-  final String? newEmail;
-  final DateTime? invitedAt;
-  final String? actionLink;
-  final String? email;
-  final String? phone;
-  final DateTime createdAt;
-  final DateTime? emailConfirmedAt;
-  final DateTime? phoneConfirmedAt;
-  final DateTime? lastSignInAt;
-  final String? role;
-  final DateTime? updatedAt;
-  final List<UserIdentity>? identities;
-  final List<Factor>? factors;
-  final bool isAnonymous;
-
   const User({
     required this.id,
     required this.appMetadata,
@@ -48,6 +26,27 @@ class User {
     this.factors,
     this.isAnonymous = false,
   });
+  final String id;
+  final Map<String, dynamic> appMetadata;
+  final Map<String, dynamic>? userMetadata;
+  final String audience;
+  final DateTime? confirmationSentAt;
+  final DateTime? recoverySentAt;
+  final DateTime? emailChangeSentAt;
+  final String? newEmail;
+  final DateTime? invitedAt;
+  final String? actionLink;
+  final String? email;
+  final String? phone;
+  final DateTime createdAt;
+  final DateTime? emailConfirmedAt;
+  final DateTime? phoneConfirmedAt;
+  final DateTime? lastSignInAt;
+  final String? role;
+  final DateTime? updatedAt;
+  final List<UserIdentity>? identities;
+  final List<Factor>? factors;
+  final bool isAnonymous;
 
   /// Returns a `User` object from a map of json
   /// returns `null` if there is no `id` present
@@ -185,15 +184,6 @@ class User {
 }
 
 class UserIdentity {
-  final String id;
-  final String userId;
-  final Map<String, dynamic>? identityData;
-  final String identityId;
-  final String provider;
-  final DateTime? createdAt;
-  final DateTime? lastSignInAt;
-  final DateTime? updatedAt;
-
   const UserIdentity({
     required this.id,
     required this.userId,
@@ -204,6 +194,27 @@ class UserIdentity {
     required this.lastSignInAt,
     this.updatedAt,
   });
+
+  factory UserIdentity.fromMap(Map<String, dynamic> map) {
+    return UserIdentity(
+      id: map['id'] as String,
+      userId: map['user_id'] as String,
+      identityData: (map['identity_data'] as Map?)?.cast(),
+      identityId: (map['identity_id'] ?? '') as String,
+      provider: map['provider'] as String,
+      createdAt: tryParseIso8601(map, 'created_at'),
+      lastSignInAt: tryParseIso8601(map, 'last_sign_in_at'),
+      updatedAt: tryParseIso8601(map, 'updated_at'),
+    );
+  }
+  final String id;
+  final String userId;
+  final Map<String, dynamic>? identityData;
+  final String identityId;
+  final String provider;
+  final DateTime? createdAt;
+  final DateTime? lastSignInAt;
+  final DateTime? updatedAt;
 
   UserIdentity copyWith({
     String? id,
@@ -224,19 +235,6 @@ class UserIdentity {
       createdAt: createdAt ?? this.createdAt,
       lastSignInAt: lastSignInAt ?? this.lastSignInAt,
       updatedAt: updatedAt ?? this.updatedAt,
-    );
-  }
-
-  factory UserIdentity.fromMap(Map<String, dynamic> map) {
-    return UserIdentity(
-      id: map['id'] as String,
-      userId: map['user_id'] as String,
-      identityData: (map['identity_data'] as Map?)?.cast(),
-      identityId: (map['identity_id'] ?? '') as String,
-      provider: map['provider'] as String,
-      createdAt: tryParseIso8601(map, 'created_at'),
-      lastSignInAt: tryParseIso8601(map, 'last_sign_in_at'),
-      updatedAt: tryParseIso8601(map, 'updated_at'),
     );
   }
 

@@ -20,8 +20,6 @@ part of 'postgrest_builder.dart';
 /// {@endtemplate}
 @immutable
 class PostgrestQueryBuilder {
-  final _RequestConfig _config;
-
   /// {@macro postgrest_query_builder}
   PostgrestQueryBuilder({
     required Uri url,
@@ -42,6 +40,7 @@ class PostgrestQueryBuilder {
        );
 
   const PostgrestQueryBuilder._(this._config);
+  final _RequestConfig _config;
 
   /// Perform a SELECT query on the table or view.
   ///

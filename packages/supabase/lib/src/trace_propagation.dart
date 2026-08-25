@@ -11,6 +11,8 @@ typedef TraceContextProvider = FutureOr<TraceContext?> Function();
 ///
 /// See https://www.w3.org/TR/trace-context/
 class TraceContext {
+  const TraceContext({this.traceparent, this.tracestate, this.baggage});
+
   /// The `traceparent` header, formatted as
   /// `version-traceid-parentid-traceflags`.
   final String? traceparent;
@@ -20,8 +22,6 @@ class TraceContext {
 
   /// The `baggage` header carrying application-defined key-value pairs.
   final String? baggage;
-
-  const TraceContext({this.traceparent, this.tracestate, this.baggage});
 }
 
 /// Options controlling W3C trace context propagation onto outgoing Supabase
@@ -33,6 +33,12 @@ class TraceContext {
 /// (`*.supabase.co`, `*.supabase.in`, the project host, and loopback addresses
 /// for local development). Third-party hosts never receive trace headers.
 class TracePropagationOptions {
+  const TracePropagationOptions({
+    this.enabled = false,
+    this.respectSamplingDecision = true,
+    this.traceContextProvider,
+  });
+
   /// Whether trace propagation is enabled. Defaults to `false`.
   final bool enabled;
 
@@ -47,10 +53,4 @@ class TracePropagationOptions {
 
   /// Supplies the current trace context for each outgoing request.
   final TraceContextProvider? traceContextProvider;
-
-  const TracePropagationOptions({
-    this.enabled = false,
-    this.respectSamplingDecision = true,
-    this.traceContextProvider,
-  });
 }

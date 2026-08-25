@@ -9,11 +9,10 @@ import 'package:iceberg/src/logger.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class _IcebergResponse {
+  const _IcebergResponse(this.statusCode, this.headers, this.body);
   final int statusCode;
   final Map<String, String> headers;
   final dynamic body;
-
-  const _IcebergResponse(this.statusCode, this.headers, this.body);
 }
 
 /// Client for the Apache Iceberg REST Catalog exposed by Supabase Storage under
@@ -25,14 +24,6 @@ class _IcebergResponse {
 /// await catalog.createNamespace(['analytics']);
 /// ```
 class IcebergRestCatalog {
-  final String _baseUrl;
-  final Map<String, String> _headers;
-  final http.Client? _httpClient;
-  final String? _warehouse;
-  final String? _accessDelegation;
-
-  Future<String>? _prefixFuture;
-
   /// Creates a catalog client.
   ///
   /// [baseUrl] is the base URL of the Iceberg REST Catalog, for Supabase
@@ -54,6 +45,13 @@ class IcebergRestCatalog {
            (accessDelegation == null || accessDelegation.isEmpty)
            ? null
            : accessDelegation.map((delegation) => delegation.value).join(',');
+  final String _baseUrl;
+  final Map<String, String> _headers;
+  final http.Client? _httpClient;
+  final String? _warehouse;
+  final String? _accessDelegation;
+
+  Future<String>? _prefixFuture;
 
   String _namespaceToPath(List<String> namespace) =>
       namespace.map(Uri.encodeComponent).join('%1F');

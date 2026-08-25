@@ -13,6 +13,13 @@ typedef Callback = void Function(dynamic response);
 /// {@endtemplate}
 @internal
 class Push {
+  /// {@macro push}
+  Push(
+    this._channel,
+    this._event, [
+    this.payload = const {},
+    this._timeout = RealtimeConstants.defaultTimeout,
+  ]);
   bool sent = false;
   Timer? _timeoutTimer;
   String _ref = '';
@@ -31,14 +38,6 @@ class Push {
 
   /// The push timeout
   Duration _timeout;
-
-  /// {@macro push}
-  Push(
-    this._channel,
-    this._event, [
-    this.payload = const {},
-    this._timeout = RealtimeConstants.defaultTimeout,
-  ]);
 
   String get ref => _ref;
 
@@ -143,8 +142,7 @@ class Push {
 
 @internal
 class Hook {
+  const Hook(this.status, this.callback);
   final String status;
   final Callback callback;
-
-  const Hook(this.status, this.callback);
 }

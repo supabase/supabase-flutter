@@ -35,13 +35,12 @@ typedef TimerCalculation = Duration Function(int tries);
 /// ```
 @internal
 class RetryTimer {
+  RetryTimer(this.callback, this.timerCalculation);
   final TimerCallback callback;
   final TimerCalculation timerCalculation;
 
   Timer? _timer;
   int _tries = 0;
-
-  RetryTimer(this.callback, this.timerCalculation);
 
   /// Cancels any previous timer and reset tries
   void reset() {

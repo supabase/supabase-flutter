@@ -2,19 +2,6 @@ import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class AuthMFAEnrollResponse {
-  /// ID of the factor that was just enrolled (in an unverified state).
-  final String id;
-
-  /// Type of MFA factor. Supports both `[FactorType.totp]` and
-  /// `[FactorType.phone]`.
-  final FactorType type;
-
-  /// TOTP enrollment information (only present when type is totp).
-  final TOTPEnrollment? totp;
-
-  /// Phone enrollment information (only present when type is phone).
-  final PhoneEnrollment? phone;
-
   const AuthMFAEnrollResponse({
     required this.id,
     required this.type,
@@ -38,9 +25,36 @@ class AuthMFAEnrollResponse {
           : null,
     );
   }
+
+  /// ID of the factor that was just enrolled (in an unverified state).
+  final String id;
+
+  /// Type of MFA factor. Supports both `[FactorType.totp]` and
+  /// `[FactorType.phone]`.
+  final FactorType type;
+
+  /// TOTP enrollment information (only present when type is totp).
+  final TOTPEnrollment? totp;
+
+  /// Phone enrollment information (only present when type is phone).
+  final PhoneEnrollment? phone;
 }
 
 class TOTPEnrollment {
+  const TOTPEnrollment({
+    required this.qrCode,
+    required this.secret,
+    required this.uri,
+  });
+
+  factory TOTPEnrollment.fromJson(Map<String, dynamic> json) {
+    return TOTPEnrollment(
+      qrCode: json['qr_code'] as String,
+      secret: json['secret'] as String,
+      uri: json['uri'] as String,
+    );
+  }
+
   /// A `data:image/svg+xml;utf-8,` URL containing a QR code that encodes the
   /// authenticator URI.
   ///
@@ -57,26 +71,9 @@ class TOTPEnrollment {
   /// The authenticator URI encoded within the QR code, should you need to use
   /// it. Avoid logging this value to the console.
   final String uri;
-
-  const TOTPEnrollment({
-    required this.qrCode,
-    required this.secret,
-    required this.uri,
-  });
-
-  factory TOTPEnrollment.fromJson(Map<String, dynamic> json) {
-    return TOTPEnrollment(
-      qrCode: json['qr_code'] as String,
-      secret: json['secret'] as String,
-      uri: json['uri'] as String,
-    );
-  }
 }
 
 class PhoneEnrollment {
-  /// The phone number that will receive the SMS OTP.
-  final String phone;
-
   const PhoneEnrollment({
     required this.phone,
   });
@@ -96,15 +93,12 @@ class PhoneEnrollment {
       'Invalid phone enrollment data type: ${value.runtimeType}',
     ),
   };
+
+  /// The phone number that will receive the SMS OTP.
+  final String phone;
 }
 
 class AuthMFAChallengeResponse {
-  /// ID of the newly created challenge.
-  final String id;
-
-  /// Timestamp when this challenge will no longer be usable.
-  final DateTime expiresAt;
-
   const AuthMFAChallengeResponse({required this.id, required this.expiresAt});
 
   factory AuthMFAChallengeResponse.fromJson(Map<String, dynamic> json) {
@@ -113,24 +107,15 @@ class AuthMFAChallengeResponse {
       expiresAt: parseUnixSeconds(json, 'expires_at'),
     );
   }
+
+  /// ID of the newly created challenge.
+  final String id;
+
+  /// Timestamp when this challenge will no longer be usable.
+  final DateTime expiresAt;
 }
 
 class AuthMFAVerifyResponse {
-  /// New access token (JWT) after successful verification.
-  final String accessToken;
-
-  /// Type of token, typically `Bearer`.
-  final String tokenType;
-
-  /// Duration in which the access token will expire.
-  final Duration expiresIn;
-
-  /// Refresh token you can use to obtain new access tokens when expired.
-  final String refreshToken;
-
-  /// Updated user profile.
-  final User user;
-
   const AuthMFAVerifyResponse({
     required this.accessToken,
     required this.tokenType,
@@ -170,37 +155,48 @@ class AuthMFAVerifyResponse {
       user: user,
     );
   }
+
+  /// New access token (JWT) after successful verification.
+  final String accessToken;
+
+  /// Type of token, typically `Bearer`.
+  final String tokenType;
+
+  /// Duration in which the access token will expire.
+  final Duration expiresIn;
+
+  /// Refresh token you can use to obtain new access tokens when expired.
+  final String refreshToken;
+
+  /// Updated user profile.
+  final User user;
 }
 
 class AuthMFAUnenrollResponse {
-  /// ID of the factor that was successfully unenrolled.
-  final String id;
-
   const AuthMFAUnenrollResponse({required this.id});
 
   factory AuthMFAUnenrollResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAUnenrollResponse(id: json['id'] as String);
   }
+
+  /// ID of the factor that was successfully unenrolled.
+  final String id;
 }
 
 class AuthMFAListFactorsResponse {
-  final List<Factor> all;
-  final List<Factor> totp;
-  final List<Factor> phone;
-  final List<Factor> webauthn;
-
   const AuthMFAListFactorsResponse({
     required this.all,
     required this.totp,
     required this.phone,
     this.webauthn = const [],
   });
+  final List<Factor> all;
+  final List<Factor> totp;
+  final List<Factor> phone;
+  final List<Factor> webauthn;
 }
 
 class AuthMFAAdminListFactorsResponse {
-  /// All factors attached to the user.
-  final List<Factor> factors;
-
   const AuthMFAAdminListFactorsResponse({required this.factors});
 
   factory AuthMFAAdminListFactorsResponse.fromJson(Map<String, dynamic> json) {
@@ -217,17 +213,20 @@ class AuthMFAAdminListFactorsResponse {
           .toList(),
     );
   }
+
+  /// All factors attached to the user.
+  final List<Factor> factors;
 }
 
 class AuthMFAAdminDeleteFactorResponse {
-  /// ID of the factor that was successfully deleted.
-  final String id;
-
   const AuthMFAAdminDeleteFactorResponse({required this.id});
 
   factory AuthMFAAdminDeleteFactorResponse.fromJson(Map<String, dynamic> json) {
     return AuthMFAAdminDeleteFactorResponse(id: json['id'] as String);
   }
+
+  /// ID of the factor that was successfully deleted.
+  final String id;
 }
 
 enum FactorStatus {
@@ -250,22 +249,6 @@ enum FactorType {
 }
 
 class Factor {
-  /// ID of the factor.
-  final String id;
-
-  /// Friendly name of the factor, useful to disambiguate between multiple
-  /// factors.
-  final String? friendlyName;
-
-  /// Type of factor. Supports `totp`, `phone` and `webauthn`.
-  final FactorType factorType;
-
-  /// Factor's status.
-  final FactorStatus status;
-
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
   const Factor({
     required this.id,
     required this.friendlyName,
@@ -291,6 +274,22 @@ class Factor {
       updatedAt: parseIso8601(json, 'updated_at'),
     );
   }
+
+  /// ID of the factor.
+  final String id;
+
+  /// Friendly name of the factor, useful to disambiguate between multiple
+  /// factors.
+  final String? friendlyName;
+
+  /// Type of factor. Supports `totp`, `phone` and `webauthn`.
+  final FactorType factorType;
+
+  /// Factor's status.
+  final FactorStatus status;
+
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Map<String, dynamic> toJson() {
     return {
@@ -345,6 +344,12 @@ enum AuthenticatorAssuranceLevel {
 }
 
 class AuthMFAGetAuthenticatorAssuranceLevelResponse {
+  const AuthMFAGetAuthenticatorAssuranceLevelResponse({
+    required this.currentLevel,
+    required this.nextLevel,
+    required this.currentAuthenticationMethods,
+  });
+
   /// Current AAL level of the session.
   final AuthenticatorAssuranceLevel? currentLevel;
 
@@ -359,12 +364,6 @@ class AuthMFAGetAuthenticatorAssuranceLevelResponse {
   /// Use the information here to detect the last time a user verified a factor,
   /// for example if implementing a step-up scenario.
   final List<AuthenticationMethodReferenceEntry> currentAuthenticationMethods;
-
-  const AuthMFAGetAuthenticatorAssuranceLevelResponse({
-    required this.currentLevel,
-    required this.nextLevel,
-    required this.currentAuthenticationMethods,
-  });
 }
 
 enum AuthenticationMethodReference {
@@ -385,8 +384,9 @@ enum AuthenticationMethodReference {
   passkey('passkey'),
   unknown('unknown');
 
-  final String value;
   const AuthenticationMethodReference(this.value);
+
+  final String value;
 }
 
 /// An authentication method reference (AMR) entry.
@@ -397,12 +397,6 @@ enum AuthenticationMethodReference {
 /// see [AuthMFAApi.getAuthenticatorAssuranceLevel].
 ///
 class AuthenticationMethodReferenceEntry {
-  /// authentication method name
-  final AuthenticationMethodReference method;
-
-  /// Timestamp when the method was successfully used.
-  final DateTime timestamp;
-
   const AuthenticationMethodReferenceEntry({
     required this.method,
     required this.timestamp,
@@ -419,4 +413,10 @@ class AuthenticationMethodReferenceEntry {
       timestamp: parseUnixSeconds(json, 'timestamp'),
     );
   }
+
+  /// authentication method name
+  final AuthenticationMethodReference method;
+
+  /// Timestamp when the method was successfully used.
+  final DateTime timestamp;
 }

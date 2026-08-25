@@ -5,6 +5,15 @@ import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class Session {
+  Session({
+    required this.accessToken,
+    this.expiresIn,
+    this.refreshToken,
+    required this.tokenType,
+    this.providerToken,
+    this.providerRefreshToken,
+    required this.user,
+  });
   final String? providerToken;
   final String? providerRefreshToken;
   final String accessToken;
@@ -16,16 +25,6 @@ class Session {
   final String? refreshToken;
   final String tokenType;
   final User user;
-
-  Session({
-    required this.accessToken,
-    this.expiresIn,
-    this.refreshToken,
-    required this.tokenType,
-    this.providerToken,
-    this.providerRefreshToken,
-    required this.user,
-  });
 
   /// Returns a `Session` object from a map of json
   /// returns `null` if there is no `access_token` present

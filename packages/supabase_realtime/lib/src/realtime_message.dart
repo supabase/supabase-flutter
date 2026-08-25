@@ -21,6 +21,28 @@ import 'package:supabase_realtime/src/types.dart';
 /// );
 /// ```
 class RealtimeMessage {
+  const RealtimeMessage({
+    required this.topic,
+    required this.event,
+    this.payload,
+    this.ref,
+    this.joinRef,
+  });
+
+  /// Reads a message from the JSON structure of a [version] frame.
+  ///
+  /// Throws a [FormatException] when [json] does not have the shape [version]
+  /// prescribes.
+  factory RealtimeMessage.fromJson(
+    Object? json, [
+    RealtimeProtocolVersion version = RealtimeProtocolVersion.v2,
+  ]) {
+    return switch (version) {
+      RealtimeProtocolVersion.v1 => _fromObject(json),
+      RealtimeProtocolVersion.v2 => _fromArray(json),
+    };
+  }
+
   /// Reference of the channel join this message belongs to.
   ///
   /// `null` for messages that are not tied to a join, such as heartbeats.
@@ -37,14 +59,6 @@ class RealtimeMessage {
 
   /// Body of the message, `null` when the event carries none.
   final Object? payload;
-
-  const RealtimeMessage({
-    required this.topic,
-    required this.event,
-    this.payload,
-    this.ref,
-    this.joinRef,
-  });
 
   /// Builds an outgoing message for a channel [event].
   ///
@@ -68,20 +82,6 @@ class RealtimeMessage {
       ref: ref,
       joinRef: joinRef,
     );
-  }
-
-  /// Reads a message from the JSON structure of a [version] frame.
-  ///
-  /// Throws a [FormatException] when [json] does not have the shape [version]
-  /// prescribes.
-  factory RealtimeMessage.fromJson(
-    Object? json, [
-    RealtimeProtocolVersion version = RealtimeProtocolVersion.v2,
-  ]) {
-    return switch (version) {
-      RealtimeProtocolVersion.v1 => _fromObject(json),
-      RealtimeProtocolVersion.v2 => _fromArray(json),
-    };
   }
 
   /// The JSON structure of this message for [version].

@@ -6,14 +6,6 @@ import 'counter.dart';
 /// Used to perform [rpc] and [from] operations with a different schema than in
 /// [SupabaseClient].
 class SupabaseQuerySchema {
-  final Counter _counter;
-  final String _restUrl;
-  final String _schema;
-  final AsyncJsonCodec _jsonCodec;
-  final Client? _authHttpClient;
-  final RealtimeClient _realtime;
-  final PostgrestClient _rest;
-
   const SupabaseQuerySchema({
     required Counter counter,
     required String restUrl,
@@ -29,6 +21,13 @@ class SupabaseQuerySchema {
        _authHttpClient = authHttpClient,
        _realtime = realtime,
        _rest = rest;
+  final Counter _counter;
+  final String _restUrl;
+  final String _schema;
+  final AsyncJsonCodec _jsonCodec;
+  final Client? _authHttpClient;
+  final RealtimeClient _realtime;
+  final PostgrestClient _rest;
 
   /// Perform a table operation.
   SupabaseQueryBuilder from(String table) {

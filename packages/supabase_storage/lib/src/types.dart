@@ -2,15 +2,6 @@ import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class Bucket {
-  final String id;
-  final String name;
-  final String owner;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final bool public;
-  final int? fileSizeLimit;
-  final List<String>? allowedMimeTypes;
-
   const Bucket({
     required this.id,
     required this.name,
@@ -37,23 +28,19 @@ class Bucket {
           : null,
     );
   }
+  final String id;
+  final String name;
+  final String owner;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool public;
+  final int? fileSizeLimit;
+  final List<String>? allowedMimeTypes;
 }
 
 /// A bucket backed by the Apache Iceberg table format, used for structured
 /// analytical data storage.
 class AnalyticsBucket {
-  /// The unique identifier of the bucket.
-  final String id;
-
-  /// The name of the bucket.
-  final String name;
-
-  /// The creation timestamp.
-  final DateTime createdAt;
-
-  /// The last update timestamp.
-  final DateTime updatedAt;
-
   const AnalyticsBucket({
     required this.id,
     required this.name,
@@ -69,18 +56,21 @@ class AnalyticsBucket {
       updatedAt: parseIso8601(json, 'updated_at'),
     );
   }
+
+  /// The unique identifier of the bucket.
+  final String id;
+
+  /// The name of the bucket.
+  final String name;
+
+  /// The creation timestamp.
+  final DateTime createdAt;
+
+  /// The last update timestamp.
+  final DateTime updatedAt;
 }
 
 class FileObject {
-  final String name;
-  final String? bucketId;
-  final String? owner;
-  final String? id;
-  final DateTime? updatedAt;
-  final DateTime? createdAt;
-  final Map<String, dynamic>? metadata;
-  final Bucket? buckets;
-
   const FileObject({
     required this.name,
     required this.bucketId,
@@ -112,22 +102,17 @@ class FileObject {
           : null,
     );
   }
+  final String name;
+  final String? bucketId;
+  final String? owner;
+  final String? id;
+  final DateTime? updatedAt;
+  final DateTime? createdAt;
+  final Map<String, dynamic>? metadata;
+  final Bucket? buckets;
 }
 
 class FileObjectV2 {
-  final String id;
-  final String version;
-  final String name;
-  final String bucketId;
-  final DateTime? updatedAt;
-  final DateTime createdAt;
-  final int? size;
-  final String? cacheControl;
-  final String? contentType;
-  final String? etag;
-  final DateTime? lastModified;
-  final Map<String, dynamic>? metadata;
-
   const FileObjectV2({
     required this.id,
     required this.version,
@@ -159,6 +144,18 @@ class FileObjectV2 {
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }
+  final String id;
+  final String version;
+  final String name;
+  final String bucketId;
+  final DateTime? updatedAt;
+  final DateTime createdAt;
+  final int? size;
+  final String? cacheControl;
+  final String? contentType;
+  final String? etag;
+  final DateTime? lastModified;
+  final Map<String, dynamic>? metadata;
 }
 
 /// [public] The visibility of the bucket. Public buckets don't require an
@@ -172,15 +169,14 @@ class FileObjectV2 {
 /// [allowedMimeTypes] specifies the allowed mime types that this bucket can
 /// accept during upload
 class BucketOptions {
-  final bool public;
-  final String? fileSizeLimit;
-  final List<String>? allowedMimeTypes;
-
   const BucketOptions({
     required this.public,
     this.fileSizeLimit,
     this.allowedMimeTypes,
   });
+  final bool public;
+  final String? fileSizeLimit;
+  final List<String>? allowedMimeTypes;
 }
 
 /// The column that [StorageBucketApi.listBuckets] can sort its results by.
@@ -188,6 +184,14 @@ enum BucketSortColumn { id, name, createdAt, updatedAt }
 
 /// Filter, sort and pagination options for [StorageBucketApi.listBuckets].
 class ListBucketsOptions {
+  const ListBucketsOptions({
+    this.limit,
+    this.offset,
+    this.sortColumn,
+    this.sortOrder,
+    this.search,
+  });
+
   /// The maximum number of buckets to return.
   final int? limit;
 
@@ -203,14 +207,6 @@ class ListBucketsOptions {
   /// A search term used to filter buckets by name.
   final String? search;
 
-  const ListBucketsOptions({
-    this.limit,
-    this.offset,
-    this.sortColumn,
-    this.sortOrder,
-    this.search,
-  });
-
   Map<String, String> toQueryParameters() {
     return {
       'limit': ?limit?.toString(),
@@ -223,6 +219,14 @@ class ListBucketsOptions {
 }
 
 class FileOptions {
+  const FileOptions({
+    this.cacheControl = '3600',
+    this.upsert = false,
+    this.contentType,
+    this.metadata,
+    this.headers,
+  });
+
   /// The number of seconds the asset is cached in the browser and
   /// in the Supabase CDN. This is set in the `Cache-Control: max-age=<seconds>`
   /// header.
@@ -249,17 +253,16 @@ class FileOptions {
 
   /// Optionally add extra headers.
   final Map<String, String>? headers;
-
-  const FileOptions({
-    this.cacheControl = '3600',
-    this.upsert = false,
-    this.contentType,
-    this.metadata,
-    this.headers,
-  });
 }
 
 class SearchOptions {
+  const SearchOptions({
+    this.limit = 100,
+    this.offset = 0,
+    this.sortBy = const SortBy(),
+    this.search,
+  });
+
   /// The number of files you want to be returned.
   final int? limit;
 
@@ -271,13 +274,6 @@ class SearchOptions {
 
   /// The search string to filter files by.
   final String? search;
-
-  const SearchOptions({
-    this.limit = 100,
-    this.offset = 0,
-    this.sortBy = const SortBy(),
-    this.search,
-  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -291,16 +287,16 @@ class SearchOptions {
 
 /// The column and direction that [StorageFileApi.list] sorts its results by.
 class SortBy {
+  const SortBy({
+    this.column = 'name',
+    this.order = SortDirection.ascending,
+  });
+
   /// The column to sort by. Can be any column inside a [FileObject].
   final String? column;
 
   /// The sort direction.
   final SortDirection order;
-
-  const SortBy({
-    this.column = 'name',
-    this.order = SortDirection.ascending,
-  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -316,16 +312,16 @@ enum FileSortColumn { name, updatedAt, createdAt }
 /// The column and direction that [StorageFileApi.listPaginated] sorts its
 /// results by.
 class FileSort {
+  const FileSort({
+    this.column = FileSortColumn.name,
+    this.order = SortDirection.ascending,
+  });
+
   /// The column to sort by.
   final FileSortColumn column;
 
   /// The sort direction.
   final SortDirection order;
-
-  const FileSort({
-    this.column = FileSortColumn.name,
-    this.order = SortDirection.ascending,
-  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -337,6 +333,14 @@ class FileSort {
 
 /// Options for [StorageFileApi.listPaginated].
 class PaginatedSearchOptions {
+  const PaginatedSearchOptions({
+    this.limit,
+    this.prefix,
+    this.cursor,
+    this.withDelimiter,
+    this.sortBy,
+  });
+
   /// The number of files to return.
   ///
   /// Defaults to `1000` on the server when omitted.
@@ -359,14 +363,6 @@ class PaginatedSearchOptions {
   /// The column and direction to sort by.
   final FileSort? sortBy;
 
-  const PaginatedSearchOptions({
-    this.limit,
-    this.prefix,
-    this.cursor,
-    this.withDelimiter,
-    this.sortBy,
-  });
-
   Map<String, dynamic> toMap() {
     return {
       'limit': ?limit,
@@ -380,24 +376,6 @@ class PaginatedSearchOptions {
 
 /// A file entry returned by [StorageFileApi.listPaginated].
 class PaginatedFile {
-  /// The file name.
-  final String name;
-
-  /// The full object key/path.
-  final String? key;
-
-  /// The unique identifier of the file.
-  final String? id;
-
-  /// The last update timestamp.
-  final DateTime? updatedAt;
-
-  /// The creation timestamp.
-  final DateTime? createdAt;
-
-  /// The file metadata, including size and mimetype. `null` when not yet set.
-  final Map<String, dynamic>? metadata;
-
   const PaginatedFile({
     required this.name,
     required this.key,
@@ -417,17 +395,29 @@ class PaginatedFile {
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }
+
+  /// The file name.
+  final String name;
+
+  /// The full object key/path.
+  final String? key;
+
+  /// The unique identifier of the file.
+  final String? id;
+
+  /// The last update timestamp.
+  final DateTime? updatedAt;
+
+  /// The creation timestamp.
+  final DateTime? createdAt;
+
+  /// The file metadata, including size and mimetype. `null` when not yet set.
+  final Map<String, dynamic>? metadata;
 }
 
 /// A folder entry returned by [StorageFileApi.listPaginated] when using a
 /// delimiter.
 class PaginatedFolder {
-  /// The folder name/prefix.
-  final String name;
-
-  /// The full folder key/path.
-  final String? key;
-
   const PaginatedFolder({
     required this.name,
     required this.key,
@@ -439,23 +429,16 @@ class PaginatedFolder {
       key: json['key'] as String?,
     );
   }
+
+  /// The folder name/prefix.
+  final String name;
+
+  /// The full folder key/path.
+  final String? key;
 }
 
 /// The result of [StorageFileApi.listPaginated].
 class PaginatedListResult {
-  /// Whether there are more results available on a subsequent page.
-  final bool hasNext;
-
-  /// The folders in this page. Only populated when a delimiter is used.
-  final List<PaginatedFolder> folders;
-
-  /// The files in this page.
-  final List<PaginatedFile> objects;
-
-  /// The cursor to pass as [PaginatedSearchOptions.cursor] to fetch the next
-  /// page.
-  final String? nextCursor;
-
   const PaginatedListResult({
     required this.hasNext,
     required this.folders,
@@ -477,20 +460,33 @@ class PaginatedListResult {
       nextCursor: json['nextCursor'] as String?,
     );
   }
+
+  /// Whether there are more results available on a subsequent page.
+  final bool hasNext;
+
+  /// The folders in this page. Only populated when a delimiter is used.
+  final List<PaginatedFolder> folders;
+
+  /// The files in this page.
+  final List<PaginatedFile> objects;
+
+  /// The cursor to pass as [PaginatedSearchOptions.cursor] to fetch the next
+  /// page.
+  final String? nextCursor;
 }
 
 class SignedUrl {
+  const SignedUrl({
+    required this.path,
+    required this.signedUrl,
+  });
+
   /// The file path, including the current file name. For example
   /// `folder/image.png`.
   final String path;
 
   /// Full signed URL of the files.
   final String signedUrl;
-
-  const SignedUrl({
-    required this.path,
-    required this.signedUrl,
-  });
 
   @override
   String toString() => 'SignedUrl(path: $path, signedUrl: $signedUrl)';
@@ -532,17 +528,19 @@ class SignedUrl {
 /// }
 /// ```
 sealed class SignedUrlResult {
+  const SignedUrlResult({required this.path});
+
   /// The requested file path.
   final String path;
-  const SignedUrlResult({required this.path});
 }
 
 /// A successful [SignedUrlResult]: the file was found and a signed URL was
 /// generated.
 final class SignedUrlSuccess extends SignedUrlResult {
+  const SignedUrlSuccess({required super.path, required this.signedUrl});
+
   /// The signed URL ready for use.
   final String signedUrl;
-  const SignedUrlSuccess({required super.path, required this.signedUrl});
 
   @override
   String toString() => 'SignedUrlSuccess(path: $path, signedUrl: $signedUrl)';
@@ -551,9 +549,10 @@ final class SignedUrlSuccess extends SignedUrlResult {
 /// A failed [SignedUrlResult]: the path could not be signed (e.g. the file does
 /// not exist).
 final class SignedUrlFailure extends SignedUrlResult {
+  const SignedUrlFailure({required super.path, required this.error});
+
   /// The reason the URL could not be created.
   final String error;
-  const SignedUrlFailure({required super.path, required this.error});
 
   @override
   String toString() => 'SignedUrlFailure(path: $path, error: $error)';
@@ -562,6 +561,12 @@ final class SignedUrlFailure extends SignedUrlResult {
 /// Response of an upload or update operation, describing where the object was
 /// stored.
 class UploadResponse {
+  const UploadResponse({
+    this.id,
+    required this.path,
+    required this.fullPath,
+  });
+
   /// The identifier of the stored object.
   ///
   /// `null` when the server does not report one, which is the case for uploads
@@ -574,26 +579,20 @@ class UploadResponse {
   /// The path of the object prefixed with the bucket id.
   final String fullPath;
 
-  const UploadResponse({
-    this.id,
-    required this.path,
-    required this.fullPath,
-  });
-
   @override
   String toString() =>
       'UploadResponse(id: $id, path: $path, fullPath: $fullPath)';
 }
 
 class SignedUploadURLResponse extends SignedUrl {
-  /// Token to be used when uploading files with the `uploadToSignedUrl` method.
-  final String token;
-
   const SignedUploadURLResponse({
     required super.signedUrl,
     required super.path,
     required this.token,
   });
+
+  /// Token to be used when uploading files with the `uploadToSignedUrl` method.
+  final String token;
 }
 
 /// Thrown when a storage operation fails.
@@ -607,9 +606,6 @@ class StorageException extends SupabaseException {
 
 /// Thrown when storage answered with an error.
 class StorageApiException extends StorageException with SupabaseApiException {
-  @override
-  final int statusCode;
-
   const StorageApiException(
     super.message, {
     required this.statusCode,
@@ -640,15 +636,17 @@ class StorageApiException extends StorageException with SupabaseApiException {
       statusCode: int.tryParse('${json['statusCode']}') ?? statusCode,
     );
   }
+  @override
+  final int statusCode;
 }
 
 class StorageRetryController {
+  /// Creates a controller to abort storage file upload retry operations.
+  StorageRetryController();
+
   /// Whether the retry operation is aborted
   bool get cancelled => _cancelled;
   bool _cancelled = false;
-
-  /// Creates a controller to abort storage file upload retry operations.
-  StorageRetryController();
 
   /// Aborts the next retry operation
   void cancel() {
@@ -680,6 +678,15 @@ enum RequestImageFormat {
 /// Specifies the dimensions and the resize mode of the requesting image.
 /// {@endtemplate}
 class TransformOptions {
+  /// {@macro transform_options}
+  const TransformOptions({
+    this.width,
+    this.height,
+    this.resize,
+    this.quality,
+    this.format,
+  });
+
   /// The width of the image in pixels.
   final int? width;
 
@@ -700,15 +707,6 @@ class TransformOptions {
   /// When using 'origin' we force the format to be the same as the original
   /// image, bypassing automatic browser optimization such as webp conversion
   final RequestImageFormat? format;
-
-  /// {@macro transform_options}
-  const TransformOptions({
-    this.width,
-    this.height,
-    this.resize,
-    this.quality,
-    this.format,
-  });
 
   /// The transformation options as `transform` query parameters.
   @internal
@@ -740,13 +738,12 @@ class TransformOptions {
 /// );
 /// ```
 class DownloadBehavior {
+  /// Triggers a download with a custom [fileName].
+  const DownloadBehavior.named(String fileName) : _queryValue = fileName;
   const DownloadBehavior._(String fileName) : _queryValue = fileName;
 
   /// Triggers a download using the file's original name.
   static const DownloadBehavior withOriginalName = DownloadBehavior._('');
-
-  /// Triggers a download with a custom [fileName].
-  const DownloadBehavior.named(String fileName) : _queryValue = fileName;
 
   final String _queryValue;
 

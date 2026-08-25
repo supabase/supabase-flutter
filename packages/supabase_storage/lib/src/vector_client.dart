@@ -29,12 +29,11 @@ import 'package:supabase_common/supabase_common.dart';
 /// project.
 @experimental
 class SupabaseVectorsClient {
+  @internal
+  const SupabaseVectorsClient(this._url, this._headers, this._storageFetch);
   final String _url;
   final Map<String, String> _headers;
   final Fetch _storageFetch;
-
-  @internal
-  const SupabaseVectorsClient(this._url, this._headers, this._storageFetch);
 
   FetchOptions get _options => FetchOptions(_headers);
 
@@ -99,13 +98,6 @@ class SupabaseVectorsClient {
 /// Obtain an instance through [SupabaseVectorsClient.from].
 @experimental
 class StorageVectorBucketApi {
-  final String _url;
-  final Map<String, String> _headers;
-  final Fetch _storageFetch;
-
-  /// The name of the vector bucket these operations are scoped to.
-  final String bucketName;
-
   @internal
   const StorageVectorBucketApi(
     this._url,
@@ -113,6 +105,12 @@ class StorageVectorBucketApi {
     this._storageFetch,
     this.bucketName,
   );
+  final String _url;
+  final Map<String, String> _headers;
+  final Fetch _storageFetch;
+
+  /// The name of the vector bucket these operations are scoped to.
+  final String bucketName;
 
   FetchOptions get _options => FetchOptions(_headers);
 
@@ -205,6 +203,14 @@ class StorageVectorBucketApi {
 /// Obtain an instance through [StorageVectorBucketApi.index].
 @experimental
 class StorageVectorIndexApi {
+  @internal
+  const StorageVectorIndexApi(
+    this._url,
+    this._headers,
+    this._storageFetch,
+    this.bucketName,
+    this.indexName,
+  );
   final String _url;
   final Map<String, String> _headers;
   final Fetch _storageFetch;
@@ -214,15 +220,6 @@ class StorageVectorIndexApi {
 
   /// The name of the index these operations are scoped to.
   final String indexName;
-
-  @internal
-  const StorageVectorIndexApi(
-    this._url,
-    this._headers,
-    this._storageFetch,
-    this.bucketName,
-    this.indexName,
-  );
 
   FetchOptions get _options => FetchOptions(_headers);
 

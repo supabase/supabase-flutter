@@ -39,14 +39,13 @@ part of 'auth_client.dart';
 /// {@endtemplate}
 @experimental
 class AuthPasskeyApi {
-  final AuthClient _client;
-  final AuthFetch _fetch;
-
   const AuthPasskeyApi({
     required AuthClient client,
     required AuthFetch fetch,
   }) : _client = client,
        _fetch = fetch;
+  final AuthClient _client;
+  final AuthFetch _fetch;
 
   /// Starts the registration of a new passkey for the signed in user.
   ///

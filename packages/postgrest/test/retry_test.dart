@@ -38,15 +38,14 @@ _ResponseFactory _networkError() =>
     );
 
 class _MockRetryClient extends BaseClient {
-  final List<_ResponseFactory> _responses;
-  final Duration Function(int index) _responseLatency;
-  final List<BaseRequest> requests = [];
-
   _MockRetryClient(
     this._responses, {
     Duration Function(int index)? responseLatency,
   }) : _responseLatency =
            responseLatency ?? ((_) => const Duration(milliseconds: 200));
+  final List<_ResponseFactory> _responses;
+  final Duration Function(int index) _responseLatency;
+  final List<BaseRequest> requests = [];
 
   int get callCount => requests.length;
 

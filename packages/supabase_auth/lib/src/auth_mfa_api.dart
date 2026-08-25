@@ -1,12 +1,11 @@
 part of 'auth_client.dart';
 
 class AuthMFAApi {
-  final AuthClient _client;
-  final AuthFetch _fetch;
-
   const AuthMFAApi({required AuthClient client, required AuthFetch fetch})
     : _client = client,
       _fetch = fetch;
+  final AuthClient _client;
+  final AuthFetch _fetch;
 
   /// Unenroll removes a MFA factor.
   ///

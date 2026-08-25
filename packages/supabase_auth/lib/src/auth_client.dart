@@ -59,6 +59,55 @@ class _SessionState {
 /// attempts a short backoff can squeeze into that window.
 /// {@endtemplate}
 class AuthClient {
+  /// {@macro auth_client}
+  AuthClient({
+    String? url,
+    Map<String, String>? headers,
+    bool? autoRefreshToken,
+    Client? httpClient,
+    AuthAsyncStorage? asyncStorage,
+    AuthFlowType flowType = AuthFlowType.pkce,
+    this.appendPkceFlowIdToRedirects = false,
+    this.retryOptions = const SupabaseRetryOptions(count: 8),
+  }) : assert(
+         flowType != AuthFlowType.pkce || asyncStorage != null,
+         'You need to provide asyncStorage to perform pkce flow. Pass a '
+         'MemoryAuthAsyncStorage when the code verifiers do not need to '
+         'outlive the process.',
+       ),
+       _url = url ?? AuthConstants.defaultAuthUrl,
+       _headers = {...AuthConstants.defaultHeaders, ...?headers},
+       _httpClient = httpClient,
+       _pkceVerifierStore = asyncStorage == null
+           ? null
+           : PKCEVerifierStore(asyncStorage),
+       _flowType = flowType {
+    _autoRefreshToken = autoRefreshToken ?? true;
+
+    final authUrl = url ?? AuthConstants.defaultAuthUrl;
+    authLogger.config(
+      'Initialize AuthClient v$version with url: '
+      '${Uri.parse(_url).redacted}, autoRefreshToken: '
+      '$_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: '
+      '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
+      '${AuthConstants.autoRefreshTickThreshold}',
+    );
+    authLogger.finest('Initialize with headers: ${_headers.redacted}');
+    admin = AuthAdminApi(
+      authUrl,
+      headers: _headers,
+      httpClient: httpClient,
+    );
+    oauth = AuthOAuthApi(client: this, fetch: _fetch);
+    mfa = AuthMFAApi(client: this, fetch: _fetch);
+    passkey = AuthPasskeyApi(client: this, fetch: _fetch);
+    if (_autoRefreshToken) {
+      startAutoRefresh();
+    }
+
+    _mayStartBroadcastChannel();
+  }
+
   /// Namespace for the Supabase Auth admin API methods. These can be used for
   /// example to get a user from a JWT in a server environment or reset a
   /// user's password.
@@ -175,55 +224,6 @@ class AuthClient {
   BroadcastChannel? _broadcastChannel;
 
   StreamSubscription<dynamic>? _broadcastChannelSubscription;
-
-  /// {@macro auth_client}
-  AuthClient({
-    String? url,
-    Map<String, String>? headers,
-    bool? autoRefreshToken,
-    Client? httpClient,
-    AuthAsyncStorage? asyncStorage,
-    AuthFlowType flowType = AuthFlowType.pkce,
-    this.appendPkceFlowIdToRedirects = false,
-    this.retryOptions = const SupabaseRetryOptions(count: 8),
-  }) : assert(
-         flowType != AuthFlowType.pkce || asyncStorage != null,
-         'You need to provide asyncStorage to perform pkce flow. Pass a '
-         'MemoryAuthAsyncStorage when the code verifiers do not need to '
-         'outlive the process.',
-       ),
-       _url = url ?? AuthConstants.defaultAuthUrl,
-       _headers = {...AuthConstants.defaultHeaders, ...?headers},
-       _httpClient = httpClient,
-       _pkceVerifierStore = asyncStorage == null
-           ? null
-           : PKCEVerifierStore(asyncStorage),
-       _flowType = flowType {
-    _autoRefreshToken = autoRefreshToken ?? true;
-
-    final authUrl = url ?? AuthConstants.defaultAuthUrl;
-    authLogger.config(
-      'Initialize AuthClient v$version with url: '
-      '${Uri.parse(_url).redacted}, autoRefreshToken: '
-      '$_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: '
-      '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
-      '${AuthConstants.autoRefreshTickThreshold}',
-    );
-    authLogger.finest('Initialize with headers: ${_headers.redacted}');
-    admin = AuthAdminApi(
-      authUrl,
-      headers: _headers,
-      httpClient: httpClient,
-    );
-    oauth = AuthOAuthApi(client: this, fetch: _fetch);
-    mfa = AuthMFAApi(client: this, fetch: _fetch);
-    passkey = AuthPasskeyApi(client: this, fetch: _fetch);
-    if (_autoRefreshToken) {
-      startAutoRefresh();
-    }
-
-    _mayStartBroadcastChannel();
-  }
 
   /// Getter for the headers
   Map<String, String> get headers => _headers;
