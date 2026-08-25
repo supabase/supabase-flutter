@@ -82,9 +82,9 @@ class ListUsersResponse {
 
 class ResendResponse {
   /// Only set for phone resend
-  String? messageId;
+  final String? messageId;
 
-  ResendResponse({
+  const ResendResponse({
     this.messageId,
   });
 }

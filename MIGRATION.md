@@ -1772,3 +1772,37 @@ await supabase.storage.from('bucket').list(
 
 `SortBy(order: null)` no longer compiles; leave `order` out to sort ascending. `column` is
 unchanged, since `list()` accepts any column of a `FileObject`.
+
+### Session and auth request objects are immutable
+
+`Session.expiresAt` is `late final`, so it can be read but no longer assigned. It has always been
+derived from the `exp` claim of the access token rather than the login response body, so
+overwriting it only desynchronized the value from the token that the auto refresh logic acts on.
+Mint a new session, or call `copyWith` with a different `accessToken`, to change the expiry:
+
+```dart
+// Before
+session.expiresAt = DateTime.now().add(const Duration(hours: 1));
+
+// After
+final refreshed = session.copyWith(accessToken: newAccessToken);
+print(refreshed.expiresAt);
+```
+
+`ResendResponse.messageId` is `final` too, matching every other response type.
+
+The request fields on `UserAttributes` and `AdminUserAttributes` are `final`, so pass them to the
+constructor instead of assigning after construction:
+
+```dart
+// Before
+final attributes = UserAttributes();
+attributes.email = 'new@example.com';
+attributes.data = {'name': 'Alice'};
+await supabase.auth.updateUser(attributes);
+
+// After
+await supabase.auth.updateUser(
+  UserAttributes(email: 'new@example.com', data: {'name': 'Alice'}),
+);
+```

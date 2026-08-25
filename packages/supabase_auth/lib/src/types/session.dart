@@ -77,7 +77,7 @@ class Session {
   /// Derived from the `exp` claim of [accessToken], not read from the login
   /// response's JSON body. `null` when [accessToken] carries no expiry or
   /// cannot be decoded.
-  late DateTime? expiresAt = _expiresAt;
+  late final DateTime? expiresAt = _expiresAt;
 
   DateTime? get _expiresAt {
     try {
