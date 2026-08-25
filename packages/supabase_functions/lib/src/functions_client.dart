@@ -11,6 +11,7 @@ import 'package:supabase_functions/src/logger.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
+/// Client for invoking Supabase Edge Functions.
 class FunctionsClient {
   /// [jsonCodec] encodes the request body and decodes the response. The
   /// default codec keeps large payloads off the calling isolate. A codec
