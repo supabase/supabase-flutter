@@ -19,7 +19,6 @@ typedef _Order = ({String column, bool ascending});
 /// Thrown by `SupabaseStreamBuilder.listen` when the underlying Realtime
 /// channel fails to subscribe.
 class RealtimeSubscribeException implements Exception {
-  /// Creates an exception.
   const RealtimeSubscribeException(this.status, [this.details]);
 
   /// The subscription status that caused this exception, always
