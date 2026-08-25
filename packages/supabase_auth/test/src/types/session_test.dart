@@ -226,6 +226,21 @@ void main() {
         expect(session.expiresAt!.isUtc, isTrue);
       });
 
+      test('is derived once and cached across reads', () {
+        final expiresAt =
+            (DateTime.now().millisecondsSinceEpoch / 1000).floor() + 3600;
+        final header = base64Encode(utf8.encode('{"alg":"HS256","typ":"JWT"}'));
+        final payload = base64Encode(utf8.encode('{"exp":$expiresAt}'));
+
+        final session = Session(
+          accessToken: '$header.$payload.signature',
+          tokenType: 'bearer',
+          user: mockUser,
+        );
+
+        expect(identical(session.expiresAt, session.expiresAt), isTrue);
+      });
+
       test('handles malformed JWT gracefully', () {
         final session = Session(
           accessToken: 'not.a.jwt',

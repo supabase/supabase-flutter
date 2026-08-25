@@ -2,26 +2,26 @@ import 'package:collection/collection.dart';
 
 class UserAttributes {
   /// The user's email.
-  String? email;
+  final String? email;
 
   /// The user's phone.
-  String? phone;
+  final String? phone;
 
   /// The user's password.
-  String? password;
+  final String? password;
 
   /// The nonce sent for reauthentication if the user's password is to be
   /// updated.
   ///
   /// Call reauthenticate() to obtain the nonce first.
-  String? nonce;
+  final String? nonce;
 
   /// A custom data object to store the user's metadata. This maps to the
   /// `auth.users.user_metadata` column.
   ///
   /// The `data` should be a JSON object that includes user-specific info, such
   /// as their first and last name.
-  Object? data;
+  final Object? data;
 
   /// The user's current password.
   ///
@@ -29,7 +29,7 @@ class UserAttributes {
   /// `GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD` setting is
   /// enabled on the auth server, in which case the current password is required
   /// to verify the change.
-  String? currentPassword;
+  final String? currentPassword;
 
   UserAttributes({
     this.email,
