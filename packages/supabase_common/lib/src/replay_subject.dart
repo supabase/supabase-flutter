@@ -10,6 +10,9 @@ import 'dart:async';
 /// exposes settable [onListen]/[onCancel] hooks used by consumers that wire the
 /// subject up imperatively.
 class ReplaySubject<T> {
+  /// Creates a subject backed by a broadcast [StreamController].
+  ///
+  /// See [StreamController.broadcast] for [sync], [onListen] and [onCancel].
   ReplaySubject({
     bool sync = false,
     void Function()? onListen,
@@ -47,8 +50,11 @@ class ReplaySubject<T> {
 
   set onResume(void Function()? value) {}
 
+  /// Whether [close] has been called.
   bool get isClosed => _controller.isClosed;
 
+  /// A broadcast stream that replays the most recent event to every new
+  /// subscriber.
   Stream<T> get stream => Stream.multi((controller) {
     // Replay the latest event to the new subscriber, matching the
     // controller's sync-ness so that a sync subject stays synchronous.
@@ -76,6 +82,7 @@ class ReplaySubject<T> {
     controller.onCancel = subscription.cancel;
   }, isBroadcast: true);
 
+  /// Adds [event], which is also replayed to future subscribers.
   void add(T event) {
     _hasEvent = true;
     _latestIsError = false;
@@ -85,6 +92,7 @@ class ReplaySubject<T> {
     _controller.add(event);
   }
 
+  /// Adds an error, which is also replayed to future subscribers.
   void addError(Object error, [StackTrace? stackTrace]) {
     _hasEvent = true;
     _latestIsError = true;
@@ -93,7 +101,9 @@ class ReplaySubject<T> {
     _controller.addError(error, stackTrace);
   }
 
+  /// Adds all events of [source] until it is done.
   Future<void> addStream(Stream<T> source) => _controller.addStream(source);
 
+  /// Closes the subject. No further events can be added.
   Future<void> close() => _controller.close();
 }

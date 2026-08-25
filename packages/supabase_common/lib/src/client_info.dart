@@ -6,8 +6,14 @@ class PlatformInfo {
     this.platformVersion,
     this.runtimeVersion,
   });
+
+  /// The normalized platform name, for example `'Android'` or `'iOS'`.
   final String? platform;
+
+  /// The operating system version.
   final String? platformVersion;
+
+  /// The Dart or Flutter runtime version.
   final String? runtimeVersion;
 }
 
