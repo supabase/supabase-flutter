@@ -184,7 +184,6 @@ enum RealtimeSubscribeStatus {
 
 /// A subscription status change emitted by [RealtimeChannel.onStatusChange].
 class RealtimeSubscribeStatusChange {
-  /// Creates a status change.
   const RealtimeSubscribeStatusChange(this.status, [this.error]);
 
   /// The new status of the channel subscription.
@@ -202,7 +201,6 @@ class RealtimeSubscribeStatusChange {
 /// Configuration for broadcast replay feature.
 /// Allows replaying broadcast messages from a specific timestamp.
 class ReplayOption {
-  /// Creates a replay option.
   const ReplayOption({
     required this.since,
     this.limit,
@@ -227,7 +225,6 @@ class ReplayOption {
 /// Configuration for a [RealtimeChannel]'s broadcast, presence, and RLS
 /// behavior.
 class RealtimeChannelConfig {
-  /// Creates a channel configuration.
   const RealtimeChannelConfig({
     this.ack = false,
     this.self = false,
@@ -305,7 +302,6 @@ class RealtimeChannelConfig {
 /// ([status] is `'ok'`) or fails to become ready in time ([status] is
 /// `'error'`).
 class RealtimeSystemPayload {
-  /// Creates a system payload.
   const RealtimeSystemPayload({
     required this.extension,
     required this.status,
@@ -313,7 +309,6 @@ class RealtimeSystemPayload {
     required this.channel,
   });
 
-  /// Creates a system payload from its wire representation.
   factory RealtimeSystemPayload.fromJson(Map<String, dynamic> json) {
     return RealtimeSystemPayload(
       extension: json['extension']?.toString() ?? '',
@@ -344,7 +339,6 @@ class RealtimeSystemPayload {
 
 /// Data class that contains the Postgres change event payload.
 class PostgresChangePayload {
-  /// Creates a payload.
   const PostgresChangePayload({
     required this.schema,
     required this.table,
@@ -574,12 +568,10 @@ class PostgresChangeFilter {
 
 /// Base class for the payloads emitted by the presence streams.
 abstract class RealtimePresencePayload {
-  /// Creates a presence payload.
   const RealtimePresencePayload({
     required this.event,
   });
 
-  /// Creates a presence payload from its wire representation.
   RealtimePresencePayload.fromJson(Map<String, dynamic> json)
     : event = PresenceEvent.fromValue(json['event']);
 
@@ -592,12 +584,10 @@ abstract class RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.sync] callback.
 class RealtimePresenceSyncPayload extends RealtimePresencePayload {
-  /// Creates a sync payload.
   const RealtimePresenceSyncPayload({
     required super.event,
   });
 
-  /// Creates a sync payload from its wire representation.
   factory RealtimePresenceSyncPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceSyncPayload(
       event: PresenceEvent.fromValue(json['event']),
@@ -610,7 +600,6 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.join] callback.
 class RealtimePresenceJoinPayload extends RealtimePresencePayload {
-  /// Creates a join payload.
   const RealtimePresenceJoinPayload({
     required super.event,
     required this.key,
@@ -618,7 +607,6 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
     required this.newPresences,
   });
 
-  /// Creates a join payload from its wire representation.
   factory RealtimePresenceJoinPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceJoinPayload(
       event: PresenceEvent.fromValue(json['event']),
@@ -647,7 +635,6 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.leave] callback.
 class RealtimePresenceLeavePayload extends RealtimePresencePayload {
-  /// Creates a leave payload.
   const RealtimePresenceLeavePayload({
     required super.event,
     required this.key,
@@ -655,7 +642,6 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
     required this.leftPresences,
   });
 
-  /// Creates a leave payload from its wire representation.
   factory RealtimePresenceLeavePayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceLeavePayload(
       event: PresenceEvent.fromValue(json['event']),
@@ -684,7 +670,6 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
 
 /// A single client connected through presence.
 class SinglePresenceState {
-  /// Creates a presence state.
   const SinglePresenceState({
     required this.key,
     required this.presences,

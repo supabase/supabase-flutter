@@ -39,7 +39,6 @@ typedef RealtimeDecode = Future<RealtimeMessage> Function(Object frame);
 
 /// Event details for when the connection closed.
 class RealtimeCloseEvent {
-  /// Creates a close event.
   const RealtimeCloseEvent({
     required this.code,
     required this.reason,
@@ -94,7 +93,6 @@ enum RealtimeConnectionStatus {
 
 /// A connection status change emitted by [RealtimeClient.onStatusChange].
 class RealtimeConnectionStatusChange {
-  /// Creates a status change.
   const RealtimeConnectionStatusChange(this.status, [this.closeEvent]);
 
   /// The new status of the WebSocket connection.

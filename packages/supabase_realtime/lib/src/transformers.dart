@@ -13,10 +13,8 @@ enum PostgresType {
   /// Legacy `abstime` (absolute time).
   abstime,
 
-  /// `boolean`.
   bool,
 
-  /// `date`.
   date,
 
   /// `daterange`, a range of dates.
@@ -43,13 +41,10 @@ enum PostgresType {
   /// `int8range`, a range of 8-byte integers.
   int8range,
 
-  /// `json`.
   json,
 
-  /// `jsonb`.
   jsonb,
 
-  /// `money`.
   money,
 
   /// `numeric`/`decimal`.
@@ -64,7 +59,6 @@ enum PostgresType {
   /// `time`, a time of day without a time zone.
   time,
 
-  /// `text`.
   text,
 
   /// `timestamp`, without a time zone.
@@ -86,7 +80,6 @@ enum PostgresType {
 /// A PostgreSQL column description used to convert a change payload's raw
 /// string values to their Dart-typed form.
 class PostgresColumn {
-  /// Creates a column description.
   const PostgresColumn(
     this.name,
     this.type, {
