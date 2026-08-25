@@ -13,10 +13,13 @@ final Converter<List<int>, Object?> _utf8JsonDecoder = const Utf8Decoder().fuse(
 /// from bytes still fuses the UTF-8 and JSON decoding steps, which avoids
 /// materializing the intermediate string.
 class YAJsonIsolate implements AsyncJsonCodec {
+  /// Creates a codec. [debugName] is accepted for API parity with the IO
+  /// implementation but unused, since there are no isolates on web.
   const YAJsonIsolate({
     String? debugName,
   });
 
+  /// Kept for backwards compatibility; there is nothing to initialize on web.
   Future<void> initialize() => Future.value();
 
   @override

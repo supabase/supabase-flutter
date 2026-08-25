@@ -29,6 +29,7 @@ final Converter<List<int>, Object?> _utf8JsonDecoder = const Utf8Decoder().fuse(
 /// isolate spawned per call: its result is handed back through `Isolate.exit`
 /// without copying, and independent calls run in parallel.
 class YAJsonIsolate implements AsyncJsonCodec {
+  /// Creates a codec with an optional [debugName] for its isolates.
   YAJsonIsolate({
     this.debugName,
   });
