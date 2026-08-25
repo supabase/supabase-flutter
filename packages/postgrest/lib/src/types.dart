@@ -65,7 +65,6 @@ class PostgrestApiException extends SupabaseException
   /// A hint for resolving the error, if PostgREST or PostgreSQL reported one.
   final String? hint;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'message': message,
@@ -109,7 +108,6 @@ class PostgrestResponse<T> {
   /// The total row count reported by PostgREST.
   final int count;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() => {
     'data': data,
     'count': count,

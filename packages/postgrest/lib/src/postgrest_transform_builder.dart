@@ -3,7 +3,6 @@ part of 'postgrest_builder.dart';
 /// A builder for shaping the result of a query, such as ordering or limiting
 /// it.
 class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
-  /// Creates a builder wrapping [builder].
   PostgrestTransformBuilder(super.builder);
 
   /// Returns a copy of this request pointed at [url].

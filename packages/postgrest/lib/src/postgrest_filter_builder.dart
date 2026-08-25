@@ -2,7 +2,6 @@ part of 'postgrest_builder.dart';
 
 /// A builder for applying filters to a query.
 class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
-  /// Creates a builder wrapping [builder].
   PostgrestFilterBuilder(super.builder);
 
   @override
