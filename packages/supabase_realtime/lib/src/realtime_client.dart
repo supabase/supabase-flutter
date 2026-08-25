@@ -885,7 +885,11 @@ class RealtimeClient {
   Future<void> setAccessToken(String? token) async {
     final tokenToSend =
         token ?? (await customAccessToken?.call()) ?? _accessToken;
+    _applyAccessToken(tokenToSend);
+  }
 
+  /// Applies an already resolved access token to the socket and its channels.
+  void _applyAccessToken(String? tokenToSend) {
     if (_accessToken == tokenToSend) {
       return;
     }
@@ -934,24 +938,11 @@ class RealtimeClient {
     realtimeLogger.fine('Connected');
     realtimeLogger.finest('Connected to $_redactedEndpointUrl');
     unawaited(_resolveAccessTokenAndFlush());
-    _reconnectTimer.reset();
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(
       heartbeatInterval,
       (Timer t) => unawaited(sendHeartbeat()),
     );
-
-    try {
-      // Snapshot before rejoining: a rejoin can synchronously unsubscribe a
-      // duplicate topic, which removes it from [_channels].
-      for (final channel in _channels.toList()) {
-        if (channel.isErrored) {
-          channel.rejoin();
-        }
-      }
-    } catch (error) {
-      realtimeLogger.warning('Error while rejoining channels', error);
-    }
 
     _statusController.add(
       const RealtimeConnectionStatusChange(RealtimeConnectionStatus.open),
@@ -1021,42 +1012,94 @@ class RealtimeClient {
     }
   }
 
-  /// Resolves the access token before flushing the send buffer so that
-  /// buffered channel join payloads carry the correct token.
+  /// Resolves the access token before rejoining errored channels and flushing
+  /// the send buffer, so that every join carries the resolved identity rather
+  /// than the stale payload captured while the socket was disconnected.
   ///
-  /// When [RealtimeChannel.subscribe] runs before an asynchronous access token
-  /// has resolved (common when [customAccessToken] reads from async storage),
-  /// the buffered join payload has no `access_token`. That buffered message
-  /// captured the stale payload, so once auth has settled the join payloads are
-  /// patched with the resolved token, the stale buffered joins are dropped, and
-  /// the join is re-sent for any channel still joining.
+  /// On success the join payloads are patched with the token, the stale
+  /// buffered joins are dropped, and the join is re-sent for any channel still
+  /// joining. A throwing [customAccessToken] instead fails the connect: the
+  /// error surfaces as a `channelError` status and on [onStatusChange], the
+  /// buffer stays unsent, and the connection is closed so the reconnect
+  /// backoff retries the provider. A resolution that outlives its connection
+  /// is dropped entirely, success and error alike.
   Future<void> _resolveAccessTokenAndFlush() async {
-    try {
-      if (customAccessToken != null) {
-        await setAccessToken(null);
-        final resolvedToken = _accessToken;
-        if (resolvedToken != null) {
-          // Snapshot before patching and rejoining, in case either removes a
-          // channel from [_channels] synchronously.
-          final channelsSnapshot = _channels.toList();
-          for (final channel in channelsSnapshot) {
-            channel.updateJoinPayload({'access_token': resolvedToken});
-          }
-          _sendBuffer.clear();
-          for (final channel in channelsSnapshot) {
-            if (channel.isJoining) {
-              channel.forceRejoin();
-            }
+    final customAccessToken = this.customAccessToken;
+    if (customAccessToken != null) {
+      final originConnection = _connection;
+      final String? providedToken;
+      try {
+        providedToken = await customAccessToken();
+      } catch (error) {
+        if (!_isCurrentOpenConnection(originConnection)) {
+          return;
+        }
+        realtimeLogger.warning(
+          'Error resolving access token on connect, closing connection',
+          error,
+        );
+        _triggerChanError(error);
+        _statusController.addError(error);
+        unawaited(
+          _connection?.sink.close(
+            RealtimeConstants.webSocketCloseNormal,
+            'access token resolution failed',
+          ),
+        );
+        return;
+      }
+      if (!_isCurrentOpenConnection(originConnection)) {
+        return;
+      }
+      _applyAccessToken(providedToken ?? _accessToken);
+      final resolvedToken = _accessToken;
+      if (resolvedToken != null) {
+        // Snapshot before patching and rejoining, in case either removes a
+        // channel from [_channels] synchronously.
+        final channelsSnapshot = _channels.toList();
+        for (final channel in channelsSnapshot) {
+          channel.updateJoinPayload({'access_token': resolvedToken});
+        }
+        _sendBuffer.clear();
+        for (final channel in channelsSnapshot) {
+          if (channel.isJoining) {
+            channel.forceRejoin();
           }
         }
       }
+    }
+    // The backoff is only reset here, once the connection is usable: a
+    // connect whose provider threw above counts as a failed attempt, so
+    // repeated provider failures keep growing the reconnect delay.
+    _reconnectTimer.reset();
+    _rejoinErroredChannels();
+    _flushSendBuffer();
+  }
+
+  /// Whether [originConnection] is still the connection in use and open, so
+  /// that work started on it (such as an access token resolution) may still
+  /// apply its result.
+  ///
+  /// The state check matters on its own: while [disconnect] awaits the sink
+  /// close, [connection] still points at the old connection even though the
+  /// state has already left [SocketState.open].
+  bool _isCurrentOpenConnection(WebSocketChannel? originConnection) =>
+      identical(_connection, originConnection) &&
+      _connectionState == SocketState.open;
+
+  /// Rejoins the channels that errored on a previous connection, once the
+  /// access token has resolved so the joins carry the correct identity.
+  void _rejoinErroredChannels() {
+    try {
+      // Snapshot before rejoining: a rejoin can synchronously unsubscribe a
+      // duplicate topic, which removes it from [_channels].
+      for (final channel in _channels.toList()) {
+        if (channel.isErrored) {
+          channel.rejoin();
+        }
+      }
     } catch (error) {
-      realtimeLogger.warning(
-        'Error resolving access token on connect',
-        error,
-      );
-    } finally {
-      _flushSendBuffer();
+      realtimeLogger.warning('Error while rejoining channels', error);
     }
   }
 
