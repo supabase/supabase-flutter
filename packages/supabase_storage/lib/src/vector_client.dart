@@ -29,7 +29,6 @@ import 'package:supabase_common/supabase_common.dart';
 /// project.
 @experimental
 class SupabaseVectorsClient {
-  /// Creates the API namespace.
   @internal
   const SupabaseVectorsClient(this._url, this._headers, this._storageFetch);
   final String _url;
@@ -99,7 +98,6 @@ class SupabaseVectorsClient {
 /// Obtain an instance through [SupabaseVectorsClient.from].
 @experimental
 class StorageVectorBucketApi {
-  /// Creates the API namespace.
   @internal
   const StorageVectorBucketApi(
     this._url,
@@ -205,7 +203,6 @@ class StorageVectorBucketApi {
 /// Obtain an instance through [StorageVectorBucketApi.index].
 @experimental
 class StorageVectorIndexApi {
-  /// Creates the API namespace.
   @internal
   const StorageVectorIndexApi(
     this._url,

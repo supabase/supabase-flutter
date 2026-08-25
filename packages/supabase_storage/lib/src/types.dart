@@ -3,7 +3,6 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// A storage bucket.
 class Bucket {
-  /// Creates a bucket.
   const Bucket({
     required this.id,
     required this.name,
@@ -15,7 +14,6 @@ class Bucket {
     this.allowedMimeTypes,
   });
 
-  /// Creates a bucket from its wire representation.
   factory Bucket.fromJson(Map<String, dynamic> json) {
     final allowedMimeTypes = json['allowed_mime_types'];
     return Bucket(
@@ -61,7 +59,6 @@ class Bucket {
 /// A bucket backed by the Apache Iceberg table format, used for structured
 /// analytical data storage.
 class AnalyticsBucket {
-  /// Creates a bucket.
   const AnalyticsBucket({
     required this.id,
     required this.name,
@@ -69,7 +66,6 @@ class AnalyticsBucket {
     required this.updatedAt,
   });
 
-  /// Creates a bucket from its wire representation.
   factory AnalyticsBucket.fromJson(Map<String, dynamic> json) {
     return AnalyticsBucket(
       id: json['id'] as String,
@@ -94,7 +90,6 @@ class AnalyticsBucket {
 
 /// A file or folder entry returned by `StorageFileApi.list`.
 class FileObject {
-  /// Creates a file object.
   const FileObject({
     required this.name,
     required this.bucketId,
@@ -106,7 +101,6 @@ class FileObject {
     required this.buckets,
   });
 
-  /// Creates a file object from its wire representation.
   factory FileObject.fromJson(dynamic json) {
     if (json is! Map<String, dynamic>) {
       throw FormatException(
@@ -155,7 +149,6 @@ class FileObject {
 
 /// A file entry returned by the storage `v2` object listing API.
 class FileObjectV2 {
-  /// Creates a file object.
   const FileObjectV2({
     required this.id,
     required this.version,
@@ -171,7 +164,6 @@ class FileObjectV2 {
     required this.metadata,
   });
 
-  /// Creates a file object from its wire representation.
   factory FileObjectV2.fromJson(Map<String, dynamic> json) {
     return FileObjectV2(
       id: json['id'] as String,
@@ -237,7 +229,6 @@ class FileObjectV2 {
 /// [allowedMimeTypes] specifies the allowed mime types that this bucket can
 /// accept during upload
 class BucketOptions {
-  /// Creates bucket options.
   const BucketOptions({
     required this.public,
     this.fileSizeLimit,
@@ -271,7 +262,6 @@ enum BucketSortColumn {
 
 /// Filter, sort and pagination options for [StorageBucketApi.listBuckets].
 class ListBucketsOptions {
-  /// Creates options.
   const ListBucketsOptions({
     this.limit,
     this.offset,
@@ -295,7 +285,6 @@ class ListBucketsOptions {
   /// A search term used to filter buckets by name.
   final String? search;
 
-  /// Converts this to query parameters.
   Map<String, String> toQueryParameters() {
     return {
       'limit': ?limit?.toString(),
@@ -309,7 +298,6 @@ class ListBucketsOptions {
 
 /// Options for an upload to storage.
 class FileOptions {
-  /// Creates options.
   const FileOptions({
     this.cacheControl = '3600',
     this.upsert = false,
@@ -348,7 +336,6 @@ class FileOptions {
 
 /// Options for `StorageFileApi.list`.
 class SearchOptions {
-  /// Creates options.
   const SearchOptions({
     this.limit = 100,
     this.offset = 0,
@@ -368,7 +355,6 @@ class SearchOptions {
   /// The search string to filter files by.
   final String? search;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toMap() {
     return {
       'limit': limit,
@@ -381,7 +367,6 @@ class SearchOptions {
 
 /// The column and direction that [StorageFileApi.list] sorts its results by.
 class SortBy {
-  /// Creates a sort specification.
   const SortBy({
     this.column = 'name',
     this.order = SortDirection.ascending,
@@ -393,7 +378,6 @@ class SortBy {
   /// The sort direction.
   final SortDirection order;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toMap() {
     return {
       'column': column ?? 'name',
@@ -417,7 +401,6 @@ enum FileSortColumn {
 /// The column and direction that [StorageFileApi.listPaginated] sorts its
 /// results by.
 class FileSort {
-  /// Creates a sort specification.
   const FileSort({
     this.column = FileSortColumn.name,
     this.order = SortDirection.ascending,
@@ -429,7 +412,6 @@ class FileSort {
   /// The sort direction.
   final SortDirection order;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toMap() {
     return {
       'column': column.snakeCase,
@@ -440,7 +422,6 @@ class FileSort {
 
 /// Options for [StorageFileApi.listPaginated].
 class PaginatedSearchOptions {
-  /// Creates options.
   const PaginatedSearchOptions({
     this.limit,
     this.prefix,
@@ -471,7 +452,6 @@ class PaginatedSearchOptions {
   /// The column and direction to sort by.
   final FileSort? sortBy;
 
-  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toMap() {
     return {
       'limit': ?limit,
@@ -485,7 +465,6 @@ class PaginatedSearchOptions {
 
 /// A file entry returned by [StorageFileApi.listPaginated].
 class PaginatedFile {
-  /// Creates a file entry.
   const PaginatedFile({
     required this.name,
     required this.key,
@@ -495,7 +474,6 @@ class PaginatedFile {
     required this.metadata,
   });
 
-  /// Creates a file entry from its wire representation.
   factory PaginatedFile.fromJson(Map<String, dynamic> json) {
     return PaginatedFile(
       name: json['name'] as String,
@@ -529,13 +507,11 @@ class PaginatedFile {
 /// A folder entry returned by [StorageFileApi.listPaginated] when using a
 /// delimiter.
 class PaginatedFolder {
-  /// Creates a folder entry.
   const PaginatedFolder({
     required this.name,
     required this.key,
   });
 
-  /// Creates a folder entry from its wire representation.
   factory PaginatedFolder.fromJson(Map<String, dynamic> json) {
     return PaginatedFolder(
       name: json['name'] as String,
@@ -552,7 +528,6 @@ class PaginatedFolder {
 
 /// The result of [StorageFileApi.listPaginated].
 class PaginatedListResult {
-  /// Creates a result.
   const PaginatedListResult({
     required this.hasNext,
     required this.folders,
@@ -560,7 +535,6 @@ class PaginatedListResult {
     required this.nextCursor,
   });
 
-  /// Creates a result from its wire representation.
   factory PaginatedListResult.fromJson(Map<String, dynamic> json) {
     final folders = json['folders'] as List? ?? const [];
     final objects = json['objects'] as List? ?? const [];
@@ -592,7 +566,6 @@ class PaginatedListResult {
 
 /// A signed URL for downloading a private object.
 class SignedUrl {
-  /// Creates a signed URL.
   const SignedUrl({
     required this.path,
     required this.signedUrl,
@@ -620,7 +593,6 @@ class SignedUrl {
   @override
   int get hashCode => path.hashCode ^ signedUrl.hashCode;
 
-  /// Returns a copy with the given fields replaced.
   SignedUrl copyWith({
     String? path,
     String? signedUrl,
@@ -655,7 +627,6 @@ sealed class SignedUrlResult {
 /// A successful [SignedUrlResult]: the file was found and a signed URL was
 /// generated.
 final class SignedUrlSuccess extends SignedUrlResult {
-  /// Creates a success result.
   const SignedUrlSuccess({required super.path, required this.signedUrl});
 
   /// The signed URL ready for use.
@@ -668,7 +639,6 @@ final class SignedUrlSuccess extends SignedUrlResult {
 /// A failed [SignedUrlResult]: the path could not be signed (e.g. the file does
 /// not exist).
 final class SignedUrlFailure extends SignedUrlResult {
-  /// Creates a failure result.
   const SignedUrlFailure({required super.path, required this.error});
 
   /// The reason the URL could not be created.
@@ -681,7 +651,6 @@ final class SignedUrlFailure extends SignedUrlResult {
 /// Response of an upload or update operation, describing where the object was
 /// stored.
 class UploadResponse {
-  /// Creates a response.
   const UploadResponse({
     this.id,
     required this.path,
@@ -707,7 +676,6 @@ class UploadResponse {
 
 /// The response of `StorageFileApi.createSignedUploadUrl`.
 class SignedUploadURLResponse extends SignedUrl {
-  /// Creates a response.
   const SignedUploadURLResponse({
     required super.signedUrl,
     required super.path,
@@ -724,13 +692,11 @@ class SignedUploadURLResponse extends SignedUrl {
 /// as a request that never reached storage. A failure storage reported is a
 /// [StorageApiException].
 class StorageException extends SupabaseException {
-  /// Creates an exception.
   const StorageException(super.message, {super.errorCode});
 }
 
 /// Thrown when storage answered with an error.
 class StorageApiException extends StorageException with SupabaseApiException {
-  /// Creates an exception.
   const StorageApiException(
     super.message, {
     required this.statusCode,

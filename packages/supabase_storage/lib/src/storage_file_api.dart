@@ -9,7 +9,6 @@ import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 /// API namespace for managing the objects within a bucket, obtained with
 /// `SupabaseStorageClient.from`.
 class StorageFileApi {
-  /// Creates the API namespace.
   StorageFileApi(
     this.url,
     Map<String, String> headers,

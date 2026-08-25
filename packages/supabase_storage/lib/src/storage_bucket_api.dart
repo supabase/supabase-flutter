@@ -6,7 +6,6 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// API namespace for managing buckets, exposed on `SupabaseStorageClient`.
 class StorageBucketApi {
-  /// Creates the API namespace.
   StorageBucketApi(
     this.url,
     Map<String, String> headers, {
