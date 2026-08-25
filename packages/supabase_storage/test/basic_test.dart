@@ -451,7 +451,7 @@ void main() {
       final request = customHttpClient.receivedRequests.single;
       expect(request.url.toString(), '$objectUrl/list-v2/public');
       expect(jsonDecode((request as Request).body), {
-        'prefix': 'prefix/',
+        'prefix': 'prefix',
         'limit': 100,
         'with_delimiter': true,
         'sortBy': {'column': 'created_at', 'order': 'desc'},

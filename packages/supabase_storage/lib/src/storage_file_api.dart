@@ -769,9 +769,14 @@ class StorageFileApi {
   Future<PaginatedListResult> listPaginated({
     PaginatedSearchOptions options = const PaginatedSearchOptions(),
   }) async {
+    final body = options.toMap();
+    final prefix = body['prefix'] as String?;
+    if (prefix != null) {
+      body['prefix'] = _removeEmptyFolders(prefix);
+    }
     final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/list-v2/$bucketId',
-      options.toMap(),
+      body,
       options: _fetchOptions,
     );
     return PaginatedListResult.fromJson(response);

@@ -244,6 +244,23 @@ void main() {
         expect(body['prefix'], 'folder/file.txt');
       });
 
+      test('by listPaginated, in the request body', () async {
+        mockClient.response = {
+          'hasNext': false,
+          'objects': <dynamic>[],
+        };
+        mockClient.statusCode = 200;
+
+        await client
+            .from('bucket')
+            .listPaginated(
+              options: PaginatedSearchOptions(prefix: path),
+            );
+
+        final body = requestBody() as Map<String, dynamic>;
+        expect(body['prefix'], 'folder/file.txt');
+      });
+
       test('by uploadBinaryToSignedUrl, including the returned path', () async {
         mockClient.response = {
           'Key': 'bucket/folder/file.txt',
