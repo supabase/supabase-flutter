@@ -1,9 +1,5 @@
 include: package:supabase_lints/analysis_options_flutter.yaml
 
-linter:
-  rules:
-    public_member_api_docs: true
-
 analyzer:
   exclude:
     - build/**
