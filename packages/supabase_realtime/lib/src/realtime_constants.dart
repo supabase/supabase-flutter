@@ -5,8 +5,6 @@ import 'package:supabase_common/supabase_common.dart';
 class RealtimeConstants {
   static const Duration defaultTimeout = Duration(milliseconds: 10000);
   static const Duration defaultConnectionCloseTimeout = Duration(seconds: 6);
-
-  @internal
   static const Duration defaultHeartbeatInterval = Duration(seconds: 25);
 
   @internal

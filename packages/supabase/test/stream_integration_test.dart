@@ -603,7 +603,7 @@ Future<void> _expectSnapshots({
 /// are being streamed yet.
 Future<void> _waitUntilJoined() async {
   for (var attempt = 0; attempt < 200; attempt++) {
-    final channels = _supabase.getChannels();
+    final channels = _supabase.channels;
     if (channels.isNotEmpty &&
         // ignore: invalid_use_of_internal_member
         channels.every((channel) => channel.isJoined)) {

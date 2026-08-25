@@ -75,7 +75,7 @@ void main() {
     test('two realtime channels', () {
       supabase.channel('anotherChannel');
 
-      final channels = supabase.getChannels();
+      final channels = supabase.channels;
 
       expect(
         channels,
@@ -98,7 +98,7 @@ void main() {
       anotherChannel.subscribe();
 
       expect(
-        supabase.getChannels(),
+        supabase.channels,
         hasLength(2),
       );
 
@@ -107,7 +107,7 @@ void main() {
       expect(status, 'ok');
 
       expect(
-        supabase.getChannels(),
+        supabase.channels,
         hasLength(1),
       );
     });
@@ -140,7 +140,7 @@ void main() {
       );
 
       expect(
-        supabase.getChannels(),
+        supabase.channels,
         isEmpty,
       );
     });
@@ -168,7 +168,7 @@ void main() {
       );
 
       expect(
-        supabase.getChannels(),
+        supabase.channels,
         isEmpty,
       );
     });

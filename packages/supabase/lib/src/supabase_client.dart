@@ -133,12 +133,11 @@ class SupabaseClient {
 
     // To apply the new headers in the realtime client,
     // manually unsubscribe and resubscribe to all channels.
-    realtime.headers
-      ..clear()
-      ..addAll({
-        'apikey': _supabaseKey,
-        ..._headers,
-      });
+    // ignore: invalid_use_of_internal_member
+    realtime.replaceHeaders({
+      'apikey': _supabaseKey,
+      ..._headers,
+    });
   }
 
   /// {@macro supabase_client}
@@ -265,10 +264,8 @@ class SupabaseClient {
     return realtime.channel(name, options);
   }
 
-  /// Returns all Realtime channels.
-  List<RealtimeChannel> getChannels() {
-    return realtime.getChannels();
-  }
+  /// All Realtime channels, as an unmodifiable view.
+  List<RealtimeChannel> get channels => realtime.channels;
 
   /// Unsubscribes and removes Realtime channel from Realtime client.
   ///
@@ -391,6 +388,10 @@ class SupabaseClient {
       connectionCloseTimeout:
           options.connectionCloseTimeout ??
           RealtimeConstants.defaultConnectionCloseTimeout,
+      heartbeatInterval:
+          options.heartbeatInterval ??
+          RealtimeConstants.defaultHeartbeatInterval,
+      reconnectAfter: options.reconnectAfter,
       customAccessToken: accessToken,
       transport: options.transport,
       disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
