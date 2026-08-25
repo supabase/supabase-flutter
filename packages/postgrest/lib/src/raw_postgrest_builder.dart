@@ -4,6 +4,7 @@ part of 'postgrest_builder.dart';
 /// return type of [withConverter] than in
 /// [ResponsePostgrestBuilder.withConverter].
 class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
+  /// Wraps [builder].
   RawPostgrestBuilder(PostgrestBuilder<T, S, R> builder)
     : super._(config: builder._config, converter: builder._converter);
 

@@ -290,6 +290,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     return _copyWith(abortSignal: abortSignal);
   }
 
+  /// Returns a copy of this request with [key] set to [value] in its headers.
   PostgrestBuilder<T, S, R> setHeader(String key, String value) {
     return _copyWith(
       headers: {..._headers, key: value},

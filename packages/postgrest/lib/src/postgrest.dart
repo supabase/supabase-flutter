@@ -82,6 +82,7 @@ class PostgrestClient {
   /// only multiplies the load without a chance of a different answer.
   static const Set<int> retryableStatusCodes = {503, 520};
 
+  /// The PostgREST endpoint this client sends requests to.
   final String url;
 
   /// The headers sent with every request.
@@ -91,6 +92,9 @@ class PostgrestClient {
   /// [PostgrestBuilder.setHeader].
   final Map<String, String> headers;
   final String? _schema;
+
+  /// The HTTP client used to send requests, or `null` to use a one-off
+  /// client per request.
   final Client? httpClient;
   final AsyncJsonCodec _jsonCodec;
   final bool _ownsJsonCodec;
@@ -98,6 +102,8 @@ class PostgrestClient {
   /// Configures the automatic retry of GET and HEAD requests.
   final SupabaseRetryOptions retryOptions;
 
+  /// Bounds how long a single request attempt may take, `null` for no
+  /// timeout.
   final Duration? requestTimeout;
 
   /// Perform a table operation.
@@ -161,6 +167,10 @@ class PostgrestClient {
     ).rpc(params, get);
   }
 
+  /// Disposes the JSON codec the client created for itself.
+  ///
+  /// Does nothing when a codec was passed to the constructor, since that one
+  /// belongs to the caller.
   Future<void> dispose() async {
     postgrestLogger.fine("dispose PostgrestClient");
     if (_ownsJsonCodec) {

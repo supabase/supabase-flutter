@@ -1,10 +1,21 @@
 import 'package:supabase_common/supabase_common.dart';
 
+/// HTTP request or response headers.
 typedef Headers = Map<String, String>;
+
+/// Converts a decoded response body to the value a query resolves to.
 typedef PostgrestConverter<S, T> = S Function(T data);
+
+/// A list of rows, as decoded from a JSON array response body.
 typedef PostgrestList = List<PostgrestMap>;
+
+/// A single row, as decoded from a JSON object response body.
 typedef PostgrestMap = Map<String, dynamic>;
+
+/// A [PostgrestResponse] whose data is a [PostgrestList].
 typedef PostgrestListResponse = PostgrestResponse<PostgrestList>;
+
+/// A [PostgrestResponse] whose data is a [PostgrestMap].
 typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 
 /// Thrown when PostgREST answered with an error.
@@ -48,9 +59,13 @@ class PostgrestApiException extends SupabaseException
   @override
   final int statusCode;
 
+  /// Additional details PostgREST or PostgreSQL reported about the error.
   final Object? details;
+
+  /// A hint for resolving the error, if PostgREST or PostgreSQL reported one.
   final String? hint;
 
+  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() {
     return {
       'message': message,
@@ -88,10 +103,13 @@ class PostgrestResponse<T> {
     required this.count,
   });
 
+  /// The decoded response body.
   final T data;
 
+  /// The total row count reported by PostgREST.
   final int count;
 
+  /// Converts this to a JSON-encodable map.
   Map<String, dynamic> toJson() => {
     'data': data,
     'count': count,
@@ -118,7 +136,10 @@ enum CountOption {
 
 /// The format of the plan returned by `PostgrestTransformBuilder.explain`.
 enum ExplainFormat {
+  /// PostgreSQL's default, human-readable plan format.
   text,
+
+  /// A machine-readable plan format.
   json,
 }
 
