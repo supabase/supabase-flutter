@@ -14,6 +14,7 @@ import 'package:supabase_realtime/src/serializer.dart';
 import 'package:supabase_realtime/src/websocket/websocket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+/// Opens the WebSocket connection used by a [RealtimeClient].
 typedef WebSocketTransport =
     WebSocketChannel Function(
       String url,
@@ -38,6 +39,7 @@ typedef RealtimeDecode = Future<RealtimeMessage> Function(Object frame);
 
 /// Event details for when the connection closed.
 class RealtimeCloseEvent {
+  /// Creates a close event.
   const RealtimeCloseEvent({
     required this.code,
     required this.reason,
@@ -64,9 +66,17 @@ class RealtimeCloseEvent {
 /// The lifecycle status of a heartbeat reported to
 /// [RealtimeClient.onHeartbeat].
 enum RealtimeHeartbeatStatus {
+  /// The heartbeat was sent to the server.
   sent,
+
+  /// The server replied successfully.
   ok,
+
+  /// The server replied with an error.
   error,
+
+  /// The previous heartbeat's reply never arrived; the connection is closed
+  /// and reconnection begins.
   timeout,
 }
 
@@ -84,6 +94,7 @@ enum RealtimeConnectionStatus {
 
 /// A connection status change emitted by [RealtimeClient.onStatusChange].
 class RealtimeConnectionStatusChange {
+  /// Creates a status change.
   const RealtimeConnectionStatusChange(this.status, [this.closeEvent]);
 
   /// The new status of the WebSocket connection.
@@ -251,6 +262,8 @@ class RealtimeClient {
   List<RealtimeChannel> get channels => List.unmodifiable(_channels);
   final List<RealtimeChannel> _channels = [];
 
+  /// The resolved WebSocket endpoint, including the `/websocket` path and the
+  /// `log_level` query parameter.
   final String endpoint;
 
   /// The headers sent when connecting, as an unmodifiable view.
@@ -264,17 +277,31 @@ class RealtimeClient {
   /// The query parameters sent when connecting, as an unmodifiable map.
   final Map<String, dynamic> parameters;
 
+  /// The Realtime protocol version negotiated with the server.
   final RealtimeProtocolVersion version;
+
+  /// The timeout to wait for the connection to close before dismissing the
+  /// result.
   final Duration connectionCloseTimeout;
+
+  /// The default timeout for push and codec calls.
   final Duration timeout;
+
+  /// Opens the underlying WebSocket connection.
   final WebSocketTransport transport;
+
+  /// Used instead of the default HTTP client for a broadcast sent with
+  /// `RealtimeChannel.httpSend`.
   final Client? httpClient;
+
+  /// The interval at which a heartbeat message is sent.
   final Duration heartbeatInterval;
   Timer? _heartbeatTimer;
 
   /// Delay before the socket is disconnected once the last channel has been
   /// removed. [Duration.zero] disconnects immediately. Defaults to twice the
   /// heartbeat interval.
+  /// The reference ID of the most recently sent heartbeat.
   @internal
   late final Duration disconnectOnEmptyChannelsAfter;
 
@@ -289,6 +316,7 @@ class RealtimeClient {
   /// Used to keep track of whether the client is connected to the server.
   String? _pendingHeartbeatRef;
 
+  /// The most recently generated message reference.
   @internal
   @visibleForTesting
   String? get pendingHeartbeatRef => _pendingHeartbeatRef;
@@ -297,10 +325,13 @@ class RealtimeClient {
   /// pushed message, including heartbeats.
   int _ref = 0;
 
+  /// Overrides [ref], so a test can force the next generated reference.
   @internal
   @visibleForTesting
   int get ref => _ref;
 
+  /// Messages pushed while the socket was not connected, as an unmodifiable
+  /// view.
   @internal
   @visibleForTesting
   set ref(int value) => _ref = value;
@@ -322,6 +353,8 @@ class RealtimeClient {
   /// and dispatches without a microtask hop.
   final Object Function(RealtimeMessage) _builtInEncode;
   final RealtimeMessage Function(Object) _builtInDecode;
+
+  /// Returns the delay before the next reconnect attempt.
   late final TimerCalculation reconnectAfter;
 
   /// The underlying WebSocket connection, or `null` when disconnected.
@@ -334,6 +367,7 @@ class RealtimeClient {
   /// connection is next established.
   final List<void Function()> _sendBuffer = [];
 
+  /// Connects the socket.
   @internal
   @visibleForTesting
   List<void Function()> get sendBuffer => List.unmodifiable(_sendBuffer);
@@ -361,9 +395,14 @@ class RealtimeClient {
   SocketState? get connectionState => _connectionState;
   SocketState? _connectionState;
 
+  /// Resolves the access token used for a connection or reconnection,
+  /// instead of the token passed to [setAccessToken].
   final Future<String?> Function()? customAccessToken;
 
   /// Connects the socket.
+  /// Registers [channel] with the same lifecycle handling as [channel]'s
+  /// registration, without constructing one, so tests can inject mock
+  /// channels.
   @internal
   Future<void> connect() async {
     if (_connection != null) {
@@ -396,6 +435,8 @@ class RealtimeClient {
         if (_connectionState != SocketState.disconnected &&
             _connectionState != SocketState.disconnecting) {
           _connectionState = SocketState.closed;
+
+          /// General error handling
           _onConnectionError(error);
           _reconnectTimer.scheduleTimeout();
         }
@@ -499,11 +540,13 @@ class RealtimeClient {
     }
   }
 
+  /// Unsubscribes [channel] and removes it from [channels].
   Future<String> removeChannel(RealtimeChannel channel) async {
     final status = await channel.unsubscribe();
     return status;
   }
 
+  /// Unsubscribes every channel and disconnects the socket.
   Future<List<String>> removeAllChannels() async {
     final values = await Future.wait(
       _channels.toList().map((channel) => channel.unsubscribe()),
@@ -547,6 +590,7 @@ class RealtimeClient {
   /// Matches on identity rather than on [RealtimeChannel.joinRef], which is
   /// the empty string until a channel is subscribed and is therefore shared
   /// by every channel that has not joined yet.
+  /// Return the next message ref, accounting for overflows
   @internal
   void remove(RealtimeChannel channel) {
     _channels.removeWhere((c) => identical(c, channel));
@@ -556,6 +600,9 @@ class RealtimeClient {
     }
   }
 
+  /// Creates and registers a new channel for [topic].
+  ///
+  /// Call `RealtimeChannel.subscribe` on the result to join it.
   RealtimeChannel channel(
     String topic, [
     RealtimeChannelConfig config = const RealtimeChannelConfig(),
@@ -569,6 +616,7 @@ class RealtimeClient {
   /// Registers [channel] with the same lifecycle handling as [channel]'s
   /// registration, without constructing one, so tests can inject mock
   /// channels.
+  /// Unsubscribe from joined or joining channels with the specified topic.
   @internal
   @visibleForTesting
   void addChannelForTesting(RealtimeChannel channel) {
@@ -1103,6 +1151,8 @@ class RealtimeClient {
     }
   }
 
+  /// Sends a heartbeat, or reconnects if the previous one never received a
+  /// reply.
   @internal
   Future<void> sendHeartbeat() async {
     if (!isConnected) {

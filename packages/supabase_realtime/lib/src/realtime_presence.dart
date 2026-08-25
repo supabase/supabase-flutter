@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
@@ -7,11 +6,13 @@ import 'package:supabase_realtime/src/types.dart';
 
 /// A single shared state between users with Realtime Presence.
 class Presence {
+  /// Creates a presence.
   const Presence({
     required this.presenceReference,
     required this.payload,
   });
 
+  /// Creates a presence from its wire representation.
   factory Presence.fromJson(Map<String, dynamic> map) {
     final ref = map['presence_ref'];
     // Create a new map without presence_ref to avoid mutating the input
@@ -28,6 +29,7 @@ class Presence {
   /// The payload shared by users.
   final Map<String, dynamic> payload;
 
+  /// Returns a deep copy of this presence.
   Presence deepClone() {
     return Presence.fromJson({
       'presence_ref': presenceReference,

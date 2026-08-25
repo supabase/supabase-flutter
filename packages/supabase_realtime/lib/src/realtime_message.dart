@@ -21,6 +21,7 @@ import 'package:supabase_realtime/src/types.dart';
 /// );
 /// ```
 class RealtimeMessage {
+  /// Creates a message.
   const RealtimeMessage({
     required this.topic,
     required this.event,

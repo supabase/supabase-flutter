@@ -7,34 +7,86 @@ import 'package:meta/meta.dart';
 
 import 'package:collection/collection.dart' show IterableExtension;
 
+/// A PostgreSQL column type, as sent in the `type` field of a column
+/// description.
 enum PostgresType {
+  /// Legacy `abstime` (absolute time).
   abstime,
+
+  /// `boolean`.
   bool,
+
+  /// `date`.
   date,
+
+  /// `daterange`, a range of dates.
   daterange,
+
+  /// `real`, a 4-byte floating point number.
   float4,
+
+  /// `double precision`, an 8-byte floating point number.
   float8,
+
+  /// `smallint`, a 2-byte integer.
   int2,
+
+  /// `integer`, a 4-byte integer.
   int4,
+
+  /// `int4range`, a range of 4-byte integers.
   int4range,
+
+  /// `bigint`, an 8-byte integer.
   int8,
+
+  /// `int8range`, a range of 8-byte integers.
   int8range,
+
+  /// `json`.
   json,
+
+  /// `jsonb`.
   jsonb,
+
+  /// `money`.
   money,
+
+  /// `numeric`/`decimal`.
   numeric,
+
+  /// `oid`, an object identifier.
   oid,
+
+  /// Legacy `reltime` (relative time).
   reltime,
+
+  /// `time`, a time of day without a time zone.
   time,
+
+  /// `text`.
   text,
+
+  /// `timestamp`, without a time zone.
   timestamp,
+
+  /// `timestamptz`, with a time zone.
   timestamptz,
+
+  /// `timetz`, a time of day with a time zone.
   timetz,
+
+  /// `tsrange`, a range of timestamps.
   tsrange,
+
+  /// `tstzrange`, a range of timestamps with a time zone.
   tstzrange,
 }
 
+/// A PostgreSQL column description used to convert a change payload's raw
+/// string values to their Dart-typed form.
 class PostgresColumn {
+  /// Creates a column description.
   const PostgresColumn(
     this.name,
     this.type, {

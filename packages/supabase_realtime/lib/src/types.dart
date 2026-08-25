@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
@@ -34,6 +33,7 @@ class Binding {
   }
 }
 
+/// The kind of Postgres change a [PostgresChangeFilter] listens for.
 enum PostgresChangeEvent {
   /// Listen to all insert, update, and delete events.
   all,
@@ -47,6 +47,7 @@ enum PostgresChangeEvent {
   /// Listen to delete events.
   delete;
 
+  /// The event name sent as the `event` filter parameter.
   @internal
   String toRealtimeEvent() {
     if (this == PostgresChangeEvent.all) {
@@ -55,6 +56,7 @@ enum PostgresChangeEvent {
     return name.toUpperCase();
   }
 
+  /// Parses the `type` field of a Postgres change payload.
   @internal
   static PostgresChangeEvent fromValue(String event) => switch (event) {
     'INSERT' => PostgresChangeEvent.insert,
@@ -110,7 +112,18 @@ class ChannelFilter {
   }
 }
 
-enum ChannelResponse { ok, timedOut, error }
+/// The result of sending a message on a [RealtimeChannel], such as a
+/// broadcast.
+enum ChannelResponse {
+  /// The server acknowledged the message.
+  ok,
+
+  /// The server did not acknowledge the message in time.
+  timedOut,
+
+  /// The server rejected the message.
+  error,
+}
 
 @internal
 enum RealtimeListenType {
@@ -127,11 +140,18 @@ enum RealtimeListenType {
   }
 }
 
+/// The kind of change a presence callback is reporting.
 enum PresenceEvent {
+  /// The full presence state was (re)synchronized.
   sync,
+
+  /// One or more clients joined.
   join,
+
+  /// One or more clients left.
   leave;
 
+  /// Parses the `event` field of a presence payload.
   @internal
   static PresenceEvent fromValue(String value) {
     for (final event in PresenceEvent.values) {
@@ -146,10 +166,25 @@ enum PresenceEvent {
   }
 }
 
-enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
+/// The status of a [RealtimeChannel.subscribe] call.
+enum RealtimeSubscribeStatus {
+  /// The channel is joined and receiving events.
+  subscribed,
+
+  /// The channel could not be joined; see the error passed alongside this
+  /// status.
+  channelError,
+
+  /// The channel was closed.
+  closed,
+
+  /// The server did not respond to the join request in time.
+  timedOut,
+}
 
 /// A subscription status change emitted by [RealtimeChannel.onStatusChange].
 class RealtimeSubscribeStatusChange {
+  /// Creates a status change.
   const RealtimeSubscribeStatusChange(this.status, [this.error]);
 
   /// The new status of the channel subscription.
@@ -167,6 +202,7 @@ class RealtimeSubscribeStatusChange {
 /// Configuration for broadcast replay feature.
 /// Allows replaying broadcast messages from a specific timestamp.
 class ReplayOption {
+  /// Creates a replay option.
   const ReplayOption({
     required this.since,
     this.limit,
@@ -178,6 +214,7 @@ class ReplayOption {
   /// Optional limit on the number of messages to replay, maximum value of 25.
   final int? limit;
 
+  /// Converts this to the shape sent in the channel's broadcast config.
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{'since': since};
     if (limit != null) {
@@ -187,7 +224,10 @@ class ReplayOption {
   }
 }
 
+/// Configuration for a [RealtimeChannel]'s broadcast, presence, and RLS
+/// behavior.
 class RealtimeChannelConfig {
+  /// Creates a channel configuration.
   const RealtimeChannelConfig({
     this.ack = false,
     this.self = false,
@@ -231,6 +271,7 @@ class RealtimeChannelConfig {
   /// if the connection is not ready in time.
   final bool replicationReady;
 
+  /// Converts this to the shape sent when joining the channel.
   Map<String, dynamic> toMap() {
     final broadcastConfig = <String, dynamic>{
       'ack': ack,
@@ -264,6 +305,7 @@ class RealtimeChannelConfig {
 /// ([status] is `'ok'`) or fails to become ready in time ([status] is
 /// `'error'`).
 class RealtimeSystemPayload {
+  /// Creates a system payload.
   const RealtimeSystemPayload({
     required this.extension,
     required this.status,
@@ -271,6 +313,7 @@ class RealtimeSystemPayload {
     required this.channel,
   });
 
+  /// Creates a system payload from its wire representation.
   factory RealtimeSystemPayload.fromJson(Map<String, dynamic> json) {
     return RealtimeSystemPayload(
       extension: json['extension']?.toString() ?? '',
@@ -301,6 +344,7 @@ class RealtimeSystemPayload {
 
 /// Data class that contains the Postgres change event payload.
 class PostgresChangePayload {
+  /// Creates a payload.
   const PostgresChangePayload({
     required this.schema,
     required this.table,
@@ -339,12 +383,26 @@ class PostgresChangePayload {
       errors: payload['errors'],
     );
   }
+
+  /// The schema the change happened in, for example `'public'`.
   final String schema;
+
+  /// The table the change happened in.
   final String table;
+
+  /// When the change was committed.
   final DateTime commitTimestamp;
+
+  /// Whether the change was an insert, update, or delete.
   final PostgresChangeEvent eventType;
+
+  /// The row after the change, empty for a delete.
   final Map<String, dynamic> newRecord;
+
+  /// The row before the change, empty for an insert.
   final Map<String, dynamic> oldRecord;
+
+  /// Errors reported by the server for this change, if any.
   final dynamic errors;
 
   @override
@@ -516,10 +574,12 @@ class PostgresChangeFilter {
 
 /// Base class for the payloads emitted by the presence streams.
 abstract class RealtimePresencePayload {
+  /// Creates a presence payload.
   const RealtimePresencePayload({
     required this.event,
   });
 
+  /// Creates a presence payload from its wire representation.
   RealtimePresencePayload.fromJson(Map<String, dynamic> json)
     : event = PresenceEvent.fromValue(json['event']);
 
@@ -532,10 +592,12 @@ abstract class RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.sync] callback.
 class RealtimePresenceSyncPayload extends RealtimePresencePayload {
+  /// Creates a sync payload.
   const RealtimePresenceSyncPayload({
     required super.event,
   });
 
+  /// Creates a sync payload from its wire representation.
   factory RealtimePresenceSyncPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceSyncPayload(
       event: PresenceEvent.fromValue(json['event']),
@@ -548,6 +610,7 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.join] callback.
 class RealtimePresenceJoinPayload extends RealtimePresencePayload {
+  /// Creates a join payload.
   const RealtimePresenceJoinPayload({
     required super.event,
     required this.key,
@@ -555,6 +618,7 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
     required this.newPresences,
   });
 
+  /// Creates a join payload from its wire representation.
   factory RealtimePresenceJoinPayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceJoinPayload(
       event: PresenceEvent.fromValue(json['event']),
@@ -583,6 +647,7 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.leave] callback.
 class RealtimePresenceLeavePayload extends RealtimePresencePayload {
+  /// Creates a leave payload.
   const RealtimePresenceLeavePayload({
     required super.event,
     required this.key,
@@ -590,6 +655,7 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
     required this.leftPresences,
   });
 
+  /// Creates a leave payload from its wire representation.
   factory RealtimePresenceLeavePayload.fromJson(Map<String, dynamic> json) {
     return RealtimePresenceLeavePayload(
       event: PresenceEvent.fromValue(json['event']),
@@ -618,6 +684,7 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
 
 /// A single client connected through presence.
 class SinglePresenceState {
+  /// Creates a presence state.
   const SinglePresenceState({
     required this.key,
     required this.presences,
