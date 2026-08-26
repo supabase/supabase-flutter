@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 
+/// The wire protocol version negotiated with the Realtime server.
 enum RealtimeProtocolVersion {
   /// Legacy protocol: object-shaped JSON text frames only.
   v1('1.0.0'),
@@ -13,6 +14,7 @@ enum RealtimeProtocolVersion {
   final String wireVersion;
 }
 
+/// The connection state of a [RealtimeClient]'s underlying socket.
 enum SocketState {
   /// Client attempting to establish a connection
   connecting,
@@ -69,4 +71,18 @@ enum ChannelEvent {
   };
 }
 
-enum RealtimeLogLevel { info, debug, warn, error }
+/// The verbosity of logging the Realtime server does for a connection, sent
+/// as the `log_level` connection parameter.
+enum RealtimeLogLevel {
+  /// Most verbose.
+  info,
+
+  /// More verbose than [warn].
+  debug,
+
+  /// More verbose than [error].
+  warn,
+
+  /// Least verbose.
+  error,
+}

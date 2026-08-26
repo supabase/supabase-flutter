@@ -14,7 +14,15 @@ import 'package:supabase_realtime/src/retry_timer.dart';
 import 'package:supabase_realtime/src/transformers.dart';
 import 'package:supabase_realtime/src/types.dart';
 
+/// A subscription to a Realtime topic, created with [RealtimeClient.channel].
+///
+/// Register listeners with [onPostgresChanges], [onBroadcast], and the
+/// presence `on*` members, then call [subscribe] to join the topic on the
+/// server.
 class RealtimeChannel {
+  /// Creates a channel for [topic] on [socket].
+  ///
+  /// Use [RealtimeClient.channel] instead of calling this directly.
   RealtimeChannel(
     this.topic,
     this.socket, {
@@ -107,10 +115,17 @@ class RealtimeChannel {
   late final RetryTimer _rejoinTimer;
   List<Push> _pushBuffer = [];
   late final RealtimePresence _presence;
+
+  /// The endpoint used for [httpSend].
   @internal
   late final String broadcastEndpointUrl;
+
+  /// [topic] with the leading `realtime:` stripped.
   @internal
   final String subTopic;
+
+  /// The full topic this channel subscribes to, for example
+  /// `realtime:room`.
   @internal
   final String topic;
   final Map<String, dynamic> _parameters;
@@ -143,6 +158,7 @@ class RealtimeChannel {
     return value;
   }
 
+  /// The client this channel was created on.
   @internal
   final RealtimeClient socket;
 
@@ -170,6 +186,8 @@ class RealtimeChannel {
   /// repeated calls with the same event reuse one binding.
   final Map<String, Stream<Map<String, dynamic>>> _broadcastStreams = {};
 
+  /// Schedules a [rejoin] once the socket reconnects, retrying with backoff
+  /// until it succeeds.
   @internal
   void rejoinUntilConnected() {
     _rejoinTimer.scheduleTimeout();
@@ -386,6 +404,7 @@ class RealtimeChannel {
     _addStatus(RealtimeSubscribeStatus.subscribed);
   }
 
+  /// The current presence state, keyed by presence key.
   List<SinglePresenceState> presenceState() {
     return _presence.state.entries
         .map(
@@ -397,6 +416,8 @@ class RealtimeChannel {
         .toList();
   }
 
+  /// Shares [payload] with every other client tracking presence on this
+  /// channel.
   Future<ChannelResponse> track(
     Map<String, dynamic> payload, [
     Map<String, dynamic> options = const {},
@@ -414,6 +435,7 @@ class RealtimeChannel {
     );
   }
 
+  /// Stops sharing this client's presence on this channel.
   Future<ChannelResponse> untrack([
     Map<String, dynamic> options = const {},
   ]) {
@@ -675,6 +697,7 @@ class RealtimeChannel {
     return controller.stream;
   }
 
+  /// Registers [callback] for events of [type] matching [filter].
   @internal
   RealtimeChannel onEvents(
     String type,
@@ -700,6 +723,7 @@ class RealtimeChannel {
     return this;
   }
 
+  /// Removes bindings of [type] registered with a matching [filter].
   @internal
   RealtimeChannel off(String type, Map<String, dynamic> filter) {
     final typeLower = type.toLowerCase();
@@ -717,6 +741,7 @@ class RealtimeChannel {
     return socket.isConnected && isJoined;
   }
 
+  /// Sends [event] with [payload] over the channel.
   @internal
   Push push(
     ChannelEvent event,
@@ -866,6 +891,11 @@ class RealtimeChannel {
     );
   }
 
+  /// Sends a `postgres_changes`, broadcast, or presence message over the
+  /// channel, resolving once the server acknowledges, rejects, or times out.
+  ///
+  /// A broadcast sent without requesting an acknowledgement (the default)
+  /// resolves immediately instead of waiting for the server.
   @internal
   Future<ChannelResponse> send({
     required RealtimeListenType type,
@@ -927,6 +957,7 @@ class RealtimeChannel {
       'Authorization': 'Bearer ${socket.accessToken}',
   };
 
+  /// Merges [payload] into the join request sent to the server.
   @internal
   void updateJoinPayload(Map<String, dynamic> payload) {
     _joinPush.updatePayload(payload);
@@ -995,14 +1026,18 @@ class RealtimeChannel {
     return payload;
   }
 
+  /// Whether this channel's [topic] matches [otherTopic].
   @internal
   bool isMember(String? otherTopic) {
     return topic == otherTopic;
   }
 
+  /// The reference of [joinPush].
   @internal
   String get joinRef => _joinPush.ref;
 
+  /// Resends [joinPush] after telling the socket to leave any other channel
+  /// already open on the same topic.
   @internal
   void rejoin([Duration? timeout]) {
     if (isLeaving) {
@@ -1030,6 +1065,8 @@ class RealtimeChannel {
     _joinPush.resend(timeout ?? _timeout);
   }
 
+  /// Dispatches an incoming [type] event with [payload] to every matching
+  /// binding registered through [onEvents].
   @internal
   void trigger(String type, [dynamic payload, String? ref]) {
     final typeLower = type.toLowerCase();
@@ -1091,23 +1128,29 @@ class RealtimeChannel {
     }
   }
 
+  /// The event name a reply to the push referenced by [ref] is sent under.
   @internal
   String replyEventName(String? ref) {
     return 'chan_reply_$ref';
   }
 
+  /// Whether the channel has been closed.
   @internal
   bool get isClosed => _state == ChannelState.closed;
 
+  /// Whether the channel is in an errored state.
   @internal
   bool get isErrored => _state == ChannelState.errored;
 
+  /// Whether the channel is joined and receiving events.
   @internal
   bool get isJoined => _state == ChannelState.joined;
 
+  /// Whether a join request is in flight.
   @internal
   bool get isJoining => _state == ChannelState.joining;
 
+  /// Whether the channel is in the process of leaving.
   @internal
   bool get isLeaving => _state == ChannelState.leaving;
 
