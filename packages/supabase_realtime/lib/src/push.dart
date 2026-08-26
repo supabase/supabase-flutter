@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
@@ -36,7 +37,11 @@ class Push {
 
   /// The payload, for example `{user_id: 123}`, replaced through
   /// [updatePayload].
-  Map<String, dynamic> get payload => _payload;
+  ///
+  /// The view is unmodifiable at the top level only: values can hold binary
+  /// data such as [Uint8List], which a recursive wrap would copy into plain
+  /// lists and thereby change its type.
+  Map<String, dynamic> get payload => UnmodifiableMapView(_payload);
 
   /// The push timeout
   Duration _timeout;

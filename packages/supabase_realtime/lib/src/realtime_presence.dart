@@ -1,4 +1,6 @@
 // ignore_for_file: public_member_api_docs
+import 'dart:collection';
+
 import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/types.dart';
@@ -161,7 +163,7 @@ class RealtimePresence {
   Map<String, List<Presence>> _state = <String, List<Presence>>{};
 
   /// The current presence state, keyed by presence key.
-  Map<String, List<Presence>> get state => _state;
+  Map<String, List<Presence>> get state => UnmodifiableMapView(_state);
 
   List<Map<String, dynamic>> _pendingDiffs = [];
   String? _joinRef;

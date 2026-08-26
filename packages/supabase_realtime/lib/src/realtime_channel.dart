@@ -117,10 +117,31 @@ class RealtimeChannel {
 
   /// The parameters sent when joining the channel.
   ///
-  /// The returned view is unmodifiable; the join payload is updated internally
-  /// through [updateJoinPayload].
+  /// The returned snapshot is unmodifiable all the way down; the join payload
+  /// is updated internally through [updateJoinPayload].
   @internal
-  Map<String, dynamic> get parameters => UnmodifiableMapView(_parameters);
+  Map<String, dynamic> get parameters => _deepUnmodifiableMap(_parameters);
+
+  static Map<String, dynamic> _deepUnmodifiableMap(Map<String, dynamic> map) {
+    return Map<String, dynamic>.unmodifiable(
+      map.map((key, value) => MapEntry(key, _deepUnmodifiable(value))),
+    );
+  }
+
+  static Object? _deepUnmodifiable(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return _deepUnmodifiableMap(value);
+    }
+    if (value is Map) {
+      return Map.unmodifiable(
+        value.map((key, nested) => MapEntry(key, _deepUnmodifiable(nested))),
+      );
+    }
+    if (value is List) {
+      return List.unmodifiable(value.map(_deepUnmodifiable));
+    }
+    return value;
+  }
 
   @internal
   final RealtimeClient socket;
@@ -368,8 +389,10 @@ class RealtimeChannel {
   List<SinglePresenceState> presenceState() {
     return _presence.state.entries
         .map(
-          (entry) =>
-              SinglePresenceState(key: entry.key, presences: entry.value),
+          (entry) => SinglePresenceState(
+            key: entry.key,
+            presences: List.unmodifiable(entry.value),
+          ),
         )
         .toList();
   }
