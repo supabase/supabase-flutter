@@ -33,7 +33,8 @@ class AuthPKCEGrantCodeExchangeError extends AuthException {
   const AuthPKCEGrantCodeExchangeError(super.message);
 }
 
-/// Thrown when an operation requires a session but none is active.
+/// Thrown when required session data is unavailable, such as when no session
+/// is active or a required access or refresh token is empty.
 class AuthSessionMissingException extends AuthException {
   AuthSessionMissingException([String? message])
     : super(

@@ -165,8 +165,8 @@ class GetClaimsOptions {
   final bool allowExpired;
 }
 
-/// A JSON Web Key Set (JWKS), as published by Supabase Auth's `/.well-known`
-/// endpoint.
+/// A JSON Web Key Set (JWKS), as published by Supabase Auth's
+/// `/.well-known/jwks.json` endpoint.
 class JWKSet {
   const JWKSet({required this.keys});
 
