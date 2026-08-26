@@ -154,11 +154,17 @@ class SupabaseClient {
   /// Supabase Storage allows you to manage user-generated content, such as
   /// photos or videos.
   late final SupabaseStorageClient storage;
+
+  /// Supabase Realtime allows you to listen to database changes and
+  /// broadcast messages between clients.
   late final RealtimeClient realtime;
   late PostgrestClient _rest;
   StreamSubscription<AuthState>? _authStateSubscription;
   final AsyncJsonCodec _jsonCodec;
   final bool _ownsJsonCodec;
+
+  /// Resolves a third-party access token and bypasses the built-in [auth]
+  /// client when set.
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each
@@ -213,6 +219,10 @@ class SupabaseClient {
     });
   }
 
+  /// Supabase Auth allows you to create and manage user sessions.
+  ///
+  /// Throws an [AuthException] when [accessToken] is set, since the built-in
+  /// auth client is not used in that case.
   AuthClient get auth {
     if (accessToken == null) {
       return _authInstance!;
@@ -296,6 +306,8 @@ class SupabaseClient {
     }
   }
 
+  /// Disconnects realtime, closes the auth state subscription, and disposes
+  /// the functions, PostgREST, and its internally owned JSON codec.
   Future<void> dispose() async {
     clientLogger.fine('Dispose SupabaseClient');
     await realtime.disconnect();

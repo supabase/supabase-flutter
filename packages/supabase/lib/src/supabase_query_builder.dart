@@ -1,5 +1,7 @@
 import 'package:supabase/supabase.dart';
 
+/// A [PostgrestQueryBuilder] that can also stream a table's rows over
+/// Realtime with [stream].
 class SupabaseQueryBuilder extends PostgrestQueryBuilder {
   SupabaseQueryBuilder(
     String url,
