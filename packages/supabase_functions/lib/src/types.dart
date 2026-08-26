@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+/// The response of a successful [FunctionsClient.invoke] call.
 class FunctionResponse {
   const FunctionResponse({
     this.data,
@@ -39,6 +40,9 @@ sealed class FunctionException extends SupabaseException {
     required String message,
     this.details,
   }) : super(message);
+
+  /// The response body, or the originating error when no response was
+  /// received.
   final dynamic details;
 
   @override
@@ -70,6 +74,7 @@ class FunctionsApiException extends FunctionException
   }) : super(
          message: message ?? 'Edge Function returned a non-2xx status code',
        );
+
   @override
   final int statusCode;
 
