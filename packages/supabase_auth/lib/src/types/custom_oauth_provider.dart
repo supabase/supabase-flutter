@@ -40,12 +40,12 @@ class OIDCDiscoveryDocument {
       jwksUri: json['jwks_uri'] as String,
       userInfoEndpoint: json['userinfo_endpoint'] as String?,
       revocationEndpoint: json['revocation_endpoint'] as String?,
-      supportedScopes: (json['supported_scopes'] as List?)?.cast(),
-      supportedResponseTypes: (json['supported_response_types'] as List?)
+      supportedScopes: (json['scopes_supported'] as List?)?.cast(),
+      supportedResponseTypes: (json['response_types_supported'] as List?)
           ?.cast(),
-      supportedSubjectTypes: (json['supported_subject_types'] as List?)?.cast(),
+      supportedSubjectTypes: (json['subject_types_supported'] as List?)?.cast(),
       supportedIdTokenSigningAlgorithms:
-          (json['supported_id_token_signing_algs'] as List?)?.cast(),
+          (json['id_token_signing_alg_values_supported'] as List?)?.cast(),
     );
   }
 
