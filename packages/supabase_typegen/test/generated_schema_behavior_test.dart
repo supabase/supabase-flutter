@@ -146,6 +146,54 @@ void main() {
     );
   });
 
+  test('insert can carry an explicitly chosen key column', () async {
+    httpClient.responseBody = '';
+
+    await client
+        .table(Books.table)
+        .insert(BooksInsert(id: 7, title: 'A typed row', authorId: 7));
+
+    expect(jsonDecode(httpClient.lastRequestBody!), {
+      'id': 7,
+      'title': 'A typed row',
+      'author_id': 7,
+    });
+  });
+
+  test('upsert merges on key columns carried by the insert values', () async {
+    httpClient.responseBody = '';
+
+    await client.table(Books.table).upsert([
+      BooksInsert(id: 1, title: 'First', authorId: 7),
+      BooksInsert(id: 2, title: 'Second', authorId: 7),
+    ]);
+
+    expect(jsonDecode(httpClient.lastRequestBody!), [
+      {'id': 1, 'title': 'First', 'author_id': 7},
+      {'id': 2, 'title': 'Second', 'author_id': 7},
+    ]);
+    expect(
+      httpClient.lastRequest!.headers['Prefer'],
+      contains('resolution=merge-duplicates'),
+    );
+    expect(
+      httpClient.lastRequest!.url.queryParameters['columns'],
+      '"id","title","author_id"',
+    );
+  });
+
+  test('update can change a key column', () async {
+    httpClient.responseBody = '';
+
+    await client
+        .table(Books.table)
+        .update(BooksUpdate(id: 2))
+        .where(Books.id.eq(1));
+
+    expect(jsonDecode(httpClient.lastRequestBody!), {'id': 2});
+    expect(httpClient.lastRequest!.url.queryParameters['id'], 'eq.1');
+  });
+
   test('update sends only the provided columns', () async {
     httpClient.responseBody = '';
 
