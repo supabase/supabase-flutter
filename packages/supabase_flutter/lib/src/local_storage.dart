@@ -67,6 +67,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
   SharedPreferencesLocalStorage({required this.persistSessionKey});
   late final SharedPreferencesAsync _preferences;
 
+  /// The shared preferences key the session is stored under.
   final String persistSessionKey;
   static const _useWebLocalStorage =
       kIsWeb && bool.fromEnvironment("dart.library.js_interop");

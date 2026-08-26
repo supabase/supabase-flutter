@@ -340,6 +340,7 @@ class SupabaseAuth with WidgetsBindingObserver {
   }
 }
 
+/// Sign-in methods that open a browser or webview, such as OAuth and SSO.
 extension AuthClientSignInProvider on AuthClient {
   /// Signs the user in using a third party providers.
   ///
@@ -445,6 +446,9 @@ extension AuthClientSignInProvider on AuthClient {
     );
   }
 
+  /// Generates a random nonce. Hash it and pass the hash to the native
+  /// sign-in SDK, then pass this raw nonce as `nonce` to `signInWithIdToken`,
+  /// which hashes it again to compare against the value in the ID token.
   String generateRawNonce() => base64Url.encode(randomBytes(16));
 
   /// Links an oauth identity to an existing user.

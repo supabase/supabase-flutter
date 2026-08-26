@@ -1,5 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Configuration for the auth client used by `Supabase.instance.client.auth`,
+/// extending [AuthClientOptions] with Flutter-specific session persistence
+/// and deep link handling.
 class FlutterAuthClientOptions extends AuthClientOptions {
   const FlutterAuthClientOptions({
     super.authFlowType,
@@ -11,6 +14,11 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     this.detectSessionInUriPredicate,
     this.persistSession = true,
   });
+
+  /// Where the session is persisted.
+  ///
+  /// Defaults to shared preferences when [persistSession] is `true`, and to
+  /// an in-memory-only storage otherwise.
   final LocalStorage? localStorage;
 
   /// If true, the client will start the deep link observer and obtain sessions
