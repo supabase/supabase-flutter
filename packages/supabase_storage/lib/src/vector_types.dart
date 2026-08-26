@@ -6,6 +6,7 @@ import 'package:supabase_common/supabase_common.dart';
 /// Currently the S3 Vectors service only supports 32-bit floats.
 @experimental
 enum VectorDataType {
+  /// 32-bit floating point components.
   float32;
 
   /// The value sent to and returned by the storage API.
@@ -24,8 +25,13 @@ enum VectorDataType {
 /// Distance metric used when comparing vectors during a similarity search.
 @experimental
 enum DistanceMetric {
+  /// The cosine of the angle between two vectors.
   cosine,
+
+  /// The straight-line distance between two vectors.
   euclidean,
+
+  /// The dot product of two vectors.
   dotProduct;
 
   /// The value sent to and returned by the storage API.

@@ -4,6 +4,7 @@ import 'package:supabase_storage/src/fetch.dart';
 import 'package:supabase_storage/src/types.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+/// API namespace for managing buckets, exposed on `SupabaseStorageClient`.
 class StorageBucketApi {
   StorageBucketApi(
     this.url,
@@ -13,6 +14,7 @@ class StorageBucketApi {
     storageFetch = Fetch(httpClient);
   }
 
+  /// The storage endpoint requests are sent to.
   final String url;
 
   final Map<String, String> _headers;
@@ -24,6 +26,7 @@ class StorageBucketApi {
   /// `SupabaseClient.headers` to replace them all on a managed client.
   Map<String, String> get headers => Map.unmodifiable(_headers);
 
+  /// Sends requests to [url].
   @internal
   late final Fetch storageFetch;
 

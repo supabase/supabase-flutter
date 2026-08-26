@@ -9,6 +9,7 @@ import 'package:supabase_storage/src/storage_file_api.dart';
 import 'package:supabase_storage/src/vector_client.dart';
 import 'package:supabase_storage/src/version.dart';
 
+/// Client for Supabase Storage, exposed on `SupabaseClient.storage`.
 class SupabaseStorageClient extends StorageBucketApi {
   /// To create a [SupabaseStorageClient], you need to provide an [url] and
   /// [headers].

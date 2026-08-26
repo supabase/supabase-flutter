@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+/// A storage bucket.
 class Bucket {
   const Bucket({
     required this.id,
@@ -28,13 +29,30 @@ class Bucket {
           : null,
     );
   }
+
+  /// The unique identifier of the bucket.
   final String id;
+
+  /// The name of the bucket.
   final String name;
+
+  /// The ID of the user who created the bucket.
   final String owner;
+
+  /// The creation timestamp.
   final DateTime createdAt;
+
+  /// The last update timestamp.
   final DateTime updatedAt;
+
+  /// Whether objects can be downloaded without a valid token.
   final bool public;
+
+  /// The maximum size, in bytes, an uploaded object may be.
   final int? fileSizeLimit;
+
+  /// The MIME types accepted for uploads, or `null` when any type is
+  /// accepted.
   final List<String>? allowedMimeTypes;
 }
 
@@ -70,6 +88,7 @@ class AnalyticsBucket {
   final DateTime updatedAt;
 }
 
+/// A file or folder entry returned by `StorageFileApi.list`.
 class FileObject {
   const FileObject({
     required this.name,
@@ -102,16 +121,33 @@ class FileObject {
           : null,
     );
   }
+
+  /// The file name.
   final String name;
+
+  /// The ID of the bucket the object belongs to.
   final String? bucketId;
+
+  /// The ID of the user who created the object.
   final String? owner;
+
+  /// The unique identifier of the object.
   final String? id;
+
+  /// The last update timestamp.
   final DateTime? updatedAt;
+
+  /// The creation timestamp.
   final DateTime? createdAt;
+
+  /// The file metadata, including size and mimetype. `null` for a folder.
   final Map<String, dynamic>? metadata;
+
+  /// The bucket the object belongs to, when requested.
   final Bucket? buckets;
 }
 
+/// A file entry returned by the storage `v2` object listing API.
 class FileObjectV2 {
   const FileObjectV2({
     required this.id,
@@ -144,17 +180,41 @@ class FileObjectV2 {
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
   }
+
+  /// The unique identifier of the object.
   final String id;
+
+  /// The version identifier of the current object contents.
   final String version;
+
+  /// The file name.
   final String name;
+
+  /// The ID of the bucket the object belongs to.
   final String bucketId;
+
+  /// The last update timestamp.
   final DateTime? updatedAt;
+
+  /// The creation timestamp.
   final DateTime createdAt;
+
+  /// The size of the object, in bytes.
   final int? size;
+
+  /// The `Cache-Control` header served with the object.
   final String? cacheControl;
+
+  /// The MIME type of the object.
   final String? contentType;
+
+  /// The object's ETag.
   final String? etag;
+
+  /// The last-modified timestamp reported by the underlying storage backend.
   final DateTime? lastModified;
+
+  /// The file metadata.
   final Map<String, dynamic>? metadata;
 }
 
@@ -174,13 +234,31 @@ class BucketOptions {
     this.fileSizeLimit,
     this.allowedMimeTypes,
   });
+
+  /// The visibility of the bucket.
   final bool public;
+
+  /// The file size limit that this bucket can accept during upload.
   final String? fileSizeLimit;
+
+  /// The allowed mime types that this bucket can accept during upload.
   final List<String>? allowedMimeTypes;
 }
 
 /// The column that [StorageBucketApi.listBuckets] can sort its results by.
-enum BucketSortColumn { id, name, createdAt, updatedAt }
+enum BucketSortColumn {
+  /// Sorts by [Bucket.id].
+  id,
+
+  /// Sorts by [Bucket.name].
+  name,
+
+  /// Sorts by [Bucket.createdAt].
+  createdAt,
+
+  /// Sorts by [Bucket.updatedAt].
+  updatedAt,
+}
 
 /// Filter, sort and pagination options for [StorageBucketApi.listBuckets].
 class ListBucketsOptions {
@@ -218,6 +296,7 @@ class ListBucketsOptions {
   }
 }
 
+/// Options for an upload to storage.
 class FileOptions {
   const FileOptions({
     this.cacheControl = '3600',
@@ -255,6 +334,7 @@ class FileOptions {
   final Map<String, String>? headers;
 }
 
+/// Options for `StorageFileApi.list`.
 class SearchOptions {
   const SearchOptions({
     this.limit = 100,
@@ -307,7 +387,16 @@ class SortBy {
 }
 
 /// The column that [StorageFileApi.listPaginated] can sort its results by.
-enum FileSortColumn { name, updatedAt, createdAt }
+enum FileSortColumn {
+  /// Sorts by [PaginatedFile.name].
+  name,
+
+  /// Sorts by [PaginatedFile.updatedAt].
+  updatedAt,
+
+  /// Sorts by [PaginatedFile.createdAt].
+  createdAt,
+}
 
 /// The column and direction that [StorageFileApi.listPaginated] sorts its
 /// results by.
@@ -475,6 +564,7 @@ class PaginatedListResult {
   final String? nextCursor;
 }
 
+/// A signed URL for downloading a private object.
 class SignedUrl {
   const SignedUrl({
     required this.path,
@@ -584,6 +674,7 @@ class UploadResponse {
       'UploadResponse(id: $id, path: $path, fullPath: $fullPath)';
 }
 
+/// The response of `StorageFileApi.createSignedUploadUrl`.
 class SignedUploadURLResponse extends SignedUrl {
   const SignedUploadURLResponse({
     required super.signedUrl,
@@ -640,6 +731,7 @@ class StorageApiException extends StorageException with SupabaseApiException {
   final int statusCode;
 }
 
+/// Allows aborting the retries of an in-flight storage upload.
 class StorageRetryController {
   /// Creates a controller to abort storage file upload retry operations.
   StorageRetryController();
@@ -670,7 +762,11 @@ enum ResizeMode {
   fill,
 }
 
+/// The image format `StorageFileApi.createSignedUrl` and friends request a
+/// transformed image in.
 enum RequestImageFormat {
+  /// Forces the same format as the original image, bypassing automatic
+  /// browser optimization such as webp conversion.
   origin,
 }
 
