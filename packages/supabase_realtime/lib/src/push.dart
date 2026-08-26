@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/constants.dart';
@@ -17,10 +18,9 @@ class Push {
   Push(
     this._channel,
     this._event, [
-    this.payload = const {},
+    Map<String, dynamic> payload = const {},
     this._timeout = RealtimeConstants.defaultTimeout,
-  ]);
-  bool sent = false;
+  ]) : _payload = payload;
   Timer? _timeoutTimer;
   String _ref = '';
   Map<String, dynamic>? _receivedResponse;
@@ -33,8 +33,15 @@ class Push {
   /// The event, for example [ChannelEvent.join]
   final ChannelEvent _event;
 
-  /// The payload, for example `{user_id: 123}`
-  late Map<String, dynamic> payload;
+  Map<String, dynamic> _payload;
+
+  /// The payload, for example `{user_id: 123}`, replaced through
+  /// [updatePayload].
+  ///
+  /// The view is unmodifiable at the top level only: values can hold binary
+  /// data such as [Uint8List], which a recursive wrap would copy into plain
+  /// lists and thereby change its type.
+  Map<String, dynamic> get payload => UnmodifiableMapView(_payload);
 
   /// The push timeout
   Duration _timeout;
@@ -49,7 +56,6 @@ class Push {
     _ref = '';
     _refEvent = null;
     _receivedResponse = null;
-    sent = false;
     send();
   }
 
@@ -58,12 +64,11 @@ class Push {
       return;
     }
     startTimeout();
-    sent = true;
     _channel.socket.push(
       RealtimeMessage.outgoing(
         topic: _channel.topic,
         event: _event,
-        payload: payload,
+        payload: _payload,
         ref: ref,
         joinRef: _channel.joinRef,
       ),
@@ -71,7 +76,7 @@ class Push {
   }
 
   void updatePayload(Map<String, dynamic> newPayload) {
-    payload = {...payload, ...newPayload};
+    _payload = {..._payload, ...newPayload};
   }
 
   Push receive(String status, Callback callback) {

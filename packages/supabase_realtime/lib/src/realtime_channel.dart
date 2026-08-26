@@ -20,7 +20,7 @@ class RealtimeChannel {
     this.socket, {
     RealtimeChannelConfig config = const RealtimeChannelConfig(),
   }) : _timeout = socket.timeout,
-       parameters = config.toMap(),
+       _parameters = config.toMap(),
        subTopic = topic.replaceFirst(
          RegExp(r"^realtime:", caseSensitive: false),
          "",
@@ -28,17 +28,17 @@ class RealtimeChannel {
     broadcastEndpointUrl = '${httpEndpointUrl(socket.endpoint)}/api/broadcast';
     _private = config.private;
 
-    joinPush = Push(
+    _joinPush = Push(
       this,
       ChannelEvent.join,
-      parameters,
+      _parameters,
       _timeout,
     );
     _rejoinTimer = RetryTimer(
       () => rejoinUntilConnected(),
       socket.reconnectAfter,
     );
-    joinPush.receive('ok', (_) {
+    _joinPush.receive('ok', (_) {
       _state = ChannelState.joined;
       _rejoinTimer.reset();
       for (final pushEvent in _pushBuffer) {
@@ -67,12 +67,12 @@ class RealtimeChannel {
       _rejoinTimer.scheduleTimeout();
     });
 
-    joinPush.receive('timeout', (_) {
+    _joinPush.receive('timeout', (_) {
       if (!isJoining) {
         return;
       }
       realtimeLogger.warning(
-        'Channel join timeout: $topic after ${joinPush.timeout}',
+        'Channel join timeout: $topic after ${_joinPush.timeout}',
       );
       _state = ChannelState.errored;
       _rejoinTimer.scheduleTimeout();
@@ -85,27 +85,64 @@ class RealtimeChannel {
       trigger(replyEventName(ref), payload);
     });
 
-    presence = RealtimePresence(this);
+    _presence = RealtimePresence(this);
   }
   final Map<String, List<Binding>> _bindings = {};
   final Duration _timeout;
   ChannelState _state = ChannelState.closed;
+  bool _joinedOnce = false;
+
+  /// Whether [subscribe] has been called on this channel.
   @internal
-  bool joinedOnce = false;
+  bool get joinedOnce => _joinedOnce;
+
+  late final Push _joinPush;
+
+  /// The push used to join this channel, exposed so tests can inspect and
+  /// trigger replies on it.
   @internal
-  late Push joinPush;
-  late RetryTimer _rejoinTimer;
+  @visibleForTesting
+  Push get joinPush => _joinPush;
+
+  late final RetryTimer _rejoinTimer;
   List<Push> _pushBuffer = [];
-  @internal
-  late RealtimePresence presence;
+  late final RealtimePresence _presence;
   @internal
   late final String broadcastEndpointUrl;
   @internal
   final String subTopic;
   @internal
   final String topic;
+  final Map<String, dynamic> _parameters;
+
+  /// The parameters sent when joining the channel.
+  ///
+  /// The returned snapshot is unmodifiable all the way down; the join payload
+  /// is updated internally through [updateJoinPayload].
   @internal
-  Map<String, dynamic> parameters;
+  Map<String, dynamic> get parameters => _deepUnmodifiableMap(_parameters);
+
+  static Map<String, dynamic> _deepUnmodifiableMap(Map<String, dynamic> map) {
+    return Map<String, dynamic>.unmodifiable(
+      map.map((key, value) => MapEntry(key, _deepUnmodifiable(value))),
+    );
+  }
+
+  static Object? _deepUnmodifiable(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return _deepUnmodifiableMap(value);
+    }
+    if (value is Map) {
+      return Map.unmodifiable(
+        value.map((key, nested) => MapEntry(key, _deepUnmodifiable(nested))),
+      );
+    }
+    if (value is List) {
+      return List.unmodifiable(value.map(_deepUnmodifiable));
+    }
+    return value;
+  }
+
   @internal
   final RealtimeClient socket;
 
@@ -143,20 +180,20 @@ class RealtimeChannel {
 
   bool _shouldEnablePresence() {
     return (_bindings['presence']?.isNotEmpty == true) ||
-        (parameters['config']['presence']['enabled'] == true);
+        (_parameters['config']['presence']['enabled'] == true);
   }
 
   void _handlePresenceUpdate() {
-    if (joinedOnce && isJoined) {
+    if (_joinedOnce && isJoined) {
       final currentPresenceEnabled =
-          parameters['config']['presence']['enabled'];
+          _parameters['config']['presence']['enabled'];
       final shouldEnablePresence = _shouldEnablePresence();
 
       if (!currentPresenceEnabled && shouldEnablePresence) {
-        final config = Map<String, dynamic>.from(parameters['config']);
+        final config = Map<String, dynamic>.from(_parameters['config']);
         config['presence'] = Map<String, dynamic>.from(config['presence']);
         config['presence']['enabled'] = true;
-        parameters['config'] = config;
+        _parameters['config'] = config;
         updateJoinPayload({'config': config});
         rejoin();
       }
@@ -173,13 +210,13 @@ class RealtimeChannel {
     if (!socket.isConnected) {
       unawaited(socket.connect());
     }
-    if (joinedOnce == true) {
+    if (_joinedOnce == true) {
       throw "tried to subscribe multiple times. 'subscribe' can only be "
           "called a single time per channel instance";
     }
-    final broadcast = parameters['config']['broadcast'];
-    final presenceConfig = parameters['config']['presence'];
-    final isPrivate = parameters['config']['private'];
+    final broadcast = _parameters['config']['broadcast'];
+    final presenceConfig = _parameters['config']['presence'];
+    final isPrivate = _parameters['config']['private'];
 
     _onError((e) {
       _addStatus(RealtimeSubscribeStatus.channelError, e);
@@ -228,10 +265,10 @@ class RealtimeChannel {
 
     updateJoinPayload({'config': config, ...accessTokenPayload});
 
-    joinedOnce = true;
+    _joinedOnce = true;
     rejoin(timeout ?? _timeout);
 
-    joinPush
+    _joinPush
         .receive(
           'ok',
           (response) => unawaited(
@@ -350,10 +387,12 @@ class RealtimeChannel {
   }
 
   List<SinglePresenceState> presenceState() {
-    return presence.state.entries
+    return _presence.state.entries
         .map(
-          (entry) =>
-              SinglePresenceState(key: entry.key, presences: entry.value),
+          (entry) => SinglePresenceState(
+            key: entry.key,
+            presences: List.unmodifiable(entry.value),
+          ),
         )
         .toList();
   }
@@ -621,7 +660,7 @@ class RealtimeChannel {
     // Once a subscribed channel has closed it cannot be joined again, and the
     // one-shot cleanup that completes the event streams has already run, so
     // hand out an already-closed stream instead of one that never completes.
-    if (joinedOnce && isClosed) {
+    if (_joinedOnce && isClosed) {
       unawaited(controller.close());
       return controller.stream;
     }
@@ -684,7 +723,7 @@ class RealtimeChannel {
     Map<String, dynamic> payload, [
     Duration? timeout,
   ]) {
-    if (!joinedOnce) {
+    if (!_joinedOnce) {
       throw "tried to push '${event.eventName()}' to '$topic' before joining. "
           "Use channel.subscribe() before pushing events";
     }
@@ -853,8 +892,8 @@ class RealtimeChannel {
     }
 
     if (payload['type'] == 'broadcast' &&
-        (parameters['config']?['broadcast']?['ack'] == null ||
-            parameters['config']?['broadcast']?['ack'] == false)) {
+        (_parameters['config']?['broadcast']?['ack'] == null ||
+            _parameters['config']?['broadcast']?['ack'] == false)) {
       if (!completer.isCompleted) {
         completer.complete(ChannelResponse.ok);
       }
@@ -890,7 +929,7 @@ class RealtimeChannel {
 
   @internal
   void updateJoinPayload(Map<String, dynamic> payload) {
-    joinPush.updatePayload(payload);
+    _joinPush.updatePayload(payload);
   }
 
   /// Leaves the channel
@@ -912,7 +951,7 @@ class RealtimeChannel {
     }
 
     // Destroy joinPush to avoid connection timeouts during unsubscription phase
-    joinPush.destroy();
+    _joinPush.destroy();
 
     final completer = Completer<String>();
 
@@ -962,7 +1001,7 @@ class RealtimeChannel {
   }
 
   @internal
-  String get joinRef => joinPush.ref;
+  String get joinRef => _joinPush.ref;
 
   @internal
   void rejoin([Duration? timeout]) {
@@ -971,7 +1010,7 @@ class RealtimeChannel {
     }
     socket.leaveOpenTopic(topic);
     _state = ChannelState.joining;
-    joinPush.resend(timeout ?? _timeout);
+    _joinPush.resend(timeout ?? _timeout);
   }
 
   /// Resends [joinPush] to tell the server we join this channel again and marks
@@ -988,7 +1027,7 @@ class RealtimeChannel {
       return;
     }
     _state = ChannelState.joining;
-    joinPush.resend(timeout ?? _timeout);
+    _joinPush.resend(timeout ?? _timeout);
   }
 
   @internal

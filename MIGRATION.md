@@ -330,6 +330,25 @@ final channels = client.channels;
 `setAccessToken()` is the intentional path for token rotation: unlike the removed field write, it
 also propagates the new token to every joined channel.
 
+### The mutable internals of `RealtimeChannel` are private
+
+`RealtimeChannel` received the same treatment as `RealtimeClient`. Its join bookkeeping used to be
+public mutable fields that were only marked `@internal`, so external code could reassign the join
+push, replace the presence tracker, or mutate the join parameters underneath the channel:
+
+| Before | After |
+| --- | --- |
+| `channel.joinedOnce = value` | removed, the getter remains (internal) |
+| `channel.joinPush = push` | removed, the getter remains (internal and test-only) |
+| `channel.presence` | removed |
+| `channel.parameters` (mutable map) | `channel.parameters` (unmodifiable view, internal) |
+
+These members were never part of the supported API surface, but they were reachable. If you read
+presence state through `channel.presence`, use `channel.presenceState()` and the
+`onPresenceSync`, `onPresenceJoin`, and `onPresenceLeave` streams instead. The join payload is
+only updated internally; there is no supported way to mutate `parameters` after the channel is
+created, so pass the configuration through `RealtimeChannelConfig` when creating the channel.
+
 ### Broadcasts no longer fall back to the REST API
 
 `sendBroadcastMessage()` used to silently post to the REST broadcast endpoint whenever the channel
