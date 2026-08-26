@@ -1741,6 +1741,8 @@ class AuthClient {
     }
   }
 
+  /// Closes the auth state streams, stops auto refresh, and fails every
+  /// pending token refresh.
   @mustCallSuper
   void dispose() {
     _isDisposed = true;

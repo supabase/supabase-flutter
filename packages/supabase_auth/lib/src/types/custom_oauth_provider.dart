@@ -6,9 +6,14 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// Type of a custom OAuth/OIDC provider managed through the admin API.
 enum CustomProviderType {
+  /// A generic OAuth 2.0 provider.
   oauth2,
+
+  /// An OpenID Connect provider, discoverable through its `.well-known`
+  /// configuration document.
   oidc;
 
+  /// Parses the `type` field of a custom provider response.
   static CustomProviderType fromValue(String value) {
     return CustomProviderType.values.firstWhere((e) => e.name == value);
   }

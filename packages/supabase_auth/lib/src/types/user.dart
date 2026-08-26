@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:supabase_auth/src/types/mfa.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+/// A user account in Supabase Auth.
 class User {
   const User({
     required this.id,
@@ -26,26 +27,71 @@ class User {
     this.factors,
     this.isAnonymous = false,
   });
+
+  /// The user's unique identifier, matches the `sub` claim of their JWTs.
   final String id;
+
+  /// Metadata the server or an admin controls; the client cannot modify it
+  /// directly.
   final Map<String, dynamic> appMetadata;
+
+  /// Metadata the signed-in user can update about themselves.
   final Map<String, dynamic>? userMetadata;
+
+  /// The `aud` claim of the user's JWTs, `'authenticated'` for most users.
   final String audience;
+
+  /// When the initial sign-up confirmation email was sent.
   final DateTime? confirmationSentAt;
+
+  /// When the most recent password recovery email was sent.
   final DateTime? recoverySentAt;
+
+  /// When the most recent email change confirmation was sent.
   final DateTime? emailChangeSentAt;
+
+  /// The new email address awaiting confirmation, if any.
   final String? newEmail;
+
+  /// When the user was invited, for a user created through an invite.
   final DateTime? invitedAt;
+
+  /// A link that performs a pending action, such as confirming a new email.
   final String? actionLink;
+
+  /// The user's email address, `null` if they signed up with a phone number
+  /// only.
   final String? email;
+
+  /// The user's phone number, `null` if they signed up with an email only.
   final String? phone;
+
+  /// When the user was created.
   final DateTime createdAt;
+
+  /// When the user's email was confirmed, `null` if unconfirmed.
   final DateTime? emailConfirmedAt;
+
+  /// When the user's phone number was confirmed, `null` if unconfirmed.
   final DateTime? phoneConfirmedAt;
+
+  /// When the user last signed in.
   final DateTime? lastSignInAt;
+
+  /// The Postgres role the user's requests are made as, for example
+  /// `'authenticated'`.
   final String? role;
+
+  /// When the user was last updated.
   final DateTime? updatedAt;
+
+  /// The third-party identities linked to this user.
   final List<UserIdentity>? identities;
+
+  /// The MFA factors enrolled by this user.
   final List<Factor>? factors;
+
+  /// Whether the user signed in anonymously.
   final bool isAnonymous;
 
   /// Returns a `User` object from a map of json
@@ -183,6 +229,7 @@ class User {
   }
 }
 
+/// A third-party identity linked to a [User].
 class UserIdentity {
   const UserIdentity({
     required this.id,
@@ -207,13 +254,30 @@ class UserIdentity {
       updatedAt: tryParseIso8601(map, 'updated_at'),
     );
   }
+
+  /// The identity's unique identifier.
   final String id;
+
+  /// The ID of the [User] this identity belongs to.
   final String userId;
+
+  /// The raw profile data returned by the provider.
   final Map<String, dynamic>? identityData;
+
+  /// The identifier the provider uses for this identity, for example the
+  /// Google account ID.
   final String identityId;
+
+  /// The provider this identity belongs to, for example `'google'`.
   final String provider;
+
+  /// When the identity was linked.
   final DateTime? createdAt;
+
+  /// When the identity was last used to sign in.
   final DateTime? lastSignInAt;
+
+  /// When the identity was last updated.
   final DateTime? updatedAt;
 
   UserIdentity copyWith({

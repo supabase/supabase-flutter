@@ -1,6 +1,7 @@
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+/// The response of `AuthMFAApi.enroll`.
 class AuthMFAEnrollResponse {
   const AuthMFAEnrollResponse({
     required this.id,
@@ -40,6 +41,7 @@ class AuthMFAEnrollResponse {
   final PhoneEnrollment? phone;
 }
 
+/// TOTP enrollment information returned by `AuthMFAApi.enroll`.
 class TOTPEnrollment {
   const TOTPEnrollment({
     required this.qrCode,
@@ -73,6 +75,7 @@ class TOTPEnrollment {
   final String uri;
 }
 
+/// Phone enrollment information returned by `AuthMFAApi.enroll`.
 class PhoneEnrollment {
   const PhoneEnrollment({
     required this.phone,
@@ -98,6 +101,7 @@ class PhoneEnrollment {
   final String phone;
 }
 
+/// The response of `AuthMFAApi.challenge`.
 class AuthMFAChallengeResponse {
   const AuthMFAChallengeResponse({required this.id, required this.expiresAt});
 
@@ -115,6 +119,7 @@ class AuthMFAChallengeResponse {
   final DateTime expiresAt;
 }
 
+/// The response of `AuthMFAApi.verify` and `AuthMFAApi.challengeAndVerify`.
 class AuthMFAVerifyResponse {
   const AuthMFAVerifyResponse({
     required this.accessToken,
@@ -172,6 +177,7 @@ class AuthMFAVerifyResponse {
   final User user;
 }
 
+/// The response of `AuthMFAApi.unenroll`.
 class AuthMFAUnenrollResponse {
   const AuthMFAUnenrollResponse({required this.id});
 
@@ -183,6 +189,7 @@ class AuthMFAUnenrollResponse {
   final String id;
 }
 
+/// The response of `AuthMFAApi.listFactors`.
 class AuthMFAListFactorsResponse {
   const AuthMFAListFactorsResponse({
     required this.all,
@@ -190,12 +197,21 @@ class AuthMFAListFactorsResponse {
     required this.phone,
     this.webauthn = const [],
   });
+
+  /// Every MFA factor enabled for the user, of any status.
   final List<Factor> all;
+
+  /// The user's verified TOTP factors.
   final List<Factor> totp;
+
+  /// The user's verified phone factors.
   final List<Factor> phone;
+
+  /// The user's verified WebAuthn factors.
   final List<Factor> webauthn;
 }
 
+/// The response of `AuthAdminMFAApi.listFactors`.
 class AuthMFAAdminListFactorsResponse {
   const AuthMFAAdminListFactorsResponse({required this.factors});
 
@@ -218,6 +234,7 @@ class AuthMFAAdminListFactorsResponse {
   final List<Factor> factors;
 }
 
+/// The response of `AuthAdminMFAApi.deleteFactor`.
 class AuthMFAAdminDeleteFactorResponse {
   const AuthMFAAdminDeleteFactorResponse({required this.id});
 
@@ -229,8 +246,12 @@ class AuthMFAAdminDeleteFactorResponse {
   final String id;
 }
 
+/// Whether an MFA [Factor] can be used to satisfy a challenge.
 enum FactorStatus {
+  /// The factor completed enrollment and can be used to verify a challenge.
   verified,
+
+  /// The factor has not completed enrollment yet.
   unverified,
 
   /// Returned when the backend sends an unknown status value.
@@ -238,9 +259,15 @@ enum FactorStatus {
   unknown,
 }
 
+/// The kind of second factor an MFA [Factor] uses.
 enum FactorType {
+  /// A time-based one-time password from an authenticator app.
   totp,
+
+  /// A one-time password sent by SMS.
   phone,
+
+  /// A WebAuthn security key or platform authenticator.
   webauthn,
 
   /// Returned when the backend sends an unknown factor type.
@@ -248,6 +275,7 @@ enum FactorType {
   unknown,
 }
 
+/// An MFA factor enrolled by a user.
 class Factor {
   const Factor({
     required this.id,
@@ -288,7 +316,10 @@ class Factor {
   /// Factor's status.
   final FactorStatus status;
 
+  /// When the factor was enrolled.
   final DateTime createdAt;
+
+  /// When the factor was last updated, for example when it was verified.
   final DateTime updatedAt;
 
   Map<String, dynamic> toJson() {
@@ -333,6 +364,7 @@ class Factor {
   }
 }
 
+/// How strongly a session's identity has been verified.
 enum AuthenticatorAssuranceLevel {
   /// The user's identity has been verified only with a conventional login
   /// (email+password, OTP, magic link, social login, etc.).
@@ -343,6 +375,7 @@ enum AuthenticatorAssuranceLevel {
   aal2,
 }
 
+/// The response of `AuthMFAApi.getAuthenticatorAssuranceLevel`.
 class AuthMFAGetAuthenticatorAssuranceLevelResponse {
   const AuthMFAGetAuthenticatorAssuranceLevelResponse({
     required this.currentLevel,
@@ -366,26 +399,61 @@ class AuthMFAGetAuthenticatorAssuranceLevelResponse {
   final List<AuthenticationMethodReferenceEntry> currentAuthenticationMethods;
 }
 
+/// A method used to verify a user's identity, reported in an
+/// [AuthenticationMethodReferenceEntry].
 enum AuthenticationMethodReference {
+  /// Signed in with a password.
   password('password'),
+
+  /// Signed in with a one-time password sent by SMS or email.
   otp('otp'),
+
+  /// Signed in with a third-party OAuth provider.
   oauth('oauth'),
+
+  /// Verified an MFA TOTP factor.
   totp('totp'),
+
+  /// Signed in with a magic link.
   magicLink('magiclink'),
+
+  /// Signed in through a password recovery link.
   recovery('recovery'),
+
+  /// Signed in by accepting an invite.
   invite('invite'),
+
+  /// Signed in through SAML SSO.
   ssoSaml('sso/saml'),
+
+  /// Signed up with an email and password.
   emailSignUp('email/signup'),
+
+  /// Verified an email change.
   emailChange('email_change'),
+
+  /// Refreshed the session's access token.
   tokenRefresh('token_refresh'),
+
+  /// Signed in anonymously.
   anonymous('anonymous'),
+
+  /// Verified an MFA phone factor.
   mfaPhone('mfa/phone'),
+
+  /// Verified an MFA WebAuthn factor.
   mfaWebauthn('mfa/webauthn'),
+
+  /// Signed in with a passkey.
   passkey('passkey'),
+
+  /// Returned when the backend sends an unknown method.
+  /// This allows forward compatibility with new methods.
   unknown('unknown');
 
   const AuthenticationMethodReference(this.value);
 
+  /// The wire value received from the server.
   final String value;
 }
 

@@ -35,6 +35,11 @@ Map<String, int> _parsePaginationLinks(String? header) {
   return pages;
 }
 
+/// Admin API namespace for managing users, exposed on
+/// `AuthClient.admin`.
+///
+/// Requires the Supabase `secret` key; never use these methods from a
+/// client-side app.
 class AuthAdminApi {
   AuthAdminApi(
     this._url, {
@@ -68,6 +73,8 @@ class AuthAdminApi {
 
   final Client? _httpClient;
   late final AuthFetch _fetch = AuthFetch(_httpClient);
+
+  /// Contains all MFA factor administration methods.
   late final AuthAdminMFAApi mfa;
 
   /// Contains all OAuth client administration methods.

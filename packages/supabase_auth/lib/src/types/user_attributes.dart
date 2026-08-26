@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 
+/// Attributes for `AuthClient.updateUser`.
 class UserAttributes {
   UserAttributes({
     this.email,
@@ -77,6 +78,8 @@ class UserAttributes {
   }
 }
 
+/// Attributes for `AuthAdminApi.createUser` and
+/// `AuthAdminApi.updateUserById`.
 class AdminUserAttributes extends UserAttributes {
   AdminUserAttributes({
     super.email,

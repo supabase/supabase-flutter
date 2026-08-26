@@ -50,6 +50,8 @@ class JwtPayload {
     Map<String, dynamic>? claims,
   }) : claims = claims ?? {};
 
+  /// Every field of [json] is kept in [claims], including the standard ones
+  /// already exposed as typed fields.
   factory JwtPayload.fromJson(Map<String, dynamic> json) {
     return JwtPayload(
       issuer: json['iss'] as String?,
@@ -87,6 +89,7 @@ class JwtPayload {
   /// Additional claims stored in the payload
   final Map<String, dynamic> claims;
 
+  /// Converts this to a JSON-encodable map, equivalent to [claims].
   Map<String, dynamic> toJson() {
     return Map.of(claims);
   }
@@ -162,6 +165,8 @@ class GetClaimsOptions {
   final bool allowExpired;
 }
 
+/// A JSON Web Key Set (JWKS), as published by Supabase Auth's
+/// `/.well-known/jwks.json` endpoint.
 class JWKSet {
   const JWKSet({required this.keys});
 
@@ -173,6 +178,8 @@ class JWKSet {
         [];
     return JWKSet(keys: keys);
   }
+
+  /// The keys in this set.
   final List<JWK> keys;
 
   Map<String, dynamic> toJson() {
