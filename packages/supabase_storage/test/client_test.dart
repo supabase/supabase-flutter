@@ -686,6 +686,20 @@ void main() {
       expect(identical(result, client), isTrue);
     });
 
+    test('sets custom header on the vectors client', () async {
+      customHttpClient.response = {'vectorBuckets': []};
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('x-custom-header', 'custom-value');
+      await client.vectors.listBuckets();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['x-custom-header'],
+        'custom-value',
+      );
+    });
+
     test('supports chaining multiple setHeader calls', () async {
       customHttpClient.response = [];
       customHttpClient.statusCode = 200;
@@ -948,7 +962,7 @@ void main() {
           .from('test-bucket')
           .list(
             searchOptions: const SearchOptions(
-              sortBy: SortBy(order: 'desc'),
+              sortBy: SortBy(order: SortDirection.descending),
             ),
           );
 
@@ -964,7 +978,7 @@ void main() {
       expect(sentSortBy(), {'column': 'name', 'order': 'asc'});
     });
 
-    test('fills in fields passed explicitly as null', () async {
+    test('fills in a column passed explicitly as null', () async {
       customHttpClient.response = [];
       customHttpClient.statusCode = 200;
 
@@ -972,7 +986,7 @@ void main() {
           .from('test-bucket')
           .list(
             searchOptions: const SearchOptions(
-              sortBy: SortBy(column: null, order: null),
+              sortBy: SortBy(column: null),
             ),
           );
 
@@ -987,7 +1001,10 @@ void main() {
           .from('test-bucket')
           .list(
             searchOptions: const SearchOptions(
-              sortBy: SortBy(column: 'created_at', order: 'desc'),
+              sortBy: SortBy(
+                column: 'created_at',
+                order: SortDirection.descending,
+              ),
             ),
           );
 

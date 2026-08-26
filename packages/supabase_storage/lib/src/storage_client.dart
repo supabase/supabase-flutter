@@ -1,5 +1,6 @@
+import 'package:http/http.dart';
 import 'package:iceberg/iceberg.dart';
-import 'package:logging/logging.dart';
+import 'package:supabase_storage/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_storage/src/storage_constants.dart';
@@ -8,10 +9,8 @@ import 'package:supabase_storage/src/storage_file_api.dart';
 import 'package:supabase_storage/src/vector_client.dart';
 import 'package:supabase_storage/src/version.dart';
 
+/// Client for Supabase Storage, exposed on `SupabaseClient.storage`.
 class SupabaseStorageClient extends StorageBucketApi {
-  final int _defaultRetryAttempts;
-  final _log = Logger('supabase.storage');
-
   /// To create a [SupabaseStorageClient], you need to provide an [url] and
   /// [headers].
   ///
@@ -21,20 +20,20 @@ class SupabaseStorageClient extends StorageBucketApi {
   ///
   /// [httpClient] is optional and can be used to provide a custom http client
   ///
-  /// [retryAttempts] specifies how many retry attempts there should be to
-  ///  upload a file when failed due to network interruption.
+  /// [retryOptions] configures how an upload that failed due to a network
+  /// interruption is retried. Uploads are not retried unless
+  /// [SupabaseRetryOptions.count] is above zero, since repeating one costs
+  /// bandwidth. With the default backoff the delays are 400 ms, 800 ms,
+  /// 1600 ms and so on, each randomized by up to 25%, capped at 30 seconds.
   ///
-  /// Time between each retries are set as the following:
-  ///  1. 400 ms +/- 25%
-  ///  2. 800 ms +/- 25%
-  ///  3. 1600 ms +/- 25%
-  ///  4. 3200 ms +/- 25%
-  ///  5. 6400 ms +/- 25%
-  ///  6. 12800 ms +/- 25%
-  ///  7. 25600 ms +/- 25%
-  ///  8. 30000 ms +/- 25%
+  /// Override it for a single upload with the `retryOptions` parameter of
+  /// [StorageFileApi.upload] and its siblings.
   ///
-  /// Anything beyond the 8th try will have 30 second delay.
+  /// [accessToken] is resolved before every request and sent as
+  /// `Authorization: Bearer <token>`. Use it when the token rotates, for
+  /// example a session token that is refreshed. Returning `null` sends no
+  /// bearer token, and it is resolved again for every upload retry. A header
+  /// set with [setHeader] still wins over it.
   ///
   /// [useNewHostname] controls whether legacy storage URLs are rewritten to use
   /// the dedicated storage host (`<ref>.storage.supabase.co`). Set to `true`
@@ -44,24 +43,32 @@ class SupabaseStorageClient extends StorageBucketApi {
   SupabaseStorageClient(
     String url,
     Map<String, String> headers, {
-    super.httpClient,
-    int retryAttempts = 0,
+    Client? httpClient,
+    this.retryOptions = const SupabaseRetryOptions(count: 0),
     bool useNewHostname = false,
+    Future<String?> Function()? accessToken,
   }) : assert(
-         retryAttempts >= 0,
-         'retryAttempts has to be greater than or equal to 0',
+         accessToken == null || headers.header('Authorization') == null,
+         'Pass either an Authorization header or accessToken, not both: the '
+         'header would win over the resolved token on every request.',
        ),
-       _defaultRetryAttempts = retryAttempts,
        super(
          useNewHostname ? _transformStorageUrl(url) : url,
          {...StorageConstants.defaultHeaders, ...headers},
+         httpClient: accessToken == null
+             ? httpClient
+             : AccessTokenClient(accessToken, httpClient),
        ) {
-    _log.config(
-      'Initialize SupabaseStorageClient v$version with url: $url, '
-      'retryAttempts: $_defaultRetryAttempts',
+    storageLogger.config(
+      'Initialize SupabaseStorageClient v$version with url: '
+      '${Uri.parse(url).redacted}, '
+      'retryOptions: $retryOptions',
     );
-    _log.finest('Initialize with headers: ${headers.redacted}');
+    storageLogger.finest('Initialize with headers: ${headers.redacted}');
   }
+
+  /// Configures the automatic retry of uploads.
+  final SupabaseRetryOptions retryOptions;
 
   /// Transforms legacy storage URLs to use the dedicated storage host.
   ///
@@ -105,7 +112,7 @@ class SupabaseStorageClient extends StorageBucketApi {
       url,
       headers,
       id,
-      _defaultRetryAttempts,
+      retryOptions,
       storageFetch,
     );
   }
@@ -143,28 +150,23 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// await vectors.createBucket('embeddings');
   /// ```
   @experimental
-  late final SupabaseVectorsClient vectors = SupabaseVectorsClient(
+  SupabaseVectorsClient get vectors => SupabaseVectorsClient(
     '$url/vector',
     headers,
     storageFetch,
   );
 
-  void setAccessToken(String jwt) {
-    headers['Authorization'] = 'Bearer $jwt';
-  }
-
   /// Sets an HTTP header for subsequent requests.
   ///
-  /// Mutates the headers map used by this client in place. Instances of
-  /// [StorageFileApi] already obtained through [from] hold their own copy of
-  /// the headers, so only calls to [from] made after this one will include
-  /// the new header. Returns this for method chaining.
+  /// Instances of [StorageFileApi] already obtained through [from] hold their
+  /// own copy of the headers, so only calls to [from] made after this one will
+  /// include the new header. Returns this for method chaining.
   ///
   /// ```dart
   /// storage.setHeader('x-custom-header', 'value').from('bucket').upload(...);
   /// ```
   SupabaseStorageClient setHeader(String key, String value) {
-    headers[key] = value;
+    replaceHeaders({...headers, key: value});
     return this;
   }
 }

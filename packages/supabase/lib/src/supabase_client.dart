@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase/src/logger.dart';
 import 'package:supabase/src/supabase_constants.dart';
 import 'package:supabase/src/version.dart';
 import 'package:supabase/supabase.dart';
@@ -27,9 +27,8 @@ import 'trace_http_client.dart';
 ///
 /// Custom http client can be used by passing [httpClient] parameter.
 ///
-/// Set the `retryAttempts` field of [storageOptions] to specify how many
-/// retry attempts there should be to upload a file to Supabase storage when
-/// failed due to network interruption.
+/// Set the `retryOptions` field of [storageOptions] to configure how an upload
+/// to Supabase storage that failed due to a network interruption is retried.
 ///
 /// [realtimeClientOptions] specifies different options you can pass to
 /// `RealtimeClient`.
@@ -42,14 +41,97 @@ import 'trace_http_client.dart';
 /// if this is not supported by the client libraries. When set, the `auth`
 /// namespace of the Supabase client cannot be used.
 ///
-/// Pass an instance of `YAJsonIsolate` to [isolate] to use your own persisted
-/// isolate instance. A new instance will be created if [isolate] is omitted.
+/// [jsonCodec] encodes and decodes the JSON of the rest and functions clients.
+/// The default codec keeps large payloads off the calling isolate. Pass your
+/// own to process that JSON some other way, for example through a native
+/// parser. A codec passed here is owned by the caller, so [dispose] leaves it
+/// alone, and it can be shared with other clients.
 ///
-/// Pass an instance of `AuthAsyncStorage` to the `pkceAsyncStorage` field of
-/// [authOptions] and set its `authFlowType` field to `AuthFlowType.pkce` in
-/// order to perform auth actions with pkce flow.
+/// The pkce flow is used by default and keeps its code verifiers in the
+/// `AuthAsyncStorage` passed to the `pkceAsyncStorage` field of [authOptions].
+/// Pass a persistent implementation whenever the flow can leave the process
+/// before the code comes back, which covers every email link and every
+/// redirect to an OAuth provider. `MemoryAuthAsyncStorage` only suits flows
+/// that start and complete in the same process, such as tests and command line
+/// tools that keep a redirect listener open.
 /// {@endtemplate}
 class SupabaseClient {
+  /// {@macro supabase_client}
+  SupabaseClient(
+    String supabaseUrl,
+    String supabaseKey, {
+    PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
+    AuthClientOptions authOptions = const AuthClientOptions(),
+    StorageClientOptions storageOptions = const StorageClientOptions(),
+    FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
+    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    TracePropagationOptions tracePropagationOptions =
+        const TracePropagationOptions(),
+    this.accessToken,
+    Map<String, String>? headers,
+    Client? httpClient,
+    AsyncJsonCodec? jsonCodec,
+  }) : _supabaseKey = supabaseKey,
+       _functionsOptions = functionsOptions,
+       _restUrl = '$supabaseUrl/rest/v1',
+       _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
+       _authUrl = '$supabaseUrl/auth/v1',
+       _storageUrl = '$supabaseUrl/storage/v1',
+       _functionsUrl = '$supabaseUrl/functions/v1',
+       _postgrestOptions = postgrestOptions,
+       _headers = {
+         ...SupabaseConstants.defaultHeaders,
+         ...?headers,
+       },
+       _httpClient = httpClient,
+       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _ownsJsonCodec = jsonCodec == null {
+    final baseHttpClient = httpClient ?? Client();
+    final tracedHttpClient = tracePropagationOptions.enabled
+        ? TracePropagationClient(
+            baseHttpClient,
+            tracePropagationOptions,
+            supabaseUrl,
+          )
+        : baseHttpClient;
+    _authApiHttpClient = tracedHttpClient;
+    _authInstance = _initSupabaseAuthClient(
+      autoRefreshToken: authOptions.autoRefreshToken,
+      authAsyncStorage: authOptions.pkceAsyncStorage,
+      authFlowType: authOptions.authFlowType,
+      appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
+      retryOptions: authOptions.retryOptions,
+    );
+    _authHttpClient = AuthHttpClient(
+      _supabaseKey,
+      tracedHttpClient,
+      _getAccessToken,
+    );
+    _functionsHttpClient = AuthHttpClient(
+      _supabaseKey,
+      tracedHttpClient,
+      _getAccessToken,
+      omitNewApiKeyAsBearer: true,
+    );
+    warnOnUnrecognizedApiKey(_supabaseKey);
+    _rest = _initRestClient();
+    functions = _initFunctionsClient();
+    storage = _initStorageClient(
+      storageOptions.retryOptions,
+      storageOptions.useNewHostname,
+    );
+    realtime = _initRealtimeClient(options: realtimeClientOptions);
+    if (accessToken == null) {
+      clientLogger.config(
+        'Initialize SupabaseClient v$version with no custom access token',
+      );
+      _listenForAuthEvents();
+    } else {
+      clientLogger.config(
+        'Initialize SupabaseClient v$version with custom access token',
+      );
+    }
+  }
   final String _supabaseKey;
   final PostgrestClientOptions _postgrestOptions;
   final FunctionsClientOptions _functionsOptions;
@@ -73,129 +155,75 @@ class SupabaseClient {
   /// Supabase Storage allows you to manage user-generated content, such as
   /// photos or videos.
   late final SupabaseStorageClient storage;
+
+  /// Supabase Realtime allows you to listen to database changes and
+  /// broadcast messages between clients.
   late final RealtimeClient realtime;
-  late final PostgrestClient rest;
+  late PostgrestClient _rest;
   StreamSubscription<AuthState>? _authStateSubscription;
-  final YAJsonIsolate _isolate;
-  final bool _hasCustomIsolate;
+  final AsyncJsonCodec _jsonCodec;
+  final bool _ownsJsonCodec;
+
+  /// Resolves a third-party access token and bypasses the built-in [auth]
+  /// client when set.
   final Future<String?> Function()? accessToken;
 
   /// Increment ID of the stream to create different realtime topic for each
   /// stream
   final _incrementId = Counter();
 
-  final _log = Logger('supabase.supabase');
-
   /// Getter for the HTTP headers
   Map<String, String> get headers => Map.unmodifiable(_headers);
 
+  /// Supabase PostgREST allows you to query your database with a RESTful
+  /// interface.
+  ///
+  /// The client is stateless, so its headers cannot be mutated in place.
+  /// Assign [headers] on this class instead, which replaces the rest client
+  /// with one carrying the new headers.
+  PostgrestClient get rest => _rest;
+
   /// To apply the new headers in existing realtime channels, manually
   /// unsubscribe and resubscribe these channels.
-  set headers(Map<String, String> newHeaders) {
+  set headers(Map<String, String> newHeaders) => _replaceHeaders(newHeaders);
+
+  void _replaceHeaders(Map<String, String> newHeaders) {
     _headers.clear();
-    _headers.addAll({...SupabaseConstants.defaultHeaders, ...newHeaders});
+    _headers.addAll({
+      ...SupabaseConstants.defaultHeaders,
+      ...newHeaders,
+    });
 
-    rest.headers
-      ..clear()
-      ..addAll(_headers);
+    _rest = _initRestClient();
 
-    functions.headers
-      ..clear()
-      ..addAll(_headers);
+    // ignore: invalid_use_of_internal_member
+    functions.replaceHeaders(_headers);
 
-    storage.headers
-      ..clear()
-      ..addAll(_headers);
+    // ignore: invalid_use_of_internal_member
+    storage.replaceHeaders(_headers);
 
     if (accessToken == null) {
-      auth.headers
-        ..clear()
-        ..addAll({
-          ...SupabaseConstants.defaultHeaders,
-          ..._getAuthHeaders(),
-          ...headers,
-        });
+      // ignore: invalid_use_of_internal_member
+      auth.replaceHeaders({
+        ...SupabaseConstants.defaultHeaders,
+        ..._getAuthHeaders(),
+        ..._headers,
+      });
     }
 
     // To apply the new headers in the realtime client,
     // manually unsubscribe and resubscribe to all channels.
-    realtime.headers
-      ..clear()
-      ..addAll({'apikey': _supabaseKey, ..._headers});
+    // ignore: invalid_use_of_internal_member
+    realtime.replaceHeaders({
+      'apikey': _supabaseKey,
+      ..._headers,
+    });
   }
 
-  /// {@macro supabase_client}
-  SupabaseClient(
-    String supabaseUrl,
-    String supabaseKey, {
-    PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
-    AuthClientOptions authOptions = const AuthClientOptions(),
-    StorageClientOptions storageOptions = const StorageClientOptions(),
-    FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
-    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    TracePropagationOptions tracePropagationOptions =
-        const TracePropagationOptions(),
-    this.accessToken,
-    Map<String, String>? headers,
-    Client? httpClient,
-    YAJsonIsolate? isolate,
-  }) : _supabaseKey = supabaseKey,
-       _functionsOptions = functionsOptions,
-       _restUrl = '$supabaseUrl/rest/v1',
-       _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
-       _authUrl = '$supabaseUrl/auth/v1',
-       _storageUrl = '$supabaseUrl/storage/v1',
-       _functionsUrl = '$supabaseUrl/functions/v1',
-       _postgrestOptions = postgrestOptions,
-       _headers = {...SupabaseConstants.defaultHeaders, ...?headers},
-       _httpClient = httpClient,
-       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-       _hasCustomIsolate = isolate != null {
-    final baseHttpClient = httpClient ?? Client();
-    final tracedHttpClient = tracePropagationOptions.enabled
-        ? TracePropagationClient(
-            baseHttpClient,
-            tracePropagationOptions,
-            supabaseUrl,
-          )
-        : baseHttpClient;
-    _authApiHttpClient = tracedHttpClient;
-    _authInstance = _initSupabaseAuthClient(
-      autoRefreshToken: authOptions.autoRefreshToken,
-      authAsyncStorage: authOptions.pkceAsyncStorage,
-      authFlowType: authOptions.authFlowType,
-    );
-    _authHttpClient = AuthHttpClient(
-      _supabaseKey,
-      tracedHttpClient,
-      _getAccessToken,
-    );
-    _functionsHttpClient = AuthHttpClient(
-      _supabaseKey,
-      tracedHttpClient,
-      _getAccessToken,
-      omitNewApiKeyAsBearer: true,
-    );
-    warnOnUnrecognizedApiKey(_supabaseKey, _log);
-    rest = _initRestClient();
-    functions = _initFunctionsClient();
-    storage = _initStorageClient(
-      storageOptions.retryAttempts,
-      storageOptions.useNewHostname,
-    );
-    realtime = _initRealtimeClient(options: realtimeClientOptions);
-    if (accessToken == null) {
-      _log.config(
-        'Initialize SupabaseClient v$version with no custom access token',
-      );
-      _listenForAuthEvents();
-    } else {
-      _log.config(
-        'Initialize SupabaseClient v$version with custom access token',
-      );
-    }
-  }
-
+  /// Supabase Auth allows you to create and manage user sessions.
+  ///
+  /// Throws an [AuthException] when [accessToken] is set, since the built-in
+  /// auth client is not used in that case.
   AuthClient get auth {
     if (accessToken == null) {
       return _authInstance!;
@@ -206,20 +234,20 @@ class SupabaseClient {
     );
   }
 
+  /// The default-schema view of the database, built on access so it always
+  /// wraps the current rest client.
+  SupabaseQuerySchema get _defaultSchema => SupabaseQuerySchema(
+    counter: _incrementId,
+    restUrl: _restUrl,
+    schema: _postgrestOptions.schema,
+    jsonCodec: _jsonCodec,
+    authHttpClient: _authHttpClient,
+    realtime: realtime,
+    rest: rest,
+  );
+
   /// Perform a table operation.
-  SupabaseQueryBuilder from(String table) {
-    final url = '$_restUrl/$table';
-    return SupabaseQueryBuilder(
-      url,
-      realtime,
-      headers: {...rest.headers, ...headers},
-      schema: _postgrestOptions.schema,
-      table: table,
-      httpClient: _authHttpClient,
-      incrementId: _incrementId.increment(),
-      isolate: _isolate,
-    );
-  }
+  SupabaseQueryBuilder from(String table) => _defaultSchema.from(table);
 
   /// Perform a typed table operation.
   ///
@@ -241,19 +269,7 @@ class SupabaseClient {
   /// Select a schema to query or perform an function (rpc) call.
   ///
   /// The schema needs to be on the list of exposed schemas inside Supabase.
-  SupabaseQuerySchema schema(String schema) {
-    final newRest = rest.schema(schema);
-    return SupabaseQuerySchema(
-      counter: _incrementId,
-      restUrl: _restUrl,
-      headers: headers,
-      schema: schema,
-      isolate: _isolate,
-      authHttpClient: _authHttpClient,
-      realtime: realtime,
-      rest: newRest,
-    );
-  }
+  SupabaseQuerySchema schema(String schema) => _defaultSchema.schema(schema);
 
   /// {@macro postgrest_rpc}
   PostgrestFilterBuilder<T> rpc<T>(
@@ -261,8 +277,7 @@ class SupabaseClient {
     Map<String, dynamic>? params,
     get = false,
   }) {
-    rest.headers.addAll(headers);
-    return rest.rpc(fn, params: params, get: get);
+    return _defaultSchema.rpc(fn, params: params, get: get);
   }
 
   /// Creates a Realtime channel with Broadcast, Presence, and Postgres Changes.
@@ -273,10 +288,8 @@ class SupabaseClient {
     return realtime.channel(name, options);
   }
 
-  /// Returns all Realtime channels.
-  List<RealtimeChannel> getChannels() {
-    return realtime.getChannels();
-  }
+  /// All Realtime channels, as an unmodifiable view.
+  List<RealtimeChannel> get channels => realtime.channels;
 
   /// Unsubscribes and removes Realtime channel from Realtime client.
   ///
@@ -302,7 +315,7 @@ class SupabaseClient {
       return session?.accessToken;
     } on AuthException catch (error, stackTrace) {
       // Throw the error instead of making an API request with an expired token.
-      _log.warning(
+      clientLogger.warning(
         'Access token is expired and refreshing failed, aborting api request',
         error,
         stackTrace,
@@ -311,14 +324,16 @@ class SupabaseClient {
     }
   }
 
+  /// Disconnects realtime, closes the auth state subscription, and disposes
+  /// the functions, PostgREST, and its internally owned JSON codec.
   Future<void> dispose() async {
-    _log.fine('Dispose SupabaseClient');
+    clientLogger.fine('Dispose SupabaseClient');
     await realtime.disconnect();
     await _authStateSubscription?.cancel();
     await functions.dispose();
-    await rest.dispose();
-    if (!_hasCustomIsolate) {
-      await _isolate.dispose();
+    await _rest.dispose();
+    if (_ownsJsonCodec) {
+      await _jsonCodec.dispose();
     }
     if (_httpClient == null) {
       _authHttpClient.close();
@@ -330,6 +345,8 @@ class SupabaseClient {
     required bool autoRefreshToken,
     required AuthAsyncStorage? authAsyncStorage,
     required AuthFlowType authFlowType,
+    required bool appendPkceFlowIdToRedirects,
+    required SupabaseRetryOptions retryOptions,
   }) {
     final authHeaders = {...headers};
     authHeaders['apikey'] = _supabaseKey;
@@ -342,6 +359,8 @@ class SupabaseClient {
       httpClient: _authApiHttpClient,
       asyncStorage: authAsyncStorage,
       flowType: authFlowType,
+      appendPkceFlowIdToRedirects: appendPkceFlowIdToRedirects,
+      retryOptions: retryOptions,
     );
   }
 
@@ -351,10 +370,8 @@ class SupabaseClient {
       headers: {...headers},
       schema: _postgrestOptions.schema,
       httpClient: _authHttpClient,
-      isolate: _isolate,
-      retryEnabled: _postgrestOptions.retryEnabled,
-      retryCount: _postgrestOptions.retryCount,
-      retryableStatusCodes: _postgrestOptions.retryableStatusCodes,
+      jsonCodec: _jsonCodec,
+      retryOptions: _postgrestOptions.retryOptions,
       requestTimeout: _postgrestOptions.requestTimeout,
     );
   }
@@ -364,28 +381,32 @@ class SupabaseClient {
       _functionsUrl,
       {...headers},
       httpClient: _functionsHttpClient,
-      isolate: _isolate,
+      jsonCodec: _jsonCodec,
       region: _functionsOptions.region,
     );
   }
 
   SupabaseStorageClient _initStorageClient(
-    int storageRetryAttempts,
+    SupabaseRetryOptions storageRetryOptions,
     bool useNewHostname,
   ) {
     return SupabaseStorageClient(
       _storageUrl,
       {...headers},
       httpClient: _authHttpClient,
-      retryAttempts: storageRetryAttempts,
+      retryOptions: storageRetryOptions,
       useNewHostname: useNewHostname,
     );
   }
 
-  RealtimeClient _initRealtimeClient({required RealtimeClientOptions options}) {
+  RealtimeClient _initRealtimeClient({
+    required RealtimeClientOptions options,
+  }) {
     return RealtimeClient(
       _realtimeUrl,
-      parameters: {'apikey': _supabaseKey},
+      parameters: {
+        'apikey': _supabaseKey,
+      },
       headers: {'apikey': _supabaseKey, ...headers},
       logLevel: options.logLevel,
       httpClient: _authHttpClient,
@@ -393,9 +414,15 @@ class SupabaseClient {
       connectionCloseTimeout:
           options.connectionCloseTimeout ??
           RealtimeConstants.defaultConnectionCloseTimeout,
+      heartbeatInterval:
+          options.heartbeatInterval ??
+          RealtimeConstants.defaultHeartbeatInterval,
+      reconnectAfter: options.reconnectAfter,
       customAccessToken: accessToken,
       transport: options.transport,
       disconnectOnEmptyChannelsAfter: options.disconnectOnEmptyChannelsAfter,
+      encode: options.encode,
+      decode: options.decode,
     );
   }
 
@@ -412,9 +439,14 @@ class SupabaseClient {
 
   void _listenForAuthEvents() {
     // ignore: invalid_use_of_internal_member
-    _authStateSubscription = auth.onAuthStateChangeSync.listen((data) {
-      unawaited(_handleTokenChanged(data.event, data.session?.accessToken));
-    }, onError: (error, stack) {});
+    _authStateSubscription = auth.onAuthStateChangeSync.listen(
+      (data) {
+        unawaited(
+          _handleTokenChanged(data.event, data.session?.accessToken),
+        );
+      },
+      onError: (error, stack) {},
+    );
   }
 
   Future<void> _handleTokenChanged(AuthChangeEvent event, String? token) async {

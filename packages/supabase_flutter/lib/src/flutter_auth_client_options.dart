@@ -1,6 +1,24 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Configuration for the auth client used by `Supabase.instance.client.auth`,
+/// extending [AuthClientOptions] with Flutter-specific session persistence
+/// and deep link handling.
 class FlutterAuthClientOptions extends AuthClientOptions {
+  const FlutterAuthClientOptions({
+    super.authFlowType,
+    super.autoRefreshToken,
+    super.pkceAsyncStorage,
+    super.appendPkceFlowIdToRedirects,
+    this.localStorage,
+    this.detectSessionInUri = true,
+    this.detectSessionInUriPredicate,
+    this.persistSession = true,
+  });
+
+  /// Where the session is persisted.
+  ///
+  /// Defaults to shared preferences when [persistSession] is `true`, and to
+  /// an in-memory-only storage otherwise.
   final LocalStorage? localStorage;
 
   /// If true, the client will start the deep link observer and obtain sessions
@@ -27,21 +45,12 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   /// custom [localStorage] always takes precedence over this flag.
   final bool persistSession;
 
-  const FlutterAuthClientOptions({
-    super.authFlowType,
-    super.autoRefreshToken,
-    super.pkceAsyncStorage,
-    this.localStorage,
-    this.detectSessionInUri = true,
-    this.detectSessionInUriPredicate,
-    this.persistSession = true,
-  });
-
   FlutterAuthClientOptions copyWith({
     AuthFlowType? authFlowType,
     bool? autoRefreshToken,
     LocalStorage? localStorage,
     AuthAsyncStorage? pkceAsyncStorage,
+    bool? appendPkceFlowIdToRedirects,
     bool? detectSessionInUri,
     bool Function(Uri uri)? detectSessionInUriPredicate,
     bool? persistSession,
@@ -51,6 +60,8 @@ class FlutterAuthClientOptions extends AuthClientOptions {
       autoRefreshToken: autoRefreshToken ?? this.autoRefreshToken,
       localStorage: localStorage ?? this.localStorage,
       pkceAsyncStorage: pkceAsyncStorage ?? this.pkceAsyncStorage,
+      appendPkceFlowIdToRedirects:
+          appendPkceFlowIdToRedirects ?? this.appendPkceFlowIdToRedirects,
       detectSessionInUri: detectSessionInUri ?? this.detectSessionInUri,
       detectSessionInUriPredicate:
           detectSessionInUriPredicate ?? this.detectSessionInUriPredicate,

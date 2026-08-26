@@ -10,9 +10,8 @@ import 'package:supabase_common/supabase_common.dart';
 
 @internal
 class AuthFetch {
-  final Client? httpClient;
-
   const AuthFetch([this.httpClient]);
+  final Client? httpClient;
 
   String _getErrorMessage(dynamic error) {
     if (error is Map) {

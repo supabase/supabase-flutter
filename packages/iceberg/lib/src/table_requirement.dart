@@ -14,19 +14,17 @@ class AssertCreate extends TableRequirement {
 }
 
 class AssertTableUuid extends TableRequirement {
-  final String uuid;
-
   const AssertTableUuid(this.uuid);
+  final String uuid;
 
   @override
   Map<String, dynamic> toJson() => {'type': 'assert-table-uuid', 'uuid': uuid};
 }
 
 class AssertReferenceSnapshotId extends TableRequirement {
+  const AssertReferenceSnapshotId({required this.reference, this.snapshotId});
   final String reference;
   final int? snapshotId;
-
-  const AssertReferenceSnapshotId({required this.reference, this.snapshotId});
 
   @override
   Map<String, dynamic> toJson() => {
@@ -37,9 +35,8 @@ class AssertReferenceSnapshotId extends TableRequirement {
 }
 
 class AssertLastAssignedFieldId extends TableRequirement {
-  final int lastAssignedFieldId;
-
   const AssertLastAssignedFieldId(this.lastAssignedFieldId);
+  final int lastAssignedFieldId;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -49,9 +46,8 @@ class AssertLastAssignedFieldId extends TableRequirement {
 }
 
 class AssertCurrentSchemaId extends TableRequirement {
-  final int currentSchemaId;
-
   const AssertCurrentSchemaId(this.currentSchemaId);
+  final int currentSchemaId;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -61,9 +57,8 @@ class AssertCurrentSchemaId extends TableRequirement {
 }
 
 class AssertLastAssignedPartitionId extends TableRequirement {
-  final int lastAssignedPartitionId;
-
   const AssertLastAssignedPartitionId(this.lastAssignedPartitionId);
+  final int lastAssignedPartitionId;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -73,9 +68,8 @@ class AssertLastAssignedPartitionId extends TableRequirement {
 }
 
 class AssertDefaultSpecificationId extends TableRequirement {
-  final int defaultSpecificationId;
-
   const AssertDefaultSpecificationId(this.defaultSpecificationId);
+  final int defaultSpecificationId;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -85,9 +79,8 @@ class AssertDefaultSpecificationId extends TableRequirement {
 }
 
 class AssertDefaultSortOrderId extends TableRequirement {
-  final int defaultSortOrderId;
-
   const AssertDefaultSortOrderId(this.defaultSortOrderId);
+  final int defaultSortOrderId;
 
   @override
   Map<String, dynamic> toJson() => {

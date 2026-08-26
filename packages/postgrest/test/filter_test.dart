@@ -273,6 +273,17 @@ void main() {
     }
   });
 
+  test('not in', () async {
+    final response = await postgrest.from('users').select('status').notInFilter(
+      'status',
+      ['ONLINE'],
+    );
+    expect(response, isNotEmpty);
+    for (final item in response) {
+      expect(item['status'], isNot('ONLINE'));
+    }
+  });
+
   test('immutable filter', () async {
     final query = postgrest.from("users").select();
     final firstResponse = await query.eq("status", "OFFLINE");

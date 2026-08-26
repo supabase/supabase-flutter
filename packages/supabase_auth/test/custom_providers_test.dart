@@ -133,5 +133,30 @@ void main() {
       expect(provider.discoveryDocument, isNotNull);
       expect(provider.discoveryDocument?.issuer, 'https://issuer.example.com');
     });
+
+    test('parses the standard OIDC discovery metadata keys', () {
+      final json = baseJson()
+        ..['discovery_document'] = {
+          'issuer': 'https://issuer.example.com',
+          'authorization_endpoint': 'https://issuer.example.com/authorize',
+          'token_endpoint': 'https://issuer.example.com/token',
+          'jwks_uri': 'https://issuer.example.com/jwks',
+          'userinfo_endpoint': 'https://issuer.example.com/userinfo',
+          'revocation_endpoint': 'https://issuer.example.com/revoke',
+          'scopes_supported': ['openid', 'email'],
+          'response_types_supported': ['code'],
+          'subject_types_supported': ['public'],
+          'id_token_signing_alg_values_supported': ['RS256'],
+        };
+
+      final document = CustomOAuthProvider.fromJson(json).discoveryDocument;
+
+      expect(document?.userInfoEndpoint, 'https://issuer.example.com/userinfo');
+      expect(document?.revocationEndpoint, 'https://issuer.example.com/revoke');
+      expect(document?.supportedScopes, ['openid', 'email']);
+      expect(document?.supportedResponseTypes, ['code']);
+      expect(document?.supportedSubjectTypes, ['public']);
+      expect(document?.supportedIdTokenSigningAlgorithms, ['RS256']);
+    });
   });
 }

@@ -6,7 +6,7 @@ import 'dart:async';
 import 'package:supabase/supabase.dart';
 import 'package:test/test.dart';
 
-import 'package:supabase_common/testing.dart';
+import 'utils.dart';
 
 late SupabaseClient _supabase;
 
@@ -541,8 +541,11 @@ void main() {
 const _streamTimeout = Duration(seconds: 10);
 const _warmUpPrefix = 'warm_up_';
 
-SupabaseClient _createClient() =>
-    SupabaseClient(localStackUrl, localStackServiceRoleKey);
+SupabaseClient _createClient() => SupabaseClient(
+  localStackUrl,
+  localStackServiceRoleKey,
+  authOptions: AuthClientOptions(pkceAsyncStorage: TestAsyncStorage()),
+);
 
 /// Listens to [stream] and asserts that it emits [expectedSnapshots] in order,
 /// where every snapshot is the result of [project] applied to the emitted rows.
@@ -600,7 +603,7 @@ Future<void> _expectSnapshots({
 /// are being streamed yet.
 Future<void> _waitUntilJoined() async {
   for (var attempt = 0; attempt < 200; attempt++) {
-    final channels = _supabase.getChannels();
+    final channels = _supabase.channels;
     if (channels.isNotEmpty &&
         // ignore: invalid_use_of_internal_member
         channels.every((channel) => channel.isJoined)) {

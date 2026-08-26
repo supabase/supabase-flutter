@@ -46,7 +46,39 @@ To install on a locally developed app:
     path: <your-path-to-the-local-supabase-flutter-repo>/packages/supabase_flutter
   ```
 
-## Testing
+## Testing your app
+
+The helpers the test suites of these packages run on are published in
+[`package:supabase_testing`](https://pub.dev/packages/supabase_testing),
+so your tests can build on the same primitives: mock HTTP clients, JWT builders,
+auth session fixtures and realtime frames. Add the package as a dev dependency:
+
+```yaml
+dev_dependencies:
+  supabase_testing: ^0.1.0
+```
+
+Then stub the endpoints the code under test talks to and run it against a
+real `SupabaseClient`, with no running stack required:
+
+```dart
+final httpClient = MockSupabaseHttpClient()
+  ..stubTable('todos', rows: [
+    {'id': 1, 'task': 'Ship it', 'status': false},
+  ]);
+final supabase = testSupabaseClient(httpClient: httpClient);
+addTearDown(supabase.dispose);
+
+final todos = await supabase.from('todos').select();
+expect(todos, hasLength(1));
+```
+
+See the [supabase_testing README](packages/supabase_testing/README.md) for the
+full guide: stubbing database, rpc, edge function and auth endpoints,
+asserting on recorded requests, running tests as a signed-in user, and wiring
+`Supabase.initialize` in Flutter widget tests.
+
+## Testing this repo
 
 The tests for the packages `postgrest`, `supabase_auth`, `supabase_realtime` and `supabase_storage` run against a
 local Supabase stack. To run these tests locally you need `docker` and the

@@ -1,3 +1,18 @@
+## 3.0.0-dev.1
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: share the test helpers through supabase_common ([#1745](https://github.com/supabase/supabase-flutter/issues/1745)). ([bcb41fa4](https://github.com/supabase/supabase-flutter/commit/bcb41fa4d9ef840c0380e641d3e45968084090c8))
+ - **PERF**(yet_another_json_isolate): process small payloads inline and large ones on short-lived isolates ([#1746](https://github.com/supabase/supabase-flutter/issues/1746)). ([7942c377](https://github.com/supabase/supabase-flutter/commit/7942c37770c5a12b18b27afc66b8595e67fdd22d))
+ - **FEAT**: introduce the supabase_testing package ([#1747](https://github.com/supabase/supabase-flutter/issues/1747)). ([5a3aa9b4](https://github.com/supabase/supabase-flutter/commit/5a3aa9b4265385e3d747ca70ad499102fa388ee9))
+ - **FEAT**: resolve an access token per request on the standalone clients ([#1742](https://github.com/supabase/supabase-flutter/issues/1742)). ([dd61782a](https://github.com/supabase/supabase-flutter/commit/dd61782a35f1a99af95f5457b5a3393b3d7939b9))
+ - **BREAKING** **REFACTOR**: process JSON through the AsyncJsonCodec interface ([#1751](https://github.com/supabase/supabase-flutter/issues/1751)). ([6969eb38](https://github.com/supabase/supabase-flutter/commit/6969eb3805cc1920f5a44902ae2ce660170c13b3))
+ - **BREAKING** **REFACTOR**: rework logging to emit only through the supabase logger hierarchy ([#1741](https://github.com/supabase/supabase-flutter/issues/1741)). ([d1642c80](https://github.com/supabase/supabase-flutter/commit/d1642c80c60d93cf3bf7919b0cef775470275ed9))
+ - **BREAKING** **REFACTOR**: remove the dead setAccessToken mutators ([#1739](https://github.com/supabase/supabase-flutter/issues/1739)). ([ced47232](https://github.com/supabase/supabase-flutter/commit/ced47232edead42ce57d27b76227723817ef2367))
+ - **BREAKING** **FEAT**(functions): make FunctionException a sealed class ([#1723](https://github.com/supabase/supabase-flutter/issues/1723)). ([cb128aaa](https://github.com/supabase/supabase-flutter/commit/cb128aaa2885397fa13c94dbac60a1bc6a3a8de4))
+ - **BREAKING** **FEAT**: rename the functions_client package to supabase_functions ([#1713](https://github.com/supabase/supabase-flutter/issues/1713)). ([eb4f3773](https://github.com/supabase/supabase-flutter/commit/eb4f3773e74dd62be5a768433d0a2497d643f110))
+ - **BREAKING** **CHORE**: give each package's Constants class a package-specific name ([#1677](https://github.com/supabase/supabase-flutter/issues/1677)). ([40f6d89c](https://github.com/supabase/supabase-flutter/commit/40f6d89c7fad32e49f028b2644914807fd731b70))
+
 ## 2.7.1
 
  - Update a dependency to the latest release.

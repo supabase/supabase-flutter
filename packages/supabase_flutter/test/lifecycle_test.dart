@@ -10,13 +10,12 @@ import 'widget_test_stubs.dart';
 /// A minimal fake [WebSocketChannel] using [Fake] to avoid
 /// implementing all [StreamChannelMixin] methods.
 class FakeWebSocketChannel extends Fake implements WebSocketChannel {
+  FakeWebSocketChannel({Completer<void>? readyCompleter})
+    : readyCompleter = readyCompleter ?? Completer<void>();
   final Completer<void> readyCompleter;
   late final FakeWebSocketSink fakeSink = FakeWebSocketSink(_streamController);
   final StreamController<dynamic> _streamController =
       StreamController<dynamic>.broadcast();
-
-  FakeWebSocketChannel({Completer<void>? readyCompleter})
-    : readyCompleter = readyCompleter ?? Completer<void>();
 
   @override
   Future<void> get ready => readyCompleter.future;
@@ -36,12 +35,11 @@ class FakeWebSocketChannel extends Fake implements WebSocketChannel {
 }
 
 class FakeWebSocketSink extends Fake implements WebSocketSink {
+  FakeWebSocketSink(this._streamController);
   final StreamController<dynamic> _streamController;
   final Completer<void> _doneCompleter = Completer<void>();
   int? closeCode;
   String? closeReason;
-
-  FakeWebSocketSink(this._streamController);
 
   @override
   Future<void> close([int? code, String? reason]) async {
@@ -83,7 +81,6 @@ void main() {
       await Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockEmptyLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),

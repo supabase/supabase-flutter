@@ -32,6 +32,7 @@ linter:
     use_enums: true
     unnecessary_breaks: true
     lines_longer_than_80_chars: true
+    sort_constructors_first: true
 
 formatter:
   trailing_commas: preserve

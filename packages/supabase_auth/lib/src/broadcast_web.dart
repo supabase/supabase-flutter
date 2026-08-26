@@ -3,11 +3,10 @@ import 'dart:convert';
 import 'dart:js_interop';
 
 import 'package:supabase_auth/src/types/types.dart';
-import 'package:logging/logging.dart';
+import 'package:supabase_auth/src/logger.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:web/web.dart' as web;
-
-final _log = Logger('supabase.auth');
 
 @internal
 BroadcastChannel getBroadcastChannel(String broadcastKey) {
@@ -24,8 +23,8 @@ BroadcastChannel getBroadcastChannel(String broadcastKey) {
   return (
     onMessage: controller.stream,
     postMessage: (message) {
-      _log.finest('Broadcasting message: $message');
-      _log.fine('Broadcasting event: ${message['event']}');
+      authLogger.finest('Broadcasting message: ${redactedPayload(message)}');
+      authLogger.fine('Broadcasting event: ${message['event']}');
       broadcast.postMessage(message.jsify()!);
     },
     close: () {

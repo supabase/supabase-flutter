@@ -21,18 +21,18 @@ import 'package:supabase_common/supabase_common.dart';
 /// }
 /// ```
 sealed class IcebergException extends SupabaseException {
-  /// The Iceberg error code reported by the server.
-  final int? code;
-
-  /// The raw error payload, when available.
-  final Object? details;
-
   const IcebergException(
     super.message, {
     super.errorCode,
     this.code,
     this.details,
   });
+
+  /// The Iceberg error code reported by the server.
+  final int? code;
+
+  /// The raw error payload, when available.
+  final Object? details;
 }
 
 /// A request failed at the network level, before any response was received.
@@ -49,9 +49,6 @@ final class IcebergNetworkException extends IcebergException {
 /// `NoSuchTableException`.
 sealed class IcebergApiException extends IcebergException
     with SupabaseApiException {
-  @override
-  final int statusCode;
-
   const IcebergApiException(
     super.message, {
     required this.statusCode,
@@ -117,6 +114,8 @@ sealed class IcebergApiException extends IcebergException
       ),
     };
   }
+  @override
+  final int statusCode;
 
   @override
   String toString() =>

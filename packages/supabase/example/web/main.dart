@@ -41,9 +41,9 @@ void exampleUsage(SupabaseClient supabase) async {
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'countries',
-        callback: (payload) {},
       )
-      .subscribe();
+      .listen((payload) {});
+  realtimeChannel.subscribe();
 
   // remember to remove channel when no longer needed
   unawaited(supabase.removeChannel(realtimeChannel));

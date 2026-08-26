@@ -4,19 +4,17 @@ import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
 import 'package:supabase/supabase.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/src/supabase_flutter_constants.dart';
 import 'package:supabase_flutter/src/flutter_auth_client_options.dart';
 import 'package:supabase_flutter/src/local_storage.dart';
+import 'package:supabase_flutter/src/logger.dart';
 import 'package:supabase_flutter/src/supabase_auth.dart';
 
 import 'hot_restart_cleanup_stub.dart'
     if (dart.library.js_interop) 'hot_restart_cleanup_web.dart';
 import 'version.dart';
-
-final _log = Logger('supabase.supabase_flutter');
 
 /// Supabase instance.
 ///
@@ -36,6 +34,8 @@ final _log = Logger('supabase.supabase_flutter');
 ///
 ///   * [SupabaseAuth]
 class Supabase {
+  Supabase._();
+
   /// Gets the current supabase instance.
   ///
   /// An [AssertionError] is thrown if supabase isn't initialized yet.
@@ -63,11 +63,15 @@ class Supabase {
   ///
   /// Custom http client can be used by passing [httpClient] parameter.
   ///
+  /// Pass [jsonCodec] to encode and decode the JSON of the rest and functions
+  /// clients some other way, for example through a native parser. A codec
+  /// passed here is owned by the caller, so it is not disposed together with
+  /// the client. One is created internally when this is omitted.
+  ///
   /// [realtimeClientOptions], [postgrestOptions], and [storageOptions]
   /// configure their respective underlying clients, for example
-  /// `storageOptions.retryAttempts` controls how many retry attempts there
-  /// should be to upload a file to Supabase storage when it fails due to a
-  /// network interruption.
+  /// `storageOptions.retryOptions` configures how an upload to Supabase
+  /// storage that failed due to a network interruption is retried.
   ///
   /// [authOptions] configures authentication behavior. Pass a custom
   /// [FlutterAuthClientOptions.localStorage] there to override the default
@@ -81,9 +85,11 @@ class Supabase {
   /// default. Pass a custom storage to [AuthClientOptions.pkceAsyncStorage]
   /// on [authOptions] to override the behavior.
   ///
-  /// If [debug] is set to `true`, debug logs will be printed in debug
-  /// console. Defaults to `kDebugMode`, and is disabled by default while
-  /// running in a Flutter test unless [debug] is explicitly set to `true`.
+  /// All Supabase packages log through `package:logging` using loggers under
+  /// the `supabase` hierarchy (for example `supabase.auth` or
+  /// `supabase.realtime`). Nothing is printed by default; attach a listener
+  /// in your application to receive the records. See the `Logging` section of
+  /// the package README for details.
   static Future<Supabase> initialize({
     required String url,
     required String publishableKey,
@@ -96,27 +102,16 @@ class Supabase {
     TracePropagationOptions tracePropagationOptions =
         const TracePropagationOptions(),
     Future<String?> Function()? accessToken,
-    bool? debug,
+    AsyncJsonCodec? jsonCodec,
   }) async {
     if (_instance._isInitialized) {
-      _log.info('Supabase is already initialized. Skipping reinitialization.');
+      flutterLogger.info(
+        'Supabase is already initialized. Skipping reinitialization.',
+      );
       return _instance;
     }
 
-    _instance._debugEnable = debug ?? (kDebugMode && !isRunningInFlutterTest);
-
-    if (_instance._debugEnable) {
-      _instance._logSubscription = Logger('supabase').onRecord.listen((record) {
-        if (record.level >= Level.INFO) {
-          debugPrint(
-            '${record.loggerName}: ${record.level.name}: ${record.message} '
-            '${record.error ?? ""}',
-          );
-        }
-      });
-    }
-
-    _log.config("Initialize Supabase v$version");
+    flutterLogger.config('Initialize Supabase v$version');
 
     if (authOptions.pkceAsyncStorage == null) {
       authOptions = authOptions.copyWith(
@@ -143,6 +138,7 @@ class Supabase {
       storageOptions: storageOptions,
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
+      jsonCodec: jsonCodec,
     );
 
     if (accessToken == null) {
@@ -157,12 +153,11 @@ class Supabase {
           CancelableOperation.fromFuture(supabaseAuth.recoverSession());
     }
 
-    _log.info('***** Supabase init completed *****');
+    flutterLogger.info('Supabase initialization completed');
 
     return _instance;
   }
 
-  Supabase._();
   static final Supabase _instance = Supabase._();
 
   bool _isInitialized = false;
@@ -189,8 +184,6 @@ class Supabase {
 
   SupabaseAuth? _supabaseAuth;
 
-  bool _debugEnable = false;
-
   /// Wraps the `recoverSession()` call so that it can be terminated when
   /// `dispose()` is called
   ///
@@ -210,8 +203,6 @@ class Supabase {
   /// (e.g. abort a reconnect if the app went back to background).
   AppLifecycleState? _targetLifecycleState;
 
-  StreamSubscription<dynamic>? _logSubscription;
-
   /// Dispose the instance to free up resources.
   ///
   /// Calling this on an instance that is not initialized does nothing, so it
@@ -223,25 +214,24 @@ class Supabase {
     final supabaseAuth = _supabaseAuth;
     final lifecycleListener = _lifecycleListener;
     final restoreSession = _restoreSessionCancellableOperation;
-    final logSubscription = _logSubscription;
     final pendingLifecycleOperation = _pendingLifecycleOperation;
 
     _client = null;
     _supabaseAuth = null;
     _restoreSessionCancellableOperation = null;
     _lifecycleListener = null;
-    _logSubscription = null;
     _isInitialized = false;
 
     _targetLifecycleState = null;
     lifecycleListener?.dispose();
 
+    // The lifecycle observer is removed before the client is disposed, so a
+    // lifecycle event cannot reach a client that is already torn down.
     await _disposeAll([
+      () => supabaseAuth?.dispose(),
       () => restoreSession?.cancel(),
-      () => logSubscription?.cancel(),
       () => pendingLifecycleOperation,
       currentClient.dispose,
-      () => supabaseAuth?.dispose(),
     ]);
   }
 
@@ -254,7 +244,11 @@ class Supabase {
       try {
         await step();
       } catch (error, stackTrace) {
-        _log.warning('Error while disposing Supabase', error, stackTrace);
+        flutterLogger.warning(
+          'Error while disposing Supabase',
+          error,
+          stackTrace,
+        );
         firstError ??= error;
         firstStackTrace ??= stackTrace;
       }
@@ -276,6 +270,7 @@ class Supabase {
     required AuthClientOptions authOptions,
     required TracePropagationOptions tracePropagationOptions,
     required Future<String?> Function()? accessToken,
+    required AsyncJsonCodec? jsonCodec,
   }) {
     final headers = {
       ...SupabaseFlutterConstants.defaultHeaders,
@@ -292,6 +287,7 @@ class Supabase {
       authOptions: authOptions,
       tracePropagationOptions: tracePropagationOptions,
       accessToken: accessToken,
+      jsonCodec: jsonCodec,
     );
 
     // Close any previous realtime client that may still be connected due to

@@ -4,14 +4,38 @@ import 'package:supabase_storage/src/fetch.dart';
 import 'package:supabase_storage/src/types.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+/// API namespace for managing buckets, exposed on `SupabaseStorageClient`.
 class StorageBucketApi {
-  final String url;
-  final Map<String, String> headers;
-  @internal
-  late Fetch storageFetch;
-
-  StorageBucketApi(this.url, this.headers, {Client? httpClient}) {
+  StorageBucketApi(
+    this.url,
+    Map<String, String> headers, {
+    Client? httpClient,
+  }) : _headers = {...headers} {
     storageFetch = Fetch(httpClient);
+  }
+
+  /// The storage endpoint requests are sent to.
+  final String url;
+
+  final Map<String, String> _headers;
+
+  /// The headers sent with every request, as an unmodifiable view.
+  ///
+  /// Pass headers to the constructor instead of mutating them here. Use
+  /// `SupabaseStorageClient.setHeader` to add one, or assign
+  /// `SupabaseClient.headers` to replace them all on a managed client.
+  Map<String, String> get headers => Map.unmodifiable(_headers);
+
+  /// Sends requests to [url].
+  @internal
+  late final Fetch storageFetch;
+
+  /// Replaces the request headers with [newHeaders].
+  @internal
+  void replaceHeaders(Map<String, String> newHeaders) {
+    _headers
+      ..clear()
+      ..addAll(newHeaders);
   }
 
   Map<String, dynamic> _bucketPayload(String id, BucketOptions bucketOptions) {
@@ -29,7 +53,7 @@ class StorageBucketApi {
   /// [options] optionally filters, sorts and paginates the returned buckets.
   /// Calling [listBuckets] without any options returns all buckets.
   Future<List<Bucket>> listBuckets([ListBucketsOptions? options]) async {
-    final FetchOptions fetchOptions = FetchOptions(headers);
+    final FetchOptions fetchOptions = FetchOptions(_headers);
     final queryParameters = options?.toQueryParameters() ?? const {};
     final uri = Uri.parse('$url/bucket').replace(
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
@@ -50,7 +74,7 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to retrieve.
   Future<Bucket> getBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers);
+    final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.get(
       '$url/bucket/$id',
       options: options,
@@ -78,7 +102,7 @@ class StorageBucketApi {
     String id, [
     BucketOptions bucketOptions = const BucketOptions(public: false),
   ]) async {
-    final FetchOptions options = FetchOptions(headers);
+    final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.post(
       '$url/bucket',
       _bucketPayload(id, bucketOptions),
@@ -97,7 +121,7 @@ class StorageBucketApi {
     String id,
     BucketOptions bucketOptions,
   ) async {
-    final FetchOptions options = FetchOptions(headers);
+    final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.put(
       '$url/bucket/$id',
       _bucketPayload(id, bucketOptions),
@@ -111,7 +135,7 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to empty.
   Future<String> emptyBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers);
+    final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.post(
       '$url/bucket/$id/empty',
       {},
@@ -125,7 +149,7 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to delete.
   Future<String> deleteBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers);
+    final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.delete(
       '$url/bucket/$id',
       {},
@@ -158,7 +182,7 @@ class StorageBucketApi {
     final response = await storageFetch.delete(
       requestUrl.toString(),
       {},
-      options: FetchOptions(headers),
+      options: FetchOptions(_headers),
     );
     return (response as Map<String, dynamic>)['message'] as String;
   }
@@ -167,7 +191,7 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier for the bucket you are creating.
   Future<AnalyticsBucket> createAnalyticsBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers);
+    final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.post(
       '$url/iceberg/bucket',
       {'name': id},
@@ -183,7 +207,7 @@ class StorageBucketApi {
   Future<List<AnalyticsBucket>> listAnalyticsBuckets([
     ListBucketsOptions? options,
   ]) async {
-    final FetchOptions fetchOptions = FetchOptions(headers);
+    final FetchOptions fetchOptions = FetchOptions(_headers);
     final queryParameters = options?.toQueryParameters() ?? const {};
     final uri = Uri.parse('$url/iceberg/bucket').replace(
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
@@ -202,7 +226,7 @@ class StorageBucketApi {
   ///
   /// [id] is the unique identifier of the bucket you would like to delete.
   Future<String> deleteAnalyticsBucket(String id) async {
-    final FetchOptions options = FetchOptions(headers);
+    final FetchOptions options = FetchOptions(_headers);
     final response = await storageFetch.delete(
       '$url/iceberg/bucket/$id',
       {},

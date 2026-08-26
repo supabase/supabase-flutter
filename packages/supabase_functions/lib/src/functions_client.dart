@@ -6,50 +6,88 @@ import 'package:supabase_functions/src/types.dart';
 import 'package:supabase_functions/src/version.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart' show MultipartRequest;
-import 'package:logging/logging.dart';
+import 'package:meta/meta.dart';
+import 'package:supabase_functions/src/logger.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
+/// Client for invoking Supabase Edge Functions.
 class FunctionsClient {
-  final String _url;
-  final Map<String, String> _headers;
-  final http.Client? _httpClient;
-  final YAJsonIsolate _isolate;
-  final bool _hasCustomIsolate;
-  final String? _region;
-  final _log = Logger("supabase.functions");
-
-  /// In case you don't provide your own isolate, call [dispose] when you're
-  /// done
+  /// [jsonCodec] encodes the request body and decodes the response. The
+  /// default codec keeps large payloads off the calling isolate. A codec
+  /// passed here is owned by the caller, so [dispose] leaves it alone; call
+  /// [dispose] when you're done with a client that created its own.
+  ///
+  /// [accessToken] is resolved before every invocation and sent as
+  /// `Authorization: Bearer <token>`. Use it when the token rotates, for
+  /// example a session token that is refreshed. Returning `null` sends no
+  /// bearer token. A header passed to [invoke] still wins over it, so a single
+  /// call can be made with a different token.
   FunctionsClient(
     String url,
     Map<String, String> headers, {
     http.Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     String? region,
-  }) : _url = url,
+    Future<String?> Function()? accessToken,
+  }) : assert(
+         accessToken == null || headers.header('Authorization') == null,
+         'Pass either an Authorization header or accessToken, not both: the '
+         'header would win over the resolved token on every invocation.',
+       ),
+       _url = url,
        _headers = {...FunctionsConstants.defaultHeaders, ...headers},
-       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-       _hasCustomIsolate = isolate != null,
-       _httpClient = httpClient,
+       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _ownsJsonCodec = jsonCodec == null,
+       // The transport belongs to the caller, so the client never closes it,
+       // the same way it leaves a caller-provided JSON codec alone.
+       // ignore: dispose-class-fields
+       _httpClient = accessToken == null
+           ? httpClient
+           : AccessTokenClient(accessToken, httpClient),
        _region = region {
-    _log.config(
-      "Initialize FunctionsClient v$version with url '$url' and region "
+    functionsLogger.config(
+      "Initialize FunctionsClient v$version with url "
+      "'${Uri.parse(url).redacted}' and region "
       "'$region'",
     );
-    _log.finest("Initialize with headers: ${headers.redacted}");
+    functionsLogger.finest("Initialize with headers: ${headers.redacted}");
   }
+  final String _url;
+  final Map<String, String> _headers;
+  final http.Client? _httpClient;
+  final AsyncJsonCodec _jsonCodec;
+  final bool _ownsJsonCodec;
+  final String? _region;
 
-  /// Getter for the headers
-  Map<String, String> get headers {
-    return _headers;
-  }
-
-  /// Updates the authorization header
+  /// The headers sent with every invocation, as an unmodifiable view.
   ///
-  /// [token] - the new jwt token sent in the authorization header
-  void setAccessToken(String token) {
-    _headers['Authorization'] = 'Bearer $token';
+  /// Pass headers to the constructor instead of mutating them here. A client
+  /// managed by a `SupabaseClient` gets its headers replaced through the
+  /// internal [replaceHeaders] when `SupabaseClient.headers` is assigned.
+  Map<String, String> get headers => Map.unmodifiable(_headers);
+
+  /// Sets an HTTP header for subsequent invocations.
+  ///
+  /// Returns this for method chaining. A header passed to [invoke] still wins
+  /// over it for that single call. On a client managed by a `SupabaseClient`,
+  /// assign `SupabaseClient.headers` instead, so that every client gets the
+  /// header.
+  ///
+  /// ```dart
+  /// functions.setHeader('x-custom-header', 'value');
+  /// ```
+  FunctionsClient setHeader(String key, String value) {
+    _headers[key] = value;
+    return this;
+  }
+
+  /// Replaces the invocation headers with [newHeaders].
+  @internal
+  void replaceHeaders(Map<String, String> newHeaders) {
+    _headers
+      ..clear()
+      ..addAll(newHeaders);
   }
 
   /// Invokes a function
@@ -195,14 +233,15 @@ class FunctionsClient {
         } else if (body is Uint8List) {
           bodyRequest.bodyBytes = body;
         } else {
-          bodyRequest.body = await _isolate.encode(body);
+          bodyRequest.body = await _jsonCodec.encode(body);
         }
       }
       request = bodyRequest;
     }
 
-    _log.finest(
-      'Request: ${request.method} ${request.url} ${request.headers.redacted}',
+    functionsLogger.finest(
+      'Request: ${request.method} ${request.url.redacted} '
+      '${request.headers.redacted}',
     );
 
     final http.StreamedResponse response;
@@ -226,17 +265,16 @@ class FunctionsClient {
       if (bodyBytes.isEmpty) {
         data = "";
       } else {
-        final bodyText = utf8.decode(bodyBytes);
         dynamic decoded;
         try {
-          decoded = await _isolate.decode(bodyText);
+          decoded = await _jsonCodec.decodeBytes(bodyBytes);
         } on FormatException {
           // A body labeled JSON that doesn't parse is only tolerated on an
           // error status, where the raw text still needs to reach the caller
           // as the exception `details`. On a success status it's a real
           // anomaly, so keep surfacing it instead of handing back a String.
           if (isSuccessStatus) rethrow;
-          decoded = bodyText;
+          decoded = utf8.decode(bodyBytes);
         }
         data = decoded;
       }
@@ -272,13 +310,14 @@ class FunctionsClient {
     );
   }
 
-  /// Disposes the self created isolate for json encoding/decoding
+  /// Disposes the JSON codec the client created for itself.
   ///
-  /// Does nothing if you pass your own isolate
+  /// Does nothing when a codec was passed to the constructor, since that one
+  /// belongs to the caller.
   Future<void> dispose() async {
-    _log.fine("Dispose FunctionsClient");
-    if (!_hasCustomIsolate) {
-      return _isolate.dispose();
+    functionsLogger.fine("Dispose FunctionsClient");
+    if (_ownsJsonCodec) {
+      return _jsonCodec.dispose();
     }
   }
 }

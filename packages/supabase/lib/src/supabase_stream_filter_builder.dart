@@ -1,5 +1,7 @@
 part of './supabase_stream_builder.dart';
 
+/// A [SupabaseStreamBuilder] that can also filter which rows are streamed,
+/// created with `SupabaseQueryBuilder.stream`.
 class SupabaseStreamFilterBuilder extends SupabaseStreamBuilder {
   SupabaseStreamFilterBuilder({
     required super.queryBuilder,

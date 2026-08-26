@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:http/http.dart';
 import 'package:iceberg/iceberg.dart';
+import 'package:supabase_testing/supabase_testing.dart';
 import 'package:test/test.dart';
 
 const String supabaseUrl = 'SUPABASE_TEST_URL';
@@ -13,14 +14,12 @@ StreamedResponse _json(
   int statusCode,
   BaseRequest request, {
   Map<String, String> headers = const {},
-}) {
-  return StreamedResponse(
-    Stream.value(utf8.encode(jsonEncode(body))),
-    statusCode,
-    request: request,
-    headers: {'content-type': 'application/json', ...headers},
-  );
-}
+}) => jsonStreamedResponse(
+  body,
+  statusCode: statusCode,
+  request: request,
+  headers: headers,
+);
 
 class MockCatalogClient extends BaseClient {
   final List<Request> requests = <Request>[];

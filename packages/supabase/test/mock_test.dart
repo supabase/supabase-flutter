@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:supabase/supabase.dart';
+import 'package:supabase_testing/supabase_testing.dart';
 import 'package:test/test.dart';
 
 extension type const Todo(Map<String, dynamic> _json)
@@ -191,181 +192,96 @@ void main() {
 
             // Send an insert event
             await Future.delayed(Duration(milliseconds: 10));
-            final insertString = jsonEncode([
-              null,
-              null,
+            final insertString = postgresChangesFrame(
               topic,
-              'postgres_changes',
-              {
-                'ids': [77086988],
-                'data': {
-                  'commit_timestamp': '2021-08-01T08:00:20Z',
-                  'record': {'id': 3, 'task': 'task 3', 'status': 't'},
-                  'schema': 'public',
-                  'table': 'todos',
-                  'type': 'INSERT',
-                  'filter': ?realtimeFilter,
-                  'columns': [
-                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                    {
-                      'name': 'task',
-                      'type': 'text',
-                      'type_modifier': 4294967295,
-                    },
-                    {
-                      'name': 'status',
-                      'type': 'bool',
-                      'type_modifier': 4294967295,
-                    },
-                  ],
-                },
+              ids: [77086988],
+              data: {
+                'commit_timestamp': '2021-08-01T08:00:20Z',
+                'record': {'id': 3, 'task': 'task 3', 'status': 't'},
+                'schema': 'public',
+                'table': 'todos',
+                'type': 'INSERT',
+                'filter': ?realtimeFilter,
+                'columns': todoColumns,
               },
-            ]);
+            );
             webSocket!.add(insertString);
 
             // Send an update event for id = 2
             await Future.delayed(Duration(milliseconds: 10));
-            final updateString = jsonEncode([
-              null,
-              null,
+            final updateString = postgresChangesFrame(
               topic,
-              'postgres_changes',
-              {
-                'ids': [77086988],
-                'data': {
-                  'columns': [
-                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                    {
-                      'name': 'task',
-                      'type': 'text',
-                      'type_modifier': 4294967295,
-                    },
-                    {
-                      'name': 'status',
-                      'type': 'bool',
-                      'type_modifier': 4294967295,
-                    },
-                  ],
-                  'commit_timestamp': '2021-08-01T08:00:30Z',
-                  'errors': null,
-                  'old_record': {'id': 2},
-                  'record': {'id': 2, 'task': 'task 2 updated', 'status': 'f'},
-                  'schema': 'public',
-                  'table': 'todos',
-                  'type': 'UPDATE',
-                  'filter': ?realtimeFilter,
-                },
+              ids: [77086988],
+              data: {
+                'columns': todoColumns,
+                'commit_timestamp': '2021-08-01T08:00:30Z',
+                'errors': null,
+                'old_record': {'id': 2},
+                'record': {'id': 2, 'task': 'task 2 updated', 'status': 'f'},
+                'schema': 'public',
+                'table': 'todos',
+                'type': 'UPDATE',
+                'filter': ?realtimeFilter,
               },
-            ]);
+            );
             webSocket!.add(updateString);
 
             // Send delete event for id=2
             await Future.delayed(Duration(milliseconds: 10));
-            final deleteString = jsonEncode([
-              null,
-              null,
+            final deleteString = postgresChangesFrame(
               topic,
-              'postgres_changes',
-              {
-                'data': {
-                  'columns': [
-                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                    {
-                      'name': 'task',
-                      'type': 'text',
-                      'type_modifier': 4294967295,
-                    },
-                    {
-                      'name': 'status',
-                      'type': 'bool',
-                      'type_modifier': 4294967295,
-                    },
-                  ],
-                  'commit_timestamp': '2022-09-14T02:12:52Z',
-                  'errors': null,
-                  'old_record': {'id': 2},
-                  'schema': 'public',
-                  'table': 'todos',
-                  'type': 'DELETE',
-                  'filter': ?realtimeFilter,
-                },
-                'ids': [77086988],
+              ids: [77086988],
+              data: {
+                'columns': todoColumns,
+                'commit_timestamp': '2022-09-14T02:12:52Z',
+                'errors': null,
+                'old_record': {'id': 2},
+                'schema': 'public',
+                'table': 'todos',
+                'type': 'DELETE',
+                'filter': ?realtimeFilter,
               },
-            ]);
+            );
             webSocket!.add(deleteString);
 
             /// Send an update event for id = 4
             /// Record with id = 4 did not exist in the initial data fetch,
             /// so the SDK should insert the record in the in memory cache
             await Future.delayed(Duration(milliseconds: 10));
-            final updateId4 = jsonEncode([
-              null,
-              null,
+            final updateId4 = postgresChangesFrame(
               topic,
-              'postgres_changes',
-              {
-                'ids': [77086988],
-                'data': {
-                  'columns': [
-                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                    {
-                      'name': 'task',
-                      'type': 'text',
-                      'type_modifier': 4294967295,
-                    },
-                    {
-                      'name': 'status',
-                      'type': 'bool',
-                      'type_modifier': 4294967295,
-                    },
-                  ],
-                  'commit_timestamp': '2021-08-01T08:00:30Z',
-                  'errors': null,
-                  'old_record': {'id': 4},
-                  'record': {'id': 4, 'task': 'task 4', 'status': 't'},
-                  'schema': 'public',
-                  'table': 'todos',
-                  'type': 'UPDATE',
-                  'filter': ?realtimeFilter,
-                },
+              ids: [77086988],
+              data: {
+                'columns': todoColumns,
+                'commit_timestamp': '2021-08-01T08:00:30Z',
+                'errors': null,
+                'old_record': {'id': 4},
+                'record': {'id': 4, 'task': 'task 4', 'status': 't'},
+                'schema': 'public',
+                'table': 'todos',
+                'type': 'UPDATE',
+                'filter': ?realtimeFilter,
               },
-            ]);
+            );
             webSocket!.add(updateId4);
 
             // Send delete event for id=5
             /// Should be ignored by the SDK
             await Future.delayed(Duration(milliseconds: 10));
-            final ignoredDeleteString = jsonEncode([
-              null,
-              null,
+            final ignoredDeleteString = postgresChangesFrame(
               topic,
-              'postgres_changes',
-              {
-                'data': {
-                  'columns': [
-                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                    {
-                      'name': 'task',
-                      'type': 'text',
-                      'type_modifier': 4294967295,
-                    },
-                    {
-                      'name': 'status',
-                      'type': 'bool',
-                      'type_modifier': 4294967295,
-                    },
-                  ],
-                  'commit_timestamp': '2022-09-14T02:12:52Z',
-                  'errors': null,
-                  'old_record': {'id': 5},
-                  'schema': 'public',
-                  'table': 'todos',
-                  'type': 'DELETE',
-                  'filter': ?realtimeFilter,
-                },
-                'ids': [77086988],
+              ids: [77086988],
+              data: {
+                'columns': todoColumns,
+                'commit_timestamp': '2022-09-14T02:12:52Z',
+                'errors': null,
+                'old_record': {'id': 5},
+                'schema': 'public',
+                'table': 'todos',
+                'type': 'DELETE',
+                'filter': ?realtimeFilter,
               },
-            ]);
+            );
             webSocket!.add(ignoredDeleteString);
           }());
         });
@@ -383,11 +299,13 @@ void main() {
       'http://${mockServer.address.host}:${mockServer.port}',
       apiKey,
       headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
     );
     customHeadersClient = SupabaseClient(
       'http://${mockServer.address.host}:${mockServer.port}',
       apiKey,
       headers: {'X-Client-Info': 'supabase-flutter/0.0.0', ...customHeaders},
+      authOptions: const AuthClientOptions(authFlowType: AuthFlowType.implicit),
     );
     hasListener = false;
   });
@@ -706,17 +624,17 @@ void main() {
       /// exception
       /// https://github.com/supabase-community/supabase-flutter/issues/81
       test('Calling Postgrest within realtime callback', () async {
-        supabase
-            .channel('todos')
+        final channel = supabase.channel('todos');
+        channel
             .onPostgresChanges(
               event: PostgresChangeEvent.all,
               schema: 'public',
               table: 'todos',
-              callback: (payload) {
-                unawaited(supabase.from('todos'));
-              },
             )
-            .subscribe();
+            .listen((payload) {
+              supabase.from('todos');
+            });
+        channel.subscribe();
 
         await Future.delayed(const Duration(milliseconds: 700));
 
@@ -859,6 +777,9 @@ void main() {
           'http://${errorServer.address.host}:${errorServer.port}',
           'test-key',
           headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+          authOptions: const AuthClientOptions(
+            authFlowType: AuthFlowType.implicit,
+          ),
         );
 
         final stream = errorClient.from('todos').stream(primaryKey: ['id']);
@@ -890,6 +811,9 @@ void main() {
             throw Exception('Token retrieval failed');
           },
           headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+          authOptions: const AuthClientOptions(
+            authFlowType: AuthFlowType.implicit,
+          ),
         );
 
         // Should handle token errors gracefully
@@ -908,6 +832,9 @@ void main() {
           'http://${mockServer.address.host}:${mockServer.port}',
           'test-key',
           headers: {'X-Client-Info': 'supabase-flutter/0.0.0'},
+          authOptions: const AuthClientOptions(
+            authFlowType: AuthFlowType.implicit,
+          ),
         );
 
         // First dispose should succeed

@@ -10,10 +10,6 @@ import 'types/fetch_options.dart';
 /// `custom:mycompany`, and are distinct from the OAuth 2.1 server clients
 /// managed through [AuthAdminOAuthApi].
 class AuthAdminCustomProvidersApi {
-  final String _url;
-  final Map<String, String> _headers;
-  final AuthFetch _fetch;
-
   const AuthAdminCustomProvidersApi({
     required String url,
     required Map<String, String> headers,
@@ -21,6 +17,9 @@ class AuthAdminCustomProvidersApi {
   }) : _url = url,
        _headers = headers,
        _fetch = fetch;
+  final String _url;
+  final Map<String, String> _headers;
+  final AuthFetch _fetch;
 
   /// Lists all custom providers, optionally filtered by [type].
   ///

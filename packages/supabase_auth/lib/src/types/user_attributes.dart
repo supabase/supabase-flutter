@@ -1,36 +1,7 @@
 import 'package:collection/collection.dart';
 
+/// Attributes for `AuthClient.updateUser`.
 class UserAttributes {
-  /// The user's email.
-  String? email;
-
-  /// The user's phone.
-  String? phone;
-
-  /// The user's password.
-  String? password;
-
-  /// The nonce sent for reauthentication if the user's password is to be
-  /// updated.
-  ///
-  /// Call reauthenticate() to obtain the nonce first.
-  String? nonce;
-
-  /// A custom data object to store the user's metadata. This maps to the
-  /// `auth.users.user_metadata` column.
-  ///
-  /// The `data` should be a JSON object that includes user-specific info, such
-  /// as their first and last name.
-  Object? data;
-
-  /// The user's current password.
-  ///
-  /// This is only used when the user is changing their password and the
-  /// `GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD` setting is
-  /// enabled on the auth server, in which case the current password is required
-  /// to verify the change.
-  String? currentPassword;
-
   UserAttributes({
     this.email,
     this.phone,
@@ -39,6 +10,36 @@ class UserAttributes {
     this.data,
     this.currentPassword,
   }) : assert(data == null || data is List || data is Map);
+
+  /// The user's email.
+  final String? email;
+
+  /// The user's phone.
+  final String? phone;
+
+  /// The user's password.
+  final String? password;
+
+  /// The nonce sent for reauthentication if the user's password is to be
+  /// updated.
+  ///
+  /// Call reauthenticate() to obtain the nonce first.
+  final String? nonce;
+
+  /// A custom data object to store the user's metadata. This maps to the
+  /// `auth.users.user_metadata` column.
+  ///
+  /// The `data` should be a JSON object that includes user-specific info, such
+  /// as their first and last name.
+  final Object? data;
+
+  /// The user's current password.
+  ///
+  /// This is only used when the user is changing their password and the
+  /// `GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD` setting is
+  /// enabled on the auth server, in which case the current password is required
+  /// to verify the change.
+  final String? currentPassword;
 
   Map<String, dynamic> toJson() {
     return {
@@ -77,7 +78,21 @@ class UserAttributes {
   }
 }
 
+/// Attributes for `AuthAdminApi.createUser` and
+/// `AuthAdminApi.updateUserById`.
 class AdminUserAttributes extends UserAttributes {
+  AdminUserAttributes({
+    super.email,
+    super.phone,
+    super.password,
+    super.data,
+    this.userMetadata,
+    this.appMetadata,
+    this.emailConfirm,
+    this.phoneConfirm,
+    this.banDuration,
+  });
+
   /// A custom data object to store the user's metadata. This maps to the
   /// `auth.users.user_metadata` column.
   ///
@@ -120,18 +135,6 @@ class AdminUserAttributes extends UserAttributes {
   ///
   /// Setting the ban duration to 'none' lifts the ban on the user.
   final String? banDuration;
-
-  AdminUserAttributes({
-    super.email,
-    super.phone,
-    super.password,
-    super.data,
-    this.userMetadata,
-    this.appMetadata,
-    this.emailConfirm,
-    this.phoneConfirm,
-    this.banDuration,
-  });
 
   @override
   Map<String, dynamic> toJson() {

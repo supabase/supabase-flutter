@@ -6,20 +6,18 @@ class TestException extends SupabaseException {
 }
 
 class TestApiException extends SupabaseException with SupabaseApiException {
-  @override
-  final int statusCode;
-
   const TestApiException(
     super.message, {
     required this.statusCode,
     super.errorCode,
   });
+  @override
+  final int statusCode;
 }
 
 class DetailedException extends SupabaseException {
-  final String details;
-
   const DetailedException(super.message, {required this.details});
+  final String details;
 
   @override
   String toString() => '$runtimeType(message: $message, details: $details)';

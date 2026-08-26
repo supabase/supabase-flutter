@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart';
+import 'package:supabase_testing/supabase_testing.dart';
 
 class CustomHttpClient extends BaseClient {
   /// List of received requests by the client.
@@ -20,8 +21,7 @@ class CustomHttpClient extends BaseClient {
       // non-abort tests don't stall.
       final abortTrigger = request is Abortable ? request.abortTrigger : null;
       if (abortTrigger != null) {
-        await abortTrigger;
-        throw RequestAbortedException(request.url);
+        return stallUntilAborted(request);
       }
       return StreamedResponse(
         Stream.value(utf8.encode(jsonEncode({"key": "Hello World"}))),

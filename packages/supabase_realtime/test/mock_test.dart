@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:supabase_testing/supabase_testing.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:test/test.dart';
 
@@ -46,112 +47,57 @@ void main() {
             // Send an insert event
             if (postgresFilter == null) {
               await Future.delayed(Duration(milliseconds: 300));
-              final insertString = jsonEncode([
-                null,
-                null,
+              final insertString = postgresChangesFrame(
                 topic,
-                'postgres_changes',
-                {
-                  'ids': [77086988],
-                  'data': {
-                    'commit_timestamp': '2021-08-01T08:00:20Z',
-                    'record': {'id': 3, 'task': 'task 3', 'status': 't'},
-                    'schema': 'public',
-                    'table': 'todos',
-                    'type': 'INSERT',
-                    'filter': ?postgresFilter,
-                    'columns': [
-                      {
-                        'name': 'id',
-                        'type': 'int4',
-                        'type_modifier': 4294967295,
-                      },
-                      {
-                        'name': 'task',
-                        'type': 'text',
-                        'type_modifier': 4294967295,
-                      },
-                      {
-                        'name': 'status',
-                        'type': 'bool',
-                        'type_modifier': 4294967295,
-                      },
-                    ],
-                  },
+                ids: [77086988],
+                data: {
+                  'commit_timestamp': '2021-08-01T08:00:20Z',
+                  'record': {'id': 3, 'task': 'task 3', 'status': 't'},
+                  'schema': 'public',
+                  'table': 'todos',
+                  'type': 'INSERT',
+                  'filter': ?postgresFilter,
+                  'columns': todoColumns,
                 },
-              ]);
+              );
               webSocket!.add(insertString);
             }
 
             // Send an update event for id = 2
             await Future.delayed(Duration(milliseconds: 10));
-            final updateString = jsonEncode([
-              null,
-              null,
+            final updateString = postgresChangesFrame(
               topic,
-              'postgres_changes',
-              {
-                'ids': [25993878],
-                'data': {
-                  'columns': [
-                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                    {
-                      'name': 'task',
-                      'type': 'text',
-                      'type_modifier': 4294967295,
-                    },
-                    {
-                      'name': 'status',
-                      'type': 'bool',
-                      'type_modifier': 4294967295,
-                    },
-                  ],
-                  'commit_timestamp': '2021-08-01T08:00:30Z',
-                  'errors': null,
-                  'old_record': {'id': 2},
-                  'record': {'id': 2, 'task': 'task 2 updated', 'status': 'f'},
-                  'schema': 'public',
-                  'table': 'todos',
-                  'type': 'UPDATE',
-                  'filter': ?postgresFilter,
-                },
+              ids: [25993878],
+              data: {
+                'columns': todoColumns,
+                'commit_timestamp': '2021-08-01T08:00:30Z',
+                'errors': null,
+                'old_record': {'id': 2},
+                'record': {'id': 2, 'task': 'task 2 updated', 'status': 'f'},
+                'schema': 'public',
+                'table': 'todos',
+                'type': 'UPDATE',
+                'filter': ?postgresFilter,
               },
-            ]);
+            );
             webSocket!.add(updateString);
 
             // Send delete event for id=2
             await Future.delayed(Duration(milliseconds: 10));
-            final deleteString = jsonEncode([
-              null,
-              null,
+            final deleteString = postgresChangesFrame(
               topic,
-              'postgres_changes',
-              {
-                'data': {
-                  'columns': [
-                    {'name': 'id', 'type': 'int4', 'type_modifier': 4294967295},
-                    {
-                      'name': 'task',
-                      'type': 'text',
-                      'type_modifier': 4294967295,
-                    },
-                    {
-                      'name': 'status',
-                      'type': 'bool',
-                      'type_modifier': 4294967295,
-                    },
-                  ],
-                  'commit_timestamp': '2022-09-14T02:12:52Z',
-                  'errors': null,
-                  'old_record': {'id': 2},
-                  'schema': 'public',
-                  'table': 'todos',
-                  'type': 'DELETE',
-                  'filter': ?postgresFilter,
-                },
-                'ids': [48673474],
+              ids: [48673474],
+              data: {
+                'columns': todoColumns,
+                'commit_timestamp': '2022-09-14T02:12:52Z',
+                'errors': null,
+                'old_record': {'id': 2},
+                'schema': 'public',
+                'table': 'todos',
+                'type': 'DELETE',
+                'filter': ?postgresFilter,
               },
-            ]);
+            );
             webSocket!.add(deleteString);
           }());
         });
@@ -187,22 +133,16 @@ void main() {
     });
 
     test('.on()', () {
-      final streamController = StreamController<PostgresChangePayload>();
-
-      client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
-          .subscribe();
+      final channel = client.channel('public:todos');
+      final changes = channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+      );
+      channel.subscribe();
 
       expect(
-        streamController.stream,
+        changes,
         emitsInOrder([
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -236,27 +176,21 @@ void main() {
     });
 
     test('.on() with filter', () {
-      final streamController = StreamController<PostgresChangePayload>();
-
-      client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'id',
-              value: 2,
-            ),
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
-          .subscribe();
+      final channel = client.channel('public:todos');
+      final changes = channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id',
+          value: 2,
+        ),
+      );
+      channel.subscribe();
 
       expect(
-        streamController.stream,
+        changes,
         emitsInOrder([
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -281,34 +215,32 @@ void main() {
     });
 
     test("correct CHANNEL_ERROR data on heartbeat timeout", () async {
-      final subscribeCallback = expectAsync2((
-        RealtimeSubscribeStatus event,
-        error,
+      final statusListener = expectAsync1((
+        RealtimeSubscribeStatusChange change,
       ) {
-        if (event == RealtimeSubscribeStatus.channelError) {
-          expect(error, isA<RealtimeCloseEvent>());
-          error as RealtimeCloseEvent;
+        if (change.status == RealtimeSubscribeStatus.channelError) {
+          expect(change.error, isA<RealtimeCloseEvent>());
+          final error = change.error as RealtimeCloseEvent;
           expect(error.reason, "heartbeat timeout");
         } else {
-          expect(event, RealtimeSubscribeStatus.closed);
+          expect(change.status, RealtimeSubscribeStatus.closed);
         }
       }, count: 2);
 
-      final channel = client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'id',
-              value: 2,
-            ),
-            callback: (payload) {},
-          );
+      final channel = client.channel('public:todos');
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id',
+          value: 2,
+        ),
+      );
 
-      channel.subscribe(subscribeCallback);
+      channel.onStatusChange.listen(statusListener);
+      channel.subscribe();
 
       await Future.delayed(Duration(milliseconds: 200));
       await webSocket?.close(
@@ -453,22 +385,16 @@ void main() {
     });
 
     test('.on()', () {
-      final streamController = StreamController<PostgresChangePayload>();
-
-      client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
-          .subscribe();
+      final channel = client.channel('public:todos');
+      final changes = channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+      );
+      channel.subscribe();
 
       expect(
-        streamController.stream,
+        changes,
         emitsInOrder([
           PostgresChangePayload.fromPayload({
             'schema': 'public',
@@ -502,27 +428,21 @@ void main() {
     });
 
     test('.on() with filter', () {
-      final streamController = StreamController<PostgresChangePayload>();
-
-      client
-          .channel('public:todos')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.all,
-            schema: 'public',
-            table: 'todos',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'id',
-              value: 2,
-            ),
-            callback: (payload) {
-              streamController.add(payload);
-            },
-          )
-          .subscribe();
+      final channel = client.channel('public:todos');
+      final changes = channel.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'todos',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id',
+          value: 2,
+        ),
+      );
+      channel.subscribe();
 
       expect(
-        streamController.stream,
+        changes,
         emitsInOrder([
           PostgresChangePayload.fromPayload({
             'schema': 'public',

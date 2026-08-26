@@ -27,6 +27,9 @@ void main() {
       supabase = SupabaseClient(
         'http://${mockServer.address.host}:${mockServer.port}',
         'supabaseKey',
+        authOptions: const AuthClientOptions(
+          authFlowType: AuthFlowType.implicit,
+        ),
       );
 
       channel = supabase.channel('realtime');
@@ -50,16 +53,12 @@ void main() {
     /// expectation:
     /// - error
     test('subscribe on existing subscription fail', () {
-      channel
-          .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: 'public',
-            table: 'countries',
-            callback: (payload) {},
-          )
-          .subscribe(
-            (event, [errorMessage]) {},
-          );
+      channel.onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'countries',
+      );
+      channel.subscribe();
       expect(
         () => channel.subscribe(),
         throwsA(isA<String>()),
@@ -76,7 +75,7 @@ void main() {
     test('two realtime channels', () {
       supabase.channel('anotherChannel');
 
-      final channels = supabase.getChannels();
+      final channels = supabase.channels;
 
       expect(
         channels,
@@ -99,7 +98,7 @@ void main() {
       anotherChannel.subscribe();
 
       expect(
-        supabase.getChannels(),
+        supabase.channels,
         hasLength(2),
       );
 
@@ -108,7 +107,7 @@ void main() {
       expect(status, 'ok');
 
       expect(
-        supabase.getChannels(),
+        supabase.channels,
         hasLength(1),
       );
     });
@@ -141,7 +140,7 @@ void main() {
       );
 
       expect(
-        supabase.getChannels(),
+        supabase.channels,
         isEmpty,
       );
     });
@@ -169,7 +168,7 @@ void main() {
       );
 
       expect(
-        supabase.getChannels(),
+        supabase.channels,
         isEmpty,
       );
     });

@@ -11,12 +11,20 @@
 # supabase_common is an internal, cross-package helper library. Its public
 # symbols are imported by the other packages, so they cannot be marked
 # @internal (that would trigger invalid_use_of_internal_member in the
-# consumers). Exclude the whole package from the public-API scan instead.
-packages/supabase_common/
+# consumers). Exclude its sources from the public-API scan instead, except for
+# the retry options and the sort direction, which the clients re-export as user
+# facing API and so are registered in the capability matrix.
+packages/supabase_common/lib/
+!packages/supabase_common/lib/src/retry_options.dart
+!packages/supabase_common/lib/src/sort_direction.dart
 
 # supabase_typegen is a development-time code generator, not SDK client surface,
 # so its public symbols are not capability-matrix symbols.
 packages/supabase_typegen/
+
+# supabase_testing holds test helpers for consumers, not SDK client surface,
+# so its public symbols are not capability-matrix symbols.
+packages/supabase_testing/
 
 # The examples are standalone demo apps, not part of the published SDK, so their
 # public classes are not capability-matrix symbols. Each package also ships its

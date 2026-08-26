@@ -4,11 +4,10 @@ import 'dart:core';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
+import 'package:postgrest/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:supabase_common/supabase_common.dart';
-import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 part 'postgrest_filter_builder.dart';
 part 'postgrest_query_builder.dart';
@@ -18,42 +17,6 @@ part 'raw_postgrest_builder.dart';
 part 'response_postgrest_builder.dart';
 
 typedef _Nullable<T> = T?;
-
-/// Bundles the automatic retry configuration so it can be carried through the
-/// builder chain as a single value instead of separate fields.
-@immutable
-class _RetryConfig {
-  _RetryConfig({
-    this.enabled = true,
-    this.count = 3,
-    Set<int> statusCodes = PostgrestClient.defaultRetryableStatusCodes,
-    Duration Function(int attempt)? delay,
-  }) : statusCodes = Set.unmodifiable(statusCodes),
-       delay = delay ?? PostgrestBuilder._defaultRetryDelay {
-    if (count < 0) {
-      throw ArgumentError.value(count, 'retryCount', 'must not be negative');
-    }
-  }
-
-  final bool enabled;
-  final int count;
-  final Set<int> statusCodes;
-  final Duration Function(int attempt) delay;
-
-  _RetryConfig copyWith({
-    required bool enabled,
-    int? count,
-    Set<int>? statusCodes,
-    Duration Function(int attempt)? delay,
-  }) {
-    return _RetryConfig(
-      enabled: enabled,
-      count: count ?? this.count,
-      statusCodes: statusCodes ?? this.statusCodes,
-      delay: delay ?? this.delay,
-    );
-  }
-}
 
 /// The immutable request state carried through the builder chain.
 ///
@@ -69,7 +32,7 @@ class _RequestConfig {
     this.method,
     this.body,
     this.httpClient,
-    this.isolate,
+    this.jsonCodec,
     this.count,
     this.maybeSingle = false,
     required this.retry,
@@ -83,10 +46,10 @@ class _RequestConfig {
   final HttpMethod? method;
   final Object? body;
   final Client? httpClient;
-  final YAJsonIsolate? isolate;
+  final AsyncJsonCodec? jsonCodec;
   final CountOption? count;
   final bool maybeSingle;
-  final _RetryConfig retry;
+  final SupabaseRetryOptions retry;
   final Duration? requestTimeout;
   final Future<void>? abortSignal;
 
@@ -97,10 +60,10 @@ class _RequestConfig {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
-    _RetryConfig? retry,
+    SupabaseRetryOptions? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) {
@@ -111,7 +74,7 @@ class _RequestConfig {
       method: method ?? this.method,
       body: body ?? this.body,
       httpClient: httpClient ?? this.httpClient,
-      isolate: isolate ?? this.isolate,
+      jsonCodec: jsonCodec ?? this.jsonCodec,
       count: count ?? this.count,
       maybeSingle: maybeSingle ?? this.maybeSingle,
       retry: retry ?? this.retry,
@@ -126,6 +89,49 @@ class _RequestConfig {
 String? _emptyPreferAsNull(String? prefer) =>
     (prefer == null || prefer.isEmpty) ? null : prefer;
 
+extension on Uri {
+  /// Returns this url with [value] appended to the values of query parameter
+  /// [key].
+  ///
+  /// Uses lists to allow multiple values for the same key.
+  Uri appendSearchParameters(String key, String value) {
+    final searchParameters = Map<String, dynamic>.of(queryParametersAll);
+    searchParameters[key] = [...?searchParameters[key], value];
+    return replace(queryParameters: searchParameters);
+  }
+
+  /// Returns this url with the values of query parameter [key] replaced by
+  /// [value].
+  Uri overrideSearchParameters(String key, String value) {
+    final searchParameters = Map<String, dynamic>.of(queryParametersAll);
+    searchParameters[key] = value;
+    return replace(queryParameters: searchParameters);
+  }
+}
+
+/// Wraps [config] in the executable filter phase once a table operation or
+/// function call has been chosen.
+PostgrestFilterBuilder<P> _filterBuilder<P>(_RequestConfig config) =>
+    PostgrestFilterBuilder(
+      PostgrestBuilder<P, P, P>._(config: config, converter: null),
+    );
+
+/// Convert list filter to query parameters string
+String _cleanFilterList(List<dynamic> filter) {
+  if (filter.every((element) => element is num)) {
+    return filter.map((s) => '$s').join(',');
+  }
+  // Escape `\` and `"` inside each element before quoting, otherwise a value
+  // containing a double quote (e.g. `a"b`) produces a malformed PostgREST
+  // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
+  return filter
+      .map((s) {
+        final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+        return '"$escaped"';
+      })
+      .join(',');
+}
+
 /// The base builder class.
 ///
 /// [T] for the overall return type, so `PostgrestResponse<S>` or [S]
@@ -134,29 +140,6 @@ String? _emptyPreferAsNull(String? prefer) =>
 /// Otherwise [S] and [R] are the same
 @immutable
 class PostgrestBuilder<T, S, R> implements Future<T> {
-  final _RequestConfig _config;
-  final PostgrestConverter<S, R>? _converter;
-  final _log = Logger('supabase.postgrest');
-
-  Object? get _body => _config.body;
-  Headers get _headers => _config.headers;
-  bool get _maybeSingle => _config.maybeSingle;
-  HttpMethod? get _method => _config.method;
-  String? get _schema => _config.schema;
-  Uri get _url => _config.url;
-  Client? get _httpClient => _config.httpClient;
-  YAJsonIsolate? get _isolate => _config.isolate;
-  CountOption? get _count => _config.count;
-  _RetryConfig get _retry => _config.retry;
-  Duration? get _requestTimeout => _config.requestTimeout;
-  Future<void>? get _abortSignal => _config.abortSignal;
-
-  static Duration _defaultRetryDelay(int attempt) => exponentialBackoff(
-    attempt,
-    initialDelay: const Duration(seconds: 1),
-    maxDelay: const Duration(seconds: 30),
-  );
-
   PostgrestBuilder({
     required Uri url,
     required Headers headers,
@@ -164,14 +147,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool maybeSingle = false,
     PostgrestConverter<S, R>? converter,
-    bool retryEnabled = true,
-    int retryCount = 3,
-    Set<int> retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
-    @visibleForTesting Duration Function(int attempt)? retryDelay,
+    SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) : _converter = converter,
@@ -182,15 +162,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
          method: method,
          body: body,
          httpClient: httpClient,
-         isolate: isolate,
+         jsonCodec: jsonCodec,
          count: count,
          maybeSingle: maybeSingle,
-         retry: _RetryConfig(
-           enabled: retryEnabled,
-           count: retryCount,
-           statusCodes: retryableStatusCodes,
-           delay: retryDelay,
-         ),
+         retry: retryOptions,
          requestTimeout: requestTimeout,
          abortSignal: abortSignal,
        );
@@ -198,11 +173,26 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// Rewraps an existing [config] under a possibly different [converter] (and
   /// therefore possibly different generic types). This is what lets the typed
   /// builders share a single config instance without re-listing its fields.
-  PostgrestBuilder._({
+  const PostgrestBuilder._({
     required _RequestConfig config,
     required PostgrestConverter<S, R>? converter,
   }) : _config = config,
        _converter = converter;
+  final _RequestConfig _config;
+  final PostgrestConverter<S, R>? _converter;
+
+  Object? get _body => _config.body;
+  Headers get _headers => _config.headers;
+  bool get _maybeSingle => _config.maybeSingle;
+  HttpMethod? get _method => _config.method;
+  String? get _schema => _config.schema;
+  Uri get _url => _config.url;
+  Client? get _httpClient => _config.httpClient;
+  AsyncJsonCodec? get _jsonCodec => _config.jsonCodec;
+  CountOption? get _count => _config.count;
+  SupabaseRetryOptions get _retry => _config.retry;
+  Duration? get _requestTimeout => _config.requestTimeout;
+  Future<void>? get _abortSignal => _config.abortSignal;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,
@@ -211,11 +201,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
     PostgrestConverter<S, R>? converter,
-    _RetryConfig? retry,
+    SupabaseRetryOptions? retry,
     Duration? requestTimeout,
     Future<void>? abortSignal,
   }) => PostgrestBuilder._(
@@ -226,7 +216,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       method: method,
       body: body,
       httpClient: httpClient,
-      isolate: isolate,
+      jsonCodec: jsonCodec,
       count: count,
       maybeSingle: maybeSingle,
       retry: retry,
@@ -239,9 +229,9 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
   /// Overrides the retry behavior for this specific request.
   ///
   /// When [enabled] is `false`, retries are disabled for this request even if
-  /// [PostgrestClient] was configured with `retryEnabled: true`.
-  /// When [enabled] is `true`, retries are enabled for this request even if
-  /// [PostgrestClient] was configured with `retryEnabled: false`.
+  /// the [SupabaseRetryOptions] of the client enable them. When [enabled] is
+  /// `true`, retries are enabled for this request even if the client disables
+  /// them.
   ///
   /// [count] overrides the number of retry attempts for this request.
   ///
@@ -300,6 +290,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     return _copyWith(abortSignal: abortSignal);
   }
 
+  /// Returns a copy of this request with [key] set to [value] in its headers.
   PostgrestBuilder<T, S, R> setHeader(String key, String value) {
     return _copyWith(
       headers: {..._headers, key: value},
@@ -338,8 +329,15 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     if (method != HttpMethod.get && method != HttpMethod.head) {
       execHeaders['Content-Type'] = 'application/json';
     }
-    final bodyString = jsonEncode(_body);
-    _log.finest("Request: ${method.value} $_url");
+    // Only a write carries a body, so a read skips the encode entirely and a
+    // client with a codec does not pay for one on every select.
+    final bodyString = switch (method) {
+      HttpMethod.post ||
+      HttpMethod.put ||
+      HttpMethod.patch => await _encodeBody(),
+      HttpMethod.get || HttpMethod.head || HttpMethod.delete => null,
+    };
+    postgrestLogger.finest("Request: ${method.value} ${_url.redacted}");
 
     final requestTimeout = _requestTimeout;
 
@@ -375,14 +373,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       request.headers.addAll(execHeaders);
       switch (method) {
         case HttpMethod.post || HttpMethod.put || HttpMethod.patch:
-          request.body = bodyString;
+          // Encoded above for exactly these methods.
+          request.body = bodyString!;
         case HttpMethod.get || HttpMethod.head || HttpMethod.delete:
           break;
       }
-      final client = _httpClient ?? http.Client();
-
       try {
-        final streamResponse = await client.send(request);
+        final streamResponse = await request.sendWith(_httpClient);
         return await http.Response.fromStream(streamResponse);
       } on RequestAbortedException {
         if (timedOut) {
@@ -391,9 +388,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         rethrow;
       } finally {
         timeoutTimer?.cancel();
-        if (_httpClient == null) {
-          client.close();
-        }
       }
     }
 
@@ -407,12 +401,13 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     Map<String, String> execHeaders,
   ) async {
     final maxRetries = _retry.count;
-    final retryableStatusCodes = _retry.statusCodes;
 
     final isRetryableMethod =
         method == HttpMethod.get || method == HttpMethod.head;
 
-    if (!_retry.enabled || !isRetryableMethod) {
+    // A count below one means the request is sent exactly once, so the retry
+    // loop has nothing to add.
+    if (!_retry.enabled || !isRetryableMethod || maxRetries < 1) {
       return send();
     }
 
@@ -423,8 +418,10 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
       try {
         final response = await send();
-        if (!retryableStatusCodes.contains(response.statusCode) ||
-            attempt == maxRetries) {
+        final isRetryable = PostgrestClient.retryableStatusCodes.contains(
+          response.statusCode,
+        );
+        if (!isRetryable || attempt == maxRetries) {
           return response;
         }
       } on RequestAbortedException catch (_) {
@@ -440,6 +437,16 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     }
 
     throw StateError('unreachable');
+  }
+
+  /// Encodes the request body, on the codec when there is one so that a large
+  /// payload, a bulk insert for example, does not block the calling isolate.
+  Future<String> _encodeBody() async {
+    final jsonCodec = _jsonCodec;
+    if (jsonCodec == null) {
+      return jsonEncode(_body);
+    }
+    return jsonCodec.encode(_body);
   }
 
   /// Parse request response to json object if possible
@@ -458,11 +465,11 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           body = response.body;
         } else {
           try {
-            final isolate = _isolate;
-            if ((response.contentLength ?? 0) > 10000 && isolate != null) {
-              body = await isolate.decode(response.body);
+            final jsonCodec = _jsonCodec;
+            if (jsonCodec != null) {
+              body = await jsonCodec.decodeBytes(response.bodyBytes);
             } else {
-              body = jsonDecode(response.body);
+              body = jsonDecode(utf8.decode(response.bodyBytes));
             }
           } on FormatException catch (_) {
             // A 2xx status does not guarantee a JSON body. A proxy or gateway
@@ -491,7 +498,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
             message: 'JSON object requested, multiple (or no) rows returned',
           );
 
-          _log.finest('$exception for request $_url');
+          postgrestLogger.finest('$exception for request ${_url.redacted}');
           throw exception;
         } else if (body.length == 1) {
           body = body.first;
@@ -569,8 +576,8 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       );
     }
 
-    _log.finest('$error from request: $_url');
-    _log.fine('$error from request');
+    postgrestLogger.finest('$error from request: ${_url.redacted}');
+    postgrestLogger.fine('$error from request');
 
     throw error;
   }
@@ -597,45 +604,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
       return null as T;
     }
     throw error;
-  }
-
-  /// Get new Uri with updated query parameters
-  /// Uses lists to allow multiple values for the same key
-  ///
-  /// [url] may be used to update based on a different url than the current one
-  Uri appendSearchParameters(String key, String value, [Uri? url]) {
-    final searchParameters = Map<String, dynamic>.of(
-      (url ?? _url).queryParametersAll,
-    );
-    searchParameters[key] = [...?searchParameters[key], value];
-    return (url ?? _url).replace(queryParameters: searchParameters);
-  }
-
-  /// Get new Uri with overridden query parameters
-  ///
-  /// [url] may be used to update based on a different url than the current one
-  Uri overrideSearchParameters(String key, String value, [Uri? url]) {
-    final searchParameters = Map<String, dynamic>.of(
-      (url ?? _url).queryParametersAll,
-    );
-    searchParameters[key] = value;
-    return (url ?? _url).replace(queryParameters: searchParameters);
-  }
-
-  /// Convert list filter to query parameters string
-  String _cleanFilterArray(List<dynamic> filter) {
-    if (filter.every((element) => element is num)) {
-      return filter.map((s) => '$s').join(',');
-    }
-    // Escape `\` and `"` inside each element before quoting, otherwise a value
-    // containing a double quote (e.g. `a"b`) produces a malformed PostgREST
-    // filter like `in.("a"b")`. This matches PostgREST/PostgreSQL array quoting.
-    return filter
-        .map((s) {
-          final escaped = '$s'.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
-          return '"$escaped"';
-        })
-        .join(',');
   }
 
   @override

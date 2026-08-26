@@ -100,6 +100,18 @@ void main() {
       expect(client.headers['apikey'], 'foo');
     });
 
+    test('headers cannot be mutated in place', () {
+      final client = PostgrestClient(
+        localStackRestUrl,
+        headers: {'apikey': 'foo'},
+      );
+      addTearDown(client.dispose);
+      expect(
+        () => client.headers['apikey'] = 'bar',
+        throwsUnsupportedError,
+      );
+    });
+
     test('override X-Client-Info', () async {
       final client = PostgrestClient(
         localStackRestUrl,
@@ -111,11 +123,51 @@ void main() {
       );
     });
 
-    test('auth', () async {
-      postgrest = PostgrestClient(localStackRestUrl).setAccessToken('foo');
+    test('accessToken is resolved before every request', () async {
+      var calls = 0;
+      final httpClient = CustomHttpClient();
+      final client = PostgrestClient(
+        localStackRestUrl,
+        httpClient: httpClient,
+        accessToken: () async => 'token-${calls++}',
+      );
+
+      await client.from('empty-succ').select().head();
+      final first = httpClient.lastRequest!.headers['Authorization'];
+      await client.from('empty-succ').select().head();
+      final second = httpClient.lastRequest!.headers['Authorization'];
+
+      expect([first, second], ['Bearer token-0', 'Bearer token-1']);
+    });
+
+    test('setHeader wins over accessToken', () async {
+      final httpClient = CustomHttpClient();
+      final client = PostgrestClient(
+        localStackRestUrl,
+        httpClient: httpClient,
+        accessToken: () async => 'resolved',
+      );
+
+      await client
+          .from('empty-succ')
+          .select()
+          .setHeader('Authorization', 'Bearer per-request')
+          .head();
+
       expect(
-        postgrest.headers['Authorization'],
-        'Bearer foo',
+        httpClient.lastRequest!.headers['Authorization'],
+        'Bearer per-request',
+      );
+    });
+
+    test('accessToken together with an Authorization header asserts', () {
+      expect(
+        () => PostgrestClient(
+          localStackRestUrl,
+          headers: {'Authorization': 'Bearer static'},
+          accessToken: () async => 'resolved',
+        ),
+        throwsA(isA<AssertionError>()),
       );
     });
 
@@ -431,13 +483,6 @@ void main() {
           .count(CountOption.exact);
 
       expect(response.count, 1);
-    });
-
-    test('execute without table operation', () async {
-      await expectLater(
-        () => postgrest.from('users'),
-        throwsA(isA<ArgumentError>()),
-      );
     });
 
     test('select from uppercase table name', () async {

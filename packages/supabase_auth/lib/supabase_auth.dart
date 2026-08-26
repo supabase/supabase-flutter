@@ -2,7 +2,7 @@
 library;
 
 export 'package:supabase_common/supabase_common.dart'
-    show SupabaseApiException, SupabaseException;
+    show SupabaseApiException, SupabaseException, SupabaseRetryOptions;
 
 export 'src/constants.dart';
 export 'src/auth_admin_api.dart';

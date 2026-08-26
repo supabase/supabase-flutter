@@ -87,7 +87,7 @@ void main() {
             offset: 5,
             search: 'prod',
             sortColumn: BucketSortColumn.createdAt,
-            sortOrder: BucketSortOrder.descending,
+            sortOrder: SortDirection.descending,
           ),
         );
 
@@ -220,7 +220,7 @@ void main() {
           offset: 5,
           search: 'ware',
           sortColumn: BucketSortColumn.createdAt,
-          sortOrder: BucketSortOrder.descending,
+          sortOrder: SortDirection.descending,
         ),
       );
 
@@ -443,7 +443,7 @@ void main() {
               withDelimiter: true,
               sortBy: FileSort(
                 column: FileSortColumn.createdAt,
-                order: FileSortOrder.descending,
+                order: SortDirection.descending,
               ),
             ),
           );
@@ -451,7 +451,7 @@ void main() {
       final request = customHttpClient.receivedRequests.single;
       expect(request.url.toString(), '$objectUrl/list-v2/public');
       expect(jsonDecode((request as Request).body), {
-        'prefix': 'prefix/',
+        'prefix': 'prefix',
         'limit': 100,
         'with_delimiter': true,
         'sortBy': {'column': 'created_at', 'order': 'desc'},
@@ -795,7 +795,7 @@ void main() {
       client = SupabaseStorageClient(
         '$supabaseUrl/storage/v1',
         {'Authorization': 'Bearer $supabaseKey'},
-        retryAttempts: 5,
+        retryOptions: const SupabaseRetryOptions(count: 5),
         // `RetryHttpClient` will throw `SocketException` for the first two
         // tries
         httpClient: RetryHttpClient(),
@@ -808,7 +808,11 @@ void main() {
 
       final uploadTask = client
           .from('public')
-          .upload('a.txt', file, retryAttempts: 1);
+          .upload(
+            'a.txt',
+            file,
+            retryOptions: const SupabaseRetryOptions(count: 1),
+          );
       await expectLater(uploadTask, throwsException);
     });
 
@@ -917,6 +921,75 @@ void main() {
       });
 
       expect(client.headers['X-Client-Info'], 'supabase-dart/0.0.0');
+    });
+
+    test('headers cannot be mutated in place', () {
+      client = SupabaseStorageClient('$supabaseUrl/storage/v1', {
+        'Authorization': 'Bearer $supabaseKey',
+      });
+
+      expect(
+        () => client.headers['x-custom-header'] = 'value',
+        throwsUnsupportedError,
+      );
+      expect(
+        () => client.from('bucket').headers['x-custom-header'] = 'value',
+        throwsUnsupportedError,
+      );
+    });
+  });
+
+  group('accessToken', () {
+    setUp(() {
+      customHttpClient.response = [testBucketJson];
+    });
+
+    test('is resolved before every request', () async {
+      var calls = 0;
+      final storage = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {},
+        httpClient: customHttpClient,
+        accessToken: () async => 'token-${calls++}',
+      );
+
+      await storage.listBuckets();
+      await storage.listBuckets();
+
+      expect(
+        customHttpClient.receivedRequests
+            .map((request) => request.headers['Authorization'])
+            .toList(),
+        ['Bearer token-0', 'Bearer token-1'],
+      );
+    });
+
+    test('setHeader wins over the resolved token', () async {
+      final storage = SupabaseStorageClient(
+        '$supabaseUrl/storage/v1',
+        {},
+        httpClient: customHttpClient,
+        accessToken: () async => 'resolved',
+      );
+
+      storage.setHeader('Authorization', 'Bearer pinned');
+      await storage.listBuckets();
+
+      expect(
+        customHttpClient.receivedRequests.last.headers['Authorization'],
+        'Bearer pinned',
+      );
+    });
+
+    test('together with an Authorization header asserts', () {
+      expect(
+        () => SupabaseStorageClient(
+          '$supabaseUrl/storage/v1',
+          {'Authorization': 'Bearer static'},
+          accessToken: () async => 'resolved',
+        ),
+        throwsA(isA<AssertionError>()),
+      );
     });
   });
 

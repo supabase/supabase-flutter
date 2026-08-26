@@ -18,6 +18,7 @@ workspace:
   - packages/supabase_flutter/example
   - packages/supabase_common
   - packages/supabase_lints
+  - packages/supabase_testing
   - packages/supabase_typegen
   - packages/yet_another_json_isolate
   - examples/authentication
@@ -50,6 +51,11 @@ melos:
           version=$(awk '/version:/ {
             pos=match($2, /[0-9]+\.[0-9]+\.[0-9]+/);
             print substr($2, pos); }' $d/pubspec.yaml)
-          echo "const version = '$version';" > $d/lib/src/version.dart
+          {
+            echo "import 'package:meta/meta.dart';"
+            echo
+            echo "@internal"
+            echo "const version = '$version';"
+          } > $d/lib/src/version.dart
         done
         git add packages/*/lib/src/version.dart
