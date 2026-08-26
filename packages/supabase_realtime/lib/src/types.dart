@@ -56,7 +56,7 @@ enum PostgresChangeEvent {
     return name.toUpperCase();
   }
 
-  /// Parses the `type` field of a Postgres change payload.
+  /// Parses the `eventType` field of a Postgres change payload.
   @internal
   static PostgresChangeEvent fromValue(String event) => switch (event) {
     'INSERT' => PostgresChangeEvent.insert,

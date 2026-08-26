@@ -275,7 +275,7 @@ class RealtimeClient {
   /// The query parameters sent when connecting, as an unmodifiable map.
   final Map<String, dynamic> parameters;
 
-  /// The Realtime protocol version negotiated with the server.
+  /// The Realtime protocol version used by this client.
   final RealtimeProtocolVersion version;
 
   /// The timeout to wait for the connection to close before dismissing the
@@ -1149,8 +1149,8 @@ class RealtimeClient {
     }
   }
 
-  /// Sends a heartbeat, or reconnects if the previous one never received a
-  /// reply.
+  /// Sends a heartbeat, or closes the connection to trigger reconnection if
+  /// the previous one never received a reply.
   @internal
   Future<void> sendHeartbeat() async {
     if (!isConnected) {

@@ -893,6 +893,9 @@ class RealtimeChannel {
 
   /// Sends a `postgres_changes`, broadcast, or presence message over the
   /// channel, resolving once the server acknowledges, rejects, or times out.
+  ///
+  /// A broadcast sent without requesting an acknowledgement (the default)
+  /// resolves immediately instead of waiting for the server.
   @internal
   Future<ChannelResponse> send({
     required RealtimeListenType type,
@@ -1135,7 +1138,7 @@ class RealtimeChannel {
   @internal
   bool get isClosed => _state == ChannelState.closed;
 
-  /// Whether the last join attempt failed.
+  /// Whether the channel is in an errored state.
   @internal
   bool get isErrored => _state == ChannelState.errored;
 

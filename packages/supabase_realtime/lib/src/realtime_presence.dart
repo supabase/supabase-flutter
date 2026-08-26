@@ -27,7 +27,8 @@ class Presence {
   /// The payload shared by users.
   final Map<String, dynamic> payload;
 
-  /// Returns a deep copy of this presence.
+  /// Returns a copy of this presence with a shallow copy of [payload];
+  /// nested maps and lists inside it are still shared with the original.
   Presence deepClone() {
     return Presence.fromJson({
       'presence_ref': presenceReference,
