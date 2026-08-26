@@ -35,26 +35,12 @@ Map<String, int> _parsePaginationLinks(String? header) {
   return pages;
 }
 
+/// Admin API namespace for managing users, exposed on
+/// `AuthClient.admin`.
+///
+/// Requires the Supabase `secret` key; never use these methods from a
+/// client-side app.
 class AuthAdminApi {
-  final String _url;
-  final Map<String, String> _headers;
-
-  final Client? _httpClient;
-  late final AuthFetch _fetch = AuthFetch(_httpClient);
-  late final AuthAdminMFAApi mfa;
-
-  /// Contains all OAuth client administration methods.
-  /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
-  late final AuthAdminOAuthApi oauth;
-
-  /// Contains all custom OIDC/OAuth provider administration methods.
-  late final AuthAdminCustomProvidersApi customProviders;
-
-  /// Contains all passkey administration methods.
-  /// Only relevant when passkeys are enabled in Supabase Auth.
-  @experimental
-  late final AuthAdminPasskeyApi passkey;
-
   AuthAdminApi(
     this._url, {
     Map<String, String>? headers,
@@ -82,6 +68,26 @@ class AuthAdminApi {
       fetch: _fetch,
     );
   }
+  final String _url;
+  final Map<String, String> _headers;
+
+  final Client? _httpClient;
+  late final AuthFetch _fetch = AuthFetch(_httpClient);
+
+  /// Contains all MFA factor administration methods.
+  late final AuthAdminMFAApi mfa;
+
+  /// Contains all OAuth client administration methods.
+  /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
+  late final AuthAdminOAuthApi oauth;
+
+  /// Contains all custom OIDC/OAuth provider administration methods.
+  late final AuthAdminCustomProvidersApi customProviders;
+
+  /// Contains all passkey administration methods.
+  /// Only relevant when passkeys are enabled in Supabase Auth.
+  @experimental
+  late final AuthAdminPasskeyApi passkey;
 
   /// Removes a logged-in session.
   Future<void> signOut(

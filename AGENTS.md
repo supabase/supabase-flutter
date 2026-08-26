@@ -159,7 +159,7 @@ Each package has its own exception hierarchy:
 - **supabase_auth**: `AuthException` (base), with specialized subclasses like `AuthApiException`, `AuthRetryableFetchException`
 - **postgrest**: HTTP-based error responses
 - **realtime**: `RealtimeSubscribeException` with status tracking
-- **storage**: Retry logic with exponential backoff (up to 8 attempts)
+- **storage**: Retry logic with exponential backoff, opt-in through `SupabaseRetryOptions`
 
 ### Platform Differences
 
@@ -179,7 +179,7 @@ This enables:
 All clients accept options classes for customization:
 - `PostgrestClientOptions`: Custom schema access
 - `AuthClientOptions`: Auto-refresh tokens, PKCE vs implicit flow
-- `StorageClientOptions`: Retry attempts for uploads
+- `StorageClientOptions`: Retry configuration for uploads
 - `FunctionsClientOptions`: Edge function region selection
 - `RealtimeClientOptions`: WebSocket timeout configuration
 

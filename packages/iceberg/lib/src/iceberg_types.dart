@@ -2,12 +2,6 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// Identifies a table by its namespace and name.
 class TableIdentifier {
-  /// The multi level namespace the table belongs to.
-  final List<String> namespace;
-
-  /// The name of the table.
-  final String name;
-
   const TableIdentifier({required this.namespace, required this.name});
 
   factory TableIdentifier.fromJson(Map<String, dynamic> json) {
@@ -17,20 +11,13 @@ class TableIdentifier {
     );
   }
 
+  /// The multi level namespace the table belongs to.
+  final List<String> namespace;
+
+  /// The name of the table.
+  final String name;
+
   Map<String, dynamic> toJson() => {'namespace': namespace, 'name': name};
-}
-
-/// The direction used when sorting a [SortField].
-enum SortDirection {
-  ascending('asc'),
-  descending('desc');
-
-  const SortDirection(this.value);
-
-  final String value;
-
-  static SortDirection fromValue(String value) =>
-      values.firstWhere((direction) => direction.value == value);
 }
 
 /// Where null values are ordered relative to non null values in a [SortField].
@@ -102,9 +89,8 @@ sealed class IcebergType {
 /// A primitive Iceberg type such as `int`, `string`, `decimal(10,2)` or
 /// `fixed[16]`.
 class PrimitiveType extends IcebergType {
-  final String name;
-
   const PrimitiveType(this.name);
+  final String name;
 
   @override
   Object toJson() => name;
@@ -112,14 +98,6 @@ class PrimitiveType extends IcebergType {
 
 /// A field within a [StructType] or a [TableSchema].
 class TableField {
-  final int id;
-  final String name;
-  final IcebergType type;
-  final bool required;
-  final String? documentation;
-  final Object? initialDefault;
-  final Object? writeDefault;
-
   const TableField({
     required this.id,
     required this.name,
@@ -141,6 +119,13 @@ class TableField {
       writeDefault: json['write-default'],
     );
   }
+  final int id;
+  final String name;
+  final IcebergType type;
+  final bool required;
+  final String? documentation;
+  final Object? initialDefault;
+  final Object? writeDefault;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -155,8 +140,6 @@ class TableField {
 
 /// A nested struct type containing [fields].
 class StructType extends IcebergType {
-  final List<TableField> fields;
-
   const StructType({required this.fields});
 
   factory StructType.fromJson(Map<String, dynamic> json) {
@@ -166,6 +149,7 @@ class StructType extends IcebergType {
           .toList(),
     );
   }
+  final List<TableField> fields;
 
   @override
   Object toJson() => {
@@ -176,10 +160,6 @@ class StructType extends IcebergType {
 
 /// A list type whose elements are of type [element].
 class ListType extends IcebergType {
-  final int elementId;
-  final IcebergType element;
-  final bool elementRequired;
-
   const ListType({
     required this.elementId,
     required this.element,
@@ -193,6 +173,9 @@ class ListType extends IcebergType {
       elementRequired: json['element-required'] as bool,
     );
   }
+  final int elementId;
+  final IcebergType element;
+  final bool elementRequired;
 
   @override
   Object toJson() => {
@@ -205,12 +188,6 @@ class ListType extends IcebergType {
 
 /// A map type with keys of type [key] and values of type [value].
 class MapType extends IcebergType {
-  final int keyId;
-  final IcebergType key;
-  final int valueId;
-  final IcebergType value;
-  final bool valueRequired;
-
   const MapType({
     required this.keyId,
     required this.key,
@@ -228,6 +205,11 @@ class MapType extends IcebergType {
       valueRequired: json['value-required'] as bool,
     );
   }
+  final int keyId;
+  final IcebergType key;
+  final int valueId;
+  final IcebergType value;
+  final bool valueRequired;
 
   @override
   Object toJson() => {
@@ -242,10 +224,6 @@ class MapType extends IcebergType {
 
 /// The schema of a table, a struct of [fields].
 class TableSchema {
-  final List<TableField> fields;
-  final int? schemaId;
-  final List<int>? identifierFieldIds;
-
   const TableSchema({
     required this.fields,
     this.schemaId,
@@ -263,6 +241,9 @@ class TableSchema {
           : List<int>.from(json['identifier-field-ids'] as List),
     );
   }
+  final List<TableField> fields;
+  final int? schemaId;
+  final List<int>? identifierFieldIds;
 
   Map<String, dynamic> toJson() => {
     'type': 'struct',
@@ -274,11 +255,6 @@ class TableSchema {
 
 /// A single field of a [PartitionSpecification].
 class PartitionField {
-  final int sourceId;
-  final int? fieldId;
-  final String name;
-  final String transform;
-
   const PartitionField({
     required this.sourceId,
     required this.name,
@@ -294,6 +270,10 @@ class PartitionField {
       transform: json['transform'] as String,
     );
   }
+  final int sourceId;
+  final int? fieldId;
+  final String name;
+  final String transform;
 
   Map<String, dynamic> toJson() => {
     'source-id': sourceId,
@@ -305,9 +285,6 @@ class PartitionField {
 
 /// Describes how a table is partitioned.
 class PartitionSpecification {
-  final int? specificationId;
-  final List<PartitionField> fields;
-
   const PartitionSpecification({required this.fields, this.specificationId});
 
   factory PartitionSpecification.fromJson(Map<String, dynamic> json) {
@@ -320,6 +297,8 @@ class PartitionSpecification {
           .toList(),
     );
   }
+  final int? specificationId;
+  final List<PartitionField> fields;
 
   Map<String, dynamic> toJson() => {
     'spec-id': ?specificationId,
@@ -329,11 +308,6 @@ class PartitionSpecification {
 
 /// A single field of a [SortOrder].
 class SortField {
-  final int sourceId;
-  final String transform;
-  final SortDirection direction;
-  final NullOrder nullOrder;
-
   const SortField({
     required this.sourceId,
     required this.transform,
@@ -349,6 +323,10 @@ class SortField {
       nullOrder: NullOrder.fromValue(json['null-order'] as String),
     );
   }
+  final int sourceId;
+  final String transform;
+  final SortDirection direction;
+  final NullOrder nullOrder;
 
   Map<String, dynamic> toJson() => {
     'source-id': sourceId,
@@ -360,9 +338,6 @@ class SortField {
 
 /// Describes how a table is sorted when written.
 class SortOrder {
-  final int orderId;
-  final List<SortField> fields;
-
   const SortOrder({required this.orderId, required this.fields});
 
   factory SortOrder.fromJson(Map<String, dynamic> json) {
@@ -373,6 +348,8 @@ class SortOrder {
           .toList(),
     );
   }
+  final int orderId;
+  final List<SortField> fields;
 
   Map<String, dynamic> toJson() => {
     'order-id': orderId,
@@ -382,12 +359,6 @@ class SortOrder {
 
 /// A reference (branch or tag) pointing at a snapshot.
 class SnapshotReference {
-  final SnapshotReferenceType type;
-  final int snapshotId;
-  final Duration? maxReferenceAge;
-  final Duration? maxSnapshotAge;
-  final int? minSnapshotsToKeep;
-
   const SnapshotReference({
     required this.type,
     required this.snapshotId,
@@ -408,6 +379,11 @@ class SnapshotReference {
       minSnapshotsToKeep: json['min-snapshots-to-keep'] as int?,
     );
   }
+  final SnapshotReferenceType type;
+  final int snapshotId;
+  final Duration? maxReferenceAge;
+  final Duration? maxSnapshotAge;
+  final int? minSnapshotsToKeep;
 
   Map<String, dynamic> toJson() => {
     'type': type.value,
@@ -420,14 +396,6 @@ class SnapshotReference {
 
 /// A snapshot of a table at a point in time.
 class Snapshot {
-  final int snapshotId;
-  final int? parentSnapshotId;
-  final int? sequenceNumber;
-  final DateTime timestamp;
-  final String manifestList;
-  final Map<String, String> summary;
-  final int? schemaId;
-
   const Snapshot({
     required this.snapshotId,
     required this.timestamp,
@@ -449,6 +417,13 @@ class Snapshot {
       schemaId: json['schema-id'] as int?,
     );
   }
+  final int snapshotId;
+  final int? parentSnapshotId;
+  final int? sequenceNumber;
+  final DateTime timestamp;
+  final String manifestList;
+  final Map<String, String> summary;
+  final int? schemaId;
 
   Map<String, dynamic> toJson() => {
     'snapshot-id': snapshotId,
@@ -464,23 +439,6 @@ class Snapshot {
 /// Metadata describing the current state of a table, returned when loading or
 /// committing to a table.
 class TableMetadata {
-  final int formatVersion;
-  final String tableUuid;
-  final String? location;
-  final DateTime? lastUpdated;
-  final int? lastColumnId;
-  final List<TableSchema> schemas;
-  final int currentSchemaId;
-  final List<PartitionSpecification> partitionSpecifications;
-  final int? defaultSpecificationId;
-  final List<SortOrder> sortOrders;
-  final int? defaultSortOrderId;
-  final Map<String, String> properties;
-  final String? metadataLocation;
-  final int? currentSnapshotId;
-  final List<Snapshot> snapshots;
-  final Map<String, SnapshotReference>? references;
-
   const TableMetadata({
     required this.formatVersion,
     required this.tableUuid,
@@ -542,6 +500,22 @@ class TableMetadata {
       ),
     );
   }
+  final int formatVersion;
+  final String tableUuid;
+  final String? location;
+  final DateTime? lastUpdated;
+  final int? lastColumnId;
+  final List<TableSchema> schemas;
+  final int currentSchemaId;
+  final List<PartitionSpecification> partitionSpecifications;
+  final int? defaultSpecificationId;
+  final List<SortOrder> sortOrders;
+  final int? defaultSortOrderId;
+  final Map<String, String> properties;
+  final String? metadataLocation;
+  final int? currentSnapshotId;
+  final List<Snapshot> snapshots;
+  final Map<String, SnapshotReference>? references;
 
   /// The current (active) schema, or `null` when it can not be resolved.
   TableSchema? get currentSchema {
@@ -556,9 +530,6 @@ class TableMetadata {
 
 /// Temporary storage credentials vended by the server for a table path prefix.
 class StorageCredential {
-  final String prefix;
-  final Map<String, String> config;
-
   const StorageCredential({required this.prefix, required this.config});
 
   factory StorageCredential.fromJson(Map<String, dynamic> json) {
@@ -567,18 +538,14 @@ class StorageCredential {
       config: Map.from(json['config'] as Map? ?? const {}),
     );
   }
+  final String prefix;
+  final Map<String, String> config;
 }
 
 /// The full result of loading, creating or registering a table, including the
 /// server provided configuration, vended storage credentials and the response
 /// ETag.
 class LoadTableResult {
-  final TableMetadata metadata;
-  final String? metadataLocation;
-  final Map<String, String>? config;
-  final List<StorageCredential>? storageCredentials;
-  final String? etag;
-
   const LoadTableResult({
     required this.metadata,
     this.metadataLocation,
@@ -606,18 +573,15 @@ class LoadTableResult {
       etag: etag,
     );
   }
+  final TableMetadata metadata;
+  final String? metadataLocation;
+  final Map<String, String>? config;
+  final List<StorageCredential>? storageCredentials;
+  final String? etag;
 }
 
 /// Request describing a table to create.
 class CreateTableRequest {
-  final String name;
-  final TableSchema schema;
-  final String? location;
-  final PartitionSpecification? partitionSpecification;
-  final SortOrder? writeOrder;
-  final Map<String, String>? properties;
-  final bool? stageCreate;
-
   const CreateTableRequest({
     required this.name,
     required this.schema,
@@ -627,6 +591,13 @@ class CreateTableRequest {
     this.properties,
     this.stageCreate,
   });
+  final String name;
+  final TableSchema schema;
+  final String? location;
+  final PartitionSpecification? partitionSpecification;
+  final SortOrder? writeOrder;
+  final Map<String, String>? properties;
+  final bool? stageCreate;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -641,15 +612,14 @@ class CreateTableRequest {
 
 /// Request to register an existing metadata file as a table.
 class RegisterTableRequest {
-  final String name;
-  final String metadataLocation;
-  final bool? overwrite;
-
   const RegisterTableRequest({
     required this.name,
     required this.metadataLocation,
     this.overwrite,
   });
+  final String name;
+  final String metadataLocation;
+  final bool? overwrite;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -660,10 +630,6 @@ class RegisterTableRequest {
 
 /// The result of a namespace properties update.
 class UpdateNamespacePropertiesResult {
-  final List<String> updated;
-  final List<String> removed;
-  final List<String>? missing;
-
   const UpdateNamespacePropertiesResult({
     required this.updated,
     required this.removed,
@@ -679,60 +645,58 @@ class UpdateNamespacePropertiesResult {
           : List<String>.from(json['missing'] as List),
     );
   }
+  final List<String> updated;
+  final List<String> removed;
+  final List<String>? missing;
 }
 
 /// The result of committing updates to a table.
 class CommitTableResult {
-  final String metadataLocation;
-  final TableMetadata metadata;
-
   const CommitTableResult({
     required this.metadataLocation,
     required this.metadata,
   });
+  final String metadataLocation;
+  final TableMetadata metadata;
 }
 
 /// The result of listing namespaces.
 class ListNamespacesResult {
+  const ListNamespacesResult({required this.namespaces, this.nextPageToken});
   final List<List<String>> namespaces;
   final String? nextPageToken;
-
-  const ListNamespacesResult({required this.namespaces, this.nextPageToken});
 }
 
 /// The result of listing tables in a namespace.
 class ListTablesResult {
+  const ListTablesResult({required this.identifiers, this.nextPageToken});
   final List<TableIdentifier> identifiers;
   final String? nextPageToken;
-
-  const ListTablesResult({required this.identifiers, this.nextPageToken});
 }
 
 /// Options for listing namespaces.
 class ListNamespacesOptions {
+  const ListNamespacesOptions({this.parent, this.pageToken, this.pageSize});
   final List<String>? parent;
   final String? pageToken;
   final int? pageSize;
-
-  const ListNamespacesOptions({this.parent, this.pageToken, this.pageSize});
 }
 
 /// Options for listing tables.
 class ListTablesOptions {
+  const ListTablesOptions({this.pageToken, this.pageSize});
   final String? pageToken;
   final int? pageSize;
-
-  const ListTablesOptions({this.pageToken, this.pageSize});
 }
 
 /// Options for loading a table.
 class LoadTableOptions {
+  const LoadTableOptions({this.ifNoneMatch, this.snapshots});
+
   /// ETag from a previous response. When the table is unchanged the server
   /// responds with 304 and the load returns `null`.
   final String? ifNoneMatch;
 
   /// Which snapshots the server should include in the returned metadata.
   final TableSnapshotScope? snapshots;
-
-  const LoadTableOptions({this.ifNoneMatch, this.snapshots});
 }

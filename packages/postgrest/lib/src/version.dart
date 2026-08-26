@@ -1,1 +1,4 @@
-const version = '2.9.1';
+import 'package:meta/meta.dart';
+
+@internal
+const version = '3.0.0-dev.1';

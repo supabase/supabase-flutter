@@ -1,22 +1,23 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
+// ignore_for_file: public_member_api_docs
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 
+@internal
 typedef BindingCallback = void Function(dynamic payload, [dynamic ref]);
 
+@internal
 class Binding {
-  String type;
-  Map<String, dynamic> filter;
-  BindingCallback callback;
-  String? id;
-
   Binding(
     this.type,
     this.filter,
     this.callback, [
     this.id,
   ]);
+  String type;
+  Map<String, dynamic> filter;
+  BindingCallback callback;
+  String? id;
 
   Binding copyWith({
     String? type,
@@ -68,6 +69,14 @@ enum PostgresChangeEvent {
 
 @internal
 class ChannelFilter {
+  const ChannelFilter({
+    this.event,
+    this.schema,
+    this.table,
+    this.filter,
+    this.select,
+  });
+
   /// For [RealtimeListenType.postgresChanges] it's one of: `INSERT`, `UPDATE`,
   /// `DELETE`
   ///
@@ -89,14 +98,6 @@ class ChannelFilter {
   /// For [RealtimeListenType.postgresChanges], restricts the change payload to
   /// a subset of columns instead of the full row.
   final List<String>? select;
-
-  const ChannelFilter({
-    this.event,
-    this.schema,
-    this.table,
-    this.filter,
-    this.select,
-  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -147,19 +148,35 @@ enum PresenceEvent {
 
 enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
 
+/// A subscription status change emitted by [RealtimeChannel.onStatusChange].
+class RealtimeSubscribeStatusChange {
+  const RealtimeSubscribeStatusChange(this.status, [this.error]);
+
+  /// The new status of the channel subscription.
+  final RealtimeSubscribeStatus status;
+
+  /// The error that caused a [RealtimeSubscribeStatus.channelError] status,
+  /// `null` for other statuses.
+  final Object? error;
+
+  @override
+  String toString() =>
+      'RealtimeSubscribeStatusChange(status: ${status.name}, error: $error)';
+}
+
 /// Configuration for broadcast replay feature.
 /// Allows replaying broadcast messages from a specific timestamp.
 class ReplayOption {
+  const ReplayOption({
+    required this.since,
+    this.limit,
+  });
+
   /// Unix timestamp (in milliseconds) from which to start replaying messages
   final int since;
 
   /// Optional limit on the number of messages to replay, maximum value of 25.
   final int? limit;
-
-  const ReplayOption({
-    required this.since,
-    this.limit,
-  });
 
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{'since': since};
@@ -171,6 +188,16 @@ class ReplayOption {
 }
 
 class RealtimeChannelConfig {
+  const RealtimeChannelConfig({
+    this.ack = false,
+    this.self = false,
+    this.replay,
+    this.key = '',
+    this.enabled = false,
+    this.private = false,
+    this.replicationReady = false,
+  });
+
   /// [ack] option instructs server to acknowledge that broadcast message was
   /// received
   final bool ack;
@@ -203,16 +230,6 @@ class RealtimeChannelConfig {
   /// (message: `'Replication connection established'`) on success or `'error'`
   /// if the connection is not ready in time.
   final bool replicationReady;
-
-  const RealtimeChannelConfig({
-    this.ack = false,
-    this.self = false,
-    this.replay,
-    this.key = '',
-    this.enabled = false,
-    this.private = false,
-    this.replicationReady = false,
-  });
 
   Map<String, dynamic> toMap() {
     final broadcastConfig = <String, dynamic>{
@@ -247,19 +264,6 @@ class RealtimeChannelConfig {
 /// ([status] is `'ok'`) or fails to become ready in time ([status] is
 /// `'error'`).
 class RealtimeSystemPayload {
-  /// The extension that produced the message, e.g. `'system'` or
-  /// `'postgres_changes'`.
-  final String extension;
-
-  /// `'ok'` on success, `'error'` on failure.
-  final String status;
-
-  /// Human-readable description, e.g. `'Replication connection established'`.
-  final String message;
-
-  /// The channel (sub)topic the message refers to.
-  final String channel;
-
   const RealtimeSystemPayload({
     required this.extension,
     required this.status,
@@ -276,6 +280,19 @@ class RealtimeSystemPayload {
     );
   }
 
+  /// The extension that produced the message, e.g. `'system'` or
+  /// `'postgres_changes'`.
+  final String extension;
+
+  /// `'ok'` on success, `'error'` on failure.
+  final String status;
+
+  /// Human-readable description, e.g. `'Replication connection established'`.
+  final String message;
+
+  /// The channel (sub)topic the message refers to.
+  final String channel;
+
   @override
   String toString() =>
       'RealtimeSystemPayload(extension: $extension, status: $status, message: '
@@ -284,13 +301,6 @@ class RealtimeSystemPayload {
 
 /// Data class that contains the Postgres change event payload.
 class PostgresChangePayload {
-  final String schema;
-  final String table;
-  final DateTime commitTimestamp;
-  final PostgresChangeEvent eventType;
-  final Map<String, dynamic> newRecord;
-  final Map<String, dynamic> oldRecord;
-  final dynamic errors;
   const PostgresChangePayload({
     required this.schema,
     required this.table,
@@ -329,6 +339,13 @@ class PostgresChangePayload {
       errors: payload['errors'],
     );
   }
+  final String schema;
+  final String table;
+  final DateTime commitTimestamp;
+  final PostgresChangeEvent eventType;
+  final Map<String, dynamic> newRecord;
+  final Map<String, dynamic> oldRecord;
+  final dynamic errors;
 
   @override
   String toString() {
@@ -449,6 +466,14 @@ enum PostgresChangeFilterType {
 /// Creates a filter for realtime postgres change listener.
 /// {@endtemplate}
 class PostgresChangeFilter {
+  /// {@macro postgres_change_filter}
+  const PostgresChangeFilter({
+    required this.type,
+    required this.column,
+    required this.value,
+    this.negate = false,
+  });
+
   /// The type of the filter to set.
   final PostgresChangeFilterType type;
 
@@ -461,14 +486,6 @@ class PostgresChangeFilter {
   /// When `true`, the operator is negated with the `not.` prefix
   /// (e.g. `status=not.in.(draft,archived)`, `deleted_at=not.is.null`).
   final bool negate;
-
-  /// {@macro postgres_change_filter}
-  const PostgresChangeFilter({
-    required this.type,
-    required this.column,
-    required this.value,
-    this.negate = false,
-  });
 
   /// Quotes a scalar value PostgREST-style when it contains a reserved
   /// character (`,`, `(`, `)`, `"`, `\`) or surrounding whitespace, so the
@@ -497,17 +514,17 @@ class PostgresChangeFilter {
   }
 }
 
-/// Base class for the payload in `.onPresence()` callback functions.
+/// Base class for the payloads emitted by the presence streams.
 abstract class RealtimePresencePayload {
-  /// Name of the presence event.
-  final PresenceEvent event;
-
   const RealtimePresencePayload({
     required this.event,
   });
 
   RealtimePresencePayload.fromJson(Map<String, dynamic> json)
     : event = PresenceEvent.fromValue(json['event']);
+
+  /// Name of the presence event.
+  final PresenceEvent event;
 
   @override
   String toString() => 'PresencePayload(event: ${event.name})';
@@ -531,17 +548,6 @@ class RealtimePresenceSyncPayload extends RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.join] callback.
 class RealtimePresenceJoinPayload extends RealtimePresencePayload {
-  /// Unique identifier for the clients.
-  ///
-  /// By default the realtime server generates a UUIDv1 key for each client.
-  final String key;
-
-  /// List of newly joined presences in the callback.
-  final List<Presence> newPresences;
-
-  /// List of currently present presences.
-  final List<Presence> currentPresences;
-
   const RealtimePresenceJoinPayload({
     required super.event,
     required this.key,
@@ -558,6 +564,17 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
     );
   }
 
+  /// Unique identifier for the clients.
+  ///
+  /// By default the realtime server generates a UUIDv1 key for each client.
+  final String key;
+
+  /// List of newly joined presences in the callback.
+  final List<Presence> newPresences;
+
+  /// List of currently present presences.
+  final List<Presence> currentPresences;
+
   @override
   String toString() =>
       'PresenceJoinPayload(key: $key, newPresences: $newPresences, '
@@ -566,17 +583,6 @@ class RealtimePresenceJoinPayload extends RealtimePresencePayload {
 
 /// Payload for [PresenceEvent.leave] callback.
 class RealtimePresenceLeavePayload extends RealtimePresencePayload {
-  /// Unique identifier for the clients.
-  ///
-  /// By default the realtime server generates a UUIDv1 key for each client.
-  final String key;
-
-  /// List of presences that left in the callback.
-  final List<Presence> leftPresences;
-
-  /// List of currently present presences.
-  final List<Presence> currentPresences;
-
   const RealtimePresenceLeavePayload({
     required super.event,
     required this.key,
@@ -593,6 +599,17 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
     );
   }
 
+  /// Unique identifier for the clients.
+  ///
+  /// By default the realtime server generates a UUIDv1 key for each client.
+  final String key;
+
+  /// List of presences that left in the callback.
+  final List<Presence> leftPresences;
+
+  /// List of currently present presences.
+  final List<Presence> currentPresences;
+
   @override
   String toString() =>
       'PresenceLeavePayload(key: $key, leftPresences: $leftPresences, '
@@ -601,16 +618,16 @@ class RealtimePresenceLeavePayload extends RealtimePresencePayload {
 
 /// A single client connected through presence.
 class SinglePresenceState {
+  const SinglePresenceState({
+    required this.key,
+    required this.presences,
+  });
+
   /// Presence key of the client.
   final String key;
 
   /// List of shared payloads of the client.
   final List<Presence> presences;
-
-  const SinglePresenceState({
-    required this.key,
-    required this.presences,
-  });
 
   @override
   String toString() => 'PresenceState(key: $key, presences: $presences)';

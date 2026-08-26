@@ -17,6 +17,8 @@
 /// `RealtimeSubscribeException` and `IcebergException` are not part of this
 /// hierarchy.
 abstract class SupabaseException implements Exception {
+  const SupabaseException(this.message, {this.errorCode});
+
   /// Human readable error message associated with the error.
   final String message;
 
@@ -25,8 +27,6 @@ abstract class SupabaseException implements Exception {
   ///
   /// `null` when neither the service nor the client named the failure.
   final String? errorCode;
-
-  const SupabaseException(this.message, {this.errorCode});
 
   @override
   String toString() => '$runtimeType(message: $message, errorCode: $errorCode)';

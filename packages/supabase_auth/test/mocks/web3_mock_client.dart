@@ -5,6 +5,11 @@ import 'package:http/http.dart';
 /// A mock HTTP client that simulates the `POST /token?grant_type=web3`
 /// endpoint used for Web3 wallet authentication.
 class Web3MockClient extends BaseClient {
+  Web3MockClient({
+    this.userId = 'mock-user-id-web3',
+    this.accessToken = 'mock-access-token',
+    this.refreshToken = 'mock-refresh-token',
+  });
   final String userId;
   final String accessToken;
   final String refreshToken;
@@ -12,12 +17,6 @@ class Web3MockClient extends BaseClient {
   Uri? lastUri;
   Map<String, dynamic>? lastRequestBody;
   Map<String, String>? lastHeaders;
-
-  Web3MockClient({
-    this.userId = 'mock-user-id-web3',
-    this.accessToken = 'mock-access-token',
-    this.refreshToken = 'mock-refresh-token',
-  });
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
@@ -86,9 +85,6 @@ class Web3MockClient extends BaseClient {
 /// [statusCode] and [errorResponse], simulating an expired nonce or a bad
 /// signature.
 class Web3ErrorMockClient extends BaseClient {
-  final int statusCode;
-  final Map<String, dynamic> errorResponse;
-
   Web3ErrorMockClient({
     this.statusCode = 403,
     this.errorResponse = const {
@@ -96,6 +92,8 @@ class Web3ErrorMockClient extends BaseClient {
       'message': 'Signature verification failed',
     },
   });
+  final int statusCode;
+  final Map<String, dynamic> errorResponse;
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {

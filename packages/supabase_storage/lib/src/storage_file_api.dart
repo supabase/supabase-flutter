@@ -6,23 +6,30 @@ import 'package:supabase_common/supabase_common.dart';
 
 import 'file_stub.dart' if (dart.library.io) './file_io.dart';
 
+/// API namespace for managing the objects within a bucket, obtained with
+/// `SupabaseStorageClient.from`.
 class StorageFileApi {
-  final String url;
-  Map<String, String> _headers;
-  final String? bucketId;
-  final int _retryAttempts;
-  final Fetch _storageFetch;
-
   StorageFileApi(
     this.url,
     Map<String, String> headers,
     this.bucketId,
-    this._retryAttempts,
+    this._retryOptions,
     this._storageFetch,
   ) : _headers = {...headers};
 
-  /// The headers used for requests.
-  Map<String, String> get headers => _headers;
+  /// The storage endpoint requests are sent to.
+  final String url;
+  Map<String, String> _headers;
+
+  /// The ID of the bucket this namespace operates on.
+  final String? bucketId;
+  final SupabaseRetryOptions _retryOptions;
+  final Fetch _storageFetch;
+
+  /// The headers used for requests, as an unmodifiable view.
+  ///
+  /// Use [setHeader] to add one instead of mutating them here.
+  Map<String, String> get headers => Map.unmodifiable(_headers);
 
   /// Sets an HTTP header for subsequent requests.
   ///
@@ -44,28 +51,22 @@ class StorageFileApi {
     // separators, the bucket id, and characters that are already valid in a
     // path segment (such as `:` in ISO-8601 timestamps) are preserved, so URLs
     // for existing valid keys are unchanged.
-    final encodedPath = Uri(pathSegments: path.split('/')).path;
+    final cleanPath = _removeEmptyFolders(path);
+    final encodedPath = Uri(pathSegments: cleanPath.split('/')).path;
     return '$bucketId/$encodedPath';
   }
 
   String _removeEmptyFolders(String path) {
-    return path.replaceAll(RegExp(r'^/|/$'), '').replaceAll(RegExp(r'/+'), '/');
+    return path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'^/|/$'), '');
   }
 
-  FetchOptions get _fetchOptions => FetchOptions(headers);
+  FetchOptions get _fetchOptions => FetchOptions(_headers);
 
   UploadResponse _uploadResponse(String cleanPath, Map<String, dynamic> data) {
     return UploadResponse(
       id: data['Id'] as String?,
       path: cleanPath,
       fullPath: data['Key'] as String,
-    );
-  }
-
-  void _assertValidRetryAttempts(int? retryAttempts) {
-    assert(
-      retryAttempts == null || retryAttempts >= 0,
-      'retryAttempts has to be greater or equal to 0',
     );
   }
 
@@ -79,8 +80,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the
-  /// storage client.
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
@@ -91,10 +92,9 @@ class StorageFileApi {
     String path,
     File file, {
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   }) async {
-    _assertValidRetryAttempts(retryAttempts);
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.postFile(
@@ -102,7 +102,7 @@ class StorageFileApi {
       file,
       fileOptions,
       options: _fetchOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -119,8 +119,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the
-  /// storage client.
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
@@ -131,10 +131,9 @@ class StorageFileApi {
     String path,
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   }) async {
-    _assertValidRetryAttempts(retryAttempts);
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.postBinaryFile(
@@ -142,7 +141,7 @@ class StorageFileApi {
       data,
       fileOptions,
       options: _fetchOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -167,11 +166,9 @@ class StorageFileApi {
     String token,
     File file, [
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   ]) async {
-    _assertValidRetryAttempts(retryAttempts);
-
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
@@ -181,7 +178,7 @@ class StorageFileApi {
       requestUrl.toString(),
       file,
       fileOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -206,11 +203,9 @@ class StorageFileApi {
     String token,
     Uint8List data, [
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   ]) async {
-    _assertValidRetryAttempts(retryAttempts);
-
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     var requestUrl = Uri.parse('$url/object/upload/sign/$finalPath');
@@ -220,7 +215,7 @@ class StorageFileApi {
       requestUrl.toString(),
       data,
       fileOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -241,13 +236,14 @@ class StorageFileApi {
     String path, {
     bool upsert = false,
   }) async {
-    final finalPath = _getFinalPath(path);
+    final cleanPath = _removeEmptyFolders(path);
+    final finalPath = _getFinalPath(cleanPath);
 
     final data = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/upload/sign/$finalPath',
       {},
       options: FetchOptions({
-        ...headers,
+        ..._headers,
         if (upsert) 'x-upsert': 'true',
       }),
     );
@@ -262,7 +258,7 @@ class StorageFileApi {
 
     return SignedUploadURLResponse(
       signedUrl: signedUrl.toString(),
-      path: path,
+      path: cleanPath,
       token: token,
     );
   }
@@ -276,8 +272,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the
-  /// storage client.
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
@@ -288,10 +284,9 @@ class StorageFileApi {
     String path,
     File file, {
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   }) async {
-    _assertValidRetryAttempts(retryAttempts);
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.putFile(
@@ -299,7 +294,7 @@ class StorageFileApi {
       file,
       fileOptions,
       options: _fetchOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -317,8 +312,8 @@ class StorageFileApi {
   ///
   /// [fileOptions] HTTP headers. For example `cacheControl`
   ///
-  /// [retryAttempts] overrides the retryAttempts parameter set across the
-  /// storage client.
+  /// [retryOptions] overrides the retry configuration of the storage client
+  /// for this upload.
   ///
   /// You can pass a [retryController] and call `cancel()` to cancel the retry
   /// attempts.
@@ -329,10 +324,9 @@ class StorageFileApi {
     String path,
     Uint8List data, {
     FileOptions fileOptions = const FileOptions(),
-    int? retryAttempts,
+    SupabaseRetryOptions? retryOptions,
     StorageRetryController? retryController,
   }) async {
-    _assertValidRetryAttempts(retryAttempts);
     final cleanPath = _removeEmptyFolders(path);
     final finalPath = _getFinalPath(cleanPath);
     final response = await _storageFetch.putBinaryFile(
@@ -340,7 +334,7 @@ class StorageFileApi {
       data,
       fileOptions,
       options: _fetchOptions,
-      retryAttempts: retryAttempts ?? _retryAttempts,
+      retryOptions: retryOptions ?? _retryOptions,
       retryController: retryController,
     );
 
@@ -366,8 +360,8 @@ class StorageFileApi {
       '$url/object/move',
       {
         'bucketId': bucketId,
-        'sourceKey': fromPath,
-        'destinationKey': toPath,
+        'sourceKey': _removeEmptyFolders(fromPath),
+        'destinationKey': _removeEmptyFolders(toPath),
         'destinationBucket': ?destinationBucket,
       },
       options: options,
@@ -395,8 +389,8 @@ class StorageFileApi {
       '$url/object/copy',
       {
         'bucketId': bucketId,
-        'sourceKey': fromPath,
-        'destinationKey': toPath,
+        'sourceKey': _removeEmptyFolders(fromPath),
+        'destinationKey': _removeEmptyFolders(toPath),
         'destinationBucket': ?destinationBucket,
       },
       options: options,
@@ -483,7 +477,7 @@ class StorageFileApi {
       '$url/object/sign/$bucketId',
       {
         'expiresIn': expiresIn,
-        'paths': paths,
+        'paths': paths.map(_removeEmptyFolders).toList(),
       },
       options: options,
     );
@@ -534,7 +528,7 @@ class StorageFileApi {
 
     return _storageFetch.get(
       fetchUrl.toString(),
-      options: FetchOptions(headers, noResolveJson: true),
+      options: FetchOptions(_headers, noResolveJson: true),
     );
   }
 
@@ -597,7 +591,7 @@ class StorageFileApi {
 
     return _storageFetch.getStream(
       fetchUrl.toString(),
-      options: FetchOptions(headers, noResolveJson: true),
+      options: FetchOptions(_headers, noResolveJson: true),
     );
   }
 
@@ -701,7 +695,7 @@ class StorageFileApi {
     final options = _fetchOptions;
     final response = await _storageFetch.delete<List<dynamic>>(
       '$url/object/$bucketId',
-      {'prefixes': paths},
+      {'prefixes': paths.map(_removeEmptyFolders).toList()},
       options: options,
     );
     final fileObjects = List<FileObject>.from(
@@ -753,7 +747,7 @@ class StorageFileApi {
     SearchOptions searchOptions = const SearchOptions(),
   }) async {
     final Map<String, dynamic> body = {
-      'prefix': path ?? '',
+      'prefix': _removeEmptyFolders(path ?? ''),
       ...searchOptions.toMap(),
     };
     final options = _fetchOptions;
@@ -782,9 +776,14 @@ class StorageFileApi {
   Future<PaginatedListResult> listPaginated({
     PaginatedSearchOptions options = const PaginatedSearchOptions(),
   }) async {
+    final body = options.toMap();
+    final prefix = body['prefix'] as String?;
+    if (prefix != null) {
+      body['prefix'] = _removeEmptyFolders(prefix);
+    }
     final response = await _storageFetch.post<Map<String, dynamic>>(
       '$url/object/list-v2/$bucketId',
-      options.toMap(),
+      body,
       options: _fetchOptions,
     );
     return PaginatedListResult.fromJson(response);

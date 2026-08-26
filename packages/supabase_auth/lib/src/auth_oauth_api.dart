@@ -5,18 +5,6 @@ part of 'auth_client.dart';
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizedClient {
-  /// Unique identifier for the OAuth client
-  final String clientId;
-
-  /// Human-readable name of the OAuth client
-  final String? clientName;
-
-  /// URI of the OAuth client's website
-  final String? clientUri;
-
-  /// URI of the OAuth client's logo
-  final String? logoUri;
-
   const OAuthAuthorizedClient({
     required this.clientId,
     this.clientName,
@@ -32,6 +20,18 @@ class OAuthAuthorizedClient {
       logoUri: json['logo_uri'] as String?,
     );
   }
+
+  /// Unique identifier for the OAuth client
+  final String clientId;
+
+  /// Human-readable name of the OAuth client
+  final String? clientName;
+
+  /// URI of the OAuth client's website
+  final String? clientUri;
+
+  /// URI of the OAuth client's logo
+  final String? logoUri;
 }
 
 /// The signed-in user a pending OAuth authorization request belongs to.
@@ -41,12 +41,6 @@ class OAuthAuthorizedClient {
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizingUser {
-  /// Unique identifier of the user.
-  final String id;
-
-  /// Email address of the user.
-  final String email;
-
   const OAuthAuthorizingUser({required this.id, required this.email});
 
   factory OAuthAuthorizingUser.fromJson(Map<String, dynamic> json) {
@@ -60,21 +54,18 @@ class OAuthAuthorizingUser {
     }
     return OAuthAuthorizingUser(id: id, email: email);
   }
+
+  /// Unique identifier of the user.
+  final String id;
+
+  /// Email address of the user.
+  final String email;
 }
 
 /// An OAuth grant representing a user's authorization of an OAuth client.
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthGrant {
-  /// The OAuth client the grant was issued to.
-  final OAuthAuthorizedClient client;
-
-  /// The scopes granted to the client.
-  final List<String> scopes;
-
-  /// The moment the grant was created.
-  final DateTime grantedAt;
-
   const OAuthGrant({
     required this.client,
     required this.scopes,
@@ -88,6 +79,15 @@ class OAuthGrant {
       grantedAt: parseIso8601(json, 'granted_at'),
     );
   }
+
+  /// The OAuth client the grant was issued to.
+  final OAuthAuthorizedClient client;
+
+  /// The scopes granted to the client.
+  final List<String> scopes;
+
+  /// The moment the grant was created.
+  final DateTime grantedAt;
 }
 
 /// Result returned by [AuthOAuthApi.getAuthorizationDetails].
@@ -121,21 +121,6 @@ sealed class OAuthAuthorizationResponse {
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
-  /// The unique identifier for this authorization request.
-  final String authorizationId;
-
-  /// The OAuth client requesting authorization.
-  final OAuthAuthorizedClient client;
-
-  /// The user the authorization request belongs to.
-  final OAuthAuthorizingUser user;
-
-  /// The scopes requested by the OAuth client, if any.
-  final String? scope;
-
-  /// The redirect URI to be used after the authorization decision.
-  final String redirectUri;
-
   const OAuthAuthorizationDetailsResponse({
     required this.authorizationId,
     required this.client,
@@ -163,6 +148,21 @@ class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
       redirectUri: json['redirect_uri'] as String,
     );
   }
+
+  /// The unique identifier for this authorization request.
+  final String authorizationId;
+
+  /// The OAuth client requesting authorization.
+  final OAuthAuthorizedClient client;
+
+  /// The user the authorization request belongs to.
+  final OAuthAuthorizingUser user;
+
+  /// The scopes requested by the OAuth client, if any.
+  final String? scope;
+
+  /// The redirect URI to be used after the authorization decision.
+  final String redirectUri;
 }
 
 /// Response type returned when the signed-in user has already granted consent
@@ -173,10 +173,6 @@ class OAuthAuthorizationDetailsResponse extends OAuthAuthorizationResponse {
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthAuthorizationRedirectResponse extends OAuthAuthorizationResponse {
-  /// The URL the caller should redirect the user to in order to complete the
-  /// already-approved authorization request.
-  final String redirectUrl;
-
   const OAuthAuthorizationRedirectResponse({required this.redirectUrl});
 
   factory OAuthAuthorizationRedirectResponse.fromJson(
@@ -186,15 +182,16 @@ class OAuthAuthorizationRedirectResponse extends OAuthAuthorizationResponse {
       redirectUrl: json['redirect_url'] as String,
     );
   }
+
+  /// The URL the caller should redirect the user to in order to complete the
+  /// already-approved authorization request.
+  final String redirectUrl;
 }
 
 /// Response type for an OAuth authorization consent decision (approve or deny).
 ///
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthConsentResponse {
-  /// The URL to redirect the user to after the authorization decision.
-  final String? redirectUrl;
-
   const OAuthConsentResponse({this.redirectUrl});
 
   factory OAuthConsentResponse.fromJson(Map<String, dynamic> json) {
@@ -202,6 +199,9 @@ class OAuthConsentResponse {
       redirectUrl: json['redirect_url'] as String?,
     );
   }
+
+  /// The URL to redirect the user to after the authorization decision.
+  final String? redirectUrl;
 }
 
 /// {@template auth_oauth_server_api}
@@ -241,14 +241,13 @@ class OAuthConsentResponse {
 /// server feature is enabled in your Supabase Auth configuration.
 /// {@endtemplate}
 class AuthOAuthApi {
-  final AuthFetch _fetch;
-  final AuthClient _client;
-
   const AuthOAuthApi({
     required AuthClient client,
     required AuthFetch fetch,
   }) : _client = client,
        _fetch = fetch;
+  final AuthFetch _fetch;
+  final AuthClient _client;
 
   /// Retrieves details about an OAuth authorization request.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.

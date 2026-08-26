@@ -12,6 +12,9 @@ Future<void> main() async {
       'Authorization': 'Bearer $supabaseKey',
       'apikey': supabaseKey,
     },
+    // The pkce flow needs somewhere to keep its code verifiers. Swap this for
+    // a persistent storage when the code exchange can happen after a restart.
+    asyncStorage: MemoryAuthAsyncStorage(),
   );
 
   try {

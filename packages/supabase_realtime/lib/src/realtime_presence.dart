@@ -1,15 +1,12 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
+// ignore_for_file: public_member_api_docs
+import 'dart:collection';
+
+import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/types.dart';
 
 /// A single shared state between users with Realtime Presence.
 class Presence {
-  /// Reference to the presence object.
-  final String presenceReference;
-
-  /// The payload shared by users.
-  final Map<String, dynamic> payload;
-
   const Presence({
     required this.presenceReference,
     required this.payload,
@@ -25,6 +22,12 @@ class Presence {
     );
   }
 
+  /// Reference to the presence object.
+  final String presenceReference;
+
+  /// The payload shared by users.
+  final Map<String, dynamic> payload;
+
   Presence deepClone() {
     return Presence.fromJson({
       'presence_ref': presenceReference,
@@ -37,39 +40,42 @@ class Presence {
       'Presence(presenceReference: $presenceReference, payload: $payload)';
 }
 
+@internal
 typedef PresenceChooser<T> = T Function(String key, dynamic presence);
 
+@internal
 typedef PresenceOnJoinCallback =
     void Function(String? key, dynamic currentPresences, dynamic newPresences);
 
+@internal
 typedef PresenceOnLeaveCallback =
     void Function(String? key, dynamic currentPresences, dynamic newPresences);
 
+@internal
 class PresenceOptions {
-  final PresenceEvents events;
-
   const PresenceOptions({required this.events});
+  final PresenceEvents events;
 }
 
+@internal
 class PresenceEvents {
+  const PresenceEvents({required this.state, required this.diff});
   final String state;
   final String diff;
-
-  const PresenceEvents({required this.state, required this.diff});
 }
 
+/// Internal bookkeeping for the presence state of a [RealtimeChannel].
+///
+/// Not part of the public API: the [onJoin], [onLeave], and [onSync] setters
+/// hold a single callback slot each, and the [RealtimePresence] constructor
+/// installs the forwarders that feed the channel presence streams through
+/// them, so replacing a callback silently disables those streams.
+///
+/// To observe presence, listen to [RealtimeChannel.onPresenceSync],
+/// [RealtimeChannel.onPresenceJoin], and [RealtimeChannel.onPresenceLeave],
+/// and read the current state with [RealtimeChannel.presenceState].
+@internal
 class RealtimePresence {
-  Map<String, List<Presence>> state = <String, List<Presence>>{};
-  List<Map<String, dynamic>> pendingDiffs = [];
-  String? joinRef;
-  Map<String, dynamic> caller = {
-    'onJoin': (_, _, _) {},
-    'onLeave': (_, _, _) {},
-    'onSync': () {},
-  };
-
-  final RealtimeChannel channel;
-
   /// Initializes the Presence
   ///
   /// `channel` - The RealtimeChannel
@@ -82,43 +88,43 @@ class RealtimePresence {
         PresenceEvents(state: 'presence_state', diff: 'presence_diff');
 
     channel.onEvents(events.state, ChannelFilter(), (newState, [_]) {
-      final onJoin = caller['onJoin'];
-      final onLeave = caller['onLeave'];
-      final onSync = caller['onSync'];
+      final onJoin = _caller['onJoin'];
+      final onLeave = _caller['onLeave'];
+      final onSync = _caller['onSync'];
 
-      joinRef = channel.joinRef;
+      _joinRef = channel.joinRef;
 
-      state = RealtimePresence.syncState(
-        state,
+      _state = RealtimePresence.syncState(
+        _state,
         newState,
         onJoin,
         onLeave,
       );
 
-      for (final diff in pendingDiffs) {
-        state = RealtimePresence.syncDiff(
-          state,
+      for (final diff in _pendingDiffs) {
+        _state = RealtimePresence.syncDiff(
+          _state,
           diff,
           onJoin,
           onLeave,
         );
       }
 
-      pendingDiffs = [];
+      _pendingDiffs = [];
 
       onSync();
     });
 
     channel.onEvents(events.diff, ChannelFilter(), (diff, [_]) {
-      final onJoin = caller['onJoin'];
-      final onLeave = caller['onLeave'];
-      final onSync = caller['onSync'];
+      final onJoin = _caller['onJoin'];
+      final onLeave = _caller['onLeave'];
+      final onSync = _caller['onSync'];
 
       if (inPendingSyncState()) {
-        pendingDiffs.add(diff);
+        _pendingDiffs.add(diff);
       } else {
-        state = RealtimePresence.syncDiff(
-          state,
+        _state = RealtimePresence.syncDiff(
+          _state,
           diff,
           onJoin,
           onLeave,
@@ -154,6 +160,20 @@ class RealtimePresence {
 
     onSync(() => channel.trigger('presence', {'event': 'sync'}));
   }
+  Map<String, List<Presence>> _state = <String, List<Presence>>{};
+
+  /// The current presence state, keyed by presence key.
+  Map<String, List<Presence>> get state => UnmodifiableMapView(_state);
+
+  List<Map<String, dynamic>> _pendingDiffs = [];
+  String? _joinRef;
+  final Map<String, dynamic> _caller = {
+    'onJoin': (_, _, _) {},
+    'onLeave': (_, _, _) {},
+    'onSync': () {},
+  };
+
+  final RealtimeChannel channel;
 
   /// Used to sync the list of presences on the server with the
   /// client's state.
@@ -363,22 +383,22 @@ class RealtimePresence {
   }
 
   void onJoin(PresenceOnJoinCallback callback) {
-    caller['onJoin'] = callback;
+    _caller['onJoin'] = callback;
   }
 
   void onLeave(PresenceOnLeaveCallback callback) {
-    caller['onLeave'] = callback;
+    _caller['onLeave'] = callback;
   }
 
   void onSync(void Function() callback) {
-    caller['onSync'] = callback;
+    _caller['onSync'] = callback;
   }
 
   List<T> list<T>([PresenceChooser<T>? by]) {
-    return RealtimePresence._list(state, by);
+    return RealtimePresence._list(_state, by);
   }
 
   bool inPendingSyncState() {
-    return joinRef == null || joinRef != channel.joinRef;
+    return _joinRef == null || _joinRef != channel.joinRef;
   }
 }

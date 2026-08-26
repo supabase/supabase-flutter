@@ -4,19 +4,8 @@ import 'package:supabase_auth/src/types/user.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
+/// A signed-in user's authentication tokens.
 class Session {
-  final String? providerToken;
-  final String? providerRefreshToken;
-  final String accessToken;
-
-  /// The number of seconds until the token expires (since it was issued).
-  /// Returned when a login is confirmed.
-  final int? expiresIn;
-
-  final String? refreshToken;
-  final String tokenType;
-  final User user;
-
   Session({
     required this.accessToken,
     this.expiresIn,
@@ -26,6 +15,30 @@ class Session {
     this.providerRefreshToken,
     required this.user,
   });
+
+  /// The third-party provider's OAuth access token, `null` unless the user
+  /// signed in through OAuth.
+  final String? providerToken;
+
+  /// The third-party provider's OAuth refresh token, `null` unless the user
+  /// signed in through OAuth and the provider issued one.
+  final String? providerRefreshToken;
+
+  /// The JWT used to authenticate requests, valid until [expiresAt].
+  final String accessToken;
+
+  /// The number of seconds until the token expires (since it was issued).
+  /// Returned when a login is confirmed.
+  final int? expiresIn;
+
+  /// The token used to obtain a new session once [accessToken] expires.
+  final String? refreshToken;
+
+  /// The type of [accessToken], typically `'bearer'`.
+  final String tokenType;
+
+  /// The signed-in user.
+  final User user;
 
   /// Returns a `Session` object from a map of json
   /// returns `null` if there is no `access_token` present
@@ -77,7 +90,7 @@ class Session {
   /// Derived from the `exp` claim of [accessToken], not read from the login
   /// response's JSON body. `null` when [accessToken] carries no expiry or
   /// cannot be decoded.
-  late DateTime? expiresAt = _expiresAt;
+  late final DateTime? expiresAt = _expiresAt;
 
   DateTime? get _expiresAt {
     try {
@@ -129,12 +142,19 @@ class Session {
     );
   }
 
+  /// The tokens are redacted so that a logged session never exposes them;
+  /// use the fields directly when the actual values are needed.
   @override
   String toString() {
-    return 'Session(providerToken: $providerToken, providerRefreshToken: '
-        '$providerRefreshToken, expiresIn: $expiresIn, tokenType: $tokenType, '
-        'user: $user, accessToken: $accessToken, refreshToken: $refreshToken)';
+    return 'Session(providerToken: ${_redactToken(providerToken)}, '
+        'providerRefreshToken: ${_redactToken(providerRefreshToken)}, '
+        'expiresIn: $expiresIn, tokenType: $tokenType, user: $user, '
+        'accessToken: ${_redactToken(accessToken)}, '
+        'refreshToken: ${_redactToken(refreshToken)})';
   }
+
+  static String _redactToken(String? token) =>
+      token == null ? 'null' : '<redacted>';
 
   @override
   bool operator ==(Object other) {

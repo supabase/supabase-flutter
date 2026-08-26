@@ -4,11 +4,8 @@ import 'fetch.dart';
 import 'types/fetch_options.dart';
 import 'types/mfa.dart';
 
+/// Admin API namespace for managing users' MFA factors.
 class AuthAdminMFAApi {
-  final String _url;
-  final Map<String, String> _headers;
-  final AuthFetch _fetch;
-
   const AuthAdminMFAApi({
     required String url,
     required Map<String, String> headers,
@@ -16,7 +13,11 @@ class AuthAdminMFAApi {
   }) : _url = url,
        _headers = headers,
        _fetch = fetch;
+  final String _url;
+  final Map<String, String> _headers;
+  final AuthFetch _fetch;
 
+  /// Lists the MFA factors enrolled by the user identified by [userId].
   Future<AuthMFAAdminListFactorsResponse> listFactors({
     required String userId,
   }) async {
@@ -35,6 +36,8 @@ class AuthAdminMFAApi {
     );
   }
 
+  /// Deletes the MFA factor identified by [factorId] from the user
+  /// identified by [userId].
   Future<AuthMFAAdminDeleteFactorResponse> deleteFactor({
     required String userId,
     required String factorId,

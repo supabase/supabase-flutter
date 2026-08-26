@@ -2,7 +2,7 @@
 library;
 
 export 'package:supabase_common/supabase_common.dart'
-    show SupabaseApiException, SupabaseException;
+    show SortDirection, SupabaseApiException, SupabaseException;
 
 export 'src/iceberg_error.dart';
 export 'src/iceberg_rest_catalog.dart';

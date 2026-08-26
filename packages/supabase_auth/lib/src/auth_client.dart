@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
@@ -8,9 +7,10 @@ import 'package:supabase_auth/supabase_auth.dart';
 import 'package:supabase_auth/src/auth_constants.dart';
 import 'package:supabase_auth/src/fetch.dart';
 import 'package:supabase_auth/src/helper.dart';
+import 'package:supabase_auth/src/pkce_verifier_store.dart';
 import 'package:supabase_auth/src/types/fetch_options.dart';
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
+import 'package:supabase_auth/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 
@@ -45,11 +45,69 @@ class _SessionState {
 /// [httpClient] custom http client.
 ///
 /// [asyncStorage] local storage to store pkce code verifiers. Required when
-/// using the pkce flow.
+/// using the pkce flow. Pass a [MemoryAuthAsyncStorage] when the verifiers
+/// do not need to outlive the process.
 ///
 /// Set [flowType] to [AuthFlowType.implicit] to perform old implicit auth flow.
+///
+/// Set [AuthClient.appendPkceFlowIdToRedirects] to match a pkce callback to the
+/// flow that started it when several flows can be pending at once.
+///
+/// [retryOptions] configures how a token refresh that never reached the
+/// service is retried. A refresh also stops retrying once the next backoff
+/// would fall after the next refresh tick, so the count only caps how many
+/// attempts a short backoff can squeeze into that window.
 /// {@endtemplate}
 class AuthClient {
+  /// {@macro auth_client}
+  AuthClient({
+    String? url,
+    Map<String, String>? headers,
+    bool? autoRefreshToken,
+    Client? httpClient,
+    AuthAsyncStorage? asyncStorage,
+    AuthFlowType flowType = AuthFlowType.pkce,
+    this.appendPkceFlowIdToRedirects = false,
+    this.retryOptions = const SupabaseRetryOptions(count: 8),
+  }) : assert(
+         flowType != AuthFlowType.pkce || asyncStorage != null,
+         'You need to provide asyncStorage to perform pkce flow. Pass a '
+         'MemoryAuthAsyncStorage when the code verifiers do not need to '
+         'outlive the process.',
+       ),
+       _url = url ?? AuthConstants.defaultAuthUrl,
+       _headers = {...AuthConstants.defaultHeaders, ...?headers},
+       _httpClient = httpClient,
+       _pkceVerifierStore = asyncStorage == null
+           ? null
+           : PKCEVerifierStore(asyncStorage),
+       _flowType = flowType {
+    _autoRefreshToken = autoRefreshToken ?? true;
+
+    final authUrl = url ?? AuthConstants.defaultAuthUrl;
+    authLogger.config(
+      'Initialize AuthClient v$version with url: '
+      '${Uri.parse(_url).redacted}, autoRefreshToken: '
+      '$_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: '
+      '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
+      '${AuthConstants.autoRefreshTickThreshold}',
+    );
+    authLogger.finest('Initialize with headers: ${_headers.redacted}');
+    admin = AuthAdminApi(
+      authUrl,
+      headers: _headers,
+      httpClient: httpClient,
+    );
+    oauth = AuthOAuthApi(client: this, fetch: _fetch);
+    mfa = AuthMFAApi(client: this, fetch: _fetch);
+    passkey = AuthPasskeyApi(client: this, fetch: _fetch);
+    if (_autoRefreshToken) {
+      startAutoRefresh();
+    }
+
+    _mayStartBroadcastChannel();
+  }
+
   /// Namespace for the Supabase Auth admin API methods. These can be used for
   /// example to get a user from a JWT in a server environment or reset a
   /// user's password.
@@ -88,7 +146,8 @@ class AuthClient {
   final Map<String, Completer<AuthResponse>> _pendingRefreshes = {};
 
   /// Set by [dispose] to prevent [_doRefresh] from mutating state
-  /// or emitting events on closed stream controllers.
+  /// or emitting events on closed stream controllers, and to stop
+  /// [startAutoRefresh] from installing a timer that nothing would cancel.
   bool _isDisposed = false;
 
   JWKSet? _jwks;
@@ -99,8 +158,24 @@ class AuthClient {
     sync: true,
   );
 
-  /// Local storage to store pkce code verifiers.
-  final AuthAsyncStorage? _asyncStorage;
+  /// Keeps one code verifier per pending pkce flow. Null when no
+  /// [AuthAsyncStorage] was provided, in which case the pkce flow cannot run.
+  final PKCEVerifierStore? _pkceVerifierStore;
+
+  /// Whether the reserved `sb_flow_id` query parameter is appended to the
+  /// redirect URL of pkce flows, so a callback can be matched to the flow that
+  /// started it.
+  ///
+  /// Only needed for flows that hand back no flow id, such as email OTP,
+  /// password recovery and email change. Elsewhere pass the
+  /// [OAuthResponse.flowId] of [getOAuthSignInUrl] or [getLinkIdentityUrl] to
+  /// [exchangeCodeForSession] instead.
+  ///
+  /// Defaults to false, because the [redirect URL allow
+  /// list](https://supabase.com/docs/guides/auth/redirect-urls) is matched
+  /// against the full URL: an entry without a wildcard stops matching once the
+  /// parameter is appended, and the redirect falls back to your Site URL.
+  final bool appendPkceFlowIdToRedirects;
 
   /// Receive a notification every time an auth event happens.
   ///
@@ -141,7 +216,8 @@ class AuthClient {
 
   final AuthFlowType _flowType;
 
-  final _log = Logger('supabase.auth');
+  /// Configures how a token refresh that never reached the service is retried.
+  final SupabaseRetryOptions retryOptions;
 
   /// Proxy to the web BroadcastChannel API. Should be null on non-web
   /// platforms.
@@ -149,46 +225,38 @@ class AuthClient {
 
   StreamSubscription<dynamic>? _broadcastChannelSubscription;
 
-  /// {@macro auth_client}
-  AuthClient({
-    String? url,
-    Map<String, String>? headers,
-    bool? autoRefreshToken,
-    Client? httpClient,
-    AuthAsyncStorage? asyncStorage,
-    AuthFlowType flowType = AuthFlowType.pkce,
-  }) : _url = url ?? AuthConstants.defaultAuthUrl,
-       _headers = {...AuthConstants.defaultHeaders, ...?headers},
-       _httpClient = httpClient,
-       _asyncStorage = asyncStorage,
-       _flowType = flowType {
-    _autoRefreshToken = autoRefreshToken ?? true;
+  /// The headers sent with every request, as an unmodifiable view.
+  ///
+  /// Pass headers to the constructor instead of mutating them here. A client
+  /// managed by a `SupabaseClient` gets its headers replaced through the
+  /// internal [replaceHeaders] when `SupabaseClient.headers` is assigned.
+  Map<String, String> get headers => Map.unmodifiable(_headers);
 
-    final authUrl = url ?? AuthConstants.defaultAuthUrl;
-    _log.config(
-      'Initialize AuthClient v$version with url: $_url, autoRefreshToken: '
-      '$_autoRefreshToken, flowType: ${_flowType.name}, tickDuration: '
-      '${AuthConstants.autoRefreshTickDuration}, tickThreshold: '
-      '${AuthConstants.autoRefreshTickThreshold}',
-    );
-    _log.finest('Initialize with headers: $_headers');
-    admin = AuthAdminApi(
-      authUrl,
-      headers: _headers,
-      httpClient: httpClient,
-    );
-    oauth = AuthOAuthApi(client: this, fetch: _fetch);
-    mfa = AuthMFAApi(client: this, fetch: _fetch);
-    passkey = AuthPasskeyApi(client: this, fetch: _fetch);
-    if (_autoRefreshToken) {
-      startAutoRefresh();
-    }
-
-    _mayStartBroadcastChannel();
+  /// Sets an HTTP header for subsequent requests.
+  ///
+  /// The header is shared with [admin], so its requests carry it as well.
+  /// Returns this for method chaining. On a client managed by a
+  /// `SupabaseClient`, assign `SupabaseClient.headers` instead, so that every
+  /// client gets the header.
+  ///
+  /// ```dart
+  /// auth.setHeader('x-custom-header', 'value');
+  /// ```
+  AuthClient setHeader(String key, String value) {
+    _headers[key] = value;
+    return this;
   }
 
-  /// Getter for the headers
-  Map<String, String> get headers => _headers;
+  /// Replaces the request headers with [newHeaders].
+  ///
+  /// The map is shared with [admin], so its requests pick up the new headers
+  /// as well.
+  @internal
+  void replaceHeaders(Map<String, String> newHeaders) {
+    _headers
+      ..clear()
+      ..addAll(newHeaders);
+  }
 
   /// Returns the current logged in user, associated to [currentSession] if any;
   User? get currentUser => _currentSession?.user;
@@ -307,21 +375,24 @@ class AuthClient {
     final Map<String, dynamic> response;
 
     if (email != null) {
-      final codeChallenge = await _generatePKCECodeChallenge();
+      final pkceFlow = await _startPKCEFlow();
 
       response = await _fetch.request(
         '$_url/signup',
         HttpMethod.post,
         options: AuthRequestOptions(
           headers: _headers,
-          redirectTo: emailRedirectTo,
+          redirectTo: _maybeAppendFlowIdToRedirect(
+            emailRedirectTo,
+            pkceFlow?.flowId,
+          ),
           body: {
             'email': email,
             'password': password,
             'data': data,
             'gotrue_meta_security': {'captcha_token': captchaToken},
-            'code_challenge': codeChallenge,
-            'code_challenge_method': codeChallenge != null ? 's256' : null,
+            'code_challenge': pkceFlow?.codeChallenge,
+            'code_challenge_method': pkceFlow != null ? 's256' : null,
           },
         ),
       );
@@ -418,14 +489,18 @@ class AuthClient {
     String? scopes,
     Map<String, String>? queryParameters,
   }) async {
-    final url = await _getUrlForProvider(
+    final urlResponse = await _getUrlForProvider(
       provider,
       url: '$_url/authorize',
       redirectTo: redirectTo,
       scopes: scopes,
       queryParameters: queryParameters,
     );
-    return OAuthResponse(provider: provider, url: url);
+    return OAuthResponse(
+      provider: provider,
+      url: urlResponse.url,
+      flowId: urlResponse.flowId,
+    );
   }
 
   /// Verifies the PKCE code verifier and retrieves a session.
@@ -434,14 +509,41 @@ class AuthClient {
   /// [resetPasswordForEmail], which emits [AuthChangeEvent.passwordRecovery],
   /// or by an email change through [updateUser], which emits
   /// [AuthChangeEvent.userUpdated].
-  Future<AuthSessionUrlResponse> exchangeCodeForSession(String authCode) async {
+  ///
+  /// When several PKCE flows are pending at the same time, pass the [flowId] of
+  /// the flow the [authCode] belongs to, so the code is exchanged with the code
+  /// verifier that flow created. [getOAuthSignInUrl] and [getLinkIdentityUrl]
+  /// return it as [OAuthResponse.flowId], and with
+  /// [appendPkceFlowIdToRedirects] enabled it also arrives on the callback URL
+  /// as the reserved `sb_flow_id` query parameter, which [getSessionFromUrl]
+  /// reads for you.
+  ///
+  /// When a [flowId] is given but its stored verifier is gone, because it was
+  /// evicted, already used, or created on another device, this throws instead
+  /// of trying another flow's verifier: a mismatched verifier would spend the
+  /// single-use [authCode]. Without a [flowId] the verifier of the most
+  /// recently started flow is used, as it always was.
+  Future<AuthSessionUrlResponse> exchangeCodeForSession(
+    String authCode, {
+    String? flowId,
+  }) async {
     assert(
-      _asyncStorage != null,
+      _pkceVerifierStore != null,
       'You need to provide asyncStorage to perform pkce flow.',
     );
 
-    final codeVerifierRawString = await _asyncStorage!.getItem(
-      key: '${AuthConstants.defaultStorageKey}-code-verifier',
+    final requestedFlowId = PKCEVerifierStore.validateFlowId(flowId);
+    if (flowId != null && requestedFlowId == null) {
+      // Told apart from a missing verifier so the message points at the
+      // callback URL rather than at storage. Bounded because the id comes
+      // from that URL.
+      throw AuthException(
+        'PKCE flow id is not a valid flow id: ${_bounded(flowId)}',
+      );
+    }
+
+    final codeVerifierRawString = await _pkceVerifierStore!.retrieve(
+      flowId: requestedFlowId,
     );
     if (codeVerifierRawString == null) {
       throw AuthException('Code verifier could not be found in local storage.');
@@ -460,9 +562,7 @@ class AuthClient {
       ),
     );
 
-    await _asyncStorage.removeItem(
-      key: '${AuthConstants.defaultStorageKey}-code-verifier',
-    );
+    await _pkceVerifierStore.remove(flowId: requestedFlowId);
 
     final authSessionUrlResponse = AuthSessionUrlResponse(
       session: Session.fromJson(response)!,
@@ -478,28 +578,53 @@ class AuthClient {
     return authSessionUrlResponse;
   }
 
-  /// Generates a PKCE code verifier, persists it, and returns the derived code
-  /// challenge.
+  /// Starts a PKCE flow by generating a code verifier and persisting it in a
+  /// slot of its own, and returns the derived code challenge together with the
+  /// id of the flow it belongs to.
   ///
   /// Returns `null` when the client is not using the PKCE flow. When
   /// [storageEventName] is provided it is appended to the stored verifier so it
   /// can be recovered in [exchangeCodeForSession].
-  Future<String?> _generatePKCECodeChallenge({String? storageEventName}) async {
+  Future<({String codeChallenge, String flowId})?> _startPKCEFlow({
+    String? storageEventName,
+  }) async {
     if (_flowType != AuthFlowType.pkce) {
       return null;
     }
     assert(
-      _asyncStorage != null,
+      _pkceVerifierStore != null,
       'You need to provide asyncStorage to perform pkce flow.',
     );
     final codeVerifier = generatePKCEVerifier();
-    await _asyncStorage!.setItem(
-      key: '${AuthConstants.defaultStorageKey}-code-verifier',
-      value: storageEventName == null
+    final flowId = PKCEVerifierStore.generateFlowId();
+    final evicted = await _pkceVerifierStore!.store(
+      flowId: flowId,
+      verifier: storageEventName == null
           ? codeVerifier
           : '$codeVerifier/$storageEventName',
     );
-    return generatePKCEChallenge(codeVerifier);
+    for (final evictedFlowId in evicted) {
+      authLogger.warning(
+        'Evicted the oldest pending PKCE verifier to start a new flow, '
+        'flow id: $evictedFlowId',
+      );
+    }
+    return (codeChallenge: generatePKCEChallenge(codeVerifier), flowId: flowId);
+  }
+
+  /// Caps untrusted input echoed back in an exception message to the longest
+  /// flow id the store accepts.
+  static String _bounded(String value) =>
+      value.length <= 64 ? value : '${value.substring(0, 64)}...';
+
+  /// Appends the flow id to [redirectTo] so the callback can be matched to the
+  /// verifier stored for its flow, when [appendPkceFlowIdToRedirects] allows
+  /// it.
+  String? _maybeAppendFlowIdToRedirect(String? redirectTo, String? flowId) {
+    if (redirectTo == null || flowId == null || !appendPkceFlowIdToRedirects) {
+      return redirectTo;
+    }
+    return appendPKCEFlowIdToRedirect(redirectTo, flowId);
   }
 
   /// Allows signing in with an ID token issued by supported providers. Common
@@ -631,20 +756,23 @@ class AuthClient {
     OtpChannel channel = OtpChannel.sms,
   }) async {
     if (email != null) {
-      final codeChallenge = await _generatePKCECodeChallenge();
+      final pkceFlow = await _startPKCEFlow();
       await _fetch.request(
         '$_url/otp',
         HttpMethod.post,
         options: AuthRequestOptions(
           headers: _headers,
-          redirectTo: emailRedirectTo,
+          redirectTo: _maybeAppendFlowIdToRedirect(
+            emailRedirectTo,
+            pkceFlow?.flowId,
+          ),
           body: {
             'email': email,
             'data': data ?? {},
             'create_user': shouldCreateUser ?? true,
             'gotrue_meta_security': {'captcha_token': captchaToken},
-            'code_challenge': codeChallenge,
-            'code_challenge_method': codeChallenge != null ? 's256' : null,
+            'code_challenge': pkceFlow?.codeChallenge,
+            'code_challenge_method': pkceFlow != null ? 's256' : null,
           },
         ),
       );
@@ -784,7 +912,7 @@ class AuthClient {
       'providerId or domain has to be provided.',
     );
 
-    final codeChallenge = await _generatePKCECodeChallenge();
+    final pkceFlow = await _startPKCEFlow();
 
     final response = await _fetch.request(
       '$_url/sso',
@@ -793,12 +921,15 @@ class AuthClient {
         body: {
           'provider_id': ?providerId,
           'domain': ?domain,
-          'redirect_to': ?redirectTo,
+          'redirect_to': ?_maybeAppendFlowIdToRedirect(
+            redirectTo,
+            pkceFlow?.flowId,
+          ),
           if (captchaToken != null)
             'gotrue_meta_security': {'captcha_token': captchaToken},
           'skip_http_redirect': true,
-          'code_challenge': codeChallenge,
-          'code_challenge_method': codeChallenge != null ? 's256' : null,
+          'code_challenge': pkceFlow?.codeChallenge,
+          'code_challenge_method': pkceFlow != null ? 's256' : null,
         },
         headers: _headers,
       ),
@@ -812,13 +943,13 @@ class AuthClient {
   /// retrieve it from the current session. If no refresh token is available
   /// (neither provided nor in current session), an error will be thrown.
   Future<AuthResponse> refreshSession([String? refreshToken]) async {
-    _log.info('Refresh session');
+    authLogger.info('Refresh session');
 
     final currentSessionRefreshToken =
         refreshToken ?? _currentSession?.refreshToken;
 
     if (currentSessionRefreshToken == null) {
-      _log.warning("Can't refresh session, no refresh token found.");
+      authLogger.warning("Can't refresh session, no refresh token found.");
       throw AuthSessionMissingException();
     }
 
@@ -835,7 +966,7 @@ class AuthClient {
     }
 
     final options = AuthRequestOptions(
-      headers: headers,
+      headers: _headers,
       jwt: session.accessToken,
     );
 
@@ -876,9 +1007,7 @@ class AuthClient {
       );
     }
 
-    final codeChallenge = email != null
-        ? await _generatePKCECodeChallenge()
-        : null;
+    final pkceFlow = email != null ? await _startPKCEFlow() : null;
 
     final body = {
       'email': ?email,
@@ -886,15 +1015,18 @@ class AuthClient {
       'type': type.snakeCase,
       'gotrue_meta_security': {'captcha_token': captchaToken},
       if (email != null) ...{
-        'code_challenge': codeChallenge,
-        'code_challenge_method': codeChallenge != null ? 's256' : null,
+        'code_challenge': pkceFlow?.codeChallenge,
+        'code_challenge_method': pkceFlow != null ? 's256' : null,
       },
     };
 
     final options = AuthRequestOptions(
       headers: _headers,
       body: body,
-      redirectTo: emailRedirectTo,
+      redirectTo: _maybeAppendFlowIdToRedirect(
+        emailRedirectTo,
+        pkceFlow?.flowId,
+      ),
     );
 
     final response = await _fetch.request(
@@ -936,8 +1068,8 @@ class AuthClient {
       throw AuthSessionMissingException();
     }
 
-    final codeChallenge = attributes.email != null
-        ? await _generatePKCECodeChallenge(
+    final pkceFlow = attributes.email != null
+        ? await _startPKCEFlow(
             storageEventName: AuthChangeEvent.userUpdated.name,
           )
         : null;
@@ -945,15 +1077,18 @@ class AuthClient {
     final body = {
       ...attributes.toJson(),
       if (attributes.email != null) ...{
-        'code_challenge': codeChallenge,
-        'code_challenge_method': codeChallenge != null ? 's256' : null,
+        'code_challenge': pkceFlow?.codeChallenge,
+        'code_challenge_method': pkceFlow != null ? 's256' : null,
       },
     };
     final options = AuthRequestOptions(
       headers: _headers,
       body: body,
       jwt: accessToken,
-      redirectTo: emailRedirectTo,
+      redirectTo: _maybeAppendFlowIdToRedirect(
+        emailRedirectTo,
+        pkceFlow?.flowId,
+      ),
     );
     final response = await _fetch.request(
       '$_url/user',
@@ -1065,7 +1200,10 @@ class AuthClient {
 
     final authCode = url.queryParameters['code'];
     if (authCode != null) {
-      return await exchangeCodeForSession(authCode);
+      return await exchangeCodeForSession(
+        authCode,
+        flowId: url.queryParameters[pkceFlowIdParam],
+      );
     }
 
     if (_flowType == AuthFlowType.pkce &&
@@ -1137,14 +1275,12 @@ class AuthClient {
     required SignOutScope scope,
     required SignOutReason reason,
   }) async {
-    _log.info('Signing out user with scope: ${scope.name}');
+    authLogger.info('Signing out user with scope: ${scope.name}');
     final accessToken = currentSession?.accessToken;
 
     if (scope != SignOutScope.others) {
       _removeSession();
-      await _asyncStorage?.removeItem(
-        key: '${AuthConstants.defaultStorageKey}-code-verifier',
-      );
+      await _pkceVerifierStore?.removeAll();
       notifyAllSubscribers(
         AuthChangeEvent.signedOut,
         signOutReason: reason,
@@ -1174,21 +1310,21 @@ class AuthClient {
     String? redirectTo,
     String? captchaToken,
   }) async {
-    final codeChallenge = await _generatePKCECodeChallenge(
+    final pkceFlow = await _startPKCEFlow(
       storageEventName: AuthChangeEvent.passwordRecovery.name,
     );
 
     final body = {
       'email': email,
       'gotrue_meta_security': {'captcha_token': captchaToken},
-      'code_challenge': codeChallenge,
-      'code_challenge_method': codeChallenge != null ? 's256' : null,
+      'code_challenge': pkceFlow?.codeChallenge,
+      'code_challenge_method': pkceFlow != null ? 's256' : null,
     };
 
     final fetchOptions = AuthRequestOptions(
       headers: _headers,
       body: body,
-      redirectTo: redirectTo,
+      redirectTo: _maybeAppendFlowIdToRedirect(redirectTo, pkceFlow?.flowId),
     );
     await _fetch.request(
       '$_url/recover',
@@ -1268,7 +1404,7 @@ class AuthClient {
       skipBrowserRedirect: true,
     );
     final response = await _fetch.request(
-      authorizeUrl.toString(),
+      authorizeUrl.url.toString(),
       HttpMethod.get,
       options: AuthRequestOptions(
         headers: _headers,
@@ -1278,6 +1414,7 @@ class AuthClient {
     return OAuthResponse(
       provider: provider,
       url: Uri.parse(_urlFromResponse(response)),
+      flowId: authorizeUrl.flowId,
     );
   }
 
@@ -1290,7 +1427,7 @@ class AuthClient {
       '$_url/user/identities/${identity.identityId}',
       HttpMethod.delete,
       options: AuthRequestOptions(
-        headers: headers,
+        headers: _headers,
         jwt: _currentSession?.accessToken,
       ),
     );
@@ -1323,7 +1460,9 @@ class AuthClient {
     try {
       final session = Session.fromJson(json.decode(jsonString));
       if (session == null) {
-        _log.warning("Can't recover session from string, session is null");
+        authLogger.warning(
+          "Can't recover session from string, session is null",
+        );
         await _signOut(
           scope: SignOutScope.local,
           reason: SignOutReason.sessionMissing,
@@ -1349,13 +1488,15 @@ class AuthClient {
         return AuthResponse(session: session);
       }
 
-      _log.fine('Session from recovery is expired');
+      authLogger.fine('Session from recovery is expired');
 
       final existingSession = _currentSession;
       if (existingSession != null &&
           !existingSession.isExpired &&
           existingSession.user.id == session.user.id) {
-        _log.fine('Session was already refreshed elsewhere, skipping recovery');
+        authLogger.fine(
+          'Session was already refreshed elsewhere, skipping recovery',
+        );
         return AuthResponse(session: existingSession);
       }
 
@@ -1392,10 +1533,19 @@ class AuthClient {
   /// Starts an auto-refresh process in the background. Close to the time of
   /// expiration a process is started to refresh the session. If refreshing
   /// fails it will be retried for as long as necessary.
+  ///
+  /// Does nothing once the client has been disposed, so that a late call (for
+  /// example from an app lifecycle observer that has not been removed yet)
+  /// cannot install a timer that outlives [dispose].
   void startAutoRefresh() async {
     stopAutoRefresh();
 
-    _log.fine('Starting auto refresh');
+    if (_isDisposed) {
+      authLogger.finer('Not starting auto refresh, the client is disposed');
+      return;
+    }
+
+    authLogger.fine('Starting auto refresh');
     _autoRefreshTicker = Timer.periodic(
       AuthConstants.autoRefreshTickDuration,
       (Timer t) => _autoRefreshTokenTick(),
@@ -1407,12 +1557,16 @@ class AuthClient {
 
   /// Stops an active auto refresh process running in the background (if any).
   void stopAutoRefresh() {
-    _log.fine('Stopping auto refresh');
+    authLogger.fine('Stopping auto refresh');
     _autoRefreshTicker?.cancel();
     _autoRefreshTicker = null;
   }
 
   Future<void> _autoRefreshTokenTick() async {
+    if (_isDisposed) {
+      return;
+    }
+
     try {
       final now = DateTime.now();
 
@@ -1434,7 +1588,7 @@ class AuthClient {
                   AuthConstants.autoRefreshTickDuration.inMilliseconds)
               .floor();
 
-      _log.finer('Access token expires in $expiresInTicks ticks');
+      authLogger.finer('Access token expires in $expiresInTicks ticks');
 
       // Only tick if the next tick comes after the retry threshold
       if (expiresInTicks <= AuthConstants.autoRefreshTickThreshold) {
@@ -1454,7 +1608,7 @@ class AuthClient {
       // Make a GET request
       () async {
         attempt++;
-        _log.fine('Attempt $attempt to refresh token');
+        authLogger.fine('Attempt $attempt to refresh token');
         final options = AuthRequestOptions(
           headers: _headers,
           body: {'refresh_token': refreshToken},
@@ -1468,11 +1622,12 @@ class AuthClient {
         final authResponse = AuthResponse.fromJson(response);
         return authResponse;
       },
+      options: retryOptions,
       retryIf: (e) {
-        // Do not retry if the next retry comes after the next tick.
-        final nextBackOff = Duration(
-          milliseconds: (200 * pow(2, attempt - 1).floor()),
-        );
+        // Do not retry if the next retry comes after the next tick. The
+        // deadline is the real bound here, so the configured count only caps
+        // how many attempts a short backoff can squeeze into the tick.
+        final nextBackOff = retryOptions.delay(attempt - 1);
 
         return e is AuthRetryableFetchException &&
             (DateTime.now().millisecondsSinceEpoch +
@@ -1480,17 +1635,13 @@ class AuthClient {
                     startedAt.millisecondsSinceEpoch) <
                 AuthConstants.autoRefreshTickDuration.inMilliseconds;
       },
-      maxDelay: Duration(seconds: 10),
-      randomizationFactor: 0,
-
-      // Max interval between retries is 10 sec, so just set the maxAttempts
-      // to something that will yield a more than 10 sec interval.
-      maxAttempts: 999,
     );
   }
 
-  /// Returns the OAuth sign in URL constructed from the [url] parameter.
-  Future<Uri> _getUrlForProvider(
+  /// Returns the OAuth sign in URL constructed from the [url] parameter,
+  /// together with the id of the pkce flow it started, `null` on the implicit
+  /// flow.
+  Future<({Uri url, String? flowId})> _getUrlForProvider(
     OAuthProvider provider, {
     required String url,
     required String? scopes,
@@ -1498,20 +1649,26 @@ class AuthClient {
     required Map<String, String>? queryParameters,
     bool skipBrowserRedirect = false,
   }) async {
-    final codeChallenge = await _generatePKCECodeChallenge();
+    final pkceFlow = await _startPKCEFlow();
     final urlParameters = {
       'provider': provider.name,
       'scopes': ?scopes,
-      'redirect_to': ?redirectTo,
+      'redirect_to': ?_maybeAppendFlowIdToRedirect(
+        redirectTo,
+        pkceFlow?.flowId,
+      ),
       ...?queryParameters,
-      if (codeChallenge != null) ...{
+      if (pkceFlow != null) ...{
         'flow_type': _flowType.name,
-        'code_challenge': codeChallenge,
+        'code_challenge': pkceFlow.codeChallenge,
         'code_challenge_method': 's256',
       },
       if (skipBrowserRedirect) 'skip_http_redirect': 'true',
     };
-    return Uri.parse('$url?${Uri(queryParameters: urlParameters).query}');
+    return (
+      url: Uri.parse('$url?${Uri(queryParameters: urlParameters).query}'),
+      flowId: pkceFlow?.flowId,
+    );
   }
 
   /// Reads the `url` field out of a response that is expected to carry one.
@@ -1530,13 +1687,13 @@ class AuthClient {
 
   /// set currentSession and currentUser
   void _saveSession(Session session) {
-    _log.fine('Saving session');
-    _log.finest('Saving session: $session');
+    authLogger.fine('Saving session');
+    authLogger.finest('Saving session: $session');
     _currentSession = session;
   }
 
   void _removeSession() {
-    _log.fine('Removing session');
+    authLogger.fine('Removing session');
     _currentSession = null;
   }
 
@@ -1554,8 +1711,10 @@ class AuthClient {
           messageEvent,
         ) {
           final rawEvent = messageEvent['event'];
-          _log.finest('Received broadcast message: $messageEvent');
-          _log.info('Received broadcast event: $rawEvent');
+          authLogger.finest(
+            'Received broadcast message: ${redactedPayload(messageEvent)}',
+          );
+          authLogger.info('Received broadcast event: $rawEvent');
           final event = AuthChangeEvent.fromValue(rawEvent);
 
           if (event != null) {
@@ -1572,12 +1731,18 @@ class AuthClient {
           }
         });
       } catch (error, stackTrace) {
-        _log.warning('Failed to start broadcast channel', error, stackTrace);
+        authLogger.warning(
+          'Failed to start broadcast channel',
+          error,
+          stackTrace,
+        );
         // Ignoring
       }
     }
   }
 
+  /// Closes the auth state streams, stops auto refresh, and fails every
+  /// pending token refresh.
   @mustCallSuper
   void dispose() {
     _isDisposed = true;
@@ -1591,7 +1756,7 @@ class AuthClient {
       }
     }
     _pendingRefreshes.clear();
-    _autoRefreshTicker?.cancel();
+    stopAutoRefresh();
   }
 
   /// Generates a new JWT.
@@ -1609,7 +1774,7 @@ class AuthClient {
     // in-flight.
     final existing = _pendingRefreshes[refreshToken];
     if (existing != null) {
-      _log.finer('Refresh already pending for this token');
+      authLogger.finer('Refresh already pending for this token');
       return existing.future;
     }
 
@@ -1648,7 +1813,7 @@ class AuthClient {
   /// for a retryable/unexpected failure.
   Future<AuthResponse> _doRefresh(String refreshToken) async {
     final versionBeforeRefresh = _sessionVersion;
-    _log.fine('Refresh access token');
+    authLogger.fine('Refresh access token');
 
     try {
       final data = await _refreshAccessToken(refreshToken);
@@ -1662,7 +1827,9 @@ class AuthClient {
       // mutated (e.g. a concurrent signIn or signOut) while we were awaiting
       // the network request, so we don't overwrite the newer session.
       if (_isDisposed || _sessionVersion != versionBeforeRefresh) {
-        _log.fine('Session changed during refresh, discarding stale result.');
+        authLogger.fine(
+          'Session changed during refresh, discarding stale result.',
+        );
         return data;
       }
 
@@ -1675,7 +1842,7 @@ class AuthClient {
           error.errorCode == 'refresh_token_already_used' &&
           existingSession != null &&
           !existingSession.isExpired) {
-        _log.fine(
+        authLogger.fine(
           'Refresh token already used but current session is still valid, '
           'returning it instead of signing out',
         );
@@ -1728,7 +1895,7 @@ class AuthClient {
       fromBroadcast: !broadcast,
       signOutReason: signOutReason,
     );
-    _log.finest('onAuthStateChange: $state');
+    authLogger.finest('onAuthStateChange: $state');
     _onAuthStateChangeController.add(state);
     _onAuthStateChangeControllerSync.add(state);
   }
@@ -1736,7 +1903,7 @@ class AuthClient {
   /// For internal use only.
   @internal
   Object notifyException(Object exception, [StackTrace? stackTrace]) {
-    _log.warning('Notifying exception', exception, stackTrace);
+    authLogger.warning('Notifying exception', exception, stackTrace);
     _onAuthStateChangeController.addError(
       exception,
       stackTrace ?? StackTrace.current,

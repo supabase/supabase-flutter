@@ -1,29 +1,14 @@
 import 'package:http/http.dart';
-import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
+import 'package:postgrest/src/logger.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
+import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 /// A PostgREST api client written in Dartlang. The goal of this library is to
 /// make an "ORM-like" restful interface.
 class PostgrestClient {
-  /// HTTP status codes that trigger an automatic retry by default.
-  static const Set<int> defaultRetryableStatusCodes = {503, 520};
-
-  final String url;
-  final Map<String, String> headers;
-  final String? _schema;
-  final Client? httpClient;
-  final YAJsonIsolate _isolate;
-  final bool _hasCustomIsolate;
-  final bool retryEnabled;
-  final int retryCount;
-  final Set<int> retryableStatusCodes;
-  final Duration? requestTimeout;
-  final Duration Function(int attempt)? _retryDelay;
-  final _log = Logger('supabase.postgrest');
-
   /// To create a [PostgrestClient], you need to provide an [url] endpoint.
   ///
   /// You can also provide custom [headers] and [_schema] if needed
@@ -34,19 +19,13 @@ class PostgrestClient {
   ///
   /// [httpClient] is optional and can be used to provide a custom http client
   ///
-  /// [isolate] is optional and can be used to provide a custom isolate, which
-  /// is used for heavy json computation
+  /// [jsonCodec] is optional and can be used to encode and decode JSON
+  /// somewhere other than on the isolates the default codec spawns. A codec
+  /// passed here is owned by the caller and is not disposed by [dispose]
   ///
-  /// [retryEnabled] controls whether automatic retries are performed for GET
-  /// and HEAD requests that fail with a retryable status code or a network
-  /// error. Defaults to `true`. Use [PostgrestBuilder.retry] to override this
-  /// per request.
-  ///
-  /// [retryCount] is the number of retry attempts made for a retryable request
-  /// before giving up. Defaults to `3`.
-  ///
-  /// [retryableStatusCodes] are the HTTP status codes that trigger a retry.
-  /// Defaults to `{503, 520}`.
+  /// [retryOptions] configures the automatic retry of GET and HEAD requests
+  /// that fail with a retryable status code or a network error. Use
+  /// [PostgrestBuilder.retry] to override it for a single request.
   ///
   /// [requestTimeout] optionally bounds how long a single request attempt may
   /// take. It is implemented on top of the abort mechanism, so it actually
@@ -55,61 +34,90 @@ class PostgrestClient {
   /// thrown once the retries are exhausted. When `null` (the default) no
   /// timeout is applied. Use [PostgrestBuilder.abortSignal] to cancel a request
   /// outright, which stops retrying immediately.
+  ///
+  /// [accessToken] is resolved before every request and sent as
+  /// `Authorization: Bearer <token>`. Use it when the token rotates, for
+  /// example a session token that is refreshed. Returning `null` sends no
+  /// bearer token, and it is resolved again for every retry. A header set with
+  /// [PostgrestBuilder.setHeader] still wins over it, so a single request can
+  /// be made with a different token.
   PostgrestClient(
     this.url, {
     Map<String, String>? headers,
     String? schema,
-    this.httpClient,
-    YAJsonIsolate? isolate,
-    this.retryEnabled = true,
-    this.retryCount = 3,
-    Set<int> retryableStatusCodes = defaultRetryableStatusCodes,
+    Client? httpClient,
+    AsyncJsonCodec? jsonCodec,
+    this.retryOptions = const SupabaseRetryOptions(),
     this.requestTimeout,
-    @visibleForTesting Duration Function(int attempt)? retryDelay,
-  }) : retryableStatusCodes = Set.unmodifiable(retryableStatusCodes),
+    Future<String?> Function()? accessToken,
+  }) : assert(
+         accessToken == null || headers?.header('Authorization') == null,
+         'Pass either an Authorization header or accessToken, not both: the '
+         'header would win over the resolved token on every request.',
+       ),
+       // The transport belongs to the caller, so the client never closes it,
+       // the same way it leaves a caller-provided JSON codec alone.
+       // ignore: dispose-class-fields
+       httpClient = accessToken == null
+           ? httpClient
+           : AccessTokenClient(accessToken, httpClient),
        _schema = schema,
-       headers = {...defaultHeaders, ...?headers},
-       _isolate = isolate ?? (YAJsonIsolate()..initialize()),
-       _hasCustomIsolate = isolate != null,
-       _retryDelay = retryDelay {
-    if (retryCount < 0) {
-      throw ArgumentError.value(
-        retryCount,
-        'retryCount',
-        'must not be negative',
-      );
-    }
-    _log.config('Initialize PostgrestClient with url: $url, schema: $_schema');
-    _log.finest('Initialize with headers: $headers');
+       headers = Map.unmodifiable({...defaultHeaders, ...?headers}),
+       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _ownsJsonCodec = jsonCodec == null {
+    postgrestLogger.config(
+      () =>
+          'Initialize PostgrestClient with url: ${Uri.parse(url).redacted}, '
+          'schema: $_schema',
+    );
+    postgrestLogger.finest(
+      () => 'Initialize with headers: ${this.headers.redacted}',
+    );
   }
 
-  /// Authenticates the request with JWT.
+  /// The HTTP status codes that trigger a retry.
   ///
-  /// Passing `null` clears the `Authorization` header.
-  PostgrestClient setAccessToken(String? token) {
-    _log.finest("setAccessToken with: $token");
-    if (token != null) {
-      headers['Authorization'] = 'Bearer $token';
-    } else {
-      headers.remove('Authorization');
-    }
-    return this;
-  }
+  /// `503 Service Unavailable` and `520 Unknown Error` are the only responses
+  /// a Supabase project answers with that are worth repeating, so the set is
+  /// fixed. Retrying anything else, a `500` from a failing query for example,
+  /// only multiplies the load without a chance of a different answer.
+  static const Set<int> retryableStatusCodes = {503, 520};
+
+  /// The PostgREST endpoint this client sends requests to.
+  final String url;
+
+  /// The headers sent with every request.
+  ///
+  /// The map is unmodifiable: the client is stateless, so headers are set
+  /// through the constructor, or per request with
+  /// [PostgrestBuilder.setHeader].
+  final Map<String, String> headers;
+  final String? _schema;
+
+  /// The HTTP client used to send requests, or `null` to use a one-off
+  /// client per request.
+  final Client? httpClient;
+  final AsyncJsonCodec _jsonCodec;
+  final bool _ownsJsonCodec;
+
+  /// Configures the automatic retry of GET and HEAD requests.
+  final SupabaseRetryOptions retryOptions;
+
+  /// Bounds how long a single request attempt may take, `null` for no
+  /// timeout.
+  final Duration? requestTimeout;
 
   /// Perform a table operation.
-  PostgrestQueryBuilder<void> from(String table) {
+  PostgrestQueryBuilder from(String table) {
     final requestUrl = '$url/$table';
     return PostgrestQueryBuilder(
       url: Uri.parse(requestUrl),
-      headers: {...headers},
+      headers: headers,
       schema: _schema,
       httpClient: httpClient,
-      isolate: _isolate,
-      retryEnabled: retryEnabled,
-      retryCount: retryCount,
-      retryableStatusCodes: retryableStatusCodes,
+      jsonCodec: _jsonCodec,
+      retryOptions: retryOptions,
       requestTimeout: requestTimeout,
-      retryDelay: _retryDelay,
     );
   }
 
@@ -136,15 +144,12 @@ class PostgrestClient {
   PostgrestClient schema(String schema) {
     return PostgrestClient(
       url,
-      headers: {...headers},
+      headers: headers,
       schema: schema,
       httpClient: httpClient,
-      isolate: _isolate,
-      retryEnabled: retryEnabled,
-      retryCount: retryCount,
-      retryableStatusCodes: retryableStatusCodes,
+      jsonCodec: _jsonCodec,
+      retryOptions: retryOptions,
       requestTimeout: requestTimeout,
-      retryDelay: _retryDelay,
     );
   }
 
@@ -171,22 +176,23 @@ class PostgrestClient {
     final requestUrl = '$url/rpc/$fn';
     return PostgrestRpcBuilder(
       requestUrl,
-      headers: {...headers},
+      headers: headers,
       schema: _schema,
       httpClient: httpClient,
-      isolate: _isolate,
-      retryEnabled: retryEnabled,
-      retryCount: retryCount,
-      retryableStatusCodes: retryableStatusCodes,
+      jsonCodec: _jsonCodec,
+      retryOptions: retryOptions,
       requestTimeout: requestTimeout,
-      retryDelay: _retryDelay,
     ).rpc(params, get);
   }
 
+  /// Disposes the JSON codec the client created for itself.
+  ///
+  /// Does nothing when a codec was passed to the constructor, since that one
+  /// belongs to the caller.
   Future<void> dispose() async {
-    _log.fine("dispose PostgrestClient");
-    if (!_hasCustomIsolate) {
-      return _isolate.dispose();
+    postgrestLogger.fine("dispose PostgrestClient");
+    if (_ownsJsonCodec) {
+      return _jsonCodec.dispose();
     }
   }
 }

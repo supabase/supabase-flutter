@@ -1,10 +1,21 @@
 import 'package:supabase_common/supabase_common.dart';
 
+/// HTTP request or response headers.
 typedef Headers = Map<String, String>;
+
+/// Converts a decoded response body to the value a query resolves to.
 typedef PostgrestConverter<S, T> = S Function(T data);
+
+/// A list of rows, as decoded from a JSON array response body.
 typedef PostgrestList = List<PostgrestMap>;
+
+/// A single row, as decoded from a JSON object response body.
 typedef PostgrestMap = Map<String, dynamic>;
+
+/// A [PostgrestResponse] whose data is a [PostgrestList].
 typedef PostgrestListResponse = PostgrestResponse<PostgrestList>;
+
+/// A [PostgrestResponse] whose data is a [PostgrestMap].
 typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 
 /// Thrown when PostgREST answered with an error.
@@ -14,12 +25,6 @@ typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 /// is the HTTP status of the response.
 class PostgrestApiException extends SupabaseException
     with SupabaseApiException {
-  @override
-  final int statusCode;
-
-  final Object? details;
-  final String? hint;
-
   const PostgrestApiException({
     required String message,
     required this.statusCode,
@@ -51,6 +56,14 @@ class PostgrestApiException extends SupabaseException
       hint: json['hint']?.toString(),
     );
   }
+  @override
+  final int statusCode;
+
+  /// Additional details PostgREST or PostgreSQL reported about the error.
+  final Object? details;
+
+  /// A hint for resolving the error, if PostgREST or PostgreSQL reported one.
+  final String? hint;
 
   Map<String, dynamic> toJson() {
     return {
@@ -71,15 +84,6 @@ class PostgrestApiException extends SupabaseException
 
 /// A Postgrest response
 class PostgrestResponse<T> {
-  const PostgrestResponse({
-    required this.data,
-    required this.count,
-  });
-
-  final T data;
-
-  final int count;
-
   factory PostgrestResponse.fromJson(Map<String, dynamic> json) {
     final countValue = json['count'];
     if (countValue is! num) {
@@ -93,6 +97,16 @@ class PostgrestResponse<T> {
       count: countValue.toInt(),
     );
   }
+  const PostgrestResponse({
+    required this.data,
+    required this.count,
+  });
+
+  /// The decoded response body.
+  final T data;
+
+  /// The total row count reported by PostgREST.
+  final int count;
 
   Map<String, dynamic> toJson() => {
     'data': data,
@@ -120,7 +134,10 @@ enum CountOption {
 
 /// The format of the plan returned by `PostgrestTransformBuilder.explain`.
 enum ExplainFormat {
+  /// PostgreSQL's default, human-readable plan format.
   text,
+
+  /// A machine-readable plan format.
   json,
 }
 

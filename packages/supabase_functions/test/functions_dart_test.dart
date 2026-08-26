@@ -257,22 +257,45 @@ void main() {
       expect(response.statusCode, 200);
     });
 
-    test('dispose isolate', () async {
+    test('dispose the JSON codec it created itself', () async {
       await functionsCustomHttpClient.dispose();
       expect(functionsCustomHttpClient.invoke('function'), throwsStateError);
     });
 
-    test('do not dispose custom isolate', () async {
+    test('do not dispose a supplied JSON codec', () async {
       final client = FunctionsClient(
         "",
         {},
-        isolate: YAJsonIsolate(),
+        jsonCodec: YAJsonIsolate(),
         httpClient: CustomHttpClient(),
       );
 
       await client.dispose();
       final response = await client.invoke('function');
       expect(response.data, {'key': 'Hello World'});
+    });
+
+    test('encodes and decodes through a supplied JSON codec', () async {
+      final jsonCodec = _RecordingJsonCodec();
+      final client = FunctionsClient(
+        "",
+        {},
+        jsonCodec: jsonCodec,
+        httpClient: CustomHttpClient(),
+      );
+      addTearDown(client.dispose);
+
+      final response = await client.invoke(
+        'function',
+        body: {'name': 'Supabase'},
+      );
+
+      expect(response.data, {'key': 'Hello World'});
+      expect(jsonCodec.encodedValues, [
+        {'name': 'Supabase'},
+      ]);
+      expect(jsonCodec.decodedPayloads, 1);
+      expect(jsonCodec.isDisposed, isFalse);
     });
 
     test('Listen to SSE event', () async {
@@ -438,21 +461,131 @@ void main() {
     });
 
     group('Headers', () {
-      test('setAccessToken updates authorization header', () async {
-        functionsCustomHttpClient.setAccessToken('new-token');
+      test('headers getter returns the constructor headers merged with the '
+          'defaults', () {
+        final client = FunctionsClient("", {'apikey': 'foo'});
 
-        await functionsCustomHttpClient.invoke('function');
-
-        final request = customHttpClient.receivedRequests.last;
-        expect(request.headers['Authorization'], 'Bearer new-token');
+        expect(client.headers['apikey'], 'foo');
+        expect(client.headers, contains('X-Client-Info'));
       });
 
-      test('headers getter returns current headers', () {
-        functionsCustomHttpClient.setAccessToken('test-token');
+      test('headers cannot be mutated in place', () {
+        final client = FunctionsClient("", {'apikey': 'foo'});
 
-        final headers = functionsCustomHttpClient.headers;
-        expect(headers['Authorization'], 'Bearer test-token');
-        expect(headers, contains('X-Client-Info'));
+        expect(
+          () => client.headers['apikey'] = 'bar',
+          throwsUnsupportedError,
+        );
+        expect(client.headers['apikey'], 'foo');
+      });
+
+      test('setHeader adds a header to subsequent invocations', () async {
+        final httpClient = CustomHttpClient();
+        final client = FunctionsClient(
+          'http://localhost',
+          {'apikey': 'foo'},
+          httpClient: httpClient,
+        );
+        addTearDown(client.dispose);
+
+        expect(
+          identical(client.setHeader('x-custom-header', 'value'), client),
+          isTrue,
+        );
+        await client.invoke('function');
+
+        expect(
+          httpClient.receivedRequests.last.headers['x-custom-header'],
+          'value',
+        );
+      });
+
+      test('a header passed to invoke wins over setHeader', () async {
+        final httpClient = CustomHttpClient();
+        final client = FunctionsClient(
+          'http://localhost',
+          {'apikey': 'foo'},
+          httpClient: httpClient,
+        );
+        addTearDown(client.dispose);
+
+        client.setHeader('x-custom-header', 'value');
+        await client.invoke(
+          'function',
+          headers: {'x-custom-header': 'per-call'},
+        );
+
+        expect(
+          httpClient.receivedRequests.last.headers['x-custom-header'],
+          'per-call',
+        );
+        expect(client.headers['x-custom-header'], 'value');
+      });
+
+      test('accessToken is resolved before every invocation', () async {
+        var calls = 0;
+        final client = FunctionsClient(
+          "",
+          {},
+          httpClient: customHttpClient,
+          accessToken: () async => 'token-${calls++}',
+        );
+
+        await client.invoke('function');
+        await client.invoke('function');
+
+        expect(
+          customHttpClient.receivedRequests
+              .map((request) => request.headers['Authorization'])
+              .toList(),
+          ['Bearer token-0', 'Bearer token-1'],
+        );
+      });
+
+      test('a header passed to invoke wins over accessToken', () async {
+        final client = FunctionsClient(
+          "",
+          {},
+          httpClient: customHttpClient,
+          accessToken: () async => 'resolved',
+        );
+
+        await client.invoke(
+          'function',
+          headers: {'Authorization': 'Bearer per-call'},
+        );
+
+        expect(
+          customHttpClient.receivedRequests.last.headers['Authorization'],
+          'Bearer per-call',
+        );
+      });
+
+      test('accessToken sends nothing when it resolves to null', () async {
+        final client = FunctionsClient(
+          "",
+          {},
+          httpClient: customHttpClient,
+          accessToken: () async => null,
+        );
+
+        await client.invoke('function');
+
+        expect(
+          customHttpClient.receivedRequests.last.headers,
+          isNot(contains('Authorization')),
+        );
+      });
+
+      test('accessToken together with an Authorization header asserts', () {
+        expect(
+          () => FunctionsClient(
+            "",
+            {'Authorization': 'Bearer static'},
+            accessToken: () async => 'resolved',
+          ),
+          throwsA(isA<AssertionError>()),
+        );
       });
 
       test('custom headers override defaults', () async {
@@ -576,13 +709,12 @@ void main() {
 
     group('Constructor variations', () {
       test('constructor with all parameters', () {
-        final isolate = YAJsonIsolate();
         final httpClient = CustomHttpClient();
         final client = FunctionsClient(
           'https://example.com',
           {'X-Test': 'value'},
           httpClient: httpClient,
-          isolate: isolate,
+          jsonCodec: YAJsonIsolate(),
         );
 
         expect(client.headers['X-Test'], 'value');
@@ -727,4 +859,36 @@ void main() {
       );
     });
   });
+}
+
+/// An [AsyncJsonCodec] that works inline and records what it was asked to
+/// process, so a test can assert that the client routes its JSON through the
+/// codec it was given and leaves its disposal to the caller.
+class _RecordingJsonCodec implements AsyncJsonCodec {
+  final List<Object?> encodedValues = [];
+  int decodedPayloads = 0;
+  bool isDisposed = false;
+
+  @override
+  Future<dynamic> decode(String json) async {
+    decodedPayloads++;
+    return jsonDecode(json);
+  }
+
+  @override
+  Future<dynamic> decodeBytes(Uint8List encodedJson) async {
+    decodedPayloads++;
+    return jsonDecode(utf8.decode(encodedJson));
+  }
+
+  @override
+  Future<String> encode(Object? json) async {
+    encodedValues.add(json);
+    return jsonEncode(json);
+  }
+
+  @override
+  Future<void> dispose() async {
+    isDisposed = true;
+  }
 }

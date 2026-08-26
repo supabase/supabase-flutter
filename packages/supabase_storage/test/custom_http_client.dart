@@ -3,17 +3,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart';
 
-class FailingHttpClient extends BaseClient {
-  @override
-  Future<StreamedResponse> send(BaseRequest request) async {
-    //Return custom status code to check for usage of this client.
-    return StreamedResponse(
-      request.finalize(),
-      420,
-      request: request,
-    );
-  }
-}
+export 'package:supabase_testing/supabase_testing.dart' show FailingHttpClient;
 
 /// Client that fails for few times when attempting to upload file
 class RetryHttpClient extends BaseClient {

@@ -1,13 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
 import 'package:postgres/postgres.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_common/testing.dart';
+import 'package:supabase_testing/supabase_testing.dart';
 
 export 'package:supabase_common/testing.dart';
+export 'package:supabase_testing/supabase_testing.dart';
 
 const _postgresEndpoint = (
   host: localStackHost,
@@ -17,38 +17,15 @@ const _postgresEndpoint = (
   password: localStackDatabasePassword,
 );
 
-String _base64Url(List<int> bytes) =>
-    base64Url.encode(bytes).replaceAll('=', '');
-
 /// Generates an HS256 JWT signed with [localStackJwtSecret] that the Realtime
 /// server accepts as the connection apikey.
 String generateRealtimeToken({String role = 'anon'}) {
   final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-  final header = _base64Url(
-    utf8.encode(
-      json.encode({
-        'alg': 'HS256',
-        'typ': 'JWT',
-      }),
-    ),
-  );
-  final payload = _base64Url(
-    utf8.encode(
-      json.encode({
-        'role': role,
-        'iat': now,
-        'exp': now + 60 * 60,
-      }),
-    ),
-  );
-  final signingInput = '$header.$payload';
-  final signature = _base64Url(
-    Hmac(
-      sha256,
-      utf8.encode(localStackJwtSecret),
-    ).convert(utf8.encode(signingInput)).bytes,
-  );
-  return '$signingInput.$signature';
+  return signedTestJwt({
+    'role': role,
+    'iat': now,
+    'exp': now + 60 * 60,
+  }, secret: localStackJwtSecret);
 }
 
 /// Creates a [RealtimeClient] connected to the local Supabase CLI Realtime
@@ -116,28 +93,31 @@ Future<void> primePostgresChanges({
   final received = Completer<void>();
 
   final channel = client.channel('postgres-changes-warmup');
-  channel.onPostgresChanges(
-    event: PostgresChangeEvent.insert,
-    schema: 'public',
-    table: 'todos',
-    callback: (_) {
-      if (!received.isCompleted) received.complete();
-    },
-  );
+  channel
+      .onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: 'todos',
+      )
+      .listen((_) {
+        if (!received.isCompleted) received.complete();
+      });
 
   final subscribed = Completer<void>();
-  channel.subscribe((status, error) {
+  channel.onStatusChange.listen((change) {
     if (subscribed.isCompleted) return;
-    if (status == RealtimeSubscribeStatus.subscribed) {
+    if (change.status == RealtimeSubscribeStatus.subscribed) {
       subscribed.complete();
-    } else if (status == RealtimeSubscribeStatus.channelError ||
-        status == RealtimeSubscribeStatus.timedOut) {
+    } else if (change.status == RealtimeSubscribeStatus.channelError ||
+        change.status == RealtimeSubscribeStatus.timedOut ||
+        change.status == RealtimeSubscribeStatus.closed) {
       subscribed.completeError(
-        StateError('warmup subscribe failed: ${status.name}'),
+        StateError('warmup subscribe failed: ${change.status.name}'),
         StackTrace.current,
       );
     }
   });
+  channel.subscribe();
 
   try {
     await subscribed.future.timeout(const Duration(seconds: 15));
@@ -182,21 +162,26 @@ Future<void> waitForRealtimeServer({
     httpReachable = await _isRealtimeHttpReachable();
 
     final client = createRealtimeClient(RealtimeProtocolVersion.v1);
-    client.onError((error) => lastError = error);
+    client.onStatusChange.listen(
+      (_) {},
+      onError: (Object error) => lastError = error,
+    );
 
     final completer = Completer<bool>();
     final channel = client.channel('readiness-check');
-    channel.subscribe((status, error) {
+    channel.onStatusChange.listen((change) {
       if (completer.isCompleted) return;
-      lastStatus = status.name;
-      if (error != null) lastError = error;
-      if (status == RealtimeSubscribeStatus.subscribed) {
+      lastStatus = change.status.name;
+      if (change.error != null) lastError = change.error;
+      if (change.status == RealtimeSubscribeStatus.subscribed) {
         completer.complete(true);
-      } else if (status == RealtimeSubscribeStatus.channelError ||
-          status == RealtimeSubscribeStatus.timedOut) {
+      } else if (change.status == RealtimeSubscribeStatus.channelError ||
+          change.status == RealtimeSubscribeStatus.timedOut ||
+          change.status == RealtimeSubscribeStatus.closed) {
         completer.complete(false);
       }
     });
+    channel.subscribe();
 
     var ready = false;
     try {

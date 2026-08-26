@@ -1,7 +1,6 @@
 import 'package:supabase_auth/supabase_auth.dart';
 import 'package:test/test.dart';
 
-import 'mocks/json_response_mock_client.dart';
 import 'utils.dart';
 
 void main() {

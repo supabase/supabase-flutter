@@ -5,12 +5,11 @@ import 'trace_propagation.dart';
 
 @internal
 class TracePropagationClient extends BaseClient {
+  TracePropagationClient(this._inner, this._options, String supabaseUrl)
+    : _exactHosts = _defaultExactHosts(supabaseUrl);
   final Client _inner;
   final TracePropagationOptions _options;
   final Set<String> _exactHosts;
-
-  TracePropagationClient(this._inner, this._options, String supabaseUrl)
-    : _exactHosts = _defaultExactHosts(supabaseUrl);
 
   static const _wildcardDomains = ['supabase.co', 'supabase.in'];
 

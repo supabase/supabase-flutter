@@ -5,15 +5,6 @@ import 'package:supabase_common/supabase_common.dart';
 
 /// JWT Header structure
 class JwtHeader {
-  /// Algorithm used to sign the JWT (e.g., 'RS256', 'ES256', 'HS256')
-  final String algorithm;
-
-  /// Key ID - identifies which key was used to sign the JWT
-  final String? keyId;
-
-  /// Token type - typically 'JWT'
-  final String? type;
-
   const JwtHeader({
     required this.algorithm,
     this.keyId,
@@ -28,6 +19,15 @@ class JwtHeader {
     );
   }
 
+  /// Algorithm used to sign the JWT (e.g., 'RS256', 'ES256', 'HS256')
+  final String algorithm;
+
+  /// Key ID - identifies which key was used to sign the JWT
+  final String? keyId;
+
+  /// Token type - typically 'JWT'
+  final String? type;
+
   Map<String, dynamic> toJson() {
     return {
       'alg': algorithm,
@@ -39,6 +39,32 @@ class JwtHeader {
 
 /// JWT Payload structure with standard claims
 class JwtPayload {
+  JwtPayload({
+    this.issuer,
+    this.subject,
+    this.audience,
+    this.expiresAt,
+    this.notBefore,
+    this.issuedAt,
+    this.jwtId,
+    Map<String, dynamic>? claims,
+  }) : claims = claims ?? {};
+
+  /// Every field of [json] is kept in [claims], including the standard ones
+  /// already exposed as typed fields.
+  factory JwtPayload.fromJson(Map<String, dynamic> json) {
+    return JwtPayload(
+      issuer: json['iss'] as String?,
+      subject: json['sub'] as String?,
+      audience: json['aud'],
+      expiresAt: (json['exp'] as num?)?.toInt(),
+      notBefore: (json['nbf'] as num?)?.toInt(),
+      issuedAt: (json['iat'] as num?)?.toInt(),
+      jwtId: json['jti'] as String?,
+      claims: Map<String, dynamic>.of(json),
+    );
+  }
+
   /// Issuer - identifies principal that issued the JWT
   final String? issuer;
 
@@ -63,30 +89,7 @@ class JwtPayload {
   /// Additional claims stored in the payload
   final Map<String, dynamic> claims;
 
-  JwtPayload({
-    this.issuer,
-    this.subject,
-    this.audience,
-    this.expiresAt,
-    this.notBefore,
-    this.issuedAt,
-    this.jwtId,
-    Map<String, dynamic>? claims,
-  }) : claims = claims ?? {};
-
-  factory JwtPayload.fromJson(Map<String, dynamic> json) {
-    return JwtPayload(
-      issuer: json['iss'] as String?,
-      subject: json['sub'] as String?,
-      audience: json['aud'],
-      expiresAt: (json['exp'] as num?)?.toInt(),
-      notBefore: (json['nbf'] as num?)?.toInt(),
-      issuedAt: (json['iat'] as num?)?.toInt(),
-      jwtId: json['jti'] as String?,
-      claims: Map<String, dynamic>.of(json),
-    );
-  }
-
+  /// Converts this to a JSON-encodable map, equivalent to [claims].
   Map<String, dynamic> toJson() {
     return Map.of(claims);
   }
@@ -94,6 +97,13 @@ class JwtPayload {
 
 /// Decoded JWT structure
 class DecodedJwt {
+  const DecodedJwt({
+    required this.header,
+    required this.payload,
+    required this.signature,
+    required this.raw,
+  });
+
   /// JWT header
   final JwtHeader header;
 
@@ -105,17 +115,16 @@ class DecodedJwt {
 
   /// Raw encoded parts of the JWT
   final JwtRawParts raw;
-
-  const DecodedJwt({
-    required this.header,
-    required this.payload,
-    required this.signature,
-    required this.raw,
-  });
 }
 
 /// Raw encoded parts of a JWT
 class JwtRawParts {
+  const JwtRawParts({
+    required this.header,
+    required this.payload,
+    required this.signature,
+  });
+
   /// Raw base64url encoded header
   final String header;
 
@@ -124,16 +133,16 @@ class JwtRawParts {
 
   /// Raw base64url encoded signature
   final String signature;
-
-  const JwtRawParts({
-    required this.header,
-    required this.payload,
-    required this.signature,
-  });
 }
 
 /// Response from getClaims method
 class GetClaimsResponse {
+  const GetClaimsResponse({
+    required this.claims,
+    required this.header,
+    required this.signature,
+  });
+
   /// JWT claims from the payload
   final JwtPayload claims;
 
@@ -142,29 +151,23 @@ class GetClaimsResponse {
 
   /// JWT signature
   final List<int> signature;
-
-  const GetClaimsResponse({
-    required this.claims,
-    required this.header,
-    required this.signature,
-  });
 }
 
 /// Options for getClaims method
 class GetClaimsOptions {
+  const GetClaimsOptions({
+    this.allowExpired = false,
+  });
+
   /// If set to `true`, the `exp` claim will not be validated against the
   /// current time. This allows you to extract claims from expired JWTs without
   /// getting an error.
   final bool allowExpired;
-
-  const GetClaimsOptions({
-    this.allowExpired = false,
-  });
 }
 
+/// A JSON Web Key Set (JWKS), as published by Supabase Auth's
+/// `/.well-known/jwks.json` endpoint.
 class JWKSet {
-  final List<JWK> keys;
-
   const JWKSet({required this.keys});
 
   factory JWKSet.fromJson(Map<String, dynamic> json) {
@@ -175,6 +178,9 @@ class JWKSet {
         [];
     return JWKSet(keys: keys);
   }
+
+  /// The keys in this set.
+  final List<JWK> keys;
 
   Map<String, dynamic> toJson() {
     return {
@@ -187,24 +193,6 @@ class JWKSet {
 /// JSON Web Key (JWK) representation.
 /// {@endtemplate}
 class JWK {
-  /// The "kty" (key type) parameter identifies the cryptographic algorithm
-  /// family used with the key, such as "RSA" or "EC".
-  final String keyType;
-
-  /// The "key_ops" (key operations) parameter identifies the cryptographic
-  /// operations for which the key is intended to be used.
-  final List<String> keyOperations;
-
-  /// The "alg" (algorithm) parameter identifies the algorithm intended for
-  /// use with the key.
-  final String? algorithm;
-
-  /// The "kid" (key ID) parameter is used to match a specific key.
-  final String? keyId;
-
-  /// Additional arbitrary properties of the JWK.
-  final Map<String, dynamic> _additionalProperties;
-
   /// {@macro jwk}
   JWK({
     required this.keyType,
@@ -237,6 +225,24 @@ class JWK {
       additionalProperties: additionalProperties,
     );
   }
+
+  /// The "kty" (key type) parameter identifies the cryptographic algorithm
+  /// family used with the key, such as "RSA" or "EC".
+  final String keyType;
+
+  /// The "key_ops" (key operations) parameter identifies the cryptographic
+  /// operations for which the key is intended to be used.
+  final List<String> keyOperations;
+
+  /// The "alg" (algorithm) parameter identifies the algorithm intended for
+  /// use with the key.
+  final String? algorithm;
+
+  /// The "kid" (key ID) parameter is used to match a specific key.
+  final String? keyId;
+
+  /// Additional arbitrary properties of the JWK.
+  final Map<String, dynamic> _additionalProperties;
 
   /// Allows accessing additional properties using operator[].
   dynamic operator [](String key) => switch (key) {

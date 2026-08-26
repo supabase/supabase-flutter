@@ -1,3 +1,30 @@
+## 3.0.0-dev.1
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: share the test helpers through supabase_common ([#1745](https://github.com/supabase/supabase-flutter/issues/1745)). ([bcb41fa4](https://github.com/supabase/supabase-flutter/commit/bcb41fa4d9ef840c0380e641d3e45968084090c8))
+ - **REFACTOR**: share the auth callback parameters and secure random helpers ([#1744](https://github.com/supabase/supabase-flutter/issues/1744)). ([66ac4901](https://github.com/supabase/supabase-flutter/commit/66ac4901c684b83faae96e13ac560d7efdac158e))
+ - **REFACTOR**: share the HTTP request pieces between the fetch layers ([#1647](https://github.com/supabase/supabase-flutter/issues/1647)). ([a2a9eeaa](https://github.com/supabase/supabase-flutter/commit/a2a9eeaac4f8cc5d98199945283245b697e07a19))
+ - **PERF**(yet_another_json_isolate): process small payloads inline and large ones on short-lived isolates ([#1746](https://github.com/supabase/supabase-flutter/issues/1746)). ([7942c377](https://github.com/supabase/supabase-flutter/commit/7942c37770c5a12b18b27afc66b8595e67fdd22d))
+ - **FIX**(supabase_lints): enable lines_longer_than_80_chars and fix all violations ([#1655](https://github.com/supabase/supabase-flutter/issues/1655)). ([a08b6577](https://github.com/supabase/supabase-flutter/commit/a08b6577d002d0c7ae0d484ddd6da802922be37b))
+ - **FEAT**: introduce the supabase_testing package ([#1747](https://github.com/supabase/supabase-flutter/issues/1747)). ([5a3aa9b4](https://github.com/supabase/supabase-flutter/commit/5a3aa9b4265385e3d747ca70ad499102fa388ee9))
+ - **FEAT**: resolve an access token per request on the standalone clients ([#1742](https://github.com/supabase/supabase-flutter/issues/1742)). ([dd61782a](https://github.com/supabase/supabase-flutter/commit/dd61782a35f1a99af95f5457b5a3393b3d7939b9))
+ - **DOCS**: fix inaccurate dartdoc comments across all packages ([#1659](https://github.com/supabase/supabase-flutter/issues/1659)). ([090ee978](https://github.com/supabase/supabase-flutter/commit/090ee9781ccdc7a749902830697d51251aa9f052))
+ - **BREAKING** **REFACTOR**: process JSON through the AsyncJsonCodec interface ([#1751](https://github.com/supabase/supabase-flutter/issues/1751)). ([6969eb38](https://github.com/supabase/supabase-flutter/commit/6969eb3805cc1920f5a44902ae2ce660170c13b3))
+ - **BREAKING** **REFACTOR**(postgrest): make the rest client and builders stateless ([#1748](https://github.com/supabase/supabase-flutter/issues/1748)). ([4efb8ce4](https://github.com/supabase/supabase-flutter/commit/4efb8ce4fcff225d7b601af1a5b351da530cb34d))
+ - **BREAKING** **REFACTOR**: rework logging to emit only through the supabase logger hierarchy ([#1741](https://github.com/supabase/supabase-flutter/issues/1741)). ([d1642c80](https://github.com/supabase/supabase-flutter/commit/d1642c80c60d93cf3bf7919b0cef775470275ed9))
+ - **BREAKING** **REFACTOR**: remove the dead setAccessToken mutators ([#1739](https://github.com/supabase/supabase-flutter/issues/1739)). ([ced47232](https://github.com/supabase/supabase-flutter/commit/ced47232edead42ce57d27b76227723817ef2367))
+ - **BREAKING** **REFACTOR**: share one retry configuration across the clients ([#1738](https://github.com/supabase/supabase-flutter/issues/1738)). ([3b2a4855](https://github.com/supabase/supabase-flutter/commit/3b2a4855a5d2e83af17d3cd280189c6a89170741))
+ - **BREAKING** **REFACTOR**(postgrest): fix the retried status codes to 503 and 520 ([#1737](https://github.com/supabase/supabase-flutter/issues/1737)). ([17487ff5](https://github.com/supabase/supabase-flutter/commit/17487ff5ecc4ca5df74f08d48cdb0bfac767fe8f))
+ - **BREAKING** **REFACTOR**(postgrest): expose retry configuration as PostgrestRetryOptions ([#1731](https://github.com/supabase/supabase-flutter/issues/1731)). ([7c0cfe53](https://github.com/supabase/supabase-flutter/commit/7c0cfe53ca9366f703d52dd4a78105475439e4b8))
+ - **BREAKING** **REFACTOR**: spell out abbreviations in the public API ([#1712](https://github.com/supabase/supabase-flutter/issues/1712)). ([29286f43](https://github.com/supabase/supabase-flutter/commit/29286f4309a74da769ed7aad569daacba6dee7ae))
+ - **BREAKING** **REFACTOR**: share one exponential backoff calculation ([#1646](https://github.com/supabase/supabase-flutter/issues/1646)). ([8bc93f5d](https://github.com/supabase/supabase-flutter/commit/8bc93f5d8ccd72351dc1789e30a4aa9c8e8de1fa))
+ - **BREAKING** **REFACTOR**: split every service exception into a client and an api base ([#1644](https://github.com/supabase/supabase-flutter/issues/1644)). ([0202c332](https://github.com/supabase/supabase-flutter/commit/0202c33249828dc96a778af5fd72520ca5234a46))
+ - **BREAKING** **REFACTOR**: share a single HttpMethod enum across the packages ([#1678](https://github.com/supabase/supabase-flutter/issues/1678)). ([23d55c37](https://github.com/supabase/supabase-flutter/commit/23d55c376fe8e2aa0ff4083f2ff39488fe827979))
+ - **BREAKING** **REFACTOR**: remove analyzer ignores by fixing the underlying code ([#1675](https://github.com/supabase/supabase-flutter/issues/1675)). ([9f367d77](https://github.com/supabase/supabase-flutter/commit/9f367d77f8f1e1723a985885db0de45123dce6f4))
+ - **BREAKING** **REFACTOR**: remove all deprecated APIs and dead public surface for v3 ([#1661](https://github.com/supabase/supabase-flutter/issues/1661)). ([1ffa0deb](https://github.com/supabase/supabase-flutter/commit/1ffa0deba0371585c7a4ac93795cf199a58e2353))
+ - **BREAKING** **FIX**: make order() default to ascending ([#1658](https://github.com/supabase/supabase-flutter/issues/1658)). ([e06f2302](https://github.com/supabase/supabase-flutter/commit/e06f23025949dc2e8b1d4b3528619181ef8edde0))
+
 ## 2.9.1
 
  - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))

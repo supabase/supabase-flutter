@@ -4,6 +4,8 @@ import 'package:supabase_auth/supabase_auth.dart';
 import 'package:http/http.dart';
 import 'package:test/test.dart';
 
+import 'utils.dart';
+
 /// Records the body of every request it receives and answers with a minimal
 /// enroll payload, so we can inspect what the client actually sent without a
 /// live server.
@@ -47,6 +49,7 @@ void main() {
         url: 'http://localhost',
         headers: {'apikey': 'anon-key'},
         httpClient: http,
+        asyncStorage: TestAsyncStorage(),
       );
     });
 

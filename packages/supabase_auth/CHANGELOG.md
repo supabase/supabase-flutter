@@ -1,3 +1,23 @@
+## 3.0.0-dev.1
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: share the test helpers through supabase_common ([#1745](https://github.com/supabase/supabase-flutter/issues/1745)). ([bcb41fa4](https://github.com/supabase/supabase-flutter/commit/bcb41fa4d9ef840c0380e641d3e45968084090c8))
+ - **REFACTOR**: share the auth callback parameters and secure random helpers ([#1744](https://github.com/supabase/supabase-flutter/issues/1744)). ([66ac4901](https://github.com/supabase/supabase-flutter/commit/66ac4901c684b83faae96e13ac560d7efdac158e))
+ - **FIX**(auth): fail with an AuthException when a redirect response has no url ([#1728](https://github.com/supabase/supabase-flutter/issues/1728)). ([1a4801f2](https://github.com/supabase/supabase-flutter/commit/1a4801f2d6a5c2d3e80ad590e5dac7589d4db57f))
+ - **FIX**(auth): parse expires_in as num in Session.fromJson ([#1716](https://github.com/supabase/supabase-flutter/issues/1716)). ([a0be8277](https://github.com/supabase/supabase-flutter/commit/a0be82772523d1906cfceb34a5392b77d29ae17e))
+ - **FEAT**: introduce the supabase_testing package ([#1747](https://github.com/supabase/supabase-flutter/issues/1747)). ([5a3aa9b4](https://github.com/supabase/supabase-flutter/commit/5a3aa9b4265385e3d747ca70ad499102fa388ee9))
+ - **FEAT**(auth): store PKCE verifiers per flow to survive overlapping flows ([#1662](https://github.com/supabase/supabase-flutter/issues/1662)). ([61bbbc5e](https://github.com/supabase/supabase-flutter/commit/61bbbc5e2fbd0e01a1efbcd4d0257286a6060934))
+ - **BREAKING** **REFACTOR**: rework logging to emit only through the supabase logger hierarchy ([#1741](https://github.com/supabase/supabase-flutter/issues/1741)). ([d1642c80](https://github.com/supabase/supabase-flutter/commit/d1642c80c60d93cf3bf7919b0cef775470275ed9))
+ - **BREAKING** **REFACTOR**: share one retry configuration across the clients ([#1738](https://github.com/supabase/supabase-flutter/issues/1738)). ([3b2a4855](https://github.com/supabase/supabase-flutter/commit/3b2a4855a5d2e83af17d3cd280189c6a89170741))
+ - **BREAKING** **REFACTOR**(postgrest): expose retry configuration as PostgrestRetryOptions ([#1731](https://github.com/supabase/supabase-flutter/issues/1731)). ([7c0cfe53](https://github.com/supabase/supabase-flutter/commit/7c0cfe53ca9366f703d52dd4a78105475439e4b8))
+ - **BREAKING** **REFACTOR**(auth): return a Uri from OAuthResponse.url instead of a String ([#1729](https://github.com/supabase/supabase-flutter/issues/1729)). ([c8a66f10](https://github.com/supabase/supabase-flutter/commit/c8a66f100c9e1e1c899829cddc63aa7f1d230e93))
+ - **BREAKING** **REFACTOR**: spell out abbreviations in the public API ([#1712](https://github.com/supabase/supabase-flutter/issues/1712)). ([29286f43](https://github.com/supabase/supabase-flutter/commit/29286f4309a74da769ed7aad569daacba6dee7ae))
+ - **BREAKING** **FIX**(gotrue): assert asyncStorage is provided for PKCE flow in the constructor ([#1489](https://github.com/supabase/supabase-flutter/issues/1489)). ([30729cc9](https://github.com/supabase/supabase-flutter/commit/30729cc9edcc3366504382dc5d7ba2dbe1e43251))
+ - **BREAKING** **FIX**(auth): return Uri from getSSOSignInUrl instead of String ([#1722](https://github.com/supabase/supabase-flutter/issues/1722)). ([9aa2e767](https://github.com/supabase/supabase-flutter/commit/9aa2e76788f74b7a890c9a0e2f45e3f4ca44424b))
+ - **BREAKING** **FEAT**: rename the gotrue package to supabase_auth ([#1697](https://github.com/supabase/supabase-flutter/issues/1697)). ([563b502e](https://github.com/supabase/supabase-flutter/commit/563b502ee64d161defddeceaaacc43615f39b75c))
+ - **BREAKING** **CHORE**: give each package's Constants class a package-specific name ([#1677](https://github.com/supabase/supabase-flutter/issues/1677)). ([40f6d89c](https://github.com/supabase/supabase-flutter/commit/40f6d89c7fad32e49f028b2644914807fd731b70))
+
 ## 2.27.1
 
  - **REFACTOR**(supabase_common): share the local stack test configuration ([#1640](https://github.com/supabase/supabase-flutter/issues/1640)). ([a08f06d3](https://github.com/supabase/supabase-flutter/commit/a08f06d3b746d1fa5e3cd17c3370fe10466cb69b))
