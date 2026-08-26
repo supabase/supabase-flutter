@@ -446,8 +446,9 @@ extension AuthClientSignInProvider on AuthClient {
     );
   }
 
-  /// Generates a random nonce to pass to a native sign-in SDK before hashing
-  /// it and sending the ID token to `signInWithIdToken`.
+  /// Generates a random nonce. Hash it and pass the hash to the native
+  /// sign-in SDK, then pass this raw nonce as `nonce` to `signInWithIdToken`,
+  /// which hashes it again to compare against the value in the ID token.
   String generateRawNonce() => base64Url.encode(randomBytes(16));
 
   /// Links an oauth identity to an existing user.
