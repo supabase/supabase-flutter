@@ -6,8 +6,6 @@ part of 'postgrest_builder.dart';
 /// called to obtain an executable builder.
 @immutable
 class PostgrestRpcBuilder {
-  final _RequestConfig _config;
-
   PostgrestRpcBuilder(
     String url, {
     Map<String, String>? headers,
@@ -25,6 +23,7 @@ class PostgrestRpcBuilder {
          retry: retryOptions,
          requestTimeout: requestTimeout,
        );
+  final _RequestConfig _config;
 
   /// Performs a database function call.
   ///

@@ -34,6 +34,8 @@ import 'version.dart';
 ///
 ///   * [SupabaseAuth]
 class Supabase {
+  Supabase._();
+
   /// Gets the current supabase instance.
   ///
   /// An [AssertionError] is thrown if supabase isn't initialized yet.
@@ -156,7 +158,6 @@ class Supabase {
     return _instance;
   }
 
-  Supabase._();
   static final Supabase _instance = Supabase._();
 
   bool _isInitialized = false;

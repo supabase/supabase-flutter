@@ -8,32 +8,6 @@ import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 /// A PostgREST api client written in Dartlang. The goal of this library is to
 /// make an "ORM-like" restful interface.
 class PostgrestClient {
-  /// The HTTP status codes that trigger a retry.
-  ///
-  /// `503 Service Unavailable` and `520 Unknown Error` are the only responses
-  /// a Supabase project answers with that are worth repeating, so the set is
-  /// fixed. Retrying anything else, a `500` from a failing query for example,
-  /// only multiplies the load without a chance of a different answer.
-  static const Set<int> retryableStatusCodes = {503, 520};
-
-  final String url;
-
-  /// The headers sent with every request.
-  ///
-  /// The map is unmodifiable: the client is stateless, so headers are set
-  /// through the constructor, or per request with
-  /// [PostgrestBuilder.setHeader].
-  final Map<String, String> headers;
-  final String? _schema;
-  final Client? httpClient;
-  final AsyncJsonCodec _jsonCodec;
-  final bool _ownsJsonCodec;
-
-  /// Configures the automatic retry of GET and HEAD requests.
-  final SupabaseRetryOptions retryOptions;
-
-  final Duration? requestTimeout;
-
   /// To create a [PostgrestClient], you need to provide an [url] endpoint.
   ///
   /// You can also provide custom [headers] and [_schema] if needed
@@ -99,6 +73,32 @@ class PostgrestClient {
       () => 'Initialize with headers: ${this.headers.redacted}',
     );
   }
+
+  /// The HTTP status codes that trigger a retry.
+  ///
+  /// `503 Service Unavailable` and `520 Unknown Error` are the only responses
+  /// a Supabase project answers with that are worth repeating, so the set is
+  /// fixed. Retrying anything else, a `500` from a failing query for example,
+  /// only multiplies the load without a chance of a different answer.
+  static const Set<int> retryableStatusCodes = {503, 520};
+
+  final String url;
+
+  /// The headers sent with every request.
+  ///
+  /// The map is unmodifiable: the client is stateless, so headers are set
+  /// through the constructor, or per request with
+  /// [PostgrestBuilder.setHeader].
+  final Map<String, String> headers;
+  final String? _schema;
+  final Client? httpClient;
+  final AsyncJsonCodec _jsonCodec;
+  final bool _ownsJsonCodec;
+
+  /// Configures the automatic retry of GET and HEAD requests.
+  final SupabaseRetryOptions retryOptions;
+
+  final Duration? requestTimeout;
 
   /// Perform a table operation.
   PostgrestQueryBuilder from(String table) {

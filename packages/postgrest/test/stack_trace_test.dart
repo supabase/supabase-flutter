@@ -20,8 +20,8 @@ _ResponseFactory _errorStatus(int code) =>
 typedef _ResponseFactory = Future<StreamedResponse> Function(BaseRequest);
 
 class _MockClient extends BaseClient {
-  final _ResponseFactory _response;
   _MockClient(this._response);
+  final _ResponseFactory _response;
 
   @override
   Future<StreamedResponse> send(BaseRequest request) => _response(request);

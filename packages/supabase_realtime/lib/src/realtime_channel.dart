@@ -15,52 +15,6 @@ import 'package:supabase_realtime/src/transformers.dart';
 import 'package:supabase_realtime/src/types.dart';
 
 class RealtimeChannel {
-  final Map<String, List<Binding>> _bindings = {};
-  final Duration _timeout;
-  ChannelState _state = ChannelState.closed;
-  @internal
-  bool joinedOnce = false;
-  @internal
-  late Push joinPush;
-  late RetryTimer _rejoinTimer;
-  List<Push> _pushBuffer = [];
-  @internal
-  late RealtimePresence presence;
-  @internal
-  late final String broadcastEndpointUrl;
-  @internal
-  final String subTopic;
-  @internal
-  final String topic;
-  @internal
-  Map<String, dynamic> parameters;
-  @internal
-  final RealtimeClient socket;
-
-  /// Defines if the channel is private or not and if RLS policies will be used
-  /// to check data
-  late final bool _private;
-
-  final _statusController =
-      StreamController<RealtimeSubscribeStatusChange>.broadcast();
-
-  /// Controllers backing the event streams handed out by the `on*` members,
-  /// closed when the channel closes.
-  final List<StreamController<dynamic>> _eventControllers = [];
-
-  Stream<RealtimePresenceSyncPayload>? _presenceSyncStream;
-  Stream<RealtimePresenceJoinPayload>? _presenceJoinStream;
-  Stream<RealtimePresenceLeavePayload>? _presenceLeaveStream;
-  Stream<RealtimeSystemPayload>? _systemEventsStream;
-
-  /// Streams handed out by [onPostgresChanges], keyed by the encoded filter,
-  /// so that repeated calls with the same arguments reuse one binding.
-  final Map<String, Stream<PostgresChangePayload>> _postgresChangeStreams = {};
-
-  /// Streams handed out by [onBroadcast], keyed by the event name, so that
-  /// repeated calls with the same event reuse one binding.
-  final Map<String, Stream<Map<String, dynamic>>> _broadcastStreams = {};
-
   RealtimeChannel(
     this.topic,
     this.socket, {
@@ -133,6 +87,51 @@ class RealtimeChannel {
 
     presence = RealtimePresence(this);
   }
+  final Map<String, List<Binding>> _bindings = {};
+  final Duration _timeout;
+  ChannelState _state = ChannelState.closed;
+  @internal
+  bool joinedOnce = false;
+  @internal
+  late Push joinPush;
+  late RetryTimer _rejoinTimer;
+  List<Push> _pushBuffer = [];
+  @internal
+  late RealtimePresence presence;
+  @internal
+  late final String broadcastEndpointUrl;
+  @internal
+  final String subTopic;
+  @internal
+  final String topic;
+  @internal
+  Map<String, dynamic> parameters;
+  @internal
+  final RealtimeClient socket;
+
+  /// Defines if the channel is private or not and if RLS policies will be used
+  /// to check data
+  late final bool _private;
+
+  final _statusController =
+      StreamController<RealtimeSubscribeStatusChange>.broadcast();
+
+  /// Controllers backing the event streams handed out by the `on*` members,
+  /// closed when the channel closes.
+  final List<StreamController<dynamic>> _eventControllers = [];
+
+  Stream<RealtimePresenceSyncPayload>? _presenceSyncStream;
+  Stream<RealtimePresenceJoinPayload>? _presenceJoinStream;
+  Stream<RealtimePresenceLeavePayload>? _presenceLeaveStream;
+  Stream<RealtimeSystemPayload>? _systemEventsStream;
+
+  /// Streams handed out by [onPostgresChanges], keyed by the encoded filter,
+  /// so that repeated calls with the same arguments reuse one binding.
+  final Map<String, Stream<PostgresChangePayload>> _postgresChangeStreams = {};
+
+  /// Streams handed out by [onBroadcast], keyed by the event name, so that
+  /// repeated calls with the same event reuse one binding.
+  final Map<String, Stream<Map<String, dynamic>>> _broadcastStreams = {};
 
   @internal
   void rejoinUntilConnected() {

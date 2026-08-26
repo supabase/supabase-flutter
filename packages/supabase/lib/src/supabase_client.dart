@@ -55,6 +55,82 @@ import 'trace_http_client.dart';
 /// tools that keep a redirect listener open.
 /// {@endtemplate}
 class SupabaseClient {
+  /// {@macro supabase_client}
+  SupabaseClient(
+    String supabaseUrl,
+    String supabaseKey, {
+    PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
+    AuthClientOptions authOptions = const AuthClientOptions(),
+    StorageClientOptions storageOptions = const StorageClientOptions(),
+    FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
+    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
+    TracePropagationOptions tracePropagationOptions =
+        const TracePropagationOptions(),
+    this.accessToken,
+    Map<String, String>? headers,
+    Client? httpClient,
+    AsyncJsonCodec? jsonCodec,
+  }) : _supabaseKey = supabaseKey,
+       _functionsOptions = functionsOptions,
+       _restUrl = '$supabaseUrl/rest/v1',
+       _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
+       _authUrl = '$supabaseUrl/auth/v1',
+       _storageUrl = '$supabaseUrl/storage/v1',
+       _functionsUrl = '$supabaseUrl/functions/v1',
+       _postgrestOptions = postgrestOptions,
+       _headers = {
+         ...SupabaseConstants.defaultHeaders,
+         ...?headers,
+       },
+       _httpClient = httpClient,
+       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
+       _ownsJsonCodec = jsonCodec == null {
+    final baseHttpClient = httpClient ?? Client();
+    final tracedHttpClient = tracePropagationOptions.enabled
+        ? TracePropagationClient(
+            baseHttpClient,
+            tracePropagationOptions,
+            supabaseUrl,
+          )
+        : baseHttpClient;
+    _authApiHttpClient = tracedHttpClient;
+    _authInstance = _initSupabaseAuthClient(
+      autoRefreshToken: authOptions.autoRefreshToken,
+      authAsyncStorage: authOptions.pkceAsyncStorage,
+      authFlowType: authOptions.authFlowType,
+      appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
+      retryOptions: authOptions.retryOptions,
+    );
+    _authHttpClient = AuthHttpClient(
+      _supabaseKey,
+      tracedHttpClient,
+      _getAccessToken,
+    );
+    _functionsHttpClient = AuthHttpClient(
+      _supabaseKey,
+      tracedHttpClient,
+      _getAccessToken,
+      omitNewApiKeyAsBearer: true,
+    );
+    warnOnUnrecognizedApiKey(_supabaseKey);
+    _rest = _initRestClient();
+    functions = _initFunctionsClient();
+    storage = _initStorageClient(
+      storageOptions.retryOptions,
+      storageOptions.useNewHostname,
+    );
+    realtime = _initRealtimeClient(options: realtimeClientOptions);
+    if (accessToken == null) {
+      clientLogger.config(
+        'Initialize SupabaseClient v$version with no custom access token',
+      );
+      _listenForAuthEvents();
+    } else {
+      clientLogger.config(
+        'Initialize SupabaseClient v$version with custom access token',
+      );
+    }
+  }
   final String _supabaseKey;
   final PostgrestClientOptions _postgrestOptions;
   final FunctionsClientOptions _functionsOptions;
@@ -138,83 +214,6 @@ class SupabaseClient {
       'apikey': _supabaseKey,
       ..._headers,
     });
-  }
-
-  /// {@macro supabase_client}
-  SupabaseClient(
-    String supabaseUrl,
-    String supabaseKey, {
-    PostgrestClientOptions postgrestOptions = const PostgrestClientOptions(),
-    AuthClientOptions authOptions = const AuthClientOptions(),
-    StorageClientOptions storageOptions = const StorageClientOptions(),
-    FunctionsClientOptions functionsOptions = const FunctionsClientOptions(),
-    RealtimeClientOptions realtimeClientOptions = const RealtimeClientOptions(),
-    TracePropagationOptions tracePropagationOptions =
-        const TracePropagationOptions(),
-    this.accessToken,
-    Map<String, String>? headers,
-    Client? httpClient,
-    AsyncJsonCodec? jsonCodec,
-  }) : _supabaseKey = supabaseKey,
-       _functionsOptions = functionsOptions,
-       _restUrl = '$supabaseUrl/rest/v1',
-       _realtimeUrl = '$supabaseUrl/realtime/v1'.replaceAll('http', 'ws'),
-       _authUrl = '$supabaseUrl/auth/v1',
-       _storageUrl = '$supabaseUrl/storage/v1',
-       _functionsUrl = '$supabaseUrl/functions/v1',
-       _postgrestOptions = postgrestOptions,
-       _headers = {
-         ...SupabaseConstants.defaultHeaders,
-         ...?headers,
-       },
-       _httpClient = httpClient,
-       _jsonCodec = jsonCodec ?? (YAJsonIsolate()..initialize()),
-       _ownsJsonCodec = jsonCodec == null {
-    final baseHttpClient = httpClient ?? Client();
-    final tracedHttpClient = tracePropagationOptions.enabled
-        ? TracePropagationClient(
-            baseHttpClient,
-            tracePropagationOptions,
-            supabaseUrl,
-          )
-        : baseHttpClient;
-    _authApiHttpClient = tracedHttpClient;
-    _authInstance = _initSupabaseAuthClient(
-      autoRefreshToken: authOptions.autoRefreshToken,
-      authAsyncStorage: authOptions.pkceAsyncStorage,
-      authFlowType: authOptions.authFlowType,
-      appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
-      retryOptions: authOptions.retryOptions,
-    );
-    _authHttpClient = AuthHttpClient(
-      _supabaseKey,
-      tracedHttpClient,
-      _getAccessToken,
-    );
-    _functionsHttpClient = AuthHttpClient(
-      _supabaseKey,
-      tracedHttpClient,
-      _getAccessToken,
-      omitNewApiKeyAsBearer: true,
-    );
-    warnOnUnrecognizedApiKey(_supabaseKey);
-    _rest = _initRestClient();
-    functions = _initFunctionsClient();
-    storage = _initStorageClient(
-      storageOptions.retryOptions,
-      storageOptions.useNewHostname,
-    );
-    realtime = _initRealtimeClient(options: realtimeClientOptions);
-    if (accessToken == null) {
-      clientLogger.config(
-        'Initialize SupabaseClient v$version with no custom access token',
-      );
-      _listenForAuthEvents();
-    } else {
-      clientLogger.config(
-        'Initialize SupabaseClient v$version with custom access token',
-      );
-    }
   }
 
   AuthClient get auth {

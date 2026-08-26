@@ -11,13 +11,6 @@ import 'package:supabase_common/supabase_common.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
 
 class FunctionsClient {
-  final String _url;
-  final Map<String, String> _headers;
-  final http.Client? _httpClient;
-  final AsyncJsonCodec _jsonCodec;
-  final bool _ownsJsonCodec;
-  final String? _region;
-
   /// [jsonCodec] encodes the request body and decodes the response. The
   /// default codec keeps large payloads off the calling isolate. A codec
   /// passed here is owned by the caller, so [dispose] leaves it alone; call
@@ -58,6 +51,12 @@ class FunctionsClient {
     );
     functionsLogger.finest("Initialize with headers: ${headers.redacted}");
   }
+  final String _url;
+  final Map<String, String> _headers;
+  final http.Client? _httpClient;
+  final AsyncJsonCodec _jsonCodec;
+  final bool _ownsJsonCodec;
+  final String? _region;
 
   /// Getter for the headers
   Map<String, String> get headers {

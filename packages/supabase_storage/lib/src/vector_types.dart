@@ -58,12 +58,6 @@ DateTime? _parseUnixSeconds(Object? value) {
 /// Encryption settings attached to a vector bucket.
 @experimental
 class VectorBucketEncryption {
-  /// The ARN of the KMS key used to encrypt the bucket, if any.
-  final String? kmsKeyArn;
-
-  /// The server-side encryption type applied to the bucket.
-  final String? serverSideEncryptionType;
-
   const VectorBucketEncryption({this.kmsKeyArn, this.serverSideEncryptionType});
 
   factory VectorBucketEncryption.fromJson(Map<String, dynamic> json) {
@@ -72,21 +66,17 @@ class VectorBucketEncryption {
       serverSideEncryptionType: json['sseType'] as String?,
     );
   }
+
+  /// The ARN of the KMS key used to encrypt the bucket, if any.
+  final String? kmsKeyArn;
+
+  /// The server-side encryption type applied to the bucket.
+  final String? serverSideEncryptionType;
 }
 
 /// Metadata describing a vector bucket.
 @experimental
 class VectorBucket {
-  /// The unique name of the vector bucket.
-  final String name;
-
-  /// When the bucket was created, in UTC. `null` when the server does not
-  /// include it (for example in list responses).
-  final DateTime? creationTime;
-
-  /// The bucket's encryption configuration, when present.
-  final VectorBucketEncryption? encryption;
-
   const VectorBucket({
     required this.name,
     this.creationTime,
@@ -103,36 +93,21 @@ class VectorBucket {
           : null,
     );
   }
+
+  /// The unique name of the vector bucket.
+  final String name;
+
+  /// When the bucket was created, in UTC. `null` when the server does not
+  /// include it (for example in list responses).
+  final DateTime? creationTime;
+
+  /// The bucket's encryption configuration, when present.
+  final VectorBucketEncryption? encryption;
 }
 
 /// Metadata describing a vector index within a bucket.
 @experimental
 class VectorIndex {
-  /// The unique name of the index within its bucket.
-  final String name;
-
-  /// The name of the parent vector bucket. `null` when the server does not
-  /// include it (for example in list responses).
-  final String? bucketName;
-
-  /// The data type of the vector components. `null` for values the client does
-  /// not recognize.
-  final VectorDataType? dataType;
-
-  /// The dimensionality of the vectors stored in this index.
-  final int? dimension;
-
-  /// The distance metric used for similarity queries. `null` for values the
-  /// client does not recognize.
-  final DistanceMetric? distanceMetric;
-
-  /// Metadata keys that are stored but cannot be used in query filters.
-  final List<String>? nonFilterableMetadataKeys;
-
-  /// When the index was created, in UTC. `null` when the server does not
-  /// include it.
-  final DateTime? creationTime;
-
   const VectorIndex({
     required this.name,
     this.bucketName,
@@ -161,12 +136,43 @@ class VectorIndex {
       creationTime: _parseUnixSeconds(json['creationTime']),
     );
   }
+
+  /// The unique name of the index within its bucket.
+  final String name;
+
+  /// The name of the parent vector bucket. `null` when the server does not
+  /// include it (for example in list responses).
+  final String? bucketName;
+
+  /// The data type of the vector components. `null` for values the client does
+  /// not recognize.
+  final VectorDataType? dataType;
+
+  /// The dimensionality of the vectors stored in this index.
+  final int? dimension;
+
+  /// The distance metric used for similarity queries. `null` for values the
+  /// client does not recognize.
+  final DistanceMetric? distanceMetric;
+
+  /// Metadata keys that are stored but cannot be used in query filters.
+  final List<String>? nonFilterableMetadataKeys;
+
+  /// When the index was created, in UTC. `null` when the server does not
+  /// include it.
+  final DateTime? creationTime;
 }
 
 /// A single vector to insert or update through
 /// [StorageVectorIndexApi.putVectors].
 @experimental
 class Vector {
+  const Vector({
+    required this.key,
+    required this.data,
+    this.metadata,
+  });
+
   /// The unique key identifying the vector within its index.
   final String key;
 
@@ -175,12 +181,6 @@ class Vector {
 
   /// Optional arbitrary metadata stored alongside the vector.
   final Map<String, dynamic>? metadata;
-
-  const Vector({
-    required this.key,
-    required this.data,
-    this.metadata,
-  });
 
   Map<String, dynamic> toJson() {
     return {
@@ -197,19 +197,6 @@ class Vector {
 /// operation was asked to return them.
 @experimental
 class VectorMatch {
-  /// The unique key identifying the vector within its index.
-  final String key;
-
-  /// The vector embedding, when requested.
-  final List<double>? data;
-
-  /// The arbitrary metadata stored alongside the vector, when requested.
-  final Map<String, dynamic>? metadata;
-
-  /// The similarity distance from the query vector. Only present in query
-  /// results when distances were requested.
-  final double? distance;
-
   const VectorMatch({
     required this.key,
     this.data,
@@ -225,17 +212,24 @@ class VectorMatch {
       distance: (json['distance'] as num?)?.toDouble(),
     );
   }
+
+  /// The unique key identifying the vector within its index.
+  final String key;
+
+  /// The vector embedding, when requested.
+  final List<double>? data;
+
+  /// The arbitrary metadata stored alongside the vector, when requested.
+  final Map<String, dynamic>? metadata;
+
+  /// The similarity distance from the query vector. Only present in query
+  /// results when distances were requested.
+  final double? distance;
 }
 
 /// The result of [SupabaseVectorsClient.listBuckets].
 @experimental
 class VectorBucketList {
-  /// The buckets in this page.
-  final List<VectorBucket> buckets;
-
-  /// The token to pass as `nextToken` to fetch the next page, if any.
-  final String? nextToken;
-
   const VectorBucketList({
     required this.buckets,
     this.nextToken,
@@ -250,17 +244,17 @@ class VectorBucketList {
       nextToken: json['nextToken'] as String?,
     );
   }
+
+  /// The buckets in this page.
+  final List<VectorBucket> buckets;
+
+  /// The token to pass as `nextToken` to fetch the next page, if any.
+  final String? nextToken;
 }
 
 /// The result of [StorageVectorBucketApi.listIndexes].
 @experimental
 class VectorIndexList {
-  /// The indexes in this page.
-  final List<VectorIndex> indexes;
-
-  /// The token to pass as `nextToken` to fetch the next page, if any.
-  final String? nextToken;
-
   const VectorIndexList({
     required this.indexes,
     this.nextToken,
@@ -275,17 +269,17 @@ class VectorIndexList {
       nextToken: json['nextToken'] as String?,
     );
   }
+
+  /// The indexes in this page.
+  final List<VectorIndex> indexes;
+
+  /// The token to pass as `nextToken` to fetch the next page, if any.
+  final String? nextToken;
 }
 
 /// The result of [StorageVectorIndexApi.listVectors].
 @experimental
 class VectorList {
-  /// The vectors in this page.
-  final List<VectorMatch> vectors;
-
-  /// The token to pass as `nextToken` to fetch the next page, if any.
-  final String? nextToken;
-
   const VectorList({
     required this.vectors,
     this.nextToken,
@@ -300,18 +294,17 @@ class VectorList {
       nextToken: json['nextToken'] as String?,
     );
   }
+
+  /// The vectors in this page.
+  final List<VectorMatch> vectors;
+
+  /// The token to pass as `nextToken` to fetch the next page, if any.
+  final String? nextToken;
 }
 
 /// The result of [StorageVectorIndexApi.queryVectors].
 @experimental
 class VectorQueryResult {
-  /// The matching vectors ordered by ascending distance from the query vector.
-  final List<VectorMatch> matches;
-
-  /// The distance metric the server used for the search. `null` for values the
-  /// client does not recognize.
-  final DistanceMetric? distanceMetric;
-
   const VectorQueryResult({
     required this.matches,
     this.distanceMetric,
@@ -326,4 +319,11 @@ class VectorQueryResult {
       distanceMetric: DistanceMetric.fromValue(json['distanceMetric']),
     );
   }
+
+  /// The matching vectors ordered by ascending distance from the query vector.
+  final List<VectorMatch> matches;
+
+  /// The distance metric the server used for the search. `null` for values the
+  /// client does not recognize.
+  final DistanceMetric? distanceMetric;
 }

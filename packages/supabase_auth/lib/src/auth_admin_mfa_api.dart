@@ -5,10 +5,6 @@ import 'types/fetch_options.dart';
 import 'types/mfa.dart';
 
 class AuthAdminMFAApi {
-  final String _url;
-  final Map<String, String> _headers;
-  final AuthFetch _fetch;
-
   const AuthAdminMFAApi({
     required String url,
     required Map<String, String> headers,
@@ -16,6 +12,9 @@ class AuthAdminMFAApi {
   }) : _url = url,
        _headers = headers,
        _fetch = fetch;
+  final String _url;
+  final Map<String, String> _headers;
+  final AuthFetch _fetch;
 
   Future<AuthMFAAdminListFactorsResponse> listFactors({
     required String userId,

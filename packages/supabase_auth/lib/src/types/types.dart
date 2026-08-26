@@ -20,9 +20,6 @@ enum AuthFlowType { implicit, pkce }
 /// OAuthProvider('custom:my-provider')
 /// ```
 final class OAuthProvider {
-  /// The provider identifier sent to the Supabase Auth API.
-  final String name;
-
   /// Creates an [OAuthProvider] with an arbitrary [name].
   ///
   /// Use this for custom/generic OAuth providers:
@@ -30,6 +27,9 @@ final class OAuthProvider {
   /// OAuthProvider('custom:my-provider')
   /// ```
   const OAuthProvider(this.name);
+
+  /// The provider identifier sent to the Supabase Auth API.
+  final String name;
 
   static const apple = OAuthProvider('apple');
   static const azure = OAuthProvider('azure');
@@ -131,45 +131,6 @@ enum OAuthClientRegistrationType {
 /// OAuth client object returned from the OAuth 2.1 server.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class OAuthClient {
-  /// Unique identifier for the OAuth client
-  final String clientId;
-
-  /// Human-readable name of the OAuth client
-  final String clientName;
-
-  /// Client secret (only returned on registration and regeneration)
-  final String? clientSecret;
-
-  /// Type of OAuth client
-  final OAuthClientType clientType;
-
-  /// Token endpoint authentication method
-  final String tokenEndpointAuthenticationMethod;
-
-  /// Registration type of the client
-  final OAuthClientRegistrationType registrationType;
-
-  /// URI of the OAuth client
-  final String? clientUri;
-
-  /// Array of allowed redirect URIs
-  final List<String> redirectUris;
-
-  /// Array of allowed grant types
-  final List<OAuthClientGrantType> grantTypes;
-
-  /// Array of allowed response types
-  final List<OAuthClientResponseType> responseTypes;
-
-  /// Scope of the OAuth client
-  final String? scope;
-
-  /// Timestamp when the client was created
-  final DateTime createdAt;
-
-  /// Timestamp when the client was last updated
-  final DateTime updatedAt;
-
   const OAuthClient({
     required this.clientId,
     required this.clientName,
@@ -218,11 +179,59 @@ class OAuthClient {
       updatedAt: parseIso8601(json, 'updated_at'),
     );
   }
+
+  /// Unique identifier for the OAuth client
+  final String clientId;
+
+  /// Human-readable name of the OAuth client
+  final String clientName;
+
+  /// Client secret (only returned on registration and regeneration)
+  final String? clientSecret;
+
+  /// Type of OAuth client
+  final OAuthClientType clientType;
+
+  /// Token endpoint authentication method
+  final String tokenEndpointAuthenticationMethod;
+
+  /// Registration type of the client
+  final OAuthClientRegistrationType registrationType;
+
+  /// URI of the OAuth client
+  final String? clientUri;
+
+  /// Array of allowed redirect URIs
+  final List<String> redirectUris;
+
+  /// Array of allowed grant types
+  final List<OAuthClientGrantType> grantTypes;
+
+  /// Array of allowed response types
+  final List<OAuthClientResponseType> responseTypes;
+
+  /// Scope of the OAuth client
+  final String? scope;
+
+  /// Timestamp when the client was created
+  final DateTime createdAt;
+
+  /// Timestamp when the client was last updated
+  final DateTime updatedAt;
 }
 
 /// Parameters for creating a new OAuth client.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class CreateOAuthClientOptions {
+  const CreateOAuthClientOptions({
+    required this.clientName,
+    this.clientUri,
+    required this.redirectUris,
+    this.grantTypes,
+    this.responseTypes,
+    this.scope,
+  });
+
   /// Human-readable name of the OAuth client
   final String clientName;
 
@@ -242,15 +251,6 @@ class CreateOAuthClientOptions {
   /// Scope of the OAuth client
   final String? scope;
 
-  const CreateOAuthClientOptions({
-    required this.clientName,
-    this.clientUri,
-    required this.redirectUris,
-    this.grantTypes,
-    this.responseTypes,
-    this.scope,
-  });
-
   Map<String, dynamic> toJson() {
     return {
       'client_name': clientName,
@@ -266,6 +266,15 @@ class CreateOAuthClientOptions {
 /// Parameters for updating an existing OAuth client.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class UpdateOAuthClientOptions {
+  const UpdateOAuthClientOptions({
+    this.clientName,
+    this.clientUri,
+    this.redirectUris,
+    this.grantTypes,
+    this.responseTypes,
+    this.scope,
+  });
+
   /// Human-readable name of the OAuth client
   final String? clientName;
 
@@ -283,15 +292,6 @@ class UpdateOAuthClientOptions {
 
   /// Scope of the OAuth client
   final String? scope;
-
-  const UpdateOAuthClientOptions({
-    this.clientName,
-    this.clientUri,
-    this.redirectUris,
-    this.grantTypes,
-    this.responseTypes,
-    this.scope,
-  });
 
   Map<String, dynamic> toJson() {
     return {

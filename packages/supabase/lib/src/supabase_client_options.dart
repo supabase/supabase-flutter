@@ -1,6 +1,11 @@
 import 'package:supabase/supabase.dart';
 
 class PostgrestClientOptions {
+  const PostgrestClientOptions({
+    this.schema = 'public',
+    this.retryOptions = const SupabaseRetryOptions(),
+    this.requestTimeout,
+  });
   final String schema;
 
   /// Configures the automatic retry of GET and HEAD requests that fail with a
@@ -17,15 +22,16 @@ class PostgrestClientOptions {
   /// the retries are exhausted. When `null` (the default) no timeout is
   /// applied.
   final Duration? requestTimeout;
-
-  const PostgrestClientOptions({
-    this.schema = 'public',
-    this.retryOptions = const SupabaseRetryOptions(),
-    this.requestTimeout,
-  });
 }
 
 class AuthClientOptions {
+  const AuthClientOptions({
+    this.autoRefreshToken = true,
+    this.pkceAsyncStorage,
+    this.authFlowType = AuthFlowType.pkce,
+    this.appendPkceFlowIdToRedirects = false,
+    this.retryOptions = const SupabaseRetryOptions(count: 8),
+  });
   final bool autoRefreshToken;
 
   /// Configures how a token refresh that never reached the service is retried.
@@ -59,17 +65,14 @@ class AuthClientOptions {
   /// Check your redirect URL allow list first, see
   /// [AuthClient.appendPkceFlowIdToRedirects].
   final bool appendPkceFlowIdToRedirects;
-
-  const AuthClientOptions({
-    this.autoRefreshToken = true,
-    this.pkceAsyncStorage,
-    this.authFlowType = AuthFlowType.pkce,
-    this.appendPkceFlowIdToRedirects = false,
-    this.retryOptions = const SupabaseRetryOptions(count: 8),
-  });
 }
 
 class StorageClientOptions {
+  const StorageClientOptions({
+    this.retryOptions = const SupabaseRetryOptions(count: 0),
+    this.useNewHostname = false,
+  });
+
   /// Configures how an upload that failed due to a network interruption is
   /// retried.
   ///
@@ -85,15 +88,9 @@ class StorageClientOptions {
   /// enabled; otherwise every storage request will fail with an
   /// `Invalid Storage request` error. Defaults to `false` (opt-in).
   final bool useNewHostname;
-
-  const StorageClientOptions({
-    this.retryOptions = const SupabaseRetryOptions(count: 0),
-    this.useNewHostname = false,
-  });
 }
 
 class FunctionsClientOptions {
-  final String? region;
-
   const FunctionsClientOptions({this.region});
+  final String? region;
 }

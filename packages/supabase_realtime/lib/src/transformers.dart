@@ -35,6 +35,13 @@ enum PostgresType {
 }
 
 class PostgresColumn {
+  const PostgresColumn(
+    this.name,
+    this.type, {
+    this.flags = const [],
+    this.typeModifier,
+  });
+
   /// the column name. eg: "user_id"
   final String name;
 
@@ -46,13 +53,6 @@ class PostgresColumn {
 
   /// the type modifier. eg: 4294967295
   final int? typeModifier;
-
-  const PostgresColumn(
-    this.name,
-    this.type, {
-    this.flags = const [],
-    this.typeModifier,
-  });
 }
 
 /// Takes an array of columns and an object of string values then converts each

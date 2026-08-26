@@ -90,8 +90,9 @@ enum ErrorCode {
   webauthnCredentialNotFound('webauthn_credential_not_found'),
   webauthnVerificationFailed('webauthn_verification_failed');
 
-  final String code;
   const ErrorCode(this.code);
+
+  final String code;
 
   static ErrorCode? fromCode(String code) {
     return ErrorCode.values.firstWhereOrNull(

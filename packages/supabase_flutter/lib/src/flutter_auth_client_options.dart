@@ -1,6 +1,16 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FlutterAuthClientOptions extends AuthClientOptions {
+  const FlutterAuthClientOptions({
+    super.authFlowType,
+    super.autoRefreshToken,
+    super.pkceAsyncStorage,
+    super.appendPkceFlowIdToRedirects,
+    this.localStorage,
+    this.detectSessionInUri = true,
+    this.detectSessionInUriPredicate,
+    this.persistSession = true,
+  });
   final LocalStorage? localStorage;
 
   /// If true, the client will start the deep link observer and obtain sessions
@@ -26,17 +36,6 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   /// in memory only and are not restored across app restarts. Supplying a
   /// custom [localStorage] always takes precedence over this flag.
   final bool persistSession;
-
-  const FlutterAuthClientOptions({
-    super.authFlowType,
-    super.autoRefreshToken,
-    super.pkceAsyncStorage,
-    super.appendPkceFlowIdToRedirects,
-    this.localStorage,
-    this.detectSessionInUri = true,
-    this.detectSessionInUriPredicate,
-    this.persistSession = true,
-  });
 
   FlutterAuthClientOptions copyWith({
     AuthFlowType? authFlowType,

@@ -1,16 +1,10 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
+// ignore_for_file: public_member_api_docs
 import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:supabase_realtime/src/types.dart';
 
 /// A single shared state between users with Realtime Presence.
 class Presence {
-  /// Reference to the presence object.
-  final String presenceReference;
-
-  /// The payload shared by users.
-  final Map<String, dynamic> payload;
-
   const Presence({
     required this.presenceReference,
     required this.payload,
@@ -25,6 +19,12 @@ class Presence {
       payload: payload,
     );
   }
+
+  /// Reference to the presence object.
+  final String presenceReference;
+
+  /// The payload shared by users.
+  final Map<String, dynamic> payload;
 
   Presence deepClone() {
     return Presence.fromJson({
@@ -51,17 +51,15 @@ typedef PresenceOnLeaveCallback =
 
 @internal
 class PresenceOptions {
-  final PresenceEvents events;
-
   const PresenceOptions({required this.events});
+  final PresenceEvents events;
 }
 
 @internal
 class PresenceEvents {
+  const PresenceEvents({required this.state, required this.diff});
   final String state;
   final String diff;
-
-  const PresenceEvents({required this.state, required this.diff});
 }
 
 /// Internal bookkeeping for the presence state of a [RealtimeChannel].
@@ -76,17 +74,6 @@ class PresenceEvents {
 /// and read the current state with [RealtimeChannel.presenceState].
 @internal
 class RealtimePresence {
-  Map<String, List<Presence>> state = <String, List<Presence>>{};
-  List<Map<String, dynamic>> pendingDiffs = [];
-  String? joinRef;
-  Map<String, dynamic> caller = {
-    'onJoin': (_, _, _) {},
-    'onLeave': (_, _, _) {},
-    'onSync': () {},
-  };
-
-  final RealtimeChannel channel;
-
   /// Initializes the Presence
   ///
   /// `channel` - The RealtimeChannel
@@ -171,6 +158,16 @@ class RealtimePresence {
 
     onSync(() => channel.trigger('presence', {'event': 'sync'}));
   }
+  Map<String, List<Presence>> state = <String, List<Presence>>{};
+  List<Map<String, dynamic>> pendingDiffs = [];
+  String? joinRef;
+  Map<String, dynamic> caller = {
+    'onJoin': (_, _, _) {},
+    'onLeave': (_, _, _) {},
+    'onSync': () {},
+  };
+
+  final RealtimeChannel channel;
 
   /// Used to sync the list of presences on the server with the
   /// client's state.

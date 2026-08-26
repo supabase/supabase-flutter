@@ -23,6 +23,18 @@ import 'package:supabase_common/src/backoff.dart';
 /// not retried unless a [count] above zero is configured.
 @immutable
 class SupabaseRetryOptions {
+  const SupabaseRetryOptions({
+    this.enabled = true,
+    this.count = 3,
+    this.initialDelay = const Duration(milliseconds: 400),
+    this.maxDelay = const Duration(seconds: 30),
+    this.randomizationFactor = 0.25,
+  }) : assert(count >= 0, 'count must not be negative'),
+       assert(
+         randomizationFactor >= 0 && randomizationFactor <= 1,
+         'randomizationFactor must be between 0 and 1',
+       );
+
   /// Whether failed requests are retried at all.
   final bool enabled;
 
@@ -40,18 +52,6 @@ class SupabaseRetryOptions {
   /// The fraction between 0 and 1 the delay is randomized by, which keeps many
   /// clients from retrying in lockstep.
   final double randomizationFactor;
-
-  const SupabaseRetryOptions({
-    this.enabled = true,
-    this.count = 3,
-    this.initialDelay = const Duration(milliseconds: 400),
-    this.maxDelay = const Duration(seconds: 30),
-    this.randomizationFactor = 0.25,
-  }) : assert(count >= 0, 'count must not be negative'),
-       assert(
-         randomizationFactor >= 0 && randomizationFactor <= 1,
-         'randomizationFactor must be between 0 and 1',
-       );
 
   /// The delay before the retry that follows the zero based [attempt], so
   /// `delay(0)` is how long the client waits after the initial request.

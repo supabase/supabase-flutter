@@ -38,6 +38,11 @@ typedef RealtimeDecode = Future<RealtimeMessage> Function(Object frame);
 
 /// Event details for when the connection closed.
 class RealtimeCloseEvent {
+  const RealtimeCloseEvent({
+    required this.code,
+    required this.reason,
+  });
+
   /// Web socket protocol status codes for when a connection is closed.
   ///
   /// The full list can be found at the following:
@@ -49,11 +54,6 @@ class RealtimeCloseEvent {
   ///
   /// https://datatracker.ietf.org/doc/html/rfc6455#section-7.1.6
   final String? reason;
-
-  const RealtimeCloseEvent({
-    required this.code,
-    required this.reason,
-  });
 
   @override
   String toString() {
@@ -84,14 +84,14 @@ enum RealtimeConnectionStatus {
 
 /// A connection status change emitted by [RealtimeClient.onStatusChange].
 class RealtimeConnectionStatusChange {
+  const RealtimeConnectionStatusChange(this.status, [this.closeEvent]);
+
   /// The new status of the WebSocket connection.
   final RealtimeConnectionStatus status;
 
   /// The close code and reason sent by the server, `null` for
   /// [RealtimeConnectionStatus.open] and for a close without one.
   final RealtimeCloseEvent? closeEvent;
-
-  const RealtimeConnectionStatusChange(this.status, [this.closeEvent]);
 
   @override
   String toString() =>
@@ -135,6 +135,107 @@ class RealtimeConnectionStatusChange {
 /// - Works on all Dart platforms (Flutter mobile/desktop, web, server).
 /// - On web, the underlying [WebSocketChannel] uses the browser WebSocket API.
 class RealtimeClient {
+  /// Initializes the Socket
+  ///
+  /// [endpoint] The string WebSocket endpoint, ie, "ws://example.com/socket",
+  /// "wss://example.com", or "/socket" (which inherits the host and protocol).
+  ///
+  /// [transport] The Websocket Transport, for example WebSocket.
+  ///
+  /// [timeout] The default timeout to trigger push timeouts. Also bounds a
+  /// custom [encode] or [decode] call, so one that never completes fails
+  /// after [timeout] instead of stalling every write or dispatch chained
+  /// after it.
+  ///
+  /// [connectionCloseTimeout] The timeout to wait for the connection to close
+  /// before dismissing the result. Defaults to 6 seconds.
+  ///
+  /// [parameters] The optional parameters to pass when connecting.
+  ///
+  /// [headers] The optional headers to pass when connecting.
+  ///
+  /// [heartbeatInterval] The interval at which to send a heartbeat message.
+  ///
+  /// [disconnectOnEmptyChannelsAfter] The delay before disconnecting the socket
+  /// once the last channel is removed. If a new channel is created before the
+  /// delay elapses, the pending disconnect is cancelled and the open socket is
+  /// reused. Pass [Duration.zero] to disconnect immediately. Defaults to twice
+  /// the heartbeat interval.
+  ///
+  /// [encode] Overrides how outgoing messages are serialized, for example to
+  /// serialize on a background isolate. Defaults to the codec for [version].
+  ///
+  /// [decode] Overrides how incoming frames are deserialized. Defaults to the
+  /// codec for [version].
+  ///
+  /// [reconnectAfter] The optional function that returns the reconnect
+  /// interval. Defaults to the stepped backoff of
+  /// [RetryTimer.createRetryFunction].
+  ///
+  /// [logLevel] Specifies the log level for the connection on the server.
+  ///
+  /// [version] The Realtime protocol version. Defaults to
+  /// [RealtimeProtocolVersion.v2]; pass [RealtimeProtocolVersion.v1] for the
+  /// legacy object-shaped JSON frames.
+  RealtimeClient(
+    String endpoint, {
+    WebSocketTransport? transport,
+    this.timeout = RealtimeConstants.defaultTimeout,
+    this.connectionCloseTimeout =
+        RealtimeConstants.defaultConnectionCloseTimeout,
+    this.heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval,
+    Duration? disconnectOnEmptyChannelsAfter,
+    this.encode,
+    this.decode,
+    TimerCalculation? reconnectAfter,
+    Map<String, String>? headers,
+    Map<String, dynamic> parameters = const {},
+    RealtimeLogLevel? logLevel,
+    this.httpClient,
+    this.customAccessToken,
+    this.version = RealtimeProtocolVersion.v2,
+  }) : endpoint = Uri.parse('$endpoint/websocket')
+           .replace(
+             queryParameters: logLevel == null
+                 ? null
+                 : {'log_level': logLevel.name},
+           )
+           .toString(),
+       _headers = {
+         ...RealtimeConstants.defaultHeaders,
+         ...?headers,
+       },
+       parameters = Map.unmodifiable(parameters),
+       transport = transport ?? createWebSocketClient,
+       _builtInEncode = version == RealtimeProtocolVersion.v1
+           ? _encodeLegacy
+           : _serializer.encode,
+       _builtInDecode = version == RealtimeProtocolVersion.v1
+           ? _decodeLegacy
+           : _serializer.decode {
+    realtimeLogger.config(
+      'Initialize RealtimeClient with endpoint: '
+      '${Uri.parse(this.endpoint).redacted}, timeout: $timeout, '
+      'heartbeatInterval: $heartbeatInterval, '
+      'logLevel: ${logLevel?.name}',
+    );
+    realtimeLogger.finest(
+      'Initialize with headers: ${_headers.redacted}, '
+      'parameters: ${redactedPayload(parameters)}',
+    );
+    final customJWT = _headers['Authorization']?.split(' ').last;
+    _accessToken = customJWT ?? parameters['apikey'];
+
+    this.disconnectOnEmptyChannelsAfter =
+        disconnectOnEmptyChannelsAfter ?? (heartbeatInterval * 2);
+
+    this.reconnectAfter = reconnectAfter ?? RetryTimer.createRetryFunction();
+    _reconnectTimer = RetryTimer(
+      () => unawaited(_reconnect()),
+      this.reconnectAfter,
+    );
+  }
+
   /// The JWT access token used for channel subscription authorization and
   /// Realtime RLS.
   ///
@@ -261,107 +362,6 @@ class RealtimeClient {
   SocketState? _connectionState;
 
   final Future<String?> Function()? customAccessToken;
-
-  /// Initializes the Socket
-  ///
-  /// [endpoint] The string WebSocket endpoint, ie, "ws://example.com/socket",
-  /// "wss://example.com", or "/socket" (which inherits the host and protocol).
-  ///
-  /// [transport] The Websocket Transport, for example WebSocket.
-  ///
-  /// [timeout] The default timeout to trigger push timeouts. Also bounds a
-  /// custom [encode] or [decode] call, so one that never completes fails
-  /// after [timeout] instead of stalling every write or dispatch chained
-  /// after it.
-  ///
-  /// [connectionCloseTimeout] The timeout to wait for the connection to close
-  /// before dismissing the result. Defaults to 6 seconds.
-  ///
-  /// [parameters] The optional parameters to pass when connecting.
-  ///
-  /// [headers] The optional headers to pass when connecting.
-  ///
-  /// [heartbeatInterval] The interval at which to send a heartbeat message.
-  ///
-  /// [disconnectOnEmptyChannelsAfter] The delay before disconnecting the socket
-  /// once the last channel is removed. If a new channel is created before the
-  /// delay elapses, the pending disconnect is cancelled and the open socket is
-  /// reused. Pass [Duration.zero] to disconnect immediately. Defaults to twice
-  /// the heartbeat interval.
-  ///
-  /// [encode] Overrides how outgoing messages are serialized, for example to
-  /// serialize on a background isolate. Defaults to the codec for [version].
-  ///
-  /// [decode] Overrides how incoming frames are deserialized. Defaults to the
-  /// codec for [version].
-  ///
-  /// [reconnectAfter] The optional function that returns the reconnect
-  /// interval. Defaults to the stepped backoff of
-  /// [RetryTimer.createRetryFunction].
-  ///
-  /// [logLevel] Specifies the log level for the connection on the server.
-  ///
-  /// [version] The Realtime protocol version. Defaults to
-  /// [RealtimeProtocolVersion.v2]; pass [RealtimeProtocolVersion.v1] for the
-  /// legacy object-shaped JSON frames.
-  RealtimeClient(
-    String endpoint, {
-    WebSocketTransport? transport,
-    this.timeout = RealtimeConstants.defaultTimeout,
-    this.connectionCloseTimeout =
-        RealtimeConstants.defaultConnectionCloseTimeout,
-    this.heartbeatInterval = RealtimeConstants.defaultHeartbeatInterval,
-    Duration? disconnectOnEmptyChannelsAfter,
-    this.encode,
-    this.decode,
-    TimerCalculation? reconnectAfter,
-    Map<String, String>? headers,
-    Map<String, dynamic> parameters = const {},
-    RealtimeLogLevel? logLevel,
-    this.httpClient,
-    this.customAccessToken,
-    this.version = RealtimeProtocolVersion.v2,
-  }) : endpoint = Uri.parse('$endpoint/websocket')
-           .replace(
-             queryParameters: logLevel == null
-                 ? null
-                 : {'log_level': logLevel.name},
-           )
-           .toString(),
-       _headers = {
-         ...RealtimeConstants.defaultHeaders,
-         ...?headers,
-       },
-       parameters = Map.unmodifiable(parameters),
-       transport = transport ?? createWebSocketClient,
-       _builtInEncode = version == RealtimeProtocolVersion.v1
-           ? _encodeLegacy
-           : _serializer.encode,
-       _builtInDecode = version == RealtimeProtocolVersion.v1
-           ? _decodeLegacy
-           : _serializer.decode {
-    realtimeLogger.config(
-      'Initialize RealtimeClient with endpoint: '
-      '${Uri.parse(this.endpoint).redacted}, timeout: $timeout, '
-      'heartbeatInterval: $heartbeatInterval, '
-      'logLevel: ${logLevel?.name}',
-    );
-    realtimeLogger.finest(
-      'Initialize with headers: ${_headers.redacted}, '
-      'parameters: ${redactedPayload(parameters)}',
-    );
-    final customJWT = _headers['Authorization']?.split(' ').last;
-    _accessToken = customJWT ?? parameters['apikey'];
-
-    this.disconnectOnEmptyChannelsAfter =
-        disconnectOnEmptyChannelsAfter ?? (heartbeatInterval * 2);
-
-    this.reconnectAfter = reconnectAfter ?? RetryTimer.createRetryFunction();
-    _reconnectTimer = RetryTimer(
-      () => unawaited(_reconnect()),
-      this.reconnectAfter,
-    );
-  }
 
   /// Connects the socket.
   @internal

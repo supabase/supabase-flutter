@@ -1,15 +1,14 @@
 /// Platform information used to build the richer, platform-aware form of the
 /// `X-Client-Info` header.
 class PlatformInfo {
-  final String? platform;
-  final String? platformVersion;
-  final String? runtimeVersion;
-
   const PlatformInfo({
     this.platform,
     this.platformVersion,
     this.runtimeVersion,
   });
+  final String? platform;
+  final String? platformVersion;
+  final String? runtimeVersion;
 }
 
 /// Platform names shared across the Supabase SDKs so per-platform stats can be

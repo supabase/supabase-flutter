@@ -14,12 +14,6 @@ typedef PostgrestMapResponse = PostgrestResponse<PostgrestMap>;
 /// is the HTTP status of the response.
 class PostgrestApiException extends SupabaseException
     with SupabaseApiException {
-  @override
-  final int statusCode;
-
-  final Object? details;
-  final String? hint;
-
   const PostgrestApiException({
     required String message,
     required this.statusCode,
@@ -51,6 +45,11 @@ class PostgrestApiException extends SupabaseException
       hint: json['hint']?.toString(),
     );
   }
+  @override
+  final int statusCode;
+
+  final Object? details;
+  final String? hint;
 
   Map<String, dynamic> toJson() {
     return {
@@ -71,15 +70,6 @@ class PostgrestApiException extends SupabaseException
 
 /// A Postgrest response
 class PostgrestResponse<T> {
-  const PostgrestResponse({
-    required this.data,
-    required this.count,
-  });
-
-  final T data;
-
-  final int count;
-
   factory PostgrestResponse.fromJson(Map<String, dynamic> json) {
     final countValue = json['count'];
     if (countValue is! num) {
@@ -93,6 +83,14 @@ class PostgrestResponse<T> {
       count: countValue.toInt(),
     );
   }
+  const PostgrestResponse({
+    required this.data,
+    required this.count,
+  });
+
+  final T data;
+
+  final int count;
 
   Map<String, dynamic> toJson() => {
     'data': data,

@@ -54,13 +54,12 @@ class AuthRetryableFetchException extends AuthException {
 /// retrying.
 class AuthRetryableApiException extends AuthRetryableFetchException
     with SupabaseApiException {
-  @override
-  final int statusCode;
-
   AuthRetryableApiException({
     required super.message,
     required this.statusCode,
   });
+  @override
+  final int statusCode;
 
   @override
   bool operator ==(Object other) =>
@@ -74,14 +73,13 @@ class AuthRetryableApiException extends AuthRetryableFetchException
 
 /// Thrown when the auth service answered with an error.
 class AuthApiException extends AuthException with SupabaseApiException {
-  @override
-  final int statusCode;
-
   const AuthApiException(
     super.message, {
     required this.statusCode,
     super.errorCode,
   });
+  @override
+  final int statusCode;
 
   @override
   bool operator ==(Object other) =>
@@ -99,13 +97,13 @@ class AuthApiException extends AuthException with SupabaseApiException {
 /// It reports no status code of its own; read it from [originalError] when that
 /// is a response.
 class AuthUnknownException extends AuthException {
-  /// May contain a non 2xx [http.Response] object or the original thrown error.
-  final Object originalError;
-
   AuthUnknownException({
     required String message,
     required this.originalError,
   }) : super(message);
+
+  /// May contain a non 2xx [http.Response] object or the original thrown error.
+  final Object originalError;
 
   @override
   String toString() =>
@@ -114,13 +112,12 @@ class AuthUnknownException extends AuthException {
 }
 
 class AuthWeakPasswordException extends AuthApiException {
-  final List<String> reasons;
-
   AuthWeakPasswordException({
     required String message,
     required super.statusCode,
     required this.reasons,
   }) : super(message, errorCode: ErrorCode.weakPassword.code);
+  final List<String> reasons;
 
   @override
   String toString() =>

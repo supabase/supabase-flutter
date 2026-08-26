@@ -1,6 +1,15 @@
 import 'package:collection/collection.dart';
 
 class UserAttributes {
+  UserAttributes({
+    this.email,
+    this.phone,
+    this.password,
+    this.nonce,
+    this.data,
+    this.currentPassword,
+  }) : assert(data == null || data is List || data is Map);
+
   /// The user's email.
   final String? email;
 
@@ -30,15 +39,6 @@ class UserAttributes {
   /// enabled on the auth server, in which case the current password is required
   /// to verify the change.
   final String? currentPassword;
-
-  UserAttributes({
-    this.email,
-    this.phone,
-    this.password,
-    this.nonce,
-    this.data,
-    this.currentPassword,
-  }) : assert(data == null || data is List || data is Map);
 
   Map<String, dynamic> toJson() {
     return {
@@ -78,6 +78,18 @@ class UserAttributes {
 }
 
 class AdminUserAttributes extends UserAttributes {
+  AdminUserAttributes({
+    super.email,
+    super.phone,
+    super.password,
+    super.data,
+    this.userMetadata,
+    this.appMetadata,
+    this.emailConfirm,
+    this.phoneConfirm,
+    this.banDuration,
+  });
+
   /// A custom data object to store the user's metadata. This maps to the
   /// `auth.users.user_metadata` column.
   ///
@@ -120,18 +132,6 @@ class AdminUserAttributes extends UserAttributes {
   ///
   /// Setting the ban duration to 'none' lifts the ban on the user.
   final String? banDuration;
-
-  AdminUserAttributes({
-    super.email,
-    super.phone,
-    super.password,
-    super.data,
-    this.userMetadata,
-    this.appMetadata,
-    this.emailConfirm,
-    this.phoneConfirm,
-    this.banDuration,
-  });
 
   @override
   Map<String, dynamic> toJson() {

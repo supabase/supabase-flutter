@@ -32,6 +32,21 @@ class RealtimeSubscribeException implements Exception {
 typedef SupabaseStreamEvent = List<Map<String, dynamic>>;
 
 class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
+  SupabaseStreamBuilder({
+    required PostgrestQueryBuilder queryBuilder,
+    required String realtimeTopic,
+    required RealtimeClient realtimeClient,
+    required String schema,
+    required String table,
+    required List<String> primaryKey,
+    required bool private,
+  }) : _queryBuilder = queryBuilder,
+       _realtimeTopic = realtimeTopic,
+       _realtimeClient = realtimeClient,
+       _schema = schema,
+       _table = table,
+       _uniqueColumns = primaryKey,
+       _private = private;
   final PostgrestQueryBuilder _queryBuilder;
 
   final RealtimeClient _realtimeClient;
@@ -74,22 +89,6 @@ class SupabaseStreamBuilder extends Stream<SupabaseStreamEvent> {
 
   /// Flag that the stream has at least one time been subscribed to realtime
   bool _wasSubscribed = false;
-
-  SupabaseStreamBuilder({
-    required PostgrestQueryBuilder queryBuilder,
-    required String realtimeTopic,
-    required RealtimeClient realtimeClient,
-    required String schema,
-    required String table,
-    required List<String> primaryKey,
-    required bool private,
-  }) : _queryBuilder = queryBuilder,
-       _realtimeTopic = realtimeTopic,
-       _realtimeClient = realtimeClient,
-       _schema = schema,
-       _table = table,
-       _uniqueColumns = primaryKey,
-       _private = private;
 
   /// Orders the result with the specified [column].
   ///

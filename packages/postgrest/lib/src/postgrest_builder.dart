@@ -140,22 +140,6 @@ String _cleanFilterList(List<dynamic> filter) {
 /// Otherwise [S] and [R] are the same
 @immutable
 class PostgrestBuilder<T, S, R> implements Future<T> {
-  final _RequestConfig _config;
-  final PostgrestConverter<S, R>? _converter;
-
-  Object? get _body => _config.body;
-  Headers get _headers => _config.headers;
-  bool get _maybeSingle => _config.maybeSingle;
-  HttpMethod? get _method => _config.method;
-  String? get _schema => _config.schema;
-  Uri get _url => _config.url;
-  Client? get _httpClient => _config.httpClient;
-  AsyncJsonCodec? get _jsonCodec => _config.jsonCodec;
-  CountOption? get _count => _config.count;
-  SupabaseRetryOptions get _retry => _config.retry;
-  Duration? get _requestTimeout => _config.requestTimeout;
-  Future<void>? get _abortSignal => _config.abortSignal;
-
   PostgrestBuilder({
     required Uri url,
     required Headers headers,
@@ -194,6 +178,21 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     required PostgrestConverter<S, R>? converter,
   }) : _config = config,
        _converter = converter;
+  final _RequestConfig _config;
+  final PostgrestConverter<S, R>? _converter;
+
+  Object? get _body => _config.body;
+  Headers get _headers => _config.headers;
+  bool get _maybeSingle => _config.maybeSingle;
+  HttpMethod? get _method => _config.method;
+  String? get _schema => _config.schema;
+  Uri get _url => _config.url;
+  Client? get _httpClient => _config.httpClient;
+  AsyncJsonCodec? get _jsonCodec => _config.jsonCodec;
+  CountOption? get _count => _config.count;
+  SupabaseRetryOptions get _retry => _config.retry;
+  Duration? get _requestTimeout => _config.requestTimeout;
+  Future<void>? get _abortSignal => _config.abortSignal;
 
   PostgrestBuilder<T, S, R> _copyWith({
     Uri? url,

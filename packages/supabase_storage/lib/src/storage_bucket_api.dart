@@ -5,14 +5,13 @@ import 'package:supabase_storage/src/types.dart';
 import 'package:supabase_common/supabase_common.dart';
 
 class StorageBucketApi {
+  StorageBucketApi(this.url, this.headers, {Client? httpClient}) {
+    storageFetch = Fetch(httpClient);
+  }
   final String url;
   final Map<String, String> headers;
   @internal
   late Fetch storageFetch;
-
-  StorageBucketApi(this.url, this.headers, {Client? httpClient}) {
-    storageFetch = Fetch(httpClient);
-  }
 
   Map<String, dynamic> _bucketPayload(String id, BucketOptions bucketOptions) {
     return {

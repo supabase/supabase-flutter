@@ -5,39 +5,35 @@ import 'package:iceberg/src/iceberg_types.dart';
 /// not modelled (for example snapshot, statistics and encryption key updates)
 /// can be sent with [TableUpdate.raw].
 sealed class TableUpdate {
-  const TableUpdate();
-
-  Map<String, dynamic> toJson();
-
   /// An update expressed as a raw JSON map, for actions without a dedicated
   /// subclass. The [action] key is added automatically.
   const factory TableUpdate.raw(String action, Map<String, dynamic> body) =
       RawTableUpdate;
+  const TableUpdate();
+
+  Map<String, dynamic> toJson();
 }
 
 class RawTableUpdate extends TableUpdate {
+  const RawTableUpdate(this.action, this.body);
   final String action;
   final Map<String, dynamic> body;
-
-  const RawTableUpdate(this.action, this.body);
 
   @override
   Map<String, dynamic> toJson() => {...body, 'action': action};
 }
 
 class AssignUuidUpdate extends TableUpdate {
-  final String uuid;
-
   const AssignUuidUpdate(this.uuid);
+  final String uuid;
 
   @override
   Map<String, dynamic> toJson() => {'action': 'assign-uuid', 'uuid': uuid};
 }
 
 class UpgradeFormatVersionUpdate extends TableUpdate {
-  final int formatVersion;
-
   const UpgradeFormatVersionUpdate(this.formatVersion);
+  final int formatVersion;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -47,9 +43,8 @@ class UpgradeFormatVersionUpdate extends TableUpdate {
 }
 
 class AddSchemaUpdate extends TableUpdate {
-  final TableSchema schema;
-
   const AddSchemaUpdate(this.schema);
+  final TableSchema schema;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -59,9 +54,8 @@ class AddSchemaUpdate extends TableUpdate {
 }
 
 class SetCurrentSchemaUpdate extends TableUpdate {
-  final int schemaId;
-
   const SetCurrentSchemaUpdate(this.schemaId);
+  final int schemaId;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -71,9 +65,8 @@ class SetCurrentSchemaUpdate extends TableUpdate {
 }
 
 class AddPartitionSpecificationUpdate extends TableUpdate {
-  final PartitionSpecification specification;
-
   const AddPartitionSpecificationUpdate(this.specification);
+  final PartitionSpecification specification;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -83,9 +76,8 @@ class AddPartitionSpecificationUpdate extends TableUpdate {
 }
 
 class SetDefaultSpecificationUpdate extends TableUpdate {
-  final int specificationId;
-
   const SetDefaultSpecificationUpdate(this.specificationId);
+  final int specificationId;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -95,9 +87,8 @@ class SetDefaultSpecificationUpdate extends TableUpdate {
 }
 
 class AddSortOrderUpdate extends TableUpdate {
-  final SortOrder sortOrder;
-
   const AddSortOrderUpdate(this.sortOrder);
+  final SortOrder sortOrder;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -107,9 +98,8 @@ class AddSortOrderUpdate extends TableUpdate {
 }
 
 class SetDefaultSortOrderUpdate extends TableUpdate {
-  final int sortOrderId;
-
   const SetDefaultSortOrderUpdate(this.sortOrderId);
+  final int sortOrderId;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -119,9 +109,8 @@ class SetDefaultSortOrderUpdate extends TableUpdate {
 }
 
 class SetLocationUpdate extends TableUpdate {
-  final String location;
-
   const SetLocationUpdate(this.location);
+  final String location;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -131,9 +120,8 @@ class SetLocationUpdate extends TableUpdate {
 }
 
 class SetPropertiesUpdate extends TableUpdate {
-  final Map<String, String> updates;
-
   const SetPropertiesUpdate(this.updates);
+  final Map<String, String> updates;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -143,9 +131,8 @@ class SetPropertiesUpdate extends TableUpdate {
 }
 
 class RemovePropertiesUpdate extends TableUpdate {
-  final List<String> removals;
-
   const RemovePropertiesUpdate(this.removals);
+  final List<String> removals;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -155,9 +142,8 @@ class RemovePropertiesUpdate extends TableUpdate {
 }
 
 class RemovePartitionSpecificationsUpdate extends TableUpdate {
-  final List<int> specificationIds;
-
   const RemovePartitionSpecificationsUpdate(this.specificationIds);
+  final List<int> specificationIds;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -167,9 +153,8 @@ class RemovePartitionSpecificationsUpdate extends TableUpdate {
 }
 
 class RemoveSchemasUpdate extends TableUpdate {
-  final List<int> schemaIds;
-
   const RemoveSchemasUpdate(this.schemaIds);
+  final List<int> schemaIds;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -179,13 +164,12 @@ class RemoveSchemasUpdate extends TableUpdate {
 }
 
 class SetSnapshotReferenceUpdate extends TableUpdate {
-  final String referenceName;
-  final SnapshotReference reference;
-
   const SetSnapshotReferenceUpdate({
     required this.referenceName,
     required this.reference,
   });
+  final String referenceName;
+  final SnapshotReference reference;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -196,9 +180,8 @@ class SetSnapshotReferenceUpdate extends TableUpdate {
 }
 
 class RemoveSnapshotReferenceUpdate extends TableUpdate {
-  final String referenceName;
-
   const RemoveSnapshotReferenceUpdate(this.referenceName);
+  final String referenceName;
 
   @override
   Map<String, dynamic> toJson() => {
@@ -208,9 +191,8 @@ class RemoveSnapshotReferenceUpdate extends TableUpdate {
 }
 
 class RemoveSnapshotsUpdate extends TableUpdate {
-  final List<int> snapshotIds;
-
   const RemoveSnapshotsUpdate(this.snapshotIds);
+  final List<int> snapshotIds;
 
   @override
   Map<String, dynamic> toJson() => {

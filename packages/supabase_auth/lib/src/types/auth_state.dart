@@ -3,6 +3,12 @@ import 'package:supabase_auth/src/types/session.dart';
 import 'package:supabase_auth/src/types/sign_out_reason.dart';
 
 class AuthState {
+  const AuthState(
+    this.event,
+    this.session, {
+    this.fromBroadcast = false,
+    this.signOutReason,
+  });
   final AuthChangeEvent event;
   final Session? session;
 
@@ -21,13 +27,6 @@ class AuthState {
   /// Whether this state was broadcasted via `web.BroadcastChannel` on web from
   /// another tab or window.
   final bool fromBroadcast;
-
-  const AuthState(
-    this.event,
-    this.session, {
-    this.fromBroadcast = false,
-    this.signOutReason,
-  });
 
   @override
   String toString() {

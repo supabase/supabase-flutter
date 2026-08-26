@@ -19,6 +19,36 @@ enum CustomProviderType {
 /// Populated when the server successfully fetches and validates the
 /// provider's OpenID Connect discovery document.
 class OIDCDiscoveryDocument {
+  const OIDCDiscoveryDocument({
+    required this.issuer,
+    required this.authorizationEndpoint,
+    required this.tokenEndpoint,
+    required this.jwksUri,
+    this.userInfoEndpoint,
+    this.revocationEndpoint,
+    this.supportedScopes,
+    this.supportedResponseTypes,
+    this.supportedSubjectTypes,
+    this.supportedIdTokenSigningAlgorithms,
+  });
+
+  factory OIDCDiscoveryDocument.fromJson(Map<String, dynamic> json) {
+    return OIDCDiscoveryDocument(
+      issuer: json['issuer'] as String,
+      authorizationEndpoint: json['authorization_endpoint'] as String,
+      tokenEndpoint: json['token_endpoint'] as String,
+      jwksUri: json['jwks_uri'] as String,
+      userInfoEndpoint: json['userinfo_endpoint'] as String?,
+      revocationEndpoint: json['revocation_endpoint'] as String?,
+      supportedScopes: (json['scopes_supported'] as List?)?.cast(),
+      supportedResponseTypes: (json['response_types_supported'] as List?)
+          ?.cast(),
+      supportedSubjectTypes: (json['subject_types_supported'] as List?)?.cast(),
+      supportedIdTokenSigningAlgorithms:
+          (json['id_token_signing_alg_values_supported'] as List?)?.cast(),
+    );
+  }
+
   /// The issuer identifier
   final String issuer;
 
@@ -48,40 +78,71 @@ class OIDCDiscoveryDocument {
 
   /// List of supported ID token signing algorithms
   final List<String>? supportedIdTokenSigningAlgorithms;
-
-  const OIDCDiscoveryDocument({
-    required this.issuer,
-    required this.authorizationEndpoint,
-    required this.tokenEndpoint,
-    required this.jwksUri,
-    this.userInfoEndpoint,
-    this.revocationEndpoint,
-    this.supportedScopes,
-    this.supportedResponseTypes,
-    this.supportedSubjectTypes,
-    this.supportedIdTokenSigningAlgorithms,
-  });
-
-  factory OIDCDiscoveryDocument.fromJson(Map<String, dynamic> json) {
-    return OIDCDiscoveryDocument(
-      issuer: json['issuer'] as String,
-      authorizationEndpoint: json['authorization_endpoint'] as String,
-      tokenEndpoint: json['token_endpoint'] as String,
-      jwksUri: json['jwks_uri'] as String,
-      userInfoEndpoint: json['userinfo_endpoint'] as String?,
-      revocationEndpoint: json['revocation_endpoint'] as String?,
-      supportedScopes: (json['supported_scopes'] as List?)?.cast(),
-      supportedResponseTypes: (json['supported_response_types'] as List?)
-          ?.cast(),
-      supportedSubjectTypes: (json['supported_subject_types'] as List?)?.cast(),
-      supportedIdTokenSigningAlgorithms:
-          (json['supported_id_token_signing_algs'] as List?)?.cast(),
-    );
-  }
 }
 
 /// Custom OAuth/OIDC provider object returned from the admin API.
 class CustomOAuthProvider {
+  const CustomOAuthProvider({
+    required this.id,
+    required this.providerType,
+    required this.identifier,
+    required this.name,
+    required this.clientId,
+    this.acceptableClientIds,
+    this.scopes,
+    this.customClaimsAllowlist,
+    this.pkceEnabled,
+    this.attributeMapping,
+    this.authorizationParameters,
+    this.enabled,
+    this.emailOptional,
+    this.issuer,
+    this.discoveryUrl,
+    this.skipNonceCheck,
+    this.authorizationUrl,
+    this.tokenUrl,
+    this.userInfoUrl,
+    this.jwksUri,
+    this.discoveryDocument,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory CustomOAuthProvider.fromJson(Map<String, dynamic> json) {
+    final discoveryDocument = json['discovery_document'];
+    return CustomOAuthProvider(
+      id: json['id'] as String,
+      providerType: CustomProviderType.fromValue(
+        json['provider_type'] as String,
+      ),
+      identifier: json['identifier'] as String,
+      name: json['name'] as String,
+      clientId: json['client_id'] as String,
+      acceptableClientIds: (json['acceptable_client_ids'] as List?)?.cast(),
+      scopes: (json['scopes'] as List?)?.cast(),
+      customClaimsAllowlist: (json['custom_claims_allowlist'] as List?)?.cast(),
+      pkceEnabled: json['pkce_enabled'] as bool?,
+      attributeMapping: json['attribute_mapping'] as Map<String, dynamic>?,
+      authorizationParameters: (json['authorization_params'] as Map?)?.cast(),
+      enabled: json['enabled'] as bool?,
+      emailOptional: json['email_optional'] as bool?,
+      issuer: json['issuer'] as String?,
+      discoveryUrl: json['discovery_url'] as String?,
+      skipNonceCheck: json['skip_nonce_check'] as bool?,
+      authorizationUrl: json['authorization_url'] as String?,
+      tokenUrl: json['token_url'] as String?,
+      userInfoUrl: json['userinfo_url'] as String?,
+      jwksUri: json['jwks_uri'] as String?,
+      discoveryDocument: discoveryDocument == null
+          ? null
+          : OIDCDiscoveryDocument.fromJson(
+              discoveryDocument as Map<String, dynamic>,
+            ),
+      createdAt: parseIso8601(json, 'created_at'),
+      updatedAt: parseIso8601(json, 'updated_at'),
+    );
+  }
+
   /// Unique identifier (UUID)
   final String id;
 
@@ -153,13 +214,16 @@ class CustomOAuthProvider {
 
   /// Timestamp when the provider was last updated
   final DateTime updatedAt;
+}
 
-  const CustomOAuthProvider({
-    required this.id,
+/// Parameters for creating a new custom provider.
+class CreateCustomProviderOptions {
+  const CreateCustomProviderOptions({
     required this.providerType,
     required this.identifier,
     required this.name,
     required this.clientId,
+    required this.clientSecret,
     this.acceptableClientIds,
     this.scopes,
     this.customClaimsAllowlist,
@@ -175,49 +239,8 @@ class CustomOAuthProvider {
     this.tokenUrl,
     this.userInfoUrl,
     this.jwksUri,
-    this.discoveryDocument,
-    required this.createdAt,
-    required this.updatedAt,
   });
 
-  factory CustomOAuthProvider.fromJson(Map<String, dynamic> json) {
-    final discoveryDocument = json['discovery_document'];
-    return CustomOAuthProvider(
-      id: json['id'] as String,
-      providerType: CustomProviderType.fromValue(
-        json['provider_type'] as String,
-      ),
-      identifier: json['identifier'] as String,
-      name: json['name'] as String,
-      clientId: json['client_id'] as String,
-      acceptableClientIds: (json['acceptable_client_ids'] as List?)?.cast(),
-      scopes: (json['scopes'] as List?)?.cast(),
-      customClaimsAllowlist: (json['custom_claims_allowlist'] as List?)?.cast(),
-      pkceEnabled: json['pkce_enabled'] as bool?,
-      attributeMapping: json['attribute_mapping'] as Map<String, dynamic>?,
-      authorizationParameters: (json['authorization_params'] as Map?)?.cast(),
-      enabled: json['enabled'] as bool?,
-      emailOptional: json['email_optional'] as bool?,
-      issuer: json['issuer'] as String?,
-      discoveryUrl: json['discovery_url'] as String?,
-      skipNonceCheck: json['skip_nonce_check'] as bool?,
-      authorizationUrl: json['authorization_url'] as String?,
-      tokenUrl: json['token_url'] as String?,
-      userInfoUrl: json['userinfo_url'] as String?,
-      jwksUri: json['jwks_uri'] as String?,
-      discoveryDocument: discoveryDocument == null
-          ? null
-          : OIDCDiscoveryDocument.fromJson(
-              discoveryDocument as Map<String, dynamic>,
-            ),
-      createdAt: parseIso8601(json, 'created_at'),
-      updatedAt: parseIso8601(json, 'updated_at'),
-    );
-  }
-}
-
-/// Parameters for creating a new custom provider.
-class CreateCustomProviderOptions {
   /// Provider type
   final CustomProviderType providerType;
 
@@ -281,29 +304,6 @@ class CreateCustomProviderOptions {
   /// JWKS URI for token verification
   final String? jwksUri;
 
-  const CreateCustomProviderOptions({
-    required this.providerType,
-    required this.identifier,
-    required this.name,
-    required this.clientId,
-    required this.clientSecret,
-    this.acceptableClientIds,
-    this.scopes,
-    this.customClaimsAllowlist,
-    this.pkceEnabled,
-    this.attributeMapping,
-    this.authorizationParameters,
-    this.enabled,
-    this.emailOptional,
-    this.issuer,
-    this.discoveryUrl,
-    this.skipNonceCheck,
-    this.authorizationUrl,
-    this.tokenUrl,
-    this.userInfoUrl,
-    this.jwksUri,
-  });
-
   Map<String, dynamic> toJson() {
     return {
       'provider_type': providerType.name,
@@ -335,6 +335,27 @@ class CreateCustomProviderOptions {
 /// All fields are optional. Only provided fields will be updated.
 /// `providerType` and `identifier` are immutable and cannot be changed.
 class UpdateCustomProviderOptions {
+  const UpdateCustomProviderOptions({
+    this.name,
+    this.clientId,
+    this.clientSecret,
+    this.acceptableClientIds,
+    this.scopes,
+    this.customClaimsAllowlist,
+    this.pkceEnabled,
+    this.attributeMapping,
+    this.authorizationParameters,
+    this.enabled,
+    this.emailOptional,
+    this.issuer,
+    this.discoveryUrl,
+    this.skipNonceCheck,
+    this.authorizationUrl,
+    this.tokenUrl,
+    this.userInfoUrl,
+    this.jwksUri,
+  });
+
   /// Human-readable name
   final String? name;
 
@@ -391,27 +412,6 @@ class UpdateCustomProviderOptions {
 
   /// JWKS URI for token verification
   final String? jwksUri;
-
-  const UpdateCustomProviderOptions({
-    this.name,
-    this.clientId,
-    this.clientSecret,
-    this.acceptableClientIds,
-    this.scopes,
-    this.customClaimsAllowlist,
-    this.pkceEnabled,
-    this.attributeMapping,
-    this.authorizationParameters,
-    this.enabled,
-    this.emailOptional,
-    this.issuer,
-    this.discoveryUrl,
-    this.skipNonceCheck,
-    this.authorizationUrl,
-    this.tokenUrl,
-    this.userInfoUrl,
-    this.jwksUri,
-  });
 
   Map<String, dynamic> toJson() {
     return {

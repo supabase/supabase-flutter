@@ -4,6 +4,12 @@ import 'package:meta/meta.dart';
 
 @internal
 class AuthHttpClient extends BaseClient {
+  AuthHttpClient(
+    this._supabaseKey,
+    this._inner,
+    this._getAccessToken, {
+    bool omitNewApiKeyAsBearer = false,
+  }) : _omitNewApiKeyAsBearer = omitNewApiKeyAsBearer;
   final Client _inner;
 
   final String _supabaseKey;
@@ -13,13 +19,6 @@ class AuthHttpClient extends BaseClient {
   /// is never sent as an `Authorization: Bearer` token. A genuine session
   /// access token is still sent normally.
   final bool _omitNewApiKeyAsBearer;
-
-  AuthHttpClient(
-    this._supabaseKey,
-    this._inner,
-    this._getAccessToken, {
-    bool omitNewApiKeyAsBearer = false,
-  }) : _omitNewApiKeyAsBearer = omitNewApiKeyAsBearer;
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {

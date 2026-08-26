@@ -17,6 +17,8 @@ import 'package:supabase_realtime/src/realtime_message.dart';
 /// their JSON counterparts.
 @internal
 class Serializer {
+  const Serializer({List<String>? allowedMetadataKeys})
+    : allowedMetadataKeys = allowedMetadataKeys ?? const [];
   static const int headerLength = 1;
   static const int userBroadcastPushMetaLength = 6;
 
@@ -38,9 +40,6 @@ class Serializer {
   /// Keys of the broadcast payload that are forwarded as frame metadata when
   /// sending a binary broadcast push.
   final List<String> allowedMetadataKeys;
-
-  const Serializer({List<String>? allowedMetadataKeys})
-    : allowedMetadataKeys = allowedMetadataKeys ?? const [];
 
   /// Encodes a message into the string or binary representation that is
   /// written to the WebSocket.
