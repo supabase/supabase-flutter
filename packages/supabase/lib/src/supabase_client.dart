@@ -163,7 +163,7 @@ class SupabaseClient {
   final AsyncJsonCodec _jsonCodec;
   final bool _ownsJsonCodec;
 
-  /// Resolves a third-party access token, replacing the built-in [auth]
+  /// Resolves a third-party access token and bypasses the built-in [auth]
   /// client when set.
   final Future<String?> Function()? accessToken;
 
@@ -307,7 +307,7 @@ class SupabaseClient {
   }
 
   /// Disconnects realtime, closes the auth state subscription, and disposes
-  /// the functions, PostgREST, and JSON codec resources.
+  /// the functions, PostgREST, and its internally owned JSON codec.
   Future<void> dispose() async {
     clientLogger.fine('Dispose SupabaseClient');
     await realtime.disconnect();

@@ -16,12 +16,14 @@ typedef _StreamPostgrestFilter = ({
 
 typedef _Order = ({String column, bool ascending});
 
-/// Thrown by `SupabaseStreamBuilder.listen` when the underlying Realtime
+/// Delivered to the stream's error handler when the underlying Realtime
 /// channel fails to subscribe.
 class RealtimeSubscribeException implements Exception {
   const RealtimeSubscribeException(this.status, [this.details]);
 
-  /// The subscription status that caused this exception, always
+  /// The subscription status that caused this exception.
+  ///
+  /// When emitted by [SupabaseStreamBuilder], this is always
   /// [RealtimeSubscribeStatus.channelError] or
   /// [RealtimeSubscribeStatus.timedOut].
   final RealtimeSubscribeStatus status;
