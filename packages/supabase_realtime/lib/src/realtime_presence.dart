@@ -164,7 +164,9 @@ class RealtimePresence {
   Map<String, List<Presence>> _state = <String, List<Presence>>{};
 
   /// The current presence state, keyed by presence key.
-  Map<String, List<Presence>> get state => UnmodifiableMapView(_state);
+  Map<String, List<Presence>> get state => UnmodifiableMapView(
+    _state.map((key, value) => MapEntry(key, List.unmodifiable(value))),
+  );
 
   List<Map<String, dynamic>> _pendingDiffs = [];
   String? _joinRef;

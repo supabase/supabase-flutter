@@ -260,8 +260,9 @@ class RealtimeClient {
   List<RealtimeChannel> get channels => List.unmodifiable(_channels);
   final List<RealtimeChannel> _channels = [];
 
-  /// The resolved WebSocket endpoint, including the `/websocket` path and the
-  /// `log_level` query parameter.
+  /// The resolved WebSocket endpoint, including the `/websocket` path and,
+  /// when `logLevel` was passed to the constructor, the `log_level` query
+  /// parameter.
   final String endpoint;
 
   /// The headers sent when connecting, as an unmodifiable view.
@@ -299,7 +300,6 @@ class RealtimeClient {
   /// Delay before the socket is disconnected once the last channel has been
   /// removed. [Duration.zero] disconnects immediately. Defaults to twice the
   /// heartbeat interval.
-  /// The reference ID of the most recently sent heartbeat.
   @internal
   late final Duration disconnectOnEmptyChannelsAfter;
 
@@ -314,7 +314,7 @@ class RealtimeClient {
   /// Used to keep track of whether the client is connected to the server.
   String? _pendingHeartbeatRef;
 
-  /// The most recently generated message reference.
+  /// The reference ID of the most recently sent heartbeat.
   @internal
   @visibleForTesting
   String? get pendingHeartbeatRef => _pendingHeartbeatRef;
@@ -323,13 +323,12 @@ class RealtimeClient {
   /// pushed message, including heartbeats.
   int _ref = 0;
 
-  /// Overrides [ref], so a test can force the next generated reference.
+  /// The most recently generated message reference.
   @internal
   @visibleForTesting
   int get ref => _ref;
 
-  /// Messages pushed while the socket was not connected, as an unmodifiable
-  /// view.
+  /// Overrides [ref], so a test can force the next generated reference.
   @internal
   @visibleForTesting
   set ref(int value) => _ref = value;
@@ -365,7 +364,8 @@ class RealtimeClient {
   /// connection is next established.
   final List<void Function()> _sendBuffer = [];
 
-  /// Connects the socket.
+  /// Messages pushed while the socket was not connected, as an unmodifiable
+  /// view.
   @internal
   @visibleForTesting
   List<void Function()> get sendBuffer => List.unmodifiable(_sendBuffer);
@@ -398,9 +398,6 @@ class RealtimeClient {
   final Future<String?> Function()? customAccessToken;
 
   /// Connects the socket.
-  /// Registers [channel] with the same lifecycle handling as [channel]'s
-  /// registration, without constructing one, so tests can inject mock
-  /// channels.
   @internal
   Future<void> connect() async {
     if (_connection != null) {
@@ -588,7 +585,6 @@ class RealtimeClient {
   /// Matches on identity rather than on [RealtimeChannel.joinRef], which is
   /// the empty string until a channel is subscribed and is therefore shared
   /// by every channel that has not joined yet.
-  /// Return the next message ref, accounting for overflows
   @internal
   void remove(RealtimeChannel channel) {
     _channels.removeWhere((c) => identical(c, channel));
@@ -614,7 +610,6 @@ class RealtimeClient {
   /// Registers [channel] with the same lifecycle handling as [channel]'s
   /// registration, without constructing one, so tests can inject mock
   /// channels.
-  /// Unsubscribe from joined or joining channels with the specified topic.
   @internal
   @visibleForTesting
   void addChannelForTesting(RealtimeChannel channel) {
