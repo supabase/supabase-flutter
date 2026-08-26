@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:supabase/supabase.dart';
+import 'package:supabase/src/supabase_client.dart' as real;
+import 'package:supabase/supabase.dart' hide SupabaseClient;
 import 'package:supabase_common/supabase_common.dart';
 import 'package:test/test.dart';
 import 'package:yet_another_json_isolate/yet_another_json_isolate.dart';
@@ -172,6 +173,29 @@ void main() {
       );
     });
 
+    test('codec overrides are handed to the realtime client', () async {
+      Future<Object> encode(RealtimeMessage message) => Future.value('');
+      Future<RealtimeMessage> decode(Object frame) =>
+          Future.value(const RealtimeMessage(topic: '', event: ''));
+
+      supabase = SupabaseClient(
+        supabaseUrl,
+        supabaseKey,
+        realtimeClientOptions: RealtimeClientOptions(
+          encode: encode,
+          decode: decode,
+        ),
+      );
+
+      expect(supabase.realtime.encode, same(encode));
+      expect(supabase.realtime.decode, same(decode));
+    });
+
+    test('the realtime client uses the built-in codec by default', () async {
+      expect(supabase.realtime.encode, isNull);
+      expect(supabase.realtime.decode, isNull);
+    });
+
     test('realtime access token is set properly', () async {
       final request = await getRealtimeRequest(
         server: mockServer,
@@ -183,6 +207,36 @@ void main() {
   });
 
   group('auth', () {
+    test('the pkce flow asserts when no pkceAsyncStorage is given', () {
+      expect(
+        () => real.SupabaseClient('http://localhost:1', 'supabaseKey'),
+        throwsA(
+          isA<AssertionError>().having(
+            (error) => error.message,
+            'message',
+            contains('You need to provide asyncStorage to perform pkce flow.'),
+          ),
+        ),
+      );
+    });
+
+    test('the pkce flow works with a MemoryAuthAsyncStorage', () async {
+      final supabase = real.SupabaseClient(
+        'http://localhost:1',
+        'supabaseKey',
+        authOptions: AuthClientOptions(
+          pkceAsyncStorage: MemoryAuthAsyncStorage(),
+        ),
+      );
+      addTearDown(supabase.dispose);
+
+      final response = await supabase.auth.getOAuthSignInUrl(
+        provider: OAuthProvider.github,
+      );
+
+      expect(response.url.queryParameters, contains('code_challenge'));
+    });
+
     test('properly set Authorization header', () async {
       final (:sessionString, :accessToken) = getSessionData(
         DateTime.now().add(Duration(hours: 1)),
@@ -218,6 +272,53 @@ void main() {
 
       await mockServer.close();
     });
+
+    test(
+      'a per-request Authorization header wins over the session token',
+      () async {
+        final (:sessionString, accessToken: _) = getSessionData(
+          DateTime.now().add(Duration(hours: 1)),
+        );
+
+        final mockServer = await HttpServer.bind('localhost', 0);
+        addTearDown(() => mockServer.close(force: true));
+        final supabase = SupabaseClient(
+          'http://${mockServer.address.host}:${mockServer.port}',
+          "supabaseKey",
+          authOptions: AuthClientOptions(autoRefreshToken: false),
+        );
+        addTearDown(supabase.dispose);
+        await supabase.auth.recoverSession(sessionString);
+
+        final pending = [
+          supabase.functions.invoke(
+            "test",
+            headers: {'Authorization': 'Bearer pinned'},
+          ),
+          // then() subscribes, which is what starts a Postgrest builder.
+          supabase
+              .from("test")
+              .select()
+              .setHeader('Authorization', 'Bearer pinned')
+              .then((value) => value),
+        ];
+
+        var count = 0;
+        await for (final request in mockServer) {
+          expect(request.headers.value('Authorization'), 'Bearer pinned');
+          request.response
+            ..headers.contentType = ContentType.json
+            ..write('[]');
+          await request.response.close();
+          count++;
+          if (count == pending.length) {
+            break;
+          }
+        }
+
+        await Future.wait(pending);
+      },
+    );
 
     test('call recoverSession', () async {
       final expiresAt = DateTime.now().add(Duration(seconds: 31));
@@ -359,6 +460,46 @@ void main() {
         expect(supabase.realtime.headers['Custom-Header'], 'custom-value');
       });
 
+      test('rest client headers cannot be mutated in place', () {
+        expect(
+          () => supabase.rest.headers['Custom-Header'] = 'custom-value',
+          throwsUnsupportedError,
+        );
+      });
+
+      test('sub-client headers cannot be mutated in place', () {
+        expect(
+          () => supabase.auth.headers['Custom-Header'] = 'custom-value',
+          throwsUnsupportedError,
+        );
+        expect(
+          () => supabase.functions.headers['Custom-Header'] = 'custom-value',
+          throwsUnsupportedError,
+        );
+        expect(
+          () => supabase.storage.headers['Custom-Header'] = 'custom-value',
+          throwsUnsupportedError,
+        );
+        expect(
+          () => supabase.storage.from('bucket').headers['Custom-Header'] =
+              'custom-value',
+          throwsUnsupportedError,
+        );
+      });
+
+      test('should propagate updated headers to the auth client', () {
+        supabase.headers = {'Custom-Header': 'custom-value'};
+
+        expect(supabase.auth.headers['Custom-Header'], 'custom-value');
+        expect(supabase.auth.headers['apikey'], supabaseKey);
+      });
+
+      test('rpc leaves the rest client headers untouched', () {
+        final headersBefore = {...supabase.rest.headers};
+        unawaited(supabase.rpc('do_something'));
+        expect(supabase.rest.headers, headersBefore);
+      });
+
       test('should preserve default headers when setting custom headers', () {
         supabase.headers = {'Custom-Header': 'custom-value'};
 
@@ -406,36 +547,34 @@ void main() {
       );
     });
 
-    group('Shared YAJsonIsolate', () {
+    group('JSON codec', () {
       test(
-        'does not dispose an injected YAJsonIsolate so the caller retains '
-        'ownership',
+        'does not dispose a supplied codec, so the caller keeps ownership',
         () async {
-          final isolate = YAJsonIsolate();
-          await isolate.initialize();
+          final jsonCodec = YAJsonIsolate();
+          await jsonCodec.initialize();
 
           final client = SupabaseClient(
             supabaseUrl,
             supabaseKey,
-            isolate: isolate,
+            jsonCodec: jsonCodec,
           );
 
           await client.dispose();
 
-          // Isolate is still alive — caller owns the lifecycle
-          expect(await isolate.encode({'key': 'value'}), isA<String>());
+          expect(await jsonCodec.encode({'key': 'value'}), isA<String>());
 
-          await isolate.dispose();
+          await jsonCodec.dispose();
         },
       );
 
       test(
-        'creates a single isolate shared across rest and functions clients',
+        'creates a single codec shared across rest and functions clients',
         () async {
-          // Creating a SupabaseClient without providing an isolate should
-          // still result in a single shared isolate (not one per sub-client).
-          // Verified indirectly: dispose() should complete without error,
-          // meaning there is no double-dispose from sub-clients.
+          // The rest and functions clients get the codec the SupabaseClient
+          // created, rather than one each, so disposing the client disposes it
+          // exactly once. Verified indirectly: a double dispose of the same
+          // codec would throw.
           final client = SupabaseClient(supabaseUrl, supabaseKey);
 
           expect(client.dispose(), completes);
@@ -468,4 +607,29 @@ void main() {
       });
     });
   });
+}
+
+/// A [real.SupabaseClient] that falls back to an in-memory pkce storage, so the
+/// tests below do not have to pass one at every construction site.
+class SupabaseClient extends real.SupabaseClient {
+  SupabaseClient(
+    super.supabaseUrl,
+    super.supabaseKey, {
+    super.postgrestOptions,
+    AuthClientOptions authOptions = const AuthClientOptions(),
+    super.storageOptions,
+    super.functionsOptions,
+    super.realtimeClientOptions,
+    super.accessToken,
+    super.headers,
+    super.httpClient,
+    super.jsonCodec,
+  }) : super(
+         authOptions: AuthClientOptions(
+           autoRefreshToken: authOptions.autoRefreshToken,
+           pkceAsyncStorage:
+               authOptions.pkceAsyncStorage ?? MemoryAuthAsyncStorage(),
+           authFlowType: authOptions.authFlowType,
+         ),
+       );
 }

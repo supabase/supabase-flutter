@@ -1,15 +1,12 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:supabase_common/src/random.dart';
 
 /// Generates a random PKCE code verifier.
 String generatePKCEVerifier() {
   const verifierLength = 56;
-  final random = Random.secure();
-  return base64UrlEncode(
-    List.generate(verifierLength, (_) => random.nextInt(256)),
-  ).split('=')[0];
+  return base64UrlEncode(randomBytes(verifierLength)).split('=')[0];
 }
 
 /// Generates the PKCE code challenge for the given [verifier].

@@ -17,7 +17,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
     HttpMethod? method,
     Object? body,
     Client? httpClient,
-    YAJsonIsolate? isolate,
+    AsyncJsonCodec? jsonCodec,
     CountOption? count,
     bool? maybeSingle,
   }) {
@@ -30,7 +30,7 @@ class RawPostgrestBuilder<T, S, R> extends PostgrestBuilder<T, S, R> {
           method: method,
           body: body,
           httpClient: httpClient,
-          isolate: isolate,
+          jsonCodec: jsonCodec,
           count: count,
           maybeSingle: maybeSingle,
         ),

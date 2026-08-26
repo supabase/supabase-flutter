@@ -32,4 +32,25 @@ void main() {
     // well-formed quoted value rather than `in.("a"b\c")`.
     expect(mock.lastUrl!.queryParameters['name'], r'in.("a\"b\\c")');
   });
+
+  test(
+    'escapes double quotes and backslashes in negated list filter values',
+    () async {
+      final mock = _CapturingClient();
+      final client = PostgrestClient('http://localhost:3000', httpClient: mock);
+
+      await client.from('t').select().notInFilter('name', [r'a"b\c']);
+
+      expect(mock.lastUrl!.queryParameters['name'], r'not.in.("a\"b\\c")');
+    },
+  );
+
+  test('does not quote numeric negated list filter values', () async {
+    final mock = _CapturingClient();
+    final client = PostgrestClient('http://localhost:3000', httpClient: mock);
+
+    await client.from('t').select().notInFilter('id', [1, 2, 3]);
+
+    expect(mock.lastUrl!.queryParameters['id'], 'not.in.(1,2,3)');
+  });
 }

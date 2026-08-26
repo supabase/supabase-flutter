@@ -150,7 +150,7 @@ void main() {
         offset: 5,
         search: 'photo',
         sortColumn: BucketSortColumn.createdAt,
-        sortOrder: BucketSortOrder.descending,
+        sortOrder: SortDirection.descending,
       );
 
       expect(options.toQueryParameters(), {
@@ -176,9 +176,17 @@ void main() {
   });
 
   group('SortBy.toMap', () {
-    test('falls back to defaults when column and order are null', () {
-      const sortBy = SortBy(column: null, order: null);
+    test('falls back to the default column when it is null', () {
+      const sortBy = SortBy(column: null);
       expect(sortBy.toMap(), {'column': 'name', 'order': 'asc'});
+    });
+
+    test('serializes the order to its value', () {
+      const sortBy = SortBy(
+        column: 'updated_at',
+        order: SortDirection.descending,
+      );
+      expect(sortBy.toMap(), {'column': 'updated_at', 'order': 'desc'});
     });
   });
 
@@ -186,7 +194,7 @@ void main() {
     test('serializes column to snake_case and order to its value', () {
       const sort = FileSort(
         column: FileSortColumn.updatedAt,
-        order: FileSortOrder.descending,
+        order: SortDirection.descending,
       );
       expect(sort.toMap(), {'column': 'updated_at', 'order': 'desc'});
     });

@@ -19,7 +19,6 @@ void main() {
       () => Supabase.initialize(
         url: supabaseUrl,
         publishableKey: supabaseKey,
-        debug: false,
         authOptions: FlutterAuthClientOptions(
           localStorage: const MockLocalStorage(),
           pkceAsyncStorage: MockAsyncStorage(),

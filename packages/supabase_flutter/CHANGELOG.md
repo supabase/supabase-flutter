@@ -1,3 +1,34 @@
+## 3.0.0-dev.1
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**: share the test helpers through supabase_common ([#1745](https://github.com/supabase/supabase-flutter/issues/1745)). ([bcb41fa4](https://github.com/supabase/supabase-flutter/commit/bcb41fa4d9ef840c0380e641d3e45968084090c8))
+ - **REFACTOR**: share the auth callback parameters and secure random helpers ([#1744](https://github.com/supabase/supabase-flutter/issues/1744)). ([66ac4901](https://github.com/supabase/supabase-flutter/commit/66ac4901c684b83faae96e13ac560d7efdac158e))
+ - **FIX**(supabase_lints): enable lines_longer_than_80_chars and fix all violations ([#1655](https://github.com/supabase/supabase-flutter/issues/1655)). ([a08b6577](https://github.com/supabase/supabase-flutter/commit/a08b6577d002d0c7ae0d484ddd6da802922be37b))
+ - **FEAT**: introduce the supabase_testing package ([#1747](https://github.com/supabase/supabase-flutter/issues/1747)). ([5a3aa9b4](https://github.com/supabase/supabase-flutter/commit/5a3aa9b4265385e3d747ca70ad499102fa388ee9))
+ - **FEAT**(auth): store PKCE verifiers per flow to survive overlapping flows ([#1662](https://github.com/supabase/supabase-flutter/issues/1662)). ([61bbbc5e](https://github.com/supabase/supabase-flutter/commit/61bbbc5e2fbd0e01a1efbcd4d0257286a6060934))
+ - **DOCS**: fix inaccurate dartdoc comments across all packages ([#1659](https://github.com/supabase/supabase-flutter/issues/1659)). ([090ee978](https://github.com/supabase/supabase-flutter/commit/090ee9781ccdc7a749902830697d51251aa9f052))
+ - **DOCS**: add a v2 to v3 migration guide ([#1660](https://github.com/supabase/supabase-flutter/issues/1660)). ([aa1c1497](https://github.com/supabase/supabase-flutter/commit/aa1c14978c765ff8a0bce3a42e3fe9ca083eab32))
+ - **BREAKING** **REFACTOR**: process JSON through the AsyncJsonCodec interface ([#1751](https://github.com/supabase/supabase-flutter/issues/1751)). ([6969eb38](https://github.com/supabase/supabase-flutter/commit/6969eb3805cc1920f5a44902ae2ce660170c13b3))
+ - **BREAKING** **REFACTOR**: rework logging to emit only through the supabase logger hierarchy ([#1741](https://github.com/supabase/supabase-flutter/issues/1741)). ([d1642c80](https://github.com/supabase/supabase-flutter/commit/d1642c80c60d93cf3bf7919b0cef775470275ed9))
+ - **BREAKING** **REFACTOR**: share one retry configuration across the clients ([#1738](https://github.com/supabase/supabase-flutter/issues/1738)). ([3b2a4855](https://github.com/supabase/supabase-flutter/commit/3b2a4855a5d2e83af17d3cd280189c6a89170741))
+ - **BREAKING** **REFACTOR**(realtime): replace listener callbacks with streams ([#1706](https://github.com/supabase/supabase-flutter/issues/1706)). ([07345bf9](https://github.com/supabase/supabase-flutter/commit/07345bf9568a0ba495f1e34cb6ba542eddecc7e9))
+ - **BREAKING** **REFACTOR**(auth): return a Uri from OAuthResponse.url instead of a String ([#1729](https://github.com/supabase/supabase-flutter/issues/1729)). ([c8a66f10](https://github.com/supabase/supabase-flutter/commit/c8a66f100c9e1e1c899829cddc63aa7f1d230e93))
+ - **BREAKING** **REFACTOR**: spell out abbreviations in the public API ([#1712](https://github.com/supabase/supabase-flutter/issues/1712)). ([29286f43](https://github.com/supabase/supabase-flutter/commit/29286f4309a74da769ed7aad569daacba6dee7ae))
+ - **BREAKING** **REFACTOR**: split every service exception into a client and an api base ([#1644](https://github.com/supabase/supabase-flutter/issues/1644)). ([0202c332](https://github.com/supabase/supabase-flutter/commit/0202c33249828dc96a778af5fd72520ca5234a46))
+ - **BREAKING** **REFACTOR**: remove analyzer ignores by fixing the underlying code ([#1675](https://github.com/supabase/supabase-flutter/issues/1675)). ([9f367d77](https://github.com/supabase/supabase-flutter/commit/9f367d77f8f1e1723a985885db0de45123dce6f4))
+ - **BREAKING** **REFACTOR**: remove all deprecated APIs and dead public surface for v3 ([#1661](https://github.com/supabase/supabase-flutter/issues/1661)). ([1ffa0deb](https://github.com/supabase/supabase-flutter/commit/1ffa0deba0371585c7a4ac93795cf199a58e2353))
+ - **BREAKING** **REFACTOR**(realtime): clean up connection naming on RealtimeClient ([#1404](https://github.com/supabase/supabase-flutter/issues/1404)). ([4344c346](https://github.com/supabase/supabase-flutter/commit/4344c346164f731ff394cf8384bebac21f743a94))
+ - **BREAKING** **FIX**(auth): return Uri from getSSOSignInUrl instead of String ([#1722](https://github.com/supabase/supabase-flutter/issues/1722)). ([9aa2e767](https://github.com/supabase/supabase-flutter/commit/9aa2e76788f74b7a890c9a0e2f45e3f4ca44424b))
+ - **BREAKING** **FIX**(supabase_flutter): persist the session with SharedPreferencesAsync ([#1680](https://github.com/supabase/supabase-flutter/issues/1680)). ([41500b73](https://github.com/supabase/supabase-flutter/commit/41500b73e207cc812c2d42e4e4f4a79127e0502b))
+ - **BREAKING** **FIX**: release retained resources on dispose ([#1668](https://github.com/supabase/supabase-flutter/issues/1668)). ([d21d8c03](https://github.com/supabase/supabase-flutter/commit/d21d8c03dd2ebbad5713f28157e2c9445e13c7e0))
+ - **BREAKING** **FIX**(gotrue): emit userUpdated instead of signedIn when an email change is confirmed ([#1664](https://github.com/supabase/supabase-flutter/issues/1664)). ([7a042416](https://github.com/supabase/supabase-flutter/commit/7a042416ce190f22f02d0683ecd1fdc84a29ec5a))
+ - **BREAKING** **FEAT**: rename the storage_client package to supabase_storage ([#1715](https://github.com/supabase/supabase-flutter/issues/1715)). ([6b0388f2](https://github.com/supabase/supabase-flutter/commit/6b0388f209c87dc57ee7281d211fff241e13ec6a))
+ - **BREAKING** **FEAT**: rename the realtime_client package to supabase_realtime ([#1714](https://github.com/supabase/supabase-flutter/issues/1714)). ([d37bed56](https://github.com/supabase/supabase-flutter/commit/d37bed567711c8ed68590a002bb3f1a45432abcb))
+ - **BREAKING** **FEAT**: rename the functions_client package to supabase_functions ([#1713](https://github.com/supabase/supabase-flutter/issues/1713)). ([eb4f3773](https://github.com/supabase/supabase-flutter/commit/eb4f3773e74dd62be5a768433d0a2497d643f110))
+ - **BREAKING** **FEAT**: rename the gotrue package to supabase_auth ([#1697](https://github.com/supabase/supabase-flutter/issues/1697)). ([563b502e](https://github.com/supabase/supabase-flutter/commit/563b502ee64d161defddeceaaacc43615f39b75c))
+ - **BREAKING** **CHORE**: give each package's Constants class a package-specific name ([#1677](https://github.com/supabase/supabase-flutter/issues/1677)). ([40f6d89c](https://github.com/supabase/supabase-flutter/commit/40f6d89c7fad32e49f028b2644914807fd731b70))
+
 ## 2.17.1
 
  - Update a dependency to the latest release.

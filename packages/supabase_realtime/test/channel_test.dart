@@ -116,7 +116,7 @@ void main() {
 
       expect(joinPush.timeout, RealtimeConstants.defaultTimeout);
 
-      channel.subscribe((_, [_]) {}, newTimeout);
+      channel.subscribe(newTimeout);
 
       expect(joinPush.timeout, newTimeout);
     });
@@ -138,18 +138,19 @@ void main() {
           thrown: const FormatException(
             'InvalidJWTToken: Invalid value for JWT claim "exp" with value 0',
           ),
+          headers: {'Authorization': 'Bearer expired-token'},
         );
-        throwingSocket.accessToken = 'expired-token';
 
         final localChannel = throwingSocket.channel('topic');
 
         RealtimeSubscribeStatus? status;
-        localChannel.subscribe((s, _) => status = s);
+        localChannel.onStatusChange.listen((change) => status = change.status);
+        localChannel.subscribe();
         localChannel.joinPush.trigger('ok', {});
 
-        // Drain the microtask queue so the async 'ok' callback completes.
-        await Future<void>.value();
-        await Future<void>.value();
+        // Drain the event queue so the async 'ok' handler completes and the
+        // status stream delivers.
+        await Future<void>.delayed(Duration.zero);
 
         expect(throwingSocket.setAuthCalls, 1);
         expect(
@@ -169,8 +170,8 @@ void main() {
         final throwingSocket = _SetAuthThrowingSocket(
           '/socket',
           thrown: const FormatException('some other parsing failure'),
+          headers: {'Authorization': 'Bearer some-token'},
         );
-        throwingSocket.accessToken = 'some-token';
 
         final localChannel = throwingSocket.channel('topic');
 
@@ -179,10 +180,12 @@ void main() {
         // the test runner zone.
         await runZonedGuarded(
           () async {
-            localChannel.subscribe((s, _) => status = s);
+            localChannel.onStatusChange.listen(
+              (change) => status = change.status,
+            );
+            localChannel.subscribe();
             localChannel.joinPush.trigger('ok', {});
-            await Future<void>.value();
-            await Future<void>.value();
+            await Future<void>.delayed(Duration.zero);
           },
           (_, _) {
             /* expected: rethrown FormatException */
@@ -208,7 +211,7 @@ void main() {
     });
 
     test('subscribes when the server echoes back an `in` filter with escaped '
-        'quotes and backslashes', () {
+        'quotes and backslashes', () async {
       RealtimeSubscribeStatus? status;
       channel.onPostgresChanges(
         event: PostgresChangeEvent.all,
@@ -219,10 +222,10 @@ void main() {
           column: 'name',
           value: [r'a"b\c'],
         ),
-        callback: (_) {},
       );
 
-      channel.subscribe((newStatus, _) => status = newStatus);
+      channel.onStatusChange.listen((change) => status = change.status);
+      channel.subscribe();
 
       final sentFilter =
           (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
@@ -234,12 +237,13 @@ void main() {
           {'id': 1, ...sentFilter},
         ],
       });
+      await Future<void>.delayed(Duration.zero);
 
       expect(status, RealtimeSubscribeStatus.subscribed);
     });
 
     test('reports a channelError when the server echoes back a different '
-        'filter', () {
+        'filter', () async {
       RealtimeSubscribeStatus? status;
       channel.onPostgresChanges(
         event: PostgresChangeEvent.all,
@@ -250,10 +254,10 @@ void main() {
           column: 'name',
           value: [r'a"b\c'],
         ),
-        callback: (_) {},
       );
 
-      channel.subscribe((newStatus, _) => status = newStatus);
+      channel.onStatusChange.listen((change) => status = change.status);
+      channel.subscribe();
 
       final sentFilter =
           (channel.joinPush.payload['config']['postgres_changes'] as List)[0]
@@ -264,6 +268,7 @@ void main() {
           {...sentFilter, 'id': 1, 'filter': 'name=in.("a"b\\c")'},
         ],
       });
+      await Future<void>.delayed(Duration.zero);
 
       expect(status, RealtimeSubscribeStatus.channelError);
     });
@@ -274,7 +279,6 @@ void main() {
         schema: 'public',
         table: 'users',
         select: ['id', 'first_name'],
-        callback: (_) {},
       );
 
       channel.subscribe();
@@ -302,7 +306,6 @@ void main() {
             value: ['open', 'pending'],
           ),
         ],
-        callback: (_) {},
       );
 
       channel.subscribe();
@@ -353,19 +356,21 @@ void main() {
     });
 
     test(
-      'forwards a system error to the subscribe callback as channelError',
-      () {
+      'forwards a system error to the status stream as channelError',
+      () async {
         RealtimeSubscribeStatus? status;
         Object? error;
-        channel.subscribe((newStatus, newError) {
-          status = newStatus;
-          error = newError;
+        channel.onStatusChange.listen((change) {
+          status = change.status;
+          error = change.error;
         });
+        channel.subscribe();
 
         channel.trigger('system', {
           'status': 'error',
           'message': 'Unable to subscribe to changes with given parameters',
         });
+        await Future<void>.delayed(Duration.zero);
 
         expect(status, RealtimeSubscribeStatus.channelError);
         expect(error, isA<Exception>());
@@ -376,55 +381,56 @@ void main() {
       },
     );
 
-    test('falls back to a default message when the system error has none', () {
-      Object? error;
-      channel.subscribe((_, newError) => error = newError);
+    test(
+      'falls back to a default message when the system error has none',
+      () async {
+        Object? error;
+        channel.onStatusChange.listen((change) => error = change.error);
+        channel.subscribe();
 
-      channel.trigger('system', {'status': 'error'});
+        channel.trigger('system', {'status': 'error'});
+        await Future<void>.delayed(Duration.zero);
 
-      expect(error, isA<Exception>());
-      expect(
-        error?.toString(),
-        contains('postgres_changes subscription failed'),
-      );
-    });
+        expect(error, isA<Exception>());
+        expect(
+          error?.toString(),
+          contains('postgres_changes subscription failed'),
+        );
+      },
+    );
 
-    test('does not surface a system ok event as an error', () {
+    test('does not surface a system ok event as an error', () async {
       RealtimeSubscribeStatus? status;
-      channel.subscribe((newStatus, _) => status = newStatus);
+      channel.onStatusChange.listen((change) => status = change.status);
+      channel.subscribe();
 
       channel.trigger('system', {
         'status': 'ok',
         'message': 'Subscribed to PostgreSQL',
       });
+      await Future<void>.delayed(Duration.zero);
 
       expect(status, isNot(RealtimeSubscribeStatus.channelError));
     });
 
-    test(
-      'forwards the raw payload, parseable into a RealtimeSystemPayload',
-      () {
-        dynamic received;
-        channel.onSystemEvents((payload) => received = payload);
+    test('emits a typed RealtimeSystemPayload', () async {
+      RealtimeSystemPayload? received;
+      channel.onSystemEvents.listen((payload) => received = payload);
 
-        channel.trigger('system', {
-          'extension': 'system',
-          'status': 'ok',
-          'message': 'Replication connection established',
-          'channel': 'topic',
-        });
+      channel.trigger('system', {
+        'extension': 'system',
+        'status': 'ok',
+        'message': 'Replication connection established',
+        'channel': 'topic',
+      });
+      await Future<void>.delayed(Duration.zero);
 
-        expect(received, isA<Map<dynamic, dynamic>>());
-
-        final system = RealtimeSystemPayload.fromJson(
-          Map<String, dynamic>.from(received),
-        );
-        expect(system.extension, 'system');
-        expect(system.status, 'ok');
-        expect(system.message, 'Replication connection established');
-        expect(system.channel, 'topic');
-      },
-    );
+      expect(received, isA<RealtimeSystemPayload>());
+      expect(received!.extension, 'system');
+      expect(received!.status, 'ok');
+      expect(received!.message, 'Replication connection established');
+      expect(received!.channel, 'topic');
+    });
   });
 
   group('onMessage', () {
@@ -492,6 +498,77 @@ void main() {
     });
   });
 
+  group('event stream reuse', () {
+    setUp(() {
+      socket = RealtimeClient('wss://example.com/socket');
+      channel = socket.channel('topic');
+    });
+
+    test(
+      'returns the same stream for identical postgres_changes arguments',
+      () {
+        final first = channel.onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'todos',
+        );
+        final second = channel.onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'todos',
+        );
+        final other = channel.onPostgresChanges(
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: 'todos',
+        );
+
+        expect(identical(first, second), isTrue);
+        expect(identical(first, other), isFalse);
+      },
+    );
+
+    test('returns the same stream for the same broadcast event', () {
+      final first = channel.onBroadcast(event: 'cursor');
+      final second = channel.onBroadcast(event: 'cursor');
+      final other = channel.onBroadcast(event: 'position');
+
+      expect(identical(first, second), isTrue);
+      expect(identical(first, other), isFalse);
+    });
+
+    test(
+      'streams created after the channel closed complete immediately',
+      () async {
+        channel.subscribe();
+        channel.trigger('phx_close');
+        // Wait for the deferred controller cleanup to run.
+        await Future<void>.delayed(Duration.zero);
+        expect(channel.isClosed, isTrue);
+
+        await expectLater(channel.onBroadcast(event: 'cursor'), emitsDone);
+        await expectLater(channel.onPresenceSync, emitsDone);
+      },
+    );
+
+    test('reused streams deliver events to every listener', () async {
+      var firstEvents = 0;
+      var secondEvents = 0;
+      channel.onBroadcast(event: 'cursor').listen((_) => firstEvents++);
+      channel.onBroadcast(event: 'cursor').listen((_) => secondEvents++);
+      channel.subscribe();
+
+      channel.trigger('broadcast', {
+        'event': 'cursor',
+        'payload': {'x': 1},
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      expect(firstEvents, 1);
+      expect(secondEvents, 1);
+    });
+  });
+
   group('blocking listeners after subscribe', () {
     setUp(() {
       socket = RealtimeClient('wss://example.com/socket');
@@ -503,10 +580,7 @@ void main() {
       expect(channel.isJoining, isTrue);
 
       expect(
-        () => channel.onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          callback: (_) {},
-        ),
+        () => channel.onPostgresChanges(event: PostgresChangeEvent.all),
         throwsA(
           allOf(
             isA<String>(),
@@ -522,10 +596,7 @@ void main() {
       expect(channel.isJoined, isTrue);
 
       expect(
-        () => channel.onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          callback: (_) {},
-        ),
+        () => channel.onPostgresChanges(event: PostgresChangeEvent.all),
         throwsA(
           allOf(
             isA<String>(),
@@ -537,10 +608,7 @@ void main() {
 
     test('allows adding postgres_changes listener before subscribe', () {
       expect(
-        () => channel.onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          callback: (_) {},
-        ),
+        () => channel.onPostgresChanges(event: PostgresChangeEvent.all),
         returnsNormally,
       );
     });
@@ -550,7 +618,7 @@ void main() {
       expect(channel.isJoining, isTrue);
 
       expect(
-        () => channel.onPresenceSync((_) {}),
+        () => channel.onPresenceSync,
         returnsNormally,
       );
     });
@@ -560,7 +628,7 @@ void main() {
       expect(channel.isJoining, isTrue);
 
       expect(
-        () => channel.onBroadcast(event: 'test', callback: (_) {}),
+        () => channel.onBroadcast(event: 'test'),
         returnsNormally,
       );
     });
@@ -725,12 +793,10 @@ void main() {
     });
 
     test('send message via WebSocket when subscribed to channel', () async {
-      final subscribed = Completer<void>();
-      channel.subscribe((status, [error]) {
-        if (status == RealtimeSubscribeStatus.subscribed) {
-          subscribed.complete();
-        }
-      });
+      final subscribed = channel.onStatusChange.firstWhere(
+        (change) => change.status == RealtimeSubscribeStatus.subscribed,
+      );
+      channel.subscribe();
 
       // Accept the websocket the client opens on subscribe, then reply to the
       // channel join so it transitions to subscribed.
@@ -755,7 +821,7 @@ void main() {
             broadcast.complete(message);
         }
       });
-      await subscribed.future;
+      await subscribed;
 
       // Once subscribed, broadcasts are pushed over the websocket instead of
       // falling back to the REST endpoint.
@@ -827,21 +893,21 @@ void main() {
       );
     });
 
-    test('description', () async {
+    test('emits presence events on the presence streams', () async {
       bool syncCalled = false, joinCalled = false, leaveCalled = false;
-      channel
-          .onPresenceSync((payload) {
-            syncCalled = true;
-          })
-          .onPresenceJoin((payload) {
-            joinCalled = true;
-          })
-          .onPresenceLeave((payload) {
-            leaveCalled = true;
-          })
-          .subscribe();
+      channel.onPresenceSync.listen((payload) {
+        syncCalled = true;
+      });
+      channel.onPresenceJoin.listen((payload) {
+        joinCalled = true;
+      });
+      channel.onPresenceLeave.listen((payload) {
+        leaveCalled = true;
+      });
+      channel.subscribe();
 
       channel.trigger('presence', {'event': 'sync'}, '1');
+      await Future<void>.delayed(Duration.zero);
       expect(syncCalled, isTrue);
       channel.trigger('presence', {
         'event': 'join',
@@ -849,6 +915,7 @@ void main() {
         'newPresences': <Presence>[],
         'currentPresences': <Presence>[],
       }, '2');
+      await Future<void>.delayed(Duration.zero);
       expect(joinCalled, isTrue);
       channel.trigger('presence', {
         'event': 'leave',
@@ -856,6 +923,7 @@ void main() {
         'leftPresences': <Presence>[],
         'currentPresences': <Presence>[],
       }, '3');
+      await Future<void>.delayed(Duration.zero);
       expect(leaveCalled, isTrue);
     });
   });
@@ -934,7 +1002,7 @@ void main() {
         config: const RealtimeChannelConfig(),
       );
 
-      channel.onPresenceSync((payload) {});
+      channel.onPresenceSync.listen((payload) {});
       channel.subscribe();
 
       final joinPayload = channel.joinPush.payload;
@@ -951,7 +1019,7 @@ void main() {
           config: const RealtimeChannelConfig(enabled: true),
         );
 
-        channel.onPresenceSync((payload) {});
+        channel.onPresenceSync.listen((payload) {});
         channel.subscribe();
 
         final joinPayload = channel.joinPush.payload;
@@ -983,7 +1051,7 @@ void main() {
         config: const RealtimeChannelConfig(),
       );
 
-      channel.onPresenceJoin((payload) {});
+      channel.onPresenceJoin.listen((payload) {});
       channel.subscribe();
 
       final joinPayload = channel.joinPush.payload;
@@ -997,7 +1065,7 @@ void main() {
         config: const RealtimeChannelConfig(),
       );
 
-      channel.onPresenceLeave((payload) {});
+      channel.onPresenceLeave.listen((payload) {});
       channel.subscribe();
 
       final joinPayload = channel.joinPush.payload;
@@ -1024,7 +1092,7 @@ void main() {
         channel.joinPush.trigger('ok', {});
         expect(channel.parameters['config']['presence']['enabled'], isFalse);
 
-        channel.onPresenceSync((payload) {});
+        channel.onPresenceSync.listen((payload) {});
 
         expect(channel.parameters['config']['presence']['enabled'], isTrue);
       },
@@ -1044,7 +1112,7 @@ void main() {
         channel.joinPush.trigger('ok', {});
         final initialPayload = Map.from(channel.parameters);
 
-        channel.onPresenceSync((payload) {});
+        channel.onPresenceSync.listen((payload) {});
 
         expect(channel.parameters['config']['presence']['enabled'], isTrue);
         expect(channel.parameters, equals(initialPayload));
@@ -1064,13 +1132,13 @@ void main() {
         channel.joinPush.trigger('ok', {});
         expect(channel.parameters['config']['presence']['enabled'], isFalse);
 
-        channel.onPresenceSync((payload) {});
+        channel.onPresenceSync.listen((payload) {});
         expect(channel.parameters['config']['presence']['enabled'], isTrue);
 
         final payloadAfterFirst = Map.from(channel.parameters);
 
-        channel.onPresenceJoin((payload) {});
-        channel.onPresenceLeave((payload) {});
+        channel.onPresenceJoin.listen((payload) {});
+        channel.onPresenceLeave.listen((payload) {});
 
         expect(channel.parameters, equals(payloadAfterFirst));
       },
@@ -1088,7 +1156,7 @@ void main() {
 
         expect(channel.joinedOnce, isFalse);
 
-        channel.onPresenceSync((payload) {});
+        channel.onPresenceSync.listen((payload) {});
 
         expect(channel.parameters['config']['presence']['enabled'], isFalse);
       },
@@ -1097,7 +1165,7 @@ void main() {
     test(
       'should receive presence events after resubscription triggered by adding '
       'callback',
-      () {
+      () async {
         channel = RealtimeChannel(
           'topic',
           socket,
@@ -1108,11 +1176,12 @@ void main() {
         channel.joinPush.trigger('ok', {});
 
         bool syncCalled = false;
-        channel.onPresenceSync((payload) {
+        channel.onPresenceSync.listen((payload) {
           syncCalled = true;
         });
 
         channel.trigger('presence', {'event': 'sync'}, '1');
+        await Future<void>.delayed(Duration.zero);
 
         expect(syncCalled, isTrue);
       },
@@ -1129,7 +1198,7 @@ void main() {
       channel.joinPush.trigger('ok', {});
       expect(channel.parameters['config']['presence']['enabled'], isFalse);
 
-      channel.onPresenceJoin((payload) {});
+      channel.onPresenceJoin.listen((payload) {});
 
       expect(channel.parameters['config']['presence']['enabled'], isTrue);
     });
@@ -1145,7 +1214,7 @@ void main() {
       channel.joinPush.trigger('ok', {});
       expect(channel.parameters['config']['presence']['enabled'], isFalse);
 
-      channel.onPresenceLeave((payload) {});
+      channel.onPresenceLeave.listen((payload) {});
 
       expect(channel.parameters['config']['presence']['enabled'], isTrue);
     });
@@ -1390,7 +1459,11 @@ void main() {
 }
 
 class _SetAuthThrowingSocket extends RealtimeClient {
-  _SetAuthThrowingSocket(super.endpoint, {required this.thrown});
+  _SetAuthThrowingSocket(
+    super.endpoint, {
+    required this.thrown,
+    super.headers,
+  });
 
   final FormatException thrown;
   int setAuthCalls = 0;

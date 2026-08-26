@@ -1,5 +1,5 @@
-import 'package:logging/logging.dart';
 import 'package:meta/meta.dart';
+import 'package:supabase/src/logger.dart';
 
 const _publishableKeyPrefix = 'sb_publishable_';
 const _secretKeyPrefix = 'sb_secret_';
@@ -20,7 +20,7 @@ final Set<String> _warnedApiKeySubtypes = {};
 /// Never throws: the server, not the SDK, decides key validity. The key value
 /// is never logged.
 @internal
-void warnOnUnrecognizedApiKey(String key, Logger log) {
+void warnOnUnrecognizedApiKey(String key) {
   if (!key.startsWith('sb_') || isNewApiKey(key)) {
     return;
   }
@@ -30,7 +30,7 @@ void warnOnUnrecognizedApiKey(String key, Logger log) {
       ? ''
       : rest.substring(0, underscoreIndex);
   if (_warnedApiKeySubtypes.add(subtype)) {
-    log.warning(
+    clientLogger.warning(
       'Unrecognized Supabase API key format. The key will be sent as-is. '
       'If this is unexpected, verify your API key.',
     );

@@ -17,6 +17,7 @@ import 'utils.dart';
 /// This simulates real GoTrue server behavior where refresh tokens are
 /// single-use.
 class RefreshTokenTrackingHttpClient extends BaseClient {
+  RefreshTokenTrackingHttpClient({this.responseDelay, this.holdFirstRequest});
   final Set<String> _usedRefreshTokens = {};
   final List<String> requestLog = [];
   int requestCount = 0;
@@ -26,8 +27,6 @@ class RefreshTokenTrackingHttpClient extends BaseClient {
 
   /// Completer to control when the first request completes
   Completer<void>? holdFirstRequest;
-
-  RefreshTokenTrackingHttpClient({this.responseDelay, this.holdFirstRequest});
 
   /// Manually mark a token as used (to simulate race condition where
   /// another request already consumed the token)

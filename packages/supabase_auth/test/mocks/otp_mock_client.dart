@@ -4,6 +4,13 @@ import 'package:http/http.dart';
 
 /// A mock HTTP client that simulates OTP-related API responses.
 class OtpMockClient extends BaseClient {
+  OtpMockClient({
+    this.phoneNumber = '+11234567890',
+    this.email = 'test@example.com',
+    this.userId = 'mock-user-id-123',
+    this.accessToken = 'mock-access-token',
+    this.refreshToken = 'mock-refresh-token',
+  });
   final String phoneNumber;
   final String email;
   final String userId;
@@ -12,14 +19,6 @@ class OtpMockClient extends BaseClient {
 
   Map<String, dynamic>? lastResendBody;
   Map<String, dynamic>? lastUpdateUserBody;
-
-  OtpMockClient({
-    this.phoneNumber = '+11234567890',
-    this.email = 'test@example.com',
-    this.userId = 'mock-user-id-123',
-    this.accessToken = 'mock-access-token',
-    this.refreshToken = 'mock-refresh-token',
-  });
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
@@ -425,9 +424,6 @@ class ChannelMockClient extends BaseClient {
 }
 
 class ErrorMockClient extends BaseClient {
-  final int statusCode;
-  final Map<String, dynamic> errorResponse;
-
   ErrorMockClient({
     this.statusCode = 400,
     this.errorResponse = const {
@@ -435,6 +431,8 @@ class ErrorMockClient extends BaseClient {
       'message': 'The OTP provided is invalid or has expired',
     },
   });
+  final int statusCode;
+  final Map<String, dynamic> errorResponse;
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {

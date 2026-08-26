@@ -1,34 +1,29 @@
 part of 'postgrest_builder.dart';
 
-class PostgrestRpcBuilder
-    extends RawPostgrestBuilder<dynamic, dynamic, dynamic> {
+/// Builds a stored procedure call.
+///
+/// Like [PostgrestQueryBuilder] it is not executable itself: [rpc] has to be
+/// called to obtain an executable builder.
+@immutable
+class PostgrestRpcBuilder {
   PostgrestRpcBuilder(
     String url, {
     Map<String, String>? headers,
     String? schema,
     Client? httpClient,
-    required YAJsonIsolate isolate,
-    bool retryEnabled = true,
-    int retryCount = 3,
-    Set<int> retryableStatusCodes = PostgrestClient.defaultRetryableStatusCodes,
-    Duration Function(int attempt)? retryDelay,
+    required AsyncJsonCodec jsonCodec,
+    SupabaseRetryOptions retryOptions = const SupabaseRetryOptions(),
     Duration? requestTimeout,
-    Future<void>? abortSignal,
-  }) : super(
-         PostgrestBuilder(
-           url: Uri.parse(url),
-           headers: headers ?? {},
-           schema: schema,
-           httpClient: httpClient,
-           isolate: isolate,
-           retryEnabled: retryEnabled,
-           retryCount: retryCount,
-           retryableStatusCodes: retryableStatusCodes,
-           retryDelay: retryDelay,
-           requestTimeout: requestTimeout,
-           abortSignal: abortSignal,
-         ),
+  }) : _config = _RequestConfig(
+         url: Uri.parse(url),
+         headers: {...?headers},
+         schema: schema,
+         httpClient: httpClient,
+         jsonCodec: jsonCodec,
+         retry: retryOptions,
+         requestTimeout: requestTimeout,
        );
+  final _RequestConfig _config;
 
   /// Performs a database function call.
   ///
@@ -40,7 +35,7 @@ class PostgrestRpcBuilder
     Object? params,
     bool get = false,
   ]) {
-    var newUrl = _url;
+    var newUrl = _config.url;
     final HttpMethod method;
     if (get) {
       method = HttpMethod.get;
@@ -53,12 +48,11 @@ class PostgrestRpcBuilder
 
           final MapEntry(:key, :value) = entry;
           final formattedValue = value is List
-              ? '{${_cleanFilterArray(value)}}'
+              ? '{${_cleanFilterList(value)}}'
               : value;
-          newUrl = appendSearchParameters(
+          newUrl = newUrl.appendSearchParameters(
             key.toString(),
             '$formattedValue',
-            newUrl,
           );
         }
       } else {
@@ -68,8 +62,8 @@ class PostgrestRpcBuilder
       method = HttpMethod.post;
     }
 
-    return PostgrestFilterBuilder(
-      _copyWithType(
+    return _filterBuilder(
+      _config.copyWith(
         method: method,
         url: newUrl,
         body: params,

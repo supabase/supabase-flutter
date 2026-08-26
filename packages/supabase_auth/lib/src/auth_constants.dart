@@ -12,6 +12,10 @@ class AuthConstants {
   /// storage key prefix to store code verifiers
   static const String defaultStorageKey = 'supabase.auth.token';
 
+  /// Maximum number of PKCE code verifiers kept in storage at once. Starting
+  /// another flow beyond this evicts the oldest pending verifier.
+  static const int pkceMaxConcurrentFlows = 5;
+
   /// The margin to use when checking if a token is expired.
   static const expiryMargin = Duration(seconds: 30);
 

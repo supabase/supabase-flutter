@@ -43,7 +43,7 @@ class _SetSessionMockClient extends BaseClient {
       // Refresh-token fallback response with a freshly minted access token.
       final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       final issuedAt = expiresAt - 3600;
-      final freshAccessToken = _makeRawJwt({
+      final freshAccessToken = unsignedTestJwt({
         'exp': expiresAt,
         'iat': issuedAt,
         'sub': 'mock-user-id',
@@ -68,20 +68,6 @@ class _SetSessionMockClient extends BaseClient {
   }
 }
 
-/// Crafts a JWT by base64url-encoding [payload] directly.
-///
-/// Unlike using dart_jsonwebtoken, this gives exact control over every claim —
-/// no auto-injected `iat`, no claim overrides. The signature is a stub;
-/// [decodeJwt] does not verify signatures.
-String _makeRawJwt(Map<String, dynamic> payload) {
-  final header = base64Url.encode(
-    utf8.encode(jsonEncode({'alg': 'HS256', 'typ': 'JWT'})),
-  );
-  final body = base64Url.encode(utf8.encode(jsonEncode(payload)));
-  const signature = 'AAAA';
-  return '$header.$body.$signature';
-}
-
 void main() {
   late _SetSessionMockClient mockClient;
   late AuthClient client;
@@ -99,7 +85,7 @@ void main() {
     test('empty refresh token with a non-null access token throws before '
         'inspecting the access token', () async {
       final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
-      final accessToken = _makeRawJwt({
+      final accessToken = unsignedTestJwt({
         'exp': expiresAt,
         'iat': expiresAt - 3600,
         'sub': 'mock-user-id',
@@ -117,7 +103,7 @@ void main() {
         'as expired and falls back to the refresh-token path', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // exp is 20 s in the future, inside the 30 s AuthConstants.expiryMargin.
-      final accessToken = _makeRawJwt({
+      final accessToken = unsignedTestJwt({
         'exp': timeNow + 20,
         'iat': timeNow - 3580,
         'sub': 'mock-user-id',
@@ -138,7 +124,7 @@ void main() {
     test('access token with no exp claim is treated as expired and falls back '
         'to the refresh-token path', () async {
       // JWT without an exp claim: decodeJwt succeeds but exp == null.
-      final accessToken = _makeRawJwt({
+      final accessToken = unsignedTestJwt({
         'role': 'authenticated',
         'sub': 'mock-user-id',
       });
@@ -160,7 +146,7 @@ void main() {
       () async {
         final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
         final expiresAt = issuedAt + 3600;
-        final accessToken = _makeRawJwt({
+        final accessToken = unsignedTestJwt({
           'exp': expiresAt,
           'iat': issuedAt,
           'sub': 'mock-user-id',
@@ -179,7 +165,7 @@ void main() {
     test('expiresIn is null when iat claim is absent', () async {
       final expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 3600;
       // JWT without iat.
-      final accessToken = _makeRawJwt({
+      final accessToken = unsignedTestJwt({
         'exp': expiresAt,
         'sub': 'mock-user-id',
       });
@@ -195,7 +181,7 @@ void main() {
     test('expiresAt matches the exp claim in the JWT', () async {
       final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final expiresAt = issuedAt + 3600;
-      final accessToken = _makeRawJwt({
+      final accessToken = unsignedTestJwt({
         'exp': expiresAt,
         'iat': issuedAt,
         'sub': 'mock-user-id',
@@ -221,7 +207,7 @@ void main() {
         final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
         final expiresAt = issuedAt + 3600;
         const refreshToken = 'my-refresh-token';
-        final accessToken = _makeRawJwt({
+        final accessToken = unsignedTestJwt({
           'exp': expiresAt,
           'iat': issuedAt,
           'sub': 'mock-user-id',
@@ -243,7 +229,7 @@ void main() {
     test('fast path emits signedIn (not tokenRefreshed)', () async {
       final issuedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
       final expiresAt = issuedAt + 3600;
-      final accessToken = _makeRawJwt({
+      final accessToken = unsignedTestJwt({
         'exp': expiresAt,
         'iat': issuedAt,
         'sub': 'mock-user-id',
@@ -260,7 +246,7 @@ void main() {
     test('expired-fallback path emits tokenRefreshed (not signedIn)', () async {
       final timeNow = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       // Clearly expired token (exp well in the past).
-      final accessToken = _makeRawJwt({
+      final accessToken = unsignedTestJwt({
         'exp': timeNow - 100,
         'iat': timeNow - 3700,
         'sub': 'mock-user-id',

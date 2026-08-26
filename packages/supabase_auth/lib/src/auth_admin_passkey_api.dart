@@ -14,10 +14,6 @@ import 'types/passkey.dart';
 /// server. Never expose your `secret` key on the client.
 @experimental
 class AuthAdminPasskeyApi {
-  final String _url;
-  final Map<String, String> _headers;
-  final AuthFetch _fetch;
-
   const AuthAdminPasskeyApi({
     required String url,
     required Map<String, String> headers,
@@ -25,6 +21,9 @@ class AuthAdminPasskeyApi {
   }) : _url = url,
        _headers = headers,
        _fetch = fetch;
+  final String _url;
+  final Map<String, String> _headers;
+  final AuthFetch _fetch;
 
   /// Returns the list of passkeys registered to the user with [userId].
   Future<List<Passkey>> listPasskeys({required String userId}) async {

@@ -268,6 +268,87 @@ final WebSocketChannel? socket = client.connection;
 client.onConnectionMessage(rawMessage);
 ```
 
+### The mutable internals of `RealtimeClient` are private
+
+`RealtimeClient` used to expose its internal state machine as public mutable fields, so external
+code could reset the message counter, cancel the heartbeat timer, or add channels to the internal
+list, bypassing all lifecycle management. The internals are now private and the remaining public
+surface is read-only:
+
+| Before | After |
+| --- | --- |
+| `client.channels` (mutable list) | `client.channels` (unmodifiable view) |
+| `client.getChannels()` | `client.channels` |
+| `supabase.getChannels()` | `supabase.channels` |
+| `client.accessToken = token` | `await client.setAccessToken(token)` |
+| `client.heartbeatInterval = interval` | `RealtimeClient(heartbeatInterval: interval)` |
+| `client.customAccessToken = getter` | `RealtimeClient(customAccessToken: getter)` |
+| `client.reconnectAfter = calculation` | `RealtimeClient(reconnectAfter: calculation)` |
+| `client.connection = channel` | removed, the getter remains |
+| `client.connectionState = state` | removed, the getter remains |
+| `client.headers['key'] = value` | `RealtimeClient(headers: headers)` |
+| `client.heartbeatTimer`, `client.reconnectTimer` | removed |
+| `client.ref`, `client.pendingHeartbeatRef`, `client.sendBuffer` | internal and test-only |
+
+`channels`, `accessToken`, `connection` and `connectionState` are still readable, and everything
+that used to be mutated after construction is either a constructor parameter or has a dedicated
+method. Channels are added with `channel()` and removed with `removeChannel()` or
+`removeAllChannels()`; the returned `channels` list is an unmodifiable snapshot, so mutating it
+throws an `UnsupportedError`. The `headers` and `parameters` maps are also unmodifiable now; pass
+them to the constructor instead, or assign `SupabaseClient.headers` when the client is managed by
+a `SupabaseClient`.
+
+When the client is managed by a `SupabaseClient`, pass the heartbeat interval and the reconnect
+backoff through `RealtimeClientOptions` instead:
+
+```dart
+final supabase = SupabaseClient(
+  supabaseUrl,
+  supabaseKey,
+  realtimeClientOptions: const RealtimeClientOptions(
+    heartbeatInterval: Duration(seconds: 60),
+  ),
+);
+```
+
+```dart
+// Before
+final client = RealtimeClient(realtimeUrl);
+client.heartbeatInterval = const Duration(seconds: 60);
+client.accessToken = newToken;
+final channels = client.getChannels();
+
+// After
+final client = RealtimeClient(
+  realtimeUrl,
+  heartbeatInterval: const Duration(seconds: 60),
+);
+await client.setAccessToken(newToken);
+final channels = client.channels;
+```
+
+`setAccessToken()` is the intentional path for token rotation: unlike the removed field write, it
+also propagates the new token to every joined channel.
+
+### The mutable internals of `RealtimeChannel` are private
+
+`RealtimeChannel` received the same treatment as `RealtimeClient`. Its join bookkeeping used to be
+public mutable fields that were only marked `@internal`, so external code could reassign the join
+push, replace the presence tracker, or mutate the join parameters underneath the channel:
+
+| Before | After |
+| --- | --- |
+| `channel.joinedOnce = value` | removed, the getter remains (internal) |
+| `channel.joinPush = push` | removed, the getter remains (internal and test-only) |
+| `channel.presence` | removed |
+| `channel.parameters` (mutable map) | `channel.parameters` (unmodifiable view, internal) |
+
+These members were never part of the supported API surface, but they were reachable. If you read
+presence state through `channel.presence`, use `channel.presenceState()` and the
+`onPresenceSync`, `onPresenceJoin`, and `onPresenceLeave` streams instead. The join payload is
+only updated internally; there is no supported way to mutate `parameters` after the channel is
+created, so pass the configuration through `RealtimeChannelConfig` when creating the channel.
+
 ### Broadcasts no longer fall back to the REST API
 
 `sendBroadcastMessage()` used to silently post to the REST broadcast endpoint whenever the channel
@@ -307,6 +388,247 @@ Messages sent between `subscribe()` and the channel actually joining are still b
 flushed once the join succeeds, so only channels that were never subscribed throw.
 
 `httpSend()` requires a Realtime server running v2.97.0 or newer.
+
+### Realtime listener callbacks are now streams
+
+Every recurring-event listener in `realtime_client` is now a Dart `Stream` instead of a callback,
+following the shape `RealtimeClient.onHeartbeat` already had. Streams compose (`map`, `where`,
+`firstWhere`, `timeout`), support multiple listeners, and removing a listener is a
+`StreamSubscription.cancel()`, which the callback API had no public equivalent for.
+
+On `RealtimeClient`, the four connection callbacks are replaced by two broadcast streams:
+`onStatusChange` for the connection lifecycle and `onMessage` for every decoded frame. Connection
+errors are emitted as stream errors on `onStatusChange`, so they arrive through the `onError`
+handler of `listen`:
+
+```dart
+// Before
+client.onOpen(() => print('open'));
+client.onClose((event) => print('closed: $event'));
+client.onError((error) => print('error: $error'));
+client.onMessage((message) => print('message: $message'));
+
+// After
+client.onStatusChange.listen(
+  (change) => switch (change.status) {
+    RealtimeConnectionStatus.open => print('open'),
+    RealtimeConnectionStatus.closed => print('closed: ${change.closeEvent}'),
+  },
+  onError: (error) => print('error: $error'),
+);
+client.onMessage.listen((message) => print('message: $message'));
+```
+
+Four separate streams for one connection was a different shape than the channel, where all of
+open, closed and error already arrive on a single `RealtimeChannel.onStatusChange`. Since a stream
+needs `listen` and a cancelled subscription to clean up, one status stream is also less
+bookkeeping than three.
+
+On `RealtimeChannel`, `onPostgresChanges` and `onBroadcast` no longer take a `callback` parameter
+and return a typed stream instead of the channel, so they can no longer be chained. Repeated calls
+with the same arguments return the same stream. For `postgres_changes` the stream still has to be
+created before `subscribe()`, because the requested changes are part of the join payload, but it
+can be listened to at any point:
+
+```dart
+// Before
+supabase
+    .channel('room')
+    .onPostgresChanges(
+      event: PostgresChangeEvent.insert,
+      schema: 'public',
+      table: 'messages',
+      callback: (payload) => print(payload),
+    )
+    .onBroadcast(
+      event: 'cursor-pos',
+      callback: (payload) => print(payload),
+    )
+    .subscribe();
+
+// After
+final channel = supabase.channel('room');
+channel
+    .onPostgresChanges(
+      event: PostgresChangeEvent.insert,
+      schema: 'public',
+      table: 'messages',
+    )
+    .listen(print);
+channel.onBroadcast(event: 'cursor-pos').listen(print);
+channel.subscribe();
+```
+
+The presence and system listeners are stream getters, and `onSystemEvents` emits a typed
+`RealtimeSystemPayload` instead of a raw payload:
+
+```dart
+// Before
+channel.onPresenceSync((payload) { /* ... */ });
+channel.onPresenceJoin((payload) { /* ... */ });
+channel.onPresenceLeave((payload) { /* ... */ });
+channel.onSystemEvents((payload) {
+  final system = RealtimeSystemPayload.fromJson(
+    Map<String, dynamic>.from(payload as Map),
+  );
+});
+
+// After
+channel.onPresenceSync.listen((payload) { /* ... */ });
+channel.onPresenceJoin.listen((payload) { /* ... */ });
+channel.onPresenceLeave.listen((payload) { /* ... */ });
+channel.onSystemEvents.listen((system) { /* ... */ });
+```
+
+`subscribe()` no longer takes a status callback. Status changes are emitted on the new
+`RealtimeChannel.onStatusChange` stream as `RealtimeSubscribeStatusChange` values, which carry the
+`RealtimeSubscribeStatus` and, for `channelError`, the error that caused it. The optional timeout
+moved up to be the first positional parameter:
+
+```dart
+// Before
+channel.subscribe((status, [error]) {
+  if (status == RealtimeSubscribeStatus.subscribed) {
+    // ...
+  } else if (status == RealtimeSubscribeStatus.channelError) {
+    print('error: $error');
+  }
+}, const Duration(seconds: 10));
+
+// After
+channel.onStatusChange.listen((change) {
+  if (change.status == RealtimeSubscribeStatus.subscribed) {
+    // ...
+  } else if (change.status == RealtimeSubscribeStatus.channelError) {
+    print('error: ${change.error}');
+  }
+});
+channel.subscribe(const Duration(seconds: 10));
+```
+
+All channel streams complete when the channel closes, so `await for` loops and `onDone` handlers
+end on their own once the channel is gone.
+
+### `Binding` and `BindingCallback` are internal
+
+`Binding` and `BindingCallback` were the raw registration primitives underneath the channel
+listeners, exported by accident: their only consumers, `RealtimeChannel.onEvents` and
+`RealtimeChannel.off`, have always been internal. They are no longer exported. Use the typed
+channel streams (`onPostgresChanges`, `onBroadcast`, `onPresenceSync`, `onPresenceJoin`,
+`onPresenceLeave`, `onSystemEvents`) instead.
+
+### `RealtimePresence` is internal
+
+`RealtimePresence` and its helper types (`PresenceOpts`, `PresenceEvents`, `PresenceChooser`,
+`PresenceOnJoinCallback`, `PresenceOnLeaveCallback`) are now `@internal`, along with the
+`RealtimeChannel.presence` field. They were presence bookkeeping that leaked into the public API,
+and registering a callback through `channel.presence.onJoin(...)` silently disabled the channel's
+own presence events, because the channel's forwarders occupied the same single callback slot.
+
+Everything the class offered is available on the channel:
+
+```dart
+// Before
+channel.presence.onJoin((key, current, joined) { /* ... */ });
+channel.presence.onLeave((key, current, left) { /* ... */ });
+channel.presence.onSync(() { /* ... */ });
+final Map<String, List<Presence>> state = channel.presence.state;
+
+// After
+channel.onPresenceJoin.listen((payload) { /* ... */ });
+channel.onPresenceLeave.listen((payload) { /* ... */ });
+channel.onPresenceSync.listen((payload) { /* ... */ });
+final List<SinglePresenceState> state = channel.presenceState();
+```
+
+`presenceState()` is not a drop-in replacement for `presence.state`: it returns a
+`List<SinglePresenceState>` rather than a map, so a presence key is read from
+`SinglePresenceState.key` and its payloads from `SinglePresenceState.presences`. When code depended
+on the map, rebuild it from the list:
+
+```dart
+final byKey = {
+  for (final state in channel.presenceState()) state.key: state.presences,
+};
+```
+
+The `Presence` payload class is unchanged and stays public.
+
+### `RealtimeEncode` and `RealtimeDecode` are asynchronous and typed
+
+The codec overrides on `RealtimeClient` were synchronous and worked on raw maps, so the JSON work
+always ran on the main isolate and a large payload could block the event loop. Both typedefs now
+work on a `RealtimeMessage` and return a `Future`, which lets you hand the work to a background
+isolate:
+
+| Before | After |
+| --- | --- |
+| `Object Function(Map<String, dynamic>)` | `Future<Object> Function(RealtimeMessage)` |
+| `Map<String, dynamic> Function(Object)` | `Future<RealtimeMessage> Function(Object)` |
+
+`RealtimeMessage` carries the `joinRef`, `ref`, `topic`, `event` and `payload` of a message, and
+converts to and from the shape a protocol version puts on the wire, so a codec only has to turn that
+shape into bytes and back. Outgoing frames are written in push order and incoming messages are
+dispatched in receive order, even when a later payload finishes encoding or decoding first. A codec
+call that never completes fails after `RealtimeClient.timeout` instead of stalling every write or
+dispatch queued behind it:
+
+```dart
+final isolate = YAJsonIsolate();
+
+final client = RealtimeClient(
+  'wss://project.supabase.co/realtime/v1',
+  encode: (message) => isolate.encode(message.toJson()),
+  decode: (frame) async =>
+      RealtimeMessage.fromJson(await isolate.decode(frame as String)),
+);
+```
+
+`RealtimeClient.onMessage` now emits `RealtimeMessage` instead of `Map<String, dynamic>`, so a
+listener that reads fields off the map needs to switch to properties:
+
+```dart
+// Before
+client.onMessage.listen((message) => print(message['event']));
+
+// After
+client.onMessage.listen((message) => print(message.event));
+```
+
+`toJson` and `RealtimeMessage.fromJson` default to protocol `2.0.0`; pass
+`RealtimeProtocolVersion.v1` to either when the client runs on the legacy protocol.
+
+`RealtimeClientOptions` takes the same two callbacks, so a codec can be set on `SupabaseClient` and
+on `Supabase.initialize` without constructing a `RealtimeClient` yourself:
+
+```dart
+await Supabase.initialize(
+  url: url,
+  anonKey: anonKey,
+  realtimeClientOptions: RealtimeClientOptions(
+    encode: (message) => isolate.encode(message.toJson()),
+    decode: (frame) async =>
+        RealtimeMessage.fromJson(await isolate.decode(frame as String)),
+  ),
+);
+```
+
+`encode` and `decode` are now `null` unless you pass one; `RealtimeClient` uses the built-in codec
+for whichever of the two is `null`. That codec is synchronous, so a client that overrides neither
+still writes and dispatches without a microtask hop. Reading a custom codec back off the client
+changed accordingly; the built-in codec has no public accessor, so this only applies when you
+passed your own:
+
+```dart
+// Before
+final Map<String, dynamic> message = client.decode(frame);
+
+// After
+final RealtimeMessage message = await client.decode!(frame);
+```
+
+A codec replaces the built-in one completely, so the one above handles text frames only. Handle a
+`Uint8List` frame as well if you send or receive binary broadcasts.
 
 ### Plural enum names singularized
 
@@ -503,7 +825,7 @@ already inert: unused types, options the client ignored, or values the server ne
 | `OAuthProvider.snakeCase` | `OAuthProvider.name` | `supabase_auth` |
 | `User.confirmedAt` | `User.emailConfirmedAt` | `supabase_auth` |
 | `ReturningOption` | none, it was unused | `postgrest` |
-| `PostgrestClient.auth()` | `PostgrestClient.setAuth()` | `postgrest` |
+| `PostgrestClient.auth()` | none, pass an `Authorization` header instead | `postgrest` |
 | `RealtimeClient.longpollerTimeout` | none, there is no longpoll transport | `supabase_realtime` |
 | `ChannelResponse.rateLimited` | none, it was never returned | `supabase_realtime` |
 | `FileObject.lastAccessedAt`, `FileObjectV2.lastAccessedAt` | none, the server does not populate it | `supabase_storage` |
@@ -1002,7 +1324,7 @@ Across every package:
 
 | Before | After |
 | --- | --- |
-| `setAuth()` | `setAccessToken()` |
+| `RealtimeClient.setAuth()` | `RealtimeClient.setAccessToken()` |
 | `queryParams:` | `queryParameters:` |
 | `opts:` | `options:` |
 | `PresenceOpts` | `PresenceOptions` |
@@ -1065,3 +1387,466 @@ These renames also change a type:
 | `RealtimeClient.reconnectAfterMs` (`int` return) | `reconnectAfter` (`Duration` return) |
 | `SnapshotReference.maxReferenceAgeMs` / `maxSnapshotAgeMs` (`int?`) | `maxReferenceAge` / `maxSnapshotAge` (`Duration?`) |
 | `Snapshot.timestampMs` / `TableMetadata.lastUpdatedMs` (`int`) | `timestamp` / `lastUpdated` (`DateTime`, UTC) |
+
+### Every client takes one `SupabaseRetryOptions`
+
+Retry used to be configured differently in every client: PostgREST took three
+separate parameters, storage took an `int`, and the auth token refresh had no
+knobs at all. All three take the same `SupabaseRetryOptions` now, which carries
+`enabled`, `count`, `initialDelay`, `maxDelay` and `randomizationFactor`. What
+counts as a retryable failure stays with each client, since those are not
+interchangeable: PostgREST repeats a read that answered with `503` or `520`,
+storage repeats an upload that hit a network error, and auth repeats a token
+refresh that never reached the service.
+
+| Before | After |
+| --- | --- |
+| `PostgrestClient(retryEnabled: …, retryCount: …)` | `PostgrestClient(retryOptions: …)` |
+| `PostgrestClientOptions(retryEnabled: …, retryCount: …)` | `PostgrestClientOptions(retryOptions: …)` |
+| `PostgrestBuilder`, `PostgrestQueryBuilder` and `PostgrestRpcBuilder` constructors, same parameters | `retryOptions: …` |
+| `SupabaseStorageClient(retryAttempts: 5)` | `SupabaseStorageClient(retryOptions: SupabaseRetryOptions(count: 5))` |
+| `StorageClientOptions(retryAttempts: 5)` | `StorageClientOptions(retryOptions: SupabaseRetryOptions(count: 5))` |
+| `upload(…, retryAttempts: 5)` and the same parameter on `uploadBinary`, `uploadToSignedUrl`, `uploadBinaryToSignedUrl`, `update` and `updateBinary` | `retryOptions: SupabaseRetryOptions(count: 5)` |
+
+```dart
+// Before
+postgrestOptions: const PostgrestClientOptions(retryCount: 5),
+storageOptions: const StorageClientOptions(retryAttempts: 5),
+
+// After
+postgrestOptions: const PostgrestClientOptions(
+  retryOptions: SupabaseRetryOptions(count: 5),
+),
+storageOptions: const StorageClientOptions(
+  retryOptions: SupabaseRetryOptions(count: 5),
+),
+```
+
+`count` is the number of retries after the first attempt, so `count: 0` sends a
+request exactly once. The old storage `retryAttempts` counted the same way, so
+the number carries over unchanged.
+
+The auth token refresh is configurable for the first time, through
+`AuthClientOptions.retryOptions` and `AuthClient(retryOptions: …)`. The refresh
+still stops retrying once the next backoff would fall after the next refresh
+tick, so the count only caps how many attempts a short backoff can squeeze into
+that window.
+
+The per-request `PostgrestBuilder.retry()` override is unchanged.
+
+### The retry backoff defaults are the same in every client
+
+One curve is used everywhere now: the first retry waits 400 ms, every retry
+after that waits twice as long up to 30 seconds, and each delay is randomized
+by up to 25% so that many clients do not retry in lockstep. Only how many
+retries are made differs, and only where it has to.
+
+| Client | Before | After |
+| --- | --- | --- |
+| `postgrest` | 3 retries, 1s doubling to 30s, no jitter | 3 retries on the shared curve |
+| `supabase_storage` | opt-in, 400ms doubling to 30s, 25% jitter | unchanged, still opt-in with `count: 0` |
+| `supabase_auth` | 400ms doubling to 10s, no jitter | shared curve, bounded by the refresh tick as before |
+
+PostgREST reads therefore back off sooner than they did, and with jitter. Pass
+your own `SupabaseRetryOptions` to keep the old curve:
+
+```dart
+postgrestOptions: const PostgrestClientOptions(
+  retryOptions: SupabaseRetryOptions(
+    initialDelay: Duration(seconds: 1),
+    randomizationFactor: 0,
+  ),
+),
+```
+
+### The retried status codes are no longer configurable
+
+`503 Service Unavailable` and `520 Unknown Error` are the only responses worth
+repeating, so the set of retried status codes is fixed. Retrying anything else,
+a `500` from a failing query for example, only multiplies the load without a
+chance of a different answer.
+
+| Before | After |
+| --- | --- |
+| `PostgrestClient(retryableStatusCodes: …)` | removed |
+| `PostgrestClientOptions(retryableStatusCodes: …)` | removed |
+| `PostgrestClient.defaultRetryableStatusCodes` | `PostgrestClient.retryableStatusCodes` |
+
+If you retried a status code outside that set, catch the exception and decide
+what to do with it yourself:
+
+```dart
+// Before
+postgrestOptions: const PostgrestClientOptions(
+  retryableStatusCodes: {500, 503, 520},
+),
+
+// After
+try {
+  await supabase.from('todos').select();
+} on PostgrestApiException catch (error) {
+  if (error.statusCode == 500) {
+    // Retry it yourself, or surface it.
+  }
+}
+```
+
+### `setAccessToken()` is gone from the rest, storage and functions clients
+
+`PostgrestClient.setAccessToken()`, `SupabaseStorageClient.setAccessToken()` and
+`FunctionsClient.setAccessToken()` are removed. `RealtimeClient.setAccessToken()` stays.
+
+Despite the name, these three pinned a token rather than kept one in sync. `SupabaseClient` gives
+the rest, storage and functions clients an HTTP client that attaches the current session token to
+every request, but only when the request does not already carry an `Authorization` header. A token
+set through `setAccessToken` did carry one, so it won, and nothing ever cleared it: it kept
+overriding the session token across refreshes and sign-outs for the rest of the client's life.
+
+If you never called them, nothing changes. If you did, the replacement depends on what you were
+after.
+
+To authenticate as the signed-in user, do nothing. `SupabaseClient` already resolves that token on
+every request.
+
+On a client you construct yourself, pass an `accessToken` callback. It is resolved before every
+request, so a token that rotates is picked up without you pushing the new value anywhere. This is
+the closest replacement for the old setter, and unlike it, it does not go stale:
+
+```dart
+// Before
+final functions = FunctionsClient(functionsUrl, {'apikey': anonKey});
+functions.setAccessToken(jwt);
+
+// After
+final functions = FunctionsClient(
+  functionsUrl,
+  {'apikey': anonKey},
+  accessToken: () async => currentJwt,
+);
+```
+
+`PostgrestClient` and `SupabaseStorageClient` take the same callback. If the token never changes,
+a constructor header is still enough:
+
+```dart
+final functions = FunctionsClient(functionsUrl, {
+  'apikey': anonKey,
+  'Authorization': 'Bearer $jwt',
+});
+```
+
+Passing both an `Authorization` header and `accessToken` asserts, because the header would win on
+every request and the callback would never be used.
+
+To use a different token for a single call, pass it to that call:
+
+```dart
+await functions.invoke('hello', headers: {'Authorization': 'Bearer $jwt'});
+await postgrest.from('countries').select().setHeader('Authorization', 'Bearer $jwt');
+```
+
+To pin a token on a client you got from `SupabaseClient`, set the header yourself. `SupabaseClient`
+builds its sub-clients, so there is no `accessToken` callback to pass:
+
+```dart
+supabase.storage.setHeader('Authorization', 'Bearer $jwt');
+supabase.functions.setHeader('Authorization', 'Bearer $jwt');
+```
+
+The rest client is stateless and its header map unmodifiable (see
+[the stateless rest client](#the-rest-client-and-its-builders-are-stateless)), so a pinned token is
+passed per request there, or client-wide through the `headers` setter of `SupabaseClient`:
+
+```dart
+await supabase.from('countries').select().setHeader('Authorization', 'Bearer $jwt');
+supabase.headers = {...supabase.headers, 'Authorization': 'Bearer $jwt'};
+```
+
+That shadows the session token exactly as the old setter did, so remove the header again once the
+pinned token should no longer apply.
+
+Realtime keeps its setter because it holds a live socket and has to push a new token over it rather
+than attach one per request.
+
+### The rest client and its builders are stateless
+
+`PostgrestClient` no longer holds any mutable state, and the query builder is no longer awaitable
+before a table operation has been chosen.
+
+| Before | After |
+| --- | --- |
+| `supabase.rest.headers['X-Foo'] = 'bar'` | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}` |
+| `postgrest.headers['X-Foo'] = 'bar'` | pass the header to the `PostgrestClient` constructor, or use `setHeader()` per request |
+| `await supabase.from('countries')` compiled and threw an `ArgumentError` at runtime | does not compile |
+| `SupabaseQuerySchema(headers: …)` | removed, the headers of the `rest` client are used |
+| `PostgrestQueryBuilder(method: …, abortSignal: …)` and `PostgrestRpcBuilder(abortSignal: …)` | removed, both belong to the executable builder returned by a table operation or by `rpc()` |
+| `PostgrestBuilder.appendSearchParameters()` and `overrideSearchParameters()` | removed, internal URL helpers that leaked into the public API |
+| `PostgrestQueryBuilder<T>` | `PostgrestQueryBuilder`, the type argument only mattered when the builder was awaitable |
+
+`PostgrestClient.headers` is now an unmodifiable map. The client never changes after construction,
+which makes it safe to share across requests and removes a class of bugs where one call site's
+header mutation leaked into every later request. Set headers where they belong instead: on the
+constructor for all requests, or with `setHeader()` on a builder for a single request.
+
+On `SupabaseClient`, `rest` is no longer a mutable singleton for the same reason. Assigning
+`supabase.headers` replaces the rest client with one carrying the new headers, so reads through
+`supabase.rest.headers` stay correct, but in-place mutation of that map now throws an
+`UnsupportedError`. A `PostgrestClient` reference captured before the assignment keeps the headers
+it was built with, and the same holds for the `SupabaseQuerySchema` returned by
+`supabase.schema(…)`, which wraps the rest client it was created with. Read `supabase.rest` or call
+`supabase.schema(…)` again (and create new builders) after changing `supabase.headers`.
+`supabase.rpc()` used to permanently merge the client headers into the rest client on every call;
+that mutation is gone along with the state it leaked into.
+
+Since the query builder is no longer awaitable, its type argument no longer means anything and is
+gone: `insert()`, `upsert()`, `update()` and `delete()` without a trailing `select()` now resolve
+to `void` everywhere, where `supabase.from()` used to yield `dynamic` and a standalone
+`PostgrestClient` `void`. Code that assigned that value was reading `null`; drop the assignment or
+add `select()` to actually return data.
+
+A query builder that has not chosen a table operation is meaningless as a request, so
+`supabase.from('countries')` by itself no longer implements `Future` and cannot be awaited,
+converted with `withConverter()`, or given an `abortSignal()`. Call `select()`, `insert()`,
+`upsert()`, `update()`, `delete()` or `count()` first; everything after that point is unchanged.
+`setHeader()` and `retry()` remain available before the operation, since they configure whichever
+request follows:
+
+```dart
+// Before: compiled, but threw an ArgumentError at runtime.
+await supabase.from('countries');
+
+// After: does not compile. Choose an operation first.
+await supabase.from('countries').select();
+```
+
+### Client header maps are unmodifiable
+
+The auth, functions and storage clients used to hand out their internal header map, so any caller
+could rewrite the headers of a client from anywhere, including the sub-clients a `SupabaseClient`
+manages. Every `headers` getter now returns an unmodifiable view, the same way
+`PostgrestClient.headers` and `RealtimeClient.headers` already did.
+
+| Before | After |
+| --- | --- |
+| `supabase.auth.headers['X-Foo'] = 'bar'` | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}` |
+| `supabase.functions.headers['X-Foo'] = 'bar'` | `supabase.headers = {...supabase.headers, 'X-Foo': 'bar'}` |
+| `supabase.storage.headers['X-Foo'] = 'bar'` | `supabase.storage.setHeader('X-Foo', 'bar')` |
+| `storage.from('bucket').headers['X-Foo'] = 'bar'` | `storage.from('bucket').setHeader('X-Foo', 'bar')` |
+| `authClient.headers['X-Foo'] = 'bar'` | `authClient.setHeader('X-Foo', 'bar')` |
+| `functionsClient.headers['X-Foo'] = 'bar'` | `functionsClient.setHeader('X-Foo', 'bar')` |
+
+Mutating one of those maps now throws an `UnsupportedError`. To add a single header, the auth,
+functions and storage clients have a `setHeader()` method, and storage has one per bucket as well.
+A whole set of headers is passed to the constructor. For a client managed by a `SupabaseClient`,
+assign `SupabaseClient.headers`, which propagates the new headers to every sub-client at once.
+
+`SupabaseStorageClient.vectors` is a getter that builds a client on each access instead of a cached
+instance, so it always carries the current headers. Hold on to the returned client only for as long
+as its headers should stay fixed.
+
+### The SDK no longer prints logs
+
+`Supabase.initialize` no longer takes a `debug` flag and never prints anything to the console. All
+packages still emit their records through [`package:logging`](https://pub.dev/packages/logging)
+under the `supabase` logger hierarchy, but whether, where, and at which level those records are
+handled is now entirely up to the application.
+
+```dart
+// Before
+await Supabase.initialize(
+  url: supabaseUrl,
+  publishableKey: supabaseKey,
+  debug: true,
+);
+
+// After
+Logger.root.onRecord.listen((record) {
+  if (record.loggerName.startsWith('supabase.')) {
+    debugPrint('${record.loggerName}: ${record.level.name}: '
+        '${record.message} ${record.error ?? ''}');
+  }
+});
+await Supabase.initialize(
+  url: supabaseUrl,
+  publishableKey: supabaseKey,
+);
+```
+
+See the `Logging` section of the `supabase_flutter` README for level filtering with
+`hierarchicalLoggingEnabled`.
+
+Two logger names changed, so update any listeners that filter on `LogRecord.loggerName`:
+
+| Before | After |
+| --- | --- |
+| `supabase.supabase` | `supabase.dart` |
+| `supabase.supabase_flutter` | `supabase.flutter` |
+
+### JSON encoding and decoding is behind the `AsyncJsonCodec` interface
+
+`SupabaseClient`, `PostgrestClient` and `FunctionsClient` used to take a `YAJsonIsolate`
+through an `isolate:` parameter, which named an implementation rather than a contract, and
+named one that does not spawn an isolate at all on web. They now take an `AsyncJsonCodec`
+through `jsonCodec:`, the interface `YAJsonIsolate` implements. The same rename applies to
+the builders that carry the codec through the chain: `PostgrestBuilder`,
+`PostgrestQueryBuilder`, `PostgrestRpcBuilder`, `RawPostgrestBuilder`,
+`SupabaseQueryBuilder` and `SupabaseQuerySchema`.
+
+```dart
+// Before
+final client = SupabaseClient(url, key, isolate: YAJsonIsolate()..initialize());
+
+// After
+final client = SupabaseClient(url, key, jsonCodec: YAJsonIsolate()..initialize());
+```
+
+`Supabase.initialize` takes the codec too, so a `supabase_flutter` application never has to
+construct a `SupabaseClient` to choose one:
+
+```dart
+await Supabase.initialize(
+  url: url,
+  publishableKey: publishableKey,
+  jsonCodec: myJsonCodec,
+);
+```
+
+`AsyncJsonCodec` is exported from `postgrest`, `supabase_functions`, `supabase` and
+`supabase_flutter`, so an application can encode and decode JSON its own way, for example
+through a native parser or through a wrapper that records how long each payload takes:
+
+```dart
+class TimedJsonCodec implements AsyncJsonCodec {
+  TimedJsonCodec(this._inner);
+
+  final AsyncJsonCodec _inner;
+
+  @override
+  Future<dynamic> decode(String json) => _time(() => _inner.decode(json));
+
+  @override
+  Future<dynamic> decodeBytes(Uint8List encodedJson) =>
+      _time(() => _inner.decodeBytes(encodedJson));
+
+  @override
+  Future<String> encode(Object? json) => _time(() => _inner.encode(json));
+
+  @override
+  Future<void> dispose() => _inner.dispose();
+}
+```
+
+A codec passed to a client belongs to the caller, so `dispose()` leaves it alone, exactly
+as the old `isolate:` parameter did. A client that was not given one creates the default
+codec and disposes it with itself. `SupabaseClient` passes its codec on to the rest and
+functions clients it builds, so one codec serves all three.
+
+`YAJsonIsolate` is not exported by `supabase` or `supabase_flutter`, so depend on
+`yet_another_json_isolate` directly to name the default implementation, for example to wrap
+it as above.
+
+### `RealtimeClient.logger` and `RealtimeClient.log` are gone
+
+The realtime client had a second logging path next to `package:logging`: a `logger` callback
+constructor parameter and a public `log` method. Both are removed. Realtime diagnostics are
+emitted on the `supabase.realtime` logger, so listen there instead.
+
+```dart
+// Before
+final client = RealtimeClient(
+  realtimeUrl,
+  logger: (kind, message, data) => print('$kind: $message $data'),
+);
+
+// After
+hierarchicalLoggingEnabled = true;
+Logger('supabase.realtime').onRecord.listen((record) {
+  print('${record.level.name}: ${record.message} ${record.error ?? ''}');
+});
+final client = RealtimeClient(realtimeUrl);
+```
+
+Without `hierarchicalLoggingEnabled = true`, `package:logging` resolves the `onRecord` stream of a
+non-root logger to `Logger.root.onRecord`, which receives records from every logger in the
+application; in that case listen on `Logger.root` and filter on `LogRecord.loggerName` instead.
+
+### One shared `SortDirection` for every sort direction
+
+Three enums described the same ascending or descending direction: `BucketSortOrder` and
+`FileSortOrder` in `supabase_storage`, and `SortDirection` in `iceberg`. They are now one
+`SortDirection`, shared by every package. The values are unchanged, so only the type name moves.
+
+| Before | After |
+| --- | --- |
+| `BucketSortOrder` | `SortDirection` |
+| `FileSortOrder` | `SortDirection` |
+| `SortDirection` | unchanged |
+
+```dart
+// Before
+await supabase.storage.listBuckets(
+  const ListBucketsOptions(sortOrder: BucketSortOrder.descending),
+);
+
+// After
+await supabase.storage.listBuckets(
+  const ListBucketsOptions(sortOrder: SortDirection.descending),
+);
+```
+
+`StorageFileApi.list()` took its direction as a `String`, so a typo such as `'ascending'` only
+surfaced as a 400 from the storage server. `SortBy.order` is a `SortDirection` too, non-nullable
+with `SortDirection.ascending` as its default:
+
+```dart
+// Before
+await supabase.storage.from('bucket').list(
+      searchOptions: const SearchOptions(
+        sortBy: SortBy(column: 'created_at', order: 'desc'),
+      ),
+    );
+
+// After
+await supabase.storage.from('bucket').list(
+      searchOptions: const SearchOptions(
+        sortBy: SortBy(column: 'created_at', order: SortDirection.descending),
+      ),
+    );
+```
+
+`SortBy(order: null)` no longer compiles; leave `order` out to sort ascending. `column` is
+unchanged, since `list()` accepts any column of a `FileObject`.
+
+### Session and auth request objects are immutable
+
+`Session.expiresAt` is `late final`, so it can be read but no longer assigned. It has always been
+derived from the `exp` claim of the access token rather than the login response body, so
+overwriting it only desynchronized the value from the token that the auto refresh logic acts on.
+Mint a new session, or call `copyWith` with a different `accessToken`, to change the expiry:
+
+```dart
+// Before
+session.expiresAt = DateTime.now().add(const Duration(hours: 1));
+
+// After
+final refreshed = session.copyWith(accessToken: newAccessToken);
+print(refreshed.expiresAt);
+```
+
+`ResendResponse.messageId` is `final` too, matching every other response type.
+
+The request fields on `UserAttributes` and `AdminUserAttributes` are `final`, so pass them to the
+constructor instead of assigning after construction:
+
+```dart
+// Before
+final attributes = UserAttributes();
+attributes.email = 'new@example.com';
+attributes.data = {'name': 'Alice'};
+await supabase.auth.updateUser(attributes);
+
+// After
+await supabase.auth.updateUser(
+  UserAttributes(email: 'new@example.com', data: {'name': 'Alice'}),
+);
+```

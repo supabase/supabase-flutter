@@ -109,6 +109,9 @@ features:
     status: implemented
     symbols:
       - AuthClient.exchangeCodeForSession
+      - AuthClient.appendPkceFlowIdToRedirects
+      - AuthClientOptions.appendPkceFlowIdToRedirects
+      - OAuthResponse.flowId
   auth.sign_in.resend_confirmation:
     status: implemented
     symbols:
@@ -234,6 +237,8 @@ features:
       - AuthClient.stopAutoRefresh
     supporting_symbols:
       - AuthClientOptions.autoRefreshToken
+      - AuthClient.retryOptions
+      - AuthClientOptions.retryOptions
   auth.session.subscribe_auth_events:
     status: implemented
     symbols:
@@ -387,6 +392,18 @@ features:
       - PasskeyAuthenticationOptionsResponse.expiresAt
       - PasskeyAuthenticationOptionsResponse.fromJson
       - PasskeyAuthenticationOptionsResponse.options
+  auth.passkey.list_passkeys:
+    status: implemented
+    symbols:
+      - AuthPasskeyApi.list
+  auth.passkey.update_passkey:
+    status: implemented
+    symbols:
+      - AuthPasskeyApi.update
+  auth.passkey.delete_passkey:
+    status: implemented
+    symbols:
+      - AuthPasskeyApi.delete
 
   # auth — OAuth server (Supabase acting as an OAuth provider)
   auth.oauth_server.get_authorization_details:
@@ -919,6 +936,7 @@ features:
   database.using_filters.not_in:
     status: implemented
     symbols:
+      - PostgrestFilterBuilder.notInFilter
       - PostgrestFilterBuilder.not
   database.using_filters.contains:
     status: implemented
@@ -1112,18 +1130,26 @@ features:
   database.configuration.auto_retry:
     status: implemented
     symbols:
-      - PostgrestClient.retryEnabled
-      - PostgrestClient.retryCount
+      - PostgrestClient.retryOptions
+      - PostgrestClientOptions.retryOptions
       - PostgrestClient.retryableStatusCodes
-      - PostgrestClientOptions.retryEnabled
-      - PostgrestClientOptions.retryCount
-      - PostgrestClientOptions.retryableStatusCodes
       - PostgrestBuilder.retry
-      - PostgrestClient.defaultRetryableStatusCodes
+      - SupabaseRetryOptions
+      - SupabaseRetryOptions.enabled
+      - SupabaseRetryOptions.count
+      - SupabaseRetryOptions.initialDelay
+      - SupabaseRetryOptions.maxDelay
+      - SupabaseRetryOptions.randomizationFactor
     supporting_symbols:
       - PostgrestFilterBuilder.retry
       - PostgrestQueryBuilder.retry
       - PostgrestTransformBuilder.retry
+      - SupabaseRetryOptions.SupabaseRetryOptions
+      - SupabaseRetryOptions.copyWith
+      - SupabaseRetryOptions.delay
+      - SupabaseRetryOptions.==
+      - SupabaseRetryOptions.hashCode
+      - SupabaseRetryOptions.toString
   database.configuration.request_timeout:
     status: implemented
     symbols:
@@ -1216,9 +1242,6 @@ features:
       - FileSort.order
       - FileSort.toMap
       - FileSortColumn
-      - FileSortOrder
-      - FileSortOrder.FileSortOrder
-      - FileSortOrder.value
       - PaginatedFile
       - PaginatedFile.PaginatedFile
       - PaginatedFile.createdAt
@@ -1380,9 +1403,6 @@ features:
       - ListBucketsOptions.sortOrder
       - ListBucketsOptions.toQueryParameters
       - BucketSortColumn
-      - BucketSortOrder
-      - BucketSortOrder.BucketSortOrder
-      - BucketSortOrder.value
   storage.file_buckets.update_bucket:
     status: implemented
     symbols:
@@ -1395,6 +1415,15 @@ features:
     status: implemented
     symbols:
       - StorageBucketApi.emptyBucket
+  storage.file_buckets.request_cancellation:
+    status: partially_implemented
+    note: "StorageRetryController.cancel only stops the upload from being retried again; the attempt that is already in flight keeps transferring until it completes or fails, and downloads have no cancellation surface at all."
+    symbols:
+      - StorageRetryController.cancel
+    supporting_symbols:
+      - StorageRetryController
+      - StorageRetryController.StorageRetryController
+      - StorageRetryController.cancelled
 
   # storage — vector buckets
   storage.vector_buckets.create_vector_bucket:
@@ -1768,6 +1797,20 @@ features:
     status: implemented
     symbols:
       - IcebergRestCatalog.tableExists
+  storage.analytics.access_catalog:
+    status: implemented
+    symbols:
+      - SupabaseStorageClient.analyticsCatalog
+    supporting_symbols:
+      - IcebergRestCatalog
+      - IcebergRestCatalog.IcebergRestCatalog
+
+  # storage — configuration
+  storage.configuration.auto_retry:
+    status: implemented
+    symbols:
+      - StorageClientOptions.retryOptions
+      - SupabaseStorageClient.retryOptions
 
   # storage — errors
   storage.errors.error_codes:
@@ -1788,7 +1831,13 @@ features:
     symbols:
       - RealtimeChannel.subscribe
     supporting_symbols:
+      - RealtimeChannel.onStatusChange
       - RealtimeSubscribeStatus
+      - RealtimeSubscribeStatusChange
+      - RealtimeSubscribeStatusChange.RealtimeSubscribeStatusChange
+      - RealtimeSubscribeStatusChange.error
+      - RealtimeSubscribeStatusChange.status
+      - RealtimeSubscribeStatusChange.toString
   realtime.channel.unsubscribe:
     status: implemented
     symbols:
@@ -1816,9 +1865,14 @@ features:
       - RealtimeClient.connection
       - RealtimeClient.onConnectionMessage
     supporting_symbols:
-      - RealtimeClient.onError
       - RealtimeClient.onMessage
-      - RealtimeClient.onOpen
+      - RealtimeClient.onStatusChange
+      - RealtimeConnectionStatus
+      - RealtimeConnectionStatusChange
+      - RealtimeConnectionStatusChange.RealtimeConnectionStatusChange
+      - RealtimeConnectionStatusChange.closeEvent
+      - RealtimeConnectionStatusChange.status
+      - RealtimeConnectionStatusChange.toString
   realtime.client.disconnect:
     status: implemented
     symbols:
@@ -1827,7 +1881,7 @@ features:
       - RealtimeClientOptions.connectionCloseTimeout
       - RealtimeConstants.defaultConnectionCloseTimeout
     supporting_symbols:
-      - RealtimeClient.onClose
+      - RealtimeConstants.webSocketCloseNormal
       - RealtimeCloseEvent
       - RealtimeCloseEvent.RealtimeCloseEvent
       - RealtimeCloseEvent.code
@@ -1843,10 +1897,8 @@ features:
   realtime.client.get_channels:
     status: implemented
     symbols:
-      - RealtimeClient.getChannels
-      - SupabaseClient.getChannels
-    supporting_symbols:
       - RealtimeClient.channels
+      - SupabaseClient.channels
   realtime.client.remove_channel:
     status: implemented
     symbols:
@@ -1931,6 +1983,12 @@ features:
       - PostgresChangeFilter.type
       - PostgresChangeFilter.value
       - PostgresChangeFilterType
+  realtime.subscriptions.postgres_changes_multiple_filters:
+    status: implemented
+    symbols:
+      - RealtimeChannel.onPostgresChanges
+    supporting_symbols:
+      - PostgresChangeFilter
   realtime.subscriptions.subscribe_presence:
     status: implemented
     symbols:
@@ -1938,17 +1996,7 @@ features:
       - RealtimeChannel.onPresenceJoin
       - RealtimeChannel.onPresenceLeave
     supporting_symbols:
-      - PresenceChooser
       - PresenceEvent
-      - PresenceEvents
-      - PresenceEvents.PresenceEvents
-      - PresenceEvents.diff
-      - PresenceEvents.state
-      - PresenceOnJoinCallback
-      - PresenceOnLeaveCallback
-      - PresenceOptions
-      - PresenceOptions.PresenceOptions
-      - PresenceOptions.events
       - RealtimePresenceJoinPayload
       - RealtimePresenceJoinPayload.RealtimePresenceJoinPayload
       - RealtimePresenceJoinPayload.currentPresences
@@ -2016,21 +2064,6 @@ features:
       - Presence.payload
       - Presence.presenceReference
       - Presence.toString
-      - RealtimeChannel.presence
-      - RealtimePresence
-      - RealtimePresence.RealtimePresence
-      - RealtimePresence.caller
-      - RealtimePresence.channel
-      - RealtimePresence.inPendingSyncState
-      - RealtimePresence.joinRef
-      - RealtimePresence.list
-      - RealtimePresence.onJoin
-      - RealtimePresence.onLeave
-      - RealtimePresence.onSync
-      - RealtimePresence.pendingDiffs
-      - RealtimePresence.state
-      - RealtimePresence.syncDiff
-      - RealtimePresence.syncState
       - SinglePresenceState
       - SinglePresenceState.SinglePresenceState
       - SinglePresenceState.key
@@ -2053,10 +2086,16 @@ features:
     status: implemented
     symbols:
       - RealtimeClient.reconnectAfter
+      - RealtimeClientOptions.reconnectAfter
+    supporting_symbols:
+      - TimerCalculation
   realtime.configuration.heartbeat_interval:
     status: implemented
     symbols:
       - RealtimeClient.heartbeatInterval
+      - RealtimeClientOptions.heartbeatInterval
+    supporting_symbols:
+      - RealtimeConstants.defaultHeartbeatInterval
   realtime.configuration.access_token_callback:
     status: implemented
     note: "On connect the access token is resolved before the send buffer is flushed; buffered channel join payloads are patched with the token and re-sent so subscriptions authenticate correctly when the token resolves asynchronously (e.g. read from async storage)."
@@ -2065,19 +2104,31 @@ features:
   realtime.configuration.custom_logger:
     status: implemented
     symbols:
-      - RealtimeClient.logger
-    supporting_symbols:
-      - RealtimeClient.log
       - RealtimeClientOptions.logLevel
+    supporting_symbols:
       - RealtimeLogLevel
   realtime.configuration.binary_protocol:
     status: implemented
     symbols:
       - RealtimeClient.encode
       - RealtimeClient.decode
+      - RealtimeClientOptions.encode
+      - RealtimeClientOptions.decode
     supporting_symbols:
       - RealtimeDecode
       - RealtimeEncode
+      - RealtimeMessage
+      - RealtimeMessage.RealtimeMessage
+      - RealtimeMessage.==
+      - RealtimeMessage.event
+      - RealtimeMessage.fromJson
+      - RealtimeMessage.hashCode
+      - RealtimeMessage.joinRef
+      - RealtimeMessage.payload
+      - RealtimeMessage.ref
+      - RealtimeMessage.toJson
+      - RealtimeMessage.toString
+      - RealtimeMessage.topic
       - RealtimeProtocolVersion
       - RealtimeProtocolVersion.RealtimeProtocolVersion
       - RealtimeProtocolVersion.wireVersion
@@ -2102,8 +2153,10 @@ features:
       - FunctionResponse.FunctionResponse
   functions.invocation.set_auth_token:
     status: implemented
+    note: "There is no setter. The token is supplied as an accessToken callback that is resolved before every invocation, so a rotating token is picked up without a call to update it. Through SupabaseClient it is wired up automatically. A single invocation can override it with an Authorization header."
     symbols:
-      - FunctionsClient.setAccessToken
+      - FunctionsClient.FunctionsClient
+      - FunctionsClient.invoke
   functions.invocation.method_override:
     status: implemented
     note: "The HttpMethod enum is shared with postgrest, so it also offers head, which supabase-js does not expose for function invocation."
@@ -2132,11 +2185,10 @@ features:
       - SupabaseClient.accessToken
   client.authentication_integration.cross_client_token_sync:
     status: implemented
+    note: "The rest, storage and functions clients share an HTTP client that resolves the current access token on every request, so there is nothing to synchronize and they expose no setter. Realtime keeps one because it pushes the token over a live socket rather than per request."
     symbols:
-      - PostgrestClient.setAccessToken
       - RealtimeClient.setAccessToken
-      - SupabaseStorageClient.setAccessToken
-      - FunctionsClient.setAccessToken
+      - SupabaseClient.accessToken
   client.authentication_integration.oauth_flow_type:
     status: implemented
     symbols:
@@ -2178,6 +2230,10 @@ features:
       - LocalStorage.initialize
       - LocalStorage.persistSession
       - LocalStorage.removePersistedSession
+      - MemoryAuthAsyncStorage
+      - MemoryAuthAsyncStorage.getItem
+      - MemoryAuthAsyncStorage.removeItem
+      - MemoryAuthAsyncStorage.setItem
       - SharedPreferencesAuthAsyncStorage
       - SharedPreferencesAuthAsyncStorage.SharedPreferencesAuthAsyncStorage
       - SharedPreferencesAuthAsyncStorage.getItem
@@ -2210,7 +2266,9 @@ features:
       - SupabaseClient.headers
     supporting_symbols:
       - FunctionsClient.headers
+      - FunctionsClient.setHeader
       - AuthClient.headers
+      - AuthClient.setHeader
       - PostgrestBuilder.setHeader
       - PostgrestClient.headers
       - PostgrestFilterBuilder.setHeader
@@ -2256,6 +2314,11 @@ supporting_symbols:
   - AdminUserAttributes.phoneConfirm
   - AdminUserAttributes.toJson
   - AdminUserAttributes.userMetadata
+  - AsyncJsonCodec
+  - AsyncJsonCodec.decode
+  - AsyncJsonCodec.decodeBytes
+  - AsyncJsonCodec.dispose
+  - AsyncJsonCodec.encode
   - AuthApiException
   - AuthApiException.==
   - AuthApiException.AuthApiException
@@ -2293,14 +2356,6 @@ supporting_symbols:
   - AuthWeakPasswordException.AuthWeakPasswordException
   - AuthWeakPasswordException.reasons
   - AuthWeakPasswordException.toString
-  - Binding
-  - Binding.Binding
-  - Binding.callback
-  - Binding.copyWith
-  - Binding.filter
-  - Binding.id
-  - Binding.type
-  - BindingCallback
   - BroadcastChannel
   - Bucket
   - Bucket.Bucket
@@ -2372,9 +2427,6 @@ supporting_symbols:
   - AuthMFAApi.AuthMFAApi
   - AuthPasskeyApi
   - AuthPasskeyApi.AuthPasskeyApi
-  - AuthPasskeyApi.delete
-  - AuthPasskeyApi.list
-  - AuthPasskeyApi.update
   - Headers
   - IcebergApiException
   - IcebergApiException.IcebergApiException
@@ -2395,8 +2447,6 @@ supporting_symbols:
   - IcebergNetworkException.IcebergNetworkException
   - IcebergNotFoundException
   - IcebergNotFoundException.IcebergNotFoundException
-  - IcebergRestCatalog
-  - IcebergRestCatalog.IcebergRestCatalog
   - IcebergServerException
   - IcebergServerException.IcebergServerException
   - IcebergType
@@ -2481,10 +2531,8 @@ supporting_symbols:
   - Passkey.toJson
   - PostgrestBuilder
   - PostgrestBuilder.PostgrestBuilder
-  - PostgrestBuilder.appendSearchParameters
   - PostgrestBuilder.asStream
   - PostgrestBuilder.catchError
-  - PostgrestBuilder.overrideSearchParameters
   - PostgrestBuilder.then
   - PostgrestBuilder.whenComplete
   - PostgrestApiException
@@ -2620,7 +2668,6 @@ supporting_symbols:
   - StorageBucketApi.url
   - StorageClientOptions
   - StorageClientOptions.StorageClientOptions
-  - StorageClientOptions.retryAttempts
   - StorageClientOptions.useNewHostname
   - StorageCredential
   - StorageCredential.StorageCredential
@@ -2631,10 +2678,6 @@ supporting_symbols:
   - StorageFileApi.StorageFileApi
   - StorageFileApi.bucketId
   - StorageFileApi.url
-  - StorageRetryController
-  - StorageRetryController.StorageRetryController
-  - StorageRetryController.cancel
-  - StorageRetryController.cancelled
   - StructType
   - StructType.StructType
   - StructType.fields
@@ -2659,7 +2702,6 @@ supporting_symbols:
   - SupabaseQueryBuilder.stream
   - SupabaseStorageClient
   - SupabaseStorageClient.SupabaseStorageClient
-  - SupabaseStorageClient.analyticsCatalog
   - SupabaseStreamBuilder
   - SupabaseStreamBuilder.SupabaseStreamBuilder
   - SupabaseStreamBuilder.asyncExpand
@@ -2764,6 +2806,7 @@ supporting_symbols:
   - YAJsonIsolate.YAJsonIsolate
   - YAJsonIsolate.debugName
   - YAJsonIsolate.decode
+  - YAJsonIsolate.decodeBytes
   - YAJsonIsolate.dispose
   - YAJsonIsolate.encode
   - YAJsonIsolate.initialize

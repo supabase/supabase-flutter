@@ -5,7 +5,9 @@ import 'package:supabase_common/supabase_common.dart';
 
 @internal
 typedef TimerCallback = void Function();
-@internal
+
+/// Returns the delay before the next retry, given the number of [tries] so
+/// far.
 typedef TimerCalculation = Duration Function(int tries);
 
 /// Creates a timer that accepts a `timerCalculation` function to perform
@@ -33,13 +35,12 @@ typedef TimerCalculation = Duration Function(int tries);
 /// ```
 @internal
 class RetryTimer {
+  RetryTimer(this.callback, this.timerCalculation);
   final TimerCallback callback;
   final TimerCalculation timerCalculation;
 
   Timer? _timer;
   int _tries = 0;
-
-  RetryTimer(this.callback, this.timerCalculation);
 
   /// Cancels any previous timer and reset tries
   void reset() {

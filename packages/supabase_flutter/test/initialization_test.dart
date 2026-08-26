@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -35,10 +37,39 @@ void main() {
           Supabase.initialize(
             url: supabaseUrl,
             publishableKey: supabaseKey,
-            debug: false,
           ),
           completes,
         );
+      });
+    });
+
+    group('Custom JSON codec initialization', () {
+      test('initializes with a supplied codec', () async {
+        final jsonCodec = _RecordingJsonCodec();
+
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          jsonCodec: jsonCodec,
+        );
+
+        expect(Supabase.instance.isInitialized, isTrue);
+        expect(jsonCodec.isDisposed, isFalse);
+      });
+
+      test('leaves a supplied codec usable after dispose', () async {
+        final jsonCodec = _RecordingJsonCodec();
+
+        await Supabase.initialize(
+          url: supabaseUrl,
+          publishableKey: supabaseKey,
+          jsonCodec: jsonCodec,
+        );
+        await Supabase.instance.dispose();
+
+        // The caller owns it, so the client must not have disposed it.
+        expect(jsonCodec.isDisposed, isFalse);
+        expect(await jsonCodec.decode('{"a":1}'), {'a': 1});
       });
     });
 
@@ -49,7 +80,6 @@ void main() {
           Supabase.initialize(
             url: supabaseUrl,
             publishableKey: supabaseKey,
-            debug: false,
             authOptions: const FlutterAuthClientOptions(
               localStorage: localStorage,
             ),
@@ -62,7 +92,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: true,
           authOptions: FlutterAuthClientOptions(
             localStorage: const MockExpiredStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
@@ -80,7 +109,6 @@ void main() {
           Supabase.initialize(
             url: supabaseUrl,
             publishableKey: supabaseKey,
-            debug: false,
             authOptions: const FlutterAuthClientOptions(
               authFlowType: AuthFlowType.pkce,
             ),
@@ -97,7 +125,6 @@ void main() {
           Supabase.initialize(
             url: supabaseUrl,
             publishableKey: supabaseKey,
-            debug: false,
             httpClient: httpClient,
           ),
           completes,
@@ -108,7 +135,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
           accessToken: () async => 'custom-access-token',
         );
 
@@ -126,7 +152,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
         );
 
         // Dispose
@@ -139,7 +164,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
         );
       });
 
@@ -147,7 +171,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
         );
 
         final supabase = Supabase.instance;
@@ -160,7 +183,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
         );
 
         final supabase = Supabase.instance;
@@ -173,7 +195,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: false,
           authOptions: FlutterAuthClientOptions(
             localStorage: const MockLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
@@ -189,7 +210,6 @@ void main() {
         await Supabase.initialize(
           url: supabaseUrl,
           publishableKey: supabaseKey,
-          debug: true,
           authOptions: FlutterAuthClientOptions(
             localStorage: const MockEmptyLocalStorage(),
             pkceAsyncStorage: MockAsyncStorage(),
@@ -201,4 +221,25 @@ void main() {
       });
     });
   });
+}
+
+/// An [AsyncJsonCodec] that works inline and records whether it was disposed,
+/// so a test can assert that a supplied codec stays the caller's to dispose.
+class _RecordingJsonCodec implements AsyncJsonCodec {
+  bool isDisposed = false;
+
+  @override
+  Future<dynamic> decode(String json) async => jsonDecode(json);
+
+  @override
+  Future<dynamic> decodeBytes(Uint8List encodedJson) async =>
+      jsonDecode(utf8.decode(encodedJson));
+
+  @override
+  Future<String> encode(Object? json) async => jsonEncode(json);
+
+  @override
+  Future<void> dispose() async {
+    isDisposed = true;
+  }
 }

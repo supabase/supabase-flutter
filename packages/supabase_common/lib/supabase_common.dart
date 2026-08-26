@@ -5,6 +5,8 @@
 /// notice.
 library;
 
+export 'src/access_token_client.dart';
+export 'src/auth_callback.dart';
 export 'src/backoff.dart';
 export 'src/base64url.dart';
 export 'src/client_info.dart';
@@ -15,9 +17,13 @@ export 'src/http_status.dart';
 export 'src/persist_session_key.dart';
 export 'src/pkce.dart';
 export 'src/platform/platform_info.dart';
+export 'src/random.dart';
+export 'src/redaction.dart';
 export 'src/replay_subject.dart';
 export 'src/retry.dart';
+export 'src/retry_options.dart';
 export 'src/snake_case.dart';
+export 'src/sort_direction.dart';
 export 'src/supabase_exception.dart';
 export 'src/timestamp.dart';
 export 'src/uuid.dart';

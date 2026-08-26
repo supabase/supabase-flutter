@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:supabase_realtime/src/serializer.dart';
+import 'package:supabase_realtime/supabase_realtime.dart';
 import 'package:test/test.dart';
 
 /// Builds a `kind = userBroadcast` (4) binary frame the same way the server
@@ -43,13 +44,15 @@ void main() {
 
   group('encode text frames', () {
     test('encodes a message as a positional JSON array', () {
-      final result = serializer.encode({
-        'join_ref': '1',
-        'ref': '2',
-        'topic': 'realtime:room',
-        'event': 'phx_join',
-        'payload': {'foo': 'bar'},
-      });
+      final result = serializer.encode(
+        const RealtimeMessage(
+          joinRef: '1',
+          ref: '2',
+          topic: 'realtime:room',
+          event: 'phx_join',
+          payload: {'foo': 'bar'},
+        ),
+      );
 
       expect(result, isA<String>());
       expect(
@@ -65,11 +68,13 @@ void main() {
     });
 
     test('preserves null join_ref and ref positionally', () {
-      final result = serializer.encode({
-        'topic': 'phoenix',
-        'event': 'heartbeat',
-        'payload': <String, dynamic>{},
-      });
+      final result = serializer.encode(
+        const RealtimeMessage(
+          topic: 'phoenix',
+          event: 'heartbeat',
+          payload: <String, dynamic>{},
+        ),
+      );
 
       expect(
         jsonDecode(result as String),
@@ -78,13 +83,15 @@ void main() {
     });
 
     test('encodes a non-binary broadcast as a text frame', () {
-      final result = serializer.encode({
-        'join_ref': '1',
-        'ref': '2',
-        'topic': 'realtime:room',
-        'event': 'broadcast',
-        'payload': {'event': 'cursor', 'type': 'broadcast', 'x': 1},
-      });
+      final result = serializer.encode(
+        const RealtimeMessage(
+          joinRef: '1',
+          ref: '2',
+          topic: 'realtime:room',
+          event: 'broadcast',
+          payload: {'event': 'cursor', 'type': 'broadcast', 'x': 1},
+        ),
+      );
 
       expect(result, isA<String>());
       expect((jsonDecode(result as String) as List)[3], 'broadcast');
@@ -92,7 +99,7 @@ void main() {
   });
 
   group('decode text frames', () {
-    test('decodes a positional JSON array into a message map', () {
+    test('decodes a positional JSON array into a message', () {
       final result = serializer.decode(
         jsonEncode([
           '1',
@@ -103,13 +110,16 @@ void main() {
         ]),
       );
 
-      expect(result, {
-        'join_ref': '1',
-        'ref': '2',
-        'topic': 'realtime:room',
-        'event': 'phx_reply',
-        'payload': {'status': 'ok'},
-      });
+      expect(
+        result,
+        const RealtimeMessage(
+          joinRef: '1',
+          ref: '2',
+          topic: 'realtime:room',
+          event: 'phx_reply',
+          payload: {'status': 'ok'},
+        ),
+      );
     });
 
     test('throws a FormatException on a malformed text frame', () {
@@ -136,11 +146,11 @@ void main() {
 
       final result = serializer.decode(frame);
 
-      expect(result['join_ref'], isNull);
-      expect(result['ref'], isNull);
-      expect(result['topic'], 'realtime:room');
-      expect(result['event'], 'broadcast');
-      expect(result['payload'], {
+      expect(result.joinRef, isNull);
+      expect(result.ref, isNull);
+      expect(result.topic, 'realtime:room');
+      expect(result.event, 'broadcast');
+      expect(result.payload, {
         'type': 'broadcast',
         'event': 'cursor',
         'payload': {'x': 1, 'y': 2},
@@ -158,33 +168,37 @@ void main() {
       );
 
       final result = serializer.decode(frame);
-      final payload = result['payload'] as Map<String, dynamic>;
+      final payload = result.payload as Map<String, dynamic>;
 
       expect(payload['event'], 'file');
       expect(payload['payload'], rawPayload);
       expect(payload.containsKey('meta'), isFalse);
     });
 
-    test('returns an empty map for unknown binary kinds', () {
-      final result = serializer.decode(Uint8List.fromList([99, 0, 0]));
-      expect(result, <String, dynamic>{});
+    test('throws a FormatException on an unknown binary kind', () {
+      expect(
+        () => serializer.decode(Uint8List.fromList([99, 0, 0])),
+        throwsFormatException,
+      );
     });
   });
 
   group('encode binary broadcast push', () {
     test('encodes a broadcast with a binary payload as a binary frame', () {
       final payload = Uint8List.fromList([10, 20, 30]);
-      final result = serializer.encode({
-        'join_ref': '7',
-        'ref': '8',
-        'topic': 'realtime:room',
-        'event': 'broadcast',
-        'payload': {
-          'type': 'broadcast',
-          'event': 'file',
-          'payload': payload,
-        },
-      });
+      final result = serializer.encode(
+        RealtimeMessage(
+          joinRef: '7',
+          ref: '8',
+          topic: 'realtime:room',
+          event: 'broadcast',
+          payload: {
+            'type': 'broadcast',
+            'event': 'file',
+            'payload': payload,
+          },
+        ),
+      );
 
       expect(result, isA<Uint8List>());
       final bytes = result as Uint8List;
@@ -203,17 +217,19 @@ void main() {
 
     test('forwards allowed metadata keys', () {
       final serializerWithMeta = Serializer(allowedMetadataKeys: ['trace_id']);
-      final result = serializerWithMeta.encode({
-        'topic': 'realtime:room',
-        'event': 'broadcast',
-        'payload': {
-          'type': 'broadcast',
-          'event': 'file',
-          'trace_id': 'abc',
-          'ignored': 'nope',
-          'payload': Uint8List.fromList([1]),
-        },
-      });
+      final result = serializerWithMeta.encode(
+        RealtimeMessage(
+          topic: 'realtime:room',
+          event: 'broadcast',
+          payload: {
+            'type': 'broadcast',
+            'event': 'file',
+            'trace_id': 'abc',
+            'ignored': 'nope',
+            'payload': Uint8List.fromList([1]),
+          },
+        ),
+      );
 
       final bytes = result as Uint8List;
       final metadataLength = bytes[5];
@@ -238,18 +254,20 @@ void main() {
       final topic = 'realtime:café';
       final userEvent = 'café-🎉';
       final payload = Uint8List.fromList([1, 2, 3]);
-      final result = serializerWithMeta.encode({
-        'join_ref': '10',
-        'ref': '1',
-        'topic': topic,
-        'event': 'broadcast',
-        'payload': {
-          'type': 'broadcast',
-          'event': userEvent,
-          'label': 'naïve',
-          'payload': payload,
-        },
-      });
+      final result = serializerWithMeta.encode(
+        RealtimeMessage(
+          joinRef: '10',
+          ref: '1',
+          topic: topic,
+          event: 'broadcast',
+          payload: {
+            'type': 'broadcast',
+            'event': userEvent,
+            'label': 'naïve',
+            'payload': payload,
+          },
+        ),
+      );
 
       final bytes = result as Uint8List;
       final joinRefBytes = utf8.encode('10');
@@ -294,15 +312,17 @@ void main() {
     test('throws when a frame field exceeds 255 bytes', () {
       final longTopic = 'a' * 256;
       expect(
-        () => serializer.encode({
-          'topic': longTopic,
-          'event': 'broadcast',
-          'payload': {
-            'type': 'broadcast',
-            'event': 'file',
-            'payload': Uint8List.fromList([1]),
-          },
-        }),
+        () => serializer.encode(
+          RealtimeMessage(
+            topic: longTopic,
+            event: 'broadcast',
+            payload: {
+              'type': 'broadcast',
+              'event': 'file',
+              'payload': Uint8List.fromList([1]),
+            },
+          ),
+        ),
         throwsArgumentError,
       );
     });

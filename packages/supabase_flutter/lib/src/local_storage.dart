@@ -1,14 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:logging/logging.dart';
+import 'package:supabase_flutter/src/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import './local_storage_stub.dart'
     if (dart.library.js_interop) './local_storage_web.dart'
     as web;
-
-final _log = Logger('supabase.supabase_flutter');
 
 /// LocalStorage is used to persist the user session in the device.
 ///
@@ -66,10 +64,10 @@ class EmptyLocalStorage extends LocalStorage {
 /// [SharedPreferences] API, is moved over to [SharedPreferencesAsync] on
 /// [initialize].
 class SharedPreferencesLocalStorage extends LocalStorage {
+  SharedPreferencesLocalStorage({required this.persistSessionKey});
   late final SharedPreferencesAsync _preferences;
 
-  SharedPreferencesLocalStorage({required this.persistSessionKey});
-
+  /// The shared preferences key the session is stored under.
   final String persistSessionKey;
   static const _useWebLocalStorage =
       kIsWeb && bool.fromEnvironment("dart.library.js_interop");
@@ -135,7 +133,7 @@ class SharedPreferencesLocalStorage extends LocalStorage {
         await legacyPreferences.remove(persistSessionKey);
       }
     } catch (error, stackTrace) {
-      _log.warning('Could not migrate the session', error, stackTrace);
+      flutterLogger.warning('Could not migrate the session', error, stackTrace);
     }
   }
 
@@ -207,7 +205,11 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
       await legacyPreferences.remove(key);
       return value;
     } catch (error, stackTrace) {
-      _log.warning('Could not read the legacy store', error, stackTrace);
+      flutterLogger.warning(
+        'Could not read the legacy store',
+        error,
+        stackTrace,
+      );
       return null;
     }
   }

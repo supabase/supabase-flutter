@@ -9,8 +9,6 @@ import 'types/types.dart';
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 @internal
 class OAuthClientResponse {
-  final OAuthClient? client;
-
   const OAuthClientResponse({this.client});
 
   factory OAuthClientResponse.fromJson(Map<String, dynamic> json) {
@@ -18,18 +16,13 @@ class OAuthClientResponse {
       client: json.isEmpty ? null : OAuthClient.fromJson(json),
     );
   }
+  final OAuthClient? client;
 }
 
 /// Response type for listing OAuth clients.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 @internal
 class OAuthClientListResponse {
-  final List<OAuthClient> clients;
-  final String? audience;
-  final int? nextPage;
-  final int? lastPage;
-  final int total;
-
   const OAuthClientListResponse({
     required this.clients,
     this.audience,
@@ -49,15 +42,16 @@ class OAuthClientListResponse {
       total: (json['total'] as num?)?.toInt() ?? 0,
     );
   }
+  final List<OAuthClient> clients;
+  final String? audience;
+  final int? nextPage;
+  final int? lastPage;
+  final int total;
 }
 
 /// Contains all OAuth client administration methods.
 /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
 class AuthAdminOAuthApi {
-  final String _url;
-  final Map<String, String> _headers;
-  final AuthFetch _fetch;
-
   const AuthAdminOAuthApi({
     required String url,
     required Map<String, String> headers,
@@ -65,6 +59,9 @@ class AuthAdminOAuthApi {
   }) : _url = url,
        _headers = headers,
        _fetch = fetch;
+  final String _url;
+  final Map<String, String> _headers;
+  final AuthFetch _fetch;
 
   /// Lists all OAuth clients with optional pagination.
   /// Only relevant when the OAuth 2.1 server is enabled in Supabase Auth.
