@@ -686,6 +686,20 @@ void main() {
       expect(identical(result, client), isTrue);
     });
 
+    test('sets custom header on the vectors client', () async {
+      customHttpClient.response = {'vectorBuckets': []};
+      customHttpClient.statusCode = 200;
+
+      client.setHeader('x-custom-header', 'custom-value');
+      await client.vectors.listBuckets();
+
+      expect(customHttpClient.receivedRequests.length, 1);
+      expect(
+        customHttpClient.receivedRequests.first.headers['x-custom-header'],
+        'custom-value',
+      );
+    });
+
     test('supports chaining multiple setHeader calls', () async {
       customHttpClient.response = [];
       customHttpClient.statusCode = 200;

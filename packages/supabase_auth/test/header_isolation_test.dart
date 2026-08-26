@@ -73,5 +73,36 @@ void main() {
 
       expect(client.headers, before);
     });
+
+    test('headers cannot be mutated in place', () async {
+      expect(
+        () => client.headers['apikey'] = 'other-key',
+        throwsUnsupportedError,
+      );
+
+      await client.getUser('user-access-token');
+
+      expect(http.requestHeaders.single['apikey'], 'anon-key');
+    });
+
+    test('setHeader adds a header to subsequent requests', () async {
+      expect(
+        identical(client.setHeader('x-custom-header', 'value'), client),
+        isTrue,
+      );
+
+      await client.getUser('user-access-token');
+
+      expect(http.requestHeaders.single['x-custom-header'], 'value');
+      expect(client.headers['x-custom-header'], 'value');
+    });
+
+    test('setHeader is picked up by the admin api', () async {
+      client.setHeader('x-custom-header', 'value');
+
+      await client.admin.getUserById('18bc7a4e-c095-4573-93dc-e0be29bada97');
+
+      expect(http.requestHeaders.single['x-custom-header'], 'value');
+    });
   });
 }

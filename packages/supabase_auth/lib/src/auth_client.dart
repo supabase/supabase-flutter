@@ -225,8 +225,38 @@ class AuthClient {
 
   StreamSubscription<dynamic>? _broadcastChannelSubscription;
 
-  /// Getter for the headers
-  Map<String, String> get headers => _headers;
+  /// The headers sent with every request, as an unmodifiable view.
+  ///
+  /// Pass headers to the constructor instead of mutating them here. A client
+  /// managed by a `SupabaseClient` gets its headers replaced through the
+  /// internal [replaceHeaders] when `SupabaseClient.headers` is assigned.
+  Map<String, String> get headers => Map.unmodifiable(_headers);
+
+  /// Sets an HTTP header for subsequent requests.
+  ///
+  /// The header is shared with [admin], so its requests carry it as well.
+  /// Returns this for method chaining. On a client managed by a
+  /// `SupabaseClient`, assign `SupabaseClient.headers` instead, so that every
+  /// client gets the header.
+  ///
+  /// ```dart
+  /// auth.setHeader('x-custom-header', 'value');
+  /// ```
+  AuthClient setHeader(String key, String value) {
+    _headers[key] = value;
+    return this;
+  }
+
+  /// Replaces the request headers with [newHeaders].
+  ///
+  /// The map is shared with [admin], so its requests pick up the new headers
+  /// as well.
+  @internal
+  void replaceHeaders(Map<String, String> newHeaders) {
+    _headers
+      ..clear()
+      ..addAll(newHeaders);
+  }
 
   /// Returns the current logged in user, associated to [currentSession] if any;
   User? get currentUser => _currentSession?.user;
@@ -936,7 +966,7 @@ class AuthClient {
     }
 
     final options = AuthRequestOptions(
-      headers: headers,
+      headers: _headers,
       jwt: session.accessToken,
     );
 
@@ -1397,7 +1427,7 @@ class AuthClient {
       '$_url/user/identities/${identity.identityId}',
       HttpMethod.delete,
       options: AuthRequestOptions(
-        headers: headers,
+        headers: _headers,
         jwt: _currentSession?.accessToken,
       ),
     );

@@ -189,22 +189,19 @@ class SupabaseClient {
 
     _rest = _initRestClient();
 
-    functions.headers
-      ..clear()
-      ..addAll(_headers);
+    // ignore: invalid_use_of_internal_member
+    functions.replaceHeaders(_headers);
 
-    storage.headers
-      ..clear()
-      ..addAll(_headers);
+    // ignore: invalid_use_of_internal_member
+    storage.replaceHeaders(_headers);
 
     if (accessToken == null) {
-      auth.headers
-        ..clear()
-        ..addAll({
-          ...SupabaseConstants.defaultHeaders,
-          ..._getAuthHeaders(),
-          ...headers,
-        });
+      // ignore: invalid_use_of_internal_member
+      auth.replaceHeaders({
+        ...SupabaseConstants.defaultHeaders,
+        ..._getAuthHeaders(),
+        ..._headers,
+      });
     }
 
     // To apply the new headers in the realtime client,

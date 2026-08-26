@@ -467,6 +467,33 @@ void main() {
         );
       });
 
+      test('sub-client headers cannot be mutated in place', () {
+        expect(
+          () => supabase.auth.headers['Custom-Header'] = 'custom-value',
+          throwsUnsupportedError,
+        );
+        expect(
+          () => supabase.functions.headers['Custom-Header'] = 'custom-value',
+          throwsUnsupportedError,
+        );
+        expect(
+          () => supabase.storage.headers['Custom-Header'] = 'custom-value',
+          throwsUnsupportedError,
+        );
+        expect(
+          () => supabase.storage.from('bucket').headers['Custom-Header'] =
+              'custom-value',
+          throwsUnsupportedError,
+        );
+      });
+
+      test('should propagate updated headers to the auth client', () {
+        supabase.headers = {'Custom-Header': 'custom-value'};
+
+        expect(supabase.auth.headers['Custom-Header'], 'custom-value');
+        expect(supabase.auth.headers['apikey'], supabaseKey);
+      });
+
       test('rpc leaves the rest client headers untouched', () {
         final headersBefore = {...supabase.rest.headers};
         unawaited(supabase.rpc('do_something'));

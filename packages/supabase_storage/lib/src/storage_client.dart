@@ -149,7 +149,7 @@ class SupabaseStorageClient extends StorageBucketApi {
   /// await vectors.createBucket('embeddings');
   /// ```
   @experimental
-  late final SupabaseVectorsClient vectors = SupabaseVectorsClient(
+  SupabaseVectorsClient get vectors => SupabaseVectorsClient(
     '$url/vector',
     headers,
     storageFetch,
@@ -157,16 +157,15 @@ class SupabaseStorageClient extends StorageBucketApi {
 
   /// Sets an HTTP header for subsequent requests.
   ///
-  /// Mutates the headers map used by this client in place. Instances of
-  /// [StorageFileApi] already obtained through [from] hold their own copy of
-  /// the headers, so only calls to [from] made after this one will include
-  /// the new header. Returns this for method chaining.
+  /// Instances of [StorageFileApi] already obtained through [from] hold their
+  /// own copy of the headers, so only calls to [from] made after this one will
+  /// include the new header. Returns this for method chaining.
   ///
   /// ```dart
   /// storage.setHeader('x-custom-header', 'value').from('bucket').upload(...);
   /// ```
   SupabaseStorageClient setHeader(String key, String value) {
-    headers[key] = value;
+    replaceHeaders({...headers, key: value});
     return this;
   }
 }
