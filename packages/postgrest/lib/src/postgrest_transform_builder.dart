@@ -210,7 +210,6 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
     // `application/vnd.pgrst.object+json` Accept header, so that a request
     // matching zero rows resolves to `null` without PostgREST answering 406
     // and polluting the API logs.
-    // https://github.com/supabase/supabase-flutter/issues/560
     return PostgrestTransformBuilder(
       _copyWithType(
         maybeSingle: true,
