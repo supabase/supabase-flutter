@@ -206,17 +206,14 @@ class PostgrestTransformBuilder<T> extends RawPostgrestBuilder<T, T, T> {
   /// (e.g. using `eq` on a UNIQUE column or `limit(1)`),
   /// otherwise this will result in an error.
   PostgrestTransformBuilder<PostgrestMap?> maybeSingle() {
-    // Temporary fix for https://github.com/supabase/supabase-flutter/issues/560
-    // Issue persists e.g. for `.insert([...]).select().maybeSingle()`
-    final newHeaders = {..._headers};
-    newHeaders['Accept'] = _method == HttpMethod.get
-        ? 'application/json'
-        : 'application/vnd.pgrst.object+json';
-
+    // The single-row constraint is enforced client-side instead of via the
+    // `application/vnd.pgrst.object+json` Accept header, so that a request
+    // matching zero rows resolves to `null` without PostgREST answering 406
+    // and polluting the API logs.
+    // https://github.com/supabase/supabase-flutter/issues/560
     return PostgrestTransformBuilder(
       _copyWithType(
         maybeSingle: true,
-        headers: newHeaders,
       ),
     );
   }
