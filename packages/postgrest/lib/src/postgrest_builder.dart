@@ -488,8 +488,7 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
 
       // maybeSingle() fetches the result as a list and enforces the
       // at-most-one-row constraint here, so that zero rows never produce a
-      // PostgREST 406. The synthesized error mirrors PostgREST's own:
-      // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
+      // PostgREST 406.
       if (_maybeSingle && body is List) {
         if (body.length > 1) {
           final exception = PostgrestApiException(
