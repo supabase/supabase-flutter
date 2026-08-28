@@ -346,28 +346,171 @@ dynamic toArray(dynamic value, String type) {
     return value;
   }
 
-  // trim Postgres array curly brackets
-  final lastIndex = value.length - 1;
-  final closeBrace = value[lastIndex];
-  final openBrace = value[0];
+  // Postgres prefixes the literal with explicit dimensions, for example
+  // `[0:1]={1,2}`, when a dimension's lower bound is not 1.
+  final literal = value.trim().replaceFirst(_arrayDimensions, '');
 
   // Confirm value is a Postgres array by checking curly brackets
-  if (openBrace == '{' && closeBrace == '}') {
-    final trimmedValue = value.substring(1, lastIndex);
-    List<dynamic> array;
-
-    // TODO: find a better solution to separate Postgres array data
-    try {
-      array = json.decode('[$trimmedValue]') as List;
-    } catch (_) {
-      // WARNING: splitting on comma does not cover all edge cases
-      array = trimmedValue != '' ? trimmedValue.split(',') : [];
-    }
-
-    return array.map((element) => convertCell(type, element)).toList();
+  if (literal.length < 2 ||
+      !literal.startsWith('{') ||
+      !literal.endsWith('}')) {
+    return value;
   }
 
-  return value;
+  final elements = _ArrayLiteralParser(
+    literal,
+    _elementDelimiter(type),
+  ).parse();
+  if (elements == null) {
+    // Not a literal this parser understands, hand the raw value back rather
+    // than splitting it into something that looks like data but isn't.
+    return value;
+  }
+
+  return _convertElements(elements, type);
+}
+
+/// The explicit dimension decoration of an array literal, such as
+/// `[0:1]=` or `[1:2][3:4]=`.
+final _arrayDimensions = RegExp(r'^(\[-?\d+:-?\d+\])+=');
+
+/// The character separating two elements of an array literal, which is the
+/// element type's `typdelim`. That is a comma for every built-in type except
+/// `box`, whose values use commas internally and are separated by semicolons.
+String _elementDelimiter(String type) => type == 'box' ? ';' : ',';
+
+/// Runs [convertCell] over every leaf of a parsed array literal, leaving nulls
+/// and the shape of nested arrays intact.
+dynamic _convertElements(dynamic element, String type) {
+  if (element is List) {
+    return element.map((child) => _convertElements(child, type)).toList();
+  }
+  if (element == null) {
+    return null;
+  }
+  return convertCell(type, element);
+}
+
+/// Parses the array literal Postgres sends on the wire, for example
+/// `{"a,b",c}` or `{{1,2},{3,4}}`.
+///
+/// Elements are separated by [_delimiter], may be quoted with `"` (in which
+/// case `\` escapes the next character), and unquoted whitespace around an
+/// element is not part of its value. An unquoted `NULL` is the null element,
+/// while a quoted `"NULL"` is the four character string.
+class _ArrayLiteralParser {
+  _ArrayLiteralParser(this._literal, this._delimiter);
+
+  final String _literal;
+  final String _delimiter;
+  int _position = 0;
+
+  bool get _isAtEnd => _position >= _literal.length;
+
+  /// Returns the parsed elements, or null when [_literal] is not a single
+  /// well-formed array so the caller can fall back to the raw value instead
+  /// of silently returning corrupted data.
+  List<dynamic>? parse() {
+    try {
+      final elements = _parseArray();
+      return _isAtEnd ? elements : null;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  List<dynamic> _parseArray() {
+    _expect('{');
+    final elements = <dynamic>[];
+    _skipWhitespace();
+    if (_consume('}')) {
+      return elements;
+    }
+    while (true) {
+      _skipWhitespace();
+      elements.add(_parseElement());
+      _skipWhitespace();
+      if (_consume('}')) {
+        return elements;
+      }
+      _expect(_delimiter);
+    }
+  }
+
+  dynamic _parseElement() {
+    return switch (_peek()) {
+      '{' => _parseArray(),
+      '"' => _parseQuoted(),
+      _ => _parseUnquoted(),
+    };
+  }
+
+  String _parseQuoted() {
+    _expect('"');
+    final buffer = StringBuffer();
+    while (true) {
+      final character = _next();
+      if (character == '"') {
+        return buffer.toString();
+      }
+      buffer.write(character == r'\' ? _next() : character);
+    }
+  }
+
+  dynamic _parseUnquoted() {
+    final start = _position;
+    while (!_isAtEnd &&
+        _literal[_position] != _delimiter &&
+        _literal[_position] != '}') {
+      // Postgres quotes any element containing a backslash, so this is not a
+      // literal it produced.
+      if (_literal[_position] == r'\') {
+        throw const FormatException();
+      }
+      _position++;
+    }
+    final raw = _literal.substring(start, _position).trim();
+    // Postgres quotes the empty string, so a zero length unquoted element is
+    // not a valid literal.
+    if (raw.isEmpty) {
+      throw const FormatException();
+    }
+    return raw.toUpperCase() == 'NULL' ? null : raw;
+  }
+
+  void _skipWhitespace() {
+    while (!_isAtEnd && _literal[_position].trim().isEmpty) {
+      _position++;
+    }
+  }
+
+  String _peek() {
+    if (_isAtEnd) {
+      throw const FormatException();
+    }
+    return _literal[_position];
+  }
+
+  String _next() {
+    if (_isAtEnd) {
+      throw const FormatException();
+    }
+    return _literal[_position++];
+  }
+
+  bool _consume(String character) {
+    if (_isAtEnd || _literal[_position] != character) {
+      return false;
+    }
+    _position++;
+    return true;
+  }
+
+  void _expect(String character) {
+    if (!_consume(character)) {
+      throw const FormatException();
+    }
+  }
 }
 
 /// Fixes timestamp to be ISO-8601. Swaps the space between the date and time
