@@ -351,7 +351,7 @@ dynamic toArray(dynamic value, String type) {
     return value;
   }
 
-  final elements = _parseArrayLiteral(value);
+  final elements = _ArrayLiteralParser(value).parse();
   if (elements == null) {
     // Not a literal this parser understands, hand the raw value back rather
     // than splitting it into something that looks like data but isn't.
@@ -380,107 +380,108 @@ dynamic _convertElements(dynamic element, String type) {
 /// escapes the next character), and unquoted whitespace around an element is
 /// not part of its value. An unquoted `NULL` is the null element, while a
 /// quoted `"NULL"` is the four character string.
-///
-/// Returns null when [literal] doesn't parse, so the caller can fall back to
-/// the raw value instead of silently returning corrupted data.
-List<dynamic>? _parseArrayLiteral(String literal) {
-  var index = 0;
+class _ArrayLiteralParser {
+  _ArrayLiteralParser(this._literal);
 
-  void skipWhitespace() {
-    while (index < literal.length && literal[index].trim().isEmpty) {
-      index++;
-    }
-  }
+  final String _literal;
+  int _position = 0;
 
-  String? parseQuoted() {
-    final buffer = StringBuffer();
-    index++; // opening quote
-    while (index < literal.length) {
-      final char = literal[index];
-      if (char == r'\') {
-        index++;
-        if (index >= literal.length) {
-          return null;
-        }
-        buffer.write(literal[index]);
-      } else if (char == '"') {
-        index++; // closing quote
-        return buffer.toString();
-      } else {
-        buffer.write(char);
-      }
-      index++;
-    }
-    return null; // unterminated
-  }
+  bool get _isAtEnd => _position >= _literal.length;
 
-  List<dynamic>? parseArray() {
-    if (index >= literal.length || literal[index] != '{') {
+  /// Returns the parsed elements, or null when [_literal] is not a single
+  /// well-formed array so the caller can fall back to the raw value instead
+  /// of silently returning corrupted data.
+  List<dynamic>? parse() {
+    try {
+      final elements = _parseArray();
+      return _isAtEnd ? elements : null;
+    } on FormatException {
       return null;
     }
-    index++;
+  }
 
+  List<dynamic> _parseArray() {
+    _expect('{');
     final elements = <dynamic>[];
-    skipWhitespace();
-    if (index < literal.length && literal[index] == '}') {
-      index++;
+    _skipWhitespace();
+    if (_consume('}')) {
       return elements;
     }
-
-    while (index < literal.length) {
-      skipWhitespace();
-      if (index >= literal.length) {
-        return null;
-      }
-
-      final dynamic element;
-      switch (literal[index]) {
-        case '{':
-          final nested = parseArray();
-          if (nested == null) {
-            return null;
-          }
-          element = nested;
-        case '"':
-          final quoted = parseQuoted();
-          if (quoted == null) {
-            return null;
-          }
-          element = quoted;
-        default:
-          final start = index;
-          while (index < literal.length &&
-              literal[index] != ',' &&
-              literal[index] != '}') {
-            index++;
-          }
-          final raw = literal.substring(start, index).trim();
-          element = raw.toUpperCase() == 'NULL' ? null : raw;
-      }
-      elements.add(element);
-
-      skipWhitespace();
-      if (index >= literal.length) {
-        return null;
-      }
-      if (literal[index] == ',') {
-        index++;
-        continue;
-      }
-      if (literal[index] == '}') {
-        index++;
+    while (true) {
+      _skipWhitespace();
+      elements.add(_parseElement());
+      _skipWhitespace();
+      if (_consume('}')) {
         return elements;
       }
-      return null; // junk between an element and the next separator
+      _expect(',');
     }
-    return null; // unterminated
   }
 
-  final parsed = parseArray();
-  if (parsed == null || index != literal.length) {
-    return null;
+  dynamic _parseElement() {
+    return switch (_peek()) {
+      '{' => _parseArray(),
+      '"' => _parseQuoted(),
+      _ => _parseUnquoted(),
+    };
   }
-  return parsed;
+
+  String _parseQuoted() {
+    _expect('"');
+    final buffer = StringBuffer();
+    while (true) {
+      final char = _next();
+      if (char == '"') {
+        return buffer.toString();
+      }
+      buffer.write(char == r'\' ? _next() : char);
+    }
+  }
+
+  dynamic _parseUnquoted() {
+    final start = _position;
+    while (!_isAtEnd &&
+        _literal[_position] != ',' &&
+        _literal[_position] != '}') {
+      _position++;
+    }
+    final raw = _literal.substring(start, _position).trim();
+    return raw.toUpperCase() == 'NULL' ? null : raw;
+  }
+
+  void _skipWhitespace() {
+    while (!_isAtEnd && _literal[_position].trim().isEmpty) {
+      _position++;
+    }
+  }
+
+  String _peek() {
+    if (_isAtEnd) {
+      throw const FormatException();
+    }
+    return _literal[_position];
+  }
+
+  String _next() {
+    if (_isAtEnd) {
+      throw const FormatException();
+    }
+    return _literal[_position++];
+  }
+
+  bool _consume(String char) {
+    if (_isAtEnd || _literal[_position] != char) {
+      return false;
+    }
+    _position++;
+    return true;
+  }
+
+  void _expect(String char) {
+    if (!_consume(char)) {
+      throw const FormatException();
+    }
+  }
 }
 
 /// Fixes timestamp to be ISO-8601. Swaps the space between the date and time
