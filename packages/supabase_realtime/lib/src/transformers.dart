@@ -449,11 +449,11 @@ class _ArrayLiteralParser {
     _expect('"');
     final buffer = StringBuffer();
     while (true) {
-      final char = _next();
-      if (char == '"') {
+      final character = _next();
+      if (character == '"') {
         return buffer.toString();
       }
-      buffer.write(char == r'\' ? _next() : char);
+      buffer.write(character == r'\' ? _next() : character);
     }
   }
 
@@ -498,16 +498,16 @@ class _ArrayLiteralParser {
     return _literal[_position++];
   }
 
-  bool _consume(String char) {
-    if (_isAtEnd || _literal[_position] != char) {
+  bool _consume(String character) {
+    if (_isAtEnd || _literal[_position] != character) {
       return false;
     }
     _position++;
     return true;
   }
 
-  void _expect(String char) {
-    if (!_consume(char)) {
+  void _expect(String character) {
+    if (!_consume(character)) {
       throw const FormatException();
     }
   }
