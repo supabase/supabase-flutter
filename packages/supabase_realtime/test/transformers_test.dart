@@ -259,10 +259,24 @@ void main() {
       );
     });
 
+    test('drops whitespace around the literal itself', () {
+      expect(toArray(' {1,2} ', 'int4'), equals([1, 2]));
+    });
+
     test('returns the raw value when the literal is malformed', () {
       expect(toArray('{"unterminated}', 'text'), equals('{"unterminated}'));
       expect(toArray('{a}{b}', 'text'), equals('{a}{b}'));
       expect(toArray('not an array', 'text'), equals('not an array'));
+    });
+
+    test('returns the raw value for an empty unquoted element', () {
+      expect(toArray('{1,,2}', 'int4'), equals('{1,,2}'));
+      expect(toArray('{1,}', 'int4'), equals('{1,}'));
+      expect(toArray('{,1}', 'int4'), equals('{,1}'));
+    });
+
+    test('returns the raw value for a backslash outside quotes', () {
+      expect(toArray(r'{a\,b}', 'text'), equals(r'{a\,b}'));
     });
   });
 

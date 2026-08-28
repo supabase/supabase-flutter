@@ -348,7 +348,7 @@ dynamic toArray(dynamic value, String type) {
 
   // Postgres prefixes the literal with explicit dimensions, for example
   // `[0:1]={1,2}`, when a dimension's lower bound is not 1.
-  final literal = value.replaceFirst(_arrayDimensions, '');
+  final literal = value.trim().replaceFirst(_arrayDimensions, '');
 
   // Confirm value is a Postgres array by checking curly brackets
   if (literal.length < 2 ||
@@ -462,9 +462,19 @@ class _ArrayLiteralParser {
     while (!_isAtEnd &&
         _literal[_position] != _delimiter &&
         _literal[_position] != '}') {
+      // Postgres quotes any element containing a backslash, so this is not a
+      // literal it produced.
+      if (_literal[_position] == r'\') {
+        throw const FormatException();
+      }
       _position++;
     }
     final raw = _literal.substring(start, _position).trim();
+    // Postgres quotes the empty string, so a zero length unquoted element is
+    // not a valid literal.
+    if (raw.isEmpty) {
+      throw const FormatException();
+    }
     return raw.toUpperCase() == 'NULL' ? null : raw;
   }
 
