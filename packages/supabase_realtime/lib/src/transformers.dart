@@ -346,12 +346,21 @@ dynamic toArray(dynamic value, String type) {
     return value;
   }
 
+  // Postgres prefixes the literal with explicit dimensions, for example
+  // `[0:1]={1,2}`, when a dimension's lower bound is not 1.
+  final literal = value.replaceFirst(_arrayDimensions, '');
+
   // Confirm value is a Postgres array by checking curly brackets
-  if (value.length < 2 || !value.startsWith('{') || !value.endsWith('}')) {
+  if (literal.length < 2 ||
+      !literal.startsWith('{') ||
+      !literal.endsWith('}')) {
     return value;
   }
 
-  final elements = _ArrayLiteralParser(value).parse();
+  final elements = _ArrayLiteralParser(
+    literal,
+    _elementDelimiter(type),
+  ).parse();
   if (elements == null) {
     // Not a literal this parser understands, hand the raw value back rather
     // than splitting it into something that looks like data but isn't.
@@ -360,6 +369,15 @@ dynamic toArray(dynamic value, String type) {
 
   return _convertElements(elements, type);
 }
+
+/// The explicit dimension decoration of an array literal, such as
+/// `[0:1]=` or `[1:2][3:4]=`.
+final _arrayDimensions = RegExp(r'^(\[-?\d+:-?\d+\])+=');
+
+/// The character separating two elements of an array literal, which is the
+/// element type's `typdelim`. That is a comma for every built-in type except
+/// `box`, whose values use commas internally and are separated by semicolons.
+String _elementDelimiter(String type) => type == 'box' ? ';' : ',';
 
 /// Runs [convertCell] over every leaf of a parsed array literal, leaving nulls
 /// and the shape of nested arrays intact.
@@ -376,14 +394,15 @@ dynamic _convertElements(dynamic element, String type) {
 /// Parses the array literal Postgres sends on the wire, for example
 /// `{"a,b",c}` or `{{1,2},{3,4}}`.
 ///
-/// Elements are separated by commas, may be quoted with `"` (in which case `\`
-/// escapes the next character), and unquoted whitespace around an element is
-/// not part of its value. An unquoted `NULL` is the null element, while a
-/// quoted `"NULL"` is the four character string.
+/// Elements are separated by [_delimiter], may be quoted with `"` (in which
+/// case `\` escapes the next character), and unquoted whitespace around an
+/// element is not part of its value. An unquoted `NULL` is the null element,
+/// while a quoted `"NULL"` is the four character string.
 class _ArrayLiteralParser {
-  _ArrayLiteralParser(this._literal);
+  _ArrayLiteralParser(this._literal, this._delimiter);
 
   final String _literal;
+  final String _delimiter;
   int _position = 0;
 
   bool get _isAtEnd => _position >= _literal.length;
@@ -414,7 +433,7 @@ class _ArrayLiteralParser {
       if (_consume('}')) {
         return elements;
       }
-      _expect(',');
+      _expect(_delimiter);
     }
   }
 
@@ -441,7 +460,7 @@ class _ArrayLiteralParser {
   dynamic _parseUnquoted() {
     final start = _position;
     while (!_isAtEnd &&
-        _literal[_position] != ',' &&
+        _literal[_position] != _delimiter &&
         _literal[_position] != '}') {
       _position++;
     }

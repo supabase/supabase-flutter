@@ -241,6 +241,24 @@ void main() {
       );
     });
 
+    test('strips explicit dimension decorations', () {
+      expect(toArray('[0:1]={1,2}', 'int4'), equals([1, 2]));
+      expect(
+        toArray('[1:2][11:12]={{1,2},{3,4}}', 'int4'),
+        equals([
+          [1, 2],
+          [3, 4],
+        ]),
+      );
+    });
+
+    test('splits box elements on the semicolon delimiter', () {
+      expect(
+        toArray('{(1,1),(0,0);(10,10),(0,0)}', 'box'),
+        equals(['(1,1),(0,0)', '(10,10),(0,0)']),
+      );
+    });
+
     test('returns the raw value when the literal is malformed', () {
       expect(toArray('{"unterminated}', 'text'), equals('{"unterminated}'));
       expect(toArray('{a}{b}', 'text'), equals('{a}{b}'));
