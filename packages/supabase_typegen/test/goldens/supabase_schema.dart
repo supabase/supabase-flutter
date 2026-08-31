@@ -91,10 +91,10 @@ class Authors {
 /// Prices per book, with the standard discount precomputed
 extension type const BookPricesRow(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
-  int? get id => _json['id'] as int?;
-  String? get title => _json['title'] as String?;
-  num? get price => _json['price'] as num?;
   num? get discountedPrice => _json['discounted_price'] as num?;
+  int? get id => _json['id'] as int?;
+  num? get price => _json['price'] as num?;
+  String? get title => _json['title'] as String?;
 }
 
 /// Values for inserting a row into `book_prices`. Columns that are nullable,
@@ -104,21 +104,21 @@ extension type const BookPricesRow(Map<String, dynamic> _json)
 /// to insert SQL NULL explicitly.
 extension type const BookPricesInsert._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
-  BookPricesInsert({int? id, String? title, num? price})
-    : this._({'id': ?id, 'title': ?title, 'price': ?price});
+  BookPricesInsert({int? id, num? price, String? title})
+    : this._({'id': ?id, 'price': ?price, 'title': ?title});
 
   /// Returns a copy with `id` set to SQL NULL, overriding any database default.
   BookPricesInsert setIdToNull() => BookPricesInsert._({..._json, 'id': null});
-
-  /// Returns a copy with `title` set to SQL NULL, overriding any database
-  /// default.
-  BookPricesInsert setTitleToNull() =>
-      BookPricesInsert._({..._json, 'title': null});
 
   /// Returns a copy with `price` set to SQL NULL, overriding any database
   /// default.
   BookPricesInsert setPriceToNull() =>
       BookPricesInsert._({..._json, 'price': null});
+
+  /// Returns a copy with `title` set to SQL NULL, overriding any database
+  /// default.
+  BookPricesInsert setTitleToNull() =>
+      BookPricesInsert._({..._json, 'title': null});
 }
 
 /// Values for updating rows of `book_prices`. All columns are optional; passing
@@ -126,21 +126,21 @@ extension type const BookPricesInsert._(Map<String, dynamic> _json)
 /// to write SQL NULL explicitly.
 extension type const BookPricesUpdate._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
-  BookPricesUpdate({int? id, String? title, num? price})
-    : this._({'id': ?id, 'title': ?title, 'price': ?price});
+  BookPricesUpdate({int? id, num? price, String? title})
+    : this._({'id': ?id, 'price': ?price, 'title': ?title});
 
   /// Returns a copy with `id` set to SQL NULL, overriding any database default.
   BookPricesUpdate setIdToNull() => BookPricesUpdate._({..._json, 'id': null});
-
-  /// Returns a copy with `title` set to SQL NULL, overriding any database
-  /// default.
-  BookPricesUpdate setTitleToNull() =>
-      BookPricesUpdate._({..._json, 'title': null});
 
   /// Returns a copy with `price` set to SQL NULL, overriding any database
   /// default.
   BookPricesUpdate setPriceToNull() =>
       BookPricesUpdate._({..._json, 'price': null});
+
+  /// Returns a copy with `title` set to SQL NULL, overriding any database
+  /// default.
+  BookPricesUpdate setTitleToNull() =>
+      BookPricesUpdate._({..._json, 'title': null});
 }
 
 /// Typed access to the `book_prices` table.
@@ -150,17 +150,17 @@ class BookPrices {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('book_prices', BookPricesRow.new);
 
-  static const id = TableColumn<int>('id');
-  static const title = TableColumn<String>('title');
-  static const price = TableColumn<num>('price');
   static const discountedPrice = TableColumn<num>('discounted_price');
+  static const id = TableColumn<int>('id');
+  static const price = TableColumn<num>('price');
+  static const title = TableColumn<String>('title');
 }
 
 /// A row of the `book_submissions` table.
 extension type const BookSubmissionsRow(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
-  String? get title => _json['title'] as String?;
   String? get authorName => _json['author_name'] as String?;
+  String? get title => _json['title'] as String?;
 }
 
 /// Typed access to the `book_submissions` table.
@@ -173,17 +173,17 @@ class BookSubmissions {
     BookSubmissionsRow.new,
   );
 
-  static const title = TableColumn<String>('title');
   static const authorName = TableColumn<String>('author_name');
+  static const title = TableColumn<String>('title');
 }
 
 /// A row of the `book_summaries` table.
 /// Denormalized book and author names
 extension type const BookSummariesRow(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
+  String? get authorName => _json['author_name'] as String?;
   int? get id => _json['id'] as int?;
   String? get title => _json['title'] as String?;
-  String? get authorName => _json['author_name'] as String?;
 }
 
 /// Typed access to the `book_summaries` table.
@@ -193,36 +193,36 @@ class BookSummaries {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('book_summaries', BookSummariesRow.new);
 
+  static const authorName = TableColumn<String>('author_name');
   static const id = TableColumn<int>('id');
   static const title = TableColumn<String>('title');
-  static const authorName = TableColumn<String>('author_name');
 }
 
 /// A row of the `books` table.
 /// Books available in the library
 extension type const BooksRow(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
-  int get id => _json['id'] as int;
-  String get title => _json['title'] as String;
   int get authorId => _json['author_id'] as int;
-  num? get price => _json['price'] as num?;
-  double? get rating => (_json['rating'] as num?)?.toDouble();
+  String? get coverUuid => _json['cover_uuid'] as String?;
+
+  /// When the row was created
+  DateTime get createdAt => DateTime.parse(_json['created_at'] as String);
+  int get id => _json['id'] as int;
   bool get inPrint => _json['in_print'] as bool;
+  Object? get metadata => _json['metadata'] as Object?;
   Mood? get mood => switch (_json['mood']) {
     null => null,
     final Object value => Mood.fromWire(value as String),
   };
-  List<String>? get tags => (_json['tags'] as List<dynamic>?)?.cast();
   List<int>? get pageCounts => (_json['page_counts'] as List<dynamic>?)?.cast();
-  Object? get metadata => _json['metadata'] as Object?;
-  String? get coverUuid => _json['cover_uuid'] as String?;
+  num? get price => _json['price'] as num?;
   DateTime? get publishedOn => switch (_json['published_on']) {
     null => null,
     final Object value => DateTime.parse(value as String),
   };
-
-  /// When the row was created
-  DateTime get createdAt => DateTime.parse(_json['created_at'] as String);
+  double? get rating => (_json['rating'] as num?)?.toDouble();
+  List<String>? get tags => (_json['tags'] as List<dynamic>?)?.cast();
+  String get title => _json['title'] as String;
   DateTime? get updatedAt => switch (_json['updated_at']) {
     null => null,
     final Object value => DateTime.parse(value as String),
@@ -237,75 +237,75 @@ extension type const BooksRow(Map<String, dynamic> _json)
 extension type const BooksInsert._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
   BooksInsert({
-    int? id,
-    required String title,
     required int authorId,
-    num? price,
-    double? rating,
-    bool? inPrint,
-    Mood? mood,
-    List<String>? tags,
-    List<int>? pageCounts,
-    Object? metadata,
     String? coverUuid,
-    DateTime? publishedOn,
     DateTime? createdAt,
+    int? id,
+    bool? inPrint,
+    Object? metadata,
+    Mood? mood,
+    List<int>? pageCounts,
+    num? price,
+    DateTime? publishedOn,
+    double? rating,
+    List<String>? tags,
+    required String title,
     DateTime? updatedAt,
   }) : this._({
-         'id': ?id,
-         'title': title,
          'author_id': authorId,
-         'price': ?price,
-         'rating': ?rating,
-         'in_print': ?inPrint,
-         'mood': ?mood?.wireName,
-         'tags': ?tags,
-         'page_counts': ?pageCounts,
-         'metadata': ?metadata,
          'cover_uuid': ?coverUuid,
+         'created_at': ?createdAt?.toUtc().toIso8601String(),
+         'id': ?id,
+         'in_print': ?inPrint,
+         'metadata': ?metadata,
+         'mood': ?mood?.wireName,
+         'page_counts': ?pageCounts,
+         'price': ?price,
          'published_on': ?switch (publishedOn) {
            null => null,
            final value => _dateString(value),
          },
-         'created_at': ?createdAt?.toUtc().toIso8601String(),
+         'rating': ?rating,
+         'tags': ?tags,
+         'title': title,
          'updated_at': ?updatedAt?.toIso8601String(),
        });
-
-  /// Returns a copy with `price` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setPriceToNull() => BooksInsert._({..._json, 'price': null});
-
-  /// Returns a copy with `rating` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setRatingToNull() => BooksInsert._({..._json, 'rating': null});
-
-  /// Returns a copy with `mood` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setMoodToNull() => BooksInsert._({..._json, 'mood': null});
-
-  /// Returns a copy with `tags` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setTagsToNull() => BooksInsert._({..._json, 'tags': null});
-
-  /// Returns a copy with `page_counts` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setPageCountsToNull() =>
-      BooksInsert._({..._json, 'page_counts': null});
-
-  /// Returns a copy with `metadata` set to SQL NULL, overriding any database
-  /// default.
-  BooksInsert setMetadataToNull() =>
-      BooksInsert._({..._json, 'metadata': null});
 
   /// Returns a copy with `cover_uuid` set to SQL NULL, overriding any database
   /// default.
   BooksInsert setCoverUuidToNull() =>
       BooksInsert._({..._json, 'cover_uuid': null});
 
+  /// Returns a copy with `metadata` set to SQL NULL, overriding any database
+  /// default.
+  BooksInsert setMetadataToNull() =>
+      BooksInsert._({..._json, 'metadata': null});
+
+  /// Returns a copy with `mood` set to SQL NULL, overriding any database
+  /// default.
+  BooksInsert setMoodToNull() => BooksInsert._({..._json, 'mood': null});
+
+  /// Returns a copy with `page_counts` set to SQL NULL, overriding any database
+  /// default.
+  BooksInsert setPageCountsToNull() =>
+      BooksInsert._({..._json, 'page_counts': null});
+
+  /// Returns a copy with `price` set to SQL NULL, overriding any database
+  /// default.
+  BooksInsert setPriceToNull() => BooksInsert._({..._json, 'price': null});
+
   /// Returns a copy with `published_on` set to SQL NULL, overriding any
   /// database default.
   BooksInsert setPublishedOnToNull() =>
       BooksInsert._({..._json, 'published_on': null});
+
+  /// Returns a copy with `rating` set to SQL NULL, overriding any database
+  /// default.
+  BooksInsert setRatingToNull() => BooksInsert._({..._json, 'rating': null});
+
+  /// Returns a copy with `tags` set to SQL NULL, overriding any database
+  /// default.
+  BooksInsert setTagsToNull() => BooksInsert._({..._json, 'tags': null});
 
   /// Returns a copy with `updated_at` set to SQL NULL, overriding any database
   /// default.
@@ -319,75 +319,75 @@ extension type const BooksInsert._(Map<String, dynamic> _json)
 extension type const BooksUpdate._(Map<String, dynamic> _json)
     implements Map<String, dynamic> {
   BooksUpdate({
-    int? id,
-    String? title,
     int? authorId,
-    num? price,
-    double? rating,
-    bool? inPrint,
-    Mood? mood,
-    List<String>? tags,
-    List<int>? pageCounts,
-    Object? metadata,
     String? coverUuid,
-    DateTime? publishedOn,
     DateTime? createdAt,
+    int? id,
+    bool? inPrint,
+    Object? metadata,
+    Mood? mood,
+    List<int>? pageCounts,
+    num? price,
+    DateTime? publishedOn,
+    double? rating,
+    List<String>? tags,
+    String? title,
     DateTime? updatedAt,
   }) : this._({
-         'id': ?id,
-         'title': ?title,
          'author_id': ?authorId,
-         'price': ?price,
-         'rating': ?rating,
-         'in_print': ?inPrint,
-         'mood': ?mood?.wireName,
-         'tags': ?tags,
-         'page_counts': ?pageCounts,
-         'metadata': ?metadata,
          'cover_uuid': ?coverUuid,
+         'created_at': ?createdAt?.toUtc().toIso8601String(),
+         'id': ?id,
+         'in_print': ?inPrint,
+         'metadata': ?metadata,
+         'mood': ?mood?.wireName,
+         'page_counts': ?pageCounts,
+         'price': ?price,
          'published_on': ?switch (publishedOn) {
            null => null,
            final value => _dateString(value),
          },
-         'created_at': ?createdAt?.toUtc().toIso8601String(),
+         'rating': ?rating,
+         'tags': ?tags,
+         'title': ?title,
          'updated_at': ?updatedAt?.toIso8601String(),
        });
-
-  /// Returns a copy with `price` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setPriceToNull() => BooksUpdate._({..._json, 'price': null});
-
-  /// Returns a copy with `rating` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setRatingToNull() => BooksUpdate._({..._json, 'rating': null});
-
-  /// Returns a copy with `mood` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setMoodToNull() => BooksUpdate._({..._json, 'mood': null});
-
-  /// Returns a copy with `tags` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setTagsToNull() => BooksUpdate._({..._json, 'tags': null});
-
-  /// Returns a copy with `page_counts` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setPageCountsToNull() =>
-      BooksUpdate._({..._json, 'page_counts': null});
-
-  /// Returns a copy with `metadata` set to SQL NULL, overriding any database
-  /// default.
-  BooksUpdate setMetadataToNull() =>
-      BooksUpdate._({..._json, 'metadata': null});
 
   /// Returns a copy with `cover_uuid` set to SQL NULL, overriding any database
   /// default.
   BooksUpdate setCoverUuidToNull() =>
       BooksUpdate._({..._json, 'cover_uuid': null});
 
+  /// Returns a copy with `metadata` set to SQL NULL, overriding any database
+  /// default.
+  BooksUpdate setMetadataToNull() =>
+      BooksUpdate._({..._json, 'metadata': null});
+
+  /// Returns a copy with `mood` set to SQL NULL, overriding any database
+  /// default.
+  BooksUpdate setMoodToNull() => BooksUpdate._({..._json, 'mood': null});
+
+  /// Returns a copy with `page_counts` set to SQL NULL, overriding any database
+  /// default.
+  BooksUpdate setPageCountsToNull() =>
+      BooksUpdate._({..._json, 'page_counts': null});
+
+  /// Returns a copy with `price` set to SQL NULL, overriding any database
+  /// default.
+  BooksUpdate setPriceToNull() => BooksUpdate._({..._json, 'price': null});
+
   /// Returns a copy with `published_on` set to SQL NULL, overriding any
   /// database default.
   BooksUpdate setPublishedOnToNull() =>
       BooksUpdate._({..._json, 'published_on': null});
+
+  /// Returns a copy with `rating` set to SQL NULL, overriding any database
+  /// default.
+  BooksUpdate setRatingToNull() => BooksUpdate._({..._json, 'rating': null});
+
+  /// Returns a copy with `tags` set to SQL NULL, overriding any database
+  /// default.
+  BooksUpdate setTagsToNull() => BooksUpdate._({..._json, 'tags': null});
 
   /// Returns a copy with `updated_at` set to SQL NULL, overriding any database
   /// default.
@@ -402,19 +402,19 @@ class Books {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('books', BooksRow.new);
 
-  static const id = TableColumn<int>('id');
-  static const title = TableColumn<String>('title');
   static const authorId = TableColumn<int>('author_id');
-  static const price = TableColumn<num>('price');
-  static const rating = TableColumn<double>('rating');
-  static const inPrint = TableColumn<bool>('in_print');
-  static const mood = TableColumn<Mood>('mood');
-  static const tags = TableColumn<List<String>>('tags');
-  static const pageCounts = TableColumn<List<int>>('page_counts');
-  static const metadata = TableColumn<Object>('metadata');
   static const coverUuid = TableColumn<String>('cover_uuid');
-  static const publishedOn = TableColumn<DateTime>('published_on');
   static const createdAt = TableColumn<DateTime>('created_at');
+  static const id = TableColumn<int>('id');
+  static const inPrint = TableColumn<bool>('in_print');
+  static const metadata = TableColumn<Object>('metadata');
+  static const mood = TableColumn<Mood>('mood');
+  static const pageCounts = TableColumn<List<int>>('page_counts');
+  static const price = TableColumn<num>('price');
+  static const publishedOn = TableColumn<DateTime>('published_on');
+  static const rating = TableColumn<double>('rating');
+  static const tags = TableColumn<List<String>>('tags');
+  static const title = TableColumn<String>('title');
   static const updatedAt = TableColumn<DateTime>('updated_at');
 }
 

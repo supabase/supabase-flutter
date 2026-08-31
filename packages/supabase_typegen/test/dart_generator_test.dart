@@ -101,11 +101,11 @@ void main() {
     expect(code, contains("TableColumn<num>('discounted_price')"));
     expect(
       code,
-      contains('BookPricesInsert({int? id, String? title, num? price})'),
+      contains('BookPricesInsert({int? id, num? price, String? title})'),
     );
     expect(
       code,
-      contains('BookPricesUpdate({int? id, String? title, num? price})'),
+      contains('BookPricesUpdate({int? id, num? price, String? title})'),
     );
   });
 
