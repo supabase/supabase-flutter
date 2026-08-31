@@ -76,6 +76,52 @@ void main() {
     expect(code, contains("TableColumn<int>('id')"));
   });
 
+  test('read-only views generate no insert or update surface', () {
+    final code = generateDartCode(schema);
+
+    expect(code, contains('extension type const AuthorStatsRow'));
+    expect(code, isNot(contains('AuthorStatsInsert')));
+    expect(code, isNot(contains('AuthorStatsUpdate')));
+  });
+
+  test('insert-only and update-only relations generate a single value '
+      'type', () {
+    ColumnDescription titleColumn() => const ColumnDescription(
+      name: 'title',
+      postgresFormat: 'text',
+      typeKind: ColumnTypeKind.text,
+      isRequired: false,
+      hasDefault: false,
+      isNullable: true,
+    );
+    final code = generateDartCode(
+      SchemaDescription(
+        schemaName: 'public',
+        tables: [
+          TableDescription(
+            name: 'book_submissions',
+            columns: [titleColumn()],
+            isInsertable: true,
+            isUpdatable: false,
+          ),
+          TableDescription(
+            name: 'book_corrections',
+            columns: [titleColumn()],
+            isInsertable: false,
+            isUpdatable: true,
+          ),
+        ],
+        enums: [],
+      ),
+    );
+
+    expect(code, contains('BookSubmissionsInsert({String? title})'));
+    expect(code, isNot(contains('BookSubmissionsUpdate')));
+
+    expect(code, contains('BookCorrectionsUpdate({String? title})'));
+    expect(code, isNot(contains('BookCorrectionsInsert')));
+  });
+
   test('tables whose columns are all read-only get parameterless '
       'insert and update constructors', () {
     final table = TableDescription(

@@ -139,13 +139,17 @@ void _writeTable(
 ) {
   final baseName = pascalCase(table.name);
   final rowType = typeNames.claim('${baseName}Row');
-  final insertType = typeNames.claim('${baseName}Insert');
-  final updateType = typeNames.claim('${baseName}Update');
+  final insertType = table.isInsertable
+      ? typeNames.claim('${baseName}Insert')
+      : null;
+  final updateType = table.isUpdatable
+      ? typeNames.claim('${baseName}Update')
+      : null;
   final namespaceType = typeNames.claim(baseName);
 
   final memberNames = _uniqueMemberNames(
     [for (final column in table.columns) column.name],
-    reserved: {rowType, insertType, updateType},
+    reserved: {rowType, ?insertType, ?updateType},
   );
   final bindings = {
     for (final column in table.columns)
@@ -153,32 +157,37 @@ void _writeTable(
   };
 
   _writeRow(buffer, table, rowType, memberNames, bindings);
-  _writeValues(
-    buffer,
-    table,
-    insertType,
-    memberNames,
-    bindings,
-    requireRequiredColumns: true,
-    docLine:
-        'Values for inserting a row into `${table.name}`. Columns that are '
-        'nullable, identity, or covered by a database default are optional; '
-        'passing `null` omits the column so the database default applies. '
-        'Columns the database always generates itself are left out entirely. '
-        'Use the `set…ToNull` methods to insert SQL NULL explicitly.',
-  );
-  _writeValues(
-    buffer,
-    table,
-    updateType,
-    memberNames,
-    bindings,
-    requireRequiredColumns: false,
-    docLine:
-        'Values for updating rows of `${table.name}`. All columns are '
-        'optional; passing `null` omits the column, leaving it unchanged. '
-        'Use the `set…ToNull` methods to write SQL NULL explicitly.',
-  );
+  if (insertType != null) {
+    _writeValues(
+      buffer,
+      table,
+      insertType,
+      memberNames,
+      bindings,
+      requireRequiredColumns: true,
+      docLine:
+          'Values for inserting a row into `${table.name}`. Columns that are '
+          'nullable, identity, or covered by a database default are optional; '
+          'passing `null` omits the column so the database default applies. '
+          'Columns the database always generates itself are left out '
+          'entirely. Use the `set…ToNull` methods to insert SQL NULL '
+          'explicitly.',
+    );
+  }
+  if (updateType != null) {
+    _writeValues(
+      buffer,
+      table,
+      updateType,
+      memberNames,
+      bindings,
+      requireRequiredColumns: false,
+      docLine:
+          'Values for updating rows of `${table.name}`. All columns are '
+          'optional; passing `null` omits the column, leaving it unchanged. '
+          'Use the `set…ToNull` methods to write SQL NULL explicitly.',
+    );
+  }
   _writeNamespace(buffer, table, namespaceType, rowType, memberNames, bindings);
 }
 
