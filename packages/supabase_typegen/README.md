@@ -38,7 +38,8 @@ The document is the `GeneratorMetadata` introspection contract of
 [`@supabase/postgrest-typegen`](https://github.com/supabase/pg-toolbelt),
 which is also what postgres-meta's own type generators consume. Until CLI
 support for `--lang dart` and `--lang json` ships, the same document comes
-from serializing that package's `introspect()` result.
+from serializing that package's `introspect()` result, ordered with its
+`sortGeneratorMetadata` pass.
 
 ## Committing schema.json
 

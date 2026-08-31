@@ -76,12 +76,37 @@ void main() {
     expect(code, contains("TableColumn<int>('id')"));
   });
 
-  test('read-only views generate no insert or update surface', () {
+  test('read-only views and materialized views generate no insert or '
+      'update surface', () {
     final code = generateDartCode(schema);
 
     expect(code, contains('extension type const AuthorStatsRow'));
     expect(code, isNot(contains('AuthorStatsInsert')));
     expect(code, isNot(contains('AuthorStatsUpdate')));
+
+    expect(code, contains('extension type const BookSummariesRow'));
+    expect(code, isNot(contains('BookSummariesInsert')));
+    expect(code, isNot(contains('BookSummariesUpdate')));
+
+    expect(code, contains('extension type const BookSubmissionsRow'));
+    expect(code, isNot(contains('BookSubmissionsInsert')));
+    expect(code, isNot(contains('BookSubmissionsUpdate')));
+  });
+
+  test('non-updatable view columns read but are excluded from insert and '
+      'update', () {
+    final code = generateDartCode(schema);
+
+    expect(code, contains('num? get discountedPrice'));
+    expect(code, contains("TableColumn<num>('discounted_price')"));
+    expect(
+      code,
+      contains('BookPricesInsert({int? id, String? title, num? price})'),
+    );
+    expect(
+      code,
+      contains('BookPricesUpdate({int? id, String? title, num? price})'),
+    );
   });
 
   test('insert-only and update-only relations generate a single value '
