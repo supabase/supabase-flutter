@@ -828,6 +828,7 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isFilter
+      - PostgrestFilterBuilder.isUnknown
       - SupabaseStreamFilterBuilder.isFilter
   database.using_filters.is_distinct:
     status: implemented
