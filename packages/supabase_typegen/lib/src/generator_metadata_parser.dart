@@ -60,6 +60,17 @@ ColumnTypeKind _elementTypeKind(String elementFormat, {required bool isEnum}) {
 /// (`supabase gen types --lang json`), into a [SchemaDescription] for
 /// [schemaName].
 ///
+/// The document carries a `version` field, currently 1, and the
+/// semantically sorted collections produced by `sortGeneratorMetadata`:
+/// `tables`, `foreignTables`, `views`, `materializedViews`, `columns`,
+/// `primaryKeys`, `relationships`, `functions` and `types`. Collections and
+/// fields the generator does not need, such as `primaryKeys`, are ignored.
+///
+/// Tables and foreign tables are always insertable and updatable. Views use
+/// the `is_insert_enabled` and `is_update_enabled` flags, falling back to
+/// `is_updatable` for documents that predate the flags. Materialized views
+/// are never writable.
+///
 /// Throws a [FormatException] when the document does not have the
 /// `GeneratorMetadata` shape.
 SchemaDescription parseGeneratorMetadata(
@@ -75,9 +86,29 @@ SchemaDescription parseGeneratorMetadata(
   }
 
   final relations = [
-    for (final key in ['tables', 'foreignTables', 'views', 'materializedViews'])
-      ...?(document[key] as List<dynamic>?)?.cast<Map<String, dynamic>>(),
-  ].where((relation) => relation['schema'] == schemaName);
+    for (final table in _relationsOf(document, 'tables', schemaName))
+      (relation: table, isInsertable: true, isUpdatable: true),
+    for (final foreignTable in _relationsOf(
+      document,
+      'foreignTables',
+      schemaName,
+    ))
+      (relation: foreignTable, isInsertable: true, isUpdatable: true),
+    for (final view in _relationsOf(document, 'views', schemaName))
+      (
+        relation: view,
+        isInsertable:
+            (view['is_insert_enabled'] ?? view['is_updatable']) as bool,
+        isUpdatable:
+            (view['is_update_enabled'] ?? view['is_updatable']) as bool,
+      ),
+    for (final materializedView in _relationsOf(
+      document,
+      'materializedViews',
+      schemaName,
+    ))
+      (relation: materializedView, isInsertable: false, isUpdatable: false),
+  ];
 
   final columnsByRelationId = <int, List<Map<String, dynamic>>>{};
   for (final column
@@ -101,7 +132,7 @@ SchemaDescription parseGeneratorMetadata(
   final tables = <TableDescription>[];
   final enumsByQualifiedName = <String, EnumDescription>{};
 
-  for (final relation in relations) {
+  for (final (:relation, :isInsertable, :isUpdatable) in relations) {
     final relationName = relation['name'] as String;
 
     final columns = <ColumnDescription>[];
@@ -145,7 +176,8 @@ SchemaDescription parseGeneratorMetadata(
           isNullable: isNullable,
           isReadOnly:
               column['identity_generation'] == 'ALWAYS' ||
-              column['is_generated'] as bool,
+              column['is_generated'] as bool ||
+              !(column['is_updatable'] as bool),
           comment: column['comment'] as String?,
           foreignKey: foreignKeysByColumn[(relationName, name)],
         ),
@@ -157,6 +189,8 @@ SchemaDescription parseGeneratorMetadata(
         name: relationName,
         comment: relation['comment'] as String?,
         columns: columns,
+        isInsertable: isInsertable,
+        isUpdatable: isUpdatable,
       ),
     );
   }
@@ -171,6 +205,16 @@ SchemaDescription parseGeneratorMetadata(
     enums: enums,
   );
 }
+
+/// The relations of one document collection, such as `views`, that belong to
+/// [schemaName].
+Iterable<Map<String, dynamic>> _relationsOf(
+  Map<String, dynamic> document,
+  String collection,
+  String schemaName,
+) => (document[collection] as List<dynamic>? ?? const [])
+    .cast<Map<String, dynamic>>()
+    .where((relation) => relation['schema'] == schemaName);
 
 /// Maps `(table, column)` pairs of [schemaName] to their foreign key targets,
 /// pairing the source and referenced columns of each relationship by index.

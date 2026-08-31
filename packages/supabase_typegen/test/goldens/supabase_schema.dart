@@ -40,46 +40,6 @@ extension type const AuthorStatsRow(Map<String, dynamic> _json)
   int? get bookCount => _json['book_count'] as int?;
 }
 
-/// Values for inserting a row into `author_stats`. Columns that are nullable,
-/// identity, or covered by a database default are optional; passing `null`
-/// omits the column so the database default applies. Columns the database
-/// always generates itself are left out entirely. Use the `set…ToNull` methods
-/// to insert SQL NULL explicitly.
-extension type const AuthorStatsInsert._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
-  AuthorStatsInsert({int? authorId, int? bookCount})
-    : this._({'author_id': ?authorId, 'book_count': ?bookCount});
-
-  /// Returns a copy with `author_id` set to SQL NULL, overriding any database
-  /// default.
-  AuthorStatsInsert setAuthorIdToNull() =>
-      AuthorStatsInsert._({..._json, 'author_id': null});
-
-  /// Returns a copy with `book_count` set to SQL NULL, overriding any database
-  /// default.
-  AuthorStatsInsert setBookCountToNull() =>
-      AuthorStatsInsert._({..._json, 'book_count': null});
-}
-
-/// Values for updating rows of `author_stats`. All columns are optional;
-/// passing `null` omits the column, leaving it unchanged. Use the `set…ToNull`
-/// methods to write SQL NULL explicitly.
-extension type const AuthorStatsUpdate._(Map<String, dynamic> _json)
-    implements Map<String, dynamic> {
-  AuthorStatsUpdate({int? authorId, int? bookCount})
-    : this._({'author_id': ?authorId, 'book_count': ?bookCount});
-
-  /// Returns a copy with `author_id` set to SQL NULL, overriding any database
-  /// default.
-  AuthorStatsUpdate setAuthorIdToNull() =>
-      AuthorStatsUpdate._({..._json, 'author_id': null});
-
-  /// Returns a copy with `book_count` set to SQL NULL, overriding any database
-  /// default.
-  AuthorStatsUpdate setBookCountToNull() =>
-      AuthorStatsUpdate._({..._json, 'book_count': null});
-}
-
 /// Typed access to the `author_stats` table.
 class AuthorStats {
   const AuthorStats._();

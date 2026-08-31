@@ -40,6 +40,20 @@ void main() {
     ]);
   });
 
+  test('tables are insertable and updatable', () {
+    final books = schema.tables.singleWhere((table) => table.name == 'books');
+    expect(books.isInsertable, isTrue);
+    expect(books.isUpdatable, isTrue);
+  });
+
+  test('read-only views are neither insertable nor updatable', () {
+    final authorStats = schema.tables.singleWhere(
+      (table) => table.name == 'author_stats',
+    );
+    expect(authorStats.isInsertable, isFalse);
+    expect(authorStats.isUpdatable, isFalse);
+  });
+
   test('parses table and view comments', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');
     expect(books.comment, 'Books available in the library');
@@ -211,4 +225,112 @@ void main() {
     ]);
     expect(authorStats.columns.first.isNullable, isTrue);
   });
+
+  test('foreign tables are insertable and updatable', () {
+    final parsed = parseGeneratorMetadata({
+      'version': 1,
+      'tables': <dynamic>[],
+      'foreignTables': [
+        {'id': 1, 'schema': 'public', 'name': 'remote_logs', 'comment': null},
+      ],
+      'columns': [_column(tableId: 1, table: 'remote_logs', name: 'message')],
+    });
+
+    final remoteLogs = parsed.tables.single;
+    expect(remoteLogs.name, 'remote_logs');
+    expect(remoteLogs.isInsertable, isTrue);
+    expect(remoteLogs.isUpdatable, isTrue);
+  });
+
+  group('view writability flags', () {
+    SchemaDescription parseView(Map<String, dynamic> view) =>
+        parseGeneratorMetadata({
+          'version': 1,
+          'tables': <dynamic>[],
+          'views': [view],
+          'columns': [
+            _column(tableId: 1, table: view['name'] as String, name: 'title'),
+          ],
+        });
+
+    test('is_insert_enabled alone makes a view insert-only', () {
+      final parsed = parseView({
+        'id': 1,
+        'schema': 'public',
+        'name': 'book_submissions',
+        'is_updatable': false,
+        'is_insert_enabled': true,
+        'is_update_enabled': false,
+        'comment': null,
+      });
+
+      expect(parsed.tables.single.isInsertable, isTrue);
+      expect(parsed.tables.single.isUpdatable, isFalse);
+    });
+
+    test('is_update_enabled alone makes a view update-only', () {
+      final parsed = parseView({
+        'id': 1,
+        'schema': 'public',
+        'name': 'book_corrections',
+        'is_updatable': false,
+        'is_insert_enabled': false,
+        'is_update_enabled': true,
+        'comment': null,
+      });
+
+      expect(parsed.tables.single.isInsertable, isFalse);
+      expect(parsed.tables.single.isUpdatable, isTrue);
+    });
+
+    test('absent flags fall back to is_updatable', () {
+      for (final isUpdatable in [true, false]) {
+        final parsed = parseView({
+          'id': 1,
+          'schema': 'public',
+          'name': 'book_prices',
+          'is_updatable': isUpdatable,
+          'comment': null,
+        });
+
+        expect(
+          parsed.tables.single.isInsertable,
+          isUpdatable,
+          reason: 'is_updatable: $isUpdatable',
+        );
+        expect(
+          parsed.tables.single.isUpdatable,
+          isUpdatable,
+          reason: 'is_updatable: $isUpdatable',
+        );
+      }
+    });
+  });
 }
+
+/// A minimal column document of the GeneratorMetadata contract.
+Map<String, dynamic> _column({
+  required int tableId,
+  required String table,
+  required String name,
+}) => {
+  'table_id': tableId,
+  'schema': 'public',
+  'table': table,
+  'id': '$tableId.1',
+  'ordinal_position': 1,
+  'name': name,
+  'default_value': null,
+  'data_type': 'text',
+  'format': 'text',
+  'type_schema': 'pg_catalog',
+  'is_identity': false,
+  'identity_generation': null,
+  'is_generated': false,
+  'is_nullable': true,
+  'is_updatable': true,
+  'is_unique': false,
+  'enums': <String>[],
+  'check': null,
+  'comment': null,
+};

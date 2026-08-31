@@ -67,6 +67,8 @@ class TableDescription {
     required this.name,
     required this.columns,
     this.comment,
+    this.isInsertable = true,
+    this.isUpdatable = true,
   });
 
   /// Name of the table in the database.
@@ -77,6 +79,17 @@ class TableDescription {
 
   /// Columns of the table, in database order.
   final List<ColumnDescription> columns;
+
+  /// Whether rows can be inserted through the relation. Tables and foreign
+  /// tables always are; views only when the database reports that INSERT
+  /// works through them; materialized views never are. Relations that are
+  /// not insertable get no insert value type in the generated code.
+  final bool isInsertable;
+
+  /// Whether rows can be updated through the relation, with the same rules
+  /// as [isInsertable]. Relations that are not updatable get no update value
+  /// type in the generated code.
+  final bool isUpdatable;
 }
 
 /// Description of a single table column.
@@ -128,8 +141,10 @@ class ColumnDescription {
   final bool isNullable;
 
   /// Whether the column can never be written, because it is a
-  /// `GENERATED ALWAYS` identity or a generated column. Read-only columns
-  /// appear in the row type but not in the insert and update value types.
+  /// `GENERATED ALWAYS` identity, a generated column, or a column the
+  /// database reports as not updatable, such as a computed column of an
+  /// otherwise writable view. Read-only columns appear in the row type but
+  /// not in the insert and update value types.
   final bool isReadOnly;
 }
 
