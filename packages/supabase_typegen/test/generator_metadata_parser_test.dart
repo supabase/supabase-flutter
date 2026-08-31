@@ -11,9 +11,7 @@ void main() {
   setUpAll(() {
     document =
         jsonDecode(
-              File(
-                'test/fixtures/generator_metadata.json',
-              ).readAsStringSync(),
+              File('test/fixtures/generator_metadata.json').readAsStringSync(),
             )
             as Map<String, dynamic>;
     schema = parseGeneratorMetadata(document);
@@ -58,9 +56,7 @@ void main() {
   test('read-only views and materialized views are neither insertable nor '
       'updatable', () {
     for (final name in ['author_stats', 'book_submissions', 'book_summaries']) {
-      final relation = schema.tables.singleWhere(
-        (table) => table.name == name,
-      );
+      final relation = schema.tables.singleWhere((table) => table.name == name);
       expect(relation.isInsertable, isFalse, reason: name);
       expect(relation.isUpdatable, isFalse, reason: name);
     }
@@ -195,12 +191,7 @@ void main() {
     for (final format in ['inet', 'cidr', 'macaddr', 'money', 'xml', 'name']) {
       final parsed = parseGeneratorMetadata({
         'tables': [
-          {
-            'id': 1,
-            'schema': 'public',
-            'name': 'servers',
-            'comment': null,
-          },
+          {'id': 1, 'schema': 'public', 'name': 'servers', 'comment': null},
         ],
         'columns': [columnOf(format)],
       });
@@ -225,6 +216,47 @@ void main() {
     );
     expect(moodColumn.postgresFormat, 'public.mood');
   });
+
+  test(
+    'resolves same-named enums across schemas by the column type_schema',
+    () {
+      final parsed = parseGeneratorMetadata({
+        'version': 1,
+        'tables': [
+          {'id': 1, 'schema': 'public', 'name': 'reviews', 'comment': null},
+        ],
+        'columns': [
+          {
+            ..._column(tableId: 1, table: 'reviews', name: 'mood'),
+            'data_type': 'USER-DEFINED',
+            'format': 'mood',
+            'type_schema': 'internal',
+            'enums': ['up', 'down'],
+          },
+        ],
+        'types': [
+          {
+            'id': 10,
+            'schema': 'public',
+            'name': 'mood',
+            'enums': ['happy', 'sad'],
+          },
+          {
+            'id': 11,
+            'schema': 'internal',
+            'name': 'mood',
+            'enums': ['up', 'down'],
+          },
+        ],
+      });
+
+      final mood = parsed.tables.single.columns.single;
+      expect(mood.postgresFormat, 'internal.mood');
+      final enumDescription = parsed.enums.single;
+      expect(enumDescription.qualifiedName, 'internal.mood');
+      expect(enumDescription.values, ['up', 'down']);
+    },
+  );
 
   test('parses array columns', () {
     final books = schema.tables.singleWhere((table) => table.name == 'books');

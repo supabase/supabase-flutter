@@ -127,7 +127,7 @@ SchemaDescription parseGeneratorMetadata(
   }
 
   final foreignKeysByColumn = _foreignKeysByColumn(document, schemaName);
-  final enumTypes = _enumTypes(document, schemaName);
+  final enumTypes = _enumTypes(document);
 
   final tables = <TableDescription>[];
   final enumsByQualifiedName = <String, EnumDescription>{};
@@ -148,7 +148,12 @@ SchemaDescription parseGeneratorMetadata(
 
       var postgresFormat = format;
       if (isEnum && !isArray) {
-        final enumDescription = _enumDescription(format, enumValues, enumTypes);
+        final enumDescription = _enumDescription(
+          format,
+          column['type_schema'] as String,
+          enumValues,
+          enumTypes,
+        );
         postgresFormat = enumDescription.qualifiedName;
         enumsByQualifiedName.putIfAbsent(
           enumDescription.qualifiedName,
@@ -244,35 +249,32 @@ Map<(String, String), ForeignKeyDescription> _foreignKeysByColumn(
   return foreignKeys;
 }
 
-/// Maps enum type names to `(schema, values)`, preferring types of
-/// [schemaName] when the same name exists in several schemas.
-Map<String, (String, List<String>)> _enumTypes(
-  Map<String, dynamic> document,
-  String schemaName,
-) {
-  final enumTypes = <String, (String, List<String>)>{};
+/// Maps schema-qualified enum type names, for example `public.mood`, to
+/// their values in declaration order.
+Map<String, List<String>> _enumTypes(Map<String, dynamic> document) {
+  final enumTypes = <String, List<String>>{};
   for (final type
       in (document['types'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()) {
     final values = (type['enums'] as List<dynamic>? ?? const []).cast<String>();
     if (values.isEmpty) continue;
-    final name = type['name'] as String;
-    final schema = type['schema'] as String;
-    if (schema == schemaName || !enumTypes.containsKey(name)) {
-      enumTypes[name] = (schema, values);
-    }
+    enumTypes['${type['schema']}.${type['name']}'] = values;
   }
   return enumTypes;
 }
 
+/// Resolves the enum type of a column exactly, by the column's `type_schema`
+/// and type name. Falls back to the values carried on the column itself when
+/// the type is missing from the document's `types` list.
 EnumDescription _enumDescription(
   String format,
+  String typeSchema,
   List<String> columnEnumValues,
-  Map<String, (String, List<String>)> enumTypes,
+  Map<String, List<String>> enumTypes,
 ) {
-  final type = enumTypes[format];
+  final qualifiedName = '$typeSchema.$format';
   return EnumDescription(
-    qualifiedName: type == null ? format : '${type.$1}.$format',
-    values: type == null ? columnEnumValues : type.$2,
+    qualifiedName: qualifiedName,
+    values: enumTypes[qualifiedName] ?? columnEnumValues,
   );
 }
