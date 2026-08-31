@@ -32,10 +32,19 @@ void main() {
     );
   });
 
+  test('tolerates the version and primaryKeys fields of the document', () {
+    expect(document['version'], 1);
+    expect(document['primaryKeys'], isA<List<dynamic>>());
+    expect(schema.tables, isNotEmpty);
+  });
+
   test('parses tables and views sorted by name', () {
     expect(schema.tables.map((table) => table.name), [
       'author_stats',
       'authors',
+      'book_prices',
+      'book_submissions',
+      'book_summaries',
       'books',
     ]);
   });
@@ -46,12 +55,38 @@ void main() {
     expect(books.isUpdatable, isTrue);
   });
 
-  test('read-only views are neither insertable nor updatable', () {
-    final authorStats = schema.tables.singleWhere(
-      (table) => table.name == 'author_stats',
+  test('read-only views and materialized views are neither insertable nor '
+      'updatable', () {
+    for (final name in ['author_stats', 'book_submissions', 'book_summaries']) {
+      final relation = schema.tables.singleWhere(
+        (table) => table.name == name,
+      );
+      expect(relation.isInsertable, isFalse, reason: name);
+      expect(relation.isUpdatable, isFalse, reason: name);
+    }
+  });
+
+  test('automatically updatable views are insertable and updatable', () {
+    final bookPrices = schema.tables.singleWhere(
+      (table) => table.name == 'book_prices',
     );
-    expect(authorStats.isInsertable, isFalse);
-    expect(authorStats.isUpdatable, isFalse);
+    expect(bookPrices.isInsertable, isTrue);
+    expect(bookPrices.isUpdatable, isTrue);
+  });
+
+  test('non-updatable columns of a writable view are read-only', () {
+    final bookPrices = schema.tables.singleWhere(
+      (table) => table.name == 'book_prices',
+    );
+    final discountedPrice = bookPrices.columns.singleWhere(
+      (column) => column.name == 'discounted_price',
+    );
+    expect(discountedPrice.isReadOnly, isTrue);
+
+    final price = bookPrices.columns.singleWhere(
+      (column) => column.name == 'price',
+    );
+    expect(price.isReadOnly, isFalse);
   });
 
   test('parses table and view comments', () {

@@ -87,6 +87,117 @@ class Authors {
   static const name = TableColumn<String>('name');
 }
 
+/// A row of the `book_prices` table.
+/// Prices per book, with the standard discount precomputed
+extension type const BookPricesRow(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  int? get id => _json['id'] as int?;
+  String? get title => _json['title'] as String?;
+  num? get price => _json['price'] as num?;
+  num? get discountedPrice => _json['discounted_price'] as num?;
+}
+
+/// Values for inserting a row into `book_prices`. Columns that are nullable,
+/// identity, or covered by a database default are optional; passing `null`
+/// omits the column so the database default applies. Columns the database
+/// always generates itself are left out entirely. Use the `set…ToNull` methods
+/// to insert SQL NULL explicitly.
+extension type const BookPricesInsert._(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  BookPricesInsert({int? id, String? title, num? price})
+    : this._({'id': ?id, 'title': ?title, 'price': ?price});
+
+  /// Returns a copy with `id` set to SQL NULL, overriding any database default.
+  BookPricesInsert setIdToNull() => BookPricesInsert._({..._json, 'id': null});
+
+  /// Returns a copy with `title` set to SQL NULL, overriding any database
+  /// default.
+  BookPricesInsert setTitleToNull() =>
+      BookPricesInsert._({..._json, 'title': null});
+
+  /// Returns a copy with `price` set to SQL NULL, overriding any database
+  /// default.
+  BookPricesInsert setPriceToNull() =>
+      BookPricesInsert._({..._json, 'price': null});
+}
+
+/// Values for updating rows of `book_prices`. All columns are optional; passing
+/// `null` omits the column, leaving it unchanged. Use the `set…ToNull` methods
+/// to write SQL NULL explicitly.
+extension type const BookPricesUpdate._(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  BookPricesUpdate({int? id, String? title, num? price})
+    : this._({'id': ?id, 'title': ?title, 'price': ?price});
+
+  /// Returns a copy with `id` set to SQL NULL, overriding any database default.
+  BookPricesUpdate setIdToNull() => BookPricesUpdate._({..._json, 'id': null});
+
+  /// Returns a copy with `title` set to SQL NULL, overriding any database
+  /// default.
+  BookPricesUpdate setTitleToNull() =>
+      BookPricesUpdate._({..._json, 'title': null});
+
+  /// Returns a copy with `price` set to SQL NULL, overriding any database
+  /// default.
+  BookPricesUpdate setPriceToNull() =>
+      BookPricesUpdate._({..._json, 'price': null});
+}
+
+/// Typed access to the `book_prices` table.
+class BookPrices {
+  const BookPrices._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table = PostgrestTable('book_prices', BookPricesRow.new);
+
+  static const id = TableColumn<int>('id');
+  static const title = TableColumn<String>('title');
+  static const price = TableColumn<num>('price');
+  static const discountedPrice = TableColumn<num>('discounted_price');
+}
+
+/// A row of the `book_submissions` table.
+extension type const BookSubmissionsRow(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  String? get title => _json['title'] as String?;
+  String? get authorName => _json['author_name'] as String?;
+}
+
+/// Typed access to the `book_submissions` table.
+class BookSubmissions {
+  const BookSubmissions._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table = PostgrestTable(
+    'book_submissions',
+    BookSubmissionsRow.new,
+  );
+
+  static const title = TableColumn<String>('title');
+  static const authorName = TableColumn<String>('author_name');
+}
+
+/// A row of the `book_summaries` table.
+/// Denormalized book and author names
+extension type const BookSummariesRow(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  int? get id => _json['id'] as int?;
+  String? get title => _json['title'] as String?;
+  String? get authorName => _json['author_name'] as String?;
+}
+
+/// Typed access to the `book_summaries` table.
+class BookSummaries {
+  const BookSummaries._();
+
+  /// Table definition for [PostgrestClient.table].
+  static const table = PostgrestTable('book_summaries', BookSummariesRow.new);
+
+  static const id = TableColumn<int>('id');
+  static const title = TableColumn<String>('title');
+  static const authorName = TableColumn<String>('author_name');
+}
+
 /// A row of the `books` table.
 /// Books available in the library
 extension type const BooksRow(Map<String, dynamic> _json)
