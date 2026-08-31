@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs
 import 'dart:collection';
 
 import 'package:meta/meta.dart';
@@ -28,6 +27,8 @@ class Presence {
   /// The payload shared by users.
   final Map<String, dynamic> payload;
 
+  /// Returns a copy of this presence with a shallow copy of [payload];
+  /// nested maps and lists inside it are still shared with the original.
   Presence deepClone() {
     return Presence.fromJson({
       'presence_ref': presenceReference,
@@ -163,7 +164,9 @@ class RealtimePresence {
   Map<String, List<Presence>> _state = <String, List<Presence>>{};
 
   /// The current presence state, keyed by presence key.
-  Map<String, List<Presence>> get state => UnmodifiableMapView(_state);
+  Map<String, List<Presence>> get state => UnmodifiableMapView(
+    _state.map((key, value) => MapEntry(key, List.unmodifiable(value))),
+  );
 
   List<Map<String, dynamic>> _pendingDiffs = [];
   String? _joinRef;

@@ -1,6 +1,7 @@
 import 'package:postgrest/postgrest.dart';
 import 'package:test/test.dart';
 
+import 'custom_http_client.dart';
 import 'reset_helper.dart';
 import 'test_utils.dart';
 
@@ -257,6 +258,29 @@ void main() {
     for (final item in response) {
       expect(item['data'], null);
     }
+  });
+
+  test('is unknown', () async {
+    final customHttpClient = CustomHttpClient();
+    final mockedPostgrest = PostgrestClient(
+      'http://localhost:3000',
+      httpClient: customHttpClient,
+    );
+    try {
+      await mockedPostgrest.from('users').select().isUnknown('confirmed');
+    } catch (_) {}
+    expect(
+      customHttpClient.lastRequest!.url.queryParameters['confirmed'],
+      'is.unknown',
+    );
+
+    // The `todos.is_complete` column is `not null`, so no row is ever
+    // `UNKNOWN`, but the request is still accepted by the server.
+    final response = await postgrest
+        .from('todos')
+        .select('is_complete')
+        .isUnknown('is_complete');
+    expect(response, isEmpty);
   });
 
   test('in', () async {

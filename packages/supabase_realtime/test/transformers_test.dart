@@ -193,6 +193,93 @@ void main() {
     );
   });
 
+  group('transformers toArray with quoting', () {
+    test('keeps commas inside a quoted element', () {
+      expect(toArray('{"a,b",c}', 'text'), equals(['a,b', 'c']));
+    });
+
+    test('unquoted NULL is the null element, quoted NULL is the string', () {
+      expect(toArray('{NULL,a}', 'text'), equals([null, 'a']));
+      expect(toArray('{null,1}', 'int4'), equals([null, 1]));
+      expect(toArray('{"NULL",a}', 'text'), equals(['NULL', 'a']));
+    });
+
+    test('reads an empty string element', () {
+      expect(toArray('{"",a}', 'text'), equals(['', 'a']));
+    });
+
+    test('keeps the shape of a multidimensional array', () {
+      expect(
+        toArray('{{1,2},{3,4}}', 'int4'),
+        equals([
+          [1, 2],
+          [3, 4],
+        ]),
+      );
+    });
+
+    test('unescapes quotes and backslashes inside a quoted element', () {
+      expect(toArray(r'{"a\"b","c\\d"}', 'text'), equals(['a"b', r'c\d']));
+    });
+
+    test('keeps braces that are part of a quoted element', () {
+      expect(
+        toArray(r'{"{not an array}"}', 'text'),
+        equals(['{not an array}']),
+      );
+    });
+
+    test('drops whitespace around unquoted elements but not inside them', () {
+      expect(toArray('{a , b}', 'text'), equals(['a', 'b']));
+      expect(
+        toArray('{hello world,foo}', 'text'),
+        equals(['hello world', 'foo']),
+      );
+      expect(
+        toArray('{"hello world"," foo "}', 'text'),
+        equals(['hello world', ' foo ']),
+      );
+    });
+
+    test('strips explicit dimension decorations', () {
+      expect(toArray('[0:1]={1,2}', 'int4'), equals([1, 2]));
+      expect(
+        toArray('[1:2][11:12]={{1,2},{3,4}}', 'int4'),
+        equals([
+          [1, 2],
+          [3, 4],
+        ]),
+      );
+    });
+
+    test('splits box elements on the semicolon delimiter', () {
+      expect(
+        toArray('{(1,1),(0,0);(10,10),(0,0)}', 'box'),
+        equals(['(1,1),(0,0)', '(10,10),(0,0)']),
+      );
+    });
+
+    test('drops whitespace around the literal itself', () {
+      expect(toArray(' {1,2} ', 'int4'), equals([1, 2]));
+    });
+
+    test('returns the raw value when the literal is malformed', () {
+      expect(toArray('{"unterminated}', 'text'), equals('{"unterminated}'));
+      expect(toArray('{a}{b}', 'text'), equals('{a}{b}'));
+      expect(toArray('not an array', 'text'), equals('not an array'));
+    });
+
+    test('returns the raw value for an empty unquoted element', () {
+      expect(toArray('{1,,2}', 'int4'), equals('{1,,2}'));
+      expect(toArray('{1,}', 'int4'), equals('{1,}'));
+      expect(toArray('{,1}', 'int4'), equals('{,1}'));
+    });
+
+    test('returns the raw value for a backslash outside quotes', () {
+      expect(toArray(r'{a\,b}', 'text'), equals(r'{a\,b}'));
+    });
+  });
+
   group('enrich payload', () {
     test('can enrich single tenant realtime payload', () {
       final enrichedPayload = getEnrichedPayload({

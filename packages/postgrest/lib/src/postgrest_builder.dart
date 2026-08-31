@@ -486,12 +486,14 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
         }
       }
 
-      // Workaround for https://github.com/supabase/supabase-flutter/issues/560
-      if (_maybeSingle && method == HttpMethod.get && body is List) {
+      // maybeSingle() fetches the result as a list and enforces the
+      // at-most-one-row constraint here, so that zero rows never produce a
+      // PostgREST 406.
+      if (_maybeSingle && body is List) {
         if (body.length > 1) {
           final exception = PostgrestApiException(
-            // https://github.com/PostgREST/postgrest/blob/a867d79c42419af16c18c3fb019eba8df992626f/src/PostgREST/Error.hs#L553
             statusCode: 406,
+            errorCode: 'PGRST116',
             details:
                 'Results contain ${body.length} rows, application/vnd.pgrst.object+json requires 1 row',
             hint: null,
@@ -562,10 +564,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
           statusCode: response.statusCode,
           details: response.reasonPhrase,
         );
-
-        if (_maybeSingle) {
-          return _handleMaybeSingleError(response, error);
-        }
       }
     } else {
       error = PostgrestApiException(
@@ -579,30 +577,6 @@ class PostgrestBuilder<T, S, R> implements Future<T> {
     postgrestLogger.finest('$error from request: ${_url.redacted}');
     postgrestLogger.fine('$error from request');
 
-    throw error;
-  }
-
-  /// When [_maybeSingle] is true, check whether error details contain
-  /// 'Results contain 0 rows' then
-  /// return PostgrestResponse with null data
-  T _handleMaybeSingleError(
-    http.Response response,
-    PostgrestApiException error,
-  ) {
-    if (error.details is String &&
-        (error.details as String).contains('Results contain 0 rows')) {
-      if (_count != null && response.request!.method != HttpMethod.head.value) {
-        if (_converter != null) {
-          return PostgrestResponse<S>(data: _converter(null as R), count: 0)
-              as T;
-        }
-        return PostgrestResponse<S>(data: null as S, count: 0) as T;
-      }
-      if (_converter != null) {
-        return _converter(null as R) as T;
-      }
-      return null as T;
-    }
     throw error;
   }
 
