@@ -128,6 +128,7 @@ features:
     status: implemented
     symbols:
       - AuthClient.resetPasswordForEmail
+  auth.sign_in.concurrent_pkce_flows: not_implemented
 
   # auth — session & user
   auth.session.get_session:
