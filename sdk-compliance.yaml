@@ -109,9 +109,6 @@ features:
     status: implemented
     symbols:
       - AuthClient.exchangeCodeForSession
-      - AuthClient.appendPkceFlowIdToRedirects
-      - AuthClientOptions.appendPkceFlowIdToRedirects
-      - OAuthResponse.flowId
   auth.sign_in.resend_confirmation:
     status: implemented
     symbols:
@@ -128,7 +125,12 @@ features:
     status: implemented
     symbols:
       - AuthClient.resetPasswordForEmail
-  auth.sign_in.concurrent_pkce_flows: not_implemented
+  auth.sign_in.concurrent_pkce_flows:
+    status: implemented
+    symbols:
+      - AuthClient.appendPkceFlowIdToRedirects
+      - AuthClientOptions.appendPkceFlowIdToRedirects
+      - OAuthResponse.flowId
 
   # auth — session & user
   auth.session.get_session:
