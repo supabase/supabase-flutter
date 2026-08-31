@@ -110,6 +110,9 @@ SchemaDescription parseGeneratorMetadata(
       (relation: materializedView, isInsertable: false, isUpdatable: false),
   ];
 
+  // Document order is kept: `sortGeneratorMetadata` orders columns by name
+  // within a table, the canonical order every postgrest-typegen generator
+  // emits.
   final columnsByRelationId = <int, List<Map<String, dynamic>>>{};
   for (final column
       in (document['columns'] as List<dynamic>? ?? const [])
@@ -117,13 +120,6 @@ SchemaDescription parseGeneratorMetadata(
     columnsByRelationId
         .putIfAbsent(column['table_id'] as int, () => [])
         .add(column);
-  }
-  for (final columns in columnsByRelationId.values) {
-    columns.sort(
-      (a, b) => (a['ordinal_position'] as int).compareTo(
-        b['ordinal_position'] as int,
-      ),
-    );
   }
 
   final foreignKeysByColumn = _foreignKeysByColumn(document, schemaName);
