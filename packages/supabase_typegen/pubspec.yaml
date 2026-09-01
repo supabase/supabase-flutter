@@ -1,6 +1,7 @@
 name: supabase_typegen
 description: Command-line code generator that turns a Supabase database schema into typed Dart table definitions.
 version: 0.1.1
+publish_to: none
 homepage: 'https://supabase.com'
 repository: 'https://github.com/supabase/supabase-flutter/tree/main/packages/supabase_typegen'
 issue_tracker: 'https://github.com/supabase/supabase-flutter/issues'
@@ -14,6 +15,15 @@ environment:
 
 resolution: workspace
 
+executables:
+  supabase_typegen:
+
+dependencies:
+  args: ^2.7.0
+  dart_style: ^3.1.0
+
 dev_dependencies:
+  http: ^1.6.0
+  postgrest: 3.0.0-dev.1
   supabase_lints: ^0.1.1
   test: ^1.25.0

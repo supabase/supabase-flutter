@@ -136,6 +136,14 @@ jobs:
           dart pub global activate melos
           melos bootstrap
 
+      # The runner image ships a package index that goes stale as soon as a
+      # security pocket update supersedes an indexed version; resolving
+      # package versions from it then 404s, and the cache action saves an
+      # empty (poisoned) cache entry on top. Refresh the index first.
+      - name: Refresh apt package index
+        if: ${{ matrix.target == 'linux' }}
+        run: sudo apt-get update
+
       - name: Install Linux build dependencies (cached)
         if: ${{ matrix.target == 'linux' }}
         uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
