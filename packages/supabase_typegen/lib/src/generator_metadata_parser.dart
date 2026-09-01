@@ -56,8 +56,8 @@ ColumnTypeKind _elementTypeKind(String elementFormat, {required bool isEnum}) {
 }
 
 /// Parses a `GeneratorMetadata` document, the introspection contract of
-/// `@supabase/postgrest-typegen` (`supabase gen types --lang json`), into a
-/// [SchemaDescription] for [schemaName].
+/// `@supabase/postgrest-typegen`, into a [SchemaDescription] for
+/// [schemaName].
 ///
 /// The document carries a `version` field, currently 1, and the
 /// semantically sorted collections produced by `sortGeneratorMetadata`:

@@ -25,11 +25,10 @@ supabase gen types --lang dart --local > lib/supabase_schema.g.dart
 Any of the CLI's connection flags work (`--local`, `--linked`, `--db-url`,
 `--project-id`).
 
-To run the package yourself, dump the schema metadata first and pass it with
+To run the package yourself, pass a `GeneratorMetadata` document with
 `--input` (a path, or `-` for stdin):
 
 ```sh
-supabase gen types --lang json --local > schema.json
 dart run supabase_typegen --input schema.json \
   --output lib/supabase_schema.g.dart
 ```
@@ -39,8 +38,10 @@ The document is the `GeneratorMetadata` introspection contract of
 the same intermediate representation its TypeScript, Go, Swift, and Python
 generators consume. The CLI produces it by running that package's
 `introspect()` in-process against the database, ordered with its
-`sortGeneratorMetadata` pass; until `--lang dart` and `--lang json` ship,
-serializing that result by hand yields the identical document.
+`sortGeneratorMetadata` pass, and hands it to this tool over stdin; until
+`--lang dart` ships, serializing that result yourself yields the identical
+document (`tool/regenerate_fixture.ts` in this package is a working
+template).
 
 ## Committing schema.json
 

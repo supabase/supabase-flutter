@@ -9,9 +9,8 @@ final _argParser = ArgParser()
     'input',
     abbr: 'i',
     help:
-        'Path of the GeneratorMetadata document, or - to '
-        'read it from stdin. Produce it with '
-        '`supabase gen types --lang json`.',
+        'Path of the GeneratorMetadata document of '
+        '@supabase/postgrest-typegen, or - to read it from stdin.',
   )
   ..addOption(
     'schema',
@@ -66,8 +65,8 @@ Future<int> _run(List<String> arguments) async {
   if (input == null) {
     stderr.writeln(
       '--input is required: the path of a GeneratorMetadata '
-      'document, or - to read it from stdin. Produce it with '
-      '`supabase gen types --lang json`.',
+      'document of @supabase/postgrest-typegen, or - to read it '
+      'from stdin.',
     );
     return 64;
   }
@@ -96,8 +95,8 @@ Future<int> _run(List<String> arguments) async {
     return 65;
   } on TypeError {
     stderr.writeln(
-      'The document in $input is not a GeneratorMetadata document. '
-      'Produce it with `supabase gen types --lang json`.',
+      'The document in $input is not a GeneratorMetadata document '
+      'of @supabase/postgrest-typegen.',
     );
     return 65;
   }
