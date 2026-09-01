@@ -6,13 +6,6 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 
 final _argParser = ArgParser()
   ..addOption(
-    'input',
-    abbr: 'i',
-    help:
-        'Path of the GeneratorMetadata document of '
-        '@supabase/postgrest-typegen, or - to read it from stdin.',
-  )
-  ..addOption(
     'schema',
     defaultsTo: 'public',
     help: 'The database schema to generate types for.',
@@ -52,36 +45,26 @@ Future<int> _run(List<String> arguments) async {
   if (options.flag('help')) {
     stdout
       ..writeln(
-        'Generates typed Supabase table definitions from the schema '
-        'metadata that postgrest-typegen emits.',
+        'Generates typed Supabase table definitions from the '
+        'GeneratorMetadata document that postgrest-typegen emits, '
+        'read from stdin.',
       )
       ..writeln()
-      ..writeln('Usage: dart run supabase_typegen --input schema.json')
+      ..writeln('Usage: dart run supabase_typegen < <metadata document>')
       ..writeln(_argParser.usage);
     return 0;
   }
 
-  final input = options.option('input');
-  if (input == null) {
+  if (stdin.hasTerminal) {
     stderr.writeln(
-      '--input is required: the path of a GeneratorMetadata '
-      'document of @supabase/postgrest-typegen, or - to read it '
-      'from stdin.',
+      'Expected a GeneratorMetadata document of '
+      '@supabase/postgrest-typegen on stdin. This tool is normally '
+      'invoked through `supabase gen types --lang dart`.',
     );
     return 64;
   }
 
-  final String contents;
-  if (input == '-') {
-    contents = await utf8.decodeStream(stdin);
-  } else {
-    final inputFile = File(input);
-    if (!inputFile.existsSync()) {
-      stderr.writeln('The input file $input does not exist.');
-      return 66;
-    }
-    contents = inputFile.readAsStringSync();
-  }
+  final contents = await utf8.decodeStream(stdin);
 
   final schemaName = options.option('schema')!;
   final SchemaDescription schema;
@@ -91,11 +74,11 @@ Future<int> _run(List<String> arguments) async {
       schemaName: schemaName,
     );
   } on FormatException catch (error) {
-    stderr.writeln('Could not parse $input: ${error.message}');
+    stderr.writeln('Could not parse the document on stdin: ${error.message}');
     return 65;
   } on TypeError {
     stderr.writeln(
-      'The document in $input is not a GeneratorMetadata document '
+      'The document on stdin is not a GeneratorMetadata document '
       'of @supabase/postgrest-typegen.',
     );
     return 65;

@@ -25,44 +25,14 @@ supabase gen types --lang dart --local > lib/supabase_schema.g.dart
 Any of the CLI's connection flags work (`--local`, `--linked`, `--db-url`,
 `--project-id`).
 
-To run the package yourself, pass a `GeneratorMetadata` document with
-`--input` (a path, or `-` for stdin):
-
-```sh
-dart run supabase_typegen --input schema.json \
-  --output lib/supabase_schema.g.dart
-```
-
-The document is the `GeneratorMetadata` introspection contract of
-[`@supabase/postgrest-typegen`](https://github.com/supabase/sdk/tree/main/packages/postgrest-typegen),
-the same intermediate representation its TypeScript, Go, Swift, and Python
-generators consume. The CLI produces it by running that package's
-`introspect()` in-process against the database, ordered with its
-`sortGeneratorMetadata` pass, and hands it to this tool over stdin; until
-`--lang dart` ships, serializing that result yourself yields the identical
-document (`tool/regenerate_fixture.ts` in this package is a working
-template).
-
-## Committing schema.json
-
-The SQL in your `supabase/` directory stays the single source of truth: the
-CLI applies your migrations to the local database and the metadata document
-is introspected from the result. `schema.json` is derived output, the same
-category as the generated Dart file, so committing it is optional and the
-recommended one-liner never writes it at all.
-
-Committing a snapshot can still be worthwhile:
-
-- it diffs nicely in review, so a migration's effect on the API surface is
-  visible next to the SQL that caused it,
-- the generator can re-run from it offline, without Docker or a database,
-  which keeps CI checks and codegen fast and hermetic,
-- a stale generated file is detectable by regenerating from the snapshot and
-  comparing.
-
-If you commit it, treat it like a lockfile: regenerate it in the same change
-as every migration, and never edit it by hand. When the snapshot and the
-migrations disagree, the migrations win; regenerate the snapshot.
+Under the hood the CLI runs the introspection of
+[`@supabase/postgrest-typegen`](https://github.com/supabase/sdk/tree/main/packages/postgrest-typegen)
+in-process against the database (the same `GeneratorMetadata` intermediate
+representation its TypeScript, Go, Swift, and Python generators consume,
+ordered with `sortGeneratorMetadata`) and hands the document to this tool
+over stdin. The SQL in your `supabase/` directory stays the single source of
+truth: the CLI applies your migrations to the local database and the types
+are generated from the result.
 
 Use `--schema` to generate for a schema other than `public`, and `--import`
 to change which library the generated file imports `PostgrestTable` and
