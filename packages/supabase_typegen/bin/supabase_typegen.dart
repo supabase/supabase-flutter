@@ -76,12 +76,6 @@ Future<int> _run(List<String> arguments) async {
   } on FormatException catch (error) {
     stderr.writeln('Could not parse the document on stdin: ${error.message}');
     return 65;
-  } on TypeError {
-    stderr.writeln(
-      'The document on stdin is not a GeneratorMetadata document '
-      'of @supabase/postgrest-typegen.',
-    );
-    return 65;
   }
 
   final code = generateDartCode(schema, importUri: options.option('import')!);

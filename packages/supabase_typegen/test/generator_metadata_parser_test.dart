@@ -30,6 +30,55 @@ void main() {
     );
   });
 
+  test('rejects documents with malformed collection entries', () {
+    expect(
+      () => parseGeneratorMetadata({
+        'tables': <dynamic>[],
+        'columns': <dynamic>[null],
+      }),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('GeneratorMetadata'),
+        ),
+      ),
+    );
+  });
+
+  test('registers the enum of enum array columns', () {
+    final parsed = parseGeneratorMetadata({
+      'version': 1,
+      'tables': [
+        {'id': 1, 'schema': 'public', 'name': 'reviews', 'comment': null},
+      ],
+      'columns': [
+        {
+          ..._column(tableId: 1, table: 'reviews', name: 'moods'),
+          'data_type': 'ARRAY',
+          'format': '_mood',
+          'type_schema': 'public',
+          'enums': ['happy', 'sad'],
+        },
+      ],
+      'types': [
+        {
+          'id': 10,
+          'schema': 'public',
+          'name': 'mood',
+          'enums': ['happy', 'sad'],
+        },
+      ],
+    });
+
+    final moods = parsed.tables.single.columns.single;
+    expect(moods.typeKind, ColumnTypeKind.array);
+    expect(moods.postgresFormat, '_mood');
+    final enumDescription = parsed.enums.single;
+    expect(enumDescription.qualifiedName, 'public.mood');
+    expect(enumDescription.values, ['happy', 'sad']);
+  });
+
   test('tolerates the version and primaryKeys fields of the document', () {
     expect(document['version'], 1);
     expect(document['primaryKeys'], isA<List<dynamic>>());

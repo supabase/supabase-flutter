@@ -64,8 +64,9 @@ await client.table(Books.table).insert(
   nullable columns, so nulling a `NOT NULL` column is a compile error.
 - Array elements are assumed non-null (`text[]` maps to `List<String>`),
   matching the supabase-js type generator; arrays containing SQL NULL
-  elements throw when the element is read. Enum array columns degrade to
-  `List<String>`.
+  elements throw when the element is read. Enum, date, and timestamp array
+  elements stay in their wire representation (`List<String>`); the Dart enum
+  for enum array elements is still generated for manual conversion.
 - `timestamptz` values are written back in UTC, naive `timestamp` values as
   local wall time, and `date` values date-only, so calendar dates never
   shift with the client timezone.

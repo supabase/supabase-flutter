@@ -76,6 +76,20 @@ SchemaDescription parseGeneratorMetadata(
   Map<String, dynamic> document, {
   String schemaName = 'public',
 }) {
+  try {
+    return _parseGeneratorMetadata(document, schemaName: schemaName);
+  } on TypeError catch (error) {
+    throw FormatException(
+      'Not a GeneratorMetadata document: a record does not have the '
+      'expected shape ($error).',
+    );
+  }
+}
+
+SchemaDescription _parseGeneratorMetadata(
+  Map<String, dynamic> document, {
+  required String schemaName,
+}) {
   if (document['tables'] is! List<dynamic> ||
       document['columns'] is! List<dynamic>) {
     throw const FormatException(
@@ -142,14 +156,18 @@ SchemaDescription parseGeneratorMetadata(
       final isArray = typeKind == ColumnTypeKind.array;
 
       var postgresFormat = format;
-      if (isEnum && !isArray) {
+      if (isEnum) {
         final enumDescription = _enumDescription(
-          format,
+          isArray ? format.substring(1) : format,
           column['type_schema'] as String,
           enumValues,
           enumTypes,
         );
-        postgresFormat = enumDescription.qualifiedName;
+        // Array elements stay in their wire representation, but the enum the
+        // elements belong to is still emitted for manual conversion.
+        if (!isArray) {
+          postgresFormat = enumDescription.qualifiedName;
+        }
         enumsByQualifiedName.putIfAbsent(
           enumDescription.qualifiedName,
           () => enumDescription,

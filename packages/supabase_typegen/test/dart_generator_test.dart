@@ -147,6 +147,53 @@ void main() {
     expect(code, isNot(contains('BookCorrectionsInsert')));
   });
 
+  test('encodes hostile schema names and import URIs in the header', () {
+    final code = generateDartCode(
+      SchemaDescription(
+        schemaName: 'evil\nimport "dart:io";',
+        tables: const [],
+        enums: const [],
+      ),
+      importUri: "package:postgrest/postgrest.dart'; import 'dart:io",
+    );
+
+    expect(code, isNot(contains('evil\nimport')));
+    expect(code, contains('// Source schema: evil import "dart:io";'));
+    expect(
+      code,
+      contains(
+        "import 'package:postgrest/postgrest.dart\\'; import \\'dart:io';",
+      ),
+    );
+  });
+
+  test('temporal and enum array elements read as wire strings', () {
+    final code = generateDartCode(
+      SchemaDescription(
+        schemaName: 'public',
+        tables: const [
+          TableDescription(
+            name: 'events',
+            columns: [
+              ColumnDescription(
+                name: 'days',
+                postgresFormat: '_date',
+                typeKind: ColumnTypeKind.array,
+                elementTypeKind: ColumnTypeKind.date,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: const [],
+      ),
+    );
+
+    expect(code, contains('List<String> get days'));
+  });
+
   test('tables whose columns are all read-only get parameterless '
       'insert and update constructors', () {
     final table = TableDescription(
