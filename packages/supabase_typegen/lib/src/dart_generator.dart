@@ -78,7 +78,7 @@ String generateDartCode(
 /// unqualified, so a schema object named like one of them (for example an
 /// enum named `string`) cannot shadow it.
 class _TypeNameRegistry {
-  final _used = <String>{
+  final _used = {
     'String',
     'Object',
     'Map',
@@ -418,9 +418,9 @@ String _readExpression(ColumnDescription column, _Binding binding) {
       nullable
           ? '($access as num?)?.toDouble()'
           : '($access as num).toDouble()',
-    // PostgREST encodes integral float4[]/float8[] elements as JSON
-    // integers, so floating elements convert through num like the scalars;
-    // a lazy cast would throw on access.
+    // PostgREST encodes integral elements of floating point arrays as JSON
+    // integers, so floating elements convert through num like the scalars
+    // instead of a lazy cast that would throw on access.
     ColumnTypeKind.array
         when column.elementTypeKind == ColumnTypeKind.floating =>
       nullable

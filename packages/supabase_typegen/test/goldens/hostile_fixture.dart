@@ -9,11 +9,11 @@ import 'package:supabase_typegen/supabase_typegen.dart';
 /// package's own `dart analyze` run proves the generated code stays valid,
 /// not merely parseable, for schemas like these.
 const SchemaDescription hostileSchema = SchemaDescription(
-  schemaName: 'evil\nimport "dart:io";',
+  schemaName: 'evil\nmultiline "schema" name',
   tables: [
     TableDescription(
       name: 'postgrest_table',
-      comment: 'first\rimport "dart:io";\u2028second \$interpolation',
+      comment: 'first\rsecond\u2028third \$interpolation "quoted"',
       columns: [
         ColumnDescription(
           name: "quote'name tail",
