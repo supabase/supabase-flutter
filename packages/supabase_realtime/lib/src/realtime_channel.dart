@@ -138,7 +138,7 @@ class RealtimeChannel {
   Map<String, dynamic> get parameters => _deepUnmodifiableMap(_parameters);
 
   static Map<String, dynamic> _deepUnmodifiableMap(Map<String, dynamic> map) {
-    return Map<String, dynamic>.unmodifiable(
+    return Map.unmodifiable(
       map.map((key, value) => MapEntry(key, _deepUnmodifiable(value))),
     );
   }

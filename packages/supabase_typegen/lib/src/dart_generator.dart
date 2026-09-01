@@ -368,9 +368,9 @@ String _elementDartType(ColumnTypeKind? elementTypeKind) =>
       ColumnTypeKind.floating => 'double',
       ColumnTypeKind.numeric => 'num',
       ColumnTypeKind.boolean => 'bool',
-      ColumnTypeKind.text => 'String',
       // Temporal and enum elements stay in their wire representation, a
       // documented limitation of array columns.
+      ColumnTypeKind.text ||
       ColumnTypeKind.date ||
       ColumnTypeKind.timestamp ||
       ColumnTypeKind.timestampWithTimeZone ||
