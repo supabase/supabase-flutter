@@ -54,7 +54,7 @@ Future<int> _run(List<String> arguments) async {
     stdout
       ..writeln(
         'Generates typed Supabase table definitions from the schema '
-        'metadata that postgres-meta emits.',
+        'metadata that postgrest-typegen emits.',
       )
       ..writeln()
       ..writeln('Usage: dart run supabase_typegen --input schema.json')

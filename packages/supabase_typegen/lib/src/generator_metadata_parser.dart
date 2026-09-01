@@ -29,7 +29,7 @@ const _textFormats = {
 };
 const _jsonFormats = {'json', 'jsonb'};
 
-/// Derives the [ColumnTypeKind] from the postgres-meta [format] of a column,
+/// Derives the [ColumnTypeKind] from the metadata [format] of a column,
 /// for example `int8`, `timestamptz` or `_text` for a `text[]` array. This is
 /// the single place where type names are compared as strings; everything
 /// downstream works with the enum.
@@ -55,10 +55,9 @@ ColumnTypeKind _elementTypeKind(String elementFormat, {required bool isEnum}) {
   return kind == ColumnTypeKind.enumType ? ColumnTypeKind.text : kind;
 }
 
-/// Parses a `GeneratorMetadata` document, the introspection contract shared
-/// by `@supabase/postgrest-typegen` and postgres-meta
-/// (`supabase gen types --lang json`), into a [SchemaDescription] for
-/// [schemaName].
+/// Parses a `GeneratorMetadata` document, the introspection contract of
+/// `@supabase/postgrest-typegen` (`supabase gen types --lang json`), into a
+/// [SchemaDescription] for [schemaName].
 ///
 /// The document carries a `version` field, currently 1, and the
 /// semantically sorted collections produced by `sortGeneratorMetadata`:

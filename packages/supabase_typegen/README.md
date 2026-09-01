@@ -35,11 +35,12 @@ dart run supabase_typegen --input schema.json \
 ```
 
 The document is the `GeneratorMetadata` introspection contract of
-[`@supabase/postgrest-typegen`](https://github.com/supabase/pg-toolbelt),
-which is also what postgres-meta's own type generators consume. Until CLI
-support for `--lang dart` and `--lang json` ships, the same document comes
-from serializing that package's `introspect()` result, ordered with its
-`sortGeneratorMetadata` pass.
+[`@supabase/postgrest-typegen`](https://github.com/supabase/sdk/tree/main/packages/postgrest-typegen),
+the same intermediate representation its TypeScript, Go, Swift, and Python
+generators consume. The CLI produces it by running that package's
+`introspect()` in-process against the database, ordered with its
+`sortGeneratorMetadata` pass; until `--lang dart` and `--lang json` ship,
+serializing that result by hand yields the identical document.
 
 ## Committing schema.json
 
