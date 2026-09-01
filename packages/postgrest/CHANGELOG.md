@@ -1,3 +1,11 @@
+## 3.0.0-dev.2
+
+ - **FIX**(postgrest): enforce maybeSingle() client-side for all request methods ([#1779](https://github.com/supabase/supabase-flutter/issues/1779)). ([c360849d](https://github.com/supabase/supabase-flutter/commit/c360849d3790fc7597416e3168e5ad03fc8ec807))
+ - **FEAT**: add typed table access with PostgrestTable and TableColumn ([#1634](https://github.com/supabase/supabase-flutter/issues/1634)). ([f0b9366d](https://github.com/supabase/supabase-flutter/commit/f0b9366da552f1f8edcc8f9e9345176e7188af43))
+ - **FEAT**(postgrest): add an isUnknown filter method ([#1788](https://github.com/supabase/supabase-flutter/issues/1788)). ([448de1cd](https://github.com/supabase/supabase-flutter/commit/448de1cd32dadf0a8f4bbad57d1ded0aca2cd117))
+ - **FEAT**(postgrest): add a notInFilter filter method ([#1762](https://github.com/supabase/supabase-flutter/issues/1762)). ([9965ecb4](https://github.com/supabase/supabase-flutter/commit/9965ecb43bd0a8befd9a5ce1a824db8c70d37020))
+ - **DOCS**(postgrest): enable public_member_api_docs ([#1772](https://github.com/supabase/supabase-flutter/issues/1772)). ([41ed7da3](https://github.com/supabase/supabase-flutter/commit/41ed7da32ec02c300b373ee065fc2798631cbd79))
+
 ## 3.0.0-dev.1
 
 > Note: This release has breaking changes.

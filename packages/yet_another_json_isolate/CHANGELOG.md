@@ -1,3 +1,17 @@
+## 3.0.0-dev.2
+
+> Note: This release has breaking changes.
+
+ - **REFACTOR**(yet_another_json_isolate): rename conditional import files to idiomatic names ([#1777](https://github.com/supabase/supabase-flutter/issues/1777)). ([bb250795](https://github.com/supabase/supabase-flutter/commit/bb25079503413bf183743180b7a99cafd4572a14))
+ - **PERF**(yet_another_json_isolate): process small payloads inline and large ones on short-lived isolates ([#1746](https://github.com/supabase/supabase-flutter/issues/1746)). ([7942c377](https://github.com/supabase/supabase-flutter/commit/7942c37770c5a12b18b27afc66b8595e67fdd22d))
+ - **FIX**(supabase_lints): enable lines_longer_than_80_chars and fix all violations ([#1655](https://github.com/supabase/supabase-flutter/issues/1655)). ([a08b6577](https://github.com/supabase/supabase-flutter/commit/a08b6577d002d0c7ae0d484ddd6da802922be37b))
+ - **DOCS**(yet_another_json_isolate): enable public_member_api_docs ([#1768](https://github.com/supabase/supabase-flutter/issues/1768)). ([8e736ecf](https://github.com/supabase/supabase-flutter/commit/8e736ecf652bfa2a83d5e76f2e52ace32a8a4b2c))
+ - **DOCS**: fix inaccurate dartdoc comments across all packages ([#1659](https://github.com/supabase/supabase-flutter/issues/1659)). ([090ee978](https://github.com/supabase/supabase-flutter/commit/090ee9781ccdc7a749902830697d51251aa9f052))
+ - **BREAKING** **REFACTOR**: process JSON through the AsyncJsonCodec interface ([#1751](https://github.com/supabase/supabase-flutter/issues/1751)). ([6969eb38](https://github.com/supabase/supabase-flutter/commit/6969eb3805cc1920f5a44902ae2ce660170c13b3))
+ - **BREAKING** **REFACTOR**: remove analyzer ignores by fixing the underlying code ([#1675](https://github.com/supabase/supabase-flutter/issues/1675)). ([9f367d77](https://github.com/supabase/supabase-flutter/commit/9f367d77f8f1e1723a985885db0de45123dce6f4))
+ - **BREAKING** **REFACTOR**: remove all deprecated APIs and dead public surface for v3 ([#1661](https://github.com/supabase/supabase-flutter/issues/1661)). ([1ffa0deb](https://github.com/supabase/supabase-flutter/commit/1ffa0deba0371585c7a4ac93795cf199a58e2353))
+ - **BREAKING** **FIX**: release retained resources on dispose ([#1668](https://github.com/supabase/supabase-flutter/issues/1668)). ([d21d8c03](https://github.com/supabase/supabase-flutter/commit/d21d8c03dd2ebbad5713f28157e2c9445e13c7e0))
+
 ## 2.1.1
 
  - **FIX**: raise min Dart SDK to 3.4.0 across all packages ([#1409](https://github.com/supabase/supabase-flutter/issues/1409)). ([311f883f](https://github.com/supabase/supabase-flutter/commit/311f883f73406b60a0e95ea05e3444a4bab80c5a))

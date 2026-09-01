@@ -3,6 +3,105 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 2026-09-01
+
+### Changes
+
+---
+
+Packages with breaking changes:
+
+ - [`supabase` - `v3.0.0-dev.2`](#supabase---v300-dev2)
+ - [`supabase_auth` - `v3.0.0-dev.2`](#supabase_auth---v300-dev2)
+ - [`supabase_functions` - `v3.0.0-dev.2`](#supabase_functions---v300-dev2)
+ - [`supabase_realtime` - `v3.0.0-dev.2`](#supabase_realtime---v300-dev2)
+ - [`supabase_storage` - `v3.0.0-dev.2`](#supabase_storage---v300-dev2)
+ - [`yet_another_json_isolate` - `v3.0.0-dev.2`](#yet_another_json_isolate---v300-dev2)
+
+Packages with other changes:
+
+ - [`postgrest` - `v3.0.0-dev.2`](#postgrest---v300-dev2)
+ - [`supabase_flutter` - `v3.0.0-dev.2`](#supabase_flutter---v300-dev2)
+ - [`supabase_lints` - `v0.1.2`](#supabase_lints---v012)
+ - [`supabase_testing` - `v0.1.1`](#supabase_testing---v011)
+ - [`supabase_typegen` - `v0.1.2`](#supabase_typegen---v012)
+
+Packages with dependency updates only:
+
+> Packages listed below depend on other packages in this workspace that have had changes. Their versions have been incremented to bump the minimum dependency versions of the packages they depend upon in this project.
+
+ - `supabase_testing` - `v0.1.1`
+
+---
+
+#### `supabase` - `v3.0.0-dev.2`
+
+ - **FEAT**: add typed table access with PostgrestTable and TableColumn ([#1634](https://github.com/supabase/supabase-flutter/issues/1634)). ([f0b9366d](https://github.com/supabase/supabase-flutter/commit/f0b9366da552f1f8edcc8f9e9345176e7188af43))
+ - **DOCS**(supabase): enable public_member_api_docs ([#1773](https://github.com/supabase/supabase-flutter/issues/1773)). ([64a2b600](https://github.com/supabase/supabase-flutter/commit/64a2b600f827cbe73e2258c4a7524d7947d3666b))
+ - **BREAKING** **REFACTOR**(realtime): make RealtimeClient internal mutable fields private ([#1758](https://github.com/supabase/supabase-flutter/issues/1758)). ([e38f3a83](https://github.com/supabase/supabase-flutter/commit/e38f3a83d3955ec55ed551eb137c00a6c269ff78))
+ - **BREAKING** **FIX**: return unmodifiable header views with controlled replacement ([#1764](https://github.com/supabase/supabase-flutter/issues/1764)). ([8343a9a8](https://github.com/supabase/supabase-flutter/commit/8343a9a8163610ea7bd4b157b6176f7a149512e8))
+
+#### `supabase_auth` - `v3.0.0-dev.2`
+
+ - **FIX**(auth): guard startAutoRefresh against use after dispose ([#1760](https://github.com/supabase/supabase-flutter/issues/1760)). ([f0a61e8e](https://github.com/supabase/supabase-flutter/commit/f0a61e8e7c2984da004db90d010a32ab449ce94d))
+ - **DOCS**(gotrue): enable public_member_api_docs ([#1775](https://github.com/supabase/supabase-flutter/issues/1775)). ([8e3e1ec4](https://github.com/supabase/supabase-flutter/commit/8e3e1ec470c260c06dc48d8c72becf74dcb82a87))
+ - **BREAKING** **REFACTOR**(auth): make Session.expiresAt read-only and auth DTO fields final ([#1766](https://github.com/supabase/supabase-flutter/issues/1766)). ([c17be896](https://github.com/supabase/supabase-flutter/commit/c17be8961ffe5ceb6c138f167cbcaad17bab4702))
+ - **BREAKING** **FIX**: return unmodifiable header views with controlled replacement ([#1764](https://github.com/supabase/supabase-flutter/issues/1764)). ([8343a9a8](https://github.com/supabase/supabase-flutter/commit/8343a9a8163610ea7bd4b157b6176f7a149512e8))
+
+#### `supabase_functions` - `v3.0.0-dev.2`
+
+ - **DOCS**(functions_client): enable public_member_api_docs ([#1769](https://github.com/supabase/supabase-flutter/issues/1769)). ([f05bec95](https://github.com/supabase/supabase-flutter/commit/f05bec954279a4827aae70ad0459f91d4516c6d0))
+ - **BREAKING** **FIX**: return unmodifiable header views with controlled replacement ([#1764](https://github.com/supabase/supabase-flutter/issues/1764)). ([8343a9a8](https://github.com/supabase/supabase-flutter/commit/8343a9a8163610ea7bd4b157b6176f7a149512e8))
+
+#### `supabase_realtime` - `v3.0.0-dev.2`
+
+ - **FIX**(realtime): parse Postgres array literals instead of splitting on commas ([#1781](https://github.com/supabase/supabase-flutter/issues/1781)). ([89925f1d](https://github.com/supabase/supabase-flutter/commit/89925f1d5712f3dc8142f5833937663e4c794530))
+ - **FIX**(realtime): surface access-token provider errors on connect instead of logging and continuing ([#1759](https://github.com/supabase/supabase-flutter/issues/1759)). ([bb4b58cf](https://github.com/supabase/supabase-flutter/commit/bb4b58cfafecb748218a0a8c6be83fd1e883d588))
+ - **FEAT**: add supabase_typegen package generating typed table definitions ([#1635](https://github.com/supabase/supabase-flutter/issues/1635)). ([6cfea7b1](https://github.com/supabase/supabase-flutter/commit/6cfea7b1cf4d4d7101f5971e4659fb1888e58506))
+ - **DOCS**(realtime_client): enable public_member_api_docs ([#1771](https://github.com/supabase/supabase-flutter/issues/1771)). ([effc37d5](https://github.com/supabase/supabase-flutter/commit/effc37d524ae7b9fa793b325c4179dc18966000c))
+ - **BREAKING** **REFACTOR**(realtime): make RealtimeChannel internal mutable fields private with controlled accessors ([#1765](https://github.com/supabase/supabase-flutter/issues/1765)). ([b22038cd](https://github.com/supabase/supabase-flutter/commit/b22038cd05abb73b682fd09869b33d26bb46eec8))
+ - **BREAKING** **REFACTOR**(realtime): make RealtimeClient internal mutable fields private ([#1758](https://github.com/supabase/supabase-flutter/issues/1758)). ([e38f3a83](https://github.com/supabase/supabase-flutter/commit/e38f3a83d3955ec55ed551eb137c00a6c269ff78))
+
+#### `supabase_storage` - `v3.0.0-dev.2`
+
+ - **FIX**(storage): normalize object paths consistently across all file operations ([#1761](https://github.com/supabase/supabase-flutter/issues/1761)). ([f58c3d1f](https://github.com/supabase/supabase-flutter/commit/f58c3d1f60fe102cd0d9235505241d1aeccb7075))
+ - **DOCS**(storage_client): enable public_member_api_docs ([#1776](https://github.com/supabase/supabase-flutter/issues/1776)). ([6122a170](https://github.com/supabase/supabase-flutter/commit/6122a17070afc64db0c770496cdfb970cf55de17))
+ - **BREAKING** **FIX**: return unmodifiable header views with controlled replacement ([#1764](https://github.com/supabase/supabase-flutter/issues/1764)). ([8343a9a8](https://github.com/supabase/supabase-flutter/commit/8343a9a8163610ea7bd4b157b6176f7a149512e8))
+
+#### `yet_another_json_isolate` - `v3.0.0-dev.2`
+
+ - **REFACTOR**(yet_another_json_isolate): rename conditional import files to idiomatic names ([#1777](https://github.com/supabase/supabase-flutter/issues/1777)). ([bb250795](https://github.com/supabase/supabase-flutter/commit/bb25079503413bf183743180b7a99cafd4572a14))
+ - **PERF**(yet_another_json_isolate): process small payloads inline and large ones on short-lived isolates ([#1746](https://github.com/supabase/supabase-flutter/issues/1746)). ([7942c377](https://github.com/supabase/supabase-flutter/commit/7942c37770c5a12b18b27afc66b8595e67fdd22d))
+ - **FIX**(supabase_lints): enable lines_longer_than_80_chars and fix all violations ([#1655](https://github.com/supabase/supabase-flutter/issues/1655)). ([a08b6577](https://github.com/supabase/supabase-flutter/commit/a08b6577d002d0c7ae0d484ddd6da802922be37b))
+ - **DOCS**(yet_another_json_isolate): enable public_member_api_docs ([#1768](https://github.com/supabase/supabase-flutter/issues/1768)). ([8e736ecf](https://github.com/supabase/supabase-flutter/commit/8e736ecf652bfa2a83d5e76f2e52ace32a8a4b2c))
+ - **DOCS**: fix inaccurate dartdoc comments across all packages ([#1659](https://github.com/supabase/supabase-flutter/issues/1659)). ([090ee978](https://github.com/supabase/supabase-flutter/commit/090ee9781ccdc7a749902830697d51251aa9f052))
+ - **BREAKING** **REFACTOR**: process JSON through the AsyncJsonCodec interface ([#1751](https://github.com/supabase/supabase-flutter/issues/1751)). ([6969eb38](https://github.com/supabase/supabase-flutter/commit/6969eb3805cc1920f5a44902ae2ce660170c13b3))
+ - **BREAKING** **REFACTOR**: remove analyzer ignores by fixing the underlying code ([#1675](https://github.com/supabase/supabase-flutter/issues/1675)). ([9f367d77](https://github.com/supabase/supabase-flutter/commit/9f367d77f8f1e1723a985885db0de45123dce6f4))
+ - **BREAKING** **REFACTOR**: remove all deprecated APIs and dead public surface for v3 ([#1661](https://github.com/supabase/supabase-flutter/issues/1661)). ([1ffa0deb](https://github.com/supabase/supabase-flutter/commit/1ffa0deba0371585c7a4ac93795cf199a58e2353))
+ - **BREAKING** **FIX**: release retained resources on dispose ([#1668](https://github.com/supabase/supabase-flutter/issues/1668)). ([d21d8c03](https://github.com/supabase/supabase-flutter/commit/d21d8c03dd2ebbad5713f28157e2c9445e13c7e0))
+
+#### `postgrest` - `v3.0.0-dev.2`
+
+ - **FIX**(postgrest): enforce maybeSingle() client-side for all request methods ([#1779](https://github.com/supabase/supabase-flutter/issues/1779)). ([c360849d](https://github.com/supabase/supabase-flutter/commit/c360849d3790fc7597416e3168e5ad03fc8ec807))
+ - **FEAT**: add typed table access with PostgrestTable and TableColumn ([#1634](https://github.com/supabase/supabase-flutter/issues/1634)). ([f0b9366d](https://github.com/supabase/supabase-flutter/commit/f0b9366da552f1f8edcc8f9e9345176e7188af43))
+ - **FEAT**(postgrest): add an isUnknown filter method ([#1788](https://github.com/supabase/supabase-flutter/issues/1788)). ([448de1cd](https://github.com/supabase/supabase-flutter/commit/448de1cd32dadf0a8f4bbad57d1ded0aca2cd117))
+ - **FEAT**(postgrest): add a notInFilter filter method ([#1762](https://github.com/supabase/supabase-flutter/issues/1762)). ([9965ecb4](https://github.com/supabase/supabase-flutter/commit/9965ecb43bd0a8befd9a5ce1a824db8c70d37020))
+ - **DOCS**(postgrest): enable public_member_api_docs ([#1772](https://github.com/supabase/supabase-flutter/issues/1772)). ([41ed7da3](https://github.com/supabase/supabase-flutter/commit/41ed7da32ec02c300b373ee065fc2798631cbd79))
+
+#### `supabase_flutter` - `v3.0.0-dev.2`
+
+ - **FIX**(auth): guard startAutoRefresh against use after dispose ([#1760](https://github.com/supabase/supabase-flutter/issues/1760)). ([f0a61e8e](https://github.com/supabase/supabase-flutter/commit/f0a61e8e7c2984da004db90d010a32ab449ce94d))
+ - **DOCS**(supabase_flutter): enable public_member_api_docs ([#1774](https://github.com/supabase/supabase-flutter/issues/1774)). ([b88bd761](https://github.com/supabase/supabase-flutter/commit/b88bd7613cda2e443e1c0da565b66533779348db))
+
+#### `supabase_lints` - `v0.1.2`
+
+ - **FIX**(supabase_lints): enable lines_longer_than_80_chars and fix all violations ([#1655](https://github.com/supabase/supabase-flutter/issues/1655)). ([a08b6577](https://github.com/supabase/supabase-flutter/commit/a08b6577d002d0c7ae0d484ddd6da802922be37b))
+
+#### `supabase_typegen` - `v0.1.2`
+
+ - **FEAT**: add supabase_typegen package generating typed table definitions ([#1635](https://github.com/supabase/supabase-flutter/issues/1635)). ([6cfea7b1](https://github.com/supabase/supabase-flutter/commit/6cfea7b1cf4d4d7101f5971e4659fb1888e58506))
+
+
 ## 2026-08-21
 
 ### Changes

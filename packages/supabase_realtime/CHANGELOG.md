@@ -1,3 +1,14 @@
+## 3.0.0-dev.2
+
+> Note: This release has breaking changes.
+
+ - **FIX**(realtime): parse Postgres array literals instead of splitting on commas ([#1781](https://github.com/supabase/supabase-flutter/issues/1781)). ([89925f1d](https://github.com/supabase/supabase-flutter/commit/89925f1d5712f3dc8142f5833937663e4c794530))
+ - **FIX**(realtime): surface access-token provider errors on connect instead of logging and continuing ([#1759](https://github.com/supabase/supabase-flutter/issues/1759)). ([bb4b58cf](https://github.com/supabase/supabase-flutter/commit/bb4b58cfafecb748218a0a8c6be83fd1e883d588))
+ - **FEAT**: add supabase_typegen package generating typed table definitions ([#1635](https://github.com/supabase/supabase-flutter/issues/1635)). ([6cfea7b1](https://github.com/supabase/supabase-flutter/commit/6cfea7b1cf4d4d7101f5971e4659fb1888e58506))
+ - **DOCS**(realtime_client): enable public_member_api_docs ([#1771](https://github.com/supabase/supabase-flutter/issues/1771)). ([effc37d5](https://github.com/supabase/supabase-flutter/commit/effc37d524ae7b9fa793b325c4179dc18966000c))
+ - **BREAKING** **REFACTOR**(realtime): make RealtimeChannel internal mutable fields private with controlled accessors ([#1765](https://github.com/supabase/supabase-flutter/issues/1765)). ([b22038cd](https://github.com/supabase/supabase-flutter/commit/b22038cd05abb73b682fd09869b33d26bb46eec8))
+ - **BREAKING** **REFACTOR**(realtime): make RealtimeClient internal mutable fields private ([#1758](https://github.com/supabase/supabase-flutter/issues/1758)). ([e38f3a83](https://github.com/supabase/supabase-flutter/commit/e38f3a83d3955ec55ed551eb137c00a6c269ff78))
+
 ## 3.0.0-dev.1
 
 > Note: This release has breaking changes.

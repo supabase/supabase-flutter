@@ -1,3 +1,12 @@
+## 3.0.0-dev.2
+
+> Note: This release has breaking changes.
+
+ - **FIX**(auth): guard startAutoRefresh against use after dispose ([#1760](https://github.com/supabase/supabase-flutter/issues/1760)). ([f0a61e8e](https://github.com/supabase/supabase-flutter/commit/f0a61e8e7c2984da004db90d010a32ab449ce94d))
+ - **DOCS**(gotrue): enable public_member_api_docs ([#1775](https://github.com/supabase/supabase-flutter/issues/1775)). ([8e3e1ec4](https://github.com/supabase/supabase-flutter/commit/8e3e1ec470c260c06dc48d8c72becf74dcb82a87))
+ - **BREAKING** **REFACTOR**(auth): make Session.expiresAt read-only and auth DTO fields final ([#1766](https://github.com/supabase/supabase-flutter/issues/1766)). ([c17be896](https://github.com/supabase/supabase-flutter/commit/c17be8961ffe5ceb6c138f167cbcaad17bab4702))
+ - **BREAKING** **FIX**: return unmodifiable header views with controlled replacement ([#1764](https://github.com/supabase/supabase-flutter/issues/1764)). ([8343a9a8](https://github.com/supabase/supabase-flutter/commit/8343a9a8163610ea7bd4b157b6176f7a149512e8))
+
 ## 3.0.0-dev.1
 
 > Note: This release has breaking changes.

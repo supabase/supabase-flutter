@@ -1,3 +1,11 @@
+## 3.0.0-dev.2
+
+> Note: This release has breaking changes.
+
+ - **FIX**(storage): normalize object paths consistently across all file operations ([#1761](https://github.com/supabase/supabase-flutter/issues/1761)). ([f58c3d1f](https://github.com/supabase/supabase-flutter/commit/f58c3d1f60fe102cd0d9235505241d1aeccb7075))
+ - **DOCS**(storage_client): enable public_member_api_docs ([#1776](https://github.com/supabase/supabase-flutter/issues/1776)). ([6122a170](https://github.com/supabase/supabase-flutter/commit/6122a17070afc64db0c770496cdfb970cf55de17))
+ - **BREAKING** **FIX**: return unmodifiable header views with controlled replacement ([#1764](https://github.com/supabase/supabase-flutter/issues/1764)). ([8343a9a8](https://github.com/supabase/supabase-flutter/commit/8343a9a8163610ea7bd4b157b6176f7a149512e8))
+
 ## 3.0.0-dev.1
 
 > Note: This release has breaking changes.

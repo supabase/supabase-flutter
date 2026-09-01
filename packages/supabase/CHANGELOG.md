@@ -1,3 +1,12 @@
+## 3.0.0-dev.2
+
+> Note: This release has breaking changes.
+
+ - **FEAT**: add typed table access with PostgrestTable and TableColumn ([#1634](https://github.com/supabase/supabase-flutter/issues/1634)). ([f0b9366d](https://github.com/supabase/supabase-flutter/commit/f0b9366da552f1f8edcc8f9e9345176e7188af43))
+ - **DOCS**(supabase): enable public_member_api_docs ([#1773](https://github.com/supabase/supabase-flutter/issues/1773)). ([64a2b600](https://github.com/supabase/supabase-flutter/commit/64a2b600f827cbe73e2258c4a7524d7947d3666b))
+ - **BREAKING** **REFACTOR**(realtime): make RealtimeClient internal mutable fields private ([#1758](https://github.com/supabase/supabase-flutter/issues/1758)). ([e38f3a83](https://github.com/supabase/supabase-flutter/commit/e38f3a83d3955ec55ed551eb137c00a6c269ff78))
+ - **BREAKING** **FIX**: return unmodifiable header views with controlled replacement ([#1764](https://github.com/supabase/supabase-flutter/issues/1764)). ([8343a9a8](https://github.com/supabase/supabase-flutter/commit/8343a9a8163610ea7bd4b157b6176f7a149512e8))
+
 ## 3.0.0-dev.1
 
 > Note: This release has breaking changes.
