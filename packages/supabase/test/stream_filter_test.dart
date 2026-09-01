@@ -1,3 +1,6 @@
+// The typed table access API under test is annotated @experimental.
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -62,6 +65,29 @@ void main() {
       expect(restQueries.single, testCase.restQuery);
     });
   }
+
+  group('typed', () {
+    for (final testCase in _typedTestCases) {
+      test(testCase.name, () async {
+        final subscription = testCase
+            .filter(
+              supabase
+                  .table(_Users.table)
+                  .stream(primaryKey: [_Users.username]),
+            )
+            .listen(null);
+        addTearDown(subscription.cancel);
+
+        await _eventually(
+          () => postgresChanges.isNotEmpty && restQueries.isNotEmpty,
+          'the channel to join and the PostgREST request to arrive',
+        );
+
+        expect(postgresChanges.single['filter'], testCase.realtimeFilter);
+        expect(restQueries.single, testCase.restQuery);
+      });
+    }
+  });
 }
 
 /// Records what the client sends and answers just enough for the channel to
@@ -244,6 +270,125 @@ final _testCases = <_TestCase>[
     filter: (stream) => stream.eq('username', 'supa,bot'),
     realtimeFilter: 'username=eq."supa,bot"',
     restQuery: {'select': '*', 'username': 'eq.supa,bot'},
+  ),
+];
+
+extension type const _User(Map<String, dynamic> _json)
+    implements Map<String, dynamic> {
+  String get username => _json['username'] as String;
+}
+
+class _Users {
+  static const table = PostgrestTable('users', _User.new);
+  static const username = TableColumn<String>('username');
+  static const status = TableColumn<String>('status');
+  static const age = TableColumn<int>('age');
+  static const data = TableColumn<String>('data');
+}
+
+typedef _TypedTestCase = ({
+  String name,
+  SupabaseTypedStreamBuilder<_User> Function(
+    SupabaseTypedStreamFilterBuilder<_User> stream,
+  )
+  filter,
+  String? realtimeFilter,
+  Map<String, String> restQuery,
+});
+
+/// The typed [SupabaseTypedStreamFilterBuilder.filter] has to end up sending
+/// exactly what the untyped filters above send.
+final _typedTestCases = <_TypedTestCase>[
+  (
+    name: 'eq',
+    filter: (stream) => stream.filter(_Users.status.eq('ONLINE')),
+    realtimeFilter: 'status=eq.ONLINE',
+    restQuery: {'select': '*', 'status': 'eq.ONLINE'},
+  ),
+  (
+    name: 'neq',
+    filter: (stream) => stream.filter(_Users.status.neq('ONLINE')),
+    realtimeFilter: 'status=neq.ONLINE',
+    restQuery: {'select': '*', 'status': 'neq.ONLINE'},
+  ),
+  (
+    name: 'lt',
+    filter: (stream) => stream.filter(_Users.age.lt(20)),
+    realtimeFilter: 'age=lt.20',
+    restQuery: {'select': '*', 'age': 'lt.20'},
+  ),
+  (
+    name: 'lte',
+    filter: (stream) => stream.filter(_Users.age.lte(20)),
+    realtimeFilter: 'age=lte.20',
+    restQuery: {'select': '*', 'age': 'lte.20'},
+  ),
+  (
+    name: 'gt',
+    filter: (stream) => stream.filter(_Users.age.gt(20)),
+    realtimeFilter: 'age=gt.20',
+    restQuery: {'select': '*', 'age': 'gt.20'},
+  ),
+  (
+    name: 'gte',
+    filter: (stream) => stream.filter(_Users.age.gte(20)),
+    realtimeFilter: 'age=gte.20',
+    restQuery: {'select': '*', 'age': 'gte.20'},
+  ),
+  (
+    name: 'inFilter',
+    filter: (stream) =>
+        stream.filter(_Users.status.inFilter(['ONLINE', 'OFFLINE'])),
+    realtimeFilter: 'status=in.(ONLINE,OFFLINE)',
+    restQuery: {'select': '*', 'status': 'in.("ONLINE","OFFLINE")'},
+  ),
+  (
+    name: 'like',
+    filter: (stream) => stream.filter(_Users.username.like('%supa%')),
+    realtimeFilter: 'username=like.%supa%',
+    restQuery: {'select': '*', 'username': 'like.%supa%'},
+  ),
+  (
+    name: 'ilike',
+    filter: (stream) => stream.filter(_Users.username.ilike('%SUPA%')),
+    realtimeFilter: 'username=ilike.%SUPA%',
+    restQuery: {'select': '*', 'username': 'ilike.%SUPA%'},
+  ),
+  (
+    name: 'matchRegex',
+    filter: (stream) => stream.filter(_Users.username.matchRegex('^supa.*')),
+    realtimeFilter: 'username=match.^supa.*',
+    restQuery: {'select': '*', 'username': 'match.^supa.*'},
+  ),
+  (
+    name: 'imatchRegex',
+    filter: (stream) => stream.filter(_Users.username.imatchRegex('^SUPA.*')),
+    realtimeFilter: 'username=imatch.^SUPA.*',
+    restQuery: {'select': '*', 'username': 'imatch.^SUPA.*'},
+  ),
+  (
+    name: 'isNull',
+    filter: (stream) => stream.filter(_Users.data.isNull()),
+    realtimeFilter: 'data=is.null',
+    restQuery: {'select': '*', 'data': 'is.null'},
+  ),
+  (
+    name: 'isDistinctFrom',
+    filter: (stream) => stream.filter(_Users.status.isDistinctFrom('ONLINE')),
+    realtimeFilter: 'status=isdistinct.ONLINE',
+    restQuery: {'select': '*', 'status': 'isdistinct.ONLINE'},
+  ),
+  (
+    name: 'multiple filters are combined with a comma',
+    filter: (stream) => stream
+        .filter(_Users.status.eq('ONLINE'))
+        .filter(_Users.username.like('%supa%')),
+    realtimeFilter: 'status=eq.ONLINE,username=like.%supa%',
+    restQuery: {
+      'select': '*',
+      'status': 'eq.ONLINE',
+      'username': 'like.%supa%',
+    },
   ),
 ];
 

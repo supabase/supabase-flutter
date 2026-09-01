@@ -1,4 +1,5 @@
 import 'package:http/http.dart';
+import 'package:meta/meta.dart';
 import 'package:postgrest/src/logger.dart';
 import 'package:postgrest/postgrest.dart';
 import 'package:postgrest/src/constants.dart';
@@ -118,6 +119,23 @@ class PostgrestClient {
       retryOptions: retryOptions,
       requestTimeout: requestTimeout,
     );
+  }
+
+  /// Perform a typed table operation.
+  ///
+  /// Unlike [from], results are converted into the row type of [table]
+  /// instead of raw `Map<String, dynamic>` data, and filters are built from
+  /// [TableColumn]s, which makes them compile-time checked.
+  ///
+  /// ```dart
+  /// final List<Book> books = await client
+  ///     .table(Books.table)
+  ///     .select()
+  ///     .where(Books.id.gt(10));
+  /// ```
+  @experimental
+  PostgrestTypedQueryBuilder<Row> table<Row>(PostgrestTable<Row> table) {
+    return PostgrestTypedQueryBuilder(from(table.name), table);
   }
 
   /// Select a schema to query or perform an function (rpc) call.

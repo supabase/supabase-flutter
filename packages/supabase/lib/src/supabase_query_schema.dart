@@ -1,4 +1,5 @@
 import 'package:http/http.dart';
+import 'package:meta/meta.dart';
 import 'package:supabase/supabase.dart';
 
 import 'counter.dart';
@@ -44,6 +45,12 @@ class SupabaseQuerySchema {
       retryOptions: _rest.retryOptions,
       requestTimeout: _rest.requestTimeout,
     );
+  }
+
+  /// Perform a typed table operation, see [SupabaseClient.table].
+  @experimental
+  SupabaseTypedQueryBuilder<Row> table<Row>(PostgrestTable<Row> table) {
+    return SupabaseTypedQueryBuilder(from(table.name), table);
   }
 
   /// {@macro postgrest_rpc}
