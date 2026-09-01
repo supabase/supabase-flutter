@@ -17,15 +17,18 @@ class SupabaseTypedStreamBuilder<Row> extends Stream<List<Row>> {
 
   /// Orders the result with the specified [column].
   ///
+  /// Rows come back in ascending order unless `ascending: false` is passed,
+  /// matching [SupabaseStreamBuilder.order].
+  ///
   /// ```dart
   /// supabase
   ///     .table(Books.table)
   ///     .stream(primaryKey: [Books.id])
-  ///     .order(Books.title, ascending: true);
+  ///     .order(Books.title);
   /// ```
   SupabaseTypedStreamBuilder<Row> order(
     TableColumn<Object> column, {
-    bool ascending = false,
+    bool ascending = true,
   }) {
     _streamBuilder.order(column.name, ascending: ascending);
     return this;

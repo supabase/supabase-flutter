@@ -39,7 +39,7 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// [referencedTable].
   PostgrestTypedTransformBuilder<Row, T> order(
     TableColumn<Object> column, {
-    bool ascending = false,
+    bool ascending = true,
     bool nullsFirst = false,
     String? referencedTable,
   }) => PostgrestTypedTransformBuilder._(

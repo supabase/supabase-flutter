@@ -284,10 +284,14 @@ void main() {
           .table(Books.table)
           .select()
           .where(Books.id.gt(0))
-          .order(Books.title, ascending: true)
+          .order(Books.title)
           .limit(2);
 
-      expect(requestParameters()['order'], 'title.asc.nullslast');
+      expect(
+        requestParameters()['order'],
+        'title.asc.nullslast',
+        reason: 'order defaults to ascending like the untyped builder',
+      );
       expect(requestParameters()['limit'], '2');
       expect(books, hasLength(2));
 

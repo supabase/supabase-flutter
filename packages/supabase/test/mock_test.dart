@@ -864,6 +864,21 @@ void main() {
 
       expect(todos.map((todo) => todo.task), ['task 1', 'task 2']);
     });
+
+    test('stream order defaults to ascending', () async {
+      final stream = supabase
+          .table(Todos.table)
+          .stream(primaryKey: [Todos.id])
+          .order(Todos.id);
+
+      final List<Todo> todos = await stream.first;
+
+      expect(
+        todos.map((todo) => todo.task),
+        ['task 1', 'task 2'],
+        reason: 'order defaults to ascending like the untyped builder',
+      );
+    });
   });
 
   group('typed realtime filter', () {

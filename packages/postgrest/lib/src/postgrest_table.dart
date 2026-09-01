@@ -197,6 +197,10 @@ sealed class ColumnFilter {
 
   /// Negates this filter.
   ///
+  /// Throws a [StateError] when this filter is already negated, including the
+  /// filters returned by [TableColumn.isNotNull], which are negated
+  /// [TableColumn.isNull] filters.
+  ///
   /// ```dart
   /// client.table(Books.table).select().where(Books.id.eq(1).not());
   /// ```
