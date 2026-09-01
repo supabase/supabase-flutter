@@ -26,7 +26,7 @@ dependencies:
   supabase_functions: 3.0.0-dev.2
   supabase_realtime: 3.0.0-dev.2
   supabase_storage: 3.0.0-dev.2
-  yet_another_json_isolate: 3.0.0
+  yet_another_json_isolate: 3.0.0-dev.2
   logging: ^1.3.0
 
 dev_dependencies:

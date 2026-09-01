@@ -1,4 +1,4 @@
-## 3.0.0
+## 3.0.0-dev.2
 
 > Note: This release has breaking changes.
 

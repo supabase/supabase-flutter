@@ -16,7 +16,7 @@ Packages with breaking changes:
  - [`supabase_functions` - `v3.0.0-dev.2`](#supabase_functions---v300-dev2)
  - [`supabase_realtime` - `v3.0.0-dev.2`](#supabase_realtime---v300-dev2)
  - [`supabase_storage` - `v3.0.0-dev.2`](#supabase_storage---v300-dev2)
- - [`yet_another_json_isolate` - `v3.0.0`](#yet_another_json_isolate---v300)
+ - [`yet_another_json_isolate` - `v3.0.0-dev.2`](#yet_another_json_isolate---v300-dev2)
 
 Packages with other changes:
 
@@ -67,7 +67,7 @@ Packages with dependency updates only:
  - **DOCS**(storage_client): enable public_member_api_docs ([#1776](https://github.com/supabase/supabase-flutter/issues/1776)). ([6122a170](https://github.com/supabase/supabase-flutter/commit/6122a17070afc64db0c770496cdfb970cf55de17))
  - **BREAKING** **FIX**: return unmodifiable header views with controlled replacement ([#1764](https://github.com/supabase/supabase-flutter/issues/1764)). ([8343a9a8](https://github.com/supabase/supabase-flutter/commit/8343a9a8163610ea7bd4b157b6176f7a149512e8))
 
-#### `yet_another_json_isolate` - `v3.0.0`
+#### `yet_another_json_isolate` - `v3.0.0-dev.2`
 
  - **REFACTOR**(yet_another_json_isolate): rename conditional import files to idiomatic names ([#1777](https://github.com/supabase/supabase-flutter/issues/1777)). ([bb250795](https://github.com/supabase/supabase-flutter/commit/bb25079503413bf183743180b7a99cafd4572a14))
  - **PERF**(yet_another_json_isolate): process small payloads inline and large ones on short-lived isolates ([#1746](https://github.com/supabase/supabase-flutter/issues/1746)). ([7942c377](https://github.com/supabase/supabase-flutter/commit/7942c37770c5a12b18b27afc66b8595e67fdd22d))

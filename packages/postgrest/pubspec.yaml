@@ -19,7 +19,7 @@ resolution: workspace
 
 dependencies:
   http: ^1.6.0
-  yet_another_json_isolate: 3.0.0
+  yet_another_json_isolate: 3.0.0-dev.2
   meta: ^1.16.0
   logging: ^1.3.0
   supabase_common: 3.0.0-dev.1
