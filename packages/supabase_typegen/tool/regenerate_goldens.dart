@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:supabase_typegen/supabase_typegen.dart';
 
+import '../test/goldens/hostile_fixture.dart';
+
 /// Regenerates the golden files under `test/goldens` from the fixtures.
 ///
 /// Run from the package root with `dart run tool/regenerate_goldens.dart`.
@@ -16,4 +18,7 @@ void main() {
   File(
     'test/goldens/supabase_schema.dart',
   ).writeAsStringSync(generateDartCode(schema));
+  File(
+    'test/goldens/hostile_schema.dart',
+  ).writeAsStringSync(generateDartCode(hostileSchema));
 }

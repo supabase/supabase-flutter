@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:supabase_typegen/supabase_typegen.dart';
 import 'package:test/test.dart';
 
+import 'goldens/hostile_fixture.dart';
+
 final _whitespace = RegExp(r'\s+');
 
 /// Collapses whitespace so the comparison is stable across formatter
@@ -33,6 +35,20 @@ void main() {
       reason:
           'The generator output changed. Regenerate the golden with '
           '`dart run tool/regenerate_goldens.dart` and review the diff.',
+    );
+  });
+
+  test('matches the hostile golden output', () {
+    final golden = File('test/goldens/hostile_schema.dart').readAsStringSync();
+
+    expect(
+      _normalize(generateDartCode(hostileSchema)),
+      _normalize(golden),
+      reason:
+          'The generator output changed for the pathological schema. '
+          'Regenerate the golden with `dart run tool/regenerate_goldens.dart` '
+          'and review the diff; the checked-in golden is what proves the '
+          'generated code analyzes cleanly for hostile names.',
     );
   });
 
