@@ -1,3 +1,10 @@
+## 3.0.0-dev.2
+
+> Note: This release has breaking changes.
+
+ - **DOCS**(functions_client): enable public_member_api_docs ([#1769](https://github.com/supabase/supabase-flutter/issues/1769)). ([f05bec95](https://github.com/supabase/supabase-flutter/commit/f05bec954279a4827aae70ad0459f91d4516c6d0))
+ - **BREAKING** **FIX**: return unmodifiable header views with controlled replacement ([#1764](https://github.com/supabase/supabase-flutter/issues/1764)). ([8343a9a8](https://github.com/supabase/supabase-flutter/commit/8343a9a8163610ea7bd4b157b6176f7a149512e8))
+
 ## 3.0.0-dev.1
 
 > Note: This release has breaking changes.

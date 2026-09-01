@@ -1,3 +1,8 @@
+## 3.0.0-dev.2
+
+ - **FIX**(auth): guard startAutoRefresh against use after dispose ([#1760](https://github.com/supabase/supabase-flutter/issues/1760)). ([f0a61e8e](https://github.com/supabase/supabase-flutter/commit/f0a61e8e7c2984da004db90d010a32ab449ce94d))
+ - **DOCS**(supabase_flutter): enable public_member_api_docs ([#1774](https://github.com/supabase/supabase-flutter/issues/1774)). ([b88bd761](https://github.com/supabase/supabase-flutter/commit/b88bd7613cda2e443e1c0da565b66533779348db))
+
 ## 3.0.0-dev.1
 
 > Note: This release has breaking changes.

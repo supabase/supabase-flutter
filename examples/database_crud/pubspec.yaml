@@ -14,10 +14,10 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^3.0.0-dev.1
+  supabase_flutter: ^3.0.0-dev.2
 
 dev_dependencies:
-  supabase_lints: ^0.1.1
+  supabase_lints: ^0.1.2
   flutter_test:
     sdk: flutter
   integration_test:
