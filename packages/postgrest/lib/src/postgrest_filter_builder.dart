@@ -242,8 +242,25 @@ class PostgrestFilterBuilder<T> extends PostgrestTransformBuilder<T> {
   ///     .select()
   ///     .isFilter('data', null);
   /// ```
+  ///
+  /// For the SQL `UNKNOWN` state, use [isUnknown] instead.
   PostgrestFilterBuilder<T> isFilter(String column, bool? value) {
     return copyWithUrl(_url.appendSearchParameters(column, 'is.$value'));
+  }
+
+  /// A check for the SQL boolean `UNKNOWN` state.
+  ///
+  /// Only meaningful on boolean columns and expressions. See [isFilter] for
+  /// `null`, `true` and `false`.
+  ///
+  /// ```dart
+  /// await supabase
+  ///     .from('users')
+  ///     .select()
+  ///     .isUnknown('confirmed');
+  /// ```
+  PostgrestFilterBuilder<T> isUnknown(String column) {
+    return copyWithUrl(_url.appendSearchParameters(column, 'is.unknown'));
   }
 
   /// Finds all rows whose value on the stated [column] is found on the

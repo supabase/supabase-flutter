@@ -14,6 +14,7 @@ import 'package:supabase_realtime/src/serializer.dart';
 import 'package:supabase_realtime/src/websocket/websocket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+/// Opens the WebSocket connection used by a [RealtimeClient].
 typedef WebSocketTransport =
     WebSocketChannel Function(
       String url,
@@ -64,9 +65,17 @@ class RealtimeCloseEvent {
 /// The lifecycle status of a heartbeat reported to
 /// [RealtimeClient.onHeartbeat].
 enum RealtimeHeartbeatStatus {
+  /// The heartbeat was sent to the server.
   sent,
+
+  /// The server replied successfully.
   ok,
+
+  /// The server replied with an error.
   error,
+
+  /// The previous heartbeat's reply never arrived; the connection is closed
+  /// and reconnection begins.
   timeout,
 }
 
@@ -251,6 +260,9 @@ class RealtimeClient {
   List<RealtimeChannel> get channels => List.unmodifiable(_channels);
   final List<RealtimeChannel> _channels = [];
 
+  /// The resolved WebSocket endpoint, including the `/websocket` path and,
+  /// when `logLevel` was passed to the constructor, the `log_level` query
+  /// parameter.
   final String endpoint;
 
   /// The headers sent when connecting, as an unmodifiable view.
@@ -264,11 +276,24 @@ class RealtimeClient {
   /// The query parameters sent when connecting, as an unmodifiable map.
   final Map<String, dynamic> parameters;
 
+  /// The Realtime protocol version used by this client.
   final RealtimeProtocolVersion version;
+
+  /// The timeout to wait for the connection to close before dismissing the
+  /// result.
   final Duration connectionCloseTimeout;
+
+  /// The default timeout for push and codec calls.
   final Duration timeout;
+
+  /// Opens the underlying WebSocket connection.
   final WebSocketTransport transport;
+
+  /// Used instead of the default HTTP client for a broadcast sent with
+  /// `RealtimeChannel.httpSend`.
   final Client? httpClient;
+
+  /// The interval at which a heartbeat message is sent.
   final Duration heartbeatInterval;
   Timer? _heartbeatTimer;
 
@@ -289,6 +314,7 @@ class RealtimeClient {
   /// Used to keep track of whether the client is connected to the server.
   String? _pendingHeartbeatRef;
 
+  /// The reference ID of the most recently sent heartbeat.
   @internal
   @visibleForTesting
   String? get pendingHeartbeatRef => _pendingHeartbeatRef;
@@ -297,10 +323,12 @@ class RealtimeClient {
   /// pushed message, including heartbeats.
   int _ref = 0;
 
+  /// The most recently generated message reference.
   @internal
   @visibleForTesting
   int get ref => _ref;
 
+  /// Overrides [ref], so a test can force the next generated reference.
   @internal
   @visibleForTesting
   set ref(int value) => _ref = value;
@@ -322,6 +350,8 @@ class RealtimeClient {
   /// and dispatches without a microtask hop.
   final Object Function(RealtimeMessage) _builtInEncode;
   final RealtimeMessage Function(Object) _builtInDecode;
+
+  /// Returns the delay before the next reconnect attempt.
   late final TimerCalculation reconnectAfter;
 
   /// The underlying WebSocket connection, or `null` when disconnected.
@@ -334,6 +364,8 @@ class RealtimeClient {
   /// connection is next established.
   final List<void Function()> _sendBuffer = [];
 
+  /// Messages pushed while the socket was not connected, as an unmodifiable
+  /// view.
   @internal
   @visibleForTesting
   List<void Function()> get sendBuffer => List.unmodifiable(_sendBuffer);
@@ -361,6 +393,8 @@ class RealtimeClient {
   SocketState? get connectionState => _connectionState;
   SocketState? _connectionState;
 
+  /// Resolves the access token used for a connection or reconnection,
+  /// instead of the token passed to [setAccessToken].
   final Future<String?> Function()? customAccessToken;
 
   /// Connects the socket.
@@ -396,6 +430,8 @@ class RealtimeClient {
         if (_connectionState != SocketState.disconnected &&
             _connectionState != SocketState.disconnecting) {
           _connectionState = SocketState.closed;
+
+          /// General error handling
           _onConnectionError(error);
           _reconnectTimer.scheduleTimeout();
         }
@@ -499,11 +535,13 @@ class RealtimeClient {
     }
   }
 
+  /// Unsubscribes [channel] and removes it from [channels].
   Future<String> removeChannel(RealtimeChannel channel) async {
     final status = await channel.unsubscribe();
     return status;
   }
 
+  /// Unsubscribes every channel and disconnects the socket.
   Future<List<String>> removeAllChannels() async {
     final values = await Future.wait(
       _channels.toList().map((channel) => channel.unsubscribe()),
@@ -556,6 +594,9 @@ class RealtimeClient {
     }
   }
 
+  /// Creates and registers a new channel for [topic].
+  ///
+  /// Call `RealtimeChannel.subscribe` on the result to join it.
   RealtimeChannel channel(
     String topic, [
     RealtimeChannelConfig config = const RealtimeChannelConfig(),
@@ -1103,6 +1144,8 @@ class RealtimeClient {
     }
   }
 
+  /// Sends a heartbeat, or closes the connection to trigger reconnection if
+  /// the previous one never received a reply.
   @internal
   Future<void> sendHeartbeat() async {
     if (!isConnected) {

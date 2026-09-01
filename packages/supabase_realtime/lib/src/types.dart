@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_realtime/supabase_realtime.dart';
@@ -34,6 +33,7 @@ class Binding {
   }
 }
 
+/// The kind of Postgres change a [PostgresChangeFilter] listens for.
 enum PostgresChangeEvent {
   /// Listen to all insert, update, and delete events.
   all,
@@ -47,6 +47,7 @@ enum PostgresChangeEvent {
   /// Listen to delete events.
   delete;
 
+  /// The event name sent as the `event` filter parameter.
   @internal
   String toRealtimeEvent() {
     if (this == PostgresChangeEvent.all) {
@@ -55,6 +56,7 @@ enum PostgresChangeEvent {
     return name.toUpperCase();
   }
 
+  /// Parses the `eventType` field of a Postgres change payload.
   @internal
   static PostgresChangeEvent fromValue(String event) => switch (event) {
     'INSERT' => PostgresChangeEvent.insert,
@@ -110,7 +112,18 @@ class ChannelFilter {
   }
 }
 
-enum ChannelResponse { ok, timedOut, error }
+/// The result of sending a message on a [RealtimeChannel], such as a
+/// broadcast.
+enum ChannelResponse {
+  /// The server acknowledged the message.
+  ok,
+
+  /// The server did not acknowledge the message in time.
+  timedOut,
+
+  /// The server rejected the message.
+  error,
+}
 
 @internal
 enum RealtimeListenType {
@@ -127,11 +140,18 @@ enum RealtimeListenType {
   }
 }
 
+/// The kind of change a presence callback is reporting.
 enum PresenceEvent {
+  /// The full presence state was (re)synchronized.
   sync,
+
+  /// One or more clients joined.
   join,
+
+  /// One or more clients left.
   leave;
 
+  /// Parses the `event` field of a presence payload.
   @internal
   static PresenceEvent fromValue(String value) {
     for (final event in PresenceEvent.values) {
@@ -146,7 +166,21 @@ enum PresenceEvent {
   }
 }
 
-enum RealtimeSubscribeStatus { subscribed, channelError, closed, timedOut }
+/// The status of a [RealtimeChannel.subscribe] call.
+enum RealtimeSubscribeStatus {
+  /// The channel is joined and receiving events.
+  subscribed,
+
+  /// The channel could not be joined; see the error passed alongside this
+  /// status.
+  channelError,
+
+  /// The channel was closed.
+  closed,
+
+  /// The server did not respond to the join request in time.
+  timedOut,
+}
 
 /// A subscription status change emitted by [RealtimeChannel.onStatusChange].
 class RealtimeSubscribeStatusChange {
@@ -178,6 +212,7 @@ class ReplayOption {
   /// Optional limit on the number of messages to replay, maximum value of 25.
   final int? limit;
 
+  /// Converts this to the shape sent in the channel's broadcast config.
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{'since': since};
     if (limit != null) {
@@ -187,6 +222,8 @@ class ReplayOption {
   }
 }
 
+/// Configuration for a [RealtimeChannel]'s broadcast, presence, and RLS
+/// behavior.
 class RealtimeChannelConfig {
   const RealtimeChannelConfig({
     this.ack = false,
@@ -231,6 +268,7 @@ class RealtimeChannelConfig {
   /// if the connection is not ready in time.
   final bool replicationReady;
 
+  /// Converts this to the shape sent when joining the channel.
   Map<String, dynamic> toMap() {
     final broadcastConfig = <String, dynamic>{
       'ack': ack,
@@ -339,12 +377,26 @@ class PostgresChangePayload {
       errors: payload['errors'],
     );
   }
+
+  /// The schema the change happened in, for example `'public'`.
   final String schema;
+
+  /// The table the change happened in.
   final String table;
+
+  /// When the change was committed.
   final DateTime commitTimestamp;
+
+  /// Whether the change was an insert, update, or delete.
   final PostgresChangeEvent eventType;
+
+  /// The row after the change, empty for a delete.
   final Map<String, dynamic> newRecord;
+
+  /// The row before the change, empty for an insert.
   final Map<String, dynamic> oldRecord;
+
+  /// Errors reported by the server for this change, if any.
   final dynamic errors;
 
   @override
