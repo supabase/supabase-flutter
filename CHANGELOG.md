@@ -24,6 +24,7 @@ Packages with other changes:
  - [`supabase_flutter` - `v3.0.0-dev.2`](#supabase_flutter---v300-dev2)
  - [`supabase_lints` - `v0.1.2`](#supabase_lints---v012)
  - [`supabase_testing` - `v0.1.1`](#supabase_testing---v011)
+ - [`supabase_typegen` - `v0.1.2`](#supabase_typegen---v012)
 
 Packages with dependency updates only:
 
@@ -95,6 +96,10 @@ Packages with dependency updates only:
 #### `supabase_lints` - `v0.1.2`
 
  - **FIX**(supabase_lints): enable lines_longer_than_80_chars and fix all violations ([#1655](https://github.com/supabase/supabase-flutter/issues/1655)). ([a08b6577](https://github.com/supabase/supabase-flutter/commit/a08b6577d002d0c7ae0d484ddd6da802922be37b))
+
+#### `supabase_typegen` - `v0.1.2`
+
+ - **FEAT**: add supabase_typegen package generating typed table definitions ([#1635](https://github.com/supabase/supabase-flutter/issues/1635)). ([6cfea7b1](https://github.com/supabase/supabase-flutter/commit/6cfea7b1cf4d4d7101f5971e4659fb1888e58506))
 
 
 ## 2026-08-21
