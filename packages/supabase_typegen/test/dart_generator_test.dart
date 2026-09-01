@@ -168,6 +168,120 @@ void main() {
     );
   });
 
+  test('schema names shadowing core or imported types are suffixed', () {
+    final code = generateDartCode(
+      SchemaDescription(
+        schemaName: 'public',
+        tables: const [
+          TableDescription(
+            name: 'postgrest_table',
+            columns: [
+              ColumnDescription(
+                name: 'name',
+                postgresFormat: 'text',
+                typeKind: ColumnTypeKind.text,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: const [
+          EnumDescription(qualifiedName: 'public.string', values: ['a']),
+        ],
+      ),
+    );
+
+    expect(code, contains('enum String\$ '));
+    expect(code, contains('final String wireName;'));
+    expect(code, isNot(contains('extension type const PostgrestTable._')));
+  });
+
+  test('floating array elements convert through num', () {
+    final code = generateDartCode(
+      SchemaDescription(
+        schemaName: 'public',
+        tables: const [
+          TableDescription(
+            name: 'metrics',
+            columns: [
+              ColumnDescription(
+                name: 'samples',
+                postgresFormat: '_float8',
+                typeKind: ColumnTypeKind.array,
+                elementTypeKind: ColumnTypeKind.floating,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: const [],
+      ),
+    );
+
+    expect(code, contains('List<double> get samples'));
+    expect(code, contains('(element as num).toDouble()'));
+  });
+
+  test('database comments cannot escape generated doc comments', () {
+    final code = generateDartCode(
+      SchemaDescription(
+        schemaName: 'public',
+        tables: const [
+          TableDescription(
+            name: 'books',
+            comment: 'first\rimport "dart:io";\u2028second',
+            columns: [
+              ColumnDescription(
+                name: 'id',
+                postgresFormat: 'int8',
+                typeKind: ColumnTypeKind.integer,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: const [],
+      ),
+    );
+
+    expect(code, contains('/// first'));
+    expect(code, contains('/// import "dart:io";'));
+    expect(code, contains('/// second'));
+  });
+
+  test('string literals escape unicode line separators', () {
+    final code = generateDartCode(
+      SchemaDescription(
+        schemaName: 'public',
+        tables: const [
+          TableDescription(
+            name: 'books',
+            columns: [
+              ColumnDescription(
+                name: 'line\u2028break',
+                postgresFormat: 'text',
+                typeKind: ColumnTypeKind.text,
+                isRequired: true,
+                hasDefault: false,
+                isNullable: false,
+              ),
+            ],
+          ),
+        ],
+        enums: const [],
+      ),
+    );
+
+    expect(code, contains(r"'line\u{2028}break'"));
+    expect(code, isNot(contains('line\u2028break')));
+  });
+
   test('temporal and enum array elements read as wire strings', () {
     final code = generateDartCode(
       SchemaDescription(

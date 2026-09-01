@@ -73,8 +73,25 @@ String generateDartCode(
 }
 
 /// Hands out unique top level type names, suffixing `$` on collisions.
+///
+/// Starts out with every identifier the generated source references
+/// unqualified, so a schema object named like one of them (for example an
+/// enum named `string`) cannot shadow it.
 class _TypeNameRegistry {
-  final _used = <String>{};
+  final _used = <String>{
+    'String',
+    'Object',
+    'Map',
+    'MapEntry',
+    'List',
+    'DateTime',
+    'int',
+    'double',
+    'num',
+    'bool',
+    'PostgrestTable',
+    'TableColumn',
+  };
 
   String claim(String name) {
     var candidate = name;
@@ -127,7 +144,9 @@ void _writeEnum(
     ..writeln('        orElse: () => throw ArgumentError.value(')
     ..writeln('          wireName,')
     ..writeln("          'wireName',")
-    ..writeln("          'No $typeName value with this wire name',")
+    ..writeln(
+      '          ${_stringLiteral('No $typeName value with this wire name')},',
+    )
     ..writeln('        ),')
     ..writeln('      );')
     ..writeln()
@@ -399,6 +418,16 @@ String _readExpression(ColumnDescription column, _Binding binding) {
       nullable
           ? '($access as num?)?.toDouble()'
           : '($access as num).toDouble()',
+    // PostgREST encodes integral float4[]/float8[] elements as JSON
+    // integers, so floating elements convert through num like the scalars;
+    // a lazy cast would throw on access.
+    ColumnTypeKind.array
+        when column.elementTypeKind == ColumnTypeKind.floating =>
+      nullable
+          ? '($access as List<dynamic>?)'
+                '?.map((element) => (element as num).toDouble()).toList()'
+          : '($access as List<dynamic>)'
+                '.map((element) => (element as num).toDouble()).toList()',
     ColumnTypeKind.array =>
       nullable
           ? '($access as List<dynamic>?)?.cast()'
@@ -481,12 +510,17 @@ void _writeDocComment(
 }) {
   if (comment == null) return;
   final width = 80 - indent.length - '/// '.length;
-  for (final line in comment.trim().split('\n')) {
+  for (final line in comment.trim().split(_lineTerminators)) {
     for (final wrapped in _wrap(line.trim(), width)) {
       buffer.writeln('$indent/// $wrapped');
     }
   }
 }
+
+/// Every Dart source line terminator: a comment line broken on LF alone
+/// would let a CR or U+2028/U+2029 end the generated `///` comment early and
+/// turn the remainder into source code.
+final _lineTerminators = RegExp('\\r\\n?|[\\n\\u2028\\u2029]');
 
 /// Greedily wraps [text] into lines of at most [width] characters, keeping
 /// words longer than [width] on their own line.
@@ -511,6 +545,8 @@ String _stringLiteral(String value) {
       .replaceAll(r'$', r'\$')
       .replaceAll('\n', r'\n')
       .replaceAll('\r', r'\r')
-      .replaceAll('\t', r'\t');
+      .replaceAll('\t', r'\t')
+      .replaceAll('\u2028', r'\u{2028}')
+      .replaceAll('\u2029', r'\u{2029}');
   return "'$escaped'";
 }

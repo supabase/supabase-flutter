@@ -46,6 +46,35 @@ void main() {
     );
   });
 
+  test('rejects relationships with mismatched column counts', () {
+    expect(
+      () => parseGeneratorMetadata({
+        'tables': [
+          {'id': 1, 'schema': 'public', 'name': 'books', 'comment': null},
+        ],
+        'columns': [_column(tableId: 1, table: 'books', name: 'author_id')],
+        'relationships': [
+          {
+            'foreign_key_name': 'books_author_id_fkey',
+            'schema': 'public',
+            'relation': 'books',
+            'columns': ['author_id'],
+            'referenced_schema': 'public',
+            'referenced_relation': 'authors',
+            'referenced_columns': <String>[],
+          },
+        ],
+      }),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('books_author_id_fkey'),
+        ),
+      ),
+    );
+  });
+
   test('registers the enum of enum array columns', () {
     final parsed = parseGeneratorMetadata({
       'version': 1,

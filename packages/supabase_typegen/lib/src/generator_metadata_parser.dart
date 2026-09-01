@@ -249,6 +249,13 @@ Map<(String, String), ForeignKeyDescription> _foreignKeysByColumn(
     final columns = (relationship['columns'] as List<dynamic>).cast<String>();
     final referencedColumns =
         (relationship['referenced_columns'] as List<dynamic>).cast<String>();
+    if (columns.length != referencedColumns.length) {
+      throw FormatException(
+        'Not a GeneratorMetadata document: the relationship '
+        '"${relationship['foreign_key_name']}" pairs ${columns.length} '
+        'columns with ${referencedColumns.length} referenced columns.',
+      );
+    }
     for (var i = 0; i < columns.length; i++) {
       foreignKeys.putIfAbsent(
         (table, columns[i]),
