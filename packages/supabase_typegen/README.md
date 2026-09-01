@@ -16,7 +16,9 @@ For every table the generator emits:
 
 The easiest way is through the Supabase CLI, which handles the database
 connection and runs this package for you. Add `supabase_typegen` as a dev
-dependency of your project, then:
+dependency of your project (until the package is published to
+[pub.dev](https://pub.dev), depend on it with a `git` source pointing at
+`packages/supabase_typegen` in this repository), then:
 
 ```sh
 supabase gen types --lang dart --local > lib/supabase_schema.g.dart
