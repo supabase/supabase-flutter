@@ -162,7 +162,8 @@ void main() {
     expect(
       code,
       contains(
-        "import 'package:postgrest/postgrest.dart\\'; import \\'dart:io';",
+        "import 'package:postgrest/postgrest.dart\\'; "
+        "import \\'dart:io';",
       ),
     );
   });

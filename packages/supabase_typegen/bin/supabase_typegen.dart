@@ -64,11 +64,10 @@ Future<int> _run(List<String> arguments) async {
     return 64;
   }
 
-  final contents = await utf8.decodeStream(stdin);
-
   final schemaName = options.option('schema')!;
   final SchemaDescription schema;
   try {
+    final contents = await utf8.decodeStream(stdin);
     schema = parseGeneratorMetadata(
       jsonDecode(contents) as Map<String, dynamic>,
       schemaName: schemaName,

@@ -30,9 +30,11 @@ Under the hood the CLI runs the introspection of
 in-process against the database (the same `GeneratorMetadata` intermediate
 representation its TypeScript, Go, Swift, and Python generators consume,
 ordered with `sortGeneratorMetadata`) and hands the document to this tool
-over stdin. The SQL in your `supabase/` directory stays the single source of
-truth: the CLI applies your migrations to the local database and the types
-are generated from the result.
+over stdin. The types reflect the current state of the selected database:
+with `--local` the SQL in your `supabase/` directory stays the single source
+of truth, since the CLI applies your migrations to the local database and
+generates from the result, while `--linked`, `--project-id`, and `--db-url`
+generate from whatever that database currently contains.
 
 Use `--schema` to generate for a schema other than `public`, and `--import`
 to change which library the generated file imports `PostgrestTable` and
