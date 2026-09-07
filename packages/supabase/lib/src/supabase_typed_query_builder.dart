@@ -24,7 +24,7 @@ class SupabaseTypedQueryBuilder<Row> extends PostgrestTypedQueryBuilder<Row> {
   ///
   /// The typed counterpart of [SupabaseQueryBuilder.stream]; rows are
   /// converted through [PostgrestTable.rowFromJson] and [primaryKey] is
-  /// expressed with [TableColumn]s.
+  /// expressed with [PostgrestColumn]s.
   ///
   /// ```dart
   /// supabase
@@ -35,7 +35,7 @@ class SupabaseTypedQueryBuilder<Row> extends PostgrestTypedQueryBuilder<Row> {
   /// });
   /// ```
   SupabaseTypedStreamFilterBuilder<Row> stream({
-    required List<TableColumn<Object>> primaryKey,
+    required List<PostgrestColumn<Row, Object>> primaryKey,
     bool private = false,
   }) {
     return SupabaseTypedStreamFilterBuilder(

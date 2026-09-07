@@ -74,23 +74,42 @@ class PostgrestTypedQueryBuilder<Row> {
   /// By default no data is returned. Use a trailing [select] to return the
   /// upserted rows typed as [Row].
   ///
-  /// See [PostgrestQueryBuilder.upsert] for [values], [onConflict],
-  /// [ignoreDuplicates] and [defaultToNull].
+  /// [onConflict] names the columns of the unique constraint to merge on;
+  /// left out, the primary key is the target.
+  ///
+  /// ```dart
+  /// await client.table(Users.table).upsert(
+  ///   {'email': 'a@example.com', 'name': 'Ada'},
+  ///   onConflict: [Users.email],
+  /// );
+  /// ```
+  ///
+  /// See [PostgrestQueryBuilder.upsert] for [values], [ignoreDuplicates] and
+  /// [defaultToNull].
   PostgrestTypedFilterBuilder<Row, void> upsert(
     Object values, {
-    String? onConflict,
+    List<PostgrestColumn<Row, Object>>? onConflict,
     bool ignoreDuplicates = false,
     bool defaultToNull = true,
-  }) => PostgrestTypedFilterBuilder._(
-    _queryBuilder.upsert(
-      values,
-      onConflict: onConflict,
-      ignoreDuplicates: ignoreDuplicates,
-      defaultToNull: defaultToNull,
-    ),
-    table,
-    _toVoid,
-  );
+  }) {
+    if (onConflict != null && onConflict.isEmpty) {
+      throw ArgumentError.value(
+        onConflict,
+        'onConflict',
+        'onConflict needs at least one column',
+      );
+    }
+    return PostgrestTypedFilterBuilder._(
+      _queryBuilder.upsert(
+        values,
+        onConflict: onConflict?.map((column) => column.name).join(','),
+        ignoreDuplicates: ignoreDuplicates,
+        defaultToNull: defaultToNull,
+      ),
+      table,
+      _toVoid,
+    );
+  }
 
   /// Perform an UPDATE on the table or view.
   ///

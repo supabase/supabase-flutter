@@ -165,6 +165,14 @@ final class PostgrestFilter<Row> {
   List<({String key, String value})> get queryParameters =>
       _queryParameters(_node);
 
+  /// The one comparison this filter consists of, or `null` for a raw or a
+  /// composed filter.
+  PostgrestComparison<Row>? get comparison => switch (_node) {
+    _Comparison(:final column, :final operator, :final value) =>
+      PostgrestComparison._(column, operator, value),
+    _Raw() || _And() || _Or() || _Not() => null,
+  };
+
   /// Absorbs a child `&` so `a & b & c` renders flat rather than nested.
   static List<_FilterNode<Row>> _andParts<Row>(_FilterNode<Row> node) =>
       switch (node) {
@@ -179,6 +187,24 @@ final class PostgrestFilter<Row> {
         _Or(:final children) => children,
         _Comparison() || _Raw() || _And() || _Not() => [node],
       };
+}
+
+/// One operator applied to one column, the shape a consumer that cannot
+/// apply a whole tree, such as a realtime stream, reads through
+/// [PostgrestFilter.comparison].
+@experimental
+final class PostgrestComparison<Row> {
+  const PostgrestComparison._(this.column, this.operator, this.value);
+
+  /// The expression on the left of the operator.
+  final PostgrestFilterableExpression<Row, Object> column;
+
+  /// The operator.
+  final PostgrestFilterOperator operator;
+
+  /// The operand as it was given: the value for a comparison, a `List` for
+  /// `in` and the array operators, and `null`, `true` or `false` for `is`.
+  final Object? value;
 }
 
 sealed class _FilterNode<Row> {

@@ -10,6 +10,7 @@ class Todos {
   static const c = PostgrestColumn<Todo, int>('c');
   static const id = PostgrestColumn<Todo, int>('id');
   static const name = PostgrestColumn<Todo, String>('name');
+  static const due = PostgrestNullableColumn<Todo, DateTime>('due');
 }
 
 List<String> rendered(PostgrestFilter<Todo> filter) => [
@@ -182,6 +183,28 @@ void main() {
       final filter = (Todos.a.eq(1) & Todos.name.eq('p(q)')) | Todos.id.eq(3);
 
       expect(rendered(filter), ['or=(and(a.eq.1,name.eq."p(q)"),id.eq.3)']);
+    });
+  });
+
+  group('comparison', () {
+    test('exposes a single operator call with its operand as given', () {
+      final comparison = Todos.id.eq(1).comparison!;
+
+      expect(comparison.column, Todos.id);
+      expect(comparison.operator, PostgrestFilterOperator.eq);
+      expect(comparison.value, 1);
+      expect(Todos.id.inFilter([1, 2]).comparison!.value, [1, 2]);
+      expect(Todos.due.isNull().comparison!.value, isNull);
+      expect(
+        Todos.due.isNull().comparison!.operator,
+        PostgrestFilterOperator.isFilter,
+      );
+    });
+
+    test('is null for a raw or composed filter', () {
+      expect(PostgrestFilter.raw<Todo>('x', 'eq.1').comparison, isNull);
+      expect((Todos.a.eq(1) & Todos.b.eq(2)).comparison, isNull);
+      expect(Todos.a.eq(1).not().comparison, isNull);
     });
   });
 }

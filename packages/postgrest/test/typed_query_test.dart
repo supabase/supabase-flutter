@@ -423,6 +423,26 @@ void main() {
       );
     });
 
+    test('upsert names its conflict target with columns', () async {
+      httpClient.responseBody = '';
+
+      await client
+          .table(Books.table)
+          .upsert(
+            {'id': 1, 'title': 'foo'},
+            onConflict: [Books.id, Books.title],
+          );
+
+      expect(requestParameters()['on_conflict'], 'id,title');
+    });
+
+    test('an empty conflict target throws', () {
+      expect(
+        () => client.table(Books.table).upsert({'id': 1}, onConflict: []),
+        throwsArgumentError,
+      );
+    });
+
     test('update patches the filtered rows', () async {
       httpClient.responseBody = '';
 

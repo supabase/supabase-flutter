@@ -765,10 +765,6 @@ features:
       - PostgrestTable.name
       - PostgrestTable.rowFromJson
       - RowConverter
-      - TableColumn
-      - TableColumn.TableColumn
-      - TableColumn.name
-      - TableColumn.toString
       - PostgrestColumnExpression
       - PostgrestColumnExpression.expression
       - PostgrestColumnExpression.toString
@@ -858,157 +854,92 @@ features:
     symbols:
       - PostgrestFilterBuilder.eq
       - SupabaseStreamFilterBuilder.eq
-      - TableColumn.eq
       - PostgrestFilterableExpression.eq
-      - ComparisonFilter
-      - ComparisonFilter.column
-      - ComparisonFilter.value
-      - EqFilter
-      - EqFilter.operator
   database.using_filters.neq:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.neq
       - SupabaseStreamFilterBuilder.neq
-      - TableColumn.neq
       - PostgrestFilterableExpression.neq
-      - NeqFilter
-      - NeqFilter.operator
   database.using_filters.gt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gt
       - SupabaseStreamFilterBuilder.gt
-      - TableColumn.gt
       - PostgrestFilterableExpression.gt
-      - GtFilter
-      - GtFilter.operator
   database.using_filters.gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.gte
       - SupabaseStreamFilterBuilder.gte
-      - TableColumn.gte
       - PostgrestFilterableExpression.gte
-      - GteFilter
-      - GteFilter.operator
   database.using_filters.lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lt
       - SupabaseStreamFilterBuilder.lt
-      - TableColumn.lt
       - PostgrestFilterableExpression.lt
-      - LtFilter
-      - LtFilter.operator
   database.using_filters.lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.lte
       - SupabaseStreamFilterBuilder.lte
-      - TableColumn.lte
       - PostgrestFilterableExpression.lte
-      - LteFilter
-      - LteFilter.operator
   database.using_filters.like:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.like
       - SupabaseStreamFilterBuilder.like
-      - TextTableColumnFilters
-      - TextTableColumnFilters.like
       - PostgrestTextFilters
       - PostgrestTextFilters.like
-      - PatternFilter
-      - PatternFilter.column
-      - PatternFilter.pattern
-      - PatternFilter.value
-      - LikeFilter
-      - LikeFilter.operator
   database.using_filters.like_all:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.likeAllOf
-      - TextTableColumnFilters.likeAllOf
       - PostgrestTextFilters.likeAllOf
-      - PatternListFilter
-      - PatternListFilter.column
-      - PatternListFilter.patterns
-      - PatternListFilter.value
-      - LikeAllOfFilter
-      - LikeAllOfFilter.operator
   database.using_filters.like_any:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.likeAnyOf
-      - TextTableColumnFilters.likeAnyOf
       - PostgrestTextFilters.likeAnyOf
-      - LikeAnyOfFilter
-      - LikeAnyOfFilter.operator
   database.using_filters.ilike:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilike
       - SupabaseStreamFilterBuilder.ilike
-      - TextTableColumnFilters.ilike
       - PostgrestTextFilters.ilike
-      - IlikeFilter
-      - IlikeFilter.operator
   database.using_filters.ilike_all:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilikeAllOf
-      - TextTableColumnFilters.ilikeAllOf
       - PostgrestTextFilters.ilikeAllOf
-      - IlikeAllOfFilter
-      - IlikeAllOfFilter.operator
   database.using_filters.ilike_any:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.ilikeAnyOf
-      - TextTableColumnFilters.ilikeAnyOf
       - PostgrestTextFilters.ilikeAnyOf
-      - IlikeAnyOfFilter
-      - IlikeAnyOfFilter.operator
   database.using_filters.is:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isFilter
       - PostgrestFilterBuilder.isUnknown
       - SupabaseStreamFilterBuilder.isFilter
-      - TableColumn.isNull
-      - TableColumn.isNotNull
       - PostgrestBooleanFilters
       - PostgrestBooleanFilters.isTrue
       - PostgrestBooleanFilters.isFalse
       - PostgrestNullableExpression.isNull
-      - IsNullFilter
-      - IsNullFilter.column
-      - IsNullFilter.operator
-      - IsNullFilter.value
   database.using_filters.is_distinct:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.isDistinct
       - SupabaseStreamFilterBuilder.isDistinct
-      - TableColumn.isDistinctFrom
       - PostgrestFilterableExpression.isDistinct
-      - IsDistinctFilter
-      - IsDistinctFilter.column
-      - IsDistinctFilter.operator
-      - IsDistinctFilter.value
   database.using_filters.in:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.inFilter
       - SupabaseStreamFilterBuilder.inFilter
-      - TableColumn.inFilter
       - PostgrestFilterableExpression.inFilter
-      - InListFilter
-      - InListFilter.column
-      - InListFilter.operator
-      - InListFilter.value
-      - InListFilter.values
   database.using_filters.not_in:
     status: implemented
     note: "The column-expression surface has no dedicated notIn: negation is `not()` on the filter tree, so `Books.id.inFilter([1, 2]).not()` renders `id=not.in.(1,2)`."
@@ -1020,35 +951,23 @@ features:
     note: "The operand literal is chosen by the column's Postgres type, not by the operator: `cs.{a,b}` for an array, `cs.[1,3)` for a range, `cs.{\"a\":1}` for jsonb. The column-expression surface spells the three as separate methods so each takes the operand shape it needs; the string builder takes one list, string or map argument."
     symbols:
       - PostgrestFilterBuilder.contains
-      - TableColumn.contains
       - PostgrestArrayFilters
       - PostgrestArrayFilters.contains
       - PostgrestFilterableExpression.containsRange
       - PostgrestFilterableExpression.containsJson
-      - ContainmentFilter
-      - ContainmentFilter.column
-      - ContainmentFilter.value
-      - ContainsFilter
-      - ContainsFilter.operator
   database.using_filters.contained_by:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.containedBy
-      - TableColumn.containedBy
       - PostgrestArrayFilters.containedBy
       - PostgrestFilterableExpression.containedByRange
       - PostgrestFilterableExpression.containedByJson
-      - ContainedByFilter
-      - ContainedByFilter.operator
   database.using_filters.overlaps:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.overlaps
-      - TableColumn.overlaps
       - PostgrestArrayFilters.overlaps
       - PostgrestFilterableExpression.overlapsRange
-      - OverlapsFilter
-      - OverlapsFilter.operator
   database.using_filters.match:
     status: implemented
     symbols:
@@ -1057,77 +976,42 @@ features:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.not
-      - ColumnFilter.not
       - PostgrestFilter.not
-      - NegatedFilter
-      - NegatedFilter.column
-      - NegatedFilter.inner
-      - NegatedFilter.not
-      - NegatedFilter.operator
-      - NegatedFilter.value
   database.using_filters.or:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.or
-      - PostgrestTypedFilterBuilder.whereAny
       - PostgrestFilter.|
   database.using_filters.range_gt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeGt
-      - TableColumn.rangeGt
       - PostgrestFilterableExpression.rangeGt
-      - RangeFilter
-      - RangeFilter.column
-      - RangeFilter.range
-      - RangeFilter.value
-      - RangeGtFilter
-      - RangeGtFilter.operator
   database.using_filters.range_gte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeGte
-      - TableColumn.rangeGte
       - PostgrestFilterableExpression.rangeGte
-      - RangeGteFilter
-      - RangeGteFilter.operator
   database.using_filters.range_lt:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLt
-      - TableColumn.rangeLt
       - PostgrestFilterableExpression.rangeLt
-      - RangeLtFilter
-      - RangeLtFilter.operator
   database.using_filters.range_lte:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeLte
-      - TableColumn.rangeLte
       - PostgrestFilterableExpression.rangeLte
-      - RangeLteFilter
-      - RangeLteFilter.operator
   database.using_filters.range_adjacent:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.rangeAdjacent
-      - TableColumn.rangeAdjacent
       - PostgrestFilterableExpression.rangeAdjacent
-      - RangeAdjacentFilter
-      - RangeAdjacentFilter.operator
   database.using_filters.text_search:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.textSearch
-      - TextTableColumnFilters.textSearch
       - PostgrestFilterableExpression.textSearch
-      - TextSearchFilter
-      - TextSearchFilter.column
-      - TextSearchFilter.config
-      - TextSearchFilter.operator
-      - TextSearchFilter.query
-      - TextSearchFilter.type
-      - TextSearchFilter.value
     supporting_symbols:
       - TextSearchType
   database.using_filters.regex:
@@ -1135,29 +1019,19 @@ features:
     symbols:
       - PostgrestFilterBuilder.matchRegex
       - SupabaseStreamFilterBuilder.matchRegex
-      - TextTableColumnFilters.matchRegex
       - PostgrestTextFilters.matchRegex
-      - MatchRegexFilter
-      - MatchRegexFilter.operator
   database.using_filters.regex_icase:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.imatchRegex
       - SupabaseStreamFilterBuilder.imatchRegex
-      - TextTableColumnFilters.imatchRegex
       - PostgrestTextFilters.imatchRegex
-      - ImatchRegexFilter
-      - ImatchRegexFilter.operator
   database.using_filters.raw:
     status: implemented
     symbols:
       - PostgrestFilterBuilder.filter
       - PostgrestTypedFilterBuilder
       - PostgrestTypedFilterBuilder.where
-      - ColumnFilter
-      - ColumnFilter.column
-      - ColumnFilter.operator
-      - ColumnFilter.value
       - PostgrestFilter
       - PostgrestFilter.raw
       - PostgrestFilter.&
@@ -2091,6 +1965,11 @@ features:
       - PostgresChangeFilter.negate
       - PostgresChangeFilterType.token
       - SupabaseTypedStreamFilterBuilder.filter
+      - PostgrestFilter.comparison
+      - PostgrestComparison
+      - PostgrestComparison.column
+      - PostgrestComparison.operator
+      - PostgrestComparison.value
     supporting_symbols:
       - PostgresChangeFilter
       - PostgresChangeFilter.PostgresChangeFilter
