@@ -60,8 +60,63 @@ sealed class PostgrestColumnExpression<Row, Value extends Object> {
   /// chain [jsonText] or [cast] to reach a scalar.
   PostgrestColumnExpression<Row, Value> jsonObject(String path);
 
+  /// The sum of this expression across the group, typed [double] whatever
+  /// the column's type. Past 2^53 the value rounds silently.
+  ///
+  /// {@template postgrest_aggregate}
+  /// Select position only: PostgREST has no `HAVING` and rejects an aggregate
+  /// in `order`. Selecting a plain column alongside an aggregate groups by
+  /// it. Needs PostgREST's `db-aggregates-enabled` setting, which is on for
+  /// hosted Supabase. The response is keyed by the function name alone, so
+  /// two aggregates of the same function in one `select` collide. `sum`,
+  /// `avg`, `min` and `max` are `null` when no row matches; the type
+  /// parameter describes a present value.
+  /// {@endtemplate}
+  PostgrestDerivedExpression<Row, double> sum() =>
+      _derive(_AggregateFunction.sum.suffix);
+
+  /// The mean of this expression across the group.
+  ///
+  /// {@macro postgrest_aggregate}
+  PostgrestDerivedExpression<Row, double> avg() =>
+      _derive(_AggregateFunction.avg.suffix);
+
+  /// The smallest value of this expression in the group, keeping the
+  /// expression's own type.
+  ///
+  /// {@macro postgrest_aggregate}
+  PostgrestDerivedExpression<Row, Value> min() =>
+      _derive(_AggregateFunction.min.suffix);
+
+  /// The largest value of this expression in the group, keeping the
+  /// expression's own type.
+  ///
+  /// {@macro postgrest_aggregate}
+  PostgrestDerivedExpression<Row, Value> max() =>
+      _derive(_AggregateFunction.max.suffix);
+
+  /// How many non-null values of this expression are in the group.
+  ///
+  /// Use [PostgrestDerivedExpression.countAll] to count rows instead.
+  ///
+  /// {@macro postgrest_aggregate}
+  PostgrestDerivedExpression<Row, int> count() =>
+      _derive(_AggregateFunction.count.suffix);
+
   @override
   String toString() => expression;
+}
+
+/// The aggregate functions PostgREST applies to a `select` list entry.
+enum _AggregateFunction {
+  sum,
+  avg,
+  min,
+  max,
+  count;
+
+  /// The call appended to the expression, `.sum()`.
+  String get suffix => '.$name()';
 }
 
 /// A column expression that can also sit on the left of a filter operator.

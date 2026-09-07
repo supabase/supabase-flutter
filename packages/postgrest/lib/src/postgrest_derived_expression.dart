@@ -28,8 +28,8 @@ final class PostgrestCastTarget<Value extends Object> {
   final String sqlType;
 }
 
-/// A cast or an aggregate applied to another expression: select position
-/// only, whatever it was applied to.
+/// A cast or an aggregate applied to another expression, or [countAll]:
+/// select position only, whatever it was applied to.
 ///
 /// PostgREST drops a cast from a filter, has no `HAVING` for an aggregate and
 /// rejects both in `order`. A JSON path chained onto one stays select-only,
@@ -47,6 +47,18 @@ final class PostgrestDerivedExpression<Row, Value extends Object>
 
   final String? _embed;
   final String _inner;
+
+  /// `count()`, which counts rows rather than the values of a column.
+  ///
+  /// ```dart
+  /// final rows = await client
+  ///     .table(Orders.table)
+  ///     .select([PostgrestDerivedExpression.countAll()]); // select=count()
+  /// ```
+  ///
+  /// {@macro postgrest_aggregate}
+  static PostgrestDerivedExpression<Row, int> countAll<Row>() =>
+      const PostgrestDerivedExpression._(embed: null, inner: 'count()');
 
   @override
   String get expression => switch (_embed) {
