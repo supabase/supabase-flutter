@@ -12,7 +12,7 @@ class AuthMFAEnrollResponse {
 
   factory AuthMFAEnrollResponse.fromJson(Map<String, dynamic> json) {
     final type = FactorType.values.firstWhere(
-      (e) => e.name == json['type'],
+      (e) => e.snakeCase == json['type'],
       orElse: () => FactorType.unknown,
     );
     return AuthMFAEnrollResponse(
@@ -196,6 +196,7 @@ class AuthMFAListFactorsResponse {
     required this.totp,
     required this.phone,
     this.webauthn = const [],
+    this.recoveryCode = const [],
   });
 
   /// Every MFA factor enabled for the user, of any status.
@@ -209,6 +210,90 @@ class AuthMFAListFactorsResponse {
 
   /// The user's verified WebAuthn factors.
   final List<Factor> webauthn;
+
+  /// The user's verified recovery codes factors.
+  ///
+  /// A user has at most one; see [AuthMFARecoveryCodesApi].
+  final List<Factor> recoveryCode;
+}
+
+/// The response of `AuthMFARecoveryCodesApi.getStatus`.
+///
+/// Never contains the codes themselves.
+class AuthMFARecoveryCodesStatusResponse {
+  const AuthMFARecoveryCodesStatusResponse({
+    required this.id,
+    required this.total,
+    required this.remaining,
+  });
+
+  factory AuthMFARecoveryCodesStatusResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return AuthMFARecoveryCodesStatusResponse(
+      id: json['id'] as String,
+      total: (json['total'] as num).toInt(),
+      remaining: (json['remaining'] as num).toInt(),
+    );
+  }
+
+  /// ID of the recovery codes factor, as it appears in [User.factors].
+  final String id;
+
+  /// Number of codes in the current set.
+  final int total;
+
+  /// Number of codes in the current set that have not been used yet. `0` when
+  /// every code has been consumed.
+  final int remaining;
+}
+
+/// The response of `AuthMFARecoveryCodesApi.generate` and
+/// `AuthMFARecoveryCodesApi.regenerate`.
+///
+/// The [codes] are returned exactly once and cannot be retrieved again.
+class AuthMFARecoveryCodesGenerateResponse {
+  const AuthMFARecoveryCodesGenerateResponse({
+    required this.id,
+    required this.friendlyName,
+    required this.total,
+    required this.codes,
+  });
+
+  factory AuthMFARecoveryCodesGenerateResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final codes = json['codes'];
+    if (codes is! List) {
+      throw FormatException(
+        'Expected codes to be a list, got ${codes.runtimeType}',
+        json.toString(),
+      );
+    }
+    return AuthMFARecoveryCodesGenerateResponse(
+      id: json['id'] as String,
+      friendlyName: json['friendly_name'] as String?,
+      total: (json['total'] as num).toInt(),
+      codes: codes.cast<String>(),
+    );
+  }
+
+  /// ID of the recovery codes factor.
+  final String id;
+
+  /// Friendly name of the recovery codes factor.
+  final String? friendlyName;
+
+  /// Number of codes in the set.
+  final int total;
+
+  /// The plaintext recovery codes in canonical form: lowercase, without
+  /// separators.
+  ///
+  /// They are returned exactly once and cannot be retrieved again. Show them
+  /// to the user in a copy or download friendly layout and ask them to store
+  /// the codes safely. Avoid logging them to the console.
+  final List<String> codes;
 }
 
 /// The response of `AuthAdminMFAApi.listFactors`.
@@ -270,6 +355,10 @@ enum FactorType {
   /// A WebAuthn security key or platform authenticator.
   webauthn,
 
+  /// A set of single-use recovery codes, managed through
+  /// [AuthMFARecoveryCodesApi] rather than [AuthMFAApi.enroll].
+  recoveryCode,
+
   /// Returned when the backend sends an unknown factor type.
   /// This allows forward compatibility with new factor types.
   unknown,
@@ -291,7 +380,7 @@ class Factor {
       id: json['id'] as String,
       friendlyName: json['friendly_name'] as String?,
       factorType: FactorType.values.firstWhere(
-        (e) => e.name == json['factor_type'],
+        (e) => e.snakeCase == json['factor_type'],
         orElse: () => FactorType.unknown,
       ),
       status: FactorStatus.values.firstWhere(
@@ -310,7 +399,8 @@ class Factor {
   /// factors.
   final String? friendlyName;
 
-  /// Type of factor. Supports `totp`, `phone` and `webauthn`.
+  /// Type of factor. Supports `totp`, `phone`, `webauthn` and
+  /// `recovery_code`.
   final FactorType factorType;
 
   /// Factor's status.
@@ -326,7 +416,7 @@ class Factor {
     return {
       'id': id,
       'friendly_name': friendlyName,
-      'factor_type': factorType.name,
+      'factor_type': factorType.snakeCase,
       'status': status.name,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -443,6 +533,9 @@ enum AuthenticationMethodReference {
 
   /// Verified an MFA WebAuthn factor.
   mfaWebauthn('mfa/webauthn'),
+
+  /// Verified an MFA recovery code.
+  mfaRecoveryCode('mfa/recovery_code'),
 
   /// Signed in with a passkey.
   passkey('passkey'),

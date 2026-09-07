@@ -3,11 +3,18 @@ part of 'auth_client.dart';
 /// API namespace for managing the signed-in user's MFA factors, exposed on
 /// `AuthClient.mfa`.
 class AuthMFAApi {
-  const AuthMFAApi({required AuthClient client, required AuthFetch fetch})
+  AuthMFAApi({required AuthClient client, required AuthFetch fetch})
     : _client = client,
-      _fetch = fetch;
+      _fetch = fetch,
+      recoveryCodes = AuthMFARecoveryCodesApi(client: client, fetch: fetch);
   final AuthClient _client;
   final AuthFetch _fetch;
+
+  /// Namespace for the MFA recovery codes API methods.
+  ///
+  /// {@macro auth_mfa_recovery_codes_api}
+  @experimental
+  final AuthMFARecoveryCodesApi recoveryCodes;
 
   /// Unenroll removes a MFA factor.
   ///
@@ -58,7 +65,7 @@ class AuthMFAApi {
 
     final body = <String, dynamic>{
       'friendly_name': friendlyName,
-      'factor_type': factorType.name,
+      'factor_type': factorType.snakeCase,
     };
 
     if (factorType == FactorType.totp) {
@@ -208,12 +215,20 @@ class AuthMFAApi {
               factor.status == FactorStatus.verified,
         )
         .toList();
+    final recoveryCode = factors
+        .where(
+          (factor) =>
+              factor.factorType == FactorType.recoveryCode &&
+              factor.status == FactorStatus.verified,
+        )
+        .toList();
 
     return AuthMFAListFactorsResponse(
       all: factors,
       totp: totp,
       phone: phone,
       webauthn: webauthn,
+      recoveryCode: recoveryCode,
     );
   }
 

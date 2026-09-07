@@ -246,6 +246,22 @@ enum ErrorCode {
   /// Verifying a WebAuthn MFA factor is disabled for this project.
   mfaWebauthnVerifyDisabled('mfa_webauthn_verify_not_enabled'),
 
+  /// Generating MFA recovery codes is disabled for this project.
+  mfaRecoveryCodesEnrollDisabled('mfa_recovery_codes_enroll_not_enabled'),
+
+  /// Verifying MFA recovery codes is disabled for this project.
+  mfaRecoveryCodesVerifyDisabled('mfa_recovery_codes_verify_not_enabled'),
+
+  /// Recovery code verification is temporarily locked after too many failed
+  /// attempts.
+  mfaRecoveryCodesLocked('mfa_recovery_codes_locked'),
+
+  /// Recovery codes cannot be the user's only MFA factor.
+  mfaRecoveryCodesSoleFactor('mfa_recovery_codes_sole_factor'),
+
+  /// The user already has a verified factor of this type.
+  mfaVerifiedFactorExists('mfa_verified_factor_exists'),
+
   /// Passkeys are disabled for this project.
   passkeyDisabled('passkey_disabled'),
 

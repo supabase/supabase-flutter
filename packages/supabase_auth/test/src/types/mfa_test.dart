@@ -21,6 +21,13 @@ void main() {
       expect(factor.status, FactorStatus.verified);
     });
 
+    test('fromJson parses recovery_code factor type', () {
+      final factor = Factor.fromJson(factorJson('recovery_code'));
+
+      expect(factor.factorType, FactorType.recoveryCode);
+      expect(factor.toJson()['factor_type'], 'recovery_code');
+    });
+
     test('fromJson falls back to unknown for unrecognized factor types', () {
       final factor = Factor.fromJson(factorJson('something-new'));
 
@@ -29,6 +36,15 @@ void main() {
   });
 
   group('AuthenticationMethodReferenceEntry', () {
+    test('fromJson parses mfa/recovery_code method', () {
+      final entry = AuthenticationMethodReferenceEntry.fromJson({
+        'method': 'mfa/recovery_code',
+        'timestamp': 1735689600,
+      });
+
+      expect(entry.method, AuthenticationMethodReference.mfaRecoveryCode);
+    });
+
     test('fromJson parses passkey method', () {
       final entry = AuthenticationMethodReferenceEntry.fromJson({
         'method': 'passkey',
