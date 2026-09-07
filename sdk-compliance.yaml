@@ -917,6 +917,8 @@ features:
       - SupabaseStreamFilterBuilder.like
       - TextTableColumnFilters
       - TextTableColumnFilters.like
+      - PostgrestTextFilters
+      - PostgrestTextFilters.like
       - PatternFilter
       - PatternFilter.column
       - PatternFilter.pattern
@@ -928,6 +930,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.likeAllOf
       - TextTableColumnFilters.likeAllOf
+      - PostgrestTextFilters.likeAllOf
       - PatternListFilter
       - PatternListFilter.column
       - PatternListFilter.patterns
@@ -939,6 +942,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.likeAnyOf
       - TextTableColumnFilters.likeAnyOf
+      - PostgrestTextFilters.likeAnyOf
       - LikeAnyOfFilter
       - LikeAnyOfFilter.operator
   database.using_filters.ilike:
@@ -947,6 +951,7 @@ features:
       - PostgrestFilterBuilder.ilike
       - SupabaseStreamFilterBuilder.ilike
       - TextTableColumnFilters.ilike
+      - PostgrestTextFilters.ilike
       - IlikeFilter
       - IlikeFilter.operator
   database.using_filters.ilike_all:
@@ -954,6 +959,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.ilikeAllOf
       - TextTableColumnFilters.ilikeAllOf
+      - PostgrestTextFilters.ilikeAllOf
       - IlikeAllOfFilter
       - IlikeAllOfFilter.operator
   database.using_filters.ilike_any:
@@ -961,6 +967,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.ilikeAnyOf
       - TextTableColumnFilters.ilikeAnyOf
+      - PostgrestTextFilters.ilikeAnyOf
       - IlikeAnyOfFilter
       - IlikeAnyOfFilter.operator
   database.using_filters.is:
@@ -996,6 +1003,7 @@ features:
       - PostgrestFilterBuilder.inFilter
       - SupabaseStreamFilterBuilder.inFilter
       - TableColumn.inFilter
+      - PostgrestFilterableExpression.inFilter
       - InListFilter
       - InListFilter.column
       - InListFilter.operator
@@ -1003,14 +1011,20 @@ features:
       - InListFilter.values
   database.using_filters.not_in:
     status: implemented
+    note: "The column-expression surface has no dedicated notIn: negation is `not()` on the filter tree, so `Books.id.inFilter([1, 2]).not()` renders `id=not.in.(1,2)`."
     symbols:
       - PostgrestFilterBuilder.notInFilter
       - PostgrestFilterBuilder.not
   database.using_filters.contains:
     status: implemented
+    note: "The operand literal is chosen by the column's Postgres type, not by the operator: `cs.{a,b}` for an array, `cs.[1,3)` for a range, `cs.{\"a\":1}` for jsonb. The column-expression surface spells the three as separate methods so each takes the operand shape it needs; the string builder takes one list, string or map argument."
     symbols:
       - PostgrestFilterBuilder.contains
       - TableColumn.contains
+      - PostgrestArrayFilters
+      - PostgrestArrayFilters.contains
+      - PostgrestFilterableExpression.containsRange
+      - PostgrestFilterableExpression.containsJson
       - ContainmentFilter
       - ContainmentFilter.column
       - ContainmentFilter.value
@@ -1021,6 +1035,9 @@ features:
     symbols:
       - PostgrestFilterBuilder.containedBy
       - TableColumn.containedBy
+      - PostgrestArrayFilters.containedBy
+      - PostgrestFilterableExpression.containedByRange
+      - PostgrestFilterableExpression.containedByJson
       - ContainedByFilter
       - ContainedByFilter.operator
   database.using_filters.overlaps:
@@ -1028,6 +1045,8 @@ features:
     symbols:
       - PostgrestFilterBuilder.overlaps
       - TableColumn.overlaps
+      - PostgrestArrayFilters.overlaps
+      - PostgrestFilterableExpression.overlapsRange
       - OverlapsFilter
       - OverlapsFilter.operator
   database.using_filters.match:
@@ -1057,6 +1076,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.rangeGt
       - TableColumn.rangeGt
+      - PostgrestFilterableExpression.rangeGt
       - RangeFilter
       - RangeFilter.column
       - RangeFilter.range
@@ -1068,6 +1088,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.rangeGte
       - TableColumn.rangeGte
+      - PostgrestFilterableExpression.rangeGte
       - RangeGteFilter
       - RangeGteFilter.operator
   database.using_filters.range_lt:
@@ -1075,6 +1096,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.rangeLt
       - TableColumn.rangeLt
+      - PostgrestFilterableExpression.rangeLt
       - RangeLtFilter
       - RangeLtFilter.operator
   database.using_filters.range_lte:
@@ -1082,6 +1104,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.rangeLte
       - TableColumn.rangeLte
+      - PostgrestFilterableExpression.rangeLte
       - RangeLteFilter
       - RangeLteFilter.operator
   database.using_filters.range_adjacent:
@@ -1089,6 +1112,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.rangeAdjacent
       - TableColumn.rangeAdjacent
+      - PostgrestFilterableExpression.rangeAdjacent
       - RangeAdjacentFilter
       - RangeAdjacentFilter.operator
   database.using_filters.text_search:
@@ -1096,6 +1120,7 @@ features:
     symbols:
       - PostgrestFilterBuilder.textSearch
       - TextTableColumnFilters.textSearch
+      - PostgrestFilterableExpression.textSearch
       - TextSearchFilter
       - TextSearchFilter.column
       - TextSearchFilter.config
@@ -1111,6 +1136,7 @@ features:
       - PostgrestFilterBuilder.matchRegex
       - SupabaseStreamFilterBuilder.matchRegex
       - TextTableColumnFilters.matchRegex
+      - PostgrestTextFilters.matchRegex
       - MatchRegexFilter
       - MatchRegexFilter.operator
   database.using_filters.regex_icase:
@@ -1119,6 +1145,7 @@ features:
       - PostgrestFilterBuilder.imatchRegex
       - SupabaseStreamFilterBuilder.imatchRegex
       - TextTableColumnFilters.imatchRegex
+      - PostgrestTextFilters.imatchRegex
       - ImatchRegexFilter
       - ImatchRegexFilter.operator
   database.using_filters.raw:
