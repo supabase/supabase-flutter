@@ -21,6 +21,45 @@ sealed class PostgrestColumnExpression<Row, Value extends Object> {
   /// operator.
   String get expression;
 
+  /// Applies [derivation] where PostgREST expects it: appended, or inside an
+  /// embedded projection's parentheses.
+  PostgrestDerivedExpression<Row, Derived> _derive<Derived extends Object>(
+    String derivation,
+  ) => PostgrestDerivedExpression._(
+    embed: null,
+    inner: '$expression$derivation',
+  );
+
+  /// Casts this expression to another Postgres type, `cost::text`.
+  ///
+  /// Select position only: PostgREST drops a cast from a filter, so
+  /// `cost::text=eq.10` compares the uncast column, and rejects one in
+  /// `order`. Make it the last step in a chain, since PostgREST applies only
+  /// the first of two casts and rejects a JSON path on a cast.
+  PostgrestDerivedExpression<Row, Target> cast<Target extends Object>(
+    PostgrestCastTarget<Target> target,
+  ) => _derive('::${target.sqlType}');
+
+  /// Reads a `json`/`jsonb` path as text, with `->>`.
+  ///
+  /// ```dart
+  /// .where(Items.data.jsonText('name').eq('Ada')) // data->>name=eq.Ada
+  /// ```
+  ///
+  /// Comparison is textual, so `data->>n=gt.2` excludes a row where `n` is
+  /// `10`; use [jsonObject] for numeric comparison. The result keeps the
+  /// positions of what it was applied to.
+  PostgrestColumnExpression<Row, String> jsonText(String path);
+
+  /// Reads a `json`/`jsonb` path as JSON, with `->`.
+  ///
+  /// Comparison is numeric for numbers, so `data->n=gt.2` includes a row
+  /// where `n` is `10`.
+  ///
+  /// The result keeps this expression's [Value], but `->` returns `jsonb`;
+  /// chain [jsonText] or [cast] to reach a scalar.
+  PostgrestColumnExpression<Row, Value> jsonObject(String path);
+
   @override
   String toString() => expression;
 }
@@ -301,6 +340,14 @@ final class PostgrestColumn<Row, Value extends Object>
   @override
   // ignore: match-getter-setter-field-names
   String get expression => name;
+
+  @override
+  PostgrestJsonPath<Row, String> jsonText(String path) =>
+      PostgrestJsonPath._('$name->>$path');
+
+  @override
+  PostgrestJsonPath<Row, Value> jsonObject(String path) =>
+      PostgrestJsonPath._('$name->$path');
 }
 
 /// A stored column the database allows to be `NULL`.

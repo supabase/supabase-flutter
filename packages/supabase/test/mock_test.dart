@@ -913,6 +913,16 @@ void main() {
       );
     });
 
+    test('a JSON path filter throws', () {
+      unawaited(handleRequests(mockServer));
+      final stream = supabase.table(Todos.table).stream(primaryKey: [Todos.id]);
+
+      expect(
+        () => stream.filter(Todos.task.jsonText('k').eq('x')),
+        throwsArgumentError,
+      );
+    });
+
     test('a composed filter throws', () {
       unawaited(handleRequests(mockServer));
       final stream = supabase.table(Todos.table).stream(primaryKey: [Todos.id]);
