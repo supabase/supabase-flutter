@@ -216,3 +216,25 @@ await Supabase.initialize(
   in the same pull request, under the major version it will ship in
 - Line length limit is 80 characters
 - Use `dart format` for consistent formatting
+
+### Adding a new public API
+
+Every exported public symbol must be declared in `sdk-compliance.yaml` at the
+repo root, or the "SDK Compliance" CI check fails. If the capability already
+exists in the [SDK capability matrix](https://github.com/supabase/sdk)
+(`capabilities/<area>.yaml` there), just register your symbols. If it doesn't
+exist yet, open a PR on that repo first to declare it; once it's merged and
+released, bump the pinned SHA in
+[`.github/workflows/validate-capabilities.yml`](.github/workflows/validate-capabilities.yml)
+to the new `capability-matrix-vX.Y.Z` tag, then register the symbols here,
+entry points under `symbols`, everything else (params, response types, etc.)
+under `supporting_symbols`:
+
+```yaml
+auth.mfa_recovery_codes.generate:
+  status: implemented
+  symbols:
+    - AuthClient.generateMfaRecoveryCodes
+  supporting_symbols:
+    - MFARecoveryCodesGenerateResponse
+```
