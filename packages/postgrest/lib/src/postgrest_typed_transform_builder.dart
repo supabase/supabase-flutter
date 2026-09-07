@@ -25,30 +25,32 @@ class PostgrestTypedTransformBuilder<Row, T> extends PostgrestTypedBuilder<T> {
   /// final List<Book> books =
   ///     await client.table(Books.table).insert({'title': 'foo'}).select();
   /// ```
+  ///
+  /// See [PostgrestTypedQueryBuilder.select] for [columns].
   PostgrestTypedTransformBuilder<Row, List<Row>> select([
-    String columns = '*',
+    List<PostgrestColumnExpression<Row, Object>>? columns,
   ]) => PostgrestTypedTransformBuilder._(
-    _transformBuilder.select(columns),
+    _transformBuilder.select(_selectList(columns)),
     _table,
     (data) => _rowsFromJson(_table, data),
   );
 
-  /// Orders the result with the specified [column].
+  /// Sorts the result by [ordering].
   ///
-  /// See [PostgrestTransformBuilder.order] for [ascending], [nullsFirst] and
-  /// [referencedTable].
+  /// The direction is spelled on the column, the same way an operator is, and
+  /// only what was asked for is sent:
+  ///
+  /// ```dart
+  /// .order(Books.title)                       // order=title
+  /// .order(Books.priority.desc())             // order=priority.desc
+  /// .order(Books.dueDate.asc().nullsFirst())  // order=due_date.asc.nullsfirst
+  /// ```
+  ///
+  /// Repeated calls append, so the second key breaks ties in the first.
   PostgrestTypedTransformBuilder<Row, T> order(
-    TableColumn<Object> column, {
-    bool ascending = true,
-    bool nullsFirst = false,
-    String? referencedTable,
-  }) => PostgrestTypedTransformBuilder._(
-    _transformBuilder.order(
-      column.name,
-      ascending: ascending,
-      nullsFirst: nullsFirst,
-      referencedTable: referencedTable,
-    ),
+    PostgrestOrdering<Row> ordering,
+  ) => PostgrestTypedTransformBuilder._(
+    _transformBuilder.appendOrderKey(ordering.orderKey),
     _table,
     _convert,
   );

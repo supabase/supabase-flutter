@@ -47,8 +47,12 @@ class AuthorStats {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('author_stats', AuthorStatsRow.new);
 
-  static const authorId = TableColumn<int>('author_id');
-  static const bookCount = TableColumn<int>('book_count');
+  static const authorId = PostgrestNullableColumn<AuthorStatsRow, int>(
+    'author_id',
+  );
+  static const bookCount = PostgrestNullableColumn<AuthorStatsRow, int>(
+    'book_count',
+  );
 }
 
 /// A row of the `authors` table.
@@ -83,8 +87,8 @@ class Authors {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('authors', AuthorsRow.new);
 
-  static const id = TableColumn<int>('id');
-  static const name = TableColumn<String>('name');
+  static const id = PostgrestColumn<AuthorsRow, int>('id');
+  static const name = PostgrestColumn<AuthorsRow, String>('name');
 }
 
 /// A row of the `book_prices` table.
@@ -150,10 +154,12 @@ class BookPrices {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('book_prices', BookPricesRow.new);
 
-  static const discountedPrice = TableColumn<num>('discounted_price');
-  static const id = TableColumn<int>('id');
-  static const price = TableColumn<num>('price');
-  static const title = TableColumn<String>('title');
+  static const discountedPrice = PostgrestNullableColumn<BookPricesRow, num>(
+    'discounted_price',
+  );
+  static const id = PostgrestNullableColumn<BookPricesRow, int>('id');
+  static const price = PostgrestNullableColumn<BookPricesRow, num>('price');
+  static const title = PostgrestNullableColumn<BookPricesRow, String>('title');
 }
 
 /// A row of the `book_submissions` table.
@@ -173,8 +179,12 @@ class BookSubmissions {
     BookSubmissionsRow.new,
   );
 
-  static const authorName = TableColumn<String>('author_name');
-  static const title = TableColumn<String>('title');
+  static const authorName = PostgrestNullableColumn<BookSubmissionsRow, String>(
+    'author_name',
+  );
+  static const title = PostgrestNullableColumn<BookSubmissionsRow, String>(
+    'title',
+  );
 }
 
 /// A row of the `book_summaries` table.
@@ -193,9 +203,13 @@ class BookSummaries {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('book_summaries', BookSummariesRow.new);
 
-  static const authorName = TableColumn<String>('author_name');
-  static const id = TableColumn<int>('id');
-  static const title = TableColumn<String>('title');
+  static const authorName = PostgrestNullableColumn<BookSummariesRow, String>(
+    'author_name',
+  );
+  static const id = PostgrestNullableColumn<BookSummariesRow, int>('id');
+  static const title = PostgrestNullableColumn<BookSummariesRow, String>(
+    'title',
+  );
 }
 
 /// A row of the `books` table.
@@ -402,20 +416,28 @@ class Books {
   /// Table definition for [PostgrestClient.table].
   static const table = PostgrestTable('books', BooksRow.new);
 
-  static const authorId = TableColumn<int>('author_id');
-  static const coverUuid = TableColumn<String>('cover_uuid');
-  static const createdAt = TableColumn<DateTime>('created_at');
-  static const id = TableColumn<int>('id');
-  static const inPrint = TableColumn<bool>('in_print');
-  static const metadata = TableColumn<Object>('metadata');
-  static const mood = TableColumn<Mood>('mood');
-  static const pageCounts = TableColumn<List<int>>('page_counts');
-  static const price = TableColumn<num>('price');
-  static const publishedOn = TableColumn<DateTime>('published_on');
-  static const rating = TableColumn<double>('rating');
-  static const tags = TableColumn<List<String>>('tags');
-  static const title = TableColumn<String>('title');
-  static const updatedAt = TableColumn<DateTime>('updated_at');
+  static const authorId = PostgrestColumn<BooksRow, int>('author_id');
+  static const coverUuid = PostgrestNullableColumn<BooksRow, String>(
+    'cover_uuid',
+  );
+  static const createdAt = PostgrestColumn<BooksRow, DateTime>('created_at');
+  static const id = PostgrestColumn<BooksRow, int>('id');
+  static const inPrint = PostgrestColumn<BooksRow, bool>('in_print');
+  static const metadata = PostgrestNullableColumn<BooksRow, Object>('metadata');
+  static const mood = PostgrestNullableColumn<BooksRow, Mood>('mood');
+  static const pageCounts = PostgrestNullableColumn<BooksRow, List<int>>(
+    'page_counts',
+  );
+  static const price = PostgrestNullableColumn<BooksRow, num>('price');
+  static const publishedOn = PostgrestNullableColumn<BooksRow, DateTime>(
+    'published_on',
+  );
+  static const rating = PostgrestNullableColumn<BooksRow, double>('rating');
+  static const tags = PostgrestNullableColumn<BooksRow, List<String>>('tags');
+  static const title = PostgrestColumn<BooksRow, String>('title');
+  static const updatedAt = PostgrestNullableColumn<BooksRow, DateTime>(
+    'updated_at',
+  );
 }
 
 String _dateString(DateTime date) =>

@@ -8,8 +8,9 @@ For every table the generator emits:
 - a zero-cost row extension type over the decoded JSON map with typed getters,
 - `Insert` and `Update` value types that enforce required columns at the
   construction site,
-- a `PostgrestTable` definition and `TableColumn` tokens for compile-time
-  checked filters,
+- a `PostgrestTable` definition and `PostgrestColumn` tokens for compile-time
+  checked filters and orderings, with nullable columns as
+  `PostgrestNullableColumn` so `isNull()` only exists where it can match,
 - Dart enums for Postgres enums, with wire-name mapping.
 
 ## Usage
@@ -40,7 +41,7 @@ generate from whatever that database currently contains.
 
 Use `--schema` to generate for a schema other than `public`, and `--import`
 to change which library the generated file imports `PostgrestTable` and
-`TableColumn` from.
+`PostgrestColumn` from.
 
 The metadata comes from the database catalog, so nullability, database
 defaults, and identity columns are exact: a `NOT NULL` column with a default
@@ -52,8 +53,8 @@ columns appear in the row type but not in the insert and update types.
 ```dart
 final books = await client.table(Books.table)
     .select()
-    .where(Books.mood.eq(Mood.happy))
-    .order(Books.createdAt, ascending: false); // List<BooksRow>
+    .where(Books.mood.eq(Mood.happy) & Books.publishedOn.isNull().not())
+    .order(Books.createdAt.desc()); // List<BooksRow>
 
 await client.table(Books.table).insert(
   BooksInsert(title: 'A typed row', tags: ['dart']),

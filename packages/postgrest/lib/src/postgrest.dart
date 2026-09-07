@@ -125,7 +125,7 @@ class PostgrestClient {
   ///
   /// Unlike [from], results are converted into the row type of [table]
   /// instead of raw `Map<String, dynamic>` data, and filters are built from
-  /// [TableColumn]s, which makes them compile-time checked.
+  /// [PostgrestColumn]s, which makes them compile-time checked.
   ///
   /// ```dart
   /// final List<Book> books = await client

@@ -2,8 +2,8 @@ part of 'postgrest_typed_builder.dart';
 
 /// The typed counterpart of [PostgrestFilterBuilder].
 ///
-/// Filters are built from [TableColumn]s and applied with [where], which
-/// checks the value type of each filter against its column at compile time.
+/// Filters are built from [PostgrestColumn]s and applied with [where]; the
+/// value type and the table of each filter are checked at compile time.
 @experimental
 class PostgrestTypedFilterBuilder<Row, T>
     extends PostgrestTypedTransformBuilder<Row, T> {
@@ -18,21 +18,34 @@ class PostgrestTypedFilterBuilder<Row, T>
 
   /// Only rows satisfying [filter].
   ///
-  /// Chain multiple [where] calls to combine filters with logical AND.
+  /// Operators are methods on a column, composed with `&`, `|` and
+  /// [PostgrestFilter.not]:
   ///
   /// ```dart
   /// final List<Book> books = await client
   ///     .table(Books.table)
   ///     .select()
-  ///     .where(Books.id.gt(10))
-  ///     .where(Books.title.like('%Dart%'));
+  ///     .where(
+  ///       (Books.isDone.eq(false) & Books.priority.gt(3)) | Books.id.eq(7),
+  ///     );
   /// ```
-  PostgrestTypedFilterBuilder<Row, T> where(ColumnFilter filter) =>
-      PostgrestTypedFilterBuilder._(
-        filter._apply(_filterBuilder),
-        _table,
-        _convert,
-      );
+  ///
+  /// A filter is a value, so it can be assembled conditionally:
+  ///
+  /// ```dart
+  /// var filter = Books.isDone.eq(false);
+  /// if (priority != null) filter = filter & Books.priority.gte(priority);
+  /// client.table(Books.table).select().where(filter);
+  /// ```
+  ///
+  /// Repeated [where] calls combine with logical AND.
+  PostgrestTypedFilterBuilder<Row, T> where(PostgrestFilter<Row> filter) {
+    var builder = _filterBuilder;
+    for (final parameter in filter.queryParameters) {
+      builder = builder.appendSearchParameter(parameter.key, parameter.value);
+    }
+    return PostgrestTypedFilterBuilder._(builder, _table, _convert);
+  }
 
   /// Only rows satisfying at least one of the [filters].
   ///

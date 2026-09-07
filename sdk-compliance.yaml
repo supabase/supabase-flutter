@@ -1174,6 +1174,18 @@ features:
       - SupabaseStreamBuilder.order
       - PostgrestTypedTransformBuilder.order
       - SupabaseTypedStreamBuilder.order
+      - PostgrestOrderableExpression.asc
+      - PostgrestOrderableExpression.desc
+      - PostgrestOrderableExpression.nullsFirst
+      - PostgrestOrderableExpression.nullsLast
+      - PostgrestOrderableExpression.orderKey
+    supporting_symbols:
+      - PostgrestOrdering
+      - PostgrestOrdering.orderKey
+      - PostgrestOrdering.asc
+      - PostgrestOrdering.desc
+      - PostgrestOrdering.nullsFirst
+      - PostgrestOrdering.nullsLast
   database.using_modifiers.limit:
     status: implemented
     symbols:
