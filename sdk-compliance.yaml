@@ -1123,8 +1123,24 @@ features:
       - PostgrestTransformBuilder.geojson
   database.using_modifiers.relationship_embed:
     status: implemented
+    note: "Two spellings. The string builder takes query-string syntax in select(), for example `author(*)`. The column-expression surface declares a relation once on the table's namespace class as a PostgrestToOneRelation or PostgrestToManyRelation and projects a column through it, `Books.author(Authors.name)`, which is compile-time checked in select position and, for the to-one direction only, in order position (a to-many order key is PGRST118 on the server). Filtering inside an embed is not on the typed surface; embeddedFilterName is the form it will use."
     symbols:
       - PostgrestTransformBuilder.select
+      - PostgrestToOneRelation.call
+      - PostgrestToManyRelation.call
+    supporting_symbols:
+      - PostgrestToOneRelation
+      - PostgrestToOneRelation.PostgrestToOneRelation
+      - PostgrestToOneRelation.name
+      - PostgrestToManyRelation
+      - PostgrestToManyRelation.PostgrestToManyRelation
+      - PostgrestToManyRelation.name
+      - PostgrestToOneColumn
+      - PostgrestToOneColumn.jsonText
+      - PostgrestToOneColumn.jsonObject
+      - PostgrestToManyColumn
+      - PostgrestToManyColumn.jsonText
+      - PostgrestToManyColumn.jsonObject
   database.using_modifiers.explain:
     status: implemented
     symbols:

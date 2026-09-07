@@ -27,11 +27,22 @@ class Books {
   static const publishedOn = PostgrestNullableColumn<Book, DateTime>(
     'published_on',
   );
+  static const author = PostgrestToOneRelation<Book, Author>('author');
 }
 
 class Authors {
   static const table = PostgrestTable('authors', Author.new);
   static const id = PostgrestColumn<Author, int>('id');
+  static const name = PostgrestColumn<Author, String>('name');
+  static const books = PostgrestToManyRelation<Author, Book>('books');
+}
+
+class BookClass {
+  const BookClass();
+}
+
+class AuthorClass {
+  const AuthorClass();
 }
 
 class MockHttpClient extends BaseClient {
@@ -113,6 +124,25 @@ void main() {
       ]);
 
       expect(requestParameters()['select'], 'count(),title.max()');
+    });
+
+    test('selects and orders by embedded columns', () async {
+      httpClient.responseBody = '[{"id":1,"author":{"name":"a"}}]';
+
+      await client
+          .table(Books.table)
+          .select([Books.id, Books.author(Authors.name)])
+          .order(Books.author(Authors.name).desc());
+
+      expect(requestParameters()['select'], 'id,author(name)');
+      expect(requestParameters()['order'], 'author(name).desc');
+
+      await client.table(Authors.table).select([
+        Authors.id,
+        Authors.books(Books.id).count(),
+      ]);
+
+      expect(requestParameters()['select'], 'id,books(id.count())');
     });
 
     test('an empty column list throws', () {
@@ -313,11 +343,13 @@ void main() {
     });
 
     test('a filter carries the row type of its table', () {
-      // `client.table(Books.table).select().where(Authors.id.eq(1))` is a
-      // compile error: the filter is a PostgrestFilter<Author>. The static
-      // types are what the check rests on.
-      expect(Books.id.eq(1), isA<PostgrestFilter<Book>>());
-      expect(Authors.id.eq(1), isA<PostgrestFilter<Author>>());
+      // Book and Author are extension types and erased at runtime, so the
+      // check uses class row types.
+      const id = PostgrestColumn<BookClass, int>('id');
+      final Object filter = id.eq(1);
+
+      expect(filter, isA<PostgrestFilter<BookClass>>());
+      expect(filter, isNot(isA<PostgrestFilter<AuthorClass>>()));
     });
   });
 
