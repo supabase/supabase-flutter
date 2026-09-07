@@ -346,6 +346,7 @@ features:
       - AuthMFAListFactorsResponse.AuthMFAListFactorsResponse
       - AuthMFAListFactorsResponse.all
       - AuthMFAListFactorsResponse.phone
+      - AuthMFAListFactorsResponse.recoveryCode
       - AuthMFAListFactorsResponse.totp
       - AuthMFAListFactorsResponse.webauthn
   auth.mfa.get_authenticator_assurance_level:
@@ -367,6 +368,46 @@ features:
       - AuthMFAGetAuthenticatorAssuranceLevelResponse.currentAuthenticationMethods
       - AuthMFAGetAuthenticatorAssuranceLevelResponse.currentLevel
       - AuthMFAGetAuthenticatorAssuranceLevelResponse.nextLevel
+
+  # auth — MFA recovery codes
+  auth.mfa_recovery_codes.get_status:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.getStatus
+    supporting_symbols:
+      - AuthMFAApi.recoveryCodes
+      - AuthMFARecoveryCodesApi
+      - AuthMFARecoveryCodesApi.AuthMFARecoveryCodesApi
+      - AuthMFARecoveryCodesStatusResponse
+      - AuthMFARecoveryCodesStatusResponse.AuthMFARecoveryCodesStatusResponse
+      - AuthMFARecoveryCodesStatusResponse.fromJson
+      - AuthMFARecoveryCodesStatusResponse.id
+      - AuthMFARecoveryCodesStatusResponse.remaining
+      - AuthMFARecoveryCodesStatusResponse.total
+  auth.mfa_recovery_codes.generate:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.generate
+    supporting_symbols:
+      - AuthMFARecoveryCodesGenerateResponse
+      - AuthMFARecoveryCodesGenerateResponse.AuthMFARecoveryCodesGenerateResponse
+      - AuthMFARecoveryCodesGenerateResponse.codes
+      - AuthMFARecoveryCodesGenerateResponse.friendlyName
+      - AuthMFARecoveryCodesGenerateResponse.fromJson
+      - AuthMFARecoveryCodesGenerateResponse.id
+      - AuthMFARecoveryCodesGenerateResponse.total
+  auth.mfa_recovery_codes.verify:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.verify
+  auth.mfa_recovery_codes.regenerate:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.regenerate
+  auth.mfa_recovery_codes.unenroll:
+    status: implemented
+    symbols:
+      - AuthMFARecoveryCodesApi.unenroll
 
   # auth — passkeys (experimental)
   auth.passkey.register_passkey:
@@ -2397,6 +2438,8 @@ supporting_symbols:
   - Factor.updatedAt
   - FactorStatus
   - FactorType
+  - FactorType.FactorType
+  - FactorType.value
   - FlutterAuthClientOptions
   - FlutterAuthClientOptions.FlutterAuthClientOptions
   - FlutterAuthClientOptions.copyWith

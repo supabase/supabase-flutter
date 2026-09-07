@@ -21,6 +21,7 @@ import 'version.dart';
 
 part 'auth_oauth_api.dart';
 part 'auth_mfa_api.dart';
+part 'auth_mfa_recovery_codes_api.dart';
 part 'auth_passkey_api.dart';
 
 class _SessionState {
