@@ -1,276 +1,275 @@
 // All error codes from the Supabase Auth API. The whole list can be found here:
 // https://github.com/supabase/auth/blob/master/internal/api/errorcodes.go
 import 'package:collection/collection.dart';
+import 'package:supabase_common/supabase_common.dart';
 
 /// A machine-readable identifier for an [AuthApiException], returned by the
 /// Supabase Auth server as the `error_code` field.
 enum ErrorCode {
   /// An unexpected server failure, such as an internal error.
-  unexpectedFailure('unexpected_failure'),
+  unexpectedFailure,
 
   /// A request value failed validation.
-  validationFailed('validation_failed'),
+  validationFailed,
 
   /// The request body could not be parsed as JSON.
-  badJson('bad_json'),
+  badJson,
 
   /// The email address is already in use by another user.
-  emailExists('email_exists'),
+  emailExists,
 
   /// The phone number is already in use by another user.
-  phoneExists('phone_exists'),
+  phoneExists,
 
   /// The provided JWT could not be parsed or verified.
-  badJwt('bad_jwt'),
+  badJwt,
 
   /// The user does not have permission to perform an admin action.
-  notAdmin('not_admin'),
+  notAdmin,
 
   /// The request is missing a required `Authorization` header.
-  noAuthorization('no_authorization'),
+  noAuthorization,
 
   /// No user matches the given identifier.
-  userNotFound('user_not_found'),
+  userNotFound,
 
   /// The session does not exist or was already terminated.
-  sessionNotFound('session_not_found'),
+  sessionNotFound,
 
   /// The session has expired and must be refreshed.
-  sessionExpired('session_expired'),
+  sessionExpired,
 
   /// The request requires a session but none was provided.
-  sessionMissing('session_missing'),
+  sessionMissing,
 
   /// The PKCE or OAuth flow state does not exist or already completed.
-  flowStateNotFound('flow_state_not_found'),
+  flowStateNotFound,
 
   /// The PKCE or OAuth flow state has expired.
-  flowStateExpired('flow_state_expired'),
+  flowStateExpired,
 
   /// New user sign-ups are disabled for this project.
-  signupDisabled('signup_disabled'),
+  signupDisabled,
 
   /// The user has been banned and cannot sign in.
-  userBanned('user_banned'),
+  userBanned,
 
   /// The OAuth provider's email must be verified before it can be used.
-  providerEmailNeedsVerification('provider_email_needs_verification'),
+  providerEmailNeedsVerification,
 
   /// The invite does not exist, was already used, or has expired.
-  inviteNotFound('invite_not_found'),
+  inviteNotFound,
 
   /// The `state` parameter of the OAuth callback is missing or invalid.
-  badOauthState('bad_oauth_state'),
+  badOauthState,
 
   /// The OAuth callback is missing required parameters.
-  badOauthCallback('bad_oauth_callback'),
+  badOauthCallback,
 
   /// The OAuth provider is not enabled for this project.
-  oauthProviderNotSupported('oauth_provider_not_supported'),
+  oauthProviderNotSupported,
 
   /// The JWT's `aud` claim does not match what the server expects.
-  unexpectedAudience('unexpected_audience'),
+  unexpectedAudience,
 
   /// The user's only identity cannot be unlinked.
-  singleIdentityNotDeletable('single_identity_not_deletable'),
+  singleIdentityNotDeletable,
 
   /// The identity cannot be unlinked because its email is used by another
   /// identity of the same user.
-  emailConflictIdentityNotDeletable('email_conflict_identity_not_deletable'),
+  emailConflictIdentityNotDeletable,
 
   /// The identity is already linked to a user.
-  identityAlreadyExists('identity_already_exists'),
+  identityAlreadyExists,
 
   /// Signing in with email is disabled for this project.
-  emailProviderDisabled('email_provider_disabled'),
+  emailProviderDisabled,
 
   /// Signing in with phone is disabled for this project.
-  phoneProviderDisabled('phone_provider_disabled'),
+  phoneProviderDisabled,
 
   /// The user has reached the maximum number of enrolled MFA factors.
-  tooManyEnrolledMfaFactors('too_many_enrolled_mfa_factors'),
+  tooManyEnrolledMfaFactors,
 
   /// An MFA factor with this name already exists for the user.
-  mfaFactorNameConflict('mfa_factor_name_conflict'),
+  mfaFactorNameConflict,
 
   /// No MFA factor matches the given identifier.
-  mfaFactorNotFound('mfa_factor_not_found'),
+  mfaFactorNotFound,
 
   /// The MFA challenge was created from a different IP address.
-  mfaIpAddressMismatch('mfa_ip_address_mismatch'),
+  mfaIpAddressMismatch,
 
   /// The MFA challenge has expired.
-  mfaChallengeExpired('mfa_challenge_expired'),
+  mfaChallengeExpired,
 
   /// The MFA verification code is incorrect.
-  mfaVerificationFailed('mfa_verification_failed'),
+  mfaVerificationFailed,
 
   /// The MFA verification was rejected, for example by an auth hook.
-  mfaVerificationRejected('mfa_verification_rejected'),
+  mfaVerificationRejected,
 
   /// The session's authenticator assurance level is too low for this
   /// operation.
-  insufficientAal('insufficient_aal'),
+  insufficientAal,
 
   /// The captcha verification failed.
-  captchaFailed('captcha_failed'),
+  captchaFailed,
 
   /// SAML SSO is disabled for this project.
-  samlProviderDisabled('saml_provider_disabled'),
+  samlProviderDisabled,
 
   /// Manually linking identities is disabled for this project.
-  manualLinkingDisabled('manual_linking_disabled'),
+  manualLinkingDisabled,
 
   /// The SMS message could not be sent.
-  smsSendFailed('sms_send_failed'),
+  smsSendFailed,
 
   /// The user's email has not been confirmed yet.
-  emailNotConfirmed('email_not_confirmed'),
+  emailNotConfirmed,
 
   /// The user's phone number has not been confirmed yet.
-  phoneNotConfirmed('phone_not_confirmed'),
+  phoneNotConfirmed,
 
   /// The reauthentication nonce is missing from the request.
-  reauthNonceMissing('reauth_nonce_missing'),
+  reauthNonceMissing,
 
   /// The SAML relay state does not exist or was already used.
-  samlRelayStateNotFound('saml_relay_state_not_found'),
+  samlRelayStateNotFound,
 
   /// The SAML relay state has expired.
-  samlRelayStateExpired('saml_relay_state_expired'),
+  samlRelayStateExpired,
 
   /// No SAML identity provider matches the given identifier.
-  samlIdpNotFound('saml_idp_not_found'),
+  samlIdpNotFound,
 
   /// The SAML assertion did not contain a user identifier.
-  samlAssertionNoUserId('saml_assertion_no_user_id'),
+  samlAssertionNoUserId,
 
   /// The SAML assertion did not contain an email address.
-  samlAssertionNoEmail('saml_assertion_no_email'),
+  samlAssertionNoEmail,
 
   /// A user with this identifier already exists.
-  userAlreadyExists('user_already_exists'),
+  userAlreadyExists,
 
   /// No SSO provider matches the given identifier.
-  ssoProviderNotFound('sso_provider_not_found'),
+  ssoProviderNotFound,
 
   /// The SAML identity provider's metadata could not be fetched.
-  samlMetadataFetchFailed('saml_metadata_fetch_failed'),
+  samlMetadataFetchFailed,
 
   /// A SAML identity provider with this entity ID already exists.
-  samlIdpAlreadyExists('saml_idp_already_exists'),
+  samlIdpAlreadyExists,
 
   /// The SSO domain is already registered to a provider.
-  ssoDomainAlreadyExists('sso_domain_already_exists'),
+  ssoDomainAlreadyExists,
 
   /// The SAML assertion's entity ID does not match the registered provider.
-  samlEntityIdMismatch('saml_entity_id_mismatch'),
+  samlEntityIdMismatch,
 
   /// The request conflicts with the current state of the resource, for
   /// example a concurrent update.
-  conflict('conflict'),
+  conflict,
 
   /// The authentication provider is disabled for this project.
-  providerDisabled('provider_disabled'),
+  providerDisabled,
 
   /// The user's account is managed by SSO and cannot be modified directly.
-  userSsoManaged('user_sso_managed'),
+  userSsoManaged,
 
   /// The operation requires the user to reauthenticate first.
-  reauthenticationNeeded('reauthentication_needed'),
+  reauthenticationNeeded,
 
   /// The new password must be different from the current one.
-  samePassword('same_password'),
+  samePassword,
 
   /// The reauthentication code is incorrect or expired.
-  reauthenticationNotValid('reauthentication_not_valid'),
+  reauthenticationNotValid,
 
   /// The one-time password has expired.
-  otpExpired('otp_expired'),
+  otpExpired,
 
   /// Signing in with a one-time password is disabled for this project.
-  otpDisabled('otp_disabled'),
+  otpDisabled,
 
   /// No identity matches the given identifier.
-  identityNotFound('identity_not_found'),
+  identityNotFound,
 
   /// The password does not meet the project's strength requirements.
-  weakPassword('weak_password'),
+  weakPassword,
 
   /// Too many requests were sent in a short period.
-  overRequestRateLimit('over_request_rate_limit'),
+  overRequestRateLimit,
 
   /// Too many emails were sent to this address in a short period.
-  overEmailSendRateLimit('over_email_send_rate_limit'),
+  overEmailSendRateLimit,
 
   /// Too many SMS messages were sent to this number in a short period.
-  overSmsSendRateLimit('over_sms_send_rate_limit'),
+  overSmsSendRateLimit,
 
   /// The PKCE code verifier does not match the code challenge sent when the
   /// flow started.
-  badCodeVerifier('bad_code_verifier'),
+  badCodeVerifier,
 
   /// Signing in anonymously is disabled for this project.
-  anonymousProviderDisabled('anonymous_provider_disabled'),
+  anonymousProviderDisabled,
 
   /// An auth hook did not respond in time.
-  hookTimeout('hook_timeout'),
+  hookTimeout,
 
   /// An auth hook did not respond in time even after being retried.
-  hookTimeoutAfterRetry('hook_timeout_after_retry'),
+  hookTimeoutAfterRetry,
 
   /// An auth hook's response exceeded the maximum payload size.
-  hookPayloadOverSizeLimit('hook_payload_over_size_limit'),
+  hookPayloadOverSizeLimit,
 
   /// An auth hook's response did not report its payload size.
-  hookPayloadUnknownSize('hook_payload_unknown_size'),
+  hookPayloadUnknownSize,
 
   /// The request took too long to complete.
-  requestTimeout('request_timeout'),
+  requestTimeout,
 
   /// Enrolling a phone MFA factor is disabled for this project.
-  mfaPhoneEnrollDisabled('mfa_phone_enroll_not_enabled'),
+  mfaPhoneEnrollNotEnabled,
 
   /// Verifying a phone MFA factor is disabled for this project.
-  mfaPhoneVerifyDisabled('mfa_phone_verify_not_enabled'),
+  mfaPhoneVerifyNotEnabled,
 
   /// Enrolling a TOTP MFA factor is disabled for this project.
-  mfaTotpEnrollDisabled('mfa_totp_enroll_not_enabled'),
+  mfaTotpEnrollNotEnabled,
 
   /// Verifying a TOTP MFA factor is disabled for this project.
-  mfaTotpVerifyDisabled('mfa_totp_verify_not_enabled'),
+  mfaTotpVerifyNotEnabled,
 
   /// Enrolling a WebAuthn MFA factor is disabled for this project.
-  mfaWebauthnEnrollDisabled('mfa_webauthn_enroll_not_enabled'),
+  mfaWebauthnEnrollNotEnabled,
 
   /// Verifying a WebAuthn MFA factor is disabled for this project.
-  mfaWebauthnVerifyDisabled('mfa_webauthn_verify_not_enabled'),
+  mfaWebauthnVerifyNotEnabled,
 
   /// Passkeys are disabled for this project.
-  passkeyDisabled('passkey_disabled'),
+  passkeyDisabled,
 
   /// The user has reached the maximum number of registered passkeys.
-  tooManyPasskeys('too_many_passkeys'),
+  tooManyPasskeys,
 
   /// The WebAuthn challenge does not exist or was already used.
-  webauthnChallengeNotFound('webauthn_challenge_not_found'),
+  webauthnChallengeNotFound,
 
   /// The WebAuthn challenge has expired.
-  webauthnChallengeExpired('webauthn_challenge_expired'),
+  webauthnChallengeExpired,
 
   /// The WebAuthn credential is already registered.
-  webauthnCredentialExists('webauthn_credential_exists'),
+  webauthnCredentialExists,
 
   /// No WebAuthn credential matches the given identifier.
-  webauthnCredentialNotFound('webauthn_credential_not_found'),
+  webauthnCredentialNotFound,
 
   /// The WebAuthn verification failed.
-  webauthnVerificationFailed('webauthn_verification_failed');
-
-  const ErrorCode(this.code);
+  webauthnVerificationFailed;
 
   /// The wire value sent as the `error_code` field.
-  final String code;
+  String get code => snakeCase;
 
   /// Returns the error code whose [code] matches, or `null` if none does.
   static ErrorCode? fromCode(String code) {

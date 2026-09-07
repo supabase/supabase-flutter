@@ -2379,7 +2379,6 @@ supporting_symbols:
   - BucketOptions.public
   - CountOption
   - ErrorCode
-  - ErrorCode.ErrorCode
   - ErrorCode.code
   - ErrorCode.fromCode
   - Factor
