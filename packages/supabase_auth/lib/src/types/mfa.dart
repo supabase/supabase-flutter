@@ -12,7 +12,7 @@ class AuthMFAEnrollResponse {
 
   factory AuthMFAEnrollResponse.fromJson(Map<String, dynamic> json) {
     final type = FactorType.values.firstWhere(
-      (e) => e.value == json['type'],
+      (e) => e.snakeCase == json['type'],
       orElse: () => FactorType.unknown,
     );
     return AuthMFAEnrollResponse(
@@ -347,26 +347,21 @@ enum FactorStatus {
 /// The kind of second factor an MFA [Factor] uses.
 enum FactorType {
   /// A time-based one-time password from an authenticator app.
-  totp('totp'),
+  totp,
 
   /// A one-time password sent by SMS.
-  phone('phone'),
+  phone,
 
   /// A WebAuthn security key or platform authenticator.
-  webauthn('webauthn'),
+  webauthn,
 
   /// A set of single-use recovery codes, managed through
   /// [AuthMFARecoveryCodesApi] rather than [AuthMFAApi.enroll].
-  recoveryCode('recovery_code'),
+  recoveryCode,
 
   /// Returned when the backend sends an unknown factor type.
   /// This allows forward compatibility with new factor types.
-  unknown('unknown');
-
-  const FactorType(this.value);
-
-  /// The wire value received from and sent to the server.
-  final String value;
+  unknown,
 }
 
 /// An MFA factor enrolled by a user.
@@ -385,7 +380,7 @@ class Factor {
       id: json['id'] as String,
       friendlyName: json['friendly_name'] as String?,
       factorType: FactorType.values.firstWhere(
-        (e) => e.value == json['factor_type'],
+        (e) => e.snakeCase == json['factor_type'],
         orElse: () => FactorType.unknown,
       ),
       status: FactorStatus.values.firstWhere(
@@ -421,7 +416,7 @@ class Factor {
     return {
       'id': id,
       'friendly_name': friendlyName,
-      'factor_type': factorType.value,
+      'factor_type': factorType.snakeCase,
       'status': status.name,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),

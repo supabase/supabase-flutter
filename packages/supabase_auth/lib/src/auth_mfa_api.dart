@@ -65,7 +65,7 @@ class AuthMFAApi {
 
     final body = <String, dynamic>{
       'friendly_name': friendlyName,
-      'factor_type': factorType.value,
+      'factor_type': factorType.snakeCase,
     };
 
     if (factorType == FactorType.totp) {

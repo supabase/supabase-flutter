@@ -2438,8 +2438,6 @@ supporting_symbols:
   - Factor.updatedAt
   - FactorStatus
   - FactorType
-  - FactorType.FactorType
-  - FactorType.value
   - FlutterAuthClientOptions
   - FlutterAuthClientOptions.FlutterAuthClientOptions
   - FlutterAuthClientOptions.copyWith
