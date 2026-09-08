@@ -9,6 +9,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     super.autoRefreshToken,
     super.pkceAsyncStorage,
     super.appendPkceFlowIdToRedirects,
+    super.retryOptions,
     super.persistSession = true,
     this.localStorage,
     this.detectSessionInUri = true,
@@ -19,7 +20,9 @@ class FlutterAuthClientOptions extends AuthClientOptions {
   ///
   /// Defaults to shared preferences when [persistSession] is `true`, and to
   /// an in-memory-only storage otherwise. A custom storage is used regardless
-  /// of [persistSession].
+  /// of [persistSession], and the session then counts as persisted unless the
+  /// storage is an [EmptyLocalStorage], so cross-tab sync on web follows the
+  /// storage that is actually in use.
   final LocalStorage? localStorage;
 
   /// If true, the client will start the deep link observer and obtain sessions
@@ -45,6 +48,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
     LocalStorage? localStorage,
     AuthAsyncStorage? pkceAsyncStorage,
     bool? appendPkceFlowIdToRedirects,
+    SupabaseRetryOptions? retryOptions,
     bool? detectSessionInUri,
     bool Function(Uri uri)? detectSessionInUriPredicate,
     bool? persistSession,
@@ -56,6 +60,7 @@ class FlutterAuthClientOptions extends AuthClientOptions {
       pkceAsyncStorage: pkceAsyncStorage ?? this.pkceAsyncStorage,
       appendPkceFlowIdToRedirects:
           appendPkceFlowIdToRedirects ?? this.appendPkceFlowIdToRedirects,
+      retryOptions: retryOptions ?? this.retryOptions,
       detectSessionInUri: detectSessionInUri ?? this.detectSessionInUri,
       detectSessionInUriPredicate:
           detectSessionInUriPredicate ?? this.detectSessionInUriPredicate,

@@ -68,11 +68,12 @@ class AuthClientOptions {
 
   /// Whether the session is meant to outlive this client.
   ///
-  /// On web such a session is kept in sync across the tabs of the same
-  /// project, so a sign-in or sign-out in one tab reaches the others. Leave it
-  /// false for a client that must keep its own session, such as one created
-  /// with the service role key next to the user's client. `supabase_flutter`
-  /// persists the session and defaults it to true.
+  /// The client stores nothing itself. On web a persisted session is kept in
+  /// sync across the tabs of the same project, so a sign-in or sign-out in one
+  /// tab reaches the others. Leave it false for a client that must keep its
+  /// own session, such as one created with the service role key next to the
+  /// user's client. `supabase_flutter` persists the session and defaults it to
+  /// true.
   final bool persistSession;
 
   /// The auth flow used for sign-in, sign-up, and password recovery.

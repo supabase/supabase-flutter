@@ -127,6 +127,9 @@ class Supabase {
             : const EmptyLocalStorage(),
       );
     }
+    authOptions = authOptions.copyWith(
+      persistSession: authOptions.localStorage is! EmptyLocalStorage,
+    );
     _instance._init(
       url,
       publishableKey,

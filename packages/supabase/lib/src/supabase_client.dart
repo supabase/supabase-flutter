@@ -95,14 +95,7 @@ class SupabaseClient {
           )
         : baseHttpClient;
     _authApiHttpClient = tracedHttpClient;
-    _authInstance = _initSupabaseAuthClient(
-      autoRefreshToken: authOptions.autoRefreshToken,
-      authAsyncStorage: authOptions.pkceAsyncStorage,
-      persistSession: authOptions.persistSession,
-      authFlowType: authOptions.authFlowType,
-      appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
-      retryOptions: authOptions.retryOptions,
-    );
+    _authInstance = _initSupabaseAuthClient(authOptions);
     _authHttpClient = AuthHttpClient(
       _supabaseKey,
       tracedHttpClient,
@@ -342,14 +335,7 @@ class SupabaseClient {
     _authInstance?.dispose();
   }
 
-  AuthClient _initSupabaseAuthClient({
-    required bool autoRefreshToken,
-    required AuthAsyncStorage? authAsyncStorage,
-    required bool persistSession,
-    required AuthFlowType authFlowType,
-    required bool appendPkceFlowIdToRedirects,
-    required SupabaseRetryOptions retryOptions,
-  }) {
+  AuthClient _initSupabaseAuthClient(AuthClientOptions authOptions) {
     final authHeaders = {...headers};
     authHeaders['apikey'] = _supabaseKey;
     authHeaders['Authorization'] = 'Bearer $_supabaseKey';
@@ -357,13 +343,13 @@ class SupabaseClient {
     return AuthClient(
       url: _authUrl,
       headers: authHeaders,
-      autoRefreshToken: autoRefreshToken,
+      autoRefreshToken: authOptions.autoRefreshToken,
       httpClient: _authApiHttpClient,
-      asyncStorage: authAsyncStorage,
-      persistSession: persistSession,
-      flowType: authFlowType,
-      appendPkceFlowIdToRedirects: appendPkceFlowIdToRedirects,
-      retryOptions: retryOptions,
+      asyncStorage: authOptions.pkceAsyncStorage,
+      persistSession: accessToken == null && authOptions.persistSession,
+      flowType: authOptions.authFlowType,
+      appendPkceFlowIdToRedirects: authOptions.appendPkceFlowIdToRedirects,
+      retryOptions: authOptions.retryOptions,
     );
   }
 

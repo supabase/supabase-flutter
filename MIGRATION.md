@@ -994,18 +994,31 @@ client you construct directly no longer takes part unless you ask for it:
 
 ```dart
 // Before: every client synced its session across tabs.
-final client = SupabaseClient(url, publishableKey);
+final client = SupabaseClient(
+  url,
+  publishableKey,
+  authOptions: AuthClientOptions(pkceAsyncStorage: MemoryAuthAsyncStorage()),
+);
 
 // After: opt in where the session should be shared.
 final client = SupabaseClient(
   url,
   publishableKey,
-  authOptions: AuthClientOptions(persistSession: true),
+  authOptions: AuthClientOptions(
+    pkceAsyncStorage: MemoryAuthAsyncStorage(),
+    persistSession: true,
+  ),
 );
 ```
 
-`FlutterAuthClientOptions.persistSession` moved up to `AuthClientOptions`. Code that passes it keeps
-working, since the Flutter options still accept it and default it to `true`.
+A client configured with a third-party `accessToken` has no session of its own and never opens the
+channel.
+
+`FlutterAuthClientOptions.persistSession` moved up to `AuthClientOptions` and still defaults to
+`true`. In `supabase_flutter` the channel follows the storage that is actually in use: an app that
+passes `persistSession: false`, or `localStorage: const EmptyLocalStorage()`, keeps its session in
+memory and no longer syncs it across tabs, while a custom `localStorage` counts as persisting and
+keeps syncing.
 
 ### The session is persisted with `SharedPreferencesAsync`
 

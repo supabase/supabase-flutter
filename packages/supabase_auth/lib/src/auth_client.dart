@@ -228,8 +228,6 @@ class AuthClient {
 
   final AuthFlowType _flowType;
 
-  /// Whether the session is meant to outlive this client, which on web also
-  /// decides whether it is kept in sync with the other tabs.
   final bool _persistSession;
 
   /// Configures how a token refresh that never reached the service is retried.
@@ -1714,13 +1712,8 @@ class AuthClient {
   }
 
   void _mayStartBroadcastChannel() {
-    if (!_persistSession) {
-      authLogger.finer(
-        'Not starting broadcast channel, the session is not persisted',
-      );
-      return;
-    }
-    if (const bool.fromEnvironment('dart.library.js_interop')) {
+    if (_persistSession &&
+        const bool.fromEnvironment('dart.library.js_interop')) {
       final broadcastKey = defaultPersistSessionKey(_url);
 
       assert(
