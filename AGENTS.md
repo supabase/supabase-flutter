@@ -69,7 +69,7 @@ dart test -j 1
 supabase stop
 ```
 
-The single `supabase/` config at the repository root serves every package: its migrations and `seed.sql` create the schemas, functions, and test data all four packages rely on. The ports are offset from the CLI defaults (gateway on `http://127.0.0.1:54421`, database on `127.0.0.1:54422`) so this test stack can run alongside another local Supabase project.
+The single `supabase/` config at the repository root serves every package: its migrations and `seed.sql` create the schemas, functions, and test data all four packages rely on. The stack binds ports 14420 to 14429 (gateway on `http://127.0.0.1:14421`, database on `127.0.0.1:14422`), off the CLI defaults so it can run alongside another local Supabase project and below Linux's default ephemeral port range so an outgoing connection cannot claim a port the stack still needs to bind.
 
 The `-j 1` flag runs tests sequentially (not concurrently), which is required since tests share the same backend.
 

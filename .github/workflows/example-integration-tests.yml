@@ -41,7 +41,13 @@ jobs:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
       - name: Start Supabase
-        run: supabase start --workdir examples
+        run: |
+          # This stack keeps the CLI default ports, which sit in the ephemeral
+          # port range, so a bind conflict is possible; retry once.
+          supabase start --workdir examples || {
+            supabase stop --no-backup --workdir examples || true
+            supabase start --workdir examples
+          }
 
       - name: Install cloudflared
         run: |

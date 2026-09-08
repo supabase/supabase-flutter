@@ -6,7 +6,7 @@ const localStackHost = '127.0.0.1';
 
 /// Port of the API gateway of the local Supabase CLI stack.
 @visibleForTesting
-const localStackPort = 54421;
+const localStackPort = 14421;
 
 /// Base URL of the API gateway, which every service is exposed through.
 @visibleForTesting
@@ -33,7 +33,7 @@ const localStackRealtimeUrl =
 /// mails the auth service would have sent. The `[inbucket]` section of
 /// `supabase/config.toml` exposes it.
 @visibleForTesting
-const localStackMailPort = 54424;
+const localStackMailPort = 14424;
 
 /// Base URL of the mail server web interface of the local stack.
 @visibleForTesting
@@ -41,7 +41,7 @@ const localStackMailUrl = 'http://$localStackHost:$localStackMailPort';
 
 /// Port Postgres itself is exposed on, for tests that need to run SQL.
 @visibleForTesting
-const localStackDatabasePort = 54422;
+const localStackDatabasePort = 14422;
 
 /// Database of the local stack.
 @visibleForTesting
