@@ -1800,6 +1800,7 @@ class AuthClient {
       _initialized.complete();
       return;
     }
+    final versionBeforeRead = _sessionVersion;
     String? persisted;
     try {
       persisted = await storage.getItem(_storageKey);
@@ -1809,6 +1810,13 @@ class AuthClient {
         error,
         stackTrace,
       );
+    }
+    if (_isDisposed || _sessionVersion != versionBeforeRead) {
+      // A sign-in or sign-out that happened while the storage was being read
+      // is newer than what was read, so it stays.
+      authLogger.fine('Session changed during restore, keeping it');
+      _initialized.complete();
+      return;
     }
     if (persisted == null) {
       notifyAllSubscribers(AuthChangeEvent.initialSession);

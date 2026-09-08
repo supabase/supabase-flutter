@@ -140,6 +140,29 @@ void main() {
       expect(await storage.getItem(legacyPrefixKey), isNull);
     });
 
+    test('remove without a flow id clears the matching slot of the prefix '
+        'used before', () async {
+      await storage.setItem(legacyPrefixKey, 'verifier-old');
+      await storage.setItem(legacyPrefixIndexKey, '["flow-old","flow-other"]');
+      await storage.setItem(legacyPrefixSlotKey('flow-old'), 'verifier-old');
+      await storage.setItem(
+        legacyPrefixSlotKey('flow-other'),
+        'verifier-other',
+      );
+
+      await store.remove();
+
+      expect(await storage.getItem(legacyPrefixKey), isNull);
+      expect(await storage.getItem(legacyPrefixSlotKey('flow-old')), isNull);
+      expect(
+        await storage.getItem(legacyPrefixSlotKey('flow-other')),
+        'verifier-other',
+      );
+      expect(jsonDecode(await storage.getItem(legacyPrefixIndexKey) ?? ''), [
+        'flow-other',
+      ]);
+    });
+
     test('removeAll clears the keys of the prefix used before', () async {
       await storage.setItem(legacyPrefixKey, 'verifier-old');
       await storage.setItem(legacyPrefixIndexKey, '["flow-old"]');

@@ -131,24 +131,32 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
 
   /// Makes sure a legacy value for [key] is not moved over after the value
   /// was removed, which would bring back a session the user signed out of.
+  ///
+  /// The marker is only written when the legacy store holds the key, so the
+  /// keys of pkce flows that never existed in v2 leave no trace behind. When
+  /// the legacy store cannot be read it is written regardless: not knowing
+  /// whether a stale session is in there must not let one come back later.
   Future<void> _retireLegacyItem(String key) async {
     if (await _preferences.containsKey(_migratedKey(key))) {
       return;
     }
+    final SharedPreferences legacyPreferences;
     try {
-      final legacyPreferences = await SharedPreferences.getInstance();
-      if (!legacyPreferences.containsKey(key)) {
-        return;
-      }
-      await _preferences.setBool(_migratedKey(key), true);
-      await _removeLegacyItem(legacyPreferences, key);
+      legacyPreferences = await SharedPreferences.getInstance();
     } catch (error, stackTrace) {
       flutterLogger.warning(
         'Could not read the legacy store',
         error,
         stackTrace,
       );
+      await _preferences.setBool(_migratedKey(key), true);
+      return;
     }
+    if (!legacyPreferences.containsKey(key)) {
+      return;
+    }
+    await _preferences.setBool(_migratedKey(key), true);
+    await _removeLegacyItem(legacyPreferences, key);
   }
 
   /// Deletes the legacy entry so a stale token is not left lying around.

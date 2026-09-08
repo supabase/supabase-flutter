@@ -215,6 +215,42 @@ void main() {
     expect(await storage.getItem(storageKey), isNull);
   });
 
+  test('a sign in during the restore is not replaced by the stored '
+      'session', () async {
+    final stored = getSessionData(DateTime.now().add(const Duration(hours: 1)));
+    final slowStorage = _SlowStorage();
+    await slowStorage.setItem(storageKey, stored.sessionString);
+    final client = AuthClient(
+      url: authUrl,
+      headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
+      asyncStorage: slowStorage,
+      persistSession: true,
+      flowType: AuthFlowType.implicit,
+    );
+    addTearDown(client.dispose);
+
+    final response = await client.signInWithPassword(
+      email: email1,
+      password: password,
+    );
+    await client.initialized;
+    await settle();
+
+    expect(client.currentSession?.accessToken, response.session?.accessToken);
+    final persisted = await slowStorage.getItem(storageKey);
+    expect(
+      Session.fromJson(jsonDecode(persisted!))?.accessToken,
+      response.session?.accessToken,
+    );
+    final events = <AuthChangeEvent>[];
+    final subscription = client.onAuthStateChange.listen(
+      (state) => events.add(state.event),
+    );
+    await settle();
+    await subscription.cancel();
+    expect(events, [AuthChangeEvent.signedIn]);
+  });
+
   test('a failing storage does not break sign in', () async {
     const failingStorage = _FailingStorage();
     final client = AuthClient(
@@ -235,6 +271,15 @@ void main() {
 
     expect(client.currentSession?.accessToken, response.session?.accessToken);
   });
+}
+
+/// Takes long enough to read that a sign in can complete in the meantime.
+class _SlowStorage extends MemoryAuthAsyncStorage {
+  @override
+  Future<String?> getItem(String key) async {
+    await Future.delayed(const Duration(seconds: 2));
+    return super.getItem(key);
+  }
 }
 
 class _FailingStorage extends AuthAsyncStorage {

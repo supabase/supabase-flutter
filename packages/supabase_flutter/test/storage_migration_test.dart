@@ -124,6 +124,24 @@ void main() {
       expect(await storage.getItem(sessionKey), testSessionValue);
       await expectLater(storage.removeItem(sessionKey), completes);
     });
+
+    test(
+      'does not restore a legacy session after a sign-out during which the '
+      'legacy store could not be read',
+      () async {
+        mockSharedPreferences();
+        SharedPreferencesStorePlatform.instance = _ThrowingLegacyStore();
+        final storage = SharedPreferencesAuthAsyncStorage();
+        await storage.setItem(sessionKey, testSessionValue);
+        await storage.removeItem(sessionKey);
+
+        // The legacy store is readable again and still holds a v2 session.
+        SharedPreferences.setMockInitialValues({sessionKey: testSessionValue});
+        final newStorage = SharedPreferencesAuthAsyncStorage();
+
+        expect(await newStorage.getItem(sessionKey), isNull);
+      },
+    );
   });
 
   group('SharedPreferencesAuthAsyncStorage migration of a v2 verifier', () {

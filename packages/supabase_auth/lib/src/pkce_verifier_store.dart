@@ -171,14 +171,25 @@ class PKCEVerifierStore {
       await _storage.removeItem(_slotKey(spentFlowId));
       await _storage.removeItem(_legacyPrefixSlotKey(spentFlowId));
     }
+    await _writeIndex(
+      _indexKey,
+      index,
+      index.where((id) => !spentFlowIds.contains(id)).toList(),
+    );
 
-    final remaining = index.where((id) => !spentFlowIds.contains(id)).toList();
-    if (remaining.length != index.length) {
-      if (remaining.isEmpty) {
-        await _storage.removeItem(_indexKey);
-      } else {
-        await _storage.setItem(_indexKey, jsonEncode(remaining));
+    // A verifier found through the legacy prefix has its slot under that
+    // prefix too, in an index of its own.
+    if (flowId == null && verifier != null) {
+      final legacyIndex = await _readIndex(_legacyPrefixIndexKey);
+      final remaining = <String>[];
+      for (final id in legacyIndex) {
+        if (await _storage.getItem(_legacyPrefixSlotKey(id)) == verifier) {
+          await _storage.removeItem(_legacyPrefixSlotKey(id));
+        } else {
+          remaining.add(id);
+        }
       }
+      await _writeIndex(_legacyPrefixIndexKey, legacyIndex, remaining);
     }
 
     // The legacy key mirrors the most recently started flow, which may be this
@@ -205,6 +216,23 @@ class PKCEVerifierStore {
     await _storage.removeItem(_legacyKey);
     await _storage.removeItem(_legacyPrefixIndexKey);
     await _storage.removeItem(_legacyPrefixKey);
+  }
+
+  /// Stores [remaining] under [key] when it differs from [previous], dropping
+  /// the key when nothing is left.
+  Future<void> _writeIndex(
+    String key,
+    List<String> previous,
+    List<String> remaining,
+  ) async {
+    if (remaining.length == previous.length) {
+      return;
+    }
+    if (remaining.isEmpty) {
+      await _storage.removeItem(key);
+    } else {
+      await _storage.setItem(key, jsonEncode(remaining));
+    }
   }
 
   /// The index goes through the same validation as a flow id read off a URL:
