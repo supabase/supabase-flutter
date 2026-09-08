@@ -209,11 +209,12 @@ class AuthClient {
 
   /// Completes once the session persisted by an earlier run has been restored.
   ///
-  /// From then on [currentSession] holds the restored session and the
-  /// [AuthChangeEvent.initialSession] event has been emitted. A restored
-  /// session that has expired is refreshed in the background, which
-  /// [onAuthStateChange] reports like any other refresh. Completes right away
-  /// when the session is not persisted.
+  /// When the session is persisted, [currentSession] holds the restored
+  /// session and the [AuthChangeEvent.initialSession] event has been emitted
+  /// by then. A restored session that has expired is refreshed in the
+  /// background, which [onAuthStateChange] reports like any other refresh.
+  /// Completes right away, without emitting an event, when the session is not
+  /// persisted.
   Future<void> get initialized => _initialized.future;
 
   /// The storage writes that have not completed yet, run one after the other
@@ -1157,7 +1158,10 @@ class AuthClient {
     );
     final userResponse = UserResponse.fromJson(response);
 
-    _currentSession = currentSession?.copyWith(user: userResponse.user);
+    final session = currentSession;
+    if (session != null) {
+      _saveSession(session.copyWith(user: userResponse.user));
+    }
     notifyAllSubscribers(AuthChangeEvent.userUpdated);
 
     return userResponse;
@@ -1800,6 +1804,36 @@ class AuthClient {
       _initialized.complete();
       return;
     }
+    String? expired;
+    try {
+      expired = await _readPersistedSession(storage);
+    } finally {
+      _initialized.complete();
+    }
+    if (expired == null) {
+      return;
+    }
+    unawaited(
+      recoverSession(expired).then(
+        (_) {},
+        onError: (Object error, StackTrace stackTrace) {
+          // Already reported on the stream by recoverSession itself.
+          authLogger.fine('Could not refresh the restored session', error);
+        },
+      ),
+    );
+  }
+
+  /// Makes the session persisted in [storage] the current one and emits
+  /// [AuthChangeEvent.initialSession].
+  ///
+  /// A value that does not hold a session is removed from the storage. A
+  /// sign-in or sign-out that happened while the storage was being read is
+  /// newer than what was read, so the current session is kept in that case.
+  ///
+  /// Returns the persisted value when the session it holds has expired, so
+  /// that the caller can refresh it.
+  Future<String?> _readPersistedSession(AuthAsyncStorage storage) async {
     final versionBeforeRead = _sessionVersion;
     String? persisted;
     try {
@@ -1811,41 +1845,33 @@ class AuthClient {
         stackTrace,
       );
     }
-    if (_isDisposed || _sessionVersion != versionBeforeRead) {
-      // A sign-in or sign-out that happened while the storage was being read
-      // is newer than what was read, so it stays.
+    if (_isDisposed) {
+      return null;
+    }
+    if (_sessionVersion != versionBeforeRead) {
       authLogger.fine('Session changed during restore, keeping it');
-      _initialized.complete();
-      return;
-    }
-    if (persisted == null) {
       notifyAllSubscribers(AuthChangeEvent.initialSession);
-      _initialized.complete();
-      return;
+      return null;
     }
-    try {
-      await setInitialSession(persisted);
-    } catch (error, stackTrace) {
-      authLogger.warning(
-        'Could not restore the persisted session',
-        error,
-        stackTrace,
-      );
-      _removeSession();
-      notifyAllSubscribers(AuthChangeEvent.initialSession);
-      _initialized.complete();
-      return;
+    Session? session;
+    if (persisted != null) {
+      try {
+        session = Session.fromJson(json.decode(persisted));
+      } catch (error, stackTrace) {
+        authLogger.warning(
+          'Could not restore the persisted session',
+          error,
+          stackTrace,
+        );
+      }
+      if (session == null) {
+        _removeSession();
+      } else {
+        _currentSession = session;
+      }
     }
-    _initialized.complete();
-    unawaited(
-      recoverSession(persisted).then(
-        (_) {},
-        onError: (Object error, StackTrace stackTrace) {
-          // Already reported on the stream by recoverSession itself.
-          authLogger.fine('Could not refresh the restored session', error);
-        },
-      ),
-    );
+    notifyAllSubscribers(AuthChangeEvent.initialSession);
+    return session != null && session.isExpired ? persisted : null;
   }
 
   void _mayStartBroadcastChannel() {

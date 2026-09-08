@@ -4,6 +4,7 @@ library;
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:web/web.dart';
 
@@ -55,6 +56,16 @@ void main() {
       window.localStorage.setItem(testKey, '"not json');
 
       expect(await storage.getItem(testKey), '"not json');
+    });
+
+    test('moves a verifier written by the legacy API over', () async {
+      const verifierKey = 'supabase.auth.token-code-verifier';
+      SharedPreferences.setMockInitialValues({verifierKey: 'legacy-verifier'});
+
+      expect(await storage.getItem(verifierKey), 'legacy-verifier');
+      expect(window.localStorage.getItem(verifierKey), 'legacy-verifier');
+      final legacyPreferences = await SharedPreferences.getInstance();
+      expect(legacyPreferences.getString(verifierKey), isNull);
     });
   });
 }

@@ -32,10 +32,15 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
   static const _useWebLocalStorage =
       kIsWeb && bool.fromEnvironment('dart.library.js_interop');
 
+  /// The keys whose legacy value has been looked up in this process. Nothing
+  /// writes to the legacy store anymore, so a second lookup would find the
+  /// same thing.
+  final _legacyChecked = <String>{};
+
   @override
   Future<String?> getItem(String key) async {
     if (_useWebLocalStorage) {
-      return _webItem(key);
+      return _webItem(key) ?? await _migrateLegacyWebItem(key);
     }
     return await _preferences.getString(key) ?? await _migrateLegacyItem(key);
   }
@@ -82,6 +87,37 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
     return decoded;
   }
 
+  /// Moves a value written by supabase_flutter v2 through the legacy
+  /// [SharedPreferences] API over to the plain [key] in `window.localStorage`.
+  ///
+  /// That API keeps its values under a prefixed key, so a code verifier
+  /// written by v2 is not found under [key] until it is moved. Both keys live
+  /// in the same `window.localStorage`, so a deleted entry cannot come back
+  /// and no marker is needed.
+  Future<String?> _migrateLegacyWebItem(String key) async {
+    if (_legacyChecked.contains(key)) {
+      return null;
+    }
+    try {
+      final legacyPreferences = await SharedPreferences.getInstance();
+      final value = legacyPreferences.getString(key);
+      _legacyChecked.add(key);
+      if (value == null) {
+        return null;
+      }
+      web.setItem(key, value);
+      await _removeLegacyItem(legacyPreferences, key);
+      return value;
+    } catch (error, stackTrace) {
+      flutterLogger.warning(
+        'Could not read the legacy store',
+        error,
+        stackTrace,
+      );
+      return null;
+    }
+  }
+
   /// Records that the legacy value of [key] has been dealt with, so that it is
   /// moved over once.
   ///
@@ -90,6 +126,12 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
   /// later write through either API can bring the deleted entry back, and a
   /// resurrected session would sign a user in again after they signed out.
   static String _migratedKey(String key) => '$key-legacy-migrated';
+
+  /// Whether the legacy value of [key] has not been looked at yet, neither in
+  /// this process nor, going by the marker, in an earlier one.
+  Future<bool> _isLegacyItemPending(String key) async =>
+      !_legacyChecked.contains(key) &&
+      !await _preferences.containsKey(_migratedKey(key));
 
   /// Moves the value the legacy [SharedPreferences] API holds for [key] over to
   /// [SharedPreferencesAsync] and returns it.
@@ -103,13 +145,14 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
   /// with it and leave the app unable to start over a session it may not even
   /// have.
   Future<String?> _migrateLegacyItem(String key) async {
-    if (await _preferences.containsKey(_migratedKey(key))) {
+    if (!await _isLegacyItemPending(key)) {
       return null;
     }
     try {
       final legacyPreferences = await SharedPreferences.getInstance();
       final value = legacyPreferences.getString(key);
       if (value == null) {
+        _legacyChecked.add(key);
         return null;
       }
       // The new store is written first, so that an interruption before the
@@ -117,6 +160,7 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
       // than in neither.
       await _preferences.setString(key, value);
       await _preferences.setBool(_migratedKey(key), true);
+      _legacyChecked.add(key);
       await _removeLegacyItem(legacyPreferences, key);
       return value;
     } catch (error, stackTrace) {
@@ -137,7 +181,7 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
   /// the legacy store cannot be read it is written regardless: not knowing
   /// whether a stale session is in there must not let one come back later.
   Future<void> _retireLegacyItem(String key) async {
-    if (await _preferences.containsKey(_migratedKey(key))) {
+    if (!await _isLegacyItemPending(key)) {
       return;
     }
     final SharedPreferences legacyPreferences;
@@ -150,8 +194,10 @@ class SharedPreferencesAuthAsyncStorage extends AuthAsyncStorage {
         stackTrace,
       );
       await _preferences.setBool(_migratedKey(key), true);
+      _legacyChecked.add(key);
       return;
     }
+    _legacyChecked.add(key);
     if (!legacyPreferences.containsKey(key)) {
       return;
     }

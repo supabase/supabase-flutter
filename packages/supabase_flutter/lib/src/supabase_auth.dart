@@ -23,8 +23,9 @@ import 'clear_auth_url_parameters_stub.dart'
 /// `Supabase.instance.client.auth` for auth operations.
 ///
 /// **Responsibilities:**
-/// - Persists and restores sessions via a [LocalStorage] implementation so
-///   that users remain signed in across app restarts.
+/// - Waits for the [AuthClient] to restore the persisted session before the
+///   deep link observer starts, so a link cannot be exchanged over a session
+///   that is still being read.
 /// - Observes deep links (universal links / custom URL schemes) and exchanges
 ///   auth codes or tokens found in those links for a valid session, supporting
 ///   both PKCE and Implicit OAuth flows.
@@ -32,21 +33,21 @@ import 'clear_auth_url_parameters_stub.dart'
 ///   `WidgetsBindingObserver`) to the auth client so that token refresh
 ///   resumes correctly after the app
 ///   returns to the foreground.
-/// - Emits an [AuthChangeEvent.initialSession] event at startup so that
-///   listeners receive a consistent first event regardless of whether a stored
-///   session exists.
+/// - Emits an [AuthChangeEvent.initialSession] event at startup when the
+///   session is not persisted, so that listeners receive a consistent first
+///   event regardless of the persistence settings.
 ///
 /// **Key collaborators:**
 /// - [AuthClient] (`Supabase.instance.client.auth`) — the underlying auth
 ///   client that [SupabaseAuth] coordinates with.
-/// - [LocalStorage] — pluggable storage backend for session persistence.
 /// - `AppLinks` — provides the incoming deep link stream and the initial link
 ///   that launched the app.
 ///
 /// **Lifecycle:**
 /// 1. Created lazily when [Supabase.initialize] runs.
-/// 2. [initialize] restores any persisted session, registers the deep link
-///    observer, and adds this instance as a `WidgetsBindingObserver`.
+/// 2. [initialize] waits for the persisted session to be restored, registers
+///    the deep link observer, and adds this instance as a
+///    `WidgetsBindingObserver`.
 /// 3. [dispose] cancels all subscriptions, removes the binding observer, and
 ///    stops deep link monitoring.
 ///

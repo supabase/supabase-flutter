@@ -30,8 +30,8 @@ void main() {
         mockEventChannel: true,
         initialLink: 'com.supabase://callback/?code=my-code-verifier',
       );
-      final pkceAsyncStorage = MockAsyncStorage();
-      await pkceAsyncStorage.setItem(
+      final asyncStorage = MockAsyncStorage();
+      await asyncStorage.setItem(
         '${defaultPersistSessionKey(supabaseUrl)}-code-verifier',
         'raw-code-verifier',
       );
@@ -40,7 +40,7 @@ void main() {
         publishableKey: supabaseKey,
         httpClient: pkceHttpClient,
         authOptions: FlutterAuthClientOptions(
-          asyncStorage: pkceAsyncStorage,
+          asyncStorage: asyncStorage,
         ),
       );
     });
@@ -117,8 +117,8 @@ void main() {
           mockEventChannel: true,
           initialLink: 'com.supabase://callback/?code=my-code-verifier',
         );
-        final pkceAsyncStorage = MockAsyncStorage();
-        await pkceAsyncStorage.setItem(
+        final asyncStorage = MockAsyncStorage();
+        await asyncStorage.setItem(
           '${defaultPersistSessionKey(supabaseUrl)}-code-verifier',
           'raw-code-verifier',
         );
@@ -127,7 +127,7 @@ void main() {
           publishableKey: supabaseKey,
           httpClient: pkceHttpClient,
           authOptions: FlutterAuthClientOptions(
-            asyncStorage: pkceAsyncStorage,
+            asyncStorage: asyncStorage,
             detectSessionInUriPredicate: (uri) => false,
           ),
         );
@@ -148,8 +148,8 @@ void main() {
           mockEventChannel: true,
           initialLink: 'com.supabase://callback/?code=my-code-verifier',
         );
-        final pkceAsyncStorage = MockAsyncStorage();
-        await pkceAsyncStorage.setItem(
+        final asyncStorage = MockAsyncStorage();
+        await asyncStorage.setItem(
           '${defaultPersistSessionKey(supabaseUrl)}-code-verifier',
           'raw-code-verifier',
         );
@@ -158,7 +158,7 @@ void main() {
           publishableKey: supabaseKey,
           httpClient: pkceHttpClient,
           authOptions: FlutterAuthClientOptions(
-            asyncStorage: pkceAsyncStorage,
+            asyncStorage: asyncStorage,
             detectSessionInUriPredicate: (uri) {
               receivedUris.add(uri);
               return uri.queryParameters.containsKey('code');

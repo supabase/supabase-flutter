@@ -60,18 +60,26 @@ class PKCEVerifierStore {
   /// this store generates is rejected before it is used to build a key.
   static final _flowIdPattern = RegExp(r'^[a-zA-Z0-9_-]{8,64}$');
 
-  String get _legacyKey => '$storageKey-code-verifier';
-  String get _indexKey => '$storageKey-flows-code-verifier';
+  /// The prefixes a pending verifier may be stored under: [storageKey], and
+  /// [AuthConstants.legacyStorageKey] for a flow started before the change.
+  late final List<String> _prefixes = {
+    storageKey,
+    AuthConstants.legacyStorageKey,
+  }.toList();
 
-  String _slotKey(String flowId) => '$storageKey-flow-$flowId-code-verifier';
+  /// The key the most recently started flow is mirrored under, which is the
+  /// key that was used before slots existed.
+  static String _mirrorKey(String prefix) => '$prefix-code-verifier';
 
-  static const _legacyPrefixKey =
-      '${AuthConstants.legacyStorageKey}-code-verifier';
-  static const _legacyPrefixIndexKey =
-      '${AuthConstants.legacyStorageKey}-flows-code-verifier';
+  static String _indexKeyOf(String prefix) => '$prefix-flows-code-verifier';
 
-  static String _legacyPrefixSlotKey(String flowId) =>
-      '${AuthConstants.legacyStorageKey}-flow-$flowId-code-verifier';
+  static String _slotKeyOf(String prefix, String flowId) =>
+      '$prefix-flow-$flowId-code-verifier';
+
+  String get _legacyKey => _mirrorKey(storageKey);
+  String get _indexKey => _indexKeyOf(storageKey);
+
+  String _slotKey(String flowId) => _slotKeyOf(storageKey, flowId);
 
   /// Returns [flowId] when it has the shape of a flow id, `null` otherwise.
   static String? validateFlowId(String? flowId) =>
@@ -108,7 +116,9 @@ class PKCEVerifierStore {
   }) async {
     await _storage.setItem(_slotKey(flowId), verifier);
 
-    final index = (await _readIndex()).where((id) => id != flowId).toList()
+    final index = await _readIndex(_indexKey);
+    index
+      ..remove(flowId)
       ..add(flowId);
     final evicted = <String>[];
     while (index.length > AuthConstants.pkceMaxConcurrentFlows) {
@@ -132,13 +142,15 @@ class PKCEVerifierStore {
   /// falling back to the key used before slots existed: submitting another
   /// flow's verifier would spend the single-use auth code.
   Future<String?> retrieve({String? flowId}) async {
-    final verifier = await _storage.getItem(
-      flowId == null ? _legacyKey : _slotKey(flowId),
-    );
-    return verifier ??
-        await _storage.getItem(
-          flowId == null ? _legacyPrefixKey : _legacyPrefixSlotKey(flowId),
-        );
+    for (final prefix in _prefixes) {
+      final verifier = await _storage.getItem(
+        flowId == null ? _mirrorKey(prefix) : _slotKeyOf(prefix, flowId),
+      );
+      if (verifier != null) {
+        return verifier;
+      }
+    }
+    return null;
   }
 
   /// Removes the verifier of [flowId], or the one of the most recently started
@@ -153,52 +165,49 @@ class PKCEVerifierStore {
 
   Future<void> _remove({String? flowId}) async {
     final verifier = await retrieve(flowId: flowId);
-    final index = await _readIndex();
+    for (final prefix in _prefixes) {
+      await _removeUnder(prefix, flowId: flowId, verifier: verifier);
+    }
+  }
 
-    // Without a flow id the verifier came from the legacy key, which mirrors
-    // whichever flow started last. Its slot is found by value, since the legacy
-    // key does not record which flow that was.
+  /// Removes the spent [verifier] from its slot and the mirror key under
+  /// [prefix], and drops the slot from the index kept there.
+  ///
+  /// Without a flow id the verifier came from the mirror key, which reflects
+  /// whichever flow started last. Its slot is found by value, since the mirror
+  /// key does not record which flow that was.
+  Future<void> _removeUnder(
+    String prefix, {
+    required String? flowId,
+    required String? verifier,
+  }) async {
+    final indexKey = _indexKeyOf(prefix);
+    final index = await _readIndex(indexKey);
     final spentFlowIds = flowId != null
         ? [flowId]
         : verifier == null
         ? const <String>[]
         : [
             for (final id in index)
-              if (await _storage.getItem(_slotKey(id)) == verifier) id,
+              if (await _storage.getItem(_slotKeyOf(prefix, id)) == verifier)
+                id,
           ];
 
     for (final spentFlowId in spentFlowIds) {
-      await _storage.removeItem(_slotKey(spentFlowId));
-      await _storage.removeItem(_legacyPrefixSlotKey(spentFlowId));
+      await _storage.removeItem(_slotKeyOf(prefix, spentFlowId));
     }
     await _writeIndex(
-      _indexKey,
+      indexKey,
       index,
       index.where((id) => !spentFlowIds.contains(id)).toList(),
     );
 
-    // A verifier found through the legacy prefix has its slot under that
-    // prefix too, in an index of its own.
-    if (flowId == null && verifier != null) {
-      final legacyIndex = await _readIndex(_legacyPrefixIndexKey);
-      final remaining = <String>[];
-      for (final id in legacyIndex) {
-        if (await _storage.getItem(_legacyPrefixSlotKey(id)) == verifier) {
-          await _storage.removeItem(_legacyPrefixSlotKey(id));
-        } else {
-          remaining.add(id);
-        }
-      }
-      await _writeIndex(_legacyPrefixIndexKey, legacyIndex, remaining);
-    }
-
-    // The legacy key mirrors the most recently started flow, which may be this
+    // The mirror key holds the most recently started flow, which may be this
     // one. Leaving a spent verifier there would let a later exchange without a
     // flow id reuse it.
-    for (final key in [_legacyKey, _legacyPrefixKey]) {
-      if (verifier != null && verifier == await _storage.getItem(key)) {
-        await _storage.removeItem(key);
-      }
+    final mirrorKey = _mirrorKey(prefix);
+    if (verifier != null && verifier == await _storage.getItem(mirrorKey)) {
+      await _storage.removeItem(mirrorKey);
     }
   }
 
@@ -206,16 +215,14 @@ class PKCEVerifierStore {
   Future<void> removeAll() => _serialize(_removeAll);
 
   Future<void> _removeAll() async {
-    for (final flowId in await _readIndex()) {
-      await _storage.removeItem(_slotKey(flowId));
+    for (final prefix in _prefixes) {
+      final indexKey = _indexKeyOf(prefix);
+      for (final flowId in await _readIndex(indexKey)) {
+        await _storage.removeItem(_slotKeyOf(prefix, flowId));
+      }
+      await _storage.removeItem(indexKey);
+      await _storage.removeItem(_mirrorKey(prefix));
     }
-    for (final flowId in await _readIndex(_legacyPrefixIndexKey)) {
-      await _storage.removeItem(_legacyPrefixSlotKey(flowId));
-    }
-    await _storage.removeItem(_indexKey);
-    await _storage.removeItem(_legacyKey);
-    await _storage.removeItem(_legacyPrefixIndexKey);
-    await _storage.removeItem(_legacyPrefixKey);
   }
 
   /// Stores [remaining] under [key] when it differs from [previous], dropping
@@ -237,8 +244,8 @@ class PKCEVerifierStore {
 
   /// The index goes through the same validation as a flow id read off a URL:
   /// with cookie backed storage its contents are no more trustworthy.
-  Future<List<String>> _readIndex([String? key]) async {
-    final index = await _storage.getItem(key ?? _indexKey);
+  Future<List<String>> _readIndex(String key) async {
+    final index = await _storage.getItem(key);
     if (index == null) {
       return [];
     }

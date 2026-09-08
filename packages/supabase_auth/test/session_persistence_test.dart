@@ -228,6 +228,9 @@ void main() {
       flowType: AuthFlowType.implicit,
     );
     addTearDown(client.dispose);
+    final states = <AuthState>[];
+    final subscription = client.onAuthStateChange.listen(states.add);
+    addTearDown(subscription.cancel);
 
     final response = await client.signInWithPassword(
       email: email1,
@@ -242,13 +245,67 @@ void main() {
       Session.fromJson(jsonDecode(persisted!))?.accessToken,
       response.session?.accessToken,
     );
+    expect(states.map((state) => state.event), [
+      AuthChangeEvent.signedIn,
+      AuthChangeEvent.initialSession,
+    ]);
+    expect(
+      states.last.session?.accessToken,
+      response.session?.accessToken,
+    );
+  });
+
+  test('persists the user after it was updated', () async {
+    final client = createClient();
+    await client.initialized;
+    await client.signInWithPassword(email: email1, password: password);
+
+    await client.updateUser(UserAttributes(data: {'name': 'Updated'}));
+    await settle();
+
+    final persisted = await storage.getItem(storageKey);
+    final session = Session.fromJson(jsonDecode(persisted!));
+    expect(session?.user.userMetadata?['name'], 'Updated');
+  });
+
+  test('a persisted value without an access token only emits an initial '
+      'session', () async {
+    await storage.setItem(storageKey, '{}');
+    final client = createClient();
     final events = <AuthChangeEvent>[];
     final subscription = client.onAuthStateChange.listen(
       (state) => events.add(state.event),
+      onError: (_) {},
     );
+    addTearDown(subscription.cancel);
+
+    await client.initialized;
     await settle();
-    await subscription.cancel();
-    expect(events, [AuthChangeEvent.signedIn]);
+
+    expect(client.currentSession, isNull);
+    expect(await storage.getItem(storageKey), isNull);
+    expect(events, [AuthChangeEvent.initialSession]);
+  });
+
+  test('does not write the restored session back to the storage', () async {
+    final stored = getSessionData(DateTime.now().add(const Duration(hours: 1)));
+    final countingStorage = _CountingStorage();
+    await countingStorage.setItem(storageKey, stored.sessionString);
+    countingStorage.writes = 0;
+    final client = AuthClient(
+      url: authUrl,
+      headers: {'Authorization': 'Bearer $anonToken', 'apikey': anonToken},
+      asyncStorage: countingStorage,
+      persistSession: true,
+      flowType: AuthFlowType.implicit,
+    );
+    addTearDown(client.dispose);
+
+    await client.initialized;
+    await settle();
+
+    expect(client.currentSession?.accessToken, stored.accessToken);
+    expect(countingStorage.writes, 0);
   });
 
   test('a failing storage does not break sign in', () async {
@@ -279,6 +336,23 @@ class _SlowStorage extends MemoryAuthAsyncStorage {
   Future<String?> getItem(String key) async {
     await Future.delayed(const Duration(seconds: 2));
     return super.getItem(key);
+  }
+}
+
+/// Counts the writes it receives.
+class _CountingStorage extends MemoryAuthAsyncStorage {
+  int writes = 0;
+
+  @override
+  Future<void> setItem(String key, String value) {
+    writes++;
+    return super.setItem(key, value);
+  }
+
+  @override
+  Future<void> removeItem(String key) {
+    writes++;
+    return super.removeItem(key);
   }
 }
 
