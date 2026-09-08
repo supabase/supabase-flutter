@@ -997,7 +997,7 @@ client you construct directly no longer takes part unless you ask for it:
 final client = SupabaseClient(
   url,
   publishableKey,
-  authOptions: AuthClientOptions(asyncStorage: MemoryAuthAsyncStorage()),
+  authOptions: AuthClientOptions(pkceAsyncStorage: MemoryAuthAsyncStorage()),
 );
 
 // After: opt in where the session should be shared.
