@@ -23,7 +23,7 @@ dependencies:
   flutter_web_auth_2: ^5.0.0
   meta: ^1.16.0
   supabase_flutter: 3.0.0-dev.2
-  web: '>=1.0.0 <2.0.0'
+  web: ^1.0.0
 
 dev_dependencies:
   flutter_test:

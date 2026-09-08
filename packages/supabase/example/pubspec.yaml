@@ -9,7 +9,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  web: '>=1.0.0 <2.0.0'
+  web: ^1.0.0
   supabase: ^3.0.0-dev.2
 
 dev_dependencies:
