@@ -10,7 +10,6 @@ import 'package:supabase_flutter/src/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:supabase_common/supabase_common.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'clear_auth_url_parameters_stub.dart'
     if (dart.library.js_interop) 'clear_auth_url_parameters_web.dart';
@@ -265,6 +264,10 @@ extension AuthClientSignInProvider on AuthClient {
   /// To obtain the OAuth URL without launching a browser, use
   /// [getOAuthSignInUrl] instead.
   ///
+  /// [preferEphemeral] is ignored by the default [OAuthLauncher]; it is used
+  /// by launchers that support it, such as the one in
+  /// `supabase_flutter_web_auth`.
+  ///
   /// See also:
   ///
   ///   * <https://supabase.io/docs/guides/auth#third-party-logins>
@@ -274,6 +277,7 @@ extension AuthClientSignInProvider on AuthClient {
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
     Map<String, String>? queryParameters,
+    bool preferEphemeral = false,
   }) async {
     final response = await getOAuthSignInUrl(
       provider: provider,
@@ -281,32 +285,13 @@ extension AuthClientSignInProvider on AuthClient {
       scopes: scopes,
       queryParameters: queryParameters,
     );
-    return _launchAuthUrl(response.url, provider, authScreenLaunchMode);
-  }
-
-  /// Launches the [url] for an OAuth or identity-linking flow, forcing an
-  /// external browser for Google on Android.
-  Future<bool> _launchAuthUrl(
-    Uri url,
-    OAuthProvider provider,
-    LaunchMode authScreenLaunchMode,
-  ) {
-    LaunchMode launchMode = authScreenLaunchMode;
-
-    // `defaultTargetPlatform` reports the host OS even on web, so guard with
-    // `kIsWeb` to keep the external-browser workaround native-only.
-    final isAndroid =
-        !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-
-    // Google login has to be performed on external browser window on Android
-    if (provider == OAuthProvider.google && isAndroid) {
-      launchMode = LaunchMode.externalApplication;
-    }
-
-    return launchUrl(
-      url,
-      mode: launchMode,
-      webOnlyWindowName: '_self',
+    return Supabase.instance.oauthLauncher.launch(
+      this,
+      response.url,
+      provider: provider,
+      redirectTo: redirectTo == null ? null : Uri.parse(redirectTo),
+      launchMode: authScreenLaunchMode,
+      preferEphemeral: preferEphemeral,
     );
   }
 
@@ -327,6 +312,10 @@ extension AuthClientSignInProvider on AuthClient {
   /// returns false or throws a [PlatformException] depending on the launchUrl
   /// failure.
   ///
+  /// [preferEphemeral] is ignored by the default [OAuthLauncher]; it is used
+  /// by launchers that support it, such as the one in
+  /// `supabase_flutter_web_auth`.
+  ///
   /// ```dart
   /// await supabase.auth.signInWithSSO(
   ///   domain: 'company.com',
@@ -338,6 +327,7 @@ extension AuthClientSignInProvider on AuthClient {
     String? redirectTo,
     String? captchaToken,
     LaunchMode launchMode = LaunchMode.platformDefault,
+    bool preferEphemeral = false,
   }) async {
     final ssoUrl = await getSSOSignInUrl(
       providerId: providerId,
@@ -345,10 +335,13 @@ extension AuthClientSignInProvider on AuthClient {
       redirectTo: redirectTo,
       captchaToken: captchaToken,
     );
-    return await launchUrl(
+    return Supabase.instance.oauthLauncher.launch(
+      this,
       ssoUrl,
-      mode: launchMode,
-      webOnlyWindowName: '_self',
+      provider: null,
+      redirectTo: redirectTo == null ? null : Uri.parse(redirectTo),
+      launchMode: launchMode,
+      preferEphemeral: preferEphemeral,
     );
   }
 
@@ -359,12 +352,17 @@ extension AuthClientSignInProvider on AuthClient {
 
   /// Links an oauth identity to an existing user.
   /// This method supports the PKCE flow.
+  ///
+  /// [preferEphemeral] is ignored by the default [OAuthLauncher]; it is used
+  /// by launchers that support it, such as the one in
+  /// `supabase_flutter_web_auth`.
   Future<bool> linkIdentity(
     OAuthProvider provider, {
     String? redirectTo,
     String? scopes,
     LaunchMode authScreenLaunchMode = LaunchMode.platformDefault,
     Map<String, String>? queryParameters,
+    bool preferEphemeral = false,
   }) async {
     final response = await getLinkIdentityUrl(
       provider,
@@ -372,6 +370,13 @@ extension AuthClientSignInProvider on AuthClient {
       scopes: scopes,
       queryParameters: queryParameters,
     );
-    return _launchAuthUrl(response.url, provider, authScreenLaunchMode);
+    return Supabase.instance.oauthLauncher.launch(
+      this,
+      response.url,
+      provider: provider,
+      redirectTo: redirectTo == null ? null : Uri.parse(redirectTo),
+      launchMode: authScreenLaunchMode,
+      preferEphemeral: preferEphemeral,
+    );
   }
 }
