@@ -172,7 +172,13 @@ jobs:
 
       - name: Start Supabase
         if: ${{ matrix.package.backend }}
-        run: supabase start
+        run: |
+          # A container can still lose a host port to a transient conflict, and
+          # the CLI tears the stack down when that happens, so retry once.
+          supabase start || {
+            supabase stop --no-backup || true
+            supabase start
+          }
 
       - name: Save Supabase Docker images to cache
         if: ${{ matrix.package.backend && steps.supabase-images.outputs.cache-hit != 'true' }}
